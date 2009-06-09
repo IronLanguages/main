@@ -13,8 +13,8 @@
  *
  * ***************************************************************************/
 
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Dynamic.Utils;
 using System.Runtime.CompilerServices;
 
@@ -42,7 +42,7 @@ namespace System.Linq.Expressions {
         /// <param name="node">The expression to visit.</param>
         /// <returns>The modified expression, if it or any subexpression was modified;
         /// otherwise, returns the original expression.</returns>
-        public Expression Visit(Expression node) {
+        public virtual Expression Visit(Expression node) {
             if (node != null) {
                 return node.Accept(this);
             }
@@ -55,10 +55,10 @@ namespace System.Linq.Expressions {
         /// <param name="nodes">The expressions to visit.</param>
         /// <returns>The modified expression list, if any of the elements were modified;
         /// otherwise, returns the original expression list.</returns>
-        public ReadOnlyCollection<Expression> Visit(ReadOnlyCollection<Expression> nodes) {
+        protected ReadOnlyCollection<Expression> Visit(ReadOnlyCollection<Expression> nodes) {
             Expression[] newNodes = null;
             for (int i = 0, n = nodes.Count; i < n; i++) {
-                Expression node = nodes[i].Accept(this);
+                Expression node = Visit(nodes[i]);
 
                 if (newNodes != null) {
                     newNodes[i] = node;
@@ -80,7 +80,7 @@ namespace System.Linq.Expressions {
             Expression[] newNodes = null;
             for (int i = 0, n = nodes.ArgumentCount; i < n; i++) {
                 Expression curNode = nodes.GetArgument(i);
-                Expression node = curNode.Accept(this);
+                Expression node = Visit(curNode);
 
                 if (newNodes != null) {
                     newNodes[i] = node;
@@ -137,9 +137,9 @@ namespace System.Linq.Expressions {
             if (node == null) {
                 return null;
             }
-            node = node.Accept(this) as T;
+            node = Visit(node) as T;
             if (node == null) {
-                throw Error.MustRewriteToSameType(callerName, typeof(T), callerName);
+                throw Error.MustRewriteToSameNode(callerName, typeof(T), callerName);
             }
             return node;
         }
@@ -156,9 +156,9 @@ namespace System.Linq.Expressions {
         protected ReadOnlyCollection<T> VisitAndConvert<T>(ReadOnlyCollection<T> nodes, string callerName) where T : Expression {
             T[] newNodes = null;
             for (int i = 0, n = nodes.Count; i < n; i++) {
-                T node = nodes[i].Accept(this) as T;
+                T node = Visit(nodes[i]) as T;
                 if (node == null) {
-                    throw Error.MustRewriteToSameType(callerName, typeof(T), callerName);
+                    throw Error.MustRewriteToSameNode(callerName, typeof(T), callerName);
                 }
 
                 if (newNodes != null) {
@@ -191,7 +191,16 @@ namespace System.Linq.Expressions {
             if (l == node.Left && r == node.Right && c == node.Conversion) {
                 return node;
             }
-            return Expression.MakeBinary(node.NodeType, l, r, node.IsLiftedToNull, node.Method, c);
+            if (node.IsReferenceComparison) {
+                if (node.NodeType == ExpressionType.Equal) {
+                    return Expression.ReferenceEqual(l, r);
+                } else {
+                    return Expression.ReferenceNotEqual(l, r);
+                }
+            }
+            var result = Expression.MakeBinary(node.NodeType, l, r, node.IsLiftedToNull, node.Method, c);
+            ValidateBinary(node, result);
+            return result;
         }
 
         /// <summary>
@@ -303,7 +312,7 @@ namespace System.Linq.Expressions {
         /// <see cref="Expression.VisitChildren" /> will try to reduce the node.
         /// </remarks>
         protected internal virtual Expression VisitExtension(Expression node) {
-            return node.VisitChildren(this);
+            return node.VisitChildren(this.Visit);
         }
 
         /// <summary>
@@ -465,6 +474,7 @@ namespace System.Linq.Expressions {
         /// <param name="node">The expression to visit.</param>
         /// <returns>The modified expression, if it or any subexpression was modified;
         /// otherwise, returns the original expression.</returns>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix")]
         protected internal virtual Expression VisitNew(NewExpression node) {
             ReadOnlyCollection<Expression> a = Visit(node.Arguments);
             if (a == node.Arguments) {
@@ -528,7 +538,9 @@ namespace System.Linq.Expressions {
             if (s == node.SwitchValue && c == node.Cases && d == node.DefaultBody) {
                 return node;
             }
-            return Expression.Switch(node.Type, s, d, node.Comparison, c);
+            var result = Expression.Switch(node.Type, s, d, node.Comparison, c);
+            ValidateSwitch(node, result);
+            return result;
         }
 
         /// <summary>
@@ -579,7 +591,10 @@ namespace System.Linq.Expressions {
             if (e == node.Expression) {
                 return node;
             }
-            return Expression.TypeIs(e, node.TypeOperand);
+            if (node.NodeType == ExpressionType.TypeIs) {
+                return Expression.TypeIs(e, node.TypeOperand);
+            }
+            return Expression.TypeEqual(e, node.TypeOperand);
         }
 
         /// <summary>
@@ -593,7 +608,9 @@ namespace System.Linq.Expressions {
             if (o == node.Operand) {
                 return node;
             }
-            return Expression.MakeUnary(node.NodeType, o, node.Type, node.Method);
+            var result = Expression.MakeUnary(node.NodeType, o, node.Type, node.Method);
+            ValidateUnary(node, result);
+            return result;
         }
 
         /// <summary>
@@ -699,6 +716,62 @@ namespace System.Linq.Expressions {
                 return node;
             }
             return Expression.ListBind(node.Member, initializers);
+        }
+
+
+        //
+        // Prevent some common cases of invalid rewrites.
+        //
+        // Essentially, we don't want the rewritten node to be semantically
+        // bound by the factory, which may do the wrong thing. Instead we
+        // require derived classes to be explicit about what they want to do if
+        // types change.
+        //
+        private static void ValidateUnary(UnaryExpression before, UnaryExpression after) {
+            if (before.Method == null) {
+                if (after.Method != null) {
+                    throw Error.MustRewriteWithoutMethod(after.Method, "VisitUnary");
+                }
+
+                ValidateChildType(before.Operand.Type, after.Operand.Type, "VisitUnary");
+            }
+        }
+
+        private static void ValidateBinary(BinaryExpression before, BinaryExpression after) {
+            if (before.Method == null) {
+                if (after.Method != null) {
+                    throw Error.MustRewriteWithoutMethod(after.Method, "VisitBinary");
+                }
+
+                ValidateChildType(before.Left.Type, after.Left.Type, "VisitBinary");
+                ValidateChildType(before.Right.Type, after.Right.Type, "VisitBinary");
+            }
+        }
+
+        // We wouldn't need this if switch didn't infer the method.
+        private static void ValidateSwitch(SwitchExpression before, SwitchExpression after) {
+            // If we did not have a method, we don't want to bind to one,
+            // it might not be the right thing.
+            if (before.Comparison == null && after.Comparison != null) {
+                throw Error.MustRewriteWithoutMethod(after.Comparison, "VisitSwitch");
+            }
+        }
+
+        // Value types must stay as the same type, otherwise it's now a
+        // different operation, e.g. adding two doubles vs adding two ints.
+        private static void ValidateChildType(Type before, Type after, string methodName) {
+            if (before.IsValueType) {
+                if (TypeUtils.AreEquivalent(before, after)) {
+                    // types are the same value type
+                    return;
+                }
+            } else if (!after.IsValueType) {
+                // both are reference types
+                return;
+            }
+
+            // Otherwise, it's an invalid type change.
+            throw Error.MustRewriteChildToSameType(before, after, methodName);
         }
     }
 }

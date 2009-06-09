@@ -18,6 +18,15 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 using IronRuby.Compiler;
 using IronRuby.Compiler.Ast;
+using IronRuby.Builtins;
+using Microsoft.Scripting.Math;
+using System.Reflection;
+using System.Reflection.Emit;
+using Microsoft.Scripting.Utils;
+using Microsoft.Scripting.Generation;
+using System.Collections.Generic;
+using IronRuby.Runtime;
+using IronRuby.Runtime.Calls;
 
 namespace IronRuby.Tests {
 
@@ -426,6 +435,22 @@ puts 2.1560
 ");
         }
 
+        public void NumericOps1() {
+            // overflow tests:
+            Assert((BigInteger)ClrInteger.Minus(Int32.MinValue) == -(BigInteger)Int32.MinValue);
+            Assert((BigInteger)ClrInteger.Abs(Int32.MinValue) == -(BigInteger)Int32.MinValue);
+
+            Assert((BigInteger)ClrInteger.Divide(Int32.MinValue, -1) == -(BigInteger)Int32.MinValue);
+            Assert(ClrInteger.Modulo(Int32.MinValue, -1) == 0);
+
+            var dm = ClrInteger.DivMod(Int32.MinValue, -1);
+            Assert((BigInteger)dm[0] == -(BigInteger)Int32.MinValue);
+            Assert((int)dm[1] == 0);
+
+            Assert((int)ClrInteger.LeftShift(1, Int32.MinValue) == 0);
+            AssertExceptionThrown<ArgumentOutOfRangeException>(() => ClrInteger.RightShift(1, Int32.MinValue));
+        }
+
         public void Scenario_RubyInclusions1() {
             AssertOutput(delegate() {
                 CompilerTest(@"
@@ -738,51 +763,7 @@ puts foo
             },
             "foo");
         }
-
-        public void Scenario_RubyArgSplatting1() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
-def foo(a,b,c)
-  print a,b,c
-end
-
-foo(*[1,2,3])
-");
-            }, @"123");
-        }
-
-        public void Scenario_RubyArgSplatting2() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
-class C
-    def []=(a,b,c)
-      print a,b,c
-    end
-end
-
-x = [1,2]
-C.new[*x] = 3
-C.new[1, *[2]] = 3
-");
-            }, @"123123");
-        }
-
-        public void Scenario_RubyArgSplatting3() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
-def foo(a,b,c)
-  print a,b,c
-  puts
-end
-
-foo(1,2,*3)
-foo(1,2,*nil)
-");
-            }, @"
-123
-12nil");
-        }
-
+        
         public void ClassVariables1() {
             AssertOutput(delegate() {
                 CompilerTest(@"
@@ -864,81 +845,6 @@ include System::Collections
 puts ArrayList
 ");
             }, @"System::Collections::ArrayList");
-        }
-
-        public void Scenario_ModuleOps_Methods() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
-class C
-  def ifoo
-    puts 'ifoo'
-  end
-end
-
-class << C
-  $C1 = self
-  
-  def foo
-    puts 'foo'
-  end
-end
-
-class C
-  alias_method(:bar,:foo) rescue puts 'Error 1'
-  instance_method(:foo) rescue puts 'Error 2'
-  puts method_defined?(:foo)
-  foo
-  
-  alias_method(:ibar,:ifoo)
-  instance_method(:ifoo)
-  puts method_defined?(:ifoo)
-  ifoo rescue puts 'Error 3'
-  
-  remove_method(:ifoo)
-end
-
-C.new.ifoo rescue puts 'Error 4'
-C.new.ibar
-");
-            }, @"
-Error 1
-Error 2
-false
-foo
-true
-Error 3
-Error 4
-ifoo
-");
-        }
-
-        public void Methods1() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
-class C
-  def foo a,b
-    puts a + b
-  end
-end
-
-class D < C
-end
-
-c = C.new
-p m = c.method(:foo)
-p u = m.unbind
-p n = u.bind(D.new)
-
-m[1,2]
-n[1,2]
-");
-            }, @"
-#<Method: C#foo>
-#<UnboundMethod: C#foo>
-#<Method: D(C)#foo>
-3
-3
-");
         }
     }
 }

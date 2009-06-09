@@ -1,0 +1,132 @@
+
+<html><head>
+  <title>Class: Log4r::LogEvent</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <link rel=StyleSheet href="../.././rdoc-style.css" type="text/css" media=screen>
+  <script type="text/javascript" language="JavaScript">
+  <!--
+  function popCode(url) {
+    parent.frames.source.location = url
+  }
+  //-->
+  </script>
+</head>
+<body bgcolor="white">
+
+
+<table width="100%" border=0 cellspacing=0>
+ <tr class="title-row">
+ <td class="big-title-font">
+   <font size=-3><B>Class</B><BR></font>Log4r::LogEvent
+ </td>
+ <td align="right">
+   <table cellspacing=0 cellpadding=2>
+     <tr valign="top">
+      <td class="small-title-font">In:</td>
+      <td class="small-title-font">
+log4r/logevent.rb
+      </td>
+     </tr>
+     <tr>
+      <td class="small-title-font">Parent:</td>
+      <td class="small-title-font">
+Object
+      </td>
+     </tr>
+   </table>
+  </td>
+  </tr>
+</table><br>
+  <!-- banner header -->
+
+
+<div class="description"><p>
+<a href="LogEvent.html">LogEvent</a> wraps up all the miscellaneous data
+associated with a logging statement. It gets passed around to the varied
+components of <a href="../Log4r.html">Log4r</a> and should be of interest
+to those creating extensions.
+</p>
+<p>
+Data contained:
+</p>
+<dl>
+<dt>level</dt><dd>The integer level of the log event. Use LNAMES[level] to get the actual
+level name.
+
+</dd>
+<dt>tracer</dt><dd>The execution stack returned by <tt>caller</tt> at the log event. It is nil
+if the invoked <a href="Logger.html">Logger</a>&#8217;s trace is false.
+
+</dd>
+<dt>data</dt><dd>The object that was passed into the logging method.
+
+</dd>
+<dt>name</dt><dd>The name of the logger that was invoked.
+
+</dd>
+<dt>fullname</dt><dd>The fully qualified name of the logger that was invoked.
+
+</dd>
+</dl>
+<p>
+Note that creating timestamps is a task left to formatters.
+</p>
+</div>
+
+</div>
+
+<table cellpadding=5 width="100%">
+<tr><td class="tablesubtitle">Methods</td></tr>
+</table><br>
+<div class="name-list">
+<a href="#M000001">new</a>,
+</div>
+
+<table cellpadding=5 width="100%">
+<tr><td class="tablesubtitle">Attributes</td></tr>
+</table><br>
+<table cellspacing=5>
+     <tr valign="top">
+       <td align="center" class="attr-rw">&nbsp;[R]&nbsp;</td>
+       <td class="attr-name">data</td>
+       <td></td>
+     </tr>
+     <tr valign="top">
+       <td align="center" class="attr-rw">&nbsp;[R]&nbsp;</td>
+       <td class="attr-name">fullname</td>
+       <td></td>
+     </tr>
+     <tr valign="top">
+       <td align="center" class="attr-rw">&nbsp;[R]&nbsp;</td>
+       <td class="attr-name">level</td>
+       <td></td>
+     </tr>
+     <tr valign="top">
+       <td align="center" class="attr-rw">&nbsp;[R]&nbsp;</td>
+       <td class="attr-name">name</td>
+       <td></td>
+     </tr>
+     <tr valign="top">
+       <td align="center" class="attr-rw">&nbsp;[R]&nbsp;</td>
+       <td class="attr-name">tracer</td>
+       <td></td>
+     </tr>
+</table>
+
+
+  
+
+<table cellpadding=5 width="100%">
+<tr><td class="tablesubtitle">Public Class methods</td></tr>
+</table>
+<table width="100%" cellspacing = 0 cellpadding=5 border=0>
+<tr><td class="methodtitle">
+<a name="M000001">
+<b>new</b>(level, logger, tracer, data) 
+<a href="LogEvent.src/M000001.html" target="source" class="srclink">src</a>
+</a></td></tr>
+</table>
+  <!-- method descriptions -->
+
+</body>
+</html>

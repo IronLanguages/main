@@ -13,6 +13,8 @@
  *
  * ***************************************************************************/
 
+using EachSite = System.Func<System.Runtime.CompilerServices.CallSite, object, IronRuby.Builtins.Proc, object>;
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -26,7 +28,6 @@ using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
 using System.Runtime.InteropServices;
 using Ast = System.Linq.Expressions.Expression;
-using EachSite = System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyContext, object, IronRuby.Builtins.Proc, object>;
 
 namespace IronRuby.Builtins {
 
@@ -67,7 +68,7 @@ namespace IronRuby.Builtins {
             }
 
             string strName = className.ConvertToString();
-            RubyUtils.CheckConstantName(strName);
+            self.Context.CheckConstantName(strName);
             return Create(block, self, strName, attributeNames);
         }
 
@@ -100,7 +101,8 @@ namespace IronRuby.Builtins {
         // Copies data from one Struct instance into another:
         [RubyMethod("initialize_copy", RubyMethodAttributes.PrivateInstance)]
         public static RubyStruct/*!*/ InitializeCopy(RubyStruct/*!*/ self, [NotNull]RubyStruct/*!*/ source) {
-            if (self.Class != source.Class) {
+            // TODO: compare non-singleton classes?
+            if (self.ImmediateClass.GetNonSingletonClass() != source.ImmediateClass.GetNonSingletonClass()) {
                 throw RubyExceptions.CreateTypeError("wrong argument class");
             }
 
@@ -136,7 +138,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("[]")]
         public static object GetValue(ConversionStorage<int>/*!*/ conversionStorage, RubyStruct/*!*/ self, object index) {
-            return self[NormalizeIndex(self.ItemCount, Protocols.CastToFixnum(conversionStorage, self.Class.Context, index))];
+            return self[NormalizeIndex(self.ItemCount, Protocols.CastToFixnum(conversionStorage, index))];
         }
 
         [RubyMethod("[]=")]
@@ -156,7 +158,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("[]=")]
         public static object SetValue(ConversionStorage<int>/*!*/ conversionStorage, RubyStruct/*!*/ self, object index, object value) {
-            return self[NormalizeIndex(self.ItemCount, Protocols.CastToFixnum(conversionStorage, self.Class.Context, index))] = value;
+            return self[NormalizeIndex(self.ItemCount, Protocols.CastToFixnum(conversionStorage, index))] = value;
         }
 
         [RubyMethod("each")]
@@ -219,7 +221,7 @@ namespace IronRuby.Builtins {
             if (self.Values.Length > 0) {
                 var site = equals.GetCallSite("==");
                 for (int i = 0; i < self.Values.Length; i++) {
-                    if (RubyOps.IsFalse(site.Target(site, self.Class.Context, self.Values[i], other.Values[i]))) {
+                    if (RubyOps.IsFalse(site.Target(site, self.Values[i], other.Values[i]))) {
                         return false;
                     }
                 }
@@ -231,7 +233,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("to_s")]
         [RubyMethod("inspect")]
         public static MutableString/*!*/ Inspect(RubyStruct/*!*/ self) {
-            RubyContext context = self.Class.Context;
+            RubyContext context = self.ImmediateClass.Context;
 
             using (IDisposable handle = RubyUtils.InfiniteInspectTracker.TrackObject(self)) {
                 // #<struct Struct::Foo name=nil, val=nil>
@@ -263,21 +265,20 @@ namespace IronRuby.Builtins {
         // Until we discover the difference, delegate to Enumerable#select
         [RubyMethod("select")]
         public static RubyArray/*!*/ Select(CallSiteStorage<EachSite>/*!*/ each, BlockParam predicate, RubyStruct/*!*/ self) {
-            return Enumerable.Select(each, self.Class.Context, predicate, self);
+            return Enumerable.Select(each, predicate, self);
         }
 
         // equivalent to Array#values_at over the data array
         [RubyMethod("values_at")]
         public static RubyArray/*!*/ ValuesAt(ConversionStorage<int>/*!*/ fixnumCast, RubyStruct/*!*/ self, [NotNull]params object[] values) {
             RubyArray result = new RubyArray();
-            RubyContext context = self.Class.Context;
             object[] data = self.Values;
 
             for (int i = 0; i < values.Length; ++i) {
                 Range range = values[i] as Range;
                 if (range != null) {
-                    int begin = Protocols.CastToFixnum(fixnumCast, context, range.Begin);
-                    int end = Protocols.CastToFixnum(fixnumCast, context, range.End);
+                    int begin = Protocols.CastToFixnum(fixnumCast, range.Begin);
+                    int end = Protocols.CastToFixnum(fixnumCast, range.End);
 
                     if (range.ExcludeEnd) {
                         end -= 1;
@@ -294,7 +295,7 @@ namespace IronRuby.Builtins {
                         }
                     }
                 } else {
-                    int index = NormalizeIndex(data.Length, Protocols.CastToFixnum(fixnumCast, context, values[i]));
+                    int index = NormalizeIndex(data.Length, Protocols.CastToFixnum(fixnumCast, values[i]));
                     result.Add(data[index]);
                 }
             }

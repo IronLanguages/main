@@ -25,6 +25,7 @@ using System.Runtime.InteropServices;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using IronRuby.Runtime.Calls;
+using System.Diagnostics;
 
 namespace IronRuby.Runtime {
     /// <summary>
@@ -45,23 +46,39 @@ namespace IronRuby.Runtime {
         }
 
         public static Exception/*!*/ CreateUnexpectedTypeError(RubyContext/*!*/ context, object param, string/*!*/ type) {
-            return CreateTypeError(String.Format("wrong argument type {0} (expected {1})", RubyUtils.GetClassName(context, param), type));
+            return CreateTypeError(String.Format("wrong argument type {0} (expected {1})", context.GetClassDisplayName(param), type));
         }
 
         public static Exception/*!*/ CannotConvertTypeToTargetType(RubyContext/*!*/ context, object param, string/*!*/ toType) {
             Assert.NotNull(context, toType);
-            return CreateTypeConversionError(RubyUtils.GetClassName(context, param), toType);
+            return CreateTypeConversionError(context.GetClassName(param), toType);
         }
 
         public static Exception/*!*/ MethodShouldReturnType(RubyContext/*!*/ context, object param, string/*!*/ method, string/*!*/ targetType) {
             Assert.NotNull(context, method, targetType);
             return new InvalidOperationException(String.Format("{0}#{1} should return {2}",
-                RubyUtils.GetClassName(context, param), method, targetType
+                context.GetClassName(param), method, targetType
             ));
         }
 
         public static Exception/*!*/ CreateAllocatorUndefinedError(RubyClass/*!*/ rubyClass) {
             return CreateTypeError(String.Format("allocator undefined for {0}", rubyClass.Name));
+        }
+
+        public static Exception/*!*/ CreateNotClrTypeError(RubyClass/*!*/ rubyClass) {
+            return CreateTypeError(String.Format("`{0}' doesn't represent a CLR type", rubyClass.Name));
+        }
+
+        public static Exception/*!*/ CreateMissingDefaultConstructorError(RubyClass/*!*/ rubyClass, string/*!*/ initializerOwnerName) {
+            Debug.Assert(rubyClass.IsRubyClass);
+
+            Type baseType = rubyClass.GetUnderlyingSystemType().BaseType;
+            Debug.Assert(baseType != null);
+
+            return CreateTypeError(String.Format("can't allocate class `{1}' that derives from type `{0}' with no default constructor;" +
+                " define {1}#new singleton method instead of {2}#initialize",
+                rubyClass.Context.GetTypeName(baseType, true), rubyClass.Name, initializerOwnerName
+            ));
         }
 
         public static Exception/*!*/ CreateArgumentError(string/*!*/ message) {
@@ -141,24 +158,9 @@ namespace IronRuby.Runtime {
             return FormatMethodMissingMessage(context, self, name, "undefined method `{0}' for {1}");
         }
 
-        private static readonly UnaryOpStorage/*!*/ ToSSiteStorage = new UnaryOpStorage();
-
-        private static string/*!*/ FormatMethodMissingMessage(RubyContext/*!*/ context, object self, string/*!*/ name, string/*!*/ message) {
+        internal static string/*!*/ FormatMethodMissingMessage(RubyContext/*!*/ context, object self, string/*!*/ name, string/*!*/ message) {
             Assert.NotNull(name);
-            string strObject;
-
-            if (self == null) {
-                strObject = "nil:NilClass";
-            } else {
-                // TODO: cross-runtime
-                var site = ToSSiteStorage.GetCallSite("to_s", RubyCallSignature.WithImplicitSelf(0));
-                strObject = (site.Target(site, context, self) as MutableString ?? RubyUtils.ObjectToMutableString(context, self)).ConvertToString();
-
-                if (!strObject.StartsWith("#")) {
-                    strObject += ":" + RubyUtils.GetClassName(context, self);
-                }
-            }
-
+            string strObject = context.InspectEnsuringClassName(self);
             return String.Format(message, name, strObject);
         }
 
@@ -168,6 +170,15 @@ namespace IronRuby.Runtime {
 
         public static Exception/*!*/ CreatePrivateMethodCalled(RubyContext/*!*/ context, object self, string/*!*/ name) {
             return new MissingMethodException(FormatMethodMissingMessage(context, self, name, "private method `{0}' called for {1}"));
+        }
+
+        public static Exception/*!*/ CreateProtectedMethodCalled(RubyContext/*!*/ context, object self, string/*!*/ name) {
+            return new MissingMethodException(FormatMethodMissingMessage(context, self, name, "protected method `{0}' called for {1}"));
+        }
+
+        public static Exception/*!*/ CreateEncodingCompatibilityError(RubyEncoding/*!*/ encoding1, RubyEncoding/*!*/ encoding2) {
+            return new EncodingCompatibilityError(String.Format("incompatible character encodings: {0}{1} and {2}{3}",
+                encoding1.Name, encoding1.IsKCoding ? " (KCODE)" : null, encoding2.Name, encoding2.IsKCoding ? " (KCODE)" : null));
         }
     }
 }

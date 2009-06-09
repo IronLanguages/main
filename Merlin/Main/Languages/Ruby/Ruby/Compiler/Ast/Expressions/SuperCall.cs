@@ -19,6 +19,7 @@ using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Utils;
 using IronRuby.Builtins;
 using MSA = System.Linq.Expressions;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Compiler.Ast {
     using Ast = System.Linq.Expressions.Expression;
@@ -39,10 +40,6 @@ namespace IronRuby.Compiler.Ast {
         }
 
         internal override MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen) {
-            if (gen.CurrentMethod.IsTopLevelCode && gen.CurrentBlock == null && !gen.CompilerOptions.IsEval) {
-                return Ast.Throw(Methods.MakeTopLevelSuperException.OpCall());
-            }
-
             // invoke super member action:
             CallBuilder callBuilder = new CallBuilder(gen);
 
@@ -86,7 +83,7 @@ namespace IronRuby.Compiler.Ast {
         internal override MSA.Expression/*!*/ TransformDefinedCondition(AstGenerator/*!*/ gen) {
             // TODO:
             //throw new NotImplementedError();
-            return Ast.Constant(false);
+            return AstUtils.Constant(false);
         }
 
         internal override string/*!*/ GetNodeName(AstGenerator/*!*/ gen) {

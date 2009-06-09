@@ -1,2 +1,0 @@
-critical:Array#eql? properly handles recursive arrays
-fails:Array#eql? returns false when each pair of corresponding elements are equivalent in the sense of == but not in the sense of eql?

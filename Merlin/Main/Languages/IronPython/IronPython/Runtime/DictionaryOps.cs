@@ -34,114 +34,10 @@ namespace IronPython.Runtime {
     /// Currently these are published on IDictionary&lt;object, object&gt;
     /// </summary>
     public static class DictionaryOps {
-        #region Dictionary Public API Surface
-
-        [SpecialName]
-        public static bool __contains__(IDictionary<object, object> self, object value) {
-            return self.ContainsKey(value);
-        }
-
-        [SpecialName]
-        [return: MaybeNotImplemented]
-        public static object __cmp__(CodeContext/*!*/ context, IDictionary<object, object> self, object other) {
-            IDictionary<object, object> oth = other as IDictionary<object, object>;
-            // CompareTo is allowed to throw (string, int, etc... all do it if they don't get a matching type)
-            if (oth == null) {
-                object len, iteritems;
-                if (!PythonOps.TryGetBoundAttr(DefaultContext.Default, other, Symbols.Length, out len) ||
-                    !PythonOps.TryGetBoundAttr(DefaultContext.Default, other, SymbolTable.StringToId("iteritems"), out iteritems)) {
-                    return NotImplementedType.Value;
-                }
-
-                // user-defined dictionary...
-                int lcnt = self.Count;
-                int rcnt = Converter.ConvertToInt32(PythonOps.CallWithContext(DefaultContext.Default, len));
-
-                if (lcnt != rcnt) return lcnt > rcnt ? 1 : -1;
-
-                return DictionaryOps.CompareToWorker(context, self, new List(PythonOps.CallWithContext(context, iteritems)));
-            }
-
-            CompareUtil.Push(self, oth);
-            try {
-                return DictionaryOps.CompareTo(context, self, oth);
-            } finally {
-                CompareUtil.Pop(self, oth);
-            }
-        }
+        #region Dictionary Public API Surface        
 
         // Dictionary has an odd not-implemented check to support custom dictionaries and therefore
         // needs a custom __eq__ / __ne__ implementation.
-
-        [return: MaybeNotImplemented]
-        [SpecialName]
-        public static object Equal(IDictionary<object, object> self, object other) {
-            if (!(other is PythonDictionary || other is IDictionary<object, object>))
-                return NotImplementedType.Value;
-
-            return EqualsHelper(self, other);
-        }
-
-        [return: MaybeNotImplemented]
-        [SpecialName]
-        public static object GreaterThanOrEqual(CodeContext/*!*/ context, IDictionary<object, object> self, object other) {
-            object res = __cmp__(context, self, other);
-            if (res == NotImplementedType.Value) return res;
-
-            return ((int)res) >= 0;
-        }
-
-        [return: MaybeNotImplemented]
-        [SpecialName]
-        public static object GreaterThan(CodeContext/*!*/ context, IDictionary<object, object> self, object other) {
-            object res = __cmp__(context, self, other);
-            if (res == NotImplementedType.Value) return res;
-
-            return ((int)res) > 0;
-        }
-
-        [SpecialName]
-        public static void __delitem__(IDictionary<object, object> self, object key) {
-            if (!self.Remove(key)) {
-                throw PythonOps.KeyError(key);
-            }
-        }
-
-        public static IEnumerator __iter__(PythonDictionary self) {
-            return new DictionaryKeyEnumerator(self._storage);
-        }
-
-        [return: MaybeNotImplemented]
-        [SpecialName]
-        public static object LessThanOrEqual(CodeContext/*!*/ context, IDictionary<object, object> self, object other) {
-            object res = __cmp__(context, self, other);
-            if (res == NotImplementedType.Value) return res;
-
-            return ((int)res) <= 0;
-        }
-
-        [SpecialName]
-        public static int __len__(IDictionary<object, object> self) {
-            return self.Count;
-        }
-
-        [return: MaybeNotImplemented]
-        [SpecialName]
-        public static object LessThan(CodeContext/*!*/ context, IDictionary<object, object> self, object other) {
-            object res = __cmp__(context, self, other);
-            if (res == NotImplementedType.Value) return res;
-
-            return ((int)res) < 0;
-        }
-
-        [return: MaybeNotImplemented]
-        [SpecialName]
-        public static object NotEqual(IDictionary<object, object> self, object other) {
-            object res = Equal(self, other);
-            if (res != NotImplementedType.Value) return PythonOps.Not(res);
-
-            return res;
-        }
 
         public static string/*!*/ __repr__(CodeContext/*!*/ context, IDictionary<object, object> self) {
             List<object> infinite = PythonOps.GetAndCheckInfinite(self);
@@ -175,14 +71,6 @@ namespace IronPython.Runtime {
             }
         }
 
-        public static void clear(IDictionary<object, object> self) {
-            self.Clear();
-        }
-
-        public static object copy(CodeContext/*!*/ context, IDictionary<object, object> self) {
-            return new PythonDictionary(context, new Dictionary<object, object>(self));
-        }
-
         public static object get(IDictionary<object, object> self, object key) {
             return get(self, key, null);
         }
@@ -211,10 +99,6 @@ namespace IronPython.Runtime {
 
         public static IEnumerator iterkeys(IDictionary<object, object> self) {
             return ((IEnumerable)keys(self)).GetEnumerator();
-        }
-
-        public static IEnumerator itervalues(IDictionary<object, object> self) {
-            return ((IEnumerable)values(self)).GetEnumerator();
         }
 
         public static List keys(IDictionary<object, object> self) {
@@ -263,10 +147,6 @@ namespace IronPython.Runtime {
             if (self.TryGetValue(key, out ret)) return ret;
             self[key] = defaultValue;
             return defaultValue;
-        }
-
-        public static List values(IDictionary<object, object> self) {
-            return PythonOps.MakeListFromSequence(self.Values);
         }
 
         public static void update(CodeContext/*!*/ context, PythonDictionary/*!*/ self, object b) {
@@ -385,29 +265,6 @@ namespace IronPython.Runtime {
             return litems.CompareToWorker(ritems);
         }
 
-        internal static bool EqualsHelper(IDictionary<object, object> self, object other) {
-            IDictionary<object, object> oth = other as IDictionary<object, object>;
-            if (oth == null) return false;
-
-            if (oth.Count != self.Count) return false;
-
-            // we cannot call Compare here and compare against zero because Python defines
-            // value equality as working even if the keys/values are unordered.
-            List myKeys = keys(self);
-
-            foreach (object o in myKeys) {
-                object res;
-                if (!oth.TryGetValue(o, out res)) return false;
-
-                CompareUtil.Push(res);
-                try {
-                    if (!PythonOps.EqualRetBool(res, self[o])) return false;
-                } finally {
-                    CompareUtil.Pop(res);
-                }
-            }
-            return true;
-        }
         #endregion
     }
 }

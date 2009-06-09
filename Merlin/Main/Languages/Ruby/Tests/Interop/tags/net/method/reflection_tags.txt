@@ -1,0 +1,3 @@
+fails:Reflecting on abstract .NET methods should be able to be grabbed as an object after call to #method
+fails:Reflecting on abstract .NET methods are able to be grabbed as an object
+fails:Static .NET methods don't incorrectly get cached when called on an instance

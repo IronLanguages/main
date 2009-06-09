@@ -195,6 +195,15 @@ namespace IronPython.Runtime.Types {
             return ((OldInstance)oldInstance).GetBoundMember(null, _extraKeys[index]);
         }
 
+        public bool TryGetValueHelper(int index, object oldInstance, out object res) {
+            res = _values[index];
+            if (res != Uninitialized.Instance) {
+                return true;
+            }
+            //TODO this should go to a faster path since we know it's not in the dict
+            return ((OldInstance)oldInstance).TryGetBoundCustomMember(null, _extraKeys[index], out res);
+        }
+
         public void SetExtraValue(int index, object value) {
             _values[index] = value;
         }

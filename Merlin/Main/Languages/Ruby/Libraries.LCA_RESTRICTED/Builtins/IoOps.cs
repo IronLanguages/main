@@ -141,7 +141,7 @@ namespace IronRuby.Builtins {
                     }
 
                     metaBuilder.Result = Ast.Call(typeof(RubyIOOps).GetMethod("InvokeOpenBlock"), 
-                        args.ContextExpression, 
+                        args.MetaContext.Expression, 
                         metaBuilder.BfcVariable, 
                         metaBuilder.Result
                     );
@@ -203,7 +203,7 @@ namespace IronRuby.Builtins {
             try {
                 process = Process.Start(startInfo);
             } catch (Exception e) {
-                throw new Errno.NoEntryError(startInfo.FileName, e);
+                throw RubyErrno.CreateENOENT(startInfo.FileName, e);
             }
 
             context.ChildProcessExitStatus = new RubyProcess.Status(process);
@@ -268,7 +268,7 @@ namespace IronRuby.Builtins {
                         return null;
                     }
                 } catch (Exception e) {
-                    throw new Errno.InvalidError(e.Message, e);
+                    throw RubyErrno.CreateEINVAL(e.Message, e);
                 }
 
                 result = new RubyArray();
@@ -338,7 +338,7 @@ namespace IronRuby.Builtins {
         private static RubyIO/*!*/ ToIo(RubyContext/*!*/ context, object obj) {
             RubyIO io = obj as RubyIO;
             if (io == null) {
-                throw RubyExceptions.CreateTypeConversionError(RubyUtils.GetClassName(context, obj), "IO");
+                throw RubyExceptions.CreateTypeConversionError(context.GetClassDisplayName(obj), "IO");
             }
             return io;
         }
@@ -352,8 +352,8 @@ namespace IronRuby.Builtins {
         #region Public instance methods
 
         [RubyMethod("<<")]
-        public static RubyIO Output(RubyContext/*!*/ context, RubyIO/*!*/ self, object/*!*/ str) {
-            _WriteSite.Target(_WriteSite, context, self, str);
+        public static RubyIO Output(BinaryOpStorage/*!*/ writeStorage, RubyIO/*!*/ self, object value) {
+            Protocols.Write(writeStorage, self, value);
             return self;
         }
 
@@ -568,121 +568,118 @@ namespace IronRuby.Builtins {
 
         #region print, puts, putc
 
-        private static CallSite<Func<CallSite, RubyContext, object, object, object>> _WriteSite = CallSite<Func<CallSite, RubyContext, object, object, object>>.
-            Create(RubyCallAction.Make("write", 1));
-
         // print, puts accept an arbitrary self object (it is called from Kernel#print, puts).
         
         [RubyMethod("print")]
-        public static void Print(RubyScope/*!*/ scope, object self) {
-            Print(scope.RubyContext, self, scope.GetInnerMostClosureScope().LastInputLine);
+        public static void Print(BinaryOpStorage/*!*/ writeStorage, RubyScope/*!*/ scope, object self) {
+            Print(writeStorage, self, scope.GetInnerMostClosureScope().LastInputLine);
         }
 
         [RubyMethod("print")]
-        public static void Print(RubyContext/*!*/ context, object self, object val) {
-            _WriteSite.Target(_WriteSite, context, self, val);
+        public static void Print(BinaryOpStorage/*!*/ writeStorage, object self, object value) {
+            Protocols.Write(writeStorage, self, value);
         }
 
         [RubyMethod("print")]
-        public static void Print(UnaryOpStorage/*!*/ tosStorage, RubyContext/*!*/ context, object self, [NotNull]params object[]/*!*/ args) {
-            MutableString delimiter = context.OutputSeparator;
+        public static void Print(BinaryOpStorage/*!*/ writeStorage, ConversionStorage<MutableString>/*!*/ tosConversion, object self, 
+            [NotNull]params object[]/*!*/ args) {
+            MutableString delimiter = writeStorage.Context.OutputSeparator;
             for (int i = 0; i < args.Length; i++) {
-                MutableString str = ToPrintedString(tosStorage, context, args[i]);
-                if (delimiter != null) {
-                    str.Append(delimiter);
-                }
-                Print(context, self, str);
+                MutableString str = ToPrintedString(tosConversion, args[i]);               
+                Print(writeStorage, self, str);
             }
+			if (delimiter != null)
+			{
+				Print(writeStorage, self, delimiter);
+			}
         }
 
         [RubyMethod("putc")]
-        public static MutableString/*!*/ Putc(RubyContext/*!*/ context, object self, [NotNull]MutableString/*!*/ val) {
+        public static MutableString/*!*/ Putc(BinaryOpStorage/*!*/ writeStorage, object self, [NotNull]MutableString/*!*/ val) {
             if (val.IsEmpty) {
                 throw RubyExceptions.CreateTypeError("can't convert String into Integer");
             }
 
             // writes a single byte into the output stream:
             var c = MutableString.CreateBinary(val.GetBinarySlice(0, 1));
-            _WriteSite.Target(_WriteSite, context, self, c);
-
+            Protocols.Write(writeStorage, self, c);
             return val;
         }
 
         [RubyMethod("putc")]
-        public static int Putc(RubyContext/*!*/ context, object self, [DefaultProtocol]int c) {
+        public static int Putc(BinaryOpStorage/*!*/ writeStorage, object self, [DefaultProtocol]int c) {
             MutableString str = MutableString.CreateBinary(1).Append(unchecked((byte)c));
-            _WriteSite.Target(_WriteSite, context, self, str);
+            Protocols.Write(writeStorage, self, str);
             return c;
         }
 
         private static readonly MutableString NewLine = MutableString.CreateMutable("\n").Freeze();
 
-        public static MutableString/*!*/ ToPrintedString(UnaryOpStorage/*!*/ tosStorage, RubyContext/*!*/ context, object obj) {
+        public static MutableString/*!*/ ToPrintedString(ConversionStorage<MutableString>/*!*/ tosConversion, object obj) {
             IDictionary<object, object> hash;
             List<object> list;
             MutableString str;
 
             if ((list = obj as List<object>) != null) {
-                return IListOps.Join(tosStorage, context, list, NewLine);
+                return IListOps.Join(tosConversion, list, NewLine);
             } else if ((hash = obj as IDictionary<object, object>) != null) {
-                return IDictionaryOps.ToString(tosStorage, context, hash);
+                return IDictionaryOps.ToMutableString(tosConversion, hash);
             } else if (obj == null) {
                 return MutableString.Create("nil");
             } else if (obj is bool) {
                 return MutableString.Create((bool)obj ? "true" : "false");
             } else if (obj is double) {
-                var result = MutableString.Create(obj.ToString());
-                if ((double)(int)(double)obj == (double)obj) {
+                double value = (double)obj;
+                var result = MutableString.Create(value.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                if ((double)(int)value == value) {
                     result.Append(".0");
                 }
                 return result;
             } else if ((str = obj as MutableString) != null) {
                 return str;
             } else {
-                return RubyUtils.ObjectToMutableString(tosStorage, context, obj);
+                return Protocols.ConvertToString(tosConversion, obj);
             }
         }
 
         [RubyMethod("puts")]
-        public static void PutsEmptyLine(RubyContext/*!*/ context, object self) {
-            _WriteSite.Target(_WriteSite, context, self, MutableString.CreateMutable("\n"));
+        public static void PutsEmptyLine(BinaryOpStorage/*!*/ writeStorage, object self) {
+            Protocols.Write(writeStorage, self, MutableString.CreateMutable("\n"));
         }
 
         [RubyMethod("puts")]
-        public static void Puts(RubyContext/*!*/ context, object self, [NotNull]MutableString/*!*/ str) {
-            _WriteSite.Target(_WriteSite, context, self, str);
+        public static void Puts(BinaryOpStorage/*!*/ writeStorage, object self, [NotNull]MutableString/*!*/ str) {
+            Protocols.Write(writeStorage, self, str);
 
             if (!str.EndsWith('\n')) {
-                PutsEmptyLine(context, self);
+                PutsEmptyLine(writeStorage, self);
             }
         }
 
         [RubyMethod("puts")]
-        public static void Puts(UnaryOpStorage/*!*/ tosStorage, RubyContext/*!*/ context, object self, [NotNull]object/*!*/ val) {
-            Puts(context, self, ToPrintedString(tosStorage, context, val));
+        public static void Puts(BinaryOpStorage/*!*/ writeStorage, ConversionStorage<MutableString>/*!*/ tosConversion, 
+            object self, [NotNull]object/*!*/ val) {
+
+            Puts(writeStorage, self, ToPrintedString(tosConversion, val));
         }
 
         [RubyMethod("puts")]
-        public static void Puts(UnaryOpStorage/*!*/ tosStorage, RubyContext/*!*/ context, object self, [NotNull]params object[]/*!*/ vals) {
+        public static void Puts(BinaryOpStorage/*!*/ writeStorage, ConversionStorage<MutableString>/*!*/ tosConversion, 
+            object self, [NotNull]params object[]/*!*/ vals) {
+
             for (int i = 0; i < vals.Length; i++) {
-                Puts(tosStorage, context, self, vals[i]);
+                Puts(writeStorage, tosConversion, self, vals[i]);
             }
         }
 
         [RubyMethod("printf")]
         public static void PrintFormatted(
-            ConversionStorage<IntegerValue>/*!*/ integerConversion, 
-            ConversionStorage<int>/*!*/ fixnumCast, 
-            ConversionStorage<double>/*!*/ tofConversion, 
-            ConversionStorage<MutableString>/*!*/ tosConversion,
+            StringFormatterSiteStorage/*!*/ storage, 
             ConversionStorage<MutableString>/*!*/ stringCast, 
             BinaryOpStorage/*!*/ writeStorage,
-            UnaryOpStorage/*!*/ inspectStorage,
-            RubyContext/*!*/ context, RubyIO/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ format, [NotNull]params object[]/*!*/ args) {
+            RubyIO/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ format, [NotNull]params object[]/*!*/ args) {
 
-            KernelOps.PrintFormatted(integerConversion, fixnumCast, tofConversion, tosConversion, stringCast, writeStorage, inspectStorage, context, 
-                null, self, format, args
-            );
+            KernelOps.PrintFormatted(storage, stringCast, writeStorage, null, self, format, args);
         }
 
         #endregion
@@ -700,8 +697,8 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("write")]
-        public static int Write(ConversionStorage<MutableString>/*!*/ tosStorage, RubyContext/*!*/ context, RubyIO/*!*/ self, object obj) {
-            return Write(self, Protocols.ConvertToString(tosStorage, context, obj));
+        public static int Write(ConversionStorage<MutableString>/*!*/ tosConversion, RubyIO/*!*/ self, object obj) {
+            return Write(self, Protocols.ConvertToString(tosConversion, obj));
         }
 
         //write_nonblock
@@ -713,7 +710,7 @@ namespace IronRuby.Builtins {
         private static RubyIO/*!*/ OpenFileForRead(RubyContext/*!*/ context, MutableString/*!*/ path) {
             string strPath = path.ConvertToString();
             if (!File.Exists(strPath)) {
-                throw new Errno.NoEntryError(String.Format("No such file or directory - {0}", strPath));
+                throw RubyErrno.CreateENOENT(String.Format("No such file or directory - {0}", strPath));
             }
             return new RubyIO(context, File.OpenRead(strPath), "r");
         }
@@ -742,33 +739,20 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("read")]
-        public static MutableString/*!*/ Read(RubyIO/*!*/ self, [DefaultProtocol]int bytes, [DefaultProtocol, Optional]MutableString buffer) {
+        public static MutableString Read(RubyIO/*!*/ self, [DefaultProtocol]int bytes, [DefaultProtocol, Optional]MutableString buffer) {
             self.AssertOpenedForReading();
-            if (self.IsEndOfStream()) {
-                return null;
+            if (bytes < 0) {
+                throw RubyExceptions.CreateArgumentError("negative length -1 given");
             }
 
             if (buffer == null) {
                 buffer = MutableString.CreateBinary();
-            }
-
-            buffer.Clear();
-            if (!self.PreserveEndOfLines) {
-                for (int i = 0; i < bytes; ++i) {
-                    int c = self.ReadByteNormalizeEoln();
-                    if (c == -1) {
-                        return buffer;
-                    } else {
-                        buffer.Append((byte)c);
-                    }
-                }
             } else {
-                var fixedBuffer = new byte[bytes];
-                bytes = self.ReadBytes(fixedBuffer, 0, bytes);
-                buffer.Append(fixedBuffer, 0, bytes);
+                buffer.Clear();
             }
 
-            return buffer;
+            int bytesRead = self.AppendBytes(buffer, bytes);
+            return (bytesRead == 0 && bytes != 0) ? null : buffer;
         }
 
         [RubyMethod("read", RubyMethodAttributes.PublicSingleton)]
@@ -785,7 +769,7 @@ namespace IronRuby.Builtins {
             [DefaultProtocol, NotNull]MutableString/*!*/ path, [DefaultProtocol]int length, [DefaultProtocol, Optional]int offset) {
 
             if (offset < 0) {
-                throw new Errno.InvalidError();
+                throw RubyErrno.CreateEINVAL();
             }
 
             if (length < 0) {
@@ -982,26 +966,26 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        internal static IOWrapper/*!*/ CreateIOWrapper(RespondToStorage/*!*/ respondToStorage, 
-            RubyContext/*!*/ context, object io, FileAccess access) {
-
-            bool canRead, canWrite, canSeek;
+        public static IOWrapper/*!*/ CreateIOWrapper(RespondToStorage/*!*/ respondToStorage, object io, FileAccess access) {
+            bool canRead, canWrite, canSeek, canFlush, canBeClosed;
 
             if (access == FileAccess.Read || access == FileAccess.ReadWrite) {
-                canRead = Protocols.RespondTo(respondToStorage, context, io, "read");
+                canRead = Protocols.RespondTo(respondToStorage, io, "read");
             } else {
                 canRead = false;
             }
 
             if (access == FileAccess.Write || access == FileAccess.ReadWrite) {
-                canWrite = Protocols.RespondTo(respondToStorage, context, io, "write");
+                canWrite = Protocols.RespondTo(respondToStorage, io, "write");
             } else {
                 canWrite = false;
             }
 
-            canSeek = Protocols.RespondTo(respondToStorage, context, io, "seek") && Protocols.RespondTo(respondToStorage, context, io, "tell");
+            canSeek = Protocols.RespondTo(respondToStorage, io, "seek") && Protocols.RespondTo(respondToStorage, io, "tell");
+            canFlush = Protocols.RespondTo(respondToStorage, io, "flush");
+            canBeClosed = Protocols.RespondTo(respondToStorage, io, "close");
 
-            return new IOWrapper(context, io, canRead, canWrite, canSeek);
+            return new IOWrapper(respondToStorage.Context, io, canRead, canWrite, canSeek, canFlush, canBeClosed);
         }
     }
 }

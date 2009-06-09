@@ -108,6 +108,8 @@ namespace IronPython.Modules {
 
             Scope res = PythonContext.GetContext(context).CreateModule().Scope;
             res.SetName(Symbols.Name, name);
+            res.SetName(Symbols.Doc, null);
+            res.SetName(Symbols.Package, null);
             return res;
         }
 
@@ -234,6 +236,10 @@ namespace IronPython.Modules {
             if (pathname == null) throw PythonOps.TypeError("load_source() argument 3 must be file, not None");
             
             return LoadPythonSource(PythonContext.GetContext(context), name, file, pathname);
+        }
+
+        public static object reload(CodeContext/*!*/ context, Scope scope) {
+            return Builtin.reload(context, scope);
         }
 
         public static PythonType NullImporter {

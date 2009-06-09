@@ -51,12 +51,12 @@ namespace Microsoft.Scripting.Actions {
                 get { return true; }
             }
 
-            protected override Type TypeImpl() {
-                return _type;
+            public sealed override Type Type {
+                get { return _type; }
             }
 
-            protected override ExpressionType NodeTypeImpl() {
-                return ExpressionType.Extension;
+            public sealed override ExpressionType NodeType {
+                get { return ExpressionType.Extension; }
             }
 
             public Expression[] Inputs {
@@ -168,8 +168,7 @@ namespace Microsoft.Scripting.Actions {
         }
 
         private bool IsSideEffectFree(Expression rewritten) {
-            if (rewritten is ParameterExpression ||
-                rewritten is GlobalVariableExpression) {
+            if (rewritten is ParameterExpression) {
                 return true;
             }
 

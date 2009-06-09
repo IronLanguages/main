@@ -18,38 +18,43 @@ using System.Linq.Expressions;
 using System.Dynamic;
 
 using Microsoft.Scripting.Utils;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Actions.Calls;
 
 namespace IronPython.Runtime.Binding {
     class WarningInfo {
         private readonly string/*!*/ _message;
         private readonly PythonType/*!*/ _type;
         private readonly Expression _condition;
+        private readonly Func<bool> _conditionDelegate;
 
         public WarningInfo(PythonType/*!*/ type, string/*!*/ message) {
             _message = message;
             _type = type;
         }
 
-        public WarningInfo(PythonType/*!*/ type, string/*!*/ message, Expression condition) {
+        public WarningInfo(PythonType/*!*/ type, string/*!*/ message, Expression condition, Func<bool> conditionDelegate) {
             _message = message;
             _type = type;
             _condition = condition;
+            _conditionDelegate = conditionDelegate;
         }
 
         public DynamicMetaObject/*!*/ AddWarning(Expression/*!*/ codeContext, DynamicMetaObject/*!*/ result) {
             Expression warn = Expression.Call(
                 typeof(PythonOps).GetMethod("Warn"),
                 codeContext,
-                Expression.Constant(_type),
-                Expression.Constant(_message),
-                Expression.Constant(ArrayUtils.EmptyObjects)
+                AstUtils.Constant(_type),
+                AstUtils.Constant(_message),
+                AstUtils.Constant(ArrayUtils.EmptyObjects)
             );
 
             if (_condition != null) {
-                warn = Expression.Condition(_condition, warn, Expression.Empty());
+                warn = Expression.Condition(_condition, warn, AstUtils.Empty());
             }
 
             return new DynamicMetaObject(
@@ -59,6 +64,22 @@ namespace IronPython.Runtime.Binding {
                 ),
                 result.Restrictions
             );
+        }
+
+        public OptimizingCallDelegate/*!*/ AddWarning(OptimizingCallDelegate/*!*/ result) {
+            if(_conditionDelegate != null) {
+                return delegate(object[] callArgs, out bool shouldOptimize) { 
+                    if (_conditionDelegate()) {
+                        PythonOps.Warn((CodeContext)callArgs[0], _type, _message, ArrayUtils.EmptyObjects);
+                    }
+                    return result(callArgs, out shouldOptimize);
+                };
+            }
+
+            return delegate(object[] callArgs, out bool shouldOptimize) { 
+                PythonOps.Warn((CodeContext)callArgs[0], _type, _message, ArrayUtils.EmptyObjects);
+                return result(callArgs, out shouldOptimize);
+            };
         }
     }
 }

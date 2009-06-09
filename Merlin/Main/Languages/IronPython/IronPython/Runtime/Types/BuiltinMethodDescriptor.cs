@@ -23,6 +23,7 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Ast = System.Linq.Expressions.Expression;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Runtime.Types {
 
@@ -50,26 +51,24 @@ namespace IronPython.Runtime.Types {
             return true;
         }
 
-        internal override Expression/*!*/ MakeGetExpression(PythonBinder/*!*/ binder, Expression/*!*/ codeContext, Expression instance, Expression/*!*/ owner, Expression/*!*/ error) {
+        internal override void MakeGetExpression(PythonBinder/*!*/ binder, Expression/*!*/ codeContext, Expression instance, Expression/*!*/ owner, ConditionalBuilder/*!*/ builder) {
             if (instance != null) {
-                return Ast.Call(
-                    typeof(PythonOps).GetMethod("MakeBoundBuiltinFunction"),
-                    Ast.Constant(_template),
-                    instance
+                builder.FinishCondition(
+                    Ast.Call(
+                        typeof(PythonOps).GetMethod("MakeBoundBuiltinFunction"),
+                        AstUtils.Constant(_template),
+                        instance
+                    )
                 );
+            } else {
+                builder.FinishCondition(AstUtils.Constant(this));
             }
-
-            return Ast.Constant(this);
         }
 
         internal override bool GetAlwaysSucceeds {
             get {
                 return true;
             }
-        }
-
-        internal override bool TryGetBoundValue(CodeContext context, object instance, PythonType owner, out object value) {
-            return TryGetValue(context, instance, owner, out value);
         }
 
         internal BuiltinFunction/*!*/ Template {
@@ -146,7 +145,8 @@ namespace IronPython.Runtime.Types {
             if (result != 0) {
                 return (result > 0) ? 1 : -1;
             }
-            return (int)StringOps.__cmp__(__name__, bmd.__name__);
+            
+            return StringOps.Compare(__name__, bmd.__name__);
         }
 
         #endregion

@@ -1,0 +1,7 @@
+fails:StringIO#putc when passed [String] overwrites the character at the current position
+fails:StringIO#putc when passed [String] only writes the first character from the passed String
+fails:StringIO#putc when passed [Object] it writes the passed Integer % 256 to self
+fails:StringIO#putc when passed [Object] pads self with \000 when the current position is after the end
+fails:StringIO#putc when passed [Object] tries to convert the passed argument to an Integer using #to_int
+fails:StringIO#putc when in append mode appends to the end of self
+fails:StringIO#putc when self is not writable raises an IOError

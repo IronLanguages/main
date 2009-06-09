@@ -211,6 +211,18 @@ bar
 ");
         }
 
+        public void RubyInitializersCaching3() {
+            AssertOutput(delegate() {
+                CompilerTest(@"
+class Object
+  remove_method :initialize rescue p $!
+end
+");
+            }, @"
+#<NameError: Cannot remove Object#initialize>
+");
+        }
+
         public void RubyAllocators1() {
             AssertOutput(delegate() {
                 CompilerTest(@"

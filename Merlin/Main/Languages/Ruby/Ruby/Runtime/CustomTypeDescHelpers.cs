@@ -35,10 +35,10 @@ namespace IronRuby.Runtime {
 
         #region ICustomTypeDescriptor helper functions
 
-        private static RubyClass/*!*/ GetClass(object self) {
+        private static RubyClass/*!*/ GetImmediateClass(object self) {
             IRubyObject rubyObj = self as IRubyObject;
             ContractUtils.RequiresNotNull(rubyObj, "self");
-            return rubyObj.Class;
+            return rubyObj.ImmediateClass;
         }
 
         [Emitted]
@@ -49,7 +49,7 @@ namespace IronRuby.Runtime {
 
         [Emitted]
         public static string GetClassName(object self) {
-            return GetClass(self).Name;
+            return GetImmediateClass(self).NominalClass.Name;
         }
 
         [Emitted]
@@ -60,7 +60,7 @@ namespace IronRuby.Runtime {
 
         [Emitted]
         public static TypeConverter GetConverter(object self) {
-            return new TypeConv(self);
+            return new TypeConverter();
         }
 
         [Emitted]
@@ -120,8 +120,8 @@ namespace IronRuby.Runtime {
                 return new PropertyDescriptor[0];
             }
             
-            RubyContext context = GetClass(self).Context;
-            RubyClass immediateClass = context.GetImmediateClassOf(self);
+            RubyClass immediateClass = GetImmediateClass(self);
+            RubyContext context = immediateClass.Context;
 
             const int readable = 0x01;
             const int writable = 0x02;
@@ -158,7 +158,7 @@ namespace IronRuby.Runtime {
             var result = new List<PropertyDescriptor>(properties.Count);
             foreach (var pair in properties) {
                 if (pair.Value == (readable | writable)) {
-                    result.Add(new RubyPropertyDescriptor(pair.Key, self, immediateClass.GetUnderlyingSystemType()));
+                    result.Add(new RubyPropertyDescriptor(context, pair.Key, self, immediateClass.GetUnderlyingSystemType()));
                 }
             }
             return result.ToArray();
@@ -237,18 +237,23 @@ namespace IronRuby.Runtime {
 
         class RubyPropertyDescriptor : PropertyDescriptor {
             private readonly string/*!*/ _name;
-            private readonly Type _propertyType;
-            private readonly Type _componentType;
-            private readonly CallSite<Func<CallSite, RubyContext, object, object>> _getterSite;
-            private readonly CallSite<Func<CallSite, RubyContext, object, object, object>> _setterSite;
+            private readonly Type/*!*/ _propertyType;
+            private readonly Type/*!*/ _componentType;
+            private readonly CallSite<Func<CallSite, object, object>>/*!*/ _getterSite;
+            private readonly CallSite<Func<CallSite, object, object, object>>/*!*/ _setterSite;
 
-            internal RubyPropertyDescriptor(string name, object testObject, Type componentType)
+            internal RubyPropertyDescriptor(RubyContext/*!*/ context, string/*!*/ name, object testObject, Type/*!*/ componentType)
                 : base(name, null) {
                 _name = name;
                 _componentType = componentType;
 
-                _getterSite = CallSite<Func<CallSite, RubyContext, object, object>>.Create(RubySites.InstanceCallAction(_name));
-                _setterSite = CallSite<Func<CallSite, RubyContext, object, object, object>>.Create(RubySites.InstanceCallAction(_name + "="));
+                _getterSite = CallSite<Func<CallSite, object, object>>.Create(
+                    RubyCallAction.Make(context, _name, RubyCallSignature.WithImplicitSelf(0))
+                );
+
+                _setterSite = CallSite<Func<CallSite, object, object, object>>.Create(
+                    RubyCallAction.Make(context, _name + "=", RubyCallSignature.WithImplicitSelf(0))
+                );
 
                 try {
                     _propertyType = GetValue(testObject).GetType();
@@ -257,17 +262,13 @@ namespace IronRuby.Runtime {
                 }
             }
 
-            private static RubyContext/*!*/ GetContext(object obj) {
-                return GetClass(obj).Context;
-            }
-
             public override object GetValue(object obj) {
-                return _getterSite.Target.Invoke(_getterSite, GetContext(obj), obj);
+                return _getterSite.Target.Invoke(_getterSite, obj);
             }
 
             public override void SetValue(object obj, object value) {
                 if (_setterSite != null) {
-                    _setterSite.Target.Invoke(_setterSite, GetContext(obj), obj, value);
+                    _setterSite.Target.Invoke(_setterSite, obj, value);
                 }
             }
 
@@ -295,6 +296,7 @@ namespace IronRuby.Runtime {
             }
         }
 
+#if TODO
         private class TypeConv : TypeConverter {
             object convObj;
 
@@ -310,7 +312,7 @@ namespace IronRuby.Runtime {
             }
 
             public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType) {
-                return Converter.CanConvertFrom(sourceType, convObj.GetType(), NarrowingLevel.All);
+                return Converter.CanConvertFrom(sourceType, convObj.GetType(), NarrowingLevel.All, true);
             }
 
             public override object ConvertFrom(ITypeDescriptorContext context, System.Globalization.CultureInfo culture, object value) {
@@ -340,6 +342,7 @@ namespace IronRuby.Runtime {
 
             #endregion
         }
+#endif
     }
 }
 

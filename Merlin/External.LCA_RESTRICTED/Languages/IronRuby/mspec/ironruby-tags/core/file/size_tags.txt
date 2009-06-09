@@ -1,0 +1,6 @@
+fails:File.size returns the size of the file
+fails:File.size accepts a String-like (to_str) parameter
+fails:File.size accepts a File argument
+fails:File.size? returns nil if the file has zero size
+fails:File.size? returns the size of the file if it exists and is not empty
+fails:File.size? returns nil if file_name doesn't exist

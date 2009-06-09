@@ -1,0 +1,7 @@
+* CHANGES
+* MANIFEST
+* README
+* Rakefile
+* facade.gemspec
+* lib/facade.rb
+* test/tc_facade.rb

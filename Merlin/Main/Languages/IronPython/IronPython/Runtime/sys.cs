@@ -62,6 +62,8 @@ namespace IronPython.Runtime {
             }
         }
 
+        public const int dllhandle = 0;
+
         public static void excepthook(CodeContext/*!*/ context, object exctype, object value, object traceback) {
             PythonContext pc = PythonContext.GetContext(context);
 
@@ -120,16 +122,34 @@ namespace IronPython.Runtime {
             return null;
         }
 
-        public static TraceBackFrame/*!*/ _getframe(CodeContext/*!*/ context) {
-            return new TraceBackFrame(Builtin.globals(context), Builtin.locals(context), null);
+        [PythonHidden]
+        public static TraceBackFrame/*!*/ _getframeImpl(CodeContext/*!*/ context) {
+            return _getframeImpl(context, 0);
         }
 
-        public static TraceBackFrame/*!*/ _getframe(CodeContext/*!*/ context, int depth) {
-            if (depth == 0) {
-                return _getframe(context);
+        [PythonHidden]
+        public static TraceBackFrame/*!*/ _getframeImpl(CodeContext/*!*/ context, int depth) {
+            var stack = PythonOps.GetFunctionStack();
+
+            if (depth < stack.Count) {
+                TraceBackFrame cur = null;
+                for (int i = 0; i < stack.Count - depth; i++) {
+                    var elem = stack[i];
+
+                    cur = new TraceBackFrame(
+                        context,
+                        Builtin.globals(elem.Context),
+                        Builtin.locals(elem.Context),
+                        elem.Function != null ?
+                            elem.Function.func_code :
+                            null,
+                        cur
+                    );
+                }
+                return cur; 
             }
 
-            throw PythonOps.ValueError("_getframe is not implemented for non-zero depth");
+            throw PythonOps.ValueError("call stack is not deep enough");
         }
 
         // hex_version is set by PythonContext
@@ -182,7 +202,7 @@ namespace IronPython.Runtime {
 
         // version and version_info are set by PythonContext
 
-        public const string winver = "2.5";
+        public const string winver = "2.6";
 
         #region Special types
 

@@ -18,17 +18,34 @@ using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Reflection;
 using Microsoft.Contracts;
+using System.Collections.Generic;
+using Microsoft.Scripting.Utils;
+using Microsoft.Scripting.Runtime;
+using System.Runtime.InteropServices;
+using Microsoft.Scripting.Generation;
+using System.Threading;
 
 namespace Microsoft.Scripting.Actions {
     public class EventTracker : MemberTracker {
-        private EventInfo _event;
+        // For each instance of the class that declares the event there is a list of pairs in a table 
+        // (like if we added an instance field for each instance event into its declaring class). 
+        // We use _staticTarget for a static event (it is bound to its declaring type).
+        // Each pair in the list holds on the stub handler that was added to the event delegate chain and the callable 
+        // object that is passed to +=/-= operators. 
+        private WeakDictionary<object, NormalHandlerList> _handlerLists;
+        private static readonly object _staticTarget = new object();
+
+        private readonly EventInfo _eventInfo;
+        private MethodInfo _addMethod;
+        private MethodInfo _removeMethod;
 
         internal EventTracker(EventInfo eventInfo) {
-            _event = eventInfo;
+            Assert.NotNull(eventInfo);
+            _eventInfo = eventInfo;
         }
 
         public override Type DeclaringType {
-            get { return _event.DeclaringType; }
+            get { return _eventInfo.DeclaringType; }
         }
 
         public override TrackerTypes MemberType {
@@ -36,13 +53,27 @@ namespace Microsoft.Scripting.Actions {
         }
 
         public override string Name {
-            get { return _event.Name; }
+            get { return _eventInfo.Name; }
         }
 
         public EventInfo Event {
             get {
-                return _event;
+                return _eventInfo;
             }
+        }
+
+        public MethodInfo GetCallableAddMethod() {
+            if (_addMethod == null) {
+                _addMethod = CompilerHelpers.TryGetCallableMethod(_eventInfo.GetAddMethod(true));
+            }
+            return _addMethod;
+        }
+
+        public MethodInfo GetCallableRemoveMethod() {
+            if (_removeMethod == null) {
+                _removeMethod = CompilerHelpers.TryGetCallableMethod(_eventInfo.GetRemoveMethod(true));
+            }
+            return _removeMethod;
         }
 
         /// <summary>
@@ -85,7 +116,188 @@ namespace Microsoft.Scripting.Actions {
 
         [Confined]
         public override string ToString() {
-            return _event.ToString();
+            return _eventInfo.ToString();
         }
+
+        public void AddHandler(object target, object handler, LanguageContext language) {
+            ContractUtils.RequiresNotNull(handler, "handler");
+            ContractUtils.RequiresNotNull(language, "language");
+
+            Delegate delegateHandler;
+            HandlerList stubs;
+
+            // we can add event directly (signature does match):
+            if (_eventInfo.EventHandlerType.IsAssignableFrom(handler.GetType())) {
+                delegateHandler = (Delegate)handler;
+                stubs = null;
+            } else {
+                // create signature converting stub:
+                delegateHandler = language.GetDelegate(handler, _eventInfo.EventHandlerType);
+                stubs = GetHandlerList(target);
+            }
+
+            GetCallableAddMethod().Invoke(target, new object[] { delegateHandler });
+
+            if (stubs != null) {
+                // remember the stub so that we could search for it on removal:
+                stubs.AddHandler(handler, delegateHandler);
+            }
+        }
+
+        public void RemoveHandler(object target, object handler, IEqualityComparer<object> objectComparer) {
+            ContractUtils.RequiresNotNull(handler, "handler");
+            ContractUtils.RequiresNotNull(objectComparer, "objectComparer");
+
+            Delegate delegateHandler;
+            if (_eventInfo.EventHandlerType.IsAssignableFrom(handler.GetType())) {
+                delegateHandler = (Delegate)handler;
+            } else {
+                delegateHandler = GetHandlerList(target).RemoveHandler(handler, objectComparer);
+            }
+
+            if (delegateHandler != null) {
+                GetCallableRemoveMethod().Invoke(target, new object[] { delegateHandler });
+            }
+        }
+
+        #region Private Implementation Details
+
+        private HandlerList GetHandlerList(object instance) {
+#if !SILVERLIGHT
+            if (instance != null && IsComObject(instance)) {
+                return GetComHandlerList(instance);
+            }
+#endif
+
+            if (_handlerLists == null) {
+                Interlocked.CompareExchange(ref _handlerLists, new WeakDictionary<object, NormalHandlerList>(), null);
+            }
+
+            if (instance == null) {
+                // targetting a static method, we'll use a random object
+                // as our place holder here...
+                instance = _staticTarget;
+            }
+
+            lock (_handlerLists) {
+                NormalHandlerList result;
+                if (_handlerLists.TryGetValue(instance, out result)) {
+                    return result;
+                }
+
+                result = new NormalHandlerList();
+                _handlerLists[instance] = result;
+                return result;
+            }
+        }
+
+#if !SILVERLIGHT
+        private static readonly Type ComObjectType = typeof(object).Assembly.GetType("System.__ComObject");
+
+        internal static bool IsComObject(object obj) {
+            // we can't use System.Runtime.InteropServices.Marshal.IsComObject(obj) since it doesn't work in partial trust
+            return obj != null && ComObjectType.IsAssignableFrom(obj.GetType());
+        }
+
+        /// <summary>
+        /// Gets the stub list for a COM Object.  For COM objects we store the stub list
+        /// directly on the object using the Marshal APIs.  This allows us to not have
+        /// any circular references to deal with via weak references which are challenging
+        /// in the face of COM.
+        /// </summary>
+        private HandlerList GetComHandlerList(object instance) {
+            HandlerList hl = (HandlerList)Marshal.GetComObjectData(instance, this);
+            if (hl == null) {
+                lock (_staticTarget) {
+                    hl = (HandlerList)Marshal.GetComObjectData(instance, this);
+                    if (hl == null) {
+                        hl = new ComHandlerList();
+                        if (!Marshal.SetComObjectData(instance, this, hl)) {
+                            throw new COMException("Failed to set COM Object Data");
+                        }
+                    }
+                }
+            }
+
+            return hl;
+        }
+#endif
+
+        /// <summary>
+        /// Holds on a list of delegates hooked to the event. 
+        /// We need the list because we cannot enumerate the delegates hooked to CLR event and we need to do so in 
+        /// handler removal (we need to do custom delegate comparison there). If BCL enables the enumeration we could remove this.
+        /// </summary>
+        private abstract class HandlerList {
+            public abstract void AddHandler(object callableObject, Delegate handler);
+            public abstract Delegate RemoveHandler(object callableObject, IEqualityComparer<object> comparer);
+        }
+
+#if !SILVERLIGHT
+        private sealed class ComHandlerList : HandlerList {
+            /// <summary>
+            /// Storage for the handlers - a key value pair of the callable object and the delegate handler.
+            /// </summary>
+            private readonly CopyOnWriteList<KeyValuePair<object, object>> _handlers = new CopyOnWriteList<KeyValuePair<object, object>>();
+
+            public override void AddHandler(object callableObject, Delegate handler) {
+                Assert.NotNull(handler);
+                _handlers.Add(new KeyValuePair<object, object>(callableObject, handler));
+            }
+
+            public override Delegate RemoveHandler(object callableObject, IEqualityComparer<object> comparer) {
+                List<KeyValuePair<object, object>> copyOfHandlers = _handlers.GetCopyForRead();
+                for (int i = copyOfHandlers.Count - 1; i >= 0; i--) {
+                    object key = copyOfHandlers[i].Key;
+                    object value = copyOfHandlers[i].Value;
+
+                    if (comparer.Equals(key, callableObject)) {
+                        Delegate handler = (Delegate)value;
+                        _handlers.RemoveAt(i);
+                        return handler;
+                    }
+                }
+
+                return null;
+            }
+        }
+#endif
+
+        private sealed class NormalHandlerList : HandlerList {
+            /// <summary>
+            /// Storage for the handlers - a key value pair of the callable object and the delegate handler.
+            /// 
+            /// The delegate handler is closed over the callable object.  Therefore as long as the object is alive the
+            /// delegate will stay alive and so will the callable object.  That means it's fine to have a weak reference
+            /// to both of these objects.
+            /// </summary>
+            private readonly CopyOnWriteList<KeyValuePair<WeakReference, WeakReference>> _handlers = new CopyOnWriteList<KeyValuePair<WeakReference, WeakReference>>();
+
+            public NormalHandlerList() {
+            }
+
+            public override void AddHandler(object callableObject, Delegate handler) {
+                Assert.NotNull(handler);
+                _handlers.Add(new KeyValuePair<WeakReference, WeakReference>(new WeakReference(callableObject), new WeakReference(handler)));
+            }
+
+            public override Delegate RemoveHandler(object callableObject, IEqualityComparer<object> comparer) {
+                List<KeyValuePair<WeakReference, WeakReference>> copyOfHandlers = _handlers.GetCopyForRead();
+                for (int i = copyOfHandlers.Count - 1; i >= 0; i--) {
+                    object key = copyOfHandlers[i].Key.Target;
+                    object value = copyOfHandlers[i].Value.Target;
+
+                    if (key != null && value != null && comparer.Equals(key, callableObject)) {
+                        Delegate handler = (Delegate)value;
+                        _handlers.RemoveAt(i);
+                        return handler;
+                    }
+                }
+
+                return null;
+            }
+        }
+
+        #endregion
     }
 }

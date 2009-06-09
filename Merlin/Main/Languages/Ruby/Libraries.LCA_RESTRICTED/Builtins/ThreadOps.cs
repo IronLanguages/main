@@ -25,6 +25,7 @@ using System.Threading;
 using IronRuby.Runtime;
 using System.Text;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 
 namespace IronRuby.Builtins {
     /// <summary>
@@ -280,7 +281,7 @@ namespace IronRuby.Builtins {
 
             MutableString result = MutableString.CreateMutable();
             result.Append("#<");
-            result.Append(RubyUtils.GetClassName(context, self));
+            result.Append(context.GetClassDisplayName(self));
             result.Append(':');
             RubyUtils.AppendFormatHexObjectId(result, RubyUtils.GetObjectId(context, self));
             result.Append(' ');
@@ -442,18 +443,19 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("raise")]
         [RubyStackTraceHidden]
-        public static void RaiseException(RespondToStorage/*!*/ respondToStorage, UnaryOpStorage/*!*/ storage0, BinaryOpStorage/*!*/ storage1,
-            RubyContext/*!*/ context, Thread/*!*/ self, object/*!*/ obj, [Optional]object arg, [Optional]RubyArray backtrace) {
+        public static void RaiseException(RespondToStorage/*!*/ respondToStorage, UnaryOpStorage/*!*/ storage0, BinaryOpStorage/*!*/ storage1, 
+            CallSiteStorage<Action<CallSite, Exception, RubyArray>>/*!*/ setBackTraceStorage, 
+            Thread/*!*/ self, object/*!*/ obj, [Optional]object arg, [Optional]RubyArray backtrace) {
 
             if (self == Thread.CurrentThread) {
-                KernelOps.RaiseException(respondToStorage, storage0, storage1, context, self, obj, arg, backtrace);
+                KernelOps.RaiseException(respondToStorage, storage0, storage1, setBackTraceStorage, self, obj, arg, backtrace);
                 return;
             }
 
 #if SILVERLIGHT
             throw new NotImplementedError("Thread#raise is not implemented on Silverlight");
 #else
-            Exception e = KernelOps.CreateExceptionToRaise(respondToStorage, storage0, storage1, context, obj, arg, backtrace);
+            Exception e = KernelOps.CreateExceptionToRaise(respondToStorage, storage0, storage1, setBackTraceStorage, obj, arg, backtrace);
             RaiseAsyncException(self, e);
 #endif
         }
@@ -617,6 +619,10 @@ namespace IronRuby.Builtins {
             }
             ThreadGroup group = Group(Thread.CurrentThread);
             Thread result = new Thread(new ThreadStart(delegate() { RubyThreadStart(startRoutine, args, group); }));
+
+            // Ruby exits when the main thread exits. So all other threads need to be marked as background threads
+            result.IsBackground = true;
+
             result.Start();
             return result;
         }
@@ -654,7 +660,7 @@ namespace IronRuby.Builtins {
                     trace.AppendLine();
                     trace.AppendLine();
                     RubyExceptionData data = RubyExceptionData.GetInstance(e);
-                    if (data.Backtrace != null) { // ReinitializeException sets Backtrace to null
+                    if (data.Backtrace != null) {
                         foreach (var frame in data.Backtrace) {
                             trace.Append(frame.ToString());
                         }

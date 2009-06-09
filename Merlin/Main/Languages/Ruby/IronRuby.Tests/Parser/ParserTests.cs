@@ -18,24 +18,15 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Dynamic;
 using System.Text;
+using IronRuby.Builtins;
+using IronRuby.Compiler;
+using IronRuby.Runtime;
+using IronRuby.Runtime.Calls;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Hosting;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
-using IronRuby.Builtins;
-using IronRuby.Compiler;
-using IronRuby.Runtime;
-using Microsoft.Scripting.Utils;
-using IronRuby.Compiler.Ast;
-using System.Runtime.CompilerServices;
-using IronRuby.Runtime.Calls;
-
-using MSA = System.Linq.Expressions;
-using Ast = System.Linq.Expressions.Expression;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
-using System.Reflection;
 
 namespace IronRuby.Tests {
     public partial class Tests {
@@ -192,74 +183,91 @@ namespace IronRuby.Tests {
         }
 
         public void Identifiers1() {
-            Assert(Tokenizer.IsConstantName("C"));
-            Assert(Tokenizer.IsConstantName("Cx"));
-            Assert(Tokenizer.IsConstantName("C9"));
-            Assert(Tokenizer.IsConstantName("CazAZ0123456789_"));
-            Assert(Tokenizer.IsConstantName("C_"));
-            Assert(!Tokenizer.IsConstantName(null));
-            Assert(!Tokenizer.IsConstantName(""));
-            Assert(!Tokenizer.IsConstantName("C="));
-            Assert(!Tokenizer.IsConstantName("C?"));
-            Assert(!Tokenizer.IsConstantName("C!"));
-            Assert(!Tokenizer.IsConstantName("_"));
-            Assert(!Tokenizer.IsConstantName("0"));
-            Assert(!Tokenizer.IsConstantName("c"));
+            string surrogate = "\ud800\udc00";
 
-            Assert(Tokenizer.IsMethodName("C"));
-            Assert(Tokenizer.IsMethodName("Cx"));
-            Assert(Tokenizer.IsMethodName("CazAZ0123456789_"));
-            Assert(Tokenizer.IsMethodName("f="));
-            Assert(Tokenizer.IsMethodName("f?"));
-            Assert(Tokenizer.IsMethodName("f!"));
-            Assert(Tokenizer.IsMethodName("_"));
-            Assert(Tokenizer.IsMethodName("c"));
-            Assert(!Tokenizer.IsMethodName("="));
-            Assert(!Tokenizer.IsMethodName("?"));
-            Assert(!Tokenizer.IsMethodName("!"));
-            Assert(!Tokenizer.IsMethodName(null));
-            Assert(!Tokenizer.IsMethodName(""));
-            
-            Assert(Tokenizer.IsGlobalVariableName("$x"));
-            Assert(Tokenizer.IsGlobalVariableName("$XazAZ0123456789_"));
-            Assert(!Tokenizer.IsGlobalVariableName("$f="));
-            Assert(!Tokenizer.IsGlobalVariableName("$f?"));
-            Assert(!Tokenizer.IsGlobalVariableName("$f!"));
-            Assert(!Tokenizer.IsGlobalVariableName("$f$"));
-            Assert(!Tokenizer.IsGlobalVariableName(null));
-            Assert(!Tokenizer.IsGlobalVariableName("$"));
-            Assert(!Tokenizer.IsGlobalVariableName("$$"));
-            Assert(!Tokenizer.IsGlobalVariableName("f"));
-            Assert(!Tokenizer.IsGlobalVariableName("ff"));
-            Assert(!Tokenizer.IsGlobalVariableName("fff"));
+            Assert(Tokenizer.IsConstantName("C", false));
+            Assert(Tokenizer.IsConstantName("Cx", false));
+            Assert(Tokenizer.IsConstantName("C9", false));
+            Assert(Tokenizer.IsConstantName("CazAZ0123456789_", false));
+            Assert(Tokenizer.IsConstantName("C_", false));
+            Assert(!Tokenizer.IsConstantName(null, false));
+            Assert(!Tokenizer.IsConstantName("", false));
+            Assert(!Tokenizer.IsConstantName("C=", false));
+            Assert(!Tokenizer.IsConstantName("C?", false));
+            Assert(!Tokenizer.IsConstantName("C!", false));
+            Assert(!Tokenizer.IsConstantName("_", false));
+            Assert(!Tokenizer.IsConstantName("0", false));
+            Assert(!Tokenizer.IsConstantName("c", false));
+            Assert(!Tokenizer.IsConstantName("Σ", false));
+            Assert(!Tokenizer.IsConstantName("Σ", true));
+            Assert(Tokenizer.IsConstantName("CΣ", true));
 
-            Assert(Tokenizer.IsInstanceVariableName("@x"));
-            Assert(Tokenizer.IsInstanceVariableName("@XazAZ0123456789_"));
-            Assert(!Tokenizer.IsInstanceVariableName("@f="));
-            Assert(!Tokenizer.IsInstanceVariableName("@f?"));
-            Assert(!Tokenizer.IsInstanceVariableName("@f!"));
-            Assert(!Tokenizer.IsInstanceVariableName("@f@"));
-            Assert(!Tokenizer.IsInstanceVariableName(null));
-            Assert(!Tokenizer.IsInstanceVariableName("@"));
-            Assert(!Tokenizer.IsInstanceVariableName("@@"));
-            Assert(!Tokenizer.IsInstanceVariableName("@@@"));
-            Assert(!Tokenizer.IsInstanceVariableName("f"));
-            Assert(!Tokenizer.IsInstanceVariableName("ff"));
-            Assert(!Tokenizer.IsInstanceVariableName("fff"));
+            Assert(Tokenizer.IsMethodName("C", false));
+            Assert(Tokenizer.IsMethodName("Cx", false));
+            Assert(Tokenizer.IsMethodName("CazAZ0123456789_", false));
+            Assert(Tokenizer.IsMethodName("f=", false));
+            Assert(Tokenizer.IsMethodName("f?", false));
+            Assert(Tokenizer.IsMethodName("f!", false));
+            Assert(Tokenizer.IsMethodName("_", false));
+            Assert(Tokenizer.IsMethodName("c", false));
+            Assert(!Tokenizer.IsMethodName("=", false));
+            Assert(!Tokenizer.IsMethodName("?", false));
+            Assert(!Tokenizer.IsMethodName("!", false));
+            Assert(!Tokenizer.IsMethodName(null, false));
+            Assert(!Tokenizer.IsMethodName("", false));
+            Assert(!Tokenizer.IsMethodName("Σ", false));
+            Assert(Tokenizer.IsMethodName("Σ", true));
+            Assert(Tokenizer.IsMethodName(surrogate, true));
 
-            Assert(Tokenizer.IsClassVariableName("@@x"));
-            Assert(Tokenizer.IsClassVariableName("@@XazAZ0123456789_"));
-            Assert(!Tokenizer.IsClassVariableName("@@f="));
-            Assert(!Tokenizer.IsClassVariableName("@@f?"));
-            Assert(!Tokenizer.IsClassVariableName("@@f!"));
-            Assert(!Tokenizer.IsClassVariableName("@@f@"));
-            Assert(!Tokenizer.IsClassVariableName(null));
-            Assert(!Tokenizer.IsClassVariableName("@"));
-            Assert(!Tokenizer.IsClassVariableName("@@"));
-            Assert(!Tokenizer.IsClassVariableName("@@@"));
-            Assert(!Tokenizer.IsClassVariableName("f"));
-            Assert(!Tokenizer.IsClassVariableName("ff"));
-            Assert(!Tokenizer.IsClassVariableName("fff"));
+            Assert(Tokenizer.IsGlobalVariableName("$x", false));
+            Assert(Tokenizer.IsGlobalVariableName("$XazAZ0123456789_", false));
+            Assert(!Tokenizer.IsGlobalVariableName("$f=", false));
+            Assert(!Tokenizer.IsGlobalVariableName("$f?", false));
+            Assert(!Tokenizer.IsGlobalVariableName("$f!", false));
+            Assert(!Tokenizer.IsGlobalVariableName("$f$", false));
+            Assert(!Tokenizer.IsGlobalVariableName(null, false));
+            Assert(!Tokenizer.IsGlobalVariableName("$", false));
+            Assert(!Tokenizer.IsGlobalVariableName("$$", false));
+            Assert(!Tokenizer.IsGlobalVariableName("f", false));
+            Assert(!Tokenizer.IsGlobalVariableName("ff", false));
+            Assert(!Tokenizer.IsGlobalVariableName("fff", false));
+            Assert(!Tokenizer.IsGlobalVariableName("$Σ", false));
+            Assert(Tokenizer.IsGlobalVariableName("$Σ", true));
+            Assert(Tokenizer.IsGlobalVariableName("$" + surrogate, true));
+
+            Assert(Tokenizer.IsInstanceVariableName("@x", false));
+            Assert(Tokenizer.IsInstanceVariableName("@XazAZ0123456789_", false));
+            Assert(!Tokenizer.IsInstanceVariableName("@f=", false));
+            Assert(!Tokenizer.IsInstanceVariableName("@f?", false));
+            Assert(!Tokenizer.IsInstanceVariableName("@f!", false));
+            Assert(!Tokenizer.IsInstanceVariableName("@f@", false));
+            Assert(!Tokenizer.IsInstanceVariableName(null, false));
+            Assert(!Tokenizer.IsInstanceVariableName("@", false));
+            Assert(!Tokenizer.IsInstanceVariableName("@@", false));
+            Assert(!Tokenizer.IsInstanceVariableName("@@@", false));
+            Assert(!Tokenizer.IsInstanceVariableName("f", false));
+            Assert(!Tokenizer.IsInstanceVariableName("ff", false));
+            Assert(!Tokenizer.IsInstanceVariableName("fff", false));
+            Assert(!Tokenizer.IsInstanceVariableName("@Σ", false));
+            Assert(Tokenizer.IsInstanceVariableName("@Σ", true));
+            Assert(Tokenizer.IsInstanceVariableName("@" + surrogate, true));
+
+            Assert(Tokenizer.IsClassVariableName("@@x", false));
+            Assert(Tokenizer.IsClassVariableName("@@XazAZ0123456789_", false));
+            Assert(!Tokenizer.IsClassVariableName("@@f=", false));
+            Assert(!Tokenizer.IsClassVariableName("@@f?", false));
+            Assert(!Tokenizer.IsClassVariableName("@@f!", false));
+            Assert(!Tokenizer.IsClassVariableName("@@f@", false));
+            Assert(!Tokenizer.IsClassVariableName(null, false));
+            Assert(!Tokenizer.IsClassVariableName("@", false));
+            Assert(!Tokenizer.IsClassVariableName("@@", false));
+            Assert(!Tokenizer.IsClassVariableName("@@@", false));
+            Assert(!Tokenizer.IsClassVariableName("f", false));
+            Assert(!Tokenizer.IsClassVariableName("ff", false));
+            Assert(!Tokenizer.IsClassVariableName("fff", false));
+            Assert(!Tokenizer.IsClassVariableName("@@Σ", false));
+            Assert(Tokenizer.IsClassVariableName("@@Σ", true));
+            Assert(Tokenizer.IsClassVariableName("@@" + surrogate, true));
         }
 
         private void Identifiers2() {
@@ -269,6 +277,37 @@ namespace IronRuby.Tests {
             // otherwise the content of previous token is stored in token value and is interpreted as string.
             t.Load("//\ntrue")[Tokens.RegexpBeg][Tokens.RegexpEnd][(Tokens)'\n'][Tokens.True].EOF();
 
+            t.Load("Σ = CΣ", (tok) => tok.AllowNonAsciiIdentifiers = true).
+                ReadSymbol(Tokens.Identifier, "Σ")[(Tokens)'='].ReadSymbol(Tokens.ConstantIdentifier, "CΣ").EOF();
+
+            t.Load("Σ = CΣ")[Tokens.InvalidCharacter].Expect(Errors.InvalidCharacterInExpression);
+
+            t.Load("@Σ=@@Σ=$Σ", (tok) => tok.AllowNonAsciiIdentifiers = true)
+                [Tokens.InstanceVariable][(Tokens)'=']
+                [Tokens.ClassVariable][(Tokens)'=']
+                [Tokens.GlobalVariable].EOF();
+
+            t.Load("def Σ;end", (tok) => tok.AllowNonAsciiIdentifiers = true)
+                [Tokens.Def][Tokens.Identifier][(Tokens)';'][Tokens.End].EOF();
+
+            // BOM can be used as an identifier in 1.8 -KU mode:
+            t.Load(new byte[] { 
+                0xEF, 0xBB, 0xBF, (byte)'=', (byte)'1' 
+            }, (tok) => { 
+                tok.Compatibility = RubyCompatibility.Ruby18; tok.AllowNonAsciiIdentifiers = true; 
+            })
+            [Tokens.Identifier][(Tokens)'='][1].EOF();
+
+            // we should report a warning if -KCODE is not used and treat BOM as whitespace (MRI 1.8 reports an error):
+            t.Load(new byte[] { 
+                0xEF, 0xBB, 0xBF, (byte)'=', (byte)'1' 
+            }, (tok) => { 
+                tok.Compatibility = RubyCompatibility.Ruby18; 
+                tok.AllowNonAsciiIdentifiers = false;
+                tok.Verbatim = true;
+            }) 
+            [Tokens.Whitespace][(Tokens)'='][1].Expect(Errors.InvalidUseOfByteOrderMark);
+            
             t.Expect();
         }
 
@@ -466,6 +505,7 @@ namespace IronRuby.Tests {
 
         private void ParseEscapes1() {
             AssertTokenizer t = AssertTokens();
+            t.DefaultEncoding = RubyEncoding.Binary;
 
             const string CR = "\r";
             const string LF = "\n";
@@ -564,6 +604,7 @@ namespace IronRuby.Tests {
 
         private void Escapes1() {
             AssertTokenizer t = AssertTokens();
+     
             // hexa:
             t.Load("\"\\x\n20\"")[Tokens.StringBeg]["?\n20"][Tokens.StringEnd].Expect(Errors.InvalidEscapeCharacter);
             t.Load("\"\\x2\n0\"")[Tokens.StringBeg]["\u0002\n0"][Tokens.StringEnd].EOF();
@@ -574,7 +615,13 @@ namespace IronRuby.Tests {
             t.Load("\"\\04\n0\"")[Tokens.StringBeg]["\u0004\n0"][Tokens.StringEnd].EOF();
             t.Load("\"\\040\n\"")[Tokens.StringBeg][" \n"][Tokens.StringEnd].EOF();
             t.Load("\"\\123\"")[Tokens.StringBeg]["S"][Tokens.StringEnd].EOF();
-            
+
+            // multi-byte characters:
+            t.Load(@"""abΣ\xce\xa3cd\xce\xa3e""")[Tokens.StringBeg]["abΣΣcdΣe", Encoding.UTF8][Tokens.StringEnd].EOF();
+
+            // an incomplete character:
+            t.Load(@"""ab\xce""")[Tokens.StringBeg][new byte[] { (byte)'a', (byte)'b', 0xce }][Tokens.StringEnd].EOF();
+
             t.Expect();
         }
 
@@ -611,7 +658,11 @@ namespace IronRuby.Tests {
             t.Load("\"\\u00\n20\"")[Tokens.StringBeg]["?00\n20"][Tokens.StringEnd].Expect(Errors.InvalidEscapeCharacter).EOF();
             t.Load("\"\\u0\n020\"")[Tokens.StringBeg]["?0\n020"][Tokens.StringEnd].Expect(Errors.InvalidEscapeCharacter).EOF();
             t.Load("\"\\u\n0020\"")[Tokens.StringBeg]["?\n0020"][Tokens.StringEnd].Expect(Errors.InvalidEscapeCharacter).EOF();
-            
+
+            // TODO:
+            t.DefaultEncoding = RubyEncoding.Binary;
+            t.Load(@"""\u{5d0}""")[Tokens.StringBeg][@"\u{5d0}"][Tokens.StringEnd].Expect(Errors.EncodingsMixed).EOF();
+
             t.Expect();
         }
 
@@ -648,7 +699,7 @@ namespace IronRuby.Tests {
             t.Expect();
         }
 
-        private void Symbols1() {
+        public void Symbols1() {
             // TODO: we need AssertParser
             //AssertTokenizer t = AssertTokens();
 
@@ -657,24 +708,68 @@ namespace IronRuby.Tests {
             //t.Expect();
         }
 
-        // TODO:
-        [Options(Compatibility = RubyCompatibility.Ruby19)]
-        private void UnicodeIdentifiers1() {
-            AssertTokenizer t = AssertTokens();
+        public void KCode1() {
+            var sjisEncoding = RubyEncoding.KCodeSJIS;
 
-            //t.Load("Σ=@Σ=@@Σ=$Σ")
-            //    [Tokens.Identifier][Tokens.Eq]
-            //    [Tokens.InstanceVariable][Tokens.Eq]
-            //    [Tokens.ClassVariable][Tokens.Eq]
-            //    [Tokens.GlobalVariable].EOF();
-
-            //t.Load("def Σ;end")
-            //    [Tokens.Def][Tokens.Identifier][(Tokens)';'][Tokens.End].EOF();
+            var sjisEngine = Ruby.CreateEngine((setup) => {
+                setup.Options["KCode"] = RubyEncoding.KCodeSJIS;
+            });
+            Assert(sjisEngine.Execute("$KCODE").ToString() == "SJIS");
             
-            //t.Load("<<Σ\nhello\nΣ")
-            //    [Tokens.StringBeg]["hello\n"][Tokens.StringEnd][(Tokens)'\n'].EOF();
+            var utf8Engine = Ruby.CreateEngine((setup) => {
+                setup.Options["KCode"] = RubyEncoding.KCodeUTF8;
+            });
+            Assert(utf8Engine.Execute("$KCODE").ToString() == "UTF8");
 
-            t.Expect();
+            // using default encoding (UTF8) for Unicode string source (ignoring KCODE):
+            var str = sjisEngine.Execute<MutableString>("Σ = 'Σ'");
+            Assert(str.Encoding == RubyEncoding.UTF8 && str.ToString() == "Σ");
+
+            // Use source code encoding no matter what characters are used in the string:
+            str = sjisEngine.Execute<MutableString>("'ascii'");
+            Assert(str.Encoding == RubyEncoding.UTF8 && str.ToString() == "ascii");
+
+            // Unicode source code (KCODE ignored):
+            var bytes = Encoding.UTF8.GetBytes("Σ = 'Σ'");
+            str = sjisEngine.CreateScriptSource(new BinaryContentProvider(bytes), null, Encoding.UTF8).Execute<MutableString>();
+            Assert(str.Encoding == RubyEncoding.UTF8 && str.ToString() == "Σ");
+
+            // SJIS source code (KCODE ignored):
+            bytes = sjisEncoding.Encoding.GetBytes(@"ﾎ = 'ﾎ'");
+            str = utf8Engine.CreateScriptSource(new BinaryContentProvider(bytes), null, sjisEncoding.Encoding).Execute<MutableString>();
+            Assert(str.Encoding == sjisEncoding && str.ToString() == "ﾎ");
+
+            // eval uses KCODE (binary source, KCODE == SJIS):
+            bytes = sjisEncoding.Encoding.GetBytes(@"eval(""ﾎ = 'ﾎ'"")");
+            str = sjisEngine.CreateScriptSource(new BinaryContentProvider(bytes), null, BinaryEncoding.Instance).Execute<MutableString>();
+            Assert(str.Encoding == sjisEncoding && str.ToString() == "ﾎ");
+
+            // eval uses KCODE (SJIS source, KCODE == SJIS):
+            bytes = sjisEncoding.Encoding.GetBytes(@"eval(""ﾎ = 'ﾎ'"")");
+            str = sjisEngine.CreateScriptSource(new BinaryContentProvider(bytes), null, sjisEncoding.Encoding).Execute<MutableString>();
+            Assert(str.Encoding == sjisEncoding && str.ToString() == "ﾎ");
+        }
+
+        private void KCode2() {
+            if (_driver.PartialTrust) return;
+
+            var sjisEncoding = RubyEncoding.KCodeSJIS;
+
+            // change KCODE at runtime:
+            Context.SetGlobalVariable(null, "KCODE", MutableString.Create("S"));
+            Assert(ReferenceEquals(Context.KCode, sjisEncoding));
+
+            // load file encoded in SJIS:
+            var tmpPath = Path.GetTempFileName();
+            try {
+                Runtime.Globals.SetVariable("TempFileName", MutableString.Create(tmpPath));
+                File.WriteAllBytes(tmpPath, sjisEncoding.Encoding.GetBytes("Cﾎ = 'ﾎ'"));
+                Engine.Execute(@"load(TempFileName)");
+                var str = Runtime.Globals.GetVariable<MutableString>("Cﾎ");
+                Assert(str.Encoding == sjisEncoding && str.ToString() == "ﾎ");
+            } finally {
+                File.Delete(tmpPath);
+            }
         }
 
         // encodings suported in preamble:
@@ -712,7 +807,7 @@ p __ENCODING__
 ")), null, Encoding.UTF8, SourceCodeKind.File);
 
             using (var reader = source1.GetReader()) {
-                Assert(reader.Encoding.WebName == BinaryEncoding.Instance.WebName);
+                Assert(reader.Encoding == BinaryEncoding.Instance);
             }
 
             AssertOutput(() => source1.Execute(), @"#<Encoding:ASCII-8BIT>");
@@ -732,29 +827,12 @@ p __ENCODING__
             Context.CreateFileUnit("foo.rb", "# enCoding = UNDEFINED_ENCODING").Execute();
         }
 
-        /// <summary>
-        /// The default hosting encoding in 1.8 compat mode is BINARY.
-        /// </summary>
-        [Options(Compatibility = RubyCompatibility.Ruby18)]
-        private void Encoding4() {
-            AssertOutput(() => CompilerTest(@"
-p ""a\200\201\202b""
-"), @"
-""a\200\201\202b""
-");
-        }
-
-        /// <summary>
-        /// The default hosting encoding in 1.9 compat mode is UTF8.
-        /// </summary>
         [Options(Compatibility = RubyCompatibility.Ruby19)]
-        private void Encoding5() {
-            // TODO: we need to apply encoding in tokenizer on non-unicode escapes are given in an encoded string
-            XAssertOutput(() => CompilerTest(@"
-p ""a\200\201\202""
-"), @"
-""a\x80\x81\x82""
-");
+        private void Encoding4() {
+            var enc = Engine.Execute<RubyEncoding>(@"eval('# encoding: SJIS
+__ENCODING__
+')");
+            Assert(enc == RubyEncoding.GetRubyEncoding("SJIS"));
         }
 
         [Options(Compatibility = RubyCompatibility.Ruby19)]
@@ -838,8 +916,8 @@ add 'foo', 'bar'
 
             const int Id = 0x12345678;
 
-            var lambda = CallSiteTracer.Transform<DlrMainCallTarget>(ast, sourceUnit, options, Id);
-            var code = new ScriptCode(lambda, sourceUnit);
+            var lambda = CallSiteTracer.Transform<Func<RubyScope, RuntimeFlowControl, object, object>>(ast, sourceUnit, options, Id);
+            var code = new RubyScriptCode(lambda, sourceUnit, TopScopeFactoryKind.Hosted);
 
             var locations = new List<int>();
             CallSiteTracer.Register((context, args, result, id, location) => {
@@ -857,7 +935,9 @@ add 'foo', 'bar'
 
             code.Run();
 
-            Debug.Assert(locations.Count == 4 && locations[0] == 31 && locations[1] == 19 && locations[2] == 41 && locations[3] == 19);
+            // TODO: doesn't include method body since its is lazily compiled:
+            Debug.Assert(locations.Count == 2 && locations[0] == 31 && locations[1] == 41);
+            // Debug.Assert(locations.Count == 4 && locations[0] == 31 && locations[1] == 19 && locations[2] == 41 && locations[3] == 19);
         }
 
         #region Helpers

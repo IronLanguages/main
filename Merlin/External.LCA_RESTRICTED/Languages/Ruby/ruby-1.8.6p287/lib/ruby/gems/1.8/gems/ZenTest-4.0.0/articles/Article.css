@@ -1,0 +1,721 @@
+/*
+ * Basic styles for core document typography.
+ *
+ * Influenced by:
+ *   - "How to size text using ems" [http://www.clagnut.com/blog/348]
+ */
+
+/*************************** Basic Typography ******************************/
+
+a:link { color: black; }     /* unvisited link */
+a:visited { color: black; }  /* visited link */
+a:hover { color: black; }   /* mouse over link */
+a:active { color: black; }   /* selected link */
+
+html {
+  background: white;
+  color: black;
+  text-align: center;  /* IE hack to workaround for block centering. */
+  margin: 0;
+  padding: 0;
+}
+
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: Lucida Grande, sans-serif;
+}
+
+* {
+  font-family: Lucida Grande, sans-serif;
+}
+
+img { vertical-align: middle; }
+
+p, li, dt, dd {
+  line-height: 1.5;
+  font-size: .95em;
+}
+
+p, ul, ol, dl {
+  margin-left: 3em;
+  margin-right: 2em;
+}
+
+p + p {
+  text-indent: 1.4em;
+}
+
+dl {
+  margin: 1em 3em;
+}
+
+dl dt a {
+  font: 1.5em bold Lucida Grande, sans-serif;
+}
+
+dl dt {
+  font-weight: bold;
+}
+
+dl dd {
+  margin: 0em 3em;
+}
+
+ul {
+  list-style: square outside;
+}
+
+li p {  /* Markdown define paragraphs for list items. */
+  margin: 0;
+}
+
+/* 
+ * Ensure that nested items have the same size as their parent as we are
+ * using (relative) em sizing.
+ */
+li li, li p, td p, blockquote p {
+  font-size: 1em;
+}
+
+abbr, acronym {
+  letter-spacing:0.1em
+  font-variant: small-caps;
+}
+        
+em {
+  font-style: italic;    
+}
+
+term {
+    font-style: italic;
+}
+
+cite {
+  font-style: italic;
+}
+input, select, th, td {font-size:1em}
+
+/******************************* Headers ********************************/
+
+h1 {
+  text-align: center;
+  padding: .3em 2em 0em 2em;
+  margin: 0;
+  color: black;
+  font-size: 1.3em;
+}    
+
+h2 {
+  margin-left: 0.4em;
+  font-weight: bold;
+  font-size: 1.2em;  
+  border-bottom: medium #5089da solid;
+}
+
+h3 {
+  font-size: 1.2em;  
+  margin-left: .5em;
+  margin-right: auto;
+  color: #929292;
+  border-bottom: thin solid #929292;
+}  
+
+/************************ Editing / Authoring ********************/
+
+.todo {
+    background: red;
+    color: yellow;
+    font-weight: bold;
+}
+
+/************************ Samples, Input, Code, Commands ********************/
+
+code {
+ font-family: monospace;
+}
+
+
+
+kbd:before {
+  content: open-quote;
+}
+
+kbd:after {
+  content: close-quote;
+}
+
+
+code, kbd, var, pre {
+    font-family: monaco, "Courier New", courier, monospace;
+    font-size: 14px;
+}
+
+.command-box {
+  clear: right;  /* Side notes. */
+  border: 1px dotted #888;
+  background: #151515;
+  color: #eee;
+  margin: .5em 2em .5em 3em;
+  padding: .5em;
+  text-align: left;
+  font-family: monospace;
+  -moz-border-radius: .5em;
+  -webkit-border-radius: .5em;
+  border-radius: .5em;
+
+}
+
+span.placeholder {
+  font-style: italic;
+}
+
+span.placeholder:before {
+  content: "<";
+}
+
+span.placeholder:after {
+  content: ">";
+}
+
+.command-box span.placeholder {
+  font-style: normal;
+  color: #cc2;
+}
+
+.source-code-box {
+  border: 1px dotted #888;
+  background: #151515;
+  color: #eee;
+  margin: .5em 2em .5em 3em;
+  padding: .5em;
+  text-align: left;
+  font-family: monospace;
+  -moz-border-radius: .5em;
+  -webkit-border-radius: .5em;
+  border-radius: .5em;
+}
+
+.output-box {
+  border: 1px dotted #888;
+  background: #151515;
+  color: #eee;
+  margin: .5em 2em .5em 3em;
+  padding: .5em;
+  text-align: left;
+  font-family: monospace;
+}
+
+.sample-box {
+  border: 1px dotted #444;
+  margin: .5em 2em .5em 3em;
+  padding: .5em;
+  text-align: left;
+}
+
+/*
+ * Global styles for PH Web 
+ */
+
+/*
+ * Banner and Main navigation menu
+ */
+
+div.banner {
+  margin: 0;
+  padding: 0;
+  float: left;
+  width: 100%;
+  font-size: 110%;
+  line-height: normal;
+  background: #5089da url( Main-Menu-Background-2.jpg ) repeat-y bottom left;
+  border-bottom: thin #666 solid;
+}
+
+div.banner div.signature span.by {
+  font: italic .7em Didot, serif;
+  padding-right: .6em;
+  text-shadow: .2em .2em .2em #222;
+}
+
+div.banner div.signature {
+  float: right;
+  color: gainsboro;
+  font: 1.1em Didot, serif;
+  margin: 0;
+  padding: 60px .1em 0 0;
+  vertical-align: baseline;
+}
+
+img#banner-logo {
+  float: left;
+  margin: .3em 6em .1em 1em;
+  border: 0;
+}
+
+
+div.banner a#feed_link img {
+    vertical-align: middle;
+  border: 0;
+  float: right;
+  margin: .5em 1em;
+}
+
+div.banner a#contact_me_link img {
+    vertical-align: middle;
+  border: 0;
+  float: right;
+  margin: .5em 1em;
+}
+
+ul.section-menu {
+  float: left;
+  margin: 0 auto;
+  padding: 0;
+  width: 40em;
+  list-style: none;
+}
+
+ul.section-menu li {
+  display:block;
+  float: left;
+  margin: .8em 1px .5em 1px;
+  padding: 1em 0;
+  background: transparent url( 'Button Gradient.png' ) repeat-x center;
+  text-shadow: .1em .1em .2em #444;
+}
+
+
+ul.section-menu li a:visited {
+   color: gainsboro;
+}
+
+ul.section-menu li a {
+   padding: 0 1em;
+   margin: 0;
+   font: bold .9em Lucida Grande, sans-serif;
+   text-decoration: none;
+   color: gainsboro;
+}
+
+ul.section-menu li.first a {
+    padding-left: .6em;
+}
+
+ul.section-menu li.last	 a {
+    padding-left: .6em;
+}
+
+ul.section-menu li a:hover {
+    color: white;
+}
+
+ul.section-menu li#current a {
+    color: #ff8;
+}
+
+div.content {
+  float: left;
+  background: url(Shore.jpg) no-repeat left top;
+  width: 100%;
+  padding: 0;
+  padding-top: 1.3em;
+  padding-bottom: 1.3em;
+  text-align: left;
+  clear: both;
+  margin: 0;
+}
+
+
+p.Cartouche {
+  float: right;
+  width: 15em;
+  margin: 0 2em 2em 3em;
+  background: #5089da;
+  padding: 1em;
+  text-align: center;
+  color: white;
+  font-weight: bold;
+  border: 0;
+  text-indent: 0;
+
+  -moz-border-radius: .5em;
+  -webkit-border-radius: .5em;
+  border-radius: .5em;
+  -webkit-box-shadow: 4px 4px 4px rgba(0, 0, 0, 0.5)  
+}
+
+p.Cartouche a img {
+ border: 0;  
+}
+
+.Copyright {
+  clear: both;
+  text-align: center;
+  font: italic 1em Lucida Grande, sans-serif;
+  color: #444;
+  margin-bottom: .2em;
+}
+
+.License {
+  margin-top: 0;
+  font: italic 1em Lucida Grande, sans-serif;
+  color: #444;
+}
+
+a.discussion_link {
+  text-decoration: none;
+}
+
+a.comment_counter {
+  color: #5089da;
+  padding: 0 1.5em;
+}
+
+h2.document_reference a {
+  text-decoration: none;
+}
+
+span.tag_list {
+  padding-left: 4em;
+  font-weight: normal;
+}
+
+span.tag_list img {
+  vertical-align: middle;
+}
+
+span.tag_list:before {
+ content: '[';
+}
+
+span.tag_list:after {
+ content: ']';
+}
+
+p.read_more, p.read_more a {
+ font-variant : small-caps;
+ font-weight: bold;
+ color: #5089da;
+}
+
+h2 span.post_date {
+  padding-right: 1em;
+  color: #5089da;
+}
+
+div#contact_form {
+  margin: 2em;
+}
+
+div#contact_form label {
+  margin-bottom: 100px;
+  padding: 5em 1em 5em 0;
+}
+
+div#contact_form textarea {
+  margin-top: 1.5em;
+  width: 50em;
+}
+
+div.errorExplanation {
+  background: #fbb;
+  color: red;
+  padding: 1em;
+  margin: 1em;
+  -moz-border-radius: 1em;
+  -webkit-border-radius: 1em;
+  border-radius: 1em;
+}
+
+div.errorExplanation h2 {
+  font-size: 1em;
+  border: 0;
+  color: red;
+}
+
+/*
+ * Round box
+ */
+table.box {
+  table-layout: fixed;
+  border-spacing: 0;
+  border: none;
+}
+
+table.box tr, table.box tr td {
+  padding: 0; 
+  margin: 0;
+  border: none;
+}
+
+table.box tr.top, table.box tr.bottom {
+  height: 30px;
+}
+
+table.box tr.bottom td { /* Fix for Safari who does not pick up height from the <tr> rule. */
+  height: 30px;
+}
+
+table.box tr td.left, table.box tr td.right {
+  width: 30px;
+}
+
+table.box tr.top td.left {
+  background: url('Blue Box Top Left.png') no-repeat top left;
+}
+
+table.box tr.top td.center {
+  background: url('Blue Box Top.png') repeat-x top;
+}
+
+table.box tr.top td.right {
+  background: url('Blue Box Top Right.png') no-repeat top right;
+}
+
+table.box tr.middle td.left {
+  background: url('Blue Box Left.png') repeat-y left;
+}
+
+table.box tr.middle td.center {
+  background: url('Blue Box Center.png') repeat;
+  padding: 0px;
+}
+
+table.box tr.middle td.right {
+  background: url('Blue Box Right.png') repeat-y right;
+}
+
+table.box tr.bottom td.left {
+  background: url('Blue Box Bottom Left.png') no-repeat bottom left;
+}
+
+table.box tr.bottom td.center {
+  background: url('Blue Box Bottom.png') repeat-x bottom;
+}
+
+table.box tr.bottom td.right {
+  background: url('Blue Box Bottom Right.png') no-repeat bottom right;
+}
+
+
+/*
+ * Styles for PH articles.
+ */
+
+div.content {
+  float: left;
+  width: 90%;
+  padding: 0 3em;
+}
+ 
+div.content * {
+  text-align: left;
+}
+
+div.content h1 {
+  padding: 1em 2em 1em 2em;
+  text-align: center;
+  font-size: 1.7em;
+  text-shadow: .1em .1em .2em #666;
+}
+
+div.content table.reference-table {
+  margin-left: 4em;
+}
+div.content table.reference-table tr td, div.content table.reference-table tr th {
+  padding: .3em 1em;
+  text-align: left;
+}
+
+div.Header {
+  margin: .5em 3em 1em 3em;
+  padding: .5em 1em .5em 1em;
+  background: #999;
+  color: #fff;
+  border: thin solid #888;
+  text-align: center;
+}
+
+div.Author {
+  padding: 0;
+  margin: 0;
+  color: #fff;
+  font: italic 1em serif;
+}
+
+div.Author:before {
+  content: "By "
+}
+
+div.LastUpdate:before {
+  content: "Last significant update: "
+}
+
+p.LastUpdate {
+  padding: 0;
+  margin: -.5em 0 1.2em 0;
+  color: #222;
+  font: italic 1em sans-serif;
+  text-align: center;
+}
+
+div.Abstract {
+  margin: .5em 6em;
+  background: #5089da;
+  color: white;
+  text-align: justify;
+  padding: 1.2em 1.2em;
+
+  -moz-border-radius: 1em;
+  -webkit-border-radius: 1em;
+  border-radius: 1em;
+  -webkit-box-shadow: 4px 4px 4px rgba(0, 0, 0, 0.5)
+}
+
+div.Abstract p {
+  margin: 1em 0 0 0;
+  padding: 0;
+}
+
+div.Abstract p.first {
+  margin-top: 0;
+}
+
+div.Audience:before {
+  content: "Audience: ";
+}
+
+div.Audience {
+  margin: .5em 2em;
+  color: #444;
+  font: italic 1em Verdana sans-serif;
+  text-align: justify;
+}
+
+
+h2 {
+  margin-top: 1.5em;
+  margin-left: 0em;
+  font-weight: bold;
+  font-size: 1.2em;  
+  border-bottom: medium #5089da solid;
+  text-shadow: .1em .1em .2em #666;
+}
+
+h3 {
+  font-size: 1.1em;  
+  margin-top: 1em;
+  margin-left: 1em;
+  margin-right: auto;
+  color: #5089da;
+  border-bottom: thin solid #929292;
+  text-shadow: .1em .1em .2em #bbb; 
+}
+
+h4 {
+  font-size: 1em;
+  font-weight: bold;  
+  margin-left: 2em;
+  margin-right: auto;
+  color: #000;
+  border-bottom: thin #5089da solid;
+}  
+
+div#what-s-next {
+  margin: .5em 0em;
+  background: #5089da;
+  color: white;
+  text-align: justify;
+  padding: 1.5em 1em 1em 1em;
+
+  -moz-border-radius: 1em;
+  -webkit-border-radius: 1em;
+  border-radius: 1em;
+  -webkit-box-shadow: 4px 4px 4px rgba(0, 0, 0, 0.5)
+}
+
+div#what-s-next h2 {
+  color: white;
+  padding-top: 0em;
+  padding: 0;
+  margin: 0;
+}
+
+div#what-s-next h3 {
+  color: #060c14;
+  border-color: #305282;
+}
+
+div.side-note {
+  float: right;
+  width: 23em;
+  margin: 0 0 1.2em 2em;
+  padding: 0;
+  
+  background: lightyellow;
+  border: thin solid #a8a86d;
+}
+
+div.side-note .header {
+  margin: .25em 1em;
+  padding: 0 0 .3em 0;
+
+  color: black;
+  border-bottom: solid medium #5089da;
+}
+
+div.side-note p {
+  margin: .5em 1em;
+}
+
+div.side-note .header p {
+  text-align: center;
+  font-weight: bold;
+  margin: 0;
+  padding: 0;
+}
+
+h2, h3 {
+  clear: both;
+}
+
+div.maruku_toc ul {
+  margin: 0 2em;
+  padding: 0;
+}
+
+div.maruku_toc ul li ul {
+  margin: 0 2em;
+  padding: 0;
+}
+
+div.content li {
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+
+blockquote {
+	color: #333;
+	font-style: Italic;
+}
+
+.ruby .normal {}
+.ruby .comment { color: #005; font-style: italic; }
+.ruby .keyword { color: #A00; font-weight: bold; }
+.ruby .method { color: #077; }
+.ruby .class { color: #074; }
+.ruby .module { color: #050; }
+.ruby .punct { color: #447; font-weight: bold; }
+.ruby .symbol { color: #099; }
+.ruby .string { color: #944; background: #FFE; }
+.ruby .char { color: #F07; }
+.ruby .ident { color: #004; }
+.ruby .constant { color: #07F; }
+.ruby .regex { color: #B66; background: #FEF; }
+.ruby .number { color: #F99; }
+.ruby .attribute { color: #7BB; }
+.ruby .global { color: #7FB; }
+.ruby .expr { color: #227; }
+.ruby .escape { color: #277; }

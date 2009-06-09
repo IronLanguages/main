@@ -24,19 +24,24 @@ namespace System.Linq.Expressions.Compiler {
 
         #region Conditional
 
-
-        private void EmitConditionalExpression(Expression expr) {
+        private void EmitConditionalExpression(Expression expr, CompilationFlags flags) {
             ConditionalExpression node = (ConditionalExpression)expr;
             Debug.Assert(node.Test.Type == typeof(bool));
             Label labFalse = _ilg.DefineLabel();
             EmitExpressionAndBranch(false, node.Test, labFalse);
-            EmitExpressionAsType(node.IfTrue, node.Type);
+            EmitExpressionAsType(node.IfTrue, node.Type, flags);
 
-            if (Significant(node.IfFalse)) {
+            if (NotEmpty(node.IfFalse)) {
                 Label labEnd = _ilg.DefineLabel();
-                _ilg.Emit(OpCodes.Br, labEnd);
+                if ((flags & CompilationFlags.EmitAsTailCallMask) == CompilationFlags.EmitAsTail) {
+                    // We know the conditional expression is at the end of the lambda,
+                    // so it is safe to emit Ret here.
+                    _ilg.Emit(OpCodes.Ret);
+                } else {
+                    _ilg.Emit(OpCodes.Br, labEnd);
+                }
                 _ilg.MarkLabel(labFalse);
-                EmitExpressionAsType(node.IfFalse, node.Type);
+                EmitExpressionAsType(node.IfFalse, node.Type, flags);
                 _ilg.MarkLabel(labEnd);
             } else {
                 _ilg.MarkLabel(labFalse);
@@ -44,22 +49,32 @@ namespace System.Linq.Expressions.Compiler {
         }
 
         /// <summary>
-        /// Expression is significant if:
-        ///   * it is not an empty expression
-        /// == or ==
-        ///   * it is an empty expression, and 
-        ///   * it has a valid span, and
-        ///   * we are emitting debug symbols
+        /// returns true if the expression is not empty, otherwise false.
         /// </summary>
-        private static bool Significant(Expression node) {
+        private static bool NotEmpty(Expression node) {
             var empty = node as DefaultExpression;
             if (empty == null || empty.Type != typeof(void)) {
-                // non-empty expression is significant
                 return true;
             }
 
-            // Not a significant expression
             return false;
+        }
+
+        /// <summary>
+        /// returns true if the expression is NOT empty and is not debug info,
+        /// or a block that contains only insignificant expressions.
+        /// </summary>
+        private static bool Significant(Expression node) {
+            var block = node as BlockExpression;
+            if (block != null) {
+                for (int i = 0; i < block.ExpressionCount; i++) {
+                    if (Significant(block.GetExpression(i))) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            return NotEmpty(node) && !(node is DebugInfoExpression);
         }
 
         #endregion
@@ -84,6 +99,8 @@ namespace System.Linq.Expressions.Compiler {
 
 
         private void EmitNullableCoalesce(BinaryExpression b) {
+            Debug.Assert(b.Method == null);
+
             LocalBuilder loc = GetLocal(b.Left.Type);
             Label labIfNull = _ilg.DefineLabel();
             Label labEnd = _ilg.DefineLabel();
@@ -94,19 +111,7 @@ namespace System.Linq.Expressions.Compiler {
             _ilg.Emit(OpCodes.Brfalse, labIfNull);
 
             Type nnLeftType = TypeUtils.GetNonNullableType(b.Left.Type);
-            if (b.Method != null) {
-                ParameterInfo[] parameters = b.Method.GetParametersCached();
-                Debug.Assert(b.Method.IsStatic);
-                Debug.Assert(parameters.Length == 1);
-                Debug.Assert(parameters[0].ParameterType.IsAssignableFrom(b.Left.Type) ||
-                             parameters[0].ParameterType.IsAssignableFrom(nnLeftType));
-                if (!parameters[0].ParameterType.IsAssignableFrom(b.Left.Type)) {
-                    _ilg.Emit(OpCodes.Ldloca, loc);
-                    _ilg.EmitGetValueOrDefault(b.Left.Type);
-                } else
-                    _ilg.Emit(OpCodes.Ldloc, loc);
-                _ilg.Emit(OpCodes.Call, b.Method);
-            } else if (b.Conversion != null) {
+            if (b.Conversion != null) {
                 Debug.Assert(b.Conversion.Parameters.Count == 1);
                 ParameterExpression p = b.Conversion.Parameters[0];
                 Debug.Assert(p.Type.IsAssignableFrom(b.Left.Type) ||
@@ -125,8 +130,7 @@ namespace System.Linq.Expressions.Compiler {
 
                 // emit call to invoke
                 _ilg.Emit(OpCodes.Callvirt, b.Conversion.Type.GetMethod("Invoke"));
-
-            } else if (b.Type != nnLeftType) {
+            } else if (!TypeUtils.AreEquivalent(b.Type, nnLeftType)) {
                 _ilg.Emit(OpCodes.Ldloca, loc);
                 _ilg.EmitGetValueOrDefault(b.Left.Type);
                 _ilg.EmitConvertToType(nnLeftType, b.Type, true);
@@ -139,7 +143,7 @@ namespace System.Linq.Expressions.Compiler {
             _ilg.Emit(OpCodes.Br, labEnd);
             _ilg.MarkLabel(labIfNull);
             EmitExpression(b.Right);
-            if (b.Right.Type != b.Type) {
+            if (!TypeUtils.AreEquivalent(b.Right.Type, b.Type)) {
                 _ilg.EmitConvertToType(b.Right.Type, b.Type, true);
             }
             _ilg.MarkLabel(labEnd);
@@ -188,7 +192,7 @@ namespace System.Linq.Expressions.Compiler {
             _ilg.Emit(OpCodes.Brfalse, labCast);
             _ilg.Emit(OpCodes.Pop);
             EmitExpression(b.Right);
-            if (b.Right.Type != b.Type) {
+            if (!TypeUtils.AreEquivalent(b.Right.Type, b.Type)) {
                 if (b.Right.Type.IsValueType) {
                     _ilg.Emit(OpCodes.Box, b.Right.Type);
                 }
@@ -196,7 +200,7 @@ namespace System.Linq.Expressions.Compiler {
             }
             _ilg.Emit(OpCodes.Br_S, labEnd);
             _ilg.MarkLabel(labCast);
-            if (b.Left.Type != b.Type) {
+            if (!TypeUtils.AreEquivalent(b.Left.Type, b.Type)) {
                 Debug.Assert(!b.Left.Type.IsValueType);
                 _ilg.Emit(OpCodes.Castclass, b.Type);
             }
@@ -264,7 +268,7 @@ namespace System.Linq.Expressions.Compiler {
             FreeLocal(locRight);
         }
 
-        private void EmitMethodAndAlso(BinaryExpression b) {
+        private void EmitMethodAndAlso(BinaryExpression b, CompilationFlags flags) {
             Label labEnd = _ilg.DefineLabel();
             EmitExpression(b.Left);
             _ilg.Emit(OpCodes.Dup);
@@ -285,6 +289,9 @@ namespace System.Linq.Expressions.Compiler {
             Debug.Assert(b.Method.IsStatic);
             _ilg.Emit(OpCodes.Ldloc, locLeft);
             _ilg.Emit(OpCodes.Ldloc, locRight);
+            if ((flags & CompilationFlags.EmitAsTailCallMask) == CompilationFlags.EmitAsTail) {
+                _ilg.Emit(OpCodes.Tailcall);
+            }
             _ilg.Emit(OpCodes.Call, b.Method);
             FreeLocal(locLeft);
             FreeLocal(locRight);
@@ -302,11 +309,11 @@ namespace System.Linq.Expressions.Compiler {
             _ilg.MarkLabel(end);
         }
 
-        private void EmitAndAlsoBinaryExpression(Expression expr) {
+        private void EmitAndAlsoBinaryExpression(Expression expr, CompilationFlags flags) {
             BinaryExpression b = (BinaryExpression)expr;
 
             if (b.Method != null && !b.IsLiftedLogical) {
-                EmitMethodAndAlso(b);
+                EmitMethodAndAlso(b, flags);
             } else if (b.Left.Type == typeof(bool?)) {
                 EmitLiftedAndAlso(b);
             } else if (b.IsLiftedLogical) {
@@ -388,7 +395,7 @@ namespace System.Linq.Expressions.Compiler {
             _ilg.MarkLabel(end);
         }
 
-        private void EmitMethodOrElse(BinaryExpression b) {
+        private void EmitMethodOrElse(BinaryExpression b, CompilationFlags flags) {
             Label labEnd = _ilg.DefineLabel();
             EmitExpression(b.Left);
             _ilg.Emit(OpCodes.Dup);
@@ -409,17 +416,20 @@ namespace System.Linq.Expressions.Compiler {
             Debug.Assert(b.Method.IsStatic);
             _ilg.Emit(OpCodes.Ldloc, locLeft);
             _ilg.Emit(OpCodes.Ldloc, locRight);
+            if ((flags & CompilationFlags.EmitAsTailCallMask) == CompilationFlags.EmitAsTail) {
+                _ilg.Emit(OpCodes.Tailcall);
+            }
             _ilg.Emit(OpCodes.Call, b.Method);
             FreeLocal(locLeft);
             FreeLocal(locRight);
             _ilg.MarkLabel(labEnd);
         }
 
-        private void EmitOrElseBinaryExpression(Expression expr) {
+        private void EmitOrElseBinaryExpression(Expression expr, CompilationFlags flags) {
             BinaryExpression b = (BinaryExpression)expr;
 
             if (b.Method != null && !b.IsLiftedLogical) {
-                EmitMethodOrElse(b);
+                EmitMethodOrElse(b, flags);
             } else if (b.Left.Type == typeof(bool?)) {
                 EmitLiftedOrElse(b);
             } else if (b.IsLiftedLogical) {
@@ -435,7 +445,7 @@ namespace System.Linq.Expressions.Compiler {
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1800:DoNotCastUnnecessarily")]
         private void EmitExpressionAndBranch(bool branchValue, Expression node, Label label) {
-            ExpressionStart startEmitted = EmitExpressionStart(node);
+            CompilationFlags startEmitted = EmitExpressionStart(node);
             try {
                 if (node.Type == typeof(bool)) {
                     switch (node.NodeType) {
@@ -452,7 +462,7 @@ namespace System.Linq.Expressions.Compiler {
                             return;
                     }
                 }
-                EmitExpression(node, false);
+                EmitExpression(node, CompilationFlags.EmitAsNoTail | CompilationFlags.EmitNoExpressionStart);
                 EmitBranchOp(branchValue, label);
             } finally {
                 EmitExpressionEnd(startEmitted);
@@ -471,7 +481,7 @@ namespace System.Linq.Expressions.Compiler {
             bool branchWhenEqual = branch == (node.NodeType == ExpressionType.Equal);
 
             if (node.Method != null) {
-                EmitBinaryMethod(node);
+                EmitBinaryMethod(node, CompilationFlags.EmitAsNoTail);
                 // EmitBinaryMethod takes into account the Equal/NotEqual
                 // node kind, so use the original branch value
                 EmitBranchOp(branch, label);
@@ -481,7 +491,7 @@ namespace System.Linq.Expressions.Compiler {
                     _ilg.EmitHasValue(node.Right.Type);
                 } else {
                     Debug.Assert(!node.Right.Type.IsValueType);
-                    EmitExpression(node.Right);
+                    EmitExpression(GetEqualityOperand(node.Right));
                 }
                 EmitBranchOp(!branchWhenEqual, label);
             } else if (ConstantCheck.IsNull(node.Right)) {
@@ -490,7 +500,7 @@ namespace System.Linq.Expressions.Compiler {
                     _ilg.EmitHasValue(node.Left.Type);
                 } else {
                     Debug.Assert(!node.Left.Type.IsValueType);
-                    EmitExpression(node.Left);
+                    EmitExpression(GetEqualityOperand(node.Left));
                 }
                 EmitBranchOp(!branchWhenEqual, label);
             } else if (TypeUtils.IsNullableType(node.Left.Type) || TypeUtils.IsNullableType(node.Right.Type)) {
@@ -499,8 +509,8 @@ namespace System.Linq.Expressions.Compiler {
                 // node kind, so use the original branch value
                 EmitBranchOp(branch, label);
             } else {
-                EmitExpression(node.Left);
-                EmitExpression(node.Right);
+                EmitExpression(GetEqualityOperand(node.Left));
+                EmitExpression(GetEqualityOperand(node.Right));
                 if (branchWhenEqual) {
                     _ilg.Emit(OpCodes.Beq, label);
                 } else {
@@ -508,6 +518,20 @@ namespace System.Linq.Expressions.Compiler {
                     _ilg.Emit(OpCodes.Brfalse, label);
                 }
             }
+        }
+
+        // For optimized Equal/NotEqual, we can eliminate reference 
+        // conversions. IL allows comparing managed pointers regardless of
+        // type. See ECMA-335 "Binary Comparison or Branch Operations", in
+        // Partition III, Section 1.5 Table 4.
+        private static Expression GetEqualityOperand(Expression expression) {
+            if (expression.NodeType == ExpressionType.Convert) {
+                var convert = (UnaryExpression)expression;
+                if (TypeUtils.AreReferenceAssignable(convert.Type, convert.Operand.Type)) {
+                    return convert.Operand;
+                }
+            }
+            return expression;
         }
 
         private void EmitBranchLogical(bool branch, BinaryExpression node, Label label) {

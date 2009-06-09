@@ -1,2 +1,0 @@
-critical:Calling a method fails with both lambda and block argument
-fails:Calling a method with range in () should give higher priority to range

@@ -31,15 +31,15 @@ namespace Microsoft.Scripting.Actions {
 
     public partial class DefaultBinder : ActionBinder {
         public DynamicMetaObject DoOperation(string operation, params DynamicMetaObject[] args) {
-            return DoOperation(operation, Ast.Constant(null, typeof(CodeContext)), args);
+            return DoOperation(operation, new DefaultOverloadResolverFactory(this), args);
         }
 
-        public DynamicMetaObject DoOperation(string operation, Expression codeContext, params DynamicMetaObject[] args) {
+        public DynamicMetaObject DoOperation(string operation, OverloadResolverFactory resolverFactory, params DynamicMetaObject[] args) {
             ContractUtils.RequiresNotNull(operation, "operation");
-            ContractUtils.RequiresNotNull(codeContext, "codeContext");
+            ContractUtils.RequiresNotNull(resolverFactory, "resolverFactory");
             ContractUtils.RequiresNotNullItems(args, "args");
 
-            return MakeGeneralOperatorRule(operation, codeContext, args);   // Then try comparison / other ExpressionType
+            return MakeGeneralOperatorRule(operation, resolverFactory, args);   // Then try comparison / other ExpressionType
         }
 
         private enum IndexType {
@@ -47,28 +47,36 @@ namespace Microsoft.Scripting.Actions {
             Set
         }
 
-        /// <summary>
-        /// Creates the MetaObject for indexing directly into arrays or indexing into objects which have
-        /// default members.  Returns null if we're not an indexing operation.
-        /// </summary>
         public DynamicMetaObject GetIndex(DynamicMetaObject[] args) {
-            if (args[0].GetLimitType().IsArray) {
-                return MakeArrayIndexRule(IndexType.Get, args);
-            }
-
-            return MakeMethodIndexRule(IndexType.Get, args);
+            return GetIndex(new DefaultOverloadResolverFactory(this), args);
         }
 
         /// <summary>
         /// Creates the MetaObject for indexing directly into arrays or indexing into objects which have
         /// default members.  Returns null if we're not an indexing operation.
         /// </summary>
+        public DynamicMetaObject GetIndex(OverloadResolverFactory resolverFactory, DynamicMetaObject[] args) {
+            if (args[0].GetLimitType().IsArray) {
+                return MakeArrayIndexRule(IndexType.Get, args);
+            }
+
+            return MakeMethodIndexRule(IndexType.Get, resolverFactory, args);
+        }
+
         public DynamicMetaObject SetIndex(DynamicMetaObject[] args) {
+            return SetIndex(new DefaultOverloadResolverFactory(this), args);
+        }
+
+        /// <summary>
+        /// Creates the MetaObject for indexing directly into arrays or indexing into objects which have
+        /// default members.  Returns null if we're not an indexing operation.
+        /// </summary>
+        public DynamicMetaObject SetIndex(OverloadResolverFactory resolverFactory, DynamicMetaObject[] args) {
             if (args[0].LimitType.IsArray) {
                 return MakeArrayIndexRule(IndexType.Set, args);
             }
 
-            return MakeMethodIndexRule(IndexType.Set, args);
+            return MakeMethodIndexRule(IndexType.Set, resolverFactory, args);
         }
 
         public DynamicMetaObject GetDocumentation(DynamicMetaObject target) {
@@ -82,17 +90,13 @@ namespace Microsoft.Scripting.Actions {
             }
 
             return new DynamicMetaObject(
-                Ast.Constant(documentation),
+                AstUtils.Constant(documentation),
                 restrictions
             );
         }
 
-        public DynamicMetaObject GetMemberNames(DynamicMetaObject target, Expression codeContext) {
+        public DynamicMetaObject GetMemberNames(DynamicMetaObject target) {
             BindingRestrictions restrictions = BindingRestrictions.GetTypeRestriction(target.Expression, target.LimitType);
-
-            if (typeof(IMembersList).IsAssignableFrom(target.LimitType)) {
-                return MakeIMembersListRule(codeContext, target);
-            }
 
             MemberInfo[] members = target.LimitType.GetMembers();
             Dictionary<string, string> mems = new Dictionary<string, string>();
@@ -104,7 +108,7 @@ namespace Microsoft.Scripting.Actions {
             mems.Keys.CopyTo(res, 0);
 
             return new DynamicMetaObject(
-                Ast.Constant(res),
+                AstUtils.Constant(res),
                 restrictions
             );
         }
@@ -128,7 +132,7 @@ namespace Microsoft.Scripting.Actions {
             }
 
             return new DynamicMetaObject(
-                Ast.Constant(callable),
+                AstUtils.Constant(callable),
                 restrictions
             );
         }
@@ -138,14 +142,14 @@ namespace Microsoft.Scripting.Actions {
         /// ExpressionType.  If the operation cannot be completed a MetaObject which indicates an
         /// error will be returned.
         /// </summary>
-        private DynamicMetaObject MakeGeneralOperatorRule(string operation, Expression codeContext, DynamicMetaObject[] args) {
+        private DynamicMetaObject MakeGeneralOperatorRule(string operation, OverloadResolverFactory resolverFactory, DynamicMetaObject[] args) {
             OperatorInfo info = OperatorInfo.GetOperatorInfo(operation);
             DynamicMetaObject res;
 
             if (CompilerHelpers.IsComparisonOperator(info.Operator)) {
-                res = MakeComparisonRule(info, codeContext, args);
+                res = MakeComparisonRule(info, resolverFactory, args);
             } else {
-                res = MakeOperatorRule(info, codeContext, args);
+                res = MakeOperatorRule(info, resolverFactory, args);
             }
 
             return res;
@@ -153,22 +157,22 @@ namespace Microsoft.Scripting.Actions {
 
         #region Comparison operator
 
-        private DynamicMetaObject MakeComparisonRule(OperatorInfo info, Expression codeContext, DynamicMetaObject[] args) {
+        private DynamicMetaObject MakeComparisonRule(OperatorInfo info, OverloadResolverFactory resolverFactory, DynamicMetaObject[] args) {
             return
-                TryComparisonMethod(info, codeContext, args[0], args) ??   // check the first type if it has an applicable method
-                TryComparisonMethod(info, codeContext, args[0], args) ??   // then check the second type
-                TryNumericComparison(info, args) ??           // try Compare: cmp(x,y) (>, <, >=, <=, ==, !=) 0
-                TryInvertedComparison(info, args[0], args) ?? // try inverting the operator & result (e.g. if looking for Equals try NotEquals, LessThan for GreaterThan)...
-                TryInvertedComparison(info, args[0], args) ?? // inverted binding on the 2nd type
+                TryComparisonMethod(info, resolverFactory, args[0], args) ??   // check the first type if it has an applicable method
+                TryComparisonMethod(info, resolverFactory, args[0], args) ??   // then check the second type
+                TryNumericComparison(info, resolverFactory, args) ??           // try Compare: cmp(x,y) (>, <, >=, <=, ==, !=) 0
+                TryInvertedComparison(info, resolverFactory, args[0], args) ?? // try inverting the operator & result (e.g. if looking for Equals try NotEquals, LessThan for GreaterThan)...
+                TryInvertedComparison(info, resolverFactory, args[0], args) ?? // inverted binding on the 2nd type
                 TryNullComparisonRule(args) ??                // see if we're comparing to null w/ an object ref or a Nullable<T>
                 TryPrimitiveCompare(info, args) ??            // see if this is a primitive type where we're comparing the two values.
                 MakeOperatorError(info, args);                // no comparisons are possible            
         }
 
-        private DynamicMetaObject TryComparisonMethod(OperatorInfo info, Expression codeContext, DynamicMetaObject target, DynamicMetaObject[] args) {
+        private DynamicMetaObject TryComparisonMethod(OperatorInfo info, OverloadResolverFactory resolverFactory, DynamicMetaObject target, DynamicMetaObject[] args) {
             MethodInfo[] targets = GetApplicableMembers(target.GetLimitType(), info);
             if (targets.Length > 0) {
-                return TryMakeBindingTarget(targets, args, codeContext, BindingRestrictions.Empty);
+                return TryMakeBindingTarget(resolverFactory, targets, args, BindingRestrictions.Empty);
             }
 
             return null;
@@ -179,14 +183,14 @@ namespace Microsoft.Scripting.Actions {
                 Ast.Throw(
                     AstUtils.ComplexCallHelper(
                         typeof(BinderOps).GetMethod("BadArgumentsForOperation"),
-                        ArrayUtils.Insert((Expression)Ast.Constant(info.Operator), DynamicUtils.GetExpressions(args))
+                        ArrayUtils.Insert((Expression)AstUtils.Constant(info.Operator), DynamicUtils.GetExpressions(args))
                     )
                 ),
                 BindingRestrictions.Combine(args)
             );
         }
 
-        private DynamicMetaObject TryNumericComparison(OperatorInfo info, DynamicMetaObject[] args) {
+        private DynamicMetaObject TryNumericComparison(OperatorInfo info, OverloadResolverFactory resolverFactory, DynamicMetaObject[] args) {
             MethodInfo[] targets = FilterNonMethods(
                 args[0].GetLimitType(),
                 GetMember(OldDoOperationAction.Make(this, OperatorInfo.ExpressionTypeToOperator(info.Operator)),
@@ -195,22 +199,22 @@ namespace Microsoft.Scripting.Actions {
             );
 
             if (targets.Length > 0) {
-                MethodBinder mb = MethodBinder.MakeBinder(this, targets[0].Name, targets);
-                BindingTarget target = mb.MakeBindingTarget(CallTypes.None, args);
+                var resolver = resolverFactory.CreateOverloadResolver(args, new CallSignature(args.Length), CallTypes.None);
+                BindingTarget target = resolver.ResolveOverload(targets[0].Name, targets, NarrowingLevel.None, NarrowingLevel.All);
                 if (target.Success) {
                     Expression call = AstUtils.Convert(target.MakeExpression(), typeof(int));
                     switch (info.Operator) {
-                        case ExpressionType.GreaterThan: call = Ast.GreaterThan(call, Ast.Constant(0)); break;
-                        case ExpressionType.LessThan: call = Ast.LessThan(call, Ast.Constant(0)); break;
-                        case ExpressionType.GreaterThanOrEqual: call = Ast.GreaterThanOrEqual(call, Ast.Constant(0)); break;
-                        case ExpressionType.LessThanOrEqual: call = Ast.LessThanOrEqual(call, Ast.Constant(0)); break;
-                        case ExpressionType.Equal: call = Ast.Equal(call, Ast.Constant(0)); break;
-                        case ExpressionType.NotEqual: call = Ast.NotEqual(call, Ast.Constant(0)); break;
+                        case ExpressionType.GreaterThan: call = Ast.GreaterThan(call, AstUtils.Constant(0)); break;
+                        case ExpressionType.LessThan: call = Ast.LessThan(call, AstUtils.Constant(0)); break;
+                        case ExpressionType.GreaterThanOrEqual: call = Ast.GreaterThanOrEqual(call, AstUtils.Constant(0)); break;
+                        case ExpressionType.LessThanOrEqual: call = Ast.LessThanOrEqual(call, AstUtils.Constant(0)); break;
+                        case ExpressionType.Equal: call = Ast.Equal(call, AstUtils.Constant(0)); break;
+                        case ExpressionType.NotEqual: call = Ast.NotEqual(call, AstUtils.Constant(0)); break;
                     }
 
                     return new DynamicMetaObject(
                         call,
-                        BindingRestrictions.Combine(target.RestrictedArguments)
+                        target.RestrictedArguments.GetAllRestrictions()
                     );
                 }
             }
@@ -218,7 +222,7 @@ namespace Microsoft.Scripting.Actions {
             return null;
         }
 
-        private DynamicMetaObject TryInvertedComparison(OperatorInfo info, DynamicMetaObject target, DynamicMetaObject[] args) {
+        private DynamicMetaObject TryInvertedComparison(OperatorInfo info, OverloadResolverFactory resolverFactory, DynamicMetaObject target, DynamicMetaObject[] args) {
             ExpressionType revOp = GetInvertedOperator(info.Operator);
             OperatorInfo revInfo = OperatorInfo.GetOperatorInfo(revOp);
             Debug.Assert(revInfo != null);
@@ -226,7 +230,7 @@ namespace Microsoft.Scripting.Actions {
             // try the 1st type's opposite function result negated 
             MethodBase[] targets = GetApplicableMembers(target.GetLimitType(), revInfo);
             if (targets.Length > 0) {
-                return TryMakeInvertedBindingTarget(targets, args);
+                return TryMakeInvertedBindingTarget(resolverFactory, targets, args);
             }
 
             return null;
@@ -243,7 +247,7 @@ namespace Microsoft.Scripting.Actions {
             if (args[0].GetLimitType() == typeof(DynamicNull)) {
                 if (!otherType.IsValueType) {
                     return new DynamicMetaObject(
-                        Ast.Equal(args[0].Expression, Ast.Constant(null)),
+                        Ast.Equal(args[0].Expression, AstUtils.Constant(null)),
                         restrictions
                     );
                 } else if (otherType.GetGenericTypeDefinition() == typeof(Nullable<>)) {
@@ -255,7 +259,7 @@ namespace Microsoft.Scripting.Actions {
             } else if (otherType == typeof(DynamicNull)) {
                 if (!args[0].GetLimitType().IsValueType) {
                     return new DynamicMetaObject(
-                        Ast.Equal(args[0].Expression, Ast.Constant(null)),
+                        Ast.Equal(args[0].Expression, AstUtils.Constant(null)),
                         restrictions
                     );
                 } else if (args[0].GetLimitType().GetGenericTypeDefinition() == typeof(Nullable<>)) {
@@ -300,12 +304,12 @@ namespace Microsoft.Scripting.Actions {
         #region Operator Rule
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")] // TODO: fix
-        private DynamicMetaObject MakeOperatorRule(OperatorInfo info, Expression codeContext, DynamicMetaObject[] args) {
+        private DynamicMetaObject MakeOperatorRule(OperatorInfo info, OverloadResolverFactory resolverFactory, DynamicMetaObject[] args) {
             return
-                TryForwardOperator(info, codeContext, args) ??
-                TryReverseOperator(info, codeContext, args) ??
+                TryForwardOperator(info, resolverFactory, args) ??
+                TryReverseOperator(info, resolverFactory, args) ??
                 TryPrimitiveOperator(info, args) ??
-                TryMakeDefaultUnaryRule(info, codeContext, args) ??
+                TryMakeDefaultUnaryRule(info, resolverFactory, args) ??
                 MakeOperatorError(info, args);
         }
 
@@ -341,30 +345,30 @@ namespace Microsoft.Scripting.Actions {
             return null;
         }
 
-        private DynamicMetaObject TryForwardOperator(OperatorInfo info, Expression codeContext, DynamicMetaObject[] args) {
+        private DynamicMetaObject TryForwardOperator(OperatorInfo info, OverloadResolverFactory resolverFactory, DynamicMetaObject[] args) {
             MethodInfo[] targets = GetApplicableMembers(args[0].GetLimitType(), info);
             BindingRestrictions restrictions = BindingRestrictions.Empty;
 
             if (targets.Length > 0) {
-                return TryMakeBindingTarget(targets, args, codeContext, restrictions);
+                return TryMakeBindingTarget(resolverFactory, targets, args, restrictions);
             }
 
             return null;
         }
 
-        private DynamicMetaObject TryReverseOperator(OperatorInfo info, Expression codeContext, DynamicMetaObject[] args) {
+        private DynamicMetaObject TryReverseOperator(OperatorInfo info, OverloadResolverFactory resolverFactory, DynamicMetaObject[] args) {
             // we need a special conversion for the return type on MemberNames
             if (args.Length > 0) {
                 MethodInfo[] targets = GetApplicableMembers(args[0].LimitType, info);
                 if (targets.Length > 0) {
-                    return TryMakeBindingTarget(targets, args, codeContext, BindingRestrictions.Empty);
+                    return TryMakeBindingTarget(resolverFactory, targets, args, BindingRestrictions.Empty);
                 }
             }
 
             return null;
         }
 
-        private static DynamicMetaObject TryMakeDefaultUnaryRule(OperatorInfo info, Expression codeContext, DynamicMetaObject[] args) {
+        private static DynamicMetaObject TryMakeDefaultUnaryRule(OperatorInfo info, OverloadResolverFactory resolverFactory, DynamicMetaObject[] args) {
             if (args.Length == 1) {
                 BindingRestrictions restrictions = BindingRestrictionsHelpers.GetRuntimeTypeRestriction(args[0].Expression, args[0].GetLimitType()).Merge(BindingRestrictions.Combine(args));
                 switch (info.Operator) {
@@ -394,20 +398,6 @@ namespace Microsoft.Scripting.Actions {
             return null;
         }
 
-        private static DynamicMetaObject MakeIMembersListRule(Expression codeContext, DynamicMetaObject target) {
-            return new DynamicMetaObject(
-                Ast.Call(
-                    typeof(BinderOps).GetMethod("GetStringMembers"),
-                    Ast.Call(
-                        AstUtils.Convert(target.Expression, typeof(IMembersList)),
-                        typeof(IMembersList).GetMethod("GetMemberNames"),
-                        codeContext
-                    )
-                ),
-                BindingRestrictionsHelpers.GetRuntimeTypeRestriction(target.Expression, target.GetLimitType()).Merge(target.Restrictions)
-            );
-        }
-
         private static DynamicMetaObject MakeCallSignatureResult(MethodBase[] methods, DynamicMetaObject target) {
             List<string> arrres = new List<string>();
 
@@ -429,7 +419,7 @@ namespace Microsoft.Scripting.Actions {
             }
 
             return new DynamicMetaObject(
-                Ast.Constant(arrres.ToArray()),
+                AstUtils.Constant(arrres.ToArray()),
                 BindingRestrictionsHelpers.GetRuntimeTypeRestriction(target.Expression, target.GetLimitType()).Merge(target.Restrictions)
             );
         }
@@ -442,14 +432,9 @@ namespace Microsoft.Scripting.Actions {
             return args[index].HasValue ? args[index].GetLimitType() : args[index].Expression.Type;
         }
 
-        private DynamicMetaObject MakeMethodIndexRule(IndexType oper, DynamicMetaObject[] args) {
+        private DynamicMetaObject MakeMethodIndexRule(IndexType oper, OverloadResolverFactory resolverFactory, DynamicMetaObject[] args) {
             MethodInfo[] defaults = GetMethodsFromDefaults(args[0].GetLimitType().GetDefaultMembers(), oper);
             if (defaults.Length != 0) {
-                MethodBinder binder = MethodBinder.MakeBinder(
-                    this,
-                    oper == IndexType.Get ? "get_Item" : "set_Item",
-                    defaults);
-
                 DynamicMetaObject[] selfWithArgs = args;
                 ParameterExpression arg2 = null;
 
@@ -465,15 +450,15 @@ namespace Microsoft.Scripting.Actions {
                     );
                 }
 
-                BindingTarget target = binder.MakeBindingTarget(CallTypes.ImplicitInstance, selfWithArgs);
-
                 BindingRestrictions restrictions = BindingRestrictions.Combine(args);
 
+                var resolver = resolverFactory.CreateOverloadResolver(selfWithArgs, new CallSignature(selfWithArgs.Length), CallTypes.ImplicitInstance);
+                BindingTarget target = resolver.ResolveOverload(oper == IndexType.Get ? "get_Item" : "set_Item", defaults, NarrowingLevel.None, NarrowingLevel.All);
                 if (target.Success) {
                     if (oper == IndexType.Get) {
                         return new DynamicMetaObject(
                             target.MakeExpression(),
-                            restrictions.Merge(BindingRestrictions.Combine(target.RestrictedArguments))
+                            restrictions.Merge(target.RestrictedArguments.GetAllRestrictions())
                         );
                     } else {
                         return new DynamicMetaObject(
@@ -482,14 +467,15 @@ namespace Microsoft.Scripting.Actions {
                                 target.MakeExpression(),
                                 arg2
                             ),
-                            restrictions.Merge(BindingRestrictions.Combine(target.RestrictedArguments))
+                            restrictions.Merge(target.RestrictedArguments.GetAllRestrictions())
                         );
                     }
                 }
 
                 return MakeError(
-                    MakeInvalidParametersError(target),
-                    restrictions
+                    resolver.MakeInvalidParametersError(target),
+                    restrictions,
+                    typeof(object)
                 );
             }
 
@@ -544,7 +530,7 @@ namespace Microsoft.Scripting.Actions {
             // if we received methods from both declaring type & base types we need to filter them
             Dictionary<MethodSignatureInfo, MethodInfo> dict = new Dictionary<MethodSignatureInfo, MethodInfo>();
             foreach (MethodInfo mb in methods) {
-                MethodSignatureInfo args = new MethodSignatureInfo(mb.IsStatic, mb.GetParameters());
+                MethodSignatureInfo args = new MethodSignatureInfo(mb);
                 MethodInfo other;
 
                 if (dict.TryGetValue(args, out other)) {
@@ -564,29 +550,26 @@ namespace Microsoft.Scripting.Actions {
 
         #region Common helpers
 
-        private DynamicMetaObject TryMakeBindingTarget(MethodInfo[] targets, DynamicMetaObject[] args, Expression codeContext, BindingRestrictions restrictions) {
-            MethodBinder mb = MethodBinder.MakeBinder(this, targets[0].Name, targets);
-
-            BindingTarget target = mb.MakeBindingTarget(CallTypes.None, args);
+        private DynamicMetaObject TryMakeBindingTarget(OverloadResolverFactory resolverFactory, MethodInfo[] targets, DynamicMetaObject[] args, BindingRestrictions restrictions) {
+            var resolver = resolverFactory.CreateOverloadResolver(args, new CallSignature(args.Length), CallTypes.None);
+            BindingTarget target = resolver.ResolveOverload(targets[0].Name, targets, NarrowingLevel.None, NarrowingLevel.All);
             if (target.Success) {
                 return new DynamicMetaObject(
-                    target.MakeExpression(new ParameterBinderWithCodeContext(this, codeContext)),
-                    restrictions.Merge(BindingRestrictions.Combine(target.RestrictedArguments))
+                    target.MakeExpression(),
+                    restrictions.Merge(target.RestrictedArguments.GetAllRestrictions())
                 );
             }
 
             return null;
         }
 
-        private DynamicMetaObject TryMakeInvertedBindingTarget(MethodBase[] targets, DynamicMetaObject[] args) {
-            MethodBinder mb = MethodBinder.MakeBinder(this, targets[0].Name, targets);
-            DynamicMetaObject[] selfArgs = args;
-            BindingTarget target = mb.MakeBindingTarget(CallTypes.None, selfArgs);
-
+        private DynamicMetaObject TryMakeInvertedBindingTarget(OverloadResolverFactory resolverFactory, MethodBase[] targets, DynamicMetaObject[] args) {
+            var resolver = resolverFactory.CreateOverloadResolver(args, new CallSignature(args.Length), CallTypes.None);
+            BindingTarget target = resolver.ResolveOverload(targets[0].Name, targets, NarrowingLevel.None, NarrowingLevel.All);
             if (target.Success) {
                 return new DynamicMetaObject(
                     Ast.Not(target.MakeExpression()),
-                    BindingRestrictions.Combine(target.RestrictedArguments)
+                    target.RestrictedArguments.GetAllRestrictions()
                 );
             }
 
@@ -609,7 +592,7 @@ namespace Microsoft.Scripting.Actions {
             Assert.NotNull(expression, type);
 
             if (expression.Type != type) {
-                return ConvertExpression(expression, type, ConversionResultKind.ExplicitCast, Ast.Constant(null, typeof(CodeContext)));
+                return ConvertExpression(expression, type, ConversionResultKind.ExplicitCast, AstUtils.Constant(null, typeof(CodeContext)));
             }
             return expression;
         }
@@ -628,58 +611,6 @@ namespace Microsoft.Scripting.Actions {
             return FilterNonMethods(t, members);
         }
         
-        private static BindingRestrictions GetFallbackRestrictions(Type t, EventTracker et, DynamicMetaObject self) {
-            if (t == typeof(EventTracker)) {
-                //
-                // Test Generated:
-                //   BinderOps.GetEventHandlerType(((EventTracker)args[0]).Event) == et.Event.EventHandlerType
-                //
-                return BindingRestrictions.GetExpressionRestriction(
-                    Ast.Equal(
-                        Ast.Call(
-                            typeof(BinderOps).GetMethod("GetEventHandlerType"),
-                            Ast.Property(
-                                Ast.Convert(
-                                    self.Expression,
-                                    typeof(EventTracker)
-                                ),
-                                typeof(EventTracker).GetProperty("Event")
-                            )
-                        ),
-                        Ast.Constant(et.Event.EventHandlerType)
-                    )
-                );
-            } else if (t == typeof(BoundMemberTracker)) {
-                //
-                // Test Generated:
-                //   BinderOps.GetEventHandlerType(((EventTracker)((BoundMemberTracker)args[0]).BountTo).Event) == et.Event.EventHandlerType
-                //
-                return BindingRestrictions.GetExpressionRestriction(
-                    Ast.Equal(
-                        Ast.Call(
-                            typeof(BinderOps).GetMethod("GetEventHandlerType"),
-                            Ast.Property(
-                                Ast.Convert(
-                                    Ast.Property(
-                                        Ast.Convert(
-                                            self.Expression,
-                                            typeof(BoundMemberTracker)
-                                        ),
-                                        typeof(BoundMemberTracker).GetProperty("BoundTo")
-                                    ),
-                                    typeof(EventTracker)
-                                ),
-                                typeof(EventTracker).GetProperty("Event")
-                            )
-                        ),
-                        Ast.Constant(et.Event.EventHandlerType)
-                    )
-                );
-            }
-
-            return BindingRestrictions.Empty;
-        }
-
         private static MethodInfo[] FilterNonMethods(Type t, MemberGroup members) {
             Assert.NotNull(t, members);
 

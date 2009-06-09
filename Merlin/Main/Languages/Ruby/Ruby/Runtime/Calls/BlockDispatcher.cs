@@ -22,10 +22,12 @@ using Microsoft.Scripting.Utils;
 using System.Linq.Expressions;
 using System.Reflection;
 using IronRuby.Builtins;
+using System.Collections.ObjectModel;
 
 namespace IronRuby.Runtime.Calls {
     using Ast = System.Linq.Expressions.Expression;
     using AstFactory = IronRuby.Compiler.Ast.AstFactory;
+    using System.Collections;
 
     [Flags]
     public enum BlockSignatureAttributes {
@@ -38,7 +40,7 @@ namespace IronRuby.Runtime.Calls {
         // {|...,*|}
         HasUnsplatParameter = 2,
 
-        // bits 31..3 store arity
+        // bits 31..3 store arity (might be different from formal parameter count)
     }
 
     public delegate object BlockCallTarget0(BlockParam param, object self);
@@ -62,6 +64,10 @@ namespace IronRuby.Runtime.Calls {
 
         public int Arity {
             get { return ((int)_attributesAndArity >> 2); }
+        }
+
+        internal static BlockSignatureAttributes MakeAttributes(BlockSignatureAttributes attributes, int arity) {
+            return attributes | (BlockSignatureAttributes)(arity << 2);
         }
 
         // Doesn't include unsplat parameter. 
@@ -89,37 +95,38 @@ namespace IronRuby.Runtime.Calls {
         internal const int MaxBlockArity = 4;
         internal const int HiddenParameterCount = 2;
 
-        internal BlockDispatcher(BlockSignatureAttributes attributes) {
-            _attributesAndArity = attributes;
+        internal BlockDispatcher(BlockSignatureAttributes attributesAndArity) {
+            _attributesAndArity = attributesAndArity;
         }
 
-        internal static BlockDispatcher/*!*/ Create(Delegate/*!*/ method, int parameterCount, BlockSignatureAttributes attributes) {
-            if ((attributes & BlockSignatureAttributes.HasUnsplatParameter) == 0) {
+        internal static BlockDispatcher/*!*/ Create(Delegate/*!*/ method, int parameterCount, BlockSignatureAttributes attributesAndArity) {
+            if ((attributesAndArity & BlockSignatureAttributes.HasUnsplatParameter) == 0) {
                 switch (parameterCount) {
-                    case 0: return new BlockDispatcher0((BlockCallTarget0)method, attributes);
-                    case 1: return new BlockDispatcher1((BlockCallTarget1)method, attributes);
-                    case 2: return new BlockDispatcher2((BlockCallTarget2)method, attributes);
-                    case 3: return new BlockDispatcher3((BlockCallTarget3)method, attributes);
-                    case 4: return new BlockDispatcher4((BlockCallTarget4)method, attributes);
-                    default: return new BlockDispatcherN((BlockCallTargetN)method, parameterCount, attributes);
+                    case 0: return new BlockDispatcher0((BlockCallTarget0)method, attributesAndArity);
+                    case 1: return new BlockDispatcher1((BlockCallTarget1)method, attributesAndArity);
+                    case 2: return new BlockDispatcher2((BlockCallTarget2)method, attributesAndArity);
+                    case 3: return new BlockDispatcher3((BlockCallTarget3)method, attributesAndArity);
+                    case 4: return new BlockDispatcher4((BlockCallTarget4)method, attributesAndArity);
+                    default: return new BlockDispatcherN((BlockCallTargetN)method, parameterCount, attributesAndArity);
                 }
             }
 
-            return new BlockDispatcherUnsplatN((BlockCallTargetUnsplatN)method, parameterCount, attributes);
+            return new BlockDispatcherUnsplatN((BlockCallTargetUnsplatN)method, parameterCount, attributesAndArity);
         }
 
-        internal static Type/*!*/ GetDelegateType(int parameterCount, BlockSignatureAttributes attributes) {
+        internal static LambdaExpression/*!*/ CreateLambda(Expression body, string name, ReadOnlyCollection<ParameterExpression> parameters,
+            int parameterCount, BlockSignatureAttributes attributes) {
             if ((attributes & BlockSignatureAttributes.HasUnsplatParameter) == 0) {
                 switch (parameterCount) {
-                    case 0: return typeof(BlockCallTarget0);
-                    case 1: return typeof(BlockCallTarget1);
-                    case 2: return typeof(BlockCallTarget2);
-                    case 3: return typeof(BlockCallTarget3);
-                    case 4: return typeof(BlockCallTarget4);
-                    default: return typeof(BlockCallTargetN);
+                    case 0: return Ast.Lambda<BlockCallTarget0>(body, name, parameters);
+                    case 1: return Ast.Lambda<BlockCallTarget1>(body, name, parameters);
+                    case 2: return Ast.Lambda<BlockCallTarget2>(body, name, parameters);
+                    case 3: return Ast.Lambda<BlockCallTarget3>(body, name, parameters);
+                    case 4: return Ast.Lambda<BlockCallTarget4>(body, name, parameters);
+                    default: return Ast.Lambda<BlockCallTargetN>(body, name, parameters);
                 }
             }
-            return typeof(BlockCallTargetUnsplatN);
+            return Ast.Lambda<BlockCallTargetUnsplatN>(body, name, parameters);
         }
 
         private static void CopyArgumentsFromSplattee(object[]/*!*/ args, int initializedArgCount, int parameterCount, 
@@ -127,7 +134,7 @@ namespace IronRuby.Runtime.Calls {
 
             int i = Math.Min(initializedArgCount, parameterCount);
             int j = 0;
-            var list = splattee as List<object>;
+            var list = splattee as IList;
             if (list != null) {
                 while (i < parameterCount && j < list.Count) {
                     args[i++] = list[j++];
@@ -232,7 +239,7 @@ namespace IronRuby.Runtime.Calls {
                     rvalue = args.Expressions[parameterIndex];
                 } else if (rightNoneNone) {
                     // nil assignment
-                    rvalue = AddWarning(codeContextExpression, Ast.Constant(null));
+                    rvalue = AddWarning(codeContextExpression, AstUtils.Constant(null));
                 } else if (rightNoneSplat) {
                     // Splat(RHS[*]):
                     rvalue = MakeArgumentSplatWithWarning(rule, args.Values[parameterIndex], args.Expressions[parameterIndex], codeContextExpression);
@@ -272,7 +279,7 @@ namespace IronRuby.Runtime.Calls {
                 actualArgs.AddRange(arguments);
             }
 
-            actualArgs.AddForEachMissingArgument(delegate() { return Ast.Constant(null); });
+            actualArgs.AddForEachMissingArgument(delegate() { return AstUtils.Constant(null); });
 
             if (HasParamsArray) {
                 actualArgs.AddParamsArray();
@@ -293,13 +300,13 @@ namespace IronRuby.Runtime.Calls {
             if (ArgsBuilder.AddTestForListArg(rule, arg, parameter, out listLength, out listVariable)) {
                 if (listLength == 0) {
                     // return nil argument + Warning
-                    return AddWarning(codeContextExpression, Ast.Constant(null));
+                    return AddWarning(codeContextExpression, AstUtils.Constant(null));
                 } else if (listLength == 1) {
                     // return the only item of the array:
                     return Ast.Call(
                         listVariable,
-                        typeof(List<object>).GetMethod("get_Item"),
-                        Ast.Constant(0)
+                        typeof(IList).GetMethod("get_Item"),
+                        AstUtils.Constant(0)
                     );
                 } else {
                     // return the array itself + Warning:

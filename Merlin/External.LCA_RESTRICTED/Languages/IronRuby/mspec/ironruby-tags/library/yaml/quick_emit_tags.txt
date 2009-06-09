@@ -1,0 +1,4 @@
+fails:YAML.quick_emit returns a BaseNode node if emitter level is non-zero
+fails:YAML.quick_emit accepts Emitter argument
+fails:YAML.quick_emit requires opts parameter to be a Hash or Emitter
+fails:YAML.quick_emit requires a block

@@ -112,7 +112,7 @@ namespace System.Linq.Expressions.Compiler {
                 }
 
                 // Clone the lambda, replacing the body & variables
-                return new Expression<T>(lambda.Name, newBody, lambda.Parameters);
+                return new Expression<T>(newBody, lambda.Name, lambda.TailCall, lambda.Parameters);
             }
 
             return lambda;
@@ -511,7 +511,11 @@ namespace System.Linq.Expressions.Compiler {
             // The expression is emitted on top of current stack
             Result expression = RewriteExpression(node.Expression, stack);
             if (expression.Action != RewriteAction.None) {
-                expr = Expression.TypeIs(expression.Node, node.TypeOperand);
+                if (node.NodeType == ExpressionType.TypeIs) {
+                    expr = Expression.TypeIs(expression.Node, node.TypeOperand);
+                } else {
+                    expr = Expression.TypeEqual(expression.Node, node.TypeOperand);
+                }
             }
             return new Result(expression.Action, expr);
         }

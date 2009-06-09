@@ -41,12 +41,12 @@ namespace IronRuby.Compiler.Ast {
             for (int i = 0; i < _items.Count; i++) {
                 result[i] = Methods.UndefineMethod.OpCall(gen.CurrentScopeVariable, AstUtils.Constant(_items[i].Name));
             }
-            result[_items.Count] = Ast.Empty();
+            result[_items.Count] = AstUtils.Empty();
             return Ast.Block(result);
         }
 
         internal override MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen) {
-            return AstFactory.Block(Transform(gen), Ast.Constant(null));
+            return AstFactory.Block(Transform(gen), AstUtils.Constant(null));
         }
     }
 }

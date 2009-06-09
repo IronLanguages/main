@@ -17,22 +17,14 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.SymbolStore;
 using System.Dynamic.Utils;
+using System.Runtime.CompilerServices;
 
 namespace System.Linq.Expressions.Compiler {
     internal sealed class AnalyzedTree {
         internal readonly Dictionary<object, CompilerScope> Scopes = new Dictionary<object, CompilerScope>();
         internal readonly Dictionary<LambdaExpression, BoundConstants> Constants = new Dictionary<LambdaExpression, BoundConstants>();
 
-        // Lazy initialized because many trees will not need it
-        private Dictionary<SymbolDocumentInfo, ISymbolDocumentWriter> _symbolWriters;
-        internal Dictionary<SymbolDocumentInfo, ISymbolDocumentWriter> SymbolWriters {
-            get {
-                if (_symbolWriters == null) {
-                    _symbolWriters = new Dictionary<SymbolDocumentInfo, ISymbolDocumentWriter>();
-                }
-                return _symbolWriters;
-            }
-        }
+        internal DebugInfoGenerator DebugInfoGenerator { get; set; }
 
         // Created by VariableBinder
         internal AnalyzedTree() {

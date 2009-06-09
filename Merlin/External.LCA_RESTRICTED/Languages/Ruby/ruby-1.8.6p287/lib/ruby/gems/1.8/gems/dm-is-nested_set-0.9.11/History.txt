@@ -1,0 +1,21 @@
+=== 0.9.11 / not released
+
+  * No changes this version
+
+=== 0.9.10 / 2009-01-19
+
+* 2 bug fixes:
+
+  * Fixed problem with multiple repositories and transaction
+  * Fixed problem where the lack of a common identity-map would not
+    close gap / move correctly.
+
+=== 0.9.9 / 2009-01-04
+
+* 1 bug fix:
+
+  * Fixed to work with Models using STI
+
+=== 0.9.8 / 2008-12-07
+
+* No changes this version

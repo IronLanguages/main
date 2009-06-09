@@ -15,8 +15,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Reflection;
 using System.Linq.Expressions;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Actions.Calls {
     using Ast = System.Linq.Expressions.Expression;
@@ -37,14 +39,18 @@ namespace Microsoft.Scripting.Actions.Calls {
             _isRef = info.ParameterType.IsByRef;
         }
 
+        public override int ConsumedArgumentCount {
+            get { return 0; }
+        }
+
         public override int Priority {
             get { return 5; }
         }
 
-        internal protected override Expression ToExpression(ParameterBinder parameterBinder, IList<Expression> parameters, bool[] hasBeenUsed) {
+        internal protected override Expression ToExpression(OverloadResolver resolver, RestrictedArguments args, bool[] hasBeenUsed) {
             if (_isRef) {
                 if (_tmp == null) {
-                    _tmp = parameterBinder.GetTemporary(_parameterType, "outParam");
+                    _tmp = resolver.GetTemporary(_parameterType, "outParam");
                 }
                 return _tmp;
             }
@@ -52,7 +58,7 @@ namespace Microsoft.Scripting.Actions.Calls {
             return GetDefaultValue();
         }
 
-        internal override Expression ToReturnExpression(ParameterBinder parameterBinder) {
+        internal override Expression ToReturnExpression(OverloadResolver resolver) {
             if (_isRef) {
                 return _tmp;
             }
@@ -67,9 +73,9 @@ namespace Microsoft.Scripting.Actions.Calls {
         private Expression GetDefaultValue() {
             if (_parameterType.IsValueType) {
                 // default(T)                
-                return Ast.Constant(Activator.CreateInstance(_parameterType));
+                return AstUtils.Constant(Activator.CreateInstance(_parameterType));
             }
-            return Ast.Constant(null);
+            return AstUtils.Constant(null);
         }
     }
 }

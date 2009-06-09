@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+ADAPTER=sqlite3  rake spec
+ADAPTER=mysql    rake spec
+ADAPTER=postgres rake spec

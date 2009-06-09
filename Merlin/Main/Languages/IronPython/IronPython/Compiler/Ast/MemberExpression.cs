@@ -46,8 +46,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal override MSAst.Expression Transform(AstGenerator ag, Type type) {
-            return Binders.Get(
-                ag.BinderState,
+            return ag.Get(
                 type,
                 SymbolTable.IdToString(_name),
                 ag.Transform(_target)
@@ -57,8 +56,7 @@ namespace IronPython.Compiler.Ast {
         internal override MSAst.Expression TransformSet(AstGenerator ag, SourceSpan span, MSAst.Expression right, PythonOperationKind op) {
             if (op == PythonOperationKind.None) {
                 return ag.AddDebugInfoAndVoid(
-                    Binders.Set(
-                        ag.BinderState,
+                    ag.Set(
                         typeof(object),
                         SymbolTable.IdToString(_name),
                         ag.Transform(_target),
@@ -72,7 +70,7 @@ namespace IronPython.Compiler.Ast {
                     Ast.Block(
                         Ast.Assign(temp, ag.Transform(_target)),
                         SetMemberOperator(ag, right, op, temp),
-                        Ast.Empty()
+                        AstUtils.Empty()
                     ),
                     Span.Start,
                     span.End
@@ -81,17 +79,14 @@ namespace IronPython.Compiler.Ast {
         }
 
         private MSAst.Expression SetMemberOperator(AstGenerator ag, MSAst.Expression right, PythonOperationKind op, MSAst.ParameterExpression temp) {
-            return Binders.Set(
-                ag.BinderState,
+            return ag.Set(
                 typeof(object),
                 SymbolTable.IdToString(_name),
                 temp,
-                Binders.Operation(
-                    ag.BinderState,
+                ag.Operation(
                     typeof(object),
                     op,
-                    Binders.Get(
-                        ag.BinderState,
+                    ag.Get(
                         typeof(object),
                         SymbolTable.IdToString(_name),
                         temp
@@ -102,9 +97,8 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal override MSAst.Expression TransformDelete(AstGenerator ag) {
-            return Binders.Delete(
-                ag.BinderState,
-                typeof(object),
+            return ag.Delete(
+                typeof(void),
                 SymbolTable.IdToString(_name),
                 ag.Transform(_target)
             );

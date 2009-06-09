@@ -14,7 +14,7 @@
  * ***************************************************************************/
 
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Dynamic.Utils;
 using System.Linq.Expressions;
@@ -29,7 +29,7 @@ namespace System.Runtime.CompilerServices {
         /// <param name="hoistedLocals">The hoisted local state provided by the compiler.</param>
         /// <param name="locals">The actual hoisted local values.</param>
         /// <returns>The quoted expression.</returns>
-        [Obsolete("do not call this method", true)]
+        [Obsolete("do not use this method", true), EditorBrowsable(EditorBrowsableState.Never)]
         public static Expression Quote(Expression expression, object hoistedLocals, object[] locals) {
             Debug.Assert(hoistedLocals != null && locals != null);
             var quoter = new ExpressionQuoter((HoistedLocals)hoistedLocals, locals);
@@ -43,8 +43,8 @@ namespace System.Runtime.CompilerServices {
         /// <param name="second">The second list.</param>
         /// <param name="indexes">The index array indicating which list to get variables from.</param>
         /// <returns>The merged runtime variables.</returns>
-        [Obsolete("do not call this method", true)]
-        public static IList<IStrongBox> MergeRuntimeVariables(IList<IStrongBox> first, IList<IStrongBox> second, int[] indexes) {
+        [Obsolete("do not use this method", true), EditorBrowsable(EditorBrowsableState.Never)]
+        public static IRuntimeVariables MergeRuntimeVariables(IRuntimeVariables first, IRuntimeVariables second, int[] indexes) {
             return new MergedRuntimeVariables(first, second, indexes);
         }
 
@@ -128,7 +128,7 @@ namespace System.Runtime.CompilerServices {
                     return node;
                 }
 
-                var boxesConst = Expression.Constant(new ReadOnlyCollection<IStrongBox>(boxes.ToArray()));
+                var boxesConst = Expression.Constant(new RuntimeVariables(boxes.ToArray()), typeof(IRuntimeVariables));
                 // All of them were rewritten. Just return the array as a constant
                 if (vars.Count == 0) {
                     return boxesConst;
@@ -179,20 +179,40 @@ namespace System.Runtime.CompilerServices {
             }
         }
 
+        private sealed class RuntimeVariables : IRuntimeVariables {
+            private readonly IStrongBox[] _boxes;
+
+            internal RuntimeVariables(IStrongBox[] boxes) {
+                _boxes = boxes;
+            }
+
+            int IRuntimeVariables.Count {
+                get { return _boxes.Length; }
+            }
+
+            object IRuntimeVariables.this[int index] {
+                get {
+                    return _boxes[index].Value;
+                }
+                set {
+                    _boxes[index].Value = value;
+                }
+            }
+        }
 
         /// <summary>
         /// Provides a list of variables, supporing read/write of the values
         /// Exposed via RuntimeVariablesExpression
         /// </summary>
-        private sealed class MergedRuntimeVariables : IList<IStrongBox> {
-            private readonly IList<IStrongBox> _first;
-            private readonly IList<IStrongBox> _second;
+        private sealed class MergedRuntimeVariables : IRuntimeVariables {
+            private readonly IRuntimeVariables _first;
+            private readonly IRuntimeVariables _second;
 
             // For reach item, the index into the first or second list
             // Positive values mean the first array, negative means the second
             private readonly int[] _indexes;
 
-            internal MergedRuntimeVariables(IList<IStrongBox> first, IList<IStrongBox> second, int[] indexes) {
+            internal MergedRuntimeVariables(IRuntimeVariables first, IRuntimeVariables second, int[] indexes) {
                 _first = first;
                 _second = second;
                 _indexes = indexes;
@@ -202,72 +222,19 @@ namespace System.Runtime.CompilerServices {
                 get { return _indexes.Length; }
             }
 
-            public IStrongBox this[int index] {
+            public object this[int index] {
                 get {
                     index = _indexes[index];
                     return (index >= 0) ? _first[index] : _second[-1 - index];
                 }
                 set {
-                    throw Error.CollectionReadOnly();
-                }
-            }
-
-            public int IndexOf(IStrongBox item) {
-                for (int i = 0, n = _indexes.Length; i < n; i++) {
-                    if (this[i] == item) {
-                        return i;
+                    index = _indexes[index];
+                    if (index >= 0) {
+                        _first[index] = value;
+                    } else {
+                        _second[-1 - index] = value;
                     }
                 }
-                return -1;
-            }
-
-            public bool Contains(IStrongBox item) {
-                return IndexOf(item) >= 0;
-            }
-
-            public void CopyTo(IStrongBox[] array, int arrayIndex) {
-                ContractUtils.RequiresNotNull(array, "array");
-                int count = _indexes.Length;
-                if (arrayIndex < 0 || arrayIndex + count > array.Length) {
-                    throw new ArgumentOutOfRangeException("arrayIndex");
-                }
-                for (int i = 0; i < count; i++) {
-                    array[arrayIndex++] = this[i];
-                }
-            }
-
-            bool ICollection<IStrongBox>.IsReadOnly {
-                get { return true; }
-            }
-
-            public IEnumerator<IStrongBox> GetEnumerator() {
-                for (int i = 0, n = _indexes.Length; i < n; i++) {
-                    yield return this[i];
-                }
-            }
-
-            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() {
-                return GetEnumerator();
-            }
-
-            void IList<IStrongBox>.Insert(int index, IStrongBox item) {
-                throw Error.CollectionReadOnly();
-            }
-
-            void IList<IStrongBox>.RemoveAt(int index) {
-                throw Error.CollectionReadOnly();
-            }
-
-            void ICollection<IStrongBox>.Add(IStrongBox item) {
-                throw Error.CollectionReadOnly();
-            }
-
-            void ICollection<IStrongBox>.Clear() {
-                throw Error.CollectionReadOnly();
-            }
-
-            bool ICollection<IStrongBox>.Remove(IStrongBox item) {
-                throw Error.CollectionReadOnly();
             }
         }
     }

@@ -15,15 +15,19 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Dynamic;
-using System.Text;
+using System.Linq.Expressions;
+using System.Reflection;
 using Microsoft.Contracts;
-using Microsoft.Scripting.Actions;
-using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Generation;
+using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Actions.Calls {
+    using Ast = System.Linq.Expressions.Expression;
+
     /// <summary>
     /// MethodCandidate represents the different possible ways of calling a method or a set of method overloads.
     /// A single method can result in multiple MethodCandidates. Some reasons include:
@@ -32,116 +36,109 @@ namespace Microsoft.Scripting.Actions.Calls {
     /// - ArgumentKind.List and ArgumentKind.Dictionary can result in a new candidate per invocation since the list might be different every time.
     ///
     /// Each MethodCandidate represents the parameter type for the candidate using ParameterWrapper.
-    /// 
-    /// Contrast this with MethodTarget which represents the real physical invocation of a method
     /// </summary>
-    class MethodCandidate {
-        private MethodTarget _target;
-        private List<ParameterWrapper> _parameters;
-        private NarrowingLevel _narrowingLevel;
+    public sealed class MethodCandidate {
+        private readonly OverloadResolver _resolver;
+        private readonly MethodBase _method;
 
-        internal MethodCandidate(MethodCandidate previous, NarrowingLevel narrowingLevel) {
-            this._target = previous.Target;
-            this._parameters = previous._parameters;
-            _narrowingLevel = narrowingLevel;
-        }
+        private readonly List<ParameterWrapper> _parameters;
+        private readonly ParameterWrapper _paramsDict;
+        private readonly int _paramsArrayIndex;
 
-        internal MethodCandidate(MethodTarget target, List<ParameterWrapper> parameters) {
-            Debug.Assert(target != null);
+        private readonly IList<ArgBuilder> _argBuilders;
+        private readonly InstanceBuilder _instanceBuilder;
+        private readonly ReturnBuilder _returnBuilder;
 
-            _target = target;
+        internal MethodCandidate(OverloadResolver resolver, MethodBase method, List<ParameterWrapper> parameters, ParameterWrapper paramsDict,
+            ReturnBuilder returnBuilder, InstanceBuilder instanceBuilder, IList<ArgBuilder> argBuilders) {
+
+            Assert.NotNull(resolver, method, instanceBuilder, returnBuilder);
+            Assert.NotNullItems(parameters);
+            Assert.NotNullItems(argBuilders);
+
+            _resolver = resolver;
+            _method = method;
+            _instanceBuilder = instanceBuilder;
+            _argBuilders = argBuilders;
+            _returnBuilder = returnBuilder;
             _parameters = parameters;
-            _narrowingLevel = NarrowingLevel.None;
+            _paramsDict = paramsDict;
+
+            _paramsArrayIndex = ParameterWrapper.IndexOfParamsArray(parameters);
+
             parameters.TrimExcess();
         }
 
-        public MethodTarget Target {
-            get { return _target; }
+        internal ReturnBuilder ReturnBuilder {
+            get { return _returnBuilder; }
         }
 
-        public NarrowingLevel NarrowingLevel {
-            get {
-                return _narrowingLevel;
-            }
+        internal IList<ArgBuilder> ArgBuilders {
+            get { return _argBuilders; }
         }
 
-        [Confined]
-        public override string ToString() {
-            return string.Format("MethodCandidate({0})", Target);
+        public OverloadResolver Resolver {
+            get { return _resolver; }
         }
 
-        internal bool IsApplicable(Type[] types, NarrowingLevel narrowingLevel, List<ConversionResult> conversionResults) {
-            // attempt to convert each parameter
-            bool res = true;
-            for (int i = 0; i < types.Length; i++) {
-                bool success = _parameters[i].HasConversionFrom(types[i], narrowingLevel);
-
-                conversionResults.Add(new ConversionResult(types[i], _parameters[i].Type, i, !success));
-
-                res &= success;
-            }
-
-            return res;
+        public MethodBase Method {
+            get { return _method; }
         }
 
-        internal bool IsApplicable(DynamicMetaObject[] objects, NarrowingLevel narrowingLevel, List<ConversionResult> conversionResults) {
-            // attempt to convert each parameter
-            bool res = true;
-            for (int i = 0; i < objects.Length; i++) {
-                /*if (objects[i].NeedsDeferral) {
-                    conversionResults.Add(new ConversionResult(typeof(Dynamic), _parameters[i].Type, i, false));
-                } else*/ {
-                    bool success = _parameters[i].HasConversionFrom(objects[i].GetLimitType(), narrowingLevel);
+        public Type ReturnType {
+            get { return _returnBuilder.ReturnType; }
+        }
 
-                    conversionResults.Add(new ConversionResult(objects[i].GetLimitType(), _parameters[i].Type, i, !success));
+        public int ParamsArrayIndex {
+            get { return _paramsArrayIndex; }
+        }
 
-                    res &= success;
+        public bool HasParamsArray {
+            get { return _paramsArrayIndex != -1; }
+        }
+
+        public bool HasParamsDictionary {
+            get { return _paramsDict != null; }
+        }
+
+        public ActionBinder Binder {
+            get { return _resolver.Binder; }
+        }
+
+        internal ParameterWrapper GetParameter(int argumentIndex, ArgumentBinding namesBinding) {
+            return _parameters[namesBinding.ArgumentToParameter(argumentIndex)];
+        }
+
+        internal ParameterWrapper GetParameter(int parameterIndex) {
+            return _parameters[parameterIndex];
+        }
+
+        internal int ParameterCount {
+            get { return _parameters.Count; }
+        }
+
+        internal int IndexOfParameter(string name) {
+            for (int i = 0; i < _parameters.Count; i++) {
+                if (_parameters[i].Name == name) {
+                    return i;
                 }
             }
-
-            return res;
+            return -1;
         }
 
-        internal static Candidate GetPreferredCandidate(MethodCandidate one, MethodCandidate two, CallTypes callType, Type[] actualTypes) {
-            Candidate cmpParams = ParameterWrapper.GetPreferredParameters(one.Parameters, two.Parameters, actualTypes);
-            if (cmpParams.Chosen()) {
-                return cmpParams;
+        public int GetVisibleParameterCount() {
+            int result = 0;
+            foreach (var parameter in _parameters) {
+                if (!parameter.IsHidden) {
+                    result++;
+                }
             }
-
-            Candidate ret = MethodTarget.CompareEquivalentParameters(one.Target, two.Target);
-            if (ret.Chosen()) {
-                return ret;
-            }
-
-            if (CompilerHelpers.IsStatic(one.Target.Method) && !CompilerHelpers.IsStatic(two.Target.Method)) {
-                return callType == CallTypes.ImplicitInstance ? Candidate.Two : Candidate.One;
-            } else if (!CompilerHelpers.IsStatic(one.Target.Method) && CompilerHelpers.IsStatic(two.Target.Method)) {
-                return callType == CallTypes.ImplicitInstance ? Candidate.One : Candidate.Two;
-            }
-
-            return Candidate.Equivalent;
+            return result;
         }
 
-        internal static Candidate GetPreferredCandidate(MethodCandidate one, MethodCandidate two, CallTypes callType, DynamicMetaObject[] actualTypes) {
-            Candidate cmpParams = ParameterWrapper.GetPreferredParameters(one.Parameters, two.Parameters, actualTypes);
-            if (cmpParams.Chosen()) {
-                return cmpParams;
-            }
-
-            Candidate ret = MethodTarget.CompareEquivalentParameters(one.Target, two.Target);
-            if (ret.Chosen()) {
-                return ret;
-            }
-
-            if (CompilerHelpers.IsStatic(one.Target.Method) && !CompilerHelpers.IsStatic(two.Target.Method)) {
-                return callType == CallTypes.ImplicitInstance ? Candidate.Two : Candidate.One;
-            } else if (!CompilerHelpers.IsStatic(one.Target.Method) && CompilerHelpers.IsStatic(two.Target.Method)) {
-                return callType == CallTypes.ImplicitInstance ? Candidate.One : Candidate.Two;
-            }
-
-            return Candidate.Equivalent;
+        public IList<ParameterWrapper> GetParameters() {
+            return new ReadOnlyCollection<ParameterWrapper>(_parameters);
         }
-
 
         /// <summary>
         /// Builds a new MethodCandidate which takes count arguments and the provided list of keyword arguments.
@@ -149,12 +146,12 @@ namespace Microsoft.Scripting.Actions.Calls {
         /// The basic idea here is to figure out which parameters map to params or a dictionary params and
         /// fill in those spots w/ extra ParameterWrapper's.  
         /// </summary>
-        internal MethodCandidate MakeParamsExtended(ActionBinder binder, int count, string[] names) {
-            Debug.Assert(BinderHelpers.IsParamsMethod(_target.Method));
+        internal MethodCandidate MakeParamsExtended(int count, IList<string> names) {
+            Debug.Assert(BinderHelpers.IsParamsMethod(_method));
 
             List<ParameterWrapper> newParameters = new List<ParameterWrapper>(count);
             
-            // keep track of which kw args map to a real argument, and which ones
+            // keep track of which named args map to a real argument, and which ones
             // map to the params dictionary.
             List<string> unusedNames = new List<string>(names);
             List<int> unusedNameIndexes = new List<int>();
@@ -163,16 +160,13 @@ namespace Microsoft.Scripting.Actions.Calls {
             }
 
             // if we don't have a param array we'll have a param dict which is type object
-            ParameterWrapper paramsArrayParameter = null, paramsDictParameter = null;
-            int paramsArrayIndex = -1, paramsDictIndex = -1;
+            ParameterWrapper paramsArrayParameter = null;
+            int paramsArrayIndex = -1;
 
             for (int i = 0; i < _parameters.Count; i++) {
                 ParameterWrapper parameter = _parameters[i];
 
-                if (parameter.IsParamsDict) {
-                    paramsDictParameter = parameter;
-                    paramsDictIndex = i;
-                } else if (parameter.IsParamsArray) {
+                if (parameter.IsParamsArray) {
                     paramsArrayParameter = parameter;
                     paramsArrayIndex = i;
                 } else {
@@ -186,21 +180,17 @@ namespace Microsoft.Scripting.Actions.Calls {
             }
 
             if (paramsArrayIndex != -1) {
-                Type elementType = paramsArrayParameter.Type.GetElementType();
-                bool nonNullItems = CompilerHelpers.ProhibitsNullItems(paramsArrayParameter.ParameterInfo);
-
+                ParameterWrapper expanded = paramsArrayParameter.Expand();
                 while (newParameters.Count < (count - unusedNames.Count)) {
-                    ParameterWrapper param = new ParameterWrapper(binder, paramsArrayParameter.ParameterInfo, elementType, null, nonNullItems, false, false);
-                    newParameters.Insert(System.Math.Min(paramsArrayIndex, newParameters.Count), param);
+                    newParameters.Insert(System.Math.Min(paramsArrayIndex, newParameters.Count), expanded);
                 }
             }
 
-            if (paramsDictIndex != -1) {
-                Type elementType = paramsDictParameter.Type.GetElementType();
-                bool nonNullItems = CompilerHelpers.ProhibitsNullItems(paramsDictParameter.ParameterInfo);
-                
-                foreach (string si in unusedNames) {
-                    newParameters.Add(new ParameterWrapper(binder, paramsDictParameter.ParameterInfo, typeof(object), si, nonNullItems, false, false));
+            if (_paramsDict != null) {
+                bool nonNullItems = CompilerHelpers.ProhibitsNullItems(_paramsDict.ParameterInfo);
+
+                foreach (string name in unusedNames) {
+                    newParameters.Add(new ParameterWrapper(_paramsDict.ParameterInfo, typeof(object), name, nonNullItems, false, false, _paramsDict.IsHidden));
                 }
             } else if (unusedNames.Count != 0) {
                 // unbound kw args and no where to put them, can't call...
@@ -213,87 +203,348 @@ namespace Microsoft.Scripting.Actions.Calls {
                 return null;
             }
 
-            return new MethodCandidate(_target.MakeParamsExtended(count, unusedNames.ToArray(), unusedNameIndexes.ToArray()), newParameters);
+            return MakeParamsExtended(unusedNames.ToArray(), unusedNameIndexes.ToArray(), newParameters);
         }
 
-        internal string ToSignatureString(string name, CallTypes callType) {
-            StringBuilder buf = new StringBuilder(name);
-            buf.Append("(");
-            bool isFirstArg = true;
-            int i = 0;
-            if (callType == CallTypes.ImplicitInstance) i = 1;
-            for (; i < _parameters.Count; i++) {
-                if (isFirstArg) isFirstArg = false;
-                else buf.Append(", ");
-                buf.Append(_parameters[i].ToSignatureString());
+        private MethodCandidate MakeParamsExtended(string[] names, int[] nameIndices, List<ParameterWrapper> parameters) {
+            Debug.Assert(BinderHelpers.IsParamsMethod(Method));
+
+            List<ArgBuilder> newArgBuilders = new List<ArgBuilder>(_argBuilders.Count);
+
+            // current argument that we consume, initially skip this if we have it.
+            int curArg = CompilerHelpers.IsStatic(_method) ? 0 : 1;
+            int kwIndex = -1;
+            ArgBuilder paramsDictBuilder = null;
+
+            foreach (ArgBuilder ab in _argBuilders) {
+                // TODO: define a virtual method on ArgBuilder implementing this functionality:
+
+                SimpleArgBuilder sab = ab as SimpleArgBuilder;
+                if (sab != null) {
+                    // we consume one or more incoming argument(s)
+                    if (sab.IsParamsArray) {
+                        // consume all the extra arguments
+                        int paramsUsed = parameters.Count -
+                            GetConsumedArguments() -
+                            names.Length +
+                            (CompilerHelpers.IsStatic(_method) ? 1 : 0);
+
+                        newArgBuilders.Add(new ParamsArgBuilder(
+                            sab.ParameterInfo,
+                            sab.Type.GetElementType(),
+                            curArg,
+                            paramsUsed
+                        ));
+
+                        curArg += paramsUsed;
+                    } else if (sab.IsParamsDict) {
+                        // consume all the kw arguments
+                        kwIndex = newArgBuilders.Count;
+                        paramsDictBuilder = sab;
+                    } else {
+                        // consume the argument, adjust its position:
+                        newArgBuilders.Add(sab.MakeCopy(curArg++));
+                    }
+                } else if (ab is KeywordArgBuilder) {
+                    newArgBuilders.Add(ab);
+                    curArg++;
+                } else {
+                    // CodeContext, null, default, etc...  we don't consume an 
+                    // actual incoming argument.
+                    newArgBuilders.Add(ab);
+                }
             }
-            buf.Append(")");
-            return buf.ToString(); //@todo add helper info for more interesting signatures
+
+            if (kwIndex != -1) {
+                newArgBuilders.Insert(kwIndex, new ParamsDictArgBuilder(paramsDictBuilder.ParameterInfo, curArg, names, nameIndices));
+            }
+
+            return new MethodCandidate(_resolver, _method, parameters, null, _returnBuilder, _instanceBuilder, newArgBuilders);
         }
 
-        internal IList<ParameterWrapper> Parameters {
-            get {
-                return _parameters;
+        private int GetConsumedArguments() {
+            int consuming = 0;
+            foreach (ArgBuilder argb in _argBuilders) {
+                SimpleArgBuilder sab = argb as SimpleArgBuilder;
+                if (sab != null && !sab.IsParamsDict || argb is KeywordArgBuilder) {
+                    consuming++;
+                }
+            }
+            return consuming;
+        }
+
+        public Type[] GetParameterTypes() {
+            List<Type> res = new List<Type>(_argBuilders.Count);
+            for (int i = 0; i < _argBuilders.Count; i++) {
+                Type t = _argBuilders[i].Type;
+                if (t != null) {
+                    res.Add(t);
+                }
+            }
+
+            return res.ToArray();
+        }
+
+        #region MakeDelegate
+
+        internal OptimizingCallDelegate MakeDelegate(RestrictedArguments restrictedArgs) {
+            MethodInfo mi = Method as MethodInfo;
+            if (mi == null) {
+                return null;
+            }
+
+            Type declType = mi.GetBaseDefinition().DeclaringType;
+            if (declType != null &&
+                declType.Assembly == typeof(string).Assembly &&
+                declType.IsSubclassOf(typeof(MemberInfo))) {
+                // members of reflection are off limits via reflection in partial trust
+                return null;
+            }
+
+            if (_returnBuilder.CountOutParams > 0) {
+                return null;
+            }
+
+            Func<object[], object>[] builders = new Func<object[], object>[_argBuilders.Count];
+            bool[] hasBeenUsed = new bool[restrictedArgs.Length];
+
+            for (int i = 0; i < _argBuilders.Count; i++) {
+                var builder = _argBuilders[i].ToDelegate(_resolver, restrictedArgs, hasBeenUsed);
+                if (builder == null) {
+                    return null;
+                }
+
+                builders[i] = builder;
+            }
+
+            if (_instanceBuilder.HasValue) {
+                var instance = _instanceBuilder.ToDelegate(ref mi, _resolver, restrictedArgs, hasBeenUsed);
+                return new Caller(mi, builders, instance).CallWithInstance;
+            } else {
+                return new Caller(mi, builders, null).Call;
             }
         }
 
-        internal bool HasParamsDictionary() {
-            foreach (ParameterWrapper pw in _parameters) {
-                // can't bind to methods that are params dictionaries, only to their extended forms.
-                if (pw.IsParamsDict) return true;
-            }
-            return false;
-        }
+        private sealed class Caller {
+            private readonly Func<object[], object>[] _argBuilders;
+            private readonly Func<object[], object> _instanceBuilder;
+            private readonly MethodInfo _mi;
+            private ReflectedCaller _caller;
+            private int _hitCount;
 
-        internal bool TryGetNormalizedArguments<T>(T[] argTypes, string[] names, out T[] args, out CallFailure failure) {
-            if (names.Length == 0) {
-                // no named arguments, success!
-                args = argTypes;
-                failure = null;
-                return true;
+            public Caller(MethodInfo mi, Func<object[], object>[] argBuilders, Func<object[], object> instanceBuilder) {
+                _mi = mi;
+                _argBuilders = argBuilders;
+                _instanceBuilder = instanceBuilder;
             }
 
-            T[] res = new T[argTypes.Length];
-            Array.Copy(argTypes, res, argTypes.Length - names.Length);
-            List<string> unboundNames = null;
-            List<string> duppedNames = null;
+            public object Call(object[] args, out bool shouldOptimize) {
+                shouldOptimize = TrackUsage(args);
 
-            for (int i = 0; i < names.Length; i++) {
-                bool found = false;
-                for (int j = 0; j < _parameters.Count; j++) {
-                    if (_parameters[j].Name == names[i]) {
-                        found = true;
+                try {
+                    if (_caller != null) {
+                        return _caller.Invoke(GetArguments(args));
+                    }
+                    return _mi.Invoke(null, GetArguments(args));
+                } catch (TargetInvocationException tie) {
+                    ExceptionHelpers.UpdateForRethrow(tie.InnerException);
+                    throw tie.InnerException;
+                }
+            }
 
-                        if (res[j] != null) {
-                            if (duppedNames == null) duppedNames = new List<string>();
-                            duppedNames.Add(names[i]);
-                        } else {
-                            res[j] = argTypes[i + argTypes.Length - names.Length];
+            public object CallWithInstance(object[] args, out bool shouldOptimize) {
+                shouldOptimize = TrackUsage(args);
+
+                try {
+                    if (_caller != null) {
+                        return _caller.InvokeInstance(_instanceBuilder(args), GetArguments(args));
+                    }
+
+                    return _mi.Invoke(_instanceBuilder(args), GetArguments(args));
+                } catch (TargetInvocationException tie) {
+                    ExceptionHelpers.UpdateForRethrow(tie.InnerException);
+                    throw tie.InnerException;
+                }
+            }
+
+            private object[] GetArguments(object[] args) {
+                object[] finalArgs = new object[_argBuilders.Length];
+                for (int i = 0; i < finalArgs.Length; i++) {
+                    finalArgs[i] = _argBuilders[i](args);
+                }
+                return finalArgs;
+            }
+
+            private bool TrackUsage(object[] args) {
+                bool shouldOptimize;
+                _hitCount++;
+                shouldOptimize = false;
+
+                bool forceCaller = false;
+                if (_hitCount <= 100 && _caller == null) {
+                    foreach (object o in args) {
+                        // can't pass Missing.Value via reflection, use a ReflectedCaller
+                        if (o == Missing.Value) {
+                            forceCaller = true;
                         }
-                        break;
                     }
                 }
 
-                if (!found) {
-                    if (unboundNames == null) unboundNames = new List<string>();
-                    unboundNames.Add(names[i]);
+                if (_hitCount > 100) {
+                    shouldOptimize = true;
+                } else if ((_hitCount > 5 || forceCaller) && _caller == null) {
+                    _caller = ReflectedCaller.Create(_mi);
+                }
+                return shouldOptimize;
+            }
+        }
+
+        #endregion
+
+        #region MakeExpression
+
+        internal Expression MakeExpression(RestrictedArguments restrictedArgs) {
+            bool[] usageMarkers;
+            Expression[] spilledArgs;
+            Expression[] callArgs = GetArgumentExpressions(restrictedArgs, out usageMarkers, out spilledArgs);
+
+            Expression call;
+            MethodInfo mi = Method as MethodInfo;
+            if (mi != null) {
+                Expression instance;
+                if (mi.IsStatic) {
+                    instance = null;
+                } else {
+                    Debug.Assert(mi != null);
+                    instance = _instanceBuilder.ToExpression(ref mi, _resolver, restrictedArgs, usageMarkers);
+                    Debug.Assert(instance != null, "Can't skip instance expression");
+                }
+
+                if (CompilerHelpers.IsVisible(mi)) {
+                    call = AstUtils.SimpleCallHelper(instance, mi, callArgs);
+                } else {
+                    call = Ast.Call(
+                        typeof(BinderOps).GetMethod("InvokeMethod"),
+                        AstUtils.Constant(mi),
+                        instance != null ? AstUtils.Convert(instance, typeof(object)) : AstUtils.Constant(null),
+                        AstUtils.NewArrayHelper(typeof(object), callArgs)
+                    );
+                }
+            } else {
+                ConstructorInfo ci = (ConstructorInfo)Method;
+                if (CompilerHelpers.IsVisible(ci)) {
+                    call = AstUtils.SimpleNewHelper(ci, callArgs);
+                } else {
+                    call = Ast.Call(
+                        typeof(BinderOps).GetMethod("InvokeConstructor"),
+                        AstUtils.Constant(ci),
+                        AstUtils.NewArrayHelper(typeof(object), callArgs)
+                    );
                 }
             }
 
-            if (unboundNames != null) {
-                failure = new CallFailure(Target, unboundNames.ToArray(), true);
-                args = null;
-                return false;
-            } else if (duppedNames != null) {
-                failure = new CallFailure(Target, duppedNames.ToArray(), false);
-                args = null;
-                return false;
+            if (spilledArgs != null) {
+                call = Expression.Block(spilledArgs.AddLast(call));
             }
 
-            failure = null;
-            args = res;
-            return true;
+            Expression ret = _returnBuilder.ToExpression(_resolver, _argBuilders, restrictedArgs, call);
+
+            List<Expression> updates = null;
+            for (int i = 0; i < _argBuilders.Count; i++) {
+                Expression next = _argBuilders[i].UpdateFromReturn(_resolver, restrictedArgs);
+                if (next != null) {
+                    if (updates == null) {
+                        updates = new List<Expression>();
+                    }
+                    updates.Add(next);
+                }
+            }
+
+            if (updates != null) {
+                if (ret.Type != typeof(void)) {
+                    ParameterExpression temp = Ast.Variable(ret.Type, "$ret");
+                    updates.Insert(0, Ast.Assign(temp, ret));
+                    updates.Add(temp);
+                    ret = Ast.Block(new[] { temp }, updates.ToArray());
+                } else {
+                    updates.Insert(0, ret);
+                    ret = Ast.Block(typeof(void), updates.ToArray());
+                }
+            }
+
+            if (_resolver.Temps != null) {
+                ret = Ast.Block(_resolver.Temps, ret);
+            }
+
+            return ret;
+        }
+
+        private Expression[] GetArgumentExpressions(RestrictedArguments restrictedArgs, out bool[] usageMarkers, out Expression[] spilledArgs) {
+            int minPriority = Int32.MaxValue;
+            int maxPriority = Int32.MinValue;
+            foreach (ArgBuilder ab in _argBuilders) {
+                minPriority = System.Math.Min(minPriority, ab.Priority);
+                maxPriority = System.Math.Max(maxPriority, ab.Priority);
+            }
+
+            var args = new Expression[_argBuilders.Count];
+            Expression[] actualArgs = null;
+            usageMarkers = new bool[restrictedArgs.Length];
+            for (int priority = minPriority; priority <= maxPriority; priority++) {
+                for (int i = 0; i < _argBuilders.Count; i++) {
+                    if (_argBuilders[i].Priority == priority) {
+                        args[i] = _argBuilders[i].ToExpression(_resolver, restrictedArgs, usageMarkers);
+
+                        // see if this has a temp that needs to be passed as the actual argument
+                        Expression byref = _argBuilders[i].ByRefArgument;
+                        if (byref != null) {
+                            if (actualArgs == null) {
+                                actualArgs = new Expression[_argBuilders.Count];
+                            }
+                            actualArgs[i] = byref;
+                        }
+                    }
+                }
+            }
+
+            if (actualArgs != null) {
+                for (int i = 0; i < args.Length; i++) {
+                    if (args[i] != null && actualArgs[i] == null) {
+                        actualArgs[i] = _resolver.GetTemporary(args[i].Type, null);
+                        args[i] = Expression.Assign(actualArgs[i], args[i]);
+                    }
+                }
+
+                spilledArgs = RemoveNulls(args);
+                return RemoveNulls(actualArgs);
+            }
+
+            spilledArgs = null;
+            return RemoveNulls(args);
+        }
+
+        private static Expression[] RemoveNulls(Expression[] args) {
+            int newLength = args.Length;
+            for (int i = 0; i < args.Length; i++) {
+                if (args[i] == null) {
+                    newLength--;
+                }
+            }
+
+            var result = new Expression[newLength];
+            for (int i = 0, j = 0; i < args.Length; i++) {
+                if (args[i] != null) {
+                    result[j++] = args[i];
+                }
+            }
+            return result;
+        }
+
+        #endregion
+
+        [Confined]
+        public override string ToString() {
+            return string.Format("MethodCandidate({0} on {1})", Method, Method.DeclaringType.FullName);
         }
     }
-
 }

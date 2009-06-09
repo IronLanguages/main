@@ -1,2 +1,0 @@
-fails:Array#delete removes elements that are #== to object
-fails:Array#delete may be given a block that is executed if no element matches object

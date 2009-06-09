@@ -29,7 +29,8 @@ namespace IronRuby.Builtins {
     // TODO: IDictionary<TKey, TValue> instead of IDictionary<object, object>?
     //       (need support for extension methods on generic interfaces first)
     //       (IDictionary isn't a good solution because it doesn't have TryGetValue)
-    [RubyModule(Extends = typeof(IDictionary<object, object>)), Includes(typeof(Enumerable))]
+    [RubyModule(Extends = typeof(IDictionary<object, object>), Restrictions = ModuleRestrictions.None)]
+    [Includes(typeof(Enumerable))]
     public static class IDictionaryOps {
 
         #region Helper methods
@@ -70,7 +71,7 @@ namespace IronRuby.Builtins {
         #region Instance Methods
 
         [RubyMethod("==")]
-        public static bool Equals(BinaryOpStorage/*!*/ equals, RubyContext/*!*/ context, IDictionary<object, object>/*!*/ self, object otherHash) {
+        public static bool Equals(BinaryOpStorage/*!*/ equals, IDictionary<object, object>/*!*/ self, object otherHash) {
             IDictionary<object, object> other = otherHash as IDictionary<object, object>;
             if (other == null || self.Count != other.Count) {
                 return false;
@@ -79,7 +80,7 @@ namespace IronRuby.Builtins {
             // Each key value pair must be the same
             foreach (KeyValuePair<object, object> pair in self) {
                 object value;
-                if (!other.TryGetValue(pair.Key, out value) || !Protocols.IsEqual(equals, context, pair.Value, value)) {
+                if (!other.TryGetValue(pair.Key, out value) || !Protocols.IsEqual(equals, pair.Value, value)) {
                     return false;
                 }
             }
@@ -112,12 +113,12 @@ namespace IronRuby.Builtins {
         // We don't define "dup" here because "dup" shouldn't show up on builtin types like Hash
         // (Kernel#dup just works for these types)
         private static IDictionary<object, object>/*!*/ Duplicate(
-            CallSiteStorage<Func<CallSite, RubyContext, object, object, object>>/*!*/ initializeCopyStorage,
-            CallSiteStorage<Func<CallSite, RubyContext, RubyClass, object>>/*!*/ allocateStorage,
-            RubyContext/*!*/ context, IDictionary<object, object>/*!*/ self) {
+            CallSiteStorage<Func<CallSite, object, object, object>>/*!*/ initializeCopyStorage,
+            CallSiteStorage<Func<CallSite, RubyClass, object>>/*!*/ allocateStorage,
+            IDictionary<object, object>/*!*/ self) {
 
             // Call Kernel#dup, then copy items
-            var copy = (IDictionary<object, object>)KernelOps.Duplicate(initializeCopyStorage, allocateStorage, context, self);
+            var copy = (IDictionary<object, object>)KernelOps.Duplicate(initializeCopyStorage, allocateStorage, self);
             return ReplaceData(copy, self);
         }
 
@@ -296,9 +297,9 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("has_value?")]
         [RubyMethod("value?")]
-        public static bool HasValue(BinaryOpStorage/*!*/ equals, RubyContext/*!*/ context, IDictionary<object, object>/*!*/ self, object value) {
+        public static bool HasValue(BinaryOpStorage/*!*/ equals, IDictionary<object, object>/*!*/ self, object value) {
             foreach (KeyValuePair<object, object> pair in self) {
-                if (Protocols.IsEqual(equals, context, pair.Value, value)) {
+                if (Protocols.IsEqual(equals, pair.Value, value)) {
                     return true;
                 }
             }
@@ -306,9 +307,9 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("index")]
-        public static object Index(BinaryOpStorage/*!*/ equals, RubyContext/*!*/ context, IDictionary<object, object>/*!*/ self, object value) {
+        public static object Index(BinaryOpStorage/*!*/ equals, IDictionary<object, object>/*!*/ self, object value) {
             foreach (KeyValuePair<object, object> pair in self) {
-                if (Protocols.IsEqual(equals, context, pair.Value, value)) {
+                if (Protocols.IsEqual(equals, pair.Value, value)) {
                     return BaseSymbolDictionary.ObjToNull(pair.Key);
                 }
             }
@@ -371,12 +372,12 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("merge")]
         public static object Merge(
-            CallSiteStorage<Func<CallSite, RubyContext, object, object, object>>/*!*/ initializeCopyStorage,
-            CallSiteStorage<Func<CallSite, RubyContext, RubyClass, object>>/*!*/ allocateStorage,
-            RubyContext/*!*/ context, BlockParam block, IDictionary<object, object>/*!*/ self, 
+            CallSiteStorage<Func<CallSite, object, object, object>>/*!*/ initializeCopyStorage,
+            CallSiteStorage<Func<CallSite, RubyClass, object>>/*!*/ allocateStorage,
+            BlockParam block, IDictionary<object, object>/*!*/ self, 
             [DefaultProtocol, NotNull]IDictionary<object, object>/*!*/ hash) {
 
-            return Update(context, block, Duplicate(initializeCopyStorage, allocateStorage, context, self), hash);
+            return Update(allocateStorage.Context, block, Duplicate(initializeCopyStorage, allocateStorage, self), hash);
         }
 
         [RubyMethod("merge!")]
@@ -416,11 +417,11 @@ namespace IronRuby.Builtins {
         // (because it needs to return the new collection)
         [RubyMethod("reject")]
         public static object Reject(
-            CallSiteStorage<Func<CallSite, RubyContext, object, object, object>>/*!*/ initializeCopyStorage,
-            CallSiteStorage<Func<CallSite, RubyContext, RubyClass, object>>/*!*/ allocateStorage,
-            RubyContext/*!*/ context, BlockParam block, IDictionary<object, object>/*!*/ self) {
+            CallSiteStorage<Func<CallSite, object, object, object>>/*!*/ initializeCopyStorage,
+            CallSiteStorage<Func<CallSite, RubyClass, object>>/*!*/ allocateStorage,
+            BlockParam block, IDictionary<object, object>/*!*/ self) {
 
-            return DeleteIf(context, block, Duplicate(initializeCopyStorage, allocateStorage, context, self));
+            return DeleteIf(allocateStorage.Context, block, Duplicate(initializeCopyStorage, allocateStorage, self));
         }
 
         // This works like delete_if, but returns nil if no elements were removed
@@ -497,8 +498,8 @@ namespace IronRuby.Builtins {
             BinaryOpStorage/*!*/ comparisonStorage,
             BinaryOpStorage/*!*/ lessThanStorage,
             BinaryOpStorage/*!*/ greaterThanStorage,            
-            RubyContext/*!*/ context, BlockParam block, IDictionary<object, object>/*!*/ self) {
-            return ArrayOps.SortInPlace(comparisonStorage, lessThanStorage, greaterThanStorage, context, block, ToArray(self));
+            BlockParam block, IDictionary<object, object>/*!*/ self) {
+            return ArrayOps.SortInPlace(comparisonStorage, lessThanStorage, greaterThanStorage, block, ToArray(self));
         }
 
         [RubyMethod("to_a")]
@@ -516,12 +517,14 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("to_s")]
-        public static MutableString ToString(UnaryOpStorage/*!*/ tosStorage, RubyContext/*!*/ context, IDictionary<object, object>/*!*/ self) {
+        public static MutableString/*!*/ ToMutableString(ConversionStorage<MutableString>/*!*/ tosConversion, 
+            IDictionary<object, object>/*!*/ self) {
+
             using (IDisposable handle = RubyUtils.InfiniteToSTracker.TrackObject(self)) {
                 if (handle == null) {
                     return MutableString.Create("{...}");
                 } else {
-                    return IListOps.Join(tosStorage, context, ToArray(self));
+                    return IListOps.Join(tosConversion, ToArray(self));
                 }
             }
         }

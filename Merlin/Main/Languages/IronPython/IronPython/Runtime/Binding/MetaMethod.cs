@@ -16,9 +16,10 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq.Expressions;
 using System.Dynamic;
+using System.Linq.Expressions;
 
+using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Utils;
 
@@ -29,7 +30,7 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Runtime.Binding {
 
-    class MetaMethod : MetaPythonObject, IPythonInvokable {
+    class MetaMethod : MetaPythonObject, IPythonInvokable, IPythonConvertible {
         public MetaMethod(Expression/*!*/ expression, BindingRestrictions/*!*/ restrictions, Method/*!*/ value)
             : base(expression, BindingRestrictions.Empty, value) {
             Assert.NotNull(value);
@@ -53,12 +54,20 @@ namespace IronPython.Runtime.Binding {
             return InvokeWorker(callAction, args);
         }
 
-        public override DynamicMetaObject BindConvert(ConvertBinder action) {
-            if (action.Type.IsSubclassOf(typeof(Delegate))) {
-                return MakeDelegateTarget(action, action.Type, Restrict(typeof(Method)));
+        public override DynamicMetaObject BindConvert(ConvertBinder/*!*/ conversion) {
+            return ConvertWorker(conversion, conversion.Type, conversion.Explicit ? ConversionResultKind.ExplicitCast : ConversionResultKind.ImplicitCast);
+        }
+
+        public DynamicMetaObject BindConvert(PythonConversionBinder binder) {
+            return ConvertWorker(binder, binder.Type, binder.ResultKind);
+        }
+
+        public DynamicMetaObject ConvertWorker(DynamicMetaObjectBinder binder, Type toType, ConversionResultKind kind) {
+            if (toType.IsSubclassOf(typeof(Delegate))) {
+                return MakeDelegateTarget(binder, toType, Restrict(typeof(Method)));
             }
 
-            return base.BindConvert(action);
+            return FallbackConvert(binder);
         }
 
         #endregion
@@ -66,6 +75,9 @@ namespace IronPython.Runtime.Binding {
         #region Invoke Implementation
 
         private DynamicMetaObject InvokeWorker(DynamicMetaObjectBinder/*!*/ callAction, DynamicMetaObject/*!*/[] args) {
+            PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "Method Invoke " + args.Length);
+            PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "Method");
+
             CallSignature signature = BindingHelpers.GetCallSignature(callAction);
             DynamicMetaObject self = Restrict(typeof(Method));
             BindingRestrictions restrictions = self.Restrictions;
@@ -79,7 +91,7 @@ namespace IronPython.Runtime.Binding {
                     BindingRestrictions.GetExpressionRestriction(
                         Ast.Equal(
                             GetSelfExpression(self),
-                            Ast.Constant(null)
+                            AstUtils.Constant(null)
                         )
                     )
                 );
@@ -90,7 +102,7 @@ namespace IronPython.Runtime.Binding {
                         Ast.Call(
                             typeof(PythonOps).GetMethod("MethodCheckSelf"),
                             self.Expression,
-                            Ast.Constant(null)
+                            AstUtils.Constant(null)
                         ),
                         restrictions
                     );
@@ -100,11 +112,11 @@ namespace IronPython.Runtime.Binding {
                         Ast.Block(
                             MakeCheckSelf(signature, args),
                             Ast.Dynamic(
-                                BinderState.GetBinderState(callAction).Invoke(
+                                PythonContext.GetPythonContext(callAction).Invoke(
                                     BindingHelpers.GetCallSignature(callAction)
                                 ),
                                 typeof(object),
-                                ArrayUtils.Insert(BinderState.GetCodeContext(callAction), DynamicUtils.GetExpressions(ArrayUtils.Insert(func, args)))
+                                ArrayUtils.Insert(PythonContext.GetCodeContext(callAction), DynamicUtils.GetExpressions(ArrayUtils.Insert(func, args)))
                             )
                         ),
                         BindingRestrictions.Empty
@@ -128,7 +140,7 @@ namespace IronPython.Runtime.Binding {
                     BindingRestrictions.GetExpressionRestriction(
                         Ast.NotEqual(
                             GetSelfExpression(self),
-                            Ast.Constant(null)
+                            AstUtils.Constant(null)
                         )
                     )
                 );
@@ -140,11 +152,11 @@ namespace IronPython.Runtime.Binding {
 
                 call = new DynamicMetaObject(
                     Ast.Dynamic(
-                        BinderState.GetBinderState(callAction).Invoke(
+                        PythonContext.GetPythonContext(callAction).Invoke(
                             newSig
                         ),
                         typeof(object),
-                        ArrayUtils.Insert(BinderState.GetCodeContext(callAction), DynamicUtils.GetExpressions(newArgs))
+                        ArrayUtils.Insert(PythonContext.GetCodeContext(callAction), DynamicUtils.GetExpressions(newArgs))
                     ),
                     BindingRestrictions.Empty
                 );
@@ -152,7 +164,7 @@ namespace IronPython.Runtime.Binding {
                 /*
                 call = func.Invoke(
                     new CallBinder(
-                        BinderState.GetBinderState(callAction),
+                        PythonContext.GetBinderState(callAction),
                         newSig
                     ),
                     newArgs
@@ -239,7 +251,7 @@ namespace IronPython.Runtime.Binding {
             if (firstArgKind == ArgumentType.Simple || firstArgKind == ArgumentType.Instance) {
                 res = CheckSelf(AstUtils.Convert(Expression, typeof(Method)), args[0].Expression);
             } else if (firstArgKind != ArgumentType.List) {
-                res = CheckSelf(AstUtils.Convert(Expression, typeof(Method)), Ast.Constant(null));
+                res = CheckSelf(AstUtils.Convert(Expression, typeof(Method)), AstUtils.Constant(null));
             } else {
                 // list, check arg[0] and then return original list.  If not a list,
                 // or we have no items, then check against null & throw.
@@ -253,15 +265,15 @@ namespace IronPython.Runtime.Binding {
                                     Ast.Convert(args[0].Expression, typeof(ICollection)),
                                     typeof(ICollection).GetProperty("Count")
                                 ),
-                                Ast.Constant(0)
+                                AstUtils.Constant(0)
                             )
                         ),
                         Ast.Call(
                             Ast.Convert(args[0].Expression, typeof(IList<object>)),
                             typeof(IList<object>).GetMethod("get_Item"),
-                            Ast.Constant(0)
+                            AstUtils.Constant(0)
                         ),
-                        Ast.Constant(null)
+                        AstUtils.Constant(null)
                     )
                 );
             }

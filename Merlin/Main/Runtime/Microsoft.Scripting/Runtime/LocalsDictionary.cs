@@ -24,22 +24,22 @@ namespace Microsoft.Scripting.Runtime {
     /// Creates a dictionary of locals in this scope
     /// </summary>
     public sealed class LocalsDictionary : CustomSymbolDictionary {
-        private readonly IList<IStrongBox> _locals;
+        private readonly IRuntimeVariables _locals;
         private readonly SymbolId[] _symbols;
-        private Dictionary<SymbolId, IStrongBox> _boxes;
+        private Dictionary<SymbolId, int> _boxes;
 
-        public LocalsDictionary(IList<IStrongBox> locals, SymbolId[] symbols) {
+        public LocalsDictionary(IRuntimeVariables locals, SymbolId[] symbols) {
             Assert.NotNull(locals, symbols);
             _locals = locals;
             _symbols = symbols;
         }
-        
+
         private void EnsureBoxes() {
             if (_boxes == null) {
                 int count = _symbols.Length;
-                Dictionary<SymbolId, IStrongBox> boxes = new Dictionary<SymbolId, IStrongBox>(count);
+                Dictionary<SymbolId, int> boxes = new Dictionary<SymbolId, int>(count);
                 for (int i = 0; i < count; i++) {
-                    boxes[_symbols[i]] = _locals[i];
+                    boxes[_symbols[i]] = i;
                 }
                 _boxes = boxes;
             }
@@ -52,9 +52,9 @@ namespace Microsoft.Scripting.Runtime {
         protected internal override bool TrySetExtraValue(SymbolId key, object value) {
             EnsureBoxes();
 
-            IStrongBox box;
-            if (_boxes.TryGetValue(key, out box)) {
-                box.Value = value;
+            int index;
+            if (_boxes.TryGetValue(key, out index)) {
+                _locals[index] = value;
                 return true;
             }
 
@@ -64,9 +64,9 @@ namespace Microsoft.Scripting.Runtime {
         protected internal override bool TryGetExtraValue(SymbolId key, out object value) {
             EnsureBoxes();
 
-            IStrongBox box;
-            if (_boxes.TryGetValue(key, out box)) {
-                value = box.Value;
+            int index;
+            if (_boxes.TryGetValue(key, out index)) {
+                value = _locals[index];
                 return true;
             }
             value = null;

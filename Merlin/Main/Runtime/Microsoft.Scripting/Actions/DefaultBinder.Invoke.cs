@@ -29,20 +29,6 @@ namespace Microsoft.Scripting.Actions {
     using Ast = System.Linq.Expressions.Expression;
 
     public partial class DefaultBinder : ActionBinder {
-
-        /// <summary>
-        /// Provides default binding for performing a call on the specified meta objects.
-        /// </summary>
-        /// <param name="signature">The signature describing the call</param>
-        /// <param name="target">The object to be called</param>
-        /// <param name="args">
-        /// Additional meta objects are the parameters for the call as specified by the CallSignature in the CallAction.
-        /// </param>
-        /// <returns>A MetaObject representing the call or the error.</returns>
-        public DynamicMetaObject Call(CallSignature signature, DynamicMetaObject target, params DynamicMetaObject[] args) {
-            return Call(signature, new ParameterBinder(this), target, args);
-        }
-
         /// <summary>
         /// Provides default binding for performing a call on the specified meta objects.
         /// </summary>
@@ -51,17 +37,25 @@ namespace Microsoft.Scripting.Actions {
         /// <param name="args">
         /// Additional meta objects are the parameters for the call as specified by the CallSignature in the CallAction.
         /// </param>
-        /// <param name="parameterBinder">ParameterBinder used to map arguments to parameters.</param>
+        /// <param name="resolverFactory">Overload resolver factory.</param>
         /// <returns>A MetaObject representing the call or the error.</returns>
-        public DynamicMetaObject Call(CallSignature signature, ParameterBinder parameterBinder, DynamicMetaObject target, params DynamicMetaObject[] args) {
+        public DynamicMetaObject Call(CallSignature signature, OverloadResolverFactory resolverFactory, DynamicMetaObject target, params DynamicMetaObject[] args) {
             ContractUtils.RequiresNotNullItems(args, "args");
-            ContractUtils.RequiresNotNull(parameterBinder, "parameterBinder");
+            ContractUtils.RequiresNotNull(resolverFactory, "resolverFactory");
 
             TargetInfo targetInfo = GetTargetInfo(signature, target, args);
 
             if (targetInfo != null) {
                 // we're calling a well-known MethodBase
-                return MakeMetaMethodCall(signature, parameterBinder, targetInfo);
+                DynamicMetaObject res =  MakeMetaMethodCall(signature, resolverFactory, targetInfo);
+                if (res.Expression.Type.IsValueType) {
+                    res = new DynamicMetaObject(
+                        AstUtils.Convert(res.Expression, typeof(object)),
+                        res.Restrictions
+                    );
+                }
+
+                return res;
             } else {
                 // we can't call this object
                 return MakeCannotCallRule(target, target.GetLimitType());
@@ -70,29 +64,23 @@ namespace Microsoft.Scripting.Actions {
 
         #region Method Call Rule
 
-        private DynamicMetaObject MakeMetaMethodCall(CallSignature signature, ParameterBinder parameterBinder, TargetInfo targetInfo) {
+        private DynamicMetaObject MakeMetaMethodCall(CallSignature signature, OverloadResolverFactory resolverFactory, TargetInfo targetInfo) {
             BindingRestrictions restrictions = BindingRestrictions.Combine(targetInfo.Arguments).Merge(targetInfo.Restrictions);
             if (targetInfo.Instance != null) {
                 restrictions = targetInfo.Instance.Restrictions.Merge(restrictions);
             }
 
+            DynamicMetaObject[] args;
+            CallTypes callType;
             if (targetInfo.Instance != null) {
-                return CallInstanceMethod(
-                    parameterBinder,
-                    targetInfo.Targets,
-                    targetInfo.Instance,
-                    targetInfo.Arguments,
-                    signature,
-                    restrictions
-                );
+                args = ArrayUtils.Insert(targetInfo.Instance, targetInfo.Arguments);
+                callType = CallTypes.ImplicitInstance;
+            } else {
+                args = targetInfo.Arguments;
+                callType = CallTypes.None;
             }
 
-            return CallMethod(
-                parameterBinder,
-                targetInfo.Targets,
-                targetInfo.Arguments,
-                signature,
-                restrictions);
+            return CallMethod(resolverFactory.CreateOverloadResolver(args, signature, callType), targetInfo.Targets, restrictions);
         }
 
         #endregion
@@ -185,7 +173,7 @@ namespace Microsoft.Scripting.Actions {
                             Ast.Convert(self.Expression, typeof(BoundMemberTracker)),
                             typeof(BoundMemberTracker).GetProperty("BoundTo")
                         ),
-                        Ast.Constant(bmt.BoundTo)
+                        AstUtils.Constant(bmt.BoundTo)
                     )
                 );
 
@@ -253,10 +241,11 @@ namespace Microsoft.Scripting.Actions {
                 ErrorInfo.FromException(
                     Ast.New(
                         typeof(ArgumentTypeException).GetConstructor(new Type[] { typeof(string) }),
-                        Ast.Constant(type.Name + " is not callable")
+                        AstUtils.Constant(type.Name + " is not callable")
                     )
                 ),
-                self.Restrictions.Merge(BindingRestrictionsHelpers.GetRuntimeTypeRestriction(self.Expression, type))
+                self.Restrictions.Merge(BindingRestrictionsHelpers.GetRuntimeTypeRestriction(self.Expression, type)),
+                typeof(object)
             );
         }
 

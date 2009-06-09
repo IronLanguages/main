@@ -1,0 +1,25 @@
+
+<html>
+<head><title>format_object (Log4r::BasicFormatter)</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<style>
+  .kw { color: #3333FF; font-weight: bold }
+  .cmt { color: green; font-style: italic }
+  .str { color: #662222; font-style: italic }
+  .re  { color: #662222; }
+</style>
+</head>
+<body bgcolor="white">
+<pre><span class="cmt"># File log4r/formatter/formatter.rb, line 70</span>
+    <span class="kw">def</span> format_object(obj)
+      <span class="kw">if</span> obj.kind_of? Exception
+        <span class="kw">return</span> &quot;Caught #{obj.class}: #{obj.message}\n\t&quot; +\
+               obj.backtrace[0...@depth].join(<span class="str">&quot;\n\t&quot;</span>)
+      <span class="kw">elsif</span> obj.kind_of? String
+        <span class="kw">return</span> obj
+      <span class="kw">else</span> <span class="cmt"># inspect the object</span>
+        <span class="kw">return</span> &quot;#{obj.class}: #{obj.inspect}&quot;
+      <span class="kw">end</span>
+    <span class="kw">end</span></pre>
+</body>
+</html>

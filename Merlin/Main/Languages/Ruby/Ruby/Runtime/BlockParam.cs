@@ -27,6 +27,7 @@ using Ast = System.Linq.Expressions.Expression;
 using AstFactory = IronRuby.Compiler.Ast.AstFactory;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 using IronRuby.Compiler.Generation;
+using System.Dynamic;
 
 namespace IronRuby.Runtime {
     
@@ -42,6 +43,24 @@ namespace IronRuby.Runtime {
     }
 
     internal sealed class MissingBlockParam {
+        /// <remarks>
+        /// LimitType must be MissingBlockParam (overload resolution, <see cref="RubyParameterBinder.PrepareParametersBinding"/>).
+        /// Restriction should be empty: used only for !HasBlock call-sites => the site will never be reused for a call with a block.
+        /// </remarks>
+        internal sealed class Meta : DynamicMetaObject, IRestrictedMetaObject {
+            internal static readonly DynamicMetaObject Instance = new Meta();
+
+            private Meta()
+                : base(AstUtils.Constant(null, typeof(MissingBlockParam)), BindingRestrictions.Empty) {
+                Debug.Assert(LimitType == typeof(MissingBlockParam));
+            }
+
+            public DynamicMetaObject Restrict(Type/*!*/ type) {
+                Debug.Assert(type == typeof(BlockParam) || type == typeof(MissingBlockParam));
+                return this;
+            }
+        }
+
     }
 
     public sealed partial class BlockParam {
@@ -50,10 +69,10 @@ namespace IronRuby.Runtime {
         private readonly BlockCallerKind _callerKind;
 
         // filled by define_method, module_eval, load: if not null than method definition and method alias uses the module
-        private RubyModule _moduleDeclaration;
+        private RubyModule _methodLookupModule;
 
         // filled by define_method: if not null then injects a scope in super call method lookup:
-        private readonly string _superMethodName;
+        private readonly string _methodName;
         
         // Is the library method call taking this BlockParam a proc converter?
         // Used only for BlockParams that are passed to library method calls.
@@ -65,12 +84,16 @@ namespace IronRuby.Runtime {
         private RuntimeFlowControl _targetFrame;
         private ProcKind _sourceProcKind;
 
+        private void ObjectInvariant() {
+            ContractUtils.Invariant(_methodName == null || _methodLookupModule != null);
+        }
+
         internal BlockCallerKind CallerKind { get { return _callerKind; } }
         internal ProcKind SourceProcKind { get { return _sourceProcKind; } }
         internal BlockReturnReason ReturnReason { get { return _returnReason; } set { _returnReason = value; } }
         internal RuntimeFlowControl TargetFrame { get { return _targetFrame; } }
-        internal RubyModule ModuleDeclaration { get { return _moduleDeclaration; } set { _moduleDeclaration = value; } }
-        internal string SuperMethodName { get { return _superMethodName; } }
+        internal RubyModule MethodLookupModule { get { return _methodLookupModule; } set { _methodLookupModule = value; } }
+        internal string MethodName { get { return _methodName; } }
         internal bool IsLibProcConverter { get { return _isLibProcConverter; } }
         
         public Proc/*!*/ Proc { get { return _proc; } }
@@ -82,15 +105,23 @@ namespace IronRuby.Runtime {
             get { return _proc.LocalScope.RubyContext; }
         }
 
+        public bool IsMethod {
+            get {
+                ObjectInvariant();
+                return _methodName != null; 
+            }
+        }
+
         internal static PropertyInfo/*!*/ SelfProperty { get { return typeof(BlockParam).GetProperty("Self"); } }
 
         // friend: RubyOps
-        internal BlockParam(Proc/*!*/ proc, BlockCallerKind callerKind, bool isLibProcConverter, RubyModule moduleDeclaration, string superName) {
+        internal BlockParam(Proc/*!*/ proc, BlockCallerKind callerKind, bool isLibProcConverter, RubyModule moduleDeclaration, string methodName) {
             _callerKind = callerKind;
             _proc = proc;
             _isLibProcConverter = isLibProcConverter;
-            _moduleDeclaration = moduleDeclaration;
-            _superMethodName = superName;
+            _methodLookupModule = moduleDeclaration;
+            _methodName = methodName;
+            ObjectInvariant();
         }
 
         internal void SetFlowControl(BlockReturnReason reason, RuntimeFlowControl targetFrame, ProcKind sourceProcKind) {
@@ -169,10 +200,9 @@ namespace IronRuby.Runtime {
         #region Dynamic Operations
 
         /// <summary>
-        /// OldCallAction on Proc target.
-        /// From control flow perspective it "yields" to the proc.
+        /// "yields" to the proc.
         /// </summary>
-        internal void SetCallActionRule(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
+        internal void BuildInvoke(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
             Assert.NotNull(metaBuilder, args);
             Debug.Assert(!args.Signature.HasBlock);
 

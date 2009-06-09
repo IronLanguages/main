@@ -15,6 +15,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Dynamic;
+using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Actions.Calls {
     /// <summary>
@@ -22,46 +24,50 @@ namespace Microsoft.Scripting.Actions.Calls {
     /// type to another.
     /// </summary>
     public sealed class ConversionResult {
-        private readonly Type _fromType;
+        private readonly object _arg;
+        private readonly Type _argType;
         private readonly Type _toType;
-        private readonly int _position;
         private readonly bool _failed;
 
-        public ConversionResult(Type fromType, Type toType, int position, bool failed) {
-            _fromType = fromType;
+        internal ConversionResult(object arg, Type argType, Type toType, bool failed) {
+            _arg = arg;
+            _argType = argType;
             _toType = toType;
-            _position = position;
             _failed = failed;
         }
 
-        public Type From {
-            get {
-                return _fromType;
-            }
+        /// <summary>
+        /// Value of the argument or null if it is not available.
+        /// </summary>
+        public object Arg {
+            get { return _arg; }
+        }
+
+        /// <summary>
+        /// Argument actual type or its limit type if the value not known.
+        /// DynamicNull if the argument value is null.
+        /// </summary>
+        public Type ArgType {
+            get { return _argType; }
         }
 
         public Type To {
-            get {
-                return _toType;
-            }
-        }
-
-        public int Position {
-            get {
-                return _position;
-            }
+            get { return _toType; }
         }
 
         public bool Failed {
-            get {
-                return _failed;
-            }
+            get { return _failed; }
         }
 
-        internal static void ReplaceLastFailure(IList<ConversionResult> failures, int newIndex, bool isFailure) {
+        internal static void ReplaceLastFailure(IList<ConversionResult> failures, bool isFailure) {
             ConversionResult failure = failures[failures.Count - 1];
             failures.RemoveAt(failures.Count - 1);
-            failures.Add(new ConversionResult(failure.From, failure.To, newIndex, isFailure));
+            failures.Add(new ConversionResult(failure.Arg, failure.ArgType, failure.To, isFailure));
+        }
+
+        public string GetArgumentTypeName(ActionBinder binder) {
+            ContractUtils.RequiresNotNull(binder, "binder");
+            return (_arg != null) ? binder.GetObjectTypeName(_arg) : binder.GetTypeName(_argType);
         }
     }
 }

@@ -23,6 +23,7 @@ using Microsoft.Scripting.Utils;
 using System.Dynamic;
 using System.Diagnostics;
 using System.Reflection;
+using IronRuby.Compiler;
 using IronRuby.Compiler.Generation;
 
 using Ast = System.Linq.Expressions.Expression;
@@ -60,6 +61,11 @@ namespace IronRuby.Builtins {
     // ---- ThreadError
     // ---- TypeError
     // ---- ZeroDivisionError
+    // ---- EncodingError (1.9)
+    // ------ Encoding::CompatibilityError (1.9)
+    // ------ Encoding::UndefinedConversionError (1.9)
+    // ------ Encoding::InvalidByteSequenceError (1.9)
+    // ------ Encoding::ConverterNotFoundError (1.9)
     // -- SystemExit
     [RubyException("Exception", Extends = typeof(Exception))]
     public static class ExceptionOps {
@@ -71,17 +77,12 @@ namespace IronRuby.Builtins {
             return RubyExceptionData.GetClrMessage(message, exceptionClass.Name);
         }
 
-        [Emitted]
-        public static Exception/*!*/ ReinitializeException(Exception/*!*/ self, object/*!*/ message) {
-            var instance = RubyExceptionData.GetInstance(self);
-            instance.Backtrace = null;
-            instance.Message = message;
-            return self;
-        }
-        
         [RubyMethod("initialize", RubyMethodAttributes.PrivateInstance)]
         public static Exception/*!*/ ReinitializeException(RubyContext/*!*/ context, Exception/*!*/ self, [DefaultParameterValue(null)]object message) {
-            return ReinitializeException(self, message ?? context.GetClassOf(self).Name);
+            var instance = RubyExceptionData.GetInstance(self);
+            instance.Backtrace = null;
+            instance.Message = message ?? MutableString.Create(context.GetClassOf(self).Name);
+            return self;
         }
 
         [RubyMethod("exception", RubyMethodAttributes.PublicSingleton)]
@@ -112,7 +113,8 @@ namespace IronRuby.Builtins {
             return RubyExceptionData.GetInstance(self).Backtrace = backtrace;
         }
 
-        // signature: (Exception! self, [Optional]object exceptionArg) : Exception!
+        // signature: (Exception! self, [Optional]object arg) : Exception!
+        // arg is a message
         [RubyMethod("exception", RubyMethodAttributes.PublicInstance)]
         public static RuleGenerator/*!*/ GetException() {
             return new RuleGenerator((metaBuilder, args, name) => {
@@ -127,50 +129,55 @@ namespace IronRuby.Builtins {
                         metaBuilder.Result = args.TargetExpression;
                     } else {
                         RubyClass cls = args.RubyContext.GetClassOf(args.Target);
-                        var classExpression = Ast.Constant(cls);
+                        var classExpression = AstUtils.Constant(cls);
                         args.SetTarget(classExpression, cls);
 
                         ParameterExpression messageVariable = null;
 
-                        // ReinitializeException(new <exception-type>(GetClrMessage(<class>, #message = <message>)), #message)
-                        metaBuilder.Result = Ast.Call(null, new Func<Exception, object, Exception>(ReinitializeException).Method, 
-                            cls.MakeAllocatorCall(args, () => 
-                                Ast.Call(null, new Func<RubyClass, object, string>(GetClrMessage).Method, 
-                                    classExpression, 
-                                    Ast.Assign(messageVariable = metaBuilder.GetTemporary(typeof(object), "#message"), AstFactory.Box(argsBuilder[0]))
-                                )
-                            ),
-                            messageVariable ?? AstFactory.Box(argsBuilder[0])
-                        );
+                        // new <exception-type>(GetClrMessage(<class>, #message = <message>))
+                        if (cls.BuildAllocatorCall(metaBuilder, args, () =>
+                            Ast.Call(null, new Func<RubyClass, object, string>(GetClrMessage).Method,
+                                classExpression,
+                                Ast.Assign(messageVariable = metaBuilder.GetTemporary(typeof(object), "#message"), AstFactory.Box(argsBuilder[0]))
+                            )
+                        )) {
+                            // ReinitializeException(<result>, #message)
+                            metaBuilder.Result = Ast.Call(null, new Func<RubyContext, Exception, object, Exception>(ReinitializeException).Method,
+                                AstUtils.Convert(args.MetaContext.Expression, typeof(RubyContext)),
+                                metaBuilder.Result,
+                                messageVariable ?? AstFactory.Box(argsBuilder[0])
+                            );
+                        } else {
+                            metaBuilder.SetError(Methods.MakeAllocatorUndefinedError.OpCall(Ast.Convert(args.TargetExpression, typeof(RubyClass))));
+                        }
                     }
                 }
             });
         }
 
         [RubyMethod("message")]
-        public static object GetMessage(Exception/*!*/ self) {
-            return RubyExceptionData.GetInstance(self).Message;
+        public static object GetMessage(UnaryOpStorage/*!*/ stringReprStorage, Exception/*!*/ self) {
+            var site = stringReprStorage.GetCallSite("to_s");
+            return site.Target(site, self);
         }
 
         [RubyMethod("to_s")]
         [RubyMethod("to_str")]
-        public static MutableString/*!*/ GetMessage(ConversionStorage<MutableString>/*!*/ tosStorage, RubyContext/*!*/ context, Exception/*!*/ self) {
-            return Protocols.ConvertToString(tosStorage, context, GetMessage(self));
+        public static object StringRepresentation(Exception/*!*/ self) {
+            return RubyExceptionData.GetInstance(self).Message;
         }
 
         [RubyMethod("inspect", RubyMethodAttributes.PublicInstance)]
-        public static MutableString/*!*/ Inspect(UnaryOpStorage/*!*/ inspectStorage, ConversionStorage<MutableString>/*!*/ tosStorage,
-            RubyContext/*!*/ context, Exception/*!*/ self) {
-
+        public static MutableString/*!*/ Inspect(UnaryOpStorage/*!*/ inspectStorage, ConversionStorage<MutableString>/*!*/ tosConversion, Exception/*!*/ self) {
             object message = RubyExceptionData.GetInstance(self).Message;
-            string className = RubyUtils.GetClassName(context, self);
+            string className = inspectStorage.Context.GetClassDisplayName(self);
 
             MutableString result = MutableString.CreateMutable();
             result.Append("#<");
             result.Append(className);
             result.Append(": ");
             if (message != null) {
-                result.Append(KernelOps.Inspect(inspectStorage, tosStorage, context, message));
+                result.Append(KernelOps.Inspect(inspectStorage, tosConversion, message));
             } else {
                 result.Append(className);
             }

@@ -1,0 +1,85 @@
+= Remote Logging 
+
+Want to use Log4r over a network? No problem! A Log4r::RemoteOutputter will
+send its LogEvents to a Log4r::LogServer. These two classes are as easy to
+set up and use as the rest of Log4r. 
+
+== Use ROMP
+
+There is one catch though: ROMP is required to use this service. It is a
+DRb-like system with superb performance and better features. Get ROMP at 
+http://rubystuff.org/romp/
+
+== LogServer
+
+LogServer is simply a kind of Logger which embeds a ROMP::Server. Like a
+normal Logger, you can give it Outputters, set its level and so on. Its
+logging methods are accessible over a network and are called by a 
+RemoteOutputter on another host.
+
+=== LogServer Setup
+
+Setup is easy. First,
+
+  require 'log4r/logserver'
+
+The following sets up a LogServer named 'central' on localhost port 9999:
+
+  LogServer.new('central', 'tcpromp://localhost:9999')
+
+We manipulate it and give it outputters as normal:
+
+  serv = Logger['central']              # grab our new LogServer
+  serv.add 'stdout'                     # make it log to $stdout
+
+== RemoteOutputter
+
+RemoteOutputter is simply a kind of Outputter that embeds a ROMP::Client. When 
+RemoteOutputter gets a LogEvent, it will forward it to whatever LogServer it's 
+connected to. In essence, RemoteOutputter behaves like a Logger that is
+forwarding a LogEvent to another Logger (as is done in heiarchial logging).
+
+=== RemoteOutputter Setup
+
+First,
+
+  require 'log4r/outputter/remoteoutputter'
+
+Unlike typical outputters, RemoteOutputter doesn't do any formatting. That's
+up to the LogServer's outputters. Otherwise, RemoteOutputter can be
+set up as usual. The ROMP uri of the LogServer must be specified.
+
+  RemoteOutputter.new 'client', :uri=>'tcpromp://localhost:9999'
+
+=== Using RemoteOutputter
+
+Give our new RemoteOutputter to a logger:
+
+  mylog = Logger['mylog']
+  mylog.add 'client'
+
+Now, whenever mylog generates a LogEvent, LogServer should get a copy. Doing
+the following:
+
+  mylog.info "This is a message from 'mylog'"
+
+Produces this output on LogServer's console:
+
+  INFO mylog: This is a message from 'mylog'
+
+== XML Configuration
+
+RemoteOutputter is set up like normal Outputters. LogServer is set up
+like a normal Logger, but with an element name of logserver instead of
+logger:
+
+  <log4r_config>
+    <logserver name="name" uri="tcpromp://localhost:9999">
+    ...
+
+== Debugging
+
+It is recommended to set up a logger named 'log4r' on both the server and
+client to see what LogServer and RemoteOutputter are up to. Both of the classes
+use Log4r's internal logging to report any problems. See the section
+<b>What's Going on Inside?</b> in log4r.rb for more info.

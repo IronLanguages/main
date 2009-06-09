@@ -1,0 +1,39 @@
+== Synopsis
+   An easy way to implement the facade pattern in your classes.
+
+== Prerequisites
+   Ruby 1.8.0 or later
+
+== Installation
+   ruby test/tc_facade.rb (optional)
+   ruby install.rb
+   
+== Usage
+   require "facade"
+   class Foo < String
+      extend Facade
+      facade File, :dirname, :basename
+      facade Dir
+   end
+
+   f = Foo.new("/home/djberge")
+   puts f.basename # 'djberge'
+   puts f.dirname  # '/home'
+
+== Acknowledgements
+   Eero Saynatkari, Eric Hodel and Michael Granger for ideas and code which I
+   shamelessly plagiarized.
+
+== Copyright
+   Copyright (c) 2005-2007 Daniel J. Berger
+   Licensed under the same terms as Ruby itself. 
+
+== Warranty
+   This package is provided "as is" and without any express or
+   implied warranties, including, without limitation, the implied
+   warranties of merchantability and fitness for a particular purpose
+
+== Author
+   Daniel J. Berger
+   djberg96 at nospam at gmail dot com
+   imperator on IRC (freenode)

@@ -18,11 +18,9 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Dynamic;
-using System.Dynamic.Utils;
+using System.Security;
 using ComTypes = System.Runtime.InteropServices.ComTypes;
 
 namespace System.Dynamic {
@@ -67,12 +65,14 @@ namespace System.Dynamic {
 
         #region ctor
 
+        [SecurityCritical]
         private ComEventSink(object rcw, Guid sourceIid) {
             Initialize(rcw, sourceIid);
         }
 
         #endregion
 
+        [SecurityCritical]
         private void Initialize(object rcw, Guid sourceIid) {
             _sourceIid = sourceIid;
             _adviseCookie = -1;
@@ -94,10 +94,15 @@ namespace System.Dynamic {
 
         #region static methods
 
+        [SecurityCritical]
         public static ComEventSink FromRuntimeCallableWrapper(object rcw, Guid sourceIid, bool createIfNotFound) {
             List<ComEventSink> comEventSinks = ComEventSinksContainer.FromRuntimeCallableWrapper(rcw, createIfNotFound);
-            ComEventSink comEventSink = null;
 
+            if (comEventSinks == null) {
+                return null;
+            }
+
+            ComEventSink comEventSink = null;
             lock (comEventSinks) {
 
                 foreach (ComEventSink sink in comEventSinks) {
@@ -125,7 +130,6 @@ namespace System.Dynamic {
 
         public void AddHandler(int dispid, object func) {
             string name = String.Format(CultureInfo.InvariantCulture, "[DISPID={0}]", dispid);
-            Func<object[], object> handler = new SplatCallSite(func).Invoke;
 
             lock (_lockObject) {
                 ComEventSinkMethod sinkMethod;
@@ -141,10 +145,11 @@ namespace System.Dynamic {
                     _comEventSinkMethods.Add(sinkMethod);
                 }
 
-                sinkMethod._handlers += handler;
+                sinkMethod._handlers += new SplatCallSite(func).Invoke;
             }
         }
 
+        [SecurityCritical]
         public void RemoveHandler(int dispid, object func) {
 
             string name = String.Format(CultureInfo.InvariantCulture, "[DISPID={0}]", dispid);
@@ -152,8 +157,9 @@ namespace System.Dynamic {
             lock (_lockObject) {
 
                 ComEventSinkMethod sinkEntry = FindSinkMethod(name);
-                if (sinkEntry == null)
-                    throw Error.RemovingUnregisteredHandler();
+                if (sinkEntry == null){
+                    return;
+                }
 
                 // Remove the delegate from multicast delegate chain.
                 // We will need to find the delegate that corresponds
@@ -266,6 +272,11 @@ namespace System.Dynamic {
 
         #region IDisposable
 
+#if MICROSOFT_DYNAMIC
+        [SecurityCritical, SecurityTreatAsSafe]
+#else
+        [SecuritySafeCritical]
+#endif
         public void Dispose() {
             DisposeAll();
             GC.SuppressFinalize(this);
@@ -273,10 +284,16 @@ namespace System.Dynamic {
 
         #endregion
 
+#if MICROSOFT_DYNAMIC
+        [SecurityCritical, SecurityTreatAsSafe]
+#else
+        [SecuritySafeCritical]
+#endif
         ~ComEventSink() {
             DisposeAll();
         }
 
+        [SecurityCritical]
         private void DisposeAll() {
             if (_connectionPoint == null) {
                 return;

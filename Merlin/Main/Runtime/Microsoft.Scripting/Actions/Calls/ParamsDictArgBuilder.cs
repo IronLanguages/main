@@ -43,15 +43,19 @@ namespace Microsoft.Scripting.Actions.Calls {
             _nameIndexes = nameIndexes;
         }
 
+        public override int ConsumedArgumentCount {
+            get { return AllArguments; }
+        }
+
         public override int Priority {
             get { return 3; }
         }
 
-        internal protected override Expression ToExpression(ParameterBinder parameterBinder, IList<Expression> parameters, bool[] hasBeenUsed) {
+        internal protected override Expression ToExpression(OverloadResolver resolver, RestrictedArguments args, bool[] hasBeenUsed) {
             Expression res = Ast.Call(
                 typeof(BinderOps).GetMethod("MakeSymbolDictionary"),
                 Ast.NewArrayInit(typeof(string), ConstantNames()),
-                AstUtils.NewArrayHelper(typeof(object), GetParameters(parameters, hasBeenUsed))
+                AstUtils.NewArrayHelper(typeof(object), GetParameters(args, hasBeenUsed))
             );
 
             return res;
@@ -63,16 +67,28 @@ namespace Microsoft.Scripting.Actions.Calls {
             }
         }
 
-        private List<Expression> GetParameters(IList<Expression> parameters, bool[] hasBeenUsed) {
+        private List<Expression> GetParameters(RestrictedArguments args, bool[] hasBeenUsed) {
             List<Expression> res = new List<Expression>(_nameIndexes.Length);
             for (int i = 0; i < _nameIndexes.Length; i++) {
                 int parameterIndex = _nameIndexes[i] + _argIndex;
                 if (!hasBeenUsed[parameterIndex]) {
-                    res.Add(parameters[parameterIndex]);
+                    res.Add(args.GetObject(parameterIndex).Expression);
                     hasBeenUsed[parameterIndex] = true;
                 }
             }
             return res;
+        }
+
+        private int[] GetParameters(bool[] hasBeenUsed) {
+            var res = new List<int>(_nameIndexes.Length);
+            for (int i = 0; i < _nameIndexes.Length; i++) {
+                int parameterIndex = _nameIndexes[i] + _argIndex;
+                if (!hasBeenUsed[parameterIndex]) {
+                    res.Add(parameterIndex);
+                    hasBeenUsed[parameterIndex] = true;
+                }
+            }
+            return res.ToArray();
         }
 
         private Expression[] ConstantNames() {
@@ -81,6 +97,19 @@ namespace Microsoft.Scripting.Actions.Calls {
                 res[i] = AstUtils.Constant(_names[i]);
             }
             return res;
+        }
+
+        protected internal override Func<object[], object> ToDelegate(OverloadResolver resolver, RestrictedArguments args, bool[] hasBeenUsed) {
+            string[] names = _names;
+            int[] indexes = GetParameters(hasBeenUsed);
+
+            return (actualArgs) => {
+                object[] values = new object[indexes.Length];
+                for (int i = 0; i < indexes.Length; i++) {
+                    values[i] = actualArgs[indexes[i] + 1];
+                }
+                return BinderOps.MakeSymbolDictionary(names, values);
+            };
         }
     }
 }

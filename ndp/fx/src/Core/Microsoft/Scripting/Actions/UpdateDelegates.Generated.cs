@@ -39,17 +39,15 @@ namespace System.Dynamic {
             // Declare the locals here upfront. It actually saves JIT stack space.
             //
             var @this = (CallSite<Func<CallSite, TRet>>)site;
-            CallSiteRule<Func<CallSite, TRet>>[] applicable;
-            CallSiteRule<Func<CallSite, TRet>> rule;
-            Func<CallSite, TRet> ruleTarget, startingTarget = @this.Target;
+            Func<CallSite, TRet>[] applicable;
+            Func<CallSite, TRet> rule, originalRule = @this.Target;
             TRet result;
 
-            CallSiteRule<Func<CallSite, TRet>> originalRule = null;
 
             //
             // Create matchmaker and its site. We'll need them regardless.
             //
-            site = CallSiteOps.CreateMatchmaker();
+            site = CallSiteOps.CreateMatchmaker(@this);
 
             //
             // Level 1 cache lookup
@@ -61,21 +59,20 @@ namespace System.Dynamic {
                     //
                     // Execute the rule
                     //
-                    ruleTarget = CallSiteOps.SetTarget(@this, rule);
 
-                    if ((object)startingTarget == (object)ruleTarget) {
-                        // if we produce another monomorphic
-                        // rule we should try and share code between the two.
-                        originalRule = rule;
-                    }else{
-                        result = ruleTarget(site);
+                    // if we've already tried it skip it...
+                    if ((object)rule != (object)originalRule) {
+                        @this.Target = rule;
+                        result = rule(site);
+
                         if (CallSiteOps.GetMatch(site)) {
+                            CallSiteOps.UpdateRules(@this, i);
                             return result;
                         }        
 
                         // Rule didn't match, try the next one
                         CallSiteOps.ClearMatch(site);            
-                    }                
+                    }
                 }
             }
 
@@ -86,43 +83,37 @@ namespace System.Dynamic {
             //
             // Any applicable rules in level 2 cache?
             //
+
             var cache = CallSiteOps.GetRuleCache(@this);
 
-            if ((applicable = CallSiteOps.FindApplicableRules(cache)) != null) {
-                for (int i = 0; i < applicable.Length; i++) {
-                    rule = applicable[i];
+            var cachedRules = cache.GetRules();
+            for (int i = 0; i < cachedRules.Length; i++) {
+                rule = cachedRules[i].Target;
 
-                    //
-                    // Execute the rule
-                    //
-                    ruleTarget = CallSiteOps.SetTarget(@this, rule);
+                //
+                // Execute the rule
+                //
+                @this.Target = rule;
 
-                    try {
-                        result = ruleTarget(site);
-                        if (CallSiteOps.GetMatch(site)) {
-                            return result;
-                        }
-                    } finally {
-                        if (CallSiteOps.GetMatch(site)) {
-                            //
-                            // Rule worked. Add it to level 1 cache
-                            //
-                            CallSiteOps.AddRule(@this, rule);
-                            // and then move it to the front of the L2 cache
-                            CallSiteOps.MoveRule(cache, rule);
-                        }
+                try {
+                    result = rule(site);
+                    if (CallSiteOps.GetMatch(site)) {
+                        return result;
                     }
-
-                    if ((object)startingTarget == (object)ruleTarget) {
-                        // If we've gone megamorphic we can still template off the L2 cache
-                        originalRule = rule;
+                } finally {
+                    if (CallSiteOps.GetMatch(site)) {
+                        //
+                        // Rule worked. Add it to level 1 cache
+                        //
+                        CallSiteOps.AddRule(@this, rule);
+                        // and then move it to the front of the L2 cache
+                        CallSiteOps.MoveRule(cache, rule, i);
                     }
-
-                    // Rule didn't match, try the next one
-                    CallSiteOps.ClearMatch(site);
                 }
-            }
 
+                // Rule didn't match, try the next one
+                CallSiteOps.ClearMatch(site);
+            }
 
             //
             // Miss on Level 0, 1 and 2 caches. Create new rule
@@ -132,16 +123,15 @@ namespace System.Dynamic {
             var args = new object[] {  };
 
             for (; ; ) {
-                rule = CallSiteOps.CreateNewRule(cache, @this, rule, originalRule, args);
+                @this.Target = originalRule;
+                rule = @this.Target = @this.Binder.BindCore(@this, args);
 
                 //
                 // Execute the rule on the matchmaker site
                 //
 
-                ruleTarget = CallSiteOps.SetTarget(@this, rule);
-
                 try {
-                    result = ruleTarget(site);
+                    result = rule(site);
                     if (CallSiteOps.GetMatch(site)) {
                         return result;
                     }
@@ -157,6 +147,13 @@ namespace System.Dynamic {
                 // Rule we got back didn't work, try another one
                 CallSiteOps.ClearMatch(site);
             }
+        }
+
+        [Obsolete("pregenerated CallSite<T>.Update delegate", true)]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters")]
+        internal static TRet NoMatch0<TRet>(CallSite site) {
+            site._match = false;
+            return default(TRet);
         }
 
 
@@ -167,17 +164,15 @@ namespace System.Dynamic {
             // Declare the locals here upfront. It actually saves JIT stack space.
             //
             var @this = (CallSite<Func<CallSite, T0, TRet>>)site;
-            CallSiteRule<Func<CallSite, T0, TRet>>[] applicable;
-            CallSiteRule<Func<CallSite, T0, TRet>> rule;
-            Func<CallSite, T0, TRet> ruleTarget, startingTarget = @this.Target;
+            Func<CallSite, T0, TRet>[] applicable;
+            Func<CallSite, T0, TRet> rule, originalRule = @this.Target;
             TRet result;
 
-            CallSiteRule<Func<CallSite, T0, TRet>> originalRule = null;
 
             //
             // Create matchmaker and its site. We'll need them regardless.
             //
-            site = CallSiteOps.CreateMatchmaker();
+            site = CallSiteOps.CreateMatchmaker(@this);
 
             //
             // Level 1 cache lookup
@@ -189,21 +184,20 @@ namespace System.Dynamic {
                     //
                     // Execute the rule
                     //
-                    ruleTarget = CallSiteOps.SetTarget(@this, rule);
 
-                    if ((object)startingTarget == (object)ruleTarget) {
-                        // if we produce another monomorphic
-                        // rule we should try and share code between the two.
-                        originalRule = rule;
-                    }else{
-                        result = ruleTarget(site, arg0);
+                    // if we've already tried it skip it...
+                    if ((object)rule != (object)originalRule) {
+                        @this.Target = rule;
+                        result = rule(site, arg0);
+
                         if (CallSiteOps.GetMatch(site)) {
+                            CallSiteOps.UpdateRules(@this, i);
                             return result;
                         }        
 
                         // Rule didn't match, try the next one
                         CallSiteOps.ClearMatch(site);            
-                    }                
+                    }
                 }
             }
 
@@ -214,43 +208,37 @@ namespace System.Dynamic {
             //
             // Any applicable rules in level 2 cache?
             //
+
             var cache = CallSiteOps.GetRuleCache(@this);
 
-            if ((applicable = CallSiteOps.FindApplicableRules(cache)) != null) {
-                for (int i = 0; i < applicable.Length; i++) {
-                    rule = applicable[i];
+            var cachedRules = cache.GetRules();
+            for (int i = 0; i < cachedRules.Length; i++) {
+                rule = cachedRules[i].Target;
 
-                    //
-                    // Execute the rule
-                    //
-                    ruleTarget = CallSiteOps.SetTarget(@this, rule);
+                //
+                // Execute the rule
+                //
+                @this.Target = rule;
 
-                    try {
-                        result = ruleTarget(site, arg0);
-                        if (CallSiteOps.GetMatch(site)) {
-                            return result;
-                        }
-                    } finally {
-                        if (CallSiteOps.GetMatch(site)) {
-                            //
-                            // Rule worked. Add it to level 1 cache
-                            //
-                            CallSiteOps.AddRule(@this, rule);
-                            // and then move it to the front of the L2 cache
-                            CallSiteOps.MoveRule(cache, rule);
-                        }
+                try {
+                    result = rule(site, arg0);
+                    if (CallSiteOps.GetMatch(site)) {
+                        return result;
                     }
-
-                    if ((object)startingTarget == (object)ruleTarget) {
-                        // If we've gone megamorphic we can still template off the L2 cache
-                        originalRule = rule;
+                } finally {
+                    if (CallSiteOps.GetMatch(site)) {
+                        //
+                        // Rule worked. Add it to level 1 cache
+                        //
+                        CallSiteOps.AddRule(@this, rule);
+                        // and then move it to the front of the L2 cache
+                        CallSiteOps.MoveRule(cache, rule, i);
                     }
-
-                    // Rule didn't match, try the next one
-                    CallSiteOps.ClearMatch(site);
                 }
-            }
 
+                // Rule didn't match, try the next one
+                CallSiteOps.ClearMatch(site);
+            }
 
             //
             // Miss on Level 0, 1 and 2 caches. Create new rule
@@ -260,16 +248,15 @@ namespace System.Dynamic {
             var args = new object[] { arg0 };
 
             for (; ; ) {
-                rule = CallSiteOps.CreateNewRule(cache, @this, rule, originalRule, args);
+                @this.Target = originalRule;
+                rule = @this.Target = @this.Binder.BindCore(@this, args);
 
                 //
                 // Execute the rule on the matchmaker site
                 //
 
-                ruleTarget = CallSiteOps.SetTarget(@this, rule);
-
                 try {
-                    result = ruleTarget(site, arg0);
+                    result = rule(site, arg0);
                     if (CallSiteOps.GetMatch(site)) {
                         return result;
                     }
@@ -285,6 +272,13 @@ namespace System.Dynamic {
                 // Rule we got back didn't work, try another one
                 CallSiteOps.ClearMatch(site);
             }
+        }
+
+        [Obsolete("pregenerated CallSite<T>.Update delegate", true)]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters")]
+        internal static TRet NoMatch1<T0, TRet>(CallSite site, T0 arg0) {
+            site._match = false;
+            return default(TRet);
         }
 
 
@@ -295,17 +289,15 @@ namespace System.Dynamic {
             // Declare the locals here upfront. It actually saves JIT stack space.
             //
             var @this = (CallSite<Func<CallSite, T0, T1, TRet>>)site;
-            CallSiteRule<Func<CallSite, T0, T1, TRet>>[] applicable;
-            CallSiteRule<Func<CallSite, T0, T1, TRet>> rule;
-            Func<CallSite, T0, T1, TRet> ruleTarget, startingTarget = @this.Target;
+            Func<CallSite, T0, T1, TRet>[] applicable;
+            Func<CallSite, T0, T1, TRet> rule, originalRule = @this.Target;
             TRet result;
 
-            CallSiteRule<Func<CallSite, T0, T1, TRet>> originalRule = null;
 
             //
             // Create matchmaker and its site. We'll need them regardless.
             //
-            site = CallSiteOps.CreateMatchmaker();
+            site = CallSiteOps.CreateMatchmaker(@this);
 
             //
             // Level 1 cache lookup
@@ -317,21 +309,20 @@ namespace System.Dynamic {
                     //
                     // Execute the rule
                     //
-                    ruleTarget = CallSiteOps.SetTarget(@this, rule);
 
-                    if ((object)startingTarget == (object)ruleTarget) {
-                        // if we produce another monomorphic
-                        // rule we should try and share code between the two.
-                        originalRule = rule;
-                    }else{
-                        result = ruleTarget(site, arg0, arg1);
+                    // if we've already tried it skip it...
+                    if ((object)rule != (object)originalRule) {
+                        @this.Target = rule;
+                        result = rule(site, arg0, arg1);
+
                         if (CallSiteOps.GetMatch(site)) {
+                            CallSiteOps.UpdateRules(@this, i);
                             return result;
                         }        
 
                         // Rule didn't match, try the next one
                         CallSiteOps.ClearMatch(site);            
-                    }                
+                    }
                 }
             }
 
@@ -342,43 +333,37 @@ namespace System.Dynamic {
             //
             // Any applicable rules in level 2 cache?
             //
+
             var cache = CallSiteOps.GetRuleCache(@this);
 
-            if ((applicable = CallSiteOps.FindApplicableRules(cache)) != null) {
-                for (int i = 0; i < applicable.Length; i++) {
-                    rule = applicable[i];
+            var cachedRules = cache.GetRules();
+            for (int i = 0; i < cachedRules.Length; i++) {
+                rule = cachedRules[i].Target;
 
-                    //
-                    // Execute the rule
-                    //
-                    ruleTarget = CallSiteOps.SetTarget(@this, rule);
+                //
+                // Execute the rule
+                //
+                @this.Target = rule;
 
-                    try {
-                        result = ruleTarget(site, arg0, arg1);
-                        if (CallSiteOps.GetMatch(site)) {
-                            return result;
-                        }
-                    } finally {
-                        if (CallSiteOps.GetMatch(site)) {
-                            //
-                            // Rule worked. Add it to level 1 cache
-                            //
-                            CallSiteOps.AddRule(@this, rule);
-                            // and then move it to the front of the L2 cache
-                            CallSiteOps.MoveRule(cache, rule);
-                        }
+                try {
+                    result = rule(site, arg0, arg1);
+                    if (CallSiteOps.GetMatch(site)) {
+                        return result;
                     }
-
-                    if ((object)startingTarget == (object)ruleTarget) {
-                        // If we've gone megamorphic we can still template off the L2 cache
-                        originalRule = rule;
+                } finally {
+                    if (CallSiteOps.GetMatch(site)) {
+                        //
+                        // Rule worked. Add it to level 1 cache
+                        //
+                        CallSiteOps.AddRule(@this, rule);
+                        // and then move it to the front of the L2 cache
+                        CallSiteOps.MoveRule(cache, rule, i);
                     }
-
-                    // Rule didn't match, try the next one
-                    CallSiteOps.ClearMatch(site);
                 }
-            }
 
+                // Rule didn't match, try the next one
+                CallSiteOps.ClearMatch(site);
+            }
 
             //
             // Miss on Level 0, 1 and 2 caches. Create new rule
@@ -388,16 +373,15 @@ namespace System.Dynamic {
             var args = new object[] { arg0, arg1 };
 
             for (; ; ) {
-                rule = CallSiteOps.CreateNewRule(cache, @this, rule, originalRule, args);
+                @this.Target = originalRule;
+                rule = @this.Target = @this.Binder.BindCore(@this, args);
 
                 //
                 // Execute the rule on the matchmaker site
                 //
 
-                ruleTarget = CallSiteOps.SetTarget(@this, rule);
-
                 try {
-                    result = ruleTarget(site, arg0, arg1);
+                    result = rule(site, arg0, arg1);
                     if (CallSiteOps.GetMatch(site)) {
                         return result;
                     }
@@ -413,6 +397,13 @@ namespace System.Dynamic {
                 // Rule we got back didn't work, try another one
                 CallSiteOps.ClearMatch(site);
             }
+        }
+
+        [Obsolete("pregenerated CallSite<T>.Update delegate", true)]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters")]
+        internal static TRet NoMatch2<T0, T1, TRet>(CallSite site, T0 arg0, T1 arg1) {
+            site._match = false;
+            return default(TRet);
         }
 
 
@@ -423,17 +414,15 @@ namespace System.Dynamic {
             // Declare the locals here upfront. It actually saves JIT stack space.
             //
             var @this = (CallSite<Func<CallSite, T0, T1, T2, TRet>>)site;
-            CallSiteRule<Func<CallSite, T0, T1, T2, TRet>>[] applicable;
-            CallSiteRule<Func<CallSite, T0, T1, T2, TRet>> rule;
-            Func<CallSite, T0, T1, T2, TRet> ruleTarget, startingTarget = @this.Target;
+            Func<CallSite, T0, T1, T2, TRet>[] applicable;
+            Func<CallSite, T0, T1, T2, TRet> rule, originalRule = @this.Target;
             TRet result;
 
-            CallSiteRule<Func<CallSite, T0, T1, T2, TRet>> originalRule = null;
 
             //
             // Create matchmaker and its site. We'll need them regardless.
             //
-            site = CallSiteOps.CreateMatchmaker();
+            site = CallSiteOps.CreateMatchmaker(@this);
 
             //
             // Level 1 cache lookup
@@ -445,21 +434,20 @@ namespace System.Dynamic {
                     //
                     // Execute the rule
                     //
-                    ruleTarget = CallSiteOps.SetTarget(@this, rule);
 
-                    if ((object)startingTarget == (object)ruleTarget) {
-                        // if we produce another monomorphic
-                        // rule we should try and share code between the two.
-                        originalRule = rule;
-                    }else{
-                        result = ruleTarget(site, arg0, arg1, arg2);
+                    // if we've already tried it skip it...
+                    if ((object)rule != (object)originalRule) {
+                        @this.Target = rule;
+                        result = rule(site, arg0, arg1, arg2);
+
                         if (CallSiteOps.GetMatch(site)) {
+                            CallSiteOps.UpdateRules(@this, i);
                             return result;
                         }        
 
                         // Rule didn't match, try the next one
                         CallSiteOps.ClearMatch(site);            
-                    }                
+                    }
                 }
             }
 
@@ -470,43 +458,37 @@ namespace System.Dynamic {
             //
             // Any applicable rules in level 2 cache?
             //
+
             var cache = CallSiteOps.GetRuleCache(@this);
 
-            if ((applicable = CallSiteOps.FindApplicableRules(cache)) != null) {
-                for (int i = 0; i < applicable.Length; i++) {
-                    rule = applicable[i];
+            var cachedRules = cache.GetRules();
+            for (int i = 0; i < cachedRules.Length; i++) {
+                rule = cachedRules[i].Target;
 
-                    //
-                    // Execute the rule
-                    //
-                    ruleTarget = CallSiteOps.SetTarget(@this, rule);
+                //
+                // Execute the rule
+                //
+                @this.Target = rule;
 
-                    try {
-                        result = ruleTarget(site, arg0, arg1, arg2);
-                        if (CallSiteOps.GetMatch(site)) {
-                            return result;
-                        }
-                    } finally {
-                        if (CallSiteOps.GetMatch(site)) {
-                            //
-                            // Rule worked. Add it to level 1 cache
-                            //
-                            CallSiteOps.AddRule(@this, rule);
-                            // and then move it to the front of the L2 cache
-                            CallSiteOps.MoveRule(cache, rule);
-                        }
+                try {
+                    result = rule(site, arg0, arg1, arg2);
+                    if (CallSiteOps.GetMatch(site)) {
+                        return result;
                     }
-
-                    if ((object)startingTarget == (object)ruleTarget) {
-                        // If we've gone megamorphic we can still template off the L2 cache
-                        originalRule = rule;
+                } finally {
+                    if (CallSiteOps.GetMatch(site)) {
+                        //
+                        // Rule worked. Add it to level 1 cache
+                        //
+                        CallSiteOps.AddRule(@this, rule);
+                        // and then move it to the front of the L2 cache
+                        CallSiteOps.MoveRule(cache, rule, i);
                     }
-
-                    // Rule didn't match, try the next one
-                    CallSiteOps.ClearMatch(site);
                 }
-            }
 
+                // Rule didn't match, try the next one
+                CallSiteOps.ClearMatch(site);
+            }
 
             //
             // Miss on Level 0, 1 and 2 caches. Create new rule
@@ -516,16 +498,15 @@ namespace System.Dynamic {
             var args = new object[] { arg0, arg1, arg2 };
 
             for (; ; ) {
-                rule = CallSiteOps.CreateNewRule(cache, @this, rule, originalRule, args);
+                @this.Target = originalRule;
+                rule = @this.Target = @this.Binder.BindCore(@this, args);
 
                 //
                 // Execute the rule on the matchmaker site
                 //
 
-                ruleTarget = CallSiteOps.SetTarget(@this, rule);
-
                 try {
-                    result = ruleTarget(site, arg0, arg1, arg2);
+                    result = rule(site, arg0, arg1, arg2);
                     if (CallSiteOps.GetMatch(site)) {
                         return result;
                     }
@@ -541,6 +522,13 @@ namespace System.Dynamic {
                 // Rule we got back didn't work, try another one
                 CallSiteOps.ClearMatch(site);
             }
+        }
+
+        [Obsolete("pregenerated CallSite<T>.Update delegate", true)]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters")]
+        internal static TRet NoMatch3<T0, T1, T2, TRet>(CallSite site, T0 arg0, T1 arg1, T2 arg2) {
+            site._match = false;
+            return default(TRet);
         }
 
 
@@ -551,17 +539,15 @@ namespace System.Dynamic {
             // Declare the locals here upfront. It actually saves JIT stack space.
             //
             var @this = (CallSite<Func<CallSite, T0, T1, T2, T3, TRet>>)site;
-            CallSiteRule<Func<CallSite, T0, T1, T2, T3, TRet>>[] applicable;
-            CallSiteRule<Func<CallSite, T0, T1, T2, T3, TRet>> rule;
-            Func<CallSite, T0, T1, T2, T3, TRet> ruleTarget, startingTarget = @this.Target;
+            Func<CallSite, T0, T1, T2, T3, TRet>[] applicable;
+            Func<CallSite, T0, T1, T2, T3, TRet> rule, originalRule = @this.Target;
             TRet result;
 
-            CallSiteRule<Func<CallSite, T0, T1, T2, T3, TRet>> originalRule = null;
 
             //
             // Create matchmaker and its site. We'll need them regardless.
             //
-            site = CallSiteOps.CreateMatchmaker();
+            site = CallSiteOps.CreateMatchmaker(@this);
 
             //
             // Level 1 cache lookup
@@ -573,21 +559,20 @@ namespace System.Dynamic {
                     //
                     // Execute the rule
                     //
-                    ruleTarget = CallSiteOps.SetTarget(@this, rule);
 
-                    if ((object)startingTarget == (object)ruleTarget) {
-                        // if we produce another monomorphic
-                        // rule we should try and share code between the two.
-                        originalRule = rule;
-                    }else{
-                        result = ruleTarget(site, arg0, arg1, arg2, arg3);
+                    // if we've already tried it skip it...
+                    if ((object)rule != (object)originalRule) {
+                        @this.Target = rule;
+                        result = rule(site, arg0, arg1, arg2, arg3);
+
                         if (CallSiteOps.GetMatch(site)) {
+                            CallSiteOps.UpdateRules(@this, i);
                             return result;
                         }        
 
                         // Rule didn't match, try the next one
                         CallSiteOps.ClearMatch(site);            
-                    }                
+                    }
                 }
             }
 
@@ -598,43 +583,37 @@ namespace System.Dynamic {
             //
             // Any applicable rules in level 2 cache?
             //
+
             var cache = CallSiteOps.GetRuleCache(@this);
 
-            if ((applicable = CallSiteOps.FindApplicableRules(cache)) != null) {
-                for (int i = 0; i < applicable.Length; i++) {
-                    rule = applicable[i];
+            var cachedRules = cache.GetRules();
+            for (int i = 0; i < cachedRules.Length; i++) {
+                rule = cachedRules[i].Target;
 
-                    //
-                    // Execute the rule
-                    //
-                    ruleTarget = CallSiteOps.SetTarget(@this, rule);
+                //
+                // Execute the rule
+                //
+                @this.Target = rule;
 
-                    try {
-                        result = ruleTarget(site, arg0, arg1, arg2, arg3);
-                        if (CallSiteOps.GetMatch(site)) {
-                            return result;
-                        }
-                    } finally {
-                        if (CallSiteOps.GetMatch(site)) {
-                            //
-                            // Rule worked. Add it to level 1 cache
-                            //
-                            CallSiteOps.AddRule(@this, rule);
-                            // and then move it to the front of the L2 cache
-                            CallSiteOps.MoveRule(cache, rule);
-                        }
+                try {
+                    result = rule(site, arg0, arg1, arg2, arg3);
+                    if (CallSiteOps.GetMatch(site)) {
+                        return result;
                     }
-
-                    if ((object)startingTarget == (object)ruleTarget) {
-                        // If we've gone megamorphic we can still template off the L2 cache
-                        originalRule = rule;
+                } finally {
+                    if (CallSiteOps.GetMatch(site)) {
+                        //
+                        // Rule worked. Add it to level 1 cache
+                        //
+                        CallSiteOps.AddRule(@this, rule);
+                        // and then move it to the front of the L2 cache
+                        CallSiteOps.MoveRule(cache, rule, i);
                     }
-
-                    // Rule didn't match, try the next one
-                    CallSiteOps.ClearMatch(site);
                 }
-            }
 
+                // Rule didn't match, try the next one
+                CallSiteOps.ClearMatch(site);
+            }
 
             //
             // Miss on Level 0, 1 and 2 caches. Create new rule
@@ -644,16 +623,15 @@ namespace System.Dynamic {
             var args = new object[] { arg0, arg1, arg2, arg3 };
 
             for (; ; ) {
-                rule = CallSiteOps.CreateNewRule(cache, @this, rule, originalRule, args);
+                @this.Target = originalRule;
+                rule = @this.Target = @this.Binder.BindCore(@this, args);
 
                 //
                 // Execute the rule on the matchmaker site
                 //
 
-                ruleTarget = CallSiteOps.SetTarget(@this, rule);
-
                 try {
-                    result = ruleTarget(site, arg0, arg1, arg2, arg3);
+                    result = rule(site, arg0, arg1, arg2, arg3);
                     if (CallSiteOps.GetMatch(site)) {
                         return result;
                     }
@@ -669,6 +647,13 @@ namespace System.Dynamic {
                 // Rule we got back didn't work, try another one
                 CallSiteOps.ClearMatch(site);
             }
+        }
+
+        [Obsolete("pregenerated CallSite<T>.Update delegate", true)]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters")]
+        internal static TRet NoMatch4<T0, T1, T2, T3, TRet>(CallSite site, T0 arg0, T1 arg1, T2 arg2, T3 arg3) {
+            site._match = false;
+            return default(TRet);
         }
 
 
@@ -679,17 +664,15 @@ namespace System.Dynamic {
             // Declare the locals here upfront. It actually saves JIT stack space.
             //
             var @this = (CallSite<Func<CallSite, T0, T1, T2, T3, T4, TRet>>)site;
-            CallSiteRule<Func<CallSite, T0, T1, T2, T3, T4, TRet>>[] applicable;
-            CallSiteRule<Func<CallSite, T0, T1, T2, T3, T4, TRet>> rule;
-            Func<CallSite, T0, T1, T2, T3, T4, TRet> ruleTarget, startingTarget = @this.Target;
+            Func<CallSite, T0, T1, T2, T3, T4, TRet>[] applicable;
+            Func<CallSite, T0, T1, T2, T3, T4, TRet> rule, originalRule = @this.Target;
             TRet result;
 
-            CallSiteRule<Func<CallSite, T0, T1, T2, T3, T4, TRet>> originalRule = null;
 
             //
             // Create matchmaker and its site. We'll need them regardless.
             //
-            site = CallSiteOps.CreateMatchmaker();
+            site = CallSiteOps.CreateMatchmaker(@this);
 
             //
             // Level 1 cache lookup
@@ -701,21 +684,20 @@ namespace System.Dynamic {
                     //
                     // Execute the rule
                     //
-                    ruleTarget = CallSiteOps.SetTarget(@this, rule);
 
-                    if ((object)startingTarget == (object)ruleTarget) {
-                        // if we produce another monomorphic
-                        // rule we should try and share code between the two.
-                        originalRule = rule;
-                    }else{
-                        result = ruleTarget(site, arg0, arg1, arg2, arg3, arg4);
+                    // if we've already tried it skip it...
+                    if ((object)rule != (object)originalRule) {
+                        @this.Target = rule;
+                        result = rule(site, arg0, arg1, arg2, arg3, arg4);
+
                         if (CallSiteOps.GetMatch(site)) {
+                            CallSiteOps.UpdateRules(@this, i);
                             return result;
                         }        
 
                         // Rule didn't match, try the next one
                         CallSiteOps.ClearMatch(site);            
-                    }                
+                    }
                 }
             }
 
@@ -726,43 +708,37 @@ namespace System.Dynamic {
             //
             // Any applicable rules in level 2 cache?
             //
+
             var cache = CallSiteOps.GetRuleCache(@this);
 
-            if ((applicable = CallSiteOps.FindApplicableRules(cache)) != null) {
-                for (int i = 0; i < applicable.Length; i++) {
-                    rule = applicable[i];
+            var cachedRules = cache.GetRules();
+            for (int i = 0; i < cachedRules.Length; i++) {
+                rule = cachedRules[i].Target;
 
-                    //
-                    // Execute the rule
-                    //
-                    ruleTarget = CallSiteOps.SetTarget(@this, rule);
+                //
+                // Execute the rule
+                //
+                @this.Target = rule;
 
-                    try {
-                        result = ruleTarget(site, arg0, arg1, arg2, arg3, arg4);
-                        if (CallSiteOps.GetMatch(site)) {
-                            return result;
-                        }
-                    } finally {
-                        if (CallSiteOps.GetMatch(site)) {
-                            //
-                            // Rule worked. Add it to level 1 cache
-                            //
-                            CallSiteOps.AddRule(@this, rule);
-                            // and then move it to the front of the L2 cache
-                            CallSiteOps.MoveRule(cache, rule);
-                        }
+                try {
+                    result = rule(site, arg0, arg1, arg2, arg3, arg4);
+                    if (CallSiteOps.GetMatch(site)) {
+                        return result;
                     }
-
-                    if ((object)startingTarget == (object)ruleTarget) {
-                        // If we've gone megamorphic we can still template off the L2 cache
-                        originalRule = rule;
+                } finally {
+                    if (CallSiteOps.GetMatch(site)) {
+                        //
+                        // Rule worked. Add it to level 1 cache
+                        //
+                        CallSiteOps.AddRule(@this, rule);
+                        // and then move it to the front of the L2 cache
+                        CallSiteOps.MoveRule(cache, rule, i);
                     }
-
-                    // Rule didn't match, try the next one
-                    CallSiteOps.ClearMatch(site);
                 }
-            }
 
+                // Rule didn't match, try the next one
+                CallSiteOps.ClearMatch(site);
+            }
 
             //
             // Miss on Level 0, 1 and 2 caches. Create new rule
@@ -772,16 +748,15 @@ namespace System.Dynamic {
             var args = new object[] { arg0, arg1, arg2, arg3, arg4 };
 
             for (; ; ) {
-                rule = CallSiteOps.CreateNewRule(cache, @this, rule, originalRule, args);
+                @this.Target = originalRule;
+                rule = @this.Target = @this.Binder.BindCore(@this, args);
 
                 //
                 // Execute the rule on the matchmaker site
                 //
 
-                ruleTarget = CallSiteOps.SetTarget(@this, rule);
-
                 try {
-                    result = ruleTarget(site, arg0, arg1, arg2, arg3, arg4);
+                    result = rule(site, arg0, arg1, arg2, arg3, arg4);
                     if (CallSiteOps.GetMatch(site)) {
                         return result;
                     }
@@ -797,6 +772,13 @@ namespace System.Dynamic {
                 // Rule we got back didn't work, try another one
                 CallSiteOps.ClearMatch(site);
             }
+        }
+
+        [Obsolete("pregenerated CallSite<T>.Update delegate", true)]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters")]
+        internal static TRet NoMatch5<T0, T1, T2, T3, T4, TRet>(CallSite site, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4) {
+            site._match = false;
+            return default(TRet);
         }
 
 
@@ -807,17 +789,15 @@ namespace System.Dynamic {
             // Declare the locals here upfront. It actually saves JIT stack space.
             //
             var @this = (CallSite<Func<CallSite, T0, T1, T2, T3, T4, T5, TRet>>)site;
-            CallSiteRule<Func<CallSite, T0, T1, T2, T3, T4, T5, TRet>>[] applicable;
-            CallSiteRule<Func<CallSite, T0, T1, T2, T3, T4, T5, TRet>> rule;
-            Func<CallSite, T0, T1, T2, T3, T4, T5, TRet> ruleTarget, startingTarget = @this.Target;
+            Func<CallSite, T0, T1, T2, T3, T4, T5, TRet>[] applicable;
+            Func<CallSite, T0, T1, T2, T3, T4, T5, TRet> rule, originalRule = @this.Target;
             TRet result;
 
-            CallSiteRule<Func<CallSite, T0, T1, T2, T3, T4, T5, TRet>> originalRule = null;
 
             //
             // Create matchmaker and its site. We'll need them regardless.
             //
-            site = CallSiteOps.CreateMatchmaker();
+            site = CallSiteOps.CreateMatchmaker(@this);
 
             //
             // Level 1 cache lookup
@@ -829,21 +809,20 @@ namespace System.Dynamic {
                     //
                     // Execute the rule
                     //
-                    ruleTarget = CallSiteOps.SetTarget(@this, rule);
 
-                    if ((object)startingTarget == (object)ruleTarget) {
-                        // if we produce another monomorphic
-                        // rule we should try and share code between the two.
-                        originalRule = rule;
-                    }else{
-                        result = ruleTarget(site, arg0, arg1, arg2, arg3, arg4, arg5);
+                    // if we've already tried it skip it...
+                    if ((object)rule != (object)originalRule) {
+                        @this.Target = rule;
+                        result = rule(site, arg0, arg1, arg2, arg3, arg4, arg5);
+
                         if (CallSiteOps.GetMatch(site)) {
+                            CallSiteOps.UpdateRules(@this, i);
                             return result;
                         }        
 
                         // Rule didn't match, try the next one
                         CallSiteOps.ClearMatch(site);            
-                    }                
+                    }
                 }
             }
 
@@ -854,43 +833,37 @@ namespace System.Dynamic {
             //
             // Any applicable rules in level 2 cache?
             //
+
             var cache = CallSiteOps.GetRuleCache(@this);
 
-            if ((applicable = CallSiteOps.FindApplicableRules(cache)) != null) {
-                for (int i = 0; i < applicable.Length; i++) {
-                    rule = applicable[i];
+            var cachedRules = cache.GetRules();
+            for (int i = 0; i < cachedRules.Length; i++) {
+                rule = cachedRules[i].Target;
 
-                    //
-                    // Execute the rule
-                    //
-                    ruleTarget = CallSiteOps.SetTarget(@this, rule);
+                //
+                // Execute the rule
+                //
+                @this.Target = rule;
 
-                    try {
-                        result = ruleTarget(site, arg0, arg1, arg2, arg3, arg4, arg5);
-                        if (CallSiteOps.GetMatch(site)) {
-                            return result;
-                        }
-                    } finally {
-                        if (CallSiteOps.GetMatch(site)) {
-                            //
-                            // Rule worked. Add it to level 1 cache
-                            //
-                            CallSiteOps.AddRule(@this, rule);
-                            // and then move it to the front of the L2 cache
-                            CallSiteOps.MoveRule(cache, rule);
-                        }
+                try {
+                    result = rule(site, arg0, arg1, arg2, arg3, arg4, arg5);
+                    if (CallSiteOps.GetMatch(site)) {
+                        return result;
                     }
-
-                    if ((object)startingTarget == (object)ruleTarget) {
-                        // If we've gone megamorphic we can still template off the L2 cache
-                        originalRule = rule;
+                } finally {
+                    if (CallSiteOps.GetMatch(site)) {
+                        //
+                        // Rule worked. Add it to level 1 cache
+                        //
+                        CallSiteOps.AddRule(@this, rule);
+                        // and then move it to the front of the L2 cache
+                        CallSiteOps.MoveRule(cache, rule, i);
                     }
-
-                    // Rule didn't match, try the next one
-                    CallSiteOps.ClearMatch(site);
                 }
-            }
 
+                // Rule didn't match, try the next one
+                CallSiteOps.ClearMatch(site);
+            }
 
             //
             // Miss on Level 0, 1 and 2 caches. Create new rule
@@ -900,16 +873,15 @@ namespace System.Dynamic {
             var args = new object[] { arg0, arg1, arg2, arg3, arg4, arg5 };
 
             for (; ; ) {
-                rule = CallSiteOps.CreateNewRule(cache, @this, rule, originalRule, args);
+                @this.Target = originalRule;
+                rule = @this.Target = @this.Binder.BindCore(@this, args);
 
                 //
                 // Execute the rule on the matchmaker site
                 //
 
-                ruleTarget = CallSiteOps.SetTarget(@this, rule);
-
                 try {
-                    result = ruleTarget(site, arg0, arg1, arg2, arg3, arg4, arg5);
+                    result = rule(site, arg0, arg1, arg2, arg3, arg4, arg5);
                     if (CallSiteOps.GetMatch(site)) {
                         return result;
                     }
@@ -925,6 +897,13 @@ namespace System.Dynamic {
                 // Rule we got back didn't work, try another one
                 CallSiteOps.ClearMatch(site);
             }
+        }
+
+        [Obsolete("pregenerated CallSite<T>.Update delegate", true)]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters")]
+        internal static TRet NoMatch6<T0, T1, T2, T3, T4, T5, TRet>(CallSite site, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5) {
+            site._match = false;
+            return default(TRet);
         }
 
 
@@ -935,17 +914,15 @@ namespace System.Dynamic {
             // Declare the locals here upfront. It actually saves JIT stack space.
             //
             var @this = (CallSite<Func<CallSite, T0, T1, T2, T3, T4, T5, T6, TRet>>)site;
-            CallSiteRule<Func<CallSite, T0, T1, T2, T3, T4, T5, T6, TRet>>[] applicable;
-            CallSiteRule<Func<CallSite, T0, T1, T2, T3, T4, T5, T6, TRet>> rule;
-            Func<CallSite, T0, T1, T2, T3, T4, T5, T6, TRet> ruleTarget, startingTarget = @this.Target;
+            Func<CallSite, T0, T1, T2, T3, T4, T5, T6, TRet>[] applicable;
+            Func<CallSite, T0, T1, T2, T3, T4, T5, T6, TRet> rule, originalRule = @this.Target;
             TRet result;
 
-            CallSiteRule<Func<CallSite, T0, T1, T2, T3, T4, T5, T6, TRet>> originalRule = null;
 
             //
             // Create matchmaker and its site. We'll need them regardless.
             //
-            site = CallSiteOps.CreateMatchmaker();
+            site = CallSiteOps.CreateMatchmaker(@this);
 
             //
             // Level 1 cache lookup
@@ -957,21 +934,20 @@ namespace System.Dynamic {
                     //
                     // Execute the rule
                     //
-                    ruleTarget = CallSiteOps.SetTarget(@this, rule);
 
-                    if ((object)startingTarget == (object)ruleTarget) {
-                        // if we produce another monomorphic
-                        // rule we should try and share code between the two.
-                        originalRule = rule;
-                    }else{
-                        result = ruleTarget(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6);
+                    // if we've already tried it skip it...
+                    if ((object)rule != (object)originalRule) {
+                        @this.Target = rule;
+                        result = rule(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6);
+
                         if (CallSiteOps.GetMatch(site)) {
+                            CallSiteOps.UpdateRules(@this, i);
                             return result;
                         }        
 
                         // Rule didn't match, try the next one
                         CallSiteOps.ClearMatch(site);            
-                    }                
+                    }
                 }
             }
 
@@ -982,43 +958,37 @@ namespace System.Dynamic {
             //
             // Any applicable rules in level 2 cache?
             //
+
             var cache = CallSiteOps.GetRuleCache(@this);
 
-            if ((applicable = CallSiteOps.FindApplicableRules(cache)) != null) {
-                for (int i = 0; i < applicable.Length; i++) {
-                    rule = applicable[i];
+            var cachedRules = cache.GetRules();
+            for (int i = 0; i < cachedRules.Length; i++) {
+                rule = cachedRules[i].Target;
 
-                    //
-                    // Execute the rule
-                    //
-                    ruleTarget = CallSiteOps.SetTarget(@this, rule);
+                //
+                // Execute the rule
+                //
+                @this.Target = rule;
 
-                    try {
-                        result = ruleTarget(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6);
-                        if (CallSiteOps.GetMatch(site)) {
-                            return result;
-                        }
-                    } finally {
-                        if (CallSiteOps.GetMatch(site)) {
-                            //
-                            // Rule worked. Add it to level 1 cache
-                            //
-                            CallSiteOps.AddRule(@this, rule);
-                            // and then move it to the front of the L2 cache
-                            CallSiteOps.MoveRule(cache, rule);
-                        }
+                try {
+                    result = rule(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6);
+                    if (CallSiteOps.GetMatch(site)) {
+                        return result;
                     }
-
-                    if ((object)startingTarget == (object)ruleTarget) {
-                        // If we've gone megamorphic we can still template off the L2 cache
-                        originalRule = rule;
+                } finally {
+                    if (CallSiteOps.GetMatch(site)) {
+                        //
+                        // Rule worked. Add it to level 1 cache
+                        //
+                        CallSiteOps.AddRule(@this, rule);
+                        // and then move it to the front of the L2 cache
+                        CallSiteOps.MoveRule(cache, rule, i);
                     }
-
-                    // Rule didn't match, try the next one
-                    CallSiteOps.ClearMatch(site);
                 }
-            }
 
+                // Rule didn't match, try the next one
+                CallSiteOps.ClearMatch(site);
+            }
 
             //
             // Miss on Level 0, 1 and 2 caches. Create new rule
@@ -1028,16 +998,15 @@ namespace System.Dynamic {
             var args = new object[] { arg0, arg1, arg2, arg3, arg4, arg5, arg6 };
 
             for (; ; ) {
-                rule = CallSiteOps.CreateNewRule(cache, @this, rule, originalRule, args);
+                @this.Target = originalRule;
+                rule = @this.Target = @this.Binder.BindCore(@this, args);
 
                 //
                 // Execute the rule on the matchmaker site
                 //
 
-                ruleTarget = CallSiteOps.SetTarget(@this, rule);
-
                 try {
-                    result = ruleTarget(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6);
+                    result = rule(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6);
                     if (CallSiteOps.GetMatch(site)) {
                         return result;
                     }
@@ -1053,6 +1022,13 @@ namespace System.Dynamic {
                 // Rule we got back didn't work, try another one
                 CallSiteOps.ClearMatch(site);
             }
+        }
+
+        [Obsolete("pregenerated CallSite<T>.Update delegate", true)]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters")]
+        internal static TRet NoMatch7<T0, T1, T2, T3, T4, T5, T6, TRet>(CallSite site, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6) {
+            site._match = false;
+            return default(TRet);
         }
 
 
@@ -1063,17 +1039,15 @@ namespace System.Dynamic {
             // Declare the locals here upfront. It actually saves JIT stack space.
             //
             var @this = (CallSite<Func<CallSite, T0, T1, T2, T3, T4, T5, T6, T7, TRet>>)site;
-            CallSiteRule<Func<CallSite, T0, T1, T2, T3, T4, T5, T6, T7, TRet>>[] applicable;
-            CallSiteRule<Func<CallSite, T0, T1, T2, T3, T4, T5, T6, T7, TRet>> rule;
-            Func<CallSite, T0, T1, T2, T3, T4, T5, T6, T7, TRet> ruleTarget, startingTarget = @this.Target;
+            Func<CallSite, T0, T1, T2, T3, T4, T5, T6, T7, TRet>[] applicable;
+            Func<CallSite, T0, T1, T2, T3, T4, T5, T6, T7, TRet> rule, originalRule = @this.Target;
             TRet result;
 
-            CallSiteRule<Func<CallSite, T0, T1, T2, T3, T4, T5, T6, T7, TRet>> originalRule = null;
 
             //
             // Create matchmaker and its site. We'll need them regardless.
             //
-            site = CallSiteOps.CreateMatchmaker();
+            site = CallSiteOps.CreateMatchmaker(@this);
 
             //
             // Level 1 cache lookup
@@ -1085,21 +1059,20 @@ namespace System.Dynamic {
                     //
                     // Execute the rule
                     //
-                    ruleTarget = CallSiteOps.SetTarget(@this, rule);
 
-                    if ((object)startingTarget == (object)ruleTarget) {
-                        // if we produce another monomorphic
-                        // rule we should try and share code between the two.
-                        originalRule = rule;
-                    }else{
-                        result = ruleTarget(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+                    // if we've already tried it skip it...
+                    if ((object)rule != (object)originalRule) {
+                        @this.Target = rule;
+                        result = rule(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+
                         if (CallSiteOps.GetMatch(site)) {
+                            CallSiteOps.UpdateRules(@this, i);
                             return result;
                         }        
 
                         // Rule didn't match, try the next one
                         CallSiteOps.ClearMatch(site);            
-                    }                
+                    }
                 }
             }
 
@@ -1110,43 +1083,37 @@ namespace System.Dynamic {
             //
             // Any applicable rules in level 2 cache?
             //
+
             var cache = CallSiteOps.GetRuleCache(@this);
 
-            if ((applicable = CallSiteOps.FindApplicableRules(cache)) != null) {
-                for (int i = 0; i < applicable.Length; i++) {
-                    rule = applicable[i];
+            var cachedRules = cache.GetRules();
+            for (int i = 0; i < cachedRules.Length; i++) {
+                rule = cachedRules[i].Target;
 
-                    //
-                    // Execute the rule
-                    //
-                    ruleTarget = CallSiteOps.SetTarget(@this, rule);
+                //
+                // Execute the rule
+                //
+                @this.Target = rule;
 
-                    try {
-                        result = ruleTarget(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
-                        if (CallSiteOps.GetMatch(site)) {
-                            return result;
-                        }
-                    } finally {
-                        if (CallSiteOps.GetMatch(site)) {
-                            //
-                            // Rule worked. Add it to level 1 cache
-                            //
-                            CallSiteOps.AddRule(@this, rule);
-                            // and then move it to the front of the L2 cache
-                            CallSiteOps.MoveRule(cache, rule);
-                        }
+                try {
+                    result = rule(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+                    if (CallSiteOps.GetMatch(site)) {
+                        return result;
                     }
-
-                    if ((object)startingTarget == (object)ruleTarget) {
-                        // If we've gone megamorphic we can still template off the L2 cache
-                        originalRule = rule;
+                } finally {
+                    if (CallSiteOps.GetMatch(site)) {
+                        //
+                        // Rule worked. Add it to level 1 cache
+                        //
+                        CallSiteOps.AddRule(@this, rule);
+                        // and then move it to the front of the L2 cache
+                        CallSiteOps.MoveRule(cache, rule, i);
                     }
-
-                    // Rule didn't match, try the next one
-                    CallSiteOps.ClearMatch(site);
                 }
-            }
 
+                // Rule didn't match, try the next one
+                CallSiteOps.ClearMatch(site);
+            }
 
             //
             // Miss on Level 0, 1 and 2 caches. Create new rule
@@ -1156,16 +1123,15 @@ namespace System.Dynamic {
             var args = new object[] { arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7 };
 
             for (; ; ) {
-                rule = CallSiteOps.CreateNewRule(cache, @this, rule, originalRule, args);
+                @this.Target = originalRule;
+                rule = @this.Target = @this.Binder.BindCore(@this, args);
 
                 //
                 // Execute the rule on the matchmaker site
                 //
 
-                ruleTarget = CallSiteOps.SetTarget(@this, rule);
-
                 try {
-                    result = ruleTarget(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+                    result = rule(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
                     if (CallSiteOps.GetMatch(site)) {
                         return result;
                     }
@@ -1181,6 +1147,13 @@ namespace System.Dynamic {
                 // Rule we got back didn't work, try another one
                 CallSiteOps.ClearMatch(site);
             }
+        }
+
+        [Obsolete("pregenerated CallSite<T>.Update delegate", true)]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters")]
+        internal static TRet NoMatch8<T0, T1, T2, T3, T4, T5, T6, T7, TRet>(CallSite site, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7) {
+            site._match = false;
+            return default(TRet);
         }
 
 
@@ -1191,17 +1164,15 @@ namespace System.Dynamic {
             // Declare the locals here upfront. It actually saves JIT stack space.
             //
             var @this = (CallSite<Func<CallSite, T0, T1, T2, T3, T4, T5, T6, T7, T8, TRet>>)site;
-            CallSiteRule<Func<CallSite, T0, T1, T2, T3, T4, T5, T6, T7, T8, TRet>>[] applicable;
-            CallSiteRule<Func<CallSite, T0, T1, T2, T3, T4, T5, T6, T7, T8, TRet>> rule;
-            Func<CallSite, T0, T1, T2, T3, T4, T5, T6, T7, T8, TRet> ruleTarget, startingTarget = @this.Target;
+            Func<CallSite, T0, T1, T2, T3, T4, T5, T6, T7, T8, TRet>[] applicable;
+            Func<CallSite, T0, T1, T2, T3, T4, T5, T6, T7, T8, TRet> rule, originalRule = @this.Target;
             TRet result;
 
-            CallSiteRule<Func<CallSite, T0, T1, T2, T3, T4, T5, T6, T7, T8, TRet>> originalRule = null;
 
             //
             // Create matchmaker and its site. We'll need them regardless.
             //
-            site = CallSiteOps.CreateMatchmaker();
+            site = CallSiteOps.CreateMatchmaker(@this);
 
             //
             // Level 1 cache lookup
@@ -1213,21 +1184,20 @@ namespace System.Dynamic {
                     //
                     // Execute the rule
                     //
-                    ruleTarget = CallSiteOps.SetTarget(@this, rule);
 
-                    if ((object)startingTarget == (object)ruleTarget) {
-                        // if we produce another monomorphic
-                        // rule we should try and share code between the two.
-                        originalRule = rule;
-                    }else{
-                        result = ruleTarget(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
+                    // if we've already tried it skip it...
+                    if ((object)rule != (object)originalRule) {
+                        @this.Target = rule;
+                        result = rule(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
+
                         if (CallSiteOps.GetMatch(site)) {
+                            CallSiteOps.UpdateRules(@this, i);
                             return result;
                         }        
 
                         // Rule didn't match, try the next one
                         CallSiteOps.ClearMatch(site);            
-                    }                
+                    }
                 }
             }
 
@@ -1238,43 +1208,37 @@ namespace System.Dynamic {
             //
             // Any applicable rules in level 2 cache?
             //
+
             var cache = CallSiteOps.GetRuleCache(@this);
 
-            if ((applicable = CallSiteOps.FindApplicableRules(cache)) != null) {
-                for (int i = 0; i < applicable.Length; i++) {
-                    rule = applicable[i];
+            var cachedRules = cache.GetRules();
+            for (int i = 0; i < cachedRules.Length; i++) {
+                rule = cachedRules[i].Target;
 
-                    //
-                    // Execute the rule
-                    //
-                    ruleTarget = CallSiteOps.SetTarget(@this, rule);
+                //
+                // Execute the rule
+                //
+                @this.Target = rule;
 
-                    try {
-                        result = ruleTarget(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
-                        if (CallSiteOps.GetMatch(site)) {
-                            return result;
-                        }
-                    } finally {
-                        if (CallSiteOps.GetMatch(site)) {
-                            //
-                            // Rule worked. Add it to level 1 cache
-                            //
-                            CallSiteOps.AddRule(@this, rule);
-                            // and then move it to the front of the L2 cache
-                            CallSiteOps.MoveRule(cache, rule);
-                        }
+                try {
+                    result = rule(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
+                    if (CallSiteOps.GetMatch(site)) {
+                        return result;
                     }
-
-                    if ((object)startingTarget == (object)ruleTarget) {
-                        // If we've gone megamorphic we can still template off the L2 cache
-                        originalRule = rule;
+                } finally {
+                    if (CallSiteOps.GetMatch(site)) {
+                        //
+                        // Rule worked. Add it to level 1 cache
+                        //
+                        CallSiteOps.AddRule(@this, rule);
+                        // and then move it to the front of the L2 cache
+                        CallSiteOps.MoveRule(cache, rule, i);
                     }
-
-                    // Rule didn't match, try the next one
-                    CallSiteOps.ClearMatch(site);
                 }
-            }
 
+                // Rule didn't match, try the next one
+                CallSiteOps.ClearMatch(site);
+            }
 
             //
             // Miss on Level 0, 1 and 2 caches. Create new rule
@@ -1284,16 +1248,15 @@ namespace System.Dynamic {
             var args = new object[] { arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8 };
 
             for (; ; ) {
-                rule = CallSiteOps.CreateNewRule(cache, @this, rule, originalRule, args);
+                @this.Target = originalRule;
+                rule = @this.Target = @this.Binder.BindCore(@this, args);
 
                 //
                 // Execute the rule on the matchmaker site
                 //
 
-                ruleTarget = CallSiteOps.SetTarget(@this, rule);
-
                 try {
-                    result = ruleTarget(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
+                    result = rule(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
                     if (CallSiteOps.GetMatch(site)) {
                         return result;
                     }
@@ -1309,6 +1272,13 @@ namespace System.Dynamic {
                 // Rule we got back didn't work, try another one
                 CallSiteOps.ClearMatch(site);
             }
+        }
+
+        [Obsolete("pregenerated CallSite<T>.Update delegate", true)]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters")]
+        internal static TRet NoMatch9<T0, T1, T2, T3, T4, T5, T6, T7, T8, TRet>(CallSite site, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8) {
+            site._match = false;
+            return default(TRet);
         }
 
 
@@ -1319,17 +1289,15 @@ namespace System.Dynamic {
             // Declare the locals here upfront. It actually saves JIT stack space.
             //
             var @this = (CallSite<Func<CallSite, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, TRet>>)site;
-            CallSiteRule<Func<CallSite, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, TRet>>[] applicable;
-            CallSiteRule<Func<CallSite, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, TRet>> rule;
-            Func<CallSite, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, TRet> ruleTarget, startingTarget = @this.Target;
+            Func<CallSite, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, TRet>[] applicable;
+            Func<CallSite, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, TRet> rule, originalRule = @this.Target;
             TRet result;
 
-            CallSiteRule<Func<CallSite, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, TRet>> originalRule = null;
 
             //
             // Create matchmaker and its site. We'll need them regardless.
             //
-            site = CallSiteOps.CreateMatchmaker();
+            site = CallSiteOps.CreateMatchmaker(@this);
 
             //
             // Level 1 cache lookup
@@ -1341,21 +1309,20 @@ namespace System.Dynamic {
                     //
                     // Execute the rule
                     //
-                    ruleTarget = CallSiteOps.SetTarget(@this, rule);
 
-                    if ((object)startingTarget == (object)ruleTarget) {
-                        // if we produce another monomorphic
-                        // rule we should try and share code between the two.
-                        originalRule = rule;
-                    }else{
-                        result = ruleTarget(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+                    // if we've already tried it skip it...
+                    if ((object)rule != (object)originalRule) {
+                        @this.Target = rule;
+                        result = rule(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+
                         if (CallSiteOps.GetMatch(site)) {
+                            CallSiteOps.UpdateRules(@this, i);
                             return result;
                         }        
 
                         // Rule didn't match, try the next one
                         CallSiteOps.ClearMatch(site);            
-                    }                
+                    }
                 }
             }
 
@@ -1366,43 +1333,37 @@ namespace System.Dynamic {
             //
             // Any applicable rules in level 2 cache?
             //
+
             var cache = CallSiteOps.GetRuleCache(@this);
 
-            if ((applicable = CallSiteOps.FindApplicableRules(cache)) != null) {
-                for (int i = 0; i < applicable.Length; i++) {
-                    rule = applicable[i];
+            var cachedRules = cache.GetRules();
+            for (int i = 0; i < cachedRules.Length; i++) {
+                rule = cachedRules[i].Target;
 
-                    //
-                    // Execute the rule
-                    //
-                    ruleTarget = CallSiteOps.SetTarget(@this, rule);
+                //
+                // Execute the rule
+                //
+                @this.Target = rule;
 
-                    try {
-                        result = ruleTarget(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
-                        if (CallSiteOps.GetMatch(site)) {
-                            return result;
-                        }
-                    } finally {
-                        if (CallSiteOps.GetMatch(site)) {
-                            //
-                            // Rule worked. Add it to level 1 cache
-                            //
-                            CallSiteOps.AddRule(@this, rule);
-                            // and then move it to the front of the L2 cache
-                            CallSiteOps.MoveRule(cache, rule);
-                        }
+                try {
+                    result = rule(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+                    if (CallSiteOps.GetMatch(site)) {
+                        return result;
                     }
-
-                    if ((object)startingTarget == (object)ruleTarget) {
-                        // If we've gone megamorphic we can still template off the L2 cache
-                        originalRule = rule;
+                } finally {
+                    if (CallSiteOps.GetMatch(site)) {
+                        //
+                        // Rule worked. Add it to level 1 cache
+                        //
+                        CallSiteOps.AddRule(@this, rule);
+                        // and then move it to the front of the L2 cache
+                        CallSiteOps.MoveRule(cache, rule, i);
                     }
-
-                    // Rule didn't match, try the next one
-                    CallSiteOps.ClearMatch(site);
                 }
-            }
 
+                // Rule didn't match, try the next one
+                CallSiteOps.ClearMatch(site);
+            }
 
             //
             // Miss on Level 0, 1 and 2 caches. Create new rule
@@ -1412,16 +1373,15 @@ namespace System.Dynamic {
             var args = new object[] { arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9 };
 
             for (; ; ) {
-                rule = CallSiteOps.CreateNewRule(cache, @this, rule, originalRule, args);
+                @this.Target = originalRule;
+                rule = @this.Target = @this.Binder.BindCore(@this, args);
 
                 //
                 // Execute the rule on the matchmaker site
                 //
 
-                ruleTarget = CallSiteOps.SetTarget(@this, rule);
-
                 try {
-                    result = ruleTarget(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+                    result = rule(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
                     if (CallSiteOps.GetMatch(site)) {
                         return result;
                     }
@@ -1439,6 +1399,13 @@ namespace System.Dynamic {
             }
         }
 
+        [Obsolete("pregenerated CallSite<T>.Update delegate", true)]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters")]
+        internal static TRet NoMatch10<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, TRet>(CallSite site, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9) {
+            site._match = false;
+            return default(TRet);
+        }
+
 
 
         [Obsolete("pregenerated CallSite<T>.Update delegate", true)]
@@ -1447,16 +1414,14 @@ namespace System.Dynamic {
             // Declare the locals here upfront. It actually saves JIT stack space.
             //
             var @this = (CallSite<Action<CallSite, T0>>)site;
-            CallSiteRule<Action<CallSite, T0>>[] applicable;
-            CallSiteRule<Action<CallSite, T0>> rule;
-            Action<CallSite, T0> ruleTarget, startingTarget = @this.Target;
+            Action<CallSite, T0>[] applicable;
+            Action<CallSite, T0> rule, originalRule = @this.Target;
 
-            CallSiteRule<Action<CallSite, T0>> originalRule = null;
 
             //
             // Create matchmaker and its site. We'll need them regardless.
             //
-            site = CallSiteOps.CreateMatchmaker();
+            site = CallSiteOps.CreateMatchmaker(@this);
 
             //
             // Level 1 cache lookup
@@ -1468,21 +1433,20 @@ namespace System.Dynamic {
                     //
                     // Execute the rule
                     //
-                    ruleTarget = CallSiteOps.SetTarget(@this, rule);
 
-                    if ((object)startingTarget == (object)ruleTarget) {
-                        // if we produce another monomorphic
-                        // rule we should try and share code between the two.
-                        originalRule = rule;
-                    }else{
-                         ruleTarget(site, arg0);
+                    // if we've already tried it skip it...
+                    if ((object)rule != (object)originalRule) {
+                        @this.Target = rule;
+                         rule(site, arg0);
+
                         if (CallSiteOps.GetMatch(site)) {
+                            CallSiteOps.UpdateRules(@this, i);
                             return;
                         }        
 
                         // Rule didn't match, try the next one
                         CallSiteOps.ClearMatch(site);            
-                    }                
+                    }
                 }
             }
 
@@ -1493,43 +1457,37 @@ namespace System.Dynamic {
             //
             // Any applicable rules in level 2 cache?
             //
+
             var cache = CallSiteOps.GetRuleCache(@this);
 
-            if ((applicable = CallSiteOps.FindApplicableRules(cache)) != null) {
-                for (int i = 0; i < applicable.Length; i++) {
-                    rule = applicable[i];
+            var cachedRules = cache.GetRules();
+            for (int i = 0; i < cachedRules.Length; i++) {
+                rule = cachedRules[i].Target;
 
-                    //
-                    // Execute the rule
-                    //
-                    ruleTarget = CallSiteOps.SetTarget(@this, rule);
+                //
+                // Execute the rule
+                //
+                @this.Target = rule;
 
-                    try {
-                         ruleTarget(site, arg0);
-                        if (CallSiteOps.GetMatch(site)) {
-                            return;
-                        }
-                    } finally {
-                        if (CallSiteOps.GetMatch(site)) {
-                            //
-                            // Rule worked. Add it to level 1 cache
-                            //
-                            CallSiteOps.AddRule(@this, rule);
-                            // and then move it to the front of the L2 cache
-                            CallSiteOps.MoveRule(cache, rule);
-                        }
+                try {
+                     rule(site, arg0);
+                    if (CallSiteOps.GetMatch(site)) {
+                        return;
                     }
-
-                    if ((object)startingTarget == (object)ruleTarget) {
-                        // If we've gone megamorphic we can still template off the L2 cache
-                        originalRule = rule;
+                } finally {
+                    if (CallSiteOps.GetMatch(site)) {
+                        //
+                        // Rule worked. Add it to level 1 cache
+                        //
+                        CallSiteOps.AddRule(@this, rule);
+                        // and then move it to the front of the L2 cache
+                        CallSiteOps.MoveRule(cache, rule, i);
                     }
-
-                    // Rule didn't match, try the next one
-                    CallSiteOps.ClearMatch(site);
                 }
-            }
 
+                // Rule didn't match, try the next one
+                CallSiteOps.ClearMatch(site);
+            }
 
             //
             // Miss on Level 0, 1 and 2 caches. Create new rule
@@ -1539,16 +1497,15 @@ namespace System.Dynamic {
             var args = new object[] { arg0 };
 
             for (; ; ) {
-                rule = CallSiteOps.CreateNewRule(cache, @this, rule, originalRule, args);
+                @this.Target = originalRule;
+                rule = @this.Target = @this.Binder.BindCore(@this, args);
 
                 //
                 // Execute the rule on the matchmaker site
                 //
 
-                ruleTarget = CallSiteOps.SetTarget(@this, rule);
-
                 try {
-                     ruleTarget(site, arg0);
+                     rule(site, arg0);
                     if (CallSiteOps.GetMatch(site)) {
                         return;
                     }
@@ -1564,6 +1521,13 @@ namespace System.Dynamic {
                 // Rule we got back didn't work, try another one
                 CallSiteOps.ClearMatch(site);
             }
+        }
+
+        [Obsolete("pregenerated CallSite<T>.Update delegate", true)]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters")]
+        internal static void NoMatchVoid1<T0>(CallSite site, T0 arg0) {
+            site._match = false;
+            return;
         }
 
 
@@ -1574,16 +1538,14 @@ namespace System.Dynamic {
             // Declare the locals here upfront. It actually saves JIT stack space.
             //
             var @this = (CallSite<Action<CallSite, T0, T1>>)site;
-            CallSiteRule<Action<CallSite, T0, T1>>[] applicable;
-            CallSiteRule<Action<CallSite, T0, T1>> rule;
-            Action<CallSite, T0, T1> ruleTarget, startingTarget = @this.Target;
+            Action<CallSite, T0, T1>[] applicable;
+            Action<CallSite, T0, T1> rule, originalRule = @this.Target;
 
-            CallSiteRule<Action<CallSite, T0, T1>> originalRule = null;
 
             //
             // Create matchmaker and its site. We'll need them regardless.
             //
-            site = CallSiteOps.CreateMatchmaker();
+            site = CallSiteOps.CreateMatchmaker(@this);
 
             //
             // Level 1 cache lookup
@@ -1595,21 +1557,20 @@ namespace System.Dynamic {
                     //
                     // Execute the rule
                     //
-                    ruleTarget = CallSiteOps.SetTarget(@this, rule);
 
-                    if ((object)startingTarget == (object)ruleTarget) {
-                        // if we produce another monomorphic
-                        // rule we should try and share code between the two.
-                        originalRule = rule;
-                    }else{
-                         ruleTarget(site, arg0, arg1);
+                    // if we've already tried it skip it...
+                    if ((object)rule != (object)originalRule) {
+                        @this.Target = rule;
+                         rule(site, arg0, arg1);
+
                         if (CallSiteOps.GetMatch(site)) {
+                            CallSiteOps.UpdateRules(@this, i);
                             return;
                         }        
 
                         // Rule didn't match, try the next one
                         CallSiteOps.ClearMatch(site);            
-                    }                
+                    }
                 }
             }
 
@@ -1620,43 +1581,37 @@ namespace System.Dynamic {
             //
             // Any applicable rules in level 2 cache?
             //
+
             var cache = CallSiteOps.GetRuleCache(@this);
 
-            if ((applicable = CallSiteOps.FindApplicableRules(cache)) != null) {
-                for (int i = 0; i < applicable.Length; i++) {
-                    rule = applicable[i];
+            var cachedRules = cache.GetRules();
+            for (int i = 0; i < cachedRules.Length; i++) {
+                rule = cachedRules[i].Target;
 
-                    //
-                    // Execute the rule
-                    //
-                    ruleTarget = CallSiteOps.SetTarget(@this, rule);
+                //
+                // Execute the rule
+                //
+                @this.Target = rule;
 
-                    try {
-                         ruleTarget(site, arg0, arg1);
-                        if (CallSiteOps.GetMatch(site)) {
-                            return;
-                        }
-                    } finally {
-                        if (CallSiteOps.GetMatch(site)) {
-                            //
-                            // Rule worked. Add it to level 1 cache
-                            //
-                            CallSiteOps.AddRule(@this, rule);
-                            // and then move it to the front of the L2 cache
-                            CallSiteOps.MoveRule(cache, rule);
-                        }
+                try {
+                     rule(site, arg0, arg1);
+                    if (CallSiteOps.GetMatch(site)) {
+                        return;
                     }
-
-                    if ((object)startingTarget == (object)ruleTarget) {
-                        // If we've gone megamorphic we can still template off the L2 cache
-                        originalRule = rule;
+                } finally {
+                    if (CallSiteOps.GetMatch(site)) {
+                        //
+                        // Rule worked. Add it to level 1 cache
+                        //
+                        CallSiteOps.AddRule(@this, rule);
+                        // and then move it to the front of the L2 cache
+                        CallSiteOps.MoveRule(cache, rule, i);
                     }
-
-                    // Rule didn't match, try the next one
-                    CallSiteOps.ClearMatch(site);
                 }
-            }
 
+                // Rule didn't match, try the next one
+                CallSiteOps.ClearMatch(site);
+            }
 
             //
             // Miss on Level 0, 1 and 2 caches. Create new rule
@@ -1666,16 +1621,15 @@ namespace System.Dynamic {
             var args = new object[] { arg0, arg1 };
 
             for (; ; ) {
-                rule = CallSiteOps.CreateNewRule(cache, @this, rule, originalRule, args);
+                @this.Target = originalRule;
+                rule = @this.Target = @this.Binder.BindCore(@this, args);
 
                 //
                 // Execute the rule on the matchmaker site
                 //
 
-                ruleTarget = CallSiteOps.SetTarget(@this, rule);
-
                 try {
-                     ruleTarget(site, arg0, arg1);
+                     rule(site, arg0, arg1);
                     if (CallSiteOps.GetMatch(site)) {
                         return;
                     }
@@ -1691,6 +1645,13 @@ namespace System.Dynamic {
                 // Rule we got back didn't work, try another one
                 CallSiteOps.ClearMatch(site);
             }
+        }
+
+        [Obsolete("pregenerated CallSite<T>.Update delegate", true)]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters")]
+        internal static void NoMatchVoid2<T0, T1>(CallSite site, T0 arg0, T1 arg1) {
+            site._match = false;
+            return;
         }
 
 
@@ -1701,16 +1662,14 @@ namespace System.Dynamic {
             // Declare the locals here upfront. It actually saves JIT stack space.
             //
             var @this = (CallSite<Action<CallSite, T0, T1, T2>>)site;
-            CallSiteRule<Action<CallSite, T0, T1, T2>>[] applicable;
-            CallSiteRule<Action<CallSite, T0, T1, T2>> rule;
-            Action<CallSite, T0, T1, T2> ruleTarget, startingTarget = @this.Target;
+            Action<CallSite, T0, T1, T2>[] applicable;
+            Action<CallSite, T0, T1, T2> rule, originalRule = @this.Target;
 
-            CallSiteRule<Action<CallSite, T0, T1, T2>> originalRule = null;
 
             //
             // Create matchmaker and its site. We'll need them regardless.
             //
-            site = CallSiteOps.CreateMatchmaker();
+            site = CallSiteOps.CreateMatchmaker(@this);
 
             //
             // Level 1 cache lookup
@@ -1722,21 +1681,20 @@ namespace System.Dynamic {
                     //
                     // Execute the rule
                     //
-                    ruleTarget = CallSiteOps.SetTarget(@this, rule);
 
-                    if ((object)startingTarget == (object)ruleTarget) {
-                        // if we produce another monomorphic
-                        // rule we should try and share code between the two.
-                        originalRule = rule;
-                    }else{
-                         ruleTarget(site, arg0, arg1, arg2);
+                    // if we've already tried it skip it...
+                    if ((object)rule != (object)originalRule) {
+                        @this.Target = rule;
+                         rule(site, arg0, arg1, arg2);
+
                         if (CallSiteOps.GetMatch(site)) {
+                            CallSiteOps.UpdateRules(@this, i);
                             return;
                         }        
 
                         // Rule didn't match, try the next one
                         CallSiteOps.ClearMatch(site);            
-                    }                
+                    }
                 }
             }
 
@@ -1747,43 +1705,37 @@ namespace System.Dynamic {
             //
             // Any applicable rules in level 2 cache?
             //
+
             var cache = CallSiteOps.GetRuleCache(@this);
 
-            if ((applicable = CallSiteOps.FindApplicableRules(cache)) != null) {
-                for (int i = 0; i < applicable.Length; i++) {
-                    rule = applicable[i];
+            var cachedRules = cache.GetRules();
+            for (int i = 0; i < cachedRules.Length; i++) {
+                rule = cachedRules[i].Target;
 
-                    //
-                    // Execute the rule
-                    //
-                    ruleTarget = CallSiteOps.SetTarget(@this, rule);
+                //
+                // Execute the rule
+                //
+                @this.Target = rule;
 
-                    try {
-                         ruleTarget(site, arg0, arg1, arg2);
-                        if (CallSiteOps.GetMatch(site)) {
-                            return;
-                        }
-                    } finally {
-                        if (CallSiteOps.GetMatch(site)) {
-                            //
-                            // Rule worked. Add it to level 1 cache
-                            //
-                            CallSiteOps.AddRule(@this, rule);
-                            // and then move it to the front of the L2 cache
-                            CallSiteOps.MoveRule(cache, rule);
-                        }
+                try {
+                     rule(site, arg0, arg1, arg2);
+                    if (CallSiteOps.GetMatch(site)) {
+                        return;
                     }
-
-                    if ((object)startingTarget == (object)ruleTarget) {
-                        // If we've gone megamorphic we can still template off the L2 cache
-                        originalRule = rule;
+                } finally {
+                    if (CallSiteOps.GetMatch(site)) {
+                        //
+                        // Rule worked. Add it to level 1 cache
+                        //
+                        CallSiteOps.AddRule(@this, rule);
+                        // and then move it to the front of the L2 cache
+                        CallSiteOps.MoveRule(cache, rule, i);
                     }
-
-                    // Rule didn't match, try the next one
-                    CallSiteOps.ClearMatch(site);
                 }
-            }
 
+                // Rule didn't match, try the next one
+                CallSiteOps.ClearMatch(site);
+            }
 
             //
             // Miss on Level 0, 1 and 2 caches. Create new rule
@@ -1793,16 +1745,15 @@ namespace System.Dynamic {
             var args = new object[] { arg0, arg1, arg2 };
 
             for (; ; ) {
-                rule = CallSiteOps.CreateNewRule(cache, @this, rule, originalRule, args);
+                @this.Target = originalRule;
+                rule = @this.Target = @this.Binder.BindCore(@this, args);
 
                 //
                 // Execute the rule on the matchmaker site
                 //
 
-                ruleTarget = CallSiteOps.SetTarget(@this, rule);
-
                 try {
-                     ruleTarget(site, arg0, arg1, arg2);
+                     rule(site, arg0, arg1, arg2);
                     if (CallSiteOps.GetMatch(site)) {
                         return;
                     }
@@ -1818,6 +1769,13 @@ namespace System.Dynamic {
                 // Rule we got back didn't work, try another one
                 CallSiteOps.ClearMatch(site);
             }
+        }
+
+        [Obsolete("pregenerated CallSite<T>.Update delegate", true)]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters")]
+        internal static void NoMatchVoid3<T0, T1, T2>(CallSite site, T0 arg0, T1 arg1, T2 arg2) {
+            site._match = false;
+            return;
         }
 
 
@@ -1828,16 +1786,14 @@ namespace System.Dynamic {
             // Declare the locals here upfront. It actually saves JIT stack space.
             //
             var @this = (CallSite<Action<CallSite, T0, T1, T2, T3>>)site;
-            CallSiteRule<Action<CallSite, T0, T1, T2, T3>>[] applicable;
-            CallSiteRule<Action<CallSite, T0, T1, T2, T3>> rule;
-            Action<CallSite, T0, T1, T2, T3> ruleTarget, startingTarget = @this.Target;
+            Action<CallSite, T0, T1, T2, T3>[] applicable;
+            Action<CallSite, T0, T1, T2, T3> rule, originalRule = @this.Target;
 
-            CallSiteRule<Action<CallSite, T0, T1, T2, T3>> originalRule = null;
 
             //
             // Create matchmaker and its site. We'll need them regardless.
             //
-            site = CallSiteOps.CreateMatchmaker();
+            site = CallSiteOps.CreateMatchmaker(@this);
 
             //
             // Level 1 cache lookup
@@ -1849,21 +1805,20 @@ namespace System.Dynamic {
                     //
                     // Execute the rule
                     //
-                    ruleTarget = CallSiteOps.SetTarget(@this, rule);
 
-                    if ((object)startingTarget == (object)ruleTarget) {
-                        // if we produce another monomorphic
-                        // rule we should try and share code between the two.
-                        originalRule = rule;
-                    }else{
-                         ruleTarget(site, arg0, arg1, arg2, arg3);
+                    // if we've already tried it skip it...
+                    if ((object)rule != (object)originalRule) {
+                        @this.Target = rule;
+                         rule(site, arg0, arg1, arg2, arg3);
+
                         if (CallSiteOps.GetMatch(site)) {
+                            CallSiteOps.UpdateRules(@this, i);
                             return;
                         }        
 
                         // Rule didn't match, try the next one
                         CallSiteOps.ClearMatch(site);            
-                    }                
+                    }
                 }
             }
 
@@ -1874,43 +1829,37 @@ namespace System.Dynamic {
             //
             // Any applicable rules in level 2 cache?
             //
+
             var cache = CallSiteOps.GetRuleCache(@this);
 
-            if ((applicable = CallSiteOps.FindApplicableRules(cache)) != null) {
-                for (int i = 0; i < applicable.Length; i++) {
-                    rule = applicable[i];
+            var cachedRules = cache.GetRules();
+            for (int i = 0; i < cachedRules.Length; i++) {
+                rule = cachedRules[i].Target;
 
-                    //
-                    // Execute the rule
-                    //
-                    ruleTarget = CallSiteOps.SetTarget(@this, rule);
+                //
+                // Execute the rule
+                //
+                @this.Target = rule;
 
-                    try {
-                         ruleTarget(site, arg0, arg1, arg2, arg3);
-                        if (CallSiteOps.GetMatch(site)) {
-                            return;
-                        }
-                    } finally {
-                        if (CallSiteOps.GetMatch(site)) {
-                            //
-                            // Rule worked. Add it to level 1 cache
-                            //
-                            CallSiteOps.AddRule(@this, rule);
-                            // and then move it to the front of the L2 cache
-                            CallSiteOps.MoveRule(cache, rule);
-                        }
+                try {
+                     rule(site, arg0, arg1, arg2, arg3);
+                    if (CallSiteOps.GetMatch(site)) {
+                        return;
                     }
-
-                    if ((object)startingTarget == (object)ruleTarget) {
-                        // If we've gone megamorphic we can still template off the L2 cache
-                        originalRule = rule;
+                } finally {
+                    if (CallSiteOps.GetMatch(site)) {
+                        //
+                        // Rule worked. Add it to level 1 cache
+                        //
+                        CallSiteOps.AddRule(@this, rule);
+                        // and then move it to the front of the L2 cache
+                        CallSiteOps.MoveRule(cache, rule, i);
                     }
-
-                    // Rule didn't match, try the next one
-                    CallSiteOps.ClearMatch(site);
                 }
-            }
 
+                // Rule didn't match, try the next one
+                CallSiteOps.ClearMatch(site);
+            }
 
             //
             // Miss on Level 0, 1 and 2 caches. Create new rule
@@ -1920,16 +1869,15 @@ namespace System.Dynamic {
             var args = new object[] { arg0, arg1, arg2, arg3 };
 
             for (; ; ) {
-                rule = CallSiteOps.CreateNewRule(cache, @this, rule, originalRule, args);
+                @this.Target = originalRule;
+                rule = @this.Target = @this.Binder.BindCore(@this, args);
 
                 //
                 // Execute the rule on the matchmaker site
                 //
 
-                ruleTarget = CallSiteOps.SetTarget(@this, rule);
-
                 try {
-                     ruleTarget(site, arg0, arg1, arg2, arg3);
+                     rule(site, arg0, arg1, arg2, arg3);
                     if (CallSiteOps.GetMatch(site)) {
                         return;
                     }
@@ -1945,6 +1893,13 @@ namespace System.Dynamic {
                 // Rule we got back didn't work, try another one
                 CallSiteOps.ClearMatch(site);
             }
+        }
+
+        [Obsolete("pregenerated CallSite<T>.Update delegate", true)]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters")]
+        internal static void NoMatchVoid4<T0, T1, T2, T3>(CallSite site, T0 arg0, T1 arg1, T2 arg2, T3 arg3) {
+            site._match = false;
+            return;
         }
 
 
@@ -1955,16 +1910,14 @@ namespace System.Dynamic {
             // Declare the locals here upfront. It actually saves JIT stack space.
             //
             var @this = (CallSite<Action<CallSite, T0, T1, T2, T3, T4>>)site;
-            CallSiteRule<Action<CallSite, T0, T1, T2, T3, T4>>[] applicable;
-            CallSiteRule<Action<CallSite, T0, T1, T2, T3, T4>> rule;
-            Action<CallSite, T0, T1, T2, T3, T4> ruleTarget, startingTarget = @this.Target;
+            Action<CallSite, T0, T1, T2, T3, T4>[] applicable;
+            Action<CallSite, T0, T1, T2, T3, T4> rule, originalRule = @this.Target;
 
-            CallSiteRule<Action<CallSite, T0, T1, T2, T3, T4>> originalRule = null;
 
             //
             // Create matchmaker and its site. We'll need them regardless.
             //
-            site = CallSiteOps.CreateMatchmaker();
+            site = CallSiteOps.CreateMatchmaker(@this);
 
             //
             // Level 1 cache lookup
@@ -1976,21 +1929,20 @@ namespace System.Dynamic {
                     //
                     // Execute the rule
                     //
-                    ruleTarget = CallSiteOps.SetTarget(@this, rule);
 
-                    if ((object)startingTarget == (object)ruleTarget) {
-                        // if we produce another monomorphic
-                        // rule we should try and share code between the two.
-                        originalRule = rule;
-                    }else{
-                         ruleTarget(site, arg0, arg1, arg2, arg3, arg4);
+                    // if we've already tried it skip it...
+                    if ((object)rule != (object)originalRule) {
+                        @this.Target = rule;
+                         rule(site, arg0, arg1, arg2, arg3, arg4);
+
                         if (CallSiteOps.GetMatch(site)) {
+                            CallSiteOps.UpdateRules(@this, i);
                             return;
                         }        
 
                         // Rule didn't match, try the next one
                         CallSiteOps.ClearMatch(site);            
-                    }                
+                    }
                 }
             }
 
@@ -2001,43 +1953,37 @@ namespace System.Dynamic {
             //
             // Any applicable rules in level 2 cache?
             //
+
             var cache = CallSiteOps.GetRuleCache(@this);
 
-            if ((applicable = CallSiteOps.FindApplicableRules(cache)) != null) {
-                for (int i = 0; i < applicable.Length; i++) {
-                    rule = applicable[i];
+            var cachedRules = cache.GetRules();
+            for (int i = 0; i < cachedRules.Length; i++) {
+                rule = cachedRules[i].Target;
 
-                    //
-                    // Execute the rule
-                    //
-                    ruleTarget = CallSiteOps.SetTarget(@this, rule);
+                //
+                // Execute the rule
+                //
+                @this.Target = rule;
 
-                    try {
-                         ruleTarget(site, arg0, arg1, arg2, arg3, arg4);
-                        if (CallSiteOps.GetMatch(site)) {
-                            return;
-                        }
-                    } finally {
-                        if (CallSiteOps.GetMatch(site)) {
-                            //
-                            // Rule worked. Add it to level 1 cache
-                            //
-                            CallSiteOps.AddRule(@this, rule);
-                            // and then move it to the front of the L2 cache
-                            CallSiteOps.MoveRule(cache, rule);
-                        }
+                try {
+                     rule(site, arg0, arg1, arg2, arg3, arg4);
+                    if (CallSiteOps.GetMatch(site)) {
+                        return;
                     }
-
-                    if ((object)startingTarget == (object)ruleTarget) {
-                        // If we've gone megamorphic we can still template off the L2 cache
-                        originalRule = rule;
+                } finally {
+                    if (CallSiteOps.GetMatch(site)) {
+                        //
+                        // Rule worked. Add it to level 1 cache
+                        //
+                        CallSiteOps.AddRule(@this, rule);
+                        // and then move it to the front of the L2 cache
+                        CallSiteOps.MoveRule(cache, rule, i);
                     }
-
-                    // Rule didn't match, try the next one
-                    CallSiteOps.ClearMatch(site);
                 }
-            }
 
+                // Rule didn't match, try the next one
+                CallSiteOps.ClearMatch(site);
+            }
 
             //
             // Miss on Level 0, 1 and 2 caches. Create new rule
@@ -2047,16 +1993,15 @@ namespace System.Dynamic {
             var args = new object[] { arg0, arg1, arg2, arg3, arg4 };
 
             for (; ; ) {
-                rule = CallSiteOps.CreateNewRule(cache, @this, rule, originalRule, args);
+                @this.Target = originalRule;
+                rule = @this.Target = @this.Binder.BindCore(@this, args);
 
                 //
                 // Execute the rule on the matchmaker site
                 //
 
-                ruleTarget = CallSiteOps.SetTarget(@this, rule);
-
                 try {
-                     ruleTarget(site, arg0, arg1, arg2, arg3, arg4);
+                     rule(site, arg0, arg1, arg2, arg3, arg4);
                     if (CallSiteOps.GetMatch(site)) {
                         return;
                     }
@@ -2072,6 +2017,13 @@ namespace System.Dynamic {
                 // Rule we got back didn't work, try another one
                 CallSiteOps.ClearMatch(site);
             }
+        }
+
+        [Obsolete("pregenerated CallSite<T>.Update delegate", true)]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters")]
+        internal static void NoMatchVoid5<T0, T1, T2, T3, T4>(CallSite site, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4) {
+            site._match = false;
+            return;
         }
 
 
@@ -2082,16 +2034,14 @@ namespace System.Dynamic {
             // Declare the locals here upfront. It actually saves JIT stack space.
             //
             var @this = (CallSite<Action<CallSite, T0, T1, T2, T3, T4, T5>>)site;
-            CallSiteRule<Action<CallSite, T0, T1, T2, T3, T4, T5>>[] applicable;
-            CallSiteRule<Action<CallSite, T0, T1, T2, T3, T4, T5>> rule;
-            Action<CallSite, T0, T1, T2, T3, T4, T5> ruleTarget, startingTarget = @this.Target;
+            Action<CallSite, T0, T1, T2, T3, T4, T5>[] applicable;
+            Action<CallSite, T0, T1, T2, T3, T4, T5> rule, originalRule = @this.Target;
 
-            CallSiteRule<Action<CallSite, T0, T1, T2, T3, T4, T5>> originalRule = null;
 
             //
             // Create matchmaker and its site. We'll need them regardless.
             //
-            site = CallSiteOps.CreateMatchmaker();
+            site = CallSiteOps.CreateMatchmaker(@this);
 
             //
             // Level 1 cache lookup
@@ -2103,21 +2053,20 @@ namespace System.Dynamic {
                     //
                     // Execute the rule
                     //
-                    ruleTarget = CallSiteOps.SetTarget(@this, rule);
 
-                    if ((object)startingTarget == (object)ruleTarget) {
-                        // if we produce another monomorphic
-                        // rule we should try and share code between the two.
-                        originalRule = rule;
-                    }else{
-                         ruleTarget(site, arg0, arg1, arg2, arg3, arg4, arg5);
+                    // if we've already tried it skip it...
+                    if ((object)rule != (object)originalRule) {
+                        @this.Target = rule;
+                         rule(site, arg0, arg1, arg2, arg3, arg4, arg5);
+
                         if (CallSiteOps.GetMatch(site)) {
+                            CallSiteOps.UpdateRules(@this, i);
                             return;
                         }        
 
                         // Rule didn't match, try the next one
                         CallSiteOps.ClearMatch(site);            
-                    }                
+                    }
                 }
             }
 
@@ -2128,43 +2077,37 @@ namespace System.Dynamic {
             //
             // Any applicable rules in level 2 cache?
             //
+
             var cache = CallSiteOps.GetRuleCache(@this);
 
-            if ((applicable = CallSiteOps.FindApplicableRules(cache)) != null) {
-                for (int i = 0; i < applicable.Length; i++) {
-                    rule = applicable[i];
+            var cachedRules = cache.GetRules();
+            for (int i = 0; i < cachedRules.Length; i++) {
+                rule = cachedRules[i].Target;
 
-                    //
-                    // Execute the rule
-                    //
-                    ruleTarget = CallSiteOps.SetTarget(@this, rule);
+                //
+                // Execute the rule
+                //
+                @this.Target = rule;
 
-                    try {
-                         ruleTarget(site, arg0, arg1, arg2, arg3, arg4, arg5);
-                        if (CallSiteOps.GetMatch(site)) {
-                            return;
-                        }
-                    } finally {
-                        if (CallSiteOps.GetMatch(site)) {
-                            //
-                            // Rule worked. Add it to level 1 cache
-                            //
-                            CallSiteOps.AddRule(@this, rule);
-                            // and then move it to the front of the L2 cache
-                            CallSiteOps.MoveRule(cache, rule);
-                        }
+                try {
+                     rule(site, arg0, arg1, arg2, arg3, arg4, arg5);
+                    if (CallSiteOps.GetMatch(site)) {
+                        return;
                     }
-
-                    if ((object)startingTarget == (object)ruleTarget) {
-                        // If we've gone megamorphic we can still template off the L2 cache
-                        originalRule = rule;
+                } finally {
+                    if (CallSiteOps.GetMatch(site)) {
+                        //
+                        // Rule worked. Add it to level 1 cache
+                        //
+                        CallSiteOps.AddRule(@this, rule);
+                        // and then move it to the front of the L2 cache
+                        CallSiteOps.MoveRule(cache, rule, i);
                     }
-
-                    // Rule didn't match, try the next one
-                    CallSiteOps.ClearMatch(site);
                 }
-            }
 
+                // Rule didn't match, try the next one
+                CallSiteOps.ClearMatch(site);
+            }
 
             //
             // Miss on Level 0, 1 and 2 caches. Create new rule
@@ -2174,16 +2117,15 @@ namespace System.Dynamic {
             var args = new object[] { arg0, arg1, arg2, arg3, arg4, arg5 };
 
             for (; ; ) {
-                rule = CallSiteOps.CreateNewRule(cache, @this, rule, originalRule, args);
+                @this.Target = originalRule;
+                rule = @this.Target = @this.Binder.BindCore(@this, args);
 
                 //
                 // Execute the rule on the matchmaker site
                 //
 
-                ruleTarget = CallSiteOps.SetTarget(@this, rule);
-
                 try {
-                     ruleTarget(site, arg0, arg1, arg2, arg3, arg4, arg5);
+                     rule(site, arg0, arg1, arg2, arg3, arg4, arg5);
                     if (CallSiteOps.GetMatch(site)) {
                         return;
                     }
@@ -2199,6 +2141,13 @@ namespace System.Dynamic {
                 // Rule we got back didn't work, try another one
                 CallSiteOps.ClearMatch(site);
             }
+        }
+
+        [Obsolete("pregenerated CallSite<T>.Update delegate", true)]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters")]
+        internal static void NoMatchVoid6<T0, T1, T2, T3, T4, T5>(CallSite site, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5) {
+            site._match = false;
+            return;
         }
 
 
@@ -2209,16 +2158,14 @@ namespace System.Dynamic {
             // Declare the locals here upfront. It actually saves JIT stack space.
             //
             var @this = (CallSite<Action<CallSite, T0, T1, T2, T3, T4, T5, T6>>)site;
-            CallSiteRule<Action<CallSite, T0, T1, T2, T3, T4, T5, T6>>[] applicable;
-            CallSiteRule<Action<CallSite, T0, T1, T2, T3, T4, T5, T6>> rule;
-            Action<CallSite, T0, T1, T2, T3, T4, T5, T6> ruleTarget, startingTarget = @this.Target;
+            Action<CallSite, T0, T1, T2, T3, T4, T5, T6>[] applicable;
+            Action<CallSite, T0, T1, T2, T3, T4, T5, T6> rule, originalRule = @this.Target;
 
-            CallSiteRule<Action<CallSite, T0, T1, T2, T3, T4, T5, T6>> originalRule = null;
 
             //
             // Create matchmaker and its site. We'll need them regardless.
             //
-            site = CallSiteOps.CreateMatchmaker();
+            site = CallSiteOps.CreateMatchmaker(@this);
 
             //
             // Level 1 cache lookup
@@ -2230,21 +2177,20 @@ namespace System.Dynamic {
                     //
                     // Execute the rule
                     //
-                    ruleTarget = CallSiteOps.SetTarget(@this, rule);
 
-                    if ((object)startingTarget == (object)ruleTarget) {
-                        // if we produce another monomorphic
-                        // rule we should try and share code between the two.
-                        originalRule = rule;
-                    }else{
-                         ruleTarget(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6);
+                    // if we've already tried it skip it...
+                    if ((object)rule != (object)originalRule) {
+                        @this.Target = rule;
+                         rule(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6);
+
                         if (CallSiteOps.GetMatch(site)) {
+                            CallSiteOps.UpdateRules(@this, i);
                             return;
                         }        
 
                         // Rule didn't match, try the next one
                         CallSiteOps.ClearMatch(site);            
-                    }                
+                    }
                 }
             }
 
@@ -2255,43 +2201,37 @@ namespace System.Dynamic {
             //
             // Any applicable rules in level 2 cache?
             //
+
             var cache = CallSiteOps.GetRuleCache(@this);
 
-            if ((applicable = CallSiteOps.FindApplicableRules(cache)) != null) {
-                for (int i = 0; i < applicable.Length; i++) {
-                    rule = applicable[i];
+            var cachedRules = cache.GetRules();
+            for (int i = 0; i < cachedRules.Length; i++) {
+                rule = cachedRules[i].Target;
 
-                    //
-                    // Execute the rule
-                    //
-                    ruleTarget = CallSiteOps.SetTarget(@this, rule);
+                //
+                // Execute the rule
+                //
+                @this.Target = rule;
 
-                    try {
-                         ruleTarget(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6);
-                        if (CallSiteOps.GetMatch(site)) {
-                            return;
-                        }
-                    } finally {
-                        if (CallSiteOps.GetMatch(site)) {
-                            //
-                            // Rule worked. Add it to level 1 cache
-                            //
-                            CallSiteOps.AddRule(@this, rule);
-                            // and then move it to the front of the L2 cache
-                            CallSiteOps.MoveRule(cache, rule);
-                        }
+                try {
+                     rule(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6);
+                    if (CallSiteOps.GetMatch(site)) {
+                        return;
                     }
-
-                    if ((object)startingTarget == (object)ruleTarget) {
-                        // If we've gone megamorphic we can still template off the L2 cache
-                        originalRule = rule;
+                } finally {
+                    if (CallSiteOps.GetMatch(site)) {
+                        //
+                        // Rule worked. Add it to level 1 cache
+                        //
+                        CallSiteOps.AddRule(@this, rule);
+                        // and then move it to the front of the L2 cache
+                        CallSiteOps.MoveRule(cache, rule, i);
                     }
-
-                    // Rule didn't match, try the next one
-                    CallSiteOps.ClearMatch(site);
                 }
-            }
 
+                // Rule didn't match, try the next one
+                CallSiteOps.ClearMatch(site);
+            }
 
             //
             // Miss on Level 0, 1 and 2 caches. Create new rule
@@ -2301,16 +2241,15 @@ namespace System.Dynamic {
             var args = new object[] { arg0, arg1, arg2, arg3, arg4, arg5, arg6 };
 
             for (; ; ) {
-                rule = CallSiteOps.CreateNewRule(cache, @this, rule, originalRule, args);
+                @this.Target = originalRule;
+                rule = @this.Target = @this.Binder.BindCore(@this, args);
 
                 //
                 // Execute the rule on the matchmaker site
                 //
 
-                ruleTarget = CallSiteOps.SetTarget(@this, rule);
-
                 try {
-                     ruleTarget(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6);
+                     rule(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6);
                     if (CallSiteOps.GetMatch(site)) {
                         return;
                     }
@@ -2326,6 +2265,13 @@ namespace System.Dynamic {
                 // Rule we got back didn't work, try another one
                 CallSiteOps.ClearMatch(site);
             }
+        }
+
+        [Obsolete("pregenerated CallSite<T>.Update delegate", true)]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters")]
+        internal static void NoMatchVoid7<T0, T1, T2, T3, T4, T5, T6>(CallSite site, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6) {
+            site._match = false;
+            return;
         }
 
 
@@ -2336,16 +2282,14 @@ namespace System.Dynamic {
             // Declare the locals here upfront. It actually saves JIT stack space.
             //
             var @this = (CallSite<Action<CallSite, T0, T1, T2, T3, T4, T5, T6, T7>>)site;
-            CallSiteRule<Action<CallSite, T0, T1, T2, T3, T4, T5, T6, T7>>[] applicable;
-            CallSiteRule<Action<CallSite, T0, T1, T2, T3, T4, T5, T6, T7>> rule;
-            Action<CallSite, T0, T1, T2, T3, T4, T5, T6, T7> ruleTarget, startingTarget = @this.Target;
+            Action<CallSite, T0, T1, T2, T3, T4, T5, T6, T7>[] applicable;
+            Action<CallSite, T0, T1, T2, T3, T4, T5, T6, T7> rule, originalRule = @this.Target;
 
-            CallSiteRule<Action<CallSite, T0, T1, T2, T3, T4, T5, T6, T7>> originalRule = null;
 
             //
             // Create matchmaker and its site. We'll need them regardless.
             //
-            site = CallSiteOps.CreateMatchmaker();
+            site = CallSiteOps.CreateMatchmaker(@this);
 
             //
             // Level 1 cache lookup
@@ -2357,21 +2301,20 @@ namespace System.Dynamic {
                     //
                     // Execute the rule
                     //
-                    ruleTarget = CallSiteOps.SetTarget(@this, rule);
 
-                    if ((object)startingTarget == (object)ruleTarget) {
-                        // if we produce another monomorphic
-                        // rule we should try and share code between the two.
-                        originalRule = rule;
-                    }else{
-                         ruleTarget(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+                    // if we've already tried it skip it...
+                    if ((object)rule != (object)originalRule) {
+                        @this.Target = rule;
+                         rule(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+
                         if (CallSiteOps.GetMatch(site)) {
+                            CallSiteOps.UpdateRules(@this, i);
                             return;
                         }        
 
                         // Rule didn't match, try the next one
                         CallSiteOps.ClearMatch(site);            
-                    }                
+                    }
                 }
             }
 
@@ -2382,43 +2325,37 @@ namespace System.Dynamic {
             //
             // Any applicable rules in level 2 cache?
             //
+
             var cache = CallSiteOps.GetRuleCache(@this);
 
-            if ((applicable = CallSiteOps.FindApplicableRules(cache)) != null) {
-                for (int i = 0; i < applicable.Length; i++) {
-                    rule = applicable[i];
+            var cachedRules = cache.GetRules();
+            for (int i = 0; i < cachedRules.Length; i++) {
+                rule = cachedRules[i].Target;
 
-                    //
-                    // Execute the rule
-                    //
-                    ruleTarget = CallSiteOps.SetTarget(@this, rule);
+                //
+                // Execute the rule
+                //
+                @this.Target = rule;
 
-                    try {
-                         ruleTarget(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
-                        if (CallSiteOps.GetMatch(site)) {
-                            return;
-                        }
-                    } finally {
-                        if (CallSiteOps.GetMatch(site)) {
-                            //
-                            // Rule worked. Add it to level 1 cache
-                            //
-                            CallSiteOps.AddRule(@this, rule);
-                            // and then move it to the front of the L2 cache
-                            CallSiteOps.MoveRule(cache, rule);
-                        }
+                try {
+                     rule(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+                    if (CallSiteOps.GetMatch(site)) {
+                        return;
                     }
-
-                    if ((object)startingTarget == (object)ruleTarget) {
-                        // If we've gone megamorphic we can still template off the L2 cache
-                        originalRule = rule;
+                } finally {
+                    if (CallSiteOps.GetMatch(site)) {
+                        //
+                        // Rule worked. Add it to level 1 cache
+                        //
+                        CallSiteOps.AddRule(@this, rule);
+                        // and then move it to the front of the L2 cache
+                        CallSiteOps.MoveRule(cache, rule, i);
                     }
-
-                    // Rule didn't match, try the next one
-                    CallSiteOps.ClearMatch(site);
                 }
-            }
 
+                // Rule didn't match, try the next one
+                CallSiteOps.ClearMatch(site);
+            }
 
             //
             // Miss on Level 0, 1 and 2 caches. Create new rule
@@ -2428,16 +2365,15 @@ namespace System.Dynamic {
             var args = new object[] { arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7 };
 
             for (; ; ) {
-                rule = CallSiteOps.CreateNewRule(cache, @this, rule, originalRule, args);
+                @this.Target = originalRule;
+                rule = @this.Target = @this.Binder.BindCore(@this, args);
 
                 //
                 // Execute the rule on the matchmaker site
                 //
 
-                ruleTarget = CallSiteOps.SetTarget(@this, rule);
-
                 try {
-                     ruleTarget(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+                     rule(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
                     if (CallSiteOps.GetMatch(site)) {
                         return;
                     }
@@ -2453,6 +2389,13 @@ namespace System.Dynamic {
                 // Rule we got back didn't work, try another one
                 CallSiteOps.ClearMatch(site);
             }
+        }
+
+        [Obsolete("pregenerated CallSite<T>.Update delegate", true)]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters")]
+        internal static void NoMatchVoid8<T0, T1, T2, T3, T4, T5, T6, T7>(CallSite site, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7) {
+            site._match = false;
+            return;
         }
 
 
@@ -2463,16 +2406,14 @@ namespace System.Dynamic {
             // Declare the locals here upfront. It actually saves JIT stack space.
             //
             var @this = (CallSite<Action<CallSite, T0, T1, T2, T3, T4, T5, T6, T7, T8>>)site;
-            CallSiteRule<Action<CallSite, T0, T1, T2, T3, T4, T5, T6, T7, T8>>[] applicable;
-            CallSiteRule<Action<CallSite, T0, T1, T2, T3, T4, T5, T6, T7, T8>> rule;
-            Action<CallSite, T0, T1, T2, T3, T4, T5, T6, T7, T8> ruleTarget, startingTarget = @this.Target;
+            Action<CallSite, T0, T1, T2, T3, T4, T5, T6, T7, T8>[] applicable;
+            Action<CallSite, T0, T1, T2, T3, T4, T5, T6, T7, T8> rule, originalRule = @this.Target;
 
-            CallSiteRule<Action<CallSite, T0, T1, T2, T3, T4, T5, T6, T7, T8>> originalRule = null;
 
             //
             // Create matchmaker and its site. We'll need them regardless.
             //
-            site = CallSiteOps.CreateMatchmaker();
+            site = CallSiteOps.CreateMatchmaker(@this);
 
             //
             // Level 1 cache lookup
@@ -2484,21 +2425,20 @@ namespace System.Dynamic {
                     //
                     // Execute the rule
                     //
-                    ruleTarget = CallSiteOps.SetTarget(@this, rule);
 
-                    if ((object)startingTarget == (object)ruleTarget) {
-                        // if we produce another monomorphic
-                        // rule we should try and share code between the two.
-                        originalRule = rule;
-                    }else{
-                         ruleTarget(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
+                    // if we've already tried it skip it...
+                    if ((object)rule != (object)originalRule) {
+                        @this.Target = rule;
+                         rule(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
+
                         if (CallSiteOps.GetMatch(site)) {
+                            CallSiteOps.UpdateRules(@this, i);
                             return;
                         }        
 
                         // Rule didn't match, try the next one
                         CallSiteOps.ClearMatch(site);            
-                    }                
+                    }
                 }
             }
 
@@ -2509,43 +2449,37 @@ namespace System.Dynamic {
             //
             // Any applicable rules in level 2 cache?
             //
+
             var cache = CallSiteOps.GetRuleCache(@this);
 
-            if ((applicable = CallSiteOps.FindApplicableRules(cache)) != null) {
-                for (int i = 0; i < applicable.Length; i++) {
-                    rule = applicable[i];
+            var cachedRules = cache.GetRules();
+            for (int i = 0; i < cachedRules.Length; i++) {
+                rule = cachedRules[i].Target;
 
-                    //
-                    // Execute the rule
-                    //
-                    ruleTarget = CallSiteOps.SetTarget(@this, rule);
+                //
+                // Execute the rule
+                //
+                @this.Target = rule;
 
-                    try {
-                         ruleTarget(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
-                        if (CallSiteOps.GetMatch(site)) {
-                            return;
-                        }
-                    } finally {
-                        if (CallSiteOps.GetMatch(site)) {
-                            //
-                            // Rule worked. Add it to level 1 cache
-                            //
-                            CallSiteOps.AddRule(@this, rule);
-                            // and then move it to the front of the L2 cache
-                            CallSiteOps.MoveRule(cache, rule);
-                        }
+                try {
+                     rule(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
+                    if (CallSiteOps.GetMatch(site)) {
+                        return;
                     }
-
-                    if ((object)startingTarget == (object)ruleTarget) {
-                        // If we've gone megamorphic we can still template off the L2 cache
-                        originalRule = rule;
+                } finally {
+                    if (CallSiteOps.GetMatch(site)) {
+                        //
+                        // Rule worked. Add it to level 1 cache
+                        //
+                        CallSiteOps.AddRule(@this, rule);
+                        // and then move it to the front of the L2 cache
+                        CallSiteOps.MoveRule(cache, rule, i);
                     }
-
-                    // Rule didn't match, try the next one
-                    CallSiteOps.ClearMatch(site);
                 }
-            }
 
+                // Rule didn't match, try the next one
+                CallSiteOps.ClearMatch(site);
+            }
 
             //
             // Miss on Level 0, 1 and 2 caches. Create new rule
@@ -2555,16 +2489,15 @@ namespace System.Dynamic {
             var args = new object[] { arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8 };
 
             for (; ; ) {
-                rule = CallSiteOps.CreateNewRule(cache, @this, rule, originalRule, args);
+                @this.Target = originalRule;
+                rule = @this.Target = @this.Binder.BindCore(@this, args);
 
                 //
                 // Execute the rule on the matchmaker site
                 //
 
-                ruleTarget = CallSiteOps.SetTarget(@this, rule);
-
                 try {
-                     ruleTarget(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
+                     rule(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
                     if (CallSiteOps.GetMatch(site)) {
                         return;
                     }
@@ -2582,6 +2515,13 @@ namespace System.Dynamic {
             }
         }
 
+        [Obsolete("pregenerated CallSite<T>.Update delegate", true)]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters")]
+        internal static void NoMatchVoid9<T0, T1, T2, T3, T4, T5, T6, T7, T8>(CallSite site, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8) {
+            site._match = false;
+            return;
+        }
+
 
 
         [Obsolete("pregenerated CallSite<T>.Update delegate", true)]
@@ -2590,16 +2530,14 @@ namespace System.Dynamic {
             // Declare the locals here upfront. It actually saves JIT stack space.
             //
             var @this = (CallSite<Action<CallSite, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>>)site;
-            CallSiteRule<Action<CallSite, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>>[] applicable;
-            CallSiteRule<Action<CallSite, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>> rule;
-            Action<CallSite, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> ruleTarget, startingTarget = @this.Target;
+            Action<CallSite, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>[] applicable;
+            Action<CallSite, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> rule, originalRule = @this.Target;
 
-            CallSiteRule<Action<CallSite, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>> originalRule = null;
 
             //
             // Create matchmaker and its site. We'll need them regardless.
             //
-            site = CallSiteOps.CreateMatchmaker();
+            site = CallSiteOps.CreateMatchmaker(@this);
 
             //
             // Level 1 cache lookup
@@ -2611,21 +2549,20 @@ namespace System.Dynamic {
                     //
                     // Execute the rule
                     //
-                    ruleTarget = CallSiteOps.SetTarget(@this, rule);
 
-                    if ((object)startingTarget == (object)ruleTarget) {
-                        // if we produce another monomorphic
-                        // rule we should try and share code between the two.
-                        originalRule = rule;
-                    }else{
-                         ruleTarget(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+                    // if we've already tried it skip it...
+                    if ((object)rule != (object)originalRule) {
+                        @this.Target = rule;
+                         rule(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+
                         if (CallSiteOps.GetMatch(site)) {
+                            CallSiteOps.UpdateRules(@this, i);
                             return;
                         }        
 
                         // Rule didn't match, try the next one
                         CallSiteOps.ClearMatch(site);            
-                    }                
+                    }
                 }
             }
 
@@ -2636,43 +2573,37 @@ namespace System.Dynamic {
             //
             // Any applicable rules in level 2 cache?
             //
+
             var cache = CallSiteOps.GetRuleCache(@this);
 
-            if ((applicable = CallSiteOps.FindApplicableRules(cache)) != null) {
-                for (int i = 0; i < applicable.Length; i++) {
-                    rule = applicable[i];
+            var cachedRules = cache.GetRules();
+            for (int i = 0; i < cachedRules.Length; i++) {
+                rule = cachedRules[i].Target;
 
-                    //
-                    // Execute the rule
-                    //
-                    ruleTarget = CallSiteOps.SetTarget(@this, rule);
+                //
+                // Execute the rule
+                //
+                @this.Target = rule;
 
-                    try {
-                         ruleTarget(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
-                        if (CallSiteOps.GetMatch(site)) {
-                            return;
-                        }
-                    } finally {
-                        if (CallSiteOps.GetMatch(site)) {
-                            //
-                            // Rule worked. Add it to level 1 cache
-                            //
-                            CallSiteOps.AddRule(@this, rule);
-                            // and then move it to the front of the L2 cache
-                            CallSiteOps.MoveRule(cache, rule);
-                        }
+                try {
+                     rule(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+                    if (CallSiteOps.GetMatch(site)) {
+                        return;
                     }
-
-                    if ((object)startingTarget == (object)ruleTarget) {
-                        // If we've gone megamorphic we can still template off the L2 cache
-                        originalRule = rule;
+                } finally {
+                    if (CallSiteOps.GetMatch(site)) {
+                        //
+                        // Rule worked. Add it to level 1 cache
+                        //
+                        CallSiteOps.AddRule(@this, rule);
+                        // and then move it to the front of the L2 cache
+                        CallSiteOps.MoveRule(cache, rule, i);
                     }
-
-                    // Rule didn't match, try the next one
-                    CallSiteOps.ClearMatch(site);
                 }
-            }
 
+                // Rule didn't match, try the next one
+                CallSiteOps.ClearMatch(site);
+            }
 
             //
             // Miss on Level 0, 1 and 2 caches. Create new rule
@@ -2682,16 +2613,15 @@ namespace System.Dynamic {
             var args = new object[] { arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9 };
 
             for (; ; ) {
-                rule = CallSiteOps.CreateNewRule(cache, @this, rule, originalRule, args);
+                @this.Target = originalRule;
+                rule = @this.Target = @this.Binder.BindCore(@this, args);
 
                 //
                 // Execute the rule on the matchmaker site
                 //
 
-                ruleTarget = CallSiteOps.SetTarget(@this, rule);
-
                 try {
-                     ruleTarget(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+                     rule(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
                     if (CallSiteOps.GetMatch(site)) {
                         return;
                     }
@@ -2707,6 +2637,13 @@ namespace System.Dynamic {
                 // Rule we got back didn't work, try another one
                 CallSiteOps.ClearMatch(site);
             }
+        }
+
+        [Obsolete("pregenerated CallSite<T>.Update delegate", true)]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters")]
+        internal static void NoMatchVoid10<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>(CallSite site, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9) {
+            site._match = false;
+            return;
         }
 
 

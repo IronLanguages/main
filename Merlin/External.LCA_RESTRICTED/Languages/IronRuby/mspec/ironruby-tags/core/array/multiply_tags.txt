@@ -1,0 +1,1 @@
+critical:Array#* with a string raises a NoMethodError if an element does not respond to #to_s

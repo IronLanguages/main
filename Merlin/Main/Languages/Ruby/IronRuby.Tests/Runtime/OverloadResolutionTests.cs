@@ -15,45 +15,58 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
-using IronRuby.Runtime;
-using Microsoft.Scripting.Runtime;
-using IronRuby.Runtime.Calls;
 using System.Dynamic;
-
-using MSA = System.Linq.Expressions;
-using Ast = System.Linq.Expressions.Expression;
+using System.Reflection;
 using IronRuby.Builtins;
+using IronRuby.Runtime;
+using IronRuby.Runtime.Calls;
+using Microsoft.Scripting.Runtime;
+using Ast = System.Linq.Expressions.Expression;
 
 namespace IronRuby.Tests {
     public partial class Tests {
 
+        private static DynamicMetaObject/*!*/ MO(object value) {
+            return new DynamicMetaObject(Ast.Constant(value), BindingRestrictions.Empty, value);
+        }
+
+        private static MethodInfo/*!*/[]/*!*/ GetStaticMethods(Type/*!*/ type, string/*!*/ name) {
+            return Array.ConvertAll(type.GetMember(name, BindingFlags.Public | BindingFlags.Static), (mi) => (MethodInfo)mi);
+        }
+
         #region Block
 
-        public void OverloadResolution_Block() {
-            var t = GetType();
+        public class OverloadsWithBlock {
+            public static object Times1(BlockParam block, int self) {
+                return 1;
+            }
 
-            var gse = new RubyGlobalScope(Context, new Scope(), new object(), true);
-            var scope = new RubyTopLevelScope(gse, null, new SymbolDictionary());
-            var proc = new Proc(ProcKind.Proc, null, scope, new BlockDispatcher0((x, y) => null, BlockSignatureAttributes.None));
+            public static object Times2(int self) {
+                return 2;
+            }
 
-            var scopeArg = new DynamicMetaObject(Ast.Constant(proc.LocalScope), BindingRestrictions.Empty, proc.LocalScope);
-            var contextArg = new DynamicMetaObject(Ast.Constant(Context), BindingRestrictions.Empty, Context);
-            var instanceInt = new DynamicMetaObject(Ast.Constant(1), BindingRestrictions.Empty, 1);
-            var str = "foo";
-            var instanceStr = new DynamicMetaObject(Ast.Constant(str), BindingRestrictions.Empty, str);
-            var procArg = new DynamicMetaObject(Ast.Constant(proc), BindingRestrictions.Empty, proc);
-            var nullArg = new DynamicMetaObject(Ast.Constant(Ast.Constant(null)), BindingRestrictions.Empty, null);
+            public static object Times3([NotNull]BlockParam/*!*/ block, int self) {
+                return 3;
+            }
+
+            public static object Times4(RubyContext/*!*/ context, BlockParam block, object self) {
+                return 4;
+            }
+        }
+
+        public void OverloadResolution_Block1() {
+            var scope = Context.EmptyScope;
+            var proc = new Proc(ProcKind.Proc, null, scope, null, 0, new BlockDispatcher0((x, y) => null, BlockSignatureAttributes.None));
 
             var arguments = new[] {
                 // 1.times
-                new CallArguments(scopeArg, instanceInt, new DynamicMetaObject[0], RubyCallSignature.WithScope(0)),
+                new CallArguments(Context, MO(scope), new[] { MO(1) }, RubyCallSignature.WithScope(0)),
                 // 1.times &nil             
-                new CallArguments(scopeArg, instanceInt, new[] {  nullArg }, RubyCallSignature.WithScopeAndBlock(0)),
+                new CallArguments(Context, MO(scope), new[] {  MO(1), MO(null) }, RubyCallSignature.WithScopeAndBlock(0)),
                 // 1.times &p                            
-                new CallArguments(contextArg, instanceInt, new[] {  procArg }, RubyCallSignature.WithBlock(0)),
+                new CallArguments(Context, MO(1), new[] {  MO(proc) }, RubyCallSignature.WithBlock(0)),
                 // obj.times &p                          
-                new CallArguments(contextArg, instanceStr, new[] {  procArg }, RubyCallSignature.WithBlock(0)),
+                new CallArguments(Context, MO("foo"), new[] {  MO(proc) }, RubyCallSignature.WithBlock(0)),
             };
 
             var results = new[] {
@@ -63,42 +76,90 @@ namespace IronRuby.Tests {
                 "Times4",
             };
 
+            var metaBuilder = new MetaObjectBuilder(null);
             for (int i = 0; i < arguments.Length; i++) {
-                var bindingTarget = RubyMethodGroupInfo.ResolveOverload("times", new[] {
-                    t.GetMethod("Times1"),
-                    t.GetMethod("Times2"),
-                    t.GetMethod("Times3"),
-                    t.GetMethod("Times4"),
-                }, arguments[i], SelfCallConvention.SelfIsParameter);
+                RubyOverloadResolver parameterBinder;
+                var bindingTarget = RubyMethodGroupInfo.ResolveOverload(
+                    metaBuilder, arguments[i], "times", GetStaticMethods(typeof(OverloadsWithBlock), "Times*"), SelfCallConvention.SelfIsParameter,
+                    false, out parameterBinder
+                );
 
                 Assert(bindingTarget.Success);
                 Assert(bindingTarget.Method.Name == results[i]);
             }
         }
 
-        public static object Times1(BlockParam block, int self) {
-            return 1;
+        #endregion
+
+        #region Param Arrays
+
+        public class MethodsWithParamArrays {
+            public static KeyValuePair<int, Array> F1(int p1, params int[] ps) {
+                return new KeyValuePair<int, Array>(2, new object[] { p1, ps });
+            }
+
+            public static KeyValuePair<int, Array> F2(int p1) {
+                return new KeyValuePair<int, Array>(2, new object[] { p1 });
+            }
+
+            public static KeyValuePair<int, Array> F3(int p1, int p2) {
+                return new KeyValuePair<int, Array>(3, new object[] { p1, p2 });
+            }
+
+            public static KeyValuePair<int, Array> F4(double p1, int p2, params int[] ps) {
+                return new KeyValuePair<int, Array>(4, new object[] { p1, p2, ps });
+            }
+
+            public static KeyValuePair<int, Array> F5(bool p1, int p2, int p3, params int[] ps) {
+                return new KeyValuePair<int, Array>(5, new object[] { p1, p2, p3, ps });
+            }
+
+            internal static List<MethodInfo>/*!*/ GetMethods() {
+                var methods = new List<MethodInfo>();
+                methods.AddRange(GetStaticMethods(typeof(MethodsWithParamArrays), "F*"));
+                methods.Add(CreateParamsArrayMethod("F0", new[] { typeof(int), typeof(int[]), typeof(string), typeof(int) }, 1, 0));
+                return methods;
+            }
         }
 
-        public static object Times2(int self) {
-            return 2;
-        }
-
-        public static object Times3([NotNull]BlockParam/*!*/ block, int self) {
-            return 3;
-        }
-
-        public static object Times4(RubyContext/*!*/ context, BlockParam block, object self) {
-            return 4;
+        public void OverloadResolution_ParamArrays1() {
         }
 
         #endregion
 
-        public void AmbiguousMatch() {
-            AssertExceptionThrown<System.Reflection.AmbiguousMatchException>(() => CompilerTest(@"
-require 'mscorlib'
-System::Console.WriteLine(nil)
-"));
+        #region Failures
+
+        public class AmbiguousOverloads {
+            public static int F(params object[] p) {
+                return 1;
+            }
+            
+            public static int F(object p) {
+                return 1;
+            }
+
+            public static int F(int p) {
+                return 2;
+            }
+
+            public static int F(string p) {
+                return 3;
+            }
         }
+
+        public void AmbiguousMatch() {
+            Context.SetGlobalConstant("C", Context.GetClass(typeof(AmbiguousOverloads)));
+            AssertOutput(() => CompilerTest(@"
+[1, nil, 'foo'].each do |x| 
+  puts C.f(x) rescue p $!.class
+end 
+"), @"
+2
+System::Reflection::AmbiguousMatchException
+3
+");
+        }
+
+        #endregion
     }
 }

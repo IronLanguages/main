@@ -1,3 +1,0 @@
-fails:IO::foreach updates $. with each yield
-fails:IO::foreach raises TypeError if the first parameter is nil
-fails:IO::foreach converts second parameter to string and uses as separator

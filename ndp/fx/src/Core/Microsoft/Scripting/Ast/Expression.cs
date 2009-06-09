@@ -28,13 +28,22 @@ namespace System.Linq.Expressions {
     /// </summary>
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1506:AvoidExcessiveClassCoupling")]
     public abstract partial class Expression {
+        private delegate LambdaExpression LambdaFactory(Expression body, string name, bool tailCall, ReadOnlyCollection<ParameterExpression> parameters);
+
         private static readonly CacheDict<Type, MethodInfo> _LambdaDelegateCache = new CacheDict<Type, MethodInfo>(40);
-        private static CacheDict<Type, Func<Expression, string, IEnumerable<ParameterExpression>, LambdaExpression>> _exprCtors;
-        private static MethodInfo _lambdaCtorMethod;
+        private static CacheDict<Type, LambdaFactory> _LambdaFactories;
 
-        // protected ctors are part of API surface area
+        // LINQ protected ctor from 3.5
 
-#if !MICROSOFT_SCRIPTING_CORE
+#if !MICROSOFT_SCRIPTING_CORE // needs ConditionWeakTable in 4.0
+
+        // For 4.0, many frequently used Expression nodes have had their memory
+        // footprint reduced by removing the Type and NodeType fields. This has
+        // large performance benefits to all users of Expression Trees.
+        //
+        // To support the 3.5 protected constructor, we store the fields that
+        // used to be here in a ConditionalWeakTable.
+
         private class ExtensionInfo {
             public ExtensionInfo(ExpressionType nodeType, Type type) {
                 NodeType = nodeType;
@@ -47,13 +56,12 @@ namespace System.Linq.Expressions {
 
         private static ConditionalWeakTable<Expression, ExtensionInfo> _legacyCtorSupportTable;
 
-        // LinqV1 ctor
         /// <summary>
         /// Constructs a new instance of <see cref="Expression"/>.
         /// </summary>
         /// <param name="nodeType">The <see ctype="ExpressionType"/> of the <see cref="Expression"/>.</param>
         /// <param name="type">The <see cref="Type"/> of the <see cref="Expression"/>.</param>
-        [Obsolete("use a different constructor that does not take ExpressionType.  Then override GetExpressionType and GetNodeKind to provide the values that would be specified to this constructor.")]
+        [Obsolete("use a different constructor that does not take ExpressionType. Then override NodeType and Type properties to provide the values that would be specified to this constructor.")]
         protected Expression(ExpressionType nodeType, Type type) {
             // Can't enforce anything that V1 didn't
             if (_legacyCtorSupportTable == null) {
@@ -67,6 +75,7 @@ namespace System.Linq.Expressions {
             _legacyCtorSupportTable.Add(this, new ExtensionInfo(nodeType, type));
         }
 #endif
+
         /// <summary>
         /// Constructs a new instance of <see cref="Expression"/>.
         /// </summary>
@@ -76,8 +85,17 @@ namespace System.Linq.Expressions {
         /// <summary>
         /// The <see cref="ExpressionType"/> of the <see cref="Expression"/>.
         /// </summary>
-        public ExpressionType NodeType {
-            get { return NodeTypeImpl(); }
+        public virtual ExpressionType NodeType {
+            get {
+#if !MICROSOFT_SCRIPTING_CORE
+                ExtensionInfo extInfo;
+                if (_legacyCtorSupportTable.TryGetValue(this, out extInfo)) {
+                    return extInfo.NodeType;
+                }
+#endif
+                // the extension expression failed to override NodeType
+                throw Error.ExtensionNodeMustOverrideProperty("Expression.NodeType");
+            }
         }
 
 
@@ -85,8 +103,17 @@ namespace System.Linq.Expressions {
         /// The <see cref="Type"/> of the value represented by this <see cref="Expression"/>.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1721:PropertyNamesShouldNotMatchGetMethods")]
-        public Type Type {
-            get { return TypeImpl(); }
+        public virtual Type Type {
+            get {
+#if !MICROSOFT_SCRIPTING_CORE
+                ExtensionInfo extInfo;
+                if (_legacyCtorSupportTable.TryGetValue(this, out extInfo)) {
+                    return extInfo.Type;
+                }
+#endif
+                // the extension expression failed to override Type
+                throw Error.ExtensionNodeMustOverrideProperty("Expression.Type");
+            }
         }
 
         /// <summary>
@@ -95,41 +122,6 @@ namespace System.Linq.Expressions {
         /// </summary>
         public virtual bool CanReduce {
             get { return false; }
-        }
-
-        /// <summary>
-        /// Returns the node type of this Expression. Extension nodes should return
-        /// ExpressionType.Extension when overriding this method.
-        /// </summary>
-        /// <returns>The <see cref="ExpressionType"/> of the expression.</returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
-        protected virtual ExpressionType NodeTypeImpl() {
-#if !MICROSOFT_SCRIPTING_CORE
-            ExtensionInfo extInfo;
-            if (_legacyCtorSupportTable.TryGetValue(this, out extInfo)) {
-                return extInfo.NodeType;
-            }
-#endif
-
-            // the extension expression failed to override NodeTypeImpl
-            throw Error.ExtensionNodeMustOverrideMethod("Expression.NodeTypeImpl()");
-        }
-
-        /// <summary>
-        /// Gets the static type of the expression that this <see cref="Expression" /> represents.
-        /// </summary>
-        /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
-        protected virtual Type TypeImpl() {
-#if !MICROSOFT_SCRIPTING_CORE
-            ExtensionInfo extInfo;
-            if (_legacyCtorSupportTable.TryGetValue(this, out extInfo)) {
-                return extInfo.Type;
-            }
-#endif
-
-            // the extension expression failed to override TypeImpl
-            throw Error.ExtensionNodeMustOverrideMethod("Expression.TypeImpl()");
         }
 
         /// <summary>
@@ -144,10 +136,10 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// Reduces the node and then calls Visit on the reduced expression.
+        /// Reduces the node and then calls the visitor delegate on the reduced expression.
         /// Throws an exception if the node isn't reducible.
         /// </summary>
-        /// <param name="visitor">An instance of <see cref="ExpressionVisitor"/>.</param>
+        /// <param name="visitor">An instance of <see cref="Func{Expression, Expression}"/>.</param>
         /// <returns>The expression being visited, or an expression which should replace it in the tree.</returns>
         /// <remarks>
         /// Override this method to provide logic to walk the node's children. 
@@ -155,9 +147,9 @@ namespace System.Linq.Expressions {
         /// children, and if any of them change, should return a new copy of
         /// itself with the modified children.
         /// </remarks>
-        protected internal virtual Expression VisitChildren(ExpressionVisitor visitor) {
+        protected internal virtual Expression VisitChildren(Func<Expression, Expression> visitor) {
             ContractUtils.Requires(CanReduce, "this", Strings.MustBeReducible);
-            return visitor.Visit(ReduceExtensions());
+            return visitor(ReduceExtensions());
         }
 
         // Visitor pattern: this is the method that dispatches back to the visitor
@@ -214,35 +206,36 @@ namespace System.Linq.Expressions {
 
 #if MICROSOFT_SCRIPTING_CORE
         /// <summary>
+        /// Writes a <see cref="String"/> representation of the <see cref="Expression"/> to a <see cref="TextWriter"/>.
+        /// </summary>
+        /// <param name="writer">A <see cref="TextWriter"/> that will be used to build the string representation.</param>
+        public void DumpExpression(TextWriter writer) {
+            DebugViewWriter.WriteTo(this, writer);
+        }
+
+        /// <summary>
         /// Creates a <see cref="String"/> representation of the Expression.
         /// </summary>
         /// <returns>A <see cref="String"/> representation of the Expression.</returns>
-        public string Dump {
+        public string DebugView {
+#else
+        private string DebugView {
+#endif
             get {
                 using (System.IO.StringWriter writer = new System.IO.StringWriter(CultureInfo.CurrentCulture)) {
-                    ExpressionWriter.Dump(this, GetType().Name, writer);
+                    DebugViewWriter.WriteTo(this, writer);
                     return writer.ToString();
                 }
             }
         }
 
         /// <summary>
-        /// Writes a <see cref="String"/> representation of the <see cref="Expression"/> to a <see cref="TextWriter"/>.
-        /// </summary>
-        /// <param name="descr">A description for the root Expression.</param>
-        /// <param name="writer">A <see cref="TextWriter"/> that will be used to build the string representation.</param>
-        public void DumpExpression(string descr, TextWriter writer) {
-            ExpressionWriter.Dump(this, descr, writer);
-        }
-#endif
-
-        /// <summary>
         /// Helper used for ensuring we only return 1 instance of a ReadOnlyCollection of T.
         /// 
         /// This is called from various methods where we internally hold onto an IList of T
-        /// or a ROC of T.  We check to see if we've already returned a ROC of T and if so
-        /// simply return the other one.  Otherwise we do a thread-safe replacement of hte
-        /// list w/ a ROC which wraps it.
+        /// or a readonly collection of T.  We check to see if we've already returned a 
+        /// readonly collection of T and if so simply return the other one.  Otherwise we do 
+        /// a thread-safe replacement of the list w/ a readonly collection which wraps it.
         /// 
         /// Ultimately this saves us from having to allocate a ReadOnlyCollection for our
         /// data types because the compiler is capable of going directly to the IList of T.
@@ -256,7 +249,7 @@ namespace System.Linq.Expressions {
                 return res;
             }
 
-            // otherwise make sure only ROC every gets exposed
+            // otherwise make sure only readonly collection every gets exposed
             Interlocked.CompareExchange<IList<T>>(
                 ref collection,
                 value.ToReadOnly(),
@@ -279,12 +272,12 @@ namespace System.Linq.Expressions {
         /// 
         /// This enables users to get the ReadOnlyCollection w/o it consuming more memory than if 
         /// it was just an array.  Meanwhile The DLR internally avoids accessing  which would force 
-        /// the ROC to be created resulting in a typical memory savings.
+        /// the readonly collection to be created resulting in a typical memory savings.
         /// </summary>
         internal static ReadOnlyCollection<Expression> ReturnReadOnly(IArgumentProvider provider, ref object collection) {
             Expression tObj = collection as Expression;
             if (tObj != null) {
-                // otherwise make sure only one ROC ever gets exposed
+                // otherwise make sure only one readonly collection ever gets exposed
                 Interlocked.CompareExchange(
                     ref collection,
                     new ReadOnlyCollection<Expression>(new ListArgumentProvider(provider, tObj)),
@@ -292,7 +285,7 @@ namespace System.Linq.Expressions {
                 );
             }
 
-            // and return what is not guaranteed to be a ROC
+            // and return what is not guaranteed to be a readonly collection
             return (ReadOnlyCollection<Expression>)collection;
         }
 

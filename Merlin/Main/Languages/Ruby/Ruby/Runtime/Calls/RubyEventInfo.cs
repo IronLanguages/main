@@ -22,25 +22,36 @@ using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Actions;
 using IronRuby.Compiler;
 using IronRuby.Builtins;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Runtime.Calls {
     using Ast = System.Linq.Expressions.Expression;
     
-    internal class RubyEventInfo : RubyMemberInfo {
-        private readonly EventInfo/*!*/ _eventInfo;
+    public sealed class RubyEventInfo : RubyMemberInfo {
+        private readonly EventTracker/*!*/ _tracker;
 
-        public RubyEventInfo(EventInfo/*!*/ eventInfo, RubyMemberFlags flags, RubyModule/*!*/ declaringModule)
+        public EventTracker/*!*/ Tracker { get { return _tracker; } }
+
+        public RubyEventInfo(EventTracker/*!*/ tracker, RubyMemberFlags flags, RubyModule/*!*/ declaringModule)
             : base(flags, declaringModule) {
-            Assert.NotNull(eventInfo, declaringModule);
-            _eventInfo = eventInfo;
+            Assert.NotNull(tracker, declaringModule);
+            _tracker = tracker;
         }
 
         protected internal override RubyMemberInfo/*!*/ Copy(RubyMemberFlags flags, RubyModule/*!*/ module) {
-            return new RubyEventInfo(_eventInfo, flags, module);
+            return new RubyEventInfo(_tracker, flags, module);
+        }
+
+        internal override bool IsDataMember {
+            get { return true; }
+        }
+
+        internal override bool IsRubyMember {
+            get { return false; }
         }
 
         public override MemberInfo/*!*/[]/*!*/ GetMembers() {
-            return new MemberInfo[] { _eventInfo };
+            return new MemberInfo[] { _tracker.Event };
         }
 
         public override RubyMemberInfo TrySelectOverload(Type/*!*/[]/*!*/ parameterTypes) {
@@ -48,15 +59,23 @@ namespace IronRuby.Runtime.Calls {
         }
 
         internal override void BuildCallNoFlow(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name) {
-            if (args.Signature.HasBlock) {
-                metaBuilder.Result = Methods.HookupEvent.OpCall(
-                    Ast.Convert(Ast.Constant(_eventInfo), typeof(EventInfo)),
-                    args.TargetExpression,
-                    Ast.Convert(args.GetBlockExpression(), typeof(Proc))
-                );
+            // TODO: splat, rhs, ...
+            if (args.Signature.ArgumentCount == 0) {
+                if (args.Signature.HasBlock) {
+                    metaBuilder.Result = Methods.HookupEvent.OpCall(
+                        AstUtils.Constant(this),
+                        args.TargetExpression,
+                        Ast.Convert(args.GetBlockExpression(), typeof(Proc))
+                    );
+                } else {
+                    metaBuilder.Result = Methods.CreateEvent.OpCall(
+                        AstUtils.Constant(this),
+                        args.TargetExpression,
+                        AstUtils.Constant(name)
+                    );
+                }
             } else {
-                // TODO: make error
-                throw new NotImplementedError("no block given");
+                metaBuilder.SetError(Methods.MakeWrongNumberOfArgumentsError.OpCall(Ast.Constant(args.Signature.ArgumentCount), Ast.Constant(0)));
             }
         }
 

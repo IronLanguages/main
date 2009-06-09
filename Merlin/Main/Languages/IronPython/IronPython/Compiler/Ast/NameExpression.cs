@@ -20,6 +20,7 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 using MSAst = System.Linq.Expressions;
+using IronPython.Runtime.Operations;
 
 namespace IronPython.Compiler.Ast {
     using Ast = System.Linq.Expressions.Expression;
@@ -52,16 +53,22 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal override MSAst.Expression Transform(AstGenerator ag, Type type) {
-            MSAst.Expression read = _reference.Variable;
-            if (read == null) {
-                read = AstUtils.Read(_name);
+            MSAst.Expression read;
+            if (_reference.PythonVariable == null) {
+                read = Ast.Call(
+                    typeof(PythonOps).GetMethod("LookupName"),
+                    ag.LocalContext,
+                    ag.Globals.GetSymbol(_name)
+                );
+            } else {
+                read = ag.Globals.GetVariable(ag, _reference.PythonVariable);
             }
 
-            if (!_assigned && !(read is Microsoft.Scripting.Ast.GlobalVariableExpression)) {
+            if (!_assigned && !(read is IPythonGlobalExpression)) {
                 read = Ast.Call(
                     AstGenerator.GetHelperMethod("CheckUninitialized"),
                     read,
-                    AstUtils.Constant(_name)
+                    ag.Globals.GetSymbol(_name)
                 );
             }
 
@@ -69,25 +76,32 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal override MSAst.Expression TransformSet(AstGenerator ag, SourceSpan span, MSAst.Expression right, PythonOperationKind op) {
-            MSAst.Expression variable = _reference.Variable;
             MSAst.Expression assignment;
 
-            Type vt = variable != null ? variable.Type : typeof(object);
-
             if (op != PythonOperationKind.None) {
-                right = Binders.Operation(
-                    ag.BinderState,
-                    vt,
+                right = ag.Operation(
+                    typeof(object),
                     op,
-                    Transform(ag, vt),
+                    Transform(ag, typeof(object)),
                     right
                 );
             }
 
-            if (variable != null) {
-                assignment = AstUtils.Assign(variable, AstGenerator.ConvertIfNeeded(right, variable.Type));
+            if (_reference.PythonVariable != null) {
+                assignment = ag.Globals.Assign(
+                    ag.Globals.GetVariable(ag, _reference.PythonVariable), 
+                    AstGenerator.ConvertIfNeeded(right, typeof(object))
+                );
             } else {
-                assignment = AstUtils.Assign(_name, right);
+                assignment = Ast.Call(
+                    null,
+                    typeof(PythonOps).GetMethod("SetName"),
+                    new [] {
+                        ag.LocalContext, 
+                        ag.Globals.GetSymbol(_name),
+                        AstUtils.Convert(right, typeof(object))
+                        }
+                );
             }
 
             SourceSpan aspan = span.IsValid ? new SourceSpan(Span.Start, span.End) : SourceSpan.None;
@@ -95,8 +109,8 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal override MSAst.Expression TransformDelete(AstGenerator ag) {
-            MSAst.Expression variable = _reference.Variable;
-            if (variable != null && !ag.Block.Global) {
+            if (_reference.PythonVariable != null && !ag.IsGlobal) {
+                MSAst.Expression variable = ag.Globals.GetVariable(ag, _reference.PythonVariable);
                 // keep the variable alive until we hit the del statement to
                 // better match CPython's lifetimes
                 MSAst.Expression del = Ast.Block(
@@ -104,19 +118,28 @@ namespace IronPython.Compiler.Ast {
                         typeof(GC).GetMethod("KeepAlive"),
                         variable
                     ),
-                    ag.AddDebugInfo(AstUtils.Delete(variable), Span)
+                    ag.AddDebugInfo(ag.Globals.Delete(variable), Span)
                 );
                     
                 if (!_assigned) {
                     del = Ast.Block(
                         Transform(ag, variable.Type),
                         del,
-                        Ast.Empty()
+                        AstUtils.Empty()
                     );
                 }
                 return del;
             } else {
-                return ag.AddDebugInfo(AstUtils.Delete(_name), Span);
+                return ag.AddDebugInfo( 
+                    Ast.Call(
+                        typeof(PythonOps).GetMethod("RemoveName"),
+                        new [] {
+                            ag.LocalContext,
+                            ag.Globals.GetSymbol(_name)
+                        }
+                    ), 
+                    Span
+                );
             }
         }
 

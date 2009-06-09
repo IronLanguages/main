@@ -23,6 +23,7 @@ using System.Runtime.CompilerServices;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Runtime;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Binding;
@@ -128,6 +129,12 @@ namespace IronPython.Runtime.Types {
             }
         }
 
+        internal override bool CanOptimizeGets {
+            get {
+                return !_info.IsLiteral;
+            }
+        }
+
         internal override bool TrySetValue(CodeContext context, object instance, PythonType owner, object value) {
             if (ShouldSetOrDelete(owner)) {
                 DoSet(context, instance, value);
@@ -155,27 +162,30 @@ namespace IronPython.Runtime.Types {
             }
         }
 
-        internal override Expression/*!*/ MakeGetExpression(PythonBinder/*!*/ binder, Expression/*!*/ codeContext, Expression instance, Expression/*!*/ owner, Expression/*!*/ error) {
+        internal override void MakeGetExpression(PythonBinder/*!*/ binder, Expression/*!*/ codeContext, Expression instance, Expression/*!*/ owner, ConditionalBuilder/*!*/ builder) {
             if (!_info.IsPublic || _info.DeclaringType.ContainsGenericParameters) {
                 // fallback to reflection
-                return base.MakeGetExpression(binder, codeContext, instance, owner, error);
-            }
-            
-            if (instance == null) {
+                base.MakeGetExpression(binder, codeContext, instance, owner, builder);
+            } else if (instance == null) {
                 if (_info.IsStatic) {
-                    return Ast.Field(null, _info);
+                    builder.FinishCondition(AstUtils.Convert(Ast.Field(null, _info), typeof(object)));
                 } else {
-                    return Ast.Constant(this);
+                    builder.FinishCondition(Ast.Constant(this));
                 }
             } else {
-                return Ast.Field(
-                    binder.ConvertExpression(
-                        instance,
-                        _info.DeclaringType,
-                        ConversionResultKind.ExplicitCast,
-                        codeContext
-                    ),
-                    _info
+                builder.FinishCondition(
+                    AstUtils.Convert(
+                        Ast.Field(
+                            binder.ConvertExpression(
+                                instance,
+                                _info.DeclaringType,
+                                ConversionResultKind.ExplicitCast,
+                                codeContext
+                            ),
+                            _info
+                        ),
+                        typeof(object)
+                    )
                 );
             }
         }

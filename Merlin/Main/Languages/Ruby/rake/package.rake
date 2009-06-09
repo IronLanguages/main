@@ -30,13 +30,15 @@ task :package do
   system %Q{copy "#{ENV['MERLIN_ROOT']}\\bin\\release\\IronRuby*.dll" #{PACKAGE_DIR}\\bin\\}
   system %Q{copy "#{ENV['MERLIN_ROOT']}\\bin\\release\\Microsoft.Scripting.Core.dll" #{PACKAGE_DIR}\\bin\\}
   system %Q{copy "#{ENV['MERLIN_ROOT']}\\bin\\release\\Microsoft.Scripting.dll" #{PACKAGE_DIR}\\bin\\}
+  system %Q{copy "#{ENV['MERLIN_ROOT']}\\bin\\release\\Microsoft.Dynamic.dll" #{PACKAGE_DIR}\\bin\\}
+  system %Q{copy "#{ENV['MERLIN_ROOT']}\\bin\\release\\Microsoft.Scripting.ExtensionAttribute.dll" #{PACKAGE_DIR}\\bin\\}
   system %Q{copy "#{ENV['MERLIN_ROOT']}\\Languages\\Ruby\\Scripts\\bin\\*" #{PACKAGE_DIR}\\bin\\}
 
   # Generate ir.exe.config
   IronRubyCompiler.transform_config_file 'Binary', project_root + "Config\\Signed\\app.config", "#{PACKAGE_DIR}\\bin\\ir.exe.config"
 
   # Copy standard library
-  system %Q{xcopy /E /I "#{ENV['MERLIN_ROOT']}\\..\\External\\Languages\\Ruby\\redist-libs\\ruby" #{PACKAGE_DIR}\\lib\\ruby}
+  system %Q{xcopy /E /I "#{ENV['MERLIN_ROOT']}\\..\\External.LCA_RESTRICTED\\Languages\\Ruby\\redist-libs\\ruby" #{PACKAGE_DIR}\\lib\\ruby}
   system %Q{xcopy /E /I "#{ENV['MERLIN_ROOT']}\\Languages\\Ruby\\Libs" #{PACKAGE_DIR}\\lib\\IronRuby}
 
   # Generate compressed package

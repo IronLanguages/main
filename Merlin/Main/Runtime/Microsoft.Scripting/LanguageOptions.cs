@@ -27,27 +27,23 @@ namespace Microsoft.Scripting {
         private bool _exceptionDetail;
         private bool _showClrExceptions;
         private bool _interpretedMode;
-        private bool _adaptiveCompilation;
         private readonly bool _perfStats;
+        private readonly bool _noAdaptiveCompilation;
         private readonly ReadOnlyCollection<string> _searchPaths;
-
-        /// <summary>
-        /// Interpret code instead of emitting it.
-        /// </summary>
-        public bool InterpretedMode {
-            get { return _interpretedMode; }
-            set { _interpretedMode = value; }
-        }
 
         /// <summary>
         /// Dynamically choose between interpreting, simple compilation and compilation
         /// that takes advantage of runtime history.
         /// </summary>
-        public bool AdaptiveCompilation {
-            get { return _adaptiveCompilation; }
-            set { _adaptiveCompilation = value; }
+        public bool NoAdaptiveCompilation {
+            get { return _noAdaptiveCompilation; }
         }
 
+        // TODO: remove
+        public bool InterpretedMode {
+            get { return _interpretedMode; }
+            set { _interpretedMode = value; }
+        }
 
         /// <summary>
         ///  Display exception detail (callstack) when exception gets caught
@@ -82,10 +78,10 @@ namespace Microsoft.Scripting {
 
         public LanguageOptions(IDictionary<string, object> options) {
             _interpretedMode = GetOption(options, "InterpretedMode", false);
-            _adaptiveCompilation = GetOption(options, "AdaptiveCompilation", false);
             _exceptionDetail = GetOption(options, "ExceptionDetail", false);
             _showClrExceptions = GetOption(options, "ShowClrExceptions", false);
             _perfStats = GetOption(options, "PerfStats", false);
+            _noAdaptiveCompilation = GetOption(options, "NoAdaptiveCompilation", false);
             _searchPaths = GetSearchPathsOption(options) ?? new ReadOnlyCollection<string>(new[] { "." });
         }
 

@@ -19,10 +19,17 @@ using System.Linq.Expressions;
 
 namespace Microsoft.Scripting.Ast {
     public static partial class Utils {
-        [Obsolete("use Expression.Empty instead")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "span")]
-        public static DefaultExpression Empty(SourceSpan span) {
-            return Expression.Empty();
+        private static readonly DefaultExpression VoidInstance = Expression.Empty();
+
+        public static DefaultExpression Empty() {
+            return VoidInstance;
+        }
+
+        public static DefaultExpression Default(Type type) {
+            if (type == typeof(void)) {
+                return Empty();
+            }
+            return Expression.Default(type);
         }
     }
 }

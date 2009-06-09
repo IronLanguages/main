@@ -38,8 +38,6 @@ namespace System.Linq.Expressions.Compiler {
             internal readonly Type Type;
 
             internal TypedConstant(object value, Type type) {
-                Debug.Assert(type == TypeUtils.GetConstantType(type));
-
                 Value = value;
                 Type = type;
             }
@@ -89,8 +87,6 @@ namespace System.Linq.Expressions.Compiler {
         /// and increases the reference count by one
         /// </summary>
         internal void AddReference(object value, Type type) {
-            type = TypeUtils.GetConstantType(type);
-
             if (!_indexes.ContainsKey(value)) {
                 _indexes.Add(value, _values.Count);
                 _values.Add(value);
@@ -104,7 +100,9 @@ namespace System.Linq.Expressions.Compiler {
         internal void EmitConstant(LambdaCompiler lc, object value, Type type) {
             Debug.Assert(!ILGen.CanEmitConstant(value, type));
 
-            type = TypeUtils.GetConstantType(type);
+            if (!lc.CanEmitBoundConstants) {
+                throw Error.CannotCompileConstant(value);
+            }
 
             LocalBuilder local;
             if (_cache.TryGetValue(new TypedConstant(value, type), out local)) {
@@ -122,6 +120,10 @@ namespace System.Linq.Expressions.Compiler {
         internal void EmitCacheConstants(LambdaCompiler lc) {
             int count = 0;
             foreach (var reference in _references) {
+                if (!lc.CanEmitBoundConstants) {
+                    throw Error.CannotCompileConstant(reference.Value);
+                }
+
                 if (ShouldCache(reference.Value)) {
                     count++;
                 }
@@ -152,6 +154,8 @@ namespace System.Linq.Expressions.Compiler {
         }
 
         private static void EmitConstantsArray(LambdaCompiler lc) {
+            Debug.Assert(lc.CanEmitBoundConstants); // this should've been checked already
+
             lc.EmitClosureArgument();
             lc.IL.Emit(OpCodes.Ldfld, typeof(Closure).GetField("Constants"));
         }

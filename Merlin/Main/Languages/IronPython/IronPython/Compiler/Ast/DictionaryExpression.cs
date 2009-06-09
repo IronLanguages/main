@@ -16,6 +16,7 @@
 using System;
 using IronPython.Runtime;
 using MSAst = System.Linq.Expressions;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Compiler.Ast {
     using Ast = System.Linq.Expressions.Expression;
@@ -77,7 +78,7 @@ namespace IronPython.Compiler.Ast {
             // empty dictionary
             return Ast.Call(
                 typeof(PythonOps).GetMethod("MakeDict"),
-                Ast.Constant(0)
+                AstUtils.Constant(0)
             );
         }
 

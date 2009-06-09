@@ -16,10 +16,14 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using IronPython.Runtime;
+using System.IO;
+
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+
+using IronPython.Runtime;
+
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 using MSAst = System.Linq.Expressions;
 
@@ -32,14 +36,6 @@ namespace IronPython.Compiler.Ast {
         private readonly bool _printExpressions;        
         private readonly PythonLanguageFeatures _languageFeatures;
         private PythonVariable _docVariable, _nameVariable, _fileVariable;
-        private bool _disableInterpreter;
-
-        /// <summary>
-        /// The globals that free variables in the functions bind to,
-        /// then need to be separated into their own dictionary so that
-        /// free variables at module level do not bind to them
-        /// </summary>
-        private Dictionary<SymbolId, PythonVariable> _globals;
 
         public PythonAst(Statement body, bool isModule, PythonLanguageFeatures languageFeatures, bool printExpressions) {
             ContractUtils.RequiresNotNull(body, "body");
@@ -102,29 +98,8 @@ namespace IronPython.Compiler.Ast {
             get { return true; }
         }
 
-        internal bool DisableInterpreter {
-            get {
-                return _disableInterpreter;
-            }
-            set {
-                _disableInterpreter = value;
-            }
-        }
-
-        protected override bool ExposesLocalVariables {
-            get { return true; }
-        }
-
-        internal override void CreateVariables(AstGenerator ag, List<MSAst.Expression> init) {
-            if (_globals != null) {
-                foreach (KeyValuePair<SymbolId, PythonVariable> kv in _globals) {
-                    if (kv.Value.Scope == this) {
-                        kv.Value.Transform(ag);
-                    }
-                }
-            }
-
-            base.CreateVariables(ag, init);
+        internal override bool ExposesLocalVariable(PythonVariable variable) {
+            return true;
         }
 
         internal PythonVariable EnsureGlobalVariable(PythonNameBinder binder, SymbolId name) {
@@ -136,31 +111,19 @@ namespace IronPython.Compiler.Ast {
                 }
             }
 
-            if ((binder.Module & ModuleOptions.Optimized) == 0) {
-                // For non-optimized modules, keep globals separate
-                if (_globals == null) {
-                    _globals = new Dictionary<SymbolId, PythonVariable>();
-                }
-                if (!_globals.TryGetValue(name, out variable)) {
-                    variable = new PythonVariable(name, typeof(object), VariableKind.Global, this);
-                    _globals[name] = variable;
-                }
-            } else {
-                variable = EnsureUnboundVariable(name);
-            }
-            return variable;
+            return EnsureUnboundVariable(name);
         }
 
         internal override PythonVariable BindName(PythonNameBinder binder, SymbolId name) {
             return EnsureVariable(name);
         }
 
-        internal MSAst.LambdaExpression/*!*/ TransformToAst(CompilerContext context) {
+        internal ScriptCode/*!*/ TransformToAst(CompilationMode mode, CompilerContext/*!*/ context) {
             // Create the ast generator
             // Use the PrintExpression value for the body (global level code)
             PythonCompilerOptions pco = context.Options as PythonCompilerOptions;
             Debug.Assert(pco != null);
-
+            
             string name;
             if (!context.SourceUnit.HasPath || (pco.Module & ModuleOptions.ExecOrEvalCode) != 0) {
                 name = "<module>";
@@ -168,68 +131,97 @@ namespace IronPython.Compiler.Ast {
                 name = context.SourceUnit.Path;
             }
 
-            AstGenerator ag = new AstGenerator(context, _body.Span, name, false, _printExpressions);            
-            ag.Block.Global = true;
+            AstGenerator ag = new AstGenerator(mode, context, _body.Span, name, false, _printExpressions);
 
-            ag.Block.Body = Ast.Block(
+            
+            MSAst.Expression body = Ast.Block(
                 Ast.Call(
                     AstGenerator.GetHelperMethod("ModuleStarted"),
-                    AstUtils.CodeContext(),
-                    Ast.Constant(ag.BinderState, typeof(object)),
-                    Ast.Constant(_languageFeatures)
+                    ag.LocalContext,
+                    AstUtils.Constant(_languageFeatures)
                 ),
                 ag.UpdateLineNumber(0),
                 ag.UpdateLineUpdated(false),
                 ag.WrapScopeStatements(Transform(ag)),   // new ComboActionRewriter().VisitNode(Transform(ag))
-                Ast.Empty()
+                AstUtils.Empty()
             );
             if (_isModule) {
-                Debug.Assert(pco.ModuleName != null);
+                string moduleName = pco.ModuleName;
+                if (moduleName == null) {
+#if !SILVERLIGHT
+                    if (context.SourceUnit.HasPath && context.SourceUnit.Path.IndexOfAny(Path.GetInvalidFileNameChars()) == -1) {
+                        moduleName = Path.GetFileNameWithoutExtension(context.SourceUnit.Path);
+#else
+                    if (context.SourceUnit.HasPath) {                    
+                        moduleName = context.SourceUnit.Path;
+#endif
+                    } else {
+                        moduleName = "<module>";
+                    }
+                }
 
-                ag.Block.Body = Ast.Block(
-                    AstUtils.Assign(_fileVariable.Variable, Ast.Constant(name)),
-                    AstUtils.Assign(_nameVariable.Variable, Ast.Constant(pco.ModuleName)),
-                    ag.Block.Body // already typed to void
+                Debug.Assert(moduleName != null);
+
+                body = Ast.Block(
+                    ag.Globals.Assign(ag.Globals.GetVariable(ag, _fileVariable), Ast.Constant(name)),
+                    ag.Globals.Assign(ag.Globals.GetVariable(ag, _nameVariable), Ast.Constant(moduleName)),
+                    body // already typed to void
                 );
 
                 if ((pco.Module & ModuleOptions.Initialize) != 0) {
-                    MSAst.Expression tmp = ag.Block.HiddenVariable(typeof(object), "$originalModule");
+                    MSAst.Expression tmp = ag.HiddenVariable(typeof(object), "$originalModule");
                     // TODO: Should be try/fault
-                    ag.Block.Body = AstUtils.Try(
-                        Ast.Assign(tmp, Ast.Call(AstGenerator.GetHelperMethod("PublishModule"), AstUtils.CodeContext(), Ast.Constant(pco.ModuleName))),
-                        ag.Block.Body
+                    body = AstUtils.Try(
+                        Ast.Assign(tmp, Ast.Call(AstGenerator.GetHelperMethod("PublishModule"), ag.LocalContext, Ast.Constant(moduleName))),
+                        body
                     ).Catch(
                         typeof(Exception),
-                        Ast.Call(AstGenerator.GetHelperMethod("RemoveModule"), AstUtils.CodeContext(), Ast.Constant(pco.ModuleName), tmp),
-                        Ast.Rethrow(ag.Block.Body.Type)
+                        Ast.Call(AstGenerator.GetHelperMethod("RemoveModule"), ag.LocalContext, Ast.Constant(moduleName), tmp),
+                        Ast.Rethrow(body.Type)
                     );
                 }
             }
 
-            ag.Block.Body = ag.AddReturnTarget(ag.Block.Body);
-            DisableInterpreter = ag.DisableInterpreter;
-            return ag.Block.MakeLambda();
+            if (ag.PyContext.PythonOptions.Frames) {
+                body = Ast.Block(
+                    new[] { FunctionDefinition._functionStack },
+                    FunctionDefinition.AddFrame(
+                        ag.LocalContext, 
+                        Ast.Constant(null, typeof(PythonFunction)), 
+                        body
+                    )
+                );
+            }
+
+            body = ag.AddProfiling(body);
+            body = ag.AddReturnTarget(body);
+
+            if (body.Type == typeof(void)) {
+                body = Ast.Block(body, Ast.Constant(null));
+            }
+
+            return ag.MakeScriptCode(body, context, this);
         }
 
         internal override MSAst.Expression Transform(AstGenerator ag) {
             List<MSAst.Expression> block = new List<MSAst.Expression>();
             // Create the variables
-            CreateVariables(ag, block);
+            CreateVariables(ag, null, block, false, false);
 
             MSAst.Expression bodyStmt = ag.Transform(_body);
 
             string doc = ag.GetDocumentation(_body);
 
-            if (_isModule && doc != null) {
-                block.Add(AstUtils.Assign(
-                    _docVariable.Variable,
+            if (_isModule) {
+                block.Add(ag.Globals.Assign(
+                    ag.Globals.GetVariable(ag, _docVariable),
                     Ast.Constant(doc)
                 ));
             }
             if (bodyStmt != null) {
                 block.Add(bodyStmt); //  bodyStmt could be null if we have an error - e.g. a top level break
             }
-            block.Add(Ast.Empty());
+            block.Add(AstUtils.Empty());
 
             return Ast.Block(block);
         }
@@ -241,6 +233,6 @@ namespace IronPython.Compiler.Ast {
                 }
             }
             walker.PostWalk(this);
-        }
+        }        
     }
 }

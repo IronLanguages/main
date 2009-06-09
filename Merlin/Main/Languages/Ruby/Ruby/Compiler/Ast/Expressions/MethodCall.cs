@@ -109,7 +109,9 @@ namespace IronRuby.Compiler.Ast {
             }
 
             var dynamicSite = callBuilder.MakeCallAction(methodName, hasImplicitSelf);
-            gen.TraceCallSite(node, dynamicSite);
+            if (gen.Context.CallSiteCreated != null) {
+                gen.Context.CallSiteCreated(node, dynamicSite);
+            }
 
             MSA.Expression result = gen.DebugMark(dynamicSite, methodName);
 
@@ -134,34 +136,43 @@ namespace IronRuby.Compiler.Ast {
             MSA.Expression resultVariable = gen.CurrentScope.DefineHiddenVariable("#method-result", typeof(object));
             MSA.ParameterExpression evalUnwinder = gen.CurrentScope.DefineHiddenVariable("#unwinder", typeof(EvalUnwinder));
 
-            MSA.LabelTarget label = Ast.Label();
+            MSA.LabelTarget retryLabel = Ast.Label("retry");
                     
-            return AstFactory.Block(
+            var result = AstFactory.Block(
                 Ast.Assign(blockArgVariable, Ast.Convert(transformedBlock, blockArgVariable.Type)),
-                AstFactory.Infinite(label, null,
-                    (!isBlockDefinition) ?
-                        (MSA.Expression)Ast.Empty() : 
-                        (MSA.Expression)Methods.InitializeBlock.OpCall(blockArgVariable),
 
-                    AstUtils.Try(
-                        Ast.Assign(resultVariable, invoke)
-                    ).Catch(evalUnwinder,
-                        Ast.Assign(
-                            resultVariable, 
-                            Ast.Field(evalUnwinder, EvalUnwinder.ReturnValueField)
-                        )
-                    ),
+                Ast.Label(retryLabel),
 
-                    // if result != RetrySingleton then break end
-                    AstUtils.Unless(Methods.IsRetrySingleton.OpCall(AstFactory.Box(resultVariable)), Ast.Break(label)),
+                (!isBlockDefinition) ?
+                    (MSA.Expression)AstUtils.Empty() : 
+                    (MSA.Expression)Methods.InitializeBlock.OpCall(blockArgVariable),
+
+                AstUtils.Try(
+                    Ast.Assign(resultVariable, invoke)
+                ).Catch(evalUnwinder,
+                    Ast.Assign(
+                        resultVariable, 
+                        Ast.Field(evalUnwinder, EvalUnwinder.ReturnValueField)
+                    )
+                ),
+
+                // if result == RetrySingleton then 
+                Ast.IfThen(Methods.IsRetrySingleton.OpCall(AstFactory.Box(resultVariable)),
 
                     // if blockParam == #block then retry end
-                    (gen.CurrentMethod.IsTopLevelCode) ? Ast.Empty() :
-                        AstUtils.IfThen(Ast.Equal(gen.MakeMethodBlockParameterRead(), blockArgVariable), RetryStatement.TransformRetry(gen))
-                
+                    (gen.CurrentMethod.BlockVariable != null) ?
+                        AstUtils.IfThenElse(Ast.Equal(gen.CurrentMethod.BlockVariable, blockArgVariable),
+                            RetryStatement.TransformRetry(gen),
+                            Ast.Goto(retryLabel)
+                        )
+                        :
+                        Ast.Goto(retryLabel)
                 ),
+
                 resultVariable
             );
+
+            return result;
         }
 
         internal override MSA.Expression TransformDefinedCondition(AstGenerator/*!*/ gen) {
@@ -170,7 +181,7 @@ namespace IronRuby.Compiler.Ast {
                     Methods.IsDefinedMethod.OpCall(
                         AstFactory.Box(_target.TransformRead(gen)), gen.CurrentScopeVariable, AstUtils.Constant(_methodName)
                     ),
-                    Ast.Constant(false)
+                    AstUtils.Constant(false)
                 );
             } else {
                 return Methods.IsDefinedMethod.OpCall(gen.CurrentSelfVariable, gen.CurrentScopeVariable, AstUtils.Constant(_methodName));

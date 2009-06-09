@@ -15,24 +15,31 @@
 
 using System;
 using System.Diagnostics;
-using System.Linq.Expressions;
-using System.Runtime.CompilerServices;
 using System.Dynamic;
-using IronPython.Runtime.Operations;
-using IronPython.Runtime.Types;
+using System.Linq.Expressions;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
+
+using IronPython.Runtime.Operations;
+using IronPython.Runtime.Types;
+
 using Ast = System.Linq.Expressions.Expression;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
+using System.Threading;
+using System.Collections.Generic;
 
 namespace IronPython.Runtime.Binding {
 
     partial class MetaUserObject : MetaPythonObject, IPythonGetable {
         #region IPythonGetable Members
 
-        public DynamicMetaObject GetMember(PythonGetMemberBinder/*!*/ member, Expression/*!*/ codeContext) {
+        public DynamicMetaObject GetMember(PythonGetMemberBinder/*!*/ member, DynamicMetaObject/*!*/ codeContext) {
             return GetMemberWorker(member, codeContext);
         }        
 
@@ -41,83 +48,22 @@ namespace IronPython.Runtime.Binding {
         #region MetaObject Overrides
 
         public override DynamicMetaObject/*!*/ BindGetMember(GetMemberBinder/*!*/ action) {
-            return GetMemberWorker(action, BinderState.GetCodeContext(action));
+            return GetMemberWorker(action, PythonContext.GetCodeContextMO(action));
         }
 
         public override DynamicMetaObject/*!*/ BindSetMember(SetMemberBinder/*!*/ action, DynamicMetaObject/*!*/ value) {
-            DynamicMetaObject self = Restrict(Value.GetType());
-            CodeContext context = BinderState.GetBinderState(action).Context;
-            IPythonObject sdo = Value;
-            SetBindingInfo bindingInfo = new SetBindingInfo(
-                action,
-                new DynamicMetaObject[] { this, value },
-                new ConditionalBuilder(action),
-                BindingHelpers.GetValidationInfo(self.Expression, sdo.PythonType)
-            );
-
-            DynamicMetaObject res = null;
-            // call __setattr__ if it exists
-            PythonTypeSlot dts;
-            if (sdo.PythonType.TryResolveSlot(context, Symbols.SetAttr, out dts) && !IsStandardObjectMethod(dts)) {
-                // skip the fake __setattr__ on mixed new-style/old-style types
-                if (dts != null) {
-                    MakeSetAttrTarget(bindingInfo, sdo, dts);
-                    res = bindingInfo.Body.GetMetaObject(this, value);
-                }
-            }
-
-            if (res == null) {
-                // then see if we have a set descriptor
-                bool isOldStyle;
-                bool systemTypeResolution;
-                dts = FindSlot(context, action.Name, sdo, out isOldStyle, out systemTypeResolution);
-                
-                ReflectedSlotProperty rsp = dts as ReflectedSlotProperty;
-                if (rsp != null) {
-                    MakeSlotsSetTarget(bindingInfo, rsp, value.Expression);
-                    res = bindingInfo.Body.GetMetaObject(this, value);
-                } else if (dts != null && dts.IsSetDescriptor(context, sdo.PythonType)) {
-                    if (systemTypeResolution) {
-                        res = Fallback(action, value);
-                    } else {
-                        res = MakeSlotSet(bindingInfo, dts);
-                    }
-                }
-            }
-
-            if (res == null) {
-                // finally if we have a dictionary set the value there.
-                if (sdo.HasDictionary) {
-                    MakeDictionarySetTarget(bindingInfo);
-                } else {
-                    bindingInfo.Body.FinishCondition(
-                        FallbackSetError(action, value).Expression
-                    );
-                }
-
-                res = bindingInfo.Body.GetMetaObject(this, value);
-            }
-
-            res = new DynamicMetaObject(
-                res.Expression,
-                self.Restrictions.Merge(res.Restrictions)
-            );
-
-            return BindingHelpers.AddDynamicTestAndDefer(
-                action,
-                res,
-                new DynamicMetaObject[] { this, value },
-                bindingInfo.Validation
-            );
+            return new MetaSetBinderHelper(this, value, action).Bind(action.Name);
         }
 
         public override DynamicMetaObject/*!*/ BindDeleteMember(DeleteMemberBinder/*!*/ action) {
+            PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "DeleteMember");
+            PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "DeleteMember");
             return MakeDeleteMemberRule(
                 new DeleteBindingInfo(
                     action,
                     new DynamicMetaObject[] { this },
                     new ConditionalBuilder(action),
-                    BindingHelpers.GetValidationInfo(Expression, PythonType)
+                    BindingHelpers.GetValidationInfo(this, PythonType)
                 )
             );
         }
@@ -126,83 +72,640 @@ namespace IronPython.Runtime.Binding {
 
         #region Get Member Helpers
 
-        private DynamicMetaObject GetMemberWorker(DynamicMetaObjectBinder/*!*/ member, Expression codeContext) {
-            DynamicMetaObject self = Restrict(Value.GetType());
-            CodeContext context = BinderState.GetBinderState(member).Context;
-            IPythonObject sdo = Value;
-            GetBindingInfo bindingInfo = new GetBindingInfo(
-                member,
-                new DynamicMetaObject[] { this },
-                Ast.Variable(Expression.Type, "self"),
-                Ast.Variable(typeof(object), "lookupRes"),
-                new ConditionalBuilder(member),
-                BindingHelpers.GetValidationInfo(self.Expression, sdo.PythonType)
-            );
+        /// <summary>
+        /// Provides the lookup logic for resolving a Python object.  Subclasses
+        /// provide the actual logic for producing the binding result.  Currently
+        /// there are two forms of the binding result: one is the DynamicMetaObject
+        /// form used for non-optimized bindings.  The other is the Func of CallSite,
+        /// object, CodeContext, object form which is used for fast binding and
+        /// pre-compiled rules.
+        /// </summary>
+        internal abstract class GetOrInvokeBinderHelper<TResult> {
+            protected readonly IPythonObject _value;
 
-            PythonTypeSlot foundSlot;
-            if (TryGetGetAttribute(context, sdo.PythonType, out foundSlot)) {
-                return MakeGetAttributeRule(bindingInfo, sdo, foundSlot, codeContext);
+            public GetOrInvokeBinderHelper(IPythonObject value) {
+                _value = value;
             }
 
-            // otherwise look the object according to Python rules:
-            //  1. 1st search the MRO of the type, and if it's there, and it's a get/set descriptor,
-            //      return that value.
-            //  2. Look in the instance dictionary.  If it's there return that value, otherwise return
-            //      a value found during the MRO search.  If no value was found during the MRO search then
-            //      raise an exception.      
-            //  3. fall back to __getattr__ if defined.
-            //
-            // Ultimately we cache the result of the MRO search based upon the type version.  If we have
-            // a get/set descriptor we'll only ever use that directly.  Otherwise if we have a get descriptor
-            // we'll first check the dictionary and then invoke the get descriptor.  If we have no descriptor
-            // at all we'll just check the dictionary.  If both lookups fail we'll raise an exception.
+            public TResult Bind(CodeContext context, string name) {
+                IPythonObject sdo = Value;
 
-            bool isOldStyle;
-            bool systemTypeResolution;
-            foundSlot = FindSlot(context, GetGetMemberName(member), sdo, out isOldStyle, out systemTypeResolution);
-
-            if (!isOldStyle || foundSlot is ReflectedSlotProperty) {
-                if (sdo.HasDictionary && (foundSlot == null || !foundSlot.IsSetDescriptor(context, sdo.PythonType))) {
-                    MakeDictionaryAccess(bindingInfo);
+                PythonTypeSlot foundSlot;
+                if (TryGetGetAttribute(context, sdo.PythonType, out foundSlot)) {
+                    return BindGetAttribute(foundSlot);
                 }
 
-                if (foundSlot != null) {
-                    if (systemTypeResolution) {
-                        bindingInfo.Body.FinishCondition(GetMemberFallback(member, codeContext).Expression);
-                    } else {
-                        MakeSlotAccess(bindingInfo, foundSlot);
+                // otherwise look the object according to Python rules:
+                //  1. 1st search the MRO of the type, and if it's there, and it's a get/set descriptor,
+                //      return that value.
+                //  2. Look in the instance dictionary.  If it's there return that value, otherwise return
+                //      a value found during the MRO search.  If no value was found during the MRO search then
+                //      raise an exception.      
+                //  3. fall back to __getattr__ if defined.
+                //
+                // Ultimately we cache the result of the MRO search based upon the type version.  If we have
+                // a get/set descriptor we'll only ever use that directly.  Otherwise if we have a get descriptor
+                // we'll first check the dictionary and then invoke the get descriptor.  If we have no descriptor
+                // at all we'll just check the dictionary.  If both lookups fail we'll raise an exception.
+
+                bool isOldStyle;
+                bool systemTypeResolution;
+                foundSlot = FindSlot(context, name, sdo, out isOldStyle, out systemTypeResolution);
+
+                if (!isOldStyle || foundSlot is ReflectedSlotProperty) {
+                    if (sdo.PythonType.HasDictionary && (foundSlot == null || !foundSlot.IsSetDescriptor(context, sdo.PythonType))) {
+                        MakeDictionaryAccess();
+                    }
+
+                    if (foundSlot != null) {
+                        MakeSlotAccess(foundSlot, systemTypeResolution);
+                    }
+                } else {
+                    MakeOldStyleAccess();
+                }
+
+                if (!IsFinal) {
+                    // fall back to __getattr__ if it's defined.
+                    // TODO: For InvokeMember we should probably do a fallback w/ an error suggestion
+                    PythonTypeSlot getattr;
+                    if (Value.PythonType.TryResolveSlot(context, Symbols.GetBoundAttr, out getattr)) {
+                        MakeGetAttrAccess(getattr);
+                    }
+
+                    MakeTypeError();
+                }
+
+
+                return FinishRule();
+            }
+
+            protected abstract void MakeTypeError();
+            protected abstract void MakeGetAttrAccess(PythonTypeSlot getattr);
+            protected abstract bool IsFinal { get; }
+            protected abstract void MakeSlotAccess(PythonTypeSlot foundSlot, bool systemTypeResolution);
+            protected abstract TResult BindGetAttribute(PythonTypeSlot foundSlot);
+            protected abstract TResult FinishRule();
+            protected abstract void MakeDictionaryAccess();
+            protected abstract void MakeOldStyleAccess();
+
+        
+            public IPythonObject Value {
+                get {
+                    return _value;
+                }
+            }
+        }
+
+        /// <summary>
+        /// GetBinder which produces a DynamicMetaObject.  This binder always
+        /// successfully produces a DynamicMetaObject which can perform the requested get.
+        /// </summary>
+        abstract class MetaGetBinderHelper : GetOrInvokeBinderHelper<DynamicMetaObject> {
+            private readonly DynamicMetaObject _self;
+            private readonly GetBindingInfo _bindingInfo;
+            protected readonly MetaUserObject _target;
+            private readonly DynamicMetaObjectBinder _binder;
+            protected readonly DynamicMetaObject _codeContext;
+            private string _resolution = "GetMember ";
+
+            public MetaGetBinderHelper(MetaUserObject target, DynamicMetaObjectBinder binder, DynamicMetaObject codeContext)
+                : base(target.Value) {
+                _target = target;
+                _self = _target.Restrict(Value.GetType());
+                _binder = binder;
+                _codeContext = codeContext;
+                _bindingInfo = new GetBindingInfo(
+                    _binder,
+                    new DynamicMetaObject[] { _target },
+                    Ast.Variable(Expression.Type, "self"),
+                    Ast.Variable(typeof(object), "lookupRes"),
+                    new ConditionalBuilder(_binder),
+                    BindingHelpers.GetValidationInfo(_self, Value.PythonType)
+                );
+            }
+
+            /// <summary>
+            /// Makes a rule which calls a user-defined __getattribute__ function and falls back to __getattr__ if that
+            /// raises an AttributeError.
+            /// 
+            /// slot is the __getattribute__ method to be called.
+            /// </summary>
+            private DynamicMetaObject/*!*/ MakeGetAttributeRule(GetBindingInfo/*!*/ info, IPythonObject/*!*/ obj, PythonTypeSlot/*!*/ slot, DynamicMetaObject codeContext) {
+                // if the type implements IDynamicMetaObjectProvider and we picked up it's __getattribute__ then we want to just 
+                // dispatch to the base meta object (or to the default binder). an example of this is:
+                //
+                // class mc(type):
+                //     def __getattr__(self, name):
+                //          return 42
+                //
+                // class nc_ga(object):
+                //     __metaclass__ = mc
+                //
+                // a = nc_ga.x # here we want to dispatch to the type's rule, not call __getattribute__ directly.
+
+                CodeContext context = PythonContext.GetPythonContext(info.Action).SharedContext;
+                Type finalType = PythonTypeOps.GetFinalSystemType(obj.PythonType.UnderlyingSystemType);
+                if (typeof(IDynamicMetaObjectProvider).IsAssignableFrom(finalType)) {
+                    PythonTypeSlot baseSlot;
+                    if (TryGetGetAttribute(context, DynamicHelpers.GetPythonTypeFromType(finalType), out baseSlot) && baseSlot == slot) {
+                        return FallbackError();
                     }
                 }
-            } else {
-                MakeOldStyleAccess(bindingInfo);
+
+                // otherwise generate code into a helper function.  This will do the slot lookup and exception
+                // handling for both __getattribute__ as well as __getattr__ if it exists.
+                PythonTypeSlot getattr;
+                obj.PythonType.TryResolveSlot(context, Symbols.GetBoundAttr, out getattr);
+                DynamicMetaObject self = _target.Restrict(Value.GetType());
+                string methodName = BindingHelpers.IsNoThrow(info.Action) ? "GetAttributeNoThrow" : "GetAttribute";
+
+                return BindingHelpers.AddDynamicTestAndDefer(
+                    info.Action,
+                    new DynamicMetaObject(
+                        Ast.Call(
+                            typeof(UserTypeOps).GetMethod(methodName),
+                            Ast.Constant(PythonContext.GetPythonContext(info.Action).SharedContext),
+                            info.Args[0].Expression,
+                            Ast.Constant(GetGetMemberName(info.Action)),
+                            Ast.Constant(slot, typeof(PythonTypeSlot)),
+                            Ast.Constant(getattr, typeof(PythonTypeSlot)),
+                            Ast.Constant(new SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object, string, object>>>())
+                        ),
+                        self.Restrictions
+                    ),
+                    info.Args,
+                    info.Validation
+                );
+            }
+            
+            protected abstract DynamicMetaObject FallbackError();
+            protected abstract DynamicMetaObject Fallback();
+
+            protected virtual Expression Invoke(Expression res) {
+                return Invoke(new DynamicMetaObject(res, BindingRestrictions.Empty)).Expression;
             }
 
-            if (!bindingInfo.Body.IsFinal) {
-                // fall back to __getattr__ if it's defined.
-                PythonTypeSlot getattr;
-                if (sdo.PythonType.TryResolveSlot(context, Symbols.GetBoundAttr, out getattr)) {
-                    MakeGetAttrRule(bindingInfo, GetWeakSlot(getattr), codeContext);
+            protected virtual DynamicMetaObject Invoke(DynamicMetaObject res) {
+                return res;
+            }
+
+            protected override DynamicMetaObject BindGetAttribute(PythonTypeSlot foundSlot) {
+                PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "User GetAttribute");
+                PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "User GetAttribute");
+                return Invoke(MakeGetAttributeRule(_bindingInfo, Value, foundSlot, _codeContext));
+            }
+
+            protected override void MakeGetAttrAccess(PythonTypeSlot getattr) {
+                _resolution += "GetAttr ";
+                MakeGetAttrRule(_bindingInfo, GetWeakSlot(getattr), _codeContext);
+            }
+
+            protected override void MakeTypeError() {
+                _bindingInfo.Body.FinishCondition(FallbackError().Expression);
+            }
+
+            protected override bool IsFinal {
+                get { return _bindingInfo.Body.IsFinal; }
+            }
+
+            protected override DynamicMetaObject FinishRule() {
+                PerfTrack.NoteEvent(PerfTrack.Categories.Binding, _resolution);
+                PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "UserGet");
+
+                DynamicMetaObject res = _bindingInfo.Body.GetMetaObject(_target);
+                res = new DynamicMetaObject(
+                    Ast.Block(
+                        new ParameterExpression[] { _bindingInfo.Self, _bindingInfo.Result },
+                        Ast.Assign(_bindingInfo.Self, _self.Expression),
+                        res.Expression
+                    ),
+                    _self.Restrictions.Merge(res.Restrictions)
+                );
+
+                return BindingHelpers.AddDynamicTestAndDefer(
+                    _binder,
+                    res,
+                    new DynamicMetaObject[] { _target },
+                    _bindingInfo.Validation
+                );
+            }
+
+            private void MakeGetAttrRule(GetBindingInfo/*!*/ info, Expression/*!*/ getattr, DynamicMetaObject codeContext) {
+                info.Body.AddCondition(
+                    MakeGetAttrTestAndGet(info, getattr),
+                    Invoke(MakeGetAttrCall(info, codeContext))
+                );
+            }
+
+            private Expression/*!*/ MakeGetAttrCall(GetBindingInfo/*!*/ info, DynamicMetaObject codeContext) {
+                Expression call = Ast.Dynamic(
+                    PythonContext.GetPythonContext(info.Action).InvokeOne,
+                    typeof(object),
+                    PythonContext.GetCodeContext(info.Action),
+                    info.Result,
+                    Ast.Constant(GetGetMemberName(info.Action))
+                );
+
+                call = MaybeMakeNoThrow(info, call);
+
+                return call;
+            }
+
+            private Expression/*!*/ MaybeMakeNoThrow(GetBindingInfo/*!*/ info, Expression/*!*/ expr) {
+                if (BindingHelpers.IsNoThrow(info.Action)) {
+                    DynamicMetaObject fallback = FallbackError();
+                    Type t = BindingHelpers.GetCompatibleType(expr.Type, fallback.Expression.Type);
+                    ParameterExpression tmp = Ast.Variable(t, "getAttrRes");
+
+                    expr = Ast.Block(
+                        new ParameterExpression[] { tmp },
+                        Ast.Block(
+                            AstUtils.Try(
+                                Ast.Assign(tmp, AstUtils.Convert(expr, t))
+                            ).Catch(
+                                typeof(MissingMemberException),
+                                Ast.Assign(tmp, AstUtils.Convert(FallbackError().Expression, t))
+                            ),
+                            tmp
+                        )
+                    );
+                }
+                return expr;
+            }
+
+            protected override void MakeSlotAccess(PythonTypeSlot foundSlot, bool systemTypeResolution) {
+                _resolution += CompilerHelpers.GetType(foundSlot) + " ";
+
+                if (systemTypeResolution) {
+                    _bindingInfo.Body.FinishCondition(Fallback().Expression);
+                } else {
+                    MakeSlotAccess(foundSlot);
+                }
+            }
+                        
+            private void MakeSlotAccess(PythonTypeSlot dts) {
+                ReflectedSlotProperty rsp = dts as ReflectedSlotProperty;
+                if (rsp != null) {
+                    // we need to fall back to __getattr__ if the value is not defined, so call it and check the result.
+                    _bindingInfo.Body.AddCondition(
+                        Ast.NotEqual(
+                            Ast.Assign(
+                                _bindingInfo.Result,
+                                Ast.ArrayAccess(
+                                    GetSlots(_target),
+                                    Ast.Constant(rsp.Index)
+                                )
+                            ),
+                            Ast.Field(null, typeof(Uninitialized).GetField("Instance"))
+                        ),
+                        Invoke(_bindingInfo.Result)
+                    );
+                    return;
                 }
 
-                bindingInfo.Body.FinishCondition(FallbackGetError(member, null).Expression);
+                PythonTypeUserDescriptorSlot slot = dts as PythonTypeUserDescriptorSlot;
+                if (slot != null) {
+                    _bindingInfo.Body.FinishCondition(
+                        Ast.Call(
+                            typeof(PythonOps).GetMethod("GetUserSlotValue"),
+                            Ast.Constant(PythonContext.GetPythonContext(_bindingInfo.Action).SharedContext),
+                            Ast.Convert(AstUtils.WeakConstant(slot), typeof(PythonTypeUserDescriptorSlot)),
+                            _target.Expression,
+                            Ast.Property(
+                                Ast.Convert(
+                                    _bindingInfo.Self,
+                                    typeof(IPythonObject)),
+                                TypeInfo._IPythonObject.PythonType
+                            )
+                        )
+                    );
+                }
+
+                // users can subclass PythonProperty so check the type explicitly 
+                // and only in-line the ones we fully understand.
+                if (dts.GetType() == typeof(PythonProperty)) {
+                    // properties are mutable so we generate code to get the value rather
+                    // than burning it into the rule.
+                    Expression getter = Ast.Property(
+                        Ast.Convert(AstUtils.WeakConstant(dts), typeof(PythonProperty)),
+                        "fget"
+                    );
+                    ParameterExpression tmpGetter = Ast.Variable(typeof(object), "tmpGet");
+                    _bindingInfo.Body.AddVariable(tmpGetter);
+
+                    _bindingInfo.Body.FinishCondition(
+                        Ast.Block(
+                            Ast.Assign(tmpGetter, getter),
+                            Ast.Condition(
+                                Ast.NotEqual(
+                                    tmpGetter,
+                                    Ast.Constant(null)
+                                ),
+                                Invoke(
+                                    Ast.Dynamic(
+                                        PythonContext.GetPythonContext(_bindingInfo.Action).InvokeOne,
+                                        typeof(object),
+                                        Ast.Constant(PythonContext.GetPythonContext(_bindingInfo.Action).SharedContext),
+                                        tmpGetter,
+                                        _bindingInfo.Self
+                                    )
+                                ),
+                                Ast.Throw(Ast.Call(typeof(PythonOps).GetMethod("UnreadableProperty")), typeof(object))
+                            )
+                        )
+                    );
+                    return;
+                }
+
+                Expression tryGet = Ast.Call(
+                    TypeInfo._PythonOps.SlotTryGetBoundValue,
+                    Ast.Constant(PythonContext.GetPythonContext(_bindingInfo.Action).SharedContext),
+                    Ast.Convert(AstUtils.WeakConstant(dts), typeof(PythonTypeSlot)),
+                    AstUtils.Convert(_bindingInfo.Self, typeof(object)),
+                    Ast.Property(
+                        Ast.Convert(
+                            _bindingInfo.Self,
+                            typeof(IPythonObject)),
+                        TypeInfo._IPythonObject.PythonType
+                    ),
+                    _bindingInfo.Result
+                );
+
+                Expression value = Invoke(_bindingInfo.Result);
+                if (dts.GetAlwaysSucceeds) {
+                    _bindingInfo.Body.FinishCondition(
+                        Ast.Block(tryGet, value)
+                    );
+                } else {
+                    _bindingInfo.Body.AddCondition(
+                        tryGet,
+                        value
+                    );
+                }
             }
 
-            DynamicMetaObject res = bindingInfo.Body.GetMetaObject(this);
-            res = new DynamicMetaObject(
-                Ast.Block(
-                    new ParameterExpression[] { bindingInfo.Self, bindingInfo.Result },
-                    Ast.Assign(bindingInfo.Self, self.Expression),
-                    res.Expression
-                ),
-                self.Restrictions.Merge(res.Restrictions)
-            );
+            protected override void MakeDictionaryAccess() {
+                _resolution += "Dictionary ";
 
-            return BindingHelpers.AddDynamicTestAndDefer(
-                member,
-                res,
-                new DynamicMetaObject[] { this },
-                bindingInfo.Validation
-            );
+                FieldInfo fi = _target.LimitType.GetField(NewTypeMaker.DictFieldName);
+                Expression dict;
+                if (fi != null) {
+                    dict = Ast.Field(
+                        Ast.Convert(_bindingInfo.Self, _target.LimitType),
+                        fi
+                    );
+                } else {
+                    dict = Ast.Property(
+                        Ast.Convert(_bindingInfo.Self, typeof(IPythonObject)),
+                        TypeInfo._IPythonObject.Dict
+                    );
+                }
+
+                _bindingInfo.Body.AddCondition(
+                    Ast.AndAlso(
+                        Ast.NotEqual(
+                            dict,
+                            Ast.Constant(null)
+                        ),
+                        Ast.Call(
+                            dict,
+                            TypeInfo._IAttributesCollection.TryGetvalue,
+                            AstUtils.Constant(SymbolTable.StringToId(GetGetMemberName(_bindingInfo.Action))),
+                            _bindingInfo.Result
+                        )
+                    ),
+                    Invoke(new DynamicMetaObject(_bindingInfo.Result, BindingRestrictions.Empty)).Expression
+                );
+            }
+
+            /// <summary>
+            /// Checks a range of the MRO to perform old-style class lookups if any old-style classes
+            /// are present.  We will call this twice to produce a search before a slot and after
+            /// a slot.
+            /// </summary>
+            protected override void MakeOldStyleAccess() {
+                _resolution += "MixedOldStyle ";
+                _bindingInfo.Body.AddCondition(
+                    Ast.Call(
+                        typeof(UserTypeOps).GetMethod("TryGetMixedNewStyleOldStyleSlot"),
+                        Ast.Constant(PythonContext.GetPythonContext(_bindingInfo.Action).SharedContext),
+                        AstUtils.Convert(_bindingInfo.Self, typeof(object)),
+                        AstUtils.Constant(SymbolTable.StringToId(GetGetMemberName(_bindingInfo.Action))),
+                        _bindingInfo.Result
+                    ),
+                    Invoke(_bindingInfo.Result)
+                );
+            }
+            
+            public Expression Expression {
+                get {
+                    return _target.Expression;
+                }
+            }           
+        }
+
+        internal class FastGetBinderHelper : GetOrInvokeBinderHelper<FastGetBase> {
+            private readonly int _version;
+            private readonly PythonGetMemberBinder/*!*/ _binder;
+            private readonly CallSite<Func<CallSite, object, CodeContext, object>> _site;
+            private readonly CodeContext _context;
+            private bool _dictAccess, _noOptimizedForm;
+            private PythonTypeSlot _slot;
+            private PythonTypeSlot _getattrSlot;
+
+            public FastGetBinderHelper(CodeContext/*!*/ context, CallSite<Func<CallSite, object, CodeContext, object>>/*!*/ site, IPythonObject/*!*/ value, PythonGetMemberBinder/*!*/ binder)
+                : base(value) {
+                Assert.NotNull(value, binder, context, site);
+
+                _version = value.PythonType.Version;
+                _binder = binder;
+                _site = site;
+                _context = context;
+            }
+
+            protected override void MakeTypeError() {
+            }
+
+            protected override bool IsFinal {
+                get { return _slot != null && _slot.GetAlwaysSucceeds; }
+            }
+
+            protected override void MakeSlotAccess(PythonTypeSlot foundSlot, bool systemTypeResolution) {
+                if (systemTypeResolution) {
+                    if (!_binder.Context.Binder.TryResolveSlot(_context, this.Value.PythonType, this.Value.PythonType, SymbolTable.StringToId(_binder.Name), out foundSlot)) {
+                        Debug.Assert(false);
+                    }
+
+                }
+                _slot = foundSlot;
+            }
+            
+            public FastBindResult<Func<CallSite, object, CodeContext, object>> GetBinding(CodeContext context, string name) {
+                Dictionary<string, FastGetBase> cachedGets = GetCachedGets();
+
+                FastGetBase dlg;
+                lock (cachedGets) {                    
+                    if (!cachedGets.TryGetValue(name, out dlg) || !dlg.IsValid(Value.PythonType)) {
+                        var binding = Bind(context, name);
+                        if (binding != null) {
+                            dlg = binding;
+
+                            if (dlg.ShouldCache) {
+                                cachedGets[name] = dlg;
+                            }
+                        }
+                    }
+                }
+
+                if (dlg != null && dlg.ShouldUseNonOptimizedSite) {                    
+                    return new FastBindResult<Func<CallSite, object, CodeContext, object>>(dlg._func, false);
+                }
+                return new FastBindResult<Func<CallSite, object, CodeContext, object>>();
+            }
+
+            private Dictionary<string, FastGetBase> GetCachedGets() {
+                if (_binder.IsNoThrow) {
+                    Dictionary<string, FastGetBase> cachedGets = Value.PythonType._cachedTryGets;
+                    if (cachedGets == null) {
+                        Interlocked.CompareExchange(
+                            ref Value.PythonType._cachedTryGets,
+                            new Dictionary<string, FastGetBase>(),
+                            null);
+
+                        cachedGets = Value.PythonType._cachedTryGets;
+                    }
+                    return cachedGets;
+                } else {
+                    Dictionary<string, FastGetBase> cachedGets = Value.PythonType._cachedGets;
+                    if (cachedGets == null) {
+                        Interlocked.CompareExchange(
+                            ref Value.PythonType._cachedGets,
+                            new Dictionary<string, FastGetBase>(),
+                            null);
+
+                        cachedGets = Value.PythonType._cachedGets;
+                    }
+                    return cachedGets;
+                }
+            }
+
+            protected override FastGetBase FinishRule() {
+                if (_noOptimizedForm) {
+                    return null;
+                }
+
+                GetMemberDelegates func;
+                ReflectedSlotProperty rsp = _slot as ReflectedSlotProperty;
+                if (rsp != null) {
+                    Debug.Assert(!_dictAccess); // properties for __slots__ are get/set descriptors so we should never access the dictionary.
+                    func = new GetMemberDelegates(OptimizedGetKind.PropertySlot, _binder, SymbolTable.StringToId(_binder.Name), _version, _slot, _getattrSlot, rsp.Getter, FallbackError());
+                } else if (_dictAccess) {
+                    if (_slot is PythonTypeUserDescriptorSlot) {
+                        func = new GetMemberDelegates(OptimizedGetKind.UserSlotDict, _binder, SymbolTable.StringToId(_binder.Name), _version, _slot, _getattrSlot, null, FallbackError());
+                    } else {
+                        func = new GetMemberDelegates(OptimizedGetKind.SlotDict, _binder, SymbolTable.StringToId(_binder.Name), _version, _slot, _getattrSlot, null, FallbackError());
+                    }
+                } else {
+                    if (_slot is PythonTypeUserDescriptorSlot) {
+                        func = new GetMemberDelegates(OptimizedGetKind.UserSlotOnly, _binder, SymbolTable.StringToId(_binder.Name), _version, _slot, _getattrSlot, null, FallbackError());
+                    } else {
+                        func = new GetMemberDelegates(OptimizedGetKind.SlotOnly, _binder, SymbolTable.StringToId(_binder.Name), _version, _slot, _getattrSlot, null, FallbackError());
+                    }
+                }
+                return func;
+            }
+
+            private Func<CallSite, object, CodeContext, object> FallbackError() {
+                Type finalType = PythonTypeOps.GetFinalSystemType(Value.PythonType.UnderlyingSystemType);
+                if (typeof(IDynamicMetaObjectProvider).IsAssignableFrom(finalType)) {                    
+                    return ((IFastGettable)Value).MakeGetBinding(_site, _binder, _context, _binder.Name);
+                }
+
+                if (_binder.IsNoThrow) {
+                    return (site, self, context) => OperationFailed.Value;
+                }
+
+                SymbolId name = SymbolTable.StringToId(_binder.Name);
+                return (site, self, context) => { throw PythonOps.AttributeErrorForMissingAttribute(((IPythonObject)self).PythonType.Name, name); };
+            }
+
+            protected override void MakeDictionaryAccess() {
+                _dictAccess = true;
+            }
+
+            protected override FastGetBase BindGetAttribute(PythonTypeSlot foundSlot) {
+                Type finalType = PythonTypeOps.GetFinalSystemType(Value.PythonType.UnderlyingSystemType);
+                if (typeof(IDynamicMetaObjectProvider).IsAssignableFrom(finalType)) {
+                    Debug.Assert(Value is IFastGettable);
+
+                    PythonTypeSlot baseSlot;
+                    if (TryGetGetAttribute(_context, DynamicHelpers.GetPythonTypeFromType(finalType), out baseSlot) && 
+                        baseSlot == foundSlot) {
+                        
+                        return new ChainedUserGet(_binder, _version, FallbackError());
+                    }
+                }
+
+                PythonTypeSlot getattr;
+                Value.PythonType.TryResolveSlot(_context, Symbols.GetBoundAttr, out getattr);
+                return new GetAttributeDelegates(_site, _binder, _binder.Name, _version, foundSlot, getattr);
+            }
+
+            protected override void MakeGetAttrAccess(PythonTypeSlot getattr) {
+                _getattrSlot = getattr;
+            }
+
+            protected override void MakeOldStyleAccess() {
+                _noOptimizedForm = true;
+            }
+        }
+
+        class GetBinderHelper : MetaGetBinderHelper {
+            private readonly DynamicMetaObjectBinder _binder;
+
+            public GetBinderHelper(MetaUserObject target, DynamicMetaObjectBinder binder, DynamicMetaObject codeContext)
+                : base(target, binder, codeContext) {
+                _binder = binder;
+            }
+
+            protected override DynamicMetaObject Fallback() {
+                return GetMemberFallback(_target, _binder, _codeContext);
+            }
+
+            protected override DynamicMetaObject FallbackError() {
+                return _target.FallbackGetError(_binder, _codeContext);
+            }
+        }
+
+        class InvokeBinderHelper : MetaGetBinderHelper {
+            private readonly InvokeMemberBinder _binder;
+            private readonly DynamicMetaObject[] _args;
+
+            public InvokeBinderHelper(MetaUserObject target, InvokeMemberBinder binder, DynamicMetaObject[] args, DynamicMetaObject codeContext)
+                : base(target, binder, codeContext) {
+                _binder = binder;
+                _args = args;
+            }
+
+            protected override DynamicMetaObject Fallback() {
+                return _binder.FallbackInvokeMember(_target, _args);
+            }
+
+            protected override DynamicMetaObject FallbackError() {
+                if (_target._baseMetaObject != null) {
+                    return _target._baseMetaObject.BindInvokeMember(_binder, _args);
+                }
+
+                return Fallback();
+            }
+
+            protected override DynamicMetaObject Invoke(DynamicMetaObject res) {
+                return _binder.FallbackInvoke(res, _args, null);
+            }
+        }
+
+        private DynamicMetaObject GetMemberWorker(DynamicMetaObjectBinder/*!*/ member, DynamicMetaObject codeContext) {
+            return new GetBinderHelper(this, member, codeContext).Bind((CodeContext)codeContext.Value, GetGetMemberName(member));
         }
 
         /// <summary>
@@ -226,157 +729,11 @@ namespace IronPython.Runtime.Binding {
             }
             return false;
         }
-
-        private void MakeDictionaryAccess(GetBindingInfo/*!*/ info) {
-            info.Body.AddCondition(
-                Ast.AndAlso(
-                    Ast.NotEqual(
-                        Ast.Property(
-                            Ast.Convert(info.Self, typeof(IPythonObject)),
-                            TypeInfo._IPythonObject.Dict
-                        ),
-                        Ast.Constant(null)
-                    ),
-                    Ast.Call(
-                        Ast.Property(
-                            Ast.Convert(info.Self, typeof(IPythonObject)),
-                            TypeInfo._IPythonObject.Dict
-                        ),
-                        TypeInfo._IAttributesCollection.TryGetvalue,
-                        AstUtils.Constant(SymbolTable.StringToId(GetGetMemberName(info.Action))),
-                        info.Result
-                    )
-                ),
-                info.Result
-            );
-        }
-
-        private static void MakeSlotAccess(GetBindingInfo/*!*/ info, PythonTypeSlot dts) {
-            ReflectedSlotProperty rsp = dts as ReflectedSlotProperty;
-            if (rsp != null) {
-                // we need to fall back to __getattr__ if the value is not defined, so call it and check the result.
-                info.Body.AddCondition(
-                    Ast.NotEqual(
-                        Ast.Assign(
-                            info.Result,
-                            Ast.ArrayAccess(
-                                Ast.Call(
-                                    Ast.Convert(info.Self, typeof(IObjectWithSlots)),
-                                    typeof(IObjectWithSlots).GetMethod("GetSlots")
-                                ),
-                                Ast.Constant(rsp.Index)
-                            )
-                        ),
-                        Ast.Field(null, typeof(Uninitialized).GetField("Instance"))
-                    ),
-                    info.Result
-                );
-                return;
-            }
-
-            PythonTypeUserDescriptorSlot slot = dts as PythonTypeUserDescriptorSlot;
-            if (slot != null && !(slot.Value is PythonTypeSlot)) {
-                PythonType slottype = DynamicHelpers.GetPythonType(slot.Value);
-                if (slottype.IsSystemType) {
-                    // this is a user slot that's known not to be a descriptor
-                    // so we can just burn the value in.  For it to change the
-                    // slot will need to be replaced reving the type version.
-                    info.Body.FinishCondition(
-                        AstUtils.Convert(AstUtils.WeakConstant(slot.Value), typeof(object))
-                    );
-                    return;
-                }
-            }
-
-            // users can subclass PythonProperty so check the type explicitly 
-            // and only in-line the ones we fully understand.
-            if (dts.GetType() == typeof(PythonProperty)) {
-                // properties are mutable so we generate code to get the value rather
-                // than burning it into the rule.
-                Expression getter = Ast.Property(
-                    Ast.Convert(AstUtils.WeakConstant(dts), typeof(PythonProperty)),
-                    "fget"
-                );
-                ParameterExpression tmpGetter = Ast.Variable(typeof(object), "tmpGet");
-                info.Body.AddVariable(tmpGetter);
-
-                info.Body.FinishCondition(
-                    Ast.Block(
-                        Ast.Assign(tmpGetter, getter),
-                        Ast.Condition(
-                            Ast.NotEqual(
-                                tmpGetter,
-                                Ast.Constant(null)
-                            ),
-                            Ast.Dynamic(
-                                BinderState.GetBinderState(info.Action).InvokeOne,
-                                typeof(object),
-                                Ast.Constant(BinderState.GetBinderState(info.Action).Context),
-                                tmpGetter,
-                                info.Self
-                            ),
-                            Ast.Throw(Ast.Call(typeof(PythonOps).GetMethod("UnreadableProperty")), typeof(object))
-                        )
-                    )
-                );
-                return;
-            }
-
-            Expression tryGet = Ast.Call(
-                TypeInfo._PythonOps.SlotTryGetBoundValue,
-                Ast.Constant(BinderState.GetBinderState(info.Action).Context),
-                Ast.Convert(AstUtils.WeakConstant(dts), typeof(PythonTypeSlot)),
-                AstUtils.Convert(info.Self, typeof(object)),
-                Ast.Property(
-                    Ast.Convert(
-                        info.Self,
-                        typeof(IPythonObject)),
-                    TypeInfo._IPythonObject.PythonType
-                ),
-                info.Result
-            );
-
-            if (dts.GetAlwaysSucceeds) {
-                info.Body.FinishCondition(
-                    Ast.Block(tryGet, info.Result)
-                );
-            } else {
-                info.Body.AddCondition(
-                    tryGet,
-                    info.Result
-                );
-            }
-        }
-
-        /// <summary>
-        /// Checks a range of the MRO to perform old-style class lookups if any old-style classes
-        /// are present.  We will call this twice to produce a search before a slot and after
-        /// a slot.
-        /// </summary>
-        private void MakeOldStyleAccess(GetBindingInfo/*!*/ info) {
-            info.Body.AddCondition(
-                Ast.Call(
-                    typeof(UserTypeOps).GetMethod("TryGetMixedNewStyleOldStyleSlot"),
-                    Ast.Constant(BinderState.GetBinderState(info.Action).Context),
-                    AstUtils.Convert(info.Self, typeof(object)),
-                    AstUtils.Constant(SymbolTable.StringToId(GetGetMemberName(info.Action))),
-                    info.Result
-                ),
-                info.Result
-            );
-        }
         
-        private void MakeGetAttrRule(GetBindingInfo/*!*/ info, Expression/*!*/ getattr, Expression codeContext) {
-            info.Body.AddCondition(
-                MakeGetAttrTestAndGet(info, getattr),
-                MakeGetAttrCall(info, codeContext)
-            );
-        }
-
         private static MethodCallExpression/*!*/ MakeGetAttrTestAndGet(GetBindingInfo/*!*/ info, Expression/*!*/ getattr) {
             return Ast.Call(
                 TypeInfo._PythonOps.SlotTryGetBoundValue,
-                Ast.Constant(BinderState.GetBinderState(info.Action).Context),
+                AstUtils.Constant(PythonContext.GetPythonContext(info.Action).SharedContext),
                 AstUtils.Convert(getattr, typeof(PythonTypeSlot)),
                 AstUtils.Convert(info.Self, typeof(object)),
                 Ast.Convert(
@@ -390,98 +747,8 @@ namespace IronPython.Runtime.Binding {
                 ),
                 info.Result
             );
-        }
-
-        private Expression/*!*/ MakeGetAttrCall(GetBindingInfo/*!*/ info, Expression codeContext) {
-            Expression call = Ast.Dynamic(
-                BinderState.GetBinderState(info.Action).InvokeOne,
-                typeof(object),
-                BinderState.GetCodeContext(info.Action),
-                info.Result,
-                Ast.Constant(GetGetMemberName(info.Action))
-            );
-
-            call = MaybeMakeNoThrow(info, call, codeContext);
-
-            return call;
-        }
-
-        private Expression/*!*/ MaybeMakeNoThrow(GetBindingInfo/*!*/ info, Expression/*!*/ expr, Expression codeContext) {
-            if (BindingHelpers.IsNoThrow(info.Action)) {
-                DynamicMetaObject fallback = FallbackGetError(info.Action, codeContext);
-                Type t = BindingHelpers.GetCompatibleType(expr.Type, fallback.Expression.Type);
-                ParameterExpression tmp = Ast.Variable(t, "getAttrRes");
-
-                expr = Ast.Block(
-                    new ParameterExpression[] { tmp },
-                    Ast.Block(
-                        AstUtils.Try(
-                            Ast.Assign(tmp, AstUtils.Convert(expr, t))
-                        ).Catch(
-                            typeof(MissingMemberException),
-                            Ast.Assign(tmp, AstUtils.Convert(FallbackGetError(info.Action, codeContext).Expression, t))
-                        ),
-                        tmp
-                    )
-                );
-            }
-            return expr;
-        }
-
-        /// <summary>
-        /// Makes a rule which calls a user-defined __getattribute__ function and falls back to __getattr__ if that
-        /// raises an AttributeError.
-        /// 
-        /// slot is the __getattribute__ method to be called.
-        /// </summary>
-        private DynamicMetaObject/*!*/ MakeGetAttributeRule(GetBindingInfo/*!*/ info, IPythonObject/*!*/ obj, PythonTypeSlot/*!*/ slot, Expression codeContext) {
-            // if the type implements IDynamicMetaObjectProvider and we picked up it's __getattribute__ then we want to just 
-            // dispatch to the base meta object (or to the default binder). an example of this is:
-            //
-            // class mc(type):
-            //     def __getattr__(self, name):
-            //          return 42
-            //
-            // class nc_ga(object):
-            //     __metaclass__ = mc
-            //
-            // a = nc_ga.x # here we want to dispatch to the type's rule, not call __getattribute__ directly.
-
-            CodeContext context = BinderState.GetBinderState(info.Action).Context;
-            Type finalType = PythonTypeOps.GetFinalSystemType(obj.PythonType.UnderlyingSystemType);
-            if (typeof(IDynamicMetaObjectProvider).IsAssignableFrom(finalType)) {
-                PythonTypeSlot baseSlot;
-                if (TryGetGetAttribute(context, DynamicHelpers.GetPythonTypeFromType(finalType), out baseSlot) && baseSlot == slot) {
-                    return Fallback(info.Action, codeContext);
-                }
-            }
-            
-            // otherwise generate code into a helper function.  This will do the slot lookup and exception
-            // handling for both __getattribute__ as well as __getattr__ if it exists.
-            PythonTypeSlot getattr;
-            obj.PythonType.TryResolveSlot(context, Symbols.GetBoundAttr, out getattr);
-            DynamicMetaObject self = Restrict(Value.GetType());
-            string methodName = BindingHelpers.IsNoThrow(info.Action) ? "GetAttributeNoThrow" : "GetAttribute";
-            
-            return BindingHelpers.AddDynamicTestAndDefer(
-                info.Action,
-                new DynamicMetaObject(
-                    Ast.Call(
-                        typeof(UserTypeOps).GetMethod(methodName),
-                        Ast.Constant(BinderState.GetBinderState(info.Action).Context),
-                        info.Args[0].Expression,
-                        Ast.Constant(GetGetMemberName(info.Action)),
-                        Ast.Constant(slot, typeof(PythonTypeSlot)),
-                        Ast.Constant(getattr, typeof(PythonTypeSlot)),
-                        Ast.Constant(new SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object, string, object>>>())
-                    ),
-                    self.Restrictions
-                ),
-                info.Args,
-                info.Validation
-            );
-        }
-
+        }               
+        
         private static Expression/*!*/ GetWeakSlot(PythonTypeSlot slot) {
             return AstUtils.Convert(AstUtils.WeakConstant(slot), typeof(PythonTypeSlot));
         }
@@ -490,9 +757,10 @@ namespace IronPython.Runtime.Binding {
             return Ast.Throw(
                 Ast.Call(
                     typeof(PythonOps).GetMethod("AttributeErrorForMissingAttribute", new Type[] { typeof(string), typeof(SymbolId) }),
-                    Ast.Constant(type.Name),
+                    AstUtils.Constant(type.Name),
                     AstUtils.Constant(SymbolTable.StringToId(name))
-                )
+                ),
+                typeof(object)
             );
         }
 
@@ -500,47 +768,323 @@ namespace IronPython.Runtime.Binding {
 
         #region Set Member Helpers
 
+        internal abstract class SetBinderHelper<TResult> {
+            private readonly IPythonObject/*!*/ _instance;
+            private readonly object _value;
+            protected readonly CodeContext/*!*/ _context;
+
+            public SetBinderHelper(CodeContext/*!*/ context, IPythonObject/*!*/ instance, object value) {
+                Assert.NotNull(context, instance);
+
+                _instance = instance;
+                _value = value;
+                _context = context;
+            }
+
+            public TResult Bind(string name) {                
+                bool bound = false;
+
+                // call __setattr__ if it exists
+                PythonTypeSlot dts;
+                if (_instance.PythonType.TryResolveSlot(_context, Symbols.SetAttr, out dts) && !IsStandardObjectMethod(dts)) {
+                    // skip the fake __setattr__ on mixed new-style/old-style types
+                    if (dts != null) {
+                        MakeSetAttrTarget(dts);
+                        bound = true;
+                    }
+                }
+
+                if (!bound) {
+                    // then see if we have a set descriptor
+                    bool isOldStyle;
+                    bool systemTypeResolution;
+                    dts = FindSlot(_context, name, _instance, out isOldStyle, out systemTypeResolution);
+
+                    ReflectedSlotProperty rsp = dts as ReflectedSlotProperty;
+                    if (rsp != null) {
+                        MakeSlotsSetTarget(rsp);
+                        bound = true;
+                    } else if (dts != null && dts.IsSetDescriptor(_context, _instance.PythonType)) {
+                        MakeSlotSetOrFallback(dts, systemTypeResolution);
+                        bound = systemTypeResolution || dts.GetType() == typeof(PythonProperty);    // the only slot we currently optimize in MakeSlotSet
+                    }
+                }
+
+                if (!bound) {
+                    // finally if we have a dictionary set the value there.
+                    if (_instance.PythonType.HasDictionary) {
+                        MakeDictionarySetTarget();
+                    } else {
+                        MakeFallback();
+                    }
+                }
+
+                return Finish();
+            }
+
+            public IPythonObject Instance {
+                get {
+                    return _instance;
+                }
+            }
+
+            public object Value {
+                get {
+                    return _value;
+                }
+            }
+
+            protected abstract TResult Finish();
+            
+            protected abstract void MakeSetAttrTarget(PythonTypeSlot dts);
+            protected abstract void MakeSlotsSetTarget(ReflectedSlotProperty prop);
+            protected abstract void MakeSlotSetOrFallback(PythonTypeSlot dts, bool systemTypeResolution);
+            protected abstract void MakeDictionarySetTarget();
+            protected abstract void MakeFallback();
+        }
+
+        internal class FastSetBinderHelper<TValue> : SetBinderHelper<SetMemberDelegates<TValue>> {
+            private readonly PythonSetMemberBinder _binder;
+            private readonly CallSite<Func<CallSite, object, TValue, object>> _site;
+            private readonly int _version;
+            private PythonTypeSlot _setattrSlot;
+            private ReflectedSlotProperty _slotProp;
+            private bool _unsupported, _dictSet;
+
+            public FastSetBinderHelper(CodeContext context, CallSite<Func<CallSite, object, TValue, object>> site, IPythonObject self, object value, PythonSetMemberBinder binder)
+                : base(context, self, value) {
+                _binder = binder;
+                _site = site;
+                _version = self.PythonType.Version;
+            }
+
+            protected override SetMemberDelegates<TValue> Finish() {
+                if (_unsupported) {
+                    return new SetMemberDelegates<TValue>(_context, OptimizedSetKind.None, _site, SymbolTable.StringToId(_binder.Name), _version, _setattrSlot, null);
+                } else if (_setattrSlot != null) {
+                    return new SetMemberDelegates<TValue>(_context, OptimizedSetKind.SetAttr, _site, SymbolTable.StringToId(_binder.Name), _version, _setattrSlot, null);
+                } else if (_slotProp != null) {
+                    return new SetMemberDelegates<TValue>(_context, OptimizedSetKind.UserSlot, _site, SymbolTable.StringToId(_binder.Name), _version, null, _slotProp.Setter);
+                } else if(_dictSet) {
+                    return new SetMemberDelegates<TValue>(_context, OptimizedSetKind.SetDict, _site, SymbolTable.StringToId(_binder.Name), _version, null, null);
+                } else {
+                    return new SetMemberDelegates<TValue>(_context, OptimizedSetKind.Error, _site, SymbolTable.StringToId(_binder.Name), _version, null, null);
+                }                
+            }
+            
+            public FastBindResult<Func<CallSite, object, TValue, object>> MakeSet() {
+                var cachedSets = GetCachedSets();
+
+                FastSetBase dlg;
+                lock (cachedSets) {
+                    var kvp = new SetMemberKey(typeof(TValue), _binder.Name);
+                    if (!cachedSets.TryGetValue(kvp, out dlg) || dlg._version != Instance.PythonType.Version) {
+                        dlg = Bind(_binder.Name);
+                        if (dlg != null) {
+                            cachedSets[kvp] = dlg;
+                        }
+                    }
+                }
+
+                if (dlg.ShouldUseNonOptimizedSite) {
+                    return new FastBindResult<Func<CallSite, object, TValue, object>>((Func<CallSite, object, TValue, object>)(object)dlg._func, false);
+                }
+                return new FastBindResult<Func<CallSite, object, TValue, object>>();
+            }
+
+            private Dictionary<SetMemberKey, FastSetBase> GetCachedSets() {
+                var cachedSets = Instance.PythonType._cachedSets;
+                if (cachedSets == null) {
+                    Interlocked.CompareExchange(
+                        ref Instance.PythonType._cachedSets,
+                        new Dictionary<SetMemberKey, FastSetBase>(),
+                        null);
+
+                    cachedSets = Instance.PythonType._cachedSets;
+                }
+                return cachedSets;
+            }
+
+            protected override void MakeSlotSetOrFallback(PythonTypeSlot dts, bool systemTypeResolution) {
+                _unsupported = true;
+            }
+
+            protected override void MakeSlotsSetTarget(ReflectedSlotProperty prop) {
+                _slotProp = prop;
+            }
+
+            protected override void MakeFallback() {
+            }
+
+            protected override void MakeSetAttrTarget(PythonTypeSlot dts) {
+                _setattrSlot = dts;
+            }
+
+            protected override void MakeDictionarySetTarget() {
+                _dictSet = true;
+            }
+        }
+
+        internal class MetaSetBinderHelper : SetBinderHelper<DynamicMetaObject> {
+            private readonly MetaUserObject/*!*/ _target;
+            private readonly DynamicMetaObject/*!*/ _value;
+            private readonly SetBindingInfo _info;
+            private DynamicMetaObject _result;
+            private string _resolution = "SetMember ";
+
+            public MetaSetBinderHelper(MetaUserObject/*!*/ target, DynamicMetaObject/*!*/ value, SetMemberBinder/*!*/ binder)
+                : base(PythonContext.GetPythonContext(binder).SharedContext, target.Value, value.Value) {
+                Assert.NotNull(target, value, binder);
+
+                _target = target;
+                _value = value;
+
+                _info = new SetBindingInfo(
+                    binder,
+                    new DynamicMetaObject[] { target, value },
+                    new ConditionalBuilder(binder),
+                    BindingHelpers.GetValidationInfo(target, Instance.PythonType)
+                );
+            }
+
+            protected override void MakeSetAttrTarget(PythonTypeSlot dts) {
+                ParameterExpression tmp = Ast.Variable(typeof(object), "boundVal");
+                _info.Body.AddVariable(tmp);
+
+                _info.Body.AddCondition(
+                    Ast.Call(
+                        typeof(PythonOps).GetMethod("SlotTryGetValue"),
+                        AstUtils.Constant(PythonContext.GetPythonContext(_info.Action).SharedContext),
+                        AstUtils.Convert(AstUtils.WeakConstant(dts), typeof(PythonTypeSlot)),
+                        AstUtils.Convert(_info.Args[0].Expression, typeof(object)),
+                        AstUtils.Convert(AstUtils.WeakConstant(Instance.PythonType), typeof(PythonType)),
+                        tmp
+                    ),
+                    Ast.Dynamic(
+                        PythonContext.GetPythonContext(_info.Action).Invoke(
+                            new CallSignature(2)
+                        ),
+                        typeof(object),
+                        PythonContext.GetCodeContext(_info.Action),
+                        tmp,
+                        AstUtils.Constant(_info.Action.Name),
+                        _info.Args[1].Expression
+                    )
+                );
+
+                _info.Body.FinishCondition(
+                    FallbackSetError(_info.Action, _info.Args[1]).Expression
+                );
+
+                _result = _info.Body.GetMetaObject(_target, _value);
+                _resolution += "SetAttr ";
+            }
+
+            protected override DynamicMetaObject Finish() {
+                PerfTrack.NoteEvent(PerfTrack.Categories.Binding, _resolution);
+                PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "UserSet");
+                
+                Debug.Assert(_result != null);
+
+                _result = new DynamicMetaObject(
+                    _result.Expression,
+                    _target.Restrict(Instance.GetType()).Restrictions.Merge(_result.Restrictions)
+                );
+                
+                Debug.Assert(!_result.Expression.Type.IsValueType);
+
+                return BindingHelpers.AddDynamicTestAndDefer(
+                    _info.Action,
+                    _result,
+                    new DynamicMetaObject[] { _target, _value },
+                    _info.Validation
+                );
+
+            }
+
+            protected override void MakeFallback() {
+                _info.Body.FinishCondition(
+                    FallbackSetError(_info.Action, _value).Expression
+                );
+
+                _result = _info.Body.GetMetaObject(_target, _value);
+            }
+
+            protected override void MakeDictionarySetTarget() {
+                _resolution += "Dictionary ";
+                FieldInfo fi = _info.Args[0].LimitType.GetField(NewTypeMaker.DictFieldName);
+                if (fi != null) {
+                    // return UserTypeOps.FastSetDictionaryValue(ref this._dict, name, value);
+                    _info.Body.FinishCondition(
+                        Ast.Call(
+                            typeof(UserTypeOps).GetMethod("FastSetDictionaryValue"),
+                            Ast.Field(
+                                Ast.Convert(_info.Args[0].Expression, _info.Args[0].LimitType),
+                                fi
+                            ),
+                            AstUtils.Constant(SymbolTable.StringToId(_info.Action.Name)),
+                            AstUtils.Convert(_info.Args[1].Expression, typeof(object))
+                        )
+                    );
+                } else {
+                    // return UserTypeOps.SetDictionaryValue(rule.Parameters[0], name, value);
+                    _info.Body.FinishCondition(
+                        Ast.Call(
+                            typeof(UserTypeOps).GetMethod("SetDictionaryValue"),
+                            Ast.Convert(_info.Args[0].Expression, typeof(IPythonObject)),
+                            AstUtils.Constant(SymbolTable.StringToId(_info.Action.Name)),
+                            AstUtils.Convert(_info.Args[1].Expression, typeof(object))
+                        )
+                    );
+                }
+
+                _result = _info.Body.GetMetaObject(_target, _value);
+            }
+
+            protected override void MakeSlotSetOrFallback(PythonTypeSlot dts, bool systemTypeResolution) {
+                if (systemTypeResolution) {
+                    _result = _target.Fallback(_info.Action, _value);
+                } else {
+                    _result = MakeSlotSet(_info, dts);
+                }
+            }
+            
+            protected override void MakeSlotsSetTarget(ReflectedSlotProperty prop) {
+                _resolution += "Slot ";
+                MakeSlotsSetTargetHelper(_info, prop, _value.Expression);
+                _result = _info.Body.GetMetaObject(_target, _value);
+            }
+
+            /// <summary>
+            /// Helper for falling back - if we have a base object fallback to it first (which can
+            /// then fallback to the calling site), otherwise fallback to the calling site.
+            /// </summary>
+            private DynamicMetaObject/*!*/ FallbackSetError(SetMemberBinder/*!*/ action, DynamicMetaObject/*!*/ value) {
+                if (_target._baseMetaObject != null) {
+                    return _target._baseMetaObject.BindSetMember(action, value);
+                } else if (action is PythonSetMemberBinder) {
+                    return new DynamicMetaObject(
+                        MakeTypeError(action.Name, Instance.PythonType),
+                        BindingRestrictions.Empty
+                    );
+                }
+
+                return _info.Action.FallbackSetMember(_target, value);
+            }
+
+        }
+
         private static bool IsStandardObjectMethod(PythonTypeSlot dts) {
             BuiltinMethodDescriptor bmd = dts as BuiltinMethodDescriptor;
             if (bmd == null) return false;
             return bmd.Template.Targets[0].DeclaringType == typeof(ObjectOps);
         }
 
-        private void MakeSetAttrTarget(SetBindingInfo bindingInfo, IPythonObject sdo, PythonTypeSlot dts) {
-            ParameterExpression tmp = Ast.Variable(typeof(object), "boundVal");
-            bindingInfo.Body.AddVariable(tmp);
-
-            bindingInfo.Body.AddCondition(
-                Ast.Call(
-                    typeof(PythonOps).GetMethod("SlotTryGetValue"),
-                    Ast.Constant(BinderState.GetBinderState(bindingInfo.Action).Context),
-                    AstUtils.Convert(AstUtils.WeakConstant(dts), typeof(PythonTypeSlot)),
-                    AstUtils.Convert(bindingInfo.Args[0].Expression, typeof(object)),
-                    AstUtils.Convert(AstUtils.WeakConstant(sdo.PythonType), typeof(PythonType)),
-                    tmp
-                ),
-                Ast.Dynamic(
-                    BinderState.GetBinderState(bindingInfo.Action).Invoke(
-                        new CallSignature(2)
-                    ),
-                    typeof(object),
-                    BinderState.GetCodeContext(bindingInfo.Action),
-                    tmp,
-                    Ast.Constant(bindingInfo.Action.Name),
-                    bindingInfo.Args[1].Expression
-                )
-            );
-
-            bindingInfo.Body.FinishCondition(
-                FallbackSetError(bindingInfo.Action, bindingInfo.Args[1]).Expression
-            );
-        }
-
         private static void MakeSlotsDeleteTarget(MemberBindingInfo/*!*/ info, ReflectedSlotProperty/*!*/ rsp) {
-            MakeSlotsSetTarget(info, rsp, Ast.Field(null, typeof(Uninitialized).GetField("Instance")));
+            MakeSlotsSetTargetHelper(info, rsp, Ast.Field(null, typeof(Uninitialized).GetField("Instance")));
         }
 
-        private static void MakeSlotsSetTarget(MemberBindingInfo/*!*/ info, ReflectedSlotProperty/*!*/ rsp, Expression/*!*/ value) {
+        private static void MakeSlotsSetTargetHelper(MemberBindingInfo/*!*/ info, ReflectedSlotProperty/*!*/ rsp, Expression/*!*/ value) {
             // type has __slots__ defined for this member, call the setter directly
             ParameterExpression tmp = Ast.Variable(typeof(object), "res");
             info.Body.AddVariable(tmp);
@@ -552,11 +1096,8 @@ namespace IronPython.Runtime.Binding {
                         Ast.Convert(
                             Ast.Assign(
                                 Ast.ArrayAccess(
-                                    Ast.Call(
-                                        Ast.Convert(info.Args[0].Expression, typeof(IObjectWithSlots)),
-                                        typeof(IObjectWithSlots).GetMethod("GetSlots")
-                                    ),
-                                    Ast.Constant(rsp.Index)
+                                    GetSlots(info.Args[0]),
+                                    AstUtils.Constant(rsp.Index)
                                 ),
                                 AstUtils.Convert(value, typeof(object))
                             ),
@@ -567,7 +1108,6 @@ namespace IronPython.Runtime.Binding {
                 )
             );
         }
-
 
         private static DynamicMetaObject MakeSlotSet(SetBindingInfo/*!*/ info, PythonTypeSlot/*!*/ dts) {
             ParameterExpression tmp = Ast.Variable(info.Args[1].Expression.Type, "res");
@@ -591,28 +1131,31 @@ namespace IronPython.Runtime.Binding {
                         Ast.Condition(
                             Ast.NotEqual(
                                 tmpSetter,
-                                Ast.Constant(null)
+                                AstUtils.Constant(null)
                             ),
                             Ast.Block(
                                 Ast.Assign(tmp, info.Args[1].Expression),
                                 Ast.Dynamic(
-                                    BinderState.GetBinderState(info.Action).InvokeOne,
-                                    typeof(void),
-                                    Ast.Constant(BinderState.GetBinderState(info.Action).Context),
+                                    PythonContext.GetPythonContext(info.Action).InvokeOne,
+                                    typeof(object),
+                                    AstUtils.Constant(PythonContext.GetPythonContext(info.Action).SharedContext),
                                     tmpSetter,
                                     info.Args[0].Expression,
                                     AstUtils.Convert(tmp, typeof(object))
                                 ),
-                                tmp
+                                Ast.Convert(
+                                    tmp,
+                                    typeof(object)
+                                )
                             ),
-                            Ast.Throw(Ast.Call(typeof(PythonOps).GetMethod("UnsetableProperty")), tmp.Type)
+                            Ast.Throw(Ast.Call(typeof(PythonOps).GetMethod("UnsetableProperty")), typeof(object))
                         )
                     )
                 );
                 return info.Body.GetMetaObject();
             }
 
-            CodeContext context = BinderState.GetBinderState(info.Action).Context;
+            CodeContext context = PythonContext.GetPythonContext(info.Action).SharedContext;
             Debug.Assert(context != null);
 
             info.Body.AddCondition(
@@ -620,7 +1163,7 @@ namespace IronPython.Runtime.Binding {
                     Ast.Assign(tmp, info.Args[1].Expression),
                     Ast.Call(
                         typeof(PythonOps).GetMethod("SlotTrySetValue"),
-                        Ast.Constant(context),
+                        AstUtils.Constant(context),
                         AstUtils.Convert(AstUtils.WeakConstant(dts), typeof(PythonTypeSlot)),
                         AstUtils.Convert(info.Args[0].Expression, typeof(object)),
                         Ast.Convert(
@@ -635,21 +1178,9 @@ namespace IronPython.Runtime.Binding {
                         AstUtils.Convert(tmp, typeof(object))
                     )
                 ),
-                tmp
+                AstUtils.Convert(tmp, typeof(object))
             );
             return null;
-        }
-
-        private static void MakeDictionarySetTarget(SetBindingInfo/*!*/ info) {
-            // return UserTypeOps.SetDictionaryValue(rule.Parameters[0], name, value);
-            info.Body.FinishCondition(
-                Ast.Call(
-                    typeof(UserTypeOps).GetMethod("SetDictionaryValue"),
-                    Ast.Convert(info.Args[0].Expression, typeof(IPythonObject)),
-                    AstUtils.Constant(SymbolTable.StringToId(info.Action.Name)),
-                    AstUtils.Convert(info.Args[1].Expression, typeof(object))
-                )
-            );
         }
 
         #endregion
@@ -657,7 +1188,7 @@ namespace IronPython.Runtime.Binding {
         #region Delete Member Helpers
 
         private DynamicMetaObject/*!*/ MakeDeleteMemberRule(DeleteBindingInfo/*!*/ info) {
-            CodeContext context = BinderState.GetBinderState(info.Action).Context;
+            CodeContext context = PythonContext.GetPythonContext(info.Action).SharedContext;
             DynamicMetaObject self = info.Args[0].Restrict(info.Args[0].GetRuntimeType());
 
             IPythonObject sdo = info.Args[0].Value as IPythonObject;
@@ -666,8 +1197,9 @@ namespace IronPython.Runtime.Binding {
                     Ast.Throw(
                         Ast.New(
                             typeof(ArgumentTypeException).GetConstructor(new Type[] { typeof(string) }),
-                            Ast.Constant("can't delete __class__ attribute")
-                        )
+                            AstUtils.Constant("can't delete __class__ attribute")
+                        ),
+                        typeof(object)
                     ),
                     self.Restrictions
                 );
@@ -690,7 +1222,7 @@ namespace IronPython.Runtime.Binding {
                 MakeSlotDelete(info, dts);
             }
 
-            if (!info.Body.IsFinal && sdo.HasDictionary) {
+            if (!info.Body.IsFinal && sdo.PythonType.HasDictionary) {
                 // finally if we have a dictionary set the value there.
                 MakeDictionaryDeleteTarget(info);
             }
@@ -738,16 +1270,16 @@ namespace IronPython.Runtime.Binding {
                         Ast.Condition(
                             Ast.NotEqual(
                                 tmpDeleter,
-                                Ast.Constant(null)
-                            ),
+                                AstUtils.Constant(null)
+                            ),                            
                             Ast.Dynamic(
-                                BinderState.GetBinderState(info.Action).InvokeOne,
-                                typeof(void),
-                                Ast.Constant(BinderState.GetBinderState(info.Action).Context),
+                                PythonContext.GetPythonContext(info.Action).InvokeOne,
+                                typeof(object),
+                                AstUtils.Constant(PythonContext.GetPythonContext(info.Action).SharedContext),
                                 tmpDeleter,
                                 info.Args[0].Expression
                             ),
-                            Ast.Throw(Ast.Call(typeof(PythonOps).GetMethod("UndeletableProperty")))
+                            Ast.Throw(Ast.Call(typeof(PythonOps).GetMethod("UndeletableProperty")), typeof(object))
                         )
                     )
                 );
@@ -757,7 +1289,7 @@ namespace IronPython.Runtime.Binding {
             info.Body.AddCondition(
                 Ast.Call(
                     typeof(PythonOps).GetMethod("SlotTryDeleteValue"),
-                    Ast.Constant(BinderState.GetBinderState(info.Action).Context),
+                    AstUtils.Constant(PythonContext.GetPythonContext(info.Action).SharedContext),
                     AstUtils.Convert(AstUtils.WeakConstant(dts), typeof(PythonTypeSlot)),
                     AstUtils.Convert(info.Args[0].Expression, typeof(object)),
                     Ast.Convert(
@@ -770,7 +1302,7 @@ namespace IronPython.Runtime.Binding {
                         typeof(PythonType)
                     )
                 ),
-                Ast.Constant(null)
+                AstUtils.Constant(null)
             );
             return null;
         }
@@ -783,18 +1315,18 @@ namespace IronPython.Runtime.Binding {
             info.Body.AddCondition(
                 Ast.Call(
                     TypeInfo._PythonOps.SlotTryGetBoundValue,
-                    Ast.Constant(BinderState.GetBinderState(info.Action).Context),
+                    AstUtils.Constant(PythonContext.GetPythonContext(info.Action).SharedContext),
                     AstUtils.Convert(AstUtils.WeakConstant(dts), typeof(PythonTypeSlot)),
                     AstUtils.Convert(info.Args[0].Expression, typeof(object)),
                     AstUtils.Convert(AstUtils.WeakConstant(self.PythonType), typeof(PythonType)),
                     tmp
                 ),
                 Ast.Dynamic(
-                    BinderState.GetBinderState(info.Action).InvokeOne,
+                    PythonContext.GetPythonContext(info.Action).InvokeOne,
                     typeof(object),
-                    BinderState.GetCodeContext(info.Action),
+                    PythonContext.GetCodeContext(info.Action),
                     tmp,
-                    Ast.Constant(info.Action.Name)
+                    AstUtils.Constant(info.Action.Name)
                 )
             );
         }
@@ -817,7 +1349,7 @@ namespace IronPython.Runtime.Binding {
         /// Looks up the associated PythonTypeSlot from the object.  Indicates if the result
         /// came from a standard .NET type in which case we will fallback to the sites binder.
         /// </summary>
-        private PythonTypeSlot FindSlot(CodeContext/*!*/ context, string/*!*/ name, IPythonObject/*!*/ sdo, out bool isOldStyle, out bool systemTypeResolution) {
+        private static PythonTypeSlot FindSlot(CodeContext/*!*/ context, string/*!*/ name, IPythonObject/*!*/ sdo, out bool isOldStyle, out bool systemTypeResolution) {
             PythonTypeSlot foundSlot = null;
             isOldStyle = false;                // if we're mixed new-style/old-style we have to do a slower check
             systemTypeResolution = false;      // if we pick up the property from a System type we fallback
@@ -895,7 +1427,7 @@ namespace IronPython.Runtime.Binding {
         /// Helper for falling back - if we have a base object fallback to it first (which can
         /// then fallback to the calling site), otherwise fallback to the calling site.
         /// </summary>
-        private DynamicMetaObject/*!*/ FallbackGetError(DynamicMetaObjectBinder/*!*/ action, Expression codeContext) {
+        private DynamicMetaObject/*!*/ FallbackGetError(DynamicMetaObjectBinder/*!*/ action, DynamicMetaObject codeContext) {
             if (_baseMetaObject != null) {
                 return Fallback(action, codeContext);
             } else if (BindingHelpers.IsNoThrow(action)) {
@@ -910,26 +1442,8 @@ namespace IronPython.Runtime.Binding {
                 );
             }
 
-            return GetMemberFallback(action, codeContext);
+            return GetMemberFallback(this, action, codeContext);
         }
-
-        /// <summary>
-        /// Helper for falling back - if we have a base object fallback to it first (which can
-        /// then fallback to the calling site), otherwise fallback to the calling site.
-        /// </summary>
-        private DynamicMetaObject/*!*/ FallbackSetError(SetMemberBinder/*!*/ action, DynamicMetaObject/*!*/ value) {
-            if (_baseMetaObject != null) {
-                return _baseMetaObject.BindSetMember(action, value);
-            } else if (action is PythonSetMemberBinder) {
-                return new DynamicMetaObject(
-                    MakeTypeError(action.Name, Value.PythonType),
-                    BindingRestrictions.Empty
-                );
-            }
-
-            return action.FallbackSetMember(this, value);
-        }
-
 
         /// <summary>
         /// Helper for falling back - if we have a base object fallback to it first (which can
@@ -949,5 +1463,19 @@ namespace IronPython.Runtime.Binding {
         }
 
         #endregion
+
+        private static Expression/*!*/ GetSlots(DynamicMetaObject/*!*/ self) {
+            FieldInfo fi = self.LimitType.GetField(NewTypeMaker.SlotsAndWeakRefFieldName);
+            if (fi != null) {
+                return Ast.Field(
+                    Ast.Convert(self.Expression, self.LimitType),
+                    fi
+                );
+            }
+            return Ast.Call(
+                Ast.Convert(self.Expression, typeof(IPythonObject)),
+                typeof(IPythonObject).GetMethod("GetSlots")
+            );
+        }
     }
 }

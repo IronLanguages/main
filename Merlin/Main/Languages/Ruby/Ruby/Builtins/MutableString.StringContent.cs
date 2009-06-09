@@ -16,8 +16,9 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using Microsoft.Scripting.Ast;
 using Microsoft.Scripting.Utils;
+using IronRuby.Runtime;
+using System.IO;
 
 namespace IronRuby.Builtins {
     public partial class MutableString {
@@ -25,65 +26,50 @@ namespace IronRuby.Builtins {
         private class StringContent : Content {
             private readonly string/*!*/ _data;
 
-            public StringContent(MutableString/*!*/ owner, string/*!*/ data)
+            public StringContent(string/*!*/ data, MutableString owner) 
                 : base(owner) {
                 Assert.NotNull(data);
                 _data = data;
             }
 
-            protected virtual BinaryContent/*!*/ SwitchToBinary() {
-                return WrapContent(DataToBytes());
+            internal BinaryContent/*!*/ SwitchToBinary() {
+                var bytes = DataToBytes();
+                return WrapContent(bytes, bytes.Length);
             }
 
-            private StringBuilderContent/*!*/ SwitchToMutable() {
-                return WrapContent(new StringBuilder(_data));
+            internal BinaryContent/*!*/ SwitchToBinary(int additionalCapacity) {
+                // TODO:
+                return SwitchToBinary();
             }
 
-            #region Data Operations
-
-            protected byte[] DataToBytes() {
-                return _data.Length > 0 ? _owner._encoding.GetBytes(_data) : IronRuby.Runtime.Utils.EmptyBytes;
+            private CharArrayContent/*!*/ SwitchToMutable() {
+                return WrapContent(_data.ToCharArray(), _data.Length);
             }
 
-            // TODO:
-            public int DataCompareTo(string/*!*/ other) {
-                int min = _data.Length, defaultResult;
-                if (min < other.Length) {
-                    defaultResult = -1;
-                } else if (min > other.Length) {
-                    min = other.Length;
-                    defaultResult = +1;
-                } else {
-                    defaultResult = 0;
-                }
-
-                for (int i = 0; i < min; i++) {
-                    if (_data[i] != other[i]) {
-                        return (int)_data[i] - other[i];
-                    }
-                }
-
-                return defaultResult;
+            private CharArrayContent/*!*/ SwitchToMutable(int additionalCapacity) {
+                // TODO:
+                return SwitchToMutable();
             }
 
-            #endregion
+            protected byte[]/*!*/ DataToBytes() {
+                return _data.Length > 0 ? _owner._encoding.StrictEncoding.GetBytes(_data) : Utils.EmptyBytes;
+            }
 
             #region GetHashCode, Length, Clone (read-only)
 
-            public override int GetHashCode() {
-                // TODO: Duping our hash function from the StringBuilder case to ensure that we return the same hash value for "get".hash vs. "GET".downcase.hash
-                int result = 5381;
-                for (int i = 0; i < _data.Length; i++) {
-                    result = unchecked(((result << 5) + result) ^ _data[i]);
-                }
-                return result;
+            public override int GetHashCode(out int binarySum) {
+                return _data.GetValueHashCode(out binarySum);
+            }
+
+            public override int GetBinaryHashCode(out int binarySum) {
+                return IsBinaryEncoded ? GetHashCode(out binarySum) : SwitchToBinary().GetBinaryHashCode(out binarySum);
             }
 
             public override bool IsBinary {
                 get { return false; }
             }
 
-            public override int Length {
+            public override int Count {
                 get { return _data.Length; }
             }
 
@@ -96,30 +82,40 @@ namespace IronRuby.Builtins {
             }
 
             public override int GetByteCount() {
-                return (_data.Length > 0) ? SwitchToBinary().DataLength : 0;
+                return (IsBinaryEncoded) ? _data.Length : (_data.Length == 0) ? 0 : SwitchToBinary().GetByteCount();
             }
 
-            public override void GetDebugView(out string/*!*/ value, out string/*!*/ type) {
-                value = _data;
-                type = "String (immutable)";
+            public override Content/*!*/ Clone() {
+                return new StringContent(_data, _owner);
             }
 
-            public override Content/*!*/ Clone(MutableString/*!*/ newOwner) {
-                return new StringContent(newOwner, _data);
+            public override void TrimExcess() {
+                // nop
+            }
+
+            public override int GetCapacity() {
+                return _data.Length;
+            }
+
+            public override void SetCapacity(int capacity) {
+                if (capacity < _data.Length) {
+                    throw new InvalidOperationException();
+                }
+                SwitchToMutable(capacity - _data.Length);
             }
 
             #endregion
 
             #region Conversions (read-only)
 
-            // internal representation is immutable so we can pass it outside:
             public override string/*!*/ ConvertToString() {
+                // internal representation is immutable so we can pass it outside:
                 return _data;
             }
 
             public override byte[]/*!*/ ConvertToBytes() {
                 var binary = SwitchToBinary();
-                return binary.DataGetSlice(0, binary.DataLength);
+                return binary.GetBinarySlice(0, binary.GetByteCount());
             }
 
             public override string/*!*/ ToString() {
@@ -130,13 +126,25 @@ namespace IronRuby.Builtins {
                 return DataToBytes();
             }
 
+            internal override byte[]/*!*/ GetByteArray() {
+                return SwitchToBinary().GetByteArray();
+            }
+
+            public override void SwitchToBinaryContent() {
+                SwitchToBinary();
+            }
+
+            public override void SwitchToStringContent() {
+                // nop
+            }
+
             public override GenericRegex/*!*/ ToRegularExpression(RubyRegexOptions options) {
                 return new StringRegex(_data, options);
             }
 
             public override Content/*!*/ EscapeRegularExpression() {
                 StringBuilder sb = StringRegex.EscapeToStringBuilder(_data);
-                return (sb != null) ? new StringContent(_owner, sb.ToString()) : this;
+                return (sb != null) ? new StringContent(sb.ToString(), _owner) : this;
             }
 
             #endregion
@@ -144,7 +152,8 @@ namespace IronRuby.Builtins {
             #region CompareTo (read-only)
 
             public override int CompareTo(string/*!*/ str) {
-                return DataCompareTo(str);
+                // TODO: Ruby compares characters w/o taking locale into account:
+                return _data.ValueCompareTo(str);
             }
 
             public override int CompareTo(byte[]/*!*/ bytes) {
@@ -164,17 +173,7 @@ namespace IronRuby.Builtins {
             }
 
             public override byte GetByte(int index) {
-                return SwitchToBinary().DataGetByte(index);
-            }
-
-            public override char PeekChar(int index) {
-                return _data[index];
-            }
-
-            public override byte PeekByte(int index) {
-                byte[] bytes = new byte[_owner._encoding.GetMaxByteCount(1)];
-                _owner._encoding.GetBytes(_data, index, 1, bytes, 0);
-                return bytes[0];
+                return SwitchToBinary().GetByte(index);
             }
 
             public override string/*!*/ GetStringSlice(int start, int count) {
@@ -182,11 +181,11 @@ namespace IronRuby.Builtins {
             }
 
             public override byte[]/*!*/ GetBinarySlice(int start, int count) {
-                return SwitchToBinary().DataGetSlice(start, count);
+                return SwitchToBinary().GetBinarySlice(start, count);
             }
 
             public override Content/*!*/ GetSlice(int start, int count) {
-                return new StringContent(_owner, _data.Substring(start, count));
+                return new StringContent(_data.Substring(start, count), _owner);
             }
 
             #endregion
@@ -198,7 +197,7 @@ namespace IronRuby.Builtins {
             }
 
             public override int IndexOf(byte b, int start, int count) {
-                return SwitchToBinary().DataIndexOf(b, start, count);
+                return SwitchToBinary().IndexOf(b, start, count);
             }
 
             public override int IndexOf(string/*!*/ str, int start, int count) {
@@ -206,7 +205,7 @@ namespace IronRuby.Builtins {
             }
 
             public override int IndexOf(byte[]/*!*/ bytes, int start, int count) {
-                return SwitchToBinary().DataIndexOf(bytes, start, count);
+                return SwitchToBinary().IndexOf(bytes, start, count);
             }
 
             public override int IndexIn(Content/*!*/ str, int start, int count) {
@@ -222,7 +221,7 @@ namespace IronRuby.Builtins {
             }
 
             public override int LastIndexOf(byte b, int start, int count) {
-                return SwitchToBinary().DataLastIndexOf(b, start, count);
+                return SwitchToBinary().LastIndexOf(b, start, count);
             }
 
             public override int LastIndexOf(string/*!*/ str, int start, int count) {
@@ -230,7 +229,7 @@ namespace IronRuby.Builtins {
             }
 
             public override int LastIndexOf(byte[]/*!*/ bytes, int start, int count) {
-                return SwitchToBinary().DataLastIndexOf(bytes, start, count);
+                return SwitchToBinary().LastIndexOf(bytes, start, count);
             }
 
             public override int LastIndexIn(Content/*!*/ str, int start, int count) {
@@ -241,68 +240,80 @@ namespace IronRuby.Builtins {
 
             #region Append
 
-            public override Content/*!*/ Append(char c, int repeatCount) {
-                return SwitchToMutable().DataAppend(c, repeatCount);
+            public override void Append(char c, int repeatCount) {
+                SwitchToMutable(repeatCount).Append(c, repeatCount);
             }
 
-            public override Content/*!*/ Append(byte b, int repeatCount) {
-                return SwitchToBinary().DataAppend(b, repeatCount);
+            public override void Append(byte b, int repeatCount) {
+                SwitchToBinary(repeatCount).Append(b, repeatCount);
             }
 
-            public override Content/*!*/ Append(string/*!*/ str, int start, int count) {
-                return SwitchToMutable().DataAppend(str, start, count);
+            public override void Append(string/*!*/ str, int start, int count) {
+                SwitchToMutable(count).Append(str, start, count);
             }
 
-            public override Content/*!*/ Append(byte[]/*!*/ bytes, int start, int count) {
-                return SwitchToBinary().DataAppend(bytes, start, count);
+            public override void Append(char[]/*!*/ chars, int start, int count) {
+                SwitchToMutable(count).Append(chars, start, count);
             }
 
-            public override Content/*!*/ AppendFormat(IFormatProvider provider, string/*!*/ format, object[]/*!*/ args) {
-                return SwitchToMutable().DataAppendFormat(provider, format, args);
+            public override void Append(byte[]/*!*/ bytes, int start, int count) {
+                SwitchToBinary(count).Append(bytes, start, count);
             }
 
-            public override Content/*!*/ AppendTo(Content/*!*/ str, int start, int count) {
-                return str.Append(_data, start, count);
+            public override void Append(Stream/*!*/ stream, int count) {
+                SwitchToBinary(count).Append(stream, count);
+            }
+
+            public override void AppendFormat(IFormatProvider provider, string/*!*/ format, object[]/*!*/ args) {
+                SwitchToMutable().AppendFormat(provider, format, args);
+            }
+
+            public override void AppendTo(Content/*!*/ str, int start, int count) {
+                str.Append(_data, start, count);
             }
 
             #endregion
 
             #region Insert
 
-            public override Content/*!*/ Insert(int index, char c) {
-                return SwitchToMutable().DataInsert(index, c);
+            public override void Insert(int index, char c) {
+                SwitchToMutable().Insert(index, c);
             }
 
-            public override Content/*!*/ Insert(int index, byte b) {
-                return SwitchToBinary().DataInsert(index, b);
+            public override void Insert(int index, byte b) {
+                SwitchToBinary().Insert(index, b);
             }
 
-            public override Content/*!*/ Insert(int index, string/*!*/ str, int start, int count) {
-                return SwitchToMutable().DataInsert(index, str, start, count);
+            public override void Insert(int index, string/*!*/ str, int start, int count) {
+                SwitchToMutable().Insert(index, str, start, count);
             }
 
-            public override Content/*!*/ Insert(int index, byte[]/*!*/ bytes, int start, int count) {
-                return SwitchToBinary().DataInsert(index, bytes, start, count);
+            public override void Insert(int index, char[]/*!*/ chars, int start, int count) {
+                SwitchToMutable().Insert(index, chars, start, count);
             }
 
-            public override Content/*!*/ InsertTo(Content/*!*/ str, int index, int start, int count) {
-                return str.Insert(index, _data, start, count);
+            public override void Insert(int index, byte[]/*!*/ bytes, int start, int count) {
+                SwitchToBinary().Insert(index, bytes, start, count);
             }
 
-            public override Content/*!*/ SetItem(int index, byte b) {
-                return SwitchToBinary().DataSetByte(index, b);
+            public override void InsertTo(Content/*!*/ str, int index, int start, int count) {
+                str.Insert(index, _data, start, count);
             }
 
-            public override Content/*!*/ SetItem(int index, char c) {
-                return SwitchToMutable().DataSetChar(index, c);
+            public override void SetItem(int index, byte b) {
+                SwitchToBinary().SetItem(index, b);
+            }
+
+            public override void SetItem(int index, char c) {
+                SwitchToMutable().DataSetChar(index, c);
             }
 
             #endregion
 
             #region Remove
 
-            public override Content/*!*/ Remove(int start, int count) {
-                return SwitchToMutable().DataRemove(start, count);
+            public override void Remove(int start, int count) {
+                SwitchToMutable().Remove(start, count);
             }
 
             #endregion

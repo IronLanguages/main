@@ -1,0 +1,3 @@
+fails:Dir.glob matches regexp special [
+fails:Dir.glob matches regexp special }
+fails:Dir.glob matches special characters by escaping with a backslash with '\<character>'

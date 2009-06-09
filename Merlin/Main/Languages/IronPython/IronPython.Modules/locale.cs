@@ -80,7 +80,7 @@ LC_TIME:      sets the locale for time functions [unused]
 
 If locale is None then the current setting is returned.
 ")]
-        public static object setlocale(CodeContext/*!*/ context, object category, [DefaultParameterValue(null)]string locale) {
+        public static object setlocale(CodeContext/*!*/ context, int category, [DefaultParameterValue(null)]string locale) {
             LocaleInfo li = GetLocaleInfo(context);
             if (locale == null) {
                 return li.GetLocale(context, category);
@@ -153,8 +153,8 @@ Currently returns the string unmodified")]
                 return conv;
             }
 
-            public string SetLocale(CodeContext/*!*/ context, object category, string locale) {
-                switch ((LocaleCategories)(int)category) {
+            public string SetLocale(CodeContext/*!*/ context, int category, string locale) {
+                switch ((LocaleCategories)category) {
                     case LocaleCategories.All:
                         SetLocale(context, LC_COLLATE, locale);
                         SetLocale(context, LC_CTYPE, locale);
@@ -181,8 +181,8 @@ Currently returns the string unmodified")]
 
             }
 
-            public string GetLocale(CodeContext/*!*/ context, object category) {
-                switch ((LocaleCategories)(int)category) {
+            public string GetLocale(CodeContext/*!*/ context, int category) {
+                switch ((LocaleCategories)category) {
                     case LocaleCategories.All:
                         if (Collate == CType &&
                             Collate == Time &&
@@ -210,7 +210,7 @@ Currently returns the string unmodified")]
             }
 
             public string CultureToName(CultureInfo culture) {
-                if (culture == CultureInfo.InvariantCulture) {
+                if (culture == PythonContext.CCulture) {
                     return "C";
                 }
                 
@@ -219,7 +219,7 @@ Currently returns the string unmodified")]
 
             private CultureInfo LocaleToCulture(CodeContext/*!*/ context, string locale) {
                 if (locale == "C") {
-                    return CultureInfo.InvariantCulture;
+                    return PythonContext.CCulture;
                 }
 
                 locale = locale.Replace('_', '-');

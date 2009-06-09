@@ -16,10 +16,11 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using Microsoft.Scripting;
 using System.Threading;
+using IronRuby.Builtins;
+using Microsoft.Scripting;
 
-namespace IronRuby {
+namespace IronRuby.Runtime {
 
     [Serializable]
     public sealed class RubyOptions : LanguageOptions {
@@ -32,10 +33,14 @@ namespace IronRuby {
         private readonly bool _loadFromDisk;
         private readonly bool _profile;
         private readonly bool _hasSearchPaths;
+        private readonly bool _noAssemblyResolveHook;
         private readonly RubyCompatibility _compatibility;
+        private readonly RubyEncoding _kcode = null;
+
 #if DEBUG
-        private static bool _UseThreadAbortForSyncRaise;
-        private static bool _CompileRegexps;
+        public static bool UseThreadAbortForSyncRaise;
+        public static bool CompileRegexps;
+        public static bool ShowRules;
 #endif
 
         public ReadOnlyCollection<string>/*!*/ Arguments {
@@ -66,6 +71,10 @@ namespace IronRuby {
             get { return _profile; }
         }
 
+        public bool NoAssemblyResolveHook {
+            get { return _noAssemblyResolveHook; }
+        }
+
         public ReadOnlyCollection<string>/*!*/ LibraryPaths {
             get { return _libraryPaths; }
         }
@@ -78,15 +87,9 @@ namespace IronRuby {
             get { return _compatibility; }
         }
 
-#if DEBUG
-        public static bool UseThreadAbortForSyncRaise {
-            get { return _UseThreadAbortForSyncRaise; }
+        public RubyEncoding KCode {
+            get { return _kcode; }
         }
-
-        public static bool CompileRegexps {
-            get { return _CompileRegexps; }
-        }
-#endif
 
         public RubyOptions(IDictionary<string, object>/*!*/ options)
             : base(options) {
@@ -98,12 +101,15 @@ namespace IronRuby {
             _savePath = GetOption(options, "SavePath", (string)null);
             _loadFromDisk = GetOption(options, "LoadFromDisk", false);
             _profile = GetOption(options, "Profile", false);
+            _noAssemblyResolveHook = GetOption(options, "NoAssemblyResolveHook", false);
             _libraryPaths = GetStringCollectionOption(options, "LibraryPaths", ';', ',') ?? new ReadOnlyCollection<string>(new[] { "." });
             _hasSearchPaths = GetOption<object>(options, "SearchPaths", null) != null;
             _compatibility = GetCompatibility(options, "Compatibility", RubyCompatibility.Default);
-#if DEBUG
-            _UseThreadAbortForSyncRaise = GetOption(options, "UseThreadAbortForSyncRaise", false);
-            _CompileRegexps = GetOption(options, "CompileRegexps", false);
+
+#if !SILVERLIGHT
+            if (_compatibility == RubyCompatibility.Ruby18) {
+                _kcode = GetKCoding(options, "KCode", null);
+            }
 #endif
         }
 
@@ -127,5 +133,20 @@ namespace IronRuby {
             }
             return defaultValue;
         }
+
+#if !SILVERLIGHT
+        private static RubyEncoding GetKCoding(IDictionary<string, object>/*!*/ options, string/*!*/ name, RubyEncoding defaultValue) {
+            object value;
+            if (options != null && options.TryGetValue(name, out value)) {
+                RubyEncoding rubyEncoding = value as RubyEncoding;
+                if (rubyEncoding != null && rubyEncoding.IsKCoding) {
+                    return rubyEncoding;
+                }
+
+                throw new ArgumentException(String.Format("Invalid value for option {0}. Specify one of RubyEncoding.KCode* encodings.", name));
+            }
+            return defaultValue;
+        }
+#endif
     }
 }

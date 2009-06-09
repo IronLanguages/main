@@ -1,1 +1,0 @@
-fails:File::Stat#initialize creates a File::Stat object for the given file

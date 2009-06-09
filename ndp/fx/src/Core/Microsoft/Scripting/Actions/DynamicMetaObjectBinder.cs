@@ -14,6 +14,7 @@
  * ***************************************************************************/
 
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Dynamic.Utils;
 using System.Linq.Expressions;
 using System.Linq.Expressions.Compiler;
@@ -31,34 +32,26 @@ namespace System.Dynamic {
     /// </remarks>
     public abstract class DynamicMetaObjectBinder : CallSiteBinder {
 
-        #region Standard Binder Kinds
-
-        internal const int OperationBinderHash = 0x4000000;
-        internal const int UnaryOperationBinderHash = 0x8000000;
-        internal const int BinaryOperationBinderHash = 0xc000000;
-        internal const int GetMemberBinderHash = 0x10000000;
-        internal const int SetMemberBinderHash = 0x14000000;
-        internal const int DeleteMemberBinderHash = 0x18000000;
-        internal const int GetIndexBinderHash = 0x1c000000;
-        internal const int SetIndexBinderHash = 0x20000000;
-        internal const int DeleteIndexBinderHash = 0x24000000;
-        internal const int InvokeMemberBinderHash = 0x28000000;
-        internal const int ConvertBinderHash = 0x2c000000;
-        internal const int CreateInstanceBinderHash = 0x30000000;
-        internal const int InvokeBinderHash = 0x34000000;
-        internal const int BinaryOperationOnMemberBinderHash = 0x38000000;
-        internal const int BinaryOperationOnIndexBinderHash = 0x3c000000;
-        internal const int UnaryOperationOnMemberBinderHash = 0x40000000;
-        internal const int UnaryOperationOnIndexBinderHash = 0x44000000;
-
-        #endregion
-
         #region Public APIs
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DynamicMetaObjectBinder"/> class.
         /// </summary>
         protected DynamicMetaObjectBinder() {
+        }
+
+        /// <summary>
+        /// The result type of the operation.
+        /// </summary>
+        public virtual Type ReturnType {
+            get { return typeof(object); }
+        }
+
+        /// <summary>
+        /// Gets the value indicating if we should validate the result of the binding.
+        /// </summary>
+        protected virtual bool ValidateBindingResult {
+            get { return true; }
         }
 
         /// <summary>
@@ -78,7 +71,26 @@ namespace System.Dynamic {
                 throw new InvalidOperationException();
             }
 
-            DynamicMetaObject target = ObjectToMetaObject(args[0], parameters[0]);
+            // Ensure that the binder's ReturnType matches CallSite's return
+            // type. We do this so meta objects and language binders can
+            // compose trees together without needing to insert converts.
+            //
+            // For now, we need to allow binders to opt out of this check.
+            Type expectedResult;
+            if (ValidateBindingResult) {
+                expectedResult = ReturnType;
+
+                if (returnLabel.Type != typeof(void) &&
+                    !TypeUtils.AreReferenceAssignable(returnLabel.Type, expectedResult)) {
+                    throw Error.BinderNotCompatibleWithCallSite(expectedResult, this, returnLabel.Type);
+                }
+            } else {
+                // We have to at least make sure it works with the CallSite's
+                // type to build the return.
+                expectedResult = returnLabel.Type;
+            }
+
+            DynamicMetaObject target = DynamicMetaObject.Create(args[0], parameters[0]);
             DynamicMetaObject[] metaArgs = CreateArgumentMetaObjects(args, parameters);
 
             DynamicMetaObject binding = Bind(target, metaArgs);
@@ -90,17 +102,34 @@ namespace System.Dynamic {
             Expression body = binding.Expression;
             BindingRestrictions restrictions = binding.Restrictions;
 
-            // if target is an IDO we may have a target-specific binding. 
-            // so it makes sense to restrict on the target's type.
-            // ideally IDO's should do this, but they often miss this.
-            if (args[0] as IDynamicMetaObjectProvider != null) {
-                restrictions = BindingRestrictions.GetTypeRestriction(parameters[0], args[0].GetType()).Merge(restrictions);
+            // Ensure the result matches the expected result type.
+            if (expectedResult != typeof(void) &&
+                !TypeUtils.AreReferenceAssignable(expectedResult, body.Type)) {
+
+                //
+                // Blame the last person that handled the result: assume it's
+                // the dynamic object (if any), otherwise blame the language.
+                //
+                if (target.Value is IDynamicMetaObjectProvider) {
+                    throw Error.DynamicObjectResultNotAssignable(body.Type, target.Value.GetType(), this, expectedResult);
+                } else {
+                    throw Error.DynamicBinderResultNotAssignable(body.Type, this, expectedResult);
+                }
+            }
+
+            // if the target is IDO, standard binders ask it to bind the rule so we may have a target-specific binding. 
+            // it makes sense to restrict on the target's type in such cases.
+            // ideally IDO metaobjects should do this, but they often miss that type of "this" is significant.
+            if (IsStandardBinder && args[0] as IDynamicMetaObjectProvider != null) {
+                VerifyRestrictions(restrictions);
             }
 
             restrictions = AddRemoteObjectRestrictions(restrictions, args, parameters);
 
-            // Add the return label
-            body = AddReturn(body, returnLabel, body.Type);
+            // Add the return
+            if (body.NodeType != ExpressionType.Goto) {
+                body = Expression.Return(returnLabel, body);
+            }
 
             // Finally, add restrictions
             if (restrictions != BindingRestrictions.Empty) {
@@ -110,12 +139,18 @@ namespace System.Dynamic {
             return body;
         }
 
+        private static void VerifyRestrictions(BindingRestrictions restrictions) {
+            if (restrictions == BindingRestrictions.Empty) {
+                throw new InvalidOperationException();
+            }
+        }
+
         private static DynamicMetaObject[] CreateArgumentMetaObjects(object[] args, ReadOnlyCollection<ParameterExpression> parameters) {
             DynamicMetaObject[] mos;
             if (args.Length != 1) {
                 mos = new DynamicMetaObject[args.Length - 1];
                 for (int i = 1; i < args.Length; i++) {
-                    mos[i - 1] = ObjectToMetaObject(args[i], parameters[i]);
+                    mos[i - 1] = DynamicMetaObject.Create(args[i], parameters[i]);
                 }
             } else {
                 mos = DynamicMetaObject.EmptyMetaObjects;
@@ -166,19 +201,6 @@ namespace System.Dynamic {
             return restrictions;
         }
 
-        private static DynamicMetaObject ObjectToMetaObject(object argValue, Expression parameterExpression) {
-            IDynamicMetaObjectProvider ido = argValue as IDynamicMetaObjectProvider;
-#if !SILVERLIGHT
-            if (ido != null && !RemotingServices.IsObjectOutOfAppDomain(argValue)) {
-#else
-            if (ido != null) {
-#endif
-                return ido.GetMetaObject(parameterExpression);
-            } else {
-                return new DynamicMetaObject(parameterExpression, BindingRestrictions.Empty, argValue);
-            }
-        }
-
         /// <summary>
         /// When overridden in the derived class, performs the binding of the dynamic operation.
         /// </summary>
@@ -186,6 +208,19 @@ namespace System.Dynamic {
         /// <param name="args">An array of arguments of the dynamic operation.</param>
         /// <returns>The <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
         public abstract DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args);
+
+        /// <summary>
+        /// Gets an expression that will cause the binding to be updated. It
+        /// indicates that the expression's binding is no longer valid.
+        /// This is typically used when the "version" of a dynamic object has
+        /// changed.
+        /// </summary>
+        /// <param name="type">The <see cref="Expression.Type">Type</see> property of the resulting expression; any type is allowed.</param>
+        /// <returns>The update expression.</returns>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
+        public Expression GetUpdateExpression(Type type) {
+            return Expression.Goto(CallSiteBinder.UpdateLabel, type);
+        }
 
         /// <summary>
         /// Defers the binding of the operation until later time when the runtime values of all dynamic operation arguments have been computed.
@@ -197,14 +232,11 @@ namespace System.Dynamic {
             ContractUtils.RequiresNotNull(target, "target");
 
             if (args == null) {
-                return MakeDeferred(
-                        target.Restrictions,
-                        target
-                );
+                return MakeDeferred(target.Restrictions, target);
             } else {
                 return MakeDeferred(
-                        target.Restrictions.Merge(BindingRestrictions.Combine(args)),
-                        args.AddFirst(target)
+                    target.Restrictions.Merge(BindingRestrictions.Combine(args)),
+                    args.AddFirst(target)
                 );
             }
         }
@@ -215,151 +247,29 @@ namespace System.Dynamic {
         /// <param name="args">An array of arguments of the dynamic operation.</param>
         /// <returns>The <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
         public DynamicMetaObject Defer(params DynamicMetaObject[] args) {
-            return MakeDeferred(
-                BindingRestrictions.Combine(args),
-                args
-            );
+            return MakeDeferred(BindingRestrictions.Combine(args), args);
         }
 
         private DynamicMetaObject MakeDeferred(BindingRestrictions rs, params DynamicMetaObject[] args) {
             var exprs = DynamicMetaObject.GetExpressions(args);
 
-            Type delegateType = DelegateHelpers.MakeDeferredSiteDelegate(args, typeof(object));
+            Type delegateType = DelegateHelpers.MakeDeferredSiteDelegate(args, ReturnType);
 
             // Because we know the arguments match the delegate type (we just created the argument types)
             // we go directly to DynamicExpression.Make to avoid a bunch of unnecessary argument validation
             return new DynamicMetaObject(
-                DynamicExpression.Make(
-                    typeof(object),
-                    delegateType,
-                    this,
-                    new TrueReadOnlyCollection<Expression>(exprs)
-                ),
+                DynamicExpression.Make(ReturnType, delegateType, this, new TrueReadOnlyCollection<Expression>(exprs)),
                 rs
             );
         }
 
         #endregion
 
-        /// <summary>
-        /// Converts the result of a dynamic operation to the given type.
-        /// Void converts to default(T). This will not find a userdefined
-        /// conversion method, and its error is specific to converting the
-        /// result of a dynamic operation.
-        /// </summary>
-        internal static Expression Convert(Expression expression, Type type) {
-            if (expression.Type == type) {
-                return expression;
+        // used to detect standard MetaObjectBinders.
+        internal virtual bool IsStandardBinder {
+            get {
+                return false;
             }
-
-            // Dynamic operations can convert void -> default(T)
-            if (expression.Type == typeof(void)) {
-                return Expression.Block(expression, Expression.Default(type));
-            }
-
-            // If we don't have a valid primtive conversion, it's an error.
-            if (!TypeUtils.HasIdentityPrimitiveOrNullableConversion(expression.Type, type) &&
-                !TypeUtils.HasReferenceConversion(expression.Type, type)) {
-                throw Error.CannotConvertDynamicResult(expression.Type, type);
-            }
-
-            return Expression.Convert(expression, type);
-        }
-
-        private Expression AddReturn(Expression body, LabelTarget @return, Type toType) {
-            switch (body.NodeType) {
-                case ExpressionType.Conditional:
-                    var conditional = (ConditionalExpression)body;
-
-                    // We can only look for defer expression as one of the
-                    // branches of a conditional. Otherwise we confuse actual
-                    // "defers" with "my dynamic test failed".
-                    if (IsDeferExpression(conditional.IfTrue)) {
-                        return Expression.Condition(
-                            Expression.Not(conditional.Test),
-                            ConvertAndReturn(conditional.IfFalse, @return, toType),
-                            Expression.Default(conditional.Type),
-                            conditional.Type
-                        );
-                    }
-                    if (IsDeferExpression(conditional.IfFalse)) {
-                        return Expression.Condition(
-                            conditional.Test,
-                            ConvertAndReturn(conditional.IfTrue, @return, toType),
-                            Expression.Default(conditional.Type),
-                            conditional.Type
-                        );
-                    }
-                    return Expression.Condition(
-                        conditional.Test,
-                        AddReturn(conditional.IfTrue, @return, toType),
-                        AddReturn(conditional.IfFalse, @return, toType),
-                        conditional.Type
-                    );
-                case ExpressionType.Block:
-                    var block = (BlockExpression)body;
-
-                    int count = block.ExpressionCount;
-                    Expression[] nodes = new Expression[count];
-
-                    for (int i = 0; i < nodes.Length - 1; i++) {
-                        nodes[i] = block.GetExpression(i);
-                    }
-                    nodes[nodes.Length - 1] = AddReturn(block.GetExpression(count - 1), @return, toType);
-
-                    return block.Rewrite(block.Variables, nodes);
-                default:
-                    return ConvertAndReturn(body, @return, toType);
-            }
-        }
-
-        // We need this instead of folding it into AddReturn because Python
-        // generates trees that won't work unless we stop at the first "defer"
-        // that we see.
-        private static Expression ConvertAndReturn(Expression body, LabelTarget @return, Type toType) {
-            // Coerce the body to the rule's result type.
-            Expression result = body;
-            if (toType != result.Type) {
-                result = Expression.Block(toType, result);
-            }
-
-            // Then add a convert to the lambda return type.
-            if (@return.Type != typeof(void) && result.Type != @return.Type) {
-                result = Convert(result, @return.Type);
-            }
-
-            return Expression.Return(@return, result, body.Type);
-        }
-
-        // The presence of a call to our own binder actually means:
-        // "this rule failed, please try to bind again". To make it work
-        // we need to remove the body so we'll fall through and report that
-        // it failed to match, otherwise we stack overflow.
-        private bool IsDeferExpression(Expression node) {
-            var dynamic = node as DynamicExpression;
-            if (dynamic != null) {
-                if (dynamic.Binder != this) {
-                    return false;
-                }
-
-                // We should be making sure that all of the arguments match,
-                // but we can't yet, because Python sometimes drops one of the
-                // arguments but they don't really mean to.
-                return true;
-            }
-
-            if (node.NodeType == ExpressionType.Convert) {
-                return IsDeferExpression(((UnaryExpression)node).Operand);
-            }
-
-            // Simple reference conversions or void conversion might look like
-            // a block with one expression.
-            var block = node as BlockExpression;
-            if (block != null && block.ExpressionCount == 1) {
-                return IsDeferExpression(block.GetExpression(0));
-            }
-
-            return false;
         }
 
 #if !SILVERLIGHT

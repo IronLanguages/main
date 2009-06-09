@@ -17,11 +17,11 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Dynamic;
-using System.Dynamic.Utils;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Security;
+using System.Security.Permissions;
 
 namespace System.Dynamic {
     /// <summary>
@@ -51,6 +51,10 @@ namespace System.Dynamic {
         /// This is the factory method to get the ComObject corresponding to an RCW
         /// </summary>
         /// <returns></returns>
+#if MICROSOFT_DYNAMIC
+        [PermissionSet(SecurityAction.LinkDemand, Unrestricted = true)]
+#endif
+        [SecurityCritical]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2201:DoNotRaiseReservedExceptionTypes")]
         public static ComObject ObjectToComObject(object rcw) {
             Debug.Assert(ComObject.IsComObject(rcw));
@@ -106,12 +110,12 @@ namespace System.Dynamic {
             return new ComObject(rcw);
         }
 
-        internal virtual IEnumerable<string> MemberNames {
-            get { return new string[0]; }
+        internal virtual IList<string> GetMemberNames(bool dataOnly) {
+            return new string[0];
         }
 
-        internal virtual IEnumerable<KeyValuePair<string, object>> DataMembers {
-            get { return new KeyValuePair<string, object>[0]; }
+        internal virtual IList<KeyValuePair<string, object>> GetMembers(IEnumerable<string> names) {
+            return new KeyValuePair<string, object>[0];
         }
 
         DynamicMetaObject IDynamicMetaObjectProvider.GetMetaObject(Expression parameter) {

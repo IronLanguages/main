@@ -13,8 +13,8 @@
  *
  * ***************************************************************************/
 
+using System.Diagnostics;
 using System.Dynamic.Utils;
-using System.Text;
 
 namespace System.Linq.Expressions {
     /// <summary>
@@ -42,6 +42,9 @@ namespace System.Linq.Expressions {
     /// <summary>
     /// Represents an unconditional jump. This includes return statements, break and continue statements, and other jumps.
     /// </summary>
+#if !SILVERLIGHT
+    [DebuggerTypeProxy(typeof(Expression.GotoExpressionProxy))]
+#endif
     public sealed class GotoExpression : Expression {
         private readonly GotoExpressionKind _kind;
         private readonly Expression _value;
@@ -59,16 +62,16 @@ namespace System.Linq.Expressions {
         /// Gets the static type of the expression that this <see cref="Expression" /> represents. (Inherited from <see cref="Expression"/>.)
         /// </summary>
         /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
-        protected override Type TypeImpl() {
-            return _type;
+        public sealed override Type Type {
+            get { return _type; }
         }
 
         /// <summary>
         /// Returns the node type of this <see cref="Expression" />. (Inherited from <see cref="Expression" />.)
         /// </summary>
         /// <returns>The <see cref="ExpressionType"/> that represents this expression.</returns>
-        protected override ExpressionType NodeTypeImpl() {
-            return ExpressionType.Goto;
+        public sealed override ExpressionType NodeType {
+            get { return ExpressionType.Goto; }
         }
 
         /// <summary>

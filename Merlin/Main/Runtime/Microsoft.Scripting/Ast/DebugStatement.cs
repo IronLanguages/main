@@ -16,6 +16,7 @@
 using System.Diagnostics;
 using System.Linq.Expressions;
 using Microsoft.Scripting.Utils;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Ast {
     public partial class Utils {
@@ -24,7 +25,7 @@ namespace Microsoft.Scripting.Ast {
 #if DEBUG
             return CallDebugWriteLine(marker);
 #else
-            return Expression.Empty();
+            return Utils.Empty();
 #endif
         }
 
@@ -47,7 +48,7 @@ namespace Microsoft.Scripting.Ast {
         private static MethodCallExpression CallDebugWriteLine(string marker) {
             return Expression.Call(
                 typeof(Debug).GetMethod("WriteLine", new[] { typeof(string) }),
-                Expression.Constant(marker)
+                AstUtils.Constant(marker)
             );
         }
 #endif

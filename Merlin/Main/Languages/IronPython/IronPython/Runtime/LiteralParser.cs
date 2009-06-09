@@ -14,11 +14,14 @@
  * ***************************************************************************/
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Text;
-using IronPython.Runtime.Operations;
+
 using Microsoft.Scripting.Math;
-using System.Collections.Generic; 
+
+using IronPython.Runtime.Operations;
 
 namespace IronPython.Runtime {
     /// <summary>
@@ -125,10 +128,6 @@ namespace IronPython.Runtime {
                     buf.Append(ch);
                 }
             }
-
-            // skip BOM (TODO: this is ugly workaround that is in fact not strictly correct, we need binary strings to handle it correctly):
-            if (buf.Length >= 3 && buf[0] == '\u00ef' && buf[1] == '\u00bb' && buf[2] == '\u00bf')
-                return buf.ToString(3, buf.Length - 3);
 
             return buf.ToString();
         }
@@ -299,17 +298,7 @@ namespace IronPython.Runtime {
         }
 
         public static object ParseInteger(string text, int b) {
-            if (b == 0 && text.StartsWith("0x")) {
-                int shift = 0;
-                int ret = 0;
-                for (int i = text.Length - 1; i >= 2; i--) {
-                    ret |= HexValue(text[i]) << shift;
-                    shift += 4;
-                }
-                return ret;
-            }
-
-            if (b == 0) b = DetectRadix(ref text);
+            Debug.Assert(b != 0);
             int iret;
             if (!ParseInt(text, b, out iret)) {
                 BigInteger ret = ParseBigInteger(text, b);
@@ -385,12 +374,18 @@ namespace IronPython.Runtime {
             if (b == 0) {
                 if (start < end && text[start] == '0') {
                     start++;
-                    // Hex or oct
-                    if (start < end && (text[start] == 'x' || text[start] == 'X')) {
-                        start++;
-                        b = 16;
-                    } else {
-                        b = 8;
+                    // Hex, oct, or bin
+                    b = 8;
+                    if (start < end) {
+                        if (text[start] == 'x' || text[start] == 'X') {
+                            start++;
+                            b = 16;
+                        } else if (text[start] == 'o' || text[start] == 'O') {
+                            start++;
+                        } else if (text[start] == 'b' || text[start] == 'B') {
+                            start++;
+                            b = 2;
+                        }
                     }
                 } else {
                     b = 10;
@@ -407,19 +402,8 @@ namespace IronPython.Runtime {
             }
         }
 
-        private static int DetectRadix(ref string s) {
-            if (s.StartsWith("0x") || s.StartsWith("0X")) {
-                s = s.Substring(2);
-                return 16;
-            } else if (s.StartsWith("0")) {
-                return 8;
-            } else {
-                return 10;
-            }
-        }
-
         public static BigInteger ParseBigInteger(string text, int b) {
-            if (b == 0) b = DetectRadix(ref text);
+            Debug.Assert(b != 0);
             BigInteger ret = BigInteger.Zero;
             BigInteger m = BigInteger.One;
 
@@ -458,9 +442,15 @@ namespace IronPython.Runtime {
             ParseIntegerStart(text, ref b, ref start, end, ref sign);
 
             BigInteger ret = BigInteger.Zero;
+            int saveStart = start;
             for (; ; ) {
                 int digit;
-                if (start >= end) break;
+                if (start >= end) {
+                    if (start == saveStart) {
+                        throw new ArgumentException("Invalid integer literal");
+                    }
+                    break;
+                }
                 if (!HexValue(text[start], out digit)) break;
                 if (!(digit < b)) {
                     if (text[start] == 'l' || text[start] == 'L') {
@@ -494,12 +484,27 @@ namespace IronPython.Runtime {
                 }
                 return ParseFloatNoCatch(text);
             } catch (OverflowException) {
-                return Double.PositiveInfinity;
+                return text.lstrip().StartsWith("-") ? Double.NegativeInfinity : Double.PositiveInfinity;
             }
         }
 
         private static double ParseFloatNoCatch(string text) {
-            return double.Parse(ReplaceUnicodeDigits(text), System.Globalization.CultureInfo.InvariantCulture);
+            string s = ReplaceUnicodeDigits(text);
+            switch (s.lower().lstrip()) {
+                case "nan":
+                case "+nan":
+                case "-nan":
+                    return double.NaN;
+                case "inf":
+                case "+inf":
+                    return double.PositiveInfinity;
+                case "-inf":
+                    return double.NegativeInfinity;
+                default:
+                    // pass NumberStyles to disallow ,'s in float strings.
+                    double res = double.Parse(s, NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);
+                    return (res == 0.0 && text.lstrip().StartsWith("-")) ? DoubleOps.NegativeZero : res;
+            }
         }
 
         private static string ReplaceUnicodeDigits(string text) {

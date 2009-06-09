@@ -14,63 +14,42 @@
  * ***************************************************************************/
 
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using Microsoft.Scripting;
-using Microsoft.Scripting.Actions;
-using System.Linq.Expressions;
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
+using System.Reflection;
 using IronRuby.Builtins;
 using IronRuby.Compiler;
-using MethodDeclaration = IronRuby.Compiler.Ast.MethodDeclaration;
+using IronRuby.Compiler.Ast;
+using Microsoft.Scripting.Utils;
+using Ast = System.Linq.Expressions.Expression;
 using AstFactory = IronRuby.Compiler.Ast.AstFactory;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
-using Ast = System.Linq.Expressions.Expression;
-using System.Reflection;
+using MethodDeclaration = IronRuby.Compiler.Ast.MethodDeclaration;
+using MSA = System.Linq.Expressions;
 
 namespace IronRuby.Runtime.Calls {
     public sealed class RubyMethodInfo : RubyMemberInfo {
         // Delegate type for methods with many parameters.
         internal static readonly Type ParamsArrayDelegateType = typeof(Func<object, Proc, object[], object>);
-        
-        // Method AST:
-        // - MethodDeclaration in normal execution mode (no -save flag), or after queried.
-        // - MethodDeclaration.Serializable in -save mode.
-        // - char[] in -load mode when the method's source code is deserialized from a compiled assembly.
-        private object/*!*/ _ast;
 
-        private readonly Delegate/*!*/ _method;
-        private readonly string/*!*/ _definitionName;
+        private RubyMethodBody _body;
+        private readonly RubyScope/*!*/ _declaringScope;
 
-        private readonly int _mandatoryParamCount;
-        private readonly int _optionalParamCount;  
-        private readonly bool _hasUnsplatParameter;
-
-        public Delegate/*!*/ Method { get { return _method; } }
-        public string/*!*/ DefinitionName { get { return _definitionName; } }
-        public int MandatoryParamCount { get { return _mandatoryParamCount; } }
-        public int OptionalParamCount { get { return _optionalParamCount; } }
-        public bool HasUnsplatParameter { get { return _hasUnsplatParameter; } }
+        public string/*!*/ DefinitionName { get { return _body.Name; } }
+        public int MandatoryParamCount { get { return _body.MandatoryParameterCount; } }
+        public int OptionalParamCount { get { return _body.OptionalParameterCount; } }
+        public bool HasUnsplatParameter { get { return _body.HasUnsplatParameter; } }
+        public RubyScope/*!*/ DeclaringScope { get { return _declaringScope; } }
 
         // method:
-        internal RubyMethodInfo(object/*!*/ ast, Delegate/*!*/ method, RubyModule/*!*/ declaringModule, 
-            string/*!*/ definitionName, int mandatory, int optional, bool hasUnsplatParameter, RubyMemberFlags flags)
+        internal RubyMethodInfo(RubyMethodBody/*!*/ body, RubyScope/*!*/ declaringScope, RubyModule/*!*/ declaringModule, RubyMemberFlags flags)
             : base(flags, declaringModule) {
-            Assert.NotNull(ast, method, declaringModule, definitionName);
+            Assert.NotNull(body, declaringModule);
 
-            _ast = ast;
-            _method = method;
-            _mandatoryParamCount = mandatory;
-            _optionalParamCount = optional;
-            _hasUnsplatParameter = hasUnsplatParameter;
-            _definitionName = definitionName;
+            _body = body;
+            _declaringScope = declaringScope;
         }
 
         protected internal override RubyMemberInfo/*!*/ Copy(RubyMemberFlags flags, RubyModule/*!*/ module) {
-            return new RubyMethodInfo(_ast, _method, module, _definitionName, _mandatoryParamCount, _optionalParamCount, 
-                _hasUnsplatParameter, flags
-            );
+            return new RubyMethodInfo(_body, _declaringScope, module, flags);
         }
         
         internal override bool IsRemovable {
@@ -84,33 +63,23 @@ namespace IronRuby.Runtime.Calls {
         }
 
         public override MemberInfo/*!*/[]/*!*/ GetMembers() {
-            return new MemberInfo[] { _method.Method };
+            return new MemberInfo[] { GetDelegate().Method };
         }
 
         public override int GetArity() {
-            if (_optionalParamCount > 0) {
-                return -_mandatoryParamCount - 1;
+            if (_body.HasUnsplatParameter || OptionalParamCount > 0) {
+                return -MandatoryParamCount - 1;
             } else {
-                return _mandatoryParamCount;
+                return MandatoryParamCount;
             }
         }
 
         public MethodDeclaration/*!*/ GetSyntaxTree() {
-            // live tree:
-            var tree = _ast as MethodDeclaration;
-            if (tree != null) {
-                return tree;
-            }
+            return _body.Ast;
+        }
 
-            // live tree wrapped into IExpressionSerializable class:
-            var serializableTree = _ast as MethodDeclaration.Serializable;
-            if (serializableTree != null) {
-                _ast = serializableTree.Method;
-                return serializableTree.Method;
-            }
-
-            // TODO: serialized tree:
-            throw new NotImplementedException();
+        internal Delegate/*!*/ GetDelegate() {
+            return _body.GetDelegate(_declaringScope, DeclaringModule);
         }
 
         #region Dynamic Sites
@@ -122,7 +91,7 @@ namespace IronRuby.Runtime.Calls {
             metaBuilder.ControlFlowBuilder = RuleControlFlowBuilder;
 
             // 2 implicit args: self, block
-            var argsBuilder = new ArgsBuilder(2, _mandatoryParamCount, _optionalParamCount, _hasUnsplatParameter);
+            var argsBuilder = new ArgsBuilder(2, MandatoryParamCount, OptionalParamCount, _body.HasUnsplatParameter);
             argsBuilder.SetImplicit(0, AstFactory.Box(args.TargetExpression));
             argsBuilder.SetImplicit(1, args.Signature.HasBlock ? AstUtils.Convert(args.GetBlockExpression(), typeof(Proc)) : AstFactory.NullOfProc);
             argsBuilder.AddCallArguments(metaBuilder, args);
@@ -137,15 +106,16 @@ namespace IronRuby.Runtime.Calls {
                 boxedArguments[i] = AstFactory.Box(boxedArguments[i]);
             }
 
-            if (_method.GetType() == ParamsArrayDelegateType) {
+            var method = GetDelegate();
+            if (method.GetType() == ParamsArrayDelegateType) {
                 // Func<object, Proc, object[], object>
-                metaBuilder.Result = AstFactory.CallDelegate(_method, new[] { 
+                metaBuilder.Result = AstFactory.CallDelegate(method, new[] { 
                     boxedArguments[0], 
                     boxedArguments[1], 
                     Ast.NewArrayInit(typeof(object), ArrayUtils.ShiftLeft(boxedArguments, 2)) 
                 });
             } else {
-                metaBuilder.Result = AstFactory.CallDelegate(_method, boxedArguments);
+                metaBuilder.Result = AstFactory.CallDelegate(method, boxedArguments);
             }
         }
 
@@ -164,9 +134,9 @@ namespace IronRuby.Runtime.Calls {
                 return;
             } 
 
-            Expression rfcVariable = metaBuilder.GetTemporary(typeof(RuntimeFlowControl), "#rfc");
-            ParameterExpression methodUnwinder = metaBuilder.GetTemporary(typeof(MethodUnwinder), "#unwinder");
-            Expression resultVariable = metaBuilder.GetTemporary(typeof(object), "#result");
+            var rfcVariable = metaBuilder.GetTemporary(typeof(RuntimeFlowControl), "#rfc");
+            var methodUnwinder = metaBuilder.GetTemporary(typeof(MethodUnwinder), "#unwinder");
+            var resultVariable = metaBuilder.GetTemporary(typeof(object), "#result");
 
             metaBuilder.Result = Ast.Block(
                 // initialize frame (RFC):
@@ -180,7 +150,7 @@ namespace IronRuby.Runtime.Calls {
 
                 ).Finally(
                     // we need to mark the RFC dead snce the block might escape and break later:
-                    Ast.Assign(Ast.Field(rfcVariable, RuntimeFlowControl.IsActiveMethodField), Ast.Constant(false))
+                    Methods.LeaveMethodFrame.OpCall(rfcVariable)
                 ), 
                 resultVariable
             );

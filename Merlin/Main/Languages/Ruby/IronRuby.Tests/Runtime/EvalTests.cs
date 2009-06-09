@@ -95,39 +95,26 @@ END
             AssertOutput(() => CompilerTest(body), output, OutputFlags.Match);
         }
 
-        public void EvalReturn1() {
+        /// <summary>
+        /// Assigning to a variable defined in an outer scope shouldn't define a new variable in the currenct scope.
+        /// </summary>
+        public void Eval4() {
             AssertOutput(delegate() {
                 CompilerTest(@"
-def y
-  yield
-end
+1.times {
+  x = nil
+  1.times {
+    eval('1.times { x = 2 }')
+  } 
+  
+  module M
+    eval('x = 3')
+  end
 
-def foo
-  $b = Proc.new {  
-    eval('return 123')
-  }
-  goo
-end
-
-def goo
-  y(&$b)
-end
-
-p foo
+  puts x
+}
 ");
-            }, @"123");
-        }
-
-        public void EvalReturn2() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
-def foo 
-  eval('return 123')
-end
-
-p foo
-");
-            }, @"123");
+            }, "2");
         }
 
         public void LocalNames1() {
@@ -560,12 +547,5 @@ foo
 1
 1");
         }
-
-
-// TODO: RFC.InBlock is not set properly
-// 1.times { eval('break') }
-// Array.new(10) { eval('break 1') }
-// define_method(:foo) { eval('break 1') }
-// M.module_eval { eval('break 1') }
     }
 }

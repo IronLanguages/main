@@ -17,6 +17,8 @@
 
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
+using System.Security;
+using System.Security.Permissions;
 
 namespace System.Dynamic {
     internal sealed class BoundDispEvent : DynamicObject {
@@ -30,14 +32,21 @@ namespace System.Dynamic {
             _dispid = dispid;
         }
 
-        public override bool TryBinaryOperation(BinaryOperationBinder binder, object arg, out object result) {
+        /// <summary>
+        /// Provides the implementation of performing AddAssign and SubtractAssign binary operations.
+        /// </summary>
+        /// <param name="binder">The binder provided by the call site.</param>
+        /// <param name="handler">The handler for the operation.</param>
+        /// <param name="result">The result of the operation.</param>
+        /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
+        public override bool TryBinaryOperation(BinaryOperationBinder binder, object handler, out object result) {
             if (binder.Operation == ExpressionType.AddAssign) {
-                result = InPlaceAdd(arg);
+                result = InPlaceAdd(handler);
                 return true;
             }
 
             if (binder.Operation == ExpressionType.SubtractAssign) {
-                result = InPlaceSubtract(arg);
+                result = InPlaceSubtract(handler);
                 return true;
             }
 
@@ -45,31 +54,68 @@ namespace System.Dynamic {
             return false;
         }
 
+        private static void VerifyHandler(object handler) {
+            if (handler is Delegate && handler.GetType() != typeof(Delegate)) {
+                return; // delegate
+            }
+
+            if (handler is IDynamicMetaObjectProvider) {
+                return; // IDMOP
+            }
+
+            throw Error.UnsupportedHandlerType();
+        }
+
         /// <summary>
         /// Adds a handler to an event.
         /// </summary>
-        /// <param name="func">The handler to be added.</param>
+        /// <param name="handler">The handler to be added.</param>
         /// <returns>The original event with handler added.</returns>
-        [SpecialName]
-        public object InPlaceAdd(object func) {
+#if MICROSOFT_DYNAMIC
+        [SecurityCritical, SecurityTreatAsSafe]
+#else
+        [SecuritySafeCritical]
+#endif
+        private object InPlaceAdd(object handler) {
+            ContractUtils.RequiresNotNull(handler, "handler");
+            VerifyHandler(handler);
+
+            //
+            // Demand Full Trust to proceed with the operation.
+            //
+
+            new PermissionSet(PermissionState.Unrestricted).Demand();
+
             ComEventSink comEventSink = ComEventSink.FromRuntimeCallableWrapper(_rcw, _sourceIid, true);
-            comEventSink.AddHandler(_dispid, func);
+            comEventSink.AddHandler(_dispid, handler);
             return this;
         }
 
         /// <summary>
         /// Removes handler from the event.
         /// </summary>
-        /// <param name="func">The handler to be removed.</param>
+        /// <param name="handler">The handler to be removed.</param>
         /// <returns>The original event with handler removed.</returns>
-        [SpecialName]
-        public object InPlaceSubtract(object func) {
+#if MICROSOFT_DYNAMIC
+        [SecurityCritical, SecurityTreatAsSafe]
+#else
+        [SecuritySafeCritical]
+#endif
+        private object InPlaceSubtract(object handler) {
+            ContractUtils.RequiresNotNull(handler, "handler");
+            VerifyHandler(handler);
+
+            //
+            // Demand Full Trust to proceed with the operation.
+            //
+
+            new PermissionSet(PermissionState.Unrestricted).Demand();
+
             ComEventSink comEventSink = ComEventSink.FromRuntimeCallableWrapper(_rcw, _sourceIid, false);
-            if (comEventSink == null) {
-                throw Error.RemovingUnregisteredEvent();
+            if (comEventSink != null) {
+                comEventSink.RemoveHandler(_dispid, handler);
             }
 
-            comEventSink.RemoveHandler(_dispid, func);
             return this;
         }
     }

@@ -156,11 +156,6 @@ x = 'RuntimeError'
         }
 
         public void Scenario_RubyExceptions7() {
-            // TODO: fix stack traces in interpreter
-            if (Engine.Setup.InterpretedMode) {
-                return;
-            }
-
             AssertOutput(delegate() {
                 CompilerTest(@"
 def foo
@@ -449,6 +444,19 @@ rescue Exception => e
 end
 ");
             }, @"foo");
+        }
+
+        public void JumpFromEnsure1() {
+            AssertOutput(delegate() {
+                CompilerTest(@"
+def foo
+ensure
+  return 1
+end
+
+p foo
+");
+            }, @"1");
         }
 
         public void Scenario_RubyExceptions_Globals() {

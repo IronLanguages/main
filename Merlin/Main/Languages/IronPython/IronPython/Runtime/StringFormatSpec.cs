@@ -196,6 +196,7 @@ namespace IronPython.Runtime {
             Assert.NotNull(text);
 
             char? sign = GetSign(isZero, isPos);
+            string type = GetTypeString();
 
             if (Width != null) {
                 int width = Width.Value;
@@ -208,10 +209,14 @@ namespace IronPython.Runtime {
                     if (sign != null) {
                         fillLength--;
                     }
+                    if (type != null) {
+                        fillLength -= type.Length;
+                    }
 
                     if (Alignment != '=' && sign != null) {
-                        text = sign.Value + text;
+                        text = sign.Value + type + text;
                         sign = null;
+                        type = null;
                     }
 
                     switch (Alignment) {
@@ -228,24 +233,51 @@ namespace IronPython.Runtime {
                     }
 
                     if (headerLen != 0) {
-                        text = new string(fill, headerLen) + text;
-                    }
-
-                    if (sign != null) {
-                        text = sign.Value + text;
+                        string ssign = sign.HasValue ? sign.Value.ToString() : "";
+                        text = ssign + type + new string(fill, headerLen) + text;
+                    } else {
+                        if (sign != null) {
+                            text = sign.Value + text;
+                        }
+                        if (type != null) {
+                            text = type + text;
+                        }
                     }
 
                     if (footerLen != 0) {
                         text = text + new string(fill, footerLen);
                     }
-                } else if (sign != null) {
-                    text = sign.Value + text;
+                } else {
+                    text = FinishText(text, sign, type);
                 }
-            } else if (sign != null) {
-                text = sign.Value + text;
+            } else {
+                text = FinishText(text, sign, type);
             }
 
+            
             return text;
+        }
+
+        private static string FinishText(string text, char? sign, string type) {
+            if (sign != null) {
+                text = sign.Value + type + text;
+            } else if (type != null) {
+                text = type + text;
+            }
+            return text;
+        }
+
+        private string GetTypeString() {
+            string type = null;
+            if (IncludeType) {
+                switch (Type) {
+                    case 'X': type = "0X"; break;
+                    case 'x': type = "0x"; break;
+                    case 'o': type = "0o"; break;
+                    case 'b': type = "0b"; break;
+                }
+            }
+            return type;
         }
 
         private char? GetSign(bool isZero, bool isPos) {

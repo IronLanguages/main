@@ -17,52 +17,49 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.IO;
-using System.Dynamic;
-using System.Text;
 using System.Threading;
-using Microsoft.Scripting;
-using Microsoft.Scripting.Actions;
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
 using IronRuby.Builtins;
-using IronRuby.Runtime;
-using IronRuby.Runtime.Calls;
 using IronRuby.Compiler.Generation;
+using IronRuby.Runtime;
+using Microsoft.Scripting;
+using Microsoft.Scripting.Generation;
+using Microsoft.Scripting.Utils;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
+using MSA = System.Linq.Expressions;
 
 namespace IronRuby.Compiler.Ast {
     using Ast = System.Linq.Expressions.Expression;
-    using AstUtils = Microsoft.Scripting.Ast.Utils;
-    using MSA = System.Linq.Expressions;
-
-    internal class AstGenerator {
+    
+    internal sealed class AstGenerator {
         private static int _UniqueId;
 
-        private readonly RubyBinder/*!*/ _binder;
+        private readonly RubyContext/*!*/ _context;
         private readonly RubyCompilerOptions/*!*/ _compilerOptions;
-        private readonly SourceUnit/*!*/ _sourceUnit;
         private readonly MSA.SymbolDocumentInfo _document;
-        private readonly Encoding/*!*/ _encoding;
+        private readonly RubyEncoding/*!*/ _encoding;
         private readonly Profiler _profiler;
+        private readonly bool _printInteractiveResult;
         private readonly bool _debugCompiler;
         private readonly bool _debugMode;
         private readonly bool _traceEnabled;
         private readonly bool _savingToDisk;
 
-        internal AstGenerator(RubyBinder/*!*/ binder, RubyCompilerOptions/*!*/ options, SourceUnit/*!*/ sourceUnit, Encoding/*!*/ encoding,
-            bool debugCompiler, bool debugMode, bool traceEnabled, bool profilerEnabled, bool savingToDisk) {
+        private MSA.Expression _sourcePathConstant; // lazy
 
-            Assert.NotNull(binder, options, encoding);
-            _binder = binder;
+        internal AstGenerator(RubyContext/*!*/ context, RubyCompilerOptions/*!*/ options, MSA.SymbolDocumentInfo document, RubyEncoding/*!*/ encoding,
+            bool printInteractiveResult) {
+
+            Assert.NotNull(context, options, encoding);
+            _context = context;
             _compilerOptions = options;
-            _debugCompiler = debugCompiler;
-            _debugMode = debugMode;
-            _traceEnabled = traceEnabled;
-            _sourceUnit = sourceUnit;
-            _document = sourceUnit.Document;
+            _debugCompiler = Snippets.Shared.SaveSnippets;
+            _debugMode = context.DomainManager.Configuration.DebugMode;
+            _traceEnabled = context.RubyOptions.EnableTracing;
+            _document = document;
             _encoding = encoding;
-            _profiler = profilerEnabled ? Profiler.Instance : null;
-            _savingToDisk = savingToDisk;
+            _profiler = context.RubyOptions.Profile ? Profiler.Instance : null;
+            _savingToDisk = context.RubyOptions.SavePath != null;
+            _printInteractiveResult = printInteractiveResult;
         }
 
         public RubyCompilerOptions/*!*/ CompilerOptions { 
@@ -89,18 +86,33 @@ namespace IronRuby.Compiler.Ast {
             get { return _savingToDisk; }
         }
 
-        public SourceUnit/*!*/ SourceUnit {
-            get { return _sourceUnit; }
+        public string SourcePath {
+            get { return _document != null ? _document.FileName : null; }
         }
 
-        public Encoding Encoding {
+        public MSA.SymbolDocumentInfo Document {
+            get { return _document; }
+        }
+
+        public bool PrintInteractiveResult {
+            get { return _printInteractiveResult; }
+        }
+
+        public MSA.Expression/*!*/ SourcePathConstant {
+            get {
+                if (_sourcePathConstant == null) {
+                    _sourcePathConstant = Ast.Constant(SourcePath, typeof(string));
+                }
+                return _sourcePathConstant;
+            }
+        }
+
+        public RubyEncoding/*!*/ Encoding {
             get { return _encoding; }
         }
 
-        internal ActionBinder Binder {
-            get {
-                return _binder;
-            }
+        internal RubyContext/*!*/ Context {
+            get { return _context; }
         }
 
         #region Lexical Scopes
@@ -148,8 +160,7 @@ namespace IronRuby.Compiler.Ast {
 
         public sealed class RescueScope : LexicalScope {
             private readonly MSA.Expression/*!*/ _retryingVariable;
-            private readonly MSA.LabelTarget/*!*/ _breakLabel;
-            private readonly MSA.LabelTarget/*!*/ _continueLabel;
+            private readonly MSA.LabelTarget/*!*/ _retryLabel;
 
             public RescueScope _parentRescue;
 
@@ -162,26 +173,21 @@ namespace IronRuby.Compiler.Ast {
                 set { _parentRescue = value; }
             }
 
-            public MSA.LabelTarget/*!*/ BreakLabel {
-                get { return _breakLabel; }
+            public MSA.LabelTarget/*!*/ RetryLabel {
+                get { return _retryLabel; }
             }
 
-            public MSA.LabelTarget/*!*/ ContinueLabel {
-                get { return _continueLabel; }
-            }
-
-            public RescueScope(MSA.Expression/*!*/ retryingVariable, MSA.LabelTarget/*!*/ breakLabel, MSA.LabelTarget/*!*/ continueLabel) {
-                Assert.NotNull(retryingVariable, breakLabel, continueLabel);
+            public RescueScope(MSA.Expression/*!*/ retryingVariable, MSA.LabelTarget/*!*/ retryLabel) {
+                Assert.NotNull(retryingVariable, retryLabel);
                 _retryingVariable = retryingVariable;
-                _breakLabel = breakLabel;
-                _continueLabel = continueLabel;
+                _retryLabel = retryLabel;
             }
         }
 
         public class VariableScope : LexicalScope {
             private readonly ScopeBuilder/*!*/ _builder;
             private readonly MSA.Expression/*!*/ _selfVariable;
-            private readonly MSA.Expression/*!*/ _runtimeScopeVariable;
+            private readonly MSA.ParameterExpression/*!*/ _runtimeScopeVariable;
             private VariableScope _parentVariableScope;
 
             public ScopeBuilder/*!*/ Builder {
@@ -192,7 +198,7 @@ namespace IronRuby.Compiler.Ast {
                 get { return _selfVariable; }
             }
 
-            public MSA.Expression/*!*/ RuntimeScopeVariable {
+            public MSA.ParameterExpression/*!*/ RuntimeScopeVariable {
                 get { return _runtimeScopeVariable; }
             }
 
@@ -201,7 +207,7 @@ namespace IronRuby.Compiler.Ast {
                 set { _parentVariableScope = value; }
             }
 
-            public VariableScope(ScopeBuilder/*!*/ locals, MSA.Expression/*!*/ selfVariable, MSA.Expression/*!*/ runtimeScopeVariable) {
+            public VariableScope(ScopeBuilder/*!*/ locals, MSA.Expression/*!*/ selfVariable, MSA.ParameterExpression/*!*/ runtimeScopeVariable) {
                 Assert.NotNull(selfVariable, runtimeScopeVariable);
                 _builder = locals;
                 _runtimeScopeVariable = runtimeScopeVariable;
@@ -226,7 +232,7 @@ namespace IronRuby.Compiler.Ast {
             public RescueScope ParentRescue { get { return _parentRescue; } set { _parentRescue = value; } }
             public LoopScope ParentLoop { get { return _parentLoop; } set { _parentLoop = value; } }
 
-            public FrameScope(ScopeBuilder/*!*/ builder, MSA.Expression/*!*/ selfVariable, MSA.Expression/*!*/ runtimeScopeVariable)
+            public FrameScope(ScopeBuilder/*!*/ builder, MSA.Expression/*!*/ selfVariable, MSA.ParameterExpression/*!*/ runtimeScopeVariable)
                 : base(builder, selfVariable, runtimeScopeVariable) {
                 _uniqueId = Interlocked.Increment(ref _UniqueId);
             }
@@ -264,7 +270,7 @@ namespace IronRuby.Compiler.Ast {
                 get { return _redoLabel; }
             }
 
-            public BlockScope(ScopeBuilder/*!*/ builder, MSA.Expression/*!*/ selfVariable, MSA.Expression/*!*/ runtimeScopeVariable,
+            public BlockScope(ScopeBuilder/*!*/ builder, MSA.Expression/*!*/ selfVariable, MSA.ParameterExpression/*!*/ runtimeScopeVariable,
                 MSA.Expression/*!*/ bfcVariable, MSA.LabelTarget/*!*/ redoLabel)
                 : base(builder, selfVariable, runtimeScopeVariable) {
                 Assert.NotNull(bfcVariable, redoLabel);
@@ -276,7 +282,6 @@ namespace IronRuby.Compiler.Ast {
         public sealed class MethodScope : FrameScope {
             private readonly MSA.Expression _blockVariable;
             private readonly MSA.Expression/*!*/ _rfcVariable;
-            private readonly MSA.Expression _currentMethodVariable;
             private readonly string _methodName;
             private readonly Parameters _parameters;
             private MethodScope _parentMethod;
@@ -295,33 +300,23 @@ namespace IronRuby.Compiler.Ast {
             }
 
             // TODO: super call
-            // non-null if !IsTopLevelCode
+            // null for top-level code
             public string MethodName {
                 get { return _methodName; }
             }
 
             // TODO: super call
-            // non-null if !IsTopLevelCode
+            // null for top-level code
             public Parameters Parameters {
                 get { return _parameters; }
             }
 
-            // non-null if !IsTopLevelCode
-            public MSA.Expression CurrentMethodVariable {
-                get { return _currentMethodVariable; }
-            }
-
-            public bool IsTopLevelCode {
-                get { return _parentMethod == null; }
-            }
-
             public MethodScope(
-                ScopeBuilder/*!*/ builder, 
-                MSA.Expression/*!*/ selfVariable, 
-                MSA.Expression/*!*/ runtimeScopeVariable,
+                ScopeBuilder/*!*/ builder,
+                MSA.Expression/*!*/ selfVariable,
+                MSA.ParameterExpression/*!*/ runtimeScopeVariable,
                 MSA.Expression blockVariable, 
                 MSA.Expression/*!*/ rfcVariable,
-                MSA.Expression currentMethodVariable, 
                 string methodName, 
                 Parameters parameters)
                 : base(builder, selfVariable, runtimeScopeVariable) {
@@ -331,7 +326,6 @@ namespace IronRuby.Compiler.Ast {
                 _rfcVariable = rfcVariable;
                 _methodName = methodName;
                 _parameters = parameters;
-                _currentMethodVariable = currentMethodVariable;
             }
         }
 
@@ -348,7 +342,7 @@ namespace IronRuby.Compiler.Ast {
                 get { return _isSingleton; }
             }
 
-            public ModuleScope(ScopeBuilder/*!*/ builder, MSA.Expression/*!*/ selfVariable, MSA.Expression/*!*/ runtimeScopeVariable, bool isSingleton)
+            public ModuleScope(ScopeBuilder/*!*/ builder, MSA.Expression/*!*/ selfVariable, MSA.ParameterExpression/*!*/ runtimeScopeVariable, bool isSingleton)
                 : base(builder, selfVariable, runtimeScopeVariable) {
                 _isSingleton = isSingleton;
             }
@@ -360,12 +354,9 @@ namespace IronRuby.Compiler.Ast {
         private LoopScope _currentLoop;
         private RescueScope _currentRescue;
         private VariableScope _currentVariableScope;
-        private ModuleScope _currentModule;
 
-        // inner-most module (not reset by method definition):
-        public ModuleScope CurrentModule {
-            get { return _currentModule; }
-        }
+        // inner-most module (available only if we enter a module declaration in the current AST, not available in eval'd code or in a method):
+        private ModuleScope _currentModule;
 
         // inner-most method frame:
         public MethodScope/*!*/ CurrentMethod {
@@ -406,21 +397,13 @@ namespace IronRuby.Compiler.Ast {
         }
 
         // runtime scope variable of the current variable scope:
-        public MSA.Expression/*!*/ CurrentScopeVariable {
+        public MSA.ParameterExpression/*!*/ CurrentScopeVariable {
             get { return _currentVariableScope.RuntimeScopeVariable; }
         }
 
         // inner-most scope builder:
         public ScopeBuilder/*!*/ CurrentScope {
             get { return _currentVariableScope.Builder; }
-        }
-
-        public ModuleScope GetCurrentNonSingletonModule() {
-            ModuleScope scope = CurrentModule;
-            while (scope != null && scope.IsSingleton) {
-                scope = scope.ParentModule;
-            }
-            return scope;
         }
 
         #endregion
@@ -444,10 +427,10 @@ namespace IronRuby.Compiler.Ast {
             _currentLoop = _currentLoop.ParentLoop;
         }
 
-        public void EnterRescueClause(MSA.Expression/*!*/ retryingVariable, MSA.LabelTarget/*!*/ breakLabel, MSA.LabelTarget/*!*/ continueLabel) {
-            Assert.NotNull(retryingVariable, breakLabel, continueLabel);
+        public void EnterRescueClause(MSA.Expression/*!*/ retryingVariable, MSA.LabelTarget/*!*/ retryLabel) {
+            Assert.NotNull(retryingVariable, retryLabel);
 
-            RescueScope body = new RescueScope(retryingVariable, breakLabel, continueLabel);
+            RescueScope body = new RescueScope(retryingVariable, retryLabel);
 
             body.Parent = _currentElement;
             body.ParentRescue = _currentRescue;
@@ -464,8 +447,8 @@ namespace IronRuby.Compiler.Ast {
         public void EnterBlockDefinition(
             ScopeBuilder/*!*/ locals,
             MSA.Expression/*!*/ bfcVariable,
-            MSA.Expression/*!*/ selfVariable, 
-            MSA.Expression/*!*/ runtimeScopeVariable, 
+            MSA.Expression/*!*/ selfVariable,
+            MSA.ParameterExpression/*!*/ runtimeScopeVariable, 
             MSA.LabelTarget/*!*/ redoLabel) {
             Assert.NotNull(locals, bfcVariable, selfVariable);
             Assert.NotNull(redoLabel);
@@ -498,10 +481,9 @@ namespace IronRuby.Compiler.Ast {
         public void EnterMethodDefinition(
             ScopeBuilder/*!*/ locals, 
             MSA.Expression/*!*/ selfParameter,
-            MSA.Expression/*!*/ runtimeScopeVariable,
+            MSA.ParameterExpression/*!*/ runtimeScopeVariable,
             MSA.Expression blockParameter,
             MSA.Expression/*!*/ rfcVariable,
-            MSA.Expression currentMethodVariable,
             string/*!*/ methodName,
             Parameters parameters) {
             Assert.NotNull(locals, selfParameter, runtimeScopeVariable, rfcVariable);
@@ -512,7 +494,6 @@ namespace IronRuby.Compiler.Ast {
                 runtimeScopeVariable, 
                 blockParameter, 
                 rfcVariable,
-                currentMethodVariable, 
                 methodName, 
                 parameters
             );
@@ -546,8 +527,8 @@ namespace IronRuby.Compiler.Ast {
 
         public void EnterModuleDefinition(
             ScopeBuilder/*!*/ locals,
-            MSA.Expression/*!*/ selfVariable, 
-            MSA.Expression/*!*/ runtimeScopeVariable, 
+            MSA.Expression/*!*/ selfVariable,
+            MSA.ParameterExpression/*!*/ runtimeScopeVariable, 
             bool isSingleton) {
             Assert.NotNull(locals, selfVariable, runtimeScopeVariable);
 
@@ -574,10 +555,9 @@ namespace IronRuby.Compiler.Ast {
         public void EnterSourceUnit(
             ScopeBuilder/*!*/ locals,
             MSA.Expression/*!*/ selfParameter,
-            MSA.Expression/*!*/ runtimeScopeVariable,
+            MSA.ParameterExpression/*!*/ runtimeScopeVariable,
             MSA.Expression blockParameter,
             MSA.Expression/*!*/ rfcVariable,
-            MSA.Expression currentMethodVariable,
             string methodName,
             Parameters parameters) {
             Assert.NotNull(locals, selfParameter, runtimeScopeVariable, rfcVariable);
@@ -591,7 +571,6 @@ namespace IronRuby.Compiler.Ast {
                 runtimeScopeVariable,
                 blockParameter,
                 rfcVariable,
-                currentMethodVariable,
                 methodName,
                 parameters);
         }
@@ -618,7 +597,22 @@ namespace IronRuby.Compiler.Ast {
             if (CurrentMethod.BlockVariable != null) {
                 return CurrentMethod.BlockVariable;
             } else {
-                return Ast.Constant(null, typeof(Proc));
+                return AstUtils.Constant(null, typeof(Proc));
+            }
+        }
+
+        /// <summary>
+        /// Makes a read of the Self property of the current method's block parameter. 
+        /// Returns Null constant in top-level code.
+        /// </summary>
+        internal MSA.Expression/*!*/ MakeMethodBlockParameterSelfRead() {
+            Debug.Assert(CurrentMethod != null);
+
+            if (CurrentMethod.BlockVariable != null) {
+                return Ast.Property(AstUtils.Convert(CurrentMethod.BlockVariable, typeof(Proc)), Proc.SelfProperty);
+            } else {
+                // no block -> error is reported before this value is used:
+                return AstUtils.Constant(null, typeof(object));
             }
         }
 
@@ -656,11 +650,11 @@ namespace IronRuby.Compiler.Ast {
             if (count == 0) {
 
                 if (resultOperation.IsIgnore) {
-                    return Ast.Empty();
+                    return AstUtils.Empty();
                 } else if (resultOperation.Variable != null) {
-                    return Ast.Assign(resultOperation.Variable, Ast.Constant(null, resultOperation.Variable.Type));
+                    return Ast.Assign(resultOperation.Variable, AstUtils.Constant(null, resultOperation.Variable.Type));
                 } else {
-                    return Ast.Return(CurrentFrame.ReturnLabel, Ast.Constant(null));
+                    return Ast.Return(CurrentFrame.ReturnLabel, AstUtils.Constant(null));
                 }
 
             } else if (count == 1) {
@@ -703,7 +697,7 @@ namespace IronRuby.Compiler.Ast {
                     result[resultIndex++] = epilogue;
                 }
 
-                result[resultIndex++] = MSA.Expression.Empty();
+                result[resultIndex++] = AstUtils.Empty();
                 Debug.Assert(resultIndex == result.Length);
 
                 return Ast.Block(new ReadOnlyCollection<MSA.Expression>(result));
@@ -712,7 +706,7 @@ namespace IronRuby.Compiler.Ast {
 
         internal MSA.Expression/*!*/ TransformStatementsToExpression(Statements statements) {
             if (statements == null || statements.Count == 0) {
-                return Ast.Constant(null);
+                return AstUtils.Constant(null);
             }
 
             if (statements.Count == 1) {
@@ -769,7 +763,7 @@ namespace IronRuby.Compiler.Ast {
         internal MSA.Expression/*!*/ Return(MSA.Expression/*!*/ expression) {
             MSA.LabelTarget returnLabel = ReturnLabel;
             if (returnLabel.Type != typeof(void) && expression.Type == typeof(void)) {
-                expression = Ast.Block(expression, Ast.Constant(null, typeof(object)));
+                expression = Ast.Block(expression, AstUtils.Constant(null, typeof(object)));
             } else if (returnLabel.Type != expression.Type) {
                 if (!CanAssign(returnLabel.Type, expression.Type)) {
                     // Add conversion step to the AST
@@ -780,18 +774,19 @@ namespace IronRuby.Compiler.Ast {
         }
 
         internal MSA.Expression/*!*/ AddDebugInfo(MSA.Expression/*!*/ expression, SourceSpan location) {
-            return Microsoft.Scripting.Ast.Utils.AddDebugInfo(expression, _document, location.Start, location.End);
+            if (_document != null) {
+                return AstUtils.AddDebugInfo(expression, _document, location.Start, location.End);
+            } else {
+                return expression;
+            }
         }
 
         internal MSA.Expression/*!*/ DebugMarker(string/*!*/ marker) {
-            return _debugCompiler ? Methods.X.OpCall(Ast.Constant(marker)) : (MSA.Expression)Ast.Empty();
+            return _debugCompiler ? Methods.X.OpCall(AstUtils.Constant(marker)) : (MSA.Expression)AstUtils.Empty();
         }
 
         internal MSA.Expression/*!*/ DebugMark(MSA.Expression/*!*/ expression, string/*!*/ marker) {
-            return _debugCompiler ? AstFactory.Block(Methods.X.OpCall(Ast.Constant(marker)), expression) : expression;
-        }
-
-        internal virtual void TraceCallSite(Expression/*!*/ expression, MSA.DynamicExpression/*!*/ callSite) {
+            return _debugCompiler ? AstFactory.Block(Methods.X.OpCall(AstUtils.Constant(marker)), expression) : expression;
         }
 
         internal MSA.Expression/*!*/ TryCatchAny(MSA.Expression/*!*/ tryBody, MSA.Expression/*!*/ catchBody) {

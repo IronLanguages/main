@@ -1,0 +1,5 @@
+fails:Net::FTP#login when passed no arguments raises a Net::FTPReplyError when the server requests an account
+fails:Net::FTP#login when passed name raises a Net::FTPReplyError when the server requests a password, but none was given
+fails:Net::FTP#login when passed name raises a Net::FTPReplyError when the server requests an account, but none was given
+fails:Net::FTP#login when passed name, password raises a Net::FTPReplyError when the server requests an account
+fails:Net::FTP#login when passed no arguments sends the current username + hostname as a password when required 

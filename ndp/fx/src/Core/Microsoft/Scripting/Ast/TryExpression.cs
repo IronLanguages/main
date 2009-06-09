@@ -15,6 +15,7 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Dynamic.Utils;
 
 namespace System.Linq.Expressions {
@@ -28,6 +29,9 @@ namespace System.Linq.Expressions {
     /// Only one of fault or finally can be supplied.
     /// The return type of the try block must match the return type of any associated catch statements.
     /// </summary>
+#if !SILVERLIGHT
+    [DebuggerTypeProxy(typeof(Expression.TryExpressionProxy))]
+#endif
     public sealed class TryExpression : Expression {
         private readonly Type _type;
         private readonly Expression _body;
@@ -47,16 +51,16 @@ namespace System.Linq.Expressions {
         /// Gets the static type of the expression that this <see cref="Expression" /> represents. (Inherited from <see cref="Expression"/>.)
         /// </summary>
         /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
-        protected override Type TypeImpl() {
-            return _type;
+        public sealed override Type Type {
+            get { return _type; }
         }
 
         /// <summary>
         /// Returns the node type of this <see cref="Expression" />. (Inherited from <see cref="Expression" />.)
         /// </summary>
         /// <returns>The <see cref="ExpressionType"/> that represents this expression.</returns>
-        protected override ExpressionType NodeTypeImpl() {
-            return ExpressionType.Try;
+        public sealed override ExpressionType NodeType {
+            get { return ExpressionType.Try; }
         }
 
         /// <summary>
@@ -190,7 +194,7 @@ namespace System.Linq.Expressions {
                 //Body of every catch must have the same type of body of try.
                 type = tryBody.Type;
                 foreach (CatchBlock cb in handlers) {
-                    if (cb.Body == null || cb.Body.Type != type) {
+                    if (cb.Body == null || !TypeUtils.AreEquivalent(cb.Body.Type, type)) {
                         throw Error.BodyOfCatchMustHaveSameTypeAsBodyOfTry();
                     }
                 }

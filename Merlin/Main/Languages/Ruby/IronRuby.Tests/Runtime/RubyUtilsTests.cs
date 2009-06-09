@@ -41,6 +41,8 @@ namespace IronRuby.Tests {
             Assert(RubyUtils.MangleName("FOO") == "foo");
             Assert(RubyUtils.MangleName("FOOBar") == "foo_bar");
             Assert(RubyUtils.MangleName("MaM") == "ma_m");
+            Assert(RubyUtils.MangleName("foo") == "foo");
+            Assert(RubyUtils.MangleName("foo_bar=") == "foo_bar=");
             Assert(RubyUtils.MangleName("initialize") == "initialize");
             Assert(RubyUtils.MangleName("Initialize") == "Initialize");
         }

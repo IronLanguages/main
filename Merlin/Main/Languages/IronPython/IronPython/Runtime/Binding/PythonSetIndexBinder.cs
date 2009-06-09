@@ -16,21 +16,23 @@
 using System;
 using System.Dynamic;
 using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
 
 using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime.Operations;
 
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Runtime.Binding {
     using Ast = System.Linq.Expressions.Expression;
 
     class PythonSetIndexBinder : SetIndexBinder, IPythonSite, IExpressionSerializable {
-        private readonly BinderState/*!*/ _state;
+        private readonly PythonContext/*!*/ _context;
 
-        public PythonSetIndexBinder(BinderState/*!*/ state, int argCount)
-            : base(Expression.CallInfo(argCount)) {
-            _state = state;
+        public PythonSetIndexBinder(PythonContext/*!*/ context, int argCount)
+            : base(new CallInfo(argCount)) {
+            _context = context;
         }
 
         public override DynamicMetaObject FallbackSetIndex(DynamicMetaObject target, DynamicMetaObject[] indexes, DynamicMetaObject value, DynamicMetaObject errorSuggestion) {
@@ -51,8 +53,27 @@ namespace IronPython.Runtime.Binding {
             return PythonProtocol.Index(this, PythonIndexType.SetItem, finalArgs);
         }
 
+        public override T BindDelegate<T>(CallSite<T> site, object[] args) {
+            if (args[0] != null && args[0].GetType() == typeof(PythonDictionary)) {
+                if (typeof(T) == typeof(Func<CallSite, object, object, object, object>)) {
+                    return (T)(object)new Func<CallSite, object, object, object, object>(DictAssign);
+                }
+            }
+
+            return base.BindDelegate(site, args);
+        }
+        
+        private object DictAssign(CallSite site, object dict, object key, object value) {
+            if (dict != null && dict.GetType() == typeof(PythonDictionary)) {
+                ((PythonDictionary)dict)[key] = value;
+                return value;
+            }
+
+            return ((CallSite<Func<CallSite, object, object, object, object>>)site).Update(site, dict, key, value);
+        }
+
         public override int GetHashCode() {
-            return base.GetHashCode() ^ _state.Binder.GetHashCode();
+            return base.GetHashCode() ^ _context.Binder.GetHashCode();
         }
 
         public override bool Equals(object obj) {
@@ -61,13 +82,13 @@ namespace IronPython.Runtime.Binding {
                 return false;
             }
 
-            return ob._state.Binder == _state.Binder && base.Equals(obj);
+            return ob._context.Binder == _context.Binder && base.Equals(obj);
         }
 
         #region IPythonSite Members
 
-        public BinderState/*!*/ Binder {
-            get { return _state; }
+        public PythonContext/*!*/ Context {
+            get { return _context; }
         }
 
         #endregion
@@ -78,7 +99,7 @@ namespace IronPython.Runtime.Binding {
             return Ast.Call(
                 typeof(PythonOps).GetMethod("MakeSetIndexAction"),
                 BindingHelpers.CreateBinderStateExpression(),
-                Expression.Constant(CallInfo.ArgumentCount)
+                AstUtils.Constant(CallInfo.ArgumentCount)
             );
         }
 

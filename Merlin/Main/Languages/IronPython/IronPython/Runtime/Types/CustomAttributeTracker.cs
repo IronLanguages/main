@@ -29,7 +29,7 @@ namespace IronPython.Runtime.Types {
         public abstract PythonTypeSlot/*!*/ GetSlot();
 
         public override Expression GetValue(Expression context, ActionBinder binder, Type type) {
-            return Ast.Constant(GetSlot(), typeof(PythonTypeSlot));
+            return AstUtils.Constant(GetSlot(), typeof(PythonTypeSlot));
         }
 
         public override MemberTracker BindToInstance(Expression instance) {
@@ -37,19 +37,19 @@ namespace IronPython.Runtime.Types {
         }
 
         public override Expression SetValue(Expression context, ActionBinder binder, Type type, Expression value) {
-            return SetBoundValue(context, binder, type, value, Ast.Constant(null));
+            return SetBoundValue(context, binder, type, value, AstUtils.Constant(null));
         }
 
         protected override Expression GetBoundValue(Expression context, ActionBinder binder, Type type, Expression instance) {
             return Ast.Call(
                 typeof(PythonOps).GetMethod("SlotGetValue"),
                 context,
-                Ast.Constant(GetSlot(), typeof(PythonTypeSlot)),
+                AstUtils.Constant(GetSlot(), typeof(PythonTypeSlot)),
                 AstUtils.Convert(
                     instance,
                     typeof(object)
                 ),
-                Ast.Constant(DynamicHelpers.GetPythonTypeFromType(type))
+                AstUtils.Constant(DynamicHelpers.GetPythonTypeFromType(type))
             );
         }
         
@@ -57,12 +57,12 @@ namespace IronPython.Runtime.Types {
             return Ast.Call(
                 typeof(PythonOps).GetMethod("SlotSetValue"),
                 context,
-                Ast.Constant(GetSlot(), typeof(PythonTypeSlot)),
+                AstUtils.Constant(GetSlot(), typeof(PythonTypeSlot)),
                 AstUtils.Convert(
                     instance,
                     typeof(object)
                 ),
-                Ast.Constant(DynamicHelpers.GetPythonTypeFromType(type)),
+                AstUtils.Constant(DynamicHelpers.GetPythonTypeFromType(type)),
                 value
             );
         }
@@ -71,9 +71,9 @@ namespace IronPython.Runtime.Types {
             return Ast.Call(
                 typeof(PythonOps).GetMethod("SlotGetValue"),
                 builder.Context,
-                Ast.Constant(GetSlot(), typeof(PythonTypeSlot)),
-                Ast.Constant(null),
-                Ast.Constant(accessing)
+                AstUtils.Constant(GetSlot(), typeof(PythonTypeSlot)),
+                AstUtils.Constant(null),
+                AstUtils.Constant(accessing)
             );
         }
     }
@@ -98,7 +98,7 @@ namespace IronPython.Runtime.Types {
         }
 
         public override Expression GetValue(Expression context, ActionBinder binder, Type type) {
-            return GetBoundValue(context, binder, type, Ast.Constant(null));
+            return GetBoundValue(context, binder, type, AstUtils.Constant(null));
         }
 
         public override string Name {
@@ -144,7 +144,7 @@ namespace IronPython.Runtime.Types {
         }
 
         public override Expression GetValue(Expression context, ActionBinder binder, Type type) {
-            return GetBoundValue(context, binder, type, Ast.Constant(null));
+            return GetBoundValue(context, binder, type, AstUtils.Constant(null));
         }
 
         public override Type DeclaringType {

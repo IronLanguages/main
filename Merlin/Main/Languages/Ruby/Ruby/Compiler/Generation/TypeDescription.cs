@@ -26,17 +26,21 @@ namespace IronRuby.Compiler.Generation {
         // The CLI base-type.
         private readonly Type/*!*/ _baseType;
 
-        private readonly IList<ITypeFeature/*!*/>/*!*/ _features;
-        private int _hash;
+        // Do not override base type's virtual methods.
+        private readonly bool _noOverrides;
 
-        public TypeDescription(Type/*!*/ baseType, IList<ITypeFeature/*!*/>/*!*/ features) {
+        private readonly IList<ITypeFeature/*!*/>/*!*/ _features;
+        private readonly int _hash;
+
+        public TypeDescription(Type/*!*/ baseType, IList<ITypeFeature/*!*/>/*!*/ features, bool noOverrides) {
             Assert.NotNull(baseType);
             Assert.NotNull(features);
 
+            _noOverrides = noOverrides;
             _baseType = baseType;
             _features = features;
 
-            _hash = _baseType.GetHashCode();
+            _hash = (_noOverrides ? 3 : 7) ^ _baseType.GetHashCode();
             for (int i = 0; i < features.Count; i++) {
                 _hash ^= features[i].GetHashCode();
             }
@@ -44,6 +48,10 @@ namespace IronRuby.Compiler.Generation {
 
         public Type/*!*/ BaseType {
             get { return _baseType; }
+        }
+
+        public bool NoOverrides {
+            get { return _noOverrides; }
         }
 
         public IList<ITypeFeature/*!*/>/*!*/ Features {

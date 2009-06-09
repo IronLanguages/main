@@ -17,12 +17,15 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Dynamic;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Dynamic;
+using System.Runtime.CompilerServices;
+using System.Threading;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
+using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime.Operations;
@@ -38,7 +41,7 @@ namespace IronPython.Runtime.Binding {
         #region MetaObject Overrides
 
         public override DynamicMetaObject/*!*/ BindGetMember(GetMemberBinder/*!*/ member) {
-            return GetMemberWorker(member, BinderState.GetCodeContext(member));            
+            return GetMemberWorker(member, PythonContext.GetCodeContext(member));            
         }
 
         private ValidationInfo GetTypeTest() {
@@ -48,14 +51,15 @@ namespace IronPython.Runtime.Binding {
                 Ast.Call(
                     typeof(PythonOps).GetMethod("CheckSpecificTypeVersion"),
                     AstUtils.Convert(Expression, typeof(PythonType)),
-                    Ast.Constant(version)
-                ),
-                new BindingHelpers.PythonTypeValidator(Value, version).Validate
+                    AstUtils.Constant(version)
+                )
             );
         }
 
         public override DynamicMetaObject/*!*/ BindSetMember(SetMemberBinder/*!*/ member, DynamicMetaObject/*!*/ value) {
-            BinderState state = BinderState.GetBinderState(member);
+            PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "Type SetMember " + Value.UnderlyingSystemType.FullName);
+            PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "Type SetMember");
+            PythonContext state = PythonContext.GetPythonContext(member);
 
             if (Value.IsSystemType) {
                 MemberTracker tt = MemberTracker.FromMemberInfo(Value.UnderlyingSystemType);
@@ -77,12 +81,12 @@ namespace IronPython.Runtime.Binding {
                     state.Binder.SetMember(
                         member.Name,
                         new DynamicMetaObject(
-                            Ast.Constant(tt),
+                            AstUtils.Constant(tt),
                             BindingRestrictions.Empty,
                             tt
                         ),
                         value,
-                        Ast.Constant(state.Context)
+                        AstUtils.Constant(state.SharedContext)
                     ).Expression,
                     Restrictions.Merge(value.Restrictions).Merge(BindingRestrictions.GetInstanceRestriction(Expression, Value))
                 );
@@ -92,8 +96,10 @@ namespace IronPython.Runtime.Binding {
         }
 
         public override DynamicMetaObject/*!*/ BindDeleteMember(DeleteMemberBinder/*!*/ member) {
+            PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "Type DeleteMember " + Value.UnderlyingSystemType.FullName);
+            PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "Type DeleteMember");
             if (Value.IsSystemType) {
-                BinderState state = BinderState.GetBinderState(member);
+                PythonContext state = PythonContext.GetPythonContext(member);
 
                 MemberTracker tt = MemberTracker.FromMemberInfo(Value.UnderlyingSystemType);
 
@@ -103,7 +109,7 @@ namespace IronPython.Runtime.Binding {
                     state.Binder.DeleteMember(
                         member.Name,
                         new DynamicMetaObject(
-                            Ast.Constant(tt),
+                            AstUtils.Constant(tt),
                             BindingRestrictions.Empty,
                             tt
                         )
@@ -119,8 +125,8 @@ namespace IronPython.Runtime.Binding {
 
         #region IPythonGetable Members
 
-        public DynamicMetaObject/*!*/ GetMember(PythonGetMemberBinder/*!*/ member, Expression/*!*/ codeContext) {
-            return GetMemberWorker(member, codeContext);
+        public DynamicMetaObject/*!*/ GetMember(PythonGetMemberBinder/*!*/ member, DynamicMetaObject/*!*/ codeContext) {
+            return GetMemberWorker(member, codeContext.Expression);
         }
 
         #endregion
@@ -128,37 +134,10 @@ namespace IronPython.Runtime.Binding {
         #region Gets
 
         private DynamicMetaObject/*!*/ GetMemberWorker(DynamicMetaObjectBinder/*!*/ member, Expression codeContext) {
-            switch (GetGetMemberName(member)) {
-                case "__dict__":
-                case "__class__":
-                case "__bases__":
-                case "__name__":
-                    DynamicMetaObject self = Restrict(this.GetRuntimeType());
-                    ValidationInfo valInfo = MakeMetaTypeTest(self.Expression);
+            PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "Type GetMember " + Value.UnderlyingSystemType.FullName);
+            PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "Type GetMember");
 
-                    return BindingHelpers.AddDynamicTestAndDefer(
-                        member,
-                        new DynamicMetaObject(
-                            MakeMetaTypeRule(member, GetMemberFallback(member, codeContext).Expression),
-                            self.Restrictions
-                        ),
-                        new DynamicMetaObject[] { this },
-                        valInfo
-                    );
-                default:
-                    if (!Value.IsSystemType) {
-                        ValidationInfo typeTest = GetTypeTest();
-
-                        return BindingHelpers.AddDynamicTestAndDefer(
-                            member,
-                            MakeTypeGetMember(member, codeContext),
-                            new DynamicMetaObject[] { this },
-                            typeTest
-                        );
-                    }
-
-                    return MakeTypeGetMember(member, codeContext);
-            }
+            return new MetaGetBinderHelper(this, member, codeContext, GetTypeTest(), MakeMetaTypeTest(Restrict(this.GetRuntimeType()).Expression)).MakeTypeGetMember();
         }
         
         private ValidationInfo MakeMetaTypeTest(Expression self) {
@@ -171,384 +150,651 @@ namespace IronPython.Runtime.Binding {
                     Ast.Call(
                         typeof(PythonOps).GetMethod("CheckTypeVersion"),
                         self,
-                        Ast.Constant(version)
-                    ),
-                    new BindingHelpers.PythonTypeValidator(metaType, version).Validate
+                        AstUtils.Constant(version)
+                    )
                 );
             }
 
             return ValidationInfo.Empty;
         }
+        
+        /// <summary>
+        /// Base class for performing member binding.  Derived classes override Add methods
+        /// to produce the actual final result based upon what the GetBinderHelper resolves.
+        /// </summary>
+        /// <typeparam name="TResult"></typeparam>
+        public abstract class GetBinderHelper<TResult> {
+            private readonly PythonType _value;
+            private readonly string _name;
+            internal readonly CodeContext/*!*/ _context;
 
-        private DynamicMetaObject/*!*/ MakeTypeGetMember(DynamicMetaObjectBinder/*!*/ member, Expression codeContext) {
-            // normal attribute, need to check the type version
-            DynamicMetaObject self = new DynamicMetaObject(
-                AstUtils.Convert(Expression, Value.GetType()),
-                Restrictions.Merge(BindingRestrictions.GetInstanceRestriction(Expression, Value)),
-                Value
-            );
+            public GetBinderHelper(PythonType value, CodeContext/*!*/ context, string name) {
+                _value = value;
+                _name = name;
+                _context = context;
+            }
 
-            BinderState state = BinderState.GetBinderState(member);
+            #region Abstract members
 
-            // have the default binder perform it's operation against a TypeTracker and then
-            // replace the test w/ our own.
-            DynamicMetaObject result = GetFallbackGet(member, state, codeContext);
+            protected abstract TResult Finish(bool metaOnly);
 
-            for (int i = Value.ResolutionOrder.Count - 1; i >= 0; i--) {
-                PythonType pt = Value.ResolutionOrder[i];
+            protected abstract void AddError();
 
+            protected abstract void AddMetaGetAttribute(PythonType metaType, PythonTypeSlot pts);
+
+            protected abstract void AddMetaSlotAccess(PythonType pt, PythonTypeSlot pts);
+
+            protected abstract void AddMetaOldClassAccess();
+
+            protected abstract void AddSlotAccess(PythonType pt, PythonTypeSlot pts);
+
+            protected abstract void AddOldClassAccess(PythonType pt);
+
+            #endregion
+
+            #region Common Get Code
+
+            public TResult MakeTypeGetMember() {
                 PythonTypeSlot pts;
+                SymbolId name = SymbolTable.StringToId(_name);
+                bool isFinal = false, metaOnly = false;
+                CodeContext lookupContext = PythonContext.GetContext(_context).SharedClsContext;
 
-                if (pt.IsSystemType) {
-                    // built-in type, see if we can bind to any .NET members and then quit the search 
-                    // because this includes all subtypes.
-                    result = new DynamicMetaObject(
-                        MakeSystemTypeGetExpression(pt, member, result.Expression),
-                        self.Restrictions // don't merge w/ result - we've already restricted to instance.
-                    );
-                } else if (pt.IsOldClass) {
-                    // mixed new-style/old-style class, search the one slot in it's MRO for the member
-                    ParameterExpression tmp = Ast.Variable(typeof(object), "tmp");
-                    result = new DynamicMetaObject(
-                        Ast.Block(
-                            new ParameterExpression[] { tmp },
-                            Ast.Condition(
-                                Ast.Call(
-                                    typeof(PythonOps).GetMethod("OldClassTryLookupOneSlot"),
-                                    Ast.Constant(pt.OldClass),
-                                    AstUtils.Constant(SymbolTable.StringToId(GetGetMemberName(member))),
-                                    tmp
-                                ),
-                                tmp,
-                                AstUtils.Convert(result.Expression, typeof(object))
-                            )
-                        ),
-                        self.Restrictions // don't merge w/ result - we've already restricted to instance.
-                    );
+                // first look in the meta-class to see if we have a get/set descriptor
+                PythonType metaType = DynamicHelpers.GetPythonType(Value);
+                foreach (PythonType pt in metaType.ResolutionOrder) {
+                    if (pt.TryLookupSlot(lookupContext, name, out pts) && pts.IsSetDescriptor(lookupContext, metaType)) {
+                        AddMetaSlotAccess(metaType, pts);
+                        if (pts.GetAlwaysSucceeds) {
+                            metaOnly = isFinal = true;
+                            break;
+                        }
+                    }
+                }
 
-                } else if (pt.TryLookupSlot(state.Context, SymbolTable.StringToId(GetGetMemberName(member)), out pts)) {
-                    // user defined new style class, see if we have a slot.
-                    ParameterExpression tmp = Ast.Variable(typeof(object), "tmp");
+                if (!isFinal) {
+                    // then search the MRO to see if we have the value
+                    foreach (PythonType pt in Value.ResolutionOrder) {
+                        if (pt.IsOldClass) {
+                            // mixed new-style/old-style class, search the one slot in it's MRO for the member
+                            AddOldClassAccess(pt);
+                        } else if (pt.TryLookupSlot(lookupContext, name, out pts)) {
+                            AddSlotAccess(pt, pts);
 
-                    result = new DynamicMetaObject(
-                        Ast.Block(
-                            new ParameterExpression[] { tmp },
-                            Ast.Condition(
-                                Ast.Call(
-                                    TypeInfo._PythonOps.SlotTryGetBoundValue,
-                                    Ast.Constant(BinderState.GetBinderState(member).Context),
-                                    Ast.Constant(pts, typeof(PythonTypeSlot)),
-                                    Ast.Constant(null),
-                                    Ast.Constant(Value),
-                                    tmp
-                                ),
-                                tmp,
-                                AstUtils.Convert(
-                                    result.Expression,
-                                    typeof(object)
-                                )
-                            )
-                        ),
-                        self.Restrictions   // don't merge w/ result - we've already restricted to instance.
-                    );
+                            if (pts.GetAlwaysSucceeds && pts.IsAlwaysVisible) {
+                                isFinal = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (!isFinal) {
+                    // then go back to the meta class to see if we have a normal attribute
+                    foreach (PythonType pt in metaType.ResolutionOrder) {
+                        if (pt.OldClass != null) {
+                            // mixed new-style/old-style class, just call our version of __getattribute__
+                            // and let it sort it out at runtime.  
+                            AddMetaOldClassAccess();
+                            isFinal = true;
+                            break;
+                        } else if (pt.TryLookupSlot(lookupContext, name, out pts)) {
+                            AddMetaSlotAccess(metaType, pts);
+                            if (pts.GetAlwaysSucceeds) {
+                                isFinal = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (!isFinal) {
+                    // the member doesn't exist anywhere in the type hierarchy, see if
+                    // we define __getattr__ on our meta type.
+                    if (metaType.TryResolveSlot(_context, Symbols.GetBoundAttr, out pts) && 
+                        !pts.IsSetDescriptor(lookupContext, metaType)) { // we tried get/set descriptors initially
+                        
+                        AddMetaGetAttribute(metaType, pts);
+                        isFinal = pts.GetAlwaysSucceeds;
+                    }
+                }
+
+                if (!isFinal) {
+                    AddError();
+                }
+
+                return Finish(metaOnly);
+            }
+            
+            #endregion
+
+            protected PythonType Value {
+                get {
+                    return _value;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Provides the normal meta binder binding.
+        /// </summary>
+        class MetaGetBinderHelper : GetBinderHelper<DynamicMetaObject> {
+            private readonly DynamicMetaObjectBinder _member;
+            private readonly MetaPythonType _type;
+            private readonly Expression _codeContext;
+            private readonly DynamicMetaObject _restrictedSelf;
+            private readonly ConditionalBuilder _cb;
+            private readonly SymbolId _symName;
+            private readonly PythonContext _state;
+            private readonly ValidationInfo _valInfo, _metaValInfo;
+            private ParameterExpression _tmp;
+
+            public MetaGetBinderHelper(MetaPythonType type, DynamicMetaObjectBinder member, Expression codeContext, ValidationInfo validationInfo, ValidationInfo metaValidation)
+                : base(type.Value, PythonContext.GetPythonContext(member).SharedContext, GetGetMemberName(member)) {
+                _member = member;
+                _codeContext = codeContext;
+                _type = type;
+                _cb = new ConditionalBuilder(member);
+                _symName = SymbolTable.StringToId(GetGetMemberName(member));
+                _restrictedSelf = new DynamicMetaObject(
+                    AstUtils.Convert(Expression, Value.GetType()),
+                    Restrictions.Merge(BindingRestrictions.GetInstanceRestriction(Expression, Value)),
+                    Value
+                );
+                _state = PythonContext.GetPythonContext(member);
+                _valInfo = validationInfo;
+                _metaValInfo = metaValidation;
+            }
+
+            protected override void AddOldClassAccess(PythonType pt) {
+                EnsureTmp();
+
+                _cb.AddCondition(
+                    Ast.Call(
+                        typeof(PythonOps).GetMethod("OldClassTryLookupOneSlot"),
+                        AstUtils.Constant(pt.OldClass),
+                        AstUtils.Constant(_symName),
+                        _tmp
+                    ),
+                    _tmp
+                );
+            }
+
+            private void EnsureTmp() {
+                if (_tmp == null) {
+                    _tmp = Ast.Variable(typeof(object), "tmp");
+                    _cb.AddVariable(_tmp);
                 }
             }
 
-            return result;
-        }
+            protected override void AddSlotAccess(PythonType pt, PythonTypeSlot pts) {
+                pts.MakeGetExpression(
+                        _state.Binder,
+                        _codeContext,
+                        null,
+                        AstUtils.Convert(AstUtils.WeakConstant(Value), typeof(PythonType)),
+                        _cb
+                    );
 
-        private DynamicMetaObject/*!*/ GetFallbackGet(DynamicMetaObjectBinder/*!*/ member, BinderState/*!*/ state, Expression codeContext) {
-            MemberTracker tt = MemberTracker.FromMemberInfo(Value.UnderlyingSystemType);
-
-            string memberName = GetGetMemberName(member);
-            DynamicMetaObject res = new DynamicMetaObject(
-                state.Binder.GetMember(
-                    memberName,
-                    new DynamicMetaObject(
-                        Ast.Constant(tt),
-                        BindingRestrictions.Empty,
-                        tt
-                    ),
-                    Ast.Constant(state.Context),
-                    BindingHelpers.IsNoThrow(member)
-
-                ).Expression,
-                BindingRestrictions.GetInstanceRestriction(Expression, Value).Merge(Restrictions)
-            );
-
-            if (codeContext != null && Value.IsHiddenMember(memberName)) {
-                res = BindingHelpers.FilterShowCls(
-                    codeContext,
-                    member,
-                    res,
-                    Ast.Throw(
-                        Ast.Call(
-                            typeof(PythonOps).GetMethod("AttributeErrorForMissingAttribute", new Type[] { typeof(string), typeof(SymbolId) }),
-                            Ast.Constant(Value.Name),
-                            AstUtils.Constant(SymbolTable.StringToId(memberName))
-                        )
-                    )
-                );
+                if (!pts.IsAlwaysVisible) {
+                    _cb.AddCondition(Ast.Call(typeof(PythonOps).GetMethod("IsClsVisible"), _codeContext));
+                }
             }
 
-            return res;
-        }
-
-        private Expression MakeSystemTypeGetExpression(PythonType/*!*/ pt, DynamicMetaObjectBinder/*!*/ member, Expression/*!*/ error) {
-            BinderState state = BinderState.GetBinderState(member);
-
-            PythonTypeSlot pts;
-
-            CodeContext clsContext = PythonContext.GetContext(state.Context).DefaultClsBinderState.Context;
-            if (state.Binder.TryResolveSlot(clsContext, pt, Value, SymbolTable.StringToId(GetGetMemberName(member)), out pts)) {
-                Expression success = pts.MakeGetExpression(
-                    state.Binder,
-                    BinderState.GetCodeContext(member),
-                    null,
-                    AstUtils.Convert(AstUtils.WeakConstant(Value), typeof(PythonType)),
-                    error
-                );
-
-                return AddClsCheck(member, pts, success, error);
-            }
-
-            // need to lookup on type
-            return MakeMetaTypeRule(member, error);
-        }
-
-        private Expression/*!*/ AddClsCheck(DynamicMetaObjectBinder/*!*/ member, PythonTypeSlot/*!*/ slot, Expression/*!*/ success, Expression/*!*/ error) {
-            BinderState state = BinderState.GetBinderState(member);
-
-            if (Value.IsPythonType && !slot.IsAlwaysVisible) {
-                Type resType = BindingHelpers.GetCompatibleType(success.Type, error.Type);
-
-                success = Ast.Condition(
+            protected override void AddMetaOldClassAccess() {
+                // mixed new-style/old-style class, just call our version of __getattribute__
+                // and let it sort it out at runtime.  
+                _cb.FinishCondition(
                     Ast.Call(
-                        typeof(PythonOps).GetMethod("IsClsVisible"),
-                        Ast.Constant(state.Context)
-                    ),
-                    AstUtils.Convert(success, resType),
-                    AstUtils.Convert(error, resType)
-                );
-            }
-            return success;
-        }
-
-        private Expression MakeMetaTypeRule(DynamicMetaObjectBinder/*!*/ member, Expression error) {
-            BinderState state = BinderState.GetBinderState(member);
-
-            string name = GetGetMemberName(member);
-            OldGetMemberAction gma = OldGetMemberAction.Make(state.Binder, name);
-            MemberGroup mg = state.Binder.GetMember(gma, typeof(PythonType), name);
-            PythonType metaType = DynamicHelpers.GetPythonType(Value);
-            PythonTypeSlot pts;
-
-            foreach (PythonType pt in metaType.ResolutionOrder) {
-                if (pt.IsSystemType) {
-                    // need to lookup on type
-                    mg = state.Binder.GetMember(gma, typeof(PythonType), name);
-
-                    if (mg.Count > 0) {
-                        return GetBoundTrackerOrError(member, mg, error);
-                    }
-                } else if (pt.OldClass != null) {
-                    // mixed new-style/old-style class, just call our version of __getattribute__
-                    // and let it sort it out at runtime.  
-                    // TODO: IfError support
-                    return Ast.Call(
                         AstUtils.Convert(
                             Expression,
                             typeof(PythonType)
                         ),
                         typeof(PythonType).GetMethod("__getattribute__"),
-                        Ast.Constant(BinderState.GetBinderState(member).Context),
-                        Ast.Constant(name)
-                    );
-                } else if (pt.TryLookupSlot(BinderState.GetBinderState(member).Context, SymbolTable.StringToId(GetGetMemberName(member)), out pts)) {
-                    // user defined new style class, see if we have a slot.
-                    ParameterExpression tmp = Ast.Variable(typeof(object), "slotRes");
-                    return Ast.Block(
-                        new ParameterExpression[] { tmp },
-                        Ast.Condition(
-                            Ast.Call(
-                                typeof(PythonOps).GetMethod("SlotTryGetBoundValue"),
-                                Ast.Constant(BinderState.GetBinderState(member).Context),
-                                Ast.Constant(pts, typeof(PythonTypeSlot)),
-                                Expression,
-                                Ast.Constant(metaType),
-                                tmp
-                            ),
-                            tmp,
-                            AstUtils.Convert(error, typeof(object))
-                        )
-                    );
-                }
-            }
-
-            // the member doesn't exist anywhere in the type hierarchy, see if
-            // we define __getattr__ on our meta type.
-            if (metaType.TryResolveSlot(BinderState.GetBinderState(member).Context, Symbols.GetBoundAttr, out pts)) {
-                ParameterExpression tmp = Ast.Variable(typeof(object), "res");
-                return Ast.Block(
-                    new ParameterExpression[] { tmp },
-                    Ast.Condition(
-                        Ast.Call(
-                            typeof(PythonOps).GetMethod("SlotTryGetBoundValue"),
-                            Ast.Constant(BinderState.GetBinderState(member).Context),
-                            Ast.Constant(pts, typeof(PythonTypeSlot)),
-                            Expression,
-                            Ast.Constant(metaType),
-                            tmp
-                        ),
-                        Ast.Dynamic(
-                            BinderState.GetBinderState(member).InvokeOne,
-                            typeof(object),
-                            BinderState.GetCodeContext(member),
-                            tmp,
-                            Ast.Constant(name)
-                        ),
-                        AstUtils.Convert(
-                            error,
-                            typeof(object)
-                        )
+                        _codeContext,
+                        AstUtils.Constant(GetGetMemberName(_member))
                     )
                 );
             }
 
-            return error;/* ?? Ast.Throw(
-                Ast.Call(
-                    typeof(PythonOps).GetMethod("AttributeErrorForMissingAttribute", new Type[] { typeof(string), typeof(SymbolId) }),
-                    Ast.Constant(DynamicHelpers.GetPythonType(_type).Name),
-                    Ast.Constant(SymbolTable.StringToId(_name))
-                )
-            );*/
-        }
-
-        private Expression/*!*/ GetBoundTrackerOrError(DynamicMetaObjectBinder/*!*/ member, MemberGroup/*!*/ mg, Expression error) {
-            BinderState state = BinderState.GetBinderState(member);
-            MemberTracker tracker = GetTracker(member, mg);
-            Expression target = null;
-
-            if (tracker != null) {
-                tracker = tracker.BindToInstance(AstUtils.Convert(Expression, typeof(PythonType)));
-                target = tracker.GetValue(Ast.Constant(state.Context), state.Binder, Value.UnderlyingSystemType);
+            protected override void AddError() {
+                // TODO: We should preserve restrictions from the error
+                _cb.FinishCondition(GetFallbackError(_member).Expression);
             }
 
-            return target ?? error /*?? Ast.Throw(MakeAmbiguousMatchError(mg))*/;
-        }
-#if FALSE
-        private static Expression/*!*/ MakeErrorExpression(MemberGroup/*!*/ mg) {
-            if (mg.Count == 1) {
-                MemberTracker mt = mg[0];
+            protected override void AddMetaGetAttribute(PythonType metaType, PythonTypeSlot pts) {
+                EnsureTmp();
 
-                if (mt.DeclaringType.ContainsGenericParameters) {
-                    return Ast.Throw(
-                        Ast.New(
-                            typeof(InvalidOperationException).GetConstructor(new Type[] { typeof(string) }),
-                            Ast.Constant(String.Format("Cannot access member {1} declared on type {0} because the type contains generic parameters.", mt.DeclaringType.Name, mt.Name))
-                        )
-                    );
+                _cb.AddCondition(
+                    Ast.Call(
+                        typeof(PythonOps).GetMethod("SlotTryGetBoundValue"),
+                        _codeContext,
+                        AstUtils.Constant(pts, typeof(PythonTypeSlot)),
+                        Expression,
+                        AstUtils.Constant(metaType),
+                        _tmp
+                    ),
+                    Ast.Dynamic(
+                            _state.InvokeOne,
+                            typeof(object),
+                            _codeContext,
+                            _tmp,
+                            AstUtils.Constant(GetGetMemberName(_member))
+                    )
+                );
+            }
+
+            protected override void AddMetaSlotAccess(PythonType metaType, PythonTypeSlot pts) {
+                ParameterExpression tmp = Ast.Variable(typeof(object), "slotRes");
+                pts.MakeGetExpression(_state.Binder,
+                    _codeContext,
+                    Expression,
+                    AstUtils.Constant(metaType),
+                    _cb
+                );
+
+                if (!pts.IsAlwaysVisible) {
+                    _cb.AddCondition(Ast.Call(typeof(PythonOps).GetMethod("IsClsVisible"), _codeContext));
                 }
             }
 
-            return Ast.Throw(MakeAmbiguousMatchError(mg));
-        }
+           
+            protected override DynamicMetaObject/*!*/ Finish(bool metaOnly) {
+                DynamicMetaObject res = _cb.GetMetaObject(_restrictedSelf);
 
-        private static Expression/*!*/ MakeAmbiguousMatchError(MemberGroup/*!*/ members) {
-            StringBuilder sb = new StringBuilder();
-            foreach (MethodTracker mi in members) {
-                if (sb.Length != 0) sb.Append(", ");
-                sb.Append(mi.MemberType);
-                sb.Append(" : ");
-                sb.Append(mi.ToString());
+                if (metaOnly) {
+                    res = BindingHelpers.AddDynamicTestAndDefer(
+                        _member,
+                        res,
+                        new DynamicMetaObject[] { _type },
+                        _metaValInfo
+                    );
+                } else if (!Value.IsSystemType) {
+                    res =  BindingHelpers.AddDynamicTestAndDefer(
+                        _member,
+                        res,
+                        new DynamicMetaObject[] { _type },
+                        _valInfo
+                    );
+                }
+
+                return res;
             }
 
-            return Ast.New(typeof(AmbiguousMatchException).GetConstructor(
-                new Type[] { typeof(string) }),
-                Ast.Constant(sb.ToString())
-            );
+            private DynamicMetaObject/*!*/ GetFallbackError(DynamicMetaObjectBinder/*!*/ member) {
+                if (member is PythonGetMemberBinder) {
+                    // accessing from Python, produce our error
+                    PythonGetMemberBinder pb = member as PythonGetMemberBinder;
+                    if (pb.IsNoThrow) {
+                        return new DynamicMetaObject(
+                            Expression.Constant(OperationFailed.Value),
+                            BindingRestrictions.GetInstanceRestriction(Expression, Value).Merge(Restrictions)
+                        );
+                    } else {
+                        return new DynamicMetaObject(
+                            Ast.Throw(
+                                Ast.Call(
+                                    typeof(PythonOps).GetMethod(
+                                        "AttributeErrorForMissingAttribute",
+                                        new Type[] { typeof(string), typeof(SymbolId) }
+                                    ),
+                                    AstUtils.Constant(DynamicHelpers.GetPythonType(Value).Name),
+                                    AstUtils.Constant(SymbolTable.StringToId(pb.Name))
+                                ),
+                                typeof(object)
+                            ),
+                            BindingRestrictions.GetInstanceRestriction(Expression, Value).Merge(Restrictions)
+                        );
+                    }
+                }
+
+                // let the calling language bind the .NET members
+                return ((GetMemberBinder)member).FallbackGetMember(_type);
+            }
+
+            private Expression/*!*/ Expression {
+                get {
+                    return _type.Expression;
+                }
+            }
+
+            private BindingRestrictions Restrictions {
+                get {
+                    return _type.Restrictions;
+                }
+            }
+
+
         }
-#endif
 
-        private MemberTracker GetTracker(DynamicMetaObjectBinder/*!*/ member, MemberGroup/*!*/ mg) {
-            TrackerTypes mt = GetMemberTypes(mg);
-            MemberTracker tracker;
+        /// <summary>
+        /// Provides delegate based fast binding.
+        /// </summary>
+        internal class FastGetBinderHelper : GetBinderHelper<TypeGetBase> {
+            private readonly PythonGetMemberBinder _binder;
+            private readonly int _version;
+            private readonly int _metaVersion;
+            private bool _canOptimize;
+            private List<FastGetDelegate> _gets=  new List<FastGetDelegate>();
 
-            switch (mt) {
-                case TrackerTypes.Method:
-                    tracker = ReflectionCache.GetMethodGroup(GetGetMemberName(member), mg);
-                    break;
-                case TrackerTypes.TypeGroup:
-                case TrackerTypes.Type:
-                    tracker = GetTypeGroup(mg);
-                    break;
-                case TrackerTypes.Field:
-                case TrackerTypes.Property:
-                    tracker = null;
-                    foreach (MemberTracker curTracker in mg) {
-                        if (curTracker.DeclaringType == Value.UnderlyingSystemType) {
-                            tracker = curTracker;
+            public FastGetBinderHelper(PythonType type, CodeContext context, PythonGetMemberBinder binder)
+                : base(type, context, binder.Name) {
+                // capture these before we start producing the result
+                _version = type.Version;
+                _metaVersion = DynamicHelpers.GetPythonType(type).Version;
+                _binder = binder;
+            }
+            
+            public Func<CallSite, object, CodeContext, object> GetBinding() {
+                Dictionary<string, TypeGetBase> cachedGets = GetCachedGets();
+
+                TypeGetBase dlg;
+                lock (cachedGets) {                    
+                    if (!cachedGets.TryGetValue(_binder.Name, out dlg) || !dlg.IsValid(Value)) {
+                        var binding = MakeTypeGetMember();
+                        if (binding != null) {
+                            dlg = cachedGets[_binder.Name] = binding;
                         }
                     }
-                    if (tracker == null) {
-                        tracker = mg[0];
+                }
+
+                if (dlg != null && dlg.ShouldUseNonOptimizedSite) {                    
+                    return dlg._func;
+                }
+                return null;
+            }
+
+            private Dictionary<string, TypeGetBase> GetCachedGets() {
+                if (_binder.IsNoThrow) {
+                    Dictionary<string, TypeGetBase> cachedGets = Value._cachedTypeTryGets;
+                    if (cachedGets == null) {
+                        Interlocked.CompareExchange(
+                            ref Value._cachedTypeTryGets,
+                            new Dictionary<string, TypeGetBase>(),
+                            null);
+
+                        cachedGets = Value._cachedTypeTryGets;
                     }
-                    break;
-                case TrackerTypes.Field | TrackerTypes.Property:
-                    // occurs when we have a protected field w/ public property accessors
-                    List<MemberTracker> newGroup = new List<MemberTracker>();
-                    foreach (MemberTracker curTracker in mg) {
-                        if (curTracker.MemberType != TrackerTypes.Field) {
-                            newGroup.Add(curTracker);
-                        }
+                    return cachedGets;
+                } else {
+                    Dictionary<string, TypeGetBase> cachedGets = Value._cachedTypeGets;
+                    if (cachedGets == null) {
+                        Interlocked.CompareExchange(
+                            ref Value._cachedTypeGets,
+                            new Dictionary<string, TypeGetBase>(),
+                            null);
+
+                        cachedGets = Value._cachedTypeGets;
+                    }
+                    return cachedGets;
+                }
+            }
+
+            protected override void AddOldClassAccess(PythonType pt) {
+                _gets.Add(new OldClassDelegate(pt, SymbolTable.StringToId(_binder.Name)).Target);
+            }
+
+            class OldClassDelegate {
+                private readonly WeakReference _type;
+                private readonly SymbolId _name;
+
+                public OldClassDelegate(PythonType oldClass, SymbolId name) {
+                    _type = oldClass.GetSharedWeakReference();
+                    _name = name;
+                }
+
+                public bool Target(CodeContext context, object self, out object result) {
+                    return PythonOps.OldClassTryLookupOneSlot(((PythonType)_type.Target).OldClass, _name, out result);
+                }
+            }
+
+            protected override void AddSlotAccess(PythonType pt, PythonTypeSlot pts) {
+                if (pts.CanOptimizeGets) {
+                    _canOptimize = true;
+                }
+
+                if (pts.IsAlwaysVisible) {
+                    _gets.Add(new SlotAccessDelegate(pts, Value).Target);
+                } else {
+                    _gets.Add(new SlotAccessDelegate(pts, Value).TargetCheckCls);
+                }
+            }
+
+            class SlotAccessDelegate {
+                private readonly PythonTypeSlot _slot;
+                private readonly PythonType _owner;
+                private readonly WeakReference _weakOwner;
+                private readonly WeakReference _weakSlot;
+                
+                public SlotAccessDelegate(PythonTypeSlot slot, PythonType owner) {
+                    if (owner.IsSystemType) {
+                        _owner = owner;
+                        _slot = slot;
+                    } else {
+                        _weakOwner = owner.GetSharedWeakReference();
+                        _weakSlot = new WeakReference(slot);
+                    }
+                }
+
+                public bool TargetCheckCls(CodeContext context, object self, out object result) {
+                    if (PythonOps.IsClsVisible(context)) {
+                        return Slot.TryGetValue(context, null, Type, out result);
                     }
 
-                    return GetTracker(member, new MemberGroup(newGroup.ToArray()));
-                case TrackerTypes.Event:
-                case TrackerTypes.Namespace:
-                case TrackerTypes.Custom:
-                case TrackerTypes.Constructor:
-                    tracker = mg[0];
-                    break;
-                default:
-                    tracker = null;
-                    break;
+                    result = null;
+                    return false;
+                }
+                
+                public bool Target(CodeContext context, object self, out object result) {
+                    return Slot.TryGetValue(context, null, Type, out result);
+                }
+
+                public bool MetaTargetCheckCls(CodeContext context, object self, out object result) {
+                    if (PythonOps.IsClsVisible(context)) {
+                        return Slot.TryGetValue(context, self, Type, out result);
+                    }
+
+                    result = null;
+                    return false;
+                }
+
+                public bool MetaTarget(CodeContext context, object self, out object result) {
+                    return Slot.TryGetValue(context, self, Type, out result);
+                }
+
+                private PythonType Type {
+                    get {
+                        return _owner ?? (PythonType)_weakOwner.Target;
+                    }
+                }
+
+                private PythonTypeSlot Slot {
+                    get {
+                        return _slot ?? (PythonTypeSlot)_weakSlot.Target;
+                    }
+                }
             }
 
-            return tracker;
-        }
-
-        internal static TrackerTypes GetMemberTypes(MemberGroup members) {
-            TrackerTypes memberType = TrackerTypes.None;
-            for (int i = 0; i < members.Count; i++) {
-                MemberTracker mi = members[i];
-                memberType |= mi.MemberType;
+            protected override void AddMetaOldClassAccess() {
+                // mixed new-style/old-style class, just call our version of __getattribute__
+                // and let it sort it out at runtime.  
+                _gets.Add(new MetaOldClassDelegate(_binder.Name).Target);
             }
 
-            return memberType;
-        }
+            class MetaOldClassDelegate {
+                private readonly string _name;
+                public MetaOldClassDelegate(string name) {
+                    _name = name;
+                }
 
-        private static TypeTracker/*!*/ GetTypeGroup(MemberGroup/*!*/ members) {
-            TypeTracker typeTracker = (TypeTracker)members[0];
-            for (int i = 1; i < members.Count; i++) {
-                typeTracker = TypeGroup.UpdateTypeEntity(typeTracker, (TypeTracker)members[i]);
+                public bool Target(CodeContext context, object self, out object result) {
+                    result = ((PythonType)self).__getattribute__(context, _name);
+                    return true;
+                }
             }
-            return typeTracker;
-        }
 
+            protected override void AddError() {
+                if (_binder.IsNoThrow) {
+                    _gets.Add(new ErrorBinder(_binder.Name).TargetNoThrow);
+                } else {
+                    _gets.Add(new ErrorBinder(_binder.Name).Target);
+                }
+            }
+
+            protected override void AddMetaGetAttribute(PythonType metaType, PythonTypeSlot pts) {
+                _gets.Add(new MetaGetAttributeDelegate(_context, pts, metaType, _binder.Name).Target);
+            }
+
+            class MetaGetAttributeDelegate {
+                private readonly string _name;
+                private readonly PythonType _metaType;
+                private readonly WeakReference _weakMetaType;
+                private readonly PythonTypeSlot _slot;
+                private readonly WeakReference _weakSlot;
+                private readonly CallSite<Func<CallSite, CodeContext, object, string, object>> _invokeSite;
+
+                public MetaGetAttributeDelegate(CodeContext context, PythonTypeSlot slot, PythonType metaType, string name) {
+                    _name = name;
+
+                    if (metaType.IsSystemType) {
+                        _metaType = metaType;
+                        _slot = slot;
+                    } else {
+                        _weakMetaType = metaType.GetSharedWeakReference();
+                        _weakSlot = new WeakReference(slot);
+                    }
+                    _invokeSite = CallSite<Func<CallSite, CodeContext, object, string, object>>.Create(PythonContext.GetContext(context).InvokeOne);
+                }
+
+                public bool Target(CodeContext context, object self, out object result) {
+                    object value;
+
+                    if (Slot.TryGetValue(context, self, MetaType, out value)) {
+                        result = _invokeSite.Target(_invokeSite, context, value, _name);
+                        return true;
+                    }
+
+                    result = null;
+                    return false;
+                }
+
+                private PythonType MetaType {
+                    get {
+                        return _metaType ?? (PythonType)_weakMetaType.Target;
+                    }
+                }
+
+                private PythonTypeSlot Slot {
+                    get {
+                        return _slot ?? (PythonTypeSlot)_weakSlot.Target;
+                    }
+                }
+            }
+
+            protected override void AddMetaSlotAccess(PythonType metaType, PythonTypeSlot pts) {
+                if (pts.CanOptimizeGets) {
+                    _canOptimize = true;
+                }
+
+                if (pts.IsAlwaysVisible) {
+                    _gets.Add(new SlotAccessDelegate(pts, metaType).MetaTarget);
+                } else {
+                    _gets.Add(new SlotAccessDelegate(pts, metaType).MetaTargetCheckCls);
+                }
+            }
+
+
+            protected override TypeGetBase/*!*/ Finish(bool metaOnly) {
+                if (metaOnly) {
+                    if (DynamicHelpers.GetPythonType(Value).IsSystemType) {
+                        return new SystemTypeGet(_binder, _gets.ToArray(), Value, metaOnly, _canOptimize);
+                    } else {
+                        return new TypeGet(_binder, _gets.ToArray(), metaOnly ? _metaVersion : _version, metaOnly, _canOptimize);
+                    }
+                } else {
+                    if (Value.IsSystemType) {
+                        return new SystemTypeGet(_binder, _gets.ToArray(), Value, metaOnly, _canOptimize);
+                    }
+                    return new TypeGet(_binder, _gets.ToArray(), metaOnly ? _metaVersion : _version, metaOnly, _canOptimize);
+                }
+            }
+
+            class ErrorBinder {
+                private readonly string _name;
+
+                public ErrorBinder(string name) {
+                    _name = name;
+                }
+
+                public bool TargetNoThrow(CodeContext context, object self, out object result) {
+                    result = OperationFailed.Value;
+                    return true;
+                }
+
+                public bool Target(CodeContext context, object self, out object result) {
+                    throw PythonOps.AttributeErrorForMissingAttribute(
+                        DynamicHelpers.GetPythonType(self).Name,
+                        SymbolTable.StringToId(_name));
+                }
+            }
+        }
+        
         #endregion
 
         #region Sets
 
         private DynamicMetaObject/*!*/ MakeSetMember(SetMemberBinder/*!*/ member, DynamicMetaObject/*!*/ value) {
-            DynamicMetaObject self = Restrict(typeof(PythonType));
+            PythonContext state = PythonContext.GetPythonContext(member);
+            DynamicMetaObject self = Restrict(Value.GetType());
+
+            if (Value.GetType() != typeof(PythonType) && DynamicHelpers.GetPythonType(Value).IsSystemType) {
+                // built-in subclass of .NET type.  Usually __setattr__ is handled by MetaUserObject
+                // but we can have a built-in subtype that's not a user type.
+                PythonTypeSlot pts;
+                if (Value.TryGetCustomSetAttr(state.SharedContext, out pts)) {
+                    
+                    Debug.Assert(pts.GetAlwaysSucceeds);
+                    
+                    ParameterExpression tmp = Ast.Variable(typeof(object), "boundVal");
+
+                    return BindingHelpers.AddDynamicTestAndDefer(
+                        member,
+                        new DynamicMetaObject(
+                            Ast.Block(
+                                new[] { tmp },
+                                Ast.Dynamic(
+                                    state.Invoke(new CallSignature(2)),
+                                    typeof(object),
+                                    AstUtils.Constant(state.SharedContext),
+                                    Ast.Block(
+                                        Ast.Call(
+                                            typeof(PythonOps).GetMethod("SlotTryGetValue"),
+                                            AstUtils.Constant(state.SharedContext),
+                                            AstUtils.Convert(AstUtils.WeakConstant(pts), typeof(PythonTypeSlot)),
+                                            AstUtils.Convert(Expression, typeof(object)),
+                                            AstUtils.Convert(AstUtils.WeakConstant(DynamicHelpers.GetPythonType(Value)), typeof(PythonType)),
+                                            tmp
+                                        ),
+                                        tmp
+                                    ),
+                                    Ast.Constant(member.Name),
+                                    value.Expression
+                                )
+                            ),
+                            self.Restrictions
+                        ),
+                        new DynamicMetaObject[] { this, value },
+                        TestUserType()
+                    );
+                }
+            }
 
             return BindingHelpers.AddDynamicTestAndDefer(
                 member,
                 new DynamicMetaObject(
                     Ast.Call(
                         typeof(PythonOps).GetMethod("PythonTypeSetCustomMember"),
-                        Ast.Constant(BinderState.GetBinderState(member).Context),
+                        AstUtils.Constant(PythonContext.GetPythonContext(member).SharedContext),
                         self.Expression,
                         AstUtils.Constant(SymbolTable.StringToId(member.Name)),
                         AstUtils.Convert(
@@ -567,14 +813,14 @@ namespace IronPython.Runtime.Binding {
             PropertyTracker pt = mt as PropertyTracker;
             if (pt != null) {
                 MethodInfo mi = pt.GetSetMethod(true);
-                if (mi != null && (mi.IsFamily || mi.IsFamilyOrAssembly)) {
+                if (mi != null && mi.IsProtected()) {
                     return true;
                 }
             }
 
             FieldTracker ft = mt as FieldTracker;
             if (ft != null) {
-                return ft.Field.IsFamily || ft.Field.IsFamilyOrAssembly;
+                return ft.Field.IsProtected();
             }
 
             return false;
@@ -585,13 +831,13 @@ namespace IronPython.Runtime.Binding {
         #region Deletes
 
         private DynamicMetaObject/*!*/ MakeDeleteMember(DeleteMemberBinder/*!*/ member) {
-            DynamicMetaObject self = Restrict(typeof(PythonType));
+            DynamicMetaObject self = Restrict(Value.GetType());
             return BindingHelpers.AddDynamicTestAndDefer(
                 member,
                 new DynamicMetaObject(
                     Ast.Call(
                         typeof(PythonOps).GetMethod("PythonTypeDeleteCustomMember"),
-                        Ast.Constant(BinderState.GetBinderState(member).Context),
+                        AstUtils.Constant(PythonContext.GetPythonContext(member).SharedContext),
                         self.Expression,
                         AstUtils.Constant(SymbolTable.StringToId(member.Name))
                     ),
@@ -616,8 +862,7 @@ namespace IronPython.Runtime.Binding {
                             typeof(PythonType)
                         )
                     )
-                ),
-                null
+                )
             );
         }
 

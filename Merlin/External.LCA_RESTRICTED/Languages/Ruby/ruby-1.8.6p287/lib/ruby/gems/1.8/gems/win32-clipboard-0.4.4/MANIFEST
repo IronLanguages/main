@@ -1,0 +1,8 @@
+* MANIFEST
+* CHANGES
+* README
+* Rakefile
+* win32-clipboard.gemspec
+* examples/clipboard_test.rb
+* lib/win32/clipboard.rb
+* test/test_clipboard.rb

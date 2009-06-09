@@ -13,9 +13,7 @@
  *
  * ***************************************************************************/
 
-using System;
-using System.Collections.Generic;
-using System.Text;
+using System.Diagnostics;
 using System.Dynamic.Utils;
 
 namespace System.Linq.Expressions {
@@ -25,6 +23,9 @@ namespace System.Linq.Expressions {
     /// This allows the debugger to highlight the correct source code when
     /// debugging.
     /// </summary>
+#if !SILVERLIGHT
+    [DebuggerTypeProxy(typeof(Expression.DebugInfoExpressionProxy))]
+#endif
     public class DebugInfoExpression : Expression {
 
         private readonly SymbolDocumentInfo _document;
@@ -37,16 +38,16 @@ namespace System.Linq.Expressions {
         /// Gets the static type of the expression that this <see cref="Expression" /> represents. (Inherited from <see cref="Expression"/>.)
         /// </summary>
         /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
-        protected override Type TypeImpl() {
-            return typeof(void);
+        public sealed override Type Type {
+            get { return typeof(void); }
         }
 
         /// <summary>
         /// Returns the node type of this <see cref="Expression" />. (Inherited from <see cref="Expression" />.)
         /// </summary>
         /// <returns>The <see cref="ExpressionType"/> that represents this expression.</returns>
-        protected override ExpressionType NodeTypeImpl() {
-            return ExpressionType.DebugInfo;
+        public sealed override ExpressionType NodeType {
+            get { return ExpressionType.DebugInfo; }
         }
 
         /// <summary>

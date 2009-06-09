@@ -14,8 +14,6 @@
  * ***************************************************************************/
 
 using System.Dynamic.Utils;
-using System.Linq.Expressions;
-using Microsoft.Contracts;
 
 namespace System.Dynamic {
 
@@ -30,7 +28,15 @@ namespace System.Dynamic {
         /// </summary>
         /// <param name="callInfo">The signature of the arguments at the call site.</param>
         protected GetIndexBinder(CallInfo callInfo) {
+            ContractUtils.RequiresNotNull(callInfo, "callInfo");
             _callInfo = callInfo;
+        }
+
+        /// <summary>
+        /// The result type of the operation.
+        /// </summary>
+        public override sealed Type ReturnType {
+            get { return typeof(object); }
         }
 
         /// <summary>
@@ -38,26 +44,6 @@ namespace System.Dynamic {
         /// </summary>
         public CallInfo CallInfo {
             get { return _callInfo; }
-        }
-
-        /// <summary>
-        /// Determines whether the specified <see cref="Object" /> is equal to the current object.
-        /// </summary>
-        /// <param name="obj">The <see cref="Object" /> to compare with the current object.</param>
-        /// <returns>true if the specified object is equal to the current object; otherwise false.</returns>
-        [Confined]
-        public override bool Equals(object obj) {
-            GetIndexBinder ia = obj as GetIndexBinder;
-            return ia != null && ia._callInfo.Equals(_callInfo);
-        }
-
-        /// <summary>
-        /// Returns the hash code for this instance.
-        /// </summary>
-        /// <returns>An <see cref="Int32" /> containing the hash code for this instance.</returns>
-        [Confined]
-        public override int GetHashCode() {
-            return GetIndexBinderHash ^ _callInfo.GetHashCode();
         }
 
         /// <summary>
@@ -71,6 +57,13 @@ namespace System.Dynamic {
             ContractUtils.RequiresNotNullItems(args, "args");
 
             return target.BindGetIndex(this, args);
+        }
+        
+        // this is a standard DynamicMetaObjectBinder
+        internal override sealed bool IsStandardBinder {
+            get {
+                return true;
+            }
         }
 
         /// <summary>

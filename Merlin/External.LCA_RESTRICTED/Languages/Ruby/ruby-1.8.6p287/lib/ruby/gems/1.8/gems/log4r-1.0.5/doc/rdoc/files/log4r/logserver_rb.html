@@ -1,0 +1,191 @@
+
+<html><head>
+  <title>File: logserver.rb</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <link rel=StyleSheet href="../.././rdoc-style.css" type="text/css" media=screen>
+  <script type="text/javascript" language="JavaScript">
+  <!--
+  function popCode(url) {
+    parent.frames.source.location = url
+  }
+  //-->
+  </script>
+</head>
+<body bgcolor="white">
+
+<table width="100%">
+ <tr class="title-row">
+ <td><table width="100%"><tr>
+   <td class="big-title-font" colspan=2><font size=-3><B>File</B><BR></font>logserver.rb</td>
+   <td align="right"><table cellspacing=0 cellpadding=2>
+         <tr>
+           <td  class="small-title-font">Path:</td>
+           <td class="small-title-font">log4r/logserver.rb</td>
+         </tr>
+         <tr>
+           <td class="small-title-font">Modified:</td>
+           <td class="small-title-font">Mon Jan 28 19:48:08 PST 2002</td>
+         </tr>
+        </table>
+    </td></tr></table></td>
+  </tr>
+</table><br>
+  <!-- banner header -->
+
+
+<div class="description"><h1>Remote Logging</h1>
+<p>
+Want to use <a href="../../classes/Log4r.html">Log4r</a> over a network? No
+problem! A <a
+href="../../classes/Log4r/RemoteOutputter.html">Log4r::RemoteOutputter</a>
+will send its LogEvents to a <a
+href="../../classes/Log4r/LogServer.html">Log4r::LogServer</a>. These two
+classes are as easy to set up and use as the rest of <a
+href="../../classes/Log4r.html">Log4r</a>.
+</p>
+<h2>Use ROMP</h2>
+<p>
+There is one catch though: ROMP is required to use this service. It is a
+DRb-like system with superb performance and better features. Get ROMP at <a
+href="http://rubystuff.org/romp">rubystuff.org/romp</a>/
+</p>
+<h2>LogServer</h2>
+<p>
+LogServer is simply a kind of Logger which embeds a ROMP::Server. Like a
+normal Logger, you can give it Outputters, set its level and so on. Its
+logging methods are accessible over a network and are called by a
+RemoteOutputter on another host.
+</p>
+<h3>LogServer Setup</h3>
+<p>
+Setup is easy. First,
+</p>
+<pre>
+  require 'log4r/logserver'
+</pre>
+<p>
+The following sets up a LogServer named &#8216;central&#8217; on localhost
+port 9999:
+</p>
+<pre>
+  LogServer.new('central', 'tcpromp://localhost:9999')
+</pre>
+<p>
+We manipulate it and give it outputters as normal:
+</p>
+<pre>
+  serv = Logger['central']              # grab our new LogServer
+  serv.add 'stdout'                     # make it log to $stdout
+</pre>
+<h2>RemoteOutputter</h2>
+<p>
+RemoteOutputter is simply a kind of Outputter that embeds a ROMP::Client.
+When RemoteOutputter gets a LogEvent, it will forward it to whatever
+LogServer it&#8217;s connected to. In essence, RemoteOutputter behaves like
+a Logger that is forwarding a LogEvent to another Logger (as is done in
+heiarchial logging).
+</p>
+<h3>RemoteOutputter Setup</h3>
+<p>
+First,
+</p>
+<pre>
+  require 'log4r/outputter/remoteoutputter'
+</pre>
+<p>
+Unlike typical outputters, RemoteOutputter doesn&#8217;t do any formatting.
+That&#8217;s up to the LogServer&#8217;s outputters. Otherwise,
+RemoteOutputter can be set up as usual. The ROMP uri of the LogServer must
+be specified.
+</p>
+<pre>
+  RemoteOutputter.new 'client', :uri=&gt;'tcpromp://localhost:9999'
+</pre>
+<h3>Using RemoteOutputter</h3>
+<p>
+Give our new RemoteOutputter to a logger:
+</p>
+<pre>
+  mylog = Logger['mylog']
+  mylog.add 'client'
+</pre>
+<p>
+Now, whenever mylog generates a LogEvent, LogServer should get a copy.
+Doing the following:
+</p>
+<pre>
+  mylog.info &quot;This is a message from 'mylog'&quot;
+</pre>
+<p>
+Produces this output on LogServer&#8217;s console:
+</p>
+<pre>
+  INFO mylog: This is a message from 'mylog'
+</pre>
+<h2>XML Configuration</h2>
+<p>
+RemoteOutputter is set up like normal Outputters. LogServer is set up like
+a normal Logger, but with an element name of logserver instead of logger:
+</p>
+<pre>
+  &lt;log4r_config&gt;
+    &lt;logserver name=&quot;name&quot; uri=&quot;tcpromp://localhost:9999&quot;&gt;
+    ...
+</pre>
+<h2>Debugging</h2>
+<p>
+It is recommended to set up a logger named &#8216;log4r&#8217; on both the
+server and client to see what LogServer and RemoteOutputter are up to. Both
+of the classes use <a href="../../classes/Log4r.html">Log4r</a>&#8217;s
+internal logging to report any problems. See the section <b>What&#8217;s
+Going on Inside?</b> in <a href="../log4r_rb.html">log4r.rb</a> for more
+info.
+</p>
+</div>
+
+<table cellpadding=5 width="100%">
+<tr><td class="tablesubtitle">Required files</td></tr>
+</table><br>
+<div class="name-list">
+<a href="logger_rb.html">log4r/logger</a>
+log4r/lib/drbloader
+</div>
+
+
+
+<table cellpadding=5 width="100%">
+<tr><td class="tablesubtitle">Classes and Modules</td></tr>
+</table><br>
+Module <a href="../../classes/Log4r.html" class="link">Log4r</a><br />
+&nbsp;&nbsp;::Class <a href="../../classes/Log4r/BasicFormatter.html" class="link">Log4r::BasicFormatter</a><br />
+&nbsp;&nbsp;::Class <a href="../../classes/Log4r/ConfigError.html" class="link">Log4r::ConfigError</a><br />
+&nbsp;&nbsp;::Class <a href="../../classes/Log4r/Configurator.html" class="link">Log4r::Configurator</a><br />
+&nbsp;&nbsp;::Class <a href="../../classes/Log4r/DateFileOutputter.html" class="link">Log4r::DateFileOutputter</a><br />
+&nbsp;&nbsp;::Class <a href="../../classes/Log4r/DefaultFormatter.html" class="link">Log4r::DefaultFormatter</a><br />
+&nbsp;&nbsp;::Class <a href="../../classes/Log4r/EmailOutputter.html" class="link">Log4r::EmailOutputter</a><br />
+&nbsp;&nbsp;::Class <a href="../../classes/Log4r/FileOutputter.html" class="link">Log4r::FileOutputter</a><br />
+&nbsp;&nbsp;::Class <a href="../../classes/Log4r/Formatter.html" class="link">Log4r::Formatter</a><br />
+&nbsp;&nbsp;::Class <a href="../../classes/Log4r/IOOutputter.html" class="link">Log4r::IOOutputter</a><br />
+&nbsp;&nbsp;::Class <a href="../../classes/Log4r/Log4rTools.html" class="link">Log4r::Log4rTools</a><br />
+&nbsp;&nbsp;::Class <a href="../../classes/Log4r/LogEvent.html" class="link">Log4r::LogEvent</a><br />
+&nbsp;&nbsp;::Class <a href="../../classes/Log4r/LogServer.html" class="link">Log4r::LogServer</a><br />
+&nbsp;&nbsp;::Class <a href="../../classes/Log4r/Logger.html" class="link">Log4r::Logger</a><br />
+&nbsp;&nbsp;::Class <a href="../../classes/Log4r/ObjectFormatter.html" class="link">Log4r::ObjectFormatter</a><br />
+&nbsp;&nbsp;::Class <a href="../../classes/Log4r/Outputter.html" class="link">Log4r::Outputter</a><br />
+&nbsp;&nbsp;::Class <a href="../../classes/Log4r/PatternFormatter.html" class="link">Log4r::PatternFormatter</a><br />
+&nbsp;&nbsp;::Class <a href="../../classes/Log4r/RemoteOutputter.html" class="link">Log4r::RemoteOutputter</a><br />
+&nbsp;&nbsp;::Class <a href="../../classes/Log4r/RollingFileOutputter.html" class="link">Log4r::RollingFileOutputter</a><br />
+&nbsp;&nbsp;::Class <a href="../../classes/Log4r/RootLogger.html" class="link">Log4r::RootLogger</a><br />
+&nbsp;&nbsp;::Class <a href="../../classes/Log4r/SimpleFormatter.html" class="link">Log4r::SimpleFormatter</a><br />
+&nbsp;&nbsp;::Class <a href="../../classes/Log4r/StderrOutputter.html" class="link">Log4r::StderrOutputter</a><br />
+&nbsp;&nbsp;::Class <a href="../../classes/Log4r/StdoutOutputter.html" class="link">Log4r::StdoutOutputter</a><br />
+&nbsp;&nbsp;::Class <a href="../../classes/Log4r/SyslogOutputter.html" class="link">Log4r::SyslogOutputter</a><br />
+&nbsp;&nbsp;::Class <a href="../../classes/Log4r/YamlConfigurator.html" class="link">Log4r::YamlConfigurator</a><br />
+<br>
+
+  
+
+  <!-- method descriptions -->
+
+</body>
+</html>

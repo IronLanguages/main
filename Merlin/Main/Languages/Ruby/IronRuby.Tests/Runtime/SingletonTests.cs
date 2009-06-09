@@ -13,9 +13,11 @@
  *
  * ***************************************************************************/
 
+using IronRuby.Runtime;
+using System;
 namespace IronRuby.Tests {
     public partial class Tests {
-        public void Scenario_Singletons1() {
+        public void MainSingleton1() {
             AssertOutput(delegate() {
                 CompilerTest(@"
 puts self.to_s
@@ -23,7 +25,7 @@ puts self.to_s
             }, "main");
         }
 
-        public void Scenario_Singletons2() {
+        public void MainSingleton2() {
             AssertOutput(delegate() {
                 CompilerTest(@"
 module M
@@ -38,25 +40,59 @@ foo
             }, "foo");
         }
 
-        public void Scenario_Singletons3() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
-x = Object.new
-
-class << x
-  def foo
-    puts 'foo'
-  end
-end
-
-x.foo
-");
-            }, "foo");
+        /// <summary>
+        /// Ruby class.
+        /// </summary>
+        public void Singletons1A() {
+            Singletons1_Test("C", null);
         }
 
-        public void Scenario_Singletons4() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
+        /// <summary>
+        /// Object.
+        /// </summary>
+        public void Singletons1B() {
+            Singletons1_Test("Object", null);
+        }
+
+        /// <summary>
+        /// A subclass of a CLR class.
+        /// </summary>
+        public void Singletons1C() {
+            Singletons1_Test("X", "< System::Collections::ArrayList");
+        }
+
+        /// <summary>
+        /// A CLR class.
+        /// </summary>
+        public void Singletons1D() {
+            Singletons1_Test("System::Collections::ArrayList", null);
+        }
+
+        public void Singletons1_Test(string/*!*/ className, string inherits) {
+            TestOutput(String.Format(@"
+class {0} {1}
+end
+
+x, y = {0}.new, {0}.new
+
+class << x
+  def foo; 1; end
+end
+
+class << y
+  def foo; 2; end
+end
+
+p x.foo, y.foo
+", className, inherits), 
+@"
+1
+2
+");
+        }
+
+        public void Singletons2() {
+            TestOutput(@"
 class C
   def i_C
     puts 'i_C'
@@ -88,8 +124,8 @@ x.i_C
 x.c_x1 rescue puts 'X'
 x.c_C rescue puts 'X'
 y.i_x1 rescue puts 'X'
-");
-            }, @"
+",
+@"
 i_x1
 i_C
 X
@@ -98,7 +134,7 @@ X
 ");
         }
 
-        public void Scenario_Singletons5() {
+        public void Singletons3() {
             AssertOutput(delegate() {
                 CompilerTest(@"
 class C
@@ -148,6 +184,41 @@ c.foo
             }, @"
 foo
 bar");
+        }
+
+        /// <summary>
+        /// IRubyObjects.
+        /// </summary>
+        public void SingletonCaching2() {
+            AssertOutput(() => CompilerTest(@"
+class C
+end
+
+foo = C.new
+bar = C.new
+def foo.to_s; 'ok'; end
+puts bar.to_s
+puts foo.to_s
+"), @"
+#<C:*>
+ok
+", OutputFlags.Match);
+        }
+
+        /// <summary>
+        /// CLR objects.
+        /// </summary>
+        public void SingletonCaching3() {
+            //RubyOptions.ShowRules = true;
+            // TODO:
+            XTestOutput(@"
+foo = Object.new
+bar = Object.new
+def foo.to_s; 'x'; end
+puts bar.to_s
+puts foo.to_s
+", @"
+");
         }
 
         public void Scenario_ClassVariables_Singletons() {

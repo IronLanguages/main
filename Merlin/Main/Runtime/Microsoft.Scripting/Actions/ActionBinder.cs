@@ -45,7 +45,7 @@ namespace Microsoft.Scripting.Actions {
             _manager = manager;
         }
 
-        public virtual Expression Bind(OldDynamicAction action, object[] args, ReadOnlyCollection<ParameterExpression> parameters, LabelTarget returnLabel) {
+        internal Expression Bind(OldDynamicAction action, object[] args, ReadOnlyCollection<ParameterExpression> parameters, LabelTarget returnLabel) {
             var builder = new RuleBuilder(parameters, returnLabel);
             MakeRule(action, args, builder);
             if (builder.Target != null) {
@@ -96,52 +96,12 @@ namespace Microsoft.Scripting.Actions {
         /// </summary>
         public abstract bool CanConvertFrom(Type fromType, Type toType, bool toNotNullable, NarrowingLevel level);
 
-        #region TODO: move to ParameterBinder
-
-        public virtual bool ParametersEquivalent(ParameterWrapper parameter1, ParameterWrapper parameter2) {
-            return parameter1.Type == parameter2.Type && parameter1.ProhibitNull == parameter2.ProhibitNull;
-        }
-
-        public virtual bool CanConvertFrom(Type fromType, ParameterWrapper toParameter, NarrowingLevel level) {
-            Assert.NotNull(fromType, toParameter);
-
-            Type toType = toParameter.Type;
-
-            if (fromType == typeof(DynamicNull)) {
-                if (toParameter.ProhibitNull) {
-                    return false;
-                }
-
-                if (toType.IsGenericType && toType.GetGenericTypeDefinition() == typeof(Nullable<>)) {
-                    return true;
-                }
-
-                if (!toType.IsValueType) {
-                    return true;
-                }
-            }
-
-            if (fromType == toType) {
-                return true;
-            }
-
-            return CanConvertFrom(fromType, toType, toParameter.ProhibitNull, level);
-        }
-
-        /// <summary>
-        /// Selects the best (of two) candidates for conversion from actualType
-        /// </summary>
-        public virtual Candidate SelectBestConversionFor(Type actualType, ParameterWrapper candidateOne, ParameterWrapper candidateTwo, NarrowingLevel level) {
-            return Candidate.Equivalent;
-        }
-
         /// <summary>
         /// Provides ordering for two parameter types if there is no conversion between the two parameter types.
         /// </summary>
         public abstract Candidate PreferConvert(Type t1, Type t2);
 
-        #endregion
-
+        // TODO: revisit
         /// <summary>
         /// Converts the provided expression to the given type.  The expression is safe to evaluate multiple times.
         /// </summary>
@@ -176,6 +136,10 @@ namespace Microsoft.Scripting.Actions {
                 visType,
                 args
             );
+        }
+
+        public virtual Func<object[], object> ConvertObject(int index, DynamicMetaObject knownType, Type toType, ConversionResultKind conversionResultKind) {
+            throw new NotSupportedException();
         }
 
         /// <summary>
@@ -227,7 +191,7 @@ namespace Microsoft.Scripting.Actions {
             return ErrorInfo.FromException(
                 Expression.New(
                     typeof(InvalidOperationException).GetConstructor(new Type[] { typeof(string) }),
-                    Expression.Constant(Strings.InvalidOperation_ContainsGenericParameters(tracker.DeclaringType.Name, tracker.Name))
+                    AstUtils.Constant(Strings.InvalidOperation_ContainsGenericParameters(tracker.DeclaringType.Name, tracker.Name))
                 )
             );
         }
@@ -236,7 +200,7 @@ namespace Microsoft.Scripting.Actions {
             return ErrorInfo.FromException(
                 Expression.New(
                     typeof(MissingMemberException).GetConstructor(new Type[] { typeof(string) }),
-                    Expression.Constant(name)
+                    AstUtils.Constant(name)
                 )
             );
         }
@@ -245,7 +209,7 @@ namespace Microsoft.Scripting.Actions {
             return ErrorInfo.FromException(
                 Expression.New(
                     typeof(MemberAccessException).GetConstructor(new Type[] { typeof(string) }),
-                    Expression.Constant(info.Name)
+                    AstUtils.Constant(info.Name)
                 )
             );
         }
@@ -310,7 +274,7 @@ namespace Microsoft.Scripting.Actions {
             return ErrorInfo.FromException(
                 Expression.New(
                     typeof(MissingMemberException).GetConstructor(new Type[] { typeof(string) }),
-                    Expression.Constant(message)
+                    AstUtils.Constant(message)
                 )
             );
         }
@@ -319,7 +283,7 @@ namespace Microsoft.Scripting.Actions {
             return ErrorInfo.FromException(
                 Expression.Call(
                     typeof(ScriptingRuntimeHelpers).GetMethod("CannotConvertError"),
-                    Expression.Constant(toType),
+                    AstUtils.Constant(toType),
                     AstUtils.Convert(value, typeof(object))
                )
             );
@@ -335,10 +299,11 @@ namespace Microsoft.Scripting.Actions {
             return ErrorInfo.FromException(
                 Expression.New(
                     typeof(MissingMemberException).GetConstructor(new Type[] { typeof(string) }),
-                    Expression.Constant(name)
+                    AstUtils.Constant(name)
                 )
             );
         }
+
 
         #endregion
 
@@ -353,7 +318,7 @@ namespace Microsoft.Scripting.Actions {
             return rule.MakeError(
                 Expression.New(
                     typeof(MissingMemberException).GetConstructor(new Type[] { typeof(string) }),
-                    Expression.Constant(name)
+                    AstUtils.Constant(name)
                 )
             );
         }
@@ -375,14 +340,18 @@ namespace Microsoft.Scripting.Actions {
             return ErrorInfo.FromValueNoError(
                 Expression.Call(
                     typeof(ScriptingRuntimeHelpers).GetMethod("SetEvent"),
-                    Expression.Constant(ev),
+                    AstUtils.Constant(ev),
                     rule.Parameters[1]
                 )
             );
         }
 
-        protected virtual string GetTypeName(Type t) {
+        public virtual string GetTypeName(Type t) {
             return t.Name;
+        }
+
+        public virtual string GetObjectTypeName(object arg) {
+            return GetTypeName(CompilerHelpers.GetType(arg));
         }
 
         /// <summary>
@@ -414,10 +383,13 @@ namespace Microsoft.Scripting.Actions {
 
             foreach (Type ext in extTypes) {
                 foreach (MemberInfo mi in ext.GetMember(name, BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)) {
-                    if (ext != declaringType) {
-                        members.Add(MemberTracker.FromMemberInfo(mi, declaringType));
-                    } else {
-                        members.Add(MemberTracker.FromMemberInfo(mi));
+                    MemberInfo newMember = mi;
+                    if (PrivateBinding || (newMember = CompilerHelpers.TryGetVisibleMember(mi)) != null) {
+                        if (ext != declaringType) {
+                            members.Add(MemberTracker.FromMemberInfo(newMember, declaringType));
+                        } else {
+                            members.Add(MemberTracker.FromMemberInfo(newMember));
+                        }
                     }
                 }
 
@@ -472,11 +444,11 @@ namespace Microsoft.Scripting.Actions {
                 BoundMemberTracker bmt = (BoundMemberTracker)memberTracker;
                 return Expression.New(
                     typeof(BoundMemberTracker).GetConstructor(new Type[] { typeof(MemberTracker), typeof(object) }),
-                    Expression.Constant(bmt.BoundTo),
+                    AstUtils.Constant(bmt.BoundTo),
                     bmt.Instance);
             }
 
-            return Expression.Constant(memberTracker);
+            return AstUtils.Constant(memberTracker);
         }
 
         /// <summary>
@@ -527,47 +499,6 @@ namespace Microsoft.Scripting.Actions {
         public Expression MakeCallExpression(Expression context, MethodInfo method, params Expression[] parameters) {
             return MakeCallExpression(context, method, (IList<Expression>)parameters);
         }
-
-        #region TODO: move to ParameterBinder
-
-        /// <summary>
-        /// Gets an expression that evaluates to the result of GetByRefArray operation.
-        /// </summary>
-        public virtual Expression GetByRefArrayExpression(Expression argumentArrayExpression) {
-            return argumentArrayExpression;
-        }
-
-        /// <summary>
-        /// Handles binding of special parameters.
-        /// </summary>
-        /// <returns>True if the argument is handled by this method.</returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1045:DoNotPassTypesByReference", MessageId = "3#")]
-        internal protected virtual bool BindSpecialParameter(ParameterInfo parameterInfo, List<ArgBuilder> arguments, 
-            List<ParameterWrapper> parameters, ref int index) {
-
-            // CodeContext is implicitly provided at runtime, the user cannot provide it.
-            if (parameterInfo.ParameterType == typeof(CodeContext) && arguments.Count == 0) {
-                arguments.Add(new ContextArgBuilder(parameterInfo));
-                return true;
-            } else if (parameterInfo.ParameterType.IsSubclassOf(typeof(SiteLocalStorage))) {
-                arguments.Add(new SiteLocalStorageBuilder(parameterInfo));
-                return true;
-            }
-
-            return false;
-        }
-
-        /// <summary>
-        /// Called before arguments binding.
-        /// </summary>
-        /// <returns>The number of parameter infos to skip.</returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1045:DoNotPassTypesByReference", MessageId = "3#")]
-        internal protected virtual int PrepareParametersBinding(ParameterInfo[] parameterInfos, List<ArgBuilder> arguments,
-            List<ParameterWrapper> parameters, ref int index) {
-            return 0;
-        }
-
-        #endregion
     }
 }
 

@@ -22,39 +22,51 @@ using System.Linq.Expressions;
 using Ast = System.Linq.Expressions.Expression;
 using AstFactory = IronRuby.Compiler.Ast.AstFactory;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
+using System.Dynamic;
+using System.Reflection;
+using System.Diagnostics;
+using System.Collections.Generic;
 
 namespace IronRuby.Runtime.Calls {
 
     // 1) implicit conversion to MutableString
     // 2) calls to_s
     // 3) default conversion if (2) returns a non-string
-    public sealed class ConvertToSAction : RubyConversionAction, IExpressionSerializable, IEquatable<ConvertToSAction> {
-        public static readonly ConvertToSAction Instance = new ConvertToSAction();
+    public sealed class ConvertToSAction : RubyConversionAction {
+        public override Type/*!*/ ReturnType {
+            get { return typeof(MutableString); }
+        }
 
-        private ConvertToSAction() {
+        public static ConvertToSAction/*!*/ Make(RubyContext/*!*/ context) {
+            return context.MetaBinderFactory.Conversion<ConvertToSAction>();
         }
 
         [Emitted]
-        public static ConvertToSAction/*!*/ Make() {
-            return Instance;
+        public static ConvertToSAction/*!*/ MakeShared() {
+            return RubyMetaBinderFactory.Shared.Conversion<ConvertToSAction>();
         }
 
-        public bool Equals(ConvertToSAction other) {
-            return other != null;
+        public override Expression/*!*/ CreateExpression() {
+            return Methods.GetMethod(GetType(), "MakeShared").OpCall();
         }
 
-        Expression/*!*/ IExpressionSerializable.CreateExpression() {
-            return Ast.Call(Methods.GetMethod(GetType(), "Make"));
+        protected override DynamicMetaObjectBinder/*!*/ GetInteropBinder(RubyContext/*!*/ context, IList<DynamicMetaObject/*!*/>/*!*/ args, 
+            out MethodInfo postConverter) {
+            postConverter = Methods.StringToMutableString;
+            return new InteropBinder.InvokeMember(context, "ToString", new CallInfo(0));
         }
 
-        protected override void BuildConversion(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
+        protected override bool Build(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, bool defaultFallback) {
+            Debug.Assert(defaultFallback, "custom fallback not supported");
+            BuildConversion(metaBuilder, args);
+            return true;
+        }
+
+        internal static void BuildConversion(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
             const string ToS = "to_s";
 
-            // no conversion for a subclass of string:
-            var stringTarget = args.Target as MutableString;
-            if (stringTarget != null) {
+            if (TryImplicitConversion(metaBuilder, args)) {
                 metaBuilder.AddTypeRestriction(args.Target.GetType(), args.TargetExpression);
-                metaBuilder.Result = AstUtils.Convert(args.TargetExpression, typeof(MutableString));
                 return;
             }
 
@@ -62,8 +74,8 @@ namespace IronRuby.Runtime.Calls {
 
             RubyClass targetClass = args.RubyContext.GetImmediateClassOf(args.Target);
             using (targetClass.Context.ClassHierarchyLocker()) {
-                metaBuilder.AddTargetTypeTest(args.Target, targetClass, args.TargetExpression, args.RubyContext, args.ContextExpression);
-                conversionMethod = targetClass.ResolveMethodForSiteNoLock(ToS, true).Info;
+                metaBuilder.AddTargetTypeTest(args.Target, targetClass, args.TargetExpression, args.MetaContext);
+                conversionMethod = targetClass.ResolveMethodForSiteNoLock(ToS, RubyClass.IgnoreVisibility).Info;
 
                 // find method_missing - we need to add "to_xxx" methods to the missing methods table:
                 if (conversionMethod == null) {
@@ -79,11 +91,24 @@ namespace IronRuby.Runtime.Calls {
                     return;
                 }
             } else {
-                args.InsertMethodName(ToS);
-                RubyCallAction.BindToMethodMissing(metaBuilder, args, ToS, methodMissing, RubyMethodVisibility.None, false);
+                RubyCallAction.BuildMethodMissingCall(metaBuilder, args, ToS, methodMissing, RubyMethodVisibility.None, false, true);
             }
 
-            metaBuilder.Result = Methods.ToSDefaultConversion.OpCall(args.ContextExpression, AstFactory.Box(args.TargetExpression), AstFactory.Box(metaBuilder.Result));
+            metaBuilder.Result = Methods.ToSDefaultConversion.OpCall(
+                AstUtils.Convert(args.MetaContext.Expression, typeof(RubyContext)),
+                AstFactory.Box(args.TargetExpression),
+                AstFactory.Box(metaBuilder.Result)
+            );
+        }
+
+        private static bool TryImplicitConversion(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
+            var stringTarget = args.Target as MutableString;
+            if (stringTarget != null) {
+                metaBuilder.Result = AstUtils.Convert(args.TargetExpression, typeof(MutableString));
+                return true;
+            }
+
+            return false;
         }
     }
 

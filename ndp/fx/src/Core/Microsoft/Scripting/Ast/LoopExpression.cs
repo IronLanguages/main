@@ -13,12 +13,16 @@
  *
  * ***************************************************************************/
 
+using System.Diagnostics;
 using System.Dynamic.Utils;
 
 namespace System.Linq.Expressions {
     /// <summary>
     /// Represents an infinite loop. It can be exited with "break".
     /// </summary>
+#if !SILVERLIGHT
+    [DebuggerTypeProxy(typeof(Expression.LoopExpressionProxy))]
+#endif
     public sealed class LoopExpression : Expression {
         private readonly Expression _body;
         private readonly LabelTarget _break;
@@ -34,8 +38,8 @@ namespace System.Linq.Expressions {
         /// Gets the static type of the expression that this <see cref="Expression" /> represents.
         /// </summary>
         /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
-        protected override Type TypeImpl() {
-            return _break == null ? typeof(void) : _break.Type;
+        public sealed override Type Type {
+            get { return _break == null ? typeof(void) : _break.Type; }
         }
 
         /// <summary>
@@ -43,8 +47,8 @@ namespace System.Linq.Expressions {
         /// ExpressionType.Extension when overriding this method.
         /// </summary>
         /// <returns>The <see cref="ExpressionType"/> of the expression.</returns>
-        protected override ExpressionType NodeTypeImpl() {
-            return ExpressionType.Loop;
+        public sealed override ExpressionType NodeType {
+            get { return ExpressionType.Loop; }
         }
 
         /// <summary>

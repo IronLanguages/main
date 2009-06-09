@@ -1,0 +1,4 @@
+fails:Equality maps Object#== to System.Object.Equals for Ruby classes that derive from CLR types
+fails:Equality maps System.Object.Equals to Object#== for Ruby sub-classes
+fails:Equality maps System.Object.Equals to Object#== for Ruby sub-classes with #==
+fails:Equality allows both Object#== and System.Object.Equals to be overriden separately

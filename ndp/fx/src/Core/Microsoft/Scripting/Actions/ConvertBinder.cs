@@ -14,7 +14,6 @@
  * ***************************************************************************/
 
 using System.Dynamic.Utils;
-using Microsoft.Contracts;
 
 namespace System.Dynamic {
     /// <summary>
@@ -30,6 +29,8 @@ namespace System.Dynamic {
         /// <param name="type">The type to convert to.</param>
         /// <param name="explicit">true if the conversion should consider explicit conversions; otherwise, false.</param>
         protected ConvertBinder(Type type, bool @explicit) {
+            ContractUtils.RequiresNotNull(type, "type");
+
             _type = type;
             _explicit = @explicit;
         }
@@ -78,29 +79,23 @@ namespace System.Dynamic {
         /// <returns>The <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
         public sealed override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args) {
             ContractUtils.RequiresNotNull(target, "target");
-            ContractUtils.Requires(args.Length == 0);
+            ContractUtils.Requires(args == null || args.Length == 0, "args");
 
             return target.BindConvert(this);
         }
 
-        /// <summary>
-        /// Determines whether the specified <see cref="Object" /> is equal to the current object.
-        /// </summary>
-        /// <param name="obj">The <see cref="Object" /> to compare with the current object.</param>
-        /// <returns>true if the specified System.Object is equal to the current object; otherwise false.</returns>
-        [Confined]
-        public override bool Equals(object obj) {
-            ConvertBinder ca = obj as ConvertBinder;
-            return ca != null && ca._type == _type && ca._explicit == _explicit;
+        // this is a standard DynamicMetaObjectBinder
+        internal override sealed bool IsStandardBinder {
+            get {
+                return true;
+            }
         }
-        
+
         /// <summary>
-        /// Returns the hash code for this instance.
+        /// The result type of the operation.
         /// </summary>
-        /// <returns>An <see cref="Int32" /> containing the hash code for this instance.</returns>
-        [Confined]
-        public override int GetHashCode() {
-            return ConvertBinderHash ^ _type.GetHashCode() ^ (_explicit ? 0x8000000 : 0);
+        public override sealed Type ReturnType {
+            get { return _type; }
         }
     }
 }

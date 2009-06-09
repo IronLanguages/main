@@ -133,23 +133,6 @@ namespace IronPython.Runtime.Types {
             return CreateAutoDoc(info, null, 0);
         }
 
-        public static string CreateAutoDoc(FieldInfo info) {
-            string summary = null;
-#if !SILVERLIGHT // XML doc
-            GetXmlDoc(info, out summary);
-#endif
-            return summary;
-        }
-
-        public static string CreateAutoDoc(PropertyInfo info) {
-            string summary = null;
-#if !SILVERLIGHT // XML doc
-            string returns;
-            GetXmlDoc(info, out summary, out returns);
-#endif
-            return summary;
-        }
-
         public static string CreateAutoDoc(EventInfo info) {
             string summary = null;
 #if !SILVERLIGHT // XML doc      
@@ -362,17 +345,6 @@ namespace IronPython.Runtime.Types {
             return res.ToString();
         }
 
-        private static string GetXmlName(FieldInfo field) {
-            StringBuilder res = new StringBuilder();
-            res.Append("F:");
-
-            AppendTypeFormat(field.DeclaringType, res);
-            res.Append('.');
-            res.Append(field.Name);
-
-            return res.ToString();
-        }
-
         private static string GetXmlName(EventInfo field) {
             StringBuilder res = new StringBuilder();
             res.Append("E:");
@@ -576,27 +548,7 @@ namespace IronPython.Runtime.Types {
                     case "summary": summary = XmlToString(iter); break;
                 }
             }
-        }
-
-        /// <summary>
-        /// Gets the Xml documentation for the specified Field.
-        /// </summary>
-        private static void GetXmlDoc(FieldInfo field, out string summary) {
-            summary = null;
-
-            XPathDocument xpd = GetXPathDocument(field.DeclaringType.Assembly);
-            if (xpd == null) return;
-
-            XPathNavigator xpn = xpd.CreateNavigator();
-            string path = "/doc/members/member[@name='" + GetXmlName(field) + "']/*";
-            XPathNodeIterator iter = xpn.Select(path);
-
-            while (iter.MoveNext()) {
-                switch (iter.Current.Name) {
-                    case "summary": summary = XmlToString(iter) + Environment.NewLine; break;
-                }
-            }
-        }
+        }        
 
         /// <summary>
         /// Gets the Xml documentation for the specified Field.

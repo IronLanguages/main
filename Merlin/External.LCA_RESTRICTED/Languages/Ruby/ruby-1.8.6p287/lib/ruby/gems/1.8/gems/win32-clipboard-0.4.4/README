@@ -1,0 +1,112 @@
+== Description
+   win32-clipboard - a Ruby library for interacting with the Win32 clipboard.
+
+== Installation
+   rake test (optional)
+   rake install (non-gem) or rake install_gem (gem)
+
+== Synopsis
+   require 'win32/clipboard'
+   include Win32
+    
+   puts "Data on clipboard: " + Clipboard.data
+   puts "Number of available formats: " + Clipboard.num_formats
+    
+   puts "Setting data to 'foobar'"
+   Clipboard.set_data("foobar")
+    
+   puts "Clipboard now contains: " + Clipboard.data
+    
+   puts "Clearing clipboard"
+   Clipboard.empty
+        
+== Class Methods
+Clipboard.data(format=nil)
+   Returns the data currently in the clipboard.  If +format+ is
+   specified, it will attempt to retrieve the data in that format. The
+   default is Clipboard::TEXT.  See the 'Constants' section for
+   the supported formats.
+   
+   If there is no data in the clipboard, then an empty string is returned.
+    
+   Note that this method does implicit conversions on formats with regards
+   to text data.  See the MSDN documentation for more details.
+    
+Clipboard.empty
+   Empty the contents of the clipboard
+    
+Clipboard.format_available?(format_number)
+   Returns true if 'format_number' is currently available on the clipboard,
+   false otherwise.
+
+Clipboard.format_name(format_number)
+   Returns the corresponding name for the given 'format_number', or nil
+   if it does not exist.
+
+Clipboard.formats
+   Returns a hash of all the current formats, with the format number as the
+   key and the format name as the value for that key.
+
+Clipboard.get_data(format=nil)
+   Alias for Clipboard.data.
+    
+Clipboard.num_formats
+    Returns the number of different data formats currently on the clipboard.
+    
+Clipboard.register_format(format)
+   Registers the given 'format' (a String) as a clipboard format, which
+   can then be used as a valid clipboard format.
+	
+   If a registered format with the specified name already exists, a new
+   format is not registered and the return value identifies the existing
+   format. This enables more than one application to copy and paste data
+   using the same registered clipboard format. Note that the format name
+   comparison is case-insensitive.
+
+   Registered clipboard formats are identified by values in the range 0xC000
+   through 0xFFFF.
+
+Clipboard.set_data(data, format=nil)
+   Sets the clipboard contents to the data that you specify.  You may
+   optionally specify a clipboard format. The default is Clipboard::TEXT.
+    
+   See the 'Constants' section for a list of the supported formats.
+
+== Error Classes
+Clipboard::Error
+   Typically only raised if the clipboard fails to open or if you attempt to
+   register an invalid format.
+    
+== Constants
+=== Standard Constants
+VERSION
+   Returns the current version number of this package, as a String.
+    
+=== Clipboard Formats
+Clipboard::OEMTEXT
+   Text format containing characters in the OEM character set. Each line ends
+   with a carriage return/linefeed (CR-LF) combination. A null character
+   signals the end of the data.
+    
+Clipboard::TEXT
+   Text format. Each line ends with a carriage return/linefeed (CR-LF)
+   combination. A null character signals the end of the data. Use this format
+   for ANSI text.
+    
+Clipboard::UNICODETEXT
+   Unicode text format. Each line ends with a carriage return/linefeed
+   (CR-LF) combination. A null character signals the end of the data.
+    
+== Future Plans
+   Add more formatting option contants and related methods.
+    
+== License
+   Ruby's
+    
+== Copyright
+   (C) 2003-2008 Daniel J. Berger
+   All Rights Reserved
+    
+== Authors
+   Daniel J. Berger
+   Park Heesob

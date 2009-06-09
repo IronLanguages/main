@@ -1,0 +1,45 @@
+
+<html>
+<head><title>new (Log4r::RollingFileOutputter)</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<style>
+  .kw { color: #3333FF; font-weight: bold }
+  .cmt { color: green; font-style: italic }
+  .str { color: #662222; font-style: italic }
+  .re  { color: #662222; }
+</style>
+</head>
+<body bgcolor="white">
+<pre><span class="cmt"># File log4r/outputter/rollingfileoutputter.rb, line 19</span>
+    <span class="kw">def</span> initialize(_name, hash={})
+      @count = 0
+      <span class="kw">super</span>(_name, hash)
+      <span class="kw">if</span> hash.has_key?(:maxsize) || hash.has_key?(<span class="str">'maxsize'</span>) 
+        _maxsize = (hash[:maxsize] <span class="kw">or</span> hash[<span class="str">'maxsize'</span>]).to_i
+        <span class="kw">if</span> _maxsize.class != Fixnum
+          raise TypeError, <span class="str">&quot;Argument 'maxsize' must be an Fixnum&quot;</span>, caller
+        <span class="kw">end</span>
+        <span class="kw">if</span> _maxsize == 0
+          raise TypeError, <span class="str">&quot;Argument 'maxsize' must be &gt; 0&quot;</span>, caller
+        <span class="kw">end</span>
+        @maxsize = _maxsize
+      <span class="kw">end</span>
+      <span class="kw">if</span> hash.has_key?(:maxtime) || hash.has_key?(<span class="str">'maxtime'</span>) 
+        _maxtime = (hash[:maxtime] <span class="kw">or</span> hash[<span class="str">'maxtime'</span>]).to_i
+        <span class="kw">if</span> _maxtime.class != Fixnum
+          raise TypeError, <span class="str">&quot;Argument 'maxtime' must be an Fixnum&quot;</span>, caller
+        <span class="kw">end</span>
+        <span class="kw">if</span> _maxtime == 0
+          raise TypeError, <span class="str">&quot;Argument 'maxtime' must be &gt; 0&quot;</span>, caller
+        <span class="kw">end</span>
+        @maxtime = _maxtime
+        @startTime = Time.now
+      <span class="kw">end</span>
+      @baseFilename = File.basename(@filename)
+      <span class="cmt"># roll immediately so all files are of the form &quot;000001-@baseFilename&quot;</span>
+      roll
+      <span class="cmt"># initialize the file size counter</span>
+      @datasize = 0
+    <span class="kw">end</span></pre>
+</body>
+</html>

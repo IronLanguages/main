@@ -24,12 +24,13 @@ using MSA = System.Linq.Expressions;
 using System;
 using Microsoft.Scripting.Actions;
 using System.Collections.ObjectModel;
-
+using System.Diagnostics;
+using Microsoft.Scripting.Interpreter;
+    
 namespace IronRuby.Compiler.Ast {
     using Ast = System.Linq.Expressions.Expression;
     
     public partial class MethodDeclaration : DeclarationExpression {
-
         // self, block
         internal const int HiddenParameterCount = 2;
             
@@ -81,18 +82,17 @@ namespace IronRuby.Compiler.Ast {
             return parameters;
         }
 
-        private MSA.Expression/*!*/ TransformBody(AstGenerator/*!*/ gen, MSA.Expression/*!*/ methodDefinitionVariable) {
-            string encodedName = RubyExceptionData.EncodeMethodName(gen.SourceUnit, _name, Location);
+        internal MSA.LambdaExpression/*!*/ TransformBody(AstGenerator/*!*/ gen, RubyScope/*!*/ declaringScope, RubyModule/*!*/ declaringModule) {
+            string encodedName = RubyExceptionData.EncodeMethodName(_name, gen.SourcePath, Location);
             
             ScopeBuilder scope = new ScopeBuilder();
-            MSA.Expression parentScope = gen.CurrentScopeVariable;
-
+            
             MSA.ParameterExpression[] parameters = DefineParameters(gen, scope);
-            MSA.Expression currentMethodVariable = scope.DefineHiddenVariable("#method", typeof(RubyMethodInfo));
-            MSA.Expression rfcVariable = scope.DefineHiddenVariable("#rfc", typeof(RuntimeFlowControl));
-            MSA.Expression scopeVariable = scope.DefineHiddenVariable("#scope", typeof(RubyMethodScope));
-            MSA.Expression selfParameter = parameters[0];
-            MSA.Expression blockParameter = parameters[1];
+            var currentMethodVariable = scope.DefineHiddenVariable("#method", typeof(RubyMethodInfo));
+            var rfcVariable = scope.DefineHiddenVariable("#rfc", typeof(RuntimeFlowControl));
+            var scopeVariable = scope.DefineHiddenVariable("#scope", typeof(RubyMethodScope));
+            var selfParameter = parameters[0];
+            var blockParameter = parameters[1];
 
             gen.EnterMethodDefinition(
                 scope,
@@ -100,46 +100,74 @@ namespace IronRuby.Compiler.Ast {
                 scopeVariable,
                 blockParameter,
                 rfcVariable,
-                currentMethodVariable,
                 _name,
                 _parameters
             );
 
             DefinedScope.TransformLocals(scope);
 
-            MSA.ParameterExpression unwinder = scope.DefineHiddenVariable("#unwinder", typeof(MethodUnwinder));
+            // profiling:
+            MSA.Expression profileStart, profileEnd;
+            if (gen.Profiler != null) {
+                int profileTickIndex = gen.Profiler.GetTickIndex(encodedName);
+                var stampVariable = scope.DefineHiddenVariable("#stamp", typeof(long));
+                profileStart = Ast.Assign(stampVariable, Methods.Stopwatch_GetTimestamp.OpCall());
+                profileEnd = Methods.UpdateProfileTicks.OpCall(AstUtils.Constant(profileTickIndex), stampVariable);
+            } else {
+                profileStart = profileEnd = AstUtils.Empty();
+            }
 
-            MSA.Expression body = AstFactory.MakeUserMethodBody(
-                gen, Location.End.Line,
-                blockParameter,
-                rfcVariable,
-                unwinder,
-                Ast.Block(
-                    Ast.Assign(currentMethodVariable, methodDefinitionVariable),
+            // tracing:
+            MSA.Expression traceCall, traceReturn;
+            if (gen.TraceEnabled) {
+                traceCall = Methods.TraceMethodCall.OpCall(
+                    scopeVariable, 
+                    gen.SourcePathConstant, 
+                    AstUtils.Constant(Location.Start.Line)
+                );
 
-                    Ast.Assign(scopeVariable, Methods.CreateMethodScope.OpCall(
-                        scope.VisibleVariables(), parentScope, currentMethodVariable, rfcVariable, selfParameter, blockParameter)
-                    ),
-                
-                    _parameters.TransformOptionalsInitialization(gen),
-                    gen.TraceEnabled ? Methods.TraceMethodCall.OpCall(scopeVariable, Ast.Convert(Ast.Constant(gen.SourceUnit.Path), typeof(string)), Ast.Constant(Location.Start.Line)) : Ast.Empty(),
-                    Body.TransformResult(gen, ResultOperation.Return),
-                    Ast.Empty()
-                ),
-                ResultOperation.Return,
-                (gen.Profiler != null) ? gen.Profiler.GetTickIndex(encodedName) : -1,
-                (gen.Profiler != null) ? scope.DefineHiddenVariable("#stamp", typeof(long)) : null,
-                gen.ReturnLabel
+                traceReturn = Methods.TraceMethodReturn.OpCall(
+                    gen.CurrentScopeVariable,
+                    gen.SourcePathConstant,
+                    AstUtils.Constant(Location.End.Line)
+                );
+            } else {
+                traceCall = traceReturn = AstUtils.Empty();
+            }
+
+            MSA.ParameterExpression unwinder = scope.DefineHiddenVariable("#unwinder", typeof(Exception));
+            
+            MSA.Expression body = AstUtils.Try(
+                profileStart,
+
+                // scope initialization:
+                Ast.Assign(rfcVariable, Methods.CreateRfcForMethod.OpCall(AstUtils.Convert(blockParameter, typeof(Proc)))),
+                Ast.Assign(scopeVariable, Methods.CreateMethodScope.OpCall(
+                    scope.VisibleVariables(), 
+                    Ast.Constant(declaringScope, typeof(RubyScope)),
+                    Ast.Constant(declaringModule, typeof(RubyModule)), 
+                    Ast.Constant(_name),
+                    rfcVariable, selfParameter, blockParameter,
+                    EnterInterpretedFrameExpression.Instance
+                )),
+            
+                _parameters.TransformOptionalsInitialization(gen),
+                traceCall,
+                Body.TransformResult(gen, ResultOperation.Return)
+            ).Filter(unwinder, Methods.IsMethodUnwinderTargetFrame.OpCall(scopeVariable, unwinder),
+                Ast.Return(gen.ReturnLabel, Methods.GetMethodUnwinderReturnValue.OpCall(unwinder))
+            ).Finally(  
+                // leave frame:
+                Methods.LeaveMethodFrame.OpCall(rfcVariable),
+                LeaveInterpretedFrameExpression.Instance,
+                profileEnd,
+                traceReturn
             );
 
             body = gen.AddReturnTarget(scope.CreateScope(body));
             gen.LeaveMethodDefinition();
 
-            return CreateLambda(
-                encodedName, 
-                parameters, 
-                body
-            );
+            return CreateLambda(encodedName, parameters, body);
         }
 
         private static MSA.LambdaExpression/*!*/ CreateLambda(string/*!*/ name, MSA.ParameterExpression/*!*/[]/*!*/ parameters, MSA.Expression/*!*/ body) {
@@ -152,12 +180,11 @@ namespace IronRuby.Compiler.Ast {
 
                 var bodyWithParamInit = new MSA.Expression[parameters.Length + 1];
                 for (int i = 0; i < parameters.Length; i++) {
-                    bodyWithParamInit[i] = Ast.Assign(parameters[i], Ast.ArrayIndex(array, Ast.Constant(i)));
+                    bodyWithParamInit[i] = Ast.Assign(parameters[i], Ast.ArrayIndex(array, AstUtils.Constant(i)));
                 }
                 bodyWithParamInit[parameters.Length] = body;
 
-                return Ast.Lambda(
-                    RubyMethodInfo.ParamsArrayDelegateType,
+                return Ast.Lambda<Func<object, Proc, object[], object>>(
                     Ast.Block(
                         new ReadOnlyCollection<MSA.ParameterExpression>(parameters), 
                         new ReadOnlyCollection<MSA.Expression>(bodyWithParamInit)
@@ -176,42 +203,11 @@ namespace IronRuby.Compiler.Ast {
         }
 
         internal override MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen) {
-            MSA.Expression methodDefinitionVariable = gen.CurrentScope.DefineHiddenVariable(
-                "#method_" + _name, typeof(RubyMethodInfo)
+            return Methods.DefineMethod.OpCall(
+                (_target != null) ? _target.TransformRead(gen) : gen.CurrentSelfVariable,  // target
+                gen.CurrentScopeVariable,
+                Ast.Constant(new RubyMethodBody(gen.Context, this, gen.Document, gen.Encoding))
             );
-
-            return Methods.MethodDefined.OpCall(
-                Ast.Assign(methodDefinitionVariable,
-                    Methods.DefineMethod.OpCall(
-                        (_target != null) ? _target.TransformRead(gen) : gen.CurrentSelfVariable,  // target
-                        Ast.Constant((gen.SavingToDisk) ? (object)new Serializable(this) : this), 
-                        gen.CurrentScopeVariable,
-                        Ast.Constant(_target != null),                                // isSingleton?
-                        AstUtils.Constant(_name),
-                        TransformBody(gen, methodDefinitionVariable),
-                        Ast.Constant(_parameters.MandatoryCount),
-                        Ast.Constant(_parameters.OptionalCount),
-                        Ast.Constant(_parameters.Array != null)                       // hasUnsplatParameter
-                    )
-                )
-            );
-        }
-
-        internal sealed class Serializable : IExpressionSerializable {
-            private readonly MethodDeclaration/*!*/ _method;
-
-            public MethodDeclaration/*!*/ Method {
-                get { return _method; }
-            }
-
-            public Serializable(MethodDeclaration/*!*/ method) {
-                _method = method;
-            }
-
-            public MSA.Expression/*!*/ CreateExpression() {
-                // TODO: serialize source code:
-                return Ast.Constant(null);       
-            }
         }
     }
 }

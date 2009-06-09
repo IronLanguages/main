@@ -253,11 +253,18 @@ namespace IronPython.Runtime.Operations {
             TrackerTypes tt = GetMemberType(group);
             switch(tt) {
                 case TrackerTypes.Method:
+                    bool checkStatic = false;
                     List<MemberInfo> mems = new List<MemberInfo>();
                     foreach (MemberTracker mt in group) {
-                        mems.Add(((MethodTracker)mt).Method);
+                        MethodTracker metht = (MethodTracker)mt;
+                        mems.Add(metht.Method);
+                        checkStatic |= metht.IsStatic;
                     }
-                    return GetFinalSlotForFunction(GetBuiltinFunction(group[0].DeclaringType, group[0].Name, name, null, mems.ToArray()));
+
+                    Type declType = group[0].DeclaringType;
+                    MemberInfo[] memArray = mems.ToArray(); 
+                    FunctionType ft = GetMethodFunctionType(declType, memArray, checkStatic);
+                    return GetFinalSlotForFunction(GetBuiltinFunction(declType, group[0].Name, name, ft, memArray));
                 
                 case TrackerTypes.Field:
                     return GetReflectedField(((FieldTracker)group[0]).Field);
@@ -275,10 +282,10 @@ namespace IronPython.Runtime.Operations {
                     }
                     
                     if (type is TypeGroup) {
-                        return new PythonTypeValueSlot(type);
+                        return new PythonTypeUserDescriptorSlot(type, true);
                     }
 
-                    return new PythonTypeValueSlot(DynamicHelpers.GetPythonTypeFromType(type.Type));
+                    return new PythonTypeUserDescriptorSlot(DynamicHelpers.GetPythonTypeFromType(type.Type), true);
                 
                 case TrackerTypes.Constructor:
                     return GetConstructor(group[0].DeclaringType, privateBinding);
@@ -370,9 +377,9 @@ namespace IronPython.Runtime.Operations {
             lock (_eventCache) {
                 if (!_eventCache.TryGetValue(tracker, out res)) {
                     if (PythonBinder.IsExtendedType(tracker.DeclaringType)) {
-                        _eventCache[tracker] = res = new ReflectedEvent(tracker.Event, true);
+                        _eventCache[tracker] = res = new ReflectedEvent(tracker, true);
                     } else {
-                        _eventCache[tracker] = res = new ReflectedEvent(tracker.Event, false);
+                        _eventCache[tracker] = res = new ReflectedEvent(tracker, false);
                     }
                 }
             }
@@ -556,6 +563,10 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static FunctionType GetMethodFunctionType(Type/*!*/ type, MemberInfo/*!*/[]/*!*/ methods) {
+            return GetMethodFunctionType(type, methods, true);
+        }
+
+        internal static FunctionType GetMethodFunctionType(Type/*!*/ type, MemberInfo/*!*/[]/*!*/ methods, bool checkStatic) {
             FunctionType ft = FunctionType.None;
             foreach (MethodInfo mi in methods) {
                 if (mi.IsStatic && mi.IsSpecialName) {
@@ -571,7 +582,7 @@ namespace IronPython.Runtime.Operations {
                     }
                 }
 
-                if (IsStaticFunction(type, mi)) {
+                if (checkStatic && IsStaticFunction(type, mi)) {
                     ft |= FunctionType.Function;
                 } else {
                     ft |= FunctionType.Method;
@@ -741,7 +752,7 @@ namespace IronPython.Runtime.Operations {
                     return info;
                 }
 
-                if (info.IsFamily || info.IsFamilyOrAssembly) {
+                if (info.IsProtected()) {
                     return info;
                 }
             }
@@ -757,7 +768,7 @@ namespace IronPython.Runtime.Operations {
             object callable;
 
             if (pt.TryResolveMixedSlot(context, si, out pts) &&
-                pts.TryGetBoundValue(context, o, pt, out callable)) {
+                pts.TryGetValue(context, o, pt, out callable)) {
                 value = PythonCalls.Call(context, callable);
                 return true;
             }
@@ -773,7 +784,7 @@ namespace IronPython.Runtime.Operations {
             PythonType pt = DynamicHelpers.GetPythonType(o);
             object callable;
             if (pt.TryResolveMixedSlot(context, si, out pts) &&
-                pts.TryGetBoundValue(context, o, pt, out callable)) {
+                pts.TryGetValue(context, o, pt, out callable)) {
                 value = PythonCalls.Call(context, callable, arg1);
                 return true;
             }
@@ -789,7 +800,7 @@ namespace IronPython.Runtime.Operations {
             PythonType pt = DynamicHelpers.GetPythonType(o);
             object callable;
             if (pt.TryResolveMixedSlot(context, si, out pts) &&
-                pts.TryGetBoundValue(context, o, pt, out callable)) {
+                pts.TryGetValue(context, o, pt, out callable)) {
                 value = PythonCalls.Call(context, callable, arg1, arg2);
                 return true;
             }

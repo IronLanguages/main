@@ -22,16 +22,17 @@ using System.Reflection.Emit;
 namespace System.Linq.Expressions.Compiler {
     partial class LambdaCompiler {
         private void EmitAddress(Expression node, Type type) {
-            EmitAddress(node, type, true);
+            EmitAddress(node, type, CompilationFlags.EmitExpressionStart);
         }
 
         // We don't want "ref" parameters to modify values of expressions
         // except where it would in IL: locals, args, fields, and array elements
         // (Unbox is an exception, it's intended to emit a ref to the orignal
         // boxed value)
-        private void EmitAddress(Expression node, Type type, bool emitStart) {
+        private void EmitAddress(Expression node, Type type, CompilationFlags flags) {
             Debug.Assert(node != null);
-            ExpressionStart startEmitted = emitStart ? EmitExpressionStart(node) : ExpressionStart.None;
+            bool emitStart = (flags & CompilationFlags.EmitExpressionStartMask) == CompilationFlags.EmitExpressionStart;
+            CompilationFlags startEmitted = emitStart ? EmitExpressionStart(node) : CompilationFlags.EmitNoExpressionStart;
 
             switch (node.NodeType) {
                 default:
@@ -72,7 +73,7 @@ namespace System.Linq.Expressions.Compiler {
         private void AddressOf(BinaryExpression node, Type type) {
             Debug.Assert(node.NodeType == ExpressionType.ArrayIndex && node.Method == null);
 
-            if (type == node.Type) {
+            if (TypeUtils.AreEquivalent(type, node.Type)) {
                 EmitExpression(node.Left);
                 EmitExpression(node.Right);
                 Type rightType = node.Right.Type;
@@ -94,7 +95,7 @@ namespace System.Linq.Expressions.Compiler {
         }
 
         private void AddressOf(ParameterExpression node, Type type) {
-            if (type == node.Type) {
+            if (TypeUtils.AreEquivalent(type, node.Type)) {
                 if (node.IsByRef) {
                     _scope.EmitGet(node);
                 } else {
@@ -107,7 +108,7 @@ namespace System.Linq.Expressions.Compiler {
 
 
         private void AddressOf(MemberExpression node, Type type) {
-            if (type == node.Type) {
+            if (TypeUtils.AreEquivalent(type, node.Type)) {
                 // emit "this", if any
                 Type objectType = null;
                 if (node.Expression != null) {
@@ -151,7 +152,6 @@ namespace System.Linq.Expressions.Compiler {
             LocalBuilder temp = GetLocal(GetMemberType(member));
             _ilg.Emit(OpCodes.Stloc, temp);
             _ilg.Emit(OpCodes.Ldloca, temp);
-            FreeLocal(temp);
         }
 
 
@@ -174,7 +174,7 @@ namespace System.Linq.Expressions.Compiler {
         }
 
         private void AddressOf(IndexExpression node, Type type) {
-            if (type != node.Type || node.Indexer != null) {
+            if (!TypeUtils.AreEquivalent(type, node.Type) || node.Indexer != null) {
                 EmitExpressionAddress(node, type);
                 return;
             }
@@ -201,11 +201,10 @@ namespace System.Linq.Expressions.Compiler {
         private void EmitExpressionAddress(Expression node, Type type) {
             Debug.Assert(TypeUtils.AreReferenceAssignable(type, node.Type));
 
-            EmitExpression(node, false);
+            EmitExpression(node, CompilationFlags.EmitAsNoTail | CompilationFlags.EmitNoExpressionStart);
             LocalBuilder tmp = GetLocal(type);
             _ilg.Emit(OpCodes.Stloc, tmp);
             _ilg.Emit(OpCodes.Ldloca, tmp);
-            FreeLocal(tmp);
         }
 
 
@@ -214,10 +213,10 @@ namespace System.Linq.Expressions.Compiler {
         // For properties, we want to write back into the property if it's
         // passed byref.
         private WriteBack EmitAddressWriteBack(Expression node, Type type) {
-            ExpressionStart startEmitted = EmitExpressionStart(node);
+            CompilationFlags startEmitted = EmitExpressionStart(node);
 
             WriteBack result = null;
-            if (type == node.Type) {
+            if (TypeUtils.AreEquivalent(type, node.Type)) {
                 switch (node.NodeType) {
                     case ExpressionType.MemberAccess:
                         result = AddressOfWriteBack((MemberExpression)node);
@@ -228,7 +227,7 @@ namespace System.Linq.Expressions.Compiler {
                 }
             }
             if (result == null) {
-                EmitAddress(node, type, false);
+                EmitAddress(node, type, CompilationFlags.EmitAsNoTail | CompilationFlags.EmitNoExpressionStart);
             }
 
             EmitExpressionEnd(startEmitted);

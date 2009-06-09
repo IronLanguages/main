@@ -1,0 +1,67 @@
+﻿<Window
+	xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+	xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+	xmlns:local="clr-namespace:Tutorial"
+	x:Class="Tutorial.MainWindow"
+	x:Name="Window"
+	Title="IronRuby Tutorial"
+	Width="640" Margin="0,0,0,12372" Height="510">
+
+	<Grid x:Name="LayoutRoot" Margin="0">
+		<ScrollViewer x:Name="tutorial_scroll" Margin="0,0,200,0">
+			<local:TutorialPage Margin="0"/>
+		</ScrollViewer>
+		<Border x:Name="tutorial_nav" HorizontalAlignment="Right" Margin="0" Width="200" Background="White" BorderBrush="#FF7B7B7B" BorderThickness="5,0,0,0" CornerRadius="10,0,0,10" Padding="2,2,0,2">
+			<Border.Resources>
+			    <!-- Chapter TEMPLATE -->
+                <DataTemplate x:Key="ChapterTemplate">
+                    <TextBlock Text="{Binding Path=name}" />
+                </DataTemplate>
+
+                <!-- Section TEMPLATE -->
+                <HierarchicalDataTemplate 
+                  x:Key="SectionTemplate"
+                  ItemsSource="{Binding Path=chapters}"
+                  ItemTemplate="{StaticResource ChapterTemplate}"
+                >
+                    <TextBlock Text="{Binding Path=name}" />
+                </HierarchicalDataTemplate>
+			</Border.Resources>
+			<TreeView Name="chapters" Margin="1,1,0,1" BorderBrush="{x:Null}" FontSize="16"/>
+
+			<!--<ListView Margin="0" Background="White" BorderBrush="White" BorderThickness="0" IsSynchronizedWithCurrentItem="True" FontSize="16">
+				<ListView.View>
+					<GridView>
+						<GridViewColumn/>
+					</GridView>
+				</ListView.View>
+				<ListViewItem Margin="0" Content="Chapter 1"/>
+				<ListViewItem Margin="0" Content="Chapter 2"/>
+			</ListView>-->
+		</Border>
+		<ScrollViewer x:Name="main_scroll" Margin="0,25,0,0" Visibility="Hidden">
+			<StackPanel x:Name="main" HorizontalAlignment="Left" VerticalAlignment="Top" Width="626" Height="451" Background="White">
+				<Border x:Name="main_header" BorderBrush="Black" BorderThickness="0,0,0,1" Padding="8,8,8,34" Background="#FFEFEFEF" Margin="0">
+					<TextBlock HorizontalAlignment="Left" FontSize="32" Text="Pick a tutorial" TextWrapping="Wrap" Margin="0,0,0,-45"/>
+				</Border>
+			</StackPanel>
+		</ScrollViewer>
+		<StackPanel x:Name="header_navigation" VerticalAlignment="Top" Height="25" Background="#FF424242" Orientation="Horizontal" Visibility="Collapsed">
+			<StackPanel HorizontalAlignment="Left" Margin="8,4" VerticalAlignment="Center">
+				<Button Content="&lt; back" HorizontalContentAlignment="Center" Padding="2,1" VerticalContentAlignment="Center" Visibility="Hidden"/>
+			</StackPanel>
+		</StackPanel>
+		<Grid x:Name="loading" Background="#BF545454" Visibility="Hidden">
+			<Border BorderBrush="#FF484848" BorderThickness="10" Margin="150" CornerRadius="10" Background="White">
+				<Border.Effect>
+					<DropShadowEffect BlurRadius="37" Direction="180"/>
+				</Border.Effect>
+				<TextBlock FontSize="48" Text="Loading ..." TextWrapping="Wrap" Margin="0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+			</Border>
+		</Grid>
+	</Grid>
+	
+</Window>

@@ -15,10 +15,15 @@
 
 using Microsoft.Scripting;
 using System;
+
 namespace IronRuby.Tests {
     public partial class Tests {
         private bool PreciseTraces {
-            get { return !_driver.PartialTrust || _driver.Interpret; }
+            get { return Runtime.Setup.DebugMode /*|| _driver.Interpret*/; }
+        }
+
+        private bool PreciseSinglePassTraces {
+            get { return true; }
         }
 
         public void Backtrace1() {
@@ -42,7 +47,7 @@ end
 
 goo
 ", "Backtrace1.rb", SourceCodeKind.File).Execute();
-            }, PreciseTraces ? @"
+            }, PreciseSinglePassTraces ? @"
 Backtrace1.rb:11:in `bar'
 Backtrace1.rb:7:in `foo'
 Backtrace1.rb:3:in `goo'
@@ -56,7 +61,7 @@ Backtrace1.rb:0
         }
 
         public void Backtrace2() {
-            AssertOutput(delegate() {
+           AssertOutput(delegate() {
                 CompilerTest(@"
 def goo()
   foo()
@@ -80,7 +85,7 @@ rescue
   puts $@[0..4]
 end
 ");
-            }, PreciseTraces ? @"
+            }, PreciseSinglePassTraces ? @"
 Backtrace2.rb:15:in `baz'
 Backtrace2.rb:11:in `bar'
 Backtrace2.rb:7:in `foo'
@@ -124,7 +129,7 @@ rescue
   puts $@[0..4]
 end
 ");
-            }, PreciseTraces ? @"
+            }, PreciseSinglePassTraces ? @"
 Backtrace3.rb:19:in `baz'
 Backtrace3.rb:13:in `bar'
 Backtrace3.rb:9:in `foo'
@@ -144,7 +149,7 @@ Backtrace3.rb:0
                 d();
             }
         }
-        
+
         public void Backtrace4() {
             // TODO: need to fix interpreter
             if (_driver.Interpret) return;
@@ -168,16 +173,16 @@ end
 
 foo
 ");
-            }, PreciseTraces ? @"
+            }, PreciseSinglePassTraces ? @"
 Backtrace4.rb:7:in `baz'
 Backtrace4.rb:11:in `foo'
-*.cs:*:in `Bar'
+*:*:in `Bar'
 Backtrace4.rb:11:in `foo'
 Backtrace4.rb:14
 " : @"
 Backtrace4.rb:6:in `baz'
 Backtrace4.rb:11:in `foo'
-:0:in `Bar'
+*:*:in `Bar'
 Backtrace4.rb:10:in `foo'
 Backtrace4.rb:0
 ", OutputFlags.Match);

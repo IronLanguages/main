@@ -17,28 +17,62 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Threading;
-using Microsoft.Scripting;
-using Microsoft.Scripting.Actions;
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
 using IronRuby.Compiler;
 using IronRuby.Compiler.Generation;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
-using MSA = System.Linq.Expressions;
-using Ast = System.Linq.Expressions.Expression;
-using AstFactory = IronRuby.Compiler.Ast.AstFactory;
-using System.Collections.ObjectModel;
-using System.Runtime.CompilerServices;
+using Microsoft.Scripting;
+using Microsoft.Scripting.Actions;
+using Microsoft.Scripting.Utils;
 
 namespace IronRuby.Builtins {
+    [Flags]
+    public enum ModuleRestrictions {
+        None = 0,
 
-    // TODO: freezing
+        /// <summary>
+        /// Module doesn't allow its methods to be overridden.
+        /// Used for built-ins, except for Object.
+        /// </summary>
+        NoOverrides = 1,
+
+        /// <summary>
+        /// Module doesn't allow its methods to be called by mangled names.
+        /// Used for built-ins.
+        /// </summary>
+        NoNameMangling = 2,
+
+        /// <summary>
+        /// Default restrictions for built-in modules.
+        /// </summary>
+        Builtin = NoOverrides | NoNameMangling,
+    }
+
+    [Flags]
+    public enum RubyModuleAttributes {
+        None = 0,
+
+        NoOverrides = ModuleRestrictions.NoOverrides,
+        NoNameMangling = ModuleRestrictions.NoNameMangling,
+        RestrictionsMask = NoOverrides | NoNameMangling,
+
+        IsSelfContained = 0x100,
+    }
+
+    [Flags]
+    public enum MethodLookup {
+        Default = 0,
+        Virtual = 1,
+        ReturnForwarder = 2,
+        FallbackToObject = 4,
+    }
+
 #if DEBUG
     [DebuggerDisplay("{DebugName}")]
 #endif
-    public partial class RubyModule : IDuplicable {
+    public partial class RubyModule : IDuplicable, IRubyObject {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly")]
         public static readonly RubyModule[]/*!*/ EmptyArray = new RubyModule[0];
 
@@ -49,12 +83,22 @@ namespace IronRuby.Builtins {
         }
 
         private readonly RubyContext/*!*/ _context;
-        private readonly TypeTracker _tracker;
 
+        // the type this module represents or null:
+        private readonly TypeTracker _typeTracker;
+
+        // the namespace this module represents or null:
+        private readonly NamespaceTracker _namespaceTracker;
+
+        private readonly ModuleRestrictions _restrictions;
+        
+        // name of the module or null for anonymous modules:
         private string _name;
 
         // lazy interlocked init:
         private RubyClass _singletonClass;
+
+        private RubyInstanceData _instanceData;
 
         #region Mutable state guarded by ClassHierarchyLock
 
@@ -63,6 +107,27 @@ namespace IronRuby.Builtins {
         
 #if DEBUG
         private int _referringMethodRulesSinceLastUpdate;
+        private int _debugId = Interlocked.Increment(ref _DebugId);
+        private static int _DebugId;
+        
+        public string DebugName { 
+            get {
+                string name;
+                if (IsSingletonClass) {
+                    object s = ((RubyClass)this).SingletonClassOf;
+                    RubyModule m = s as RubyModule;
+                    if (m != null) {
+                        name = m.DebugName;
+                    } else {
+                        name = RuntimeHelpers.GetHashCode(s).ToString("x");
+                    }
+                    name = "S(" + name + ")";
+                } else {
+                    name = _name;
+                }
+                return name + " #" + _debugId;
+            }
+        }
 #endif
 
         private enum MemberTableState {
@@ -75,7 +140,7 @@ namespace IronRuby.Builtins {
         private MemberTableState _constantsState = MemberTableState.Uninitialized;
         private Action<RubyModule> _constantsInitializer;
         private Dictionary<string, object> _constants;  // null means lookup the execution context's global namespace 
-
+        
         // method table:
         private MemberTableState _methodsState = MemberTableState.Uninitialized;
         private Dictionary<string, RubyMemberInfo> _methods;
@@ -95,17 +160,63 @@ namespace IronRuby.Builtins {
         // MRO walk: this, _mixins[0], _mixins[1], ..., _mixins[n-1], super, ...
         private RubyModule[]/*!*/ _mixins;
 
-        // namespace constants:
-        private IAttributesCollection _clrConstants;
+        #endregion
+
+        #region Dynamic Sites
+
+        // RubyModule, SymbolId -> object
+        private CallSite<Func<CallSite, object, object, object>> _constantMissingCallbackSite;
+        private CallSite<Func<CallSite, object, object, object>> _methodAddedCallbackSite;
+        private CallSite<Func<CallSite, object, object, object>> _methodRemovedCallbackSite;
+        private CallSite<Func<CallSite, object, object, object>> _methodUndefinedCallbackSite;
+
+        internal object ConstantMissing(string/*!*/ name) {
+            return Context.Send(ref _constantMissingCallbackSite, "const_missing", this, name);
+        }
+
+        // Ruby 1.8: called after method is added, except for alias_method which calls it before
+        // Ruby 1.9: called before method is added
+        public virtual void MethodAdded(string/*!*/ name) {
+            Assert.NotNull(name);
+            Debug.Assert(!IsSingletonClass);
+
+            Context.Send(ref _methodAddedCallbackSite, Symbols.MethodAdded, this, name);
+        }
+
+        internal virtual void MethodRemoved(string/*!*/ name) {
+            Assert.NotNull(name);
+            Debug.Assert(!IsSingletonClass);
+
+            Context.Send(ref _methodRemovedCallbackSite, Symbols.MethodRemoved, this, name);
+        }
+
+        internal virtual void MethodUndefined(string/*!*/ name) {
+            Assert.NotNull(name);
+            Debug.Assert(!IsSingletonClass);
+
+            Context.Send(ref _methodUndefinedCallbackSite, Symbols.MethodUndefined, this, name);
+        }
 
         #endregion
 
-        public TypeTracker Tracker {
-            get { return _tracker; }
+        public TypeTracker TypeTracker {
+            get { return _typeTracker; }
+        }
+
+        public NamespaceTracker NamespaceTracker {
+            get { return _namespaceTracker; }
         }
 
         public bool IsInterface {
-            get { return _tracker != null && _tracker.Type.IsInterface; }
+            get { return _typeTracker != null && _typeTracker.Type.IsInterface; }
+        }
+
+        public virtual Type/*!*/ GetUnderlyingSystemType() {
+            if (IsInterface) {
+                return _typeTracker.Type;
+            } else {
+                throw new InvalidOperationException();
+            }
         }
 
         public RubyClass/*!*/ SingletonClass {
@@ -123,22 +234,17 @@ namespace IronRuby.Builtins {
             get { return false; }
         }
 
+        public ModuleRestrictions Restrictions {
+            get { return _restrictions; }
+        }
+
         internal RubyModule[]/*!*/ Mixins {
             get { return _mixins; }
         }
 
-#if DEBUG
-        private string _debugName;
-        public string DebugName { get { return _debugName ?? _name ?? "<anonymous>"; } set { _debugName = value; } }
-#endif
-
         public string Name {
             get { return _name; }
             internal set { _name = value; }
-        }
-
-        public string GetName(RubyContext/*!*/ context) {
-            return context == _context ? _name : _name + "@" + _context.RuntimeId;
         }
 
         public RubyContext/*!*/ Context {
@@ -148,6 +254,10 @@ namespace IronRuby.Builtins {
 
         public virtual bool IsClass {
             get { return false; }
+        }
+
+        public bool IsComClass {
+            get { return ReferenceEquals(this, Context.ComObjectClass); }
         }
 
         internal virtual RubyClass GetSuperClass() {
@@ -168,16 +278,18 @@ namespace IronRuby.Builtins {
         }
 
         // creates an empty module:
-        protected RubyModule(RubyClass/*!*/ rubyClass, string name)
-            : this(rubyClass.Context, name, null, null, null, null, null) {
+        protected RubyModule(RubyClass/*!*/ metaModuleClass, string name)
+            : this(metaModuleClass.Context, name, null, null, null, null, null, ModuleRestrictions.None) {
 
             // all modules need a singleton (see RubyContext.CreateModule):
-            InitializeDummySingletonClass(rubyClass, null);
+            InitializeDummySingletonClass(metaModuleClass, null);
         }
 
         internal RubyModule(RubyContext/*!*/ context, string name, Action<RubyModule> methodsInitializer, Action<RubyModule> constantsInitializer,
-            RubyModule/*!*/[] expandedMixins, IAttributesCollection clrConstants, TypeTracker tracker) {
+            RubyModule/*!*/[] expandedMixins, NamespaceTracker namespaceTracker, TypeTracker typeTracker, ModuleRestrictions restrictions) {
+
             Assert.NotNull(context);
+            Debug.Assert(namespaceTracker == null || typeTracker == null);
             Debug.Assert(expandedMixins == null ||
                 CollectionUtils.TrueForAll(expandedMixins, (m) => m != this && m != null && !m.IsClass && m.Context == context)
             );
@@ -186,9 +298,10 @@ namespace IronRuby.Builtins {
             _name = name;
             _methodsInitializer = methodsInitializer;
             _constantsInitializer = constantsInitializer;
-            _clrConstants = clrConstants;
-            _tracker = tracker;
+            _namespaceTracker = namespaceTracker;
+            _typeTracker = typeTracker;
             _mixins = expandedMixins ?? EmptyArray;
+            _restrictions = restrictions;
         }
 
         #region Initialization (thread-safe)
@@ -206,16 +319,29 @@ namespace IronRuby.Builtins {
             _constantsState = MemberTableState.Initializing;
 
             try {
-                if (_constantsInitializer != null) {
-                    Utils.Log(_name ?? "<anonymous>", "CT_INIT");
-                    // TODO: use lock-free operations in initializers
-                    _constantsInitializer(this);
+                if (_constantsInitializer != EmptyInitializer) {
+                    if (_constantsInitializer != null) {
+                        Utils.Log(_name ?? "<anonymous>", "CT_INIT");
+                        // TODO: use lock-free operations in initializers
+                        _constantsInitializer(this);
+                    } else if (!IsInterface && _typeTracker != null) {
+                        // Load types eagerly. We do this only for CLR types that have no constant initializer (not builtins) and 
+                        // a constant access is performed (otherwise this method wouldn't be called).
+                        // 
+                        // Note: Interfaces cannot declare nested types in C#, we follow the suit here.
+                        // We don't currently need this restriction but once we implement generic type overload inheritance properly
+                        // we would need to deal with inheritance from interfaces, which might be too complex. 
+                        // 
+                        LoadNestedTypes();
+                    }
                 }
             } finally {
                 _constantsInitializer = null;
                 _constantsState = MemberTableState.Initialized;
             }
         }
+
+        internal static readonly Action<RubyModule> EmptyInitializer = (_) => { };
 
         internal bool MethodInitializationNeeded {
             get { return _methodsState == MemberTableState.Uninitialized; }
@@ -284,13 +410,49 @@ namespace IronRuby.Builtins {
             }
         }
 
+        private void LoadNestedTypes() {
+            Context.RequiresClassHierarchyLock();
+            Debug.Assert(_constants != null && _constants.Count == 0);
+
+            // TODO: protected types
+            // TODO: Inherited generic overloads. We need a custom TypeGroup to do it right - part of the type group might be removed
+            // if the constant is redefined/removed from the base class. This is similar to method overload inheritance.
+            Type[] types = _typeTracker.Type.GetNestedTypes(BindingFlags.Public | BindingFlags.DeclaredOnly);
+            var trackers = new List<TypeTracker>();
+            var names = new List<string>();
+            foreach (var type in types) {
+                TypeTracker tracker = (NestedTypeTracker)MemberTracker.FromMemberInfo(type);
+
+                if (type.IsGenericType) {
+                    var name = ReflectionUtils.GetNormalizedTypeName(type);
+                    int index = names.IndexOf(name);
+                    if (index != -1) {
+                        trackers[index] = TypeGroup.UpdateTypeEntity(trackers[index], tracker);
+                        names[index] = name;
+                    } else {
+                        trackers.Add(tracker);
+                        names.Add(name);
+                    }
+                } else {
+                    trackers.Add(tracker);
+                    names.Add(type.Name);
+                }
+            }
+
+            for (int i = 0; i < trackers.Count; i++) {
+                var tracker = trackers[i];
+                _constants[names[i]] = (tracker is TypeGroup) ? tracker : (object)Context.GetModule(tracker.Type); 
+            }
+        }
+
         internal void InitializeMembersFrom(RubyModule/*!*/ module) {
             Context.RequiresClassHierarchyLock();
-            
+            Mutate();
+
             Assert.NotNull(module);
 
 #if !SILVERLIGHT // missing Clone on Delegate
-            if (module.DeclaresGlobalConstants || module._clrConstants != null && _constants == null) {
+            if (module.DeclaresGlobalConstants || module._namespaceTracker != null && _constants == null) {
 #endif
                 // initialize the module so that we can copy all constants from it:
                 module.InitializeConstantsNoLock();
@@ -305,7 +467,7 @@ namespace IronRuby.Builtins {
 #endif
 
             if (module.DeclaresGlobalConstants) {
-                Debug.Assert(module._constants == null && module._clrConstants == null);
+                Debug.Assert(module._constants == null && module._namespaceTracker == null);
                 Debug.Assert(_constants != null);
                 _constants.Clear();
                 foreach (KeyValuePair<SymbolId, object> constant in _context.TopGlobalScope.Items) {
@@ -315,9 +477,9 @@ namespace IronRuby.Builtins {
                 _constants = (module._constants != null) ? new Dictionary<string, object>(module._constants) : null;
 
                 // copy namespace members:
-                if (module._clrConstants != null) {
+                if (module._namespaceTracker != null) {
                     Debug.Assert(_constants != null);
-                    foreach (KeyValuePair<SymbolId, object> constant in module._clrConstants.SymbolAttributes) {
+                    foreach (KeyValuePair<SymbolId, object> constant in module._namespaceTracker.SymbolAttributes) {
                         _constants.Add(SymbolTable.IdToString(constant.Key), constant.Value);
                     }
                 }
@@ -355,8 +517,9 @@ namespace IronRuby.Builtins {
         }
 
         object IDuplicable.Duplicate(RubyContext/*!*/ context, bool copySingletonMembers) {
-            RubyModule result = CreateInstance(null);
-
+            // the meta-module class of this module is the singleton's super class:
+            RubyModule result = new RubyModule(_singletonClass.SuperClass, null);
+                
             // singleton members are copied here, not in InitializeCopy:
             if (copySingletonMembers && !IsSingletonClass) {
                 using (Context.ClassHierarchyLocker()) {
@@ -365,19 +528,8 @@ namespace IronRuby.Builtins {
             }
 
             // copy instance variables, and frozen, taint flags:
-            _context.CopyInstanceData(this, result, false, true, false);
+            _context.CopyInstanceData(this, result, true, false);
             return result;
-        }
-
-        // creates an empty Module or its subclass:
-        protected virtual RubyModule/*!*/ CreateInstance(string name) {
-            return _context.CreateModule(name, null, null, null, null, null, null);
-        }
-
-        public static RubyModule/*!*/ CreateInstance(RubyClass/*!*/ rubyClass, string name) {
-            return rubyClass == rubyClass.Context.ModuleClass ? 
-                new RubyModule(rubyClass, name) : 
-                new RubyModule.Subclass(rubyClass, name);
         }
 
         #endregion
@@ -479,13 +631,66 @@ namespace IronRuby.Builtins {
             }
         }
 
+        // A version of a frozen module can still change if its super-classes/mixins change.
+        private void Mutate() {
+            if (IsFrozen) {
+                throw RubyExceptions.CreateTypeError(String.Format("can't modify frozen {0}", IsClass ? "class" : "module"));
+            }
+        }
+
+        #endregion
+
+        #region IRubyObject Members
+
+        // thread-safe:
+        public RubyClass ImmediateClass {
+            get {
+                return _singletonClass;
+            }
+            set {
+                // all modules have singleton classes initialized at the creation time, these cannot be changed:
+                throw Assert.Unreachable;
+            }
+        }
+
+        // thread-safe:
+        public RubyInstanceData TryGetInstanceData() {
+            return _instanceData;
+        }
+
+        // thread-safe:
+        public RubyInstanceData GetInstanceData() {
+            return RubyOps.GetInstanceData(ref _instanceData);
+        }
+
+        // thread-safe:
+        public virtual bool IsFrozen {
+            get { return IsModuleFrozen; }
+        }
+
+        // thread-safe: _instanceData cannot be unset
+        internal bool IsModuleFrozen {
+            get { return _instanceData != null && _instanceData.Frozen; }
+        }
+
+        // thread-safe:
+        public void Freeze() {
+            GetInstanceData().Freeze();
+        }
+
+        // thread-safe:
+        public bool IsTainted {
+            get { return GetInstanceData().Tainted; }
+            set { GetInstanceData().Tainted = value; }
+        }
+
         #endregion
 
         #region Factories (thread-safe)
 
         // Ruby constructor:
         public static object CreateAnonymousModule(RubyScope/*!*/ scope, BlockParam body, RubyClass/*!*/ self) {
-            RubyModule newModule = CreateInstance(self, null);
+            RubyModule newModule = new RubyModule(self, null);
             return (body != null) ? RubyUtils.EvaluateInModule(newModule, body, newModule) : newModule;
         }
 
@@ -519,13 +724,17 @@ namespace IronRuby.Builtins {
             // This is obviously an implementation detail leaking to the language and we don't support that.
 
             // real class object and it's singleton share the tracker:
-            TypeTracker tracker = (IsSingletonClass) ? null : _tracker;
+            TypeTracker tracker = (IsSingletonClass) ? null : _typeTracker;
 
-            RubyClass result = new RubyClass(Context, null, null, this, trait, null, null, superClass, null, tracker, null, false, true);
+            var result = new RubyClass(
+                Context, null, null, this, trait, null, null, superClass, null, tracker, null, false, true, ModuleRestrictions.None
+            );
 #if DEBUG
-            result.DebugName = "S(" + DebugName + ")";
+            result.Version.SetName(result.DebugName);
 #endif
             result._singletonClass = result;
+            
+            // MRI: 
             return result;
         }
 
@@ -596,6 +805,9 @@ namespace IronRuby.Builtins {
             }
         }
 
+        // A singleton stored in constant table when CLR nested type or namespace member is removed.
+        private static readonly object RemovedConstant = new object();
+
         public string/*!*/ MakeNestedModuleName(string nestedModuleSimpleName) {
             return (ReferenceEquals(this, _context.ObjectClass) || nestedModuleSimpleName == null) ?
                 nestedModuleSimpleName :
@@ -621,8 +833,22 @@ namespace IronRuby.Builtins {
             }
         }
 
-        internal void SetConstantNoLock(string/*!*/ name, object value) {
+        // thread-safe:
+        public void SetBuiltinConstant(string/*!*/ name, object value) {
+            // TODO: hoist the lock?
+            using (Context.ClassHierarchyLocker()) {
+                SetConstantNoMutateNoLock(name, value);
+            }
+        }
+
+        private void SetConstantNoLock(string/*!*/ name, object value) {
+            Mutate();
+            SetConstantNoMutateNoLock(name, value);
+        }
+
+        private void SetConstantNoMutateNoLock(string/*!*/ name, object value) {
             Context.RequiresClassHierarchyLock();
+
             InitializeConstantsNoLock();
 
             if (DeclaresGlobalConstants) {
@@ -758,11 +984,11 @@ namespace IronRuby.Builtins {
             while (true) {
                 object result;
 
-                bool found = included ? 
+                RubyModule owner = included ? 
                     TryResolveConstantNoAutoloadCheck(inherited, name, out result) :
-                    TryGetConstantNoAutoloadCheck(name, out result);
+                    (TryGetConstantNoAutoloadCheck(name, out result) ? this : null);
 
-                if (!found) {
+                if (owner == null) {
                     return ConstantLookupResult.NotFound;
                 }
 
@@ -777,7 +1003,8 @@ namespace IronRuby.Builtins {
                 }
 
                 // autoloaded constants are removed before the associated file is loaded:
-                RemoveConstantNoLock(name);
+                object _;
+                owner.TryRemoveConstantNoLock(name, out _);
                                
                 // load file and try lookup again (releases the class hierarchy lock when loading the file):
                 if (!autoloaded.Load(autoloadScope)) {
@@ -786,20 +1013,27 @@ namespace IronRuby.Builtins {
             }
         }
 
-        private bool TryResolveConstantNoAutoloadCheck(bool inherited, string/*!*/ name, out object value) {
+        // Returns the owner of the constant or null if the constant is not found.
+        private RubyModule TryResolveConstantNoAutoloadCheck(bool inherited, string/*!*/ name, out object value) {
             Context.RequiresClassHierarchyLock();
 
             object result = null; // C# closure doesn't capture "out" parameters
-            bool found = ForEachAncestor(inherited, (module) => module.TryGetConstantNoAutoloadCheck(name, out result));
-            value = result;
-            return found;
+            RubyModule owner = null;
+            if (ForEachAncestor(inherited, (module) => (owner = module).TryGetConstantNoAutoloadCheck(name, out result))) {
+                value = result;
+                return owner;
+            } else {
+                value = null;
+                return null;
+            }
         }
 
+        // Returns the owner of the constant (this module) or null if the constant is not found.
         private bool TryGetConstantNoAutoloadCheck(string/*!*/ name, out object value) {
             Context.RequiresClassHierarchyLock();
 
             if (DeclaresGlobalConstants) {
-                Debug.Assert(_constants == null && _clrConstants == null);
+                Debug.Assert(_constants == null && _namespaceTracker == null);
 
                 // call to the host => release the lock:
                 using (Context.ClassHierarchyUnlocker()) {
@@ -812,48 +1046,74 @@ namespace IronRuby.Builtins {
                 return false;
             }
 
+            return TryGetLocalConstant(name, out value);
+        }
+
+        private bool TryGetLocalConstant(string/*!*/ name, out object value) {
+            Debug.Assert(!DeclaresGlobalConstants);
+            Context.RequiresClassHierarchyLock();
+
             InitializeConstantsNoLock();
 
-            if (_constants != null && _constants.TryGetValue(name, out value)) {
+            if (_constants.TryGetValue(name, out value)) {
+                if (value == RemovedConstant) {
+                    value = null;
+                    return false;
+                }
                 return true;
             }
 
-            if (_clrConstants != null && _clrConstants.TryGetValue(SymbolTable.StringToId(name), out value)) {
-                value = TrackerToModule(value);
-                return true;
-            }
+            if (_namespaceTracker != null) {
+                if (_namespaceTracker.TryGetValue(SymbolTable.StringToId(name), out value)) {
+                    value = TrackerToModule(value);
+                    return true;
+                }
+            } 
 
             value = null;
             return false;
         }
 
         // thread-safe:
-        public bool RemoveConstant(string/*!*/ name) {
+        public bool TryRemoveConstant(string/*!*/ name, out object value) {
             using (Context.ClassHierarchyLocker()) {
-                return RemoveConstantNoLock(name);
+                return TryRemoveConstantNoLock(name, out value);
             }
         }
 
-        // TODO: DLR interop
-        public bool RemoveConstantNoLock(string/*!*/ name) {
+        private bool TryRemoveConstantNoLock(string/*!*/ name, out object value) {
             Context.RequiresClassHierarchyLock();
 
             if (DeclaresGlobalConstants) {
-                Debug.Assert(_constants == null && _clrConstants == null);
-                return _context.TopGlobalScope.TryRemoveName(SymbolTable.StringToId(name));
+                Debug.Assert(_constants == null && _namespaceTracker == null);
+                SymbolId symbol = SymbolTable.StringToId(name);
+
+                using (Context.ClassHierarchyUnlocker()) {
+                    return _context.TopGlobalScope.TryGetName(symbol, out value) 
+                        && _context.TopGlobalScope.TryRemoveName(symbol);
+                }
             }
 
+            return TryRemoveLocalConstant(name, out value);
+        }
+
+        private bool TryRemoveLocalConstant(string/*!*/ name, out object value) {
+            Context.RequiresClassHierarchyLock();
+            Debug.Assert(!DeclaresGlobalConstants);
+
             InitializeConstantsNoLock();
+
+            if (!TryGetLocalConstant(name, out value)) {
+                return false;
+            }
 
             if (_constants != null && _constants.Remove(name)) {
                 return true;
             }
 
-            if (_clrConstants != null && _clrConstants.Remove(SymbolTable.StringToId(name))) {
-                return true;
-            }
-
-            return false;
+            Debug.Assert(_namespaceTracker != null);
+            _constants[name] = RemovedConstant;
+            return true;
         }
 
         // thread-safe:
@@ -885,7 +1145,7 @@ namespace IronRuby.Builtins {
             InitializeConstantsNoLock();
             
             if (DeclaresGlobalConstants) {
-                Debug.Assert(_constants == null && _clrConstants == null);
+                Debug.Assert(_constants == null && _namespaceTracker == null);
                 foreach (KeyValuePair<SymbolId, object> constant in _context.TopGlobalScope.Items) {
                     if (action(this, SymbolTable.IdToString(constant.Key), constant.Value)) return true;
                 }
@@ -897,8 +1157,8 @@ namespace IronRuby.Builtins {
                 if (action(this, constant.Key, constant.Value)) return true;
             }
 
-            if (_clrConstants != null) {
-                foreach (KeyValuePair<SymbolId, object> constant in _clrConstants.SymbolAttributes) {
+            if (_namespaceTracker != null) {
+                foreach (KeyValuePair<SymbolId, object> constant in _namespaceTracker.SymbolAttributes) {
                     if (action(this, SymbolTable.IdToString(constant.Key), constant.Value)) return true;
                 }
             }
@@ -934,7 +1194,8 @@ namespace IronRuby.Builtins {
 
             RubyMemberInfo method;
             using (Context.ClassHierarchyLocker()) {
-                method = ResolveMethodFallbackToObjectNoLock(oldName, true).Info;
+                // MRI: aliases a super-forwarder not the real method.
+                method = ResolveMethodNoLock(oldName, RubyClass.IgnoreVisibility, MethodLookup.FallbackToObject | MethodLookup.ReturnForwarder).Info;
                 if (method == null) {
                     throw RubyExceptions.CreateUndefinedMethodError(this, oldName);
                 }
@@ -944,7 +1205,7 @@ namespace IronRuby.Builtins {
                 SetMethodNoEventNoLock(Context, newName, method);
             }
 
-            Context.MethodAdded(this, newName);
+            MethodAdded(newName);
         }
 
         // Module#define_method:
@@ -962,7 +1223,7 @@ namespace IronRuby.Builtins {
             if (TryGetMethod(name, ref skipHidden, out existing)) {
                 SetMethodNoEventNoLock(callerContext, name, method.Copy((RubyMemberFlags)visibility, this));
             } else {
-                SetMethodNoEventNoLock(callerContext, name, new RubyMemberInfo((RubyMemberFlags)visibility | RubyMemberFlags.SuperForwarder, method.DeclaringModule));
+                SetMethodNoEventNoLock(callerContext, name, new SuperForwarderInfo((RubyMemberFlags)visibility, method.DeclaringModule, name));
             }
         }
 
@@ -975,9 +1236,9 @@ namespace IronRuby.Builtins {
         // thread-safe:
         public void AddMethod(RubyContext/*!*/ callerContext, string/*!*/ name, RubyMemberInfo/*!*/ method) {
             Assert.NotNull(name, method);
-
+            Mutate();
             SetMethodNoEvent(callerContext, name, method);
-            _context.MethodAdded(this, name);
+            MethodAdded(name);
         }
 
         // thread-safe:
@@ -988,6 +1249,11 @@ namespace IronRuby.Builtins {
         }
 
         public void SetMethodNoEventNoLock(RubyContext/*!*/ callerContext, string/*!*/ name, RubyMemberInfo/*!*/ method) {
+            Mutate();
+            SetMethodNoMutateNoEventNoLock(callerContext, name, method);
+        }
+
+        private void SetMethodNoMutateNoEventNoLock(RubyContext/*!*/ callerContext, string/*!*/ name, RubyMemberInfo/*!*/ method) {
             Context.RequiresClassHierarchyLock();
             Assert.NotNull(name, method);
 
@@ -1075,7 +1341,7 @@ namespace IronRuby.Builtins {
         // thread-safe:
         public bool RemoveMethod(string/*!*/ name) {
             if (RemoveMethodNoEvent(name)) {
-                _context.MethodRemoved(this, name);
+                MethodRemoved(name);
                 return true;
             }
             return false;
@@ -1083,12 +1349,16 @@ namespace IronRuby.Builtins {
 
         // thread-safe:
         private bool RemoveMethodNoEvent(string/*!*/ name) {
+            Mutate();
             using (Context.ClassHierarchyLocker()) {
                 InitializeMethodsNoLock();
 
                 RubyMemberInfo method;
                 if (_methods.TryGetValue(name, out method)) {
                     if (method.IsHidden || method.IsUndefined) {
+                        return false;
+                    } else if (this == _context.ObjectClass && name == Symbols.Initialize) {
+                        // We prohibit removing Object#initialize to simplify object construction logic (this is compatible with 1.9 behavior).
                         return false;
                     } else if (method.IsRemovable) {
                         // Method is used in a dynamic site or group => update version of all dependencies of this module.
@@ -1122,7 +1392,7 @@ namespace IronRuby.Builtins {
         // thread-safe:
         public void UndefineMethod(string/*!*/ name) {
             UndefineMethodNoEvent(name);
-            _context.MethodUndefined(this, name);
+            MethodUndefined(name);
         }
 
         // thread-safe:
@@ -1139,6 +1409,10 @@ namespace IronRuby.Builtins {
         public void DefineLibraryMethod(string/*!*/ name, int attributes, params Delegate[]/*!*/ overloads) {
             var flags = (RubyMemberFlags)(attributes & (int)RubyMethodAttributes.MemberFlagsMask);
             bool skipEvent = ((RubyMethodAttributes)attributes & RubyMethodAttributes.NoEvent) != 0;
+            RubyCompatibility compatibility = (RubyCompatibility)(attributes >> RubyMethodAttribute.CompatibilityEncodingShift);
+            if (compatibility > Context.RubyOptions.Compatibility) {
+                return;
+            }
             SetLibraryMethod(name, new RubyLibraryMethodInfo(overloads, flags, this), skipEvent);
         }
 
@@ -1175,31 +1449,41 @@ namespace IronRuby.Builtins {
             // trigger event only for non-builtins:
             if (noEvent) {
                 // TODO: hoist lock?
-                SetMethodNoEvent(_context, name, method);
+                using (Context.ClassHierarchyLocker()) {
+                    SetMethodNoMutateNoEventNoLock(_context, name, method);
+                }
             } else {
                 AddMethod(_context, name, method);
             }
         }
 
         // thread-safe:
-        public MethodResolutionResult ResolveMethodForSite(string/*!*/ name, bool includePrivate) {
+        public MethodResolutionResult ResolveMethodForSite(string/*!*/ name, RubyClass visibilityContext) {
             using (Context.ClassHierarchyLocker()) {
-                return ResolveMethodForSiteNoLock(name, includePrivate);
+                return ResolveMethodForSiteNoLock(name, visibilityContext);
             }
         }
 
         // thread-safe:
-        public MethodResolutionResult ResolveMethod(string/*!*/ name, bool includePrivate) {
+        public MethodResolutionResult ResolveMethod(string/*!*/ name, RubyClass visibilityContext) {
             using (Context.ClassHierarchyLocker()) {
-                return ResolveMethodNoLock(name, includePrivate);
+                return ResolveMethodNoLock(name, visibilityContext);
             }
         }
 
-        public MethodResolutionResult ResolveMethodForSiteNoLock(string/*!*/ name, bool includePrivate) {
-            return ResolveMethodNoLock(name, includePrivate).InvalidateSitesOnOverride();
+        public MethodResolutionResult ResolveMethodForSiteNoLock(string/*!*/ name, RubyClass visibilityContext) {
+            return ResolveMethodForSiteNoLock(name, visibilityContext, MethodLookup.Default);
         }
 
-        public MethodResolutionResult ResolveMethodNoLock(string/*!*/ name, bool includePrivate) {
+        internal MethodResolutionResult ResolveMethodForSiteNoLock(string/*!*/ name, RubyClass visibilityContext, MethodLookup options) {
+            return ResolveMethodNoLock(name, visibilityContext, options).InvalidateSitesOnOverride();
+        }
+
+        public MethodResolutionResult ResolveMethodNoLock(string/*!*/ name, RubyClass visibilityContext) {
+            return ResolveMethodNoLock(name, visibilityContext, MethodLookup.Default);
+        }
+
+        public MethodResolutionResult ResolveMethodNoLock(string/*!*/ name, RubyClass visibilityContext, MethodLookup options) {
             Context.RequiresClassHierarchyLock();
             Assert.NotNull(name);
 
@@ -1207,39 +1491,57 @@ namespace IronRuby.Builtins {
             RubyMemberInfo info = null;
             RubyModule owner = null;
             bool skipHidden = false;
+            bool foundCallerSelf = false;
+            MethodResolutionResult result;
 
-            if (ForEachAncestor((module) => (owner = module).TryGetMethod(name, ref skipHidden, out info))) {
+            if (ForEachAncestor((module) => {
+                owner = module;
+                foundCallerSelf |= module == visibilityContext;
+                return module.TryGetMethod(name, ref skipHidden, (options & MethodLookup.Virtual) != 0, out info);
+            })) {
                 if (info == null || info.IsUndefined) {
-                    return MethodResolutionResult.NotFound;
-                } else if (!IsMethodVisible(info, includePrivate)) {
-                    return new MethodResolutionResult(info, owner, false);
+                    result = MethodResolutionResult.NotFound;
+                } else if (!IsMethodVisible(info, owner, visibilityContext, foundCallerSelf)) {
+                    result = new MethodResolutionResult(info, owner, false);
                 } else if (info.IsSuperForwarder) {
-                    // start again with owner's super ancestor and ignore visibility:
-                    return owner.ResolveSuperMethodNoLock(name, owner);
+                    if ((options & MethodLookup.ReturnForwarder) != 0) {
+                        result = new MethodResolutionResult(info, owner, true);
+                    } else {
+                        // start again with owner's super ancestor and ignore visibility:
+                        result = owner.ResolveSuperMethodNoLock(((SuperForwarderInfo)info).SuperName, owner);
+                    }
                 } else {
-                    return new MethodResolutionResult(info, owner, true);
+                    result = new MethodResolutionResult(info, owner, true);
                 }
+            } else {
+                result = MethodResolutionResult.NotFound;
             }
 
-            return MethodResolutionResult.NotFound;
+            // Note: all classes include Object in ancestors, so we don't need to search it again:
+            if (!result.Found && (options & MethodLookup.FallbackToObject) != 0 && !IsClass) {
+                return _context.ObjectClass.ResolveMethodNoLock(name, visibilityContext, options & ~MethodLookup.FallbackToObject);
+            }
+
+            return result;
         }
 
-        private static bool IsMethodVisible(RubyMemberInfo/*!*/ method, bool includePrivate) {
-            return (
-                method.Visibility == RubyMethodVisibility.Public ||
-                method.Visibility == RubyMethodVisibility.Protected ||
-                method.Visibility == RubyMethodVisibility.Private && includePrivate
-            );
-            // TODO: protected
-        }
+        private bool IsMethodVisible(RubyMemberInfo/*!*/ method, RubyModule/*!*/ owner, RubyClass visibilityContext, bool foundCallerSelf) {
+            // call with implicit self => all methods are visible
+            if (visibilityContext == RubyClass.IgnoreVisibility) {
+                return true;
+            } 
+            
+            if (method.Visibility == RubyMethodVisibility.Protected) {
+                // A protected method is visible if the caller's self immediate class is a descendant of the method owner.
+                if (foundCallerSelf) {
+                    return true;
+                }
+                // walk ancestors from caller's self class (visibilityContext)
+                // until the method owner is found or this module is found (this module is a descendant of the owner):
+                return visibilityContext.ForEachAncestor((module) => module == owner || module == this);
+            } 
 
-        /// <summary>
-        /// Resolve method and if it is not found in this module's ancestors, resolve in Object.
-        /// </summary>
-        public virtual MethodResolutionResult ResolveMethodFallbackToObjectNoLock(string/*!*/ name, bool includePrivate) {
-            Context.RequiresClassHierarchyLock();
-            var result = ResolveMethodNoLock(name, includePrivate);
-            return result.Found ? result : _context.ObjectClass.ResolveMethodNoLock(name, includePrivate);
+            return method.Visibility == RubyMethodVisibility.Public;
         }
 
         // skip one method in the method resolution order (MRO)
@@ -1284,6 +1586,10 @@ namespace IronRuby.Builtins {
         }
 
         internal bool TryGetMethod(string/*!*/ name, ref bool skipHidden, out RubyMemberInfo method) {
+            return TryGetMethod(name, ref skipHidden, false, out method);
+        }
+
+        internal bool TryGetMethod(string/*!*/ name, ref bool skipHidden, bool virtualLookup, out RubyMemberInfo method) {
             Context.RequiresClassHierarchyLock();
             Assert.NotNull(name);
             Debug.Assert(_methods != null);
@@ -1293,10 +1599,19 @@ namespace IronRuby.Builtins {
                 return true;
             }
 
+            string mangled;
+            if (virtualLookup && (mangled = RubyUtils.MangleName(name)) != name && TryGetDefinedMethod(mangled, ref skipHidden, out method)) {
+                return true;
+            }
+
             // Skip hidden CLR overloads.
             // Skip lookup on types that are not visible or interfaces.
-            if (!skipHidden && _tracker != null && _tracker.Type.IsVisible && !_tracker.Type.IsInterface) {
-                if (TryGetClrMember(_tracker.Type, name, out method)) {
+            if (!skipHidden && _typeTracker != null && !_typeTracker.Type.IsInterface) {
+                // Note: Do not allow mangling for CLR virtual lookups - we want to match the overridden name exactly as is, 
+                // so that it corresponds to the base method call the override stub performs.
+                bool tryUnmangle = !virtualLookup && (_restrictions & ModuleRestrictions.NoNameMangling) == 0;
+
+                if (TryGetClrMember(_typeTracker.Type, name, tryUnmangle, out method)) {
                     _methods.Add(name, method);
                     return true;
                 }
@@ -1305,7 +1620,7 @@ namespace IronRuby.Builtins {
             return false;
         }
 
-        protected virtual bool TryGetClrMember(Type/*!*/ type, string/*!*/ name, out RubyMemberInfo method) {
+        protected virtual bool TryGetClrMember(Type/*!*/ type, string/*!*/ name, bool tryUnmangle, out RubyMemberInfo method) {
             method = null;
             return false;
         }
@@ -1319,7 +1634,7 @@ namespace IronRuby.Builtins {
                 if (action(this, method.Key, method.Value)) return true;
             }
 
-            if (_tracker != null) {
+            if (_typeTracker != null) {
                 // TODO: CLR methods but removed, hidden...
             }
 
@@ -1345,7 +1660,9 @@ namespace IronRuby.Builtins {
         /// <remarks>
         /// Not thread safe.
         /// </remarks>
-        public void ForEachMember(bool inherited, RubyMethodAttributes attributes, Action<string/*!*/, RubyMemberInfo/*!*/>/*!*/ action) {
+        public void ForEachMember(bool inherited, RubyMethodAttributes attributes, IEnumerable<string> foreignMembers, 
+            Action<string/*!*/, RubyMemberInfo/*!*/>/*!*/ action) {
+
             Context.RequiresClassHierarchyLock();
 
             var visited = new Dictionary<string, bool>();
@@ -1354,6 +1671,14 @@ namespace IronRuby.Builtins {
             // The difference is when we stop searching.
             bool instanceMethods = (attributes & RubyMethodAttributes.Instance) != 0;
             bool singletonMethods = (attributes & RubyMethodAttributes.Singleton) != 0;
+
+            // TODO: if we allow creating singletons for foreign objects we need to change this:
+            if (foreignMembers != null) {
+                foreach (var name in foreignMembers) {
+                    action(name, RubyMethodInfo.ForeignMember);
+                    visited.Add(name, true);
+                }
+            }
 
             bool stop = false;
             ForEachInstanceMethod(true, delegate(RubyModule/*!*/ module, string name, RubyMemberInfo member) {
@@ -1375,15 +1700,23 @@ namespace IronRuby.Builtins {
                         stop = !inherited;
                     }
 
-                } else if (member.IsUndefined) {
-                    visited.Add(name, true);
-                } else if (((RubyMethodAttributes)member.Visibility & attributes) != 0 && !visited.ContainsKey(name)) {
-                    action(name, member);
+                } else if (!visited.ContainsKey(name)) {
+                    // yield the member only if it has the right visibility:
+                    if (!member.IsUndefined && ((RubyMethodAttributes)member.Visibility & attributes) != 0) {
+                        action(name, member);
+                    }
+
+                    // visit the member even if it doesn't have the right visibility so that any overridden member with the right visibility
+                    // won't later be visited:
                     visited.Add(name, true);
                 }
 
                 return false;
             });
+        }
+
+        public void ForEachMember(bool inherited, RubyMethodAttributes attributes, Action<string/*!*/, RubyMemberInfo/*!*/>/*!*/ action) {
+            ForEachMember(inherited, attributes, null, action);
         }
 
         #endregion
@@ -1403,6 +1736,8 @@ namespace IronRuby.Builtins {
 
         public void SetClassVariable(string/*!*/ name, object value) {
             InitializeClassVariableTable();
+
+            Mutate();
             _classVariables[name] = value;
         }
 
@@ -1481,6 +1816,8 @@ namespace IronRuby.Builtins {
         
         internal void IncludeModulesNoLock(RubyModule[]/*!*/ modules) {
             Context.RequiresClassHierarchyLock();
+            Mutate();
+
             RubyUtils.RequireMixins(this, modules);
 
             RubyModule[] expanded = ExpandMixinsNoLock(GetSuperClass(), _mixins, modules);
@@ -1488,7 +1825,7 @@ namespace IronRuby.Builtins {
             foreach (RubyModule module in expanded) {
                 if (module.IsInterface) {
                     // Can't include generic interfaces
-                    if (module.Tracker.Type.ContainsGenericParameters) {
+                    if (module.TypeTracker.Type.ContainsGenericParameters) {
                         throw RubyExceptions.CreateTypeError(String.Format(
                             "{0}: cannot extend with open generic instantiation {1}. Only closed instantiations are supported.",
                             Name, module.Name
@@ -1593,8 +1930,8 @@ namespace IronRuby.Builtins {
             List<Type> interfaces = new List<Type>();
             using (Context.ClassHierarchyLocker()) {
                 foreach (RubyModule m in _mixins) {
-                    if (m.IsInterface && !interfaces.Contains(m.Tracker.Type)) {
-                        interfaces.Add(m.Tracker.Type);
+                    if (m.IsInterface && !interfaces.Contains(m.TypeTracker.Type)) {
+                        interfaces.Add(m.TypeTracker.Type);
                     }
                 }
             }
@@ -1619,7 +1956,13 @@ namespace IronRuby.Builtins {
         }
 
         internal void IncludeLibraryModule(Action<RubyModule> instanceTrait, Action<RubyModule> classTrait, Action<RubyModule> constantsInitializer, 
-            RubyModule/*!*/[]/*!*/ mixins) {
+            RubyModule/*!*/[]/*!*/ mixins, bool builtin) {
+
+            // Do not allow non-builtin library inclusions to a frozen module.
+            // We need to ensure that initializers are not modified once a module is frozen.
+            if (!builtin) {
+                Mutate();
+            }
 
             using (Context.ClassHierarchyLocker()) {
                 if (instanceTrait != null) {
@@ -1641,7 +1984,11 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region Utils
+        #region Names
+
+        public string GetName(RubyContext/*!*/ context) {
+            return context == _context ? _name : _name + "@" + _context.RuntimeId;
+        }
 
         public MutableString/*!*/ GetDisplayName(RubyContext/*!*/ context, bool showEmptyName) {
             if (IsSingletonClass) {
@@ -1677,7 +2024,7 @@ namespace IronRuby.Builtins {
                 return result.Append('>', nestings);
             } else if (_name == null) {
                 if (showEmptyName) {
-                    return MutableString.Empty;
+                    return MutableString.FrozenEmpty;
                 } else {
                     MutableString result = MutableString.CreateMutable();
                     result.Append("#<");
@@ -1692,6 +2039,6 @@ namespace IronRuby.Builtins {
             }
         }
 
-        #endregion
+        #endregion      
     }
 }

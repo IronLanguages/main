@@ -31,7 +31,7 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 namespace IronPython.Runtime.Binding {
     using Ast = System.Linq.Expressions.Expression;
 
-    class MetaOldClass : MetaPythonObject, IPythonInvokable, IPythonGetable, IPythonOperable {
+    class MetaOldClass : MetaPythonObject, IPythonInvokable, IPythonGetable, IPythonOperable, IPythonConvertible {
         public MetaOldClass(Expression/*!*/ expression, BindingRestrictions/*!*/ restrictions, OldClass/*!*/ value)
             : base(expression, BindingRestrictions.Empty, value) {
             Assert.NotNull(value);
@@ -39,7 +39,7 @@ namespace IronPython.Runtime.Binding {
 
         #region IPythonInvokable Members
 
-        public DynamicMetaObject/*!*/ Invoke(PythonInvokeBinder/*!*/ pythonInvoke, Expression/*!*/ codeContext, DynamicMetaObject/*!*/ target, DynamicMetaObject/*!*/[]/*!*/ args) {
+        public DynamicMetaObject/*!*/ Invoke(PythonInvokeBinder/*!*/ pythonInvoke, Expression/*!*/ codeContext, DynamicMetaObject/*!*/ target, DynamicMetaObject/*!*/[]/*!*/ args) {            
             return MakeCallRule(pythonInvoke, codeContext, args);
         }
 
@@ -47,7 +47,7 @@ namespace IronPython.Runtime.Binding {
 
         #region IPythonGetable Members
 
-        public DynamicMetaObject GetMember(PythonGetMemberBinder member, Expression codeContext) {
+        public DynamicMetaObject GetMember(PythonGetMemberBinder member, DynamicMetaObject codeContext) {
             // no codeContext filtering but avoid an extra site by handling this action directly
             return MakeGetMember(member, codeContext);
         }
@@ -61,15 +61,15 @@ namespace IronPython.Runtime.Binding {
         }
 
         public override DynamicMetaObject/*!*/ BindInvoke(InvokeBinder/*!*/ call, params DynamicMetaObject/*!*/[]/*!*/ args) {
-            return MakeCallRule(call, Ast.Constant(BinderState.GetBinderState(call).Context), args);
+            return MakeCallRule(call, AstUtils.Constant(PythonContext.GetPythonContext(call).SharedContext), args);
         }
 
         public override DynamicMetaObject/*!*/ BindCreateInstance(CreateInstanceBinder/*!*/ create, params DynamicMetaObject/*!*/[]/*!*/ args) {
-            return MakeCallRule(create, Ast.Constant(BinderState.GetBinderState(create).Context), args);
+            return MakeCallRule(create, AstUtils.Constant(PythonContext.GetPythonContext(create).SharedContext), args);
         }
 
         public override DynamicMetaObject/*!*/ BindGetMember(GetMemberBinder/*!*/ member) {
-            return MakeGetMember(member, BinderState.GetCodeContext(member));
+            return MakeGetMember(member, PythonContext.GetCodeContextMO(member));
         }
 
         public override DynamicMetaObject/*!*/ BindSetMember(SetMemberBinder/*!*/ member, DynamicMetaObject/*!*/ value) {
@@ -81,10 +81,20 @@ namespace IronPython.Runtime.Binding {
         }
 
         public override DynamicMetaObject BindConvert(ConvertBinder/*!*/ conversion) {
-            if (conversion.Type.IsSubclassOf(typeof(Delegate))) {
-                return MakeDelegateTarget(conversion, conversion.Type, Restrict(typeof(OldClass)));
+            return ConvertWorker(conversion, conversion.Type, conversion.Explicit ? ConversionResultKind.ExplicitCast : ConversionResultKind.ImplicitCast);
+        }
+
+        public DynamicMetaObject BindConvert(PythonConversionBinder binder) {
+            return ConvertWorker(binder, binder.Type, binder.ResultKind);
+        }
+
+        public DynamicMetaObject ConvertWorker(DynamicMetaObjectBinder binder, Type toType, ConversionResultKind kind) {        
+            PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "OldClass Convert");
+            PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "OldClass Convert");
+            if (toType.IsSubclassOf(typeof(Delegate))) {
+                return MakeDelegateTarget(binder, toType, Restrict(typeof(OldClass)));
             }
-            return conversion.FallbackConvert(this);
+            return FallbackConvert(binder);
         }
 
         public override System.Collections.Generic.IEnumerable<string> GetDynamicMemberNames() {
@@ -100,6 +110,9 @@ namespace IronPython.Runtime.Binding {
         #region Calls
 
         private DynamicMetaObject/*!*/ MakeCallRule(DynamicMetaObjectBinder/*!*/ call, Expression/*!*/ codeContext, DynamicMetaObject[] args) {
+            PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "OldClass Invoke w/ " + args.Length + " args");
+            PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "OldClass Invoke");
+
             CallSignature signature = BindingHelpers.GetCallSignature(call);
             // TODO: If we know __init__ wasn't present we could construct the OldInstance directly.
 
@@ -131,7 +144,7 @@ namespace IronPython.Runtime.Binding {
                             init
                         ),
                         Ast.Dynamic(
-                            BinderState.GetBinderState(call).Invoke(
+                            PythonContext.GetPythonContext(call).Invoke(
                                 signature
                             ),
                             typeof(object),
@@ -159,7 +172,7 @@ namespace IronPython.Runtime.Binding {
                     );
                 }
 
-                return Ast.Constant(null);
+                return AstUtils.Constant(null);
             }
 
             return Ast.Call(
@@ -177,7 +190,7 @@ namespace IronPython.Runtime.Binding {
                 return args[index].Expression;
             }
 
-            return Ast.Constant(null);
+            return AstUtils.Constant(null);
         }
 
         public object MakeCallError() {
@@ -193,6 +206,8 @@ namespace IronPython.Runtime.Binding {
         #region Member Access
 
         private DynamicMetaObject/*!*/ MakeSetMember(string/*!*/ name, DynamicMetaObject/*!*/ value) {
+            PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "OldClass SetMember");
+            PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "OldClass SetMember");
             DynamicMetaObject self = Restrict(typeof(OldClass));
 
             Expression call, valueExpr = AstUtils.Convert(value.Expression, typeof(object));
@@ -235,12 +250,14 @@ namespace IronPython.Runtime.Binding {
         }
 
         private DynamicMetaObject/*!*/ MakeDeleteMember(DeleteMemberBinder/*!*/ member) {
+            PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "OldClass DeleteMember");
+            PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "OldClass DeleteMember");
             DynamicMetaObject self = Restrict(typeof(OldClass));
 
             return new DynamicMetaObject(
                 Ast.Call(
                     typeof(PythonOps).GetMethod("OldClassDeleteMember"),
-                    Ast.Constant(BinderState.GetBinderState(member).Context),
+                    AstUtils.Constant(PythonContext.GetPythonContext(member).SharedContext),
                     self.Expression,
                     AstUtils.Constant(SymbolTable.StringToId(member.Name))
                 ),
@@ -248,7 +265,9 @@ namespace IronPython.Runtime.Binding {
             );
         }
 
-        private DynamicMetaObject/*!*/ MakeGetMember(DynamicMetaObjectBinder/*!*/ member, Expression codeContext) {
+        private DynamicMetaObject/*!*/ MakeGetMember(DynamicMetaObjectBinder/*!*/ member, DynamicMetaObject codeContext) {
+            PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "OldClass GetMember");
+            PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "OldClass GetMember");
             DynamicMetaObject self = Restrict(typeof(OldClass));
 
             Expression target;
@@ -286,14 +305,14 @@ namespace IronPython.Runtime.Binding {
                             Ast.Condition(
                                 Ast.Call(
                                     typeof(PythonOps).GetMethod("OldClassTryLookupValue"),
-                                    Ast.Constant(BinderState.GetBinderState(member).Context),
+                                    AstUtils.Constant(PythonContext.GetPythonContext(member).SharedContext),
                                     self.Expression,
                                     AstUtils.Constant(SymbolTable.StringToId(memberName)),
                                     tmp
                                 ),
                                 tmp,
                                 AstUtils.Convert(
-                                    GetMemberFallback(member, codeContext).Expression,
+                                    GetMemberFallback(this, member, codeContext).Expression,
                                     typeof(object)
                                 )
                             )
@@ -325,7 +344,7 @@ namespace IronPython.Runtime.Binding {
         DynamicMetaObject IPythonOperable.BindOperation(PythonOperationBinder action, DynamicMetaObject[] args) {
             if (action.Operation == PythonOperationKind.IsCallable) {
                 return new DynamicMetaObject(
-                    Ast.Constant(true),
+                    AstUtils.Constant(true),
                     Restrictions.Merge(BindingRestrictions.GetTypeRestriction(Expression, typeof(OldClass)))
                 );
             }

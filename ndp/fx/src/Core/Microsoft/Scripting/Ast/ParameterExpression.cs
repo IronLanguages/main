@@ -13,17 +13,17 @@
  *
  * ***************************************************************************/
 
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Dynamic.Utils;
 
 namespace System.Linq.Expressions {
 
     /// <summary>
-    /// Base class for specialized parameter expressions.  This version only holds onto the
-    /// name which all subclasses need.  Specialized subclasses provide the type and by ref
-    /// flags.
+    /// Represents a named parameter expression.
     /// </summary>
+#if !SILVERLIGHT
+    [DebuggerTypeProxy(typeof(Expression.ParameterExpressionProxy))]
+#endif
     public class ParameterExpression : Expression {
         private readonly string _name;
 
@@ -69,23 +69,23 @@ namespace System.Linq.Expressions {
                 }
             }
 
-            return new TypedParameterExpression(type, name);            
+            return new TypedParameterExpression(type, name);
         }
 
         /// <summary>
         /// Gets the static type of the expression that this <see cref="Expression" /> represents. (Inherited from <see cref="Expression"/>.)
         /// </summary>
         /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
-        protected override Type TypeImpl() {
-            return typeof(object);
+        public override Type Type {
+            get { return typeof(object); }
         }
 
         /// <summary>
         /// Returns the node type of this <see cref="Expression" />. (Inherited from <see cref="Expression" />.)
         /// </summary>
         /// <returns>The <see cref="ExpressionType"/> that represents this expression.</returns>
-        protected override ExpressionType NodeTypeImpl() {
-            return ExpressionType.Parameter;
+        public sealed override ExpressionType NodeType {
+            get { return ExpressionType.Parameter; }
         }
 
         /// <summary>
@@ -139,9 +139,9 @@ namespace System.Linq.Expressions {
             : base(name) {
             _paramType = type;
         }
-        
-        protected override Type TypeImpl() {
-            return _paramType;
+
+        public sealed override Type Type {
+            get { return _paramType; }
         }
     }
 
@@ -154,19 +154,37 @@ namespace System.Linq.Expressions {
             : base(name) {
         }
 
-        protected override Type TypeImpl() {
-            return typeof(T);
-        }        
+        public sealed override Type Type {
+            get { return typeof(T); }
+        }
     }
 
     public partial class Expression {
 
         /// <summary>
-        /// Creates a ParameterExpression node that can be used to identify a parameter or a variable in an expression tree.
+        /// Creates a <see cref="ParameterExpression" /> node that can be used to identify a parameter or a variable in an expression tree.
         /// </summary>
         /// <param name="type">The type of the parameter or variable.</param>
-        /// <param name="name">The name of the parameter or variable.</param>
-        /// <returns>A ParameterExpression node with the specified name and type.</returns>
+        /// <returns>A <see cref="ParameterExpression" /> node with the specified name and type.</returns>
+        public static ParameterExpression Parameter(Type type) {
+            return Parameter(type, null);
+        }
+
+        /// <summary>
+        /// Creates a <see cref="ParameterExpression" /> node that can be used to identify a parameter or a variable in an expression tree.
+        /// </summary>
+        /// <param name="type">The type of the parameter or variable.</param>
+        /// <returns>A <see cref="ParameterExpression" /> node with the specified name and type.</returns>
+        public static ParameterExpression Variable(Type type) {
+            return Variable(type, null);
+        }
+
+        /// <summary>
+        /// Creates a <see cref="ParameterExpression" /> node that can be used to identify a parameter or a variable in an expression tree.
+        /// </summary>
+        /// <param name="type">The type of the parameter or variable.</param>
+        /// <param name="name">The name of the parameter or variable, used for debugging or pretty printing purpose only.</param>
+        /// <returns>A <see cref="ParameterExpression" /> node with the specified name and type.</returns>
         public static ParameterExpression Parameter(Type type, string name) {
             ContractUtils.RequiresNotNull(type, "type");
 
@@ -183,11 +201,11 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// Creates a ParameterExpression node that can be used to identify a parameter or a variable in an expression tree.
+        /// Creates a <see cref="ParameterExpression" /> node that can be used to identify a parameter or a variable in an expression tree.
         /// </summary>
         /// <param name="type">The type of the parameter or variable.</param>
-        /// <param name="name">The name of the parameter or variable.</param>
-        /// <returns>A ParameterExpression node with the specified name and type.</returns>
+        /// <param name="name">The name of the parameter or variable, used for debugging or pretty printing purpose only.</param>
+        /// <returns>A <see cref="ParameterExpression" /> node with the specified name and type.</returns>
         public static ParameterExpression Variable(Type type, string name) {
             ContractUtils.RequiresNotNull(type, "type");
             ContractUtils.Requires(type != typeof(void), "type", Strings.ArgumentCannotBeOfTypeVoid);

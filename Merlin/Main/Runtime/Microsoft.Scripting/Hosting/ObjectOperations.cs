@@ -23,6 +23,10 @@ using Microsoft.Scripting.Utils;
 using System.Linq.Expressions;
 using System.Dynamic;
 
+#if !SYSTEM_CORE
+using dynamic = System.Object;
+#endif
+
 namespace Microsoft.Scripting.Hosting {
 
     /// <summary>
@@ -74,28 +78,28 @@ namespace Microsoft.Scripting.Hosting {
         /// The prefered way of calling objects is to convert the object to a strongly typed delegate 
         /// using the ConvertTo methods and then invoking that delegate.
         /// </summary>
-        public object Invoke(object obj, params object[] parameters) {
+        public dynamic Invoke(object obj, params object[] parameters) {
             return _ops.Invoke(obj, parameters);
         }
 
         /// <summary>
         /// Invokes a member on the provided object with the given parameters and returns the result.
         /// </summary>
-        public object InvokeMember(object obj, string memberName, params object[] parameters) {
+        public dynamic InvokeMember(object obj, string memberName, params object[] parameters) {
             return _ops.InvokeMember(obj, memberName, parameters);
         }
 
         /// <summary>
         /// Creates a new instance from the provided object using the given parameters, and returns the result.
         /// </summary>
-        public object CreateInstance(object obj, params object[] parameters) {
+        public dynamic CreateInstance(object obj, params object[] parameters) {
             return _ops.CreateInstance(obj, parameters);
         }
 
         /// <summary>
         /// Gets the member name from the object obj.  Throws an exception if the member does not exist or is write-only.
         /// </summary>
-        public object GetMember(object obj, string name) {
+        public dynamic GetMember(object obj, string name) {
             return _ops.GetMember(obj, name);
         }
 
@@ -123,11 +127,10 @@ namespace Microsoft.Scripting.Hosting {
         }
 
         /// <summary>
-        /// Removes the member name from the object obj.  Returns true if the member was successfully removed
-        /// or false if the member does not exist.
+        /// Removes the member name from the object obj.  
         /// </summary>
-        public bool RemoveMember(object obj, string name) {
-            return _ops.RemoveMember(obj, name);
+        public void RemoveMember(object obj, string name) {
+            _ops.RemoveMember(obj, name);
         }
 
         /// <summary>
@@ -148,7 +151,7 @@ namespace Microsoft.Scripting.Hosting {
         /// <summary>
         /// Gets the member name from the object obj.  Throws an exception if the member does not exist or is write-only.
         /// </summary>
-        public object GetMember(object obj, string name, bool ignoreCase) {
+        public dynamic GetMember(object obj, string name, bool ignoreCase) {
             return _ops.GetMember(obj, name, ignoreCase);
         }
 
@@ -176,11 +179,10 @@ namespace Microsoft.Scripting.Hosting {
         }
 
         /// <summary>
-        /// Removes the member name from the object obj.  Returns true if the member was successfully removed
-        /// or false if the member does not exist.
+        /// Removes the member name from the object obj.  
         /// </summary>
-        public bool RemoveMember(object obj, string name, bool ignoreCase) {
-            return _ops.RemoveMember(obj, name, ignoreCase);
+        public void RemoveMember(object obj, string name, bool ignoreCase) {
+            _ops.RemoveMember(obj, name, ignoreCase);
         }
 
         /// <summary>
@@ -266,7 +268,7 @@ namespace Microsoft.Scripting.Hosting {
         /// <summary>
         /// Performs a generic unary operation on the specified target and returns the result.
         /// </summary>
-        public object DoOperation(ExpressionType operation, object target) {
+        public dynamic DoOperation(ExpressionType operation, object target) {
             return _ops.DoOperation<object, object>(operation, target);
         }
 
@@ -280,7 +282,7 @@ namespace Microsoft.Scripting.Hosting {
         /// <summary>
         /// Performs the generic binary operation on the specified targets and returns the result.
         /// </summary>
-        public object DoOperation(ExpressionType operation, object target, object other) {
+        public dynamic DoOperation(ExpressionType operation, object target, object other) {
             return _ops.DoOperation<object, object, object>(operation, target, other);
         }
 
@@ -296,7 +298,7 @@ namespace Microsoft.Scripting.Hosting {
         /// Performs addition on the specified targets and returns the result.  Throws an exception
         /// if the operation cannot be performed.
         /// </summary>
-        public object Add(object self, object other) {
+        public dynamic Add(object self, object other) {
             return DoOperation(ExpressionType.Add, self, other);
         }
 
@@ -304,7 +306,7 @@ namespace Microsoft.Scripting.Hosting {
         /// Performs subtraction on the specified targets and returns the result.  Throws an exception
         /// if the operation cannot be performed.
         /// </summary>
-        public object Subtract(object self, object other) {
+        public dynamic Subtract(object self, object other) {
             return DoOperation(ExpressionType.Subtract, self, other);
         }
 
@@ -312,7 +314,7 @@ namespace Microsoft.Scripting.Hosting {
         /// Raises the first object to the power of the second object.  Throws an exception
         /// if the operation cannot be performed.
         /// </summary>
-        public object Power(object self, object other) {
+        public dynamic Power(object self, object other) {
             return DoOperation(ExpressionType.Power, self, other);
         }
 
@@ -320,7 +322,7 @@ namespace Microsoft.Scripting.Hosting {
         /// Multiplies the two objects.  Throws an exception
         /// if the operation cannot be performed.
         /// </summary>
-        public object Multiply(object self, object other) {
+        public dynamic Multiply(object self, object other) {
             return DoOperation(ExpressionType.Multiply, self, other);
         }
 
@@ -328,7 +330,7 @@ namespace Microsoft.Scripting.Hosting {
         /// Divides the first object by the second object.  Throws an exception
         /// if the operation cannot be performed.
         /// </summary>
-        public object Divide(object self, object other) {
+        public dynamic Divide(object self, object other) {
             return DoOperation(ExpressionType.Divide, self, other);
         }
 
@@ -336,14 +338,14 @@ namespace Microsoft.Scripting.Hosting {
         /// Performs modulus of the 1st object by the second object.  Throws an exception
         /// if the operation cannot be performed.
         /// </summary>
-        public object Modulo(object self, object other) {
+        public dynamic Modulo(object self, object other) {
             return DoOperation(ExpressionType.Modulo, self, other);
         }
         /// <summary>
         /// Shifts the left object left by the right object.  Throws an exception if the
         /// operation cannot be performed.
         /// </summary>
-        public object LeftShift(object self, object other) {
+        public dynamic LeftShift(object self, object other) {
             return DoOperation(ExpressionType.LeftShift, self, other);
         }
 
@@ -351,7 +353,7 @@ namespace Microsoft.Scripting.Hosting {
         /// Shifts the left object right by the right object.  Throws an exception if the
         /// operation cannot be performed.
         /// </summary>
-        public object RightShift(object self, object other) {
+        public dynamic RightShift(object self, object other) {
             return DoOperation(ExpressionType.RightShift, self, other);
         }
 
@@ -359,7 +361,7 @@ namespace Microsoft.Scripting.Hosting {
         /// Performs a bitwise-and of the two operands.  Throws an exception if the operation 
         /// cannot be performed.
         /// </summary>
-        public object BitwiseAnd(object self, object other) {
+        public dynamic BitwiseAnd(object self, object other) {
             return DoOperation(ExpressionType.And, self, other);
         }
 
@@ -367,7 +369,7 @@ namespace Microsoft.Scripting.Hosting {
         /// Performs a bitwise-or of the two operands.  Throws an exception if the operation 
         /// cannot be performed.
         /// </summary>
-        public object BitwiseOr(object self, object other) {
+        public dynamic BitwiseOr(object self, object other) {
             return DoOperation(ExpressionType.Or, self, other);
         }
 
@@ -375,7 +377,7 @@ namespace Microsoft.Scripting.Hosting {
         /// Performs a exclusive-or of the two operands.  Throws an exception if the operation 
         /// cannot be performed.
         /// </summary>
-        public object ExclusiveOr(object self, object other) {
+        public dynamic ExclusiveOr(object self, object other) {
             return DoOperation(ExpressionType.ExclusiveOr, self, other);
         }
 
@@ -384,7 +386,7 @@ namespace Microsoft.Scripting.Hosting {
         /// Throws an exception if hte comparison cannot be performed.
         /// </summary>
         public bool LessThan(object self, object other) {
-            return _ops.DoOperation<object, object, bool>(ExpressionType.LessThan, self, other);
+            return ConvertTo<bool>(_ops.DoOperation<object, object, object>(ExpressionType.LessThan, self, other));
         }
 
         /// <summary>
@@ -392,7 +394,7 @@ namespace Microsoft.Scripting.Hosting {
         /// Throws an exception if hte comparison cannot be performed.
         /// </summary>
         public bool GreaterThan(object self, object other) {
-            return _ops.DoOperation<object, object, bool>(ExpressionType.GreaterThan, self, other);
+            return ConvertTo<bool>(_ops.DoOperation<object, object, object>(ExpressionType.GreaterThan, self, other));
         }
 
         /// <summary>
@@ -400,7 +402,7 @@ namespace Microsoft.Scripting.Hosting {
         /// Throws an exception if hte comparison cannot be performed.
         /// </summary>
         public bool LessThanOrEqual(object self, object other) {
-            return _ops.DoOperation<object, object, bool>(ExpressionType.LessThanOrEqual, self, other);
+            return ConvertTo<bool>(_ops.DoOperation<object, object, object>(ExpressionType.LessThanOrEqual, self, other));
         }
 
         /// <summary>
@@ -408,7 +410,7 @@ namespace Microsoft.Scripting.Hosting {
         /// Throws an exception if hte comparison cannot be performed.
         /// </summary>
         public bool GreaterThanOrEqual(object self, object other) {
-            return _ops.DoOperation<object, object, bool>(ExpressionType.GreaterThanOrEqual, self, other);
+            return ConvertTo<bool>(_ops.DoOperation<object, object, object>(ExpressionType.GreaterThanOrEqual, self, other));
         }
 
         /// <summary>
@@ -416,7 +418,7 @@ namespace Microsoft.Scripting.Hosting {
         /// Throws an exception if the comparison cannot be performed.
         /// </summary>
         public bool Equal(object self, object other) {
-            return _ops.DoOperation<object, object, bool>(ExpressionType.Equal, self, other);
+            return ConvertTo<bool>(_ops.DoOperation<object, object, object>(ExpressionType.Equal, self, other));
         }
 
         /// <summary>
@@ -424,7 +426,7 @@ namespace Microsoft.Scripting.Hosting {
         /// Throws an exception if hte comparison cannot be performed.
         /// </summary>
         public bool NotEqual(object self, object other) {
-            return _ops.DoOperation<object, object, bool>(ExpressionType.NotEqual, self, other);
+            return ConvertTo<bool>(_ops.DoOperation<object, object, object>(ExpressionType.NotEqual, self, other));
         }
 
         /// <summary>
@@ -636,7 +638,7 @@ namespace Microsoft.Scripting.Hosting {
         public ObjectHandle Invoke([NotNull]ObjectHandle obj, params ObjectHandle[] parameters) {
             ContractUtils.RequiresNotNull(parameters, "parameters");
 
-            return new ObjectHandle(Invoke(GetLocalObject(obj), GetLocalObjects(parameters)));
+            return new ObjectHandle((object)Invoke(GetLocalObject(obj), GetLocalObjects(parameters)));
         }
 
         /// <summary>
@@ -644,15 +646,15 @@ namespace Microsoft.Scripting.Hosting {
         /// to the remote app domain.
         /// </summary>
         public ObjectHandle Invoke([NotNull]ObjectHandle obj, params object[] parameters) {
-            return new ObjectHandle(Invoke(GetLocalObject(obj), parameters));
+            return new ObjectHandle((object)Invoke(GetLocalObject(obj), parameters));
         }
 
         public ObjectHandle Create([NotNull]ObjectHandle obj, [NotNull]params ObjectHandle[] parameters) {
-            return new ObjectHandle(CreateInstance(GetLocalObject(obj), GetLocalObjects(parameters)));
+            return new ObjectHandle((object)CreateInstance(GetLocalObject(obj), GetLocalObjects(parameters)));
         }
 
         public ObjectHandle Create([NotNull]ObjectHandle obj, params object[] parameters) {
-            return new ObjectHandle(CreateInstance(GetLocalObject(obj), parameters));
+            return new ObjectHandle((object)CreateInstance(GetLocalObject(obj), parameters));
         }
 
         /// <summary>
@@ -675,7 +677,7 @@ namespace Microsoft.Scripting.Hosting {
         /// is write-only.
         /// </summary>
         public ObjectHandle GetMember([NotNull]ObjectHandle obj, string name) {
-            return new ObjectHandle(GetMember(GetLocalObject(obj), name));
+            return new ObjectHandle((object)GetMember(GetLocalObject(obj), name));
         }
 
         /// <summary>
@@ -711,8 +713,8 @@ namespace Microsoft.Scripting.Hosting {
         /// <summary>
         /// Removes the member from the remote object
         /// </summary>
-        public bool RemoveMember([NotNull]ObjectHandle obj, string name) {
-            return RemoveMember(GetLocalObject(obj), name);
+        public void RemoveMember([NotNull]ObjectHandle obj, string name) {
+            RemoveMember(GetLocalObject(obj), name);
         }
 
         /// <summary>
@@ -820,92 +822,92 @@ namespace Microsoft.Scripting.Hosting {
         /// <summary>
         /// Performs the specified unary operator on the remote object.
         /// </summary>
-        public object DoOperation(ExpressionType op, [NotNull]ObjectHandle target) {
-            return DoOperation(op, GetLocalObject(target));
+        public ObjectHandle DoOperation(ExpressionType op, [NotNull]ObjectHandle target) {
+            return new ObjectHandle((object)DoOperation(op, GetLocalObject(target)));
         }
 
         /// <summary>
         /// Performs the specified binary operator on the remote object.
         /// </summary>
         public ObjectHandle DoOperation(ExpressionType op, ObjectHandle target, ObjectHandle other) {
-            return new ObjectHandle(DoOperation(op, GetLocalObject(target), GetLocalObject(other)));
+            return new ObjectHandle((object)DoOperation(op, GetLocalObject(target), GetLocalObject(other)));
         }
 
         /// <summary>
         /// Adds the two remote objects.  Throws an exception if the operation cannot be performed.
         /// </summary>
         public ObjectHandle Add([NotNull]ObjectHandle self, [NotNull]ObjectHandle other) {
-            return new ObjectHandle(Add(GetLocalObject(self), GetLocalObject(other)));
+            return new ObjectHandle((object)Add(GetLocalObject(self), GetLocalObject(other)));
         }
 
         /// <summary>
         /// Subtracts the 1st remote object from the second.  Throws an exception if the operation cannot be performed.
         /// </summary>
         public ObjectHandle Subtract([NotNull]ObjectHandle self, [NotNull]ObjectHandle other) {
-            return new ObjectHandle(Subtract(GetLocalObject(self), GetLocalObject(other)));
+            return new ObjectHandle((object)Subtract(GetLocalObject(self), GetLocalObject(other)));
         }
 
         /// <summary>
         /// Raises the 1st remote object to the power of the 2nd.  Throws an exception if the operation cannot be performed.
         /// </summary>
         public ObjectHandle Power([NotNull]ObjectHandle self, [NotNull]ObjectHandle other) {
-            return new ObjectHandle(Power(GetLocalObject(self), GetLocalObject(other)));
+            return new ObjectHandle((object)Power(GetLocalObject(self), GetLocalObject(other)));
         }
 
         /// <summary>
         /// Multiplies the two remote objects.  Throws an exception if the operation cannot be performed.
         /// </summary>
         public ObjectHandle Multiply([NotNull]ObjectHandle self, [NotNull]ObjectHandle other) {
-            return new ObjectHandle(Multiply(GetLocalObject(self), GetLocalObject(other)));
+            return new ObjectHandle((object)Multiply(GetLocalObject(self), GetLocalObject(other)));
         }
 
         /// <summary>
         /// Divides the 1st remote object by the 2nd. Throws an exception if the operation cannot be performed.
         /// </summary>
         public ObjectHandle Divide([NotNull]ObjectHandle self, [NotNull]ObjectHandle other) {
-            return new ObjectHandle(Divide(GetLocalObject(self), GetLocalObject(other)));
+            return new ObjectHandle((object)Divide(GetLocalObject(self), GetLocalObject(other)));
         }
 
         /// <summary>
         /// Performs modulus on the 1st remote object by the 2nd.  Throws an exception if the operation cannot be performed.
         /// </summary>        
         public ObjectHandle Modulo([NotNull]ObjectHandle self, [NotNull]ObjectHandle other) {
-            return new ObjectHandle(Modulo(GetLocalObject(self), GetLocalObject(other)));
+            return new ObjectHandle((object)Modulo(GetLocalObject(self), GetLocalObject(other)));
         }
 
         /// <summary>
         /// Shifts the 1st remote object left by the 2nd remote object.  Throws an exception if the operation cannot be performed.
         /// </summary>
         public ObjectHandle LeftShift([NotNull]ObjectHandle self, [NotNull]ObjectHandle other) {
-            return new ObjectHandle(LeftShift(GetLocalObject(self), GetLocalObject(other)));
+            return new ObjectHandle((object)LeftShift(GetLocalObject(self), GetLocalObject(other)));
         }
 
         /// <summary>
         /// Shifts the 1st remote  object right by the 2nd remote object.  Throws an exception if the operation cannot be performed.
         /// </summary>
         public ObjectHandle RightShift([NotNull]ObjectHandle self, [NotNull]ObjectHandle other) {
-            return new ObjectHandle(RightShift(GetLocalObject(self), GetLocalObject(other)));
+            return new ObjectHandle((object)RightShift(GetLocalObject(self), GetLocalObject(other)));
         }
 
         /// <summary>
         /// Performs bitwise-and on the two remote objects.  Throws an exception if the operation cannot be performed.
         /// </summary>
         public ObjectHandle BitwiseAnd([NotNull]ObjectHandle self, [NotNull]ObjectHandle other) {
-            return new ObjectHandle(BitwiseAnd(GetLocalObject(self), GetLocalObject(other)));
+            return new ObjectHandle((object)BitwiseAnd(GetLocalObject(self), GetLocalObject(other)));
         }
 
         /// <summary>
         /// Performs bitwise-or on the two remote objects.  Throws an exception if the operation cannot be performed.
         /// </summary>
         public ObjectHandle BitwiseOr([NotNull]ObjectHandle self, [NotNull]ObjectHandle other) {
-            return new ObjectHandle(BitwiseOr(GetLocalObject(self), GetLocalObject(other)));
+            return new ObjectHandle((object)BitwiseOr(GetLocalObject(self), GetLocalObject(other)));
         }
 
         /// <summary>
         /// Performs exclusive-or on the two remote objects.  Throws an exception if the operation cannot be performed.
         /// </summary>
         public ObjectHandle ExclusiveOr([NotNull]ObjectHandle self, [NotNull]ObjectHandle other) {
-            return new ObjectHandle(ExclusiveOr(GetLocalObject(self), GetLocalObject(other)));
+            return new ObjectHandle((object)ExclusiveOr(GetLocalObject(self), GetLocalObject(other)));
         }
 
         /// <summary>

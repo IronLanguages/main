@@ -16,9 +16,11 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Dynamic;
+using System.IO;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
-using System.Dynamic;
+using System.Security;
 using System.Text;
 using System.Threading;
 
@@ -126,7 +128,9 @@ namespace IronPython.Runtime.Exceptions {
             /// during creation or an empty string.
             /// </summary>
             public object message {
+                [Python3Warning("BaseException.message has been deprecated as of Python 2.6")]
                 get { return _message; }
+                [Python3Warning("BaseException.message has been deprecated as of Python 2.6")]
                 set { _message = value; }
             }
 
@@ -156,15 +160,19 @@ namespace IronPython.Runtime.Exceptions {
 
             /// <summary>
             /// Gets the nth member of the args property
-            /// </summary>
+            /// </summary>            
             public object this[int index] {
+                [Python3Warning("__getitem__ not supported for exception classes in 3.x; use args attribute")]
                 get {
                     return ((PythonTuple)args)[index];
                 }
             }
 
+            [Python3Warning("__getslice__ not supported for exception classes in 3.x; use args attribute")]
             public PythonTuple/*!*/ __getslice__(int start, int stop) {
-                return PythonTuple.MakeTuple(ArrayOps.GetSlice(((PythonTuple)args)._data, start, stop));
+                PythonTuple argTuple = (PythonTuple)args;
+                Slice.FixSliceArguments(argTuple._data.Length, ref start, ref stop);
+                return PythonTuple.MakeTuple(ArrayOps.GetSlice(argTuple._data, start, stop));
             }
 
             /// <summary>
@@ -299,10 +307,6 @@ namespace IronPython.Runtime.Exceptions {
                 get { return _dict; }
             }
 
-            bool IPythonObject.HasDictionary {
-                get { return true; }
-            }
-
             IAttributesCollection IPythonObject.SetDict(IAttributesCollection dict) {
                 Interlocked.CompareExchange<IAttributesCollection>(ref _dict, dict, null);
                 return _dict;
@@ -323,6 +327,9 @@ namespace IronPython.Runtime.Exceptions {
 
                 _type = newType;
             }
+
+            object[] IPythonObject.GetSlots() { return null; }
+            object[] IPythonObject.GetSlotsCreate() { return null; }
 
             #endregion
 
@@ -357,7 +364,7 @@ namespace IronPython.Runtime.Exceptions {
                     return _clrException;
                 }
 
-                System.Exception newExcep = CreateClrException(_message != null ? _message.ToString() : String.Empty);
+                System.Exception newExcep = CreateClrException(_message as string ?? ("Python Exception: " + _type.Name));
                 AssociateException(newExcep, this);
 
                 Interlocked.CompareExchange<System.Exception>(ref _clrException, newExcep, null);
@@ -465,6 +472,51 @@ namespace IronPython.Runtime.Exceptions {
                 }
 
                 base.__init__(args);
+            }
+
+            private const int EACCES = 13;
+            private const int ENOENT = 2;
+
+            [PythonHidden]
+            protected internal override void InitializeFromClr(System.Exception/*!*/ exception) {
+                if (exception is FileNotFoundException ||
+                    exception is DirectoryNotFoundException ||
+                    exception is PathTooLongException 
+#if !SILVERLIGHT
+                    || exception is DriveNotFoundException
+#endif
+                    ) {
+                    __init__(ENOENT, exception.Message);
+                    return;                    
+                }
+
+                UnauthorizedAccessException noAccess = exception as UnauthorizedAccessException;
+                if (noAccess != null) {
+                    __init__(EACCES, exception.Message);
+                    return;
+                }
+
+                var ioExcep = exception as System.IO.IOException;
+                if (ioExcep != null) {
+                    try {
+                        uint hr = (uint)GetHRForException(exception);
+                        if ((hr & 0xffff0000U) == 0x80070000U) {
+                            // win32 error code, get the real error code...
+                            __init__(hr & 0xffff, exception.Message);
+                            return;
+                        }
+                    } catch (MethodAccessException) {
+                    } catch(SecurityException) {
+                        // not enough permissions to do this...
+                    }
+                }
+                
+                base.InitAndGetClrException(exception);
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)] // don't inline so the link demand is always evaluated here.
+            private static int GetHRForException(System.Exception exception) {
+                return System.Runtime.InteropServices.Marshal.GetHRForException(exception);
             }
         }
 
@@ -782,7 +834,8 @@ namespace IronPython.Runtime.Exceptions {
         /// Creates a PythonType for a built-in module.  These types are mutable like
         /// normal user types.
         /// </summary>
-        internal static PythonType CreateSubType(PythonContext/*!*/ context, PythonType baseType, string name, string module, string documentation) {
+        [PythonHidden]
+        public static PythonType CreateSubType(PythonContext/*!*/ context, PythonType baseType, string name, string module, string documentation) {
             return new PythonType(null, baseType, name, module, documentation);            
         }
 
@@ -807,6 +860,7 @@ namespace IronPython.Runtime.Exceptions {
 
             myType.ResolutionOrder = Mro.Calculate(myType, new PythonType[] { baseType });
             myType.BaseTypes = new PythonType[] { baseType };
+            myType.HasDictionary = true;
 
             return myType;
         }

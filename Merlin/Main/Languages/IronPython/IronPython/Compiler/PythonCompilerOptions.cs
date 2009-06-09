@@ -14,8 +14,10 @@
  * ***************************************************************************/
 
 using System;
-using IronPython.Runtime;
+
 using Microsoft.Scripting;
+
+using IronPython.Runtime;
 
 namespace IronPython.Compiler {
     [Flags]
@@ -38,10 +40,6 @@ namespace IronPython.Compiler {
         /// </summary>
         PrintFunction      = 0x008,
         /// <summary>
-        /// Enable access to features new in Python 2.6
-        /// </summary>
-        Python26           = 0x010,
-        /// <summary>
         /// Include comments in the parse tree
         /// </summary>
         Verbatim           = 0x020,
@@ -50,9 +48,10 @@ namespace IronPython.Compiler {
     [Serializable]
     public sealed class PythonCompilerOptions : CompilerOptions {
         private PythonLanguageFeatures _languageFeatures;
-        private ModuleOptions _module = ModuleOptions.Optimized;
+        private ModuleOptions _module;
         private bool _skipFirstLine, _dontImplyIndent;
         private string _moduleName;
+        private int[] _initialIndentation;
 
         /// <summary>
         /// Creates a new PythonCompilerOptions with the default language features enabled.
@@ -90,6 +89,24 @@ namespace IronPython.Compiler {
         public bool DontImplyDedent {
             get { return _dontImplyIndent; }
             set { _dontImplyIndent = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets the initial indentation.  This can be set to allow parsing
+        /// partial blocks of code that are already indented.
+        /// 
+        /// For each element of the array there is an additional level of indentation.
+        /// Each integer value represents the number of spaces used for the indentation.
+        /// 
+        /// If this value is null then no indentation level is specified.
+        /// </summary>
+        public int[] InitialIndent {
+            get {
+                return _initialIndentation;
+            }
+            set {
+                _initialIndentation = value;
+            }
         }
 
         public bool TrueDivision {
@@ -142,13 +159,23 @@ namespace IronPython.Compiler {
             }
         }
 
-        public bool Python26 {
+        public bool Interpreted {
             get {
-                return (_languageFeatures & PythonLanguageFeatures.Python26) != 0;
+                return (_module & ModuleOptions.Interpret) != 0;
             }
             set {
-                if (value) _languageFeatures |= PythonLanguageFeatures.Python26;
-                else _languageFeatures &= ~PythonLanguageFeatures.Python26;
+                if (value) _module |= ModuleOptions.Interpret;
+                else _module &= ~ModuleOptions.Interpret;
+            }
+        }
+
+        public bool Optimized {
+            get {
+                return (_module & ModuleOptions.Optimized) != 0;
+            }
+            set {
+                if (value) _module |= ModuleOptions.Optimized;
+                else _module &= ~ModuleOptions.Optimized;
             }
         }
 

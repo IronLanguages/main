@@ -24,6 +24,7 @@ namespace System.Runtime.CompilerServices {
     /// </summary>
     /// <typeparam name="T">The type of the collection element.</typeparam>
     [Serializable]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
     public sealed class ReadOnlyCollectionBuilder<T> : IList<T>, System.Collections.IList {
         private const int DefaultCapacity = 4;
 
@@ -53,7 +54,7 @@ namespace System.Runtime.CompilerServices {
         }
 
         /// <summary>
-        /// Constructs a ReadOnlyCollectionBuilder, coyping contents of the given collection.
+        /// Constructs a ReadOnlyCollectionBuilder, copying contents of the given collection.
         /// </summary>
         /// <param name="collection"></param>
         public ReadOnlyCollectionBuilder(IEnumerable<T> collection) {
@@ -124,6 +125,7 @@ namespace System.Runtime.CompilerServices {
         /// <param name="item">The object to insert into the <see cref="ReadOnlyCollectionBuilder{T}"/>.</param>
         public void Insert(int index, T item) {
             ContractUtils.Requires(index <= _size, "index");
+            
             if (_size == _items.Length) {
                 EnsureCapacity(_size + 1);
             }
@@ -140,7 +142,8 @@ namespace System.Runtime.CompilerServices {
         /// </summary>
         /// <param name="index">The zero-based index of the item to remove.</param>
         public void RemoveAt(int index) {
-            ContractUtils.Requires(index < _size, "index");
+            ContractUtils.Requires(index >= 0 && index < _size, "index");
+
             _size--;
             if (index < _size) {
                 Array.Copy(_items, index + 1, _items, index, _size - index);
@@ -373,7 +376,6 @@ namespace System.Runtime.CompilerServices {
         public void Reverse(int index, int count) {
             ContractUtils.Requires(index >= 0, "index");
             ContractUtils.Requires(count >= 0, "count");
-            ContractUtils.Requires(_size - index < count, "count");
 
             Array.Reverse(_items, index, count);
             _version++;

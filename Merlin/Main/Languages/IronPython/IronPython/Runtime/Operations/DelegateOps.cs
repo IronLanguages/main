@@ -34,7 +34,7 @@ namespace IronPython.Runtime.Operations {
                 }
             }
 
-            return BinderOps.GetDelegate(context.LanguageContext, function, type.UnderlyingSystemType);
+            return context.LanguageContext.GetDelegate(function, type.UnderlyingSystemType);
         }
 
         public static Delegate/*!*/ InPlaceAdd(Delegate/*!*/ self, Delegate/*!*/ other) {
@@ -52,7 +52,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static object Call(CodeContext/*!*/ context, Delegate @delegate, params object[] args) {
-            return PythonContext.GetContext(context).Call(@delegate, args);
+            return PythonContext.GetContext(context).CallSplat(@delegate, args);
         }
 
         public static object Call(CodeContext/*!*/ context, Delegate @delegate, [ParamDictionary]IAttributesCollection dict, params object[] args) {

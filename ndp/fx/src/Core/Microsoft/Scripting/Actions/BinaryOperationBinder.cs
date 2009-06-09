@@ -15,7 +15,6 @@
 
 using System.Dynamic.Utils;
 using System.Linq.Expressions;
-using Microsoft.Contracts;
 
 namespace System.Dynamic {
     /// <summary>
@@ -31,6 +30,13 @@ namespace System.Dynamic {
         protected BinaryOperationBinder(ExpressionType operation) {
             ContractUtils.Requires(OperationIsValid(operation), "operation");
             _operation = operation;
+        }
+
+        /// <summary>
+        /// The result type of the operation.
+        /// </summary>
+        public override sealed Type ReturnType {
+            get { return typeof(object); }
         }
 
         /// <summary>
@@ -69,28 +75,20 @@ namespace System.Dynamic {
         /// <returns>The <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
         public sealed override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args) {
             ContractUtils.RequiresNotNull(target, "target");
-            ContractUtils.RequiresNotNullItems(args, "args");
-            ContractUtils.Requires(args.Length == 1);
+            ContractUtils.RequiresNotNull(args, "args");
+            ContractUtils.Requires(args.Length == 1, "args");
 
-            return target.BindBinaryOperation(this, args[0]);
+            var arg0 = args[0];
+            ContractUtils.RequiresNotNull(arg0, "args");
+
+            return target.BindBinaryOperation(this, arg0);
         }
 
-        /// <summary>
-        /// Determines whether the specified System.Object is equal to the current <see cref="BinaryOperationBinder"/>.
-        /// </summary>
-        /// <param name="obj">The <see cref="Object"/> to compare with the current <see cref="BinaryOperationBinder"/>.</param>
-        /// <returns>true if the specified System.Object is equal to the current <see cref="BinaryOperationBinder"/>; otherwise, false.</returns>
-        public override bool Equals(object obj) {
-            BinaryOperationBinder oa = obj as BinaryOperationBinder;
-            return oa != null && oa._operation == _operation;
-        }
-
-        /// <summary>
-        /// Returns the hash code for this instance. 
-        /// </summary>
-        /// <returns>An <see cref="Int32"/> containing the hash code for this instance.</returns>
-        public override int GetHashCode() {
-            return BinaryOperationBinderHash ^ (int)_operation;
+        // this is a standard DynamicMetaObjectBinder
+        internal override sealed bool IsStandardBinder {
+            get {
+                return true;
+            }
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]

@@ -30,6 +30,9 @@ namespace IronRuby.Runtime.Calls {
         // Singleton used to hide CLR methods: method resolution skips all CLR methods since encountering a hidden method.
         internal static readonly RubyMemberInfo/*!*/ HiddenMethod = new RubyMemberInfo();
 
+        // Singleton used to represent foreign members (these are not in method tables):
+        internal static readonly RubyMemberInfo/*!*/ ForeignMember = new RubyMemberInfo();
+
         private readonly RubyMemberFlags _flags;
 
         // Null for dummy methods.
@@ -46,16 +49,65 @@ namespace IronRuby.Runtime.Calls {
             get { return (RubyMethodVisibility)(_flags & RubyMemberFlags.VisibilityMask); }
         }
 
-        internal bool IsModuleFunction {
-            get { return (_flags & RubyMemberFlags.ModuleFunction) != 0; }
+        //
+        // Notes on visibility
+        // 
+        // Ruby visibility is orthogonal to CLR visibility.
+        // Ruby visibility is mutable, CLR visibility is not.
+        // A method group can comprise of methods of various CLR visibility. Ruby visibility applies on the group as a whole.
+        //
+
+        /// <summary>
+        /// True if the member is Ruby-protected. 
+        /// </summary>
+        /// <remarks>
+        /// Ruby-protected members can only be called from a scope whose self immediate class is a descendant of the method owner.
+        /// CLR-protected members can only be called if the receiver is a descendant of the method owner. 
+        /// </remarks>
+        public bool IsProtected {
+            get { return (_flags & RubyMemberFlags.Protected) != 0; }
+        }
+
+        /// <summary>
+        /// True if the member is Ruby-private. 
+        /// </summary>
+        /// <remarks>
+        /// Ruby-private members can only be called with an implicit receiver (self).
+        /// CLR-private members can only be called if in PrivateBinding mode, the receiver might be explicit or implicit.
+        /// </remarks>
+        public bool IsPrivate {
+            get { return (_flags & RubyMemberFlags.Private) != 0; }
+        }
+
+        /// <summary>
+        /// True if the member is Ruby-public. 
+        /// </summary>
+        public bool IsPublic {
+            get { return (_flags & RubyMemberFlags.Public) != 0; }
         }
 
         internal bool IsEmpty {
             get { return (_flags & RubyMemberFlags.Empty) != 0; }
         }
 
-        internal bool IsSuperForwarder {
-            get { return (_flags & RubyMemberFlags.SuperForwarder) != 0; }
+        internal virtual bool IsSuperForwarder {
+            get { return false; }
+        }
+
+        /// <summary>
+        /// True if the member is defined in Ruby or for undefined and hidden members.
+        /// False for members representing CLR members.
+        /// </summary>
+        internal virtual bool IsRubyMember {
+            get { return true; }
+        }
+
+        /// <summary>
+        /// True if the member behaves like a property/field: GetMember invokes the member.
+        /// Otherwise the member behaves like a method: GetMember returns the method.
+        /// </summary>
+        internal virtual bool IsDataMember {
+            get { return false; }
         }
 
         /// <summary>

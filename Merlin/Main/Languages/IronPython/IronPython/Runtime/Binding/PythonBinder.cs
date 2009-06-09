@@ -20,6 +20,7 @@ using System.Diagnostics;
 using System.Dynamic;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
@@ -36,7 +37,7 @@ namespace IronPython.Runtime.Binding {
     using Ast = System.Linq.Expressions.Expression;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
 
-    public class PythonBinder : DefaultBinder {
+    public sealed partial class PythonBinder : DefaultBinder {
         private PythonContext/*!*/ _context;
         private SlotCache/*!*/ _typeMembers = new SlotCache();
         private SlotCache/*!*/ _resolvedMembers = new SlotCache();
@@ -88,11 +89,25 @@ namespace IronPython.Runtime.Binding {
 
             return Binders.Convert(
                 context,
-                _context.DefaultBinderState,
+                _context,
                 visType,
                 visType == typeof(char) ? ConversionResultKind.ImplicitCast : kind,
                 expr
             );
+        }
+
+        public override Func<object[], object> ConvertObject(int index, DynamicMetaObject knownType, Type toType, ConversionResultKind kind) {            
+            if (toType == typeof(object) || toType.IsAssignableFrom(knownType.LimitType)) {
+                return null;
+            }
+
+            Type visType = CompilerHelpers.GetVisibleType(toType);
+
+            if (knownType.LimitType == typeof(PythonType) && visType == typeof(Type)) {
+                return (args) => (Type)(PythonType)args[index];
+            }
+
+            return (args) => Converter.Convert(args[index], toType);
         }
 
         internal static MethodInfo GetGenericConvertMethod(Type toType) {
@@ -160,15 +175,11 @@ namespace IronPython.Runtime.Binding {
             return Converter.PreferConvert(t1, t2);
         }
 
-        public override Expression GetByRefArrayExpression(Expression argumentArrayExpression) {
-            return Ast.Call(typeof(PythonOps).GetMethod("MakeTuple"), argumentArrayExpression);
-        }
-
         public override ErrorInfo MakeConversionError(Type toType, Expression value) {
             return ErrorInfo.FromException(
                 Ast.Call(
                     typeof(PythonOps).GetMethod("TypeErrorForTypeMismatch"),
-                    Ast.Constant(DynamicHelpers.GetPythonTypeFromType(toType).Name),
+                    AstUtils.Constant(DynamicHelpers.GetPythonTypeFromType(toType).Name),
                     AstUtils.Convert(value, typeof(object))
                )
             );
@@ -197,8 +208,8 @@ namespace IronPython.Runtime.Binding {
                 return ErrorInfo.FromException(
                     Ast.Call(
                         typeof(PythonOps).GetMethod("StaticAssignmentFromInstanceError"),
-                        Ast.Constant(tracker),
-                        Ast.Constant(isAssignment)
+                        AstUtils.Constant(tracker),
+                        AstUtils.Constant(isAssignment)
                     )
                 );
             }
@@ -213,7 +224,7 @@ namespace IronPython.Runtime.Binding {
 
         #region .NET member binding
 
-        protected override string GetTypeName(Type t) {
+        public override string GetTypeName(Type t) {
             return DynamicHelpers.GetPythonTypeFromType(t).Name;
         }
 
@@ -226,23 +237,27 @@ namespace IronPython.Runtime.Binding {
                     type,
                     name);
 
-                _resolvedMembers.CacheSlot(type, name, PythonTypeOps.GetSlot(mg, name, PrivateBinding), mg);
+                _resolvedMembers.CacheSlot(type, action.Kind == DynamicActionKind.GetMember, name, PythonTypeOps.GetSlot(mg, name, PrivateBinding), mg);
             }
 
             return mg ?? MemberGroup.EmptyGroup;
         }
 
+
         public override ErrorInfo/*!*/ MakeEventValidation(MemberGroup/*!*/ members, Expression eventObject, Expression/*!*/ value, Expression/*!*/ codeContext) {
             EventTracker ev = (EventTracker)members[0];
 
             return ErrorInfo.FromValueNoError(
-               Ast.Call(
-                   typeof(PythonOps).GetMethod("SlotTrySetValue"),
-                   codeContext,
-                   Ast.Constant(PythonTypeOps.GetReflectedEvent(ev)),
-                   eventObject != null ? AstUtils.Convert(eventObject, typeof(object)) : Ast.Constant(null),
-                   Ast.Constant(null, typeof(PythonType)),
-                   AstUtils.Convert(value, typeof(object))
+               Ast.Block(
+                   Ast.Call(
+                       typeof(PythonOps).GetMethod("SlotTrySetValue"),
+                       codeContext,
+                       AstUtils.Constant(PythonTypeOps.GetReflectedEvent(ev)),
+                       eventObject != null ? AstUtils.Convert(eventObject, typeof(object)) : AstUtils.Constant(null),
+                       AstUtils.Constant(null, typeof(PythonType)),
+                       AstUtils.Convert(value, typeof(object))
+                   ),
+                   Ast.Constant(null)
                )
             );
         }
@@ -251,13 +266,16 @@ namespace IronPython.Runtime.Binding {
             EventTracker ev = (EventTracker)members[0];
 
             return ErrorInfo.FromValueNoError(
-               Ast.Call(
-                   typeof(PythonOps).GetMethod("SlotTrySetValue"),
-                   rule.Context,
-                   Ast.Constant(PythonTypeOps.GetReflectedEvent(ev)),
-                   AstUtils.Convert(rule.Parameters[0], typeof(object)),
-                   Ast.Constant(null, typeof(PythonType)),
-                   AstUtils.Convert(rule.Parameters[1], typeof(object))
+               Ast.Block(
+                   Ast.Call(
+                       typeof(PythonOps).GetMethod("SlotTrySetValue"),
+                       rule.Context,
+                       AstUtils.Constant(PythonTypeOps.GetReflectedEvent(ev)),
+                       AstUtils.Convert(rule.Parameters[0], typeof(object)),
+                       AstUtils.Constant(null, typeof(PythonType)),
+                       AstUtils.Convert(rule.Parameters[1], typeof(object))
+                   ),
+                   Ast.Constant(null)
                )
             );
         }
@@ -273,7 +291,7 @@ namespace IronPython.Runtime.Binding {
             return ErrorInfo.FromException(
                 Ast.New(
                     typeof(MissingMemberException).GetConstructor(new Type[] { typeof(string) }),
-                    Ast.Constant(String.Format("'{0}' object has no attribute '{1}'", typeName, name))
+                    AstUtils.Constant(String.Format("'{0}' object has no attribute '{1}'", typeName, name))
                 )
             );
         }
@@ -286,7 +304,7 @@ namespace IronPython.Runtime.Binding {
             return ErrorInfo.FromException(
                 Ast.New(
                     typeof(MissingMemberException).GetConstructor(new Type[] { typeof(string) }),
-                    Ast.Constant(
+                    AstUtils.Constant(
                         String.Format("attribute '{0}' of '{1}' object is read-only",
                             name,
                             NameConverter.GetTypeName(type)
@@ -304,7 +322,7 @@ namespace IronPython.Runtime.Binding {
             return ErrorInfo.FromException(
                 Ast.New(
                     typeof(MissingMemberException).GetConstructor(new Type[] { typeof(string) }),
-                    Ast.Constant(
+                    AstUtils.Constant(
                         String.Format("cannot delete attribute '{0}' of builtin type '{1}'",
                             name,
                             NameConverter.GetTypeName(type)
@@ -377,7 +395,7 @@ namespace IronPython.Runtime.Binding {
         private static Expression ReturnMemberTracker(Type type, MemberTracker memberTracker, bool privateBinding) {
             switch (memberTracker.MemberType) {
                 case TrackerTypes.TypeGroup:
-                    return Ast.Constant(memberTracker);
+                    return AstUtils.Constant(memberTracker);
                 case TrackerTypes.Type:
                     return ReturnTypeTracker((TypeTracker)memberTracker);
                 case TrackerTypes.Bound:
@@ -387,9 +405,9 @@ namespace IronPython.Runtime.Binding {
                 case TrackerTypes.Event:
                     return Ast.Call(
                         typeof(PythonOps).GetMethod("MakeBoundEvent"),
-                        Ast.Constant(PythonTypeOps.GetReflectedEvent((EventTracker)memberTracker)),
-                        Ast.Constant(null),
-                        Ast.Constant(type)
+                        AstUtils.Constant(PythonTypeOps.GetReflectedEvent((EventTracker)memberTracker)),
+                        AstUtils.Constant(null),
+                        AstUtils.Constant(type)
                     );
                 case TrackerTypes.Field:
                     return ReturnFieldTracker((FieldTracker)memberTracker);
@@ -408,9 +426,9 @@ namespace IronPython.Runtime.Binding {
                         val = PythonTypeOps.GetConstructor(type, InstanceOps.NonDefaultNewInst, ctors);
                     }
 
-                    return Ast.Constant(val);
+                    return AstUtils.Constant(val);
                 case TrackerTypes.Custom:
-                    return Ast.Constant(((PythonCustomTracker)memberTracker).GetSlot(), typeof(PythonTypeSlot));
+                    return AstUtils.Constant(((PythonCustomTracker)memberTracker).GetSlot(), typeof(PythonTypeSlot));
             }
             return null;
         }
@@ -445,7 +463,7 @@ namespace IronPython.Runtime.Binding {
             string strName = SymbolTable.IdToString(name);
             Type curType = type.UnderlyingSystemType;
 
-            if (!_typeMembers.TryGetCachedSlot(curType, strName, out slot)) {
+            if (!_typeMembers.TryGetCachedSlot(curType, true, strName, out slot)) {
                 MemberGroup mg = TypeInfo.GetMember(
                     this,
                     OldGetMemberAction.Make(this, name),
@@ -454,7 +472,7 @@ namespace IronPython.Runtime.Binding {
 
                 slot = PythonTypeOps.GetSlot(mg, SymbolTable.IdToString(name), PrivateBinding);
 
-                _typeMembers.CacheSlot(curType, strName, slot, mg);
+                _typeMembers.CacheSlot(curType, true, strName, slot, mg);
             }
 
             if (slot != null && (slot.IsAlwaysVisible || PythonOps.IsClsVisible(context))) {
@@ -470,12 +488,10 @@ namespace IronPython.Runtime.Binding {
         /// for members.  It also searches for extension members in the type and any base types.
         /// </summary>
         public bool TryResolveSlot(CodeContext/*!*/ context, PythonType/*!*/ type, PythonType/*!*/ owner, SymbolId name, out PythonTypeSlot slot) {
-            Debug.Assert(type.IsSystemType);
-
             string strName = SymbolTable.IdToString(name);
             Type curType = type.UnderlyingSystemType;
 
-            if (!_resolvedMembers.TryGetCachedSlot(curType, strName, out slot)) {
+            if (!_resolvedMembers.TryGetCachedSlot(curType, true, strName, out slot)) {
                 MemberGroup mg = TypeInfo.GetMemberAll(
                     this,
                     OldGetMemberAction.Make(this, strName),
@@ -484,7 +500,7 @@ namespace IronPython.Runtime.Binding {
 
                 slot = PythonTypeOps.GetSlot(mg, SymbolTable.IdToString(name), PrivateBinding);
 
-                _resolvedMembers.CacheSlot(curType, strName, slot, mg);
+                _resolvedMembers.CacheSlot(curType, true, strName, slot, mg);
             }
 
             if (slot != null && (slot.IsAlwaysVisible || PythonOps.IsClsVisible(context))) {
@@ -501,7 +517,7 @@ namespace IronPython.Runtime.Binding {
         /// This search does not include members in any subtypes or their extension members.
         /// </summary>
         public void LookupMembers(CodeContext/*!*/ context, PythonType/*!*/ type, IAttributesCollection/*!*/ memberNames) {
-            if (!_typeMembers.IsFullyCached(type.UnderlyingSystemType)) {
+            if (!_typeMembers.IsFullyCached(type.UnderlyingSystemType, true)) {
                 Dictionary<string, KeyValuePair<PythonTypeSlot, MemberGroup>> members = new Dictionary<string, KeyValuePair<PythonTypeSlot, MemberGroup>>();
 
                 foreach (ResolvedMember rm in TypeInfo.GetMembers(
@@ -517,10 +533,10 @@ namespace IronPython.Runtime.Binding {
                     }
                 }
 
-                _typeMembers.CacheAll(type.UnderlyingSystemType, members);
+                _typeMembers.CacheAll(type.UnderlyingSystemType, true, members);
             }
 
-            foreach (KeyValuePair<string, PythonTypeSlot> kvp in _typeMembers.GetAllMembers(type.UnderlyingSystemType)) {
+            foreach (KeyValuePair<string, PythonTypeSlot> kvp in _typeMembers.GetAllMembers(type.UnderlyingSystemType, true)) {
                 PythonTypeSlot slot = kvp.Value;
                 string name = kvp.Key;
 
@@ -537,7 +553,7 @@ namespace IronPython.Runtime.Binding {
         /// types of the type and its subtypes.
         /// </summary>
         public void ResolveMemberNames(CodeContext/*!*/ context, PythonType/*!*/ type, PythonType/*!*/ owner, Dictionary<string, string>/*!*/ memberNames) {
-            if (!_resolvedMembers.IsFullyCached(type.UnderlyingSystemType)) {
+            if (!_resolvedMembers.IsFullyCached(type.UnderlyingSystemType, true)) {
                 Dictionary<string, KeyValuePair<PythonTypeSlot, MemberGroup>> members = new Dictionary<string, KeyValuePair<PythonTypeSlot, MemberGroup>>();
 
                 foreach (ResolvedMember rm in TypeInfo.GetMembersAll(
@@ -553,10 +569,10 @@ namespace IronPython.Runtime.Binding {
                     }
                 }
 
-                _resolvedMembers.CacheAll(type.UnderlyingSystemType, members);
+                _resolvedMembers.CacheAll(type.UnderlyingSystemType, true, members);
             }
 
-            foreach (KeyValuePair<string, PythonTypeSlot> kvp in _resolvedMembers.GetAllMembers(type.UnderlyingSystemType)) {
+            foreach (KeyValuePair<string, PythonTypeSlot> kvp in _resolvedMembers.GetAllMembers(type.UnderlyingSystemType, true)) {
                 PythonTypeSlot slot = kvp.Value;
                 string name = kvp.Key;
 
@@ -567,11 +583,11 @@ namespace IronPython.Runtime.Binding {
         }
 
         private static Expression ReturnFieldTracker(FieldTracker fieldTracker) {
-            return Ast.Constant(PythonTypeOps.GetReflectedField(fieldTracker.Field));
+            return AstUtils.Constant(PythonTypeOps.GetReflectedField(fieldTracker.Field));
         }
 
         private static Expression ReturnMethodGroup(MethodGroup methodGroup) {
-            return Ast.Constant(PythonTypeOps.GetFinalSlotForFunction(GetBuiltinFunction(methodGroup)));
+            return AstUtils.Constant(PythonTypeOps.GetFinalSlotForFunction(GetBuiltinFunction(methodGroup)));
         }
 
         private static Expression ReturnBoundTracker(BoundMemberTracker boundMemberTracker, bool privateBinding) {
@@ -582,20 +598,20 @@ namespace IronPython.Runtime.Binding {
                     Debug.Assert(pt.GetIndexParameters().Length > 0);
                     return Ast.New(
                         typeof(ReflectedIndexer).GetConstructor(new Type[] { typeof(ReflectedIndexer), typeof(object) }),
-                        Ast.Constant(new ReflectedIndexer(((ReflectedPropertyTracker)pt).Property, NameType.Property, privateBinding)),
+                        AstUtils.Constant(new ReflectedIndexer(((ReflectedPropertyTracker)pt).Property, NameType.Property, privateBinding)),
                         boundMemberTracker.Instance
                     );
                 case TrackerTypes.Event:
                     return Ast.Call(
                         typeof(PythonOps).GetMethod("MakeBoundEvent"),
-                        Ast.Constant(PythonTypeOps.GetReflectedEvent((EventTracker)boundMemberTracker.BoundTo)),
+                        AstUtils.Constant(PythonTypeOps.GetReflectedEvent((EventTracker)boundMemberTracker.BoundTo)),
                         boundMemberTracker.Instance,
-                        Ast.Constant(boundMemberTracker.DeclaringType)
+                        AstUtils.Constant(boundMemberTracker.DeclaringType)
                     );
                 case TrackerTypes.MethodGroup:
                     return Ast.Call(
                         typeof(PythonOps).GetMethod("MakeBoundBuiltinFunction"),
-                        Ast.Constant(GetBuiltinFunction((MethodGroup)boundTo)),
+                        AstUtils.Constant(GetBuiltinFunction((MethodGroup)boundTo)),
                         AstUtils.Convert(
                             boundMemberTracker.Instance,
                             typeof(object)
@@ -621,16 +637,12 @@ namespace IronPython.Runtime.Binding {
         }
 
         private static Expression ReturnPropertyTracker(PropertyTracker propertyTracker, bool privateBinding) {
-            return Ast.Constant(PythonTypeOps.GetReflectedProperty(propertyTracker, null, privateBinding));
+            return AstUtils.Constant(PythonTypeOps.GetReflectedProperty(propertyTracker, null, privateBinding));
         }
 
         private static Expression ReturnTypeTracker(TypeTracker memberTracker) {
             // all non-group types get exposed as PythonType's
-            return Ast.Constant(DynamicHelpers.GetPythonTypeFromType(memberTracker.Type));
-        }
-
-        protected override bool AllowKeywordArgumentSetting(MethodBase method) {
-            return CompilerHelpers.IsConstructor(method) && !method.DeclaringType.IsDefined(typeof(PythonTypeAttribute), true);
+            return AstUtils.Constant(DynamicHelpers.GetPythonTypeFromType(memberTracker.Type));
         }
 
         internal ScriptDomainManager/*!*/ DomainManager {
@@ -683,6 +695,7 @@ namespace IronPython.Runtime.Binding {
             res[typeof(char)] = new Type[] { typeof(CharOps) };
             res[typeof(decimal)] = new Type[] { typeof(DecimalOps) };
             res[typeof(float)] = new Type[] { typeof(SingleOps) };
+            res[typeof(ScriptScope)] = new Type[] { typeof(ScriptScopeOps) };   // ScriptScope extensions should go away but we still need a methods for dir() support.
 
             return res;
         }
@@ -710,14 +723,10 @@ namespace IronPython.Runtime.Binding {
             res[typeof(DynamicNull)] = new ExtensionTypeInfo(typeof(NoneTypeOps), "NoneType");
             res[typeof(BaseSymbolDictionary)] = new ExtensionTypeInfo(typeof(DictionaryOps), "dict");
             res[typeof(IAttributesCollection)] = new ExtensionTypeInfo(typeof(DictionaryOps), "dict");
-            res[typeof(NamespaceTracker)] = new ExtensionTypeInfo(typeof(ReflectedPackageOps), "namespace#");
+            res[typeof(NamespaceTracker)] = new ExtensionTypeInfo(typeof(NamespaceTrackerOps), "namespace#");
             res[typeof(TypeGroup)] = new ExtensionTypeInfo(typeof(TypeGroupOps), "type-collision");
             res[typeof(TypeTracker)] = new ExtensionTypeInfo(typeof(TypeTrackerOps), "type-collision");
             res[typeof(Scope)] = new ExtensionTypeInfo(typeof(ScopeOps), "module");
-            res[typeof(ScriptScope)] = new ExtensionTypeInfo(typeof(ScriptScopeOps), "module");
-#if !SILVERLIGHT
-            res[Type.GetType("System.__ComObject")] = new ExtensionTypeInfo(typeof(ComOps), "__ComObject");
-#endif
 
             return res;
         }
@@ -750,7 +759,7 @@ namespace IronPython.Runtime.Binding {
 
         public bool WarnOnPython3000 {
             get {
-                return _context.PythonOptions.WarnPy3k;
+                return _context.PythonOptions.WarnPython30;
             }
         }
 
@@ -798,6 +807,8 @@ namespace IronPython.Runtime.Binding {
             // load any Python modules
             _context.LoadBuiltins(_context.Builtins, asm);
 
+            // load any cached new types
+            NewTypeMaker.LoadNewTypes(asm);
         }
 
         private static void LoadScriptCode(PythonContext/*!*/ pc, Assembly/*!*/ asm) {
@@ -819,19 +830,19 @@ namespace IronPython.Runtime.Binding {
         /// all members (and remembering whether all members are cached).
         /// </summary>
         private class SlotCache {
-            private Dictionary<Type/*!*/, SlotCacheInfo/*!*/> _cachedInfos;
+            private Dictionary<CachedInfoKey/*!*/, SlotCacheInfo/*!*/> _cachedInfos;
 
             /// <summary>
             /// Writes to a cache the result of a type lookup.  Null values are allowed for the slots and they indicate that
             /// the value does not exist.
             /// </summary>
-            public void CacheSlot(Type/*!*/ type, string/*!*/ name, PythonTypeSlot slot, MemberGroup/*!*/ memberGroup) {
+            public void CacheSlot(Type/*!*/ type, bool isGetMember, string/*!*/ name, PythonTypeSlot slot, MemberGroup/*!*/ memberGroup) {
                 Debug.Assert(type != null); Debug.Assert(name != null);
 
                 EnsureInfo();
 
                 lock (_cachedInfos) {
-                    SlotCacheInfo slots = GetSlotForType(type);
+                    SlotCacheInfo slots = GetSlotForType(type, isGetMember);
 
                     if (slots.ResolvedAll && slot == null && memberGroup.Count == 0) {
                         // nothing to cache, and we know we don't need to cache non-hits.
@@ -847,13 +858,13 @@ namespace IronPython.Runtime.Binding {
             /// that a cached result for a member which doesn't exist has been stored.  Otherwise it returns true if a slot is found or
             /// false if it is not.
             /// </summary>
-            public bool TryGetCachedSlot(Type/*!*/ type, string/*!*/ name, out PythonTypeSlot slot) {
+            public bool TryGetCachedSlot(Type/*!*/ type, bool isGetMember, string/*!*/ name, out PythonTypeSlot slot) {
                 Debug.Assert(type != null); Debug.Assert(name != null);
 
                 if (_cachedInfos != null) {
                     lock (_cachedInfos) {
                         SlotCacheInfo slots;
-                        if (_cachedInfos.TryGetValue(type, out slots) &&
+                        if (_cachedInfos.TryGetValue(new CachedInfoKey(type, isGetMember), out slots) &&
                             (slots.TryGetSlot(name, out slot) || slots.ResolvedAll)) {
                             return true;
                         }
@@ -875,7 +886,7 @@ namespace IronPython.Runtime.Binding {
                 if (_cachedInfos != null) {
                     lock (_cachedInfos) {
                         SlotCacheInfo slots;
-                        if (_cachedInfos.TryGetValue(type, out slots) &&
+                        if (_cachedInfos.TryGetValue(new CachedInfoKey(type, getMemberAction), out slots) &&
                             (slots.TryGetMember(name, out group) || (getMemberAction && slots.ResolvedAll))) {
                             return true;
                         }
@@ -889,11 +900,11 @@ namespace IronPython.Runtime.Binding {
             /// <summary>
             /// Checks to see if all members have been populated for the provided type.
             /// </summary>
-            public bool IsFullyCached(Type/*!*/ type) {
+            public bool IsFullyCached(Type/*!*/ type, bool isGetMember) {
                 if (_cachedInfos != null) {
                     lock (_cachedInfos) {
                         SlotCacheInfo info;
-                        if (_cachedInfos.TryGetValue(type, out info)) {
+                        if (_cachedInfos.TryGetValue(new CachedInfoKey(type, isGetMember), out info)) {
                             return info.ResolvedAll;
                         }
                     }
@@ -908,13 +919,13 @@ namespace IronPython.Runtime.Binding {
             /// The dictionary is used for the internal storage and should not be modified after
             /// providing it to the cache.
             /// </summary>
-            public void CacheAll(Type/*!*/ type, Dictionary<string/*!*/, KeyValuePair<PythonTypeSlot/*!*/, MemberGroup/*!*/>> members) {
+            public void CacheAll(Type/*!*/ type, bool isGetMember, Dictionary<string/*!*/, KeyValuePair<PythonTypeSlot/*!*/, MemberGroup/*!*/>> members) {
                 Debug.Assert(type != null);
 
                 EnsureInfo();
 
                 lock (_cachedInfos) {
-                    SlotCacheInfo slots = GetSlotForType(type);
+                    SlotCacheInfo slots = GetSlotForType(type, isGetMember);
 
                     slots.Members = members;
                     slots.ResolvedAll = true;
@@ -927,10 +938,10 @@ namespace IronPython.Runtime.Binding {
             /// The caller must check that the type is fully cached and populate the cache if it isn't before
             /// calling this method.
             /// </summary>
-            public IEnumerable<KeyValuePair<string/*!*/, PythonTypeSlot/*!*/>>/*!*/ GetAllMembers(Type/*!*/ type) {
+            public IEnumerable<KeyValuePair<string/*!*/, PythonTypeSlot/*!*/>>/*!*/ GetAllMembers(Type/*!*/ type, bool isGetMember) {
                 Debug.Assert(type != null);
 
-                SlotCacheInfo info = GetSlotForType(type);
+                SlotCacheInfo info = GetSlotForType(type, isGetMember);
                 Debug.Assert(info.ResolvedAll);
 
                 foreach (KeyValuePair<string, PythonTypeSlot> slot in info.GetAllSlots()) {
@@ -940,17 +951,48 @@ namespace IronPython.Runtime.Binding {
                 }
             }
 
-            private SlotCacheInfo/*!*/ GetSlotForType(Type/*!*/ type) {
+            private SlotCacheInfo/*!*/ GetSlotForType(Type/*!*/ type, bool isGetMember) {
                 SlotCacheInfo slots;
-                if (!_cachedInfos.TryGetValue(type, out slots)) {
-                    _cachedInfos[type] = slots = new SlotCacheInfo();
+                var key = new CachedInfoKey(type, isGetMember);
+                if (!_cachedInfos.TryGetValue(key, out slots)) {
+                    _cachedInfos[key] = slots = new SlotCacheInfo();
                 }
                 return slots;
             }
 
+            class CachedInfoKey : IEquatable<CachedInfoKey> {
+                public readonly Type Type;
+                public readonly bool IsGetMember;
+
+                public CachedInfoKey(Type type, bool isGetMember) {
+                    Type = type;
+                    IsGetMember = isGetMember;
+                }
+
+                #region IEquatable<CachedInfoKey> Members
+
+                public bool Equals(CachedInfoKey other) {
+                    return other.Type == Type && other.IsGetMember == IsGetMember;
+                }
+
+                #endregion
+
+                public override bool Equals(object obj) {
+                    CachedInfoKey other = obj as CachedInfoKey;
+                    if (other != null) {
+                        return Equals(other);
+                    }
+
+                    return false;
+                }
+
+                public override int GetHashCode() {
+                    return Type.GetHashCode() ^ (IsGetMember ? -1 : 0);
+                }
+            }
             private void EnsureInfo() {
                 if (_cachedInfos == null) {
-                    Interlocked.CompareExchange(ref _cachedInfos, new Dictionary<Type, SlotCacheInfo>(), null);
+                    Interlocked.CompareExchange(ref _cachedInfos, new Dictionary<CachedInfoKey/*!*/, SlotCacheInfo>(), null);
                 }
             }
 

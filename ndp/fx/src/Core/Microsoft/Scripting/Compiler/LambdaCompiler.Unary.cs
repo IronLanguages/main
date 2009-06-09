@@ -46,10 +46,10 @@ namespace System.Linq.Expressions.Compiler {
         }
 
         private void EmitThrowUnaryExpression(Expression expr) {
-            EmitThrow((UnaryExpression)expr, EmitAs.Default);
+            EmitThrow((UnaryExpression)expr, CompilationFlags.EmitAsDefaultType);
         }
 
-        private void EmitThrow(UnaryExpression expr, EmitAs emitAs) {
+        private void EmitThrow(UnaryExpression expr, CompilationFlags flags) {
             if (expr.Operand == null) {
                 CheckRethrow();
 
@@ -58,18 +58,17 @@ namespace System.Linq.Expressions.Compiler {
                 EmitExpression(expr.Operand);
                 _ilg.Emit(OpCodes.Throw);
             }
-            if (emitAs != EmitAs.Void && expr.Type != typeof(void)) {
-                _ilg.EmitDefault(expr.Type);
-            }
+
+            EmitUnreachable(expr, flags);
         }
 
-        private void EmitUnaryExpression(Expression expr) {
-            EmitUnary((UnaryExpression)expr);
+        private void EmitUnaryExpression(Expression expr, CompilationFlags flags) {
+            EmitUnary((UnaryExpression)expr, flags);
         }
 
-        private void EmitUnary(UnaryExpression node) {
+        private void EmitUnary(UnaryExpression node, CompilationFlags flags) {
             if (node.Method != null) {
-                EmitUnaryMethod(node);
+                EmitUnaryMethod(node, flags);
             } else if (node.NodeType == ExpressionType.NegateChecked && TypeUtils.IsInteger(node.Operand.Type)) {
                 EmitExpression(node.Operand);
                 LocalBuilder loc = GetLocal(node.Operand.Type);
@@ -136,7 +135,7 @@ namespace System.Linq.Expressions.Compiler {
                     case ExpressionType.OnesComplement:
                     case ExpressionType.IsFalse:
                     case ExpressionType.IsTrue: {
-                            Debug.Assert(operandType == resultType);
+                            Debug.Assert(TypeUtils.AreEquivalent(operandType, resultType));
                             Label labIfNull = _ilg.DefineLabel();
                             Label labEnd = _ilg.DefineLabel();
                             LocalBuilder loc = GetLocal(operandType);
@@ -195,11 +194,13 @@ namespace System.Linq.Expressions.Compiler {
                     case ExpressionType.IsFalse:
                         _ilg.Emit(OpCodes.Ldc_I4_0);
                         _ilg.Emit(OpCodes.Ceq);
-                        break;
+                        // Not an arithmetic operation -> no conversion
+                        return;
                     case ExpressionType.IsTrue:
                         _ilg.Emit(OpCodes.Ldc_I4_1);
                         _ilg.Emit(OpCodes.Ceq);
-                        break;
+                        // Not an arithmetic operation -> no conversion
+                        return;
                     case ExpressionType.UnaryPlus:
                         _ilg.Emit(OpCodes.Nop);
                         break;
@@ -215,7 +216,8 @@ namespace System.Linq.Expressions.Compiler {
                         if (TypeUtils.IsNullableType(resultType)) {
                             _ilg.Emit(OpCodes.Unbox_Any, resultType);
                         }
-                        break;
+                        // Not an arithmetic operation -> no conversion
+                        return;
                     case ExpressionType.Increment:
                         EmitConstantOne(resultType);
                         _ilg.Emit(OpCodes.Add);
@@ -266,12 +268,11 @@ namespace System.Linq.Expressions.Compiler {
             _ilg.Emit(OpCodes.Unbox_Any, node.Type);
         }
 
-        private void EmitConvertUnaryExpression(Expression expr) {
-            EmitConvert((UnaryExpression)expr);
+        private void EmitConvertUnaryExpression(Expression expr, CompilationFlags flags) {
+            EmitConvert((UnaryExpression)expr, flags);
         }
 
-
-        private void EmitConvert(UnaryExpression node) {
+        private void EmitConvert(UnaryExpression node, CompilationFlags flags) {
             if (node.Method != null) {
                 // User-defined conversions are only lifted if both source and
                 // destination types are value types.  The C# compiler gets this wrong.
@@ -305,20 +306,25 @@ namespace System.Linq.Expressions.Compiler {
                         node.Type
                     );
 
-                    EmitConvert(e);
+                    EmitConvert(e, flags);
                 } else {
-                    EmitUnaryMethod(node);
+                    EmitUnaryMethod(node, flags);
                 }
             } else if (node.Type == typeof(void)) {
-                EmitExpressionAsVoid(node.Operand);
+                EmitExpressionAsVoid(node.Operand, flags);
             } else {
-                EmitExpression(node.Operand);
-                _ilg.EmitConvertToType(node.Operand.Type, node.Type, node.NodeType == ExpressionType.ConvertChecked);
+                if (TypeUtils.AreEquivalent(node.Operand.Type, node.Type)) {
+                    EmitExpression(node.Operand, flags);
+                } else {
+                    // A conversion is emitted after emitting the operand, no tail call is emitted
+                    EmitExpression(node.Operand);
+                    _ilg.EmitConvertToType(node.Operand.Type, node.Type, node.NodeType == ExpressionType.ConvertChecked);
+                }
             }
         }
 
 
-        private void EmitUnaryMethod(UnaryExpression node) {
+        private void EmitUnaryMethod(UnaryExpression node, CompilationFlags flags) {
             if (node.IsLifted) {
                 ParameterExpression v = Expression.Variable(TypeUtils.GetNonNullableType(node.Operand.Type), null);
                 MethodCallExpression mc = Expression.Call(node.Method, v);
@@ -327,7 +333,7 @@ namespace System.Linq.Expressions.Compiler {
                 EmitLift(node.NodeType, resultType, mc, new ParameterExpression[] { v }, new Expression[] { node.Operand });
                 _ilg.EmitConvertToType(resultType, node.Type, false);
             } else {
-                EmitMethodCallExpression(Expression.Call(node.Method, node.Operand));
+                EmitMethodCallExpression(Expression.Call(node.Method, node.Operand), flags);
             }
         }
     }

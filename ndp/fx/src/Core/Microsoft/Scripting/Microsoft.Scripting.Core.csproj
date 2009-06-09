@@ -21,6 +21,8 @@
     <SignAssembly Condition="'$(SignAssembly)' == '' And Exists('$(AssemblyOriginatorKeyFile)')">true</SignAssembly>
     <SignedSym Condition="'$(SignAssembly)' == 'true'">SIGNED</SignedSym>
     <DelaySign>true</DelaySign>
+    <SilverlightPath Condition="$(SilverlightPath) == ''">..\..\..\..\..\..\Merlin\Main\Utilities\Silverlight\x86ret\</SilverlightPath>
+    <BaseAddress>855638016</BaseAddress>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FxCop|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -59,7 +61,6 @@
     <WarningLevel>4</WarningLevel>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <RunCodeAnalysis>false</RunCodeAnalysis>
-    <BaseAddress>1929379840</BaseAddress>
     <NoWarn>
     </NoWarn>
   </PropertyGroup>
@@ -76,7 +77,6 @@
     <DocumentationFile>..\..\..\..\..\..\Merlin\Main\Bin\Silverlight Debug\Microsoft.Scripting.Core.xml</DocumentationFile>
     <NoWarn>618</NoWarn>
     <SilverlightBuild>true</SilverlightBuild>
-    <SilverlightSdkPath>..\..\..\..\..\..\Merlin\Main\Utilities\Silverlight\x86ret\</SilverlightSdkPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight Release|AnyCPU' ">
     <OutputPath>..\..\..\..\..\..\Merlin\Main\Bin\Silverlight Release\</OutputPath>
@@ -89,18 +89,17 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
     <SilverlightBuild>true</SilverlightBuild>
-    <SilverlightSdkPath>..\..\..\..\..\..\Merlin\Main\Utilities\Silverlight\x86ret\</SilverlightSdkPath>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" Condition=" $(SilverlightBuild) != 'true' " />
     <Reference Include="System.Configuration" Condition=" $(SilverlightBuild) != 'true' " />
     <Reference Include="mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" Condition=" '$(SilverlightBuild)' == 'true' ">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(SilverlightSdkPath)\mscorlib.dll</HintPath>
+      <HintPath>$(SilverlightPath)\mscorlib.dll</HintPath>
     </Reference>
     <Reference Include="System, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" Condition=" '$(SilverlightBuild)' == 'true' ">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(SilverlightSdkPath)\System.dll</HintPath>
+      <HintPath>$(SilverlightPath)\System.dll</HintPath>
     </Reference>
     <Reference Include="System.Data" Condition=" $(SilverlightBuild) != 'true' " />
     <Reference Include="System.Xml" Condition=" $(SilverlightBuild) != 'true' " />
@@ -109,6 +108,7 @@
     <Compile Include="..\..\..\..\..\..\Merlin\Main\Hosts\Silverlight\SilverlightVersion.cs" Condition=" '$(SilverlightBuild)' == 'true' ">
       <Link>Properties\SilverlightVersion.cs</Link>
     </Compile>
+    <Compile Include="Actions\CallInfo.cs" />
     <Compile Include="Actions\CallSiteOps.cs" />
     <Compile Include="Actions\InvokeMemberBinder.cs" />
     <Compile Include="Actions\BinaryOperationBinder.cs" />
@@ -133,11 +133,9 @@
     <Compile Include="Actions\RuleCache.cs" />
     <Compile Include="Actions\SetIndexBinder.cs" />
     <Compile Include="Actions\SetMemberBinder.cs" />
-    <Compile Include="Actions\SmallRuleSet.cs" />
-    <Compile Include="Ast\CallInfo.cs" />
+    <Compile Include="Ast\Expression.DebuggerProxy.cs" />
     <Compile Include="Ast\IArgumentProvider.cs" />
     <Compile Include="Ast\ListArgumentProvider.cs" />
-    <Compile Include="Compiler\ArgumentPrepender.cs" />
     <Compile Include="Actions\UnaryOperationBinder.cs" />
     <Compile Include="Ast\ExpressionStringBuilder.cs" />
     <Compile Include="Compiler\BoundConstants.cs" />
@@ -148,6 +146,7 @@
     <Compile Include="Ast\GotoExpression.cs" />
     <Compile Include="Compiler\LabelInfo.cs" />
     <Compile Include="Compiler\AnalyzedTree.cs" />
+    <Compile Include="Compiler\OffsetTrackingILGenerator.cs" />
     <Compile Include="Compiler\RuntimeVariableList.cs" />
     <Compile Include="Actions\UpdateDelegates.Generated.cs" />
     <Compile Include="Ast\DynamicExpression.cs" />
@@ -192,7 +191,7 @@
     <Compile Include="Compiler\ConstantCheck.cs" />
     <Compile Include="Compiler\ExpressionQuoter.cs" />
     <Compile Include="Ast\ExpressionVisitor.cs" />
-    <Compile Include="Ast\ExpressionWriter.cs" />
+    <Compile Include="Ast\DebugViewWriter.cs" />
     <Compile Include="Compiler\HoistedLocals.cs" />
     <Compile Include="Compiler\KeyedQueue.cs" />
     <Compile Include="Compiler\LambdaCompiler.Address.cs" />
@@ -205,11 +204,13 @@
     <Compile Include="Compiler\LambdaCompiler.Statements.cs" />
     <Compile Include="Compiler\LambdaCompiler.Unary.cs" />
     <Compile Include="Compiler\LambdaCompiler.cs" />
+    <Compile Include="Compiler\DebugInfoGenerator.cs" />
     <Compile Include="Compiler\Set.cs" />
     <Compile Include="Compiler\StackSpiller.Bindings.cs" />
     <Compile Include="Compiler\StackSpiller.Generated.cs" />
     <Compile Include="Compiler\StackSpiller.Temps.cs" />
     <Compile Include="Compiler\StackSpiller.cs" />
+    <Compile Include="Compiler\SymbolDocumentGenerator.cs" />
     <Compile Include="Compiler\VariableBinder.cs" />
     <Compile Include="Compiler\AssemblyGen.cs" />
     <Compile Include="Compiler\ILGen.cs" />
@@ -222,6 +223,7 @@
     <Compile Include="Utils\ExceptionFactory.Generated.cs" />
     <Compile Include="Utils\Function.cs" />
     <Compile Include="Utils\Helpers.cs" />
+    <Compile Include="Utils\IRuntimeVariables.cs" />
     <Compile Include="Utils\ReadOnlyCollectionBuilder.cs" />
     <Compile Include="Utils\ReadOnlyDictionary.cs" />
     <Compile Include="Utils\ReferenceEqualityComparer.cs" />
@@ -229,7 +231,6 @@
     <Compile Include="Utils\TrueReadOnlyCollection.cs" />
     <Compile Include="Utils\TypeExtensions.cs" />
     <Compile Include="Stubs.cs" />
-    <Compile Include="Utils\WeakUniqueSet.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="Microsoft.Scripting.ExtensionAttribute.csproj">
@@ -243,7 +244,7 @@
     </Content>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" Condition=" '$(SilverlightTreeBuild)' != 'true' " />
-  <Import Condition=" '$(Golden)' == 'True'" Project="..\..\..\..\..\..\Merlin\External\Build\Microsoft.VersionNumber.targets" />
+  <Import Condition=" '$(Golden)' == 'True'" Project="..\..\..\..\..\..\Merlin\Main\External\Build\Microsoft.VersionNumber.targets" />
   <!-- This task produces a list of Compile items. -->
   <Target Name="GetCompileItems" Outputs="@(CompileItems)">
     <CreateItem Include="%(Compile.Identity)">

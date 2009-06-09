@@ -13,9 +13,8 @@
  *
  * ***************************************************************************/
 
-using System.Linq.Expressions;
 using System.Dynamic.Utils;
-using Microsoft.Contracts;
+using System.Linq.Expressions;
 
 namespace System.Dynamic {
     /// <summary>
@@ -31,6 +30,21 @@ namespace System.Dynamic {
         protected UnaryOperationBinder(ExpressionType operation) {
             ContractUtils.Requires(OperationIsValid(operation), "operation");
             _operation = operation;
+        }
+
+        /// <summary>
+        /// The result type of the operation.
+        /// </summary>
+        public override sealed Type ReturnType {
+            get {
+                switch(_operation) {
+                    case ExpressionType.IsFalse:
+                    case ExpressionType.IsTrue:
+                        return typeof(bool);
+                    default:
+                        return typeof(object);
+                }
+            }
         }
 
         /// <summary>
@@ -72,24 +86,11 @@ namespace System.Dynamic {
             return target.BindUnaryOperation(this);
         }
 
-        /// <summary>
-        /// Determines whether the specified System.Object is equal to the current <see cref="BinaryOperationBinder"/>.
-        /// </summary>
-        /// <param name="obj">The <see cref="Object"/> to compare with the current <see cref="BinaryOperationBinder"/>.</param>
-        /// <returns>true if the specified object is equal to the current <see cref="BinaryOperationBinder"/>; otherwise, false.</returns>
-        [Confined]
-        public override bool Equals(object obj) {
-            UnaryOperationBinder oa = obj as UnaryOperationBinder;
-            return oa != null && oa._operation == _operation;
-        }
-
-        /// <summary>
-        /// Returns the hash code for this instance. 
-        /// </summary>
-        /// <returns>An <see cref="Int32"/> containing the hash code for this instance.</returns>
-        [Confined]
-        public override int GetHashCode() {
-            return UnaryOperationBinderHash ^ (int)_operation;
+        // this is a standard DynamicMetaObjectBinder
+        internal override sealed bool IsStandardBinder {
+            get {
+                return true;
+            }
         }
 
         internal static bool OperationIsValid(ExpressionType operation) {
@@ -104,10 +105,6 @@ namespace System.Dynamic {
                 case ExpressionType.Not:
                 case ExpressionType.Decrement:
                 case ExpressionType.Increment:
-                case ExpressionType.PreIncrementAssign:
-                case ExpressionType.PreDecrementAssign:
-                case ExpressionType.PostIncrementAssign:
-                case ExpressionType.PostDecrementAssign:
                 case ExpressionType.OnesComplement:
                 case ExpressionType.IsTrue:
                 case ExpressionType.IsFalse:

@@ -54,15 +54,15 @@ namespace IronPython.Compiler.Ast {
                 statements.Add(
                     // _references[i] = PythonOps.Import(<code context>, _names[i])
                     ag.AddDebugInfo(
-                        AstUtils.Assign(
-                            _variables[i].Variable, 
+                        ag.Globals.Assign(
+                            ag.Globals.GetVariable(ag, _variables[i]), 
                             Ast.Call(
                                 AstGenerator.GetHelperMethod(                           // helper
                                     _asNames[i] == SymbolId.Empty ? "ImportTop" : "ImportBottom"
                                 ),
-                                AstUtils.CodeContext(),                                 // 1st arg - code context
-                                Ast.Constant(_names[i].MakeString()),                   // 2nd arg - module name
-                                Ast.Constant(_forceAbsolute ? 0 : -1)                   // 3rd arg - absolute or relative imports
+                                ag.LocalContext,                                        // 1st arg - code context
+                                AstUtils.Constant(_names[i].MakeString()),                   // 2nd arg - module name
+                                AstUtils.Constant(_forceAbsolute ? 0 : -1)                   // 3rd arg - absolute or relative imports
                             )
                         ),
                         _names[i].Span
@@ -70,7 +70,7 @@ namespace IronPython.Compiler.Ast {
                 );
             }
 
-            statements.Add(Ast.Empty());
+            statements.Add(AstUtils.Empty());
             return ag.AddDebugInfo(Ast.Block(statements.ToArray()), Span);
         }
 

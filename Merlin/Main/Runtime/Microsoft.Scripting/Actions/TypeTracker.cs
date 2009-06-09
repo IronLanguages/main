@@ -38,14 +38,14 @@ namespace Microsoft.Scripting.Actions {
 
         #region IMembersList Members
 
-        public IList<object> GetMemberNames(CodeContext context) {
+        public virtual IList<object> GetMemberNames(CodeContext context) {
             Dictionary<string, string> members = new Dictionary<string, string>();
-            foreach (MemberInfo mi in Type.GetMembers()) {
-                if (mi.MemberType != MemberTypes.Constructor) {
-                    members[mi.Name] = mi.Name;
-                }
-            }
+            CollectMembers(members, Type);
 
+            return MembersToList(members);
+        }
+
+        internal static IList<object> MembersToList(Dictionary<string, string> members) {
             List<object> res = new List<object>();
             foreach (string key in members.Keys) {
                 res.Add(key);
@@ -53,15 +53,21 @@ namespace Microsoft.Scripting.Actions {
             return res;
         }
 
+        internal static void CollectMembers(Dictionary<string, string> members, Type t) {
+            foreach (MemberInfo mi in t.GetMembers()) {
+                if (mi.MemberType != MemberTypes.Constructor) {
+                    members[mi.Name] = mi.Name;
+                }
+            }
+        }
+
         #endregion
 
         /// <summary>
         /// Enables implicit Type to TypeTracker conversions accross dynamic languages.
-        /// 
-        /// TODO: Should be explicit, but that breaks a JS test
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2225:OperatorOverloadsHaveNamedAlternates")]
-        public static implicit operator Type(TypeTracker tracker) {
+        public static explicit operator Type(TypeTracker tracker) {
             TypeGroup tg = tracker as TypeGroup;
             if (tg != null) {
                 Type res;

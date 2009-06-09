@@ -21,7 +21,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Remoting;
 using System.Runtime.Remoting.Messaging;
 using System.Runtime.Remoting.Proxies;
-using System.Dynamic.Utils;
+using System.Security;
 using System.Security.Permissions;
 
 namespace System.Dynamic {
@@ -45,6 +45,7 @@ namespace System.Dynamic {
     /// "I implement this interface" for event sinks only since the common 
     /// practice is to use IDistpach.Invoke when calling into event sinks). 
     /// </summary>
+    [SecurityCritical]
     internal sealed class ComEventSinkProxy : RealProxy {
 
         private Guid _sinkIid;
@@ -53,9 +54,11 @@ namespace System.Dynamic {
         
         #region ctors
 
+        [SecurityCritical]
         private ComEventSinkProxy() {
         }
 
+        [SecurityCritical]
         public ComEventSinkProxy(ComEventSink sink, Guid sinkIid)
             : base(typeof(ComEventSink)) {
             _sink = sink;
@@ -66,7 +69,12 @@ namespace System.Dynamic {
 
         #region Base Class Overrides
 
-        [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.Infrastructure)] // to match the base method
+#if MICROSOFT_DYNAMIC
+        // to match the base method
+        [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.Infrastructure)]
+#else
+        [SecurityCritical]
+#endif
         public override IntPtr SupportsInterface(ref Guid iid) {
             // if the iid is the sink iid, we ask the base class for an rcw to IDispatch
             if (iid == _sinkIid) {
@@ -79,7 +87,12 @@ namespace System.Dynamic {
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-        [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.Infrastructure)] // to match the base method
+#if MICROSOFT_DYNAMIC
+        // to match the base method
+        [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.Infrastructure)]
+#else
+        [SecurityCritical]
+#endif
         public override IMessage Invoke(IMessage msg) {
             ContractUtils.RequiresNotNull(msg, "msg");
 

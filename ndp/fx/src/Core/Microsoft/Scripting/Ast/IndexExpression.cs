@@ -25,6 +25,9 @@ namespace System.Linq.Expressions {
     /// <summary>
     /// Represents indexing a property or array.
     /// </summary>
+#if !SILVERLIGHT
+    [DebuggerTypeProxy(typeof(Expression.IndexExpressionProxy))]
+#endif
     public sealed class IndexExpression : Expression, IArgumentProvider {
         private readonly Expression _instance;
         private readonly PropertyInfo _indexer;
@@ -49,19 +52,21 @@ namespace System.Linq.Expressions {
         /// Returns the node type of this <see cref="Expression" />. (Inherited from <see cref="Expression" />.)
         /// </summary>
         /// <returns>The <see cref="ExpressionType"/> that represents this expression.</returns>
-        protected override ExpressionType NodeTypeImpl() {
-            return ExpressionType.Index;
+        public sealed override ExpressionType NodeType {
+            get { return ExpressionType.Index; }
         }
 
         /// <summary>
         /// Gets the static type of the expression that this <see cref="Expression" /> represents. (Inherited from <see cref="Expression"/>.)
         /// </summary>
         /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
-        protected override Type TypeImpl() {
-            if (_indexer != null) {
-                return _indexer.PropertyType;
+        public sealed override Type Type {
+            get {
+                if (_indexer != null) {
+                    return _indexer.PropertyType;
+                }
+                return _instance.Type.GetElementType();
             }
-            return _instance.Type.GetElementType();
         }
 
         /// <summary>

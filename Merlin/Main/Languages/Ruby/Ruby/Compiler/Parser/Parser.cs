@@ -64,12 +64,10 @@ namespace IronRuby.Compiler {
         private int _generatedNameId;
 
         // current encoding (used for __ENCODING__ pseudo-constant, literal string, symbol, regex encodings):
-        private Encoding/*!*/ _encoding;
-
-        internal Encoding/*!*/ Encoding {
-            get { return _encoding; }
+        internal RubyEncoding/*!*/ Encoding {
+            get { return _tokenizer.Encoding; }
         }
-        
+
         private bool InMethod {
             get { return _inSingletonMethodDefinition > 0 || _inInstanceMethodDefinition > 0; }
         }
@@ -147,9 +145,10 @@ namespace IronRuby.Compiler {
                 _sourceUnit = sourceUnit;
                 _tokenizer.Initialize(null, reader, sourceUnit, options.InitialLocation);
 
-                // default encoding when hosted:
-                _encoding = reader.Encoding ?? RubyEncoding.GetDefaultHostEncoding(options.Compatibility);
-
+                // Default encoding when hosted (ignore KCODE, we are reading from Unicode buffer):
+                _tokenizer.Encoding = (reader.Encoding != null) ? RubyEncoding.GetRubyEncoding(reader.Encoding) : RubyEncoding.UTF8;
+                _tokenizer.AllowNonAsciiIdentifiers = _tokenizer.Encoding != RubyEncoding.Binary;
+                
                 try {
                     Parse();
                     LeaveScope();
@@ -276,12 +275,11 @@ namespace IronRuby.Compiler {
         // __FILE__
         internal Expression/*!*/ GetCurrentFileExpression(SourceSpan location) {
             if (_sourceUnit.Path == null && _sourceUnit.Kind == SourceCodeKind.Statements) {
-                return new StringLiteral("-e", StringLiteralEncoding.Ascii, location);
+                return new StringLiteral("-e", location);
             } else if (_sourceUnit.Path == null) {
-                return new StringLiteral("(eval)", StringLiteralEncoding.Ascii, location);
+                return new StringLiteral("(eval)", location);
             } else {
-                var encoding = _sourceUnit.Path.IsAscii() ? StringLiteralEncoding.Ascii : StringLiteralEncoding.Default;
-                return new StringLiteral(_sourceUnit.Path, encoding, location);
+                return new StringLiteral(_sourceUnit.Path, location);
             }
         }
 
@@ -498,7 +496,7 @@ namespace IronRuby.Compiler {
         }
 
         public static StringLiteral/*!*/ MakeStringLiteral(TokenValue token, SourceSpan location) {
-            return new StringLiteral(token.String, token.StringLiteralEncoding, location);
+            return new StringLiteral(token.StringContent, location);
         }
 
         private StringConstructor/*!*/ MakeSymbolConstructor(List<Expression>/*!*/ content, SourceSpan location) {

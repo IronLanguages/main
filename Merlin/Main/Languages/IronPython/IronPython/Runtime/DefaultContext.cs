@@ -22,11 +22,9 @@ using Microsoft.Scripting.Runtime;
 namespace IronPython.Runtime {
     public static class DefaultContext {
         [MultiRuntimeAware]
-        public static CodeContext _default;
+        internal static CodeContext _default;
         [MultiRuntimeAware]
-        public static CodeContext _defaultCLS;
-        [MultiRuntimeAware]
-        public static PythonBinder _defaultBinder;
+        internal static CodeContext _defaultCLS;
         
         public static ContextId Id {
             get {
@@ -38,12 +36,6 @@ namespace IronPython.Runtime {
             get {
                 Debug.Assert(_default != null);
                 return _default;
-            }
-        }
-
-        public static PythonBinder DefaultPythonBinder {
-            get {
-                return _defaultBinder;
             }
         }
 
@@ -61,29 +53,15 @@ namespace IronPython.Runtime {
             }
         }
 
-        internal static void CreateContexts(ScriptDomainManager manager, PythonContext/*!*/ context) {
-            if (_default == null) {
-                Interlocked.CompareExchange(ref _default, CreateDefaultContext(context), null);
-                Interlocked.CompareExchange(ref _defaultBinder, new PythonBinder(manager, context, null), null);
-            }
-        }
-
-        internal static void CreateClsContexts(ScriptDomainManager manager, PythonContext/*!*/ context) {
-            if (_defaultCLS == null) {
-                Interlocked.CompareExchange(ref _defaultCLS, CreateDefaultCLSContext(context), null);
-            }
-        }
-
-        private static CodeContext/*!*/ CreateDefaultContext(PythonContext/*!*/ context) {
-            PythonModule module = new PythonModule(new Scope());
-            module.Scope.SetExtension(context.ContextId, module);
-            return new CodeContext(module.Scope, context);
-        }
-
-
-        private static CodeContext/*!*/ CreateDefaultCLSContext(PythonContext/*!*/ context) {
+        internal static CodeContext/*!*/ CreateDefaultCLSContext(PythonContext/*!*/ context) {
             PythonModule globalMod = context.CreateModule(ModuleOptions.ShowClsMethods | ModuleOptions.NoBuiltins);
             return new CodeContext(globalMod.Scope, context);
+        }
+
+        internal static void InitializeDefaults(CodeContext defaultContext, CodeContext defaultClsCodeContext) {
+            Interlocked.CompareExchange(ref _default, defaultContext, null);
+            Interlocked.CompareExchange(ref _defaultCLS, defaultClsCodeContext, null);
+
         }
     }
 }

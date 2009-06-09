@@ -62,9 +62,18 @@ namespace IronRuby.Builtins {
 
         private static RubyModule/*!*/ SetVisibility(RubyScope/*!*/ scope, object/*!*/ self, string/*!*/[]/*!*/ methodNames, RubyMethodAttributes attributes) {
             Assert.NotNull(scope, self, methodNames);
-            RubyClass cls = scope.RubyContext.GetClassOf(self);
-            ModuleOps.SetMethodAttributes(scope, cls, methodNames, attributes);
-            return cls;
+            RubyModule module;
+
+            // MRI: Method is searched in the class of self (Object), not in the main singleton class.
+            // IronRuby specific: If we are in a top-level scope with redirected method lookup module we use that module (hosted scopes).
+            var topScope = scope.Top.GlobalScope.TopLocalScope;
+            if (scope == topScope && topScope.MethodLookupModule != null) {
+                module = topScope.MethodLookupModule;
+            } else {
+                module = scope.RubyContext.GetClassOf(self);
+            }
+            ModuleOps.SetMethodAttributes(scope, module, methodNames, attributes);
+            return module;
         }
 
         // thread-safe:

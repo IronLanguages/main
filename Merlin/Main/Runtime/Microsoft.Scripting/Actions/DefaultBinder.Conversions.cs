@@ -37,11 +37,22 @@ namespace Microsoft.Scripting.Actions {
             // restricted type.
             BindingRestrictions typeRestrictions = arg.Restrictions.Merge(BindingRestrictionsHelpers.GetRuntimeTypeRestriction(arg.Expression, arg.GetLimitType()));
 
-            return
-                TryConvertToObject(toType, arg.Expression.Type, arg) ??
-                TryAllConversions(toType, kind, arg.Expression.Type, arg.Restrictions, arg) ??
+            DynamicMetaObject res = 
+                TryConvertToObject(toType, arg.Expression.Type, arg, typeRestrictions) ??
+                TryAllConversions(toType, kind, arg.Expression.Type, typeRestrictions, arg) ??
                 TryAllConversions(toType, kind, arg.GetLimitType(), typeRestrictions, arg) ??
                 MakeErrorTarget(toType, kind, typeRestrictions, arg);
+
+            if ((kind == ConversionResultKind.ExplicitTry || kind == ConversionResultKind.ImplicitTry) && toType.IsValueType) {
+                res = new DynamicMetaObject(
+                    AstUtils.Convert(
+                        res.Expression,
+                        typeof(object)
+                    ),
+                    res.Restrictions
+                );
+            }
+            return res;
         }
 
         #region Conversion attempt helpers
@@ -49,12 +60,12 @@ namespace Microsoft.Scripting.Actions {
         /// <summary>
         /// Checks if the conversion is to object and produces a target if it is.
         /// </summary>
-        private static DynamicMetaObject TryConvertToObject(Type toType, Type knownType, DynamicMetaObject arg) {
+        private static DynamicMetaObject TryConvertToObject(Type toType, Type knownType, DynamicMetaObject arg, BindingRestrictions restrictions) {
             if (toType == typeof(object)) {
                 if (knownType.IsValueType) {
-                    return MakeBoxingTarget(arg);
+                    return MakeBoxingTarget(arg, restrictions);
                 } else {
-                    return arg;
+                    return new DynamicMetaObject(arg.Expression, restrictions);
                 }
             }
             return null;
@@ -241,7 +252,8 @@ namespace Microsoft.Scripting.Actions {
                 case ConversionResultKind.ExplicitCast:
                     target = MakeError(
                         MakeConversionError(toType, arg.Expression),
-                        restrictions
+                        restrictions,
+                        toType
                     );
                     break;
                 case ConversionResultKind.ImplicitTry:
@@ -261,9 +273,9 @@ namespace Microsoft.Scripting.Actions {
         /// <summary>
         /// Helper to produce a rule which just boxes a value type
         /// </summary>
-        private static DynamicMetaObject MakeBoxingTarget(DynamicMetaObject arg) {
+        private static DynamicMetaObject MakeBoxingTarget(DynamicMetaObject arg, BindingRestrictions restrictions) {
             // MakeSimpleConversionTarget handles the ConversionResultKind check
-            return MakeSimpleConversionTarget(typeof(object), arg.Restrictions, arg);
+            return MakeSimpleConversionTarget(typeof(object), restrictions, arg);
         }
 
         /// <summary>
@@ -406,7 +418,7 @@ namespace Microsoft.Scripting.Actions {
             // ConvertSelfToT -> Nullable<T>
             if (kind == ConversionResultKind.ExplicitCast) {
                 // if the conversion to T fails we just throw
-                Expression conversion = ConvertExpression(arg.Expression, valueType, kind, Ast.Constant(null, typeof(CodeContext)));
+                Expression conversion = ConvertExpression(arg.Expression, valueType, kind, AstUtils.Constant(null, typeof(CodeContext)));
 
                 return new DynamicMetaObject(
                     Ast.New(
@@ -416,7 +428,7 @@ namespace Microsoft.Scripting.Actions {
                     restrictions
                 );
             } else {
-                Expression conversion = ConvertExpression(arg.Expression, valueType, kind, Ast.Constant(null, typeof(CodeContext)));
+                Expression conversion = ConvertExpression(arg.Expression, valueType, kind, AstUtils.Constant(null, typeof(CodeContext)));
 
                 // if the conversion to T succeeds then produce the nullable<T>, otherwise return default(retType)
                 ParameterExpression tmp = Ast.Variable(typeof(object), "tmp");
@@ -426,7 +438,7 @@ namespace Microsoft.Scripting.Actions {
                         Ast.Condition(
                             Ast.NotEqual(
                                 Ast.Assign(tmp, conversion),
-                                Ast.Constant(null)
+                                AstUtils.Constant(null)
                             ),
                             Ast.New(
                                 toType.GetConstructor(new Type[] { valueType }),
@@ -450,9 +462,9 @@ namespace Microsoft.Scripting.Actions {
         public static Expression GetTryConvertReturnValue(Type type) {
             Expression res;
             if (type.IsInterface || type.IsClass) {
-                res = Ast.Constant(null, type);
+                res = AstUtils.Constant(null, type);
             } else {
-                res = Ast.Constant(null);
+                res = AstUtils.Constant(null);
             }
 
             return res;
@@ -494,7 +506,7 @@ namespace Microsoft.Scripting.Actions {
         /// </summary>
         private static DynamicMetaObject MakeNullTarget(Type toType, BindingRestrictions restrictions) {
             return new DynamicMetaObject(
-                Ast.Constant(null, toType),
+                AstUtils.Constant(null, toType),
                 restrictions
             );
         }

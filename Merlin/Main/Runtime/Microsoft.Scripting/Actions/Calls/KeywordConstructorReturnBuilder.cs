@@ -15,6 +15,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Linq.Expressions;
 using System.Reflection;
 using Microsoft.Scripting.Runtime;
@@ -26,7 +27,7 @@ namespace Microsoft.Scripting.Actions.Calls {
     /// <summary>
     /// Updates fields/properties of the returned value with unused keyword parameters.
     /// </summary>
-    class KeywordConstructorReturnBuilder : ReturnBuilder {
+    internal sealed class KeywordConstructorReturnBuilder : ReturnBuilder {
         private readonly ReturnBuilder _builder;
         private readonly int _kwArgCount;
         private readonly int[] _indexesUsed;
@@ -43,16 +44,16 @@ namespace Microsoft.Scripting.Actions.Calls {
             _privateBinding = privateBinding;
         }
 
-        internal override Expression ToExpression(ParameterBinder parameterBinder, IList<ArgBuilder> args, IList<Expression> parameters, Expression ret) {
+        internal override Expression ToExpression(OverloadResolver resolver, IList<ArgBuilder> builders, RestrictedArguments args, Expression ret) {
             List<Expression> sets = new List<Expression>();
 
-            ParameterExpression tmp = parameterBinder.GetTemporary(ret.Type, "val");
+            ParameterExpression tmp = resolver.GetTemporary(ret.Type, "val");
             sets.Add(
                 Ast.Assign(tmp, ret)
             );
 
             for (int i = 0; i < _indexesUsed.Length; i++) {
-                Expression value = parameters[parameters.Count - _kwArgCount + _indexesUsed[i]];
+                Expression value = args.GetObject(args.Length - _kwArgCount + _indexesUsed[i]).Expression;
                 switch(_membersSet[i].MemberType) {
                     case MemberTypes.Field:
                         FieldInfo fi = (FieldInfo)_membersSet[i];
@@ -60,7 +61,7 @@ namespace Microsoft.Scripting.Actions.Calls {
                             sets.Add(
                                 Ast.Assign(
                                     Ast.Field(tmp, fi),
-                                    ConvertToHelper(parameterBinder, value, fi.FieldType)
+                                    ConvertToHelper(resolver, value, fi.FieldType)
                                 )
                             );
                         } else {
@@ -69,8 +70,8 @@ namespace Microsoft.Scripting.Actions.Calls {
                                 Ast.Convert(
                                     Ast.Call(
                                         typeof(ScriptingRuntimeHelpers).GetMethod("ReadOnlyAssignError"),
-                                        Ast.Constant(true),
-                                        Ast.Constant(fi.Name)
+                                        AstUtils.Constant(true),
+                                        AstUtils.Constant(fi.Name)
                                     ),
                                     fi.FieldType
                                 )
@@ -84,7 +85,7 @@ namespace Microsoft.Scripting.Actions.Calls {
                             sets.Add(
                                 Ast.Assign(
                                     Ast.Property(tmp, pi),
-                                    ConvertToHelper(parameterBinder, value, pi.PropertyType)
+                                    ConvertToHelper(resolver, value, pi.PropertyType)
                                 )
                             );
                         } else {
@@ -93,8 +94,8 @@ namespace Microsoft.Scripting.Actions.Calls {
                                 Ast.Convert(
                                     Ast.Call(
                                         typeof(ScriptingRuntimeHelpers).GetMethod("ReadOnlyAssignError"),
-                                        Ast.Constant(false),
-                                        Ast.Constant(pi.Name)
+                                        AstUtils.Constant(false),
+                                        AstUtils.Constant(pi.Name)
                                     ),
                                     pi.PropertyType
                                 )
@@ -112,10 +113,11 @@ namespace Microsoft.Scripting.Actions.Calls {
                 sets.ToArray()
             );
 
-            return _builder.ToExpression(parameterBinder, args, parameters, newCall);
+            return _builder.ToExpression(resolver, builders, args, newCall);
         }
 
-        private static Expression ConvertToHelper(ParameterBinder parameterBinder, Expression value, Type type) {
+        // TODO: revisit
+        private static Expression ConvertToHelper(OverloadResolver resolver, Expression value, Type type) {
             if (type == value.Type) {
                 return value;
             }
@@ -124,7 +126,7 @@ namespace Microsoft.Scripting.Actions.Calls {
                 return AstUtils.Convert(value, type);
             }
 
-            return parameterBinder.GetDynamicConversion(value, type);
+            return resolver.GetDynamicConversion(value, type);
         }
     }
 }

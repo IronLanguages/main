@@ -48,13 +48,13 @@ namespace Microsoft.Scripting.Actions {
 
             // check for conversion to object first...
             if (TryConvertToObject(toType, knownType)) {
-                _rule.AddTest(Ast.Constant(true));
+                _rule.AddTest(AstUtils.Constant(true));
                 return;
             }
 
             // do checks that aren't based upon strongly knowing the object's type (and don't require tests)
             if (TryAllConversions(toType, knownType)) {
-                _rule.AddTest(Ast.Constant(true));
+                _rule.AddTest(AstUtils.Constant(true));
                 return;
             }
 
@@ -508,7 +508,7 @@ namespace Microsoft.Scripting.Actions {
                     AstUtils.If(
                         Ast.NotEqual(
                             Ast.Assign(tmp, conversion),
-                            Ast.Constant(null)
+                            AstUtils.Constant(null)
                         ),
                         _rule.MakeReturn(
                             Binder,
@@ -605,7 +605,7 @@ namespace Microsoft.Scripting.Actions {
         /// </summary>
         /// <param name="toType"></param>
         private void MakeNullTarget(Type toType) {
-            _rule.Target = _rule.MakeReturn(Binder, Ast.Constant(null, toType));
+            _rule.Target = _rule.MakeReturn(Binder, AstUtils.Constant(null, toType));
         }
 
         /// <summary>
@@ -620,7 +620,7 @@ namespace Microsoft.Scripting.Actions {
                         typeof(BinderOps).GetMethod("GetDelegate"),
                         Ast.Property(_rule.Context, typeof(CodeContext), "LanguageContext"),
                         _rule.Parameters[0],
-                        Ast.Constant(toType)
+                        AstUtils.Constant(toType)
                     )
                 );
         }

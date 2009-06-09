@@ -18,8 +18,8 @@
 import sys
 import time
 
-is_silverlight = sys.platform == 'silverlight'
-is_cli = sys.platform == 'cli' 
+from iptest.test_env import *
+from iptest import options, l
 
 if not is_silverlight:
     import nt
@@ -27,16 +27,7 @@ if not is_silverlight:
  
 from type_util import types
 
-is_cli32, is_cli64 = False, False
-if is_cli or is_silverlight: 
-    import System
-    is_cli32, is_cli64 = (System.IntPtr.Size == 4), (System.IntPtr.Size == 8)
-
-is_orcas = False
-if is_cli:
-    import clr, System
-    is_orcas = len(clr.GetClrType(System.Reflection.Emit.DynamicMethod).GetConstructors()) == 8
-
+#------------------------------------------------------------------------------
 def usage(code, msg=''):
     print sys.modules['__main__'].__doc__ or 'No doc provided'
     if msg: print 'Error message: "%s"' % msg
@@ -104,8 +95,8 @@ else:
 
         # get some directories and files
         ip_root             = path_combine(rowan_root, basePyDir)
-        external_dir        = path_combine(rowan_root, r'..\External\Languages\IronPython')
-        clean_external_dir  = path_combine(rowan_root, r'..\External\Languages\CPython\25')
+        external_dir        = path_combine(rowan_root, r'..\External.LCA_RESTRICTED\Languages\IronPython')
+        clean_external_dir  = path_combine(rowan_root, r'..\External.LCA_RESTRICTED\Languages\CPython\26')
         public_testdir      = path_combine(ip_root, r'Tests')
         compat_testdir      = path_combine(ip_root, r'Tests\compat')
         test_inputs_dir     = path_combine(ip_root, r'Tests\Inputs')
@@ -113,8 +104,8 @@ else:
 
         math_testdir        = path_combine(external_dir, r'Math')
         parrot_testdir      = path_combine(external_dir, r'parrotbench')
-        lib_testdir         = path_combine(external_dir, r'25\Lib')
-        private_testdir     = path_combine(external_dir, r'25\Lib\test')
+        lib_testdir         = path_combine(external_dir, r'26\Lib')
+        private_testdir     = path_combine(external_dir, r'26\Lib\test')
 
         temporary_dir   = path_combine(get_temp_dir(), "IronPython")
         ensure_directory_present(temporary_dir)
@@ -123,7 +114,7 @@ else:
 
         if is_cli: 
             ipython_executable  = sys.executable
-            cpython_executable  = path_combine(external_dir, r'25\python.exe')
+            cpython_executable  = path_combine(external_dir, r'26\python.exe')
         else: 
             ipython_executable  = path_combine(sys.prefix, r'ipy.exe')
             cpython_executable  = sys.executable
@@ -149,7 +140,7 @@ class formatter:
 
 # helper functions for sys.path
 _saved_syspath = []
-def perserve_syspath(): 
+def preserve_syspath(): 
     _saved_syspath[:] = list(set(sys.path))
     
 def restore_syspath():  
@@ -487,6 +478,10 @@ def print_failures(total, failures):
     print '%d total, %d passed, %d failed' % (total, total - failcount, failcount)
 		
 def run_test(mod_name, noOutputPlease=False):
+    if not options.RUN_TESTS:
+        l.debug("Will not invoke any test cases from '%s'." % mod_name)
+        return
+        
     import sys
     module = sys.modules[mod_name]
     stdout = sys.stdout
@@ -540,45 +535,6 @@ def run_test(mod_name, noOutputPlease=False):
 def run_class(mod_name, verbose=False): 
     pass
     
-is_32, is_64 = False, False    
-if sys.platform=="win32":
-    cpu = get_environ_variable("PROCESSOR_ARCHITECTURE")
-    if cpu.lower()=="x86":
-        is_32 = True
-    elif cpu.lower()=="amd64":
-        is_64 = True
-else:
-    is_32, is_64 = is_cli32, is_cli64
-    
-    
-if is_cli or is_silverlight:
-    newline = System.Environment.NewLine
-else:
-    import os
-    newline = os.linesep
-
-is_debug = False
-if is_cli:
-    is_debug = sys.exec_prefix.lower().endswith("debug")
-
-is_peverify_run = False
-if is_cli:    
-    is_peverify_run = is_debug and "-X:SaveAssemblies" in System.Environment.CommandLine    
-
-is_snap = False
-#If the 'THISISSNAP' env variable is set we're running tests under the SNAP harness.
-if not is_silverlight and get_environ_variable("THISISSNAP")!=None: 
-    is_snap = True
-
-is_stress = False
-#If the 'THISISSTRESS' env variable is set we're running tests in the stress lab.
-if not is_silverlight and get_environ_variable("THISISSTRESS")!=None: 
-    is_stress = True
-
-is_vista = False
-#ipy.bat sets IS_VISTA
-if not is_silverlight and get_environ_variable("IS_VISTA")=="1":
-    is_vista = True
 
 def add_clr_assemblies(*dlls):
     import clr
@@ -617,8 +573,9 @@ def retry_on_failure(f, *args, **kwargs):
             try:
                 ret_val = f(*args, **kwargs)
                 return ret_val
-            except:
-                print "retry_on_failure(%s): failed on attempt '%d'" % (f.__name__, i+1)
+            except Exception, e:
+                print "retry_on_failure(%s): failed on attempt '%d':" % (f.__name__, i+1)
+                print e
                 continue
         raise e
                 

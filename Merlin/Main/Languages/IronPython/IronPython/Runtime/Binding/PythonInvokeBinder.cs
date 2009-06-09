@@ -16,14 +16,18 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq.Expressions;
 using System.Dynamic;
-using IronPython.Runtime.Operations;
+using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
+
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
-using Microsoft.Scripting.Actions.Calls;
+using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+
+using IronPython.Runtime.Operations;
+
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Runtime.Binding {
@@ -34,11 +38,11 @@ namespace IronPython.Runtime.Binding {
     /// When a foreign object is encountered the arguments are expanded into normal position/keyword arguments.
     /// </summary>
     class PythonInvokeBinder : DynamicMetaObjectBinder, IPythonSite, IExpressionSerializable {
-        private readonly BinderState/*!*/ _state;
+        private readonly PythonContext/*!*/ _context;
         private readonly CallSignature _signature;
 
-        public PythonInvokeBinder(BinderState/*!*/ binder, CallSignature signature) {
-            _state = binder;
+        public PythonInvokeBinder(PythonContext/*!*/ context, CallSignature signature) {
+            _context = context;
             _signature = signature;
         }
 
@@ -87,6 +91,27 @@ namespace IronPython.Runtime.Binding {
             return Fallback(context.Expression, target, args);
         }
 
+        public override T BindDelegate<T>(CallSite<T> site, object[] args) {
+            IFastInvokable ifi = args[1] as IFastInvokable;
+            if (ifi != null) {
+                FastBindResult<T> res = ifi.MakeInvokeBinding(site, this, (CodeContext)args[0], ArrayUtils.ShiftLeft(args, 2));
+                if (res.Target != null) {
+                    if (res.ShouldCache) {
+                        base.CacheTarget(res.Target);
+                    }
+
+                    return res.Target;
+                }
+            }
+
+            if (args[1] is Types.PythonType) {
+                PerfTrack.NoteEvent(PerfTrack.Categories.BindingSlow, "InvokeNoFast " + ((Types.PythonType)args[1]).Name);
+            } else {
+                PerfTrack.NoteEvent(PerfTrack.Categories.BindingSlow, "InvokeNoFast " + CompilerHelpers.GetType(args[1]));
+            }
+            return base.BindDelegate(site, args);
+        }
+
         /// <summary>
         /// Fallback - performs the default binding operation if the object isn't recognized
         /// as being invokable.
@@ -97,8 +122,8 @@ namespace IronPython.Runtime.Binding {
             }
 
             return PythonProtocol.Call(this, target, args) ??
-                Binder.Binder.Create(Signature, new ParameterBinderWithCodeContext(Binder.Binder, codeContext), target, args) ??
-                Binder.Binder.Call(Signature, new ParameterBinderWithCodeContext(Binder.Binder, codeContext), target, args);
+                Context.Binder.Create(Signature, target, args, codeContext) ??
+                Context.Binder.Call(Signature, new PythonOverloadResolverFactory(Context.Binder, codeContext), target, args);
         }
 
         #endregion
@@ -106,7 +131,7 @@ namespace IronPython.Runtime.Binding {
         #region Object Overrides
 
         public override int GetHashCode() {
-            return _signature.GetHashCode() ^ _state.Binder.GetHashCode();
+            return _signature.GetHashCode() ^ _context.Binder.GetHashCode();
         }
 
         public override bool Equals(object obj) {
@@ -115,7 +140,7 @@ namespace IronPython.Runtime.Binding {
                 return false;
             }
 
-            return ob._state.Binder == _state.Binder &&
+            return ob._context.Binder == _context.Binder &&
                 _signature == ob._signature;
         }
 
@@ -144,7 +169,7 @@ namespace IronPython.Runtime.Binding {
         /// <summary>
         /// Creates a nested dynamic site which uses the unpacked arguments.
         /// </summary>
-        protected DynamicMetaObject InvokeForeignObject(DynamicMetaObject target, DynamicMetaObject[] args) {
+        internal DynamicMetaObject InvokeForeignObject(DynamicMetaObject target, DynamicMetaObject[] args) {
             // need to unpack any dict / list arguments...
             CallInfo callInfo;
             List<Expression> metaArgs;
@@ -158,14 +183,14 @@ namespace IronPython.Runtime.Binding {
                 this,
                 new DynamicMetaObject(
                     Expression.Dynamic(
-                        _state.CompatInvoke(callInfo),
+                        _context.CompatInvoke(callInfo),
                         typeof(object),
                         metaArgs.ToArray()
                     ),
                     restrictions.Merge(BindingRestrictionsHelpers.GetRuntimeTypeRestriction(target.Expression, target.GetLimitType()))
                 ),
                 args,
-                new ValidationInfo(test, null)
+                new ValidationInfo(test)
             );
         }
 
@@ -209,14 +234,14 @@ namespace IronPython.Runtime.Binding {
                         splatKwArgTest = Expression.Call(
                             typeof(PythonOps).GetMethod("CheckDictionaryMembers"),
                             AstUtils.Convert(args[i].Expression, typeof(IAttributesCollection)),
-                            Expression.Constant(argNames.ToArray())
+                            AstUtils.Constant(argNames.ToArray())
                         );
                         break;
                     case ArgumentType.List:
                         IList<object> splattedArgs = (IList<object>)args[i].Value;
                         splatArgTest = Expression.Equal(
                             Expression.Property(AstUtils.Convert(args[i].Expression, args[i].GetLimitType()), typeof(ICollection<object>).GetProperty("Count")),
-                            Expression.Constant(splattedArgs.Count)
+                            AstUtils.Constant(splattedArgs.Count)
                         );
 
                         for (int splattedArg = 0; splattedArg < splattedArgs.Count; splattedArg++) {
@@ -224,7 +249,7 @@ namespace IronPython.Runtime.Binding {
                                 Expression.Call(
                                     AstUtils.Convert(args[i].Expression, typeof(IList<object>)),
                                     typeof(IList<object>).GetMethod("get_Item"),
-                                    Expression.Constant(splattedArg)
+                                    AstUtils.Constant(splattedArg)
                                 )
                             );
                         }
@@ -243,7 +268,7 @@ namespace IronPython.Runtime.Binding {
                 }
             }
             
-            callInfo = Expression.CallInfo(metaArgs.Count, namedArgNames.ToArray());
+            callInfo = new CallInfo(metaArgs.Count, namedArgNames.ToArray());
 
             test = splatArgTest;
             if (splatKwArgTest != null) {
@@ -259,8 +284,8 @@ namespace IronPython.Runtime.Binding {
 
         #region IPythonSite Members
 
-        public BinderState Binder {
-            get { return _state; }
+        public PythonContext Context {
+            get { return _context; }
         }
 
         #endregion

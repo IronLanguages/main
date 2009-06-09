@@ -93,7 +93,19 @@ namespace Microsoft.Scripting.Utils {
             return result;
         }
 
-        public static bool TrueForAll<T>(IList<T> collection, Predicate<T> predicate) {
+        public static int Max(this IEnumerable<int> values) {
+            ContractUtils.RequiresNotNull(values, "values");
+
+            int result = Int32.MinValue;
+            foreach (var value in values) {
+                if (value > result) {
+                    result = value;
+                }
+            }
+            return result;
+        }
+
+        public static bool TrueForAll<T>(IEnumerable<T> collection, Predicate<T> predicate) {
             ContractUtils.RequiresNotNull(collection, "collection");
             ContractUtils.RequiresNotNull(predicate, "predicate");
 
@@ -144,6 +156,28 @@ namespace Microsoft.Scripting.Utils {
                     collection.RemoveAt(i);
                 }
             }
+        }
+
+        public static int FindIndex<T>(this IList<T> collection, Predicate<T> predicate) {
+            ContractUtils.RequiresNotNull(collection, "collection");
+            ContractUtils.RequiresNotNull(predicate, "predicate");
+
+            for (int i = 0; i < collection.Count; i++) {
+                if (predicate(collection[i])) {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        public static IList<T> Sort<T>(this ICollection<T> collection, Comparison<T> comparison) {
+            ContractUtils.RequiresNotNull(collection, "collection");
+            ContractUtils.RequiresNotNull(comparison, "comparison");
+
+            var array = new T[collection.Count];
+            collection.CopyTo(array, 0);
+            Array.Sort(array, comparison);
+            return array;
         }
     }
 }

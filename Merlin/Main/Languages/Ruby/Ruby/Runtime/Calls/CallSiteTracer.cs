@@ -32,6 +32,8 @@ using IronRuby.Runtime.Calls;
 using MSA = System.Linq.Expressions;
 using Ast = System.Linq.Expressions.Expression;
 using Microsoft.Scripting;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
+using IronRuby.Builtins;
 
 namespace IronRuby.Runtime.Calls {
     public sealed class CallSiteTracer {
@@ -52,9 +54,11 @@ namespace IronRuby.Runtime.Calls {
         public static MSA.Expression<T>/*!*/ Transform<T>(SourceUnitTree/*!*/ ast, SourceUnit/*!*/ sourceUnit,
             RubyCompilerOptions/*!*/ options, int sourceId) {
 
-            var context = (RubyContext)sourceUnit.LanguageContext;
             var siteNodes = new Dictionary<MSA.DynamicExpression, SourceSpan>();
-            var generator = new TraceAstGenerator(siteNodes, context, options, sourceUnit, ast.Encoding);
+            var context = (RubyContext)sourceUnit.LanguageContext;
+            context.CallSiteCreated = (expression, callSite) => siteNodes.Add(callSite, expression.Location);
+
+            var generator = new AstGenerator(context, options, sourceUnit.Document, ast.Encoding, false);
             var lambda = ast.Transform<T>(generator);
 
             return (MSA.Expression<T>)new CallSiteTraceInjector(siteNodes, sourceId).Visit(lambda);
@@ -78,7 +82,7 @@ namespace IronRuby.Runtime.Calls {
             }
 
             internal TracingRubyCallAction(string/*!*/ methodName, RubyCallSignature signature)
-                : base(methodName, signature) {
+                : base(null, methodName, signature) {
             }
 
             public override string/*!*/ ToString() {
@@ -96,21 +100,6 @@ namespace IronRuby.Runtime.Calls {
 
             MSA.Expression/*!*/ IExpressionSerializable.CreateExpression() {
                 throw new NotSupportedException();
-            }
-        }
-
-        private sealed class TraceAstGenerator : AstGenerator {
-            private readonly Dictionary<MSA.DynamicExpression, SourceSpan>/*!*/ _sites;
-
-            public TraceAstGenerator(Dictionary<MSA.DynamicExpression, SourceSpan>/*!*/ sites,
-                RubyContext/*!*/ context, RubyCompilerOptions/*!*/ options, SourceUnit/*!*/ sourceUnit, Encoding/*!*/ encoding)
-                : base((RubyBinder)context.Binder, options, sourceUnit, encoding, false,
-                    context.DomainManager.Configuration.DebugMode, false, false, false) {
-                _sites = sites;
-            }
-
-            internal override void TraceCallSite(Expression/*!*/ expression, MSA.DynamicExpression/*!*/ callSite) {
-                _sites.Add(callSite, expression.Location);
             }
         }
 
@@ -137,8 +126,8 @@ namespace IronRuby.Runtime.Calls {
 
                     args[last] = typeof(TracingRubyCallAction).GetMethod("EnterCallSite").MakeGenericMethod(args[last].Type).OpCall(
                         args[last],
-                        Ast.Constant(_sourceId), 
-                        Ast.Constant(_sites[node].Start.Index)
+                        AstUtils.Constant(_sourceId), 
+                        AstUtils.Constant(_sites[node].Start.Index)
                     );
 
                     return Ast.Dynamic(

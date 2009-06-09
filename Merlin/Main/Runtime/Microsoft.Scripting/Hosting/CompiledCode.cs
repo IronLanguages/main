@@ -20,6 +20,10 @@ using Microsoft.Scripting.Utils;
 using System.Security.Permissions;
 using System.Threading;
 
+#if !SYSTEM_CORE
+using dynamic = System.Object;
+#endif
+
 namespace Microsoft.Scripting.Hosting {
 
     /// <summary>
@@ -67,14 +71,14 @@ namespace Microsoft.Scripting.Hosting {
         /// <summary>
         /// Executes code in a default scope.
         /// </summary>
-        public object Execute() {
+        public dynamic Execute() {
             return _code.Run(DefaultScope.Scope);
         }
 
         /// <summary>
         /// Execute code within a given scope and returns the result.
         /// </summary>
-        public object Execute(ScriptScope scope) {
+        public dynamic Execute(ScriptScope scope) {
             ContractUtils.RequiresNotNull(scope, "scope");
             return _code.Run(scope.Scope);
         }
@@ -83,24 +87,24 @@ namespace Microsoft.Scripting.Hosting {
         /// Executes code in in a default scope and converts to a given type.
         /// </summary>
         public T Execute<T>() {
-            return _engine.Operations.ConvertTo<T>(Execute());
+            return _engine.Operations.ConvertTo<T>((object)Execute());
         }
 
         /// <summary>
         /// Execute code within a given scope and converts result to a given type.
         /// </summary>
         public T Execute<T>(ScriptScope scope) {
-            return _engine.Operations.ConvertTo<T>(Execute(scope));
+            return _engine.Operations.ConvertTo<T>((object)Execute(scope));
         }
 
 
 #if !SILVERLIGHT
         public ObjectHandle ExecuteAndWrap() {
-            return new ObjectHandle(Execute());
+            return new ObjectHandle((object)Execute());
         }
 
         public ObjectHandle ExecuteAndWrap(ScriptScope scope) {
-            return new ObjectHandle(Execute(scope));
+            return new ObjectHandle((object)Execute(scope));
         }
 
         // TODO: Figure out what is the right lifetime

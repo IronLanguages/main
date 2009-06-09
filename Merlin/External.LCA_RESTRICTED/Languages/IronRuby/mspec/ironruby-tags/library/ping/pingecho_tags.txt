@@ -1,0 +1,1 @@
+fails:Ping.pingecho pings a host using the correct number of arguments

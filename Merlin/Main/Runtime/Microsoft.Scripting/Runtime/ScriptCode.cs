@@ -21,6 +21,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Threading;
 using Microsoft.Contracts;
+using Microsoft.Scripting;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
@@ -32,98 +33,43 @@ namespace Microsoft.Scripting {
     /// but not a specific ScriptScope. The code can be re-executed multiple times in different
     /// scopes. Hosting API counterpart for this class is <c>CompiledCode</c>.
     /// </summary>
-    public class ScriptCode {
-        // TODO: should probably store this as Expression<DlrMainCallTarget>
-        private readonly LambdaExpression _code;
+    public abstract class ScriptCode {
         private readonly SourceUnit _sourceUnit;
-        private DlrMainCallTarget _target;
 
-        public ScriptCode(LambdaExpression code, SourceUnit sourceUnit)
-            : this(code, null, sourceUnit) {
-        }
-
-        public ScriptCode(LambdaExpression code, DlrMainCallTarget target, SourceUnit sourceUnit) {
-            if (code == null && target == null) {
-                throw Error.MustHaveCodeOrTarget();
-            }
-
+        public ScriptCode(SourceUnit sourceUnit) {
             ContractUtils.RequiresNotNull(sourceUnit, "sourceUnit");
 
-            _code = code;
             _sourceUnit = sourceUnit;
-            _target = target;
         }
 
         public LanguageContext LanguageContext {
             get { return _sourceUnit.LanguageContext; }
         }
 
-        public DlrMainCallTarget Target {
-            get { return _target; }
-        }
-
         public SourceUnit SourceUnit {
             get { return _sourceUnit; }
-        }
-
-        public LambdaExpression Code {
-            get { return _code; }
         }
 
         public virtual Scope CreateScope() {
             return new Scope();
         }
 
-        public virtual void EnsureCompiled() {
-            EnsureTarget(_code);
-        }
-
-        public object Run(Scope scope) {
-            return InvokeTarget(_code, scope);
-        }
-
-        public object Run() {
+        public virtual object Run() {
             return Run(CreateScope());
         }
 
-        protected virtual object InvokeTarget(LambdaExpression code, Scope scope) {
-            return EnsureTarget(code)(scope, LanguageContext);
-        }
+        public abstract object Run(Scope scope);
 
-        private DlrMainCallTarget EnsureTarget(LambdaExpression code) {
-            if (_target == null) {
-                var lambda = code as Expression<DlrMainCallTarget>;
-                if (lambda == null) {
-                    // If language APIs produced the wrong delegate type,
-                    // rewrite the lambda with the correct type
-                    lambda = Expression.Lambda<DlrMainCallTarget>(code.Body, code.Name, code.Parameters);
-                }
-                Interlocked.CompareExchange(ref _target, lambda.Compile(SourceUnit.EmitDebugSymbols), null);
+        class CodeInfo {
+            public readonly MethodBuilder Builder;
+            public readonly ScriptCode Code;
+            public readonly Type DelegateType;
+
+            public CodeInfo(MethodBuilder builder, ScriptCode code, Type delegateType) {
+                Builder = builder;
+                Code = code;
+                DelegateType = delegateType;
             }
-            return _target;
-        }
-
-        internal MethodBuilder CompileToDisk(TypeGen typeGen, Dictionary<SymbolId, FieldBuilder> symbolDict) {
-            if (_code == null) {
-                throw Error.NoCodeToCompile();
-            }
-
-            MethodBuilder mb = CompileForSave(typeGen, symbolDict);
-            return mb;
-        }
-
-        public static ScriptCode Load(DlrMainCallTarget method, LanguageContext language, string path) {
-            SourceUnit su = new SourceUnit(language, NullTextContentProvider.Null, path, SourceCodeKind.File);
-            return new ScriptCode(null, method, su);
-        }
-
-        protected virtual MethodBuilder CompileForSave(TypeGen typeGen, Dictionary<SymbolId, FieldBuilder> symbolDict) {
-            var diskRewriter = new ToDiskRewriter(typeGen);
-            var lambda = diskRewriter.RewriteLambda(_code);
-
-            MethodBuilder mb = typeGen.TypeBuilder.DefineMethod(lambda.Name ?? "lambda_method", CompilerHelpers.PublicStatic | MethodAttributes.SpecialName);
-            lambda.CompileToMethod(mb, false);
-            return mb;
         }
 
         /// <summary>
@@ -155,25 +101,22 @@ namespace Microsoft.Scripting {
             var symbolDict = new Dictionary<SymbolId, FieldBuilder>();
             // then compile all of the code
 
-            Dictionary<Type, List<KeyValuePair<MethodBuilder, ScriptCode>>> langCtxBuilders = new Dictionary<Type, List<KeyValuePair<MethodBuilder, ScriptCode>>>();
+            Dictionary<Type, List<CodeInfo>> langCtxBuilders = new Dictionary<Type, List<CodeInfo>>();
             foreach (ScriptCode sc in codes) {
-                List<KeyValuePair<MethodBuilder, ScriptCode>> builders;
+                List<CodeInfo> builders;
                 if (!langCtxBuilders.TryGetValue(sc.LanguageContext.GetType(), out builders)) {
-                    langCtxBuilders[sc.LanguageContext.GetType()] = builders = new List<KeyValuePair<MethodBuilder, ScriptCode>>();
+                    langCtxBuilders[sc.LanguageContext.GetType()] = builders = new List<CodeInfo>();
                 }
 
-                builders.Add(
-                    new KeyValuePair<MethodBuilder, ScriptCode>(
-                        sc.CompileToDisk(tg, symbolDict),
-                        sc
-                    )
-                );
+                KeyValuePair<MethodBuilder, Type> compInfo = sc.CompileForSave(tg, symbolDict);
+
+                builders.Add(new CodeInfo(compInfo.Key, sc, compInfo.Value));
             }
 
             MethodBuilder mb = tb.DefineMethod(
                 "GetScriptCodeInfo",
                 MethodAttributes.SpecialName | MethodAttributes.Public | MethodAttributes.Static,
-                typeof(Tuple<Type[], DlrMainCallTarget[][], string[][], object>),
+                typeof(MutableTuple<Type[], Delegate[][], string[][], string[][]>),
                 Type.EmptyTypes);
 
             ILGen ilgen = new ILGen(mb.GetILGenerator());
@@ -187,14 +130,14 @@ namespace Microsoft.Scripting {
             });
 
             // builders array of array
-            ilgen.EmitArray(typeof(DlrMainCallTarget[]), langsWithBuilders.Length, (index) => {
-                List<KeyValuePair<MethodBuilder, ScriptCode>> builders = langsWithBuilders[index].Value;
+            ilgen.EmitArray(typeof(Delegate[]), langsWithBuilders.Length, (index) => {
+                List<CodeInfo> builders = langsWithBuilders[index].Value;
 
-                ilgen.EmitArray(typeof(DlrMainCallTarget), builders.Count, (innerIndex) => {
+                ilgen.EmitArray(typeof(Delegate), builders.Count, (innerIndex) => {
                     ilgen.EmitNull();
-                    ilgen.Emit(OpCodes.Ldftn, builders[innerIndex].Key);
+                    ilgen.Emit(OpCodes.Ldftn, builders[innerIndex].Builder);
                     ilgen.EmitNew(
-                        typeof(DlrMainCallTarget),
+                        builders[innerIndex].DelegateType,
                         new[] { typeof(object), typeof(IntPtr) }
                     );
                 });
@@ -202,19 +145,30 @@ namespace Microsoft.Scripting {
 
             // paths array of array
             ilgen.EmitArray(typeof(string[]), langsWithBuilders.Length, (index) => {
-                List<KeyValuePair<MethodBuilder, ScriptCode>> builders = langsWithBuilders[index].Value;
+                List<CodeInfo> builders = langsWithBuilders[index].Value;
 
                 ilgen.EmitArray(typeof(string), builders.Count, (innerIndex) => {
-                    ilgen.EmitString(builders[innerIndex].Value._sourceUnit.Path);
+                    ilgen.EmitString(builders[innerIndex].Code._sourceUnit.Path);
                 });
             });
 
-            // 4th element in tuple - always null...
-            ilgen.EmitNull();
+            // 4th element in tuple - custom per-language data
+            ilgen.EmitArray(typeof(string[]), langsWithBuilders.Length, (index) => {
+                List<CodeInfo> builders = langsWithBuilders[index].Value;
+
+                ilgen.EmitArray(typeof(string), builders.Count, (innerIndex) => {
+                    ICustomScriptCodeData data = builders[innerIndex].Code as ICustomScriptCodeData;
+                    if (data != null) {
+                        ilgen.EmitString(data.GetCustomScriptCodeData());
+                    } else {
+                        ilgen.Emit(OpCodes.Ldnull);
+                    }
+                });
+            });
 
             ilgen.EmitNew(
-                typeof(Tuple<Type[], DlrMainCallTarget[][], string[][], object>), 
-                new[] { typeof(Type[]), typeof(DlrMainCallTarget[][]), typeof(string[][]), typeof(object) }
+                typeof(MutableTuple<Type[], Delegate[][], string[][], string[][]>),
+                new[] { typeof(Type[]), typeof(Delegate[][]), typeof(string[][]), typeof(string[][]) }
             );
             ilgen.Emit(OpCodes.Ret);
 
@@ -251,7 +205,7 @@ namespace Microsoft.Scripting {
 
             MethodInfo mi = t.GetMethod("GetScriptCodeInfo");
             if (mi.IsSpecialName && mi.IsDefined(typeof(DlrCachedCodeAttribute), false)) {
-                var infos = (Tuple<Type[], DlrMainCallTarget[][], string[][], object>)mi.Invoke(null, ArrayUtils.EmptyObjects);
+                var infos = (MutableTuple<Type[], Delegate[][], string[][], string[][]>)mi.Invoke(null, ArrayUtils.EmptyObjects);
 
                 for (int i = 0; i < infos.Item000.Length; i++) {
                     Type curType = infos.Item000[i];
@@ -259,16 +213,26 @@ namespace Microsoft.Scripting {
 
                     Debug.Assert(infos.Item001[i].Length == infos.Item002[i].Length);
 
-                    DlrMainCallTarget[] methods = infos.Item001[i];
+                    Delegate[] methods = infos.Item001[i];
                     string[] names = infos.Item002[i];
+                    string[] customData = infos.Item003[i];
 
-                    for (int j = 0; j < methods.Length; j++) {                        
-                        codes.Add(lc.LoadCompiledCode(methods[j], names[j]));                        
+                    for (int j = 0; j < methods.Length; j++) {
+                        codes.Add(lc.LoadCompiledCode(methods[j], names[j], customData[j]));
                     }
                 }
             }
 
             return codes.ToArray();
+        }
+
+        protected LambdaExpression RewriteForSave(TypeGen typeGen, LambdaExpression code) {
+            var diskRewriter = new ToDiskRewriter(typeGen);
+            return diskRewriter.RewriteLambda(code);
+        }
+
+        protected virtual KeyValuePair<MethodBuilder, Type> CompileForSave(TypeGen typeGen, Dictionary<SymbolId, FieldBuilder> symbolDict) {
+            throw new NotSupportedException();
         }
 
         [Confined]

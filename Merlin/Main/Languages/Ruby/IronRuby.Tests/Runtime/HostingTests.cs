@@ -25,14 +25,55 @@ using IronRuby.Runtime.Calls;
 
 namespace IronRuby.Tests {
     public partial class Tests {
+        public void RubyHosting_DelegateConversions() {
+            var lambda = Engine.Execute(@"lambda { |a| a + 1 }");
+            var result = Engine.Operations.Invoke(lambda, 5);
+            Assert((int)result == 6);
+
+            var func = Engine.Operations.ConvertTo<Func<int, int>>(lambda);
+            Assert(func(10) == 11);
+
+            var method = Engine.Execute(@"def foo(a,b); a + b; end; method(:foo)");
+            var func2 = Engine.Operations.ConvertTo<Func<int, int, int>>(method);
+            Assert(func2(1, 2) == 3);
+
+            Engine.Runtime.Globals.SetVariable("F1", typeof(Func<int, int>));
+            var func3 = (Func<int, int>)Engine.Execute(@"F1.to_class.new { |a| a + 3 }");
+            Assert(func3(1) == 4);
+
+            var func4 = (Func<int, int>)Engine.Execute(@"F1.to_class.new lambda { |a| a + 4 }");
+            Assert(func4(1) == 5);
+
+            var func5 = (Func<int, int>)Engine.Execute(@"F1.to_class.new(*[lambda { |a| a + 5 }])");
+            Assert(func5(1) == 6);
+
+            AssertExceptionThrown<ArgumentException>(() => Engine.Execute(@"F1.to_class.new(*[])"));
+
+            if (_driver.RunPython) {
+                var py = Runtime.GetEngine("python");
+
+                Engine.Runtime.Globals.SetVariable("F2", typeof(Func<string[], string[], string[]>));
+                var pyAdd = py.Execute(@"
+def py_add(a, b): 
+  return a + b
+py_add
+");
+                Engine.Runtime.Globals.SetVariable("PyAdd", pyAdd);
+                var pyFunc = (Func<string[], string[], string[]>)Engine.Execute(@"F2.to_class.new PyAdd");
+                Assert(String.Join(";", pyFunc(new[] { "x" }, new[] { "y" })) == "x;y");
+            }
+        }
+
         public void RubyHosting1A() {
             ScriptScope scope = Engine.Runtime.CreateScope();
             scope.SetVariable("x", 1);
             scope.SetVariable("y", 2);
 
-            // reads x, y from scope via method_missing;
-            // copies z, w main-singleton methods to the scope:
-            Engine.Execute("def self.z; x + y; end", scope);
+            // Reads x, y from scope via method_missing.
+            // The code is instance-eval'd as a proc against the scope so both instance and 
+            // singleton method definitions define a singleton method on main object.
+            // Method definition on main object bound to a scope copies the method to the scope.
+            Engine.Execute("def z; x + y; end", scope);
             Engine.Execute("def self.w(a); a + 1; end", scope);
 
             int z = scope.GetVariable<Func<int>>("z")();
@@ -44,22 +85,30 @@ namespace IronRuby.Tests {
 
         public void RubyHosting1B() {
             ScriptScope scope = Engine.Runtime.CreateScope();
-            scope.SetVariable("x", 1);
-            scope.SetVariable("y", 2);
+            scope.SetVariable("SomeValue", 1);
+            scope.SetVariable("other_value", 2);
 
+            // Method names are unmangled for scope lookups.
             // "tmp" is defined in the top-level binding, which is associated with the scope:
-            Engine.Execute("tmp = x + y", scope);
+            Engine.Execute("tmp = some_value + other_value", scope);
             
             // "tmp" symbol is extracted from scope's top-level binding and passed to the compiler as a compiler option
             // so that the parser treats it as a local variable.
             string tmpDefined = Engine.Execute<MutableString>("defined?(tmp)", scope).ToString();
             Assert(tmpDefined == "local-variable");
 
+            // The code is eval'd against the existing top-level local scope created by the first execution.
+            // tmp2 local is looked up dynamically:
+            Engine.Execute("tmp2 = 10", scope);
+
             // result= is turned into a scope variable assignment in method_missing:
             Engine.Execute("self.result = tmp", scope);
 
+            // If "scope" variable is not defined on "self" and in the DLR scope we alias it for "self":
+            Engine.Execute("scope.result += tmp2", scope);
+
             int result = scope.GetVariable<int>("result");
-            Assert(result == 3);
+            Assert(result == 13);
 
             // Ruby local variables are not exposed:
             Assert(scope.ContainsVariable("tmp") == false);
@@ -71,6 +120,7 @@ namespace IronRuby.Tests {
                 () => Engine.Execute("class << self; remove_method(:method_missing); end")
             );
             
+
             // Main singleton in a scope-bound code defines method_missing:
             Engine.Execute("class << self; remove_method(:method_missing); end", Engine.CreateScope());
 
@@ -79,6 +129,31 @@ namespace IronRuby.Tests {
             Assert(scope.ContainsVariable("tmp"));
             
             AssertExceptionThrown<MissingMethodException>(() => Engine.Execute("self.tmp = 1"));
+
+
+            // method_missing on top-level scope is defined dynamically, not at compile time:
+            var compiled = Engine.CreateScriptSourceFromString("some_variable").Compile();
+            scope = Engine.CreateScope();
+
+            scope.SetVariable("some_variable", 123);
+            Assert(compiled.Execute<int>(scope) == 123);
+            
+            AssertExceptionThrown<MissingMethodException>(() => compiled.Execute());
+
+            scope.SetVariable("some_variable", "foo");
+            Assert(compiled.Execute<string>(scope) == "foo");
+        }
+
+        public void RubyHosting1D() {
+            // When executed without a scope top-level methods are defined on Object (as in MRI):
+            Engine.Execute("def foo; 1; end");
+            Assert(Context.ObjectClass.GetMethod("foo") != null);
+
+            // When executed against a scope top-level methods are defined on main singleton and also stored in the scope:
+            var scope = Engine.CreateScope();
+            Engine.Execute("def bar; 1; end", scope);
+            Assert(Context.ObjectClass.GetMethod("bar") == null);
+            Assert(scope.GetVariable("bar") != null);
         }
 
         public void RubyHosting2() {
@@ -113,20 +188,6 @@ bar
 
             var module = Runtime.Globals.GetVariable("Fcntl");
             Assert(module is RubyModule && ((RubyModule)module).Name == "Fcntl");
-        }
-
-        public void RubyHosting4() {
-            // TODO: LanguageSetup should have an indexer:
-            //var ruby = Ruby.CreateEngine((setup) => {
-            //    setup["InterpretedMode"] = true;
-            //    setup["SearchPaths"] = "blah";
-            //});
-
-            var ruby = Ruby.CreateEngine((setup) => {
-                setup.InterpretedMode = true;
-            });
-
-            Debug.Assert(ruby.Setup.InterpretedMode == true);
         }
 
         public void Scenario_RubyEngine1() {
@@ -176,7 +237,6 @@ foo
         public void CrossRuntime1() {
             AssertOutput(() => {
                 CompilerTest(@"
-load_assembly 'IronRuby.Libraries', 'IronRuby.StandardLibrary.IronRubyModule'
 engine = IronRuby.create_engine
 puts engine.execute('1+1')
 puts engine.execute('Fixnum')
@@ -207,45 +267,6 @@ class C; include M; end
 "));
         }
 
-        public void Scenario_RubyConsole2() {
-#if OBSOLETE
-            // TODO: interop
-            ScriptScope module = ScriptDomainManager.CurrentManager.CreateModule("Scenario_RubyConsole2");
-            module.SetVariable("a", 0);
-            RB.Execute(module, RB.CreateScriptSourceFromString("10.times { |x| a = a + x + 1}", SourceCodeKind.Statements));
-            object a = module.LookupVariable("a");
-            Assert((int)a == 55);
-
-            module.SetVariable("b", 1);
-            RB.Execute(module, RB.CreateScriptSourceFromString("10.times { |x| b = b + x + 1}", SourceCodeKind.Statements));
-            object b = module.LookupVariable("b");
-            Assert((int)b == 56);
-#endif
-        }
-
-        public void Scenario_RubyConsole3() {
-            // TODO: bug in top-level scope
-
-            //            ScriptModule module = ScriptDomainManager.CurrentManager.CreateModule("Scenario_RubyConsole3");
-            //            RB.Execute(@"
-            //for i in [11] do
-            //    j = 1
-            //end", module);
-            //            object a = module.LookupVariable("j");
-            //            Assert((int)a == 1);
-        }
-
-        public void Scenario_RubyConsole4() {
-
-            //            XAssertOutput(delegate() {
-            //                RB.ExecuteInteractiveCode("x = 1");
-            //                RB.ExecuteInteractiveCode("puts x");
-            //            }, @"
-            //=> 1
-            //=> nil
-            //1");
-        }
-
         public void ObjectOperations1() {
             var cls = Engine.Execute(@"
 class C
@@ -256,13 +277,13 @@ class C
 end
 ");
             var obj = Engine.Operations.CreateInstance(cls) as RubyObject;
-            Debug.Assert(obj != null && obj.Class.Name == "C");
+            Assert(obj != null && obj.ImmediateClass.Name == "C");
 
             obj = Engine.Operations.InvokeMember(cls, "new") as RubyObject;
-            Debug.Assert(obj != null && obj.Class.Name == "C");
+            Assert(obj != null && obj.ImmediateClass.Name == "C");
 
             var foo = Engine.Operations.GetMember(obj, "foo") as RubyMethod;
-            Debug.Assert(foo != null && foo.Name == "foo" && foo.Target == obj);
+            Assert(foo != null && foo.Name == "foo" && foo.Target == obj);
 
             AssertOutput(() => Engine.Operations.Invoke(foo, 1, 2), "[1, 2]");
             AssertOutput(() => Engine.Operations.InvokeMember(obj, "foo", 1, 2), "[1, 2]");
@@ -300,15 +321,16 @@ end
             Engine.Execute(@"
 class C
   def foo
-    puts 'foo'
+    123
   end
 end
 ");
 
-            py.CreateScriptSourceFromString(@"
+            var result = py.Execute<int>(@"
 import C
-C.new().foo()    # TODO: C().foo()
-", SourceCodeKind.Statements).Execute();
+C().foo()
+");
+            Assert(result == 123);
         }
 
         public void PythonInterop2() {
@@ -316,15 +338,86 @@ C.new().foo()    # TODO: C().foo()
 
             var py = Runtime.GetEngine("python");
 
-            py.CreateScriptSourceFromString(@"
+            py.Execute(@"
 class C(object):
-  def foo(self):
-    print 'foo'
-", SourceCodeKind.Statements).Execute(Runtime.Globals);
+  def foo(self, a, b):
+    return a + b
+", Runtime.Globals);
+
+            Assert(Engine.Execute<int>("C.new.foo(3,4)") == 7);
+        }
+
+        public void PythonInterop3() {
+            if (!_driver.RunPython) return;
+
+            var py = Runtime.GetEngine("python");
+
+            var scope = py.CreateScope();
+            py.Execute(@"
+def python():
+  return 'Python'
+", scope);
 
             Engine.Execute(@"
-p C             #TODO: C.new
+def self.ruby
+  python.call + ' + Ruby'
+end
+", scope);
+
+            AssertOutput(() => py.Execute(@"
+print ruby()
+", scope), @"
+Python + Ruby
 ");
+        }
+
+        public void PythonInterop4() {
+            if (!_driver.RunPython) return;
+
+            var py = Runtime.GetEngine("python");
+
+            var scope = py.CreateScope();
+            py.Execute(@"
+def get_python_class():
+  class C(object): 
+    x = 123  
+    def __str__(self):
+      return 'this is C'
+    
+
+  return C()
+", scope);
+
+            Engine.Execute(@"self.c = get_python_class.call", scope);
+
+            var s = Engine.Execute<MutableString>(@"c.to_str", scope);
+            Assert(s.ToString() == @"this is C");
+
+            var i = Engine.Execute<int>(@"c.x", scope);
+            Assert(i == 123);
+
+            // TODO: test
+            // c.y, where y is a delegate
+            // c.p, where p is a Ruby Proc
+        }
+
+        public void PythonInterop5() {
+            if (!_driver.RunPython) return;
+
+            var py = Runtime.GetEngine("python");
+
+            var scope = py.CreateScope();
+            py.Execute(@"
+from System.Collections import ArrayList
+class A(ArrayList):
+  def Count(self): return 123
+", scope);
+
+            Assert(Engine.Execute<int>(@"
+a = A().new
+a.Count
+", scope) == 123);
+            
         }
 
         public void CustomTypeDescriptor1() {
@@ -353,9 +446,9 @@ class C
 end
 ");
             var obj = Engine.Operations.CreateInstance(cls);
-            Debug.Assert(obj != null);
+            Assert(obj != null);
             var ictd = Engine.Operations.CreateInstance(cls) as ICustomTypeDescriptor;
-            Debug.Assert(ictd != null);
+            Assert(ictd != null);
             Assert(ictd.GetClassName() == "C");
             var props = ictd.GetProperties();
             Assert(props.Count == 2);
@@ -374,9 +467,9 @@ class D < C
 end
 ");
             var obj = Engine.Operations.CreateInstance(cls);
-            Debug.Assert(obj != null);
+            Assert(obj != null);
             var ictd = Engine.Operations.CreateInstance(cls) as ICustomTypeDescriptor;
-            Debug.Assert(ictd != null);
+            Assert(ictd != null);
             Assert(ictd.GetClassName() == "D");
             var props = ictd.GetProperties();
             Assert(props.Count == 1);

@@ -91,6 +91,11 @@ namespace IronRuby.Tests {
             }
         }
 
+        public void UsingEval(Action<bool>/*!*/ test) {
+            test(true);
+            test(false);
+        }
+
         public void LoadTestLibrary() {
             Context.ObjectClass.SetConstant("TestHelpers", Context.GetClass(typeof(TestHelpers)));
         }
@@ -113,7 +118,7 @@ namespace IronRuby.Tests {
 
             string name = _driver.TestRuntime.TestName;
 
-            if (_driver.IsDebug) {
+            if (_driver.SaveToAssemblies) {
                 string path = Path.Combine(Snippets.Shared.SnippetsDirectory, name + ".rb");
                 Directory.CreateDirectory(Snippets.Shared.SnippetsDirectory);
                 File.WriteAllText(path, code);
@@ -122,7 +127,7 @@ namespace IronRuby.Tests {
                 source = _driver.TestRuntime.Context.CreateSnippet(code, name + ".rb", SourceCodeKind.File);
             }
 
-            ScriptCode compiledCode = source.Compile(new RubyCompilerOptions(), sink);
+            ScriptCode compiledCode = source.Compile(new RubyCompilerOptions(Context.RubyOptions), sink);
             if (compiledCode != null) {
                 compiledCode.Run(new Scope());
             }
@@ -188,15 +193,35 @@ namespace IronRuby.Tests {
 
         [DebuggerHiddenAttribute]
         private void XAssertOutput(Action f, string expectedOutput) {
-            Console.WriteLine("Assertion check skipped.");
+            Driver.ColorWrite(ConsoleColor.Yellow, "Assertion check skipped.");
             // just run the code
             f();
         }
 
         private void XAssertOutput(Action f, string expectedOutput, OutputFlags flags) {
-            Console.WriteLine("Assertion check skipped.");
+            Driver.ColorWrite(ConsoleColor.Yellow, "Assertion check skipped.");
             // just run the code
             f();
+        }
+
+        [DebuggerHiddenAttribute]
+        private void TestOutput(string code, string expectedOutput) {
+            AssertOutput(() => CompilerTest(code), expectedOutput);
+        }
+
+        [DebuggerHiddenAttribute]
+        private void XTestOutput(string code, string expectedOutput) {
+            XAssertOutput(() => CompilerTest(code), expectedOutput);
+        }
+
+        [DebuggerHiddenAttribute]
+        private void TestOutputWithEval(string code, string expectedOutput) {
+            UsingEval((eval) => AssertOutput(() => CompilerTest(Eval(eval, code)), expectedOutput));
+        }
+
+        [DebuggerHiddenAttribute]
+        private void XTestOutputWithEval(string code, string expectedOutput) {
+            UsingEval((eval) => XAssertOutput(() => CompilerTest(Eval(eval, code)), expectedOutput));
         }
 
         [DebuggerHiddenAttribute]
@@ -304,6 +329,7 @@ namespace IronRuby.Tests {
         [DebuggerHiddenAttribute]
         internal void Assert(bool condition, string msg) {
             if (!condition) {
+                AssertBreak();
                 _driver.AssertionFailed(msg);
             }
         }
@@ -312,5 +338,37 @@ namespace IronRuby.Tests {
         internal void Assert(bool condition) {
             Assert(condition, "Assertion failed");
         }
+
+        internal void AssertBreak() {
+            if (Debugger.IsAttached) {
+                Debugger.Break();
+            }
+        }
+
+        #region Bugs
+        
+        // Helpers for tests which are currently failing. Using these helpers will ensure that when the bug is fixed, 
+        // you are forced to update the test case. In the meantime, it makes sure that the test can atleast be executed
+        // and documents the incorrect result
+
+        [DebuggerHiddenAttribute]
+        internal void AreEqualBug(object x, object y, object buggyResult) {
+            // Once the bug is fixed, the result should be "y".
+            AreEqual(x, buggyResult);
+        }
+
+        [DebuggerHiddenAttribute]
+        internal void AreEqualBug<T>(Action f, object y) where T : Exception {
+            // Once the bug is fixed, the result should be "y" and no exception should be thrown
+            AssertExceptionThrown<T>(f);
+        }
+
+        [DebuggerHiddenAttribute]
+        internal void AssertExceptionThrownBug<T>(Action f, object buggyResult) where T : Exception {
+            // f should throw an exception once the bug is fixed
+            f();
+        }
+
+        #endregion
     }
 }

@@ -35,7 +35,7 @@ namespace IronPython {
 
         private readonly ReadOnlyCollection<string>/*!*/ _arguments;
         private readonly ReadOnlyCollection<string>/*!*/ _warningFilters;
-        private readonly bool _warnPy3k;
+        private readonly bool _warnPy3k, _python30;
         private readonly bool _bytesWarning;
         private readonly bool _debug;
         private readonly int _recursionLimit;
@@ -48,8 +48,14 @@ namespace IronPython {
         private readonly bool _noSite;
         private readonly bool _ignoreEnvironment;
         private readonly bool _verbose;
+        private readonly bool _frames, _fullFrames;
         private readonly Version _version;
+        private bool _enableProfiler;
+        private readonly bool _lightweightScopes;
 
+        /// <summary>
+        /// Gets the collection of command line arguments.
+        /// </summary>
         public ReadOnlyCollection<string>/*!*/ Arguments {
             get { return _arguments; }
         }
@@ -75,44 +81,103 @@ namespace IronPython {
             get { return _warningFilters; }
         }
 
-        public bool WarnPy3k {
+        /// <summary>
+        /// Enables warnings related to Python 3.0 features.
+        /// </summary>
+        public bool WarnPython30 {
             get { return _warnPy3k; }
+        }
+
+        /// <summary>
+        /// Enables 3.0 features that are implemented in IronPython.
+        /// </summary>
+        public bool Python30 {
+            get {
+                return _python30;
+            }
         }
 
         public bool BytesWarning {
             get { return _bytesWarning; }
         }
 
+        /// <summary>
+        /// Enables debugging support.  When enabled a .NET debugger can be attached
+        /// to the process to step through Python code.
+        /// </summary>
         public bool Debug {
             get { return _debug; }
         }
 
+        /// <summary>
+        /// Enables inspect mode.  After running the main module the REPL will be started
+        /// within that modules context.
+        /// </summary>
         public bool Inspect {
             get { return _inspect; }
         }
 
+        /// <summary>
+        /// Suppresses addition of the user site directory.  This is ignored by IronPython
+        /// except for updating sys.flags.
+        /// </summary>
         public bool NoUserSite {
             get { return _noUserSite; }
         }
 
+        /// <summary>
+        /// Disables import site on startup.
+        /// </summary>
         public bool NoSite {
             get { return _noSite; }
         }
 
+        /// <summary>
+        /// Ignore environment variables that configure the IronPython context.
+        /// </summary>
         public bool IgnoreEnvironment {
             get { return _ignoreEnvironment; }
         }
 
+        /// <summary>
+        /// Enables the verbose option which traces import statements.  This is ignored by IronPython
+        /// except for setting sys.flags.
+        /// </summary>
         public bool Verbose {
             get { return _verbose; }
         }
 
+        /// <summary>
+        /// Sets the maximum recursion depth.  Setting to Int32.MaxValue will disable recursion
+        /// enforcement.
+        /// </summary>
         public int RecursionLimit {
             get { return _recursionLimit; }
         }
 
+        /// <summary>
+        /// Makes available sys._getframe.  Local variables will not be available in frames unless the
+        /// function calls locals(), dir(), vars(), etc...  For ensuring locals are always available use
+        /// the FullFrames option.
+        /// </summary>
+        public bool Frames {
+            get {
+                return _frames;
+            }
+        }
+
+        /// <summary>
+        /// Makes available sys._getframe.  All locals variables will live on the heap (for a considerable
+        /// performance cost) enabling introspection of all code.
+        /// </summary>
+        public bool FullFrames {
+            get {
+                return _fullFrames;
+            }
+        }
+
         /// <summary> 
-        /// Severity of a findong that indentation is formatted inconsistently.
+        /// Severity of a warning that indentation is formatted inconsistently.
         /// </summary>
         public Severity IndentationInconsistencySeverity {
             get { return _indentationInconsistencySeverity; }
@@ -125,10 +190,31 @@ namespace IronPython {
             get { return _division; }
         }
 
+        /// <summary>
+        /// Forces all code to be compiled in a mode in which the code can be reliably collected by the CLR.
+        /// </summary>
+        public bool LightweightScopes {
+            get {
+                return _lightweightScopes;
+            }
+        }
+
+        /// <summary>
+        /// Enable profiling code
+        /// </summary>
+        public bool EnableProfiler {
+            get { return _enableProfiler; }
+            set { _enableProfiler = value; }
+        }
+
         public PythonOptions() 
             : this(null) {
         }
 
+        /// <summary>
+        /// Gets the CPython version which IronPython will emulate.  Currently limited
+        /// to either 2.6 or 3.0.
+        /// </summary>
         public Version PythonVersion {
             get {
                 return _version;
@@ -154,9 +240,12 @@ namespace IronPython {
             _division = GetOption(options, "DivisionOptions", PythonDivisionOptions.Old);
             _recursionLimit = GetOption(options, "RecursionLimit", Int32.MaxValue);
             _indentationInconsistencySeverity = GetOption(options, "IndentationInconsistencySeverity", Severity.Ignore);
-            object value;
+            _enableProfiler = GetOption(options, "EnableProfiler", false);
+            _lightweightScopes = GetOption(options, "LightweightScopes", false);
+            _fullFrames = GetOption(options, "FullFrames", false);
+            _frames = _fullFrames || GetOption(options, "Frames", false);
 
-            
+            object value;
             if (options != null && options.TryGetValue("PythonVersion", out value)) {
                 if (value is Version) {
                     _version = (Version)value;
@@ -166,12 +255,14 @@ namespace IronPython {
                     throw new ArgumentException("Expected string or Version for PythonVersion");
                 }
 
-                if (_version != new Version(2, 5) && _version != new Version(2, 6)) {
-                    throw new ArgumentException("Expected Version to be 2.5 or 2.6");
+                if (_version != new Version(2, 6) && _version != new Version(3, 0)) {
+                    throw new ArgumentException("Expected Version to be 2.6 or 3.0");
                 }
             } else {
-                _version = new Version(2, 5);
+                _version = new Version(2, 6);
             }
+
+            _python30 = _version == new Version(3, 0);
         }
     }
 }

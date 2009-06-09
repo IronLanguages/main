@@ -15,6 +15,7 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Dynamic.Utils;
 using System.Reflection;
 
@@ -22,6 +23,9 @@ namespace System.Linq.Expressions {
     /// <summary>
     /// Represents a control expression that handles multiple selections by passing control to a <see cref="SwitchCase"/>.
     /// </summary>
+#if !SILVERLIGHT
+    [DebuggerTypeProxy(typeof(Expression.SwitchExpressionProxy))]
+#endif
     public sealed class SwitchExpression : Expression {
         private readonly Type _type;
         private readonly Expression _switchValue;
@@ -41,8 +45,8 @@ namespace System.Linq.Expressions {
         /// Gets the static type of the expression that this <see cref="Expression" /> represents.
         /// </summary>
         /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
-        protected override Type TypeImpl() {
-            return _type;
+        public sealed override Type Type {
+            get { return _type; }
         }
 
         /// <summary>
@@ -50,8 +54,8 @@ namespace System.Linq.Expressions {
         /// ExpressionType.Extension when overriding this method.
         /// </summary>
         /// <returns>The <see cref="ExpressionType"/> of the expression.</returns>
-        protected override ExpressionType NodeTypeImpl() {
-            return ExpressionType.Switch;
+        public sealed override ExpressionType NodeType {
+            get { return ExpressionType.Switch; }
         }
 
         /// <summary>
@@ -84,6 +88,16 @@ namespace System.Linq.Expressions {
 
         internal override Expression Accept(ExpressionVisitor visitor) {
             return visitor.VisitSwitch(this);
+        }
+
+        internal bool IsLifted {
+            get {
+                if (_switchValue.Type.IsNullableType()) {
+                    return (_comparison == null) ||
+                        !TypeUtils.AreEquivalent(_switchValue.Type, _comparison.GetParametersCached()[0].ParameterType.GetNonRefType());
+                }
+                return false;
+            }
         }
     }
 
@@ -163,47 +177,100 @@ namespace System.Linq.Expressions {
             ContractUtils.RequiresNotEmpty(caseList, "cases");
             ContractUtils.RequiresNotNullItems(caseList, "cases");
 
-            Type switchType = caseList[0].Body.Type;
-            Type testValueType = caseList[0].TestValues[0].Type;
+            // Type of the result. Either provided, or it is type of the branches.
+            Type resultType = type ?? caseList[0].Body.Type;
+            bool customType = type != null;
 
-            foreach (var c in caseList) {
-                ContractUtils.RequiresNotNull(c, "cases");
-                if (type != null) {
-                    ContractUtils.Requires(TypeUtils.AreReferenceAssignable(type, c.Body.Type), "cases", Strings.ArgumentTypesMustMatch);
-                } else {
-                    ContractUtils.Requires(switchType == c.Body.Type, "cases", Strings.AllCaseBodiesMustHaveSameType);
+            if (comparison != null) {
+                var pms = comparison.GetParametersCached();
+                if (pms.Length != 2) {
+                    throw Error.IncorrectNumberOfMethodCallArguments(comparison);
                 }
-                ContractUtils.Requires(testValueType == c.TestValues[0].Type, "cases", Strings.AllTestValuesMustHaveSameType);
+                // Validate that the switch value's type matches the comparison method's 
+                // left hand side parameter type.
+                var leftParam = pms[0];
+                bool liftedCall = false;
+                if (!ParameterIsAssignable(leftParam, switchValue.Type)) {
+                    liftedCall = ParameterIsAssignable(leftParam, switchValue.Type.GetNonNullableType());
+                    if (!liftedCall) {
+                        throw Error.SwitchValueTypeDoesNotMatchComparisonMethodParameter(switchValue.Type, leftParam.ParameterType);
+                    }
+                }
+
+                var rightParam = pms[1];
+                foreach (var c in caseList) {
+                    ContractUtils.RequiresNotNull(c, "cases");
+                    ValidateSwitchCaseType(c.Body, customType, resultType, "cases");
+                    for (int i = 0; i < c.TestValues.Count; i++) {
+                        // When a comparison method is provided, test values can have different type but have to
+                        // be reference assignable to the right hand side parameter of the method.
+                        Type rightOperandType = c.TestValues[i].Type;
+                        if (liftedCall) {
+                            if (!rightOperandType.IsNullableType()) {
+                                throw Error.TestValueTypeDoesNotMatchComparisonMethodParameter(rightOperandType, rightParam.ParameterType);
+                            }
+                            rightOperandType = rightOperandType.GetNonNullableType();
+                        }
+                        if (!ParameterIsAssignable(rightParam, rightOperandType)) {
+                            throw Error.TestValueTypeDoesNotMatchComparisonMethodParameter(rightOperandType, rightParam.ParameterType);
+                        }
+                    }
+                }
+            } else {
+                // When comparison method is not present, all the test values must have
+                // the same type. Use the first test value's type as the baseline.
+                var firstTestValue = caseList[0].TestValues[0];
+                foreach (var c in caseList) {
+                    ContractUtils.RequiresNotNull(c, "cases");
+                    ValidateSwitchCaseType(c.Body, customType, resultType, "cases");
+                    // When no comparison method is provided, require all test values to have the same type.
+                    for (int i = 0; i < c.TestValues.Count; i++) {
+                        if (!TypeUtils.AreEquivalent(firstTestValue.Type, c.TestValues[i].Type)) {
+                            throw new ArgumentException(Strings.AllTestValuesMustHaveSameType, "cases");
+                        }
+                    }
+                }
+
+                // Now we need to validate that switchValue.Type and testValueType
+                // make sense in an Equal node. Fortunately, Equal throws a
+                // reasonable error, so just call it.
+                var equal = Equal(switchValue, firstTestValue, false, comparison);
+
+                // Get the comparison function from equals node.
+                comparison = equal.Method;
             }
 
             if (defaultBody == null) {
-                if (type != null) {
-                    ContractUtils.Requires(type == typeof(void), "defaultBody", Strings.DefaultBodyMustBeSupplied);
-                } else {
-                    ContractUtils.Requires(switchType == typeof(void), "defaultBody", Strings.DefaultBodyMustBeSupplied);
-                }
+                ContractUtils.Requires(resultType == typeof(void), "defaultBody", Strings.DefaultBodyMustBeSupplied);
             } else {
-                if (type != null) {
-                    ContractUtils.Requires(TypeUtils.AreReferenceAssignable(type, defaultBody.Type), "cases", Strings.ArgumentTypesMustMatch);
-                } else {
-                    ContractUtils.Requires(switchType == defaultBody.Type, "cases", Strings.AllCaseBodiesMustHaveSameType);
-                }
+                ValidateSwitchCaseType(defaultBody, customType, resultType, "defaultBody");
             }
 
-            // Now we need to validate that switchValue.Type and testValueType
-            // make sense in an Equal node. Fortunately, Equal throws a
-            // reasonable error, so just call it.
-            var equal = Equal(switchValue, caseList[0].TestValues[0], false, comparison);
-
-            // Get the comparison function from equals node.
-            comparison = equal.Method;
-
-            // if we found a non-boolean userdefined equals, we don't want it.
+            // if we have a non-boolean userdefined equals, we don't want it.
             if (comparison != null && comparison.ReturnType != typeof(bool)) {
                 throw Error.EqualityMustReturnBoolean(comparison);
             }
 
-            return new SwitchExpression(type ?? switchType, switchValue, defaultBody, comparison, caseList);
+            return new SwitchExpression(resultType, switchValue, defaultBody, comparison, caseList);
+        }
+
+
+        /// <summary>
+        /// If custom type is provided, all branches must be reference assignable to the result type.
+        /// If no custom type is provided, all branches must have the same type - resultType.
+        /// </summary>
+        private static void ValidateSwitchCaseType(Expression @case, bool customType, Type resultType, string parameterName) {
+            if (customType) {
+                if (resultType != typeof(void)) {
+                    if (!TypeUtils.AreReferenceAssignable(resultType, @case.Type)) {
+                        throw new ArgumentException(Strings.ArgumentTypesMustMatch, parameterName);
+                    }
+                }
+            } else {
+                if (!TypeUtils.AreEquivalent(resultType, @case.Type)) {
+                    throw new ArgumentException(Strings.AllCaseBodiesMustHaveSameType, parameterName);
+                }
+            }
         }
     }
 }

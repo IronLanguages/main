@@ -15,14 +15,17 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Dynamic.Utils;
-using System.Text;
 using System.Runtime.CompilerServices;
 
 namespace System.Linq.Expressions {
     /// <summary>
     /// Represents calling a constructor and initializing one or more members of the new object.
     /// </summary>
+#if !SILVERLIGHT
+    [DebuggerTypeProxy(typeof(Expression.MemberInitExpressionProxy))]
+#endif
     public sealed class MemberInitExpression : Expression {
         private readonly NewExpression _newExpression;
         private readonly ReadOnlyCollection<MemberBinding> _bindings;
@@ -36,8 +39,8 @@ namespace System.Linq.Expressions {
         /// Gets the static type of the expression that this <see cref="Expression" /> represents.
         /// </summary>
         /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
-        protected override Type TypeImpl() {
-            return _newExpression.Type;
+        public sealed override Type Type {
+            get { return _newExpression.Type; }
         }
 
         /// <summary>
@@ -54,8 +57,8 @@ namespace System.Linq.Expressions {
         /// ExpressionType.Extension when overriding this method.
         /// </summary>
         /// <returns>The <see cref="ExpressionType"/> of the expression.</returns>
-        protected override ExpressionType NodeTypeImpl() {
-            return ExpressionType.MemberInit;
+        public sealed override ExpressionType NodeType {
+            get { return ExpressionType.MemberInit; }
         }
 
         ///<summary>Gets the expression that represents the constructor call.</summary>

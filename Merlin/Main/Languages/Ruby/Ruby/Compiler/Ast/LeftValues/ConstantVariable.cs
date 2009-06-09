@@ -17,6 +17,7 @@ using System.Diagnostics;
 using System.Dynamic;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Utils;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Compiler.Ast {
     using MSA = System.Linq.Expressions;
@@ -80,12 +81,8 @@ namespace IronRuby.Compiler.Ast {
                 // ::Foo
                 transformedQualifier = null;
                 return StaticScopeKind.Global;
-            } else if (gen.CurrentModule != null) {
-                // statically (lexically) implicitly bound to the enclosing module:
-                transformedQualifier = gen.CurrentModule.SelfVariable; // TODO: remove, should be retrieved from code context/scope
-                return StaticScopeKind.EnclosingModule;
             } else {
-                // statically (lexically) implicitly bound to top declaring module:
+                // bound to the enclosing module:
                 transformedQualifier = null;
                 return StaticScopeKind.EnclosingModule;
             }
@@ -117,7 +114,7 @@ namespace IronRuby.Compiler.Ast {
                     } else {
                         return gen.TryCatchAny(
                             Methods.IsDefinedQualifiedConstant.OpCall(AstFactory.Box(transformedQualifier), gen.CurrentScopeVariable, transformedName), 
-                            Ast.Constant(false)
+                            AstUtils.Constant(false)
                         );
                     }
             }

@@ -15,6 +15,7 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Dynamic.Utils;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -24,6 +25,9 @@ namespace System.Linq.Expressions {
     /// <summary>
     /// Represents a constructor call.
     /// </summary>
+#if !SILVERLIGHT
+    [DebuggerTypeProxy(typeof(Expression.NewExpressionProxy))]
+#endif
     public class NewExpression : Expression, IArgumentProvider {
         private readonly ConstructorInfo _constructor;
         private IList<Expression> _arguments;
@@ -39,16 +43,16 @@ namespace System.Linq.Expressions {
         /// Gets the static type of the expression that this <see cref="Expression" /> represents. (Inherited from <see cref="Expression"/>.)
         /// </summary>
         /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
-        protected override Type TypeImpl() {
-            return _constructor.DeclaringType;
+        public override Type Type {
+            get { return _constructor.DeclaringType; }
         }
 
         /// <summary>
         /// Returns the node type of this <see cref="Expression" />. (Inherited from <see cref="Expression" />.)
         /// </summary>
         /// <returns>The <see cref="ExpressionType"/> that represents this expression.</returns>
-        protected override ExpressionType NodeTypeImpl() {
-            return ExpressionType.New;
+        public sealed override ExpressionType NodeType {
+            get { return ExpressionType.New; }
         }
 
         /// <summary>
@@ -95,8 +99,8 @@ namespace System.Linq.Expressions {
             _valueType = type;
         }
 
-        protected override Type TypeImpl() {
-            return _valueType;
+        public sealed override Type Type {
+            get { return _valueType; }
         }
     }
 
@@ -208,7 +212,7 @@ namespace System.Linq.Expressions {
                     RequiresCanRead(arg, "argument");
                     MemberInfo member = members[i];
                     ContractUtils.RequiresNotNull(member, "member");
-                    if (member.DeclaringType != constructor.DeclaringType) {
+                    if (!TypeUtils.AreEquivalent(member.DeclaringType, constructor.DeclaringType)) {
                         throw Error.ArgumentMemberNotDeclOnType(member.Name, constructor.DeclaringType.Name);
                     }
                     Type memberType;

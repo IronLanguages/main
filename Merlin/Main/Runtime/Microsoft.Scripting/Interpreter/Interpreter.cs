@@ -17,8 +17,11 @@ using System;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
+using System.Diagnostics;
 
 namespace Microsoft.Scripting.Interpreter {
     /**
@@ -30,110 +33,128 @@ namespace Microsoft.Scripting.Interpreter {
      * 
      * The core loop in the interpreter is the RunInstructions method.
      */
-    internal class Interpreter {
-        private int _numberOfLocals, _maxStackDepth;
-        private bool[] _localIsBoxed;
-        private Instruction[] _instructions;
-        private LambdaExpression _lambda;
-        private ExceptionHandler[] _handlers;
-        private DebugInfo[] _debugInfos;
-        private bool _onlyFaultHandlers;
-
-        private bool AnyBoxedLocals(bool[] localIsBoxed) {
-            for (int i=0; i < localIsBoxed.Length; i++) {
-                if (localIsBoxed[i]) return true;
-            }
-            return false;
-        }
+    internal sealed class Interpreter {
+        internal readonly int _numberOfLocals;
+        internal readonly int _maxStackDepth;
+        internal readonly bool[] _localIsBoxed;
+        private readonly Instruction[] _instructions;
+        internal readonly LambdaExpression _lambda;
+        private readonly ExceptionHandler[] _handlers;
+        internal readonly DebugInfo[] _debugInfos;
+        private readonly bool _onlyFaultHandlers;
 
         internal Interpreter(LambdaExpression lambda, bool[] localIsBoxed, int maxStackDepth, 
-                           Instruction[] instructions, 
-                           ExceptionHandler[] handlers, DebugInfo[] debugInfos) {
-            this._lambda = lambda;
-            this._numberOfLocals = localIsBoxed.Length;
-            if (AnyBoxedLocals(localIsBoxed)) {
+            Instruction[] instructions, ExceptionHandler[] handlers, DebugInfo[] debugInfos) {
+
+            _lambda = lambda;
+            _numberOfLocals = localIsBoxed.Length;
+            if (Array.IndexOf(localIsBoxed, true) != -1) {
                 _localIsBoxed = localIsBoxed;
             } else {
                 _localIsBoxed = null;
             }
                 
-            this._maxStackDepth = maxStackDepth;
-            this._instructions = instructions;
-            this._handlers = handlers;
-            this._debugInfos = debugInfos;
+            _maxStackDepth = maxStackDepth;
+            _instructions = instructions;
+            _handlers = handlers;
+            _debugInfos = debugInfos;
 
             _onlyFaultHandlers = true;
             foreach (var handler in handlers) {
-                if (!handler.IsFault) {
+                if (!handler.IsFinallyOrFault) {
                     _onlyFaultHandlers = false;
                     break;
                 }
             }
         }
 
-        internal StackFrame MakeFrame() {
-            return MakeFrame(LightLambda.EmptyClosure);
-        }
-
-        internal StackFrame MakeFrame(StrongBox<object>[] closure) {
-            var ret = new StackFrame(_numberOfLocals, _maxStackDepth);
-            ret.Closure = closure;
-            
-            return ret;
-        }
-
-        private void BoxLocals(StackFrame frame) {
-            if (_localIsBoxed != null) {
-                for (int i = 0; i < _localIsBoxed.Length; i++) {
-                    if (_localIsBoxed[i]) {
-                        frame.Data[i] = new StrongBox<object>(frame.Data[i]);
-                    }
-                }
-            }
-        }
-
-        private static MethodInfo _runMethod = typeof(Interpreter).GetMethod("Run");
-        public object Run(StackFrame frame) {
-            BoxLocals(frame);
+        public object Run(InterpretedFrame frame) {
             if (_onlyFaultHandlers) {
                 bool fault = true;
                 try {
-                    RunInstructions(_instructions, frame);
+                    RunInstructions(frame);
                     fault = false;
                     return frame.Pop();
                 } finally {
                     if (fault) {
+                        frame.FaultingInstruction = frame.InstructionIndex;
                         HandleFault(frame);
                     }
                 }
             } else {
                 while (true) {
                     try {
-                        RunInstructions(_instructions, frame);
+                        RunInstructions(frame);
                         return frame.Pop();
                     } catch (Exception exc) {
-                        ExceptionHelpers.AssociateDynamicStackFrames(exc);
-                        if (!HandleCatch(frame, exc)) {
-                            ExceptionHelpers.UpdateForRethrow(exc);
+                        frame.FaultingInstruction = frame.InstructionIndex;
+                        ExceptionHandler handler = HandleCatch(frame, exc);
+
+                        if (handler == null) {
                             throw;
-                        } else if (exc is System.Threading.ThreadAbortException) {
-                            // we can't exit the catch block here or the CLR will forcibly rethrow
-                            // the exception on us.
-                            Run(frame);
                         }
+
+                        // stay in the current catch so that ThreadAbortException is not rethrown by CLR:
+                        var abort = exc as ThreadAbortException;
+                        if (abort != null) {
+                            _anyAbortException = abort;
+                            frame.CurrentAbortHandler = handler;
+                            return Run(frame);
+                        } 
                     }
                 }
             }
         }
 
-        private void UpdateStackTrace(StackFrame frame) {
-            DebugInfo info = DebugInfo.GetMatchingDebugInfo(_debugInfos, frame.InstructionIndex);
-            if (info != null && !info.IsClear) {
-                ExceptionHelpers.UpdateStackTrace(null, _runMethod, _lambda.Name, info.FileName, info.StartLine);
+        internal void RunBlock(InterpretedFrame frame, int endIndex) {
+            while (true) {
+                try {
+                    RunInstructions(frame, endIndex);
+                    return;
+                } catch (Exception exc) {
+                    endIndex = _instructions.Length;
+                    frame.FaultingInstruction = frame.InstructionIndex;
+
+                    ExceptionHandler handler = HandleCatch(frame, exc);
+                    if (handler == null) {
+                        throw;
+                    }
+
+                    // stay in the current catch so that ThreadAbortException is not rethrown by CLR:
+                    var abort = exc as ThreadAbortException;
+                    if (abort != null) {
+                        _anyAbortException = abort;
+                        frame.CurrentAbortHandler = handler;
+                        RunBlock(frame, endIndex);
+                        return;
+                    } 
+                }
             }
         }
 
-        private ExceptionHandler GetBestHandler(StackFrame frame, Type exceptionType) {
+        // To get to the current AbortReason object on Thread.CurrentThread 
+        // we need to use ExceptionState property of any ThreadAbortException instance.
+        private static ThreadAbortException _anyAbortException;
+
+        internal static void AbortThreadIfRequested(InterpretedFrame frame, int targetOffset) {
+            var abortHandler = frame.CurrentAbortHandler;
+            if (abortHandler != null && !abortHandler.IsInside(frame.InstructionIndex + targetOffset)) {
+                frame.CurrentAbortHandler = null;
+
+                var currentThread = Thread.CurrentThread;
+                if ((currentThread.ThreadState & System.Threading.ThreadState.AbortRequested) != 0) {
+                    Debug.Assert(_anyAbortException != null);
+                    // The current abort reason needs to be preserved.
+#if SILVERLIGHT
+                    currentThread.Abort();
+#else
+                    currentThread.Abort(_anyAbortException.ExceptionState);
+#endif
+                }
+            }
+        }
+
+        private ExceptionHandler GetBestHandler(InterpretedFrame frame, Type exceptionType) {
             ExceptionHandler best = null;
             foreach (var handler in _handlers) {
                 if (handler.Matches(exceptionType, frame.InstructionIndex)) {
@@ -145,70 +166,59 @@ namespace Microsoft.Scripting.Interpreter {
             return best;
         }
 
-        private bool HandleCatch(StackFrame frame, Exception exception) {
-            UpdateStackTrace(frame);
-
+        private ExceptionHandler HandleCatch(InterpretedFrame frame, Exception exception) {
             Type exceptionType = exception.GetType();
             var handler = GetBestHandler(frame, exceptionType);
-            if (handler == null) return false;
+            if (handler == null) {
+                return null;
+            }
 
-            frame.StackIndex = _numberOfLocals;
-            if (handler.IsFault) {
-                frame.InstructionIndex = handler.JumpToIndex;
+            frame.StackIndex = _numberOfLocals + handler.HandlerStackDepth;
+            if (handler.IsFinallyOrFault) {
+                frame.InstructionIndex = handler.StartHandlerIndex;
 
-                //var savedFrames = ExceptionHelpers.DynamicStackFrames;
-                //ExceptionHelpers.DynamicStackFrames = null;
-
-                RunFaultHandlerWithCatch(frame, handler.EndHandlerIndex);
+                RunBlock(frame, handler.EndHandlerIndex);
                 if (frame.InstructionIndex == handler.EndHandlerIndex) {
-                    //ExceptionHelpers.DynamicStackFrames = savedFrames;
                     frame.InstructionIndex -= 1; // push back into the right range
 
                     return HandleCatch(frame, exception);
                 } else {
-                    return true;
+                    return handler;
                 }
             } else {
                 if (handler.PushException) {
                     frame.Push(exception);
                 }
-                frame.InstructionIndex = handler.JumpToIndex;
-                return true;
+
+                frame.InstructionIndex = handler.StartHandlerIndex;
+                return handler;
             }
         }
 
-        private void RunFaultHandlerWithCatch(StackFrame frame, int endIndex) {
-            while (true) {
-                try {
-                    RunInstructions(_instructions, frame, endIndex);
-                    return;
-                } catch (Exception exc) {
-                    ExceptionHelpers.AssociateDynamicStackFrames(exc);
-                    if (!HandleCatch(frame, exc)) {
-                        ExceptionHelpers.UpdateForRethrow(exc);
-                        throw;
-                    }
-                }
-            }
-        }
-
-        private void HandleFault(StackFrame frame) {
-            UpdateStackTrace(frame);
-
+        private void HandleFault(InterpretedFrame frame) {
             var handler = GetBestHandler(frame, null);
             if (handler == null) return;
-            frame.StackIndex = _numberOfLocals;
+            frame.StackIndex = _numberOfLocals + handler.HandlerStackDepth;
+            bool wasFault = true;
             try {
-                frame.InstructionIndex = handler.JumpToIndex;
-                RunInstructions(_instructions, frame, handler.EndHandlerIndex);
+                frame.InstructionIndex = handler.StartHandlerIndex;
+                RunInstructions(frame, handler.EndHandlerIndex);
+                wasFault = false;
             } finally {
+                if (wasFault) {
+                    frame.FaultingInstruction = frame.InstructionIndex;
+                }
+
                 // This assumes that finally faults are propogated always
-                frame.InstructionIndex = handler.EndHandlerIndex;
+                //
+                // Go back one so we are scoped correctly
+                frame.InstructionIndex = handler.EndHandlerIndex - 1;
                 HandleFault(frame);
             }
         }
 
-        private static void RunInstructions(Instruction[] instructions, StackFrame frame, int endInstruction) {
+        internal void RunInstructions(InterpretedFrame frame, int endInstruction) {
+            var instructions = _instructions;
             int index = frame.InstructionIndex;
             while (index < endInstruction) {
                 index += instructions[index].Run(frame);
@@ -216,7 +226,8 @@ namespace Microsoft.Scripting.Interpreter {
             }
         }
 
-        private static void RunInstructions(Instruction[] instructions, StackFrame frame) {
+        private void RunInstructions(InterpretedFrame frame) {
+            var instructions = _instructions;
             int index = frame.InstructionIndex;
             while (index < instructions.Length) {
                 index += instructions[index].Run(frame);

@@ -433,7 +433,7 @@ namespace IronPython.Runtime {
             XRange xr = seq as XRange;
             if (xr != null) {
                 int n = xr.__len__();
-                object ret = PythonContext.GetContext(context).Call(cls);
+                object ret = PythonContext.GetContext(context).CallSplat(cls);
                 if (ret.GetType() == typeof(PythonDictionary)) {
                     PythonDictionary dr = ret as PythonDictionary;
                     for (int i = 0; i < n; i++) {
@@ -473,7 +473,9 @@ namespace IronPython.Runtime {
         [return: MaybeNotImplemented]
         public object __ne__(object other) {
             object res = __eq__(other);
-            if (res != NotImplementedType.Value) return PythonOps.Not(res);
+            if (res != NotImplementedType.Value) {
+                return ScriptingRuntimeHelpers.BooleanToObject(PythonOps.Not(res));
+            }
 
             return res;
         }
@@ -822,6 +824,13 @@ namespace IronPython.Runtime {
         }
 
         public override void Clear() {
+            foreach (var x in GetItems()) {
+                string key = x.Key as string;
+                if (key != null) {
+                    Environment.SetEnvironmentVariable(key, string.Empty);
+                }
+            }
+
             _storage.Clear();
         }
 

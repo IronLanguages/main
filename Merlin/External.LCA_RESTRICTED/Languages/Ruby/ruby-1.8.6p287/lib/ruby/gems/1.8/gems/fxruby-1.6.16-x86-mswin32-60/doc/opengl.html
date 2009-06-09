@@ -1,0 +1,73 @@
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+   <title>Appendix&nbsp;A.&nbsp;Using OpenGL with FXRuby</title><link rel="stylesheet" href="style.css" type="text/css"><meta name="generator" content="DocBook v5 XSL Stylesheets V1.72.0"><link rel="start" href="book.html" title="Developing Graphical User Interfaces with FXRuby"><link rel="up" href="pt02.html" title="Part&nbsp;II.&nbsp;Appendices"><link rel="prev" href="pt02.html" title="Part&nbsp;II.&nbsp;Appendices"><link rel="next" href="scintilla.html" title="Appendix&nbsp;B.&nbsp;Using Scintilla with FXRuby"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Appendix&nbsp;A.&nbsp;Using OpenGL with FXRuby</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="pt02.html">Prev</a>&nbsp;</td><th width="60%" align="center">Part&nbsp;II.&nbsp;Appendices</th><td width="20%" align="right">&nbsp;<a accesskey="n" href="scintilla.html">Next</a></td></tr></table><hr></div><div class="appendix" lang="en"><div class="titlepage"><div><div><h2 class="title"><a name="opengl"></a>Appendix&nbsp;A.&nbsp;Using OpenGL with FXRuby</h2></div></div></div><div class="abstract"><p class="title"><b>Abstract</b></p><p>FOX provides extensive support for OpenGL through its
+    <code class="classname">FXGLCanvas</code> and <code class="classname">FXGLViewer</code>
+    widgets, and FXRuby in turn provides interfaces to those classes. By
+    combining FXRuby with the OpenGL interface for Ruby (described below) you
+    can develop very powerful 3-D graphics applications. This chapter gives
+    you the information you'll need to get started.</p></div><div class="simplesect" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d0e4630"></a>What is OpenGL?</h2></div></div></div><p>OpenGL is a platform-independent API for 2D and 3D graphics. The
+    home page is <a xmlns:xlink="http://www.w3.org/1999/xlink" href="http://www.opengl.org" target="_top">http://www.opengl.org</a>. Because it's a
+    fairly open standard, highly optimized OpenGL drivers are available for
+    most operating systems (including Windows and Linux).</p></div><div class="simplesect" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d0e4638"></a>OpenGL Extensions for Ruby</h2></div></div></div><p>This extension module, developed by Yoshiyuki Kusano, provides
+    interfaces to not only the basic OpenGL API, but also the GLU and GLUT
+    APIs. As of this writing, the currently released version is 0.32d and is
+    available for download from <a xmlns:xlink="http://www.w3.org/1999/xlink" href="http://www2.giganet.net/~yoshi/rbogl-0.32b.tgz" target="_top">http://www2.giganet.net/~yoshi/rbogl-0.32d.tgz</a>.
+    Be sure to check the <a xmlns:xlink="http://www.w3.org/1999/xlink" href="http://www.ruby-lang.org/en/raa.html" target="_top">Ruby Application
+    Archive</a> for the latest version of this extension as it is still
+    under development.</p><p>Once you've downloaded the tarball, you should extract its contents
+    to the working directory of your choice by typing:</p><pre class="screen">$ <span><strong class="command">tar xzf rbogl-0.32d.tgz</strong></span></pre><p>After executing this command you should have a new <code class="filename">opengl</code> (<span class="emphasis"><em>not</em></span> <code class="filename">rbogl-0.32b</code>) subdirectory. Change to this
+    directory and then type:</p><pre class="screen">$ <span><strong class="command">ruby extconf.rb</strong></span></pre><p>This should create a <code class="filename">Makefile</code> configured
+    appropriately for your local Ruby installation. To now build the OpenGL
+    module, type:</p><pre class="screen">$ <span><strong class="command">make</strong></span></pre><p>You can safely ignore the warning(s) about
+    <code class="methodname">glut_KeyboardFunc</code> when it's compiling
+    <code class="filename">glut.c</code>. Well, I ignore them and it hasn't hurt me yet
+    ;) Assuming you get an otherwise clean build, install the OpenGL
+    extensions by typing:</p><pre class="screen">$ <span><strong class="command">make site-install</strong></span></pre><p>Please note that I'm not the maintainer of this particular Ruby
+    extension, so I can't really accept bug fixes for it. But if you're having
+    trouble integrating Ruby/OpenGL with FXRuby, let me know and we'll see
+    what we can do.</p></div><div class="simplesect" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d0e4693"></a>The FXGLVisual Class</h2></div></div></div><p>An <code class="classname">FXGLVisual</code> object describes the
+    capabilities of an <code class="classname">FXGLCanvas</code> or
+    <code class="classname">FXGLViewer</code> window. Typically, an X server supports
+    many different visuals with varying capabilities, but the ones with
+    greater capabilities require more resources than those with fewer
+    capbilities. To construct an <code class="classname">FXGLVisual</code> object,
+    just call <code class="methodname">FXGLVisual.new</code>:</p><pre class="programlisting">aVisual = FXGLVisual.new(theApp, VISUAL_DOUBLEBUFFER)</pre><p>The first argument to <code class="methodname">FXGLVisual.new</code> is a
+    reference to the application object. The second argument is a set of
+    options indicating the <span class="emphasis"><em>requested</em></span> capabilities for the
+    visual. If one or more of the requested capabilities aren't available, FOX
+    will try to gracefully degrade to a working GL visual; but if you're
+    counting on a specific capability, be sure to check the returned visual to
+    see if it actually supports that capability. For example, say you request
+    a visual with double-buffering and stereographic capabilities:</p><pre class="programlisting">anotherVisual = FXGLVisual.new(theApp, VISUAL_DOUBLEBUFFER | VISUAL_STEREO)</pre><p>Double-buffering is pretty commonplace these days, but stereo may
+    not be available on the system. We can check to see whether the visual we
+    got supports these capabilities by calling the
+    <code class="methodname">FXGLVisual#doubleBuffered?</code> and
+    <code class="methodname">FXGLVisual#stereo?</code> methods:</p><pre class="programlisting">anotherVisual = FXGLVisual.new(theApp, VISUAL_DOUBLEBUFFER | VISUAL_STEREO)
+if anotherVisual.doubleBuffered?
+  puts "It's double-buffered."
+else
+  puts "It's single-buffered."
+end
+if anotherVisual.stereo?
+  puts "It's stereo."
+else
+  puts "It isn't stereo."
+end</pre><p>Some <code class="classname">FXGLVisual</code> object must be associated
+    with every <code class="classname">FXGLCanvas</code> or
+    <code class="classname">FXGLViewer</code> window, but you don't need to have a
+    separate <code class="classname">FXGLVisual</code> object for each window. For
+    most applications, you can just construct a single
+    <code class="classname">FXGLVisual</code> object that's shared among all the
+    OpenGL windows.</p></div><div class="simplesect" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d0e4752"></a>The FXGLCanvas Class</h2></div></div></div><p>The <code class="classname">FXGLCanvas</code> widget provides a very simple
+    OpenGL-capable window with minimal functionality. To construct an
+    <code class="classname">FXGLCanvas</code>, call
+    <code class="methodname">FXGLCanvas.new</code>:</p><pre class="programlisting">glCanvas = FXGLCanvas.new(parent, vis)</pre><p>The first argument to <code class="methodname">FXGLCanvas.new</code> is the
+    parent (container) widget and the second argument is the
+    <code class="classname">FXGLVisual</code> that should be used for this
+    window.</p></div><div class="simplesect" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d0e4776"></a>OpenGL objects and the FXGLViewer</h2></div></div></div><p>The <code class="classname">FXGLViewer</code> widget provides a higher-level
+    OpenGL-capable window with a lot of built-in functionality. To construct
+    an <code class="classname">FXGLViewer</code>, call
+    <code class="methodname">FXGLViewer.new</code>:</p><pre class="programlisting">glViewer = FXGLViewer.new(parent, vis)</pre><p>The first argument to <code class="methodname">FXGLViewer.new</code> is the
+    parent (container) widget and the second argument is the
+    <code class="classname">FXGLVisual</code> that should be used for this
+    window.</p></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="pt02.html">Prev</a>&nbsp;</td><td width="20%" align="center"><a accesskey="u" href="pt02.html">Up</a></td><td width="40%" align="right">&nbsp;<a accesskey="n" href="scintilla.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Part&nbsp;II.&nbsp;Appendices&nbsp;</td><td width="20%" align="center"><a accesskey="h" href="book.html">Home</a></td><td width="40%" align="right" valign="top">&nbsp;Appendix&nbsp;B.&nbsp;Using Scintilla with FXRuby</td></tr></table></div></body></html>

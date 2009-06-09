@@ -1,0 +1,4 @@
+fails:IO#each yields each line starting from the current position
+fails:IO#each returns self
+fails:IO#each when passed a separator returns self
+fails:IO#each when passed a separator yields self's content starting from the current position when the passed separator is nil

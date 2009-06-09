@@ -1,0 +1,9 @@
+* CHANGES
+* README
+* MANIFEST
+* Rakefile
+* win32-file-stat.gemspec
+* lib/win32/file/stat.rb
+* test/sometestfile.exe
+* test/sometestfile.txt
+* test/test_file_stat.rb

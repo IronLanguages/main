@@ -1,0 +1,26 @@
+
+<html>
+<head><title>only_at (Log4r::Outputter)</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<style>
+  .kw { color: #3333FF; font-weight: bold }
+  .cmt { color: green; font-style: italic }
+  .str { color: #662222; font-style: italic }
+  .re  { color: #662222; }
+</style>
+</head>
+<body bgcolor="white">
+<pre><span class="cmt"># File log4r/outputter/outputter.rb, line 44</span>
+    <span class="kw">def</span> only_at(*levels)
+      raise ArgumentError, <span class="str">&quot;Gimme some levels!&quot;</span>, caller <span class="kw">if</span> levels.empty?
+      raise ArgumentError, <span class="str">&quot;Can't log only_at ALL&quot;</span>, caller <span class="kw">if</span> levels.include? ALL
+      levels.each {|level| Log4rTools.validate_level(level)}
+      @level = levels.sort.first
+      OutputterFactory.create_methods <span class="kw">self</span>, levels
+      Logger.log_internal {
+        &quot;Outputter '#{@name}' writes only on &quot; +\
+        levels.collect{|l| LNAMES[l]}.join(<span class="str">&quot;, &quot;</span>)
+      }
+    <span class="kw">end</span></pre>
+</body>
+</html>

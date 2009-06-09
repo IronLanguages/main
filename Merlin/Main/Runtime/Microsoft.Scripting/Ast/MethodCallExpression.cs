@@ -20,23 +20,11 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Dynamic;
 using Microsoft.Scripting.Utils;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Ast {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1506:AvoidExcessiveClassCoupling")]
     public static partial class Utils {
-
-        [Obsolete("use Expression.Call instead")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "span")]
-        public static MethodCallExpression Call(MethodInfo method, SourceSpan span, params Expression[] arguments) {
-            return Expression.Call(null, method, arguments);
-        }
-
-        [Obsolete("use Expression.Call instead")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "span")]
-        public static MethodCallExpression Call(Expression instance, MethodInfo method, SourceSpan span, params Expression[] arguments) {
-            return Expression.Call(instance, method, arguments);
-        }
-
 
         /// <summary>
         /// The helper to create the AST method call node. Will add conversions (Utils.Convert)
@@ -70,10 +58,10 @@ namespace Microsoft.Scripting.Ast {
             ReadOnlyCollection<Expression> finalArgs;
             if (convertedArguments == arguments) {
                 // we didn't convert anything, just convert the users original
-                // array to a ROC.
+                // array to a readonly collection.
                 finalArgs = convertedArguments.ToReadOnly();
             } else {
-                // we already copied the array so just stick it in a ROC.
+                // we already copied the array so just stick it in a readonly collection.
                 finalArgs = new ReadOnlyCollection<Expression>(convertedArguments);
             }
 
@@ -222,7 +210,7 @@ namespace Microsoft.Scripting.Ast {
 
         private static Expression CreateDefaultValueExpression(ParameterInfo parameter) {
             if (parameter.HasDefaultValue()) {
-                return Expression.Constant(parameter.DefaultValue, parameter.ParameterType);
+                return AstUtils.Constant(parameter.DefaultValue, parameter.ParameterType);
             } else {
                 throw new NotSupportedException("missing parameter value not supported");
             }

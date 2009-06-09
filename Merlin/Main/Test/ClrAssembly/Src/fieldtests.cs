@@ -796,12 +796,14 @@ namespace Merlin.Testing.FieldTest {
 #pragma warning restore
 
         public SimpleInterface InterfaceField;
+        public SimpleInterface InternalInterfaceField;
 
         public void Set() {
             PublicField = 100;
             ProtectedField = 200;
             PrivateField = 300;
-            InterfaceField = new InternalClassImplementSimpleInterface();
+            InterfaceField = new ClassImplementSimpleInterface(0);
+            InternalInterfaceField = new InternalClassImplementSimpleInterface();
         }
     }
 

@@ -18,17 +18,15 @@ using System.Runtime.CompilerServices;
 using Microsoft.Scripting.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Binding;
+using System.Collections.Generic;
 
 namespace IronPython.Runtime {
     [PythonType("buffer")]
     public sealed class PythonBuffer : ICodeFormattable {
-        private object _object;
+        internal object _object;
         private int _offset;
         private int _size;
 
-        private bool _isbuffer;      /*buffer of buffer*/
-        private bool _isstring;
-        private bool _isarray;
         private readonly CodeContext/*!*/ _context;
 
         public PythonBuffer(CodeContext/*!*/ context, object @object)
@@ -47,60 +45,70 @@ namespace IronPython.Runtime {
         }
 
         private bool InitBufferObject(object o, int offset, int size) {
-            //  we currently support only buffers, strings and arrays
-            //  of primitives and strings
-            if (o == null || (!(_isbuffer = o is PythonBuffer) && !(_isstring = o is string) && !(_isarray = o is Array)) && !(_isarray = o is IPythonArray)) {
-                return false;
-            }
             if (offset < 0) {
                 throw PythonOps.ValueError("offset must be zero or positive");
-            }
-            //  -1 is the way to ask for the default size so we allow -1 as a size
-            if (size < -1) {
+            } else if (size < -1) {
+                //  -1 is the way to ask for the default size so we allow -1 as a size
                 throw PythonOps.ValueError("size must be zero or positive");
             }
-            if (_isbuffer) {
+
+            //  we currently support only buffers, strings and arrays
+            //  of primitives, strings, bytes, and bytearray objects.
+            int length;
+            if (o is PythonBuffer) {
                 PythonBuffer py = (PythonBuffer)o;
                 o = py._object; // grab the internal object
-                offset = py._offset + offset; // reset the offset based on the given buffer's original offset
-                // reset the size based on the given buffer's original size
-                if (size >= py._size - offset || size == -1) {
-                    this._size = py._size - offset;
-                } else {
-                    this._size = size;
-                }
-            } else if (_isstring) {
-                string strobj = ((string)o);
-                if (size >= strobj.Length || size == -1) {
-                    this._size = strobj.Length;
-                } else {
-                    this._size = size;
-                }
-            } else if (_isarray) { // has to be an array at this point
+                length = py._size;
+            } else if (o is string) {
+                string strobj = (string)o;
+                length = strobj.Length;
+            } else if (o is Bytes) {
+                length = ((Bytes)o).Count;
+            } else if (o is ByteArray) {
+                length = ((ByteArray)o).Count;
+            } else if (o is Array || o is IPythonArray) {
                 Array arr = o as Array;
                 if (arr != null) {
                     Type t = arr.GetType().GetElementType();
                     if (!t.IsPrimitive && t != typeof(string)) {
                         return false;
                     }
-                    if (size >= arr.Length || size == -1) {
-                        this._size = arr.Length;
-                    } else {
-                        this._size = size;
-                    }
+                    length = arr.Length;
                 } else {
                     IPythonArray pa = (IPythonArray)o;
-                    _size = pa.__len__();
+                    length = pa.__len__();
                 }
+            } else if (o is IPythonBufferable) {
+                length = ((IPythonBufferable)o).Size;
+                _object = o;
+            } else {
+                return false;
             }
-            this._object = o;
-            this._offset = offset;
+
+            // reset the size based on the given buffer's original size
+            if (size >= (length - offset) || size == -1) {
+                _size = length - offset;
+            } else {
+                _size = size;
+            }
+            
+            _object = o;
+            _offset = offset;
 
             return true;
         }
 
         public override string ToString() {
-            return GetSelectedRange().ToString();
+            object res = GetSelectedRange();
+            if (res is Bytes) {
+                return PythonOps.MakeString((Bytes)res);
+            } else if (res is ByteArray) {
+                return PythonOps.MakeString((ByteArray)res);
+            } else if (res is IPythonBufferable) {
+                return PythonOps.MakeString((IList<byte>)GetSelectedRange());
+            }
+
+            return res.ToString();
         }
 
         public override bool Equals(object obj) {
@@ -114,7 +122,7 @@ namespace IronPython.Runtime {
             return _object.GetHashCode() ^ _offset ^ (_size << 16 | (_size >> 16));
         }
 
-        private object GetSlice() {
+        private Slice GetSlice() {
             object end = null;
             if (_size >= 0) {
                 end = _offset + _size;
@@ -154,12 +162,21 @@ namespace IronPython.Runtime {
         }
 
         private object GetSelectedRange() {
-            if (_isarray) {
-                IPythonArray arr = _object as IPythonArray;
-                if (arr != null) {
-                    return arr.tostring();
-                }
+            IPythonArray arr = _object as IPythonArray;
+            if(arr != null) {
+                return arr.tostring();
             }
+
+            ByteArray bytearr = _object as ByteArray;
+            if (bytearr != null) {
+                return new Bytes((IList<byte>)bytearr[GetSlice()]);
+            }
+
+            IPythonBufferable pyBuf = _object as IPythonBufferable;
+            if (pyBuf != null) {
+                return new Bytes(pyBuf.GetBytes(_offset, _size));
+            }
+
             return PythonOps.GetIndex(_context, _object, GetSlice());
         }
 
@@ -211,7 +228,7 @@ namespace IronPython.Runtime {
         }
 
         public int __len__() {
-            return _size;
+            return Math.Max(_size, 0);
         }
 
         internal int Size {
@@ -235,5 +252,17 @@ namespace IronPython.Runtime {
     /// </summary>
     internal interface IPythonArray : ISequence {
         string tostring();
+    }
+
+    internal interface IPythonBufferable {
+        IntPtr UnsafeAddress {
+            get;
+        }
+
+        int Size {
+            get;
+        }
+
+        byte[] GetBytes(int offset, int length);
     }
 }

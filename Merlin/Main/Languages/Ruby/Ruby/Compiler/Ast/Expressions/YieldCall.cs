@@ -42,10 +42,10 @@ namespace IronRuby.Compiler.Ast {
 
             if (gen.CompilerOptions.IsEval) {
                 // eval:
-                postYield = Methods.EvalYield.OpCall(gen.CurrentRfcVariable, bfcVariable, resultVariable);
+                postYield = Methods.EvalYield.OpCall(gen.CurrentScopeVariable, bfcVariable, resultVariable);
             } else if (gen.CurrentBlock != null) {
                 // block:
-                postYield = Methods.BlockYield.OpCall(gen.CurrentRfcVariable, gen.CurrentBlock.BfcVariable, bfcVariable, resultVariable);
+                postYield = Methods.BlockYield.OpCall(gen.CurrentScopeVariable, gen.CurrentBlock.BfcVariable, bfcVariable, resultVariable);
             } else {
                 // method:
                 postYield = Methods.MethodYield.OpCall(gen.CurrentRfcVariable, bfcVariable, resultVariable);
@@ -56,9 +56,10 @@ namespace IronRuby.Compiler.Ast {
 
                 Ast.Assign(bfcVariable, Methods.CreateBfcForYield.OpCall(gen.MakeMethodBlockParameterRead())),
 
-                Ast.Assign(resultVariable, (Arguments ?? Arguments.Empty).TransformToYield(gen, bfcVariable,
-                    Ast.Property(AstUtils.Convert(gen.MakeMethodBlockParameterRead(), typeof(Proc)), Proc.SelfProperty)
-                )),
+                Ast.Assign(
+                    resultVariable, 
+                    (Arguments ?? Arguments.Empty).TransformToYield(gen, bfcVariable, gen.MakeMethodBlockParameterSelfRead())
+                ),
 
                 AstUtils.IfThen(postYield, gen.Return(resultVariable)),
 
@@ -74,7 +75,7 @@ namespace IronRuby.Compiler.Ast {
 
         internal override MSA.Expression TransformDefinedCondition(AstGenerator/*!*/ gen) {
             // block_given semantics:
-            return Ast.NotEqual(gen.MakeMethodBlockParameterRead(), Ast.Constant(null));
+            return Ast.NotEqual(gen.MakeMethodBlockParameterRead(), AstUtils.Constant(null));
         }
 
     }

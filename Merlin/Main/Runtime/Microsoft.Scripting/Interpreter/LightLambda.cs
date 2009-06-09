@@ -18,49 +18,35 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Microsoft.Scripting.Generation;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Interpreter {
-    internal partial class LightLambda {
-        internal static StrongBox<object>[] EmptyClosure = new StrongBox<object>[0];
 
-        private readonly Interpreter _interpreter;
+    public sealed class LightLambdaCompileEventArgs : EventArgs {
+        public Delegate Compiled { get; private set; }
+
+        internal LightLambdaCompileEventArgs(Delegate compiled) {
+            Compiled = compiled;
+        }
+    }
+
+    public partial class LightLambda {
         private readonly StrongBox<object>[] _closure;
+        private readonly Interpreter _interpreter;
 
         // Adaptive compilation support
         private readonly LightDelegateCreator _delegateCreator;
         private Delegate _compiled;
 
-        internal LightLambda(Interpreter interpreter) {
-            this._interpreter = interpreter;
-            this._closure = EmptyClosure;
-        }
-
-        internal LightLambda(Interpreter interpreter, StrongBox<object>[] closure, LightDelegateCreator delegateCreator) {
-            this._interpreter = interpreter;
-            this._closure = closure;
-            this._delegateCreator = delegateCreator;
-        }
-
         /// <summary>
-        /// Set by LightDelegateCreator once the delegate is compiled.
+        /// Provides notification that the LightLambda has been compiled.
         /// </summary>
-        internal Delegate Compiled {
-            get { return _compiled; }
-            set { _compiled = value; }
-        }
+        public event EventHandler<LightLambdaCompileEventArgs> Compile;
 
-        /// <summary>
-        /// Used by LightDelegateCreator to set the delegate.
-        /// </summary>
-        internal StrongBox<object>[] Closure {
-            get { return _closure; }
-        }
-
-        private StackFrame PrepareToRun() {
-            if (_delegateCreator != null) {
-                _delegateCreator.UpdateExecutionCount();
-            }
-            return _interpreter.MakeFrame(_closure);
+        internal LightLambda(LightDelegateCreator delegateCreator, StrongBox<object>[] closure) {
+            _delegateCreator = delegateCreator;
+            _closure = closure;
+            _interpreter = delegateCreator.Interpreter;
         }
 
         private static MethodInfo GetRunMethod(Type delegateType) {
@@ -84,16 +70,18 @@ namespace Microsoft.Scripting.Interpreter {
             if (method.ReturnType == typeof(void) && paramTypes.Length == 2 && 
                 paramInfos[0].ParameterType.IsByRef && paramInfos[1].ParameterType.IsByRef)
             {
-                runMethod = typeof(LightLambda).GetMethod("RunVoidRef2");
+                runMethod = typeof(LightLambda).GetMethod("RunVoidRef2", BindingFlags.NonPublic | BindingFlags.Instance);
                 paramTypes[0] = paramInfos[0].ParameterType.GetElementType();
                 paramTypes[1] = paramInfos[1].ParameterType.GetElementType();
+            } else if(method.ReturnType == typeof(void) && paramTypes.Length == 0) {
+                return typeof(LightLambda).GetMethod("RunVoid0", BindingFlags.NonPublic | BindingFlags.Instance);
             } else if (paramInfos.Length < LightLambda.MaxParameters) {
                 for (int i = 0; i < paramInfos.Length; i++) {
                     paramTypes[i] = paramInfos[i].ParameterType;
                     if (paramTypes[i].IsByRef) return null;
                 }
 
-                runMethod = typeof(LightLambda).GetMethod(name + paramInfos.Length);
+                runMethod = typeof(LightLambda).GetMethod(name + paramInfos.Length, BindingFlags.NonPublic | BindingFlags.Instance);
             } else {
                 return null;
             }
@@ -110,7 +98,7 @@ namespace Microsoft.Scripting.Interpreter {
             }
 
             var data = Expression.NewArrayInit(typeof(object), parameters);
-            var self = Expression.Constant(this);
+            var self = AstUtils.Constant(this);
             var runMethod = typeof(LightLambda).GetMethod("Run");
             var body = Expression.Convert(Expression.Call(self, runMethod, data), method.ReturnType);
             var lambda = Expression.Lambda(delegateType, body, parameters);
@@ -126,16 +114,38 @@ namespace Microsoft.Scripting.Interpreter {
             return Delegate.CreateDelegate(delegateType, this, method);
         }
 
-        public void RunVoidRef2<T0, T1>(ref T0 arg0, ref T1 arg1) {
-            if (_compiled != null) {
+        private bool TryGetCompiled() {
+            // Use the compiled delegate if available.
+            if (_delegateCreator.HasCompiled) {
+                _compiled = _delegateCreator.CreateCompiledDelegate(_closure);
+
+                // Send it to anyone who's interested.
+                var compileEvent = Compile;
+                if (compileEvent != null && _delegateCreator.SameDelegateType) {
+                    compileEvent(this, new LightLambdaCompileEventArgs(_compiled));
+                }
+
+                return true;
+            }
+            _delegateCreator.UpdateExecutionCount();
+            return false;
+        }
+
+        private InterpretedFrame MakeFrame() {
+            return new InterpretedFrame(_interpreter, _closure);
+        }
+
+        internal void RunVoidRef2<T0, T1>(ref T0 arg0, ref T1 arg1) {
+            if (_compiled != null || TryGetCompiled()) {
                 ((ActionRef<T0, T1>)_compiled)(ref arg0, ref arg1);
                 return;
             }
 
-            var frame = PrepareToRun();
             // copy in and copy out for today...
+            var frame = MakeFrame();
             frame.Data[0] = arg0;
             frame.Data[1] = arg1;
+            frame.BoxLocals();
             var ret = _interpreter.Run(frame);
             arg0 = (T0)frame.Data[0];
             arg1 = (T1)frame.Data[1];
@@ -143,14 +153,15 @@ namespace Microsoft.Scripting.Interpreter {
 
         
         public object Run(params object[] arguments) {
-            if (_compiled != null) {
+            if (_compiled != null || TryGetCompiled()) {
                 return _compiled.DynamicInvoke(arguments);
             }
 
-            var frame = PrepareToRun();
+            var frame = MakeFrame();
             for (int i = 0; i < arguments.Length; i++) {
                 frame.Data[i] = arguments[i];
             }
+            frame.BoxLocals();
             object ret = _interpreter.Run(frame);
             return ret;
         }

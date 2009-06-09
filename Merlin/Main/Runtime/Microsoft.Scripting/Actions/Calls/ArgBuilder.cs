@@ -15,9 +15,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Linq.Expressions;
-using System.Diagnostics;
-using Microsoft.Scripting.Utils;
 using System.Reflection;
 
 namespace Microsoft.Scripting.Actions.Calls {
@@ -28,6 +27,8 @@ namespace Microsoft.Scripting.Actions.Calls {
     /// Contrast this with ParameterWrapper which represents the logical argument passed to the method.
     /// </summary>
     public abstract class ArgBuilder {
+        internal const int AllArguments = -1;
+
         // can be null, e.g. for ctor return value builder or custom arg builders
         private readonly ParameterInfo _info;
 
@@ -44,10 +45,30 @@ namespace Microsoft.Scripting.Actions.Calls {
         }
 
         /// <summary>
+        /// The number of actual arguments consumed by this builder.
+        /// </summary>
+        public abstract int ConsumedArgumentCount { get; }
+
+        /// <summary>
         /// Provides the Expression which provides the value to be passed to the argument.
         /// If <c>null</c> is returned the argument is skipped (not passed to the callee).
         /// </summary>
-        internal protected abstract Expression ToExpression(ParameterBinder parameterBinder, IList<Expression> parameters, bool[] hasBeenUsed);
+        internal protected abstract Expression ToExpression(OverloadResolver resolver, RestrictedArguments args, bool[] hasBeenUsed);
+
+        internal protected virtual Func<object[], object> ToDelegate(OverloadResolver resolver, RestrictedArguments args, bool[] hasBeenUsed) {
+            return null;
+        }
+
+        /// <summary>
+        /// Function for accessing an argument from a given index.  When returned from
+        /// ToDelegate closed over the value will enable delegate invocations for argument
+        /// gets to be optimized away.
+        /// 
+        /// This function is referenced via reflection and if renamed needs CALLERS UPDATED.
+        /// </summary>
+        public static object ArgumentRead(object value, object[] args) {
+            return args[(int)value];
+        }
 
         /// <summary>
         /// Returns the type required for the argument or null if the ArgBuilder
@@ -64,7 +85,7 @@ namespace Microsoft.Scripting.Actions.Calls {
         /// Provides an Expression which will update the provided value after a call to the method.  May
         /// return null if no update is required.
         /// </summary>
-        internal virtual Expression UpdateFromReturn(ParameterBinder parameterBinder, IList<Expression> parameters) {
+        internal virtual Expression UpdateFromReturn(OverloadResolver resolver, RestrictedArguments args) {
             return null;
         }
 
@@ -72,7 +93,7 @@ namespace Microsoft.Scripting.Actions.Calls {
         /// If the argument produces a return value (e.g. a ref or out value) this provides
         /// the additional value to be returned.
         /// </summary>
-        internal virtual Expression ToReturnExpression(ParameterBinder parameterBinder) {
+        internal virtual Expression ToReturnExpression(OverloadResolver resolver) {
             throw new InvalidOperationException();
         }
 

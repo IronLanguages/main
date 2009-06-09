@@ -50,6 +50,8 @@ namespace Merlin.Testing.TypeSample {
         public int Flag {
             get { return _flag; }
         }
+
+        public static int PublicStaticField = 500;
     }
 
     public class SimpleClass {

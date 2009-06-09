@@ -42,43 +42,35 @@ namespace IronRuby.Compiler {
     };
 
     public class Tokenizer : TokenizerService {
-        public sealed class BignumParser : UnsignedBigIntegerParser {
-            private char[] _buffer;
-            private int _position;
+        private const int InitialBufferSize = 80;
 
-            public int Position { get { return _position; } set { _position = value; } }
-            public char[] Buffer { get { return _buffer; } set { _buffer = value; } } // TODO: remove
+        public bool ForceBinaryMultiByte { get; set; }
 
-            public BignumParser() {
-            }
+        public bool AllowNonAsciiIdentifiers {
+            get { return _multiByteIdentifier < Int32.MaxValue; }
+            set { _multiByteIdentifier = AllowMultiByteIdentifier(value); }
+        }
 
-            protected override int ReadDigit() {
-                Debug.Assert('0' < 'A' && 'A' < '_' && '_' < 'a');
-
-                while (true) {
-                    char c = _buffer[_position++];
-
-                    if (c <= '9') {
-                        Debug.Assert(c >= '0');
-                        return c - '0';
-                    } else if (c >= 'a') {
-                        Debug.Assert(c <= 'z');
-                        return c - 'a' + 10;
-                    } else if (c != '_') {
-                        Debug.Assert(c >= 'A' && c <= 'Z');
-                        return c - 'A' + 10;
-                    }
-                }
+        internal RubyEncoding/*!*/ Encoding {
+            get { return _encoding; }
+            set {
+                Assert.NotNull(_encoding);
+                _encoding = value;
             }
         }
 
-        private const int InitialBufferSize = 80;
-        
+        public bool Verbatim {
+            get { return _verbatim; }
+            set { _verbatim = value; }
+        }
+
+        private RubyEncoding/*!*/ _encoding;
         private TextReader _input;
         private SourceLocation _initialLocation;
         private RubyCompatibility _compatibility;
         private bool _verbatim;
-        
+        private int _multiByteIdentifier = Int32.MaxValue;
+
         private SourceUnit _sourceUnit;
         private ErrorSink/*!*/ _errorSink;
         private BignumParser _bigIntParser;
@@ -146,6 +138,7 @@ namespace IronRuby.Compiler {
             _errorSink = ErrorSink.Null;
             _localVariableResolver = localVariableResolver;
             _verbatim = verbatim;
+            _encoding = RubyEncoding.Binary;
         }
 
         public void Initialize(SourceUnit/*!*/ sourceUnit) {
@@ -632,7 +625,6 @@ namespace IronRuby.Compiler {
                         break;
 
                     case Tokens.EndOfLine: // not considered whitespace
-                    case Tokens.InvalidCharacter:
                         break;
 
                     case Tokens.EndOfFile:
@@ -807,10 +799,21 @@ namespace IronRuby.Compiler {
                     return MarkSingleLineTokenEnd(ReadIdentifier(c, cmdState));
 
                 default:
-                    if (!IsIdentifierInitial(c)) {
-                        ReportError(Errors.InvalidCharacterInExpression, (char)c);
-                        MarkSingleLineTokenEnd();
-                        return Tokens.InvalidCharacter;
+                    if (!IsIdentifierInitial(c, _multiByteIdentifier)) {
+                        // UTF-8 BOM detection:
+                        if (_compatibility == RubyCompatibility.Ruby18 && _currentLineIndex == 0 && _bufferPos == 1 &&
+                            (c == 0xEF && Peek() == 0xBB && Peek(1) == 0xBF)) {
+                            ReportError(Errors.InvalidUseOfByteOrderMark);
+                            // skip BOM and continue parsing as if it was whitespace:
+                            Read();
+                            Read();
+                            MarkSingleLineTokenEnd();
+                            return Tokens.Whitespace;
+                        } else {
+                            ReportError(Errors.InvalidCharacterInExpression, (char)c);
+                            MarkSingleLineTokenEnd();
+                            return Tokens.InvalidCharacter;
+                        }
                     }
 
                     return MarkSingleLineTokenEnd(ReadIdentifier(c, cmdState));
@@ -939,7 +942,7 @@ namespace IronRuby.Compiler {
             
             if (_lexicalState != LexicalState.EXPR_DOT) {
                 if (_lexicalState == LexicalState.EXPR_FNAME) {
-                    _tokenValue.SetSymbol(identifier);
+                    SetStringToken(identifier);
                 }
 
                 Tokens keyword = StringToKeyword(identifier);
@@ -964,8 +967,8 @@ namespace IronRuby.Compiler {
             } else {
                 _lexicalState = LexicalState.EXPR_END;
             }
-            
-            _tokenValue.SetSymbol(identifier);
+
+            SetStringToken(identifier);
             return result;
         }
 
@@ -1084,7 +1087,7 @@ namespace IronRuby.Compiler {
             return Tokens.Do;
         }      
   
-        #endregion 
+        #endregion
 
         #region Comments
 
@@ -1194,7 +1197,7 @@ namespace IronRuby.Compiler {
 
             if (c == '=') {
                 Skip('=');
-                _tokenValue.SetSymbol(Symbols.Plus);
+                SetAsciiStringToken(Symbols.Plus);
                 _lexicalState = LexicalState.EXPR_BEG;
                 return Tokens.Assignment;
             }
@@ -1269,7 +1272,7 @@ namespace IronRuby.Compiler {
                 Skip(c);
 
                 SkipVariableName();
-                _tokenValue.SetSymbol(GetSymbol(start, _bufferPos - start));
+                SetStringToken(start, _bufferPos - start);
                 _lexicalState = LexicalState.EXPR_END;
                 return result;
             }
@@ -1297,7 +1300,7 @@ namespace IronRuby.Compiler {
                 case '_':
                     if (IsIdentifier(Peek())) {
                         SkipVariableName();
-                        _tokenValue.SetSymbol(GetSymbol(start, _bufferPos - start));
+                        SetStringToken(start, _bufferPos - start);
                         return Tokens.GlobalVariable;
                     }
                     return GlobalVariableToken(Symbols.LastInputLine);
@@ -1310,9 +1313,9 @@ namespace IronRuby.Compiler {
                 case '-':
                     if (IsIdentifier(Peek())) {
                         Read();
-                        _tokenValue.SetSymbol(GetSymbol(start, 2));
+                        SetStringToken(start, 2);
                     } else {
-                        _tokenValue.SetSymbol("-");
+                        SetAsciiStringToken("-");
                     }
                     return Tokens.GlobalVariable;
 
@@ -1356,7 +1359,7 @@ namespace IronRuby.Compiler {
                         // $0[A-Za-z0-9_] are invalid:
                         SkipVariableName();
                         ReportError(Errors.InvalidGlobalVariableName, new String(_lineBuffer, start - 1, _bufferPos - start));
-                        _tokenValue.SetSymbol(Symbols.ErrorVariable);
+                        SetAsciiStringToken(Symbols.ErrorVariable);
                         return Tokens.GlobalVariable;
                     }
 
@@ -1366,20 +1369,16 @@ namespace IronRuby.Compiler {
                     if (IsDecimalDigit(c)) {
                         return ReadMatchGroupReferenceVariable(c);
                     }
-                    
-                    if (IsLetter(c)) {
+
+                    if (IsIdentifier(c)) {
                         SkipVariableName();
-                        _tokenValue.SetSymbol(GetSymbol(start, _bufferPos - start));
+                        SetStringToken(start, _bufferPos - start);
                         return Tokens.GlobalVariable;
                     }
 
                     Back(c);
                     return (Tokens)'$';
             }
-        }
-
-        private string/*!*/ GetSymbol(int start, int length) {
-            return new String(_lineBuffer, start, length);
         }
 
         private Tokens ReadMatchGroupReferenceVariable(int c) {
@@ -1408,7 +1407,7 @@ namespace IronRuby.Compiler {
         }
 
         private Tokens GlobalVariableToken(string/*!*/ symbol) {
-            _tokenValue.SetSymbol(symbol);
+            SetAsciiStringToken(symbol);
             return Tokens.GlobalVariable;
         }
 
@@ -1423,7 +1422,7 @@ namespace IronRuby.Compiler {
             int c = Peek();
             if (c == '=') {
                 Skip(c);
-                _tokenValue.SetSymbol(Symbols.Mod);
+                SetAsciiStringToken(Symbols.Mod);
                 _lexicalState = LexicalState.EXPR_BEG;
                 MarkSingleLineTokenEnd();
                 return Tokens.Assignment;
@@ -1515,7 +1514,7 @@ namespace IronRuby.Compiler {
         // Operators: ^
         private Tokens ReadCaret() {
             if (Read('=')) {
-                _tokenValue.SetSymbol(Symbols.Xor);
+                SetAsciiStringToken(Symbols.Xor);
                 _lexicalState = LexicalState.EXPR_BEG;
                 return Tokens.Assignment;
             }
@@ -1547,7 +1546,7 @@ namespace IronRuby.Compiler {
             int c = Peek();
             if (c == '=') {
                 Skip(c);
-                _tokenValue.SetSymbol(Symbols.Divide);
+                SetAsciiStringToken(Symbols.Divide);
                 _lexicalState = LexicalState.EXPR_BEG;
                 return Tokens.Assignment;
             }
@@ -1627,7 +1626,7 @@ namespace IronRuby.Compiler {
             if (c == '*') {
                 Skip(c);
                 if (Read('=')) {
-                    _tokenValue.SetSymbol(Symbols.Power);
+                    SetAsciiStringToken(Symbols.Power);
                     _lexicalState = LexicalState.EXPR_BEG;
                     
                     return Tokens.Assignment;
@@ -1637,7 +1636,7 @@ namespace IronRuby.Compiler {
             } else if (c == '=') {
                 Skip(c);
 
-                _tokenValue.SetSymbol(Symbols.Multiply);
+                SetAsciiStringToken(Symbols.Multiply);
                 _lexicalState = LexicalState.EXPR_BEG;
                 return Tokens.Assignment;
             } else if (IS_ARG() && whitespaceSeen && !IsWhiteSpace(c)) {
@@ -1720,7 +1719,7 @@ namespace IronRuby.Compiler {
 
             if (c == '<') {
                 if (Read('=')) {
-                    _tokenValue.SetSymbol(Symbols.LeftShift);
+                    SetAsciiStringToken(Symbols.LeftShift);
                     _lexicalState = LexicalState.EXPR_BEG;
                     MarkSingleLineTokenEnd();
                     return Tokens.Assignment;
@@ -1757,7 +1756,7 @@ namespace IronRuby.Compiler {
             if (c == '>') {
                 Skip(c);
                 if (Read('=')) {
-                    _tokenValue.SetSymbol(Symbols.RightShift);
+                    SetAsciiStringToken(Symbols.RightShift);
                     _lexicalState = LexicalState.EXPR_BEG;
                     return Tokens.Assignment;
                 }
@@ -1865,7 +1864,7 @@ namespace IronRuby.Compiler {
                 _lexicalState = LexicalState.EXPR_BEG;
                 
                 if (Read('=')) {
-                    _tokenValue.SetSymbol(Symbols.And);
+                    SetAsciiStringToken(Symbols.And);
                     return Tokens.Assignment;
                 }
 
@@ -1875,7 +1874,7 @@ namespace IronRuby.Compiler {
             if (c == '=') {
                 Skip(c);
                 _lexicalState = LexicalState.EXPR_BEG;
-                _tokenValue.SetSymbol(Symbols.BitwiseAnd);
+                SetAsciiStringToken(Symbols.BitwiseAnd);
                 return Tokens.Assignment;
             }
 
@@ -1914,7 +1913,7 @@ namespace IronRuby.Compiler {
                 _lexicalState = LexicalState.EXPR_BEG;
 
                 if (Read('=')) {
-                    _tokenValue.SetSymbol(Symbols.Or);
+                    SetAsciiStringToken(Symbols.Or);
                     _lexicalState = LexicalState.EXPR_BEG;
                     return Tokens.Assignment;
                 }
@@ -1923,7 +1922,7 @@ namespace IronRuby.Compiler {
 
             if (c == '=') {
                 Skip(c);
-                _tokenValue.SetSymbol(Symbols.BitwiseOr);
+                SetAsciiStringToken(Symbols.BitwiseOr);
                 _lexicalState = LexicalState.EXPR_BEG;
                 return Tokens.Assignment;
             }
@@ -1968,7 +1967,7 @@ namespace IronRuby.Compiler {
             int c = Peek();
             if (c == '=') {
                 Skip(c);
-                _tokenValue.SetSymbol(Symbols.Minus);
+                SetAsciiStringToken(Symbols.Minus);
                 _lexicalState = LexicalState.EXPR_BEG;
                 return Tokens.Assignment;
             }
@@ -2104,7 +2103,7 @@ namespace IronRuby.Compiler {
         }
         
         // Appends escaped regex escape sequence.
-        private void AppendEscapedRegexEscape(StringBuilder/*!*/ content, int term) {
+        private void AppendEscapedRegexEscape(MutableStringBuilder/*!*/ content, int term) {
             int c = Read();
 
             switch (c) {
@@ -2119,7 +2118,7 @@ namespace IronRuby.Compiler {
                         break;
                     }
 
-                    content.Append("\\M-");
+                    content.Append('\\', 'M', '-');
 
                     // escaped:
                     AppendRegularExpressionCompositeEscape(content, term);
@@ -2131,14 +2130,13 @@ namespace IronRuby.Compiler {
                         break;
                     }
 
-                    content.Append("\\C-");
+                    content.Append('\\', 'C', '-');
 
                     AppendRegularExpressionCompositeEscape(content, term);
                     break;
 
                 case 'c':
-                    content.Append('\\');
-                    content.Append('c');
+                    content.Append('\\', 'c');
                     AppendRegularExpressionCompositeEscape(content, term);
                     break;
                     
@@ -2164,7 +2162,7 @@ namespace IronRuby.Compiler {
             }
         }
 
-        private void AppendRegularExpressionCompositeEscape(StringBuilder/*!*/ content, int term) {
+        private void AppendRegularExpressionCompositeEscape(MutableStringBuilder/*!*/ content, int term) {
             int c = ReadNormalizeEndOfLine();
             if (c == '\\') {
                 AppendEscapedRegexEscape(content, term);
@@ -2175,7 +2173,7 @@ namespace IronRuby.Compiler {
             }
         }
 
-        private void AppendEscapedOctalEscape(StringBuilder/*!*/ content) {
+        private void AppendEscapedOctalEscape(MutableStringBuilder/*!*/ content) {
             int start = _bufferPos - 1;
             ReadOctalEscape(0);
 
@@ -2183,7 +2181,7 @@ namespace IronRuby.Compiler {
             content.Append(_lineBuffer, start, _bufferPos - start);
         }
 
-        private void AppendEscapedHexEscape(StringBuilder/*!*/ content) {
+        private void AppendEscapedHexEscape(MutableStringBuilder/*!*/ content) {
             int start = _bufferPos - 1;
             ReadHexEscape();
 
@@ -2191,7 +2189,7 @@ namespace IronRuby.Compiler {
             content.Append(_lineBuffer, start, _bufferPos - start);
         }
 
-        private void AppendEscapedUnicode(StringBuilder/*!*/ content) {
+        private void AppendEscapedUnicode(MutableStringBuilder/*!*/ content) {
             int start = _bufferPos - 1;
 
             if (Peek() == '{') {
@@ -2290,7 +2288,7 @@ namespace IronRuby.Compiler {
         }
 
         // Reads up to 6 hex characters, treats them as a exadecimal code-point value and appends the result to the buffer.
-        private void AppendUnicodeCodePoint(StringBuilder/*!*/ content, StringType stringType) {
+        private void AppendUnicodeCodePoint(MutableStringBuilder/*!*/ content, StringType stringType) {
             int codepoint = ReadUnicodeCodePoint();
 
             if (codepoint < 0x10000) {
@@ -2298,14 +2296,29 @@ namespace IronRuby.Compiler {
                 AppendCharacter(content, codepoint, stringType);
             } else {
                 codepoint -= 0x10000;
-                content.Append((char)((codepoint / 0x400) + 0xd800));
-                content.Append((char)((codepoint % 0x400) + 0xdc00));
+                content.Append((char)((codepoint / 0x400) + 0xd800), (char)((codepoint % 0x400) + 0xdc00));
             }
+        }
+
+        public static int ToCodePoint(int highSurrogate, int lowSurrogate) {
+            return (highSurrogate - 0xd800) * 0x400 + (lowSurrogate - 0xdc00) + 0x10000;
         }
 
         #endregion
 
         #region Strings
+
+        internal void SetStringToken(string/*!*/ value) {
+            _tokenValue.SetString(value);
+        }
+
+        internal void SetAsciiStringToken(string/*!*/ symbol) {
+            _tokenValue.SetString(symbol);
+        }
+
+        internal void SetStringToken(int start, int length) {
+            SetStringToken(new String(_lineBuffer, start, length));
+        }
 
         // String: "...
         private Tokens ReadDoubleQuote() {
@@ -2322,8 +2335,8 @@ namespace IronRuby.Compiler {
         }
 
         // returns last character read
-        private int ReadStringContent(StringBuilder/*!*/ content, StringType stringType, int terminator, int openingParenthesis, 
-            ref int nestingLevel, ref bool hasUnicodeEscape) {
+        private int ReadStringContent(MutableStringBuilder/*!*/ content, StringType stringType, int terminator, int openingParenthesis, 
+            ref int nestingLevel) {
 
             while (true) {
                 int eolnWidth;
@@ -2366,7 +2379,6 @@ namespace IronRuby.Compiler {
                     } else if ((stringType & StringType.RegularExpression) != 0) {
                         // \uFFFF, \u{codepoint}
                         if (c == 'u' && _compatibility >= RubyCompatibility.Ruby19) {
-                            hasUnicodeEscape = true;
                             content.Append('\\');
                             AppendEscapedUnicode(content);
                         } else {
@@ -2375,9 +2387,16 @@ namespace IronRuby.Compiler {
                         }
                         continue;
                     } else if ((stringType & StringType.ExpandsEmbedded) != 0) {
-                        // \uFFFF, \u{codepoint}
                         if (c == 'u' && _compatibility >= RubyCompatibility.Ruby19) {
-                            hasUnicodeEscape = true;
+                            // TODO: if the string contains ascii characters only => it is ok and the encoding of the string will be UTF8
+                            if (_encoding != RubyEncoding.UTF8) {
+                                ReportError(Errors.EncodingsMixed, RubyEncoding.UTF8.Name, _encoding.Name);
+                                content.Append('\\');
+                                content.Append('u');
+                                continue;
+                            }
+
+                            // \uFFFF, \u{codepoint}
                             if (Peek() == '{') {
                                 AppendUnicodeCodePoint(content, stringType);
                                 continue;
@@ -2385,8 +2404,12 @@ namespace IronRuby.Compiler {
                                 c = ReadUnicodeEscape();
                             }
                         } else {
+                            // other escapes:
                             SeekRelative(-eolnWidth);
                             c = ReadEscape();
+                            Debug.Assert(c <= 0xff);
+                            AppendByte(content, (byte)c, stringType);
+                            continue;
                         }
                     } else if ((stringType & StringType.Words) != 0 && IsWhiteSpace(c)) {
                         /* ignore backslashed spaces in %w */
@@ -2399,11 +2422,19 @@ namespace IronRuby.Compiler {
             }
         }
 
-        private void AppendCharacter(StringBuilder/*!*/ content, int c, StringType stringType) {
+        private void AppendCharacter(MutableStringBuilder/*!*/ content, int c, StringType stringType) {
             if (c == 0 && (stringType & StringType.Symbol) != 0) {
                 ReportError(Errors.NullCharacterInSymbol);
             } else {
                 content.Append((char)c);
+            }
+        }
+
+        private void AppendByte(MutableStringBuilder/*!*/ content, byte b, StringType stringType) {
+            if (b == 0 && (stringType & StringType.Symbol) != 0) {
+                ReportError(Errors.NullCharacterInSymbol);
+            } else {
+                content.Append(b);
             }
         }
 
@@ -2479,7 +2510,7 @@ namespace IronRuby.Compiler {
                 return Tokens.WordSeparator;
             }
 
-            StringBuilder content;
+            MutableStringBuilder content;
 
             // start of #$variable, #@variable, #{expression} in a string:
             if ((stringKind & StringType.ExpandsEmbedded) != 0 && c == '#') {
@@ -2494,20 +2525,18 @@ namespace IronRuby.Compiler {
                         MarkSingleLineTokenEnd();
                         return StringEmbeddedCodeBegin();
                 }
-                content = new StringBuilder();
+                content = new MutableStringBuilder(_encoding);
                 content.Append('#');
             } else {
-                content = new StringBuilder();
+                content = new MutableStringBuilder(_encoding);
                 SeekRelative(-eolnWidth);
             }
 
-            bool hasUnicodeEscape = false;
-
             int nestingLevel = info.NestingLevel;
-            ReadStringContent(content, stringKind, info.TerminatingCharacter, info.OpeningParenthesis, ref nestingLevel, ref hasUnicodeEscape);
+            ReadStringContent(content, stringKind, info.TerminatingCharacter, info.OpeningParenthesis, ref nestingLevel);
             info.NestingLevel = nestingLevel;
 
-            _tokenValue.SetString(content.ToString(), hasUnicodeEscape);
+            _tokenValue.SetStringContent(content);
             MarkMultiLineTokenEnd();
             return Tokens.StringContent;
         }
@@ -2639,7 +2668,7 @@ namespace IronRuby.Compiler {
                 StringBuilder str = ReadNonexpandingHeredocContent(heredoc);
 
                 // do not restore buffer, the next token query will invoke 'if (EOF)' or 'if (line contains label)' above:
-                _tokenValue.SetString(str.ToString(), false);
+                SetStringToken(str.ToString());
                 MarkMultiLineTokenEnd();
                 return Tokens.StringContent;
             }
@@ -2694,7 +2723,7 @@ namespace IronRuby.Compiler {
         }
 
         private Tokens TokenizeExpandingHeredocContent(HeredocTokenizer/*!*/ heredoc) {
-            StringBuilder content;
+            MutableStringBuilder content;
 
             int c = Peek();
             if (c == '#') {
@@ -2712,19 +2741,18 @@ namespace IronRuby.Compiler {
                         return StringEmbeddedCodeBegin();
                 }
 
-                content = new StringBuilder();
+                content = new MutableStringBuilder(_encoding);
                 content.Append('#');
             } else {
-                content = new StringBuilder();
+                content = new MutableStringBuilder(_encoding);
             }
 
             bool isIndented = (heredoc.Properties & StringType.IndentedHeredoc) != 0;
-            bool hasUnicodeEscape = false;
             
             do {
                 // read string content upto the end of the line:
                 int tmp = 0;
-                c = ReadStringContent(content, heredoc.Properties, '\n', 0, ref tmp, ref hasUnicodeEscape);
+                c = ReadStringContent(content, heredoc.Properties, '\n', 0, ref tmp);
                 
                 // stop reading on end-of-file or just before an embedded expression: #$, #$, #{
                 if (c != '\n') {
@@ -2744,7 +2772,7 @@ namespace IronRuby.Compiler {
 
             } while (!LineContentEquals(heredoc.Label, isIndented));
 
-            _tokenValue.SetString(content.ToString(), hasUnicodeEscape);
+            _tokenValue.SetStringContent(content);
             MarkMultiLineTokenEnd();
             return Tokens.StringContent;
         }
@@ -2861,6 +2889,36 @@ namespace IronRuby.Compiler {
         #endregion
 
         #region Numbers
+
+        public sealed class BignumParser : UnsignedBigIntegerParser {
+            private char[] _buffer;
+            private int _position;
+
+            public int Position { get { return _position; } set { _position = value; } }
+            public char[] Buffer { get { return _buffer; } set { _buffer = value; } } // TODO: remove
+
+            public BignumParser() {
+            }
+
+            protected override int ReadDigit() {
+                Debug.Assert('0' < 'A' && 'A' < '_' && '_' < 'a');
+
+                while (true) {
+                    char c = _buffer[_position++];
+
+                    if (c <= '9') {
+                        Debug.Assert(c >= '0');
+                        return c - '0';
+                    } else if (c >= 'a') {
+                        Debug.Assert(c <= 'z');
+                        return c - 'a' + 10;
+                    } else if (c != '_') {
+                        Debug.Assert(c >= 'A' && c <= 'Z');
+                        return c - 'A' + 10;
+                    }
+                }
+            }
+        }
 
         private enum NumericCharKind {
             None,
@@ -3300,12 +3358,26 @@ namespace IronRuby.Compiler {
             return Int32.MaxValue;
         }
 
-        public static bool IsIdentifier(int c) {
-            return IsIdentifierInitial(c) || IsDecimalDigit(c);
+        private static int AllowMultiByteIdentifier(bool allowMultiByteIdentifier) {
+            // MRI 1.9 consideres all characters greater than 0x007f as identifiers.
+            // Surrogate pairs are composed to a single character that is also considered an identifier.
+            return allowMultiByteIdentifier ? 0x07f : Int32.MaxValue;
         }
 
-        public static bool IsIdentifierInitial(int c) {
-            return IsLetter(c) || c == '_';
+        private bool IsIdentifier(int c) {
+            return IsIdentifier(c, _multiByteIdentifier);
+        }
+
+        public static bool IsIdentifier(int c, int multiByteIdentifier) {
+            return IsIdentifierInitial(c, multiByteIdentifier) || IsDecimalDigit(c);
+        }
+
+        private bool IsIdentifierInitial(int c) {
+            return IsIdentifierInitial(c, _multiByteIdentifier);
+        }
+
+        public static bool IsIdentifierInitial(int c, int multiByteIdentifier) {
+            return IsLetter(c) || c == '_' || c > multiByteIdentifier;
         }
 
         public static bool IsLetter(int c) {
@@ -3332,8 +3404,8 @@ namespace IronRuby.Compiler {
             return unchecked(((uint)c - 9 <= (uint)13 - 9) || c == 32);
         }
 
-        private static bool IsMethodNameSuffix(int c) {
-            return IsIdentifier(c) || c == '!' || c == '?' || c == '=';
+        private static bool IsMethodNameSuffix(int c, int multiByteIdentifier) {
+            return IsIdentifier(c, multiByteIdentifier) || c == '!' || c == '?' || c == '=';
         }
 
         private void SkipVariableName() {
@@ -3622,42 +3694,44 @@ namespace IronRuby.Compiler {
 
         #region Names
 
-        public static bool IsConstantName(string name) {
+        public static bool IsConstantName(string name, bool allowMultiByteCharacters) {
+            int multiByteIdentifier = AllowMultiByteIdentifier(allowMultiByteCharacters);
             return !String.IsNullOrEmpty(name) 
                 && IsUpperLetter(name[0])
-                && IsVariableName(name, 1, 1) 
-                && IsIdentifier(name[name.Length - 1]);
+                && IsVariableName(name, 1, 1, multiByteIdentifier)
+                && IsIdentifier(name[name.Length - 1], multiByteIdentifier);
         }
 
-        public static bool IsMethodName(string name) {
+        public static bool IsMethodName(string name, bool allowMultiByteCharacters) {
+            int multiByteIdentifier = AllowMultiByteIdentifier(allowMultiByteCharacters);
             return !String.IsNullOrEmpty(name)
-                && IsIdentifierInitial(name[0])
-                && IsVariableName(name, 1, 1)
-                && IsMethodNameSuffix(name[name.Length - 1]);
+                && IsIdentifierInitial(name[0], multiByteIdentifier)
+                && IsVariableName(name, 1, 1, multiByteIdentifier)
+                && IsMethodNameSuffix(name[name.Length - 1], multiByteIdentifier);
         }
 
-        public static bool IsInstanceVariableName(string name) {
+        public static bool IsInstanceVariableName(string name, bool allowMultiByteCharacters) {
             return name != null && name.Length >= 2
                 && name[0] == '@'
-                && IsVariableName(name, 1, 0);
+                && IsVariableName(name, 1, 0, AllowMultiByteIdentifier(allowMultiByteCharacters));
         }
 
-        public static bool IsClassVariableName(string name) {
+        public static bool IsClassVariableName(string name, bool allowMultiByteCharacters) {
             return name != null && name.Length >= 3
                 && name[0] == '@'
                 && name[1] == '@'
-                && IsVariableName(name, 2, 0);
+                && IsVariableName(name, 2, 0, AllowMultiByteIdentifier(allowMultiByteCharacters));
         }
 
-        public static bool IsGlobalVariableName(string name) {
+        public static bool IsGlobalVariableName(string name, bool allowMultiByteCharacters) {
             return name != null && name.Length >= 2
                 && name[0] == '$'
-                && IsVariableName(name, 1, 0);
+                && IsVariableName(name, 1, 0, AllowMultiByteIdentifier(allowMultiByteCharacters));
         }
 
-        private static bool IsVariableName(string name, int trimStart, int trimEnd) {
+        private static bool IsVariableName(string name, int trimStart, int trimEnd, int multiByteIdentifier) {
             for (int i = trimStart; i < name.Length - trimEnd; i++) {
-                if (!IsIdentifier(name[i])) {
+                if (!IsIdentifier(name[i], multiByteIdentifier)) {
                     return false;
                 }
             }

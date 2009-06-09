@@ -193,7 +193,11 @@ namespace IronPython.Modules {
         }
 #endif
 
-        public static List listdir(CodeContext/*!*/ context, string path) {
+        public static List listdir(CodeContext/*!*/ context, [NotNull]string path) {
+            if (path == String.Empty) {
+                path = ".";
+            }
+
             List ret = PythonOps.MakeList();
             try {
                 string[] files = context.LanguageContext.DomainManager.Platform.GetFiles(path, "*");
@@ -505,7 +509,8 @@ namespace IronPython.Modules {
                     }
                     if (strarg.IndexOf(' ') != -1) {
                         sb.Append('"');
-                        sb.Append(strarg);
+                        // double quote any existing quotes
+                        sb.Append(strarg.Replace("\"", "\"\""));
                         sb.Append('"');
                     } else {
                         sb.Append(strarg);

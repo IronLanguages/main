@@ -25,6 +25,8 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using IronRuby.Builtins;
 using IronRuby.Runtime;
+using IronRuby.Runtime.Calls;
+using System.Diagnostics;
 
 namespace IronRuby.Compiler.Generation {
     internal class RubyTypeBuilder : IFeatureBuilder {
@@ -62,12 +64,12 @@ namespace IronRuby.Compiler.Generation {
         #endregion
 
         protected readonly TypeBuilder/*!*/ _tb;
-        protected readonly FieldBuilder/*!*/ _classField;
+        protected readonly FieldBuilder/*!*/ _immediateClassField;
         protected readonly FieldBuilder/*!*/ _instanceDataField;
 
         internal RubyTypeBuilder(TypeBuilder/*!*/ tb) {
             _tb = tb;
-            _classField = _tb.DefineField("_class", typeof(RubyClass), FieldAttributes.Private | FieldAttributes.InitOnly);
+            _immediateClassField = _tb.DefineField("_immediateClass", typeof(RubyClass), FieldAttributes.Private);
             _instanceDataField = _tb.DefineField("_instanceData", typeof(RubyInstanceData), FieldAttributes.Private);
         }
 
@@ -78,7 +80,7 @@ namespace IronRuby.Compiler.Generation {
 
             RubyTypeEmitter re = (emitter as RubyTypeEmitter);
             Assert.NotNull(re);
-            re.ClassField = _classField;
+            re.ImmediateClassField = _immediateClassField;
 
             DefineDynamicObjectImplementation();
 
@@ -86,12 +88,6 @@ namespace IronRuby.Compiler.Generation {
             DefineCustomTypeDescriptor();
 #endif
 
-            // we need to get the right execution context
-#if OBSOLETE
-            // TODO: remove the need for these methods to be special cased
-            EmitOverrideEquals(typeGen);
-            EmitOverrideGetHashCode(typeGen);
-#endif
         }
 
 #if !SILVERLIGHT
@@ -99,143 +95,190 @@ namespace IronRuby.Compiler.Generation {
 #endif
         private static readonly Type/*!*/[]/*!*/ _classArgSignature = new Type[] { typeof(RubyClass) };
 
-        private static bool IsAvailable(MethodBase method) {
-            return method != null && !method.IsPrivate && !method.IsFamilyAndAssembly;
+        private static readonly Type/*!*/[]/*!*/ _exceptionMessageSignature = new Type[] { typeof(string) };
+
+        private static bool IsAvailable(MethodBase/*!*/ method) {
+            return method != null && !method.IsPrivate && !method.IsAssembly && !method.IsFamilyAndAssembly;
+        }
+
+        private enum SignatureAdjustment {
+            // ordered by priority:
+            None = 0,
+            ConvertClassToContext = 1,
+            InsertClass = 2
+        }
+
+        private sealed class ConstructorBuilderInfo {
+            public ConstructorInfo BaseCtor;
+            public ParameterInfo[] BaseParameters;
+            public Type[] ParameterTypes;
+            public int ContextArgIndex;
+            public int ClassArgIndex;
+            public int ClassParamIndex;
+            public SignatureAdjustment Adjustment;
         }
 
         private void DefineConstructors() {
             BindingFlags bindingFlags = BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance;
-            ConstructorInfo defaultCtor = _tb.BaseType.GetConstructor(bindingFlags, null, Type.EmptyTypes, null);
+            ConstructorInfo defaultBaseCtor = _tb.BaseType.GetConstructor(bindingFlags, null, Type.EmptyTypes, null);
 
-            // constructor with a single parameter of type RubyClass:
-            ConstructorInfo defaultRubyCtor = null;
+            var ctors = new List<ConstructorBuilderInfo>();
 
-            bool deserializerFound = false;
             foreach (var baseCtor in _tb.BaseType.GetConstructors(bindingFlags)) {
-                if (!baseCtor.IsPublic && !baseCtor.IsFamily) {
+                if (!baseCtor.IsPublic && !baseCtor.IsProtected()) {
                     continue;
                 }
 
-                Type[] paramTypes;
                 ParameterInfo[] baseParams = baseCtor.GetParameters();
 
-                int additionalParamCount;
-                bool isDeserializer = false;
-                bool isDefaultRubyCtor = false;
-                if (baseParams.Length > 0 && baseParams[0].ParameterType == typeof(RubyClass)) {
-                    // Build a simple pass-through constructor
-                    paramTypes = ReflectionUtils.GetParameterTypes(baseParams);
-                    additionalParamCount = 0;
-                    isDefaultRubyCtor = true;
 #if !SILVERLIGHT
-                } else if (baseParams.Length == 2 && 
+                if (baseParams.Length == 2 &&
                     baseParams[0].ParameterType == typeof(SerializationInfo) && baseParams[1].ParameterType == typeof(StreamingContext)) {
-
-                    // Build a deserializer
-                    deserializerFound = true;
-                    isDeserializer = true;
-                    paramTypes = ReflectionUtils.GetParameterTypes(baseParams);
-                    additionalParamCount = 0;
+                    OverrideDeserializer(baseCtor);
+                    continue;
+                }
 #endif
-                } else {
-                    // Special-case for Exception
-                    if (_tb.IsSubclassOf(typeof(Exception)) && IsAvailable(defaultCtor)) {
-                        if (baseParams.Length == 0) {
-                            // Skip this constructor; it would conflict with the one we're going to build next
-                            continue;
-                        } else if (baseParams.Length == 1 && baseParams[0].ParameterType == typeof(string)) {
-                            // Special case exceptions to improve interop. Ruby's default message for an exception is the name of the exception class.
-                            BuildExceptionConstructor(baseCtor);
-                        }
-                    }
+                AddConstructor(ctors, MakeConstructor(baseCtor, baseParams));
+            }
 
-                    // Add RubyClass to the head of the parameter list
-                    paramTypes = new Type[baseParams.Length + 1];
-                    paramTypes[0] = typeof(RubyClass);
-                    for (int i = 0; i < baseParams.Length; i++) {
-                        paramTypes[i + 1] = baseParams[i].ParameterType;
-                    }
+            BuildConstructors(ctors);
+        }
 
-                    additionalParamCount = 1;
-                    if (baseParams.Length == 0) {
-                        isDefaultRubyCtor = true;
-                    }
+        private static void AddConstructor(List<ConstructorBuilderInfo>/*!*/ ctors, ConstructorBuilderInfo/*!*/ ctor) {
+            int existing = ctors.FindIndex((c) => c.ParameterTypes.ValueEquals(ctor.ParameterTypes));
+            if (existing != -1) {
+                if (ctors[existing].Adjustment > ctor.Adjustment) {
+                    ctors[existing] = ctor;
                 }
+            } else {
+                ctors.Add(ctor);
+            }
+        }
 
-                // Build a new constructor based on this base class ctor
-                ConstructorBuilder cb = _tb.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, paramTypes);
+        private ConstructorBuilderInfo/*!*/ MakeConstructor(ConstructorInfo/*!*/ baseCtor, ParameterInfo/*!*/[]/*!*/ baseParams) {
+            int contextArgIndex = -1;
+            int classArgIndex = -1;
+            for (int i = 0; i < baseParams.Length; i++) {
+                if (baseParams[i].ParameterType == typeof(RubyContext)) {
+                    contextArgIndex = i;
+                    break;
+                } else if (baseParams[i].ParameterType == typeof(RubyClass)) {
+                    classArgIndex = i;
+                    break;
+                }
+            }
+
+            int classParamIndex;
+            SignatureAdjustment adjustment;
+            if (classArgIndex == -1) {
+                if (contextArgIndex == -1) {                    
+                    adjustment = SignatureAdjustment.InsertClass;
+                    classParamIndex = 0;
+                } else {
+                    adjustment = SignatureAdjustment.ConvertClassToContext;
+                    classParamIndex = contextArgIndex;
+                }
+            } else {
+                adjustment = SignatureAdjustment.None;
+                classParamIndex = classArgIndex;
+            }
+
+            Debug.Assert(classParamIndex >= 0);
+
+            Type[] paramTypes = new Type[(adjustment == SignatureAdjustment.InsertClass ? 1 : 0) + baseParams.Length];
+            int paramIndex = 0, argIndex = 0;
+            if (adjustment == SignatureAdjustment.InsertClass) {
+                paramIndex++;
+            }
+
+            while (paramIndex < paramTypes.Length) {
+                paramTypes[paramIndex++] = baseParams[argIndex++].ParameterType;
+            }
+
+            paramTypes[classParamIndex] = typeof(RubyClass);
+
+            return new ConstructorBuilderInfo() {
+                BaseCtor = baseCtor,
+                BaseParameters = baseParams,
+                ParameterTypes = paramTypes,
+                ContextArgIndex = contextArgIndex,
+                ClassArgIndex = classArgIndex,
+                ClassParamIndex = classParamIndex,
+                Adjustment = adjustment,
+            };
+        }
+
+        private void BuildConstructors(IList<ConstructorBuilderInfo>/*!*/ ctors) {
+            foreach (var ctor in ctors) {
+                // ctor(... RubyClass! class ..., <visible params>) : base(<hidden params>, <visible params>) { _class = class; }
+                // ctor(... RubyClass! class ..., <visible params>) : base(... RubyOps.GetContextFromClass(class) ..., <visible params>) { _class = class; }
+                // ctor(RubyClass! class) : base(RubyOps.GetDefaultExceptionMessage(class)) { _class = class; }
+                ConstructorBuilder cb = _tb.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, ctor.ParameterTypes);
                 ILGen il = new ILGen(cb.GetILGenerator());
+
+                int paramIndex = 0;
+                int argIndex = 0;
+
+                // We need to initialize before calling base ctor since the ctor can call virtual methods.
+                // _immediateClass = immediateClass:
                 il.EmitLoadArg(0);
-                for (int i = 1; i < baseParams.Length + 1; i++) {
-                    il.EmitLoadArg(i + additionalParamCount);
-                }
-                il.Emit(OpCodes.Call, baseCtor);
+                il.EmitLoadArg(1 + ctor.ClassParamIndex);
+                il.EmitFieldSet(_immediateClassField);
 
-                if (!isDeserializer) {
-                    // ctor(RubyClass! class, {params}) : base({params}) { this._class = class; } 
-                    il.EmitLoadArg(0);
+                // base ctor call:
+                il.EmitLoadArg(0);
+
+                ConstructorInfo msgCtor;
+                if (ctor.ParameterTypes.Length == 1 && ctor.Adjustment == SignatureAdjustment.InsertClass &&
+                    _tb.IsSubclassOf(typeof(Exception)) && IsAvailable(msgCtor = _tb.BaseType.GetConstructor(_exceptionMessageSignature))) {
+
+                    // a parameterless exception constructor should use Ruby default message:
                     il.EmitLoadArg(1);
-                    il.EmitFieldSet(_classField);
-
-                    if (isDefaultRubyCtor) {
-                        defaultRubyCtor = cb;
-                    }
+                    il.EmitCall(Methods.GetDefaultExceptionMessage);
+                    il.Emit(OpCodes.Call, msgCtor);
                 } else {
-                    // ctor(SerializationInfo! info, StreamingContext! context) : base(info, context) {
-                    //   RubyOps.DeserializeObject(out this._instanceData, out this._class, info);
-                    // }
-                    il.EmitLoadArg(0);
-                    il.EmitFieldAddress(_instanceDataField);
-                    il.EmitLoadArg(0);
-                    il.EmitFieldAddress(_classField);
-                    il.EmitLoadArg(1);
-                    il.EmitCall(typeof(RubyOps).GetMethod("DeserializeObject"));
+                    if (ctor.Adjustment == SignatureAdjustment.InsertClass) {
+                        paramIndex++;
+                    }
+
+                    while (paramIndex < ctor.ParameterTypes.Length) {
+                        if (ctor.Adjustment == SignatureAdjustment.ConvertClassToContext && argIndex == ctor.ContextArgIndex) {
+                            il.EmitLoadArg(1 + ctor.ClassParamIndex);
+                            il.EmitCall(Methods.GetContextFromModule);
+                        } else {
+                            ClsTypeEmitter.DefineParameterCopy(cb, paramIndex, ctor.BaseParameters[argIndex]);
+                            il.EmitLoadArg(1 + paramIndex);
+                        }
+                        argIndex++;
+                        paramIndex++;
+                    }
+                    il.Emit(OpCodes.Call, ctor.BaseCtor);
                 }
+
                 il.Emit(OpCodes.Ret);
             }
-#if !SILVERLIGHT
-            if (defaultRubyCtor != null && !deserializerFound) {
-                // We didn't previously find a deserialization constructor.  If we can, build one now.
-                BuildDeserializationConstructor(defaultRubyCtor);
-            }
-#endif
         }
 
-        private void BuildExceptionConstructor(ConstructorInfo baseCtor) {
-            // ctor(RubyClass! class) : base(RubyOps.GetDefaultExceptionMessage(class)) {
-            //   this._class = class;
+#if !SILVERLIGHT
+        private void OverrideDeserializer(ConstructorInfo/*!*/ baseCtor) {
+            // ctor(SerializationInfo! info, StreamingContext! context) : base(info, context) {
+            //   RubyOps.DeserializeObject(out this._instanceData, out this._immediateClass, info);
             // }
-            ConstructorBuilder ctor = _tb.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, _classArgSignature);
-            ILGen il = new ILGen(ctor.GetILGenerator());
+
+            ConstructorBuilder cb = _tb.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, _deserializerSignature);
+            ILGen il = new ILGen(cb.GetILGenerator());
+
             il.EmitLoadArg(0);
             il.EmitLoadArg(1);
-            il.Emit(OpCodes.Call, Methods.GetDefaultExceptionMessage);
+            il.EmitLoadArg(2);
             il.Emit(OpCodes.Call, baseCtor);
-            il.EmitLoadArg(0);
-            il.EmitLoadArg(1);
-            il.EmitFieldSet(_classField);
-            il.Emit(OpCodes.Ret);
-        }
-
-#if !SILVERLIGHT
-        private void BuildDeserializationConstructor(ConstructorInfo thisCtor) {
-            // ctor(SerializationInfo! info, StreamingContext! context) : this((RubyClass)context.Context) {
-            //   RubyOps.DeserializeObject(out this._instanceData, out this._class, info);
-            // }
-            ConstructorBuilder ctor = _tb.DefineConstructor(MethodAttributes.Family, CallingConventions.Standard, _deserializerSignature);
-            ILGen il = new ILGen(ctor.GetILGenerator());
-            il.EmitLoadArg(0);
-            il.EmitLoadArgAddress(2);
-            il.EmitCall(typeof(StreamingContext).GetProperty("Context").GetGetMethod());
-            il.Emit(OpCodes.Castclass, typeof(RubyClass));
-            il.Emit(OpCodes.Call, thisCtor);
 
             il.EmitLoadArg(0);
             il.EmitFieldAddress(_instanceDataField);
             il.EmitLoadArg(0);
-            il.EmitFieldAddress(_classField);
+            il.EmitFieldAddress(_immediateClassField);
             il.EmitLoadArg(1);
-            il.EmitCall(typeof(RubyOps).GetMethod("DeserializeObject"));
+            il.EmitCall(Methods.DeserializeObject);
             il.Emit(OpCodes.Ret);
         }
 #endif
@@ -245,23 +288,61 @@ namespace IronRuby.Compiler.Generation {
 
             ILGen il;
 
-            // RubyClass! IRubyObject.RubyClass { get { return this._class; } }
-            il = DefineMethodOverride(_tb, typeof(IRubyObject).GetProperty(RubyObject.ClassPropertyName).GetGetMethod());
+            // RubyClass! IRubyObject.ImmediateClass { get { return _immediateClassField; } }
+            il = DefineMethodOverride(_tb, Methods.IRubyObject_get_ImmediateClass);
             il.EmitLoadArg(0);
-            il.EmitFieldGet(_classField);
+            il.EmitFieldGet(_immediateClassField);
             il.Emit(OpCodes.Ret);
 
-            // RubyInstanceData IRubyObject.TryGetInstanceData() { return this._instanceData; }
-            il = DefineMethodOverride(_tb, typeof(IRubyObject).GetMethod("TryGetInstanceData"));
+            // RubyClass! IRubyObject.ImmediateClass { set { _immediateClassField = value; } }
+            il = DefineMethodOverride(_tb, Methods.IRubyObject_set_ImmediateClass);
+            il.EmitLoadArg(0);
+            il.EmitLoadArg(1);
+            il.EmitFieldSet(_immediateClassField);
+            il.Emit(OpCodes.Ret);
+
+            // RubyInstanceData IRubyObject.TryGetInstanceData() { return _instanceData; }
+            il = DefineMethodOverride(_tb, Methods.IRubyObject_TryGetInstanceData);
             il.EmitLoadArg(0);
             il.EmitFieldGet(_instanceDataField);
             il.Emit(OpCodes.Ret);
 
             // RubyInstanceData! IRubyObject.GetInstanceData() { return RubyOps.GetInstanceData(ref _instanceData); }
-            il = DefineMethodOverride(_tb, typeof(IRubyObject).GetMethod("GetInstanceData"));
+            il = DefineMethodOverride(_tb, Methods.IRubyObject_GetInstanceData);
             il.EmitLoadArg(0);
             il.EmitFieldAddress(_instanceDataField);
-            il.EmitCall(typeof(RubyOps).GetMethod("GetInstanceData"));
+            il.EmitCall(Methods.GetInstanceData);
+            il.Emit(OpCodes.Ret);
+
+            // bool IRubyObject.IsFrozen { get { return RubyOps.IsObjectFrozen(_instanceData); } }
+            il = DefineMethodOverride(_tb, Methods.IRubyObjectState_get_IsFrozen);
+            il.EmitLoadArg(0);
+            il.EmitFieldGet(_instanceDataField);
+            il.EmitCall(Methods.IsObjectFrozen);
+            il.Emit(OpCodes.Ret);
+
+            // void IRubyObject.Freeze { RubyOps.FreezeObject(ref _instanceData); }
+            il = DefineMethodOverride(_tb, Methods.IRubyObjectState_Freeze);
+            il.EmitLoadArg(0);
+            il.EmitFieldAddress(_instanceDataField);
+            il.EmitCall(Methods.FreezeObject);
+            il.Emit(OpCodes.Ret);
+
+            // bool IRubyObject.IsTainted { 
+            //   get { return RubyOps.IsObjectTainted(_instanceData); }
+            //   set { return RubyOps.SetObjectTaint(ref _instanceData, value); }
+            // }
+            il = DefineMethodOverride(_tb, Methods.IRubyObjectState_get_IsTainted);
+            il.EmitLoadArg(0);
+            il.EmitFieldGet(_instanceDataField);
+            il.EmitCall(Methods.IsObjectTainted);
+            il.Emit(OpCodes.Ret);
+
+            il = DefineMethodOverride(_tb, Methods.IRubyObjectState_set_IsTainted);
+            il.EmitLoadArg(0);
+            il.EmitFieldAddress(_instanceDataField);
+            il.EmitLoadArg(1);
+            il.EmitCall(Methods.SetObjectTaint);
             il.Emit(OpCodes.Ret);
         }
 
@@ -294,9 +375,9 @@ namespace IronRuby.Compiler.Generation {
             il.EmitLoadArg(0);
             il.EmitFieldGet(_instanceDataField);
             il.EmitLoadArg(0);
-            il.EmitFieldGet(_classField);
+            il.EmitFieldGet(_immediateClassField);
             il.EmitLoadArg(1);
-            il.EmitCall(typeof(RubyOps).GetMethod("SerializeObject"));
+            il.EmitCall(Methods.SerializeObject);
             il.Emit(OpCodes.Ret);
 #endif
         }

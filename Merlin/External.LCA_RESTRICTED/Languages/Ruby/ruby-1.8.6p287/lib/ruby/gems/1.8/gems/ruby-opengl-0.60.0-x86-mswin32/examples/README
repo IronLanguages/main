@@ -1,0 +1,16 @@
+Examples
+========
+
+This directory contains OpenGL examples converted to ruby from various sources.
+As such, they are distributed under various terms - see each file for licensing info.
+
+RedBook/
+	Examples from OpenGL Red Book and SGI's example code in general, licensed under
+	SGI open-source license.
+OrangeBook/
+	Examples from OpenGL Orange Book (GLSL), distributed under BSD license
+NeHe/
+  NeHe's opengl tutorials (http://nehe.gamedev.net), licensed under free license.
+Misc/
+	Other examples. If license is not given, MIT is assumed.
+	

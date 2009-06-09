@@ -1,0 +1,228 @@
+
+<html><head>
+  <title>File: log4r.rb</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <link rel=StyleSheet href=".././rdoc-style.css" type="text/css" media=screen>
+  <script type="text/javascript" language="JavaScript">
+  <!--
+  function popCode(url) {
+    parent.frames.source.location = url
+  }
+  //-->
+  </script>
+</head>
+<body bgcolor="white">
+
+<table width="100%">
+ <tr class="title-row">
+ <td><table width="100%"><tr>
+   <td class="big-title-font" colspan=2><font size=-3><B>File</B><BR></font>log4r.rb</td>
+   <td align="right"><table cellspacing=0 cellpadding=2>
+         <tr>
+           <td  class="small-title-font">Path:</td>
+           <td class="small-title-font">log4r.rb</td>
+         </tr>
+         <tr>
+           <td class="small-title-font">Modified:</td>
+           <td class="small-title-font">Mon Aug 19 21:15:04 PDT 2002</td>
+         </tr>
+        </table>
+    </td></tr></table></td>
+  </tr>
+</table><br>
+  <!-- banner header -->
+
+
+<div class="description"><h1>1.0.5 <a href="../classes/Log4r.html">Log4r</a> API Reference</h1>
+<p>
+Welcome to the <a href="../classes/Log4r.html">Log4r</a> API reference.
+There are two classes of reference, the file overview and the class API.
+They are listed under Files and Classes respectively. File overviews cover
+the use of the <a href="../classes/Log4r.html">Log4r</a> API and some
+implementation details, whereas class APIs detail the methods available to
+the various objects.
+</p>
+<p>
+The code examples in this API assume:
+</p>
+<pre>
+  include Log4r
+</pre>
+<p>
+This file overview covers some of the major concepts in <a
+href="../classes/Log4r.html">Log4r</a>.
+</p>
+<h2>Log Levels</h2>
+<p>
+<a href="../classes/Log4r.html">Log4r</a> provides as many levels of
+logging as desired. Logging levels are an ordered set of names ranked by
+priority. The more important a level is, the higher its priority and the
+more likely we want to see any data associated with it. <a
+href="../classes/Log4r.html">Log4r</a> provides many ways to filter
+information by level.
+</p>
+<p>
+Loggers and Outputters have a level parameter which serves as a level
+threshold. Any data below this threshold will be ignored by the Logger or
+Outputter. Additionally, Outputters can be set to mask out any particular
+level or collection of levels.
+</p>
+<p>
+By combining level thresholds with other <a
+href="../classes/Log4r.html">Log4r</a> features, one can direct any set of
+data to any destination desired in a way that is easy to visualize and
+configure.
+</p>
+<h3>Default Levels</h3>
+<p>
+The default log levels and their priority rankings are:
+</p>
+<pre>
+  DEBUG &lt; INFO &lt; WARN &lt; ERROR &lt; FATAL
+</pre>
+<h3>Custom Levels</h3>
+<p>
+You can have as many levels as you desire, with any naming scheme. <a
+href="../classes/Log4r.html">Log4r</a> will automatically define level
+constants and log method names after your custom specification.
+</p>
+<p>
+Please see <a href="log4r/configurator_rb.html">log4r/configurator.rb</a>
+for details.
+</p>
+<h3>Boundary Levels</h3>
+<p>
+There are two special levels, <tt>ALL</tt> and <tt>OFF</tt> which denote
+whether we are logging at all levels or at none. The priority ranks with
+respect to the logging levels are as follows:
+</p>
+<pre>
+  ALL &lt; logging levels as defined by user &lt; OFF
+</pre>
+<p>
+Thus, setting the level to <tt>ALL</tt> will enable logging at all levels
+whereas <tt>OFF</tt> will turn off logging completely.
+</p>
+<h2>File Overviews</h2>
+<table>
+<tr><td valign="top">For Loggers:</td><td><a href="log4r/logger_rb.html">log4r/logger.rb</a>
+
+</td></tr>
+<tr><td valign="top">For Outputters:</td><td><a
+href="log4r/outputter/outputter_rb.html">log4r/outputter/outputter.rb</a>
+
+</td></tr>
+<tr><td valign="top">For Formatters:</td><td><a
+href="log4r/formatter/formatter_rb.html">log4r/formatter/formatter.rb</a>
+
+</td></tr>
+<tr><td valign="top">For configuration:</td><td><a href="log4r/configurator_rb.html">log4r/configurator.rb</a>
+
+</td></tr>
+</table>
+<h2>Principal Classes of <a href="../classes/Log4r.html">Log4r</a></h2>
+<ul>
+<li><a href="../classes/Log4r/Logger.html">Log4r::Logger</a> - Interface to
+logging
+
+</li>
+<li><a href="../classes/Log4r/Outputter.html">Log4r::Outputter</a> - An output
+destination for a logger.
+
+</li>
+<li><a href="../classes/Log4r/Formatter.html">Log4r::Formatter</a> - A means of
+formatting log data.
+
+</li>
+<li><a href="../classes/Log4r/Configurator.html">Log4r::Configurator</a> - A
+means of configuring <a href="../classes/Log4r.html">Log4r</a>
+
+</li>
+</ul>
+<h2>Convenience Classes</h2>
+<p>
+<a href="../classes/Log4r.html">Log4r</a> provides several convenience
+Outputters and Formatters. Please look at the file overviews of those
+classes for more details.
+</p>
+<h2>Remote Logging</h2>
+<p>
+<a href="../classes/Log4r.html">Log4r</a> provides a way to send log events
+over a network. See <a
+href="log4r/logserver_rb.html">log4r/logserver.rb</a> for details.
+</p>
+<h2>What&#8217;s Going on Inside?</h2>
+<p>
+<a href="../classes/Log4r.html">Log4r</a> has an internal logger which
+records much of what goes on inside. To see the output, define a Logger
+named &#8216;log4r&#8217; and give it an Outputter of some sort. It logs
+only at the lowest and highest priorities. That would be DEBUG and FATAL
+for the standard setup.
+</p>
+<p>
+It is essential to view this data when using certain classes, like <a
+href="../classes/Log4r/LogServer.html">Log4r::LogServer</a> and <a
+href="../classes/Log4r/EmailOutputter.html">Log4r::EmailOutputter</a>.
+</p>
+<h2>Other Info</h2>
+<table>
+<tr><td valign="top">Author:</td><td>Leon Torres
+
+</td></tr>
+<tr><td valign="top">Version:</td><td>$Id: <a href="log4r_rb.html">log4r.rb</a>,v 1.10 2002/08/20 04:15:04
+cepheus Exp $
+
+</td></tr>
+</table>
+</div>
+
+<table cellpadding=5 width="100%">
+<tr><td class="tablesubtitle">Required files</td></tr>
+</table><br>
+<div class="name-list">
+log4r/outputter/fileoutputter
+log4r/outputter/consoleoutputters
+log4r/outputter/staticoutputter
+log4r/outputter/rollingfileoutputter
+<a href="log4r/formatter/patternformatter_rb.html">log4r/formatter/patternformatter</a>
+log4r/loggerfactory
+</div>
+
+
+
+<table cellpadding=5 width="100%">
+<tr><td class="tablesubtitle">Classes and Modules</td></tr>
+</table><br>
+Module <a href="../classes/Log4r.html" class="link">Log4r</a><br />
+&nbsp;&nbsp;::Class <a href="../classes/Log4r/BasicFormatter.html" class="link">Log4r::BasicFormatter</a><br />
+&nbsp;&nbsp;::Class <a href="../classes/Log4r/ConfigError.html" class="link">Log4r::ConfigError</a><br />
+&nbsp;&nbsp;::Class <a href="../classes/Log4r/Configurator.html" class="link">Log4r::Configurator</a><br />
+&nbsp;&nbsp;::Class <a href="../classes/Log4r/DateFileOutputter.html" class="link">Log4r::DateFileOutputter</a><br />
+&nbsp;&nbsp;::Class <a href="../classes/Log4r/DefaultFormatter.html" class="link">Log4r::DefaultFormatter</a><br />
+&nbsp;&nbsp;::Class <a href="../classes/Log4r/EmailOutputter.html" class="link">Log4r::EmailOutputter</a><br />
+&nbsp;&nbsp;::Class <a href="../classes/Log4r/FileOutputter.html" class="link">Log4r::FileOutputter</a><br />
+&nbsp;&nbsp;::Class <a href="../classes/Log4r/Formatter.html" class="link">Log4r::Formatter</a><br />
+&nbsp;&nbsp;::Class <a href="../classes/Log4r/IOOutputter.html" class="link">Log4r::IOOutputter</a><br />
+&nbsp;&nbsp;::Class <a href="../classes/Log4r/Log4rTools.html" class="link">Log4r::Log4rTools</a><br />
+&nbsp;&nbsp;::Class <a href="../classes/Log4r/LogEvent.html" class="link">Log4r::LogEvent</a><br />
+&nbsp;&nbsp;::Class <a href="../classes/Log4r/LogServer.html" class="link">Log4r::LogServer</a><br />
+&nbsp;&nbsp;::Class <a href="../classes/Log4r/Logger.html" class="link">Log4r::Logger</a><br />
+&nbsp;&nbsp;::Class <a href="../classes/Log4r/ObjectFormatter.html" class="link">Log4r::ObjectFormatter</a><br />
+&nbsp;&nbsp;::Class <a href="../classes/Log4r/Outputter.html" class="link">Log4r::Outputter</a><br />
+&nbsp;&nbsp;::Class <a href="../classes/Log4r/PatternFormatter.html" class="link">Log4r::PatternFormatter</a><br />
+&nbsp;&nbsp;::Class <a href="../classes/Log4r/RemoteOutputter.html" class="link">Log4r::RemoteOutputter</a><br />
+&nbsp;&nbsp;::Class <a href="../classes/Log4r/RollingFileOutputter.html" class="link">Log4r::RollingFileOutputter</a><br />
+&nbsp;&nbsp;::Class <a href="../classes/Log4r/RootLogger.html" class="link">Log4r::RootLogger</a><br />
+&nbsp;&nbsp;::Class <a href="../classes/Log4r/SimpleFormatter.html" class="link">Log4r::SimpleFormatter</a><br />
+&nbsp;&nbsp;::Class <a href="../classes/Log4r/StderrOutputter.html" class="link">Log4r::StderrOutputter</a><br />
+&nbsp;&nbsp;::Class <a href="../classes/Log4r/StdoutOutputter.html" class="link">Log4r::StdoutOutputter</a><br />
+&nbsp;&nbsp;::Class <a href="../classes/Log4r/SyslogOutputter.html" class="link">Log4r::SyslogOutputter</a><br />
+&nbsp;&nbsp;::Class <a href="../classes/Log4r/YamlConfigurator.html" class="link">Log4r::YamlConfigurator</a><br />
+<br>
+
+  
+
+  <!-- method descriptions -->
+
+</body>
+</html>

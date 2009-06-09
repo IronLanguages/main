@@ -1,0 +1,7 @@
+<h3><%= options[:status] %> Error</h3>
+<% if @params[:error] %>
+<pre>
+<%= @params[:error] %>
+<%= @params[:error].backtrace.join('<br/>') %>
+</pre>
+<% end %>

@@ -23,7 +23,6 @@ using System.Text;
 using System.Threading;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
-using Microsoft.Scripting.Interpretation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using IronRuby.Builtins;
@@ -35,42 +34,6 @@ using System.Runtime.CompilerServices;
 using Microsoft.Scripting.Generation;
 
 namespace IronRuby.Runtime {
-
-    public class CallSiteStorage<TCallSiteFunc> : SiteLocalStorage<CallSite<TCallSiteFunc>> where TCallSiteFunc : class {
-        public CallSite<TCallSiteFunc>/*!*/ GetCallSite(string/*!*/ methodName, int argumentCount) {
-            return RubyUtils.GetCallSite(ref Data, methodName, argumentCount);
-        }
-
-        public CallSite<TCallSiteFunc>/*!*/ GetCallSite(string/*!*/ methodName, RubyCallSignature signature) {
-            return RubyUtils.GetCallSite(ref Data, methodName, signature);
-        }
-    }
-
-    public class BinaryOpStorage : CallSiteStorage<Func<CallSite, RubyContext, object, object, object>> {
-        public CallSite<Func<CallSite, RubyContext, object, object, object>>/*!*/ GetCallSite(string/*!*/ methodName) {
-            return GetCallSite(methodName, 1);
-        }
-    }
-
-    public class UnaryOpStorage : CallSiteStorage<Func<CallSite, RubyContext, object, object>> {
-        public CallSite<Func<CallSite, RubyContext, object, object>>/*!*/ GetCallSite(string/*!*/ methodName) {
-            return GetCallSite(methodName, 0);
-        }
-    }
-
-    public class RespondToStorage : CallSiteStorage<Func<CallSite, RubyContext, object, SymbolId, object>> {
-        public CallSite<Func<CallSite, RubyContext, object, SymbolId, object>>/*!*/ GetCallSite() {
-            return GetCallSite("respond_to?", 1);
-        }
-    }
-
-    public class ConversionStorage<TResult> : CallSiteStorage<Func<CallSite, RubyContext, object, TResult>> {
-        public CallSite<Func<CallSite, RubyContext, object, TResult>>/*!*/ GetSite(RubyConversionAction/*!*/ conversion) {
-            return RubyUtils.GetCallSite(ref Data, conversion);
-        }
-    }
-
-
     public static class RubyUtils {
         #region Objects
 
@@ -111,22 +74,18 @@ namespace IronRuby.Runtime {
             }
         }
 
-        public static string/*!*/ GetClassName(RubyContext/*!*/ context, object self) {
-            return context.GetClassOf(self).Name;
-        }
+        public static MutableString/*!*/ InspectObject(UnaryOpStorage/*!*/ inspectStorage, ConversionStorage<MutableString>/*!*/ tosConversion, 
+            object obj) {
 
-        public static MutableString/*!*/ InspectObject(UnaryOpStorage/*!*/ inspectStorage, ConversionStorage<MutableString>/*!*/ tosStorage,
-            RubyContext/*!*/ context, object obj) {
-
+            var context = tosConversion.Context;
             using (IDisposable handle = RubyUtils.InfiniteInspectTracker.TrackObject(obj)) {
                 if (handle == null) {
                     return MutableString.Create("...");
                 }
 
-                RubyClass objClass = context.GetClassOf(obj);
                 MutableString str = MutableString.CreateMutable();
                 str.Append("#<");
-                str.Append(objClass.GetName(context));
+                str.Append(context.GetClassDisplayName(obj));
 
                 // Ruby prints 2*object_id for objects
                 str.Append(':');
@@ -147,10 +106,10 @@ namespace IronRuby.Runtime {
                         str.Append("=");
 
                         var inspectSite = inspectStorage.GetCallSite("inspect");
-                        object inspectedValue = inspectSite.Target(inspectSite, context, var.Value);
+                        object inspectedValue = inspectSite.Target(inspectSite, var.Value);
 
-                        var tosSite = tosStorage.GetSite(ConvertToSAction.Instance);
-                        str.Append(tosSite.Target(tosSite, context, inspectedValue));
+                        var tosSite = tosConversion.GetSite(ConvertToSAction.Make(context));
+                        str.Append(tosSite.Target(tosSite, inspectedValue));
 
                         str.TaintBy(var.Value, context);
                     }
@@ -162,25 +121,29 @@ namespace IronRuby.Runtime {
             }
         }
 
-        public static MutableString/*!*/ ObjectToMutableString(RubyContext/*!*/ context, object obj) {
-            RubyClass objClass = context.GetClassOf(obj);
+        public static MutableString/*!*/ FormatObjectPrefix(string/*!*/ className, int objectId, bool isTainted) {
             MutableString str = MutableString.CreateMutable();
             str.Append("#<");
-            str.Append(objClass.GetName(context));
+            str.Append(className);
 
             // Ruby prints 2*object_id for objects
             str.Append(':');
-            AppendFormatHexObjectId(str, GetObjectId(context, obj));
+            AppendFormatHexObjectId(str, objectId);
 
-            str.Append(">");
-
-            str.TaintBy(obj, context);
+            str.IsTainted |= isTainted;
             return str;
         }
 
-        public static MutableString/*!*/ ObjectToMutableString(UnaryOpStorage/*!*/ tosStorage, RubyContext/*!*/ context, object obj) {
-            var site = tosStorage.GetCallSite("to_s");
-            return site.Target(site, context, obj) as MutableString ?? ObjectToMutableString(context, obj);
+        public static MutableString/*!*/ FormatObject(string/*!*/ className, int objectId, bool isTainted) {
+            return FormatObjectPrefix(className, objectId, isTainted).Append(">");
+        }
+
+        public static MutableString/*!*/ ObjectToMutableString(RubyContext/*!*/ context, object obj) {
+            return FormatObject(context.GetClassDisplayName(obj), GetObjectId(context, obj), context.IsObjectTainted(obj));
+        }
+
+        public static MutableString/*!*/ ObjectToMutableStringPrefix(RubyContext/*!*/ context, object obj) {
+            return FormatObjectPrefix(context.GetClassDisplayName(obj), GetObjectId(context, obj), context.IsObjectTainted(obj));
         }
 
         public static MutableString/*!*/ AppendFormatHexObjectId(MutableString/*!*/ str, int objectId) {
@@ -188,9 +151,9 @@ namespace IronRuby.Runtime {
         }
 
         public static bool TryDuplicateObject(
-            CallSiteStorage<Func<CallSite, RubyContext, object, object, object>>/*!*/ initializeCopyStorage,
-            CallSiteStorage<Func<CallSite, RubyContext, RubyClass, object>>/*!*/ allocateStorage, 
-            RubyContext/*!*/ context, object obj, bool cloneSemantics, out object copy) {
+            CallSiteStorage<Func<CallSite, object, object, object>>/*!*/ initializeCopyStorage,
+            CallSiteStorage<Func<CallSite, RubyClass, object>>/*!*/ allocateStorage, 
+            object obj, bool cloneSemantics, out object copy) {
 
             // Ruby value types can't be cloned
             if (RubyUtils.IsRubyValueType(obj)) {
@@ -198,19 +161,21 @@ namespace IronRuby.Runtime {
                 return false;
             }
 
+            var context = allocateStorage.Context;
+
             IDuplicable clonable = obj as IDuplicable;
             if (clonable != null) {
                 copy = clonable.Duplicate(context, cloneSemantics);
             } else {
                 // .NET classes and library clases that doesn't implement IDuplicable:
                 var allocateSite = allocateStorage.GetCallSite("allocate", 0);
-                copy = allocateSite.Target(allocateSite, context, context.GetClassOf(obj));
+                copy = allocateSite.Target(allocateSite, context.GetClassOf(obj));
 
                 context.CopyInstanceData(obj, copy, cloneSemantics);
             }
 
             var initializeCopySite = initializeCopyStorage.GetCallSite("initialize_copy", 1);
-            initializeCopySite.Target(initializeCopySite, context, copy, obj);
+            initializeCopySite.Target(initializeCopySite, copy, obj);
             if (cloneSemantics) {
                 context.FreezeObjectBy(copy, obj);
             }
@@ -218,56 +183,6 @@ namespace IronRuby.Runtime {
             return true;
         }        
 
-#if FALSE
-        [MultiRuntimeAware]
-        private static RecursionTracker/*!*/ _infiniteCopyTracker = new RecursionTracker();
-
-        public static object DeepCopy(RubyContext/*!*/ context, object obj) {
-            using (IDisposable handle = _infiniteCopyTracker.TrackObject(obj)) {
-                if (handle == null) {
-                    return RubyExceptions.CreateArgumentError("unable to deep copy recursive structure");
-                } else {
-                    RubyContext ec = RubyUtils.GetExecutionContext(context);
-
-                    if (RubyUtils.IsRubyValueType(obj)) {
-                        return obj;
-                    }
-
-                    object copy;
-
-                    // TODO: special case class objects:
-                    RubyClass classObject = obj as RubyClass;
-                    if (classObject != null) {
-                        copy = classObject.Duplicate();
-                    } else {
-                        copy = RubySites.Allocate(context, ec.GetClassOf(obj));
-                    }
-
-                    SymbolId[] names = ec.GetInstanceVariableNames(obj);
-                    RubyInstanceData newVars = (names.Length > 0) ? ec.GetInstanceData(copy) : null;
-                    foreach (SymbolId name in names) {
-                        object value;
-                        if (!ec.TryGetInstanceVariable(obj, name, out value)) {
-                            value = null;
-                        } else {
-                            value = DeepCopy(context, value);
-                        }
-                        newVars.SetInstanceVariable(name, value);
-                    }
-
-                    if (classObject == null) {
-                        // do any special copying needed for library types
-                        // TODO: we still need to implement copy semantics for .NET types in general
-                        IDuplicable duplicable = copy as IDuplicable;
-                        if (duplicable != null) {
-                            duplicable.InitializeFrom(obj);
-                        }
-                    }
-                    return copy;
-                }
-            }
-        }
-#endif
         public static int GetFixnumId(int number) {
             return number * 2 + 1;
         }
@@ -347,60 +262,6 @@ namespace IronRuby.Runtime {
             return result.ToString();
         }
 
-        public static string/*!*/ GetQualifiedName(Type/*!*/ type) {
-            ContractUtils.RequiresNotNull(type, "type");
-
-            StringBuilder sb = new StringBuilder();
-
-            Type t = type;
-            do {
-                if (sb.Length > 0) {
-                    sb.Insert(0, "::");
-                }
-
-                int tick = t.Name.LastIndexOf('`');
-                if (tick != -1) {
-                    sb.Insert(0, t.Name.Substring(0, tick));
-                } else {
-                    sb.Insert(0, t.Name);
-                }
-
-                t = t.DeclaringType;
-            } while (t != null);
-
-            if (type.Namespace != null) {
-                sb.Insert(0, "::");
-                sb.Insert(0, type.Namespace.Replace(Type.Delimiter.ToString(), "::"));
-            }
-
-            return sb.ToString();
-        }
-
-        public static string/*!*/ GetQualifiedName(NamespaceTracker/*!*/ namespaceTracker) {
-            ContractUtils.RequiresNotNull(namespaceTracker, "namespaceTracker");
-            if (namespaceTracker.Name == null) return String.Empty;
-
-            return namespaceTracker.Name.Replace(Type.Delimiter.ToString(), "::");
-        }
-
-        public static void CheckConstantName(string name) {
-            if (!Tokenizer.IsConstantName(name)) {
-                throw RubyExceptions.CreateNameError(String.Format("`{0}' is not allowed as a constant name", name));
-            }
-        }
-
-        public static void CheckClassVariableName(string name) {
-            if (!Tokenizer.IsClassVariableName(name)) {
-                throw RubyExceptions.CreateNameError(String.Format("`{0}' is not allowed as a class variable name", name));
-            }
-        }
-
-        public static void CheckInstanceVariableName(string name) {
-            if (!Tokenizer.IsInstanceVariableName(name)) {
-                throw RubyExceptions.CreateNameError(String.Format("`{0}' is not allowed as an instance variable name", name));
-            }
-        }
-
         #endregion
 
         #region Constants, Methods
@@ -421,8 +282,8 @@ namespace IronRuby.Runtime {
                 }
             }
 
-            CheckConstantName(name);
-            return owner.Context.ConstantMissing(owner, name);
+            globalScope.Context.CheckConstantName(name);
+            return owner.ConstantMissing(name);
         }
 
         public static void SetConstant(RubyModule/*!*/ owner, string/*!*/ name, object value) {
@@ -649,9 +510,14 @@ namespace IronRuby.Runtime {
                 IsEval = true,
                 FactoryKind = isModuleEval ? TopScopeFactoryKind.Module : TopScopeFactoryKind.None,
                 LocalNames = targetScope.GetVisibleLocalNames(),
-                TopLevelMethodName = (methodScope != null) ? methodScope.Method.DefinitionName : null,
+                TopLevelMethodName = (methodScope != null) ? methodScope.DefinitionName : null,
                 InitialLocation = new SourceLocation(0, line <= 0 ? 1 : line, 1),
             };
+        }
+
+        private static SourceUnit/*!*/ CreateRubySourceUnit(RubyContext/*!*/ context, MutableString/*!*/ code, string path) {
+            Encoding encoding = (context.KCode ?? code.Encoding).Encoding;
+            return context.CreateSourceUnit(new BinaryContentProvider(code.ToByteArray()), path, encoding, SourceCodeKind.File);
         }
 
         public static object Evaluate(MutableString/*!*/ code, RubyScope/*!*/ targetScope, object self, RubyModule module, MutableString file, int line) {
@@ -664,8 +530,8 @@ namespace IronRuby.Runtime {
 
             // we want to create a new top-level local scope:
             var options = CreateCompilerOptionsForEval(targetScope, methodScope, module != null, line);
+            var source = CreateRubySourceUnit(context, code, file != null ? file.ConvertToString() : "(eval)");
 
-            SourceUnit source = context.CreateSnippet(code.ConvertToString(), file != null ? file.ConvertToString() : "(eval)", SourceCodeKind.Statements);
             Expression<EvalEntryPointDelegate> lambda;
             try {
                 lambda = context.ParseSourceCode<EvalEntryPointDelegate>(source, options, context.RuntimeErrorSink);
@@ -678,37 +544,26 @@ namespace IronRuby.Runtime {
             }
             Debug.Assert(lambda != null);
 
-            Proc blockParameter;
-            RubyMethodInfo methodDefinition;
-            if (methodScope != null) {
-                blockParameter = methodScope.BlockParameter;
-                methodDefinition = methodScope.Method;
-            } else {
-                blockParameter = null;
-                methodDefinition = null;
+            // module-eval:
+            if (module != null) {
+                targetScope = CreateModuleEvalScope(targetScope, self, module);
             }
 
-            if (context.Options.InterpretedMode) {
-                return Interpreter.TopLevelExecute(new InterpretedScriptCode(lambda, source),
-                    targetScope,
-                    self,
-                    module,
-                    blockParameter,
-                    methodDefinition,
-                    targetScope.RuntimeFlowControl
-                );
-            } else {
-                return lambda.Compile(source.EmitDebugSymbols)(
-                    targetScope,
-                    self,
-                    module,
-                    blockParameter,
-                    methodDefinition,
-                    targetScope.RuntimeFlowControl
-                );
-            }
+            return ((EvalEntryPointDelegate)RubyScriptCode.CompileLambda(lambda, context))(
+                targetScope,
+                self,
+                module,
+                (methodScope != null) ? methodScope.BlockParameter : null,
+                targetScope.RuntimeFlowControl
+            );
         }
 
+        private static RubyModuleScope/*!*/ CreateModuleEvalScope(RubyScope/*!*/ parent, object self, RubyModule module) {
+            RubyModuleScope scope = new RubyModuleScope(parent, module, true, parent.RuntimeFlowControl, self);
+            scope.SetDebugName("top-module/instance-eval");
+            return scope;
+        }
+        
         public static object EvaluateInModule(RubyModule/*!*/ self, BlockParam/*!*/ block) {
             Assert.NotNull(self, block);
 
@@ -730,7 +585,7 @@ namespace IronRuby.Runtime {
         }
 
         private static object EvaluateInModuleNoJumpCheck(RubyModule/*!*/ self, BlockParam/*!*/ block) {
-            block.ModuleDeclaration = self;
+            block.MethodLookupModule = self;
             return RubyOps.Yield1(self, self, block);
         }
 
@@ -741,7 +596,7 @@ namespace IronRuby.Runtime {
                 throw RubyExceptions.CreateTypeError("can't define singleton method for literals");
             }
 
-            block.ModuleDeclaration = block.RubyContext.CreateSingletonClass(self);
+            block.MethodLookupModule = block.RubyContext.CreateSingletonClass(self);
 
             // TODO: flows Public visibility in the block
             // Flow "Singleton" method attribute? If we change method attribute
@@ -760,6 +615,8 @@ namespace IronRuby.Runtime {
         private static readonly Type[] _serializableTypeSignature = new Type[] { typeof(SerializationInfo), typeof(StreamingContext) };
 #endif
 
+        public static readonly string SerializationInfoClassKey = "#immediateClass";
+
         public static object/*!*/ CreateObject(RubyClass/*!*/ theclass, Hash/*!*/ attributes, bool decorate) {
             Assert.NotNull(theclass, attributes);
 
@@ -776,7 +633,7 @@ namespace IronRuby.Runtime {
 #if !SILVERLIGHT
                 }
                 SerializationInfo info = new SerializationInfo(baseType, new FormatterConverter());
-                info.AddValue("#class", theclass);
+                info.AddValue(SerializationInfoClassKey, theclass);
                 foreach (KeyValuePair<object, object> pair in attributes) {
                     string key = pair.Key.ToString();
                     key = decorate ? "@" + key : key;
@@ -796,7 +653,7 @@ namespace IronRuby.Runtime {
         }
 
         private static bool IsAvailable(MethodBase method) {
-            return method != null && !method.IsPrivate && !method.IsFamilyAndAssembly;
+            return method != null && !method.IsPrivate && !method.IsAssembly && !method.IsFamilyAndAssembly;
         }
 
         public static object/*!*/ CreateObject(RubyClass/*!*/ theClass) {
@@ -827,37 +684,33 @@ namespace IronRuby.Runtime {
 
         #region Call Site Storage Extensions
 
-        public static CallSite<TCallSiteFunc>/*!*/ GetCallSite<TCallSiteFunc>(ref CallSite<TCallSiteFunc>/*!*/ site,
+        public static CallSite<TCallSiteFunc>/*!*/ GetCallSite<TCallSiteFunc>(ref CallSite<TCallSiteFunc>/*!*/ site, RubyContext/*!*/ context,
             string/*!*/ methodName, int argumentCount) where TCallSiteFunc : class {
 
             if (site == null) {
                 Interlocked.CompareExchange(ref site,
-                    CallSite<TCallSiteFunc>.Create(RubyCallAction.Make(methodName, RubyCallSignature.WithImplicitSelf(argumentCount))), null);
+                    CallSite<TCallSiteFunc>.Create(RubyCallAction.Make(context, methodName, RubyCallSignature.WithImplicitSelf(argumentCount))), null);
             }
             return site;
         }
 
-        public static CallSite<TCallSiteFunc>/*!*/ GetCallSite<TCallSiteFunc>(ref CallSite<TCallSiteFunc>/*!*/ site,
+        public static CallSite<TCallSiteFunc>/*!*/ GetCallSite<TCallSiteFunc>(ref CallSite<TCallSiteFunc>/*!*/ site, RubyContext/*!*/ context,
             string/*!*/ methodName, RubyCallSignature signature) where TCallSiteFunc : class {
 
             if (site == null) {
                 Interlocked.CompareExchange(ref site,
-                    CallSite<TCallSiteFunc>.Create(RubyCallAction.Make(methodName, signature)), null);
+                    CallSite<TCallSiteFunc>.Create(RubyCallAction.Make(context, methodName, signature)), null);
             }
             return site;
         }
 
-        public static CallSite<Func<CallSite, RubyContext, object, TResult>>/*!*/ GetCallSite<TResult>(
-            ref CallSite<Func<CallSite, RubyContext, object, TResult>>/*!*/ site, RubyConversionAction/*!*/ conversion) {
+        public static CallSite<Func<CallSite, object, TResult>>/*!*/ GetCallSite<TResult>(
+            ref CallSite<Func<CallSite, object, TResult>>/*!*/ site, RubyConversionAction/*!*/ conversion) {
 
             if (site == null) {
-                Interlocked.CompareExchange(ref site, CallSite<Func<CallSite, RubyContext, object, TResult>>.Create(conversion), null);
+                Interlocked.CompareExchange(ref site, CallSite<Func<CallSite, object, TResult>>.Create(conversion), null);
             }
             return site;
-        }
-
-        public static bool MethodNotFound(object siteResult) {
-            return siteResult == RubyOps.MethodNotFound;
         }
 
         #endregion
@@ -933,6 +786,102 @@ namespace IronRuby.Runtime {
         }
 
 #endif
+
+        #endregion
+
+        #region Paths
+        public static MutableString CanonicalizePath(MutableString path) {
+            for (int i = 0; i < path.Length; i++) {
+                if (path.GetChar(i) == '\\')
+                    path.SetChar(i, '/');
+            }
+            return path;
+        }
+
+        public static String CanonicalizePath(string path) {
+            return path.Replace('\\', '/');
+        }
+
+        public static String CombinePaths(string basePath, string path) {
+            return (basePath.EndsWith("\\") || basePath.EndsWith("/") || basePath == string.Empty) ? 
+                basePath + path :
+                basePath + "/" + path;
+        }
+
+        // Is path something like "/foo/bar" (or "c:/foo/bar" on Windows)
+        // We need this instead of Path.IsPathRooted since we need to be able to deal with Unix-style path names even on Windows
+        public static bool IsAbsolutePath(string path) {
+            if (IsAbsoluteDriveLetterPath(path)) {
+                return true;
+            }
+
+            if (String.IsNullOrEmpty(path)) {
+                return false;
+            }
+
+            return path[0] == '/';
+        }
+
+        // Is path something like "c:/foo/bar" (on Windows)
+        public static bool IsAbsoluteDriveLetterPath(string path) {
+            if (String.IsNullOrEmpty(path)) {
+                return false;
+            }
+
+            if (Environment.OSVersion.Platform == PlatformID.Unix) {
+                return false;
+            }
+
+            return (Char.IsLetter(path[0]) && path.Length >= 2 && path[1] == ':' && path[2] == '/');
+        }
+
+        // returns "/" or something like "c:/"
+        public static string GetPathRoot(RubyContext/*!*/ context, string path, out string pathAfterRoot) {
+            Debug.Assert(IsAbsolutePath(path));
+            if (IsAbsoluteDriveLetterPath(path)) {
+                pathAfterRoot = path.Substring(3);
+                return path.Substring(0, 3);
+            } else {
+                Debug.Assert(path[0] == '/');
+
+                // The root for "////foo" is "/////"
+                string withoutInitialSlashes = path.TrimStart('/');
+                int initialSlashesCount = path.Length - withoutInitialSlashes.Length;
+                string initialSlashes = path.Substring(0, initialSlashesCount);
+                pathAfterRoot = path.Substring(initialSlashesCount);
+                
+                if (Environment.OSVersion.Platform == PlatformID.Unix || initialSlashesCount > 1) {
+                    return initialSlashes;
+                } else {
+                    string currentDirectory = RubyUtils.CanonicalizePath(context.DomainManager.Platform.CurrentDirectory);
+                    Debug.Assert(IsAbsoluteDriveLetterPath(currentDirectory));
+                    string temp;
+                    return GetPathRoot(context, currentDirectory, out temp);
+                }
+            }
+        }
+
+        // Is path something like "c:foo" (note that this is not "c:/foo")
+        public static bool HasPartialDriveLetter(string path, out char partialDriveLetter, out string relativePath) {
+            partialDriveLetter = '\0';
+            relativePath = null;
+
+            if (String.IsNullOrEmpty(path)) {
+                return false;
+            }
+
+            if (Environment.OSVersion.Platform == PlatformID.Unix) {
+                return false;
+            }
+
+            if (Char.IsLetter(path[0]) && path.Length >= 2 && path[1] == ':' && (path.Length == 2 || path[2] != '/')) {
+                partialDriveLetter = path[0];
+                relativePath = path.Substring(2);
+                return true;
+            } else {
+                return false;
+            }
+        }
 
         #endregion
     }

@@ -16,8 +16,7 @@
 #if !SILVERLIGHT // ComObject
 
 using System.Collections.Generic;
-using System.Linq.Expressions;
-using System.Dynamic;
+using System.Security;
 using ComTypes = System.Runtime.InteropServices.ComTypes;
 
 namespace System.Dynamic {
@@ -26,6 +25,7 @@ namespace System.Dynamic {
         private LinkedList<string> _itfs; // implemented interfaces
         private LinkedList<string> _sourceItfs; // source interfaces supported by this coclass
 
+        [SecurityCritical]
         internal ComTypeClassDesc(ComTypes.ITypeInfo typeInfo) :
             base(typeInfo) {
             ComTypes.TYPEATTR typeAttr = ComRuntimeHelpers.GetTypeAttrForTypeInfo(typeInfo);

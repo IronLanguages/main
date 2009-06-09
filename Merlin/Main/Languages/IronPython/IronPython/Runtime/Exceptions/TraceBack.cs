@@ -15,6 +15,10 @@
 
 using System;
 
+using Microsoft.Scripting.Runtime;
+
+using IronPython.Runtime.Operations;
+
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", Scope = "member", Target = "IronPython.Runtime.Exceptions.TraceBackFrame..ctor(System.Object,System.Object,System.Object)", MessageId = "0#globals")]
 [module: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", Scope = "member", Target = "IronPython.Runtime.Exceptions.TraceBackFrame.Globals", MessageId = "Globals")]
 
@@ -63,14 +67,25 @@ namespace IronPython.Runtime.Exceptions {
     [PythonType("frame")]
     [Serializable]
     public class TraceBackFrame {
-        private object _globals;
-        private object _locals;
-        private object _code;
+        private readonly object _globals;
+        private readonly object _locals;
+        private readonly object _code;
+        private readonly CodeContext/*!*/ _context;
+        private readonly TraceBackFrame _back;
 
-        public TraceBackFrame(object globals, object locals, object code) {
-            this._globals = globals;
-            this._locals = locals;
-            this._code = code;
+        internal TraceBackFrame(CodeContext/*!*/ context, object globals, object locals, object code) {
+            _globals = globals;
+            _locals = locals;
+            _code = code;
+            _context = context;
+        }
+
+        internal TraceBackFrame(CodeContext/*!*/ context, object globals, object locals, object code, TraceBackFrame back) {
+            _globals = globals;
+            _locals = locals;
+            _code = code;
+            _context = context;
+            _back = back;
         }
 
         public object f_globals {
@@ -89,6 +104,50 @@ namespace IronPython.Runtime.Exceptions {
             get {
                 return _code;
             }
-        }        
+        }
+
+        public object f_builtins {
+            get {
+                return PythonContext.GetContext(_context).BuiltinModuleInstance.Dict;
+            }
+        }
+
+        public TraceBackFrame f_back {
+            get {
+                return _back;
+            }
+        }
+
+        public object f_exc_traceback {
+            get {
+                return null;
+            }
+        }
+
+        public object f_exc_type {
+            get {
+                return null;
+            }
+        }
+
+        public int f_lineno {
+            get {
+                // we don't track line numbers yet, this matches the line number CPython's warning
+                // module uses when getframe isn't available.
+                return 1;
+            }
+        }
+
+        public object f_trace {
+            get {
+                return null;
+            }
+        }
+
+        public bool f_restricted {
+            get {
+                return false;
+            }
+        }
     }
 }

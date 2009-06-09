@@ -18,6 +18,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Dynamic;
 using Microsoft.Scripting.Utils;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Ast {
     public static partial class Utils {
@@ -72,7 +73,7 @@ namespace Microsoft.Scripting.Ast {
                 condition = Expression.Call(isTrue, Expression.Assign(temp, left));
             } else {
                 ContractUtils.Requires(TypeUtils.CanCompareToNull(left.Type), "left", "Incorrect left expression type");
-                condition = Expression.Equal(Expression.Assign(temp, left), Expression.Constant(null, left.Type));
+                condition = Expression.Equal(Expression.Assign(temp, left), AstUtils.Constant(null, left.Type));
             }
 
             Expression t, f;
@@ -118,12 +119,6 @@ namespace Microsoft.Scripting.Ast {
             Expression result = CoalesceFalse(left, right, isTrue, out temp);
             builder.AddHiddenVariable(temp);
             return result;
-        }
-
-        [Obsolete("use a NotEqual overload without SourceSpan")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "span")]
-        public static BinaryExpression NotEqual(Expression left, Expression right, SourceSpan span) {
-            return Expression.NotEqual(left, right);
         }
     }
 }

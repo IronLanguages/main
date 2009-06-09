@@ -15,6 +15,7 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Dynamic.Utils;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -27,6 +28,9 @@ namespace System.Linq.Expressions {
     /// Use the <see cref="M:ListInit"/> factory methods to create a ListInitExpression. 
     /// The value of the NodeType property of a ListInitExpression is ListInit. 
     /// </remarks>
+#if !SILVERLIGHT
+    [DebuggerTypeProxy(typeof(Expression.ListInitExpressionProxy))]
+#endif
     public sealed class ListInitExpression : Expression {
         private readonly NewExpression _newExpression;
         private readonly ReadOnlyCollection<ElementInit> _initializers;
@@ -40,16 +44,16 @@ namespace System.Linq.Expressions {
         /// Returns the node type of this <see cref="Expression"/>. (Inherited from <see cref="Expression" />.)
         /// </summary>
         /// <returns>The <see cref="ExpressionType"/> that represents this expression.</returns>
-        protected override ExpressionType NodeTypeImpl() {
-            return ExpressionType.ListInit;
+        public sealed override ExpressionType NodeType {
+            get { return ExpressionType.ListInit; }
         }
 
         /// <summary>
         /// Gets the static type of the expression that this <see cref="Expression" /> represents. (Inherited from <see cref="Expression"/>.)
         /// </summary>
         /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
-        protected override Type TypeImpl() {
-            return _newExpression.Type;
+        public sealed override Type Type {
+            get { return _newExpression.Type; }
         }
 
         /// <summary>

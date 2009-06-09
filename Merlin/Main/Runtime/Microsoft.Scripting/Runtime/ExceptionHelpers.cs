@@ -19,6 +19,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Threading;
 using Microsoft.Scripting.Actions;
+using Microsoft.Scripting.Generation;
 
 namespace Microsoft.Scripting.Runtime {
     /// <summary>
@@ -44,6 +45,7 @@ namespace Microsoft.Scripting.Runtime {
         /// 
         /// These represent active catch blocks on the stack.
         /// </summary>
+        [Obsolete("will be removed soon")]
         public static List<Exception> CurrentExceptions {
             get {
                 return _currentExceptions;
@@ -68,6 +70,14 @@ namespace Microsoft.Scripting.Runtime {
 #if !SILVERLIGHT
             List<StackTrace> prev;
 
+            if (rethrow.Data.Contains(typeof(DynamicStackFrame))) {
+                // we've saved the stack trace data in the exception, just continue
+                // appending to it.n2
+                _stackFrames = (List<DynamicStackFrame>)rethrow.Data[typeof(DynamicStackFrame)];
+                rethrow.Data.Remove(typeof(DynamicStackFrame));
+            }
+            // we don't have any dynamic stack trace data, capture the data we can
+            // from the raw exception object.
             StackTrace st = new StackTrace(rethrow, true);
 
             if (!TryGetAssociatedStackTraces(rethrow, out prev)) {
@@ -76,9 +86,13 @@ namespace Microsoft.Scripting.Runtime {
             }
 
             prev.Add(st);
-
+            
 #endif
             return rethrow;
+        }
+
+        public static void ClearDynamicStackFrames(Exception e) {
+            e.Data.Remove(typeof(DynamicStackFrame));
         }
 
         private static void AssociateStackTraces(Exception e, List<StackTrace> traces) {
@@ -98,23 +112,15 @@ namespace Microsoft.Scripting.Runtime {
             return TryGetAssociatedStackTraces(rethrow, out result) ? result : null;
         }
 
-        /// <summary>
-        /// Does AssociateDynamicStackFrames, UpdateStackTrace, followed by UpdateForRethrow.
-        /// Used so we only have to codegen one helper call in LightLambdaClosureVisitor.
-        /// </summary>
-        public static void UpdateStackTraceForRethrow(Exception exception, MethodBase method, string funcName, string fileName, int line) {
-            AssociateDynamicStackFrames(exception);
-            UpdateStackTrace(null, method, funcName, fileName, line);
-            UpdateForRethrow(exception);
-        }
-
         public static void UpdateStackTrace(CodeContext context, MethodBase method, string funcName, string filename, int line) {
-            Debug.Assert(filename != null);
-            if (_stackFrames == null) _stackFrames = new List<DynamicStackFrame>();
-
-            Debug.Assert(line != SourceLocation.None.Line);
-
-            _stackFrames.Add(new DynamicStackFrame(context, method, funcName, filename, line));
+            if (line != -1) {
+                Debug.Assert(filename != null);
+                if (_stackFrames == null) _stackFrames = new List<DynamicStackFrame>();
+    
+                Debug.Assert(line != SourceLocation.None.Line);
+    
+                _stackFrames.Add(new DynamicStackFrame(context, method, funcName, filename, line));
+            }
         }
 
         public static List<DynamicStackFrame> AssociateDynamicStackFrames(Exception clrException) {
@@ -134,6 +140,7 @@ namespace Microsoft.Scripting.Runtime {
             }
         }
         
+        [Obsolete("will be removed soon")]
         public static void PushExceptionHandler(Exception clrException) {
             // _currentExceptions is thread static
             if (_currentExceptions == null) {
@@ -144,6 +151,7 @@ namespace Microsoft.Scripting.Runtime {
             AssociateDynamicStackFrames(clrException);
         }
 
+        [Obsolete("will be removed soon")]
         public static void PopExceptionHandler() {
             // _currentExceptions is thread static
             Debug.Assert(_currentExceptions != null);
@@ -177,6 +185,12 @@ namespace Microsoft.Scripting.Runtime {
         /// </summary>
         public static IEnumerable<DynamicStackFrame> GetStackFrames(Exception e, bool reverseOrder) {
             IList<StackTrace> traces = ExceptionHelpers.GetExceptionStackTraces(e);
+            if (traces == null) {
+                traces = new[] { GetStackTrace(e) };
+            } else {
+                traces.Add(GetStackTrace(e));
+            }
+
             List<DynamicStackFrame> dynamicFrames = new List<DynamicStackFrame>(ScriptingRuntimeHelpers.GetDynamicStackFrames(e));
             // dynamicFrames is stored in the opposite order that we are walking,
             // so we can always pop them from the back of the List<T>, which is O(1)
@@ -184,29 +198,24 @@ namespace Microsoft.Scripting.Runtime {
                 dynamicFrames.Reverse();
             }
 
-            if (traces != null) {
-                foreach (StackTrace trace in WalkList(traces, reverseOrder)) {
-                    foreach (DynamicStackFrame result in GetStackFrames(trace, dynamicFrames, reverseOrder)) {
-                        yield return result;
-                    }
+            foreach (StackTrace trace in WalkList(traces, reverseOrder)) {
+                foreach (DynamicStackFrame result in GetStackFrames(trace, dynamicFrames, reverseOrder)) {
+                    yield return result;
                 }
             }
-
-            // TODO: new StackTrace(...) is SecurityCritical in Silverlight
-#if SILVERLIGHT
-            foreach (DynamicStackFrame result in dynamicFrames) {
-                yield return result;
-            }
-#else
-            foreach (DynamicStackFrame result in GetStackFrames(new StackTrace(e, true), dynamicFrames, reverseOrder)) {
-                yield return result;
-            }
-#endif
 
             //TODO: we would like to be able to assert this;
             // right now, we cannot, because we are not using dynamic frames for non-interpreted dynamic methods.
             // (we create the frames, but we do not consume them in FormatStackTrace.)
             //Debug.Assert(dynamicFrames.Count == 0);
+        }
+
+        private static StackTrace GetStackTrace(Exception e) {
+#if SILVERLIGHT
+            return new StackTrace(e);
+#else
+            return new StackTrace(e, true);
+#endif
         }
 
         private static IEnumerable<T> WalkList<T>(IList<T> list, bool reverseOrder) {
@@ -254,7 +263,9 @@ namespace Microsoft.Scripting.Runtime {
                     continue;
                 }
 
-                yield return GetStackFrame(frame);
+                if (method.DeclaringType != null && Snippets.Shared.IsSnippetsAssembly(method.DeclaringType.Assembly)) {
+                    yield return GetStackFrame(frame);
+                }
             }
         }
 

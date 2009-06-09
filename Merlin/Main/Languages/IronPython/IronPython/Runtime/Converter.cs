@@ -81,7 +81,7 @@ namespace IronPython.Runtime {
 
         private static CallSite<Func<CallSite, object, T>> MakeConvertSite<T>(ConversionResultKind kind) {
             return CallSite<Func<CallSite, object, T>>.Create(
-                DefaultContext.DefaultPythonContext.DefaultBinderState.Convert(
+                DefaultContext.DefaultPythonContext.Convert(
                     typeof(T),
                     kind
                 )
@@ -94,7 +94,7 @@ namespace IronPython.Runtime {
 
         private static CallSite<Func<CallSite, object, object>> MakeTrySite<T>(ConversionResultKind kind) {
             return CallSite<Func<CallSite, object, object>>.Create(
-                DefaultContext.DefaultPythonContext.DefaultBinderState.Convert(
+                DefaultContext.DefaultPythonContext.Convert(
                     typeof(T),
                     kind
                 )
@@ -282,7 +282,7 @@ namespace IronPython.Runtime {
             lock (_siteDict) {
                 if (!_siteDict.TryGetValue(to, out site)) {
                     _siteDict[to] = site = CallSite<Func<CallSite, object, object>>.Create(
-                        DefaultContext.DefaultPythonContext.DefaultBinderState.Convert(
+                        DefaultContext.DefaultPythonContext.ConvertRetObject(
                             to, 
                             ConversionResultKind.ExplicitCast
                         )
@@ -467,7 +467,7 @@ namespace IronPython.Runtime {
 
         public static object ConvertToDelegate(object value, Type to) {
             if (value == null) return null;
-            return BinderOps.GetDelegate(DefaultContext.DefaultCLS.LanguageContext, value, to);
+            return DefaultContext.DefaultCLS.LanguageContext.GetDelegate(value, to);
         }
 
 
@@ -834,6 +834,38 @@ namespace IronPython.Runtime {
                 lookupType = lookupType.BaseType;
             }
             return false;
+        }
+
+        /// <summary>
+        /// Converts a value to int ignoring floats
+        /// </summary>
+        public static int? ImplicitConvertToInt32(object o) {
+            if (o is int) {
+                return (int)o;
+            } else if (o is BigInteger) {
+                int res;
+                if (((BigInteger)o).AsInt32(out res)) {
+                    return res;
+                }
+            } else if (o is Extensible<int>) {
+                return Converter.ConvertToInt32(o);
+            } else if (o is Extensible<BigInteger>) {
+                int res;
+                if (Converter.TryConvertToInt32(o, out res)) {
+                    return res;
+                }
+            }
+
+            if (!(o is double) && !(o is float) && !(o is Extensible<double>)) {
+                object objres;
+                if (PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, o, Symbols.ConvertToInt, out objres)) {
+                    if (objres is int) {
+                        return (int)objres;
+                    }
+                }
+            }
+
+            return null;
         }
 
         internal static bool IsNumeric(Type t) {

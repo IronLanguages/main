@@ -15,6 +15,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using IronPython.Runtime.Operations;
 using Microsoft.Scripting;
@@ -37,6 +38,9 @@ namespace IronPython.Runtime {
         private string _filename;
         private int _lineNo;
         private FunctionAttributes _flags;      // future division, generator
+        private LambdaExpression _lambda;
+        private bool _shouldInterpret;
+        private bool _emitDebugSymbols;
         #endregion
 
         internal FunctionCode(ScriptCode code, CompileFlags compilerFlags)
@@ -50,8 +54,18 @@ namespace IronPython.Runtime {
             _code = code;
         }
 
-        internal FunctionCode(PythonFunction f) {
+        internal FunctionCode(PythonFunction f, FunctionInfo funcInfo) {
             _func = f;
+            _filename = funcInfo.Path;
+            object fn;
+            if (_filename == null && f.Context.GlobalScope.Dict.TryGetValue(Symbols.File, out fn) && fn is string) {
+                _filename = (string)fn;
+            }
+            _lineNo = funcInfo.LineNumber;
+            _flags = funcInfo.Flags;
+            _lambda = funcInfo.Code;
+            _shouldInterpret = funcInfo.ShouldInterpret;
+            _emitDebugSymbols = funcInfo.EmitDebugSymbols;
         }
 
         #region Public constructors
@@ -178,16 +192,18 @@ namespace IronPython.Runtime {
 
         #region Internal API Surface
 
+        internal LambdaExpression Code {
+            get {
+                return _lambda;
+            }
+        }
+
         internal void SetFilename(string sourceFile) {
             _filename = sourceFile;
         }
 
         internal void SetLineNumber(int line) {
             _lineNo = line;
-        }
-
-        internal void SetFlags(FunctionAttributes flags) {
-            _flags = flags;
         }
 
         internal object Call(Scope/*!*/ scope) {
@@ -261,6 +277,28 @@ namespace IronPython.Runtime {
             }
 
             throw PythonOps.TypeError("bad code");
+        }
+
+        internal Delegate GetCompiledCode() {
+            if (_shouldInterpret) {
+                Delegate result = Microsoft.Scripting.Generation.CompilerHelpers.LightCompile(Code);
+
+                // If the adaptive compiler decides to compile this function, we
+                // want to store the new compiled target. This saves us from going
+                // through the interpreter stub every call.
+                var lightLambda = result.Target as Microsoft.Scripting.Interpreter.LightLambda;
+                if (lightLambda != null) {
+                    lightLambda.Compile += SetCompiledTarget;
+                }
+
+                return result;
+            }
+
+            return Code.Compile();
+        }
+
+        private void SetCompiledTarget(object sender, Microsoft.Scripting.Interpreter.LightLambdaCompileEventArgs e) {
+            _func.Target = e.Compiled;
         }
     }
 }

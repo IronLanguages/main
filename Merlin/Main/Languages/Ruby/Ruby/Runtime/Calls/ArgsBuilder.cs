@@ -22,6 +22,8 @@ using System.Linq.Expressions;
 using Microsoft.Scripting.Utils;
 using AstFactory = IronRuby.Compiler.Ast.AstFactory;
 using IronRuby.Compiler;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
+using System.Collections;
 
 namespace IronRuby.Runtime.Calls {
     using Ast = System.Linq.Expressions.Expression;
@@ -138,26 +140,25 @@ namespace IronRuby.Runtime.Calls {
         }
 
         public void AddSplatted(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
-            var arg = args.GetSplattedArgument();
-            var parameter = args.GetSplattedArgumentExpression();
+            var arg = args.GetSplattedMetaArgument();
 
             int listLength;
             ParameterExpression listVariable;
-            if (metaBuilder.AddSplattedArgumentTest(arg, parameter, out listLength, out listVariable)) {
+            if (metaBuilder.AddSplattedArgumentTest(arg.Value, arg.Expression, out listLength, out listVariable)) {
                 if (listLength > 0) {
                     for (int i = 0; i < listLength; i++) {
                         Add(
                             Ast.Call(
                                 listVariable,
-                                typeof(List<object>).GetMethod("get_Item"),
-                                Ast.Constant(i)
+                                typeof(IList).GetMethod("get_Item"),
+                                AstUtils.Constant(i)
                             )
                         );
                     }
                 }
             } else {
                 // argument is not an array => add the argument itself:
-                Add(parameter);
+                Add(arg.Expression);
             }
         }
 

@@ -18,176 +18,100 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
-using System.Linq.Expressions;
+using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
-using System.Text;
 using System.Threading;
 using IronRuby.Builtins;
 using IronRuby.Compiler;
 using IronRuby.Compiler.Generation;
 using IronRuby.Runtime.Calls;
 using Microsoft.Scripting;
-using Microsoft.Scripting.Actions;
+using Microsoft.Scripting.Interpreter;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-using System.IO;
-using System.Runtime.InteropServices;
-using Microsoft.Scripting.Generation;
+using IronRuby.Compiler.Ast;
+using MSA = System.Linq.Expressions;
 
 namespace IronRuby.Runtime {
+    [ReflectionCached, CLSCompliant(false)]
     public static partial class RubyOps {
 
         [Emitted]
         public static readonly object/*!*/ DefaultArgument = new object();
         
+        // Returned by a virtual site if a base call should be performed.
         [Emitted]
-        public static readonly object/*!*/ MethodNotFound = new object();
+        public static readonly object/*!*/ ForwardToBase = new object();
 
         #region Scopes
 
         [Emitted]
-        public static RubyTopLevelScope/*!*/ CreateMainTopLevelScope(LocalsDictionary/*!*/ locals, Scope/*!*/ globalScope, LanguageContext/*!*/ language,
-            out object self, out RuntimeFlowControl/*!*/ rfc, string dataPath, int dataOffset) {
-            Assert.NotNull(locals, globalScope, language);
+        public static void InitializeScope(RubyScope/*!*/ scope, LocalsDictionary/*!*/ locals, InterpretedFrame interpretedFrame) {
+            if (scope.Frame == null) {
+                scope.Frame = locals;
+            }
+            scope.InterpretedFrame = interpretedFrame;
+        }
 
-            RubyContext context = (RubyContext)language;
-            RubyGlobalScope rubyGlobalScope = context.InitializeGlobalScope(globalScope, false);
+        [Emitted]
+        public static void InitializeScopeNoLocals(RubyScope/*!*/ scope, InterpretedFrame interpretedFrame) {
+            scope.InterpretedFrame = interpretedFrame;
+        }
 
-            RubyTopLevelScope scope = new RubyTopLevelScope(rubyGlobalScope, null, locals);
-            scope.Initialize(new RuntimeFlowControl(), RubyMethodAttributes.PrivateInstance, rubyGlobalScope.MainObject);
-            scope.SetDebugName("top-main");
-
-            var objectClass = context.ObjectClass;
-            objectClass.SetConstant("TOPLEVEL_BINDING", new Binding(scope));
-            if (dataOffset >= 0) {
-                RubyFile dataFile;
-                if (context.DomainManager.Platform.FileExists(dataPath)) {
-                    dataFile = new RubyFile(context, dataPath, RubyFileMode.RDONLY);
-                    dataFile.Seek(dataOffset, SeekOrigin.Begin);
-                } else {
-                    dataFile = null;
-                }
-
-                objectClass.SetConstant("DATA", dataFile);
+        [Emitted]
+        public static void SetDataConstant(RubyScope/*!*/ scope, string/*!*/ dataPath, int dataOffset) {
+            Debug.Assert(dataOffset >= 0);
+            RubyFile dataFile;
+            RubyContext context = scope.RubyContext;
+            if (context.DomainManager.Platform.FileExists(dataPath)) {
+                dataFile = new RubyFile(context, dataPath, RubyFileMode.RDONLY);
+                dataFile.Seek(dataOffset, SeekOrigin.Begin);
+            } else {
+                dataFile = null;
             }
 
-            self = scope.SelfObject;
-            rfc = scope.RuntimeFlowControl;
-
-            return scope;
+            context.ObjectClass.SetConstant("DATA", dataFile);
         }
 
-        [Emitted]
-        public static RubyTopLevelScope/*!*/ CreateTopLevelHostedScope(LocalsDictionary/*!*/ locals, Scope/*!*/ globalScope, LanguageContext/*!*/ language,
-            out object self, out RuntimeFlowControl/*!*/ rfc) {
-
-            RubyContext context = (RubyContext)language;
-            RubyGlobalScope rubyGlobalScope = context.InitializeGlobalScope(globalScope, true);
-
-            // reuse existing top-level scope if available:
-            RubyTopLevelScope scope = rubyGlobalScope.TopLocalScope;
-            if (scope == null) {
-                scope = new RubyTopLevelScope(rubyGlobalScope, null, locals);
-                scope.Initialize(new RuntimeFlowControl(), RubyMethodAttributes.PrivateInstance, rubyGlobalScope.MainObject);
-                scope.SetDebugName("top-level-hosted");
-                rubyGlobalScope.TopLocalScope = scope;
-            }
-
-            self = scope.SelfObject;
-            rfc = scope.RuntimeFlowControl;
-            return scope;
-        }
 
         [Emitted]
-        public static RubyTopLevelScope/*!*/ CreateTopLevelScope(LocalsDictionary/*!*/ locals, Scope/*!*/ globalScope, LanguageContext/*!*/ language,
-            out object self, out RuntimeFlowControl/*!*/ rfc) {
-
-            RubyContext context = (RubyContext)language;
-            RubyGlobalScope rubyGlobalScope = context.InitializeGlobalScope(globalScope, false);
-
-            RubyTopLevelScope scope = new RubyTopLevelScope(rubyGlobalScope, null, locals);
-            scope.Initialize(new RuntimeFlowControl(), RubyMethodAttributes.PrivateInstance, rubyGlobalScope.MainObject);
-            scope.SetDebugName("top-level");
-
-            self = scope.SelfObject;
-            rfc = scope.RuntimeFlowControl;
-            return scope;
-        }
-
-        [Emitted]
-        public static RubyTopLevelScope/*!*/ CreateWrappedTopLevelScope(LocalsDictionary/*!*/ locals, Scope/*!*/ globalScope, LanguageContext/*!*/ language,
-            out object self, out RuntimeFlowControl/*!*/ rfc) {
-
-            RubyContext context = (RubyContext)language;
-
-            RubyModule module = context.CreateModule(null, null, null, null, null, null, null);
-            object mainObject = new Object();
-            RubyClass mainSingleton = context.CreateMainSingleton(mainObject, new[] { module });
-
-            RubyGlobalScope rubyGlobalScope = context.InitializeGlobalScope(globalScope, false);
-            RubyTopLevelScope scope = new RubyTopLevelScope(rubyGlobalScope, null, locals);
-            scope.Initialize(new RuntimeFlowControl(), RubyMethodAttributes.PrivateInstance, rubyGlobalScope.MainObject);
-            scope.SetDebugName("top-level-wrapped");
-            scope.SelfObject = mainObject;
-            scope.SetModule(module);
-
-            self = scope.SelfObject;
-            rfc = scope.RuntimeFlowControl;
-            return scope;
-        }
-
-        [Emitted]
-        public static RubyModuleScope/*!*/ CreateModuleEvalScope(LocalsDictionary/*!*/ locals, RubyScope/*!*/ parent, object self, RubyModule module) {
-            RubyModuleScope scope = new RubyModuleScope(parent, locals, module, true);
-            scope.Initialize(parent.RuntimeFlowControl, RubyMethodAttributes.PublicInstance, self);
-            scope.SetDebugName("top-module/instance-eval");                
-            return scope;
-        }
-        
-        [Emitted]
-        public static RubyModuleScope/*!*/ CreateModuleScope(LocalsDictionary/*!*/ locals, RubyScope/*!*/ parent, 
+        public static RubyModuleScope/*!*/ CreateModuleScope(LocalsDictionary/*!*/ locals, RubyScope/*!*/ parent,
             RuntimeFlowControl/*!*/ rfc, RubyModule/*!*/ module) {
             Assert.NotNull(locals, parent, rfc, module);
 
-            // TODO:
-            RubyModuleScope scope = new RubyModuleScope(parent, locals, null, false);
-            scope.Initialize(rfc, RubyMethodAttributes.PublicInstance, module);
-            scope.SetModule(module);
+            RubyModuleScope scope = new RubyModuleScope(parent, module, false, rfc, module);
             scope.SetDebugName((module.IsClass ? "class" : "module") + " " + module.Name);
 
+            scope.Frame = locals;
             return scope;
         }
 
         [Emitted]
-        public static RubyMethodScope/*!*/ CreateMethodScope(LocalsDictionary/*!*/ locals, RubyScope/*!*/ parent, 
-            RubyMethodInfo/*!*/ methodDefinition, RuntimeFlowControl/*!*/ rfc, object selfObject, Proc blockParameter) {
+        public static RubyMethodScope/*!*/ CreateMethodScope(LocalsDictionary/*!*/ locals,
+            RubyScope/*!*/ parentScope, RubyModule/*!*/ declaringModule, string/*!*/ definitionName,
+            RuntimeFlowControl/*!*/ rfc, object selfObject, Proc blockParameter,
+            InterpretedFrame interpretedFrame) {
 
-            Assert.NotNull(locals, parent, methodDefinition, rfc);
+            RubyMethodScope scope = new RubyMethodScope(parentScope, declaringModule, definitionName, blockParameter, rfc, selfObject);
+            scope.SetDebugName("method " + definitionName + ((blockParameter != null) ? "&" : null));
 
-            RubyMethodScope scope = new RubyMethodScope(parent, locals, methodDefinition, blockParameter);
-            scope.Initialize(rfc, RubyMethodAttributes.PublicInstance, selfObject);
-
-            scope.SetDebugName("method " + 
-                methodDefinition.DefinitionName +
-                ((blockParameter != null) ? "&" : null)
-            );
-
+            scope.Frame = locals;
+            scope.InterpretedFrame = interpretedFrame;
             return scope;
         }
 
         [Emitted]
-        public static RubyBlockScope/*!*/ CreateBlockScope(LocalsDictionary/*!*/ locals, RubyScope/*!*/ parent, 
-            BlockParam/*!*/ blockParam, object selfObject) {
+        public static RubyBlockScope/*!*/ CreateBlockScope(LocalsDictionary/*!*/ locals, RubyScope/*!*/ parent,
+            BlockParam/*!*/ blockParam, object selfObject, InterpretedFrame interpretedFrame) {
             Assert.NotNull(locals, parent, blockParam);
 
-            RubyBlockScope scope = new RubyBlockScope(parent, locals);
-            // TODO: used to inherit parent.MethodAttributes
-            scope.Initialize(parent.RuntimeFlowControl, RubyMethodAttributes.PublicInstance, selfObject); 
-            scope.BlockParameter = blockParam;
-
+            RubyBlockScope scope = new RubyBlockScope(parent, parent.RuntimeFlowControl, blockParam, selfObject);
+            scope.MethodAttributes = RubyMethodAttributes.PublicInstance;
+            scope.Frame = locals;
+            scope.InterpretedFrame = interpretedFrame;
             return scope;
         }
 
@@ -196,27 +120,27 @@ namespace IronRuby.Runtime {
             // MRI: 
             // Reports DeclaringModule even though an aliased method in a sub-module is called.
             // Also works for singleton module-function, which shares DeclaringModule with instance module-function.
-            RubyModule module = scope.Method.DeclaringModule;
-            scope.RubyContext.ReportTraceEvent("call", scope, module, scope.Method.DefinitionName, fileName, lineNumber);
+            RubyModule module = scope.DeclaringModule;
+            scope.RubyContext.ReportTraceEvent("call", scope, module, scope.DefinitionName, fileName, lineNumber);
         }
 
         [Emitted]
         public static void TraceMethodReturn(RubyMethodScope/*!*/ scope, string fileName, int lineNumber) {
-            RubyModule module = scope.Method.DeclaringModule;
-            scope.RubyContext.ReportTraceEvent("return", scope, module, scope.Method.DefinitionName, fileName, lineNumber);
+            RubyModule module = scope.DeclaringModule;
+            scope.RubyContext.ReportTraceEvent("return", scope, module, scope.DefinitionName, fileName, lineNumber);
         }
 
         [Emitted]
         public static void TraceBlockCall(RubyBlockScope/*!*/ scope, BlockParam/*!*/ block, string fileName, int lineNumber) {
-            if (block.ModuleDeclaration != null && block.SuperMethodName != null) {
-                scope.RubyContext.ReportTraceEvent("call", scope, block.ModuleDeclaration, block.SuperMethodName, fileName, lineNumber);
+            if (block.IsMethod) {
+                scope.RubyContext.ReportTraceEvent("call", scope, block.MethodLookupModule, block.MethodName, fileName, lineNumber);
             }
         }
 
         [Emitted]
         public static void TraceBlockReturn(RubyBlockScope/*!*/ scope, BlockParam/*!*/ block, string fileName, int lineNumber) {
-            if (block.ModuleDeclaration != null && block.SuperMethodName != null) {
-                scope.RubyContext.ReportTraceEvent("return", scope, block.ModuleDeclaration, block.SuperMethodName, fileName, lineNumber);
+            if (block.IsMethod) {
+                scope.RubyContext.ReportTraceEvent("return", scope, block.MethodLookupModule, block.MethodName, fileName, lineNumber);
             }
         }
 
@@ -235,18 +159,33 @@ namespace IronRuby.Runtime {
 
         [Emitted]
         public static object GetLocalVariable(RubyScope/*!*/ scope, string/*!*/ name) {
-            return scope.ResolveLocalVariable(name);
+            return scope.ResolveLocalVariable(SymbolTable.StringToId(name));
         }
 
         [Emitted]
         public static object SetLocalVariable(object value, RubyScope/*!*/ scope, string/*!*/ name) {
-            return scope.Frame[SymbolTable.StringToId(name)] = value;
+            return scope.ResolveAndSetLocalVariable(SymbolTable.StringToId(name), value);
+        }
+
+        [Emitted]
+        public static VersionHandle/*!*/ GetSelfClassVersionHandle(RubyScope/*!*/ scope) {
+            return scope.SelfImmediateClass.Version;
         }
 
         #endregion
 
         #region Context
 
+        [Emitted]
+        public static RubyContext/*!*/ GetContextFromModule(RubyModule/*!*/ module) {
+            return module.Context;
+        }
+        
+        [Emitted]
+        public static RubyContext/*!*/ GetContextFromIRubyObject(IRubyObject/*!*/ obj) {
+            return obj.ImmediateClass.Context;
+        }
+        
         [Emitted]
         public static RubyContext/*!*/ GetContextFromScope(RubyScope/*!*/ scope) {
             return scope.RubyContext;
@@ -278,21 +217,21 @@ namespace IronRuby.Runtime {
 
         [Emitted]
         public static Proc/*!*/ DefineBlock(RubyScope/*!*/ scope, RuntimeFlowControl/*!*/ runtimeFlowControl, object self, Delegate/*!*/ clrMethod,
-            int parameterCount, BlockSignatureAttributes attributes) {
+            int parameterCount, BlockSignatureAttributes attributesAndArity, string sourcePath, int startLine) {
             Assert.NotNull(scope, clrMethod);
 
             // closes block over self and context
-            BlockDispatcher dispatcher = BlockDispatcher.Create(clrMethod, parameterCount, attributes);
-            Proc result = new Proc(ProcKind.Block, self, scope, dispatcher);
+            BlockDispatcher dispatcher = BlockDispatcher.Create(clrMethod, parameterCount, attributesAndArity);
+            Proc result = new Proc(ProcKind.Block, self, scope, sourcePath, startLine, dispatcher);
 
             result.Owner = runtimeFlowControl;
             return result;
         }
 
-        [Emitted] 
         /// <summary>
         /// Used in a method call with a block to reset proc-kind when the call is retried
         /// </summary>
+        [Emitted]
         public static void InitializeBlock(Proc/*!*/ proc) {
             Assert.NotNull(proc);
             proc.Kind = ProcKind.Block;
@@ -490,15 +429,14 @@ namespace IronRuby.Runtime {
         #region Methods
 
         [Emitted] // MethodDeclaration:
-        public static RubyMethodInfo/*!*/ DefineMethod(object targetOrSelf, object/*!*/ ast, RubyScope/*!*/ scope,
-            bool hasTarget, string/*!*/ name, Delegate/*!*/ clrMethod, int mandatory, int optional, bool hasUnsplatParameter) {
-
-            Assert.NotNull(ast, scope, clrMethod, name);
+        public static object DefineMethod(object targetOrSelf, RubyScope/*!*/ scope, RubyMethodBody/*!*/ body) {
+            Assert.NotNull(body, scope);
 
             RubyModule instanceOwner, singletonOwner;
             RubyMemberFlags instanceFlags, singletonFlags;
+            bool moduleFunction = false;
 
-            if (hasTarget) {
+            if (body.HasTarget) {
                 if (!RubyUtils.CanCreateSingleton(targetOrSelf)) {
                     throw RubyExceptions.CreateTypeError("can't define singleton method for literals");
                 }
@@ -508,9 +446,7 @@ namespace IronRuby.Runtime {
                 singletonOwner = scope.RubyContext.CreateSingletonClass(targetOrSelf);
                 singletonFlags = RubyMemberFlags.Public;
             } else {
-                // TODO: ???
                 var attributesScope = scope.GetMethodAttributesDefinitionScope();
-                //var attributesScope = scope;
                 if ((attributesScope.MethodAttributes & RubyMethodAttributes.ModuleFunction) == RubyMethodAttributes.ModuleFunction) {
                     // Singleton module-function's scope points to the instance method's RubyMemberInfo.
                     // This affects:
@@ -529,12 +465,13 @@ namespace IronRuby.Runtime {
                         throw RubyExceptions.CreateTypeError("A module function cannot be defined on a class.");
                     }
 
-                    instanceFlags = RubyMemberFlags.ModuleFunction | RubyMemberFlags.Private;
+                    instanceFlags = RubyMemberFlags.Private;
                     singletonOwner = instanceOwner.SingletonClass;
-                    singletonFlags = RubyMemberFlags.ModuleFunction | RubyMemberFlags.Public;
+                    singletonFlags = RubyMemberFlags.Public;
+                    moduleFunction = true;
                 } else {
                     instanceOwner = scope.GetMethodDefinitionOwner();
-                    instanceFlags = (RubyMemberFlags)RubyUtils.GetSpecialMethodVisibility(attributesScope.Visibility, name);
+                    instanceFlags = (RubyMemberFlags)RubyUtils.GetSpecialMethodVisibility(attributesScope.Visibility, body.Name);
                     singletonOwner = null;
                     singletonFlags = RubyMemberFlags.Invalid;
                 }
@@ -543,19 +480,28 @@ namespace IronRuby.Runtime {
             RubyMethodInfo instanceMethod = null, singletonMethod = null;
 
             if (instanceOwner != null) {
-                SetMethod(scope.RubyContext, instanceMethod = 
-                    new RubyMethodInfo(ast, clrMethod, instanceOwner, name, mandatory, optional, hasUnsplatParameter, instanceFlags)
+                SetMethod(scope.RubyContext, instanceMethod =
+                    new RubyMethodInfo(body, scope, instanceOwner, instanceFlags)
                 );
             }
 
             if (singletonOwner != null) {
                 SetMethod(scope.RubyContext, singletonMethod =
-                    new RubyMethodInfo(ast, clrMethod, singletonOwner, name, mandatory, optional, hasUnsplatParameter, singletonFlags)
+                    new RubyMethodInfo(body, scope, singletonOwner, singletonFlags)
                 );
             }
 
             // the method's scope saves the result => singleton module-function uses instance-method
-            return instanceMethod ?? singletonMethod;
+            var method = instanceMethod ?? singletonMethod;
+
+            method.DeclaringModule.MethodAdded(body.Name);
+
+            if (moduleFunction) {
+                Debug.Assert(!method.DeclaringModule.IsClass);
+                method.DeclaringModule.SingletonClass.MethodAdded(body.Name);
+            }
+
+            return null;
         }
 
         private static void SetMethod(RubyContext/*!*/ callerContext, RubyMethodInfo/*!*/ method) {
@@ -574,18 +520,6 @@ namespace IronRuby.Runtime {
             }
         }
 
-        [Emitted]
-        public static object MethodDefined(RubyMethodInfo/*!*/ method) {
-            method.Context.MethodAdded(method.DeclaringModule, method.DefinitionName);
-            
-            if (method.IsModuleFunction) {
-                Debug.Assert(!method.DeclaringModule.IsClass);
-                method.Context.MethodAdded(method.DeclaringModule.SingletonClass, method.DefinitionName);
-            }
-
-            return null;
-        }
-
         [Emitted] // AliasStatement:
         public static void AliasMethod(RubyScope/*!*/ scope, string/*!*/ newName, string/*!*/ oldName) {
             scope.GetMethodDefinitionOwner().AddMethodAlias(newName, oldName);
@@ -593,9 +527,9 @@ namespace IronRuby.Runtime {
 
         [Emitted] // UndefineMethod:
         public static void UndefineMethod(RubyScope/*!*/ scope, string/*!*/ name) {
-            RubyModule owner = scope.GetInnerMostModule();
+            RubyModule owner = scope.GetInnerMostModuleForMethodLookup();
 
-            if (!owner.ResolveMethod(name, true).Found) {
+            if (!owner.ResolveMethod(name, RubyClass.IgnoreVisibility).Found) {
                 throw RubyExceptions.CreateUndefinedMethodError(owner, name);
             }
             owner.UndefineMethod(name);
@@ -605,7 +539,7 @@ namespace IronRuby.Runtime {
         public static bool IsDefinedMethod(object self, RubyScope/*!*/ scope, string/*!*/ name) {
             // MRI: this is different from UndefineMethod, it behaves like Kernel#method (i.e. doesn't use lexical scope):
             // TODO: visibility
-            return scope.RubyContext.ResolveMethod(self, name, true).Found;
+            return scope.RubyContext.ResolveMethod(self, name, RubyClass.IgnoreVisibility).Found;
         }
 
         #endregion
@@ -619,7 +553,7 @@ namespace IronRuby.Runtime {
 
         [Emitted]
         public static RubyModule/*!*/ DefineNestedModule(RubyScope/*!*/ scope, string/*!*/ name) {
-            return RubyUtils.DefineModule(scope.GlobalScope, scope.GetInnerMostModule(), name);
+            return RubyUtils.DefineModule(scope.GlobalScope, scope.GetInnerMostModuleForConstantLookup(), name);
         }
 
         [Emitted]
@@ -647,7 +581,7 @@ namespace IronRuby.Runtime {
 
         [Emitted]
         public static RubyModule/*!*/ DefineNestedClass(RubyScope/*!*/ scope, string/*!*/ name, object superClassObject) {
-            return RubyUtils.DefineClass(scope.GlobalScope, scope.GetInnerMostModule(), name, superClassObject);
+            return RubyUtils.DefineClass(scope.GlobalScope, scope.GetInnerMostModuleForConstantLookup(), name, superClassObject);
         }
 
         [Emitted]
@@ -706,7 +640,7 @@ namespace IronRuby.Runtime {
 
         [Emitted] // ConstantVariable:
         public static object SetUnqualifiedConstant(object value, RubyScope/*!*/ scope, string/*!*/ name) {
-            RubyUtils.SetConstant(scope.GetInnerMostModule(), name, value);
+            RubyUtils.SetConstant(scope.GetInnerMostModuleForConstantLookup(), name, value);
             return value;
         }
 
@@ -798,10 +732,14 @@ namespace IronRuby.Runtime {
         #region Array
 
         [Emitted]
-        public static List<object>/*!*/ SplatAppend(List<object>/*!*/ array, object splattee) {
-            List<object> list = splattee as List<object>;
-            if (list != null) {
-                array.AddRange(list);
+        public static IList/*!*/ SplatAppend(IList/*!*/ array, object splattee) {
+            IEnumerable<object> objList;
+            IEnumerable iList;
+
+            if ((objList = splattee as IEnumerable<object>) != null) {
+                array.AddRange(objList);
+            } else if ((iList = splattee as IEnumerable) != null) {
+                array.AddRange(iList);
             } else {
                 array.Add(splattee);
             }
@@ -810,7 +748,7 @@ namespace IronRuby.Runtime {
 
         [Emitted]
         public static object Splat(object/*!*/ value) {
-            List<object> list = value as List<object>;
+            var list = value as IList;
             if (list == null) {
                 return value;
             }
@@ -824,7 +762,7 @@ namespace IronRuby.Runtime {
 
         [Emitted]
         public static object SplatPair(object value, object array) {
-            List<object> list = array as List<object>;
+            var list = array as IList;
             if (list != null) {
                 if (list.Count == 0) {
                     return value;
@@ -840,23 +778,39 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted]
-        public static RubyArray/*!*/ Unsplat(object/*!*/ value) {
-            RubyArray list = value as RubyArray;
+        public static IList/*!*/ Unsplat(object/*!*/ splattee) {
+            var list = splattee as IList;
             if (list == null) {
                 list = new RubyArray(1);
-                list.Add(value);
+                list.Add(splattee);
             }
             return list;
         }
 
+        // CaseExpression
+        [Emitted]
+        public static bool ExistsUnsplat(CallSite<Func<CallSite, object, object, object>>/*!*/ comparisonSite, object splattee, object value) {
+            var list = splattee as IList;
+            if (list != null) {
+                foreach (var item in list) {
+                    if (IsTrue(comparisonSite.Target(comparisonSite, item, value))) {
+                        return true;
+                    }
+                }
+                return false;
+            } else {
+                return IsTrue(comparisonSite.Target(comparisonSite, splattee, value)); 
+            }
+        }
+
         [Emitted] // parallel assignment:
-        public static object GetArrayItem(List<object>/*!*/ array, int index) {
+        public static object GetArrayItem(IList/*!*/ array, int index) {
             Debug.Assert(index >= 0);
             return index < array.Count ? array[index] : null;
         }
 
         [Emitted] // parallel assignment:
-        public static List<object>/*!*/ GetArraySuffix(List<object>/*!*/ array, int startIndex) {
+        public static RubyArray/*!*/ GetArraySuffix(IList/*!*/ array, int startIndex) {
             int size = array.Count - startIndex;
             if (size > 0) {
                 RubyArray result = new RubyArray(size);
@@ -867,6 +821,75 @@ namespace IronRuby.Runtime {
             } else {
                 return new RubyArray();
             }
+        }
+
+        #endregion
+
+        #region CLR Vectors (factories mimic Ruby Array factories)
+
+        [Emitted, RubyConstructor]
+        public static object/*!*/ CreateVector(ConversionStorage<Union<IList, int>>/*!*/ toAryToInt, BlockParam block, RubyClass/*!*/ self,
+            [NotNull]object/*!*/ arrayOrSize) {
+
+            var elementType = self.GetUnderlyingSystemType().GetElementType();
+            Debug.Assert(elementType != null);
+
+            var site = toAryToInt.GetSite(CompositeConversionAction.Make(self.Context, CompositeConversion.ToAryToInt));
+            var union = site.Target(site, arrayOrSize);
+
+            if (union.First != null) {
+                // block ignored
+                return CreateVectorInternal(self.Context, elementType, union.First);
+            } else if (block != null) {
+                return PopulateVector(self.Context, CreateVectorInternal(elementType, union.Second), block);
+            } else {
+                return CreateVectorInternal(elementType, union.Second);
+            }
+        }
+
+        [Emitted, RubyConstructor]
+        public static Array/*!*/ CreateVectorWithValues(RubyClass/*!*/ self, [DefaultProtocol]int size, object value) {
+            var elementType = self.GetUnderlyingSystemType().GetElementType();
+            Debug.Assert(elementType != null);
+
+            var result = CreateVectorInternal(elementType, size);
+            for (int i = 0; i < size; i++) {
+                SetVectorItem(self.Context, result, i, value);
+            }
+            return result;
+        }
+
+        public static Array/*!*/ CreateVectorInternal(Type/*!*/ elementType, int size) {
+            if (size < 0) {
+                throw RubyExceptions.CreateArgumentError("negative array size");
+            }
+
+            return Array.CreateInstance(elementType, size);
+        }
+
+        private static Array/*!*/ CreateVectorInternal(RubyContext/*!*/ context, Type/*!*/ elementType, IList/*!*/ list) {
+            var result = Array.CreateInstance(elementType, list.Count);
+            for (int i = 0; i < result.Length; i++) {
+                SetVectorItem(context, result, i, list[i]);
+            }
+
+            return result;
+        }
+
+        private static object PopulateVector(RubyContext/*!*/ context, Array/*!*/ array, BlockParam/*!*/ block) {
+            for (int i = 0; i < array.Length; i++) {
+                object item;
+                if (block.Yield(i, out item)) {
+                    return item;
+                }
+                SetVectorItem(context, array, i, item);
+            }
+            return array;
+        }
+
+        private static void SetVectorItem(RubyContext/*!*/ context, Array/*!*/ array, int index, object value) {
+            // TODO: convert to the element type:
+            array.SetValue(value, index);
         }
 
         #endregion
@@ -950,13 +973,8 @@ namespace IronRuby.Runtime {
 
         #endregion
 
-        /// <summary>
-        /// Each string part type will be specified using one of the following suffices
-        /// </summary>
-        public const char SuffixEncoded = 'E'; // Use encoding codepage System.String
-        public const char SuffixBinary = 'B'; // Binary (ASCII) System.String
-        public const char SuffixUTF8 = 'U'; // UTF8 encoded System.String
-        public const char SuffixMutable = 'M'; // String part is a Ruby string variable - because of variable substitution using "#{var}"
+        public const char SuffixLiteral = 'L';       // Repr: literal string
+        public const char SuffixMutable = 'M';       // non-literal "...#{expr}..."
 
         /// <summary>
         /// Specialized signatures exist for upto the following number of string parts
@@ -996,237 +1014,131 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted]
-        public static RubyRegex/*!*/ CreateRegexB(string/*!*/ str1, RubyRegexOptions options, StrongBox<RubyRegex> regexpCache) {
-            Func<RubyRegex> createRegex = delegate { return new RubyRegex(str1, options); };
-            return CreateRegexWorker(options, regexpCache, true, createRegex);
-        }
-
-        [Emitted]
-        public static RubyRegex/*!*/ CreateRegexU(string/*!*/ str1, RubyRegexOptions options, StrongBox<RubyRegex> regexpCache) {
-            Func<RubyRegex> createRegex = delegate { return new RubyRegex(CreateMutableStringU(str1), options); };
-            return CreateRegexWorker(options, regexpCache, true, createRegex);
-        }
-
-        [Emitted]
-        public static RubyRegex/*!*/ CreateRegexE(string/*!*/ str1, int codepage, RubyRegexOptions options, StrongBox<RubyRegex> regexpCache) {
-            Func<RubyRegex> createRegex = delegate { return new RubyRegex(CreateMutableStringE(str1, codepage), options); };
+        public static RubyRegex/*!*/ CreateRegexL(string/*!*/ str1, RubyEncoding/*!*/ encoding, RubyRegexOptions options, StrongBox<RubyRegex> regexpCache) {
+            Func<RubyRegex> createRegex = delegate { return new RubyRegex(CreateMutableStringL(str1, encoding), options); };
             return CreateRegexWorker(options, regexpCache, true, createRegex);
         }
         
         [Emitted]
-        public static RubyRegex/*!*/ CreateRegexM(MutableString str1, RubyRegexOptions options, StrongBox<RubyRegex> regexpCache) {
-            Func<RubyRegex> createRegex = delegate { return new RubyRegex(CreateMutableStringM(str1), options); };
+        public static RubyRegex/*!*/ CreateRegexM(MutableString str1, RubyEncoding/*!*/ encoding, RubyRegexOptions options, StrongBox<RubyRegex> regexpCache) {
+            Func<RubyRegex> createRegex = delegate { return new RubyRegex(CreateMutableStringM(str1, encoding), options); };
             return CreateRegexWorker(options, regexpCache, false, createRegex);
         }
 
         [Emitted]
-        public static RubyRegex/*!*/ CreateRegexBM(string/*!*/ str1, MutableString str2, RubyRegexOptions options, StrongBox<RubyRegex> regexpCache) {
-            Func<RubyRegex> createRegex = delegate { return new RubyRegex(CreateMutableStringBM(str1, str2), options); };
+        public static RubyRegex/*!*/ CreateRegexLM(string/*!*/ str1, MutableString str2, RubyEncoding/*!*/ encoding, RubyRegexOptions options, StrongBox<RubyRegex> regexpCache) {
+            Func<RubyRegex> createRegex = delegate { return new RubyRegex(CreateMutableStringLM(str1, str2, encoding), options); };
             return CreateRegexWorker(options, regexpCache, false, createRegex);
         }
 
         [Emitted]
-        public static RubyRegex/*!*/ CreateRegexUM(string/*!*/ str1, MutableString str2, RubyRegexOptions options, StrongBox<RubyRegex> regexpCache) {
-            Func<RubyRegex> createRegex = delegate { return new RubyRegex(CreateMutableStringUM(str1, str2), options); };
+        public static RubyRegex/*!*/ CreateRegexML(MutableString str1, string/*!*/ str2, RubyEncoding/*!*/ encoding, RubyRegexOptions options, StrongBox<RubyRegex> regexpCache) {
+            Func<RubyRegex> createRegex = delegate { return new RubyRegex(CreateMutableStringML(str1, str2, encoding), options); };
             return CreateRegexWorker(options, regexpCache, false, createRegex);
         }
 
         [Emitted]
-        public static RubyRegex/*!*/ CreateRegexEM(string/*!*/ str1, MutableString str2, int codepage, RubyRegexOptions options, StrongBox<RubyRegex> regexpCache) {
-            Func<RubyRegex> createRegex = delegate { return new RubyRegex(CreateMutableStringEM(str1, str2, codepage), options); };
+        public static RubyRegex/*!*/ CreateRegexMM(MutableString str1, MutableString str2, RubyEncoding/*!*/ encoding, RubyRegexOptions options, StrongBox<RubyRegex> regexpCache) {
+            Func<RubyRegex> createRegex = delegate { return new RubyRegex(CreateMutableStringMM(str1, str2, encoding), options); };
             return CreateRegexWorker(options, regexpCache, false, createRegex);
         }
 
         [Emitted]
-        public static RubyRegex/*!*/ CreateRegexMB(MutableString str1, string/*!*/ str2, RubyRegexOptions options, StrongBox<RubyRegex> regexpCache) {
-            Func<RubyRegex> createRegex = delegate { return new RubyRegex(CreateMutableStringMB(str1, str2), options); };
-            return CreateRegexWorker(options, regexpCache, false, createRegex);
-        }
-
-        [Emitted]
-        public static RubyRegex/*!*/ CreateRegexMU(MutableString str1, string/*!*/ str2, RubyRegexOptions options, StrongBox<RubyRegex> regexpCache) {
-            Func<RubyRegex> createRegex = delegate { return new RubyRegex(CreateMutableStringMU(str1, str2), options); };
-            return CreateRegexWorker(options, regexpCache, false, createRegex);
-        }
-
-        [Emitted]
-        public static RubyRegex/*!*/ CreateRegexME(MutableString str1, string/*!*/ str2, int codepage, RubyRegexOptions options, StrongBox<RubyRegex> regexpCache) {
-            Func<RubyRegex> createRegex = delegate { return new RubyRegex(CreateMutableStringME(str1, str2, codepage), options); };
-            return CreateRegexWorker(options, regexpCache, false, createRegex);
-        }
-
-        [Emitted]
-        public static RubyRegex/*!*/ CreateRegexMM(MutableString str1, MutableString str2, RubyRegexOptions options, StrongBox<RubyRegex> regexpCache) {
-            Func<RubyRegex> createRegex = delegate { return new RubyRegex(CreateMutableStringMM(str1, str2), options); };
-            return CreateRegexWorker(options, regexpCache, false, createRegex);
-        }
-
-        [Emitted]
-        public static RubyRegex/*!*/ CreateRegexN(object[]/*!*/ strings, int codepage, RubyRegexOptions options, StrongBox<RubyRegex> regexpCache) {
-            Func<RubyRegex> createRegex = delegate { return new RubyRegex(CreateMutableStringN(strings, codepage), options); };
+        public static RubyRegex/*!*/ CreateRegexN(object[]/*!*/ strings, RubyEncoding/*!*/ encoding, RubyRegexOptions options, StrongBox<RubyRegex> regexpCache) {
+            Func<RubyRegex> createRegex = delegate { return new RubyRegex(CreateMutableStringN(strings, encoding), options); };
             return CreateRegexWorker(options, regexpCache, false, createRegex);
         }
 
         #endregion
 
-        // TODO: encodings
         #region CreateMutableString
 
         [Emitted]
-        public static MutableString/*!*/ CreateMutableStringB(string/*!*/ str) {
-            return MutableString.Create(str, BinaryEncoding.Instance); 
+        public static MutableString/*!*/ CreateMutableStringL(string/*!*/ str1, RubyEncoding/*!*/ encoding) {
+            return MutableString.Create(str1, encoding);
         }
 
         [Emitted]
-        public static MutableString/*!*/ CreateMutableStringU(string/*!*/ str) {
-            return MutableString.Create(str, Encoding.UTF8);
+        public static MutableString/*!*/ CreateMutableStringM(MutableString str1, RubyEncoding/*!*/ encoding) {
+            return MutableString.CreateInternal(str1, encoding);
         }
 
         [Emitted]
-        public static MutableString/*!*/ CreateMutableStringE(string/*!*/ str1, int codepage) {
-            return MutableString.Create(str1, RubyEncoding.GetEncoding(codepage));
+        public static MutableString/*!*/ CreateMutableStringLM(string/*!*/ str1, MutableString str2, RubyEncoding/*!*/ encoding) {
+            return MutableString.CreateMutable(str1, encoding).Append(str2);
         }
 
         [Emitted]
-        public static MutableString/*!*/ CreateMutableStringM(MutableString str1) {
-            return MutableString.CreateInternal(str1);
+        public static MutableString/*!*/ CreateMutableStringML(MutableString str1, string/*!*/ str2, RubyEncoding/*!*/ encoding) {
+            return MutableString.CreateInternal(str1, encoding).Append(str2);
         }
 
         [Emitted]
-        public static MutableString/*!*/ CreateMutableStringBM(string/*!*/ str1, MutableString str2) {
-            // TODO: encoding 
-            return MutableString.CreateMutable(str1, BinaryEncoding.Instance).Append(str2);
+        public static MutableString/*!*/ CreateMutableStringMM(MutableString str1, MutableString str2, RubyEncoding/*!*/ encoding) {
+            return MutableString.CreateInternal(str1, encoding).Append(str2);
         }
 
         [Emitted]
-        public static MutableString/*!*/ CreateMutableStringUM(string/*!*/ str1, MutableString str2) {
-            // TODO: encoding 
-            return MutableString.CreateMutable(str1, BinaryEncoding.UTF8).Append(str2);
+        public static MutableString/*!*/ CreateMutableStringN(object/*!*/[]/*!*/ parts, RubyEncoding/*!*/ encoding) {
+            return ConcatStrings(parts, encoding);
         }
 
-        [Emitted]
-        public static MutableString/*!*/ CreateMutableStringEM(string/*!*/ str1, MutableString str2, int codepage) {
-            return MutableString.CreateMutable(str1, RubyEncoding.GetEncoding(codepage)).Append(str2);
-        }
+        private static MutableString/*!*/ ConcatStrings(object/*!*/[]/*!*/ parts, RubyEncoding/*!*/ encoding) {
+            var result = MutableString.CreateMutable(encoding);
 
-        [Emitted]
-        public static MutableString/*!*/ CreateMutableStringMB(MutableString str1, string/*!*/ str2) {
-            // TODO: encoding 
-            return MutableString.CreateInternal(str1).Append(str2);
-        }
+            for (int i = 0; i < parts.Length; i++) {
+                object part = parts[i];
+                byte[] bytes;
+                string str;
 
-        [Emitted]
-        public static MutableString/*!*/ CreateMutableStringMU(MutableString str1, string/*!*/ str2) {
-            // TODO: encoding 
-            return MutableString.CreateInternal(str1).Append(str2);
-        }
+                if ((str = part as string) != null) {
+                    result.Append(str);
+                } else if ((bytes = part as byte[]) != null) {
+                    result.Append(bytes);
+                } else {
+                    // TODO: check if encoding of str is compatible with encoding of the result:
+                    result.Append((MutableString)part);
+                }
+            }
 
-        [Emitted]
-        public static MutableString/*!*/ CreateMutableStringME(MutableString str1, string/*!*/ str2, int codepage) {
-            // TODO: encoding 
-            return MutableString.CreateInternal(str1).Append(str2);
-        }
-
-        [Emitted]
-        public static MutableString/*!*/ CreateMutableStringMM(MutableString str1, MutableString str2) {
-            // TODO: encoding 
-            return MutableString.CreateInternal(str1).Append(str2);
-        }
-
-        [Emitted]
-        public static MutableString/*!*/ CreateMutableStringN(object[]/*!*/ strings, int codepage) {
-            // TODO: encodings of literals in the array needs to be handled
-            return ConcatenateStrings(strings);
+            return result;
         }
 
         #endregion
 
-        // TODO: encodings
         #region CreateSymbol
 
         [Emitted]
-        public static SymbolId/*!*/ CreateSymbolB(string/*!*/ str1) {
-            Debug.Assert(str1.Length > 0);
-            return SymbolTable.StringToId(str1);
+        public static SymbolId/*!*/ CreateSymbolL(string/*!*/ str1, RubyEncoding/*!*/ encoding) {
+            return ToSymbolChecked(CreateMutableStringL(str1, encoding));
         }
         
         [Emitted]
-        public static SymbolId/*!*/ CreateSymbolU(string/*!*/ str1) {
-            Debug.Assert(str1.Length > 0);
-            return SymbolTable.StringToId(str1);
+        public static SymbolId/*!*/ CreateSymbolM(MutableString str1, RubyEncoding/*!*/ encoding) {
+            return ToSymbolChecked(CreateMutableStringM(str1, encoding));
         }
 
         [Emitted]
-        public static SymbolId/*!*/ CreateSymbolE(string/*!*/ str1, int codepage) {
-            Debug.Assert(str1.Length > 0);
-            return SymbolTable.StringToId(str1);
+        public static SymbolId/*!*/ CreateSymbolLM(string/*!*/ str1, MutableString str2, RubyEncoding/*!*/ encoding) {
+            return ToSymbolChecked(CreateMutableStringLM(str1, str2, encoding));
+        }
+
+        [Emitted]
+        public static SymbolId/*!*/ CreateSymbolML(MutableString str1, string/*!*/ str2, RubyEncoding/*!*/ encoding) {
+            return ToSymbolChecked(CreateMutableStringML(str1, str2, encoding));
         }
         
         [Emitted]
-        public static SymbolId/*!*/ CreateSymbolM(MutableString str1) {
-            if (MutableString.IsNullOrEmpty(str1)) {
-                throw RubyExceptions.CreateArgumentError("interning empty string");
-            }
-            return SymbolTable.StringToId(str1.ConvertToString());
+        public static SymbolId/*!*/ CreateSymbolMM(MutableString str1, MutableString str2, RubyEncoding/*!*/ encoding) {
+            return ToSymbolChecked(CreateMutableStringMM(str1, str2, encoding));
         }
 
         [Emitted]
-        public static SymbolId/*!*/ CreateSymbolBM(string/*!*/ str1, MutableString str2) {
-            Debug.Assert(str1.Length > 0);
-            return (str2 != null) ? SymbolTable.StringToId(str1 + str2.ConvertToString()) : SymbolTable.StringToId(str1);
+        public static SymbolId/*!*/ CreateSymbolN(object[]/*!*/ strings, RubyEncoding/*!*/ encoding) {
+            return ToSymbolChecked(CreateMutableStringN(strings, encoding));
         }
 
-        [Emitted]
-        public static SymbolId/*!*/ CreateSymbolUM(string/*!*/ str1, MutableString str2) {
-            Debug.Assert(str1.Length > 0);
-            return (str2 != null) ? SymbolTable.StringToId(str1 + str2.ConvertToString()) : SymbolTable.StringToId(str1);
-        }
-
-        [Emitted]
-        public static SymbolId/*!*/ CreateSymbolEM(string/*!*/ str1, MutableString str2, int codepage) {
-            Debug.Assert(str1.Length > 0);
-            return (str2 != null) ? SymbolTable.StringToId(str1 + str2.ConvertToString()) : SymbolTable.StringToId(str1);
-        }
-
-        [Emitted]
-        public static SymbolId/*!*/ CreateSymbolMB(MutableString str1, string/*!*/ str2) {
-            Debug.Assert(str2.Length > 0);
-            return (str1 != null) ? SymbolTable.StringToId(str1.ConvertToString() + str2) : SymbolTable.StringToId(str2);
-        }
-
-        [Emitted]
-        public static SymbolId/*!*/ CreateSymbolMU(MutableString str1, string/*!*/ str2) {
-            Debug.Assert(str2.Length > 0);
-            return (str1 != null) ? SymbolTable.StringToId(str1.ConvertToString() + str2) : SymbolTable.StringToId(str2);
-        }
-
-        [Emitted]
-        public static SymbolId/*!*/ CreateSymbolME(MutableString str1, string/*!*/ str2, int codepage) {
-            Debug.Assert(str2.Length > 0);
-            return (str1 != null) ? SymbolTable.StringToId(str1.ConvertToString() + str2) : SymbolTable.StringToId(str2);
-        }
-        
-        [Emitted]
-        public static SymbolId/*!*/ CreateSymbolMM(MutableString str1, MutableString str2) {
-            MutableString str;
-            if (MutableString.IsNullOrEmpty(str1)) {
-                if (MutableString.IsNullOrEmpty(str2)) {
-                    throw RubyExceptions.CreateArgumentError("interning empty string");
-                } else {
-                    str = str2;
-                }
-            } else if (MutableString.IsNullOrEmpty(str2)) {
-                str = str1;
-            } else {
-                str = MutableString.Create(str1).Append(str2);
-            }
-
-            return SymbolTable.StringToId(str.ToString());
-        }
-
-        [Emitted]
-        public static SymbolId/*!*/ CreateSymbolN(object[]/*!*/ strings, int codepage) {
-            var str = ConcatenateStrings(strings);
+        private static SymbolId/*!*/ ToSymbolChecked(MutableString/*!*/ str) {
             if (str.IsEmpty) {
                 throw RubyExceptions.CreateArgumentError("interning empty string");
             }
@@ -1235,28 +1147,8 @@ namespace IronRuby.Runtime {
 
         #endregion
 
-        // TODO: encodings
-        // TODO: could be optimized if we knew that we don't have any string literal:
-        private static MutableString/*!*/ ConcatenateStrings(object[]/*!*/ strings) {
-            Assert.NotNull(strings);
-            Type strType = typeof(string);
-            MutableString result = MutableString.CreateMutable();
-            for (int i = 0; i < strings.Length; i++) {
-                object str = strings[i];
-                if (str != null) {
-                    if (str.GetType() == strType) {
-                        result.Append((string)str);
-                    } else {
-                        result.Append((MutableString)str);
-                    }
-                }
-            }
-            return result;
-        }
-
         [Emitted]
         public static RubyEncoding/*!*/ CreateEncoding(int codepage) {
-            Debug.Assert(codepage >= 0, "Null encoding not allowed here");
             return RubyEncoding.GetRubyEncoding(codepage);
         }
 
@@ -1272,35 +1164,42 @@ namespace IronRuby.Runtime {
 
         #region Exceptions
 
-        [Emitted]
-        public static void CheckForAsyncRaiseViaThreadAbort(RubyScope scope, System.Threading.ThreadAbortException exception) {
-            Exception visibleException = RubyUtils.GetVisibleException(exception);
-            if (exception == visibleException || visibleException == null) {
-                return;
-            } else {
-                RubyOps.SetCurrentExceptionAndStackTrace(scope, exception);
-                // We are starting a new exception throw here (with the downside that we will lose the full stack trace)
-                RubyExceptionData.ActiveExceptionHandled(visibleException);
-
-                throw visibleException;
-            }
-        }
         //
         // NOTE:
         // Exception Ops go directly to the current exception object. MRI ignores potential aliases.
         //
-        
+
+        [Emitted]
+        public static bool FilterBlockException(RubyScope/*!*/ scope, Exception/*!*/ exception) {
+            RubyExceptionData.GetInstance(exception).CaptureExceptionTrace(scope);
+            return false;
+        }
+
+        [Emitted]
+        public static bool CanRescue(RubyScope/*!*/ scope, Exception/*!*/ exception) {
+            if (exception is StackUnwinder) {
+                return false;
+            }
+
+            LocalJumpError lje = exception as LocalJumpError;
+            if (lje != null && lje.SkipFrame == scope.RuntimeFlowControl) {
+                return false;
+            }
+
+            RubyExceptionData.GetInstance(exception).CaptureExceptionTrace(scope);
+            scope.RubyContext.CurrentException = exception;
+            return true;
+        }
+
+        [Emitted]
+        public static bool TraceTopLevelCodeFrame(RubyScope/*!*/ scope, Exception/*!*/ exception) {
+            RubyExceptionData.GetInstance(exception).CaptureExceptionTrace(scope);
+            return false;
+        }
+
         [Emitted] //Body, RescueClause:
         public static Exception GetCurrentException(RubyScope/*!*/ scope) {
             return scope.RubyContext.CurrentException;
-        }
-
-        [Emitted] //Body:
-        public static void SetCurrentExceptionAndStackTrace(RubyScope/*!*/ scope, Exception/*!*/ exception) {
-            if (RubyExceptionData.TryGetInstance(exception) == null) {
-                RubyExceptionData.AssociateInstance(exception).SetCompiledTrace();
-            }
-            scope.RubyContext.CurrentException = exception;
         }
 
         [Emitted] //Body:
@@ -1308,35 +1207,34 @@ namespace IronRuby.Runtime {
             scope.RubyContext.CurrentException = exception;
         }
 
-        private static readonly CallSite<Func<CallSite, RubyContext, object, object, bool>>/*!*/ _compareExceptionSite = CallSite<Func<CallSite, RubyContext, object, object, bool>>.Create(
-            RubySites.InstanceCallAction("===", 1));
-
         [Emitted] //RescueClause:
-        public static bool CompareException(RubyScope/*!*/ scope, object classObject) {            
+        public static bool CompareException(BinaryOpStorage/*!*/ comparisonStorage, RubyScope/*!*/ scope, object classObject) {            
             // throw the same exception when classObject is nil
             if (!(classObject is RubyModule)) {
                 throw RubyExceptions.CreateTypeError("class or module required for rescue clause");
             }
-            
-            bool result = _compareExceptionSite.Target(_compareExceptionSite, scope.RubyContext, classObject, scope.RubyContext.CurrentException);
+
+            var context = scope.RubyContext;
+            var site = comparisonStorage.GetCallSite("===");
+            bool result = IsTrue(site.Target(site, classObject, context.CurrentException));
             if (result) {
-                RubyExceptionData.ActiveExceptionHandled(scope.RubyContext.CurrentException);
+                RubyExceptionData.ActiveExceptionHandled(context.CurrentException);
             }
             return result;
         }
 
         [Emitted] //RescueClause:
-        public static bool CompareSplattedExceptions(RubyScope/*!*/ scope, object classObjects) {
+        public static bool CompareSplattedExceptions(BinaryOpStorage/*!*/ comparisonStorage, RubyScope/*!*/ scope, object classObjects) {
             var list = classObjects as IList;
             if (list != null) {
                 for (int i = 0; i < list.Count; i++) {
-                    if (CompareException(scope, list[i])) {
+                    if (CompareException(comparisonStorage, scope, list[i])) {
                         return true;
                     }
                 }
                 return false;
             } else {
-                return CompareException(scope, classObjects);
+                return CompareException(comparisonStorage, scope, classObjects);
             }
         }
 
@@ -1384,9 +1282,19 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted]
+        public static Exception/*!*/ MakeAbstractMethodCalledError(RuntimeMethodHandle/*!*/ method) {
+            return new NotImplementedException(String.Format("Abstract method `{0}' not implemented", MethodInfo.GetMethodFromHandle(method)));
+        }
+
+        [Emitted]
         public static Exception/*!*/ MakeInvalidArgumentTypesError(string/*!*/ methodName) {
             // TODO:
             return new ArgumentException(String.Format("wrong number or type of arguments for `{0}'", methodName));
+        }
+
+        [Emitted]
+        public static Exception/*!*/ MakeTypeConversionError(RubyContext/*!*/ context, object value, Type/*!*/ type) {
+            return RubyExceptions.CreateTypeConversionError(context.GetClassDisplayName(value), context.GetTypeName(type, true));
         }
 
         [Emitted]
@@ -1396,8 +1304,43 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted]
+        public static Exception/*!*/ MakeAllocatorUndefinedError(RubyClass/*!*/ classObj) {
+            return RubyExceptions.CreateAllocatorUndefinedError(classObj);
+        }
+
+        [Emitted]
+        public static Exception/*!*/ MakeNotClrTypeError(RubyClass/*!*/ classObj) {
+            return RubyExceptions.CreateNotClrTypeError(classObj);
+        }
+
+        [Emitted]
+        public static Exception/*!*/ MakeConstructorUndefinedError(RubyClass/*!*/ classObj) {
+            return RubyExceptions.CreateTypeError(String.Format("`{0}' doesn't have a visible CLR constructor", 
+                classObj.Context.GetTypeName(classObj.TypeTracker.Type, true)
+            ));
+        }
+
+        [Emitted]
+        public static Exception/*!*/ MakeMissingDefaultConstructorError(RubyClass/*!*/ classObj, string/*!*/ initializerOwnerName) {
+            return RubyExceptions.CreateMissingDefaultConstructorError(classObj, initializerOwnerName);
+        }
+
+        [Emitted]
         public static Exception/*!*/ MakePrivateMethodCalledError(RubyContext/*!*/ context, object target, string/*!*/ methodName) {
             return RubyExceptions.CreatePrivateMethodCalled(context, target, methodName);
+        }
+
+        [Emitted]
+        public static Exception/*!*/ MakeProtectedMethodCalledError(RubyContext/*!*/ context, object target, string/*!*/ methodName) {
+            return RubyExceptions.CreateProtectedMethodCalled(context, target, methodName);
+        }
+
+        [Emitted]
+        public static Exception/*!*/ MakeClrProtectedMethodCalledError(RubyContext/*!*/ context, object target, string/*!*/ methodName) {
+            return new MissingMethodException(
+                RubyExceptions.FormatMethodMissingMessage(context, target, methodName, "CLR protected method `{0}' called for {1}; " +
+                "CLR protected methods can only be called with a receiver whose class is a subclass of the class declaring the method")
+            );
         }
 
         #endregion
@@ -1430,6 +1373,8 @@ namespace IronRuby.Runtime {
             return new Range(begin, end, true);
         }
 
+        #region Dynamic Operations
+
         // allocator for struct instances:
         [Emitted]
         public static RubyStruct/*!*/ AllocateStructInstance(RubyClass/*!*/ self) {
@@ -1445,11 +1390,23 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted]
-        public static DynamicMetaObject/*!*/ GetMetaObject(IRubyObject/*!*/ obj, Expression/*!*/ parameter) {
+        public static DynamicMetaObject/*!*/ GetMetaObject(IRubyObject/*!*/ obj, MSA.Expression/*!*/ parameter) {
             return new RubyObject.Meta(parameter, BindingRestrictions.Empty, obj);
         }
 
-        #region Dynamic Actions
+        [Emitted]
+        public static RubyMethod/*!*/ CreateBoundMember(object target, RubyMemberInfo/*!*/ info, string/*!*/ name) {
+            return new RubyMethod(target, info, name);
+        }
+
+        [Emitted]
+        public static RubyMethod/*!*/ CreateBoundMissingMember(object target, RubyMemberInfo/*!*/ info, string/*!*/ name) {
+            return new RubyMethod.Curried(target, info, name);
+        }
+        
+        #endregion
+
+        #region Conversions
 
         [Emitted] // ProtocolConversionAction
         public static Proc/*!*/ ToProcValidator(string/*!*/ className, object obj) {
@@ -1458,6 +1415,18 @@ namespace IronRuby.Runtime {
                 throw new InvalidOperationException(String.Format("{0}#to_proc should return Proc", className));
             }
             return result;
+        }
+
+        // Used for implicit conversions from System.String to MutableString (to_str conversion like).
+        [Emitted]
+        public static MutableString/*!*/ StringToMutableString(string/*!*/ str) {
+            return MutableString.Create(str, RubyEncoding.UTF8);
+        }
+
+        // Used for implicit conversions from System.Object to MutableString (to_s conversion like).
+        [Emitted]
+        public static MutableString/*!*/ ObjectToMutableString(object/*!*/ value) {
+            return (value != null) ? MutableString.Create(value.ToString(), RubyEncoding.UTF8) : MutableString.FrozenEmpty;
         }
 
         [Emitted] // ProtocolConversionAction
@@ -1576,18 +1545,24 @@ namespace IronRuby.Runtime {
 
         [Emitted]
         public static double ConvertBignumToFloat(BigInteger/*!*/ value) {
-            return value.ToFloat64();
+            double result;
+            return value.TryToFloat64(out result) ? result : (value.IsNegative() ? Double.NegativeInfinity : Double.PositiveInfinity);
         }
 
         [Emitted]
-        public static double ConvertStringToFloat(MutableString/*!*/ value) {
+        public static double ConvertMutableStringToFloat(RubyContext/*!*/ context, MutableString/*!*/ value) {
+            return ConvertStringToFloat(context, value.ConvertToString());
+        }
+
+        [Emitted]
+        public static double ConvertStringToFloat(RubyContext/*!*/ context, string/*!*/ value) {
             double result;
             bool complete;
-            if (Tokenizer.TryParseDouble(value.ConvertToString(), out result, out complete) && complete) {
+            if (Tokenizer.TryParseDouble(value, out result, out complete) && complete) {
                 return result;
             }
 
-            throw RubyExceptions.CreateArgumentError("String#to_f should return Float");
+            throw RubyExceptions.InvalidValueForType(context, value, "Float");
         }
 
         [Emitted] // ProtocolConversionAction
@@ -1602,6 +1577,15 @@ namespace IronRuby.Runtime {
                 return fixnum;
             }
             throw RubyExceptions.CreateRangeError("bignum too big to convert into `long'");
+        }
+
+        [Emitted] // ConvertDoubleToFixnum
+        public static int ConvertDoubleToFixnum(double value) {
+            try {
+                return checked((int)value);
+            } catch (OverflowException) {
+                throw RubyExceptions.CreateRangeError(String.Format("float {0} out of range of Fixnum", value));
+            }
         }
 
         [Emitted] // ConvertToSAction
@@ -1663,14 +1647,9 @@ namespace IronRuby.Runtime {
         #region Class Variables
 
         [Emitted]
-        public static object GetObjectClassVariable(RubyScope/*!*/ scope, string/*!*/ name) {
-            return GetClassVariableInternal(scope.RubyContext.ObjectClass, name);
-        }
-
-        [Emitted]
         public static object GetClassVariable(RubyScope/*!*/ scope, string/*!*/ name) {
             // owner is the first module in scope:
-            RubyModule owner = scope.GetInnerMostModule(true);
+            RubyModule owner = scope.GetInnerMostModuleForClassVariableLookup();
             return GetClassVariableInternal(owner, name);
         }
 
@@ -1683,42 +1662,24 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted]
-        public static object TryGetObjectClassVariable(RubyScope/*!*/ scope, string/*!*/ name) {
-            object value;
-            scope.RubyContext.ObjectClass.TryGetClassVariable(name, out value);
-            return value;
-        }
-
-        [Emitted]
         public static object TryGetClassVariable(RubyScope/*!*/ scope, string/*!*/ name) {
             object value;
             // owner is the first module in scope:
-            scope.GetInnerMostModule(true).TryResolveClassVariable(name, out value);
+            scope.GetInnerMostModuleForClassVariableLookup().TryResolveClassVariable(name, out value);
             return value;
-        }
-
-        [Emitted]
-        public static bool IsDefinedObjectClassVariable(RubyScope/*!*/ scope, string/*!*/ name) {
-            object value;
-            return scope.RubyContext.ObjectClass.TryResolveClassVariable(name, out value) != null;
         }
 
         [Emitted]
         public static bool IsDefinedClassVariable(RubyScope/*!*/ scope, string/*!*/ name) {
             // owner is the first module in scope:
-            RubyModule owner = scope.GetInnerMostModule(true);
+            RubyModule owner = scope.GetInnerMostModuleForClassVariableLookup();
             object value;
             return owner.TryResolveClassVariable(name, out value) != null;
         }
 
         [Emitted]
-        public static object SetObjectClassVariable(object value, RubyScope/*!*/ scope, string/*!*/ name) {
-            return SetClassVariableInternal(scope.RubyContext.ObjectClass, name, value);
-        }
-
-        [Emitted]
         public static object SetClassVariable(object value, RubyScope/*!*/ scope, string/*!*/ name) {
-            return SetClassVariableInternal(scope.GetInnerMostModule(true), name, value);
+            return SetClassVariableInternal(scope.GetInnerMostModuleForClassVariableLookup(), name, value);
         }
 
         private static object SetClassVariableInternal(RubyModule/*!*/ lexicalOwner, string/*!*/ name, object value) {
@@ -1740,10 +1701,30 @@ namespace IronRuby.Runtime {
             return instanceData;
         }
 
+        [Emitted]
+        public static bool IsObjectFrozen(RubyInstanceData instanceData) {
+            return instanceData != null && instanceData.Frozen;
+        }
+
+        [Emitted]
+        public static bool IsObjectTainted(RubyInstanceData instanceData) {
+            return instanceData != null && instanceData.Tainted;
+        }
+
+        [Emitted]
+        public static void FreezeObject(ref RubyInstanceData instanceData) {
+            RubyOps.GetInstanceData(ref instanceData).Freeze();
+        }
+
+        [Emitted]
+        public static void SetObjectTaint(ref RubyInstanceData instanceData, bool value) {
+            RubyOps.GetInstanceData(ref instanceData).Tainted = value;
+        }
+
 #if !SILVERLIGHT
         [Emitted] //RubyTypeBuilder
-        public static void DeserializeObject(out RubyInstanceData/*!*/ instanceData, out RubyClass/*!*/ rubyClass, SerializationInfo/*!*/ info) {
-            rubyClass = (RubyClass)info.GetValue("#class", typeof(RubyClass));
+        public static void DeserializeObject(out RubyInstanceData/*!*/ instanceData, out RubyClass/*!*/ immediateClass, SerializationInfo/*!*/ info) {
+            immediateClass = (RubyClass)info.GetValue(RubyUtils.SerializationInfoClassKey, typeof(RubyClass));
             RubyInstanceData newInstanceData = null;
             foreach (SerializationEntry entry in info) {
                 if (entry.Name.StartsWith("@")) {
@@ -1757,8 +1738,8 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted] //RubyTypeBuilder
-        public static void SerializeObject(RubyInstanceData instanceData, RubyClass/*!*/ rubyClass, SerializationInfo/*!*/ info) {
-            info.AddValue("#class", rubyClass, typeof(RubyClass));
+        public static void SerializeObject(RubyInstanceData instanceData, RubyClass/*!*/ immediateClass, SerializationInfo/*!*/ info) {
+            info.AddValue(RubyUtils.SerializationInfoClassKey, immediateClass, typeof(RubyClass));
             if (instanceData != null) {
                 string[] instanceNames = instanceData.GetInstanceVariableNames();
                 foreach (string name in instanceNames) {
@@ -1780,27 +1761,25 @@ namespace IronRuby.Runtime {
         /// EventInfo is passed in as object since it is an internal type.
         /// </summary>
         [Emitted]
-        public static object HookupEvent(EventInfo/*!*/ eventInfo, object target, Proc/*!*/ proc) {
-            Assert.NotNull(eventInfo, proc);
+        public static Proc/*!*/ HookupEvent(RubyEventInfo/*!*/ eventInfo, object/*!*/ target, Proc/*!*/ proc) {
+            eventInfo.Tracker.AddHandler(target, proc, eventInfo.Context);
+            return proc;
+        }
 
-            BlockParam bp = CreateBfcForProcCall(proc);
-            Delegate eh = BinderOps.GetDelegate(proc.LocalScope.RubyContext, bp, eventInfo.EventHandlerType);
-            MethodInfo mi = eventInfo.GetAddMethod();
-
-            mi.Invoke(target, new object[] { eh });
-
-            return null;
+        [Emitted]
+        public static RubyEvent/*!*/ CreateEvent(RubyEventInfo/*!*/ eventInfo, object/*!*/ target, string/*!*/ name) {
+            return new RubyEvent(target, eventInfo, name);
         }
 
         [Emitted]
         public static Delegate/*!*/ CreateDelegateFromProc(Type/*!*/ type, Proc/*!*/ proc) {
             BlockParam bp = CreateBfcForProcCall(proc);
-            return BinderOps.GetDelegate(proc.LocalScope.RubyContext, bp, type);
+            return proc.LocalScope.RubyContext.GetDelegate(bp, type);
         }
 
         [Emitted]
         public static Delegate/*!*/ CreateDelegateFromMethod(Type/*!*/ type, RubyMethod/*!*/ method) {
-            return BinderOps.GetDelegate(method.Info.Context, method, type);
+            return method.Info.Context.GetDelegate(method, type);
         }
 
         #endregion

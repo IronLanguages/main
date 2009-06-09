@@ -13,6 +13,8 @@
  *
  * ***************************************************************************/
 
+using ILGenerator = System.Linq.Expressions.Compiler.OffsetTrackingILGenerator;
+
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic.Utils;
@@ -70,6 +72,10 @@ namespace System.Linq.Expressions.Compiler {
             _ilg = il;
             _node = node;
             _canReturn = canReturn;
+        }
+
+        internal bool CanReturn {
+            get { return _canReturn; }
         }
 
         /// <summary>

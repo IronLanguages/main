@@ -81,16 +81,29 @@ namespace IronPython.Compiler.Ast {
             set { _variable = value; }
         }
 
-        internal MSAst.Expression Transform(AstGenerator inner) {
-            MSAst.ParameterExpression parameter;
+        internal MSAst.Expression Transform(AstGenerator inner, bool needsWrapperMethod, bool needsLocalsDictionary, List<MSAst.Expression> init) {
             string name = SymbolTable.IdToString(Name);
-            if (_variable.AccessedInNestedScope) {
-                parameter = inner.Block.ClosedOverParameter(typeof(object), name);
+            if (_variable.AccessedInNestedScope || needsLocalsDictionary) {
+                ClosureExpression closureVar;
+                if (needsWrapperMethod) {
+                    closureVar = inner.LiftedVariable(Variable, name, _variable.AccessedInNestedScope);
+                } else {
+                    closureVar = inner.LiftedParameter(Variable, name);
+                }
+                inner.SetLocalLiftedVariable(_variable, closureVar);
+                init.Add(closureVar.Create());
+
+                return closureVar;                
             } else {
-                parameter = inner.Block.Parameter(typeof(object), name);
+                MSAst.Expression parameter;
+                if (needsWrapperMethod) {
+                    parameter = inner.Variable(typeof(object), name);
+                } else {
+                    parameter = inner.Parameter(typeof(object), name);
+                }
+                inner.Globals.SetParameter(_variable, parameter);
+                return parameter;
             }
-            _variable.SetParameter(parameter);
-            return parameter;
         }
 
         internal virtual void Init(AstGenerator inner, List<MSAst.Expression> init) {
@@ -123,7 +136,7 @@ namespace IronPython.Compiler.Ast {
             MSAst.Expression stmt = _tuple.TransformSet(
                 inner,
                 Span,
-                Variable.Variable,
+                inner.Globals.GetVariable(inner, Variable),
                 PythonOperationKind.None
             );
 

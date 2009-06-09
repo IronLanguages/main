@@ -66,12 +66,14 @@ namespace System.Linq.Expressions {
         internal SymbolDocumentWithGuids(string fileName, ref Guid language)
             : base(fileName) {
             _language = language;
+            _documentType = Compiler.SymbolGuids.DocumentType_Text;
         }
 
         internal SymbolDocumentWithGuids(string fileName, ref Guid language, ref Guid vendor)
             : base(fileName) {
             _language = language;
             _vendor = vendor;
+            _documentType = Compiler.SymbolGuids.DocumentType_Text;
         }
 
         internal SymbolDocumentWithGuids(string fileName, ref Guid language, ref Guid vendor, ref Guid documentType)

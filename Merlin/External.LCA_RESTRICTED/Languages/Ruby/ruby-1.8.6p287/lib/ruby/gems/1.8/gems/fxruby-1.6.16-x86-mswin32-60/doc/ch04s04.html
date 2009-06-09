@@ -1,0 +1,72 @@
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+   <title>Pasting Data from the Clipboard</title><link rel="stylesheet" href="style.css" type="text/css"><meta name="generator" content="DocBook v5 XSL Stylesheets V1.72.0"><link rel="start" href="book.html" title="Developing Graphical User Interfaces with FXRuby"><link rel="up" href="clipboardtut.html" title="Chapter&nbsp;4.&nbsp;Working With the Clipboard"><link rel="prev" href="ch04s03.html" title="Sending Data to the Clipboard"><link rel="next" href="dragdroptut.html" title="Chapter&nbsp;5.&nbsp;Drag and Drop"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Pasting Data from the Clipboard</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="ch04s03.html">Prev</a>&nbsp;</td><th width="60%" align="center">Chapter&nbsp;4.&nbsp;Working With the Clipboard</th><td width="20%" align="right">&nbsp;<a accesskey="n" href="dragdroptut.html">Next</a></td></tr></table><hr></div><div class="section" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d0e1122"></a>Pasting Data from the Clipboard</h2></div></div></div><p>We've seen one side of the equation, copying string data to the
+    clipboard. But before we can "round-trip" that customer data and paste it
+    back into another copy of our customer list application, we're clearly
+    going to need to transfer the data in some more useful format. That is to
+    say, if we were to receive the customer data in the format that it's
+    currently stored on the clipboard:</p><pre class="programlisting">#&lt;struct Struct::Customer name="Joe Smith", address="123 Maple, Anytown, NC", zip=12345&gt;
+</pre><p>We'd have to parse that string and try to extract the relevant data
+    from it. We can do better than that. The approach we'll use instead is to
+    serialize and deserialize the objects using YAML. First, make sure that
+    the YAML module is loaded by adding this line:</p><pre class="programlisting">require 'yaml'</pre><p>somewhere near the top of the program. Next, register a custom drag
+    type for <code class="classname">Customer</code> objects. We can do that by adding
+    one line to our main window's <code class="methodname">create</code> instance
+    method:</p><pre class="programlisting">def create
+  super
+<span class="bold"><strong>  @customerDragType = getApp().registerDragType("application/x-customer")
+</strong></span>  show(PLACEMENT_SCREEN)
+ end
+</pre><p>Note that by convention, the name of the drag type is the MIME type
+    for the data, but any unique string will do. In our case, we'll use the
+    string "application/x-customer" to identify the drag type for our
+    YAML-serialized <code class="classname">Customer</code> objects.</p><p>With that in place, we can now go back and slightly change some of
+    our previous code. When we acquire the clipboard, we'd now like to be able
+    to offer the selected customer's information either as plain text (i.e.
+    the previous format) <span class="emphasis"><em>or</em></span> as a YAML document, so we'll
+    include <span class="emphasis"><em>both</em></span> of these types in the array of drag
+    types passed to <code class="methodname">acquireClipboard()</code>:</p><pre class="programlisting"># User clicks Copy
+copyButton.connect(SEL_COMMAND) do
+  customer = customerList.getItemData(customerList.currentItem)
+<span class="bold"><strong>  types = [ FXWindow.stringType, @customerDragType ]
+</strong></span>  if acquireClipboard(types)
+    @clippedCustomer = customer
+  end
+end
+</pre><p>Similarly, when we're handling the
+    <code class="constant">SEL_CLIPBOARD_REQUEST</code> message, we now need to pay
+    attention to which drag type (i.e. which data format) the requestor
+    specified. We can do that by inspecting the
+    <code class="methodname">target</code> attribute of the
+    <code class="classname">FXEvent</code> instance passed along with the
+    <code class="constant">SEL_CLIPBOARD_REQUEST</code> message:</p><pre class="programlisting"># Handle clipboard request
+self.connect(SEL_CLIPBOARD_REQUEST) do |sender, sel, event|
+  case event.target
+    when FXWindow.stringType
+      setDNDData(FROM_CLIPBOARD, FXWindow.stringType, Fox.fxencodeStringData(@clippedCustomer.to_s))
+    when @customerDragType
+      setDNDData(FROM_CLIPBOARD, @customerDragType, @clippedCustomer.to_yaml)
+    else
+      # Ignore requests for unrecognized drag types
+  end
+end
+</pre><p>With these changes in place, we can now add a handler for the
+    "Paste" button which requests the clipboard data in YAML format,
+    deserializes it, and then adds an item to the customer list:</p><pre class="programlisting"># User clicks Paste
+pasteButton.connect(SEL_COMMAND) do
+  data = getDNDData(FROM_CLIPBOARD, @customerDragType)
+  if data
+    customer = YAML.load(data)
+    customerList.appendItem(customer.name, nil, customer)
+  end
+end
+</pre><p>The <code class="methodname">getDNDData()</code> method used here is the
+    inverse of the <code class="methodname">setDNDData()</code> method we used
+    earlier to push data to some other application requesting our clipboard
+    data. As with <code class="methodname">setDNDData()</code>, the arguments to
+    <code class="methodname">getDNDData()</code> indicate the kind of data transfer
+    we're performing (e.g. <code class="constant">FROM_CLIPBOARD</code>) and the drag
+    type for the data we're requesting. If some failure occurs (usually,
+    because the clipboard owner can't provide its data in the requested
+    format) <code class="methodname">getDNDData()</code> will simply return
+    <code class="constant">nil</code>.</p></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ch04s03.html">Prev</a>&nbsp;</td><td width="20%" align="center"><a accesskey="u" href="clipboardtut.html">Up</a></td><td width="40%" align="right">&nbsp;<a accesskey="n" href="dragdroptut.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Sending Data to the Clipboard&nbsp;</td><td width="20%" align="center"><a accesskey="h" href="book.html">Home</a></td><td width="40%" align="right" valign="top">&nbsp;Chapter&nbsp;5.&nbsp;Drag and Drop</td></tr></table></div></body></html>

@@ -53,6 +53,10 @@ namespace IronPython.Runtime {
             return found;
         }
 
+        protected virtual void LazyAdd(object name, object value) {
+            Add(name, value);
+        }
+
         public override bool Contains(SymbolId key) {
             object dummy;
             return TryGetValue(key, out dummy);
@@ -117,7 +121,7 @@ namespace IronPython.Runtime {
 
                             value = ((FieldInfo)members[0]).GetValue(null);
                             if (publish) {
-                                Add(name, value);
+                                LazyAdd(name, value);
                             }
                             return true;
                         case MemberTypes.Method:
@@ -130,7 +134,7 @@ namespace IronPython.Runtime {
                                     );
 
                                 if (publish) {
-                                    Add(name, value);
+                                    LazyAdd(name, value);
                                 }
                                 return true;
                             }
@@ -141,7 +145,7 @@ namespace IronPython.Runtime {
                             value = ((PropertyInfo)members[0]).GetValue(null, ArrayUtils.EmptyObjects);
 
                             if (publish) {
-                                Add(name, value);
+                                LazyAdd(name, value);
                             }
 
                             return true;
@@ -158,7 +162,7 @@ namespace IronPython.Runtime {
                             }
 
                             if (publish) {
-                                Add(name, value);
+                                LazyAdd(name, value);
                             }
                             return true;
                     }

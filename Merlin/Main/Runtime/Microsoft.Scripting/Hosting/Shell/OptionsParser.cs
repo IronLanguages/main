@@ -198,10 +198,6 @@ namespace Microsoft.Scripting.Hosting.Shell {
                 case "-X:AutoIndent": ConsoleOptions.AutoIndent = true; break;
                 //#endif
 
-                case "-X:LightweightScopes":
-                    SetDlrOption(arg.Substring(3));
-                    break;
-
 #if DEBUG
                 case "-X:AssembliesDir":
                     _assembliesDir = PopNextArg();
@@ -215,15 +211,20 @@ namespace Microsoft.Scripting.Hosting.Shell {
                     SetDlrOption(arg.Substring(3));
                     break;
 #endif
-
+                // TODO: remove
                 case "-X:Interpret":
                     LanguageSetup.Options["InterpretedMode"] = ScriptingRuntimeHelpers.True;
                     break;
+                
+                case "-X:NoAdaptiveCompilation":
+                    LanguageSetup.Options["NoAdaptiveCompilation"] = true;
+                    break;
 
-                case "-X:AdaptiveCompilation":                
                 case "-X:ExceptionDetail":
                 case "-X:ShowClrExceptions":
+#if DEBUG
                 case "-X:PerfStats":
+#endif
                     // TODO: separate options dictionary?
                     LanguageSetup.Options[arg.Substring(3)] = ScriptingRuntimeHelpers.True; 
                     break;
@@ -269,12 +270,9 @@ namespace Microsoft.Scripting.Hosting.Shell {
                 { "-V",                          "Print the version number and exit" },
                 { "-D",                          "Enable application debugging" },
 
-                { "-X:AutoIndent",               "" },
+                { "-X:AutoIndent",               "Enable auto-indenting in the REPL loop" },
                 { "-X:ExceptionDetail",          "Enable ExceptionDetail mode" },
-                { "-X:Interpret",                "Enable interpreted mode" },
-                { "-X:AdaptiveCompilation",      "Enable adaptive compilation" },
-                { "-X:LightweightScopes",        "Generate optimized scopes that can be garbage collected" },
-                { "-X:MaxRecursion",             "Set the maximum recursion level" },
+                { "-X:NoAdaptiveCompilation",    "Disable adaptive compilation" },
                 { "-X:PassExceptions",           "Do not catch exceptions that are unhandled by script code" },
                 { "-X:PrivateBinding",           "Enable binding to private members" },
                 { "-X:ShowClrExceptions",        "Display CLS Exception information" },
@@ -284,9 +282,10 @@ namespace Microsoft.Scripting.Hosting.Shell {
                 { "-X:ColorfulConsole",          "Enable ColorfulConsole" },
 #endif
 #if DEBUG
-                { "-X:AssembliesDir <dir>",      "Set the directory for saving generated assemblies" },
-                { "-X:SaveAssemblies",           "Save generated assemblies" },
-                { "-X:TrackPerformance",         "Track performance sensitive areas" },
+                { "-X:AssembliesDir <dir>",      "Set the directory for saving generated assemblies [debug only]" },
+                { "-X:SaveAssemblies",           "Save generated assemblies [debug only]" },
+                { "-X:TrackPerformance",         "Track performance sensitive areas [debug only]" },
+                { "-X:PerfStats",                "Print performance stats when the process exists [debug only]" },
 #if !SILVERLIGHT // Remote console
                 { Remote.RemoteRuntimeServer.RemoteRuntimeArg + " <channel_name>", 
                                                  "Start a remoting server for a remote console session." },

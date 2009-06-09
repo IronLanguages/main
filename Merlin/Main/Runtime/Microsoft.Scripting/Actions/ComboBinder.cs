@@ -13,9 +13,11 @@
  *
  * ***************************************************************************/
 
+using System;
 using System.Collections.Generic;
-using System.Linq.Expressions;
 using System.Dynamic;
+using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
 using System.Text;
 using Microsoft.Scripting.Utils;
 
@@ -52,7 +54,13 @@ namespace Microsoft.Scripting.Actions {
 
                 DynamicMetaObject[] tmpargs = GetArguments(args, results, i);
                 DynamicMetaObject next = curBinder.Binder.Bind(tmpargs[0], ArrayUtils.RemoveFirst(tmpargs));
+                if (i != 0) {
+                    // If the rule contains an embedded "update", replace it with a defer
+                    var visitor = new ReplaceUpdateVisitor { Binder = curBinder.Binder, Arguments = tmpargs };
+                    next = new DynamicMetaObject(visitor.Visit(next.Expression), next.Restrictions);
+                }
 
+                restrictions = restrictions.Merge(next.Restrictions);
                 if (next.Expression.NodeType == ExpressionType.Throw) {
                     // end of the line... the expression is throwing, none of the other 
                     // binders will have an opportunity to run.
@@ -65,7 +73,6 @@ namespace Microsoft.Scripting.Actions {
 
                 steps.Add(Expression.Assign(tmp, next.Expression));
                 results.Add(new DynamicMetaObject(tmp, next.Restrictions));
-                restrictions = restrictions.Merge(next.Restrictions);
             }
 
             return new DynamicMetaObject(
@@ -76,6 +83,25 @@ namespace Microsoft.Scripting.Actions {
                 restrictions
             );
         }
+
+        public override Type ReturnType {
+            get {
+                return _metaBinders[_metaBinders.Length - 1].Binder.ReturnType;
+            }
+        }
+
+        private sealed class ReplaceUpdateVisitor : ExpressionVisitor {
+            internal DynamicMetaObjectBinder Binder;
+            internal DynamicMetaObject[] Arguments;
+
+            protected override Expression VisitGoto(GotoExpression node) {
+                if (node.Target == CallSiteBinder.UpdateLabel) {
+                    return Binder.Defer(Arguments).Expression;
+                }
+                return base.Visit(node);
+            }
+        }
+
 
         private DynamicMetaObject[] GetArguments(DynamicMetaObject[] args, IList<DynamicMetaObject> results, int metaBinderIndex) {
             BinderMappingInfo indices = _metaBinders[metaBinderIndex];

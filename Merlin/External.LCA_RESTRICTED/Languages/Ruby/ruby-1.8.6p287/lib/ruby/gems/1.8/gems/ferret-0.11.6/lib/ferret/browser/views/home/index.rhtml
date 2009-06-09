@@ -1,0 +1,29 @@
+<h3>Index Info</h3>
+<dl>
+  <dt>Number of Documents</dt> <dd><%= @reader.num_docs %></dd>
+  <dt>Maximum Document</dt>    <dd><%= @reader.max_doc %></dd>
+</dl>
+<hr/>
+<h3>Field Infos</h3>
+<% field_props = [:stored?, :compressed?, :indexed?, :tokenized?, :omit_norms?, :store_term_vector?, :store_positions?, :store_offsets?, :has_norms?] %>
+<table cellpadding="0" cellspacing="0">
+  <tr>
+    <th>Field Name</th>
+    <th class="small">Boost</th>
+    <% field_props.each do |prop| %>
+    <th class="small"><%= prop %></th>
+    <% end %>
+  </tr>
+  <%
+    even=false;
+    @reader.field_infos.each do |fi|
+  %>
+  <tr class="<%= (even = !even) ? 'even' : 'odd' %>">
+    <td><%= fi.name %></td>
+    <td style="text-align:right;"><%= fi.boost %></td>
+    <% field_props.each do |prop| %>
+    <td class="center"><%= tick_or_cross(fi.send(prop)) %></td>
+    <% end %>
+  </tr>
+  <% end %>
+</table>

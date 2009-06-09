@@ -14,29 +14,23 @@
  * ***************************************************************************/
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Reflection.Emit;
-using System.Dynamic;
-using Microsoft.Scripting;
-using Microsoft.Scripting.Actions;
+using IronRuby.Builtins;
+using IronRuby.Compiler;
 using Microsoft.Scripting.Actions.Calls;
 using Microsoft.Scripting.Generation;
-using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-using IronRuby.Builtins;
-using IronRuby.Compiler.Generation;
-using IronRuby.Compiler;
-
+using Ast = System.Linq.Expressions.Expression;
 using AstFactory = IronRuby.Compiler.Ast.AstFactory;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
-using Ast = System.Linq.Expressions.Expression;
 
 namespace IronRuby.Runtime.Calls {
 
-    internal enum SelfCallConvention {
+    public enum SelfCallConvention {
         SelfIsInstance,
         SelfIsParameter,
         NoSelf
@@ -64,10 +58,9 @@ namespace IronRuby.Runtime.Calls {
         }
 
         internal MethodBase/*!*/[]/*!*/ SetMethodBasesNoLock(MethodBase/*!*/[]/*!*/ methods) {
-            // either all methods in the group are static or instance, a mixture is not allowed:
             Debug.Assert(
-                CollectionUtils.TrueForAll(methods, (method) => method.IsStatic) ||
-                CollectionUtils.TrueForAll(methods, (method) => !method.IsStatic)
+                CollectionUtils.TrueForAll(methods, (method) => method.IsStatic || method.DeclaringType == typeof(Object)) ||
+                CollectionUtils.TrueForAll(methods, (method) => !method.IsStatic || CompilerHelpers.IsExtension(method) || RubyClass.IsOperator(method))
             );
 
             return _methodBases = methods;
@@ -78,6 +71,7 @@ namespace IronRuby.Runtime.Calls {
         }
 
         internal abstract SelfCallConvention CallConvention { get; }
+        internal abstract bool ImplicitProtocolConversions { get; }
 
         public override int GetArity() {
             int minParameters = Int32.MaxValue;
@@ -85,11 +79,7 @@ namespace IronRuby.Runtime.Calls {
             bool hasOptional = false;
             foreach (MethodBase method in MethodBases) {
                 int mandatory, optional;
-                bool acceptsBlock;
-                RubyBinder.GetParameterCount(method.GetParameters(), out mandatory, out optional, out acceptsBlock);
-                if (mandatory > 0) {
-                    mandatory--; // account for "self"
-                }
+                RubyOverloadResolver.GetParameterCount(method, method.GetParameters(), CallConvention, out mandatory, out optional);
                 if (mandatory < minParameters) {
                     minParameters = mandatory;
                 }
@@ -147,13 +137,10 @@ namespace IronRuby.Runtime.Calls {
             return Copy(boundMethods.ToArray());
         }
 
-        private static bool IsOverloadSignature(MethodBase/*!*/ method, Type/*!*/[]/*!*/ parameterTypes) {
+        private bool IsOverloadSignature(MethodBase/*!*/ method, Type/*!*/[]/*!*/ parameterTypes) {
             var infos = method.GetParameters();
-            int firstInfo = 0;
-            while (firstInfo < infos.Length && RubyBinder.IsHiddenParameter(infos[firstInfo])) {
-                firstInfo++;
-            }
-
+            int firstInfo = RubyOverloadResolver.GetHiddenParameterCount(method, infos, CallConvention);
+            
             if (infos.Length - firstInfo != parameterTypes.Length) {
                 return false;
             }
@@ -173,8 +160,7 @@ namespace IronRuby.Runtime.Calls {
 
         private static Type/*!*/ GetAssociatedSystemType(RubyModule/*!*/ module) {
             if (module.IsClass) {
-                RubyClass cls = module as RubyClass;
-                Type type = cls.GetUnderlyingSystemType();
+                Type type = ((RubyClass)module).GetUnderlyingSystemType();
                 if (type != null) {
                     return type;
                 }
@@ -197,51 +183,56 @@ namespace IronRuby.Runtime.Calls {
                 methods = MethodBases;
             }
 
-            BuildCallNoFlow(metaBuilder, args, name, methods, CallConvention);
+            BuildCallNoFlow(metaBuilder, args, name, methods, CallConvention, ImplicitProtocolConversions);
         }
 
-        internal static BindingTarget/*!*/ ResolveOverload(string/*!*/ name, IList<MethodBase>/*!*/ overloads, CallArguments/*!*/ args, 
-            SelfCallConvention callConvention) {
+        internal static BindingTarget/*!*/ ResolveOverload(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name,
+            IList<MethodBase>/*!*/ overloads, SelfCallConvention callConvention, bool implicitProtocolConversions, 
+            out RubyOverloadResolver/*!*/ resolver) {
 
-            var methodBinder = MethodBinder.MakeBinder(args.RubyContext.Binder, name, overloads, ArrayUtils.EmptyStrings, NarrowingLevel.None, NarrowingLevel.All);
-            var argTypes = GetSignatureToMatch(args, callConvention);
-            return methodBinder.MakeBindingTarget(CallTypes.None, argTypes);
-        }
+            resolver = new RubyOverloadResolver(metaBuilder, args, callConvention, implicitProtocolConversions);
+            var bindingTarget = resolver.ResolveOverload(name, overloads, NarrowingLevel.None, NarrowingLevel.All);
 
-        internal override void BuildCallNoFlow(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name) {
-            Assert.NotNull(name, metaBuilder, args);
+            bool calleeHasBlockParam = bindingTarget.Success && HasBlockParameter(bindingTarget.Method);
+            
+            // At runtime the BlockParam is created with a new RFC instance that identifies the library method frame as 
+            // a proc-converter target of a method unwinder triggered by break from a block.
+            if (args.Signature.HasBlock) {
+                var metaBlock = args.GetMetaBlock();
+                if (metaBlock.Value != null && calleeHasBlockParam) {
+                    Debug.Assert(metaBuilder.BfcVariable != null);
+                    metaBuilder.ControlFlowBuilder = RuleControlFlowBuilder;
+                }
 
-            BuildCallNoFlow(metaBuilder, args, name, MethodBases, CallConvention);
+                // Overload resolution might not need to distinguish between nil and non-nil block.
+                // However, we still do since we construct CF only for non-nil blocks.
+                if (metaBlock.Value == null) {
+                    metaBuilder.AddRestriction(Ast.Equal(metaBlock.Expression, AstUtils.Constant(null)));
+                } else {
+                    // don't need to test the exact type of the Proc since the code is subclass agnostic:
+                    metaBuilder.AddRestriction(Ast.NotEqual(metaBlock.Expression, AstUtils.Constant(null)));
+                }
+            }
+
+            // add restrictions used for overload resolution:
+            resolver.AddArgumentRestrictions(metaBuilder, bindingTarget);
+            
+            return bindingTarget;
         }
 
         /// <summary>
         /// Resolves an library method overload and builds call expression.
         /// The resulting expression on meta-builder doesn't handle block control flow yet.
         /// </summary>
-        internal static void BuildCallNoFlow(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name, 
-            IList<MethodBase>/*!*/ overloads, SelfCallConvention callConvention) {
+        internal static void BuildCallNoFlow(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name,
+            IList<MethodBase>/*!*/ overloads, SelfCallConvention callConvention, bool implicitProtocolConversions) {
 
-            var bindingTarget = ResolveOverload(name, overloads, args, callConvention);
-            bool calleeHasBlockParam = bindingTarget.Success && HasBlockParameter(bindingTarget.Method);
-
-            // Allocates a variable holding BlockParam. At runtime the BlockParam is created with a new RFC instance that
-            // identifies the library method frame as a proc-converter target of a method unwinder triggered by break from a block.
-            //
-            // NOTE: We check for null block here -> test for that fact is added in MakeActualArgs
-            if (args.Signature.HasBlock && args.GetBlock() != null && calleeHasBlockParam) {
-                if (metaBuilder.BfcVariable == null) {
-                    metaBuilder.BfcVariable = metaBuilder.GetTemporary(typeof(BlockParam), "#bfc");
-                }
-                metaBuilder.ControlFlowBuilder = RuleControlFlowBuilder;
-            }
-
-            var actualArgs = MakeActualArgs(metaBuilder, args, callConvention, calleeHasBlockParam, true);
-
+            RubyOverloadResolver resolver;
+            var bindingTarget = ResolveOverload(metaBuilder, args, name, overloads, callConvention, implicitProtocolConversions, out resolver);
             if (bindingTarget.Success) {
-                var parameterBinder = new RubyParameterBinder(args.RubyContext.Binder, args.MetaContext.Expression, args.Signature.HasScope);
-                metaBuilder.Result = bindingTarget.MakeExpression(parameterBinder, actualArgs);
+                metaBuilder.Result = bindingTarget.MakeExpression();
             } else {
-                metaBuilder.SetError(args.RubyContext.RubyBinder.MakeInvalidParametersError(bindingTarget).Expression);
+                metaBuilder.SetError(resolver.MakeInvalidParametersError(bindingTarget).Expression);
             }
         }
 
@@ -265,7 +256,7 @@ namespace IronRuby.Runtime.Calls {
             if (resultType != typeof(void)) {
                 resultVariable = metaBuilder.GetTemporary(resultType, "#result");
             } else {
-                resultVariable = Expression.Empty();
+                resultVariable = AstUtils.Empty();
             }
 
             if (expression.Type != typeof(void)) {
@@ -282,7 +273,7 @@ namespace IronRuby.Runtime.Calls {
                         expression
                     ).Filter(methodUnwinder, Methods.IsProcConverterTarget.OpCall(bfcVariable, methodUnwinder),
                         Ast.Assign(resultVariable, Ast.Field(methodUnwinder, MethodUnwinder.ReturnValueField)),
-                        Expression.Default(expression.Type)
+                        AstUtils.Default(expression.Type)
                     ).Finally(
                         Methods.LeaveProcConverter.OpCall(bfcVariable)
                     ),
@@ -300,170 +291,6 @@ namespace IronRuby.Runtime.Calls {
                 }
             }
             return false;
-        }
-
-        internal static Expression[]/*!*/ MakeActualArgs(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args,
-            SelfCallConvention callConvention, bool calleeHasBlockParam, bool injectMissingBlockParam) {
-
-            var actualArgs = new List<Expression>(args.ExplicitArgumentCount);
-
-            // self (instance):
-            if (callConvention == SelfCallConvention.SelfIsInstance) {
-                // test already added by method resolver
-                Debug.Assert(args.TargetExpression != null);
-                AddArgument(actualArgs, args.Target, args.TargetExpression);
-            }
-
-            Proc block = null;
-            Expression blockExpression = null;
-
-            // block test - we need to test for a block regardless of whether it is actually passed to the method or not
-            // since the information that the block is not null is used for overload resolution.
-            if (args.Signature.HasBlock) {
-                block = args.GetBlock();
-                blockExpression = args.GetBlockExpression();
-
-                if (block == null) {
-                    metaBuilder.AddRestriction(Ast.Equal(blockExpression, Ast.Constant(null)));
-                } else {
-                    // don't need to test the exact type of the Proc since the code is subclass agnostic:
-                    metaBuilder.AddRestriction(Ast.NotEqual(blockExpression, Ast.Constant(null)));
-                }
-            }
-
-            // block:
-            if (calleeHasBlockParam) {
-                if (args.Signature.HasBlock) {
-                    if (block == null) {
-                        // the user explicitly passed nil as a block arg:
-                        actualArgs.Add(Ast.Constant(null));
-                    } else {
-                        // pass BlockParam:
-                        Debug.Assert(metaBuilder.BfcVariable != null);
-                        actualArgs.Add(metaBuilder.BfcVariable);
-                    }
-                } else {
-                    // no block passed into a method with a BlockParam:
-                    actualArgs.Add(Ast.Constant(null));
-                }
-            } else if (injectMissingBlockParam) {
-                // no block passed into a method w/o a BlockParam (we still need to fill the missing block argument):
-                actualArgs.Add(Ast.Constant(null));
-            }
-
-            // self (non-instance):
-            if (callConvention == SelfCallConvention.SelfIsParameter) {
-                // test already added by method resolver
-                AddArgument(actualArgs, args.Target, args.TargetExpression);
-            }
-
-            // simple arguments:
-            for (int i = 0; i < args.SimpleArgumentCount; i++) {
-                var value = args.GetSimpleArgument(i);
-                var expr = args.GetSimpleArgumentExpression(i);
-
-                metaBuilder.AddObjectTypeRestriction(value, expr);
-                AddArgument(actualArgs, value, expr);
-            }
-
-            // splat argument:
-            int listLength;
-            ParameterExpression listVariable;
-            if (args.Signature.HasSplattedArgument) {
-                object splattedArg = args.GetSplattedArgument();
-                Expression splattedArgExpression = args.GetSplattedArgumentExpression();
-
-                if (metaBuilder.AddSplattedArgumentTest(splattedArg, splattedArgExpression, out listLength, out listVariable)) {
-
-                    // AddTestForListArg only returns 'true' if the argument is a List<object>
-                    var list = (List<object>)splattedArg;
-
-                    // get arguments, add tests
-                    for (int j = 0; j < listLength; j++) {
-                        var value = list[j];
-                        var expr = Ast.Call(listVariable, typeof(List<object>).GetMethod("get_Item"), Ast.Constant(j));
-
-                        metaBuilder.AddObjectTypeCondition(value, expr);
-                        AddArgument(actualArgs, value, expr);
-                    }
-
-                } else {
-                    // argument is not an array => add the argument itself:
-                    AddArgument(actualArgs, splattedArg, splattedArgExpression);
-                }
-            }
-
-            // rhs argument:
-            if (args.Signature.HasRhsArgument) {
-                var value = args.GetRhsArgument();
-                var expr = args.GetRhsArgumentExpression();
-
-                metaBuilder.AddObjectTypeRestriction(value, expr);
-                AddArgument(actualArgs, value, expr);
-            }
-
-            return actualArgs.ToArray();
-        }
-
-        private static void AddArgument(List<Expression>/*!*/ actualArgs, object arg, Expression/*!*/ expr) {
-            if (arg == null) {
-                actualArgs.Add(Ast.Constant(null));
-            } else {
-                var type = CompilerHelpers.GetVisibleType(arg);
-                if (type.IsValueType) {
-                    actualArgs.Add(expr);
-                } else {
-                    actualArgs.Add(AstUtils.Convert(expr, type));
-                }
-            }
-        }
-
-        private static Type[]/*!*/ GetSignatureToMatch(CallArguments/*!*/ args, SelfCallConvention callConvention) {
-            var result = new List<Type>(args.ExplicitArgumentCount);
-
-            // self (instance):
-            if (callConvention == SelfCallConvention.SelfIsInstance) {
-                result.Add(CompilerHelpers.GetType(args.Target));
-            }
-
-            // block:
-            if (args.Signature.HasBlock) {
-                // use None to let binder know that [NotNull]BlockParam is not applicable
-                result.Add(args.GetBlock() != null ? typeof(BlockParam) : typeof(DynamicNull));
-            } else {
-                result.Add(typeof(MissingBlockParam));
-            }
-
-            // self (non-instance):
-            if (callConvention == SelfCallConvention.SelfIsParameter) {
-                result.Add(CompilerHelpers.GetType(args.Target));
-            }
-
-            // simple args:
-            for (int i = 0; i < args.SimpleArgumentCount; i++) {
-                result.Add(CompilerHelpers.GetType(args.GetSimpleArgument(i)));
-            }
-
-            // splat arg:
-            if (args.Signature.HasSplattedArgument) {
-                object splattedArg = args.GetSplattedArgument();
-                
-                var list = splattedArg as List<object>;
-                if (list != null) {
-                    foreach (object obj in list) {
-                        result.Add(CompilerHelpers.GetType(obj));
-                    }
-                } else {
-                    result.Add(CompilerHelpers.GetType(splattedArg));
-                }
-            }
-
-            // rhs arg:
-            if (args.Signature.HasRhsArgument) {
-                result.Add(CompilerHelpers.GetType(args.GetRhsArgument()));
-            }
-
-            return result.ToArray();
         }
 
         #endregion

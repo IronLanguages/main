@@ -16,11 +16,11 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Dynamic;
 using System.Linq.Expressions;
 using System.Reflection;
-using Microsoft.Scripting.Actions;
-using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Generation;
+using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Actions.Calls {
     /// <summary>
@@ -29,7 +29,9 @@ namespace Microsoft.Scripting.Actions.Calls {
     /// methods for params arrays and param dictionary functions.
     /// </summary>
     public class SimpleArgBuilder : ArgBuilder {
+        // Index of actual argument expression.
         private int _index;
+
         private readonly Type _parameterType;
         private readonly bool _isParams, _isParamsDict;
 
@@ -69,6 +71,10 @@ namespace Microsoft.Scripting.Actions.Calls {
             return new SimpleArgBuilder(ParameterInfo, _parameterType, newIndex, _isParams, _isParamsDict);
         }
 
+        public override int ConsumedArgumentCount {
+            get { return 1; }
+        }
+
         public override int Priority {
             get { return 0; }
         }
@@ -85,12 +91,25 @@ namespace Microsoft.Scripting.Actions.Calls {
             }
         }
 
-        internal protected override Expression ToExpression(ParameterBinder parameterBinder, IList<Expression> parameters, bool[] hasBeenUsed) {
-            Debug.Assert(_index < parameters.Count);
-            Debug.Assert(_index < hasBeenUsed.Length);
-            Debug.Assert(parameters[_index] != null);
+        internal protected override Expression ToExpression(OverloadResolver resolver, RestrictedArguments args, bool[] hasBeenUsed) {
+            Debug.Assert(hasBeenUsed.Length == args.Length);
+            Debug.Assert(_index < args.Length);
+            Debug.Assert(!hasBeenUsed[Index]);
+            
             hasBeenUsed[_index] = true;
-            return parameterBinder.ConvertExpression(parameters[_index], ParameterInfo, _parameterType);
+            return resolver.Convert(args.GetObject(_index), args.GetType(_index), ParameterInfo, _parameterType);
+        }
+
+        protected internal override Func<object[], object> ToDelegate(OverloadResolver resolver, RestrictedArguments args, bool[] hasBeenUsed) {
+            Func<object[], object> conv = resolver.GetConvertor(_index + 1, args.GetObject(_index), ParameterInfo, _parameterType);
+            if (conv != null) {
+                return conv;
+            }
+
+            return (Func<object[], object>)Delegate.CreateDelegate(
+                typeof(Func<object[], object>), 
+                _index + 1, 
+                typeof(ArgBuilder).GetMethod("ArgumentRead"));
         }
 
         public int Index {

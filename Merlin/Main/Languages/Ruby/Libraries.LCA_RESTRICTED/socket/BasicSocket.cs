@@ -265,18 +265,18 @@ namespace IronRuby.StandardLibrary.Sockets {
 
         [RubyMethod("send")]
         public static int Send(ConversionStorage<int>/*!*/ fixnumCast, 
-            RubyContext/*!*/ context, RubyBasicSocket/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ message, object flags) {
-            Protocols.CheckSafeLevel(context, 4, "send");
-            SocketFlags socketFlags = ConvertToSocketFlag(fixnumCast, context, flags);
+            RubyBasicSocket/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ message, object flags) {
+            Protocols.CheckSafeLevel(fixnumCast.Context, 4, "send");
+            SocketFlags socketFlags = ConvertToSocketFlag(fixnumCast, flags);
             return self.Socket.Send(message.ConvertToBytes(), socketFlags);
         }
 
         [RubyMethod("send")]
-        public static int Send(ConversionStorage<int>/*!*/ fixnumCast, RubyContext/*!*/ context, RubyBasicSocket/*!*/ self,
+        public static int Send(ConversionStorage<int>/*!*/ fixnumCast, RubyBasicSocket/*!*/ self,
             [DefaultProtocol, NotNull]MutableString/*!*/ message, object flags, [DefaultProtocol, NotNull]MutableString/*!*/ to) {
-            Protocols.CheckSafeLevel(context, 4, "send");
+            Protocols.CheckSafeLevel(fixnumCast.Context, 4, "send");
             // Convert the parameters
-            SocketFlags socketFlags = ConvertToSocketFlag(fixnumCast, context, flags);
+            SocketFlags socketFlags = ConvertToSocketFlag(fixnumCast, flags);
             // Unpack the socket address information from the to parameter
             SocketAddress address = new SocketAddress(AddressFamily.InterNetwork);
             for (int i = 0; i < to.GetByteCount(); i++) {
@@ -287,17 +287,17 @@ namespace IronRuby.StandardLibrary.Sockets {
         }
 
         [RubyMethod("recv")]
-        public static MutableString Receive(ConversionStorage<int>/*!*/ fixnumCast, RubyContext/*!*/ context, RubyBasicSocket/*!*/ self, 
+        public static MutableString Receive(ConversionStorage<int>/*!*/ fixnumCast, RubyBasicSocket/*!*/ self, 
             [DefaultProtocol]int length, [DefaultParameterValue(null)]object flags) {
 
-            SocketFlags sFlags = ConvertToSocketFlag(fixnumCast, context, flags);
+            SocketFlags sFlags = ConvertToSocketFlag(fixnumCast, flags);
 
             byte[] buffer = new byte[length];
             int received = self.Socket.Receive(buffer, 0, length, sFlags);
 
             MutableString str = MutableString.CreateBinary(received);
             str.Append(buffer, 0, received);
-            context.SetObjectTaint(str, true);
+            fixnumCast.Context.SetObjectTaint(str, true);
             return str;
         }
 
@@ -317,13 +317,13 @@ namespace IronRuby.StandardLibrary.Sockets {
         ///      p s.recv_nonblock(10) #=> "aaa"
         /// </example>
         [RubyMethod("recv_nonblock")]
-        public static MutableString/*!*/ ReceiveNonBlocking(ConversionStorage<int>/*!*/ fixnumCast, RubyContext/*!*/ context, RubyBasicSocket/*!*/ self,
+        public static MutableString/*!*/ ReceiveNonBlocking(ConversionStorage<int>/*!*/ fixnumCast, RubyBasicSocket/*!*/ self,
             [DefaultProtocol]int length, [DefaultParameterValue(null)]object flags) {
 
             bool blocking = self.Socket.Blocking;
             try {
                 self.Socket.Blocking = false;
-                return Receive(fixnumCast, context, self, length, flags);
+                return Receive(fixnumCast, self, length, flags);
             } finally {
                 // Reset the blocking
                 self.Socket.Blocking = blocking;
@@ -420,15 +420,15 @@ namespace IronRuby.StandardLibrary.Sockets {
             }
         }
 
-        internal static SocketFlags ConvertToSocketFlag(ConversionStorage<int>/*!*/ conversionStorage, RubyContext/*!*/ context, object flags) {
+        internal static SocketFlags ConvertToSocketFlag(ConversionStorage<int>/*!*/ conversionStorage, object flags) {
             if (flags == null) {
                 return SocketFlags.None;
             }
-            return (SocketFlags)Protocols.CastToFixnum(conversionStorage, context, flags);
+            return (SocketFlags)Protocols.CastToFixnum(conversionStorage, flags);
         }
 
         internal static AddressFamily ConvertToAddressFamily(ConversionStorage<MutableString>/*!*/ stringCast, ConversionStorage<int>/*!*/ fixnumCast, 
-            RubyContext/*!*/ context, object family) {
+            object family) {
 
             // Default is AF_INET
             if (family == null) {
@@ -439,14 +439,14 @@ namespace IronRuby.StandardLibrary.Sockets {
                 return (AddressFamily)(int)family;
             }
             // Convert to a string (using to_str) and then look up the value
-            MutableString strFamily = Protocols.CastToString(stringCast, context, family);
+            MutableString strFamily = Protocols.CastToString(stringCast, family);
             foreach (AddressFamilyName name in FamilyNames) {
                 if (name.Name.Equals(strFamily)) {
                     return name.Family;
                 }
             }
             // Convert to a Fixnum (using to_i) and hope it is a valid AddressFamily constant
-            return (AddressFamily)Protocols.CastToFixnum(fixnumCast, context, strFamily);
+            return (AddressFamily)Protocols.CastToFixnum(fixnumCast, strFamily);
         }
 
         internal static MutableString ToAddressFamilyString(AddressFamily family) {
@@ -503,14 +503,14 @@ namespace IronRuby.StandardLibrary.Sockets {
             return hostName.ConvertToString();
         }
 
-        internal static string/*!*/ ConvertToHostString(ConversionStorage<MutableString>/*!*/ stringCast, RubyContext/*!*/ context, object hostName) {
+        internal static string/*!*/ ConvertToHostString(ConversionStorage<MutableString>/*!*/ stringCast, object hostName) {
             BigInteger bignum;
             if (hostName is int) {
                 return ConvertToHostString((int)hostName);
             } else if (!ReferenceEquals(bignum = hostName as BigInteger, null)) {
                 return ConvertToHostString(bignum);
             } else if (hostName != null) {
-                return ConvertToHostString(Protocols.CastToString(stringCast, context, hostName));
+                return ConvertToHostString(Protocols.CastToString(stringCast, hostName));
             } else {
                 return ConvertToHostString((MutableString)null);
             }
@@ -542,8 +542,7 @@ namespace IronRuby.StandardLibrary.Sockets {
             return false;
         }
 
-        internal static int ConvertToPortNum(ConversionStorage<MutableString>/*!*/ stringCast, ConversionStorage<int>/*!*/ fixnumCast, 
-            RubyContext/*!*/ context, object port) {
+        internal static int ConvertToPortNum(ConversionStorage<MutableString>/*!*/ stringCast, ConversionStorage<int>/*!*/ fixnumCast, object port) {
             // conversion protocol: if it's a Fixnum, return it
             // otherwise, convert to string & then convert the result to a Fixnum
             if (port is int) {
@@ -554,13 +553,13 @@ namespace IronRuby.StandardLibrary.Sockets {
                 return 0;
             }
 
-            MutableString serviceName = Protocols.CastToString(stringCast, context, port);
+            MutableString serviceName = Protocols.CastToString(stringCast, port);
             ServiceName service = SearchForService(serviceName);
             if (service != null) {
                 return service.Port;
             }
 
-            return Protocols.CastToFixnum(fixnumCast, context, serviceName);
+            return Protocols.CastToFixnum(fixnumCast, serviceName);
         }
 
         internal static ServiceName SearchForService(int port) {

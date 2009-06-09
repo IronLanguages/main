@@ -23,7 +23,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal override MSAst.Expression Transform(AstGenerator ag) {
-            return ag.AddDebugInfo(MSAst.Expression.Empty(), Span);
+            return ag.AddDebugInfo(AstUtils.Empty(), Span);
         }
 
         public override void Walk(PythonWalker walker) {

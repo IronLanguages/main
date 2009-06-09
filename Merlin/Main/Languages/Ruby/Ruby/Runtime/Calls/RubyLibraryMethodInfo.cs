@@ -41,7 +41,7 @@ namespace IronRuby.Runtime.Calls {
     /// Currently this is used for all builtin libary methods and interop calls to CLR methods
     /// </summary>
     public sealed class RubyLibraryMethodInfo : RubyMethodGroupBase {
-        private readonly Delegate/*!*/[] _overloads;
+        private readonly Delegate/*!*/[]/*!*/ _overloads;
 
         /// <summary>
         /// Creates a Ruby method implemented by a method group of CLR methods.
@@ -62,8 +62,16 @@ namespace IronRuby.Runtime.Calls {
             get { return true; }
         }
 
+        internal Delegate/*!*/[]/*!*/ Overloads {
+            get { return _overloads; }
+        }
+
         internal override SelfCallConvention CallConvention {
             get { return SelfCallConvention.SelfIsParameter; }
+        }
+
+        internal override bool ImplicitProtocolConversions {
+            get { return false; }
         }
 
         internal protected override MethodBase/*!*/[]/*!*/ MethodBases {
@@ -85,6 +93,10 @@ namespace IronRuby.Runtime.Calls {
 
         protected override RubyMemberInfo/*!*/ Copy(MethodBase/*!*/[]/*!*/ methods) {
             return new RubyLibraryMethodInfo(this, methods);
+        }
+
+        internal override void BuildCallNoFlow(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name) {
+            BuildCallNoFlow(metaBuilder, args, name, MethodBases, CallConvention, ImplicitProtocolConversions);
         }
     }
 }

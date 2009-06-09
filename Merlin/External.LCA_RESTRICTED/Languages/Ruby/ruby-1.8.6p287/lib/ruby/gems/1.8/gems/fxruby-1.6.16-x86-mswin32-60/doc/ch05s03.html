@@ -1,0 +1,127 @@
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+   <title>Putting It All Together</title><link rel="stylesheet" href="style.css" type="text/css"><meta name="generator" content="DocBook v5 XSL Stylesheets V1.72.0"><link rel="start" href="book.html" title="Developing Graphical User Interfaces with FXRuby"><link rel="up" href="dragdroptut.html" title="Chapter&nbsp;5.&nbsp;Drag and Drop"><link rel="prev" href="ch05s02.html" title="Drag Sources"><link rel="next" href="unicode.html" title="Chapter&nbsp;6.&nbsp;Unicode and FXRuby"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Putting It All Together</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="ch05s02.html">Prev</a>&nbsp;</td><th width="60%" align="center">Chapter&nbsp;5.&nbsp;Drag and Drop</th><td width="20%" align="right">&nbsp;<a accesskey="n" href="unicode.html">Next</a></td></tr></table><hr></div><div class="section" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="d0e1567"></a>Putting It All Together</h2></div></div></div><p>We've studied drag-and-drop enabled applications from two points of
+    view, that of a drag source and that of a drop site. But for most
+    applications, you'll want a window to act as both a drag source
+    <span class="emphasis"><em>and</em></span> a drop site. As it turns out, this is just a
+    simple combination of the techniques we've already seen in the previous
+    sections.</p><p>If we use our completed drag source example program from the
+    previous section as a starting point, and then compare it to the drop site
+    example from the first section, it is apparent that the only "pieces"
+    missing are:</p><div class="itemizedlist"><ul type="disc"><li><p>A call to <code class="methodname">dropEnable</code>, to make
+        <code class="classname">DragSource</code>'s canvas drop-enabled;</p></li><li><p>A handler for the <code class="constant">SEL_DND_MOTION</code> message;
+        and,</p></li><li><p>A handler for the <code class="constant">SEL_DND_DROP</code>
+        message.</p></li></ul></div><p>If you merge those three short bits of code from
+    <code class="filename">dropsite.rb</code> into <code class="filename">dragsource.rb</code>,
+    you should end up with a program that can act as both a drag source and a
+    drop site. To test this program, you should be able to start up two
+    separate copies side-by-side and then drag from one to the other. Since,
+    as written, both copies will start up with a red background, you might
+    want to modify one of them to have a different initial backgroud color.
+    Another interesting possibility is to start up a third program (such as an
+    FXRuby example that has displays a color dialog) and drag colors back and
+    forth between all three programs. You could spend days doing this and
+    never leave the house.</p><p>The complete program is listed below, and is included in the
+    <code class="filename">examples</code> directory under the file
+    name <code class="filename">dragdrop.rb</code>.</p><pre class="programlisting">require 'fox16'
+
+include Fox
+
+class DragDropWindow &lt; FXMainWindow
+  def initialize(anApp)
+    # Initialize base class
+    super(anApp, "Drag and Drop", :opts =&gt; DECOR_ALL, :width =&gt; 400, :height =&gt; 300)
+    
+    # Fill main window with canvas
+    @canvas = FXCanvas.new(self, :opts =&gt; LAYOUT_FILL_X|LAYOUT_FILL_Y)
+    @canvas.backColor = "red"
+    
+    # Enable canvas for drag-and-drop messages
+    @canvas.dropEnable
+    
+    # Handle expose events on the canvas
+    @canvas.connect(SEL_PAINT) do |sender, sel, event|
+      FXDCWindow.new(@canvas, event) do |dc|
+        dc.foreground = @canvas.backColor
+        dc.fillRectangle(event.rect.x, event.rect.y, event.rect.w, event.rect.h)
+      end
+    end
+
+    # Handle left button press
+    @canvas.connect(SEL_LEFTBUTTONPRESS) do
+      #
+      # Capture (grab) the mouse when the button goes down, so that all future
+      # mouse events will be reported to this widget, even if those events occur
+      # outside of this widget.
+      #
+      @canvas.grab
+
+      # Advertise which drag types we can offer
+      dragTypes = [FXWindow.colorType]
+      @canvas.beginDrag(dragTypes)
+    end
+    
+    # Handle mouse motion events
+    @canvas.connect(SEL_MOTION) do |sender, sel, event|
+      if @canvas.dragging?
+        @canvas.handleDrag(event.root_x, event.root_y)
+        unless @canvas.didAccept == DRAG_REJECT
+          @canvas.dragCursor = getApp().getDefaultCursor(DEF_SWATCH_CURSOR)
+        else
+          @canvas.dragCursor = getApp().getDefaultCursor(DEF_DNDSTOP_CURSOR)
+        end
+      end
+    end
+
+    # Handle SEL_DND_MOTION messages from the canvas
+    @canvas.connect(SEL_DND_MOTION) do
+      if @canvas.offeredDNDType?(FROM_DRAGNDROP, FXWindow.colorType)
+        @canvas.acceptDrop
+      end
+    end
+
+    # Handle left button release
+    @canvas.connect(SEL_LEFTBUTTONRELEASE) do
+      @canvas.ungrab
+      @canvas.endDrag
+    end
+    
+    # Handle SEL_DND_DROP message from the canvas
+    @canvas.connect(SEL_DND_DROP) do
+      # Try to obtain the data as color values first
+      data = @canvas.getDNDData(FROM_DRAGNDROP, FXWindow.colorType)
+      unless data.nil?
+        # Update canvas background color
+        @canvas.backColor = Fox.fxdecodeColorData(data)
+      end
+    end
+
+    # Handle request for DND data
+    @canvas.connect(SEL_DND_REQUEST) do |sender, sel, event|
+      if event.target == FXWindow.colorType
+        @canvas.setDNDData(FROM_DRAGNDROP, FXWindow.colorType, Fox.fxencodeColorData(@canvas.backColor))
+      end
+    end
+  end
+
+  def create
+    # Create the main window and canvas
+    super
+    
+    # Register the drag type for colors
+    FXWindow.colorType = getApp().registerDragType(FXWindow.colorTypeName)
+
+    # Show the main window
+    show(PLACEMENT_SCREEN)
+  end
+end
+
+if __FILE__ == $0
+  FXApp.new("DragDrop", "FXRuby") do |theApp|
+    DragDropWindow.new(theApp)
+    theApp.create
+    theApp.run
+  end
+end
+
+</pre></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ch05s02.html">Prev</a>&nbsp;</td><td width="20%" align="center"><a accesskey="u" href="dragdroptut.html">Up</a></td><td width="40%" align="right">&nbsp;<a accesskey="n" href="unicode.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Drag Sources&nbsp;</td><td width="20%" align="center"><a accesskey="h" href="book.html">Home</a></td><td width="40%" align="right" valign="top">&nbsp;Chapter&nbsp;6.&nbsp;Unicode and FXRuby</td></tr></table></div></body></html>

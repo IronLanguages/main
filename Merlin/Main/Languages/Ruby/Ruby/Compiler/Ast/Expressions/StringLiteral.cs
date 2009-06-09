@@ -21,6 +21,7 @@ using System.Text;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting;
+using Microsoft.Scripting.Utils;
 
 using IronRuby.Builtins;
 using IronRuby.Runtime;
@@ -30,49 +31,39 @@ namespace IronRuby.Compiler.Ast {
     using Ast = System.Linq.Expressions.Expression;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
 
-    internal enum StringLiteralEncoding {
-        // encoding not specified in the literal
-        Default = 0,
-
-        // literal doesn't contain non-ASCII characters (> 0x7f)
-        Ascii = 1,
-
-        // literal contains \u escape
-        UTF8 = 2,
-    }
-
     public partial class StringLiteral : Expression {
-        private readonly string/*!*/ _value;
-        private readonly StringLiteralEncoding _encoding;
+        // string or byte[]
+        private readonly object/*!*/ _value;
 
-        public string/*!*/ Value {
+        internal StringLiteral(object/*!*/ value, SourceSpan location) 
+            : base(location) {
+            Debug.Assert(value is string || value is byte[]);
+            _value = value;
+        }
+
+        public StringLiteral(string/*!*/ value, SourceSpan location)
+            : this((object)value, location) {
+        }
+
+        public StringLiteral(byte[]/*!*/ value, SourceSpan location)
+            : this((object)value, location) {
+        }
+
+        internal object/*!*/ Value {
             get { return _value; }
         }
 
-        public bool IsAscii {
-            get { return _encoding == StringLiteralEncoding.Ascii; }
-        }
-
-        public bool IsUTF8 {
-            get { return _encoding == StringLiteralEncoding.UTF8; }
-        }
-
-        internal StringLiteral(string/*!*/ value, StringLiteralEncoding encoding, SourceSpan location)
-            : base(location) {
-            _value = value;
-            _encoding = encoding;
+        public MutableString/*!*/ GetMutableString() {
+            string str = _value as string;
+            if (str != null) {
+                return MutableString.Create(str);
+            } else {
+                return MutableString.CreateBinary((byte[])_value);
+            }
         }
 
         internal override MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen) {
-            if (IsAscii || gen.Encoding == BinaryEncoding.Instance) {
-                return Methods.CreateMutableStringB.OpCall(Ast.Constant(_value));
-            } else if (IsUTF8 || gen.Encoding == BinaryEncoding.UTF8) {
-                return Methods.CreateMutableStringU.OpCall(Ast.Constant(_value));
-            } else {
-                return Methods.CreateMutableStringE.OpCall(
-                    Ast.Constant(_value), Ast.Constant(RubyEncoding.GetCodePage(gen.Encoding))
-                );
-            }
+            return Methods.CreateMutableStringL.OpCall(StringConstructor.MakeConstant(_value), AstUtils.Constant(gen.Encoding));
         }
 
         internal override MSA.Expression TransformDefinedCondition(AstGenerator/*!*/ gen) {

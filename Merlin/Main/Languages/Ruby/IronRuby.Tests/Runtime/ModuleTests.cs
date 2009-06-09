@@ -13,6 +13,7 @@
  *
  * ***************************************************************************/
 
+using System.IO;
 namespace IronRuby.Tests {
     public partial class Tests {
         public void ClassDuplication1() {
@@ -152,6 +153,37 @@ p P.dup.new { 'foo' }[]
             }, output);
         }
 
+        public void Structs1() {
+            AssertOutput(() => CompilerTest(@"
+S = Struct.new(:f,:g)
+class S
+  alias set_f f=
+end
+
+s = S[1,2]
+s.set_f rescue p $!
+s.set_f(3)
+puts s.f
+s.set_f(4,5) rescue p $!
+s.set_f(*[]) rescue p $!
+s.set_f(*[6])
+puts s.f
+s.set_f(*[6,7]) rescue p $!
+puts s.f(*[])
+puts s.f(*[1]) rescue p $!
+"
+                ), @"
+#<ArgumentError: wrong number of arguments (0 for 1)>
+3
+#<ArgumentError: wrong number of arguments (2 for 1)>
+#<ArgumentError: wrong number of arguments (0 for 1)>
+6
+#<ArgumentError: wrong number of arguments (2 for 1)>
+6
+#<ArgumentError: wrong number of arguments (1 for 0)>
+");
+        }
+
         public void MetaModules1() {
             AssertOutput(delegate() {
                 CompilerTest(@"
@@ -204,5 +236,95 @@ Meta
 ");
         }
 
+        /// <summary>
+        /// Autoload removes the constant from the declaring module before it loads the target file.
+        /// </summary>
+        public void Autoload1() {
+            if (_driver.PartialTrust) return;
+
+            string file = null;
+            try {
+                file = Driver.MakeTempFile(".rb", @"
+class D 
+  p defined? X
+  X = 123
+end
+");
+                Context.DefineGlobalVariable("file", file);
+    
+                TestOutput(@"
+class D
+  autoload(:X, $file)
+end
+
+class C < D
+  p X
+end
+
+", @"
+nil
+123
+");
+
+            } finally {
+                if (file != null) {
+                    File.Delete(file);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Freezing and module initializers.
+        /// </summary>
+        public void ModuleFreezing1() {
+            if (_driver.PartialTrust) return;
+
+            TestOutput(@"
+Float.freeze
+puts defined? Float::EPSILON         # this should work, Float is a builtin
+puts defined? 1.2.+
+
+Enumerable.freeze
+begin
+  require 'enumerator'               # monkey-patches Enumerable
+rescue Exception
+  p $!
+end
+", @"
+constant
+method
+#<TypeError: can't modify frozen module>
+");
+        }
+
+        /// <summary>
+        /// Tests recursive singleton freezing.
+        /// </summary>
+        public void ModuleFreezing2() {
+            TestOutput(@"
+[Module.new, Object.new].each do |obj|
+  obj.freeze
+  p obj.frozen?
+  class << obj
+    p frozen?
+    class << self
+      p frozen?
+      class << self
+        p frozen?
+      end
+    end
+  end
+end
+", @"
+true
+true
+true
+true
+true
+true
+true
+true
+");
+        }
     }
 }

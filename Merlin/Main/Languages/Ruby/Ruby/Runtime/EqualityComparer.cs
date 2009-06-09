@@ -19,6 +19,7 @@ using System.Runtime.CompilerServices;
 using IronRuby.Builtins;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+using IronRuby.Runtime.Calls;
 
 namespace IronRuby.Runtime {
     // Even though Ruby types overload Equals & GetHashCode, we can't use them
@@ -28,24 +29,27 @@ namespace IronRuby.Runtime {
     public class EqualityComparer : IEqualityComparer<object> {
         private readonly RubyContext/*!*/ _context;
 
-        private static readonly CallSite<Func<CallSite, RubyContext, object, object>>/*!*/ _HashSharedSite = CallSite<Func<CallSite, RubyContext, object, object>>.Create(
-            RubySites.InstanceCallAction("hash"));
-
-        private static readonly CallSite<Func<CallSite, RubyContext, object, object, bool>>/*!*/ _EqlSharedSite = CallSite<Func<CallSite, RubyContext, object, object, bool>>.Create(
-            RubySites.InstanceCallAction("eql?", 1));
+        private readonly CallSite<Func<CallSite, object, object>>/*!*/ _hashSite;
+        private readonly CallSite<Func<CallSite, object, object, object>>/*!*/ _eqlSite;
 
         // friend: RubyContext
         internal EqualityComparer(RubyContext/*!*/ context) {
             Assert.NotNull(context);
             _context = context;
+            _hashSite = CallSite<Func<CallSite, object, object>>.Create(
+                RubyCallAction.Make(context, "hash", RubyCallSignature.WithImplicitSelf(0))
+             );
+            _eqlSite = CallSite<Func<CallSite, object, object, object>>.Create(
+                RubyCallAction.Make(context, "eql?", RubyCallSignature.WithImplicitSelf(1))
+            );
         }
 
         bool IEqualityComparer<object>.Equals(object x, object y) {
-            return x == y || _EqlSharedSite.Target(_EqlSharedSite, _context, x, y);
+            return x == y || RubyOps.IsTrue(_eqlSite.Target(_eqlSite, x, y));
         }
 
         int IEqualityComparer<object>.GetHashCode(object obj) {
-            object result = _HashSharedSite.Target(_HashSharedSite, _context, obj);
+            object result = _hashSite.Target(_hashSite, obj);
             if (result is int) {
                 return (int)result;
             }

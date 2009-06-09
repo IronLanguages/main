@@ -1,1 +1,0 @@
-fails:Object#kind_of? raises a TypeError if given an object that is not a Class nor a Module

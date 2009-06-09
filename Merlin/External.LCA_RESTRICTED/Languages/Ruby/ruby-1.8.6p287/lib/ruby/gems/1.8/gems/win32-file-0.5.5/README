@@ -1,0 +1,94 @@
+= Description
+Extra or redefined methods for the File class on MS Windows.
+
+= Prerequisites
+* Ruby 1.8.0 or later
+* windows-pr 0.3.0 or later
+* win32-file-stat 1.2.0 or later
+
+= Installation
+   rake test (optional)
+   rake install (standard) or rake install_gem (rubygems)
+
+= Synopsis
+   require 'win32/file'
+
+   p File.hidden?(somefile)
+   p File.attributes(somefile)
+
+   File.open(somefile){ |fh|
+      fh.hidden = true
+   }
+
+= Class methods added - see documentation for details
+* File.attributes
+* File.archive?
+* File.compressed?
+* File.decrypt
+* File.encrypt
+* File.encrypted?
+* File.get_permissions
+* File.hidden?
+* File.indexed?
+* File.longpath
+* File.normal?
+* File.offline?
+* File.readonly?
+* File.remove_attributes
+* File.reparse_point?
+* File.securities
+* File.set_attributes
+* File.set_permissions
+* File.shortpath
+* File.sparse?
+* File.system?
+* File.temporary?
+
+= Instance methods added - see documentation for details
+* File#archive=
+* File#compressed=
+* File#hidden=
+* File#indexed=
+* File#normal=
+* File#offline=
+* File#readonly=
+* File#sparse=
+* File#system=
+* File#temporary=
+
+= Class methods redefined
+* File.basename  # UNC path issues
+* File.blksize   # Wasn't implemented
+* File.blockdev? # Wasn't implemented
+* File.chardev?  # Wasn't implemented
+* File.dirname   # UNC path issues
+* File.size      # 2GB limitation
+* File.split     # UNC path issues
+
+= Notes about the test suite
+For all the unit tests to pass, the 'sometestfile.txt' file must have the
+'archive' and 'readonly' attributes set.  Although I have them set on the
+file when I create the zip archive, it seems that file attributes aren't
+guaranteed to survive the process. 
+
+So, please change the file attributes manually if needed before running the
+test suite.  You can do this by right-clicking on the file in Explorer and
+selecting 'properties'.  The readonly attribute check-box is at the bottom
+left corner.  To get to the archive attribute click on the 'Advanced' tab.
+You should see a checkbox at the top.
+
+= Known issues or bugs
+None that I'm aware of. Please report any bugs you find on the project page
+at http://www.rubyforge.org/projects/win32utils.
+
+= License
+Ruby's
+
+= Warranty
+This package is provided "as is" and without any express or
+implied warranties, including, without limitation, the implied
+warranties of merchantability and fitness for a particular purpose.
+
+= Authors
+* Daniel J. Berger
+* Park Heesob

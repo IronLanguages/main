@@ -82,7 +82,7 @@ namespace Microsoft.Scripting.ComInterop {
             dict[VarEnum.VT_UI8] = typeof(UInt64);
             dict[VarEnum.VT_INT] = typeof(IntPtr);
             dict[VarEnum.VT_UINT] = typeof(UIntPtr);
-            dict[VarEnum.VT_BOOL] = typeof(bool);
+            dict[VarEnum.VT_BOOL] = typeof(Boolean);
             dict[VarEnum.VT_R4] = typeof(Single);
             dict[VarEnum.VT_R8] = typeof(Double);
             dict[VarEnum.VT_DECIMAL] = typeof(Decimal);

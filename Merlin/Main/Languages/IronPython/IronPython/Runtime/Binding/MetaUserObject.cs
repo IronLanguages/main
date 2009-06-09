@@ -32,7 +32,7 @@ namespace IronPython.Runtime.Binding {
     using Ast = System.Linq.Expressions.Expression;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
 
-    partial class MetaUserObject : MetaPythonObject, IPythonInvokable {
+    partial class MetaUserObject : MetaPythonObject, IPythonInvokable, IPythonConvertible {
         private readonly DynamicMetaObject _baseMetaObject;            // if we're a subtype of MetaObject this is the base class MO
 
         public MetaUserObject(Expression/*!*/ expression, BindingRestrictions/*!*/ restrictions, DynamicMetaObject baseMetaObject, IPythonObject value)
@@ -51,60 +51,50 @@ namespace IronPython.Runtime.Binding {
         #region MetaObject Overrides
 
         public override DynamicMetaObject/*!*/ BindInvokeMember(InvokeMemberBinder/*!*/ action, DynamicMetaObject/*!*/[]/*!*/ args) {
-            ValidationInfo valInfo = BindingHelpers.GetValidationInfo(this);
-
-            DynamicMetaObject errorSuggestion = null;
-            if (_baseMetaObject != null) {
-                errorSuggestion = _baseMetaObject.BindInvokeMember(action, args);
-            }
-            
-            CodeContext context = BinderState.GetBinderState(action).Context;
-            IPythonObject sdo = Value;
-            PythonTypeSlot foundSlot;
-
-            if (TryGetGetAttribute(context, sdo.PythonType, out foundSlot)) {
-                // we'll always fetch the value, go ahead and invoke afterwards.
-                return BindingHelpers.GenericInvokeMember(action, valInfo, this, args);
-            }
-
-            bool isOldStyle;
-            bool systemTypeResolution;
-            foundSlot = FindSlot(context, action.Name, sdo, out isOldStyle, out systemTypeResolution);
-            if (foundSlot != null && systemTypeResolution) {
-                // it's a normal .NET member, let the calling language handle it how it usually does
-                return BindingHelpers.AddDynamicTestAndDefer(
-                    action,
-                    action.FallbackInvokeMember(this, args, errorSuggestion),
-                    args,
-                    valInfo
-                );                
-            }
-
-            // we found the member in the type dictionary, not a .NET type, or the
-            // member could exist in the instance.  Get it and invoke it.
-            return BindingHelpers.GenericInvokeMember(action, valInfo, this, args);
+            return new InvokeBinderHelper(this, action, args, PythonContext.GetCodeContextMO(action)).Bind(PythonContext.GetPythonContext(action).SharedContext, action.Name);
         }
 
-        public override DynamicMetaObject/*!*/ BindConvert(ConvertBinder/*!*/ conversion) {
-            Type type = conversion.Type;
-            ValidationInfo typeTest = BindingHelpers.GetValidationInfo(Expression, Value.PythonType);
+        public override DynamicMetaObject BindConvert(ConvertBinder/*!*/ conversion) {
+            return ConvertWorker(conversion, conversion.Type, conversion.Type, conversion.Explicit ? ConversionResultKind.ExplicitCast : ConversionResultKind.ImplicitCast);
+        }
+
+        public DynamicMetaObject BindConvert(PythonConversionBinder binder) {
+            return ConvertWorker(binder, binder.Type, binder.ReturnType, binder.ResultKind);
+        }
+
+        public DynamicMetaObject ConvertWorker(DynamicMetaObjectBinder binder, Type type, Type retType, ConversionResultKind kind) {
+            PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "Conversion " + type.FullName);
+            PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "Conversion");
+            ValidationInfo typeTest = BindingHelpers.GetValidationInfo(this, Value.PythonType);
 
             return BindingHelpers.AddDynamicTestAndDefer(
-                conversion,
-                TryPythonConversion(conversion, type) ?? base.BindConvert(conversion),
+                binder,
+                TryPythonConversion(binder, type) ?? FallbackConvert(binder),
                 new DynamicMetaObject[] { this },
                 typeTest,
-                type
+                retType
             );
         }
 
-        public override DynamicMetaObject BindBinaryOperation(BinaryOperationBinder binder, DynamicMetaObject arg) {
-            return PythonProtocol.Operation(binder, this, arg);
+        public override DynamicMetaObject/*!*/ BindBinaryOperation(BinaryOperationBinder/*!*/ binder, DynamicMetaObject/*!*/ arg) {
+            return PythonProtocol.Operation(binder, this, arg, null);
         }
 
-        public override DynamicMetaObject BindUnaryOperation(UnaryOperationBinder binder) {
+        public override DynamicMetaObject/*!*/ BindUnaryOperation(UnaryOperationBinder/*!*/ binder) {
             return PythonProtocol.Operation(binder, this);
         }
+
+        public override DynamicMetaObject/*!*/ BindGetIndex(GetIndexBinder/*!*/ binder, DynamicMetaObject/*!*/[]/*!*/ indexes) {
+            return PythonProtocol.Index(binder, PythonIndexType.GetItem, ArrayUtils.Insert(this, indexes));
+        }
+
+        public override DynamicMetaObject/*!*/ BindSetIndex(SetIndexBinder/*!*/ binder, DynamicMetaObject/*!*/[]/*!*/ indexes, DynamicMetaObject/*!*/ value) {
+            return PythonProtocol.Index(binder, PythonIndexType.SetItem, ArrayUtils.Insert(this, ArrayUtils.Append(indexes, value)));
+        }
+
+        public override DynamicMetaObject/*!*/ BindDeleteIndex(DeleteIndexBinder/*!*/ binder, DynamicMetaObject/*!*/[]/*!*/ indexes) {
+            return PythonProtocol.Index(binder, PythonIndexType.DeleteItem, ArrayUtils.Insert(this, indexes));
+        }        
 
         public override DynamicMetaObject/*!*/ BindInvoke(InvokeBinder/*!*/ action, DynamicMetaObject/*!*/[]/*!*/ args) {
             Expression context = Ast.Call(
@@ -123,7 +113,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         public override System.Collections.Generic.IEnumerable<string> GetDynamicMemberNames() {
-            foreach (object o in Value.PythonType.GetMemberNames(Value.PythonType.PythonContext.DefaultBinderState.Context, Value)) {
+            foreach (object o in Value.PythonType.GetMemberNames(Value.PythonType.PythonContext.SharedContext, Value)) {
                 if (o is string) {
                     yield return (string)o;
                 }
@@ -135,71 +125,110 @@ namespace IronPython.Runtime.Binding {
         #region Invoke Implementation
 
         private DynamicMetaObject/*!*/ InvokeWorker(DynamicMetaObjectBinder/*!*/ action, Expression/*!*/ codeContext, DynamicMetaObject/*!*/[] args) {
-            ValidationInfo typeTest = BindingHelpers.GetValidationInfo(Expression, Value.PythonType);
-
+            ValidationInfo typeTest = BindingHelpers.GetValidationInfo(this, Value.PythonType);
+            
             return BindingHelpers.AddDynamicTestAndDefer(
                 action,
-                PythonProtocol.Call(action, this, args) ?? BindingHelpers.InvokeFallback(action, codeContext, this, args),
+                PythonProtocol.Call(action, this, args) ?? InvokeFallback(action, codeContext, args),
                 args,
                 typeTest
             );
+        }
+
+        private DynamicMetaObject InvokeFallback(DynamicMetaObjectBinder action, Expression codeContext, DynamicMetaObject/*!*/[] args) {
+            InvokeBinder ib = action as InvokeBinder;
+            if (ib != null) {
+                if (_baseMetaObject != null) {
+                    return _baseMetaObject.BindInvoke(ib, args);
+                }
+
+                return ib.FallbackInvoke(this, args);
+            }
+
+            PythonInvokeBinder pib = action as PythonInvokeBinder;
+            if (pib != null) {
+                IPythonInvokable ipi = _baseMetaObject as IPythonInvokable;
+                if (ipi != null) {
+                    return ipi.Invoke(pib, codeContext, this, args);
+                }
+
+                if (_baseMetaObject != null) {
+                    return pib.InvokeForeignObject(this, args);
+                }
+
+                return pib.Fallback(codeContext, this, args);
+            }
+
+            // unreachable, we always have one of these binders
+            throw new InvalidOperationException();
         }
 
         #endregion
 
         #region Conversions
 
-        private DynamicMetaObject TryPythonConversion(ConvertBinder conversion, Type type) {
+        private DynamicMetaObject TryPythonConversion(DynamicMetaObjectBinder conversion, Type type) {
             if (!type.IsEnum) {
                 switch (Type.GetTypeCode(type)) {
                     case TypeCode.Object:
                         if (type == typeof(Complex64)) {
-                            // TODO: Fallback to Float
-                            return MakeConvertRuleForCall(conversion, this, Symbols.ConvertToComplex, "ConvertToComplex");
+                            return MakeConvertRuleForCall(conversion, type, this, Symbols.ConvertToComplex, "ConvertToComplex",
+                                (() => MakeConvertRuleForCall(conversion, type, this, Symbols.ConvertToFloat, "ConvertToFloat",
+                                    (() => FallbackConvert(conversion)),
+                                    (x) => Ast.Call(null, typeof(PythonOps).GetMethod("ConvertFloatToComplex"), x))),
+                                (x) => x);
                         } else if (type == typeof(BigInteger)) {
-                            return MakeConvertRuleForCall(conversion, this, Symbols.ConvertToLong, "ConvertToLong");
+                            return MakeConvertRuleForCall(conversion, type, this, Symbols.ConvertToLong, "ConvertToLong");
                         } else if (type == typeof(IEnumerable)) {
-                            return PythonProtocol.ConvertToIEnumerable(conversion, this);
+                            return PythonProtocol.ConvertToIEnumerable(conversion, Restrict(Value.GetType()));
                         } else if (type == typeof(IEnumerator)){
-                            return PythonProtocol.ConvertToIEnumerator(conversion, this);
-                        } else if (conversion.Type.IsSubclassOf(typeof(Delegate))) {
-                            return MakeDelegateTarget(conversion, conversion.Type, Restrict(Value.GetType()));
+                            return PythonProtocol.ConvertToIEnumerator(conversion, Restrict(Value.GetType()));
+                        } else if (type.IsSubclassOf(typeof(Delegate))) {
+                            return MakeDelegateTarget(conversion, type, Restrict(Value.GetType()));
                         }
                         break;
                     case TypeCode.Int32:
-                        return MakeConvertRuleForCall(conversion, this, Symbols.ConvertToInt, "ConvertToInt");
+                        return MakeConvertRuleForCall(conversion, type, this, Symbols.ConvertToInt, "ConvertToInt");
                     case TypeCode.Double:
-                        return MakeConvertRuleForCall(conversion, this, Symbols.ConvertToFloat, "ConvertToFloat");
+                        return MakeConvertRuleForCall(conversion, type, this, Symbols.ConvertToFloat, "ConvertToFloat");
                     case TypeCode.Boolean:
                         return PythonProtocol.ConvertToBool(
                             conversion,
                             this
                         );
+                    case TypeCode.String:
+                        if (!typeof(Extensible<string>).IsAssignableFrom(this.LimitType)) {
+                            return MakeConvertRuleForCall(conversion, type, this, Symbols.String, "ConvertToString");
+                        }
+                        break;
                 }
             }
 
             return null;
         }
 
-        private DynamicMetaObject/*!*/ MakeConvertRuleForCall(ConvertBinder/*!*/ convertToAction, DynamicMetaObject/*!*/ self, SymbolId symbolId, string returner) {
+        private DynamicMetaObject/*!*/ MakeConvertRuleForCall(DynamicMetaObjectBinder/*!*/ convertToAction, Type toType, DynamicMetaObject/*!*/ self, SymbolId symbolId, string returner, Func<DynamicMetaObject> fallback, Func<Expression, Expression> resultConverter) {
             PythonType pt = ((IPythonObject)self.Value).PythonType;
             PythonTypeSlot pts;
-            CodeContext context = BinderState.GetBinderState(convertToAction).Context;
+            CodeContext context = PythonContext.GetPythonContext(convertToAction).SharedContext;
+            ValidationInfo valInfo = BindingHelpers.GetValidationInfo(this, pt);
 
             if (pt.TryResolveSlot(context, symbolId, out pts) && !IsBuiltinConversion(context, pts, symbolId, pt)) {
                 ParameterExpression tmp = Ast.Variable(typeof(object), "func");
 
-                Expression callExpr = Ast.Call(
-                    PythonOps.GetConversionHelper(returner, GetResultKind(convertToAction)),
-                    Ast.Dynamic(
-                        BinderState.GetBinderState(convertToAction).InvokeNone,
-                        typeof(object),
-                        BinderState.GetCodeContext(convertToAction),
-                        tmp
+                Expression callExpr = resultConverter(
+                    Ast.Call(
+                        PythonOps.GetConversionHelper(returner, GetResultKind(convertToAction)),
+                        Ast.Dynamic(
+                            PythonContext.GetPythonContext(convertToAction).InvokeNone,
+                            typeof(object),
+                            PythonContext.GetCodeContext(convertToAction),
+                            tmp
+                        )
                     )
                 );
 
-                if (typeof(Extensible<>).MakeGenericType(convertToAction.Type).IsAssignableFrom(self.GetLimitType())) {
+                if (typeof(Extensible<>).MakeGenericType(toType).IsAssignableFrom(self.GetLimitType())) {
                     // if we're doing a conversion to the underlying type and we're an 
                     // Extensible<T> of that type:
 
@@ -207,41 +236,41 @@ namespace IronPython.Runtime.Binding {
                     // to actually return the underlying value.  If an extensible just keeps 
                     // returning more instances  of it's self a stack overflow occurs - both 
                     // behaviors match CPython.
-                    callExpr = AstUtils.Convert(AddExtensibleSelfCheck(convertToAction, self, callExpr), typeof(object));
+                    callExpr = AstUtils.Convert(AddExtensibleSelfCheck(convertToAction, toType, self, callExpr), typeof(object));
                 }
 
-                return new DynamicMetaObject(
-                    Ast.Block(
-                        new ParameterExpression[] { tmp },
+                return BindingHelpers.AddDynamicTestAndDefer(
+                    convertToAction,
+                    new DynamicMetaObject(
                         Ast.Condition(
-                            BindingHelpers.CheckTypeVersion(
+                            MakeTryGetTypeMember(
+                                PythonContext.GetPythonContext(convertToAction),
+                                pts,
                                 self.Expression,
-                                pt.Version
+                                tmp
                             ),
-                            Ast.Condition(
-                                MakeTryGetTypeMember(
-                                    BinderState.GetBinderState(convertToAction),
-                                    pts,
-                                    self.Expression,
-                                    tmp
-                                ),
-                                callExpr,
-                                AstUtils.Convert(
-                                    ConversionFallback(convertToAction),
-                                    typeof(object)
-                                )
-                            ),
-                            convertToAction.Defer(this).Expression
-                        )
+                            callExpr,
+                            AstUtils.Convert(
+                                ConversionFallback(convertToAction),
+                                typeof(object)
+                            )
+                        ),
+                        self.Restrict(self.GetRuntimeType()).Restrictions
                     ),
-                    self.Restrict(self.GetRuntimeType()).Restrictions
+                    new DynamicMetaObject[] { this },
+                    valInfo,
+                    tmp
                 );
             }
 
-            return convertToAction.FallbackConvert(this);
+            return fallback();
         }
 
-        private static Expression/*!*/ AddExtensibleSelfCheck(ConvertBinder/*!*/ convertToAction, DynamicMetaObject/*!*/ self, Expression/*!*/ callExpr) {
+        private DynamicMetaObject/*!*/ MakeConvertRuleForCall(DynamicMetaObjectBinder/*!*/ convertToAction, Type toType, DynamicMetaObject/*!*/ self, SymbolId symbolId, string returner) {
+            return MakeConvertRuleForCall(convertToAction, toType, self, symbolId, returner, () => FallbackConvert(convertToAction), (x) => x);
+        }
+
+        private static Expression/*!*/ AddExtensibleSelfCheck(DynamicMetaObjectBinder/*!*/ convertToAction, Type toType, DynamicMetaObject/*!*/ self, Expression/*!*/ callExpr) {
             ParameterExpression tmp = Ast.Variable(callExpr.Type, "tmp");
             callExpr = Ast.Block(
                 new ParameterExpression[] { tmp },
@@ -253,10 +282,13 @@ namespace IronPython.Runtime.Binding {
                             AstUtils.Convert(self.Expression, self.GetLimitType()),
                             self.GetLimitType().GetProperty("Value")
                         ),
-                        Binders.Convert(
-                            BinderState.GetBinderState(convertToAction),
-                            convertToAction.Type,
-                            ConversionResultKind.ExplicitCast,
+                        Ast.Dynamic(
+                            new PythonConversionBinder(
+                                PythonContext.GetPythonContext(convertToAction),
+                                toType,
+                                ConversionResultKind.ExplicitCast
+                            ),
+                            toType,
                             tmp
                         )
                     )
@@ -265,26 +297,26 @@ namespace IronPython.Runtime.Binding {
             return callExpr;
         }
 
-        private ConversionResultKind GetResultKind(ConvertBinder convertToAction) {
-            ConversionBinder cb = convertToAction as ConversionBinder;
+        private ConversionResultKind GetResultKind(DynamicMetaObjectBinder convertToAction) {
+            PythonConversionBinder cb = convertToAction as PythonConversionBinder;
             if (cb != null) {
                 return cb.ResultKind;
             }
 
-            if (convertToAction.Explicit) {
+            if (((ConvertBinder)convertToAction).Explicit) {
                 return ConversionResultKind.ExplicitCast;
             } else {
                 return ConversionResultKind.ImplicitCast;
             }
         }
 
-        private Expression ConversionFallback(ConvertBinder/*!*/ convertToAction) {
-            ConversionBinder cb = convertToAction as ConversionBinder;
+        private Expression ConversionFallback(DynamicMetaObjectBinder/*!*/ convertToAction) {
+            PythonConversionBinder cb = convertToAction as PythonConversionBinder;
             if (cb != null) {
                 return GetConversionFailedReturnValue(cb, this);
             }
 
-            return convertToAction.Defer(this).Expression;
+            return convertToAction.GetUpdateExpression(typeof(object));
         }
 
         private static bool IsBuiltinConversion(CodeContext/*!*/ context, PythonTypeSlot/*!*/ pts, SymbolId name, PythonType/*!*/ selfType) {
@@ -310,19 +342,20 @@ namespace IronPython.Runtime.Binding {
         /// <summary>
         ///  Various helpers related to calling Python __*__ conversion methods 
         /// </summary>
-        private Expression/*!*/ GetConversionFailedReturnValue(ConversionBinder/*!*/ convertToAction, DynamicMetaObject/*!*/ self) {
+        private Expression/*!*/ GetConversionFailedReturnValue(PythonConversionBinder/*!*/ convertToAction, DynamicMetaObject/*!*/ self) {
             switch (convertToAction.ResultKind) {
                 case ConversionResultKind.ImplicitTry:
                 case ConversionResultKind.ExplicitTry:
                     return DefaultBinder.GetTryConvertReturnValue(convertToAction.Type);
                 case ConversionResultKind.ExplicitCast:
                 case ConversionResultKind.ImplicitCast:
-                    DefaultBinder db = BinderState.GetBinderState(convertToAction).Binder;
+                    DefaultBinder db = PythonContext.GetPythonContext(convertToAction).Binder;
                     return DefaultBinder.MakeError(
                         db.MakeConversionError(
                             convertToAction.Type,
                             self.Expression
-                        )
+                        ), 
+                        typeof(object)
                     );
                 default:
                     throw new InvalidOperationException(convertToAction.ResultKind.ToString());
@@ -333,7 +366,7 @@ namespace IronPython.Runtime.Binding {
         /// Helper for falling back - if we have a base object fallback to it first (which can
         /// then fallback to the calling site), otherwise fallback to the calling site.
         /// </summary>
-        private DynamicMetaObject/*!*/ Fallback(DynamicMetaObjectBinder/*!*/ action, Expression codeContext) {
+        private DynamicMetaObject/*!*/ Fallback(DynamicMetaObjectBinder/*!*/ action, DynamicMetaObject codeContext) {
             if (_baseMetaObject != null) {
                 IPythonGetable ipyget = _baseMetaObject as IPythonGetable;
                 if (ipyget != null) {
@@ -349,13 +382,13 @@ namespace IronPython.Runtime.Binding {
                 }
 
                 return _baseMetaObject.BindGetMember(
-                    BinderState.GetBinderState(action).CompatGetMember(
+                    PythonContext.GetPythonContext(action).CompatGetMember(
                         GetGetMemberName(action)
                     )
                 );
             }
 
-            return GetMemberFallback(action, codeContext);
+            return GetMemberFallback(this, action, codeContext);
         }
 
         /// <summary>

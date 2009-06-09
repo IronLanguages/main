@@ -37,8 +37,9 @@ namespace IronPython.Hosting {
             switch (arg) {
                 case "-B": break; // dont_write_bytecode always true in IronPython
                 case "-U": break; // unicode always true in IronPython
+                case "-d": break; // debug output from parser, always False in IronPython
 
-                case "-b":
+                case "-b": // Not shown in help on CPython
                     LanguageSetup.Options["BytesWarning"] = ScriptingRuntimeHelpers.True;
                     break;
 
@@ -61,13 +62,13 @@ namespace IronPython.Hosting {
 
                 case "-m":
                     ConsoleOptions.ModuleToRun = PeekNextArg();
-                    LanguageSetup.Options["Arguments"] = PopRemainingArgs(); 
+                    LanguageSetup.Options["Arguments"] = PopRemainingArgs();
                     break;
 
                 case "-x":
                     ConsoleOptions.SkipFirstSourceLine = true;
                     break;
-                
+
                 // TODO: unbuffered stdout?
                 case "-u": break;
 
@@ -106,9 +107,9 @@ namespace IronPython.Hosting {
                     LanguageSetup.Options["DivisionOptions"] = ToDivisionOptions(PopNextArg());
                     break;
 
-                case "-Qold": 
-                case "-Qnew": 
-                case "-Qwarn": 
+                case "-Qold":
+                case "-Qnew":
+                case "-Qwarn":
                 case "-Qwarnall":
                     LanguageSetup.Options["DivisionOptions"] = ToDivisionOptions(arg.Substring(2));
                     break;
@@ -126,7 +127,7 @@ namespace IronPython.Hosting {
 
                     _warningFilters.Add(PopNextArg());
                     break;
-                
+
                 case "-3":
                     LanguageSetup.Options["WarnPy3k"] = ScriptingRuntimeHelpers.True;
                     break;
@@ -136,23 +137,37 @@ namespace IronPython.Hosting {
                     LanguageSetup.Options["Arguments"] = PopRemainingArgs();
                     break;
 
+                case "-X:Frames":
+                    LanguageSetup.Options["Frames"] = ScriptingRuntimeHelpers.True;
+                    break;
+                case "-X:FullFrames":
+                    LanguageSetup.Options["Frames"] = LanguageSetup.Options["FullFrames"] = ScriptingRuntimeHelpers.True;
+                    break;
                 case "-X:MaxRecursion":
+                    // we need about 6 frames for starting up, so 10 is a nice round number.
                     int limit;
-                    if (!StringUtils.TryParseInt32(PopNextArg(), out limit)) {
-                        throw new InvalidOptionException(String.Format("The argument for the {0} option must be an integer.", arg));
+                    if (!StringUtils.TryParseInt32(PopNextArg(), out limit) || limit < 10) {
+                        throw new InvalidOptionException(String.Format("The argument for the {0} option must be an integer >= 10.", arg));
                     }
 
                     LanguageSetup.Options["RecursionLimit"] = limit;
                     break;
 
+                case "-X:EnableProfiler":
+                    LanguageSetup.Options["EnableProfiler"] = ScriptingRuntimeHelpers.True;
+                    break;
+
+                case "-X:LightweightScopes":
+                    LanguageSetup.Options["LightweightScopes"] = ScriptingRuntimeHelpers.True;
+                    break;
+
                 case "-X:MTA":
                     ConsoleOptions.IsMta = true;
                     break;
-                case "-X:Python26":
-                    LanguageSetup.Options["PythonVersion"] = new Version(2, 6);
+                case "-X:Python30":
+                    LanguageSetup.Options["PythonVersion"] = new Version(3, 0);
                     break;
 
-                case "-d":
                 case "-X:Debug":
                     RuntimeSetup.DebugMode = true;
                     LanguageSetup.Options["Debug"] = ScriptingRuntimeHelpers.True;
@@ -166,7 +181,7 @@ namespace IronPython.Hosting {
                         LanguageSetup.Options["Arguments"] = PopRemainingArgs();
                     }
                     break;
-            }            
+            }
         }
 
         protected override void AfterParse() {
@@ -177,17 +192,17 @@ namespace IronPython.Hosting {
 
         private static PythonDivisionOptions ToDivisionOptions(string/*!*/ value) {
             switch (value) {
-                case "old": return PythonDivisionOptions.Old; 
-                case "new": return PythonDivisionOptions.New; 
+                case "old": return PythonDivisionOptions.Old;
+                case "new": return PythonDivisionOptions.New;
                 case "warn": return PythonDivisionOptions.Warn;
-                case "warnall": return PythonDivisionOptions.WarnAll; 
+                case "warnall": return PythonDivisionOptions.WarnAll;
                 default:
                     throw InvalidOptionValue("-Q", value);
             }
         }
 
         public override void GetHelp(out string commandLine, out string[,] options, out string[,] environmentVariables, out string comments) {
-            string [,] standardOptions;
+            string[,] standardOptions;
             base.GetHelp(out commandLine, out standardOptions, out environmentVariables, out comments);
 #if !IRONPYTHON_WINDOW
             commandLine = "Usage: ipy [options] [file.py|- [arguments]]";
@@ -195,28 +210,51 @@ namespace IronPython.Hosting {
             commandLine = "Usage: ipyw [options] [file.py|- [arguments]]";
 #endif
 
-            string [,] pythonOptions = new string[,] {
+            string[,] pythonOptions = new string[,] {
 #if !IRONPYTHON_WINDOW
                 { "-v",                     "Verbose (trace import statements) (also PYTHONVERBOSE=x)" },
 #endif
                 { "-m module",              "run library module as a script"},
                 { "-x",                     "Skip first line of the source" },
                 { "-u",                     "Unbuffered stdout & stderr" },
+                { "-O",                     "generate optimized code" },
+                { "-OO",                    "remove doc strings and apply -O optimizations" },
                 { "-E",                     "Ignore environment variables" },
                 { "-Q arg",                 "Division options: -Qold (default), -Qwarn, -Qwarnall, -Qnew" },
                 { "-S",                     "Don't imply 'import site' on initialization" },
+                { "-s",                     "Don't add user site directory to sys.path" },
                 { "-t",                     "Issue warnings about inconsistent tab usage" },
                 { "-tt",                    "Issue errors for inconsistent tab usage" },
                 { "-W arg",                 "Warning control (arg is action:message:category:module:lineno)" },
                 { "-3",                     "Warn about Python 3.x incompatibilities" },
 
+                { "-X:Frames",              "Enable basic sys._getframe support" },
+                { "-X:FullFrames",          "Enable sys._getframe with access to locals" },
                 { "-X:MaxRecursion",        "Set the maximum recursion level" },
+                { "-X:Debug",               "Enable application debugging (preferred over -D)" },
                 { "-X:MTA",                 "Run in multithreaded apartment" },
-                { "-X:Python26",            "Enable Python 2.6 features" },
+                { "-X:Python30",            "Enable available Python 3.0 features" },
+                { "-X:EnableProfiler",      "Enables profiling support in the compiler" },
+                { "-X:LightweightScopes",   "Generate optimized scopes that can be garbage collected" },
             };
 
-            // Append the Python-specific options and the standard options
-            options = ArrayUtils.Concatenate(pythonOptions, standardOptions);
+            // Ensure the combined options come out sorted
+            string[,] allOptions = ArrayUtils.Concatenate(pythonOptions, standardOptions);
+            List<string> optName = new List<string>();
+            List<int> indiciesList = new List<int>();
+            for (int i = 0; i < allOptions.Length / 2; i++) {
+                optName.Add(allOptions[i, 0]);
+                indiciesList.Add(i);
+            }
+            
+            int[] indicies = indiciesList.ToArray();
+            Array.Sort(optName.ToArray(), indicies, StringComparer.InvariantCulture);
+
+            options = new string[allOptions.Length / 2, 2];
+            for (int i = 0; i < indicies.Length; i++) {
+                options[i, 0] = allOptions[indicies[i], 0];
+                options[i, 1] = allOptions[indicies[i], 1];
+            }
 
             Debug.Assert(environmentVariables.GetLength(0) == 0); // No need to append if the default is empty
             environmentVariables = new string[,] {

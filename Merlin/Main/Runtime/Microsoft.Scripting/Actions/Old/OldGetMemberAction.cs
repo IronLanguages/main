@@ -93,7 +93,7 @@ namespace Microsoft.Scripting.Actions {
                 typeof(OldGetMemberAction).GetMethod("Make", new Type[] { typeof(ActionBinder), typeof(SymbolId), typeof(GetMemberBindingFlags) }),
                 CreateActionBinderReadExpression(),
                 AstUtils.Constant(Name),
-                Expression.Constant(_flags)
+                AstUtils.Constant(_flags)
             );
         }
 

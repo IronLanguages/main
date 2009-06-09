@@ -19,6 +19,7 @@ using System.Reflection;
 using System.Dynamic;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Actions {
     using Ast = System.Linq.Expressions.Expression;
@@ -35,7 +36,7 @@ namespace Microsoft.Scripting.Actions {
             return DeleteMember(
                 name,
                 target,
-                Ast.Constant(null, typeof(CodeContext))
+                AstUtils.Constant(null, typeof(CodeContext))
             );
         }
 
@@ -85,9 +86,9 @@ namespace Microsoft.Scripting.Actions {
                         }
                     }
 
-                    delInfo.Body.FinishCondition(MakeError(MakeUndeletableMemberError(GetDeclaringMemberType(group), delInfo.Name)));
+                    delInfo.Body.FinishCondition(MakeError(MakeUndeletableMemberError(GetDeclaringMemberType(group), delInfo.Name), typeof(object)));
                 } else {
-                    delInfo.Body.FinishCondition(MakeError(MakeMissingMemberError(type, delInfo.Name)));
+                    delInfo.Body.FinishCondition(MakeError(MakeMissingMemberError(type, delInfo.Name), typeof(object)));
                 }
             }
 
@@ -115,12 +116,12 @@ namespace Microsoft.Scripting.Actions {
             MethodInfo delMem = GetMethod(type, name);
 
             if (delMem != null && delMem.IsSpecialName) {
-                Expression call = MakeCallExpression(delInfo.CodeContext, delMem, instance, Ast.Constant(delInfo.Name));
+                Expression call = MakeCallExpression(delInfo.CodeContext, delMem, instance, AstUtils.Constant(delInfo.Name));
 
                 if (delMem.ReturnType == typeof(bool)) {
                     delInfo.Body.AddCondition(
                         call,
-                        Ast.Constant(null)
+                        AstUtils.Constant(null)
                     );
                 } else {
                     delInfo.Body.FinishCondition(call);

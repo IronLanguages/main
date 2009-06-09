@@ -40,6 +40,10 @@ namespace IronRuby.Runtime.Calls {
             get { return true; }
         }
 
+        internal override bool IsDataMember {
+            get { return true; }
+        }
+
         public override MemberInfo/*!*/[]/*!*/ GetMembers() {
             return Utils.EmptyMemberInfos;
         }
@@ -51,11 +55,14 @@ namespace IronRuby.Runtime.Calls {
         }
 
         internal override void BuildCallNoFlow(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name) {
-            metaBuilder.Result = Methods.GetInstanceVariable.OpCall(
-                args.ScopeExpression,
-                AstFactory.Box(args.TargetExpression),
-                AstUtils.Constant(InstanceVariableName)
-            );
+            var actualArgs = RubyOverloadResolver.NormalizeArguments(metaBuilder, args, 0, 0);
+            if (!metaBuilder.Error) {
+                metaBuilder.Result = Methods.GetInstanceVariable.OpCall(
+                    AstUtils.Convert(args.MetaScope.Expression, typeof(RubyScope)),
+                    AstFactory.Box(args.TargetExpression),
+                    AstUtils.Constant(InstanceVariableName)
+                );
+            }
         }
 
         protected internal override RubyMemberInfo/*!*/ Copy(RubyMemberFlags flags, RubyModule/*!*/ module) {
@@ -73,15 +80,15 @@ namespace IronRuby.Runtime.Calls {
         }
 
         internal override void BuildCallNoFlow(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name) {
-
-            var actualArgs = RubyMethodGroupInfo.MakeActualArgs(metaBuilder, args, SelfCallConvention.SelfIsParameter, false, false);
-
-            metaBuilder.Result = Methods.SetInstanceVariable.OpCall(
-                AstFactory.Box(actualArgs[0]),
-                AstFactory.Box(actualArgs[1]),
-                args.ScopeExpression,
-                AstUtils.Constant(InstanceVariableName)
-            );
+            var actualArgs = RubyOverloadResolver.NormalizeArguments(metaBuilder, args, 1, 1);
+            if (!metaBuilder.Error) {
+                metaBuilder.Result = Methods.SetInstanceVariable.OpCall(
+                    AstFactory.Box(args.TargetExpression),
+                    AstFactory.Box(actualArgs[0].Expression),
+                    AstUtils.Convert(args.MetaScope.Expression, typeof(RubyScope)),
+                    AstUtils.Constant(InstanceVariableName)
+                );
+            }
         }
 
         protected internal override RubyMemberInfo/*!*/ Copy(RubyMemberFlags flags, RubyModule/*!*/ module) {

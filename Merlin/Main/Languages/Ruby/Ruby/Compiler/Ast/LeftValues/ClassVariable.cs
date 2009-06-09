@@ -44,12 +44,10 @@ namespace IronRuby.Compiler.Ast {
         }
 
         private static MethodInfo/*!*/ GetOp(AstGenerator/*!*/ gen, int/*!*/ opKind) {
-            bool unknownOwner = gen.CompilerOptions.IsEval || gen.GetCurrentNonSingletonModule() != null;
-
             switch (opKind) {
-                case OpTryGet: return unknownOwner ? Methods.TryGetClassVariable : Methods.TryGetObjectClassVariable;
-                case OpGet: return unknownOwner ? Methods.GetClassVariable : Methods.GetObjectClassVariable;
-                case OpIsDefined: return unknownOwner ? Methods.IsDefinedClassVariable : Methods.IsDefinedObjectClassVariable;
+                case OpTryGet: return Methods.TryGetClassVariable;
+                case OpGet: return Methods.GetClassVariable;
+                case OpIsDefined: return Methods.IsDefinedClassVariable;
                 default: throw Assert.Unreachable;
             }
         }
@@ -59,11 +57,7 @@ namespace IronRuby.Compiler.Ast {
         }
 
         internal override MSA.Expression/*!*/ TransformWriteVariable(AstGenerator/*!*/ gen, MSA.Expression/*!*/ rightValue) {
-            if (gen.CompilerOptions.IsEval || gen.GetCurrentNonSingletonModule() != null) {
-                return Methods.SetClassVariable.OpCall(AstFactory.Box(rightValue), gen.CurrentScopeVariable, AstUtils.Constant(Name));
-            } else {
-                return Methods.SetObjectClassVariable.OpCall(AstFactory.Box(rightValue), gen.CurrentScopeVariable, AstUtils.Constant(Name));
-            }
+            return Methods.SetClassVariable.OpCall(AstFactory.Box(rightValue), gen.CurrentScopeVariable, AstUtils.Constant(Name));
         }
 
         internal override MSA.Expression TransformDefinedCondition(AstGenerator/*!*/ gen) {

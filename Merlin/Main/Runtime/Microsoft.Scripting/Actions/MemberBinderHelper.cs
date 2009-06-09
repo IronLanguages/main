@@ -32,7 +32,7 @@ namespace Microsoft.Scripting.Actions {
         private readonly RuleBuilder _rule;              // the rule being produced
         private Type _strongBoxType;                // null or the specific instantiated type of StrongBox
         private object[] _args;                     // the arguments we're creating a rule for 
-        private Expression _body = Ast.Empty();      // the body of the rule as it's built up
+        private Expression _body = AstUtils.Empty();      // the body of the rule as it's built up
         private object _target;
 
         public MemberBinderHelper(CodeContext context, TActionKind action, object[] args, RuleBuilder rule)
@@ -108,16 +108,16 @@ namespace Microsoft.Scripting.Actions {
         protected Expression MakeGenericPropertyExpression() {
             return Ast.New(
                 typeof(MemberAccessException).GetConstructor(new Type[] { typeof(string) }),
-                Ast.Constant(StringName)
+                AstUtils.Constant(StringName)
             );
         }
 
         protected Expression MakeIncorrectArgumentExpression(int provided, int expected) {
             return Ast.Call(
                 typeof(BinderOps).GetMethod("TypeErrorForIncorrectArgumentCount", new Type[] { typeof(string), typeof(int), typeof(int) }),
-                Ast.Constant(StringName),
-                Ast.Constant(provided),
-                Ast.Constant(expected)
+                AstUtils.Constant(StringName),
+                AstUtils.Constant(provided),
+                AstUtils.Constant(expected)
             );
         }
 
@@ -131,7 +131,7 @@ namespace Microsoft.Scripting.Actions {
             }
 
             return Ast.New(typeof(AmbiguousMatchException).GetConstructor(new Type[] { typeof(string) }),
-                        Ast.Constant(sb.ToString()));
+                        AstUtils.Constant(sb.ToString()));
         }
 
         protected void MakeMissingMemberError(Type type) {

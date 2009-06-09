@@ -45,13 +45,13 @@ namespace IronPython.Runtime {
             PythonTypeSlot getitem;
             PythonType pt = DynamicHelpers.GetPythonType(o);
             if(!pt.TryResolveSlot(context, Symbols.GetItem, out getitem) ||
-                !getitem.TryGetBoundValue(context, o, pt, out boundFunc)
+                !getitem.TryGetValue(context, o, pt, out boundFunc)
                 || o is PythonDictionary) {
                 throw PythonOps.TypeError("argument to reversed() must be a sequence");
             }
 
             int length;
-            if (!DynamicHelpers.GetPythonType(o).TryGetLength(o, out length)) {
+            if (!DynamicHelpers.GetPythonType(o).TryGetLength(context, o, out length)) {
                 throw PythonOps.TypeError("object of type '{0}' has no len()", DynamicHelpers.GetPythonType(o).Name);
             }
 

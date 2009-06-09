@@ -65,7 +65,6 @@ namespace IronPython.Compiler.Ast {
             // Temporary variable for the IEnumerator object
             MSAst.ParameterExpression enumerator = ag.GetTemporary("foreach_enumerator", typeof(IEnumerator));
 
-            ag.DisableInterpreter = true;
             // Only the body is "in the loop" for the purposes of break/continue
             // The "else" clause is outside
             MSAst.LabelTarget breakLabel, continueLabel;
@@ -101,10 +100,9 @@ namespace IronPython.Compiler.Ast {
                                                     MSAst.LabelTarget breakLabel, MSAst.LabelTarget continueLabel) {
             // enumerator = PythonOps.GetEnumeratorForIteration(list)
             MSAst.Expression init = ag.AddDebugInfo(
-                AstUtils.Assign(
+                Ast.Assign(
                     enumerator, 
-                    Binders.Operation(
-                        ag.BinderState,
+                    ag.Operation(
                         typeof(IEnumerator),
                         PythonOperationKind.GetEnumeratorForIteration,
                         ag.TransformAsObject(list)
@@ -136,7 +134,7 @@ namespace IronPython.Compiler.Ast {
                         ),
                         body,
                         ag.UpdateLineNumber(list.Start.Line),
-                        Ast.Empty()
+                        AstUtils.Empty()
                     ), 
                     ag.Transform(else_),
                     breakLabel, 
@@ -146,7 +144,7 @@ namespace IronPython.Compiler.Ast {
             return Ast.Block(
                 init,
                 ls,
-                Ast.Empty()
+                AstUtils.Empty()
             );
         }
 

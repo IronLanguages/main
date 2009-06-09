@@ -24,8 +24,42 @@ using Microsoft.Scripting.Math;
 using IronRuby.Runtime;
 using SM = System.Math;
 using IronRuby.Runtime.Calls;
+using System.Runtime.CompilerServices;
+using Microsoft.Scripting.Generation;
+using IronRuby.Compiler.Generation;
 
 namespace IronRuby.Builtins {
+
+    public sealed class StringFormatterSiteStorage : RubyCallSiteStorage {
+        private CallSite<Func<CallSite, object, int>> _fixnumCast;
+        private CallSite<Func<CallSite, object, double>> _tofConversion;
+        private CallSite<Func<CallSite, object, MutableString>> _tosConversion;
+        private CallSite<Func<CallSite, object, IntegerValue>> _integerConversion;
+
+        [Emitted]
+        public StringFormatterSiteStorage(RubyContext/*!*/ context) : base(context) {
+        }
+
+        public int CastToFixnum(object value) {
+            var site = RubyUtils.GetCallSite(ref _fixnumCast, ConvertToFixnumAction.Make(Context));
+            return site.Target(site, value);
+        }
+
+        public double CastToDouble(object value) {
+            var site = RubyUtils.GetCallSite(ref _tofConversion, ConvertToFAction.Make(Context));
+            return site.Target(site, value);
+        }
+
+        public MutableString/*!*/ ConvertToString(object value) {
+            var site = RubyUtils.GetCallSite(ref _tosConversion, ConvertToSAction.Make(Context));
+            return site.Target(site, value);
+        }
+
+        public IntegerValue ConvertToInteger(object value) {
+            var site = RubyUtils.GetCallSite(ref _integerConversion, CompositeConversionAction.Make(Context, CompositeConversion.ToIntToI));
+            return site.Target(site, value);
+        }
+    }
 
     /// <summary>
     /// StringFormatter provides Ruby's sprintf style string formatting services.
@@ -36,7 +70,7 @@ namespace IronRuby.Builtins {
     /// TODO: Use MutableString instead of StringBuilder for building the string
     /// TODO: Support negative numbers for %u and %o and %x
     /// </summary>
-    internal class StringFormatter {
+    internal sealed class StringFormatter {      
 
         // This is a ThreadStatic since so that formatting operations on one thread do not interfere with other threads
         [ThreadStatic]
@@ -84,11 +118,7 @@ namespace IronRuby.Builtins {
 
         private StringBuilder _buf;
 
-        private readonly ConversionStorage<int> _fixnumCast;
-        private readonly ConversionStorage<double> _tofConversion;
-        private readonly UnaryOpStorage _inspectStorage;
-        private readonly ConversionStorage<MutableString> _tosConversion;
-        private readonly ConversionStorage<IntegerValue> _integerConversion;
+        private readonly StringFormatterSiteStorage/*!*/ _siteStorage;
 
         #region Constructors
 
@@ -101,23 +131,10 @@ namespace IronRuby.Builtins {
             _data = data;
         }
 
-        internal StringFormatter(
-            ConversionStorage<IntegerValue>/*!*/ integerConversion,
-            ConversionStorage<int>/*!*/ fixnumCast,
-            ConversionStorage<double>/*!*/ tofConversion,
-            ConversionStorage<MutableString>/*!*/ tosConversion,
-            UnaryOpStorage inspectStorage,
-            RubyContext/*!*/ context, string/*!*/ format, IList/*!*/ data)
-            : this(context, format, data) {
-
-            Assert.NotNull(integerConversion, fixnumCast, tofConversion, tosConversion);
-            Assert.NotNull(inspectStorage);
-
-            _fixnumCast = fixnumCast;
-            _tofConversion = tofConversion;
-            _tosConversion = tosConversion;
-            _integerConversion = integerConversion;
-            _inspectStorage = inspectStorage;
+        internal StringFormatter(StringFormatterSiteStorage/*!*/ siteStorage, string/*!*/ format, IList/*!*/ data)
+            : this(siteStorage.Context, format, data) {
+            Assert.NotNull(siteStorage);
+            _siteStorage = siteStorage;
         }
 
         #endregion
@@ -135,6 +152,13 @@ namespace IronRuby.Builtins {
                 _index = modIndex + 1;
                 DoFormatCode();
             }
+
+            if (_context.DomainManager.Configuration.DebugMode) {
+                if ((!_useAbsolute.HasValue || !_useAbsolute.Value) && _relativeIndex != _data.Count) {
+                    throw RubyExceptions.CreateArgumentError("too many arguments for format string");
+                }
+            }
+
             _buf.Append(_format, _index, _format.Length - _index);
 
             MutableString result = MutableString.Create(_buf.ToString());
@@ -153,7 +177,7 @@ namespace IronRuby.Builtins {
         private void DoFormatCode() {
             // we already pulled the first %
 
-            if (_index == _format.Length) {
+            if (_index == _format.Length || _format[_index] == '\n' || _format[_index] == '\0') {
                 // '%' at the end of the string. Just print it and we are done.
                 _buf.Append('%');
                 return;
@@ -171,9 +195,13 @@ namespace IronRuby.Builtins {
 
             ReadConversionFlags();
 
+            ReadArgumentIndex(); // This can be before or after width and precision
+
             ReadMinimumFieldWidth();
 
             ReadPrecision();
+
+            ReadArgumentIndex(); // This can be before or after width and precision
 
             _opts.Value = GetData(_opts.ArgIndex);
 
@@ -181,9 +209,7 @@ namespace IronRuby.Builtins {
         }
 
         private void ReadConversionFlags() {
-            bool fFoundConversion;
-            do {
-                fFoundConversion = true;
+            while(true) {
                 switch (_curCh) {
                     case '#': _opts.AltForm = true; break;
                     case '-': _opts.LeftAdj = true; _opts.ZeroPad = false; break;
@@ -191,22 +217,25 @@ namespace IronRuby.Builtins {
                     case '+': _opts.SignChar = true; _opts.Space = false; break;
                     case ' ': if (!_opts.SignChar) _opts.Space = true; break;
                     default:
-                        // Try to read an argument index
-                        int? argIndex = TryReadArgumentIndex();
-                        if (fFoundConversion = argIndex.HasValue)
-                            _opts.ArgIndex = argIndex;
-                        break;
+                        return;
                 }
 
-                // TODO: we need to rewrite how we parse these things to line up our error messages with MRI
-                if (fFoundConversion) {
-                    if (_index >= _format.Length)
-                        throw RubyExceptions.CreateArgumentError("illegal format character - %");
-
-                    _curCh = _format[_index++];
+                if (_index >= _format.Length) {
+                    throw RubyExceptions.CreateArgumentError("illegal format character - %");
                 }
 
-            } while (fFoundConversion);
+                _curCh = _format[_index++];
+            }
+        }
+
+        private void ReadArgumentIndex() {
+            int? argIndex = TryReadArgumentIndex();
+            if (argIndex.HasValue) {
+                if (_opts.ArgIndex.HasValue) {
+                    RubyExceptions.CreateArgumentError("value given twice");
+                }
+                _opts.ArgIndex = argIndex;
+            }
         }
 
         private int? TryReadArgumentIndex() {
@@ -217,7 +246,8 @@ namespace IronRuby.Builtins {
                 }
                 if (end < _format.Length && _format[end] == '$') {
                     int argIndex = int.Parse(_format.Substring(_index - 1, end - _index + 1));
-                    _index = end + 1;
+                    _index = end + 1; // Point past the '$'
+                    _curCh = _format[_index++];
                     return argIndex;
                 }
             }
@@ -227,10 +257,10 @@ namespace IronRuby.Builtins {
         private int ReadNumberOrStar() {
             int res = 0; // default value
             if (_curCh == '*') {
+                _curCh = _format[_index++]; // Skip the '*'
                 int? argindex = TryReadArgumentIndex();
-                _curCh = _format[_index++];
 
-                res = Protocols.CastToFixnum(_fixnumCast, _context, GetData(argindex));
+                res = _siteStorage.CastToFixnum(GetData(argindex));
             } else {
                 if (Char.IsDigit(_curCh)) {
                     res = 0;
@@ -316,25 +346,28 @@ namespace IronRuby.Builtins {
             throw RubyExceptions.CreateArgumentError("too few arguments");
         }
 
+        // TODO: encodings
         private void AppendChar() {
-            int fixChar = Protocols.CastToFixnum(_fixnumCast, _context, _opts.Value);
-            fixChar = fixChar > 0 ? fixChar % 256 : ((-fixChar / 256) + 1) * 256 + fixChar;
-            char val = (char)fixChar;
+            int value = _siteStorage.CastToFixnum(_opts.Value);
+            if (value < 0 && _context.RubyOptions.Compatibility >= RubyCompatibility.Ruby19) {
+                throw RubyExceptions.CreateArgumentError(String.Format("invalid character: {0}", value));
+            }
+            char c = (char)(value & 0xff);
             if (_opts.FieldWidth > 1) {
                 if (!_opts.LeftAdj) {
                     _buf.Append(' ', _opts.FieldWidth - 1);
                 }
-                _buf.Append(val);
+                _buf.Append(c);
                 if (_opts.LeftAdj) {
                     _buf.Append(' ', _opts.FieldWidth - 1);
                 }
             } else {
-                _buf.Append(val);
+                _buf.Append(c);
             }
         }
 
         private void AppendInt(char format) {
-            IntegerValue integer = (_opts.Value == null) ? 0 : Protocols.ConvertToInteger(_integerConversion, _context, _opts.Value);
+            IntegerValue integer = (_opts.Value == null) ? 0 : _siteStorage.ConvertToInteger(_opts.Value);
 
             object val;
             bool isPositive;
@@ -405,9 +438,8 @@ namespace IronRuby.Builtins {
 
         private void AppendFloat(char type) {
             double v;
-            if (_tofConversion != null) {
-                var site = _tofConversion.GetSite(ConvertToFAction.Instance);
-                v = site.Target(site, _context, _opts.Value);
+            if (_siteStorage != null) {
+                v = _siteStorage.CastToDouble(_opts.Value);
             } else {
                 v = (double)_opts.Value;
             }
@@ -475,7 +507,7 @@ namespace IronRuby.Builtins {
             // Ruby also displays a "-0.0" for a negative zero whereas the CLR displays just "0.0"
             bool fNeedMinus;
             if (value == 0.0) {
-                fNeedMinus = FloatOps.IsNegativeZero(value);
+                fNeedMinus = MathUtils.IsNegativeZero(value);
             } else {
                 fNeedMinus = true;
                 for (int i = 0; i < _buf.Length; i++) {
@@ -653,7 +685,7 @@ namespace IronRuby.Builtins {
 
             StringBuilder/*!*/ result = new StringBuilder();
             bool isNegative = IsNegative(value);
-            uint val = (uint)(int)value;
+            uint val = unchecked((uint)(int)value);
             uint limit = isNegative ? 0xFFFFFFFF : 0;
             uint mask = _Mask[bitsToShift];
             char[] digits = lowerCase ? _LowerDigits : _UpperDigits;
@@ -790,7 +822,7 @@ namespace IronRuby.Builtins {
         /// for BigInteger below that should be kept in sync.
         /// </summary>
         private void AppendBase(char format, int radix) {
-            IntegerValue integer = (_opts.Value == null) ? 0 : Protocols.ConvertToInteger(_integerConversion, _context, _opts.Value);
+            IntegerValue integer = (_opts.Value == null) ? 0 : _siteStorage.ConvertToInteger(_opts.Value);
 
             // TODO: split paths for bignum and fixnum
             object value = integer.IsFixnum ? (object)integer.Fixnum : (object)integer.Bignum;
@@ -915,7 +947,7 @@ namespace IronRuby.Builtins {
         }
 
         private void AppendString() {
-            MutableString/*!*/ str = Protocols.ConvertToString(_tosConversion, _context, _opts.Value);
+            MutableString/*!*/ str = _siteStorage.ConvertToString(_opts.Value);
             if (KernelOps.Tainted(_context, str)) {
                 _tainted = true;
             }

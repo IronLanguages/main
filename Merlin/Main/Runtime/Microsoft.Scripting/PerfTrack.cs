@@ -19,6 +19,7 @@ using System.Diagnostics;
 using System.Linq.Expressions;
 using Microsoft.Scripting.Utils;
 using System.Dynamic;
+using System.IO;
 
 namespace Microsoft.Scripting {
     /// <summary>
@@ -49,6 +50,10 @@ namespace Microsoft.Scripting {
             OverAllocate,   // a spot where we have an un-ideal algorithm that needs to allocate more than necessary
             Rules,          // related to rules / actions.
             RuleEvaluation, // a rule was evaluated
+            Binding,        // a rule was bound
+            BindingSlow,
+            BindingFast,    
+            BindingTarget,  // a rule was bound against a target of a specific type
             Count
         }
 
@@ -69,11 +74,15 @@ namespace Microsoft.Scripting {
         }
 
         public static void DumpHistogram<TKey>(IDictionary<TKey, int> histogram) {
+            DumpHistogram(histogram, Console.Out);
+        }
+
+        public static void DumpHistogram<TKey>(IDictionary<TKey, int> histogram, TextWriter output) {
             var keys = ArrayUtils.MakeArray(histogram.Keys);
             var values = ArrayUtils.MakeArray(histogram.Values);
             Array.Sort(values, keys);
             for (int i = 0; i < keys.Length; i++) {
-                Console.WriteLine("{0} {1}", keys[i], values[i]);
+                output.WriteLine("{0} {1}", keys[i], values[i]);
             }
         }
 
@@ -85,6 +94,10 @@ namespace Microsoft.Scripting {
         }
 
         public static void DumpStats() {
+            DumpStats(Console.Out);
+        }
+
+        public static void DumpStats(TextWriter output) {
             if (totalEvents == 0) return;
 
             // numbers from AMD Opteron 244 1.8 Ghz, 2.00GB of ram,
@@ -93,45 +106,45 @@ namespace Microsoft.Scripting {
             const double THROW_TIME = 0.000025365656;
             const double FIELD_TIME = 0.0000018080093;
 
-            Console.WriteLine();
-            Console.WriteLine("---- Performance Details ----");
-            Console.WriteLine();
+            output.WriteLine();
+            output.WriteLine("---- Performance Details ----");
+            output.WriteLine();
 
             foreach (KeyValuePair<Categories, Dictionary<string, int>> kvpCategories in _events) {
                 if (kvpCategories.Value.Count > 0) {
-                    Console.WriteLine("Category : " + kvpCategories.Key);
-                    DumpHistogram(kvpCategories.Value);
-                    Console.WriteLine();
+                    output.WriteLine("Category : " + kvpCategories.Key);
+                    DumpHistogram(kvpCategories.Value, output);
+                    output.WriteLine();
                 }
             }
 
-            Console.WriteLine();
-            Console.WriteLine("---- Performance Summary ----");
-            Console.WriteLine();
+            output.WriteLine();
+            output.WriteLine("---- Performance Summary ----");
+            output.WriteLine();
             double knownTimes = 0;
             foreach (KeyValuePair<Categories, int> kvp in summaryStats) {
                 switch (kvp.Key) {
                     case Categories.Exceptions:
-                        Console.WriteLine("Total Exception ({0}) = {1}  (throwtime = ~{2} secs)", kvp.Key, kvp.Value, kvp.Value * THROW_TIME);
+                        output.WriteLine("Total Exception ({0}) = {1}  (throwtime = ~{2} secs)", kvp.Key, kvp.Value, kvp.Value * THROW_TIME);
                         knownTimes += kvp.Value * THROW_TIME;
                         break;
                     case Categories.Fields:
-                        Console.WriteLine("Total field = {0} (time = ~{1} secs)", kvp.Value, kvp.Value * FIELD_TIME);
+                        output.WriteLine("Total field = {0} (time = ~{1} secs)", kvp.Value, kvp.Value * FIELD_TIME);
                         knownTimes += kvp.Value * FIELD_TIME;
                         break;
                     case Categories.Methods:
-                        Console.WriteLine("Total calls = {0} (calltime = ~{1} secs)", kvp.Value, kvp.Value * CALL_TIME);
+                        output.WriteLine("Total calls = {0} (calltime = ~{1} secs)", kvp.Value, kvp.Value * CALL_TIME);
                         knownTimes += kvp.Value * CALL_TIME;
                         break;
                     //case Categories.Properties:
                     default:
-                        Console.WriteLine("Total {1} = {0}", kvp.Value, kvp.Key);
+                        output.WriteLine("Total {1} = {0}", kvp.Value, kvp.Key);
                         break;
                 }
             }
 
-            Console.WriteLine();
-            Console.WriteLine("Total Known Times: {0}", knownTimes);
+            output.WriteLine();
+            output.WriteLine("Total Known Times: {0}", knownTimes);
         }
 
         [Conditional("DEBUG")]

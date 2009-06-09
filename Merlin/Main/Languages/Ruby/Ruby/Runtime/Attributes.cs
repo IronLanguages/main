@@ -17,11 +17,13 @@ using System;
 using Microsoft.Scripting.Utils;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
+using IronRuby.Builtins;
 
 namespace IronRuby.Runtime {
 
     public abstract class RubyAttribute : Attribute {
         private string _buildConfig;
+        private RubyCompatibility _compatibility = RubyCompatibility.Default;
 
         /// <summary>
         /// If set, indicates what build configurations this module should be available under
@@ -35,6 +37,14 @@ namespace IronRuby.Runtime {
         public string BuildConfig {
             get { return _buildConfig; }
             set { _buildConfig = value; }
+        }
+
+        /// <summary>
+        /// Which language version supports the feature
+        /// </summary>
+        public RubyCompatibility Compatibility {
+            get { return _compatibility; }
+            set { _compatibility = value; }
         }
     }
 
@@ -76,6 +86,11 @@ namespace IronRuby.Runtime {
         private readonly string/*!*/ _name;
         private readonly RubyMethodAttributes _methodAttributes;
 
+        /// <summary>
+        /// RubyCompatibility is encoded along with the method attributes in the initialization code
+        /// </summary>
+        internal const int CompatibilityEncodingShift = 16;
+
         public string/*!*/ Name {
             get { return _name; }
         }
@@ -103,30 +118,27 @@ namespace IronRuby.Runtime {
         }
     }
 
-#if TODO
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface, AllowMultiple = false)]
-    public class RubyExtensionAttribute : RubyAttribute {
-        private readonly Type/*!*/ _extends;
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface, AllowMultiple = true)]
+    public class DeclaresRubyModuleAttribute : RubyAttribute {
+        private readonly string/*!*/ _name;
+        private readonly Type/*!*/ _moduleDefinitionType;
 
-        public Type/*!*/ Extends {
-            get { return _extends; }
+        public string/*!*/ Name {
+            get { return _name; }
         }
 
-        public RubyExtensionAttribute(Type/*!*/ extends) {
-            ContractUtils.RequiresNotNull(extends, "extends");
-            _extends = extends;
+        public Type/*!*/ ModuleDefinitionType {
+            get { return _moduleDefinitionType; }
+        }
+
+        public DeclaresRubyModuleAttribute(string/*!*/ name, Type/*!*/ moduleDefinitionType) {
+            _name = name;
+            _moduleDefinitionType = moduleDefinitionType;
         }
     }
-#endif
 
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface, AllowMultiple = false)]
     public class RubyModuleAttribute : RubyAttribute {
-        private readonly string _name;
-
-        private bool _mixinInterfaces;
-        private bool _hideClrMembers;
-        private Type _extends;
-
         /// <summary>
         /// If an extension type doesn't specify Ruby name its name is inferred from the CLR 
         /// non-generic qualified name of the type being extended. No constant is added to the Object class.
@@ -190,31 +202,21 @@ namespace IronRuby.Runtime {
         public string Name {
             get { return _name; }
         }
-
-        /// <summary>
-        /// Indicates that CLR interface modules should be mixed in to the module.
-        /// </summary>
-        public bool MixinInterfaces {
-            get { return _mixinInterfaces; }
-            set { _mixinInterfaces = value; }
-        }
-
-        public bool HideClrMembers {
-            get { return _hideClrMembers; }
-            set { _hideClrMembers = value; }
-        }
-
-        public Type Extends {
-            get { return _extends; }
-            set { _extends = value; }
-        }
+        private readonly string _name;
+        
+        public bool HideClrMembers { get; set; }
+        public Type Extends { get; set; }
+        public Type DefineIn { get; set; }
+        public ModuleRestrictions Restrictions { get; set; }
 
         public RubyModuleAttribute() {
+            Restrictions = ModuleRestrictions.Builtin;
             _name = null;
         }
 
         public RubyModuleAttribute(string/*!*/ name) {
             ContractUtils.RequiresNotEmpty(name, "name");
+            Restrictions = ModuleRestrictions.Builtin;
             _name = name;
         }
     }
@@ -312,5 +314,6 @@ namespace IronRuby.Runtime {
     [AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false)]
     public class DefaultProtocolAttribute : Attribute {
     }
+
 }
 

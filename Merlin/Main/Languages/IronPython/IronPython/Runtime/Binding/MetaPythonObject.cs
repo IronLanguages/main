@@ -36,9 +36,18 @@ namespace IronPython.Runtime.Binding {
             : base(expression, restrictions, value) {
         }
 
-        internal static MethodCallExpression MakeTryGetTypeMember(BinderState/*!*/ binderState, PythonTypeSlot dts, Expression self, ParameterExpression tmp) {
+        public DynamicMetaObject/*!*/ FallbackConvert(DynamicMetaObjectBinder/*!*/ binder) {
+            PythonConversionBinder pyBinder = binder as PythonConversionBinder;
+            if (pyBinder != null) {
+                return pyBinder.FallbackConvert(this);
+            }
+
+            return ((ConvertBinder)binder).FallbackConvert(this);
+        }
+
+        internal static MethodCallExpression MakeTryGetTypeMember(PythonContext/*!*/ PythonContext, PythonTypeSlot dts, Expression self, ParameterExpression tmp) {
             return MakeTryGetTypeMember(
-                binderState,
+                PythonContext,
                 dts, 
                 tmp,
                 self,
@@ -51,10 +60,10 @@ namespace IronPython.Runtime.Binding {
             );
         }
 
-        internal static MethodCallExpression MakeTryGetTypeMember(BinderState/*!*/ binderState, PythonTypeSlot dts, ParameterExpression tmp, Expression instance, Expression pythonType) {
+        internal static MethodCallExpression MakeTryGetTypeMember(PythonContext/*!*/ PythonContext, PythonTypeSlot dts, ParameterExpression tmp, Expression instance, Expression pythonType) {
             return Ast.Call(
                 TypeInfo._PythonOps.SlotTryGetBoundValue,
-                Ast.Constant(binderState.Context),
+                AstUtils.Constant(PythonContext.SharedContext),
                 AstUtils.Convert(Utils.WeakConstant(dts), typeof(PythonTypeSlot)),
                 AstUtils.Convert(instance, typeof(object)),
                 AstUtils.Convert(
@@ -83,33 +92,6 @@ namespace IronPython.Runtime.Binding {
             return DynamicHelpers.GetPythonTypeFromType(value.GetLimitType());
         }
 
-        public static Expression MakeTypeTests(DynamicMetaObject metaSelf, params DynamicMetaObject/*!*/[] args) {
-            Expression typeTest = null;
-            if (metaSelf != null) {
-                IPythonObject self = metaSelf.Value as IPythonObject;
-                if (self != null) {
-                    typeTest = BindingHelpers.CheckTypeVersion(metaSelf.Expression, self.PythonType.Version);
-                }
-            }
-
-            for (int i = 0; i < args.Length; i++) {
-                if (args[i].HasValue) {
-                    IPythonObject val = args[i].Value as IPythonObject;
-                    if (val != null) {
-                        Expression test = BindingHelpers.CheckTypeVersion(args[i].Expression, val.PythonType.Version);
-
-                        if (typeTest != null) {
-                            typeTest = Ast.AndAlso(typeTest, test);
-                        } else {
-                            typeTest = test;
-                        }
-                    }
-                }
-            }
-
-            return typeTest;
-        }
-
         /// <summary>
         /// Creates a target which creates a new dynamic method which contains a single
         /// dynamic site that invokes the callable object.
@@ -119,40 +101,48 @@ namespace IronPython.Runtime.Binding {
         protected DynamicMetaObject/*!*/ MakeDelegateTarget(DynamicMetaObjectBinder/*!*/ action, Type/*!*/ toType, DynamicMetaObject/*!*/ arg) {
             Debug.Assert(arg != null);
 
-            BinderState state = BinderState.GetBinderState(action);
+            PythonContext state = PythonContext.GetPythonContext(action);
             CodeContext context;
             if (state != null) {
-                context = state.Context;
+                context = state.SharedContext;
             } else {
                 context = DefaultContext.Default;
             }
             
             return new DynamicMetaObject(
-                Ast.Call(
-                    typeof(PythonOps).GetMethod("GetDelegate"),
-                    Ast.Constant(context),
-                    arg.Expression,
-                    Ast.Constant(toType)
+                Ast.Convert(
+                    Ast.Call(
+                        typeof(PythonOps).GetMethod("GetDelegate"),
+                        AstUtils.Constant(context),
+                        arg.Expression,
+                        AstUtils.Constant(toType)
+                    ),
+                    toType
                 ),
                 arg.Restrictions
             );
         }
 
-        protected DynamicMetaObject GetMemberFallback(DynamicMetaObjectBinder member, Expression codeContext) {
+        protected static DynamicMetaObject GetMemberFallback(DynamicMetaObject self, DynamicMetaObjectBinder member, DynamicMetaObject codeContext) {
             PythonGetMemberBinder gmb = member as PythonGetMemberBinder;
             if (gmb != null) {
-                return gmb.Fallback(this, codeContext);
+                return gmb.Fallback(self, codeContext);
             }
 
             GetMemberBinder gma = (GetMemberBinder)member;
 
-            return gma.FallbackGetMember(this);
+            return gma.FallbackGetMember(self);
         }
 
-        protected string GetGetMemberName(DynamicMetaObjectBinder member) {
+        protected static string GetGetMemberName(DynamicMetaObjectBinder member) {
             PythonGetMemberBinder gmb = member as PythonGetMemberBinder;
             if (gmb != null) {
                 return gmb.Name;
+            }
+
+            InvokeMemberBinder invoke = member as InvokeMemberBinder;
+            if (invoke != null) {
+                return invoke.Name;
             }
 
             GetMemberBinder gma = (GetMemberBinder)member;

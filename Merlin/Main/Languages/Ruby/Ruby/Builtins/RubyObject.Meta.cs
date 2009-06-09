@@ -19,38 +19,36 @@ using System.Linq.Expressions;
 using Microsoft.Scripting.Utils;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
+using System.Reflection;
+using IronRuby.Compiler;
 
 namespace IronRuby.Builtins {
 
-    public partial class RubyObject : IDynamicMetaObjectProvider {
+    public partial class RubyObject : IRubyDynamicMetaObjectProvider {
         public virtual DynamicMetaObject/*!*/ GetMetaObject(Expression/*!*/ parameter) {
             return new Meta(parameter, BindingRestrictions.Empty, this);
         }
 
-        internal class Meta : DynamicMetaObject {
+        internal class Meta : RubyMetaObject<IRubyObject> {
+            public override RubyContext/*!*/ Context {
+                get { return Value.ImmediateClass.Context; }
+            }
+
+            protected override MethodInfo/*!*/ ContextConverter {
+                get { return Methods.GetContextFromIRubyObject; }
+            }
+
             public Meta(Expression/*!*/ expression, BindingRestrictions/*!*/ restrictions, IRubyObject/*!*/ value)
                 : base(expression, restrictions, value) {
-                ContractUtils.RequiresNotNull(value, "value");
             }
 
-            public override DynamicMetaObject/*!*/ BindGetMember(GetMemberBinder/*!*/ binder) {
-                var self = (IRubyObject)Value;
-                return RubyGetMemberBinder.TryBind(self.Class.Context, binder, this) ?? binder.FallbackGetMember(this);
-            }
-
-            public override DynamicMetaObject/*!*/ BindInvokeMember(InvokeMemberBinder/*!*/ binder, params DynamicMetaObject/*!*/[]/*!*/ args) {
-                var self = (IRubyObject)Value;
-                return RubyInvokeMemberBinder.TryBind(self.Class.Context, binder, this, args) ?? binder.FallbackInvokeMember(this, args);
-            }
-
-            public override IEnumerable<string> GetDynamicMemberNames() {
-                var self = (IRubyObject)Value;
-                RubyInstanceData instanceData = self.GetInstanceData();
-                RubyModule theClass = (instanceData != null ? instanceData.ImmediateClass : null) ?? self.Class;
+            public override IEnumerable<string>/*!*/ GetDynamicMemberNames() {
+                var self = Value;
                 var names = new List<string>();
+                var cls = self.ImmediateClass;
 
-                using (theClass.Context.ClassHierarchyLocker()) {
-                    theClass.ForEachMember(true, RubyMethodAttributes.DefaultVisibility, (name, member) => names.Add(name));
+                using (cls.Context.ClassHierarchyLocker()) {
+                    cls.ForEachMember(true, RubyMethodAttributes.DefaultVisibility, (name, member) => names.Add(name));
                 }
 
                 return names;

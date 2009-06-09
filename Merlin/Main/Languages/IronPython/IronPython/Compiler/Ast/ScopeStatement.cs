@@ -16,9 +16,13 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
+
+using IronPython.Runtime;
+using IronPython.Runtime.Operations;
+
 using MSAst = System.Linq.Expressions;
 
 namespace IronPython.Compiler.Ast {
@@ -32,11 +36,9 @@ namespace IronPython.Compiler.Ast {
         private bool _locals;                       // The scope needs locals dictionary
                                                     // due to "exec" or call to dir, locals, eval, vars...
         
-        // the scope contains variables that are bound to parent scope forming a closure:
-        private bool _closure;
-
         private Dictionary<SymbolId, PythonVariable> _variables;
         private Dictionary<SymbolId, PythonReference> _references;
+        private Dictionary<SymbolId, PythonReference> _childReferences;
 
         public ScopeStatement Parent {
             get { return _parent; }
@@ -53,40 +55,65 @@ namespace IronPython.Compiler.Ast {
             set { _unqualifiedExec = value; }
         }
 
+        /// <summary>
+        /// True if an inner scope is accessing a variable defined in this scope.
+        /// </summary>
         internal bool ContainsNestedFreeVariables {
             get { return _nestedFreeVariables; }
             set { _nestedFreeVariables = value; }
         }
 
+        /// <summary>
+        /// True if we are forcing the creation of a dictionary for storing locals.
+        /// 
+        /// This occurs for calls to locals(), dir(), vars(), unqualified exec, and
+        /// from ... import *.
+        /// </summary>
         internal bool NeedsLocalsDictionary {
             get { return _locals; }
             set { _locals = value; }
-        }
-
-        internal bool IsClosure {
-            get { return _closure; }
-            set { _closure = value; }
         }
 
         internal Dictionary<SymbolId, PythonVariable> Variables {
             get { return _variables; }
         }
 
+        internal Dictionary<SymbolId, PythonReference> References {
+            get { return _references; }
+        }
+
         internal virtual bool IsGlobal {
             get { return false; }
         }
 
-        protected abstract bool ExposesLocalVariables { get; }
+        internal abstract bool ExposesLocalVariable(PythonVariable variable);
 
-        internal virtual void CreateVariables(AstGenerator ag, List<MSAst.Expression> init) {
+        internal void CreateVariables(AstGenerator ag, MSAst.Expression parentContext, List<MSAst.Expression> init, bool emitDictionary, bool needsLocals) {
             if (_variables != null) {
-                foreach (KeyValuePair<SymbolId, PythonVariable> kv in _variables) {
-                    PythonVariable pv = kv.Value;
-                    // Publish variables for this context only (there may be references to the global variables
-                    // in the dictionary also that were used for name binding lookups
+                CreateLocalVariables(ag, init, emitDictionary);
+            }
+
+            if (_references != null) {
+                CreateReferencedVariables(ag, init, emitDictionary, needsLocals);
+            }
+
+            if (_childReferences != null) {
+                CreateChildReferencedVariables(ag, parentContext, init);
+            }
+        }
+
+        /// <summary>
+        /// Creates variables which are defined in this scope.
+        /// </summary>
+        private void CreateLocalVariables(AstGenerator ag, List<MSAst.Expression> init, bool emitDictionary) {
+            foreach (KeyValuePair<SymbolId, PythonVariable> kv in _variables) {
+                PythonVariable pv = kv.Value;
+                // Publish variables for this context only (there may be references to the global variables
+                // in the dictionary also that were used for name binding lookups)
+                if (pv.Scope == this) {
                     // Do not publish parameters, they will get created separately.
-                    if (pv.Scope == this && pv.Kind != VariableKind.Parameter) {
-                        MSAst.Expression var = pv.Transform(ag);
+                    if (pv.Kind != VariableKind.Parameter) {
+                        MSAst.Expression var = ag.Globals.CreateVariable(ag, pv, emitDictionary);
 
                         //
                         // Initializes variable to Uninitialized.Instance:
@@ -109,27 +136,117 @@ namespace IronPython.Compiler.Ast {
                         //    - initialize them to skip the local slot while looking up the name in scope chain
                         //      TODO: this is hacky as well
                         //
-                        if (pv.Kind == VariableKind.Local && !IsGlobal && (pv.ReadBeforeInitialized || pv.AccessedInNestedScope || ExposesLocalVariables) ||
+                        if (pv.Kind == VariableKind.Local && !IsGlobal && (pv.ReadBeforeInitialized || pv.AccessedInNestedScope || ExposesLocalVariable(pv)) ||
                             pv.Kind == VariableKind.GlobalLocal && pv.ReadBeforeInitialized ||
                             pv.Kind == VariableKind.HiddenLocal) {
 
                             Debug.Assert(pv.Kind != VariableKind.HiddenLocal || pv.ReadBeforeInitialized, "Hidden variable is always uninitialized");
 
-                            init.Add(
-                                AstUtils.Assign(
-                                    var,
-                                    MSAst.Expression.Field(null, typeof(Uninitialized).GetField("Instance"))
-                                )
-                            );
+                            if (var is ClosureExpression) {
+                                init.Add(((ClosureExpression)var).Create());
+                            } else {
+                                init.Add(
+                                    ag.Globals.Assign(
+                                        var,
+                                        MSAst.Expression.Field(null, typeof(Uninitialized).GetField("Instance"))
+                                    )
+                                );
+                            }
                         }
+                    }                    
+                } 
+            }
+        }
+
+        /// <summary>
+        /// Creates variables which are defined in a parent scope and accessed in this scope.
+        /// </summary>
+        private void CreateReferencedVariables(AstGenerator ag, List<MSAst.Expression> init, bool emitDictionary, bool needsLocals) {
+            MSAst.Expression localTuple = null;
+            foreach (KeyValuePair<SymbolId, PythonReference> kv in _references) {
+                PythonVariable var = kv.Value.PythonVariable;
+
+                if (var == null || var.Scope == this) {
+                    continue;
+                }
+
+                if ((var.Kind == VariableKind.Local || var.Kind == VariableKind.Parameter) && !var.Scope.IsGlobal) {
+                    // closed over local, we need to pull in the closure variable
+                    Type tupleType = ag.GetParentTupleType();
+                    int index = ag.TupleIndex(var);
+
+                    localTuple = EnsureLocalTuple(ag, init, localTuple, tupleType);
+
+                    // get the closure cell from the tuple
+                    MSAst.Expression tuplePath = localTuple;
+                    foreach (var v in MutableTuple.GetAccessPath(tupleType, index)) {
+                        tuplePath = MSAst.Expression.Property(tuplePath, v);
+                    }
+
+                    MSAst.ParameterExpression pe = ag.HiddenVariable(typeof(ClosureCell), SymbolTable.IdToString(var.Name));
+                    init.Add(MSAst.Expression.Assign(pe, tuplePath));
+
+                    ag.SetLocalLiftedVariable(var, new ClosureExpression(var, pe, null));
+
+                    if (emitDictionary) {
+                        ag.ReferenceVariable(var, index, localTuple, needsLocals);
                     }
                 }
             }
+        }
 
-            // Require the context emits local dictionary
-            if (NeedsLocalsDictionary) {
-                ag.Block.Dictionary = true;
+        /// <summary>
+        /// Creates variables which are defined in a parent scope and used by a child scope.
+        /// </summary>
+        private void CreateChildReferencedVariables(AstGenerator ag, MSAst.Expression parentContext, List<MSAst.Expression> init) {
+            MSAst.Expression localTuple = null;
+            foreach (KeyValuePair<SymbolId, PythonReference> kv in _childReferences) {
+                // a child scope refers to this closure value but we don't refer
+                // to it directly.
+                int index = ag.TupleIndex(kv.Value.PythonVariable);
+                Type tupleType = ag.GetParentTupleType();
+
+                if (localTuple == null) {
+                    // pull the tuple from the context once
+                    localTuple = ag.HiddenVariable(tupleType, "$parentClosureTuple");
+                    init.Add(
+                        MSAst.Expression.Assign(
+                            localTuple,
+                            MSAst.Expression.Convert(
+                                MSAst.Expression.Call(
+                                    typeof(PythonOps).GetMethod("GetClosureTupleFromContext"),
+                                    parentContext
+                                ),
+                                tupleType
+                            )
+                        )
+                    );
+                }
+
+                ag.ReferenceVariable(kv.Value.PythonVariable, index, localTuple, false);
             }
+        }
+
+        private MSAst.Expression EnsureLocalTuple(AstGenerator ag, List<System.Linq.Expressions.Expression> init, MSAst.Expression localTuple, Type tupleType) {
+            if (localTuple == null) {
+                // pull the tuple from the context once
+                localTuple = ag.HiddenVariable(tupleType, "$closureTuple");
+                init.Add(
+                    MSAst.Expression.Assign(
+                        localTuple,
+                        MSAst.Expression.Convert(
+                            GetClosureTuple(),
+                            tupleType
+                        )
+                    )
+                );
+            }
+            return localTuple;
+        }
+        
+        public virtual MSAst.Expression GetClosureTuple() {
+            // PythonAst will never call this.
+            throw new NotSupportedException();
         }
 
         private bool TryGetAnyVariable(SymbolId name, out PythonVariable variable) {
@@ -165,19 +282,35 @@ namespace IronPython.Compiler.Ast {
                     kv.Value.PythonVariable = variable = BindName(binder, kv.Key);
 
                     // Accessing outer scope variable which is being deleted?
-                    if (variable != null &&
-                        variable.Deleted &&
+                    if (variable != null) {
+                        if (variable.Deleted &&
                         (object)variable.Scope != (object)this &&
                         !variable.Scope.IsGlobal) {
 
-                        // report syntax error
-                        binder.ReportSyntaxError(
-                            String.Format(
-                                System.Globalization.CultureInfo.InvariantCulture,
-                                "can not delete variable '{0}' referenced in nested scope",
-                                SymbolTable.IdToString(kv.Key)
-                                ),
-                            this);
+                            // report syntax error
+                            binder.ReportSyntaxError(
+                                String.Format(
+                                    System.Globalization.CultureInfo.InvariantCulture,
+                                    "can not delete variable '{0}' referenced in nested scope",
+                                    SymbolTable.IdToString(kv.Key)
+                                    ),
+                                this);
+                        }
+                        
+                        if (variable.Scope != this && 
+                            variable.Kind != VariableKind.Global && variable.Kind != VariableKind.GlobalLocal &&
+                            !variable.Scope.IsGlobal) {
+
+                            ScopeStatement curScope = Parent;
+                            while (curScope != variable.Scope) {
+                                if (curScope._childReferences == null) {
+                                    curScope._childReferences = new Dictionary<SymbolId, PythonReference>();
+                                }
+
+                                curScope._childReferences[kv.Key] = kv.Value;
+                                curScope = curScope.Parent;
+                            }
+                        }
                     }
                 }
             }
@@ -214,7 +347,7 @@ namespace IronPython.Compiler.Ast {
             EnsureVariables();
             Debug.Assert(!_variables.ContainsKey(name));
             PythonVariable variable;
-            _variables[name] = variable = new PythonVariable(name, typeof(object), kind, this);
+            _variables[name] = variable = new PythonVariable(name, kind, this);
             return variable;
         }
 
@@ -222,6 +355,14 @@ namespace IronPython.Compiler.Ast {
             PythonVariable variable;
             if (!TryGetVariable(name, out variable)) {
                 return CreateVariable(name, VariableKind.Local);
+            }
+            return variable;
+        }
+
+        internal PythonVariable EnsureGlobalVariable(SymbolId name) {
+            PythonVariable variable;
+            if (!TryGetVariable(name, out variable)) {
+                return CreateVariable(name, VariableKind.Global);
             }
             return variable;
         }

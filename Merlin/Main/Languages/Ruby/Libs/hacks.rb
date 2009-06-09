@@ -13,11 +13,16 @@
 #
 # ****************************************************************************
 
-# Hacked up implementation of Method
+# In non-iirb sessions, TOPLEVEL_BINDING isn't defined
+unless defined?(TOPLEVEL_BINDING)
+  TOPLEVEL_BINDING = binding
+end
 
-class Method
-  def to_proc
-    Proc.new { |*args| self.call(*args) }
+# IronRuby bug: IO#read seems to chop off the first char
+
+class TCPSocket
+  def read size
+    recv size
   end
 end
 

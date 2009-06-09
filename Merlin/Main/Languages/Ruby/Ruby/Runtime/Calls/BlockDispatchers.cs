@@ -18,6 +18,7 @@ using Microsoft.Scripting.Utils;
 using System.Collections.Generic;
 using System.Diagnostics;
 using IronRuby.Builtins;
+using System.Collections;
 
 namespace IronRuby.Runtime.Calls {
     // L(0, -)
@@ -27,8 +28,8 @@ namespace IronRuby.Runtime.Calls {
         public override Delegate/*!*/ Method { get { return _block; } }
         public override int ParameterCount { get { return 0; } }
 
-        public BlockDispatcher0(BlockCallTarget0/*!*/ block, BlockSignatureAttributes attributes)
-            : base(attributes) {
+        public BlockDispatcher0(BlockCallTarget0/*!*/ block, BlockSignatureAttributes attributesAndArity)
+            : base(attributesAndArity) {
             Assert.NotNull(block);
             Debug.Assert(!HasUnsplatParameter);
 
@@ -114,8 +115,8 @@ namespace IronRuby.Runtime.Calls {
         public override Delegate/*!*/ Method { get { return _block; } }
         public override int ParameterCount { get { return 1; } }
 
-        public BlockDispatcher1(BlockCallTarget1/*!*/ block, BlockSignatureAttributes attributes)
-            : base(attributes) {
+        public BlockDispatcher1(BlockCallTarget1/*!*/ block, BlockSignatureAttributes attributesAndArity)
+            : base(attributesAndArity) {
             Assert.NotNull(block);
             Debug.Assert(!HasUnsplatParameter);
             _block = block;
@@ -180,7 +181,7 @@ namespace IronRuby.Runtime.Calls {
 
         // R(0, *)
         public override object InvokeSplat(BlockParam/*!*/ param, object self, object splattee) {
-            var list = splattee as List<object>;
+            var list = splattee as IList;
             if (list != null) {
                 switch (list.Count) {
                     case 0:
@@ -208,7 +209,7 @@ namespace IronRuby.Runtime.Calls {
         
         // R(1, *)
         public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object splattee) {
-            var list = splattee as List<object>;
+            var list = splattee as IList;
             if (list == null) {
                 if (!HasSingleCompoundParameter) {
                     param.MultipleValuesForBlockParameterWarning(2);
@@ -288,8 +289,8 @@ namespace IronRuby.Runtime.Calls {
         public override Delegate/*!*/ Method { get { return _block; } }
         public override int ParameterCount { get { return 2; } }
 
-        public BlockDispatcher2(BlockCallTarget2/*!*/ block, BlockSignatureAttributes attributes)
-            : base(attributes) {
+        public BlockDispatcher2(BlockCallTarget2/*!*/ block, BlockSignatureAttributes attributesAndArity)
+            : base(attributesAndArity) {
             Assert.NotNull(block);
             Debug.Assert(!HasUnsplatParameter);
             _block = block;
@@ -337,7 +338,7 @@ namespace IronRuby.Runtime.Calls {
         }
 
         private object InvokeSplatInternal(BlockParam/*!*/ param, object self, object splattee) {
-            var list = splattee as List<object>;
+            var list = splattee as IList;
             if (list != null) {
                 switch (list.Count) {
                     case 0: return _block(param, self, null, null);
@@ -351,7 +352,7 @@ namespace IronRuby.Runtime.Calls {
 
         // R(1, *)
         public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object splattee) {
-            var list = splattee as List<object>;
+            var list = splattee as IList;
             if (list != null) {
                 switch (list.Count) {
                     case 0: return _block(param, self, arg1, null);
@@ -397,8 +398,8 @@ namespace IronRuby.Runtime.Calls {
         public override Delegate/*!*/ Method { get { return _block; } }
         public override int ParameterCount { get { return 3; } }
 
-        public BlockDispatcher3(BlockCallTarget3/*!*/ block, BlockSignatureAttributes attributes)
-            : base(attributes) {
+        public BlockDispatcher3(BlockCallTarget3/*!*/ block, BlockSignatureAttributes attributesAndArity)
+            : base(attributesAndArity) {
             Assert.NotNull(block);
             Debug.Assert(!HasUnsplatParameter);
             _block = block;
@@ -446,7 +447,7 @@ namespace IronRuby.Runtime.Calls {
         }
 
         private object InvokeSplatInternal(BlockParam/*!*/ param, object self, object splattee) {
-            var list = splattee as List<object>;
+            var list = splattee as IList;
             if (list != null) {
                 switch (list.Count) {
                     case 0: return _block(param, self, null, null, null);
@@ -461,7 +462,7 @@ namespace IronRuby.Runtime.Calls {
 
         // R(1, *)
         public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object splattee) {
-            var list = splattee as List<object>;
+            var list = splattee as IList;
             if (list != null) {
                 switch (list.Count) {
                     case 0: return _block(param, self, arg1, null, null);
@@ -475,7 +476,7 @@ namespace IronRuby.Runtime.Calls {
 
         // R(2, *)
         public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, object splattee) {
-            var list = splattee as List<object>;
+            var list = splattee as IList;
             if (list != null) {
                 switch (list.Count) {
                     case 0: return _block(param, self, arg1, arg2, null);
@@ -516,8 +517,8 @@ namespace IronRuby.Runtime.Calls {
         public override Delegate/*!*/ Method { get { return _block; } }
         public override int ParameterCount { get { return 4; } }
 
-        public BlockDispatcher4(BlockCallTarget4/*!*/ block, BlockSignatureAttributes attributes)
-            : base(attributes) {
+        public BlockDispatcher4(BlockCallTarget4/*!*/ block, BlockSignatureAttributes attributesAndArity)
+            : base(attributesAndArity) {
             Assert.NotNull(block);
             Debug.Assert(!HasUnsplatParameter);
             _block = block;
@@ -565,7 +566,7 @@ namespace IronRuby.Runtime.Calls {
         }
 
         private object InvokeSplatInternal(BlockParam/*!*/ param, object self, object splattee) {
-            var list = splattee as List<object>;
+            var list = splattee as IList;
             if (list != null) {
                 switch (list.Count) {
                     case 0: return _block(param, self, null, null, null, null);
@@ -581,7 +582,7 @@ namespace IronRuby.Runtime.Calls {
 
         // R(1, *)
         public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object splattee) {
-            var list = splattee as List<object>;
+            var list = splattee as IList;
             if (list != null) {
                 switch (list.Count) {
                     case 0: return _block(param, self, arg1, null, null, null);
@@ -596,7 +597,7 @@ namespace IronRuby.Runtime.Calls {
 
         // R(2, *)
         public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, object splattee) {
-            var list = splattee as List<object>;
+            var list = splattee as IList;
             if (list != null) {
                 switch (list.Count) {
                     case 0: return _block(param, self, arg1, arg2, null, null);
@@ -610,7 +611,7 @@ namespace IronRuby.Runtime.Calls {
 
         // R(3, *)
         public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, object arg3, object splattee) {
-            var list = splattee as List<object>;
+            var list = splattee as IList;
             if (list != null) {
                 switch (list.Count) {
                     case 0: return _block(param, self, arg1, arg2, arg3, null);

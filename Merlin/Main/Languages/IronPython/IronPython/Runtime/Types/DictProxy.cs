@@ -309,15 +309,11 @@ namespace IronPython.Runtime.Types {
             if (strIndex != null) {
                 PythonTypeSlot dts;
                 if (_dt.TryLookupSlot(context, SymbolTable.StringToId(strIndex), out dts)) {
-                    object res;
                     PythonTypeUserDescriptorSlot uds = dts as PythonTypeUserDescriptorSlot;
                     if (uds != null) {
                         return uds.Value;
                     }
 
-                    if ((dts is PythonTypeValueSlot) && dts.TryGetValue(context, null, _dt, out res)) {
-                        return res;
-                    }
                     return dts;
                 }
             }

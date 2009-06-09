@@ -14,23 +14,24 @@
  * ***************************************************************************/
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq.Expressions;
-using System.Reflection;
 using System.Dynamic;
+using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
-using IronPython.Runtime.Operations;
-using IronPython.Runtime.Types;
+
 using Microsoft.Scripting;
-using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-using Ast = System.Linq.Expressions.Expression;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
+
+using IronPython.Compiler;
+using IronPython.Runtime.Operations;
+using IronPython.Runtime.Types;
+
 using SpecialNameAttribute = System.Runtime.CompilerServices.SpecialNameAttribute;
+using Ast = System.Linq.Expressions.Expression;
 
 namespace IronPython.Runtime {
 
@@ -38,19 +39,17 @@ namespace IronPython.Runtime {
     /// Created for a user-defined function.  
     /// </summary>
     [PythonType("function")]
-    public sealed class PythonFunction : PythonTypeSlot, IWeakReferenceable, IMembersList, IDynamicMetaObjectProvider, ICodeFormattable {
+    public sealed partial class PythonFunction : PythonTypeSlot, IWeakReferenceable, IMembersList, IDynamicMetaObjectProvider, ICodeFormattable, Binding.IFastInvokable {
         private readonly CodeContext/*!*/ _context;     // the creating code context of the function
         [PythonHidden]
-        public readonly Delegate Target;                // the target delegate to be invoked when called (should come from function code)
-        private readonly FunctionAttributes _flags;     // * args, ** args, generator, and other attributes... 
-        private readonly int _nparams;                  // number of arguments minus arg list / arg dict parameters
-        private readonly string/*!*/[]/*!*/ _argNames;  // the names of each of the arguments on the method
+        public Delegate Target;                // the target delegate to be invoked when called (should come from function code)
+        [PythonHidden]
+        public readonly MutableTuple Closure;
 
-        private string/*!*/ _name;                      // the name of the method
+        private FunctionInfo _funcInfo;                 // function info - name, etc...
         private object[]/*!*/ _defaults;                // the default parameters of the method
-        private object _module;                         // the name of the module that the function lives in
-        private object _doc;                            // the documentation associated with the function
         private IAttributesCollection _dict;            // a dictionary to story arbitrary members on the function object
+        private object _module;                         // the module name
 
         private int _id, _compat;                       // ID/Compat flags used for testing in rules
         private FunctionCode _code;                     // the Python function code object.  Not currently used for much by us...        
@@ -64,41 +63,30 @@ namespace IronPython.Runtime {
 
         /// <summary>
         /// Python ctor - maps to function.__new__
+        /// 
+        /// y = func(x.__code__, globals(), 'foo', None, (a, ))
         /// </summary>
-        public PythonFunction(CodeContext context, FunctionCode code, IAttributesCollection globals) {
+        public PythonFunction(CodeContext context, FunctionCode code, IAttributesCollection globals, string name, PythonTuple defaults, PythonTuple closure) {
             throw new NotImplementedException();
         }
 
-        internal PythonFunction(CodeContext/*!*/ context, string/*!*/ name, Delegate target, string[] argNames, object[] defaults, FunctionAttributes flags) {
-            Assert.NotNull(context, name);
+        internal PythonFunction(CodeContext/*!*/ context, Delegate target, FunctionInfo funcInfo, object modName, object[] defaults, MutableTuple closure) {
+            Assert.NotNull(context, funcInfo);
             Assert.NotNull(context.Scope);
 
-            _name = name;
+            _funcInfo = funcInfo;
             _context = context;
-            _argNames = argNames ?? ArrayUtils.EmptyStrings;
             _defaults = defaults ?? ArrayUtils.EmptyObjects;
-            _flags = flags;
-            _nparams = _argNames.Length;
             Target = target;
-            _name = name;
 
-            if ((flags & FunctionAttributes.KeywordDictionary) != 0) {
-                _nparams--;
-            }
-
-            if ((flags & FunctionAttributes.ArgumentList) != 0) {
-                _nparams--;
-            }
-
-            Debug.Assert(_defaults.Length <= _nparams);
-
-            object modName;
-            if (context.GlobalScope.Dict.TryGetValue(Symbols.Name, out modName)) {
+            Debug.Assert(_defaults.Length <= _funcInfo.ParameterCount);
+            if (modName != Uninitialized.Instance) {
                 _module = modName;
             }
-            
+
+            Closure = closure;
             _compat = CalculatedCachedCompat();
-            _code = new FunctionCode(this);
+            _code = new FunctionCode(this, funcInfo);
         }
 
         #region Public APIs
@@ -127,24 +115,15 @@ namespace IronPython.Runtime {
 
         public PythonTuple func_closure {
             get {
-                Scope curScope = Context.Scope;
-                List<ClosureCell> cells = new List<ClosureCell>();
-                while (curScope != null) {
-                    // Check for LocalsDictionary because we don't want to get
-                    // the global scope here
-                    LocalsDictionary funcEnv = curScope.Dict as LocalsDictionary;
-                    if (funcEnv != null) {
-                        foreach (SymbolId si in funcEnv.GetExtraKeys()) {
-                            cells.Add(new ClosureCell(curScope.Dict[si]));
-                        }
+                var storage = ((Context.Scope.Dict as PythonDictionary)._storage as RuntimeVariablesDictionaryStorage);
+                if (storage != null) {
+                    object[] res = new object[storage.Names.Length];
+                    for (int i = 0; i < res.Length; i++) {
+                        res[i] = storage.GetCell(i);
                     }
-
-                    curScope = curScope.Parent;
+                    return PythonTuple.MakeTuple(res);
                 }
 
-                if (cells.Count != 0) {
-                    return PythonTuple.MakeTuple(cells.ToArray());
-                }
                 return null;
             }
             set {
@@ -158,10 +137,13 @@ namespace IronPython.Runtime {
         }
 
         public string func_name {
-            get { return _name; }
+            get { return _funcInfo.Name; }
             set {
-                if (_name == null) throw PythonOps.TypeError("func_name must be set to a string object");
-                _name = value;
+                if (value == null) {
+                    throw PythonOps.TypeError("func_name must be set to a string object");
+                }
+
+                _funcInfo = _funcInfo.SetName(value);
             }
         }
 
@@ -180,8 +162,8 @@ namespace IronPython.Runtime {
         }
 
         public object __doc__ {
-            get { return _doc; }
-            set { _doc = value; }
+            get { return _funcInfo.Documentation; }
+            set { _funcInfo = _funcInfo.SetDoc(value); }
         }
 
         public object func_doc {
@@ -217,7 +199,7 @@ namespace IronPython.Runtime {
         #region Internal APIs
 
         internal string[] ArgNames {
-            get { return _argNames; }
+            get { return _funcInfo.ArgNames; }
         }
 
         internal CodeContext Context {
@@ -229,7 +211,7 @@ namespace IronPython.Runtime {
         internal string GetSignatureString() {
             StringBuilder sb = new StringBuilder(__name__);
             sb.Append('(');
-            for (int i = 0; i < _argNames.Length; i++) {
+            for (int i = 0; i < _funcInfo.ArgNames.Length; i++) {
                 if (i != 0) sb.Append(", ");
 
                 if (i == ExpandDictPosition) {
@@ -303,7 +285,7 @@ namespace IronPython.Runtime {
         /// </summary>
         internal bool IsGeneratorWithExceptionHandling {
             get {
-                return ((_flags & (FunctionAttributes.CanSetSysExcInfo | FunctionAttributes.Generator)) == (FunctionAttributes.CanSetSysExcInfo | FunctionAttributes.Generator));
+                return ((_funcInfo.Flags & (FunctionAttributes.CanSetSysExcInfo | FunctionAttributes.Generator)) == (FunctionAttributes.CanSetSysExcInfo | FunctionAttributes.Generator));
             }
         }
 
@@ -322,8 +304,8 @@ namespace IronPython.Runtime {
         /// </summary>
         internal int ExpandListPosition {
             get {
-                if ((_flags & FunctionAttributes.ArgumentList) != 0) {
-                    return _nparams;
+                if ((_funcInfo.Flags & FunctionAttributes.ArgumentList) != 0) {
+                    return _funcInfo.ParameterCount;
                 }
 
                 return -1;
@@ -335,11 +317,11 @@ namespace IronPython.Runtime {
         /// </summary>
         internal int ExpandDictPosition {
             get {
-                if ((_flags & FunctionAttributes.KeywordDictionary) != 0) {
-                    if ((_flags & FunctionAttributes.ArgumentList) != 0) {
-                        return _nparams + 1;
+                if ((_funcInfo.Flags & FunctionAttributes.KeywordDictionary) != 0) {
+                    if ((_funcInfo.Flags & FunctionAttributes.ArgumentList) != 0) {
+                        return _funcInfo.ParameterCount + 1;
                     }
-                    return _nparams;
+                    return _funcInfo.ParameterCount;
                 }
                 return -1;
             }
@@ -350,7 +332,7 @@ namespace IronPython.Runtime {
         /// </summary>
         internal int NormalArgumentCount {
             get {
-                return _nparams;
+                return _funcInfo.ParameterCount;
             }
         }
 
@@ -359,13 +341,13 @@ namespace IronPython.Runtime {
         /// </summary>
         internal int ExtraArguments {
             get {
-                if ((_flags & FunctionAttributes.ArgumentList) != 0) {
-                    if ((_flags & FunctionAttributes.KeywordDictionary) != 0) {
+                if ((_funcInfo.Flags & FunctionAttributes.ArgumentList) != 0) {
+                    if ((_funcInfo.Flags & FunctionAttributes.KeywordDictionary) != 0) {
                         return 2;
                     }
                     return 1;
 
-                } else if ((_flags & FunctionAttributes.KeywordDictionary) != 0) {
+                } else if ((_funcInfo.Flags & FunctionAttributes.KeywordDictionary) != 0) {
                     return 1;
                 }
                 return 0;
@@ -374,7 +356,7 @@ namespace IronPython.Runtime {
 
         internal FunctionAttributes Flags {
             get {
-                return _flags;
+                return _funcInfo.Flags;
             }
         }
 
@@ -424,7 +406,7 @@ namespace IronPython.Runtime {
                     throw PythonOps.TypeError("function's dictionary may not be deleted");
                 case "__doc__":
                 case "func_doc":
-                    _doc = null;
+                    _funcInfo = _funcInfo.SetDoc(null);
                     return true;
                 case "func_defaults":
                     _defaults = ArrayUtils.EmptyObjects;
@@ -547,25 +529,40 @@ namespace IronPython.Runtime {
 
     [PythonType("cell")]
     public sealed class ClosureCell : ICodeFormattable, IValueEquality {
-        private object _value;
+        [PythonHidden]
+        public object Value;
 
         internal ClosureCell(object value) {
-            _value = value;
+            Value = value;
         }
 
         public object cell_contents {
             get {
-                return _value;
+                if (Value == Uninitialized.Instance) {
+                    throw PythonOps.ValueError("cell is empty");
+                }
+
+                return Value;
             }
         }
 
         #region ICodeFormattable Members
 
         public string/*!*/ __repr__(CodeContext/*!*/ context) {
-            return String.Format("<cell at {0}: {1} object at {2}>",
+            return String.Format("<cell at {0}: {1}>",
                 IdDispenser.GetId(this),
-                PythonTypeOps.GetName(_value),
-                IdDispenser.GetId(_value));
+                GetContentsRepr()
+                );
+        }
+
+        private string GetContentsRepr() {
+            if (Value == Uninitialized.Instance) {
+                return "empty";
+            }
+
+            return String.Format("{0} object at {1}",
+                PythonTypeOps.GetName(Value),
+                IdDispenser.GetId(Value));
         }
 
         #endregion
@@ -586,7 +583,72 @@ namespace IronPython.Runtime {
             ClosureCell cc = other as ClosureCell;
             if (cc == null) throw PythonOps.TypeError("cell.__cmp__(x,y) expected cell, got {0}", PythonTypeOps.GetName(other));
 
-            return PythonOps.Compare(_value, cc._value);
+            return PythonOps.Compare(Value, cc.Value);
         }
+    }
+
+    public sealed class FunctionInfo : IExpressionSerializable {
+        public readonly string Name;
+        public readonly object Documentation;
+        public readonly string[] ArgNames;
+        public readonly FunctionAttributes Flags;
+        public readonly int LineNumber;
+        public readonly string Path;
+        public readonly LambdaExpression Code;
+        public readonly bool ShouldInterpret;
+        public readonly bool EmitDebugSymbols;
+
+        public FunctionInfo(string name, object documentation, string[] argNames, FunctionAttributes flags, int lineNumber, string path, LambdaExpression code, bool shouldInterpret) {
+            Name = name;
+            Documentation = documentation;
+            ArgNames = argNames;
+            Flags = flags;
+            LineNumber = lineNumber;
+            Path = path;
+            Code = code;
+            ShouldInterpret = shouldInterpret;
+        }
+
+        public int ParameterCount {
+            get {
+                int nparams = ArgNames.Length;
+                if ((Flags & FunctionAttributes.KeywordDictionary) != 0) {
+                    nparams--;
+                }
+
+                if ((Flags & FunctionAttributes.ArgumentList) != 0) {
+                    nparams--;
+                }
+
+                return nparams;
+            }
+        }
+
+        public FunctionInfo SetName(string name) {
+            return new FunctionInfo(name, Documentation, ArgNames, Flags, LineNumber, Path, Code, ShouldInterpret);
+        }
+
+        public FunctionInfo SetDoc(object doc) {
+            return new FunctionInfo(Name, doc, ArgNames, Flags, LineNumber, Path, Code, ShouldInterpret);
+        }
+
+        #region IExpressionSerializable Members
+
+        public Expression CreateExpression() {
+            return Expression.Call(
+                typeof(PythonOps).GetMethod("MakeFunctionInfo"),
+                Ast.Constant(Name),
+                Ast.Constant(Documentation),
+                Ast.NewArrayInit(
+                    typeof(string),
+                    ArrayUtils.ConvertAll<string, Expression>(ArgNames, (val) => Ast.Constant(val))
+                ),
+                Ast.Constant(Flags),
+                Ast.Constant(LineNumber),
+                Ast.Constant(Path)
+            );
+        }
+
+        #endregion
     }
 }

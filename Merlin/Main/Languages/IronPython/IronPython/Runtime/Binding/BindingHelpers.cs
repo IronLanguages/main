@@ -14,19 +14,21 @@
  * ***************************************************************************/
 
 using System;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Linq.Expressions;
 using System.Dynamic;
-using IronPython.Runtime.Operations;
-using IronPython.Runtime.Types;
+using System.Linq.Expressions;
+
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+
+using IronPython.Runtime.Operations;
+using IronPython.Runtime.Types;
+
 using Ast = System.Linq.Expressions.Expression;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
-using System.Collections.Generic;
+using System.Reflection;
 
 namespace IronPython.Runtime.Binding {
     
@@ -39,14 +41,14 @@ namespace IronPython.Runtime.Binding {
         /// 
         /// Succeeds if the MetaObject is a BuiltinFunction or BuiltinMethodDescriptor.
         /// </summary>
-        internal static bool TryGetStaticFunction(BinderState/*!*/ state, SymbolId op, DynamicMetaObject/*!*/ mo, out BuiltinFunction function) {
+        internal static bool TryGetStaticFunction(PythonContext/*!*/ state, SymbolId op, DynamicMetaObject/*!*/ mo, out BuiltinFunction function) {
             PythonType type = MetaPythonObject.GetPythonType(mo);
             function = null;
             if (op != SymbolId.Empty) {
                 PythonTypeSlot xSlot;
                 object val;
-                if (type.TryResolveSlot(state.Context, op, out xSlot) &&
-                    xSlot.TryGetValue(state.Context, null, type, out val)) {
+                if (type.TryResolveSlot(state.SharedContext, op, out xSlot) &&
+                    xSlot.TryGetValue(state.SharedContext, null, type, out val)) {
                     function = TryConvertToBuiltinFunction(val);
                     if (function == null) return false;
                 }
@@ -63,18 +65,16 @@ namespace IronPython.Runtime.Binding {
             return false;
         }
 
-        internal static DynamicMetaObject/*!*/ FilterShowCls(Expression/*!*/ codeContext, DynamicMetaObjectBinder/*!*/ action, DynamicMetaObject/*!*/ res, Expression/*!*/ failure) {
+        internal static DynamicMetaObject/*!*/ FilterShowCls(DynamicMetaObject/*!*/ codeContext, DynamicMetaObjectBinder/*!*/ action, DynamicMetaObject/*!*/ res, Expression/*!*/ failure) {
             if (action is IPythonSite) {
-                Type resType = BindingHelpers.GetCompatibleType(res.Expression.Type, failure.Type);
-
                 return new DynamicMetaObject(
                     Ast.Condition(
                         Ast.Call(
                             typeof(PythonOps).GetMethod("IsClsVisible"),
-                            codeContext
+                            codeContext.Expression
                         ),
-                        AstUtils.Convert(res.Expression, resType),
-                        AstUtils.Convert(failure, resType)
+                        AstUtils.Convert(res.Expression, typeof(object)),
+                        AstUtils.Convert(failure, typeof(object))
 
                     ),
                     res.Restrictions
@@ -118,7 +118,7 @@ namespace IronPython.Runtime.Binding {
             return CallInfoToSignature(ca.CallInfo);
         }
 
-        public static Expression/*!*/ Invoke(Expression codeContext, BinderState/*!*/ binder, Type/*!*/ resultType, CallSignature signature, params Expression/*!*/[]/*!*/ args) {
+        public static Expression/*!*/ Invoke(Expression codeContext, PythonContext/*!*/ binder, Type/*!*/ resultType, CallSignature signature, params Expression/*!*/[]/*!*/ args) {
             return Ast.Dynamic(
                 binder.Invoke(
                     signature
@@ -143,13 +143,13 @@ namespace IronPython.Runtime.Binding {
                 action.FallbackInvoke(
                     new DynamicMetaObject(
                         Binders.Get(
-                            BinderState.GetCodeContext(action),
-                            BinderState.GetBinderState(action),
+                            PythonContext.GetCodeContext(action),
+                            PythonContext.GetPythonContext(action),
                             typeof(object),
                             action.Name,
                             target.Expression
                         ),
-                        BindingRestrictions.Empty
+                        BindingRestrictionsHelpers.GetRuntimeTypeRestriction(target)
                     ),
                     args,
                     null
@@ -188,10 +188,10 @@ namespace IronPython.Runtime.Binding {
 
         internal static Type/*!*/ GetCompatibleType(/*!*/Type t, Type/*!*/ otherType) {
             if (t != otherType) {
-                if (t.IsSubclassOf(otherType)) {
+                if (t.IsAssignableFrom(otherType)) {
                     // subclass
                     t = otherType;
-                } else if (otherType.IsSubclassOf(t)) {
+                } else if (otherType.IsAssignableFrom(t)) {
                     // keep t
                 } else {
                     // incompatible, both go to object
@@ -229,10 +229,7 @@ namespace IronPython.Runtime.Binding {
             if (typeTest != null) {
                 if (typeTest.Test != null) {
                     // add the test and a validator if persent
-                    Expression defer = operation.Defer(args).Expression;
-                    if (deferType != null) {
-                        defer = AstUtils.Convert(defer, deferType);
-                    }
+                    Expression defer = operation.GetUpdateExpression(deferType ?? typeof(object));
 
                     Type bestType = BindingHelpers.GetCompatibleType(defer.Type, res.Expression.Type);
 
@@ -242,12 +239,8 @@ namespace IronPython.Runtime.Binding {
                             AstUtils.Convert(res.Expression, bestType),
                             AstUtils.Convert(defer, bestType)
                         ),
-                        res.Restrictions // ,
-                        //typeTest.Validator
+                        res.Restrictions 
                     );
-                } else if (typeTest.Validator != null) {
-                    // just add the validator
-                    res = new DynamicMetaObject(res.Expression, res.Restrictions); // , typeTest.Validator
                 }
             } 
             
@@ -263,14 +256,33 @@ namespace IronPython.Runtime.Binding {
             return res;
         }
         
-        internal static Expression MakeTypeTests(params DynamicMetaObject/*!*/[] args) {
-            Expression typeTest = null;
+        internal static ValidationInfo/*!*/ GetValidationInfo(DynamicMetaObject/*!*/ tested, PythonType type) {
+            return new ValidationInfo(
+                Ast.AndAlso(
+                    Ast.TypeEqual(tested.Expression, type.UnderlyingSystemType),
+                    CheckTypeVersion(
+                        AstUtils.Convert(tested.Expression, type.UnderlyingSystemType), 
+                        type.Version
+                    )
+                )
+            );
+        }
 
+        internal static ValidationInfo/*!*/ GetValidationInfo(params DynamicMetaObject/*!*/[]/*!*/ args) {
+            Expression typeTest = null;
             for (int i = 0; i < args.Length; i++) {
                 if (args[i].HasValue) {
                     IPythonObject val = args[i].Value as IPythonObject;
                     if (val != null) {
-                        Expression test = CheckTypeVersion(args[i].Expression, val.PythonType.Version);
+                        Expression test = BindingHelpers.CheckTypeVersion(
+                            AstUtils.Convert(args[i].Expression, val.GetType()),
+                            val.PythonType.Version
+                        );
+
+                        test = Ast.AndAlso(
+                            Ast.TypeEqual(args[i].Expression, val.GetType()),
+                            test
+                        );
 
                         if (typeTest != null) {
                             typeTest = Ast.AndAlso(typeTest, test);
@@ -281,100 +293,28 @@ namespace IronPython.Runtime.Binding {
                 }
             }
 
-
-            return typeTest;
+            return new ValidationInfo(typeTest);
         }
 
-        internal static MethodCallExpression/*!*/ CheckTypeVersion(Expression/*!*/ tested, int version) {
-            return Ast.Call(
-                typeof(PythonOps).GetMethod("CheckTypeVersion"),
-                AstUtils.Convert(tested, typeof(object)),
-                Ast.Constant(version)
-            );
-        }
-
-        internal static ValidationInfo/*!*/ GetValidationInfo(Expression/*!*/ tested, PythonType type) {
-            int version = type.Version;
-
-            return new ValidationInfo(
-                Ast.Call(
+        private static MethodCallExpression/*!*/ CheckTypeVersion(Expression/*!*/ tested, int version) {
+            FieldInfo fi = tested.Type.GetField(NewTypeMaker.ClassFieldName);
+            if (fi == null) {
+                return Ast.Call(
                     typeof(PythonOps).GetMethod("CheckTypeVersion"),
                     AstUtils.Convert(tested, typeof(object)),
-                    Ast.Constant(version)
+                    AstUtils.Constant(version)
+                );
+            }
+
+            Debug.Assert(tested.Type != typeof(object));
+            return Ast.Call(
+                typeof(PythonOps).GetMethod("CheckSpecificTypeVersion"),
+                Ast.Field(
+                    tested,
+                    fi
                 ),
-                new PythonTypeValidator(type, version).Validate
+                AstUtils.Constant(version)
             );
-        }
-
-        public static ValidationInfo GetValidationInfo(DynamicMetaObject metaSelf, params DynamicMetaObject[] args) {
-            Func<bool> validation = null;
-            Expression typeTest = null;
-            if (metaSelf != null) {
-                IPythonObject self = metaSelf.Value as IPythonObject;
-                if (self != null) {
-                    PythonType pt = self.PythonType;
-                    int version = pt.Version;
-
-                    typeTest = BindingHelpers.CheckTypeVersion(metaSelf.Expression, version);
-                    validation = ValidatorAnd(validation, new PythonTypeValidator(pt, version).Validate);
-                }
-            }
-
-            for (int i = 0; i < args.Length; i++) {
-                if (args[i].HasValue) {
-                    IPythonObject val = args[i].Value as IPythonObject;
-                    if (val != null) {
-                        Expression test = BindingHelpers.CheckTypeVersion(args[i].Expression, val.PythonType.Version);
-                        PythonType pt = val.PythonType;
-                        int version = pt.Version;
-
-                        validation = ValidatorAnd(validation, new PythonTypeValidator(pt, version).Validate);
-                        
-                        if (typeTest != null) {
-                            typeTest = Ast.AndAlso(typeTest, test);
-                        } else {
-                            typeTest = test;
-                        }
-                    }
-                }
-            }
-
-            return new ValidationInfo(typeTest, validation);
-        }
-
-        private static Func<bool> ValidatorAnd(Func<bool> self, Func<bool> other) {
-            if (self == null) {
-                return other;
-            } else if (other == null) {
-                return self;
-            }
-
-            return delegate() {
-                return self() && other();
-            };
-        }
-        
-        internal class PythonTypeValidator {
-            /// <summary>
-            /// Weak reference to the dynamic type. Since they can be collected,
-            /// we need to be able to let that happen and then disable the rule.
-            /// </summary>
-            private WeakReference _pythonType;
-
-            /// <summary>
-            /// Expected version of the instance's dynamic type
-            /// </summary>
-            private int _version;
-
-            public PythonTypeValidator(PythonType pythonType, int version) {
-                this._pythonType = new WeakReference(pythonType);
-                this._version = version;
-            }
-
-            public bool Validate() {
-                PythonType dt = _pythonType.Target as PythonType;
-                return dt != null && dt.Version == _version;
-            }
         }
 
         /// <summary>
@@ -400,7 +340,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         internal static Expression CreateBinderStateExpression() {
-            return AstUtils.CodeContext();
+            return Compiler.Ast.ArrayGlobalAllocator._globalContext;
         }
 
         /// <summary>
@@ -428,9 +368,10 @@ namespace IronPython.Runtime.Binding {
             return Ast.Throw(
                 Ast.Call(
                     typeof(PythonOps).GetMethod("TypeErrorForProtectedMember"),
-                    Ast.Constant(type),
-                    Ast.Constant(name)
-                )
+                    AstUtils.Constant(type),
+                    AstUtils.Constant(name)
+                ),
+                typeof(object)
             );
         }
 
@@ -439,9 +380,10 @@ namespace IronPython.Runtime.Binding {
                 Ast.Throw(
                     Ast.Call(
                         typeof(PythonOps).GetMethod("TypeErrorForGenericMethod"),
-                        Ast.Constant(type),
-                        Ast.Constant(name)
-                    )
+                        AstUtils.Constant(type),
+                        AstUtils.Constant(name)
+                    ),
+                    typeof(object)
                 ),
                 restrictions
             );
@@ -454,16 +396,29 @@ namespace IronPython.Runtime.Binding {
 
             return true;
         }
+
+        internal static DynamicMetaObject AddPythonBoxing(DynamicMetaObject res) {
+            if (res.Expression.Type.IsValueType) {
+                // Use Python boxing rules if we're return a value type
+                res = new DynamicMetaObject(
+                    AddPythonBoxing(res.Expression),
+                    res.Restrictions
+                );
+            }
+            return res;
+        }
+
+        internal static Expression AddPythonBoxing(Expression res) {
+            return AstUtils.Convert(res, typeof(object));
+        }
     }
 
     internal class ValidationInfo {
         public readonly Expression Test;
-        public readonly Func<bool> Validator;
-        public static readonly ValidationInfo Empty = new ValidationInfo(null, null);
+        public static readonly ValidationInfo Empty = new ValidationInfo(null);
 
-        public ValidationInfo(Expression test, Func<bool> validator) {
+        public ValidationInfo(Expression test) {
             Test = test;
-            Validator = validator;
         }
     }
 }

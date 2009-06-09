@@ -53,11 +53,11 @@ namespace IronRuby.Builtins {
         }
 
         [RubyConstructor]
-        public static object CreateArray(ConversionStorage<Union<IList, int>>/*!*/ toAryToInt, BlockParam block, RubyClass/*!*/ self, 
-            [NotNull]object/*!*/ arrayOrSize) {
+        public static object CreateArray(ConversionStorage<Union<IList, int>>/*!*/ toAryToInt,
+            BlockParam block, RubyClass/*!*/ self, [NotNull]object/*!*/ arrayOrSize) {
 
-            var site = toAryToInt.GetSite(CompositeConversionAction.ToAryToInt);
-            var union = site.Target(site, self.Context, arrayOrSize);
+            var site = toAryToInt.GetSite(CompositeConversionAction.Make(toAryToInt.Context, CompositeConversion.ToAryToInt));
+            var union = site.Target(site, arrayOrSize);
 
             if (union.First != null) {
                 // block ignored
@@ -71,12 +71,13 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("initialize", RubyMethodAttributes.PrivateInstance)]
         public static object Reinitialize(ConversionStorage<Union<IList, int>>/*!*/ toAryToInt,
-            RubyContext/*!*/ context, BlockParam block, RubyArray/*!*/ self, 
-            [NotNull]object/*!*/ arrayOrSize) {
+            BlockParam block, RubyArray/*!*/ self, [NotNull]object/*!*/ arrayOrSize) {
+
+            var context = toAryToInt.Context;
             RubyUtils.RequiresNotFrozen(context, self);
 
-            var site = toAryToInt.GetSite(CompositeConversionAction.ToAryToInt);
-            var union = site.Target(site, context, arrayOrSize);
+            var site = toAryToInt.GetSite(CompositeConversionAction.Make(context, CompositeConversion.ToAryToInt));
+            var union = site.Target(site, arrayOrSize);
             
             if (union.First != null) {
                 // block ignored
@@ -101,11 +102,23 @@ namespace IronRuby.Builtins {
             return self;
         }
 
-        private static object CreateArray([NotNull]BlockParam/*!*/ block, int size) {
+        private static object CreateArray(BlockParam/*!*/ block, int size) {
             return Reinitialize(block, new RubyArray(), size);
         }
 
-        private static object Reinitialize([NotNull]BlockParam/*!*/ block, RubyArray/*!*/ self, int size) {
+        [RubyConstructor]
+        public static RubyArray/*!*/ CreateArray(BlockParam/*!*/ block, RubyClass/*!*/ self, [DefaultProtocol]int size, object value) {
+            return Reinitialize(block, new RubyArray(), size, value);
+        }
+
+        [RubyMethod("initialize", RubyMethodAttributes.PrivateInstance)]
+        public static RubyArray/*!*/ Reinitialize(BlockParam/*!*/ block, RubyArray/*!*/ self, int size, object value) {
+            block.RubyContext.ReportWarning("block supersedes default value argument");
+            Reinitialize(block, self, size);
+            return self;
+        }
+
+        private static object Reinitialize(BlockParam/*!*/ block, RubyArray/*!*/ self, int size) {
             if (size < 0) {
                 throw RubyExceptions.CreateArgumentError("negative array size");
             }
@@ -158,8 +171,12 @@ namespace IronRuby.Builtins {
         #endregion
 
         [RubyMethod("to_a")]
-        [RubyMethod("to_ary")]
         public static RubyArray/*!*/ ToArray(RubyArray/*!*/ self) {
+            return self is RubyArray.Subclass ? new RubyArray(self) : self;
+        }
+
+        [RubyMethod("to_ary")]
+        public static RubyArray/*!*/ ToExplicitArray(RubyArray/*!*/ self) {
             return self;
         }
 
@@ -254,13 +271,21 @@ namespace IronRuby.Builtins {
                         case 'a':
                         case 'Z':
                             count = 1;
-                            char[] cstr = Protocols.CastToString(stringCast, context, self[i]).ToString().ToCharArray();
-                            int len1 = directive.Count.HasValue ? directive.Count.Value : cstr.Length;
-                            int len2 = (len1 > cstr.Length) ? cstr.Length : len1;
-                            writer.Write(cstr, 0, len2);
-                            if (len1 > len2) {
+                            str = Protocols.CastToString(stringCast, self[i]);
+                            char[] cstr = (str == null) ? new char[0] : str.ToString().ToCharArray();
+                            int dataLen;
+                            int paddedLen;
+                            if (directive.Count.HasValue) {
+                                paddedLen = directive.Count.Value;
+                                dataLen = Math.Min(cstr.Length, paddedLen);
+                            } else {
+                                paddedLen = cstr.Length;
+                                dataLen = cstr.Length;
+                            }
+                            writer.Write(cstr, 0, dataLen);
+                            if (paddedLen > dataLen) {
                                 byte fill = (directive.Directive == 'A') ? (byte)' ' : (byte)0;
-                                for (int j = 0; j < (len1 - len2); j++) {
+                                for (int j = 0; j < (paddedLen - dataLen); j++) {
                                     writer.Write(fill);
                                 }
                             }
@@ -272,67 +297,67 @@ namespace IronRuby.Builtins {
                         case 'Q':
                         case 'q':
                             for (int j = 0; j < count; j++) {
-                                writer.Write(Protocols.CastToUInt64Unchecked(integerConversion, context, self[i + j]));
+                                writer.Write(Protocols.CastToUInt64Unchecked(integerConversion, self[i + j]));
                             }
                             break;
 
                         case 'l':
                         case 'i':
                             for (int j = 0; j < count; j++) {
-                                writer.Write(unchecked((int)Protocols.CastToUInt32Unchecked(integerConversion, context, self[i + j])));
+                                writer.Write(unchecked((int)Protocols.CastToUInt32Unchecked(integerConversion, self[i + j])));
                             }
                             break;
 
                         case 'L':
                         case 'I':
                             for (int j = 0; j < count; j++) {
-                                writer.Write(Protocols.CastToUInt32Unchecked(integerConversion, context, self[i + j]));
+                                writer.Write(Protocols.CastToUInt32Unchecked(integerConversion, self[i + j]));
                             }
                             break;
 
                         case 'N': // unsigned 4-byte big-endian
-                            WriteUInt32(integerConversion, writer, self, context, i, count, BitConverter.IsLittleEndian);
+                            WriteUInt32(integerConversion, writer, self, i, count, BitConverter.IsLittleEndian);
                             break;
 
                         case 'n': // unsigned 2-byte big-endian
-                            WriteUInt16(integerConversion, writer, self, context, i, count, BitConverter.IsLittleEndian);
+                            WriteUInt16(integerConversion, writer, self, i, count, BitConverter.IsLittleEndian);
                             break;
 
                         case 'V': // unsigned 4-byte little-endian
-                            WriteUInt32(integerConversion, writer, self, context, i, count, !BitConverter.IsLittleEndian);
+                            WriteUInt32(integerConversion, writer, self, i, count, !BitConverter.IsLittleEndian);
                             break;
 
                         case 'v': // unsigned 2-byte little-endian
-                            WriteUInt16(integerConversion, writer, self, context, i, count, !BitConverter.IsLittleEndian);
+                            WriteUInt16(integerConversion, writer, self, i, count, !BitConverter.IsLittleEndian);
                             break;
 
                         case 's':
                             for (int j = 0; j < count; j++) {
-                                writer.Write(unchecked((short)Protocols.CastToUInt32Unchecked(integerConversion, context, self[i + j])));
+                                writer.Write(unchecked((short)Protocols.CastToUInt32Unchecked(integerConversion, self[i + j])));
                             }
                             break;
 
                         case 'S':
                             for (int j = 0; j < count; j++) {
-                                writer.Write(unchecked((ushort)Protocols.CastToUInt32Unchecked(integerConversion, context, self[i + j])));
+                                writer.Write(unchecked((ushort)Protocols.CastToUInt32Unchecked(integerConversion, self[i + j])));
                             }
                             break;
 
                         case 'c':
                             for (int j = 0; j < count; j++) {
-                                writer.Write(unchecked((sbyte)Protocols.CastToUInt32Unchecked(integerConversion, context, self[i + j])));
+                                writer.Write(unchecked((sbyte)Protocols.CastToUInt32Unchecked(integerConversion, self[i + j])));
                             }
                             break;
 
                         case 'C':
                             for (int j = 0; j < count; j++) {
-                                writer.Write(unchecked((byte)Protocols.CastToUInt32Unchecked(integerConversion, context, self[i + j])));
+                                writer.Write(unchecked((byte)Protocols.CastToUInt32Unchecked(integerConversion, self[i + j])));
                             }
                             break;
 
                         case 'm':
                             count = 1;
-                            str = Protocols.CastToString(stringCast, context, self[i]);
+                            str = Protocols.CastToString(stringCast, self[i]);
                             char[] base64 = Convert.ToBase64String(str.ToByteArray()).ToCharArray();
                             for (int j = 0; j < base64.Length; j += 60) {
                                 int len = base64.Length - j;
@@ -347,7 +372,7 @@ namespace IronRuby.Builtins {
                         case 'U':
                             char[] buffer = new char[count];
                             for (int j = 0; j < count; j++) {
-                                buffer[j] = unchecked((char)Protocols.CastToUInt32Unchecked(integerConversion, context, self[i + j]));
+                                buffer[j] = unchecked((char)Protocols.CastToUInt32Unchecked(integerConversion, self[i + j]));
                             }
                             writer.Write(Encoding.UTF8.GetBytes(buffer));
                             break;
@@ -373,7 +398,7 @@ namespace IronRuby.Builtins {
                         case 'H':
                             // MRI skips null, unlike in "m" directive:
                             if (self[i] != null) {
-                                str = Protocols.CastToString(stringCast, context, self[i]);
+                                str = Protocols.CastToString(stringCast, self[i]);
                                 FromHex(writer, str, directive.Count ?? str.GetByteCount(), directive.Directive == 'h');
                             }
                             break;
@@ -391,26 +416,11 @@ namespace IronRuby.Builtins {
                 return stream.String;
             }
         }
-
-        private static void WriteUInt64(ConversionStorage<IntegerValue>/*!*/ integerConversion, 
-            BinaryWriter/*!*/ writer, RubyArray/*!*/ self, RubyContext/*!*/ context, int i, int count, bool swap) {
-            for (int j = 0; j < count; j++) {
-                uint n = Protocols.CastToUInt32Unchecked(integerConversion, context, self[i + j]);
-                if (swap) {
-                    writer.Write((byte)(n >> 24));
-                    writer.Write((byte)((n >> 16) & 0xff));
-                    writer.Write((byte)((n >> 8) & 0xff));
-                    writer.Write((byte)(n & 0xff));
-                } else {
-                    writer.Write(n);
-                }
-            }
-        }
         
         private static void WriteUInt32(ConversionStorage<IntegerValue>/*!*/ integerConversion, 
-            BinaryWriter/*!*/ writer, RubyArray/*!*/ self, RubyContext/*!*/ context, int i, int count, bool swap) {
+            BinaryWriter/*!*/ writer, RubyArray/*!*/ self, int i, int count, bool swap) {
             for (int j = 0; j < count; j++) {
-                uint n = Protocols.CastToUInt32Unchecked(integerConversion, context, self[i + j]);
+                uint n = Protocols.CastToUInt32Unchecked(integerConversion, self[i + j]);
                 if (swap) {
                     writer.Write((byte)(n >> 24));
                     writer.Write((byte)((n >> 16) & 0xff));
@@ -423,9 +433,9 @@ namespace IronRuby.Builtins {
         }
 
         private static void WriteUInt16(ConversionStorage<IntegerValue>/*!*/ integerConversion, 
-            BinaryWriter/*!*/ writer, RubyArray/*!*/ self, RubyContext/*!*/ context, int i, int count, bool swap) {
+            BinaryWriter/*!*/ writer, RubyArray/*!*/ self, int i, int count, bool swap) {
             for (int j = 0; j < count; j++) {
-                uint n = Protocols.CastToUInt32Unchecked(integerConversion, context, self[i + j]);
+                uint n = Protocols.CastToUInt32Unchecked(integerConversion, self[i + j]);
                 if (swap) {
                     writer.Write((byte)((n >> 8) & 0xff));
                     writer.Write((byte)(n & 0xff));
@@ -468,11 +478,11 @@ namespace IronRuby.Builtins {
             BinaryOpStorage/*!*/ comparisonStorage,
             BinaryOpStorage/*!*/ lessThanStorage,
             BinaryOpStorage/*!*/ greaterThanStorage,
-            RubyContext/*!*/ context, BlockParam block, RubyArray/*!*/ self) {
+            BlockParam block, RubyArray/*!*/ self) {
 
             RubyArray result = self.CreateInstance();
-            IListOps.Replace(context, result, self);
-            return SortInPlace(comparisonStorage, lessThanStorage, greaterThanStorage, context, block, result);
+            IListOps.Replace(comparisonStorage.Context, result, self);
+            return SortInPlace(comparisonStorage, lessThanStorage, greaterThanStorage, block, result);
         }
 
         [RubyMethod("sort!")]
@@ -480,7 +490,9 @@ namespace IronRuby.Builtins {
             BinaryOpStorage/*!*/ comparisonStorage,
             BinaryOpStorage/*!*/ lessThanStorage,
             BinaryOpStorage/*!*/ greaterThanStorage,            
-            RubyContext/*!*/ context, BlockParam block, RubyArray/*!*/ self) {
+            BlockParam block, RubyArray/*!*/ self) {
+
+            var context = comparisonStorage.Context;
             RubyUtils.RequiresNotFrozen(context, self);
 
             // TODO: this does more comparisons (and in a different order) than
@@ -489,7 +501,7 @@ namespace IronRuby.Builtins {
             // that behaves like Ruby's sort.
             if (block == null) {
                 self.Sort(delegate(object x, object y) {
-                    return Protocols.Compare(comparisonStorage, lessThanStorage, greaterThanStorage, context, x, y);
+                    return Protocols.Compare(comparisonStorage, lessThanStorage, greaterThanStorage, x, y);
                 });
             } else {
                 try {
@@ -504,7 +516,7 @@ namespace IronRuby.Builtins {
                             throw RubyExceptions.MakeComparisonError(context, x, y);
                         }
 
-                        return Protocols.ConvertCompareResult(lessThanStorage, greaterThanStorage, context, result);
+                        return Protocols.ConvertCompareResult(lessThanStorage, greaterThanStorage, result);
                     });
                 } catch (BreakException) {
                 }

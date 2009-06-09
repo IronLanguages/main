@@ -33,19 +33,13 @@ namespace IronPython.Runtime.Types {
     [PythonType]
     public class PythonTypeSlot {
         /// <summary>
-        /// Gets the value stored in the slot for the given instance. 
+        /// Gets the value stored in the slot for the given instance binding it to an instance if one is provided and
+        /// the slot binds to instances.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate")]
         internal virtual bool TryGetValue(CodeContext context, object instance, PythonType owner, out object value) {
             value = null;
             return false;
-        }
-
-        /// <summary>
-        /// Gets the value stored in the slot for the given instance, bound to the instance if possible
-        /// </summary>
-        internal virtual bool TryGetBoundValue(CodeContext context, object instance, PythonType owner, out object value) {
-            return TryGetValue(context, instance, owner, out value);
         }
 
         /// <summary>
@@ -71,39 +65,43 @@ namespace IronPython.Runtime.Types {
         }
 
         /// <summary>
+        /// True if generating code for gets can result in more optimal accesses.
+        /// </summary>
+        internal virtual bool CanOptimizeGets {
+            get {
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Gets an expression which is used for accessing this slot.  If the slot lookup fails the error expression
         /// is used again.
         /// 
         /// The default implementation just calls the TryGetValue method.  Subtypes of PythonTypeSlot can override
         /// this and provide a more optimal implementation.
         /// </summary>
-        internal virtual Expression/*!*/ MakeGetExpression(PythonBinder/*!*/ binder, Expression/*!*/ codeContext, Expression instance, Expression/*!*/ owner, Expression/*!*/ error) {
+        internal virtual void MakeGetExpression(PythonBinder/*!*/ binder, Expression/*!*/ codeContext, Expression instance, Expression/*!*/ owner, ConditionalBuilder/*!*/ builder) {
             ParameterExpression tmp = Ast.Variable(typeof(object), "slotTmp");
             Expression call = Ast.Call(
                  typeof(PythonOps).GetMethod("SlotTryGetValue"),
                  codeContext,
                  AstUtils.Convert(AstUtils.WeakConstant(this), typeof(PythonTypeSlot)),
-                 instance ?? Ast.Constant(null),
+                 instance ?? AstUtils.Constant(null),
                  owner,
                  tmp
             );
 
+            builder.AddVariable(tmp);
             if (!GetAlwaysSucceeds) {
-                call = Ast.Condition(
+                builder.AddCondition(
                     call,
-                    tmp,
-                    AstUtils.Convert(error, typeof(object))
+                    tmp
                 );
             } else {
-                call = Ast.Block(call, tmp);
+                builder.FinishCondition(Ast.Block(call, tmp));
             }
-
-            return Ast.Block(
-                new ParameterExpression[] { tmp },
-                call
-            );
         }
-
+        
         /// <summary>
         /// True if TryGetValue will always succeed, false if it may fail.
         /// 
@@ -114,7 +112,7 @@ namespace IronPython.Runtime.Types {
                 return false;
             }
         }
-        
+
         internal virtual bool IsSetDescriptor(CodeContext context, PythonType owner) {
             return false;
         }

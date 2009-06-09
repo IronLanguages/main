@@ -49,22 +49,31 @@ namespace IronPython.Runtime.Types {
     /// TODO: Back BuiltinFunction's by MethodGroup's.
     /// </summary>    
     [PythonType("builtin_function_or_method")]
-    public class BuiltinFunction : PythonTypeSlot, ICodeFormattable, IDynamicMetaObjectProvider, IDelegateConvertible {
-        private readonly BuiltinFunctionData/*!*/ _data;            // information describing the BuiltinFunction
-        private readonly object _instance;                          // the bound instance or null if unbound
+    public partial class BuiltinFunction : PythonTypeSlot, ICodeFormattable, IDynamicMetaObjectProvider, IDelegateConvertible, IFastInvokable  {
+        internal readonly BuiltinFunctionData/*!*/ _data;            // information describing the BuiltinFunction
+        internal readonly object _instance;                          // the bound instance or null if unbound
         private static readonly object _noInstance = new object();  
 
         #region Static factories
 
         internal static BuiltinFunction/*!*/ MakeMethod(string name, MethodBase info, Type declaringType, FunctionType ft) {
+            Debug.Assert(!info.ContainsGenericParameters);
+
             return new BuiltinFunction(name, new MethodBase[] { info }, declaringType, ft);
         }
 
         internal static BuiltinFunction/*!*/ MakeMethod(string name, MethodBase[] infos, Type declaringType, FunctionType ft) {
+            foreach (MethodBase mi in infos) {
+                if (mi.ContainsGenericParameters) {
+                    return new GenericBuiltinFunction(name, infos, declaringType, ft);
+                }
+            }
+
             return new BuiltinFunction(name, infos, declaringType, ft);
         }
 
         internal static BuiltinFunction/*!*/ MakeOrAdd(BuiltinFunction existing, string name, MethodBase mi, Type declaringType, FunctionType funcType) {
+            Debug.Assert(!mi.ContainsGenericParameters);
             PythonBinder.AssertNotExtensionType(declaringType);
 
             if (existing != null) {
@@ -75,7 +84,7 @@ namespace IronPython.Runtime.Types {
             }
         }
 
-        internal BuiltinFunction/*!*/ BindToInstance(object instance) {
+        internal virtual BuiltinFunction/*!*/ BindToInstance(object instance) {
             return new BuiltinFunction(instance, _data);
         }
 
@@ -96,7 +105,7 @@ namespace IronPython.Runtime.Types {
         /// Creates a bound built-in function.  The instance may be null for built-in functions
         /// accessed for None.
         /// </summary>
-        private BuiltinFunction(object instance, BuiltinFunctionData/*!*/ data) {
+        internal BuiltinFunction(object instance, BuiltinFunctionData/*!*/ data) {
             Assert.NotNull(data);
 
             _instance = instance;
@@ -134,11 +143,22 @@ namespace IronPython.Runtime.Types {
             storage = GetInitializedStorage(context, storage);
             
             object callable;
-            if (!GetDescriptor().TryGetBoundValue(context, instance, DynamicHelpers.GetPythonTypeFromType(DeclaringType), out callable)) {
+            if (!GetDescriptor().TryGetValue(context, instance, DynamicHelpers.GetPythonTypeFromType(DeclaringType), out callable)) {
                 callable = this;
             }
 
             return storage.Data.Target(storage.Data, context, callable, args);
+        }
+
+        internal object Call0(CodeContext context, SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object, object>>> storage, object instance) {
+            storage = GetInitializedStorage(context, storage);
+
+            object callable;
+            if (!GetDescriptor().TryGetValue(context, instance, DynamicHelpers.GetPythonTypeFromType(DeclaringType), out callable)) {
+                callable = this;
+            }
+            
+            return storage.Data.Target(storage.Data, context, callable);
         }
 
         private static SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object, object[], object>>> GetInitializedStorage(CodeContext context, SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object, object[], object>>> storage) {
@@ -148,6 +168,15 @@ namespace IronPython.Runtime.Types {
 
             if (storage.Data == null) {
                 storage.Data = PythonContext.GetContext(context).MakeSplatSite();
+            }
+            return storage;
+        }
+
+        private static SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object, object>>> GetInitializedStorage(CodeContext context, SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object, object>>> storage) {
+            if (storage.Data == null) {
+                storage.Data = CallSite<Func<CallSite, CodeContext, object, object>>.Create(
+                    PythonContext.GetContext(context).InvokeNone
+                );
             }
             return storage;
         }
@@ -211,18 +240,6 @@ namespace IronPython.Runtime.Types {
             }
 
             return bf;
-        }
-
-        internal void DictArgsHelper(IDictionary<object, object> dictArgs, object[] args, out object[] realArgs, out string[] argNames) {
-            realArgs = ArrayOps.CopyArray(args, args.Length + dictArgs.Count);
-            argNames = new string[dictArgs.Count];
-
-            int index = 0;
-            foreach (KeyValuePair<object, object> kvp in (IDictionary<object, object>)dictArgs) {
-                argNames[index] = kvp.Key as string;
-                realArgs[index + args.Length] = kvp.Value;
-                index++;
-            }
         }
 
         /// <summary>
@@ -293,7 +310,7 @@ namespace IronPython.Runtime.Types {
             return Ast.Call(
                 typeof(PythonOps).GetMethod("TestBoundBuiltinFunction"),
                 functionTarget,
-                Ast.Constant(_data, typeof(object))
+                AstUtils.Constant(_data, typeof(object))
             );
         }
         
@@ -312,8 +329,8 @@ namespace IronPython.Runtime.Types {
             }
         }
 
-        internal override Expression/*!*/ MakeGetExpression(PythonBinder/*!*/ binder, Expression/*!*/ codeContext, Expression instance, Expression/*!*/ owner, Expression/*!*/ error) {
-            return Ast.Constant(this);
+        internal override void MakeGetExpression(PythonBinder/*!*/ binder, Expression/*!*/ codeContext, Expression instance, Expression/*!*/ owner, ConditionalBuilder/*!*/ builder) {
+            builder.FinishCondition(Ast.Constant(this));
         }
 
         #endregion                
@@ -340,12 +357,19 @@ namespace IronPython.Runtime.Types {
         }
 
         internal class BindingResult {
-            public BindingTarget Target;
-            public DynamicMetaObject MetaObject;
+            public readonly BindingTarget Target;
+            public readonly DynamicMetaObject MetaObject;
+            public readonly OptimizingCallDelegate Function;
 
             public BindingResult(BindingTarget target, DynamicMetaObject meta) {
                 Target = target;
                 MetaObject = meta;
+            }
+
+            public BindingResult(BindingTarget target, DynamicMetaObject meta, OptimizingCallDelegate function) {
+                Target = target;
+                MetaObject = meta;
+                Function = function;
             }
         }
 
@@ -364,10 +388,12 @@ namespace IronPython.Runtime.Types {
         /// </summary>
         /// <param name="call">The call binder we're doing the call for</param>
         /// <param name="codeContext">An expression which points to the code context</param>
+        /// <param name="function">the meta object for the built in function</param>
+        /// <param name="hasSelf">true if we're calling with an instance</param>
         /// <param name="args">The arguments being passed to the function</param>
         /// <param name="functionRestriction">A restriction for the built-in function, method desc, etc...</param>
         /// <param name="bind">A delegate to perform the actual call to the method.</param>
-        internal DynamicMetaObject/*!*/ MakeBuiltinFunctionCall(DynamicMetaObjectBinder/*!*/ call, Expression/*!*/ codeContext, DynamicMetaObject/*!*/ function, DynamicMetaObject/*!*/[] args, bool hasSelf, bool enforceProtected, BindingRestrictions/*!*/ functionRestriction, Func<DynamicMetaObject/*!*/[]/*!*/, BindingResult/*!*/> bind) {
+        internal DynamicMetaObject/*!*/ MakeBuiltinFunctionCall(DynamicMetaObjectBinder/*!*/ call, Expression/*!*/ codeContext, DynamicMetaObject/*!*/ function, DynamicMetaObject/*!*/[] args, bool hasSelf, BindingRestrictions/*!*/ functionRestriction, Func<DynamicMetaObject/*!*/[]/*!*/, BindingResult/*!*/> bind) {
             DynamicMetaObject res = null;
 
             // produce an error if all overloads are generic
@@ -375,21 +401,95 @@ namespace IronPython.Runtime.Types {
                 return BindingHelpers.TypeErrorGenericMethod(DeclaringType, Name, functionRestriction);
             }
 
+            // if we have a user defined operator for **args then transform it into a PythonDictionary
+            DynamicMetaObject translated = TranslateArguments(call, codeContext, new DynamicMetaObject(function.Expression, functionRestriction, function.Value), args, hasSelf, Name);
+            if (translated != null) {
+                return translated;
+            }
+
             // swap the arguments if we have a reversed operator
             if (IsReversedOperator) {
                 ArrayUtils.SwapLastTwo(args);
             }
 
-            // if we have a user defined operator for **args then transform it into a PythonDictionary
+            // do the appropriate calling logic
+            BindingResult result = bind(args);
+
+            // validate the result
+            BindingTarget target = result.Target;
+            res = result.MetaObject;
+            
+            if (target.Method != null && target.Method.IsProtected()) {
+                // report an error when calling a protected member
+                res = new DynamicMetaObject(
+                    BindingHelpers.TypeErrorForProtectedMember(
+                        target.Method.DeclaringType,
+                        target.Method.Name
+                    ),
+                    res.Restrictions
+                );
+            } else if (IsBinaryOperator && args.Length == 2 && IsThrowException(res.Expression)) {
+                // Binary Operators return NotImplemented on failure.
+                res = new DynamicMetaObject(
+                    Ast.Property(null, typeof(PythonOps), "NotImplemented"),
+                    res.Restrictions
+                );
+            } else if (target.Method != null) {
+                // Add profiling information for this builtin function, if applicable
+                IPythonSite pythonSite = (call as IPythonSite);
+                if (pythonSite != null) {
+                    var pc = pythonSite.Context;
+                    var po = pc.Options as PythonOptions;
+                    if (po != null && po.EnableProfiler) {
+                        Profiler profiler = Profiler.GetProfiler(pc);
+                        res = new DynamicMetaObject(
+                            profiler.AddProfiling(res.Expression, target.Method),
+                            res.Restrictions
+                        );
+                    }
+                }
+            }
+
+            // add any warnings that are applicable for calling this function
+            WarningInfo info;
+
+            if (target.Method != null && BindingWarnings.ShouldWarn(PythonContext.GetPythonContext(call).Binder, target.Method, out info)) {
+                res = info.AddWarning(codeContext, res);
+            }            
+
+            // finally add the restrictions for the built-in function and return the result.
+            res = new DynamicMetaObject(
+                res.Expression,
+                functionRestriction.Merge(res.Restrictions)
+            );
+
+            // The function can return something typed to boolean or int.
+            // If that happens, we need to apply Python's boxing rules.
+            if (res.Expression.Type.IsValueType) {
+                res = BindingHelpers.AddPythonBoxing(res);
+            } else if (res.Expression.Type == typeof(void)) {
+                res = new DynamicMetaObject(
+                    Expression.Block(
+                        res.Expression,
+                        Expression.Constant(null)
+                    ),
+                    res.Restrictions
+                );
+            }
+
+            return res;
+        }
+
+        internal static DynamicMetaObject TranslateArguments(DynamicMetaObjectBinder call, Expression codeContext, DynamicMetaObject function, DynamicMetaObject/*!*/[] args, bool hasSelf, string name) {
             CallSignature sig = BindingHelpers.GetCallSignature(call);
             if (sig.HasDictionaryArgument()) {
                 int index = sig.IndexOf(ArgumentType.Dictionary);
                 if (hasSelf) {
-                    index++;
+                    args = ArrayUtils.RemoveFirst(args);
                 }
 
                 DynamicMetaObject dict = args[index];
-                
+
                 if (!(dict.Value is IDictionary)) {
                     // The DefaultBinder only handles types that implement IDictionary.  Here we have an
                     // arbitrary user-defined mapping type.  We'll convert it into a PythonDictionary
@@ -402,10 +502,10 @@ namespace IronPython.Runtime.Types {
                            typeof(PythonOps).GetMethod("UserMappingToPythonDictionary"),
                            codeContext,
                            args[index].Expression,
-                           Ast.Constant(Name)
+                           AstUtils.Constant(name)
                         ),
                         BindingRestrictionsHelpers.GetRuntimeTypeRestriction(dict.Expression, dict.GetLimitType()),
-                        PythonOps.UserMappingToPythonDictionary(BinderState.GetBinderState(call).Context, dict.Value, Name)
+                        PythonOps.UserMappingToPythonDictionary(PythonContext.GetPythonContext(call).SharedContext, dict.Value, name)
                     );
 
                     if (call is IPythonSite) {
@@ -426,55 +526,167 @@ namespace IronPython.Runtime.Types {
                 }
             }
 
+            if (sig.HasListArgument()) {
+                int index = sig.IndexOf(ArgumentType.List);
+                if (hasSelf) {
+                    args = ArrayUtils.RemoveFirst(args);
+                }
+
+                DynamicMetaObject str = args[index];
+
+                 // TODO: ANything w/ __iter__ that's not an IList<object>
+                if (str.Value is string || 
+                    str.Value is XRange) {
+                    // The DefaultBinder only handles types that implement IList<object>.  Here we have a
+                    // string.  We'll convert it into a tuple
+                    // and then have an embedded dynamic site pass that tuple through to the default
+                    // binder.
+                    DynamicMetaObject[] dynamicArgs = ArrayUtils.Insert(function, args);
+
+                    dynamicArgs[index + 1] = new DynamicMetaObject(
+                        Expression.Call(
+                           typeof(PythonOps).GetMethod("MakeTupleFromSequence"),
+                           args[index].Expression
+                        ),
+                        BindingRestrictions.Empty,
+                        PythonOps.MakeTupleFromSequence(str.Value)
+                    );
+
+                    if (call is IPythonSite) {
+                        dynamicArgs = ArrayUtils.Insert(
+                            new DynamicMetaObject(codeContext, BindingRestrictions.Empty),
+                            dynamicArgs
+                        );
+                    }
+
+                    return new DynamicMetaObject(
+                        Ast.Dynamic(
+                            call,
+                            typeof(object),
+                            DynamicUtils.GetExpressions(dynamicArgs)
+                        ),
+                        function.Restrictions.Merge(
+                            BindingRestrictions.Combine(args).Merge(BindingRestrictionsHelpers.GetRuntimeTypeRestriction(str.Expression, str.GetLimitType()))
+                        )
+                    );
+                }
+
+            }
+            return null;
+        }
+
+        private static bool IsThrowException(Expression expr) {
+            if (expr.NodeType == ExpressionType.Throw) {
+                return true;
+            } else if (expr.NodeType == ExpressionType.Convert) {
+                return IsThrowException(((UnaryExpression)expr).Operand);
+            } else if (expr.NodeType == ExpressionType.Block) {
+                foreach (Expression e in ((BlockExpression)expr).Expressions) {
+                    if (IsThrowException(e)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        internal KeyValuePair<OptimizingCallDelegate, Type[]> MakeBuiltinFunctionDelegate(DynamicMetaObjectBinder/*!*/ call, Expression/*!*/ codeContext, DynamicMetaObject/*!*/[] args, bool hasSelf, Func<DynamicMetaObject/*!*/[]/*!*/, BindingResult/*!*/> bind) {
+            OptimizingCallDelegate res = null;
+
+            // produce an error if all overloads are generic
+            if (IsOnlyGeneric) {
+                return new KeyValuePair<OptimizingCallDelegate, Type[]>(
+                    delegate(object[] callArgs, out bool shouldOptimize) {
+                        shouldOptimize = false;
+                        throw PythonOps.TypeErrorForGenericMethod(DeclaringType, Name);
+                    }, 
+                    null);
+            }
+
+            // swap the arguments if we have a reversed operator
+            if (IsReversedOperator) {
+                ArrayUtils.SwapLastTwo(args);
+            }
+
+            // if we have a user defined operator for **args then transform it into a PythonDictionary (not supported here)
+            Debug.Assert(!BindingHelpers.GetCallSignature(call).HasDictionaryArgument());
+
             // do the appropriate calling logic
             BindingResult result = bind(args);
 
             // validate the result
             BindingTarget target = result.Target;
-            res = result.MetaObject;
+            res = result.Function;
 
-            // BUG: enforceProtected should alwyas be enforced, but we have some tests that depend upon it not being enforced.
-            if (enforceProtected && target.Method != null && (target.Method.IsFamily || target.Method.IsFamilyOrAssembly)) {
+            if (target.Method != null && target.Method.IsProtected()) {
+                MethodBase method = target.Method;
                 // report an error when calling a protected member
-                res = new DynamicMetaObject(
-                    BindingHelpers.TypeErrorForProtectedMember(
-                        target.Method.DeclaringType,
-                        target.Method.Name
-                    ),
-                    res.Restrictions
-                );
-            } else if (IsBinaryOperator && args.Length == 2 && res.Expression.NodeType == ExpressionType.Throw) {
-                // Binary Operators return NotImplemented on failure.
-                res = new DynamicMetaObject(
-                    Ast.Property(null, typeof(PythonOps), "NotImplemented"),
-                    res.Restrictions
-                );
+                res = delegate(object[] callArgs, out bool shouldOptimize) { 
+                    shouldOptimize = false;
+                    throw PythonOps.TypeErrorForProtectedMember(method.DeclaringType, method.Name);
+                };
+            } else if (result.MetaObject.Expression.NodeType == ExpressionType.Throw) {
+                if (IsBinaryOperator && args.Length == 2) {
+                    // Binary Operators return NotImplemented on failure.
+                    res = delegate(object[] callArgs, out bool shouldOptimize) {
+                        shouldOptimize = false;
+                        return PythonOps.NotImplemented;
+                    };
+                }
+                // error, we don't optimize this yet.
+                return new KeyValuePair<OptimizingCallDelegate, Type[]>(null, null);
             }
 
+            if (res == null) {
+                return new KeyValuePair<OptimizingCallDelegate, Type[]>();
+            }
             // add any warnings that are applicable for calling this function
             WarningInfo info;
 
-            if (target.Method != null && BindingWarnings.ShouldWarn(BinderState.GetBinderState(call).Binder, target.Method, out info)) {
-                res = info.AddWarning(codeContext, res);
-            }            
-
-            // finally add the restrictions for the built-in function and return the result.
-            res = new DynamicMetaObject(
-                res.Expression,
-                functionRestriction.Merge(res.Restrictions)
-            );
-
-            // The function can return something typed to boolean or int.
-            // If that happens, we need to apply Python's boxing rules.
-            if (res.Expression.Type == typeof(bool) || res.Expression.Type == typeof(int)) {
-                res = new DynamicMetaObject(
-                    AstUtils.Convert(res.Expression, typeof(object)),
-                    res.Restrictions
-                );
+            if (target.Method != null && BindingWarnings.ShouldWarn(PythonContext.GetPythonContext(call).Binder, target.Method, out info)) {
+                res = info.AddWarning(res);
             }
 
-            return res;
+            // finally add the restrictions for the built-in function and return the result.
+            Type[] typeRestrictions = ArrayUtils.MakeArray(result.Target.RestrictedArguments.GetTypes());
+            
+            // The function can return something typed to boolean or int.
+            // If that happens, we need to apply Python's boxing rules.
+            if (CompilerHelpers.GetReturnType(result.Target.Method) == typeof(bool)) {
+                var tmp = res;
+                res = delegate(object[] callArgs, out bool shouldOptimize) {
+                    return ScriptingRuntimeHelpers.BooleanToObject((bool)tmp(callArgs, out shouldOptimize));
+                }; 
+            } else if (CompilerHelpers.GetReturnType(result.Target.Method) == typeof(int)) {
+                var tmp = res;
+                res = delegate(object[] callArgs, out bool shouldOptimize) {
+                    return ScriptingRuntimeHelpers.Int32ToObject((int)tmp(callArgs, out shouldOptimize));
+                };
+            }
+
+            if (IsReversedOperator) {
+                var tmp = res;
+                // add the swapping code for the caller
+                res = delegate(object[] callArgs, out bool shouldOptimize) {
+                    ArrayUtils.SwapLastTwo(callArgs);
+                    return tmp(callArgs, out shouldOptimize);
+                };
+
+                // and update the type restrictions
+                if (typeRestrictions != null) {
+                    ArrayUtils.SwapLastTwo(typeRestrictions);
+                }
+            }
+
+            var pc = PythonContext.GetContext(PythonContext.GetPythonContext(call).SharedContext);
+            var po = pc.Options as PythonOptions;
+            if (po != null && po.EnableProfiler) {
+                Profiler profiler = Profiler.GetProfiler(pc);
+                res = profiler.AddProfiling(res, target.Method);
+            }
+            return new KeyValuePair<OptimizingCallDelegate, Type[]>(res, typeRestrictions);
         }
+        
         #endregion
                         
         #region Public Python APIs
@@ -544,16 +756,9 @@ namespace IronPython.Runtime.Types {
             get {
                 // The mapping is actually provided by a class rather than a dictionary
                 // since it's hard to generate all the keys of the signature mapping when
-                // two type systems are involved.  The mapping object is cached because we use
-                // object equality in rules of built-in functions and want to avoid creating
-                // multiple instances of them.
-                if (_data.OverloadMapper == null) {
-                    Interlocked.CompareExchange(
-                        ref _data.OverloadMapper,
-                        new BuiltinFunctionOverloadMapper(this, IsUnbound ? null : _instance),
-                        null);
-                }
-                return _data.OverloadMapper;
+                // two type systems are involved.  
+
+                return new BuiltinFunctionOverloadMapper(this, IsUnbound ? null : _instance);
             }
         }
 
@@ -606,60 +811,10 @@ namespace IronPython.Runtime.Types {
             return Call(context, storage, null, args, dictArgs);
         }
 
-        public BuiltinFunction/*!*/ this[PythonTuple tuple] {
-            [PythonHidden]
+        
+        internal virtual bool IsOnlyGeneric {
             get {
-                return this[tuple._data];
-            }
-        }
-
-        /// <summary>
-        /// Use indexing on generic methods to provide a new reflected method with targets bound with
-        /// the supplied type arguments.
-        /// </summary>
-        public BuiltinFunction/*!*/ this[params object[] key] {
-            [PythonHidden]
-            get {
-                // Retrieve the list of type arguments from the index.
-                Type[] types = new Type[key.Length];
-                for (int i = 0; i < types.Length; i++) {
-                    types[i] = Converter.ConvertToType(key[i]);
-                }
-
-                BuiltinFunction res = MakeGenericMethod(types);
-                if (res == null) {
-                    bool hasGenerics = false;
-                    foreach (MethodBase mb in Targets) {
-                        MethodInfo mi = mb as MethodInfo;
-                        if (mi != null && mi.ContainsGenericParameters) {
-                            hasGenerics = true;
-                        }
-                    }
-
-                    if (hasGenerics) {
-                        throw PythonOps.TypeError(string.Format("bad type args to this generic method {0}", Name));
-                    } else {
-                        throw PythonOps.TypeError(string.Format("{0} is not a generic method and is unsubscriptable", Name));
-                    }
-                }
-
-                if (IsUnbound) {
-                    return res;
-                }
-
-                return new BuiltinFunction(_instance, res._data);
-            }
-        }
-
-        internal bool IsOnlyGeneric {
-            get {
-                foreach (MethodBase mb in Targets) {
-                    if (!mb.IsGenericMethod || !mb.ContainsGenericParameters) {
-                        return false;
-                    }
-                }
-
-                return true;
+                return false;
             }
         }
 
@@ -757,14 +912,14 @@ namespace IronPython.Runtime.Types {
 
         #region BuiltinFunctionData
 
-        private sealed class BuiltinFunctionData {
+        internal sealed class BuiltinFunctionData {
             public string/*!*/ Name;
             public MethodBase/*!*/[]/*!*/ Targets;
             public readonly Type/*!*/ DeclaringType;
             public FunctionType Type;
             public Dictionary<TypeList, BuiltinFunction> BoundGenerics;
             public Dictionary<BuiltinFunction.TypeList, BuiltinFunction> OverloadDictionary;
-            public BuiltinFunctionOverloadMapper OverloadMapper;
+            public Dictionary<CallKey, OptimizingInfo> FastCalls;
 
             public BuiltinFunctionData(string name, MethodBase[] targets, Type declType, FunctionType functionType) {
                 Name = name;
@@ -784,6 +939,314 @@ namespace IronPython.Runtime.Types {
         }
 
         #endregion
+
+        #region IFastInvokable Members
+
+        internal class CallKey : IEquatable<CallKey> {
+            public readonly Type DelegateType;
+            public readonly CallSignature Signature;
+            public readonly Type[] Types;
+            public readonly Type SelfType;
+            public bool IsUnbound;
+
+            public CallKey(CallSignature signature, Type selfType, Type delegateType, Type[] types, bool isUnbound) {
+                Signature = signature;
+                Types = types;
+                SelfType = selfType;
+                IsUnbound = isUnbound;
+                DelegateType = delegateType;
+            }
+
+            #region IEquatable<CallKey> Members
+
+            public bool Equals(CallKey other) {
+                if (DelegateType != other.DelegateType ||
+                    Signature != other.Signature ||
+                    IsUnbound != other.IsUnbound ||
+                    SelfType != other.SelfType ||
+                    Types.Length != other.Types.Length) {
+                    return false;
+                }
+
+                for (int i = 0; i < Types.Length; i++) {
+                    if (Types[i] != other.Types[i]) {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            #endregion
+
+            public override bool Equals(object obj) {
+                CallKey other = obj as CallKey;
+                if (other == null) {
+                    return false;
+                }
+
+                return Equals(other);
+            }
+
+            public override int GetHashCode() {
+                int res = Signature.GetHashCode() ^ (IsUnbound ? 0x01 : 0x00);
+                foreach (Type t in Types) {
+                    res ^= t.GetHashCode();
+                }
+                res ^= DelegateType.GetHashCode();
+                if (SelfType != null) {
+                    res ^= SelfType.GetHashCode();
+                }
+
+                return res;
+            }
+        }
+
+        FastBindResult<T> IFastInvokable.MakeInvokeBinding<T>(CallSite<T> site, PythonInvokeBinder binder, CodeContext state, object[] args) {
+            if (binder.Signature.HasDictionaryArgument() || 
+                binder.Signature.HasListArgument() ||
+                !IsUnbound && __self__ is IStrongBox || 
+                typeof(T).GetMethod("Invoke").ReturnType != typeof(object)) {
+                return new FastBindResult<T>();
+            }
+
+            Type[] callTypes = CompilerHelpers.GetTypes(args);
+            CallKey callKey = new CallKey(binder.Signature, IsUnbound ? null : CompilerHelpers.GetType(__self__), typeof(T), callTypes, IsUnbound);
+            if (_data.FastCalls == null) {
+                Interlocked.CompareExchange(
+                    ref _data.FastCalls,
+                    new Dictionary<CallKey, OptimizingInfo>(),
+                    null);
+            }
+
+            lock (_data.FastCalls) {
+                OptimizingInfo optInfo = null;
+
+                if (!_data.FastCalls.TryGetValue(callKey, out optInfo)) {
+                    KeyValuePair<OptimizingCallDelegate, Type[]> call = MakeCall<T>(binder, args);
+
+                    if (call.Key != null) {
+                        _data.FastCalls[callKey] = optInfo = new OptimizingInfo(call.Key, call.Value, binder.Signature);
+                    }
+                }
+
+                if (optInfo != null) {
+                    if (optInfo.ShouldOptimize) {
+                        // if we've already produced an optimal rule don't go and produce an
+                        // unoptimal rule (which will not hit any targets anyway - it's hit count
+                        // has been exceeded and now it always fails).
+                        return new FastBindResult<T>();
+                    }
+
+                    ParameterInfo[] prms = typeof(T).GetMethod("Invoke").GetParameters();
+                    Type[] allParams = ArrayUtils.ConvertAll(prms, (inp) => inp.ParameterType);
+                    allParams = ArrayUtils.Append(allParams, typeof(object));
+
+                    Type[] typeParams = new Type[prms.Length - 2];  // skip site, context
+                    for (int i = 2; i < prms.Length; i++) {
+                        typeParams[i - 2] = prms[i].ParameterType;
+                    }
+                    int argCount = typeParams.Length - 1;// no func
+                    Type callerType = GetCallerType(argCount); 
+
+                    if (callerType != null) {
+                        callerType = callerType.MakeGenericType(typeParams);
+
+                        object[] createArgs = new object[argCount + 3 + (!IsUnbound ? 1 : 0)];
+                        createArgs[0] = site;
+                        createArgs[1] = optInfo;
+                        createArgs[2] = this;
+                        if (optInfo.TypeTest != null) {
+                            for (int i = 3; i < createArgs.Length; i++) {
+                                createArgs[i] = optInfo.TypeTest[i - 3];
+                            }
+                        }
+                        if (!IsUnbound) {
+                            // force a type test on self
+                            createArgs[3] = CompilerHelpers.GetType(__self__);
+                        }
+
+                        object fc = Activator.CreateInstance(callerType, createArgs);
+
+                        PerfTrack.NoteEvent(PerfTrack.Categories.BindingFast, "BuiltinFunction");
+                        return new FastBindResult<T>((T)(object)fc.GetType().GetField("MyDelegate").GetValue(fc), false);
+                    }
+                }
+
+                return new FastBindResult<T>();
+            }
+        }
+
+        private KeyValuePair<OptimizingCallDelegate, Type[]> MakeCall<T>(PythonInvokeBinder binder, object[] args) where T : class {
+            Expression codeContext = Expression.Parameter(typeof(CodeContext), "context");
+            var pybinder = PythonContext.GetPythonContext(binder).Binder;
+            KeyValuePair<OptimizingCallDelegate, Type[]> call;
+            if (IsUnbound) {
+                call = MakeBuiltinFunctionDelegate(
+                    binder,
+                    codeContext,
+                    GetMetaObjects<T>(args),
+                    false,  // no self
+                    (newArgs) => {
+                        var resolver = new PythonOverloadResolver(
+                            pybinder,
+                            newArgs,
+                            BindingHelpers.GetCallSignature(binder),
+                            codeContext
+                        );
+
+                        BindingTarget target;
+                        DynamicMetaObject res = pybinder.CallMethod(
+                            resolver, 
+                            Targets, 
+                            BindingRestrictions.Empty, 
+                            Name,
+                            PythonNarrowing.None,
+                            IsBinaryOperator ? PythonNarrowing.BinaryOperator : NarrowingLevel.All,
+                            out target
+                        );
+
+                        return new BuiltinFunction.BindingResult(target, 
+                            BindingHelpers.AddPythonBoxing(res), 
+                            target.Success ? target.MakeDelegate() : null);
+                    }
+                );
+            } else {
+                DynamicMetaObject self = new DynamicMetaObject(Expression.Parameter(CompilerHelpers.GetType(__self__), "self"), BindingRestrictions.Empty, __self__);
+                DynamicMetaObject[] metaArgs = GetMetaObjects<T>(args);
+                call = MakeBuiltinFunctionDelegate(
+                    binder,
+                    codeContext,
+                    ArrayUtils.Insert(self, metaArgs),
+                    true,
+                    (newArgs) => {
+                        CallSignature signature = BindingHelpers.GetCallSignature(binder);
+                        DynamicMetaObject res;
+                        BindingTarget target;
+                        PythonOverloadResolver resolver;
+
+                        if (IsReversedOperator) {
+                            resolver = new PythonOverloadResolver(
+                                pybinder,
+                                newArgs,
+                                MetaBuiltinFunction.GetReversedSignature(signature),
+                                codeContext
+                            );
+                        } else {
+                            resolver = new PythonOverloadResolver(
+                                pybinder,
+                                self,
+                                metaArgs,
+                                signature,
+                                codeContext
+                            );
+                        }
+
+                        res = pybinder.CallMethod(
+                            resolver, 
+                            Targets, 
+                            self.Restrictions, 
+                            Name,
+                            NarrowingLevel.None,
+                            IsBinaryOperator ? PythonNarrowing.BinaryOperator : NarrowingLevel.All,
+                            out target
+                        );
+                        return new BuiltinFunction.BindingResult(target, BindingHelpers.AddPythonBoxing(res), target.Success ? target.MakeDelegate() : null);
+                    }
+                );
+            }
+            return call;
+        }
+        
+        private DynamicMetaObject[] GetMetaObjects<T>(object[] args) {
+            ParameterInfo[] pis = typeof(T).GetMethod("Invoke").GetParameters();
+            DynamicMetaObject[] res = new DynamicMetaObject[args.Length];   // remove CodeContext, func
+
+            for (int i = 0; i < res.Length; i++) {
+                res[i] = new DynamicMetaObject(
+                    Expression.Parameter(pis[i + 3].ParameterType, "arg" + i),  // +3 == skipping callsite, codecontext, func
+                    BindingRestrictions.Empty,
+                    args[i]
+                );
+            }
+
+            return res;
+        }        
+
+        #endregion
+    }
+
+    /// <summary>
+    /// A custom built-in function which supports indexing 
+    /// </summary>
+    public class GenericBuiltinFunction : BuiltinFunction {
+        internal GenericBuiltinFunction(string/*!*/ name, MethodBase/*!*/[]/*!*/ originalTargets, Type/*!*/ declaringType, FunctionType functionType)
+            : base(name, originalTargets, declaringType, functionType) {
+        }
+
+        public BuiltinFunction/*!*/ this[PythonTuple tuple] {
+            get {
+                return this[tuple._data];
+            }
+        }
+
+        internal GenericBuiltinFunction(object instance, BuiltinFunctionData/*!*/ data) : base(instance, data) {
+        }
+
+
+        internal override BuiltinFunction BindToInstance(object instance) {
+            return new GenericBuiltinFunction(instance, _data);
+        }
+
+        /// <summary>
+        /// Use indexing on generic methods to provide a new reflected method with targets bound with
+        /// the supplied type arguments.
+        /// </summary>
+        public BuiltinFunction/*!*/ this[params object[] key] {
+            get {
+                // Retrieve the list of type arguments from the index.
+                Type[] types = new Type[key.Length];
+                for (int i = 0; i < types.Length; i++) {
+                    types[i] = Converter.ConvertToType(key[i]);
+                }
+
+                BuiltinFunction res = MakeGenericMethod(types);
+                if (res == null) {
+                    bool hasGenerics = false;
+                    foreach (MethodBase mb in Targets) {
+                        MethodInfo mi = mb as MethodInfo;
+                        if (mi != null && mi.ContainsGenericParameters) {
+                            hasGenerics = true;
+                        }
+                    }
+
+                    if (hasGenerics) {
+                        throw PythonOps.TypeError(string.Format("bad type args to this generic method {0}", Name));
+                    } else {
+                        throw PythonOps.TypeError(string.Format("{0} is not a generic method and is unsubscriptable", Name));
+                    }
+                }
+
+                if (IsUnbound) {
+                    return res;
+                }
+
+                return new BuiltinFunction(_instance, res._data);
+            }
+        }
+
+        internal override bool IsOnlyGeneric {
+            get {
+                foreach (MethodBase mb in Targets) {
+                    if (!mb.IsGenericMethod || !mb.ContainsGenericParameters) {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+        }
+
     }
 }
 

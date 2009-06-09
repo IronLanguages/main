@@ -13,14 +13,18 @@
  *
  * ***************************************************************************/
 
-using IronRuby.Builtins;
-using IronRuby.Runtime;
+using IronRuby.Compiler.Generation;
 
-namespace IronRuby {
+namespace IronRuby.Runtime {
+    [ReflectionCached]
     public interface IRubyObjectState {
+        [Emitted]
         bool IsFrozen { get; }
+
+        [Emitted]
         bool IsTainted { get; set; }
 
+        [Emitted]
         void Freeze();
     }
 }

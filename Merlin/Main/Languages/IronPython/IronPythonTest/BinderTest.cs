@@ -211,6 +211,19 @@ namespace IronPythonTest.BinderTest {
         public void M855(out Boolean arg) { Flag.Value = 855; arg = true; }
 
         public void M860(ref Int32 arg1, Int32 arg2, out Int32 arg3) { arg3 = arg1 + arg2; arg1 = 100; }
+
+    }
+
+    public struct SOtherConcern {
+        private short _p100;
+        public short P100 {
+            get {
+                return _p100;
+            }
+            set {
+                _p100 = value;
+            }
+        }
     }
 
     public class GOtherConcern<T> {
@@ -900,4 +913,45 @@ namespace IronPythonTest.BinderTest {
 
     public class GenericOnlyConflict<T> { }
     public class GenericOnlyConflict<T1, T2> { }
+
+    class BaseClassNoInterface {
+        #region I1 Members
+
+        public void M() {
+            InterfaceTestHelper.Flag = true;
+        }
+
+        #endregion
+        
+    }
+
+    class DerivedClassWithInterface : BaseClassNoInterface, I1 {
+    }
+
+    abstract class AbstractClassWithInterface : I1 {
+
+        #region I1 Members
+
+        public abstract void M();
+
+        #endregion
+    }
+
+    class DerivedClassWithInterfaceImpl : AbstractClassWithInterface {
+        #region I1 Members
+
+        public override void M() {
+            InterfaceTestHelper.Flag = true;
+        }
+
+        #endregion
+    }
+
+    public class InterfaceTestHelper {
+        public static bool Flag = false;
+
+        public static object GetObject() { return new DerivedClassWithInterface(); }
+        public static object GetObject2() { return new DerivedClassWithInterfaceImpl(); }
+    }
+
 }

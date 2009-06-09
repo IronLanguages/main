@@ -126,12 +126,16 @@ namespace IronPython.Compiler.Ast {
             ag.FreeTemp(temp);
 
             // return (left (op) (temp = rleft)) and (rright)
-            return AstUtils.CoalesceTrue(
-                ag.Block,
+            MSAst.ParameterExpression tmp;
+            MSAst.Expression res = AstUtils.CoalesceTrue(
                 comparison,
                 rright,
-                AstGenerator.GetHelperMethod("IsTrue")
+                AstGenerator.GetHelperMethod("IsTrue"),
+                out tmp
             );
+
+            ag.AddHiddenVariable(tmp);
+            return res;
         }
 
         internal override MSAst.Expression Transform(AstGenerator ag, Type type) {
@@ -150,13 +154,22 @@ namespace IronPython.Compiler.Ast {
             if (op == PythonOperator.NotIn) {                
                 return AstUtils.Convert(
                     Ast.Not(
-                        Binders.Operation(
-                            ag.BinderState,
+                        ag.Operation(
                             typeof(bool),
                             PythonOperationKind.Contains,
                             left,
                             right
                         )                            
+                    ),
+                    type
+                );
+            } else if (op == PythonOperator.In) {
+                return AstUtils.Convert(
+                    ag.Operation(
+                        typeof(bool),
+                        PythonOperationKind.Contains,
+                        left,
+                        right
                     ),
                     type
                 );
@@ -172,8 +185,8 @@ namespace IronPython.Compiler.Ast {
                     return Ast.Block(
                         Ast.Call(
                             AstGenerator.GetHelperMethod("WarnDivision"),
-                            AstUtils.CodeContext(),
-                            Ast.Constant(ag.DivisionOptions),
+                            ag.LocalContext,
+                            AstUtils.Constant(ag.DivisionOptions),
                             AstUtils.Convert(
                                 Ast.Assign(tempLeft, left),
                                 typeof(object)
@@ -183,8 +196,7 @@ namespace IronPython.Compiler.Ast {
                                 typeof(object)
                             )
                         ),
-                        Binders.Operation(
-                            ag.BinderState,
+                        ag.Operation(
                             type,
                             action,
                             tempLeft,
@@ -193,8 +205,7 @@ namespace IronPython.Compiler.Ast {
                     );
                 }
 
-                return Binders.Operation(
-                    ag.BinderState,
+                return ag.Operation(
                     type,
                     action,
                     left,

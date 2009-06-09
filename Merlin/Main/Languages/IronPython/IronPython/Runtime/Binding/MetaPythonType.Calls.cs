@@ -15,17 +15,20 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Dynamic;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Dynamic;
-using IronPython.Runtime.Operations;
-using IronPython.Runtime.Types;
+
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
-using Microsoft.Scripting.Actions.Calls;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+
+using IronPython.Runtime.Operations;
+using IronPython.Runtime.Types;
+
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Runtime.Binding {
@@ -48,7 +51,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         public override DynamicMetaObject/*!*/ BindInvoke(InvokeBinder/*!*/ call, params DynamicMetaObject/*!*/[]/*!*/ args) {
-            return InvokeWorker(call, args, BinderState.GetCodeContext(call));
+            return InvokeWorker(call, args, PythonContext.GetCodeContext(call));
         }
 
         #endregion
@@ -56,6 +59,8 @@ namespace IronPython.Runtime.Binding {
         #region Invoke Implementation
 
         private DynamicMetaObject/*!*/ InvokeWorker(DynamicMetaObjectBinder/*!*/ call, DynamicMetaObject/*!*/[]/*!*/ args, Expression/*!*/ codeContext) {
+            PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "Type Invoke " + Value.UnderlyingSystemType.FullName + args.Length);
+            PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "Type Invoke");
             if (this.NeedsDeferral()) {
                 return call.Defer(ArrayUtils.Insert(this, args));
             }
@@ -66,11 +71,15 @@ namespace IronPython.Runtime.Binding {
                 }
             }
 
+            DynamicMetaObject res;
             if (IsStandardDotNetType(call)) {
-                return MakeStandardDotNetTypeCall(call, codeContext, args);
+                res = MakeStandardDotNetTypeCall(call, codeContext, args);
+            } else {
+                res = MakePythonTypeCall(call, codeContext, args);
             }
 
-            return MakePythonTypeCall(call, codeContext, args);
+            return BindingHelpers.AddPythonBoxing(res);
+
         }
 
         /// <summary>
@@ -79,23 +88,32 @@ namespace IronPython.Runtime.Binding {
         /// </summary>
         private DynamicMetaObject/*!*/ MakeStandardDotNetTypeCall(DynamicMetaObjectBinder/*!*/ call, Expression/*!*/ codeContext, DynamicMetaObject/*!*/[]/*!*/ args) {
             CallSignature signature = BindingHelpers.GetCallSignature(call);
-            BinderState state = BinderState.GetBinderState(call);
+            PythonContext state = PythonContext.GetPythonContext(call);
             MethodBase[] ctors = CompilerHelpers.GetConstructors(Value.UnderlyingSystemType, state.Binder.PrivateBinding);
 
             if (ctors.Length > 0) {
                 return state.Binder.CallMethod(
-                    new ParameterBinderWithCodeContext(state.Binder, codeContext),
+                    new PythonOverloadResolver(
+                        state.Binder,
+                        args,
+                        signature,
+                        codeContext
+                    ),
                     ctors,
-                    args,
-                    signature,
                     Restrictions.Merge(BindingRestrictions.GetInstanceRestriction(Expression, Value))
                 );
             } else {
+                string msg;
+                if (Value.UnderlyingSystemType.IsAbstract) {
+                    msg = String.Format("Cannot create instances of {0} because it is abstract", Value.Name);
+                }else{
+                    msg = String.Format("Cannot create instances of {0} because it has no public constructors", Value.Name);
+                }
                 return new DynamicMetaObject(
                    Ast.Throw(
                        Ast.New(
                            typeof(ArgumentTypeException).GetConstructor(new Type[] { typeof(string) }),
-                           Ast.Constant("Cannot create instances of " + Value.Name)
+                           AstUtils.Constant(msg)
                        )
                    ),
                    Restrictions.Merge(BindingRestrictions.GetInstanceRestriction(Expression, Value))
@@ -122,10 +140,17 @@ namespace IronPython.Runtime.Binding {
 
             if (TooManyArgsForDefaultNew(call, args)) {
                 return MakeIncorrectArgumentsForCallError(call, ai, valInfo);
+            } else if (Value.UnderlyingSystemType.IsGenericTypeDefinition) {
+                return MakeGenericTypeDefinitionError(call, ai, valInfo);
+            }
+
+            DynamicMetaObject translated = BuiltinFunction.TranslateArguments(call, codeContext, self, args, false, Value.Name);
+            if (translated != null) {
+                return translated;
             }
 
             GetAdapters(ai, call, codeContext, out newAdapter, out initAdapter);
-            BinderState state = BinderState.GetBinderState(call);
+            PythonContext state = PythonContext.GetPythonContext(call);
             
             // get the expression for calling __new__
             DynamicMetaObject createExpr = newAdapter.GetExpression(state.Binder);
@@ -215,8 +240,8 @@ namespace IronPython.Runtime.Binding {
         private void GetAdapters(ArgumentValues/*!*/ ai, DynamicMetaObjectBinder/*!*/ call, Expression/*!*/ codeContext, out NewAdapter/*!*/ newAdapter, out InitAdapter/*!*/ initAdapter) {
             PythonTypeSlot newInst, init;
 
-            Value.TryResolveSlot(BinderState.GetBinderState(call).Context, Symbols.NewInst, out newInst);
-            Value.TryResolveSlot(BinderState.GetBinderState(call).Context, Symbols.Init, out init);
+            Value.TryResolveSlot(PythonContext.GetPythonContext(call).SharedContext, Symbols.NewInst, out newInst);
+            Value.TryResolveSlot(PythonContext.GetPythonContext(call).SharedContext, Symbols.Init, out init);
 
             // these are never null because we always resolve to __new__ or __init__ somewhere.
             Assert.NotNull(newInst, init);
@@ -226,7 +251,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         private InitAdapter/*!*/ GetInitAdapter(ArgumentValues/*!*/ ai, PythonTypeSlot/*!*/ init, DynamicMetaObjectBinder/*!*/ call, Expression/*!*/ codeContext) {
-            BinderState state = BinderState.GetBinderState(call);
+            PythonContext state = PythonContext.GetPythonContext(call);
             if (IsMixedNewStyleOldStyle()) {
                 return new MixedInitAdapter(ai, state, codeContext);
             } else if ((init == InstanceOps.Init && !HasFinalizer(call)) || (Value == TypeCache.PythonType && ai.Arguments.Length == 2)) {
@@ -241,7 +266,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         private NewAdapter/*!*/ GetNewAdapter(ArgumentValues/*!*/ ai, PythonTypeSlot/*!*/ newInst, DynamicMetaObjectBinder/*!*/ call, Expression/*!*/ codeContext) {
-            BinderState state = BinderState.GetBinderState(call);
+            PythonContext state = PythonContext.GetPythonContext(call);
 
             if (IsMixedNewStyleOldStyle()) {
                 return new MixedNewAdapter(ai, state, codeContext);
@@ -258,11 +283,11 @@ namespace IronPython.Runtime.Binding {
 
         private class CallAdapter {
             private readonly ArgumentValues/*!*/ _argInfo;
-            private readonly BinderState/*!*/ _state;
+            private readonly PythonContext/*!*/ _state;
             private readonly Expression/*!*/ _context;
             private BindingRestrictions/*!*/ _restrictions;            
 
-            public CallAdapter(ArgumentValues/*!*/ ai, BinderState/*!*/ state, Expression/*!*/ codeContext) {
+            public CallAdapter(ArgumentValues/*!*/ ai, PythonContext/*!*/ state, Expression/*!*/ codeContext) {
                 _argInfo = ai;
                 _state = state;
                 _restrictions = BindingRestrictions.Empty;
@@ -278,7 +303,7 @@ namespace IronPython.Runtime.Binding {
                 }
             }
 
-            protected BinderState BinderState {
+            protected PythonContext PythonContext {
                 get {
                     return _state;
                 }
@@ -312,18 +337,18 @@ namespace IronPython.Runtime.Binding {
         #region __new__ adapters
 
         private class NewAdapter : CallAdapter {
-            public NewAdapter(ArgumentValues/*!*/ ai, BinderState/*!*/ state, Expression/*!*/ codeContext)
+            public NewAdapter(ArgumentValues/*!*/ ai, PythonContext/*!*/ state, Expression/*!*/ codeContext)
                 : base(ai, state, codeContext) {
             }
 
-            public virtual DynamicMetaObject/*!*/ GetExpression(DefaultBinder/*!*/ binder) {
+            public virtual DynamicMetaObject/*!*/ GetExpression(PythonBinder/*!*/ binder) {
                 return MakeDefaultNew(
                     binder,
                     Ast.Call(
                         typeof(PythonOps).GetMethod("PythonTypeGetMember"),
                         CodeContext,
                         AstUtils.Convert(Arguments.Self.Expression, typeof(PythonType)),
-                        Ast.Constant(null),
+                        AstUtils.Constant(null),
                         AstUtils.Constant(Symbols.NewInst)
                     )
                 );
@@ -339,7 +364,7 @@ namespace IronPython.Runtime.Binding {
 
                 return new DynamicMetaObject(
                     Ast.Dynamic(
-                        BinderState.Invoke(
+                        PythonContext.Invoke(
                             GetDynamicNewSignature()
                         ),
                         typeof(object),
@@ -367,63 +392,53 @@ namespace IronPython.Runtime.Binding {
         private class DefaultNewAdapter : NewAdapter {
             private readonly PythonType/*!*/ _creating;
 
-            public DefaultNewAdapter(ArgumentValues/*!*/ ai, PythonType/*!*/ creating, BinderState/*!*/ state, Expression/*!*/ codeContext)
+            public DefaultNewAdapter(ArgumentValues/*!*/ ai, PythonType/*!*/ creating, PythonContext/*!*/ state, Expression/*!*/ codeContext)
                 : base(ai, state, codeContext) {
                 _creating = creating;
             }
 
-            public override DynamicMetaObject/*!*/ GetExpression(DefaultBinder/*!*/ binder) {
-                var mc = new ParameterBinderWithCodeContext(binder, CodeContext);
-                
+            public override DynamicMetaObject/*!*/ GetExpression(PythonBinder/*!*/ binder) {
+                PythonOverloadResolver resolver;
                 if (_creating.IsSystemType) {
-                    return binder.CallMethod(
-                        mc,
-                        _creating.UnderlyingSystemType.GetConstructors(),
-                        new DynamicMetaObject[0],
-                        new CallSignature(0),
-                        BindingRestrictions.Empty,
-                        _creating.Name
-                    );
+                    resolver = new PythonOverloadResolver(binder, DynamicMetaObject.EmptyMetaObjects, new CallSignature(0), CodeContext);
+                } else {
+                    resolver = new PythonOverloadResolver(binder, new[] { Arguments.Self }, new CallSignature(1), CodeContext);
                 }
 
-                return binder.CallMethod(
-                    mc,
-                    _creating.UnderlyingSystemType.GetConstructors(),
-                    new DynamicMetaObject[] { Arguments.Self },
-                    new CallSignature(1),
-                    BindingRestrictions.Empty,                    
-                    _creating.Name
-                );
+                return binder.CallMethod(resolver, _creating.UnderlyingSystemType.GetConstructors(), BindingRestrictions.Empty, _creating.Name);
             }
         }
 
         private class ConstructorNewAdapter : NewAdapter {
             private readonly PythonType/*!*/ _creating;
 
-            public ConstructorNewAdapter(ArgumentValues/*!*/ ai, PythonType/*!*/ creating, BinderState/*!*/ state, Expression/*!*/ codeContext)
+            public ConstructorNewAdapter(ArgumentValues/*!*/ ai, PythonType/*!*/ creating, PythonContext/*!*/ state, Expression/*!*/ codeContext)
                 : base(ai, state, codeContext) {
                 _creating = creating;
             }
 
-            public override DynamicMetaObject/*!*/ GetExpression(DefaultBinder/*!*/ binder) {
-                var mc = new ParameterBinderWithCodeContext(binder, CodeContext);
+            public override DynamicMetaObject/*!*/ GetExpression(PythonBinder/*!*/ binder) {
+                PythonOverloadResolver resolve;
 
                 if (_creating.IsSystemType) {
-                    return binder.CallMethod(
-                        mc,
-                        _creating.UnderlyingSystemType.GetConstructors(),
-                        Arguments.Arguments,
-                        Arguments.Signature,
-                        Arguments.Self.Restrictions,
-                        _creating.Name
+                    resolve = new PythonOverloadResolver(
+                        binder, 
+                        Arguments.Arguments, 
+                        Arguments.Signature, 
+                        CodeContext
+                    );
+                } else {
+                    resolve = new PythonOverloadResolver(
+                        binder, 
+                        ArrayUtils.Insert(Arguments.Self, Arguments.Arguments), 
+                        GetDynamicNewSignature(), 
+                        CodeContext
                     );
                 }
 
                 return binder.CallMethod(
-                    mc,
+                    resolve,
                     _creating.UnderlyingSystemType.GetConstructors(),
-                    ArrayUtils.Insert(Arguments.Self, Arguments.Arguments),
-                    GetDynamicNewSignature(),
                     Arguments.Self.Restrictions,
                     _creating.Name
                 );
@@ -434,39 +449,39 @@ namespace IronPython.Runtime.Binding {
             private readonly PythonType/*!*/ _creating;
             private readonly BuiltinFunction/*!*/ _ctor;
 
-            public BuiltinNewAdapter(ArgumentValues/*!*/ ai, PythonType/*!*/ creating, BuiltinFunction/*!*/ ctor, BinderState/*!*/ state, Expression/*!*/ codeContext)
+            public BuiltinNewAdapter(ArgumentValues/*!*/ ai, PythonType/*!*/ creating, BuiltinFunction/*!*/ ctor, PythonContext/*!*/ state, Expression/*!*/ codeContext)
                 : base(ai, state, codeContext) {
                 _creating = creating;
                 _ctor = ctor;
             }
 
-            public override DynamicMetaObject/*!*/ GetExpression(DefaultBinder/*!*/ binder) {
-                var mc = new ParameterBinderWithCodeContext(binder, CodeContext);
-
-                CallSignature sig = Arguments.Signature.InsertArgument(new Argument(ArgumentType.Simple));
+            public override DynamicMetaObject/*!*/ GetExpression(PythonBinder/*!*/ binder) {
                 return binder.CallMethod(
-                    mc,
+                    new PythonOverloadResolver(
+                        binder,
+                        ArrayUtils.Insert(Arguments.Self, Arguments.Arguments),
+                        Arguments.Signature.InsertArgument(new Argument(ArgumentType.Simple)),
+                        CodeContext
+                    ),
                     _ctor.Targets,
-                    ArrayUtils.Insert(Arguments.Self, Arguments.Arguments),
-                    sig,
                     _creating.Name
                 );
             }
         }
 
         private class MixedNewAdapter : NewAdapter {
-            public MixedNewAdapter(ArgumentValues/*!*/ ai, BinderState/*!*/ state, Expression/*!*/ codeContext)
+            public MixedNewAdapter(ArgumentValues/*!*/ ai, PythonContext/*!*/ state, Expression/*!*/ codeContext)
                 : base(ai, state, codeContext) {
             }
 
-            public override DynamicMetaObject/*!*/ GetExpression(DefaultBinder/*!*/ binder) {
+            public override DynamicMetaObject/*!*/ GetExpression(PythonBinder/*!*/ binder) {
                 return MakeDefaultNew(
                     binder,
                     Ast.Call(
                         typeof(PythonOps).GetMethod("GetMixedMember"),
                         CodeContext,
                         Arguments.Self.Expression,
-                        Ast.Constant(null),
+                        AstUtils.Constant(null),
                         AstUtils.Constant(Symbols.NewInst)
                     )
                 );
@@ -478,13 +493,13 @@ namespace IronPython.Runtime.Binding {
         #region __init__ adapters
 
         private abstract class InitAdapter : CallAdapter {
-            protected InitAdapter(ArgumentValues/*!*/ ai, BinderState/*!*/ state, Expression/*!*/ codeContext)
+            protected InitAdapter(ArgumentValues/*!*/ ai, PythonContext/*!*/ state, Expression/*!*/ codeContext)
                 : base(ai, state, codeContext) {
             }
 
-            public abstract DynamicMetaObject/*!*/ MakeInitCall(DefaultBinder/*!*/ binder, DynamicMetaObject/*!*/ createExpr);
+            public abstract DynamicMetaObject/*!*/ MakeInitCall(PythonBinder/*!*/ binder, DynamicMetaObject/*!*/ createExpr);
 
-            protected DynamicMetaObject/*!*/ MakeDefaultInit(DefaultBinder/*!*/ binder, DynamicMetaObject/*!*/ createExpr, Expression/*!*/ init) {
+            protected DynamicMetaObject/*!*/ MakeDefaultInit(PythonBinder/*!*/ binder, DynamicMetaObject/*!*/ createExpr, Expression/*!*/ init) {
                 List<Expression> args = new List<Expression>();
                 args.Add(CodeContext);
                 args.Add(init);
@@ -494,7 +509,7 @@ namespace IronPython.Runtime.Binding {
 
                 return new DynamicMetaObject(
                     Ast.Dynamic(
-                        BinderState.Invoke(
+                        PythonContext.Invoke(
                             Arguments.Signature
                         ),
                         typeof(object),
@@ -508,12 +523,12 @@ namespace IronPython.Runtime.Binding {
         private class SlotInitAdapter : InitAdapter {
             private readonly PythonTypeSlot/*!*/ _slot;
             
-            public SlotInitAdapter(PythonTypeSlot/*!*/ slot, ArgumentValues/*!*/ ai, BinderState/*!*/ state, Expression/*!*/ codeContext)
+            public SlotInitAdapter(PythonTypeSlot/*!*/ slot, ArgumentValues/*!*/ ai, PythonContext/*!*/ state, Expression/*!*/ codeContext)
                 : base(ai, state, codeContext) {
                 _slot = slot;
             }
 
-            public override DynamicMetaObject/*!*/ MakeInitCall(DefaultBinder/*!*/ binder, DynamicMetaObject/*!*/ createExpr) {
+            public override DynamicMetaObject/*!*/ MakeInitCall(PythonBinder/*!*/ binder, DynamicMetaObject/*!*/ createExpr) {
                 Expression init = Ast.Call(
                     typeof(PythonOps).GetMethod("GetInitSlotMember"),
                     CodeContext,
@@ -527,11 +542,11 @@ namespace IronPython.Runtime.Binding {
         }
 
         private class DefaultInitAdapter : InitAdapter {
-            public DefaultInitAdapter(ArgumentValues/*!*/ ai, BinderState/*!*/ state, Expression/*!*/ codeContext)
+            public DefaultInitAdapter(ArgumentValues/*!*/ ai, PythonContext/*!*/ state, Expression/*!*/ codeContext)
                 : base(ai, state, codeContext) {
             }
 
-            public override DynamicMetaObject/*!*/ MakeInitCall(DefaultBinder/*!*/ binder, DynamicMetaObject/*!*/ createExpr) {
+            public override DynamicMetaObject/*!*/ MakeInitCall(PythonBinder/*!*/ binder, DynamicMetaObject/*!*/ createExpr) {
                 // default init, we can just return the value from __new__
                 return createExpr;
             }
@@ -540,34 +555,37 @@ namespace IronPython.Runtime.Binding {
         private class BuiltinInitAdapter : InitAdapter {
             private readonly BuiltinFunction/*!*/ _method;
 
-            public BuiltinInitAdapter(ArgumentValues/*!*/ ai, BuiltinFunction/*!*/ method, BinderState/*!*/ state, Expression/*!*/ codeContext)
+            public BuiltinInitAdapter(ArgumentValues/*!*/ ai, BuiltinFunction/*!*/ method, PythonContext/*!*/ state, Expression/*!*/ codeContext)
                 : base(ai, state, codeContext) {
                 _method = method;
             }
 
-            public override DynamicMetaObject/*!*/ MakeInitCall(DefaultBinder/*!*/ binder, DynamicMetaObject/*!*/ createExpr) {
+            public override DynamicMetaObject/*!*/ MakeInitCall(PythonBinder/*!*/ binder, DynamicMetaObject/*!*/ createExpr) {
                 if (_method == InstanceOps.Init.Template) {
                     // we have a default __init__, don't call it.
                     return createExpr;
                 }
 
-                return binder.CallInstanceMethod(
-                    new ParameterBinderWithCodeContext(binder, CodeContext),
+                return binder.CallMethod(
+                    new PythonOverloadResolver(
+                        binder,
+                        createExpr,
+                        Arguments.Arguments,
+                        Arguments.Signature,
+                        CodeContext
+                    ),
                     _method.Targets,
-                    createExpr,
-                    Arguments.Arguments,
-                    Arguments.Signature,
                     Arguments.Self.Restrictions
                 );
             }
         }
 
         private class MixedInitAdapter : InitAdapter {
-            public MixedInitAdapter(ArgumentValues/*!*/ ai, BinderState/*!*/ state, Expression/*!*/ codeContext)
+            public MixedInitAdapter(ArgumentValues/*!*/ ai, PythonContext/*!*/ state, Expression/*!*/ codeContext)
                 : base(ai, state, codeContext) {
             }
 
-            public override DynamicMetaObject/*!*/ MakeInitCall(DefaultBinder/*!*/ binder, DynamicMetaObject/*!*/ createExpr) {
+            public override DynamicMetaObject/*!*/ MakeInitCall(PythonBinder/*!*/ binder, DynamicMetaObject/*!*/ createExpr) {
                 Expression init = Ast.Call(
                     typeof(PythonOps).GetMethod("GetMixedMember"),
                     CodeContext,
@@ -604,12 +622,33 @@ namespace IronPython.Runtime.Binding {
                     Ast.Throw(
                         Ast.New(
                             typeof(ArgumentTypeException).GetConstructor(new Type[] { typeof(string) }),
-                            Ast.Constant(message)
+                            AstUtils.Constant(message)
                         )
                     ),
                     GetErrorRestrictions(ai)
                 ), 
                 ai.Arguments,                
+                valInfo
+            );
+        }
+
+        private DynamicMetaObject/*!*/ MakeGenericTypeDefinitionError(DynamicMetaObjectBinder/*!*/ call, ArgumentValues/*!*/ ai, ValidationInfo/*!*/ valInfo) {
+            Debug.Assert(Value.IsSystemType);
+            string message = "cannot create instances of " + Value.Name + " because it is a generic type definition";
+
+            return BindingHelpers.AddDynamicTestAndDefer(
+                call,
+                new DynamicMetaObject(
+                    Ast.Throw(
+                        Ast.New(
+                            typeof(ArgumentTypeException).GetConstructor(new Type[] { typeof(string) }),
+                            AstUtils.Constant(message)
+                        ),
+                        typeof(object)
+                    ),
+                    GetErrorRestrictions(ai)
+                ),
+                ai.Arguments,
                 valInfo
             );
         }
@@ -634,7 +673,7 @@ namespace IronPython.Runtime.Binding {
         private Expression/*!*/ GetFinalizerInitialization(DynamicMetaObjectBinder/*!*/ action, ParameterExpression/*!*/ variable) {
             return Ast.Call(
                 typeof(PythonOps).GetMethod("InitializeForFinalization"),
-                Ast.Constant(BinderState.GetBinderState(action).Context),
+                AstUtils.Constant(PythonContext.GetPythonContext(action).SharedContext),
                 AstUtils.Convert(variable, typeof(object))
             );
         }
@@ -644,7 +683,7 @@ namespace IronPython.Runtime.Binding {
             if (Value.IsSystemType) return false;
 
             PythonTypeSlot del;
-            bool hasDel = Value.TryResolveSlot(BinderState.GetBinderState(action).Context, Symbols.Unassign, out del);
+            bool hasDel = Value.TryResolveSlot(PythonContext.GetPythonContext(action).SharedContext, Symbols.Unassign, out del);
             return hasDel;
         }
 
@@ -664,13 +703,13 @@ namespace IronPython.Runtime.Binding {
 
         private bool HasDefaultNew(DynamicMetaObjectBinder/*!*/ action) {
             PythonTypeSlot newInst;
-            Value.TryResolveSlot(BinderState.GetBinderState(action).Context, Symbols.NewInst, out newInst);
+            Value.TryResolveSlot(PythonContext.GetPythonContext(action).SharedContext, Symbols.NewInst, out newInst);
             return newInst == InstanceOps.New;
         }
 
         private bool HasDefaultInit(DynamicMetaObjectBinder/*!*/ action) {
             PythonTypeSlot init;
-            Value.TryResolveSlot(BinderState.GetBinderState(action).Context, Symbols.Init, out init);
+            Value.TryResolveSlot(PythonContext.GetPythonContext(action).SharedContext, Symbols.Init, out init);
             return init == InstanceOps.Init;
         }
 
@@ -720,14 +759,13 @@ namespace IronPython.Runtime.Binding {
                         typeof(PythonOps).GetMethod("GetTypeVersion"),
                         Ast.Convert(Expression, typeof(PythonType))
                     ),
-                    Ast.Constant(version)
-                ),
-                new BindingHelpers.PythonTypeValidator(Value, version).Validate
+                    AstUtils.Constant(version)
+                )
             );
         }
 
         private bool IsStandardDotNetType(DynamicMetaObjectBinder/*!*/ action) {
-            BinderState bState = BinderState.GetBinderState(action);
+            PythonContext bState = PythonContext.GetPythonContext(action);
 
             return
                 Value.IsSystemType &&

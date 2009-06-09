@@ -32,8 +32,8 @@ using IronPython.Runtime.Types;
 namespace IronPython.Runtime.Binding {
     using Ast = System.Linq.Expressions.Expression;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
-    
-    class MetaPythonFunction : MetaPythonObject, IPythonInvokable, IPythonOperable {
+
+    class MetaPythonFunction : MetaPythonObject, IPythonInvokable, IPythonOperable, IPythonConvertible {
         public MetaPythonFunction(Expression/*!*/ expression, BindingRestrictions/*!*/ restrictions, PythonFunction/*!*/ value)
             : base(expression, BindingRestrictions.Empty, value) {
             Assert.NotNull(value);
@@ -57,11 +57,19 @@ namespace IronPython.Runtime.Binding {
             return new FunctionBinderHelper(call, this, null, args).MakeMetaObject();
         }
 
-        public override DynamicMetaObject/*!*/ BindConvert(ConvertBinder/*!*/ conversion) {
-            if (conversion.Type.IsSubclassOf(typeof(Delegate))) {
-                return MakeDelegateTarget(conversion, conversion.Type, Restrict(typeof(PythonFunction)));
+        public override DynamicMetaObject BindConvert(ConvertBinder/*!*/ conversion) {
+            return ConvertWorker(conversion, conversion.Type, conversion.Explicit ? ConversionResultKind.ExplicitCast : ConversionResultKind.ImplicitCast);
+        }
+
+        public DynamicMetaObject BindConvert(PythonConversionBinder binder) {
+            return ConvertWorker(binder, binder.Type, binder.ResultKind);
+        }
+
+        public DynamicMetaObject ConvertWorker(DynamicMetaObjectBinder binder, Type type, ConversionResultKind kind) {
+            if (type.IsSubclassOf(typeof(Delegate))) {
+                return MakeDelegateTarget(binder, type, Restrict(typeof(PythonFunction)));
             }
-            return conversion.FallbackConvert(this);
+            return FallbackConvert(binder);
         }
 
         public override System.Collections.Generic.IEnumerable<string> GetDynamicMemberNames() {
@@ -88,7 +96,6 @@ namespace IronPython.Runtime.Binding {
         /// this (e.g. we have a splatted params list, kw-dict, and defaults) we call a helper which extracts them
         /// in the proper order (first try the list, then the dict, then the defaults).
         /// </summary>
-        /// <typeparam name="T"></typeparam>
         class FunctionBinderHelper {
             private readonly MetaPythonFunction/*!*/ _func;         // the meta object for the function we're calling
             private readonly DynamicMetaObject/*!*/[]/*!*/ _args;          // the arguments for the function
@@ -107,6 +114,9 @@ namespace IronPython.Runtime.Binding {
             private Expression _paramlessCheck;                     // tests when we have no parameters
 
             public FunctionBinderHelper(DynamicMetaObjectBinder/*!*/ call, MetaPythonFunction/*!*/ function, Expression codeContext, DynamicMetaObject/*!*/[]/*!*/ args) {
+                PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "PythonFunction Invoke " + function.Value.FunctionCompatibility + " w/ " + args.Length + " args");
+                PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "PythonFunction");
+
                 _call = call;
                 _func = function;
                 _args = args;
@@ -151,8 +161,9 @@ namespace IronPython.Runtime.Binding {
                             Ast.Call(
                                 typeof(PythonOps).GetMethod(Signature.HasKeywordArgument() ? "BadKeywordArgumentError" : "FunctionBadArgumentError"),
                                 AstUtils.Convert(GetFunctionParam(), typeof(PythonFunction)),
-                                Ast.Constant(Signature.GetProvidedPositionalArgumentCount())
-                            )
+                                AstUtils.Constant(Signature.GetProvidedPositionalArgumentCount())
+                            ),
+                            typeof(object)
                         ),
                         restrict
                     );
@@ -168,7 +179,7 @@ namespace IronPython.Runtime.Binding {
                     _call, 
                     res, 
                     deferArgs, 
-                    new ValidationInfo(_deferTest, null),
+                    new ValidationInfo(_deferTest),
                     res.Expression.Type     // force defer to our return type, our restrictions guarantee this to be true (only defaults can change, and we restrict to the delegate type)
                 );
             }
@@ -200,7 +211,7 @@ namespace IronPython.Runtime.Binding {
                         typeof(PythonOps).GetMethod("FunctionGetCompatibility"),
                         Ast.Convert(_func.Expression, typeof(PythonFunction))
                     ),
-                    Ast.Constant(_func.Value.FunctionCompatibility)
+                    AstUtils.Constant(_func.Value.FunctionCompatibility)
                 );
 
                 return BindingRestrictionsHelpers.GetRuntimeTypeRestriction(
@@ -422,7 +433,7 @@ namespace IronPython.Runtime.Binding {
                     Ast.Call(
                         typeof(PythonOps).GetMethod("AddDictionaryArgument"),
                         AstUtils.Convert(GetFunctionParam(), typeof(PythonFunction)),
-                        Ast.Constant(kvp.Key),
+                        AstUtils.Constant(kvp.Key),
                         AstUtils.Convert(kvp.Value, typeof(object)),
                         AstUtils.Convert(_dict, typeof(IAttributesCollection))
                     )
@@ -501,8 +512,8 @@ namespace IronPython.Runtime.Binding {
                     Ast.Call(
                         typeof(PythonOps).GetMethod("VerifyUnduplicatedByPosition"),
                         AstUtils.Convert(GetFunctionParam(), typeof(PythonFunction)),    // function
-                        Ast.Constant(name, typeof(string)),                               // name
-                        Ast.Constant(position),                                           // position
+                        AstUtils.Constant(name, typeof(string)),                               // name
+                        AstUtils.Constant(position),                                           // position
                         _paramsLen                                                        // params list length
                         ),
                     value
@@ -540,8 +551,8 @@ namespace IronPython.Runtime.Binding {
                 return Ast.Call(
                         typeof(PythonOps).GetMethod("ExtractDictionaryArgument"),
                         AstUtils.Convert(GetFunctionParam(), typeof(PythonFunction)),        // function
-                        Ast.Constant(name, typeof(string)),                                   // name
-                        Ast.Constant(Signature.ArgumentCount),                               // arg count
+                        AstUtils.Constant(name, typeof(string)),                                   // name
+                        AstUtils.Constant(Signature.ArgumentCount),                               // arg count
                         AstUtils.Convert(_dict, typeof(IAttributesCollection))               // dictionary
                     );
             }
@@ -556,7 +567,7 @@ namespace IronPython.Runtime.Binding {
                     return Ast.Call(
                       typeof(PythonOps).GetMethod("FunctionGetDefaultValue"),
                       AstUtils.Convert(GetFunctionParam(), typeof(PythonFunction)),
-                      Ast.Constant(dfltIndex)
+                      AstUtils.Constant(dfltIndex)
                   );
                 } else {
                     // we might have a conflict, check the default last.
@@ -567,8 +578,8 @@ namespace IronPython.Runtime.Binding {
                     return Ast.Call(
                         typeof(PythonOps).GetMethod("GetFunctionParameterValue"),
                         AstUtils.Convert(GetFunctionParam(), typeof(PythonFunction)),
-                        Ast.Constant(dfltIndex),
-                        Ast.Constant(_func.Value.ArgNames[index], typeof(string)),
+                        AstUtils.Constant(dfltIndex),
+                        AstUtils.Constant(_func.Value.ArgNames[index], typeof(string)),
                         VariableOrNull(_params, typeof(List)),
                         VariableOrNull(_dict, typeof(PythonDictionary))
                     );
@@ -587,7 +598,7 @@ namespace IronPython.Runtime.Binding {
                 return Ast.Call(
                     typeof(PythonOps).GetMethod("ExtractAnyArgument"),
                     AstUtils.Convert(GetFunctionParam(), typeof(PythonFunction)),  // function
-                    Ast.Constant(name, typeof(string)),                             // name
+                    AstUtils.Constant(name, typeof(string)),                             // name
                     _paramsLen,                                    // arg count
                     _params,                                       // params list
                     AstUtils.Convert(_dict, typeof(IDictionary))  // dictionary
@@ -615,7 +626,7 @@ namespace IronPython.Runtime.Binding {
                 return Ast.Call(
                     typeof(PythonOps).GetMethod("ExtractParamsArgument"),
                     AstUtils.Convert(GetFunctionParam(), typeof(PythonFunction)),  // function
-                    Ast.Constant(Signature.ArgumentCount),                   // arg count
+                    AstUtils.Constant(Signature.ArgumentCount),                   // arg count
                     _params                                        // list
                 );
             }
@@ -627,7 +638,7 @@ namespace IronPython.Runtime.Binding {
                         type
                     );
                 }
-                return Ast.Constant(null, type);
+                return AstUtils.Constant(null, type);
             }
 
             /// <summary>
@@ -635,7 +646,7 @@ namespace IronPython.Runtime.Binding {
             /// </summary>
             private Expression/*!*/[]/*!*/ GetArgumentsForTargetType(Expression[] exprArgs) {
                 Type target = _func.Value.Target.GetType();
-                if (target == typeof(IronPython.Compiler.CallTargetN) || target == typeof(IronPython.Compiler.GeneratorTargetN)) {
+                if (target == typeof(Func<PythonFunction, object[], object>)) {
                     exprArgs = new Expression[] {
                         AstUtils.NewArrayHelper(typeof(object), exprArgs) 
                     };
@@ -711,7 +722,7 @@ namespace IronPython.Runtime.Binding {
                     Ast.Assign(_paramsLen,
                         Ast.Add(
                             Ast.Call(_params, typeof(List).GetMethod("__len__")),
-                            Ast.Constant(Signature.GetProvidedPositionalArgumentCount())
+                            AstUtils.Constant(Signature.GetProvidedPositionalArgumentCount())
                         )
                     )
                 );
@@ -735,7 +746,7 @@ namespace IronPython.Runtime.Binding {
                     int itemIndex = 0;
                     foreach (KeyValuePair<string, Expression> kvp in namedArgs) {
                         items[itemIndex++] = AstUtils.Convert(kvp.Value, typeof(object));
-                        items[itemIndex++] = Ast.Constant(kvp.Key, typeof(object));
+                        items[itemIndex++] = AstUtils.Constant(kvp.Key, typeof(object));
                     }
 
                     dictCreator = Ast.Assign(
@@ -751,7 +762,7 @@ namespace IronPython.Runtime.Binding {
                         _dict,
                         Ast.Call(
                             typeof(PythonOps).GetMethod("MakeDict"),
-                            Ast.Constant(0)
+                            AstUtils.Constant(0)
                         )
                     );
                 }
@@ -776,19 +787,6 @@ namespace IronPython.Runtime.Binding {
             }
 
             /// <summary>
-            /// Generators follow different calling convention than 'regular' Python functions.
-            /// When calling generator, we need to insert an additional argument to the call:
-            /// an instance of the PythonGenerator. This is also result of the call.
-            /// 
-            /// DLR only provides generator lambdas that return IEnumerator so we are essentially
-            /// wrapping it inside PythonGenerator.
-            /// </summary>
-            private bool IsGenerator(MethodInfo invoke) {
-                ParameterInfo[] pis = invoke.GetParameters();
-                return pis.Length > 0 && pis[0].ParameterType == typeof(PythonGenerator);
-            }
-
-            /// <summary>
             /// Creates the code to invoke the target delegate function w/ the specified arguments.
             /// </summary>
             private Expression/*!*/ MakeFunctionInvoke(Expression[] invokeArgs) {
@@ -797,15 +795,7 @@ namespace IronPython.Runtime.Binding {
 
                 // If calling generator, create the instance of PythonGenerator first
                 // and add it into the list of arguments
-                Expression pg = null;
-                if (IsGenerator(method)) {
-                    _temps.Add((ParameterExpression)(pg = Ast.Variable(typeof(PythonGenerator), "$gen")));
-
-                    invokeArgs = ArrayUtils.Insert(
-                        pg,
-                        invokeArgs
-                    );
-                }
+                invokeArgs = ArrayUtils.Insert(GetFunctionParam(), invokeArgs);
 
                 Expression invoke = AstUtils.SimpleCallHelper(
                     Ast.Convert(
@@ -819,39 +809,8 @@ namespace IronPython.Runtime.Binding {
                     invokeArgs
                 );
 
-                int count = 1;
-                if (_paramlessCheck != null) count++;
-                if (pg != null) count += 2;
-
-                if (count > 1) {
-                    Expression[] comma = new Expression[count];
-
-                    // Reset count for array fill
-                    count = 0;
-
-                    if (_paramlessCheck != null) {
-                        comma[count++] = _paramlessCheck;
-                    }
-
-                    if (pg != null) {
-                        // $gen = new PythonGenerator(context);
-                        comma[count++] = Expression.Assign(
-                            pg,
-                            Expression.New(
-                                TypeInfo._PythonGenerator.Ctor, 
-                                GetFunctionParam()
-                            )
-                        );
-                        // $gen.Next = <call DLR generator method>($gen, ....)
-                        comma[count++] = Expression.Call(typeof(PythonOps).GetMethod("InitializePythonGenerator"), pg, invoke);
-
-                        // $gen is the value
-                        comma[count++] = pg;
-                    } else {
-                        comma[count++] = invoke;
-                    }
-
-                    invoke = Expression.Block(comma);
+                if (_paramlessCheck != null) {
+                    invoke = Expression.Block(_paramlessCheck, invoke);
                 }
 
                 return invoke;
@@ -879,8 +838,9 @@ namespace IronPython.Runtime.Binding {
                     Ast.Call(
                         typeof(PythonOps).GetMethod("UnexpectedKeywordArgumentError"),
                         AstUtils.Convert(GetFunctionParam(), typeof(PythonFunction)),
-                        Ast.Constant(name, typeof(string))
-                    )
+                        AstUtils.Constant(name, typeof(string))
+                    ),
+                    typeof(PythonOps)
                 );
             }            
 
@@ -908,7 +868,7 @@ namespace IronPython.Runtime.Binding {
 
         private DynamicMetaObject MakeIsCallableRule(DynamicMetaObject/*!*/ self) {
             return new DynamicMetaObject(
-                Ast.Constant(true),
+                AstUtils.Constant(true),
                 BindingRestrictionsHelpers.GetRuntimeTypeRestriction(self.Expression, typeof(PythonFunction))
             );
         }

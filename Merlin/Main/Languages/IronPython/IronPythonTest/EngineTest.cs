@@ -34,6 +34,7 @@ using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using Microsoft.Scripting.Utils;
 using System.Runtime.CompilerServices;
+using Microsoft.Scripting.Math;
 
 namespace IronPythonTest {
 #if !SILVERLIGHT
@@ -131,8 +132,6 @@ namespace IronPythonTest {
             // Load a script with all the utility functions that are required
             // pe.ExecuteFile(InputTestDirectory + "\\EngineTests.py");
             _env = Python.CreateRuntime();
-            _env.LoadAssembly(typeof(string).Assembly);
-            _env.LoadAssembly(typeof(Debug).Assembly);
             _pe = _env.GetEngine("py");
         }
 
@@ -224,7 +223,7 @@ namespace IronPythonTest {
 
         private void TestEngine(ScriptEngine scriptEngine, Dictionary<string, object> options) {
             // basic smoke tests that the engine is alive and working
-            AreEqual((int)scriptEngine.Execute("42"), 42);
+            AreEqual((int)(object)scriptEngine.Execute("42"), 42);
 
             if(options != null) {
                 PythonOptions po = (PythonOptions)Microsoft.Scripting.Hosting.Providers.HostingHelpers.CallEngine<object, LanguageOptions>(
@@ -317,7 +316,7 @@ namespace IronPythonTest {
             // reset the same variable with integer
             scope.SetVariable(clspartName, 1);
             _pe.Execute("if 1 != clsPart: raise AssertionError('test failed')", scope);
-            AreEqual((int)scope.GetVariable(clspartName), 1);
+            AreEqual((int)(object)scope.GetVariable(clspartName), 1);
 
             ScriptSource su = _pe.CreateScriptSourceFromString("");
             AssertExceptionThrown<ArgumentNullException>(delegate() {
@@ -333,7 +332,7 @@ namespace IronPythonTest {
             public override DynamicMetaObject FallbackInvokeMember(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject errorSuggestion) {
                 return new DynamicMetaObject(
                     Expression.Constant("FallbackInvokeMember"),
-                    BindingRestrictions.GetTypeRestriction(target.Expression, target.LimitType)
+                    target.Restrictions.Merge(BindingRestrictions.Combine(args))
                 );
             }
 
@@ -357,8 +356,100 @@ namespace IronPythonTest {
                         Expression.Constant("FallbackInvoke"),
                         target.Expression
                     ),
-                    BindingRestrictions.GetTypeRestriction(target.Expression, target.LimitType)
+                    BindingRestrictionsHelpers.GetRuntimeTypeRestriction(target)
                 );
+            }
+        }
+
+        class MyGetIndexBinder : GetIndexBinder {
+            public MyGetIndexBinder(CallInfo args)
+                : base(args) {
+            }
+
+            public override DynamicMetaObject FallbackGetIndex(DynamicMetaObject target, DynamicMetaObject[] indexes, DynamicMetaObject errorSuggestion) {
+                return new DynamicMetaObject(
+                    Expression.Call(
+                        typeof(String).GetMethod("Concat", new Type[] { typeof(object), typeof(object) }),
+                        Expression.Constant("FallbackGetIndex"),
+                        indexes[0].Expression
+                    ),
+                    BindingRestrictionsHelpers.GetRuntimeTypeRestriction(target)
+                );
+            }
+        }
+
+        class MySetIndexBinder : SetIndexBinder {
+            public MySetIndexBinder(CallInfo args)
+                : base(args) {
+            }
+
+            public override DynamicMetaObject FallbackSetIndex(DynamicMetaObject target, DynamicMetaObject[] indexes, DynamicMetaObject value, DynamicMetaObject errorSuggestion) {
+                return new DynamicMetaObject(
+                    Expression.Call(
+                        typeof(String).GetMethod("Concat", new Type[] { typeof(object), typeof(object), typeof(object) }),
+                        Expression.Constant("FallbackSetIndex"),
+                        indexes[0].Expression,
+                        value.Expression
+                    ),
+                    BindingRestrictionsHelpers.GetRuntimeTypeRestriction(target)
+                );
+            }
+        }
+
+        class MyGetMemberBinder : GetMemberBinder {
+            public MyGetMemberBinder(string name)
+                : base(name, false) {
+            }
+
+            public override DynamicMetaObject FallbackGetMember(DynamicMetaObject target, DynamicMetaObject errorSuggestion) {
+                return new DynamicMetaObject(
+                    Expression.Constant("FallbackGetMember"),
+                    BindingRestrictionsHelpers.GetRuntimeTypeRestriction(target)
+                );
+            }
+        }
+
+
+        class MyInvokeBinder2 : InvokeBinder {
+            public MyInvokeBinder2(CallInfo args)
+                : base(args) {
+            }
+
+            public override DynamicMetaObject FallbackInvoke(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject errorSuggestion) {
+                Expression[] exprs = new Expression[args.Length + 1];
+                exprs[0] = Expression.Constant("FallbackInvoke");
+                for (int i = 0; i < args.Length; i++) {
+                    exprs[i + 1] = args[i].Expression;
+                }
+
+                return new DynamicMetaObject(
+                    Expression.Call(
+                        typeof(String).GetMethod("Concat", new Type[] { typeof(object[]) }),
+                        Expression.NewArrayInit(
+                            typeof(object),
+                            exprs
+                        )
+                    ),
+                    BindingRestrictionsHelpers.GetRuntimeTypeRestriction(target)
+                );
+            }
+        }
+
+        class MyConvertBinder : ConvertBinder {
+            private object _result;
+            public MyConvertBinder(Type type) : this(type, "Converted") {
+            }
+            public MyConvertBinder(Type type, object result)
+                : base(type, true) {
+                _result = result;
+            }
+
+            public override DynamicMetaObject FallbackConvert(DynamicMetaObject target, DynamicMetaObject errorSuggestion) {
+                return new DynamicMetaObject(
+                    Expression.Constant(_result),
+                    BindingRestrictionsHelpers.GetRuntimeTypeRestriction(target)
+                );
+
             }
         }
 
@@ -367,15 +458,79 @@ namespace IronPythonTest {
             ScriptScope scope = _env.CreateScope();
             ScriptSource src = _pe.CreateScriptSourceFromString(@"
 from System.Collections import ArrayList
+import clr
+clr.AddReference('System.Windows.Forms')
+from System.Windows.Forms import Control
+import System
+
+
+somecallable = System.Action[object](lambda : 'Delegate')
+
+class control(Control):
+    pass
+
+class control_setattr(Control):
+    def __init__(self):
+        object.__setattr__(self, 'lastset', None)
+    
+    def __setattr__(self, name, value):
+        object.__setattr__(self, 'lastset', (name, value))
+
+class control_override_prop(Control):
+    def __setattr__(self, name, value):
+        pass
+
+    def get_AllowDrop(self):
+        return 'abc'
+
+    def set_AllowDrop(self, value):
+        super(control_setattr, self).AllowDrop.SetValue(value)
 
 class ns(object):
     ClassVal = 'ClassVal'
 
     def __init__(self):
         self.InstVal = 'InstVal'
-    
+        self.InstCallable = somecallable
+        self.LastSetItem = None
+
+    def __add__(self, other):
+        return 'add' + str(other)
+        
     def TestFunc(self):
         return 'TestFunc'
+
+    def ToString(self):
+        return 'MyToString'
+
+    def NsMethod(self, *args, **kwargs):
+        return args, kwargs
+    
+    @staticmethod
+    def StaticMethod():
+        return 'Static'
+
+    @classmethod
+    def StaticMethod(cls):
+        return cls
+    
+    def __call__(self, *args, **kwargs):
+        return args, kwargs
+    
+    def __int__(self): return 42
+    def __float__(self): return 42.0
+    def __str__(self): return 'Python'
+    def __long__(self): return 42L
+    def __complex__(self): return 42j
+    def __nonzero__(self): return False
+
+    def __getitem__(self, index):
+        return index
+
+    def __setitem__(self, index, value):
+        self.LastSetItem = (index, value)
+    
+    SomeDelegate = somecallable
     
 class ns_getattr(object):
     ClassVal = 'ClassVal'
@@ -387,6 +542,10 @@ class ns_getattr(object):
         return 'TestFunc'
 
     def __getattr__(self, name):
+        if name == 'SomeDelegate':
+            return somecallable
+        elif name == 'something':
+            return 'getattrsomething'
         return name
 
 class ns_getattribute(object):
@@ -399,6 +558,8 @@ class ns_getattribute(object):
         return 'TestFunc'
 
     def __getattribute__(self, name):
+        if name == 'SomeDelegate':
+            return somecallable
         return name
 
 class MyArrayList(ArrayList):
@@ -431,18 +592,55 @@ class MyArrayList_getattribute(ArrayList):
     
     def TestFunc(self):
         return 'TestFunc'
-
+    
     def __getattribute__(self, name):
         return name
+
+class IterableObject(object):
+    def __iter__(self):
+        yield 1
+        yield 2
+        yield 3
+
+class IterableObjectOs:
+    def __iter__(self):
+        yield 1
+        yield 2
+        yield 3
 
 class os:
     ClassVal = 'ClassVal'
 
     def __init__(self):
         self.InstVal = 'InstVal'
+        self.InstCallable = somecallable
+        self.LastSetItem = None
     
     def TestFunc(self):
         return 'TestFunc'
+
+    def __call__(self, *args, **kwargs):
+        return args, kwargs
+    
+    def __int__(self): return 42
+    def __float__(self): return 42.0
+    def __str__(self): return 'Python'
+    def __long__(self): return 42L
+    def __nonzero__(self): return False
+    def __complex__(self): return 42j
+
+    def __getitem__(self, index):
+        return index
+
+    def __setitem__(self, index, value):
+        self.LastSetItem = (index, value)
+    
+    SomeDelegate = somecallable
+
+class plain_os:
+    pass
+
+class plain_ns(object): pass
 
 class os_getattr:
     ClassVal = 'ClassVal'
@@ -451,6 +649,8 @@ class os_getattr:
         self.InstVal = 'InstVal'
 
     def __getattr__(self, name):
+        if name == 'SomeDelegate':
+            return somecallable
         return name
     
     def TestFunc(self):
@@ -459,13 +659,22 @@ class os_getattr:
 def TestFunc():
     return 'TestFunc'
 
+def Invokable(*args, **kwargs):
+    return args, kwargs
+
 TestFunc.TestFunc = TestFunc
 TestFunc.InstVal = 'InstVal'
 TestFunc.ClassVal = 'ClassVal'  # just here to simplify tests
 
+controlinst = control()
 nsinst = ns()
+iterable = IterableObject()
+iterableos = IterableObjectOs()
+plainnsinst = plain_ns()
+nsmethod = nsinst.NsMethod
 alinst = MyArrayList()
 osinst = os()
+plainosinst = plain_os()
 os_getattrinst = os_getattr()
 ns_getattrinst = ns_getattr()
 al_getattrinst = MyArrayList_getattr()
@@ -481,50 +690,266 @@ al_getattributeinst = MyArrayList_getattribute()
             var allObjects = new object[] { scope.GetVariable("nsinst"), scope.GetVariable("osinst"), scope.GetVariable("alinst"), scope.GetVariable("TestFunc") };
             var getattrObjects = new object[] { scope.GetVariable("ns_getattrinst"), scope.GetVariable("os_getattrinst"), scope.GetVariable("al_getattrinst") };
             var getattributeObjects = new object[] { scope.GetVariable("ns_getattributeinst"), scope.GetVariable("al_getattributeinst") };
+            var indexableObjects = new object[] { scope.GetVariable("nsinst"), scope.GetVariable("osinst") };
+            var unindexableObjects = new object[] { scope.GetVariable("TestFunc"), scope.GetVariable("ns_getattrinst"), scope.GetVariable("somecallable") }; // scope.GetVariable("plainosinst"), 
+            var invokableObjects = new object[] { scope.GetVariable("Invokable"), scope.GetVariable("nsinst"), scope.GetVariable("osinst"), scope.GetVariable("nsmethod"), };
+            var convertableObjects = new object[] { scope.GetVariable("nsinst"), scope.GetVariable("osinst") };
+            var unconvertableObjects = new object[] { scope.GetVariable("plainnsinst"), scope.GetVariable("plainosinst") };
+            var iterableObjects = new object[] { scope.GetVariable("iterable"), scope.GetVariable("iterableos") };
 
             // if it lives on a system type we should do a fallback invoke member
-            var site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("Count", Expression.CallInfo(0)));
-            AreEqual(site.Target(site, scope.GetVariable("alinst")), "FallbackInvokeMember");
+            var site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("Count", new CallInfo(0)));
+            AreEqual(site.Target(site, (object)scope.GetVariable("alinst")), "FallbackInvokeMember");
 
             // invoke a function that's a member on an object
             foreach (object inst in allObjects) {
-                site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("TestFunc", Expression.CallInfo(0)));
+                site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("TestFunc", new CallInfo(0)));
                 AreEqual(site.Target(site, inst), "TestFunc");
             }
 
             // invoke a field / property that's on an object
             foreach (object inst in allObjects) {
-                site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("InstVal", Expression.CallInfo(0)));
+                site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("InstVal", new CallInfo(0)));
                 AreEqual(site.Target(site, inst), "FallbackInvokeInstVal");
 
-                site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("ClassVal", Expression.CallInfo(0)));
+                site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("ClassVal", new CallInfo(0)));
                 AreEqual(site.Target(site, inst), "FallbackInvokeClassVal");
+
+
+                if (!(inst is PythonFunction)) {
+                    site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("SomeMethodThatNeverExists", new CallInfo(0)));
+                    AreEqual(site.Target(site, inst), "FallbackInvokeMember");
+                }
             }
 
             // invoke a field / property that's not defined on objects w/ __getattr__
             foreach (object inst in getattrObjects) {
-                site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("DoesNotExist", Expression.CallInfo(0)));
+                site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("DoesNotExist", new CallInfo(0)));
                 AreEqual(site.Target(site, inst), "FallbackInvokeDoesNotExist");
             }
 
             // invoke a field / property that's not defined on objects w/ __getattribute__
             foreach (object inst in getattributeObjects) {
-                site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("DoesNotExist", Expression.CallInfo(0)));
+                site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("DoesNotExist", new CallInfo(0)));
                 AreEqual(site.Target(site, inst), "FallbackInvokeDoesNotExist");
 
-                site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("Count", Expression.CallInfo(0)));
+                site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("Count", new CallInfo(0)));
                 AreEqual(site.Target(site, inst), "FallbackInvokeCount");
 
-                site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("TestFunc", Expression.CallInfo(0)));
+                site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("TestFunc", new CallInfo(0)));
                 AreEqual(site.Target(site, inst), "FallbackInvokeTestFunc");
 
-                site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("InstVal", Expression.CallInfo(0)));
+                site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("InstVal", new CallInfo(0)));
                 AreEqual(site.Target(site, inst), "FallbackInvokeInstVal");
 
-                site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("ClassVal", Expression.CallInfo(0)));
+                site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("ClassVal", new CallInfo(0)));
                 AreEqual(site.Target(site, inst), "FallbackInvokeClassVal");
             }
+
+            foreach (object inst in indexableObjects) {
+                var site2 = CallSite<Func<CallSite, object, object, object>>.Create(new MyGetIndexBinder(new CallInfo(1)));
+                AreEqual(site2.Target(site2, inst, "index"), "index");
+
+                var site3 = CallSite<Func<CallSite, object, object, object, object>>.Create(new MySetIndexBinder(new CallInfo(1)));
+                AreEqual(site3.Target(site3, inst, "index", "value"), "value");
+
+                site = CallSite<Func<CallSite, object, object>>.Create(new MyGetMemberBinder("LastSetItem"));
+                IList<object> res = (IList<object>)site.Target(site, inst);
+                AreEqual(res.Count, 2);
+                AreEqual(res[0], "index");
+                AreEqual(res[1], "value");
+            }
+
+            foreach (object inst in unindexableObjects) {
+                var site2 = CallSite<Func<CallSite, object, object, object>>.Create(new MyGetIndexBinder(new CallInfo(1)));
+                //Console.WriteLine(inst);
+                AreEqual(site2.Target(site2, inst, "index"), "FallbackGetIndexindex");
+
+                var site3 = CallSite<Func<CallSite, object, object, object, object>>.Create(new MySetIndexBinder(new CallInfo(1)));
+                AreEqual(site3.Target(site3, inst, "index", "value"), "FallbackSetIndexindexvalue");
+            }
+
+            foreach (object inst in invokableObjects) {
+                var site2 = CallSite<Func<CallSite, object, object, object>>.Create(new MyInvokeBinder2(new CallInfo(1)));
+                VerifyFunction(new[] { "foo"}, new string[0], site2.Target(site2, inst, "foo"));
+
+                site2 = CallSite<Func<CallSite, object, object, object>>.Create(new MyInvokeBinder2(new CallInfo(1, "bar")));
+                VerifyFunction(new[] { "foo" }, new[] { "bar" }, site2.Target(site2, inst, "foo"));
+
+                var site3 = CallSite<Func<CallSite, object, object, object, object>>.Create(new MyInvokeBinder2(new CallInfo(2)));
+                VerifyFunction(new[] { "foo", "bar" }, new string[0], site3.Target(site3, inst, "foo", "bar"));
+
+                site3 = CallSite<Func<CallSite, object, object, object, object>>.Create(new MyInvokeBinder2(new CallInfo(2, "bar")));
+                VerifyFunction(new[] { "foo", "bar" }, new[] { "bar" }, site3.Target(site3, inst, "foo", "bar"));
+
+                site3 = CallSite<Func<CallSite, object, object, object, object>>.Create(new MyInvokeBinder2(new CallInfo(2, "foo", "bar")));
+                VerifyFunction(new[] { "foo", "bar" }, new[] { "foo", "bar" }, site3.Target(site3, inst, "foo", "bar"));
+            }
+
+            foreach (object inst in convertableObjects) {
+                // These may be invalid according to the DLR (wrong ret type) but currently work today.
+                site = CallSite<Func<CallSite, object, object>>.Create(new MyConvertBinder(typeof(string)));
+                AreEqual(site.Target(site, inst), "Python");
+
+                var dlgsiteo = CallSite<Func<CallSite, object, object>>.Create(new MyConvertBinder(typeof(Func<object, object>), null));
+                VerifyFunction(new[] { "foo" }, new string[0], ((Func<object, object>)(dlgsiteo.Target(dlgsiteo, inst)))("foo"));
+
+                var dlgsite2o = CallSite<Func<CallSite, object, object>>.Create(new MyConvertBinder(typeof(Func<object, object, object>), null));
+                VerifyFunction(new[] { "foo", "bar" }, new string[0], ((Func<object, object, object>)dlgsite2o.Target(dlgsite2o, inst))("foo", "bar"));
+
+                // strongly typed return versions
+                var ssite = CallSite<Func<CallSite, object, string>>.Create(new MyConvertBinder(typeof(string)));
+                AreEqual(ssite.Target(ssite, inst), "Python");
+
+                var isite = CallSite<Func<CallSite, object, int>>.Create(new MyConvertBinder(typeof(int), 23));
+                AreEqual(isite.Target(isite, inst), 42);
+
+                var dsite = CallSite<Func<CallSite, object, double>>.Create(new MyConvertBinder(typeof(double), 23.0));
+                AreEqual(dsite.Target(dsite, inst), 42.0);
+
+                var csite = CallSite<Func<CallSite, object, Complex64>>.Create(new MyConvertBinder(typeof(Complex64), new Complex64(0, 23)));
+                AreEqual(csite.Target(csite, inst), new Complex64(0, 42));
+
+                var bsite = CallSite<Func<CallSite, object, bool>>.Create(new MyConvertBinder(typeof(bool), true));
+                AreEqual(bsite.Target(bsite, inst), false);
+
+                var bisite = CallSite<Func<CallSite, object, Microsoft.Scripting.Math.BigInteger>>.Create(new MyConvertBinder(typeof(BigInteger), (BigInteger)23));
+                AreEqual(bisite.Target(bisite, inst), (Microsoft.Scripting.Math.BigInteger)42);
+
+                var dlgsite = CallSite<Func<CallSite, object, Func<object, object>>>.Create(new MyConvertBinder(typeof(Func<object, object>), null));
+                VerifyFunction(new[] { "foo" }, new string[0], dlgsite.Target(dlgsite, inst)("foo"));
+
+                var dlgsite2 = CallSite<Func<CallSite, object, Func<object, object, object>>>.Create(new MyConvertBinder(typeof(Func<object, object, object>), null));
+                VerifyFunction(new[] { "foo", "bar" }, new string[0], dlgsite2.Target(dlgsite2, inst)("foo", "bar"));
+            }
+
+            foreach (object inst in unconvertableObjects) {
+                // These may be invalid according to the DLR (wrong ret type) but currently work today.
+                site = CallSite<Func<CallSite, object, object>>.Create(new MyConvertBinder(typeof(string)));
+                AreEqual(site.Target(site, inst), "Converted");
+
+                site = CallSite<Func<CallSite, object, object>>.Create(new MyConvertBinder(typeof(Microsoft.Scripting.Math.BigInteger), (BigInteger)23));
+                AreEqual(site.Target(site, inst), (BigInteger)23);
+
+                // strongly typed return versions
+                var ssite = CallSite<Func<CallSite, object, string>>.Create(new MyConvertBinder(typeof(string)));
+                AreEqual(ssite.Target(ssite, inst), "Converted");
+
+                var isite = CallSite<Func<CallSite, object, int>>.Create(new MyConvertBinder(typeof(int), 23));
+                AreEqual(isite.Target(isite, inst), 23);
+
+                var dsite = CallSite<Func<CallSite, object, double>>.Create(new MyConvertBinder(typeof(double), 23.0));
+                AreEqual(dsite.Target(dsite, inst), 23.0);
+
+                var csite = CallSite<Func<CallSite, object, Complex64>>.Create(new MyConvertBinder(typeof(Complex64), new Complex64(0, 23.0)));
+                AreEqual(csite.Target(csite, inst), new Complex64(0, 23.0));
+
+                var bsite = CallSite<Func<CallSite, object, bool>>.Create(new MyConvertBinder(typeof(bool), true));
+                AreEqual(bsite.Target(bsite, inst), true);
+
+                var bisite = CallSite<Func<CallSite, object, BigInteger>>.Create(new MyConvertBinder(typeof(BigInteger), (BigInteger)23));
+                AreEqual(bisite.Target(bisite, inst), (BigInteger)23);
+            }
+
+            // get on .NET member should fallback
+
+            // property
+            site = CallSite<Func<CallSite, object, object>>.Create(new MyGetMemberBinder("AllowDrop"));
+            AreEqual(site.Target(site, (object)scope.GetVariable("controlinst")), "FallbackGetMember");
+
+            // method
+            site = CallSite<Func<CallSite, object, object>>.Create(new MyGetMemberBinder("BringToFront"));
+            AreEqual(site.Target(site, (object)scope.GetVariable("controlinst")), "FallbackGetMember");
+
+            // protected method
+            site = CallSite<Func<CallSite, object, object>>.Create(new MyGetMemberBinder("OnParentChanged"));
+            AreEqual(site.Target(site, (object)scope.GetVariable("controlinst")), "FallbackGetMember");
+
+            // event
+            site = CallSite<Func<CallSite, object, object>>.Create(new MyGetMemberBinder("DoubleClick"));
+            AreEqual(site.Target(site, (object)scope.GetVariable("controlinst")), "FallbackGetMember");
+
+
+            site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("something", new CallInfo(0)));
+            AreEqual(site.Target(site, (object)scope.GetVariable("ns_getattrinst")), "FallbackInvokegetattrsomething");
+
+            foreach (object inst in iterableObjects) {
+                // converting a type which implements __iter__
+                var enumsite = CallSite<Func<CallSite, object, IEnumerable>>.Create(new MyConvertBinder(typeof(IEnumerable)));
+                IEnumerable ie = enumsite.Target(enumsite, inst);
+                IEnumerator ator = ie.GetEnumerator();
+                AreEqual(ator.MoveNext(), true);
+                AreEqual(ator.Current, 1);
+                AreEqual(ator.MoveNext(), true);
+                AreEqual(ator.Current, 2);
+                AreEqual(ator.MoveNext(), true);
+                AreEqual(ator.Current, 3);
+                AreEqual(ator.MoveNext(), false);
+
+                var enumobjsite = CallSite<Func<CallSite, object, object>>.Create(new MyConvertBinder(typeof(IEnumerable)));
+                ie = (IEnumerable)enumobjsite.Target(enumobjsite, inst);
+                ator = ie.GetEnumerator();
+                AreEqual(ator.MoveNext(), true);
+                AreEqual(ator.Current, 1);
+                AreEqual(ator.MoveNext(), true);
+                AreEqual(ator.Current, 2);
+                AreEqual(ator.MoveNext(), true);
+                AreEqual(ator.Current, 3);
+                AreEqual(ator.MoveNext(), false);
+
+                var enumatorsite = CallSite<Func<CallSite, object, IEnumerator>>.Create(new MyConvertBinder(typeof(IEnumerator)));
+                ator = enumatorsite.Target(enumatorsite, inst);
+                AreEqual(ator.MoveNext(), true);
+                AreEqual(ator.Current, 1);
+                AreEqual(ator.MoveNext(), true);
+                AreEqual(ator.Current, 2);
+                AreEqual(ator.MoveNext(), true);
+                AreEqual(ator.Current, 3);
+                AreEqual(ator.MoveNext(), false);
+
+                var enumatorobjsite = CallSite<Func<CallSite, object, object>>.Create(new MyConvertBinder(typeof(IEnumerator)));
+                ator = (IEnumerator)enumatorobjsite.Target(enumatorobjsite, inst);
+                AreEqual(ator.MoveNext(), true);
+                AreEqual(ator.Current, 1);
+                AreEqual(ator.MoveNext(), true);
+                AreEqual(ator.Current, 2);
+                AreEqual(ator.MoveNext(), true);
+                AreEqual(ator.Current, 3);
+                AreEqual(ator.MoveNext(), false);
+
+                // Bug, need to support conversions of new-style classes to IEnumerable<T>,
+                // see http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21253
+                if (inst is IronPython.Runtime.Types.OldInstance) {
+                    var enumofTsite = CallSite<Func<CallSite, object, IEnumerable<object>>>.Create(new MyConvertBinder(typeof(IEnumerable<object>), new object[0]));
+                    IEnumerable<object> ieofT = enumofTsite.Target(enumofTsite, inst);
+                    IEnumerator<object> atorofT = ieofT.GetEnumerator();
+                    AreEqual(atorofT.MoveNext(), true);
+                    AreEqual(atorofT.Current, 1);
+                    AreEqual(atorofT.MoveNext(), true);
+                    AreEqual(atorofT.Current, 2);
+                    AreEqual(atorofT.MoveNext(), true);
+                    AreEqual(atorofT.Current, 3);
+                    AreEqual(atorofT.MoveNext(), false);
+                }
+            }
+
 #endif
+        }
+
+        private void VerifyFunction(object[] results, string[] names, object value) {
+            IList<object> res = (IList<object>)value;
+            AreEqual(res.Count, 2);
+            IList<object> positional = (IList<object>)res[0];
+            IDictionary<object, object> kwargs = (IDictionary<object, object>)res[1];
+
+            for (int i = 0; i < positional.Count; i++) {
+                AreEqual(positional[i], results[i]);
+            }
+
+            for (int i = positional.Count; i < results.Length; i++) {
+                AreEqual(kwargs[names[i - positional.Count]], results[i]);
+            }
+
         }
 
         public void ScenarioEvaluateInAnonymousEngineModule() {
@@ -538,13 +963,13 @@ al_getattributeinst = MyArrayList_getattribute()
             scope3.SetVariable("x", 2);
 
             AreEqual(0, _pe.Execute<int>("x", scope1));
-            AreEqual(0, (int)scope1.GetVariable("x"));
+            AreEqual(0, (int)(object)scope1.GetVariable("x"));
 
             AreEqual(1, _pe.Execute<int>("x", scope2));
-            AreEqual(1, (int)scope2.GetVariable("x"));
+            AreEqual(1, (int)(object)scope2.GetVariable("x"));
 
             AreEqual(2, _pe.Execute<int>("x", scope3));
-            AreEqual(2, (int)scope3.GetVariable("x"));
+            AreEqual(2, (int)(object)scope3.GetVariable("x"));
         }
 
         public void ScenarioObjectOperations() {
@@ -565,6 +990,27 @@ al_getattributeinst = MyArrayList_getattribute()
             //TODO - this currently fails.
             //AreEqual(4, scope1.GetVariable<int>("_"));
         }
+
+        public delegate int CP19724Delegate(double p1);
+        public void ScenarioCP19724()
+        {
+            ScriptScope scope1 = _env.CreateScope();
+            ScriptSource src = _pe.CreateScriptSourceFromString(@"
+class KNew(object):
+    def __call__(self, p1):
+        global X
+        X = 42
+        return 7
+
+k = KNew()", SourceCodeKind.Statements);
+            src.Execute(scope1);
+
+            CP19724Delegate tDelegate = scope1.GetVariable<CP19724Delegate>("k");
+            AreEqual(7, tDelegate(3.14));
+            AreEqual(42, scope1.GetVariable<int>("X"));
+        }
+
+
 
         public void ScenarioEvaluateInPublishedEngineModule() {
             PythonContext pc = DefaultContext.DefaultPythonContext;
@@ -781,36 +1227,36 @@ b = Y()", SourceCodeKind.Statements).Execute(scope);
             ScriptScope scope = _env.CreateScope();
 
             AreEqual(10, _pe.CreateScriptSourceFromString("4+6").Execute<int>(scope));
-            AreEqual(null, _pe.CreateScriptSourceFromString("if True: pass").Execute(scope));
+            AreEqual(null, (object)_pe.CreateScriptSourceFromString("if True: pass").Execute(scope));
 
             AreEqual(10, _pe.CreateScriptSourceFromString("4+6", SourceCodeKind.AutoDetect).Execute<int>(scope));
-            AreEqual(null, _pe.CreateScriptSourceFromString("if True: pass", SourceCodeKind.AutoDetect).Execute(scope));
+            AreEqual(null, (object)_pe.CreateScriptSourceFromString("if True: pass", SourceCodeKind.AutoDetect).Execute(scope));
 
             AreEqual(10, _pe.CreateScriptSourceFromString("4+6", SourceCodeKind.Expression).Execute<int>(scope));
             AssertExceptionThrown<SyntaxErrorException>(() => _pe.CreateScriptSourceFromString("if True: pass", SourceCodeKind.Expression).Execute(scope));
             
-            AreEqual(null, _pe.CreateScriptSourceFromString("4+6", SourceCodeKind.File).Execute(scope));
-            AreEqual(null, _pe.CreateScriptSourceFromString("if True: pass", SourceCodeKind.File).Execute(scope));
+            AreEqual(null, (object)_pe.CreateScriptSourceFromString("4+6", SourceCodeKind.File).Execute(scope));
+            AreEqual(null, (object)_pe.CreateScriptSourceFromString("if True: pass", SourceCodeKind.File).Execute(scope));
 
-            AreEqual(null, _pe.CreateScriptSourceFromString("4+6", SourceCodeKind.SingleStatement).Execute(scope));
-            AreEqual(null, _pe.CreateScriptSourceFromString("if True: pass", SourceCodeKind.SingleStatement).Execute(scope));
+            AreEqual(null, (object)_pe.CreateScriptSourceFromString("4+6", SourceCodeKind.SingleStatement).Execute(scope));
+            AreEqual(null, (object)_pe.CreateScriptSourceFromString("if True: pass", SourceCodeKind.SingleStatement).Execute(scope));
 
-            AreEqual(null, _pe.CreateScriptSourceFromString("4+6", SourceCodeKind.Statements).Execute(scope));
-            AreEqual(null, _pe.CreateScriptSourceFromString("if True: pass", SourceCodeKind.Statements).Execute(scope));
+            AreEqual(null, (object)_pe.CreateScriptSourceFromString("4+6", SourceCodeKind.Statements).Execute(scope));
+            AreEqual(null, (object)_pe.CreateScriptSourceFromString("if True: pass", SourceCodeKind.Statements).Execute(scope));
 
-            AreEqual(10, (int)_pe.Execute("4+6", scope));
+            AreEqual(10, (int)(object)_pe.Execute("4+6", scope));
             AreEqual(10, _pe.Execute<int>("4+6", scope));
 
-            AreEqual("abab", (string)_pe.Execute("'ab' * 2", scope));
+            AreEqual("abab", (string)(object)_pe.Execute("'ab' * 2", scope));
             AreEqual("abab", _pe.Execute<string>("'ab' * 2", scope));
 
             ClsPart clsPart = new ClsPart();
             scope.SetVariable(clspartName, clsPart);
-            AreEqual(clsPart, _pe.Execute("clsPart", scope) as ClsPart);
+            AreEqual(clsPart, ((object)_pe.Execute("clsPart", scope)) as ClsPart);
             AreEqual(clsPart, _pe.Execute<ClsPart>("clsPart", scope));
 
             _pe.Execute("clsPart.Field = 100", scope);
-            AreEqual(100, (int)_pe.Execute("clsPart.Field", scope));
+            AreEqual(100, (int)(object)_pe.Execute("clsPart.Field", scope));
             AreEqual(100, _pe.Execute<int>("clsPart.Field", scope));
 
             // Ensure that we can get back a delegate to a Python method
@@ -854,11 +1300,11 @@ ocinst = oc()
 
             ParameterExpression parameter = Expression.Parameter(typeof(object), "");
 
-            DynamicMetaObject nc = DynamicUtils.ObjectToMetaObject(scope.GetVariable("nc"), parameter);
-            DynamicMetaObject ncinst = DynamicUtils.ObjectToMetaObject(scope.GetVariable("ncinst"), parameter); ;
-            DynamicMetaObject f = DynamicUtils.ObjectToMetaObject(scope.GetVariable("f"), parameter); ;
-            DynamicMetaObject oc = DynamicUtils.ObjectToMetaObject(scope.GetVariable("oc"), parameter); ;
-            DynamicMetaObject ocinst = DynamicUtils.ObjectToMetaObject(scope.GetVariable("ocinst"), parameter); ;
+            DynamicMetaObject nc = DynamicUtils.ObjectToMetaObject((object)scope.GetVariable("nc"), parameter);
+            DynamicMetaObject ncinst = DynamicUtils.ObjectToMetaObject((object)scope.GetVariable("ncinst"), parameter); ;
+            DynamicMetaObject f = DynamicUtils.ObjectToMetaObject((object)scope.GetVariable("f"), parameter); ;
+            DynamicMetaObject oc = DynamicUtils.ObjectToMetaObject((object)scope.GetVariable("oc"), parameter); ;
+            DynamicMetaObject ocinst = DynamicUtils.ObjectToMetaObject((object)scope.GetVariable("ocinst"), parameter); ;
 
             List<string> ncnames = new List<string>(nc.GetDynamicMemberNames());
             List<string> ncinstnames = new List<string>(ncinst.GetDynamicMemberNames());
@@ -872,8 +1318,8 @@ ocinst = oc()
             ocinstnames.Sort();
             fnames.Sort();
 
-            AreEqualLists(ncnames, new[] { "__class__", "__delattr__", "__dict__", "__doc__", "__format__", "__getattribute__", "__hash__", "__init__", "__module__", "__new__", "__reduce__", "__reduce_ex__", "__repr__", "__setattr__", "__str__", "__weakref__", "abc", "classmethod", "foo", "staticfunc" });
-            AreEqualLists(ncinstnames, new[] { "__class__", "__delattr__", "__dict__", "__doc__", "__format__", "__getattribute__", "__hash__", "__init__", "__module__", "__new__", "__reduce__", "__reduce_ex__", "__repr__", "__setattr__", "__str__", "__weakref__", "abc", "baz", "classmethod", "foo", "staticfunc" });
+            AreEqualLists(ncnames, new[] { "__class__", "__delattr__", "__dict__", "__doc__", "__format__", "__getattribute__", "__hash__", "__init__", "__module__", "__new__", "__reduce__", "__reduce_ex__", "__repr__", "__setattr__", "__str__", "__subclasshook__", "__weakref__", "abc", "classmethod", "foo", "staticfunc" });
+            AreEqualLists(ncinstnames, new[] { "__class__", "__delattr__", "__dict__", "__doc__", "__format__", "__getattribute__", "__hash__", "__init__", "__module__", "__new__", "__reduce__", "__reduce_ex__", "__repr__", "__setattr__", "__str__", "__subclasshook__", "__weakref__", "abc", "baz", "classmethod", "foo", "staticfunc" });
 
             AreEqualLists(fnames, new[] { "foo" });
 
@@ -997,8 +1443,8 @@ instOC = TestOC()
             AreEqual(-1, _pe.CreateScriptSourceFromString("M1()").Execute<int>(scope));
             AreEqual(+1, _pe.CreateScriptSourceFromString("M2()").Execute<int>(scope));
 
-            AreEqual(-1, (int)_pe.CreateScriptSourceFromString("M1()").Execute(scope));
-            AreEqual(+1, (int)_pe.CreateScriptSourceFromString("M2()").Execute(scope));
+            AreEqual(-1, (int)(object)_pe.CreateScriptSourceFromString("M1()").Execute(scope));
+            AreEqual(+1, (int)(object)_pe.CreateScriptSourceFromString("M2()").Execute(scope));
 
             _pe.CreateScriptSourceFromString("if M1() != -1: raise AssertionError('test failed')", SourceCodeKind.SingleStatement).Execute(scope);
             _pe.CreateScriptSourceFromString("if M2() != +1: raise AssertionError('test failed')", SourceCodeKind.SingleStatement).Execute(scope);
@@ -1008,8 +1454,8 @@ instOC = TestOC()
             AreEqual(-1, _pe.CreateScriptSourceFromString("c.M1()").Execute<int>(scope));
             AreEqual(+1, _pe.CreateScriptSourceFromString("c.M2()").Execute<int>(scope));
 
-            AreEqual(-1, (int)_pe.CreateScriptSourceFromString("c.M1()").Execute(scope));
-            AreEqual(+1, (int)_pe.CreateScriptSourceFromString("c.M2()").Execute(scope));
+            AreEqual(-1, (int)(object)_pe.CreateScriptSourceFromString("c.M1()").Execute(scope));
+            AreEqual(+1, (int)(object)_pe.CreateScriptSourceFromString("c.M2()").Execute(scope));
 
             _pe.CreateScriptSourceFromString("if c.M1() != -1: raise AssertionError('test failed')", SourceCodeKind.SingleStatement).Execute(scope);
             _pe.CreateScriptSourceFromString("if c.M2() != +1: raise AssertionError('test failed')", SourceCodeKind.SingleStatement).Execute(scope);
@@ -1087,6 +1533,8 @@ instOC = TestOC()
             source = engine.CreateScriptSourceFromString(@"
 import sys
 for mod in sys.builtin_module_names:
+    if mod.startswith('_ctypes'):
+        continue
     x = __import__(mod)
     dir(x)
 ", SourceCodeKind.Statements);
@@ -1157,7 +1605,7 @@ if id(a) == id(b):
             try {
                 scope.Engine.ExecuteFile(Common.InputTestDirectory + "\\raise.py", scope);
                 throw new Exception("We should not get here");
-            } catch (StringException e2) {
+            } catch (StopIterationException e2) {
                 if (scope.Engine.Runtime.Setup.DebugMode != e2.StackTrace.Contains(lineNumber))
                     throw new Exception("Debugging is enabled even though Options.DebugMode is not specified");
             }

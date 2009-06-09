@@ -17,17 +17,11 @@ InvalidArgumentValue=Invalid argument value
 ComObjectExpected=COM object is expected.
 CannotCall=Cannot perform call.
 
-## ExceptionType=InvalidOperationException
-RemovingUnregisteredEvent=Removing an event handler that is not registered.
-
 ## ExceptionType=ArgumentException
 COMObjectDoesNotSupportEvents=COM object does not support events.
 
 ## ExceptionType=ArgumentException
 COMObjectDoesNotSupportSourceInterface=COM object does not support specified source interface.
-
-## ExceptionType=InvalidOperationException
-RemovingUnregisteredHandler=Removing not registered handler.
 
 ## ExceptionType=InvalidOperationException
 SetComObjectDataFailed=Marshal.SetComObjectData failed.
@@ -64,6 +58,9 @@ GetIDsOfNamesInvalid=IDispatch::GetIDsOfNames behaved unexpectedly for {0}.
 
 ## ExceptionType=InvalidOperationException
 UnsupportedEnumType=Attempting to wrap an unsupported enum type.
+
+## ExceptionType=InvalidOperationException
+UnsupportedHandlerType=Attempting to pass an event handler of an unsupported type.
 
 ## ExceptionType=MissingMemberException
 CouldNotGetDispId=Could not get dispatch ID for {0} (error: {1}).

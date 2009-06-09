@@ -238,7 +238,9 @@ namespace IronPython.Compiler.Ast {
             node.ModuleNameVariable = _globalScope.EnsureGlobalVariable(this, Symbols.Name);
 
             // define the __doc__ and the __module__
-            node.DocVariable = DefineName(Symbols.Doc);
+            if (node.Body.Documentation != null) {
+                node.DocVariable = DefineName(Symbols.Doc);
+            }
             node.ModVariable = DefineName(Symbols.Module);
 
             // Walk the body
@@ -310,6 +312,8 @@ namespace IronPython.Compiler.Ast {
 
         // FunctionDefinition
         public override bool Walk(FunctionDefinition node) {
+            node._nameVariable = _globalScope.EnsureGlobalVariable(Symbols.Name);            
+            
             // Name is defined in the enclosing context
             if (!node.IsLambda) {
                 node.Variable = DefineName(node.Name);
@@ -395,7 +399,7 @@ namespace IronPython.Compiler.Ast {
 
 
                 // Create the variable in the global context and mark it as global
-                PythonVariable variable = _globalScope.EnsureVariable(n);
+                PythonVariable variable = _globalScope.EnsureGlobalVariable(n);
                 variable.Kind = VariableKind.Global;
 
                 if (conflict == null) {
@@ -416,9 +420,7 @@ namespace IronPython.Compiler.Ast {
             if (node.Module) {
                 node.NameVariable = DefineName(Symbols.Name);
                 node.FileVariable = DefineName(Symbols.File);
-                if (node.Body.Documentation != null) {
-                    node.DocVariable = DefineName(Symbols.Doc);
-                }
+                node.DocVariable = DefineName(Symbols.Doc);
             }
             return true;
         }

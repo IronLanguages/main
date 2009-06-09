@@ -20,6 +20,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
@@ -80,27 +81,11 @@ namespace IronPython.Runtime {
 
         [Documentation("__import__(name) -> module\n\nImport a module.")]
         public static object __import__(CodeContext/*!*/ context, string name) {
-            return __import__(context, name, null, null, null);
+            return __import__(context, name, null, null, null, -1);
         }
 
-        [Documentation("__import__(name, globals) -> module\n\nImport a module.")]
-        public static object __import__(CodeContext/*!*/ context, string name, object globals) {
-            return __import__(context, name, globals, null, null);
-
-        }
-
-        [Documentation("__import__(name, globals, locals) -> module\n\nImport a module.")]
-        public static object __import__(CodeContext/*!*/ context, string name, object globals, object locals) {
-            return __import__(context, name, globals, locals, null);
-        }
-
-        [Documentation("__import__(name, globals, locals, fromlist) -> module\n\nImport a module.")]
-        public static object __import__(CodeContext/*!*/ context, string name, object globals, object locals, object fromlist) {
-            return __import__(context, name, globals, locals, fromlist, -1);
-        }
-
-        [Documentation("__import__(name, globals, locals, fromlist) -> module\n\nImport a module.")]
-        public static object __import__(CodeContext/*!*/ context, string name, object globals, object locals, object fromlist, int level) {
+        [Documentation("__import__(name, globals, locals, fromlist, level) -> module\n\nImport a module.")]
+        public static object __import__(CodeContext/*!*/ context, string name, [DefaultParameterValue(null)]object globals, [DefaultParameterValue(null)]object locals, [DefaultParameterValue(null)]object fromlist, [DefaultParameterValue(-1)]int level) {
             //!!! remove suppress in GlobalSuppressions.cs when CodePlex 2704 is fixed.
             ISequence from = fromlist as ISequence;
             PythonContext pc = PythonContext.GetContext(context);
@@ -185,6 +170,22 @@ namespace IronPython.Runtime {
             }
         }
 
+        public static string bin(int number) {
+            return Int32Ops.ToBinary(number, true);
+        }
+
+        public static string bin(Index number) {
+            return Int32Ops.ToBinary(Converter.ConvertToIndex(number), true);
+        }
+
+        public static string bin(BigInteger number) {
+            return BigIntegerOps.ToBinary(number, true);
+        }
+
+        public static string bin(double number) {
+            throw PythonOps.TypeError("'float' object cannot be interpreted as an index");
+        }
+
         public static PythonType @bool {
             get {
                 return DynamicHelpers.GetPythonTypeFromType(typeof(bool));
@@ -230,7 +231,7 @@ namespace IronPython.Runtime {
 
             if (xType.TryResolveSlot(context, Symbols.Coerce, out pts)) {
                 object callable;
-                if (pts.TryGetBoundValue(context, x, xType, out callable)) {
+                if (pts.TryGetValue(context, x, xType, out callable)) {
                     return PythonCalls.Call(context, callable, y);
                 }
             }
@@ -262,14 +263,16 @@ namespace IronPython.Runtime {
         }
 
         [Documentation("compile a unit of source code.\n\nThe source can be compiled either as exec, eval, or single.\nexec compiles the code as if it were a file\neval compiles the code as if were an expression\nsingle compiles a single statement\n\n")]
-        public static object compile(CodeContext/*!*/ context, string source, string filename, string kind, object flags, object dontInherit) {
+        public static object compile(CodeContext/*!*/ context, string source, string filename, string mode, [DefaultParameterValue(null)]object flags, [DefaultParameterValue(null)]object dont_inherit) {
             if (source.IndexOf('\0') != -1) {
                 throw PythonOps.TypeError("compile() expected string without null bytes");
             }
 
-            bool inheritContext = GetCompilerInheritance(dontInherit);
+            source = RemoveBom(source);
+
+            bool inheritContext = GetCompilerInheritance(dont_inherit);
             CompileFlags cflags = GetCompilerFlags(flags);
-            PythonCompilerOptions opts = GetDefaultCompilerOptions(context, inheritContext, cflags);
+            PythonCompilerOptions opts = GetRuntimeGeneratedCodeCompilerOptions(context, inheritContext, cflags);
             if ((cflags & CompileFlags.CO_DONT_IMPLY_DEDENT) != 0) {
                 opts.DontImplyDedent = true;
             }
@@ -278,7 +281,7 @@ namespace IronPython.Runtime {
             SourceUnit sourceUnit;
             string unitPath = String.IsNullOrEmpty(filename) ? null : filename;
 
-            switch (kind) {
+            switch (mode) {
                 case "exec": sourceUnit = context.LanguageContext.CreateSnippet(source, unitPath, SourceCodeKind.Statements); break;
                 case "eval": sourceUnit = context.LanguageContext.CreateSnippet(source, unitPath, SourceCodeKind.Expression); break;
                 case "single": sourceUnit = context.LanguageContext.CreateSnippet(source, unitPath, SourceCodeKind.InteractiveCode); break;
@@ -287,21 +290,18 @@ namespace IronPython.Runtime {
             }
 
             ScriptCode compiledCode = sourceUnit.Compile(opts, ThrowingErrorSink.Default);
-            compiledCode.EnsureCompiled();
 
             FunctionCode res = new FunctionCode(compiledCode, cflags);
             res.SetFilename(filename);
             return res;
         }
 
-        [Documentation("compile a unit of source code.\n\nThe source can be compiled either as exec, eval, or single.\nexec compiles the code as if it were a file\neval compiles the code as if were an expression\nsingle compiles a single statement\n\n")]
-        public static object compile(CodeContext/*!*/ context, string source, string filename, string kind, object flags) {
-            return compile(context, source, filename, kind, flags, null);
-        }
-
-        [Documentation("compile a unit of source code.\n\nThe source can be compiled either as exec, eval, or single.\nexec compiles the code as if it were a file\neval compiles the code as if were an expression\nsingle compiles a single statement\n\n")]
-        public static object compile(CodeContext/*!*/ context, string source, string filename, string kind) {
-            return compile(context, source, filename, kind, null, null);
+        private static string RemoveBom(string source) {
+            // skip BOM (TODO: this is ugly workaround that is in fact not strictly correct, we need binary strings to handle it correctly)
+            if (source.StartsWith("\u00ef\u00bb\u00bf")) {
+                source = source.Substring(3, source.Length - 3);
+            }
+            return source;
         }
 
         public static PythonType classmethod {
@@ -378,7 +378,7 @@ namespace IronPython.Runtime {
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods")]
         public static List dir(CodeContext/*!*/ context) {
-            List res = PythonOps.MakeListFromSequence(LocalsAsAttributesCollection(context).Keys);
+            List res = PythonOps.MakeListFromSequence(context.Scope.Dict.Keys);
 
             res.sort(context);
             return res;
@@ -429,7 +429,7 @@ namespace IronPython.Runtime {
             IAttributesCollection attrLocals = null;
             if (locals == null) {
                 if (context.Scope.Parent != null) {
-                    attrLocals = LocalsAsAttributesCollection(context);
+                    attrLocals = context.Scope.Dict;
                 }
             } else {
                 attrLocals = locals as IAttributesCollection ?? new PythonDictionary(new ObjectAttributesAdapter(context, locals));
@@ -459,13 +459,14 @@ namespace IronPython.Runtime {
                 throw PythonOps.TypeError("locals must be mapping");
             }
 
+            expression = RemoveBom(expression);
             var scope = GetExecEvalScopeOptional(context, globals, locals, false);
             var pythonContext = PythonContext.GetContext(context);
 
             // TODO: remove TrimStart
             var sourceUnit = pythonContext.CreateSnippet(expression.TrimStart(' ', '\t'), SourceCodeKind.Expression);
-            var compilerOptions = GetDefaultCompilerOptions(context, true, 0);
-            var scriptCode = pythonContext.CompileSourceCode(sourceUnit, compilerOptions, ThrowingErrorSink.Default, true); // interpret
+            var compilerOptions = GetRuntimeGeneratedCodeCompilerOptions(context, true, 0);
+            var scriptCode = pythonContext.CompilePythonCode(Compiler.CompilationMode.Lookup, sourceUnit, compilerOptions, ThrowingErrorSink.Default);
 
             return scriptCode.Run(scope);
         }
@@ -507,7 +508,7 @@ namespace IronPython.Runtime {
             SourceUnit sourceUnit = pc.CreateFileUnit(path, pc.DefaultEncoding, SourceCodeKind.Statements);
             ScriptCode code;
 
-            var options = GetDefaultCompilerOptions(context, true, 0);
+            var options = GetRuntimeGeneratedCodeCompilerOptions(context, true, 0);
             //always generate an unoptimized module since we run these against a dictionary namespace
             options.Module &= ~ModuleOptions.Optimized;
 
@@ -629,6 +630,10 @@ namespace IronPython.Runtime {
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods")]
         public static IAttributesCollection globals(CodeContext/*!*/ context) {
+            Scope scope = context.GlobalScope;
+            if (scope.Dict is PythonDictionary) {
+                return scope.Dict;
+            }
             return new PythonDictionary(new GlobalScopeDictionaryStorage(context.Scope));
         }
 
@@ -1018,18 +1023,17 @@ namespace IronPython.Runtime {
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods")]
         public static object locals(CodeContext/*!*/ context) {
-            ObjectAttributesAdapter adapter = context.Scope.Dict as ObjectAttributesAdapter;
-            if (adapter != null) {
-                // we've wrapped Locals in an IAttributesCollection, give the user back the
-                // original object.
-                return adapter.Backing;
+            PythonDictionary dict = context.Scope.Dict as PythonDictionary;
+            if (dict != null) {
+                ObjectAttributesAdapter adapter = dict._storage as ObjectAttributesAdapter;
+                if (adapter != null) {
+                    // we've wrapped Locals in an IAttributesCollection, give the user back the
+                    // original object.
+                    return adapter.Backing;
+                }                
             }
 
-            return LocalScopeDictionaryStorage.GetObjectFromScope(context.Scope);
-        }
-
-        internal static IAttributesCollection LocalsAsAttributesCollection(CodeContext/*!*/ context) {
-            return LocalScopeDictionaryStorage.GetDictionaryFromScope(context.Scope);
+            return context.Scope.Dict;
         }
 
         public static PythonType @long {
@@ -1040,7 +1044,7 @@ namespace IronPython.Runtime {
 
         private static CallSite<Func<CallSite, CodeContext, T, T1, object>> MakeMapSite<T, T1>(CodeContext/*!*/ context) {
             return CallSite<Func<CallSite, CodeContext, T, T1, object>>.Create(
-                PythonContext.GetContext(context).DefaultBinderState.InvokeOne
+                PythonContext.GetContext(context).InvokeOne
             );
         }
 
@@ -1413,26 +1417,33 @@ namespace IronPython.Runtime {
         }
 
         public static int ord(object value) {
-            char ch;
-
             if (value is char) {
-                ch = (char)value;
-            } else {
-                string stringValue = value as string;
-                if (stringValue == null) {
-                    ExtensibleString es = value as ExtensibleString;
-                    if (es != null) stringValue = es.Value;
-                }
-                if (stringValue != null) {
-                    if (stringValue.Length != 1) {
-                        throw PythonOps.TypeError("expected a character, but string of length {0} found", stringValue.Length);
-                    }
-                    ch = stringValue[0];
-                } else {
-                    throw PythonOps.TypeError("expected a character, but {0} found", DynamicHelpers.GetPythonType(value));
-                }
+                return (char)value;
+            } 
+
+            string stringValue = value as string;
+            if (stringValue == null) {
+                ExtensibleString es = value as ExtensibleString;
+                if (es != null) stringValue = es.Value;
             }
-            return (int)ch;
+            
+            if (stringValue != null) {
+                if (stringValue.Length != 1) {
+                    throw PythonOps.TypeError("expected a character, but string of length {0} found", stringValue.Length);
+                }
+                return stringValue[0];
+            }
+
+            IList<byte> bytes = value as IList<byte>;
+            if (bytes != null) {
+                if (bytes.Count != 1) {
+                    throw PythonOps.TypeError("expected a character, but string of length {0} found", bytes.Count);
+                }
+
+                return bytes[0];
+            }
+                
+            throw PythonOps.TypeError("expected a character, but {0} found", DynamicHelpers.GetPythonType(value));
         }
 
         public static object pow(CodeContext/*!*/ context, object x, object y) {
@@ -1734,7 +1745,7 @@ namespace IronPython.Runtime {
         private static void EnsureReduceData(CodeContext context, SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object, object, object, object>>> siteData) {
             if (siteData.Data == null) {
                 siteData.Data = CallSite<Func<CallSite, CodeContext, object, object, object, object>>.Create(
-                    PythonContext.GetContext(context).DefaultBinderState.Invoke(
+                    PythonContext.GetContext(context).Invoke(
                         new CallSignature(2)
                     )
                 );
@@ -1742,11 +1753,30 @@ namespace IronPython.Runtime {
             }
         }
 
+        [ThreadStatic]
+        private static List<Scope> _reloadStack; 
+
         public static object reload(CodeContext/*!*/ context, Scope/*!*/ scope) {
             if (scope == null) {
                 throw PythonOps.TypeError("unexpected type: NoneType");
             }
-            return Importer.ReloadModule(context, scope);
+
+            if (_reloadStack == null) {
+                Interlocked.CompareExchange(ref _reloadStack, new List<Scope>(), null);
+            }
+
+            // if a module attempts to reload it's self while already reloading it's 
+            // self we just return the original module.
+            if (_reloadStack.Contains(scope)) {
+                return scope;
+            }
+
+            _reloadStack.Add(scope);
+            try {
+                return Importer.ReloadModule(context, scope);
+            } finally {
+                _reloadStack.RemoveAt(_reloadStack.Count - 1);
+            }
         }
 
         public static object repr(CodeContext/*!*/ context, object o) {
@@ -1897,8 +1927,18 @@ namespace IronPython.Runtime {
             IEnumerator i0 = PythonOps.GetEnumerator(s0);
             IEnumerator i1 = PythonOps.GetEnumerator(s1);
             List ret = new List();
-            while (i0.MoveNext() && i1.MoveNext()) {
-                ret.AddNoLock(PythonTuple.MakeTuple(i0.Current, i1.Current));
+            while(true) {
+                object obj0, obj1;
+                if(!i0.MoveNext()) {
+                    break;
+                }
+                obj0 = i0.Current;
+                if(!i1.MoveNext()) {
+                    break;
+                }
+
+                obj1 = i1.Current;
+                ret.AddNoLock(PythonTuple.MakeTuple(obj0, obj1));
             }
             return ret;
         }
@@ -1922,7 +1962,7 @@ namespace IronPython.Runtime {
                     if (!iters[i].MoveNext()) return ret;
                     items[i] = iters[i].Current;
                 }
-                ret.AddNoLock(PythonTuple.Make(items));
+                ret.AddNoLock(PythonTuple.MakeTuple(items));
             }
         }
 
@@ -1933,9 +1973,9 @@ namespace IronPython.Runtime {
         }
 
         /// <summary>
-        /// Gets the appropriate LanguageContext to be used for code compiled with Python's compile built-in
+        /// Gets the appropriate LanguageContext to be used for code compiled with Python's compile, eval, execfile, etc...
         /// </summary>
-        internal static PythonCompilerOptions GetDefaultCompilerOptions(CodeContext/*!*/ context, bool inheritContext, CompileFlags cflags) {
+        internal static PythonCompilerOptions GetRuntimeGeneratedCodeCompilerOptions(CodeContext/*!*/ context, bool inheritContext, CompileFlags cflags) {
             PythonCompilerOptions pco;
             if (inheritContext) {
                 PythonModule pm = (PythonModule)context.GlobalScope.GetExtension(context.LanguageContext.ContextId);
@@ -1963,6 +2003,7 @@ namespace IronPython.Runtime {
             // The options created this way never creates
             // optimized module (exec, compile)
             pco.Module &= ~ModuleOptions.Optimized;
+            pco.Module |= ModuleOptions.Interpret;
             return pco;
         }
 
@@ -2029,7 +2070,7 @@ namespace IronPython.Runtime {
 
         [SpecialName]
         public static void PerformModuleReload(PythonContext context, IAttributesCollection dict) {
-            dict[SymbolTable.StringToId("__debug__")] = ScriptingRuntimeHelpers.BooleanToObject(context.DomainManager.Configuration.DebugMode);
+            dict[SymbolTable.StringToId("__debug__")] = ScriptingRuntimeHelpers.BooleanToObject(!context.PythonOptions.Optimize);
         }
     }
 }

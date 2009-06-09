@@ -48,7 +48,7 @@ namespace IronRuby.Builtins {
             } catch (Exception ex) {
                 throw ToRubyException(ex, strName, DirectoryOperation.Open);
             }
-            _dirName = MutableString.Create(NormalizePathSeparators(strName));
+            _dirName = MutableString.Create(RubyUtils.CanonicalizePath(strName));
             _closed = false;
             _pos = -2;
         }
@@ -169,7 +169,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("getwd", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("pwd", RubyMethodAttributes.PublicSingleton)]
         public static MutableString/*!*/ GetCurrentDirectory(object self) {
-            return MutableString.Create(NormalizePathSeparators(Directory.GetCurrentDirectory()));
+            return MutableString.Create(RubyUtils.CanonicalizePath(Directory.GetCurrentDirectory()));
         }
 
         #region glob
@@ -343,36 +343,32 @@ namespace IronRuby.Builtins {
 
             switch (op) {
                 case DirectoryOperation.ChangeDir:
-                    return new Errno.InvalidError(path);
+                    return RubyErrno.CreateEINVAL(path);
 
                 case DirectoryOperation.Open:
-                    return new Errno.NoEntryError(path);
+                    return RubyErrno.CreateENOENT(path);
 
                 case DirectoryOperation.Delete:
                     if (ex is ArgumentException) {
-                        return new Errno.InvalidError(path);
+                        return RubyErrno.CreateEINVAL(path);
                     }
                     if (ex is IOException) {
-                        return new Errno.AccessError(path);
+                        return Errno.CreateEACCES(path);
                     }
                     break;
 
                 case DirectoryOperation.Create:
                     if (ex is ArgumentException) {
-                        return new Errno.InvalidError(path);
+                        return RubyErrno.CreateEINVAL(path);
                     }
                     if (ex is IOException) {
-                        return new Errno.ExistError(path);
+                        return RubyErrno.CreateEEXIST(path);
                     }
                     break;
             }
 
             // throw anyway
             return RubyExceptions.CreateSystemCallError(String.Format("unknown scenario - {0}, {1}, {2}", exceptionType, path, op));
-        }
-
-        private static string/*!*/ NormalizePathSeparators(string/*!*/ path) {
-            return path.Replace("\\", "/");
         }
 
         #endregion

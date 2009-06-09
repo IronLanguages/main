@@ -21,6 +21,7 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using IronRuby.Builtins;
 using IronRuby.Compiler;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Runtime.Calls {
     using Ast = System.Linq.Expressions.Expression;
@@ -40,6 +41,14 @@ namespace IronRuby.Runtime.Calls {
             return new RubyFieldInfo(_fieldInfo, flags, module, _isSetter);
         }
 
+        internal override bool IsRubyMember {
+            get { return false; }
+        }
+
+        internal override bool IsDataMember {
+            get { return true; }
+        }
+
         public override MemberInfo/*!*/[]/*!*/ GetMembers() {
             return new MemberInfo[] { _fieldInfo };
         }
@@ -57,12 +66,12 @@ namespace IronRuby.Runtime.Calls {
                 if (args.SimpleArgumentCount == 0 && args.Signature.HasRhsArgument) {
                     expr = Ast.Assign(
                         Ast.Field(instance, _fieldInfo),
-                        // TODO: remove
-                        args.RubyContext.Binder.ConvertExpression(
+                        Converter.ConvertExpression(
                             args.GetRhsArgumentExpression(), 
-                            _fieldInfo.FieldType, 
-                            ConversionResultKind.ExplicitCast, 
-                            args.ScopeExpression
+                            _fieldInfo.FieldType,
+                            args.RubyContext, 
+                            args.MetaContext.Expression,
+                            true
                         )
                     );
                 }
@@ -73,7 +82,7 @@ namespace IronRuby.Runtime.Calls {
                         // TODO: seems like Compiler should correctly handle the literal field case
                         // (if you emit a read to a literal field, you get a NotSupportedExpception from
                         // FieldHandle when we try to emit)
-                        expr = Ast.Constant(_fieldInfo.GetValue(null));
+                        expr = AstUtils.Constant(_fieldInfo.GetValue(null));
                     } else {
                         expr = Ast.Field(instance, _fieldInfo);
                     }
@@ -84,7 +93,7 @@ namespace IronRuby.Runtime.Calls {
                 metaBuilder.Result = expr;
             } else {
                 metaBuilder.SetError(
-                    Methods.MakeInvalidArgumentTypesError.OpCall(Ast.Constant(_isSetter ? name + "=" : name))
+                    Methods.MakeInvalidArgumentTypesError.OpCall(AstUtils.Constant(_isSetter ? name + "=" : name))
                 );
             }
         }

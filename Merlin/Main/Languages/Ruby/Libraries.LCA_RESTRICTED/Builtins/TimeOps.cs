@@ -121,29 +121,28 @@ namespace IronRuby.Builtins {
             return new DateTime(year, month, day, hour, minute, second).AddTicks(microsecond*10);
         }
 
-        private static int GetComponent(ConversionStorage<int>/*!*/ conversionStorage, RubyContext/*!*/ context, object[] components, int index, int defValue) {
+        private static int GetComponent(ConversionStorage<int>/*!*/ conversionStorage, object[] components, int index, int defValue) {
             if (index >= components.Length || components[index] == null) {
                 return defValue;
             }
-            return Protocols.CastToFixnum(conversionStorage, context, components[index]);
+            return Protocols.CastToFixnum(conversionStorage, components[index]);
         }
 
         [RubyMethod("local", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("mktime", RubyMethodAttributes.PublicSingleton)]
-        public static DateTime CreateLocalTime(ConversionStorage<int>/*!*/ conversionStorage, 
-            RubyContext/*!*/ context, object/*!*/ self, [NotNull]params object[]/*!*/ components) {
+        public static DateTime CreateLocalTime(ConversionStorage<int>/*!*/ conversionStorage, object/*!*/ self, [NotNull]params object[]/*!*/ components) {
 
             if (components.Length > 7 || components.Length == 0) {
                 throw RubyExceptions.CreateArgumentError(String.Format("wrong number of arguments ({0} for 7)", components.Length));
             }
             
-            return new DateTime(Protocols.CastToFixnum(conversionStorage, context, components[0]),
-                GetComponent(conversionStorage, context, components, 1, 1),
-                GetComponent(conversionStorage, context, components, 2, 1),
-                GetComponent(conversionStorage, context, components, 3, 0),
-                GetComponent(conversionStorage, context, components, 4, 0),
-                GetComponent(conversionStorage, context, components, 5, 0),
-                GetComponent(conversionStorage, context, components, 6, 0)
+            return new DateTime(Protocols.CastToFixnum(conversionStorage, components[0]),
+                GetComponent(conversionStorage, components, 1, 1),
+                GetComponent(conversionStorage, components, 2, 1),
+                GetComponent(conversionStorage, components, 3, 0),
+                GetComponent(conversionStorage, components, 4, 0),
+                GetComponent(conversionStorage, components, 5, 0),
+                GetComponent(conversionStorage, components, 6, 0)
             );
         }
 
@@ -202,13 +201,13 @@ namespace IronRuby.Builtins {
                 throw RubyExceptions.CreateArgumentError(String.Format("wrong number of arguments ({0} for 7)", components.Length));
             }
             return new DateTime(
-                Protocols.CastToFixnum(conversionStorage, context, components[0]),
-                GetComponent(conversionStorage, context, components, 1, 1),
-                GetComponent(conversionStorage, context, components, 2, 1),
-                GetComponent(conversionStorage, context, components, 3, 0),
-                GetComponent(conversionStorage, context, components, 4, 0),
-                GetComponent(conversionStorage, context, components, 5, 0), DateTimeKind.Utc).AddTicks(
-                    GetComponent(conversionStorage, context, components, 6, 0) * 10
+                Protocols.CastToFixnum(conversionStorage, components[0]),
+                GetComponent(conversionStorage, components, 1, 1),
+                GetComponent(conversionStorage, components, 2, 1),
+                GetComponent(conversionStorage, components, 3, 0),
+                GetComponent(conversionStorage, components, 4, 0),
+                GetComponent(conversionStorage, components, 5, 0), DateTimeKind.Utc).AddTicks(
+                    GetComponent(conversionStorage, components, 6, 0) * 10
                 );
         }
 
@@ -274,7 +273,7 @@ namespace IronRuby.Builtins {
             try {
                 DateTime result = new DateTime(year, month, day, hour, minute, second, DateTimeKind.Utc);
                 result = result.AddTicks(usec * 10L);
-                if (isUtc) {
+                if (!isUtc) {
                     result = result.ToLocalTime();
                 }
                 return result;

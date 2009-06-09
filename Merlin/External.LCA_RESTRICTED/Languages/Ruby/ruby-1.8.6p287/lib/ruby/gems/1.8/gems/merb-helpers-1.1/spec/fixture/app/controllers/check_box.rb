@@ -1,0 +1,2 @@
+class CheckBoxSpecs < SpecController
+end

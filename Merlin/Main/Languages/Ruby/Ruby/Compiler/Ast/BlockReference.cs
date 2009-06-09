@@ -40,11 +40,7 @@ namespace IronRuby.Compiler.Ast {
 
         internal override MSA.Expression/*!*/ Transform(AstGenerator/*!*/ gen) {
             Assert.NotNull(gen);
-            return Ast.Dynamic(
-                ConvertToProcAction.Instance,
-                typeof(Proc),
-                Methods.GetContextFromScope.OpCall(gen.CurrentScopeVariable), _expression.TransformRead(gen)
-            );
+            return Ast.Dynamic(ConvertToProcAction.Make(gen.Context), typeof(Proc), _expression.TransformRead(gen));
         }
     }
 }

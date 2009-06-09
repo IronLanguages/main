@@ -38,7 +38,7 @@ namespace IronPython.Compiler.Ast {
         internal override MSAst.Expression Transform(AstGenerator ag) {
             // If debugging is off, return empty statement
             if (ag.Optimize) {
-                return ag.AddDebugInfo(MSAst.Expression.Empty(), Span);
+                return ag.AddDebugInfo(AstUtils.Empty(), Span);
             }
 
             // Transform into:
@@ -46,12 +46,15 @@ namespace IronPython.Compiler.Ast {
             // } else {
             //     RaiseAssertionError(_message);
             // }
-            return AstUtils.Unless(                                 // if
-                ag.TransformAndDynamicConvert(_test, typeof(bool)), // _test
-                Ast.Call(                                           // else branch
-                    AstGenerator.GetHelperMethod("RaiseAssertionError"),
-                    ag.TransformOrConstantNull(_message, typeof(object))
-                )
+            return ag.AddDebugInfo(
+                AstUtils.Unless(                                 // if
+                    ag.TransformAndDynamicConvert(_test, typeof(bool)), // _test
+                    Ast.Call(                                           // else branch
+                        AstGenerator.GetHelperMethod("RaiseAssertionError"),
+                        ag.TransformOrConstantNull(_message, typeof(object))
+                    )
+                ),
+                Span
             );
         }
 

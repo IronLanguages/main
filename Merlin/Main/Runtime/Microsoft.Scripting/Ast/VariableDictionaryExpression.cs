@@ -18,6 +18,7 @@ using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Ast {
 
@@ -28,9 +29,9 @@ namespace Microsoft.Scripting.Ast {
         public static Expression VariableDictionary(IEnumerable<ParameterExpression> variables) {
             var vars = variables.ToReadOnly();
             return Expression.New(
-                typeof(LocalsDictionary).GetConstructor(new[] { typeof(IList<IStrongBox>), typeof(SymbolId[]) }),
+                typeof(LocalsDictionary).GetConstructor(new[] { typeof(IRuntimeVariables), typeof(SymbolId[]) }),
                 Expression.RuntimeVariables(vars),
-                Expression.Constant(vars.Map(v => SymbolTable.StringToIdOrEmpty(v.Name)))
+                AstUtils.Constant(vars.Map(v => SymbolTable.StringToIdOrEmpty(v.Name)))
             );
         }
     }

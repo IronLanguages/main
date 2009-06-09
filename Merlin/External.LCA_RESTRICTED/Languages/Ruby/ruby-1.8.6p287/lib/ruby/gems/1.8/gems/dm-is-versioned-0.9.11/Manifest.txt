@@ -1,0 +1,14 @@
+History.txt
+LICENSE
+Manifest.txt
+README.txt
+Rakefile
+TODO
+lib/dm-is-versioned.rb
+lib/dm-is-versioned/is/version.rb
+lib/dm-is-versioned/is/versioned.rb
+spec/spec.opts
+spec/spec_helper.rb
+spec/versioned_spec.rb
+tasks/install.rb
+tasks/spec.rb

@@ -17,17 +17,43 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Reflection;
+
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting;
 
+using IronPython.Runtime;
+
 namespace IronPython.Compiler {
+    /// <summary>
+    /// A ScriptCode which has been loaded from an assembly which is saved on disk.
+    /// </summary>
     class OnDiskScriptCode : ScriptCode {
-        private readonly DlrMainCallTarget _code;
+        private readonly Func<Scope, LanguageContext, object> _code;
         private Scope _optimizedScope;
-        
-        public OnDiskScriptCode(DlrMainCallTarget code, SourceUnit sourceUnit) :
-            base(null, code, sourceUnit) {
+        private readonly string _moduleName;
+
+        public OnDiskScriptCode(Func<Scope, LanguageContext, object> code, SourceUnit sourceUnit, string moduleName) :
+            base(sourceUnit) {
             _code = code;
+            _moduleName = moduleName;
+        }
+
+        public override object Run() {
+            return _code(CreateScope(), SourceUnit.LanguageContext);
+        }
+
+        public override object Run(Scope scope) {
+            if (scope == CreateScope()) {
+                return Run();
+            }
+
+            throw new NotSupportedException();
+        }
+
+        public string ModuleName {
+            get {
+                return _moduleName;
+            }
         }
 
         public override Scope CreateScope() {
@@ -38,25 +64,20 @@ namespace IronPython.Compiler {
                 CachedOptimizedCodeAttribute optimizedCode = attrs[0];
 
                 // create the storage for the global scope
-                GlobalsDictionary dict = new GlobalsDictionary(SymbolTable.StringsToIds(optimizedCode.Names));
+                Dictionary<SymbolId, PythonGlobal> globals = new Dictionary<SymbolId, PythonGlobal>();
+                PythonGlobal[] globalArray = new PythonGlobal[optimizedCode.Names.Length];
+                Scope scope = new Scope(new PythonDictionary(new GlobalDictionaryStorage(globals, globalArray)));
 
-                // create the CodeContext for the code from the storage
-                Scope scope = new Scope(dict);
-                CodeContext context = new CodeContext(scope, SourceUnit.LanguageContext);
+                CodeContext res = new CodeContext(scope, SourceUnit.LanguageContext);
 
-                // initialize the tuple
-                IModuleDictionaryInitialization ici = dict as IModuleDictionaryInitialization;
-                if (ici != null) {
-                    ici.InitializeModuleDictionary(context);
+                for (int i = 0; i < optimizedCode.Names.Length; i++) {
+                    SymbolId name = SymbolTable.StringToId(optimizedCode.Names[i]);
+                    globalArray[i] = globals[name] = new PythonGlobal(res, name);                    
                 }
 
                 _optimizedScope = scope;
             }
             return _optimizedScope;
-        }
-
-        public override void EnsureCompiled() {
-            CreateScope();
         }
     }
 }

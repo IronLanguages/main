@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-using System.Dynamic.Utils;
+using System.Diagnostics;
 
 namespace System.Linq.Expressions {
     /// <summary>
@@ -22,6 +22,9 @@ namespace System.Linq.Expressions {
     /// <see cref="GotoExpression"/>. Otherwise, it gets the value in <see cref="LabelExpression.DefaultValue"/>. If the
     /// <see cref="Type"/> equals System.Void, no value should be provided.
     /// </summary>
+#if !SILVERLIGHT
+    [DebuggerTypeProxy(typeof(Expression.LabelExpressionProxy))]
+#endif
     public sealed class LabelExpression : Expression {
         private readonly Expression _defaultValue;
         private readonly LabelTarget _target;
@@ -35,16 +38,16 @@ namespace System.Linq.Expressions {
         /// Gets the static type of the expression that this <see cref="Expression" /> represents. (Inherited from <see cref="Expression"/>.)
         /// </summary>
         /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
-        protected override Type TypeImpl() {
-            return _target.Type;
+        public sealed override Type Type {
+            get { return _target.Type; }
         }
 
         /// <summary>
         /// Returns the node type of this <see cref="Expression" />. (Inherited from <see cref="Expression" />.)
         /// </summary>
         /// <returns>The <see cref="ExpressionType"/> that represents this expression.</returns>
-        protected override ExpressionType NodeTypeImpl() {
-            return ExpressionType.Label;
+        public sealed override ExpressionType NodeType {
+            get { return ExpressionType.Label; }
         }
 
         /// <summary>

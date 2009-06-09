@@ -15,14 +15,15 @@
 
 using System;
 using System.Collections.Generic;
-using System.Reflection;
+using System.Diagnostics;
+using System.Dynamic;
 using System.Linq.Expressions;
-using Microsoft.Scripting.Utils;
+using System.Reflection;
 using Microsoft.Scripting.Generation;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Actions.Calls {
-    using Ast = System.Linq.Expressions.Expression;
-    
+
     /// <summary>
     /// ArgBuilder which provides a default parameter value for a method call.
     /// </summary>
@@ -35,17 +36,38 @@ namespace Microsoft.Scripting.Actions.Calls {
             get { return 2; }
         }
 
-        internal protected override Expression ToExpression(ParameterBinder parameterBinder, IList<Expression> parameters, bool[] hasBeenUsed) {
+        public override int ConsumedArgumentCount {
+            get { return 0; }
+        }
+
+        internal protected override Expression ToExpression(OverloadResolver resolver, RestrictedArguments args, bool[] hasBeenUsed) {
+            object value = ParameterInfo.DefaultValue;
+            if (value is Missing) {
+                value = CompilerHelpers.GetMissingValue(ParameterInfo.ParameterType);
+            }
+
+            if (ParameterInfo.ParameterType.IsByRef) {
+                return AstUtils.Constant(value, ParameterInfo.ParameterType.GetElementType());
+            }
+
+            var metaValue = new DynamicMetaObject(AstUtils.Constant(value), BindingRestrictions.Empty, value);
+            return resolver.Convert(metaValue, CompilerHelpers.GetType(value), ParameterInfo, ParameterInfo.ParameterType);
+        }
+
+        protected internal override Func<object[], object> ToDelegate(OverloadResolver resolver, RestrictedArguments args, bool[] hasBeenUsed) {
+            if (ParameterInfo.ParameterType.IsByRef) {
+                return null;
+            } else if (ParameterInfo.DefaultValue is Missing && CompilerHelpers.GetMissingValue(ParameterInfo.ParameterType) is Missing) {
+                // reflection throws when we do this
+                return null;
+            }
+            
             object val = ParameterInfo.DefaultValue;
             if (val is Missing) {
                 val = CompilerHelpers.GetMissingValue(ParameterInfo.ParameterType);
             }
-
-            if (ParameterInfo.ParameterType.IsByRef) {
-                return Ast.Constant(val, ParameterInfo.ParameterType.GetElementType());
-            }
-
-            return parameterBinder.ConvertExpression(Ast.Constant(val), ParameterInfo, ParameterInfo.ParameterType);            
+            Debug.Assert(val != Missing.Value);
+            return (_) => val;
         }
     }
 }

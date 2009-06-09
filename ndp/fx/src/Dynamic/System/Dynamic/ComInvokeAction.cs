@@ -15,13 +15,15 @@
 
 #if !SILVERLIGHT
 
-using System.Collections.Generic;
-using System.Linq.Expressions;
-using System.Dynamic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
 
 namespace System.Dynamic {
+    /// <summary>
+    /// Invokes the object. If it falls back, just produce an error.
+    /// </summary>
     internal sealed class ComInvokeAction : InvokeBinder {
         internal ComInvokeAction(CallInfo callInfo)
             : base(callInfo) {
@@ -36,101 +38,53 @@ namespace System.Dynamic {
         }
 
         public override DynamicMetaObject FallbackInvoke(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject errorSuggestion) {
-            return errorSuggestion ?? DynamicMetaObject.CreateThrow(target, args, typeof(NotSupportedException), Strings.CannotCall);
+            return errorSuggestion ?? new DynamicMetaObject(
+                Expression.Throw(
+                    Expression.New(
+                        typeof(NotSupportedException).GetConstructor(new[] { typeof(string) }),
+                        Expression.Constant(Strings.CannotCall)
+                    )
+                ),
+                target.Restrictions.Merge(BindingRestrictions.Combine(args))
+            );
         }
     }
 
+    /// <summary>
+    /// Splats the arguments to another nested dynamic site, which does the
+    /// real invocation of the IDynamicMetaObjectProvider. 
+    /// </summary>
+    internal sealed class SplatInvokeBinder : CallSiteBinder {
+        internal readonly static SplatInvokeBinder Instance = new SplatInvokeBinder();
 
-    internal sealed class SplatInvokeBinder : DynamicMetaObjectBinder {
+        // Just splat the args and dispatch through a nested site
+        public override Expression Bind(object[] args, ReadOnlyCollection<ParameterExpression> parameters, LabelTarget returnLabel) {
+            Debug.Assert(args.Length == 2);
 
-        // SplatInvokeBinder is a singleton
-        private SplatInvokeBinder() { }
-        private static readonly SplatInvokeBinder _instance = new SplatInvokeBinder();
+            int count = ((object[])args[1]).Length;
+            ParameterExpression array = parameters[1];
 
-        internal static SplatInvokeBinder Instance {
-            get {
-                return _instance;
+            var nestedArgs = new ReadOnlyCollectionBuilder<Expression>(count + 1);
+            var delegateArgs = new Type[count + 3]; // args + target + returnType + CallSite
+            nestedArgs.Add(parameters[0]);
+            delegateArgs[0] = typeof(CallSite);
+            delegateArgs[1] = typeof(object);
+            for (int i = 0; i < count; i++) {
+                nestedArgs.Add(Expression.ArrayAccess(array, Expression.Constant(i)));
+                delegateArgs[i + 2] = typeof(object).MakeByRefType();
             }
-        }
+            delegateArgs[delegateArgs.Length - 1] = typeof(object);
 
-        private static Type ByRefObjectType = typeof(object).MakeByRefType();
-
-        public sealed override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args) {
-            ContractUtils.RequiresNotNull(target, "target");
-            ContractUtils.RequiresNotNull(target, "args");
-
-            // there must be only one argument and it is always object[].
-            // see SplatCallSite.Invoke
-            Debug.Assert(args.Length == 1);
-            Debug.Assert(args[0] != null);
-            Debug.Assert(args[0].Expression.Type == typeof(object[]));
-
-
-            // We know it is an array.
-            DynamicMetaObject arg = args[0];
-
-            Expression argAsArrayExpr = arg.Expression;
-
-            object[] argValues = (object[])arg.Value;
-            int argLen = argValues.Length;
-
-            IndexExpression[] argElements = new IndexExpression[argLen];
-            ParameterExpression[] temps = new ParameterExpression[argLen];
-
-            DynamicMetaObject[] splattedArgs = new DynamicMetaObject[argLen];
-
-            for (int i = 0; i < argLen; i++) {
-
-                // temps have Object& type here
-                // it is ok as they will be stored on a nested lambda scope which allows ref types
-                ParameterExpression temp = Expression.Parameter(ByRefObjectType, "arg" + i);
-                temps[i] = temp;
-
-                // values that we will assign to temps via Invoke.
-                argElements[i] = Expression.ArrayAccess(
-                    argAsArrayExpr,
-                    Expression.Constant(i)
-                );
-
-                // metaobjects for the inner bind.
-                splattedArgs[i] = new DynamicMetaObject(
-                    temp,
-                    BindingRestrictions.Empty,
-                    argValues[i]
-                );
-            }
-
-
-            BindingRestrictions arrayLenRestriction = BindingRestrictions.GetExpressionRestriction(
-                Expression.Equal(
-                    Expression.ArrayLength(
-                        argAsArrayExpr
-                    ),
-                    Expression.Constant(argLen)
+            return Expression.IfThen(
+                Expression.Equal(Expression.ArrayLength(array), Expression.Constant(count)),
+                Expression.Return(
+                    returnLabel,
+                    Expression.MakeDynamic(
+                        Expression.GetDelegateType(delegateArgs),
+                        new ComInvokeAction(new CallInfo(count)),
+                        nestedArgs
+                    )
                 )
-            );
-
-            ComInvokeAction invokeBinder = new ComInvokeAction(Expression.CallInfo(argLen));
-            DynamicMetaObject innerAction = target.BindInvoke(invokeBinder, splattedArgs);
-
-            Expression exprRestrictions = Expression.Lambda(innerAction.Restrictions.ToExpression(), temps);
-
-            // note that inner restrictions need to be added through Invoke to have correct scoping.
-            BindingRestrictions restrictions =
-                target.Restrictions.
-                Merge(arg.Restrictions).
-                Merge(arrayLenRestriction).
-                Merge(BindingRestrictions.GetExpressionRestriction(Expression.Invoke(exprRestrictions, argElements)));
-
-            // invoke inner expression in its own scope. 
-            Expression innerExpression = Expression.Invoke(
-                Expression.Lambda(innerAction.Expression, temps),
-                argElements
-            );
-
-            return new DynamicMetaObject(
-                innerExpression,
-                restrictions
             );
         }
     }

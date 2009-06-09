@@ -25,6 +25,7 @@ namespace IronRuby.Compiler.Ast {
     using System.Diagnostics;
     using IronRuby.Runtime.Calls;
     using System.Collections;
+    using IronRuby.Runtime;
 
     // rescue type
     //   statements
@@ -82,14 +83,16 @@ namespace IronRuby.Compiler.Ast {
         // 
         internal IfStatementTest/*!*/ Transform(AstGenerator/*!*/ gen, ResultOperation resultOperation) {
             Assert.NotNull(gen);
-            
+
             MSA.Expression condition;
             if (_types.Length != 0 || _splatType != null) {
+                var comparisonSiteStorage = Ast.Constant(new BinaryOpStorage(gen.Context));
+
                 if (_types.Length == 0) {
                     // splat only:
-                    condition = MakeCompareSplattedExceptions(gen, TransformSplatType(gen));
+                    condition = MakeCompareSplattedExceptions(gen, comparisonSiteStorage, TransformSplatType(gen));
                 } else if (_types.Length == 1 && _splatType == null) {
-                    condition = MakeCompareException(gen, _types[0].TransformRead(gen));
+                    condition = MakeCompareException(gen, comparisonSiteStorage, _types[0].TransformRead(gen));
                 } else {
 
                     // forall{i}: <temps[i]> = evaluate type[i]
@@ -116,13 +119,13 @@ namespace IronRuby.Compiler.Ast {
 
                     // CompareException(<temps[0]>) || ... CompareException(<temps[n]>) || CompareSplattedExceptions(<splatTypes>)
                     i = 0;
-                    condition = MakeCompareException(gen, temps[i++]);
+                    condition = MakeCompareException(gen, comparisonSiteStorage, temps[i++]);
                     while (i < _types.Length) {
-                        condition = Ast.OrElse(condition, MakeCompareException(gen, temps[i++]));
+                        condition = Ast.OrElse(condition, MakeCompareException(gen, comparisonSiteStorage, temps[i++]));
                     }
 
                     if (_splatType != null) {
-                        condition = Ast.OrElse(condition, MakeCompareSplattedExceptions(gen, temps[i++]));
+                        condition = Ast.OrElse(condition, MakeCompareSplattedExceptions(gen, comparisonSiteStorage, temps[i++]));
                     }
 
                     Debug.Assert(i == temps.Length);
@@ -150,20 +153,15 @@ namespace IronRuby.Compiler.Ast {
         }
 
         private MSA.Expression/*!*/ TransformSplatType(AstGenerator/*!*/ gen) {
-            return Ast.Dynamic(
-                ConvertToArraySplatAction.Instance,
-                typeof(object),
-                Methods.GetContextFromScope.OpCall(gen.CurrentScopeVariable),
-                _splatType.TransformRead(gen)
-            );
+            return Ast.Dynamic(ConvertToArraySplatAction.Make(gen.Context), typeof(object), _splatType.TransformRead(gen));
         }
 
-        private MSA.Expression/*!*/ MakeCompareException(AstGenerator/*!*/ gen, MSA.Expression/*!*/ expression) {
-            return Methods.CompareException.OpCall(gen.CurrentScopeVariable, AstFactory.Box(expression));
+        private MSA.Expression/*!*/ MakeCompareException(AstGenerator/*!*/ gen, MSA.Expression/*!*/ comparisonSiteStorage, MSA.Expression/*!*/ expression) {
+            return Methods.CompareException.OpCall(comparisonSiteStorage, gen.CurrentScopeVariable, AstFactory.Box(expression));
         }
 
-        private MSA.Expression/*!*/ MakeCompareSplattedExceptions(AstGenerator/*!*/ gen, MSA.Expression/*!*/ expression) {
-            return Methods.CompareSplattedExceptions.OpCall(gen.CurrentScopeVariable, expression);
+        private MSA.Expression/*!*/ MakeCompareSplattedExceptions(AstGenerator/*!*/ gen, MSA.Expression/*!*/ comparisonSiteStorage, MSA.Expression/*!*/ expression) {
+            return Methods.CompareSplattedExceptions.OpCall(comparisonSiteStorage, gen.CurrentScopeVariable, expression);
         }
     }
 }

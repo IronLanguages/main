@@ -1,0 +1,5 @@
+critical:TCPServer.new has an address once it has connected to a listening server
+fails:TCPServer.new binds to a host and a port
+fails:TCPServer.new binds to localhost and a port with either IPv4 or IPv6
+fails:TCPServer.new binds to INADDR_ANY if the hostname is empty
+fails:TCPServer.new coerces port to string, then determines port from that number or service name

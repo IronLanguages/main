@@ -196,21 +196,21 @@ namespace Microsoft.Scripting.Actions {
             //TODO there's a question about nulls here
             if (CompilerHelpers.IsSealed(t) && t == expr.Type) {
                 if (t.IsValueType) {
-                    return Ast.Constant(true);
+                    return AstUtils.Constant(true);
                 }
-                return Ast.NotEqual(expr, Ast.Constant(null));
+                return Ast.NotEqual(expr, AstUtils.Constant(null));
             }
 
             return Ast.AndAlso(
                 Ast.NotEqual(
                     expr,
-                    Ast.Constant(null)),
+                    AstUtils.Constant(null)),
                 Ast.Equal(
                     Ast.Call(
                         AstUtils.Convert(expr, typeof(object)),
                         typeof(object).GetMethod("GetType")
                     ),
-                    Ast.Constant(t)
+                    AstUtils.Constant(t)
                 )
             );
         }
@@ -238,7 +238,7 @@ namespace Microsoft.Scripting.Actions {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         public Expression MakeTypeTest(Type type, Expression tested) {
             if (type == null || type == typeof(DynamicNull)) {
-                return Ast.Equal(tested, Ast.Constant(null));
+                return Ast.Equal(tested, AstUtils.Constant(null));
             }
 
             return MakeTypeTestExpression(type, tested);
@@ -280,7 +280,7 @@ namespace Microsoft.Scripting.Actions {
                     Expression.Condition(
                         _test,
                         AstUtils.Convert(_target, typeof(void)),
-                        Ast.Empty()
+                        AstUtils.Empty()
                     )
                 );
             }

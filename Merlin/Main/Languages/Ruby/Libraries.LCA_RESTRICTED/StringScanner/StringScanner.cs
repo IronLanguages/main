@@ -38,7 +38,7 @@ namespace IronRuby.StandardLibrary.StringScanner {
 
         public StringScanner(RubyClass/*!*/ rubyClass) 
             : base(rubyClass) {
-            _scanString = MutableString.Empty;
+            _scanString = MutableString.FrozenEmpty;
         }
 
 #if !SILVERLIGHT
@@ -55,7 +55,7 @@ namespace IronRuby.StandardLibrary.StringScanner {
 #endif
 
         protected override RubyObject/*!*/ CreateInstance() {
-            return new StringScanner(Class);
+            return new StringScanner(ImmediateClass.NominalClass);
         }
 
         private void InitializeFrom(StringScanner/*!*/ other) {
@@ -474,7 +474,7 @@ namespace IronRuby.StandardLibrary.StringScanner {
                     sb.Append("...");
                 }
                 for (int i = CurrentPosition - len; i < CurrentPosition; i++) {
-                    MutableStringOps.AppendStringRepresentationOfChar(sb, scanstr[i], -1, true);
+                    MutableString.AppendCharRepresentation(sb, scanstr[i], -1, true, true, '"', -1);
                 }
                 sb.Append('"');
             }
@@ -488,7 +488,7 @@ namespace IronRuby.StandardLibrary.StringScanner {
                 }
                 sb.Append('"');
                 for (int i = CurrentPosition; i < CurrentPosition + len; i++) {
-                    MutableStringOps.AppendStringRepresentationOfChar(sb, scanstr[i], -1, true);
+                    MutableString.AppendCharRepresentation(sb, scanstr[i], -1, true, true, '"', -1);
                 }
                 if (ellipsis) {
                     sb.Append("...");

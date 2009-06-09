@@ -46,12 +46,12 @@ namespace Microsoft.Scripting.Ast {
             get { return true; }
         }
 
-        protected override Type TypeImpl() {
-            return _type;
+        public sealed override Type Type {
+            get { return _type; }
         }
 
-        protected override ExpressionType NodeTypeImpl() {
-            return ExpressionType.Extension;
+        public sealed override ExpressionType NodeType {
+            get { return ExpressionType.Extension; }
         }
 
         public string Name {
@@ -81,8 +81,8 @@ namespace Microsoft.Scripting.Ast {
             return _reduced;
         }
 
-        protected override Expression VisitChildren(ExpressionVisitor visitor) {
-            Expression b = visitor.Visit(_body);
+        protected override Expression VisitChildren(Func<Expression, Expression> visitor) {
+            Expression b = visitor(_body);
             if (b == _body) {
                 return this;
             }

@@ -1,0 +1,2 @@
+fails:Process.uid also goes by Process::UID.rid
+fails:Process.uid also goes by Process::Sys.getuid

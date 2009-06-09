@@ -433,6 +433,28 @@ p x.send('foo')
 ");
         }
 
+        public void AttributeAccessors3() {
+            AssertOutput(() => CompilerTest(@"
+class C
+  attr_accessor :foo 
+  
+  alias set_foo foo=
+end
+
+c = C.new
+
+c.foo = 1
+c.set_foo(*[2])
+c.set_foo(3,4) rescue p $!
+p c.foo(*[])
+p c.foo(1) rescue p $!
+"), @"
+#<ArgumentError: wrong number of arguments (2 for 1)>
+2
+#<ArgumentError: wrong number of arguments (1 for 0)>
+");
+        }
+
         public void MethodAdded1() {
             AssertOutput(delegate {
                 CompilerTest(@"
@@ -544,8 +566,8 @@ end
         /// <summary>
         /// public/private/protected define a super-forwarder - a method that calls super.
         /// </summary>
-        public void Visibility2() {
-            AssertOutput(() => CompilerTest(@"
+        public void Visibility2A() {
+            TestOutput(@"
 class A
   private
   def foo
@@ -574,10 +596,141 @@ class B
 end
 
 C.new.foo
-"), @"
+", @"
 #<UnboundMethod: C(A)#foo>
 B::foo
 ");
+        }
+
+        public void Visibility2B() {
+            TestOutput(@"
+module M 
+  def foo; puts 'ok'; end
+end
+
+class A
+  include M
+  private :foo
+end
+
+class B < A
+  include M
+  public :foo
+end
+
+B.new.foo
+", @"
+ok
+");
+
+            TestOutput(@"
+module N 
+  def foo; puts 'ok'; end
+end
+
+class D
+  include N
+  private :foo
+  public :foo
+end
+
+D.new.foo
+", @"
+ok
+");
+        }
+
+        public void Visibility2C() {
+            TestOutput(@"
+module M
+  private
+  def foo; puts 1; end
+end
+
+module N 
+  include M
+  public :foo               # defines a public super-forwarder that remembers to forward to 'foo'
+end
+
+module O
+  include N                         
+  alias bar foo             # stores N#foo public super-forwarder under name 'bar' to O's m-table
+  module_function :foo      # defines a module-function that is a copy of M#foo, not N#foo super-forwarder
+end
+
+module M
+  def foo; puts 2; end           
+end
+
+O.foo                       # this works, hence m-f foo is a copy of the real method
+
+class C 
+  include O
+end
+C.new.bar                   # invokes the new M#foo method - alias didn't make a copy of original M#foo and super-forwarder forwards to 'foo'
+", @"
+1
+2
+");
+
+        }
+        
+        /// <summary>
+        /// Protected visibility and singletons.
+        /// </summary>
+        public void Visibility3() {
+            AssertOutput(() => CompilerTest(@"
+c = class C; new; end
+
+class << c
+  protected
+  def foo; end
+end
+
+c.foo rescue p $!
+"), @"
+#<NoMethodError: protected method `foo' called for #<C:*>>
+", OutputFlags.Match);
+        }
+
+        /// <summary>
+        /// Protected visibility + caching.
+        /// </summary>
+        public void Visibility4() {
+            AssertOutput(() => CompilerTest(@"
+class C
+  protected
+  def foo
+    puts 'foo'
+  end
+end
+
+class D < C
+  def method_missing name
+    puts 'mm'
+  end
+end
+
+class X; end
+
+c,d,x = C.new,D.new,X.new
+
+# test visibility caching:
+2.times do
+  [[d,c], [c,d], [x,c], [x,d]].each do |s,r| 
+    s.instance_eval { r.foo } rescue p $! 
+  end
+end
+"), @"
+foo
+foo
+#<NoMethodError: protected method `foo' called for #<C:*>>
+mm
+foo
+foo
+#<NoMethodError: protected method `foo' called for #<C:*>>
+mm
+", OutputFlags.Match);
         }
 
         public void ModuleFunctionVisibility1() {
@@ -651,7 +804,7 @@ end
 
 class B < A
   private
-  define_method(:foo, instance_method(:foo))
+  define_method(:foo, instance_method(:foo)) 
 end
 
 B.new.foo rescue p $!
@@ -665,6 +818,47 @@ B.new.send :foo
 #<NoMethodError: private method `foo' called for #<B:*>>
 foo
 ", OutputFlags.Match);
+        }
+
+        [Options(Compatibility = RubyCompatibility.Ruby18)]
+        public void DefineMethodVisibility2A() {
+            Test_DefineMethodVisibility2();
+        }
+
+        [Options(Compatibility = RubyCompatibility.Ruby19)]
+        public void DefineMethodVisibility2B() {
+            Test_DefineMethodVisibility2();
+        }
+
+        public void Test_DefineMethodVisibility2() {
+            TestOutput(@"
+module M                                              # the inner module is the same module we call define_method on
+  1.times do  
+    module_function
+    M.send :define_method, :a, lambda { }              
+    private
+    M.send :define_method, :b, lambda { }              
+  end
+end
+
+module N                                               # the inner module different from the one we call define_method on
+  1.times do  
+    module_function
+    M.send :define_method, :c, lambda { }              
+    private
+    M.send :define_method, :d, lambda { }               
+  end
+end
+
+p M.public_instance_methods(false).collect { |m| m.to_s }.sort
+p M.private_instance_methods(false).collect { |m| m.to_s }.sort
+", Context.RubyOptions.Compatibility == RubyCompatibility.Ruby18 ? @"
+[""c"", ""d""]
+[""a"", ""b""]
+" : @"
+[""a"", ""b"", ""c"", ""d""]
+[]
+");
         }
 
         /// <summary>
@@ -706,6 +900,23 @@ end
 [""a_pri""]
 [""a_pub"", ""am_pub""]
 [""a_pri"", ""am_pri""]
+");
+        }
+
+        public void AttributeAccessorsVisibility1() {
+            TestOutput(@"
+class C
+  1.times {                                       # we need to use visibility flags of the module scope
+    private
+    attr_accessor :foo
+  }   
+ 
+  m = private_instance_methods(false)
+  p m.include?('foo'), m.include?('foo=')
+end
+", @"
+true
+true
 ");
         }
         
@@ -780,6 +991,96 @@ puts A.send(:remove_method, :foo) rescue puts B.send(:remove_method, :foo)
         [Options(Compatibility = RubyCompatibility.Ruby18)]
         public void MethodDefinitionInModuleEval1B() {
             AssertOutput(() => CompilerTest(MethodDefinitionInModuleEvalCode), "B");
+        }
+
+        public void Scenario_ModuleOps_Methods() {
+            AssertOutput(delegate() {
+                CompilerTest(@"
+class C
+  def ifoo
+    puts 'ifoo'
+  end
+end
+
+class << C
+  $C1 = self
+  
+  def foo
+    puts 'foo'
+  end
+end
+
+class C
+  alias_method(:bar,:foo) rescue puts 'Error 1'
+  instance_method(:foo) rescue puts 'Error 2'
+  puts method_defined?(:foo)
+  foo
+  
+  alias_method(:ibar,:ifoo)
+  instance_method(:ifoo)
+  puts method_defined?(:ifoo)
+  ifoo rescue puts 'Error 3'
+  
+  remove_method(:ifoo)
+end
+
+C.new.ifoo rescue puts 'Error 4'
+C.new.ibar
+");
+            }, @"
+Error 1
+Error 2
+false
+foo
+true
+Error 3
+Error 4
+ifoo
+");
+        }
+
+        public void Methods1() {
+            AssertOutput(delegate() {
+                CompilerTest(@"
+class C
+  def foo a,b
+    puts a + b
+  end
+end
+
+class D < C
+end
+
+c = C.new
+p m = c.method(:foo)
+p u = m.unbind
+p n = u.bind(D.new)
+
+m[1,2]
+n[1,2]
+");
+            }, @"
+#<Method: C#foo>
+#<UnboundMethod: C#foo>
+#<Method: D(C)#foo>
+3
+3
+");
+        }
+
+        public void MethodDef1() {
+            TestOutput(@"
+2.times do |i|
+  def foo a
+    puts a
+  end
+
+  foo i
+end
+", @"
+0
+1
+");
         }
     }
 }

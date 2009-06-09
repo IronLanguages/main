@@ -25,6 +25,10 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
+#if !SYSTEM_CORE
+using dynamic = System.Object;
+#endif
+
 namespace Microsoft.Scripting.Hosting {
     /// <summary>
     /// A ScriptScope is a unit of execution for code.  It consists of a global Scope which
@@ -78,7 +82,7 @@ namespace Microsoft.Scripting.Hosting {
         /// </summary>
         /// <exception cref="MissingMemberException">The specified name is not defined in the scope.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="name"/> is a <c>null</c> reference.</exception>
-        public object GetVariable(string name) {
+        public dynamic GetVariable(string name) {
             return _scope.LookupName(_engine.LanguageContext, SymbolTable.StringToId(name));
         }
 
@@ -90,14 +94,14 @@ namespace Microsoft.Scripting.Hosting {
         /// <exception cref="MissingMemberException">The specified name is not defined in the scope.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="name"/> is a <c>null</c> reference.</exception>
         public T GetVariable<T>(string name) {
-            return _engine.Operations.ConvertTo<T>(_engine.GetVariable(this, name));
+            return _engine.Operations.ConvertTo<T>((object)_engine.GetVariable(this, name));
         }
 
         /// <summary>
         /// Tries to get a value stored in the scope under the given name.
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="name"/> is a <c>null</c> reference.</exception>
-        public bool TryGetVariable(string name, out object value) {
+        public bool TryGetVariable(string name, out dynamic value) {
             return _scope.TryGetName(SymbolTable.StringToId(name), out value);
         }
 
@@ -132,7 +136,7 @@ namespace Microsoft.Scripting.Hosting {
         /// <exception cref="MissingMemberException">The specified name is not defined in the scope.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="name"/> is a <c>null</c> reference.</exception>
         public ObjectHandle GetVariableHandle(string name) {
-            return new ObjectHandle(GetVariable(name));
+            return new ObjectHandle((object)GetVariable(name));
         }
 
         /// <summary>
@@ -261,7 +265,7 @@ namespace Microsoft.Scripting.Hosting {
                             Expression.Call(
                                 AstUtils.Convert(Expression, typeof(ScriptScope)),
                                 typeof(ScriptScope).GetMethod("TryGetVariable", new[] { typeof(string), typeof(object).MakeByRefType() }),
-                                Expression.Constant(action.Name),
+                                AstUtils.Constant(action.Name),
                                 result
                             ),
                             result,
@@ -275,11 +279,14 @@ namespace Microsoft.Scripting.Hosting {
             // TODO: support for IgnoreCase in underlying ScriptScope APIs
             public override DynamicMetaObject BindSetMember(SetMemberBinder action, DynamicMetaObject value) {
                 return new DynamicMetaObject(
-                    Expression.Call(
-                        AstUtils.Convert(Expression, typeof(ScriptScope)),
-                        typeof(ScriptScope).GetMethod("SetVariable", new[] { typeof(string), typeof(object) }),
-                        Expression.Constant(action.Name),
-                        AstUtils.Convert(value.Expression, typeof(object))
+                    Expression.Block(
+                        Expression.Call(
+                            AstUtils.Convert(Expression, typeof(ScriptScope)),
+                            typeof(ScriptScope).GetMethod("SetVariable", new[] { typeof(string), typeof(object) }),
+                            AstUtils.Constant(action.Name),
+                            AstUtils.Convert(value.Expression, typeof(object))
+                        ),
+                        value.Expression
                     ),
                     Restrictions.Merge(value.Restrictions).Merge(BindingRestrictionsHelpers.GetRuntimeTypeRestriction(Expression, typeof(ScriptScope)))
                 );
@@ -293,9 +300,9 @@ namespace Microsoft.Scripting.Hosting {
                         Expression.Call(
                             AstUtils.Convert(Expression, typeof(ScriptScope)),
                             typeof(ScriptScope).GetMethod("RemoveVariable"),
-                            Expression.Constant(action.Name)
+                            AstUtils.Constant(action.Name)
                         ),
-                        Expression.Empty(),
+                        AstUtils.Empty(),
                         fallback.Expression
                     ),
                     Restrictions.Merge(BindingRestrictionsHelpers.GetRuntimeTypeRestriction(Expression, typeof(ScriptScope))).Merge(fallback.Restrictions)
@@ -316,7 +323,7 @@ namespace Microsoft.Scripting.Hosting {
                             Expression.Call(
                                 AstUtils.Convert(Expression, typeof(ScriptScope)),
                                 typeof(ScriptScope).GetMethod("TryGetVariable", new[] { typeof(string), typeof(object).MakeByRefType() }),
-                                Expression.Constant(action.Name),
+                                AstUtils.Constant(action.Name),
                                 result
                             ),
                             AstUtils.Convert(fallbackInvoke.Expression, typeof(object)),

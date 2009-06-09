@@ -59,14 +59,42 @@ namespace IronPython.Runtime.Types {
             }
         }
 
-        public static object __getattribute__(Scope/*!*/ self, string name) {
+        public static object __getattribute__(CodeContext/*!*/ context, Scope/*!*/ self, string name) {
+            switch (name) {
+                // never look in the dict for these...
+                case "__dict__": return Get__dict__(self);
+                case "__class__": return DynamicHelpers.GetPythonType(self);
+            }
+
             SymbolId si = SymbolTable.StringToId(name);
             object res;
             if (self.TryGetName(si, out res)) {
                 return res;
             }
 
-            throw PythonOps.AttributeErrorForMissingAttribute("module", si);
+            // fall back to object to provide all of our other attributes (e.g. __setattr__, etc...)
+            return ObjectOps.__getattribute__(context, self, name);
+        }
+
+        internal static object GetAttributeNoThrow(CodeContext/*!*/ context, Scope/*!*/ self, string name) {
+            switch (name) {
+                // never look in the dict for these...
+                case "__dict__": return Get__dict__(self);
+                case "__class__": return DynamicHelpers.GetPythonType(self);
+            }
+
+            SymbolId si = SymbolTable.StringToId(name);
+            object res;
+            if (self.TryGetName(si, out res)) {
+                return res;
+            }
+
+            // fall back to object to provide all of our other attributes (e.g. __setattr__, etc...)
+            try {
+                return ObjectOps.__getattribute__(context, self, name);
+            } catch (MissingMemberException) {
+                return OperationFailed.Value;
+            }
         }
 
         public static void __setattr__(Scope/*!*/ self, string name, object value) {
@@ -97,6 +125,9 @@ namespace IronPython.Runtime.Types {
 
         [SpecialName, PropertyMethod]
         public static IAttributesCollection/*!*/ Get__dict__(Scope/*!*/ scope) {
+            if (scope.Dict is PythonDictionary) {
+                return scope.Dict;
+            }
             return new PythonDictionary(new GlobalScopeDictionaryStorage(scope));
         }
 
@@ -143,29 +174,13 @@ namespace IronPython.Runtime.Types {
             if (name == "__dict__") {
                 Set__dict__(scope, value);
             } else {
-                PythonContext pc = (PythonContext)context.LanguageContext;
-                PythonModule pm = pc.GetPythonModule(scope);
-                if (pm != null) {
-                    pm.OnModuleChange(new ModuleChangeEventArgs(SymbolTable.StringToId(name), ModuleChangeType.Set, value));
-                }
-
                 scope.SetName(SymbolTable.StringToId(name), value);
             }
         }
 
         [SpecialName]
         public static bool DeleteMember(CodeContext/*!*/ context, Scope/*!*/ scope, string name) {
-            if (scope.TryRemoveName(SymbolTable.StringToId(name))) {
-                PythonContext pc = (PythonContext)context.LanguageContext;
-                PythonModule pm = pc.GetPythonModule(scope);
-                if (pm != null) {
-                    pm.OnModuleChange(new ModuleChangeEventArgs(SymbolTable.StringToId(name), ModuleChangeType.Delete));
-                }
-
-                return true;
-            }
-
-            return false;
+            return scope.TryRemoveName(SymbolTable.StringToId(name));
         }
     }
 }

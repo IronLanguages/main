@@ -27,16 +27,24 @@ namespace Microsoft.Scripting.Interpreter {
             new Dictionary<Type, Func<CallSiteBinder, Instruction>>();
 
         public static Instruction MakeInstruction(Type delegateType, CallSiteBinder binder) {
-            Func<CallSiteBinder, Instruction> factory;
-            if (!_factories.TryGetValue(delegateType, out factory)) {
-                Type instructionType = GetDynamicInstructionType(delegateType);
-                if (instructionType == null) {
-                    return new DynamicInstructionN(delegateType, CallSite.Create(delegateType, binder));
-                }
+            if (delegateType.GetMethod("Invoke").ReturnType == typeof(void)) {
+                // TODO: We should generally support void returning binders but the only
+                // ones that exist are delete index/member who's perf isn't that critical.
+                return new DynamicInstructionN(delegateType, CallSite.Create(delegateType, binder), true);
+            }
 
-                factory = (Func<CallSiteBinder, Instruction>)Delegate.CreateDelegate(typeof(Func<CallSiteBinder, Instruction>),
-                    instructionType.GetMethod("Factory"));
-                _factories[delegateType] = factory;
+            Func<CallSiteBinder, Instruction> factory;
+            lock (_factories) {
+                if (!_factories.TryGetValue(delegateType, out factory)) {
+                    Type instructionType = GetDynamicInstructionType(delegateType);
+                    if (instructionType == null) {
+                        return new DynamicInstructionN(delegateType, CallSite.Create(delegateType, binder));
+                    }
+
+                    factory = (Func<CallSiteBinder, Instruction>)Delegate.CreateDelegate(typeof(Func<CallSiteBinder, Instruction>),
+                        instructionType.GetMethod("Factory"));
+                    _factories[delegateType] = factory;
+                }
             }
             return factory(binder);
         }
@@ -47,7 +55,7 @@ namespace Microsoft.Scripting.Interpreter {
         private FieldInfo _targetField;
         private CallSite _site;
         private int _argCount;
-        private bool _isVoid = false;
+        private bool _isVoid;
 
         public DynamicInstructionN(Type delegateType, CallSite site) {
             var methodInfo = delegateType.GetMethod("Invoke");
@@ -57,10 +65,15 @@ namespace Microsoft.Scripting.Interpreter {
             _argCount = methodInfo.GetParameters().Length;
         }
 
-        public override int ProducedStack { get { return 1; } }
+        public DynamicInstructionN(Type delegateType, CallSite site, bool isVoid)
+            : this(delegateType, site) {
+            _isVoid = isVoid;
+        }
+
+        public override int ProducedStack { get { return _isVoid ? 0 : 1; } }
         public override int ConsumedStack { get { return _argCount-1; } }
 
-        public override int Run(StackFrame frame) {
+        public override int Run(InterpretedFrame frame) {
             var targetDelegate = _targetField.GetValue(_site);
 
             object[] args = new object[_argCount];

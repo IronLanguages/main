@@ -22,6 +22,7 @@ using System.Reflection;
 using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Actions {
     using Ast = System.Linq.Expressions.Expression;
@@ -36,7 +37,7 @@ namespace Microsoft.Scripting.Actions {
             rule.Target =
                 rule.MakeReturn(
                     context.LanguageContext.Binder,
-                    Ast.Constant(isCallable)
+                    AstUtils.Constant(isCallable)
                 );
 
             return true;
@@ -92,7 +93,7 @@ namespace Microsoft.Scripting.Actions {
                         Ast.Convert(listArg, typeof(ICollection<object>)),
                         typeof(ICollection<object>).GetProperty("Count")
                     ),
-                    Ast.Constant(((IList<object>)paramArg).Count)
+                    AstUtils.Constant(((IList<object>)paramArg).Count)
                 )
             );
         }
@@ -162,7 +163,7 @@ namespace Microsoft.Scripting.Actions {
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1000:DoNotDeclareStaticMembersOnGenericTypes")] // TODO: fix
         public static Expression MakeNecessaryTests(RuleBuilder rule, Type[] testTypes, IList<Expression> arguments) {
-            Expression typeTest = Ast.Constant(true);
+            Expression typeTest = AstUtils.Constant(true);
 
             if (testTypes != null) {
                 for (int i = 0; i < testTypes.Length; i++) {
@@ -179,7 +180,7 @@ namespace Microsoft.Scripting.Actions {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1000:DoNotDeclareStaticMembersOnGenericTypes")] // TODO: fix
         public static Expression MakeNecessaryTests(RuleBuilder rule, IList<Type[]> necessaryTests, Expression[] arguments) {
             if (necessaryTests.Count == 0) {
-                return Ast.Constant(true);
+                return AstUtils.Constant(true);
             }
 
             Type[] mostSpecificTypes = null; // This is the final types that will be checked after inspecting all the sets

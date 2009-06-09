@@ -56,20 +56,11 @@ namespace Microsoft.Scripting.Actions {
             ContractUtils.RequiresNotNull(callerContext, "callerContext");
 
             switch (action.Kind) {
-                case DynamicActionKind.Call:
-                    new CallBinderHelper<OldCallAction>(callerContext, (OldCallAction)action, extracted, rule).MakeRule();
-                    return;
                 case DynamicActionKind.GetMember:
                     new GetMemberBinderHelper(callerContext, (OldGetMemberAction)action, extracted, rule).MakeNewRule();
                     return;
                 case DynamicActionKind.SetMember:
                     new SetMemberBinderHelper(callerContext, (OldSetMemberAction)action, extracted, rule).MakeNewRule();
-                    return;
-                case DynamicActionKind.CreateInstance:
-                    new CreateInstanceBinderHelper(callerContext, (OldCreateInstanceAction)action, extracted, rule).MakeRule();
-                    return;
-                case DynamicActionKind.DoOperation:
-                    new DoOperationBinderHelper(callerContext, (OldDoOperationAction)action, extracted, rule).MakeRule();
                     return;
                 case DynamicActionKind.DeleteMember:
                     new DeleteMemberBinderHelper(callerContext, (OldDeleteMemberAction)action, extracted, rule).MakeRule();
@@ -93,104 +84,6 @@ namespace Microsoft.Scripting.Actions {
             return cc;
         }
 
-        public virtual ErrorInfo MakeInvalidParametersError(BindingTarget target) {
-            switch (target.Result) {
-                case BindingResult.CallFailure: return MakeCallFailureError(target);
-                case BindingResult.AmbiguousMatch: return MakeAmbiguousCallError(target);
-                case BindingResult.IncorrectArgumentCount: return MakeIncorrectArgumentCountError(target);
-                default: throw new InvalidOperationException();
-            }
-        }
-
-        private static ErrorInfo MakeIncorrectArgumentCountError(BindingTarget target) {
-            int minArgs = Int32.MaxValue;
-            int maxArgs = Int32.MinValue;
-            foreach (int argCnt in target.ExpectedArgumentCount) {
-                minArgs = System.Math.Min(minArgs, argCnt);
-                maxArgs = System.Math.Max(maxArgs, argCnt);
-            }
-
-            return ErrorInfo.FromException(
-                Ast.Call(
-                    typeof(BinderOps).GetMethod("TypeErrorForIncorrectArgumentCount", new Type[] {
-                                typeof(string), typeof(int), typeof(int) , typeof(int), typeof(int), typeof(bool), typeof(bool)
-                            }),
-                    Ast.Constant(target.Name, typeof(string)),  // name
-                    Ast.Constant(minArgs),                      // min formal normal arg cnt
-                    Ast.Constant(maxArgs),                      // max formal normal arg cnt
-                    Ast.Constant(0),                            // default cnt
-                    Ast.Constant(target.ActualArgumentCount),   // args provided
-                    Ast.Constant(false),                        // hasArgList
-                    Ast.Constant(false)                         // kwargs provided
-                )
-            );
-        }
-
-        private ErrorInfo MakeAmbiguousCallError(BindingTarget target) {
-            StringBuilder sb = new StringBuilder("Multiple targets could match: ");
-            string outerComma = "";
-            foreach (MethodTarget mt in target.AmbiguousMatches) {
-                Type[] types = mt.GetParameterTypes();
-                string innerComma = "";
-
-                sb.Append(outerComma);
-                sb.Append(target.Name);
-                sb.Append('(');
-                foreach (Type t in types) {
-                    sb.Append(innerComma);
-                    sb.Append(GetTypeName(t));
-                    innerComma = ", ";
-                }
-
-                sb.Append(')');
-                outerComma = ", ";
-            }
-
-            return ErrorInfo.FromException(
-                Ast.Call(
-                    typeof(BinderOps).GetMethod("SimpleTypeError"),
-                    Ast.Constant(sb.ToString(), typeof(string))
-                )
-            );
-        }
-
-        private ErrorInfo MakeCallFailureError(BindingTarget target) {
-            foreach (CallFailure cf in target.CallFailures) {
-                switch (cf.Reason) {
-                    case CallFailureReason.ConversionFailure:
-                        foreach (ConversionResult cr in cf.ConversionResults) {
-                            if (cr.Failed) {
-                                return ErrorInfo.FromException(
-                                    Ast.Call(
-                                        typeof(BinderOps).GetMethod("SimpleTypeError"),
-                                        Ast.Constant(String.Format("expected {0}, got {1}", GetTypeName(cr.To), GetTypeName(cr.From)))
-                                    )
-                                );
-                            }
-                        }
-                        break;
-                    case CallFailureReason.DuplicateKeyword:
-                        return ErrorInfo.FromException(
-                                Ast.Call(
-                                    typeof(BinderOps).GetMethod("TypeErrorForDuplicateKeywordArgument"),
-                                    Ast.Constant(target.Name, typeof(string)),
-                                    Ast.Constant(cf.KeywordArguments[0], typeof(string))    // TODO: Report all bad arguments?
-                            )
-                        );
-                    case CallFailureReason.UnassignableKeyword:
-                        return ErrorInfo.FromException(
-                                Ast.Call(
-                                    typeof(BinderOps).GetMethod("TypeErrorForExtraKeywordArgument"),
-                                    Ast.Constant(target.Name, typeof(string)),
-                                    Ast.Constant(cf.KeywordArguments[0], typeof(string))    // TODO: Report all bad arguments?
-                            )
-                        );
-                    default: throw new InvalidOperationException();
-                }
-            }
-            throw new InvalidOperationException();
-        }
-
         /// <summary>
         /// Provides a way for the binder to provide a custom error message when lookup fails.  Just
         /// doing this for the time being until we get a more robust error return mechanism.
@@ -211,7 +104,7 @@ namespace Microsoft.Scripting.Actions {
 
                     return ErrorInfo.FromValueNoError(
                         Ast.Call(
-                            AstUtils.Convert(Ast.Constant(ft.Field), typeof(FieldInfo)),
+                            AstUtils.Convert(AstUtils.Constant(ft.Field), typeof(FieldInfo)),
                             typeof(FieldInfo).GetMethod("GetValue"),
                             AstUtils.Convert(instance, typeof(object))
                         )
@@ -235,7 +128,7 @@ namespace Microsoft.Scripting.Actions {
             return ErrorInfo.FromException(
                 Expression.New(
                     typeof(MissingMemberException).GetConstructor(new Type[] { typeof(string) }),
-                    Expression.Constant(name)
+                    AstUtils.Constant(name)
                 )
             );
         }
@@ -247,27 +140,19 @@ namespace Microsoft.Scripting.Actions {
             return ErrorInfo.FromValueNoError(
                 Expression.Call(
                     typeof(BinderOps).GetMethod("SetEvent"),
-                    Expression.Constant(ev),
+                    AstUtils.Constant(ev),
                     value
                 )
             );
         }
 
-        /// <summary>
-        /// Checks to see if the language allows keyword arguments to be bound to instance fields or
-        /// properties and turned into sets.  By default this is only allowed on contructors.
-        /// </summary>
-        protected internal virtual bool AllowKeywordArgumentSetting(MethodBase method) {
-            return CompilerHelpers.IsConstructor(method);
-        }
-
-        public static Expression MakeError(ErrorInfo error) {
+        public static Expression MakeError(ErrorInfo error, Type type) {
             switch (error.Kind) {
                 case ErrorInfoKind.Error:
                     // error meta objecT?
-                    return error.Expression;
+                    return AstUtils.Convert(error.Expression, type);
                 case ErrorInfoKind.Exception:
-                    return Expression.Throw(error.Expression);
+                    return AstUtils.Convert(Expression.Throw(error.Expression), type);
                 case ErrorInfoKind.Success:
                     return error.Expression;
                 default:
@@ -275,11 +160,29 @@ namespace Microsoft.Scripting.Actions {
             }
         }
 
-        public static DynamicMetaObject MakeError(ErrorInfo error, BindingRestrictions restrictions) {
-            return new DynamicMetaObject(MakeError(error), restrictions);
+        public static DynamicMetaObject MakeError(ErrorInfo error, BindingRestrictions restrictions, Type type) {
+            return new DynamicMetaObject(MakeError(error, type), restrictions);
         }
 
-        protected TrackerTypes GetMemberType(MemberGroup members, out Expression error) {
+        private static Expression MakeAmbiguousMatchError(MemberGroup members) {
+            StringBuilder sb = new StringBuilder();
+            foreach (MemberTracker mi in members) {
+                if (sb.Length != 0) sb.Append(", ");
+                sb.Append(mi.MemberType);
+                sb.Append(" : ");
+                sb.Append(mi.ToString());
+            }
+
+            return Ast.Throw(
+                Ast.New(
+                    typeof(AmbiguousMatchException).GetConstructor(new Type[] { typeof(string) }),
+                    AstUtils.Constant(sb.ToString())
+                ),
+                typeof(object)
+            );
+        }
+
+        public TrackerTypes GetMemberType(MemberGroup members, out Expression error) {
             error = null;
             TrackerTypes memberType = TrackerTypes.All;
             for (int i = 0; i < members.Count; i++) {
@@ -295,24 +198,7 @@ namespace Microsoft.Scripting.Actions {
             return memberType;
         }
 
-        private static Expression MakeAmbiguousMatchError(MemberGroup members) {
-            StringBuilder sb = new StringBuilder();
-            foreach (MemberTracker mi in members) {
-                if (sb.Length != 0) sb.Append(", ");
-                sb.Append(mi.MemberType);
-                sb.Append(" : ");
-                sb.Append(mi.ToString());
-            }
-
-            return Ast.Throw(
-                Ast.New(
-                    typeof(AmbiguousMatchException).GetConstructor(new Type[] { typeof(string) }),
-                    Ast.Constant(sb.ToString())
-                )
-            );
-        }
-
-        internal MethodInfo GetMethod(Type type, string name) {
+        public MethodInfo GetMethod(Type type, string name) {
             // declaring type takes precedence
             MethodInfo mi = type.GetMethod(name);
             if (mi != null) {

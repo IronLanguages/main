@@ -17,26 +17,29 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Dynamic;
+using System.Diagnostics;
 using Microsoft.Scripting;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Compiler.Ast {
     using Ast = System.Linq.Expressions.Expression;
     using MSA = System.Linq.Expressions;
     
-    public partial class SymbolLiteral : Expression {
-        private readonly string/*!*/ _value;
-
-        public string/*!*/ Value {
-            get { return _value; }
+    public partial class SymbolLiteral : StringLiteral {
+        internal SymbolLiteral(object/*!*/ value, SourceSpan location) 
+            : base(value, location) {
         }
 
-        internal SymbolLiteral(string/*!*/ value, SourceSpan location)
-            : base(location) {
-            _value = value;
+        public SymbolLiteral(string/*!*/ value, SourceSpan location)
+            : base(value, location) {
+        }
+
+        public SymbolLiteral(byte[]/*!*/ value, SourceSpan location)
+            : base(value, location) {
         }
 
         internal override MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen) {
-            return Methods.CreateSymbolB.OpCall(Ast.Constant(_value));
+            return Methods.CreateSymbolL.OpCall(StringConstructor.MakeConstant(Value), AstUtils.Constant(gen.Encoding));
         }
     }
 }

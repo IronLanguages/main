@@ -46,9 +46,12 @@ namespace Microsoft.Scripting.ComInterop {
             }
 
             return new DynamicMetaObject(
-                Expression.Property(
-                    AstUtils.Convert(Expression, typeof(ComTypeLibInfo)),
-                    typeof(ComTypeLibInfo).GetProperty(name)
+                Expression.Convert(
+                    Expression.Property(
+                        AstUtils.Convert(Expression, typeof(ComTypeLibInfo)),
+                        typeof(ComTypeLibInfo).GetProperty(name)
+                    ),
+                    typeof(object)
                 ),
                 ComTypeLibInfoRestrictions(this)
             );
@@ -60,16 +63,6 @@ namespace Microsoft.Scripting.ComInterop {
 
         private BindingRestrictions ComTypeLibInfoRestrictions(params DynamicMetaObject[] args) {
             return BindingRestrictions.Combine(args).Merge(BindingRestrictions.GetTypeRestriction(Expression, typeof(ComTypeLibInfo)));
-        }
-
-        private DynamicMetaObject RestrictThisToType() {
-            return new DynamicMetaObject(
-                AstUtils.Convert(
-                    Expression,
-                    typeof(ComTypeLibInfo)
-                ),
-                BindingRestrictions.GetTypeRestriction(Expression, typeof(ComTypeLibInfo))
-            );
         }
     }
 }

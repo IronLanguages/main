@@ -83,7 +83,7 @@ namespace IronPython.Hosting {
         }
 
         public ScriptScope/*!*/ ImportModule(ScriptEngine/*!*/ engine, string/*!*/ name) {
-            Scope scope = Importer.ImportModule(_context.DefaultBinderState.Context, _context.DefaultBinderState.Context.GlobalScope.Dict, name, false, -1) as Scope;
+            Scope scope = Importer.ImportModule(_context.SharedContext, _context.SharedContext.GlobalScope.Dict, name, false, -1) as Scope;
             if (scope != null) {
                 return HostingHelpers.CreateScriptScope(engine, scope);
             }

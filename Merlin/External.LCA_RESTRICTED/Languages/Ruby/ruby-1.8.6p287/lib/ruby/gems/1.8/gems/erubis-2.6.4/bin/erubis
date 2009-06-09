@@ -1,0 +1,11 @@
+#!/usr/bin/env ruby
+
+###
+### $Rev: 121 $
+### $Release: 2.6.4 $
+### copyright(c) 2006-2009 kuwata-lab.com all rights reserved.
+###
+
+require 'erubis/main'
+
+Erubis::Main.main(ARGV)

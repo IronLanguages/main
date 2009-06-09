@@ -1,0 +1,6 @@
+fails:IO.read treats second nil argument as no length limit
+fails:IO.read treats third nil argument as 0
+fails:IO#read expands the buffer when too small
+fails:IO#read overwrites the buffer
+fails:IO#read truncates the buffer when too big
+fails:IO#read returns the given buffer

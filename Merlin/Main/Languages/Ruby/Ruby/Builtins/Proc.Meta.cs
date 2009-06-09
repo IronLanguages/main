@@ -23,35 +23,37 @@ using IronRuby.Runtime.Calls;
 using Ast = System.Linq.Expressions.Expression;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 using IronRuby.Compiler;
+using System;
+using System.Reflection;
 
 namespace IronRuby.Builtins {
 
-    public partial class Proc : IDynamicMetaObjectProvider {
+    public partial class Proc : IRubyDynamicMetaObjectProvider {
         public DynamicMetaObject/*!*/ GetMetaObject(Expression/*!*/ parameter) {
             return new Meta(parameter, BindingRestrictions.Empty, this);
         }
 
-        internal sealed class Meta : DynamicMetaObject {
-            public Meta(Expression/*!*/ expression, BindingRestrictions/*!*/ restrictions, Proc/*!*/ value)
-                : base(expression, restrictions, value) {
-                ContractUtils.RequiresNotNull(value, "value");
+        internal sealed class Meta : RubyMetaObject<Proc> {
+            public override RubyContext/*!*/ Context {
+                get { return Value.LocalScope.RubyContext; }
             }
 
-            public override DynamicMetaObject/*!*/ BindInvoke(InvokeBinder/*!*/ action, DynamicMetaObject/*!*/[]/*!*/ args) {
-                RubyCallSignature callSignature;
-                if (RubyCallSignature.TryCreate(action.CallInfo, out callSignature)) {
-                    return action.FallbackInvoke(this, args);
-                }
+            protected override MethodInfo/*!*/ ContextConverter {
+                get { return Methods.GetContextFromProc; }
+            }
 
-                var context = new DynamicMetaObject(
-                    Methods.GetContextFromProc.OpCall(AstUtils.Convert(Expression, typeof(Proc))),
-                    BindingRestrictions.Empty,
-                    RubyOps.GetContextFromProc((Proc)Value)
-                );
+            public Meta(Expression/*!*/ expression, BindingRestrictions/*!*/ restrictions, Proc/*!*/ value)
+                : base(expression, restrictions, value) {
+            }
 
-                var metaBuilder = new MetaObjectBuilder();
-                Proc.SetCallActionRule(metaBuilder, new CallArguments(context, this, args, callSignature), true);
-                return metaBuilder.CreateMetaObject(action, args);
+            // Conversion to a delegate.
+            public override DynamicMetaObject/*!*/ BindConvert(ConvertBinder/*!*/ binder) {
+                return InteropBinder.TryBindCovertToDelegate(this, binder, Methods.CreateDelegateFromProc)
+                    ?? base.BindConvert(binder);
+            }
+
+            public override DynamicMetaObject/*!*/ BindInvoke(InvokeBinder/*!*/ binder, DynamicMetaObject/*!*/[]/*!*/ args) {
+                return InteropBinder.Invoke.Bind(binder, this, args, Value.BuildInvoke);
             }
         }
     }

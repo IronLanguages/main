@@ -31,13 +31,6 @@ namespace Microsoft.Scripting.Ast {
             return Loop(test, null, body, @else, @break, @continue);
         }
 
-        [Obsolete("use While overload without SourceSpan")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "span")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "header")]
-        public static LoopExpression While(Expression test, Expression body, Expression @else, LabelTarget @break, LabelTarget @continue, SourceLocation header, SourceSpan span) {
-            return Loop(test, null, body, @else, @break, @continue);
-        }
-
         public static LoopExpression Infinite(Expression body) {
             return Expression.Loop(body, null, null);
         }
@@ -48,13 +41,6 @@ namespace Microsoft.Scripting.Ast {
 
         public static LoopExpression Loop(Expression test, Expression increment, Expression body, Expression @else) {
             return Loop(test, increment, body, @else, null, null);
-        }
-
-        [Obsolete("use Loop overload without SourceSpan")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "span")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "header")]
-        public static LoopExpression Loop(Expression test, Expression increment, Expression body, Expression @else, LabelTarget @break, LabelTarget @continue, SourceLocation header, SourceSpan span) {
-            return Loop(test, increment, body, @else, @break, @continue);
         }
 
         public static LoopExpression Loop(Expression test, Expression increment, Expression body, Expression @else, LabelTarget @break, LabelTarget @continue) {
@@ -83,16 +69,16 @@ namespace Microsoft.Scripting.Ast {
                     test != null
                         ? (Expression)Expression.Condition(
                             test,
-                            Expression.Empty(),
+                            Utils.Empty(),
                             Expression.Block(
-                                @else != null ? @else : Expression.Empty(),
+                                @else != null ? @else : Utils.Empty(),
                                 Expression.Break(@break)
                             )
                         )
-                        : Expression.Empty(),
+                        : Utils.Empty(),
                     body,
-                    @continue != null ? (Expression)Expression.Label(@continue) : Expression.Empty(),
-                    increment != null ? increment : Expression.Empty()
+                    @continue != null ? (Expression)Expression.Label(@continue) : Utils.Empty(),
+                    increment != null ? increment : Utils.Empty()
                 ),
                 @break,
                 null

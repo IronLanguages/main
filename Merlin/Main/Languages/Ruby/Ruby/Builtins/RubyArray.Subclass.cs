@@ -16,22 +16,21 @@
 using IronRuby.Runtime;
 using Microsoft.Scripting.Utils;
 using IronRuby.Compiler.Generation;
+using System.Diagnostics;
 
 namespace IronRuby.Builtins {
     public partial class RubyArray {
-        public sealed class Subclass : RubyArray, IRubyObject {
-            private readonly RubyClass/*!*/ _class;
-            private RubyInstanceData _instanceData;
-
+        public sealed partial class Subclass : RubyArray, IRubyObject {
             // called by Class#new rule when creating a Ruby subclass of String:
             public Subclass(RubyClass/*!*/ rubyClass) {
                 Assert.NotNull(rubyClass);
-                _class = rubyClass;
+                Debug.Assert(!rubyClass.IsSingletonClass);
+                ImmediateClass = rubyClass;
             }
 
             private Subclass(RubyArray.Subclass/*!*/ array)
                 : base(array) {
-                _class = array._class;
+                ImmediateClass = array.ImmediateClass.NominalClass;
             }
 
             protected override RubyArray/*!*/ Copy() {
@@ -39,25 +38,8 @@ namespace IronRuby.Builtins {
             }
 
             public override RubyArray/*!*/ CreateInstance() {
-                return new Subclass(_class);
+                return new Subclass(ImmediateClass.NominalClass);
             }
-
-            #region IRubyObject Members
-
-            [Emitted]
-            public RubyClass/*!*/ Class {
-                get { return _class; }
-            }
-
-            public RubyInstanceData/*!*/ GetInstanceData() {
-                return RubyOps.GetInstanceData(ref _instanceData);
-            }
-
-            public RubyInstanceData TryGetInstanceData() {
-                return _instanceData;
-            }
-
-            #endregion
         }
     }
 }

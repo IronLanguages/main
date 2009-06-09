@@ -114,11 +114,10 @@ namespace IronRuby.Compiler.Ast {
                     AstUtils.IfThen(
                         Ast.AndAlso(
                             exceptionRethrowVariable,
-                            Ast.NotEqual(oldExceptionVariable, Ast.Constant(null))
+                            Ast.NotEqual(oldExceptionVariable, AstUtils.Constant(null))
                         ),
                         Ast.Throw(oldExceptionVariable)
-                    ),
-                    Ast.Empty()
+                    )
                 );
             } else {
                 // rethrow:
@@ -127,7 +126,7 @@ namespace IronRuby.Compiler.Ast {
                         exceptionRethrowVariable,
                         Ast.NotEqual(
                             Ast.Assign(oldExceptionVariable, Methods.GetCurrentException.OpCall(gen.CurrentScopeVariable)),
-                            Ast.Constant(null, typeof(Exception)))
+                            AstUtils.Constant(null, typeof(Exception)))
                         ),
                     Ast.Throw(oldExceptionVariable)
                 );
@@ -136,100 +135,92 @@ namespace IronRuby.Compiler.Ast {
             if (_elseStatements != null) {
                 transformedElse = gen.TransformStatements(_elseStatements, resultOperation);
             } else {
-                transformedElse = Ast.Empty();
+                transformedElse = AstUtils.Empty();
             }
 
             // body should do return, but else-clause is present => we cannot do return from the guarded statements: 
             // (the value of the last expression in the body cannot be the last executed expression statement => we can ignore it):
             transformedBody = gen.TransformStatements(_statements, (_elseStatements != null) ? ResultOperation.Ignore : resultOperation);
 
-            MSA.Expression setInRescueFlag = null, clearInRescueFlag = null;
-            var breakLabel = Ast.Label();
-            var continueLabel = Ast.Label();
+            MSA.Expression enterRescue = null, leaveRescue = null;
+            var retryLabel = Ast.Label("retry");
 
             // make rescue clause:
             MSA.Expression transformedRescue;
             if (_rescueClauses != null) {
                 // outer-most EH blocks sets and clears runtime flag RuntimeFlowControl.InTryRescue:
                 if (gen.CurrentRescue == null) {
-                    setInRescueFlag = Ast.Assign(Ast.Field(gen.CurrentRfcVariable, RuntimeFlowControl.InRescueField), Ast.Constant(true));
-                    clearInRescueFlag = Ast.Assign(Ast.Field(gen.CurrentRfcVariable, RuntimeFlowControl.InRescueField), Ast.Constant(false));
+                    enterRescue = Methods.EnterRescue.OpCall(gen.CurrentScopeVariable);
+                    leaveRescue = Methods.LeaveRescue.OpCall(gen.CurrentScopeVariable);
                 } else {
-                    setInRescueFlag = clearInRescueFlag = Ast.Empty();
+                    enterRescue = leaveRescue = AstUtils.Empty();
                 }
 
-                gen.EnterRescueClause(retryingVariable, breakLabel, continueLabel);
+                gen.EnterRescueClause(retryingVariable, retryLabel);
 
                 var handlers = new IfStatementTest[_rescueClauses.Count];
                 for (int i = 0; i < handlers.Length; i++) {
                     handlers[i] = _rescueClauses[i].Transform(gen, resultOperation);
                 }
 
-                transformedRescue = Ast.Block(
-                    setInRescueFlag,
+                transformedRescue =
                     AstUtils.Try(
-                        AstUtils.If(handlers, Ast.Assign(exceptionRethrowVariable, Ast.Constant(true)))
-                    ).Filter(evalUnwinder, Ast.Equal(Ast.Field(evalUnwinder, EvalUnwinder.ReasonField), Ast.Constant(BlockReturnReason.Retry)),
+                        enterRescue,
+                        AstUtils.If(handlers, Ast.Assign(exceptionRethrowVariable, AstUtils.Constant(true)))
+                    ).Filter(evalUnwinder, Ast.Equal(Ast.Field(evalUnwinder, EvalUnwinder.ReasonField), AstUtils.Constant(BlockReturnReason.Retry)),
                         Ast.Block(
-                            Ast.Assign(retryingVariable, Ast.Constant(true)),
-                            Ast.Continue(continueLabel),
-                            Ast.Empty()
+                            Ast.Assign(retryingVariable, AstUtils.Constant(true)),
+                            Ast.Continue(retryLabel),
+                            AstUtils.Empty()
                         )
-                    )
-                );
+                    );
+                
 
                 gen.LeaveRescueClause();
 
             } else {
-                transformedRescue = Ast.Assign(exceptionRethrowVariable, Ast.Constant(true));
+                transformedRescue = Ast.Assign(exceptionRethrowVariable, AstUtils.Constant(true));
             }
 
             if (_elseStatements != null) {
                 transformedElse = AstUtils.Unless(exceptionThrownVariable, transformedElse);
             }
 
-            var result = AstFactory.Infinite(breakLabel, continueLabel,
-                Ast.Assign(exceptionThrownVariable, Ast.Constant(false)),
-                Ast.Assign(exceptionRethrowVariable, Ast.Constant(false)),
-                Ast.Assign(retryingVariable, Ast.Constant(false)),
-
+            var result = Ast.Block(
+                Ast.Label(retryLabel),
                 AstUtils.Try(
+                    Ast.Assign(exceptionThrownVariable, AstUtils.Constant(false)),
+                    Ast.Assign(exceptionRethrowVariable, AstUtils.Constant(false)),
+                    Ast.Assign(retryingVariable, AstUtils.Constant(false)),
+
                     // save exception (old_$! is not used unless there is a rescue clause):
-                    Ast.Block(
-                        (_rescueClauses == null) ? (MSA.Expression)Ast.Empty() :
-                            Ast.Assign(oldExceptionVariable, Methods.GetCurrentException.OpCall(gen.CurrentScopeVariable)),
+                    (_rescueClauses == null) ? (MSA.Expression)AstUtils.Empty() :
+                        Ast.Assign(oldExceptionVariable, Methods.GetCurrentException.OpCall(gen.CurrentScopeVariable)),
 
-                        AstUtils.Try(
-                            Ast.Block(transformedBody, Ast.Empty())
-                        ).Filter(exceptionVariable, Methods.CanRescue.OpCall(gen.CurrentRfcVariable, exceptionVariable),
-                            Ast.Assign(exceptionThrownVariable, Ast.Constant(true)),
-                            Methods.SetCurrentExceptionAndStackTrace.OpCall(gen.CurrentScopeVariable, exceptionVariable),
-                            transformedRescue,
-                            Ast.Empty()
-                        ).FinallyIf((_rescueClauses != null), 
-                            // restore previous exception if the current one has been handled:
-                            AstUtils.Unless(exceptionRethrowVariable,
-                                Methods.SetCurrentException.OpCall(gen.CurrentScopeVariable, oldExceptionVariable)
-                            ),
-                            clearInRescueFlag
+                    AstUtils.Try(
+                        Ast.Block(transformedBody, AstUtils.Empty())
+                    ).Filter(exceptionVariable, Methods.CanRescue.OpCall(gen.CurrentScopeVariable, exceptionVariable),
+                        Ast.Assign(exceptionThrownVariable, AstUtils.Constant(true)),
+                        transformedRescue,
+                        AstUtils.Empty()
+                    ).FinallyIf((_rescueClauses != null), 
+                        // restore previous exception if the current one has been handled:
+                        AstUtils.Unless(exceptionRethrowVariable,
+                            Methods.SetCurrentException.OpCall(gen.CurrentScopeVariable, oldExceptionVariable)
                         ),
+                        leaveRescue
+                    ),
 
-                        // unless (exception_thrown) do <else-statements> end
-                        transformedElse,
-                        Ast.Empty()
-                    )
+                    // unless (exception_thrown) do <else-statements> end
+                    transformedElse,
+                    AstUtils.Empty()
                 ).FilterIf((_rescueClauses != null || _elseStatements != null),
-                    exceptionVariable, Methods.CanRescue.OpCall(gen.CurrentRfcVariable, exceptionVariable),
-                    Ast.Block(
-                        Methods.SetCurrentExceptionAndStackTrace.OpCall(gen.CurrentScopeVariable, exceptionVariable),
-                        Ast.Assign(exceptionRethrowVariable, Ast.Constant(true)),
-                        Ast.Empty()
-                    )
-                ).Finally(
+                    exceptionVariable, Methods.CanRescue.OpCall(gen.CurrentScopeVariable, exceptionVariable),
+                    Ast.Assign(exceptionRethrowVariable, AstUtils.Constant(true)),
+                    AstUtils.Empty()
+                ).FinallyWithJumps(
                     AstUtils.Unless(retryingVariable, transformedEnsure)
-                ),
-
-                Ast.Break(breakLabel)
+                )
             );
 
             return result;

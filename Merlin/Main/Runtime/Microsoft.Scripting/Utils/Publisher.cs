@@ -78,6 +78,12 @@ namespace Microsoft.Scripting.Utils {
             }
         }
 
+        public IEnumerable<TKey> Keys {
+            get {
+                return data.Keys;
+            }
+        }
+
         /// <summary>
         /// Helper class which stores the published value
         /// </summary>

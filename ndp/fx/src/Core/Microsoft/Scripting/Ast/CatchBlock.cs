@@ -13,6 +13,7 @@
  *
  * ***************************************************************************/
 
+using System.Diagnostics;
 using System.Dynamic.Utils;
 
 namespace System.Linq.Expressions {
@@ -21,6 +22,9 @@ namespace System.Linq.Expressions {
     /// Represents a catch statement in a try block. 
     /// This must have the same return type (i.e., the type of <see cref="P:CatchBlock.Body"/>) as the try block it is associated with.
     /// </summary>
+#if !SILVERLIGHT
+    [DebuggerTypeProxy(typeof(Expression.CatchBlockProxy))]
+#endif
     public sealed class CatchBlock {
         private readonly Type _test;
         private readonly ParameterExpression _var;
@@ -76,7 +80,7 @@ namespace System.Linq.Expressions {
     public partial class Expression {
         /// <summary>
         /// Creates a <see cref="CatchBlock"/> representing a catch statement. 
-        /// The <see cref="Type"/> of <see cref="Exception"/> to be caught can be specified but no reference to the <see cref="Exception"/> object 
+        /// The <see cref="Type"/> of object to be caught can be specified but no reference to the object 
         /// will be available for use in the <see cref="CatchBlock"/>.
         /// </summary>
         /// <param name="type">The <see cref="Type"/> of <see cref="Exception"/> this <see cref="CatchBlock"/> will handle.</param>
@@ -87,7 +91,7 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// Creates a <see cref="CatchBlock"/> representing a catch statement with a reference to the caught <see cref="Exception"/> object for use in the handler body.
+        /// Creates a <see cref="CatchBlock"/> representing a catch statement with a reference to the caught object for use in the handler body.
         /// </summary>
         /// <param name="variable">A <see cref="ParameterExpression"/> representing a reference to the <see cref="Exception"/> object caught by this handler.</param>
         /// <param name="body">The body of the catch statement.</param>
@@ -133,7 +137,7 @@ namespace System.Linq.Expressions {
         /// <remarks><paramref name="type"/> must be non-null and match the type of <paramref name="variable"/> (if it is supplied).</remarks>
         public static CatchBlock MakeCatchBlock(Type type, ParameterExpression variable, Expression body, Expression filter) {
             ContractUtils.RequiresNotNull(type, "type");
-            ContractUtils.Requires(variable == null || variable.Type == type, "variable");
+            ContractUtils.Requires(variable == null || TypeUtils.AreEquivalent(variable.Type, type), "variable");
             if (variable != null && variable.IsByRef) {
                 throw Error.VariableMustNotBeByRef(variable, variable.Type);
             }

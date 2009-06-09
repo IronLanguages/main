@@ -32,15 +32,15 @@ namespace Microsoft.Scripting.Ast {
         internal CodeContextExpression() {
         }
 
-        protected override System.Type TypeImpl() {
-            return typeof(CodeContext);
+        public sealed override Type Type {
+            get { return typeof(CodeContext); }
         }
 
-        protected override ExpressionType NodeTypeImpl() {
-            return ExpressionType.Extension;
+        public sealed override ExpressionType NodeType {
+            get { return ExpressionType.Extension; }
         }
 
-        protected override Expression VisitChildren(ExpressionVisitor visitor) {
+        protected override Expression VisitChildren(Func<Expression, Expression> visitor) {
             return this;
         }
     }
@@ -60,12 +60,12 @@ namespace Microsoft.Scripting.Ast {
             _newContext = newContext;
         }
 
-        protected override Type TypeImpl() {
-            return _body.Type;
+        public sealed override Type Type {
+            get { return _body.Type; }
         }
 
-        protected override ExpressionType NodeTypeImpl() {
-            return ExpressionType.Extension;
+        public sealed override ExpressionType NodeType {
+            get { return ExpressionType.Extension; }
         }
 
         /// <summary>
@@ -82,9 +82,9 @@ namespace Microsoft.Scripting.Ast {
             get { return _newContext; }
         }
 
-        protected override Expression VisitChildren(ExpressionVisitor visitor) {
-            Expression newContext = visitor.Visit(_newContext);
-            Expression body = visitor.Visit(_body);
+        protected override Expression VisitChildren(Func<Expression, Expression> visitor) {
+            Expression newContext = visitor(_newContext);
+            Expression body = visitor(_body);
 
             if (newContext == _newContext && body == _body) {
                 return this;

@@ -15,66 +15,24 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Microsoft.Scripting.Utils;
 
 namespace IronPython.Runtime.Operations {
     public static class EnumOps {        
         [SpecialName]
         public static object BitwiseOr(object self, object other) {
-            if (self is Enum && other is Enum) {
-                Type selfType = self.GetType();
-                Type otherType = other.GetType();
-
-                if (selfType == otherType) {
-                    Type underType = Enum.GetUnderlyingType(selfType);
-                    if (underType == typeof(int)) {
-                        return Enum.ToObject(selfType, (int)self | (int)other);
-                    } else if (underType == typeof(long)) {
-                        return Enum.ToObject(selfType, (long)self | (long)other);
-                    } else if (underType == typeof(short)) {
-                        return Enum.ToObject(selfType, (short)self | (short)other);
-                    } else if (underType == typeof(byte)) {
-                        return Enum.ToObject(selfType, (byte)self | (byte)other);
-                    } else if (underType == typeof(sbyte)) {
-                        return Enum.ToObject(selfType, (sbyte)self | (sbyte)other);
-                    } else if (underType == typeof(uint)) {
-                        return Enum.ToObject(selfType, (uint)self | (uint)other);
-                    } else if (underType == typeof(ulong)) {
-                        return Enum.ToObject(selfType, (ulong)self | (ulong)other);
-                    } else if (underType == typeof(ushort)) {
-                        return Enum.ToObject(selfType, (ushort)self | (ushort)other);
-                    }
-                }
+            object result = EnumUtils.BitwiseOr(self, other);
+            if (result != null) {
+                return result;
             }
-
             throw PythonOps.ValueError("bitwise or cannot be applied to {0} and {1}", self.GetType(), other.GetType());
         }
 
         [SpecialName]
         public static object BitwiseAnd(object self, object other) {
-            if (self is Enum && other is Enum) {
-                Type selfType = self.GetType();
-                Type otherType = other.GetType();
-
-                if (selfType == otherType) {
-                    Type underType = Enum.GetUnderlyingType(selfType);
-                    if (underType == typeof(int)) {
-                        return Enum.ToObject(selfType, (int)self & (int)other);
-                    } else if (underType == typeof(long)) {
-                        return Enum.ToObject(selfType, (long)self & (long)other);
-                    } else if (underType == typeof(short)) {
-                        return Enum.ToObject(selfType, (short)self & (short)other);
-                    } else if (underType == typeof(byte)) {
-                        return Enum.ToObject(selfType, (byte)self & (byte)other);
-                    } else if (underType == typeof(sbyte)) {
-                        return Enum.ToObject(selfType, (sbyte)self & (sbyte)other);
-                    } else if (underType == typeof(uint)) {
-                        return Enum.ToObject(selfType, (uint)self & (uint)other);
-                    } else if (underType == typeof(ulong)) {
-                        return Enum.ToObject(selfType, (ulong)self & (ulong)other);
-                    } else if (underType == typeof(ushort)) {
-                        return Enum.ToObject(selfType, (ushort)self & (ushort)other);
-                    }
-                }
+            object result = EnumUtils.BitwiseAnd(self, other);
+            if (result != null) {
+                return result;
             }
 
             throw PythonOps.ValueError("bitwise and cannot be applied to {0} and {1}", self.GetType(), other.GetType());
@@ -82,30 +40,9 @@ namespace IronPython.Runtime.Operations {
 
         [SpecialName]
         public static object ExclusiveOr(object self, object other) {
-            if (self is Enum && other is Enum) {
-                Type selfType = self.GetType();
-                Type otherType = other.GetType();
-
-                if (selfType == otherType) {
-                    Type underType = Enum.GetUnderlyingType(selfType);
-                    if (underType == typeof(int)) {
-                        return Enum.ToObject(selfType, (int)self ^ (int)other);
-                    } else if (underType == typeof(long)) {
-                        return Enum.ToObject(selfType, (long)self ^ (long)other);
-                    } else if (underType == typeof(short)) {
-                        return Enum.ToObject(selfType, (short)self ^ (short)other);
-                    } else if (underType == typeof(byte)) {
-                        return Enum.ToObject(selfType, (byte)self ^ (byte)other);
-                    } else if (underType == typeof(sbyte)) {
-                        return Enum.ToObject(selfType, (sbyte)self ^ (sbyte)other);
-                    } else if (underType == typeof(uint)) {
-                        return Enum.ToObject(selfType, (uint)self ^ (uint)other);
-                    } else if (underType == typeof(ulong)) {
-                        return Enum.ToObject(selfType, (ulong)self ^ (ulong)other);
-                    } else if (underType == typeof(ushort)) {
-                        return Enum.ToObject(selfType, (ushort)self ^ (ushort)other);
-                    }
-                }
+            object result = EnumUtils.ExclusiveOr(self, other);
+            if (result != null) {
+                return result;
             }
 
             throw PythonOps.ValueError("bitwise xor cannot be applied to {0} and {1}", self.GetType(), other.GetType());
@@ -113,26 +50,9 @@ namespace IronPython.Runtime.Operations {
 
         [SpecialName]
         public static object OnesComplement(object self) {
-            if (self is Enum) {
-                Type selfType = self.GetType();
-                Type underType = Enum.GetUnderlyingType(selfType);
-                if (underType == typeof(int)) {
-                    return Enum.ToObject(selfType, ~(int)self);
-                } else if (underType == typeof(long)) {
-                    return Enum.ToObject(selfType, ~(long)self);
-                } else if (underType == typeof(short)) {
-                    return Enum.ToObject(selfType, ~(short)self);
-                } else if (underType == typeof(byte)) {
-                    return Enum.ToObject(selfType, ~(byte)self);
-                } else if (underType == typeof(sbyte)) {
-                    return Enum.ToObject(selfType, ~(sbyte)self);
-                } else if (underType == typeof(uint)) {
-                    return Enum.ToObject(selfType, ~(uint)self);
-                } else if (underType == typeof(ulong)) {
-                    return Enum.ToObject(selfType, ~(ulong)self);
-                } else if (underType == typeof(ushort)) {
-                    return Enum.ToObject(selfType, ~(ushort)self);
-                }
+            object result = EnumUtils.OnesComplement(self);
+            if (result != null) {
+                return result;
             }
 
             throw PythonOps.ValueError("one's complement cannot be applied to {0}", self.GetType());

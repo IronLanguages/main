@@ -14,10 +14,14 @@
  * ***************************************************************************/
 
 using System;
-using IronPython.Runtime.Binding;
+using System.Collections.Generic;
+
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Runtime;
+
+using IronPython.Runtime.Binding;
+
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 using MSAst = System.Linq.Expressions;
 
@@ -75,7 +79,8 @@ namespace IronPython.Compiler.Ast {
         ///         exit(None, None, None)
         /// 
         /// </summary>
-        internal override MSAst.Expression Transform(AstGenerator ag) {
+        internal override MSAst.Expression Transform(AstGenerator ag) {            
+            MSAst.ParameterExpression lineUpdated = ag.GetTemporary("$lineUpdated_with", typeof(bool));
             // Five statements in the result...
             MSAst.Expression[] statements = new MSAst.Expression[6];
 
@@ -95,8 +100,7 @@ namespace IronPython.Compiler.Ast {
             MSAst.ParameterExpression exit = ag.GetTemporary("with_exit");
             statements[1] = ag.MakeAssignment(
                 exit,
-                Binders.Get(
-                    ag.BinderState,
+                ag.Get(
                     typeof(object),
                     "__exit__",
                     manager
@@ -107,19 +111,20 @@ namespace IronPython.Compiler.Ast {
             // 3. value = mgr.__enter__()
             //******************************************************************
             MSAst.ParameterExpression value = ag.GetTemporary("with_value");
-            statements[2] = ag.MakeAssignment(
-                value,
-                Binders.Invoke(
-                    ag.BinderState,
-                    typeof(object),
-                    new CallSignature(0),
-                    Binders.Get(
-                        ag.BinderState,
+            statements[2] = ag.AddDebugInfo(
+                ag.MakeAssignment(
+                    value,
+                    ag.Invoke(
                         typeof(object),
-                        "__enter__",
-                        manager
+                        new CallSignature(0),
+                        ag.Get(
+                            typeof(object),
+                            "__enter__",
+                            manager
+                        )
                     )
-                )
+                ),
+                new SourceSpan(Start, _header)
             );
 
             //******************************************************************
@@ -128,7 +133,7 @@ namespace IronPython.Compiler.Ast {
             MSAst.ParameterExpression exc = ag.GetTemporary("with_exc", typeof(bool));
             statements[3] = ag.MakeAssignment(
                 exc,
-                Ast.Constant(true)
+                AstUtils.Constant(true)
             );
 
             //******************************************************************
@@ -150,71 +155,98 @@ namespace IronPython.Compiler.Ast {
             //******************************************************************
 
             MSAst.ParameterExpression exception = ag.GetTemporary("exception", typeof(Exception));
-
+            MSAst.ParameterExpression nestedFrames = ag.GetTemporary("$nestedFrames", typeof(List<DynamicStackFrame>));
             statements[4] =
                 // try:
-                AstUtils.Try(// try statement body
-                    _var != null ?
-                        ag.AddDebugInfo(
-                            Ast.Block(
-                // VAR = value
-                                _var.TransformSet(ag, SourceSpan.None, value, PythonOperationKind.None),
-                // BLOCK
-                                ag.Transform(_body),
-                                Ast.Empty()
-                            ),
-                            _body.Span
-                        ) :
-                // BLOCK
-                        ag.Transform(_body) // except:, // try statement location
-                ).Catch(exception,
-                    Ast.Block(
-                // Python specific exception handling code
+                AstUtils.Try(
+                    AstUtils.Try(// try statement body
+                        ag.PushLineUpdated(false, lineUpdated),
+                        _var != null ?
+                            ag.AddDebugInfo(
+                                Ast.Block(
+                    // VAR = value
+                                    _var.TransformSet(ag, SourceSpan.None, value, PythonOperationKind.None),
+                    // BLOCK
+                                    ag.Transform(_body),
+                                    AstUtils.Empty()
+                                ),
+                                _body.Span
+                            ) :
+                    // BLOCK
+                            ag.Transform(_body) // except:, // try statement location
+                    ).Catch(exception,
+                    // Python specific exception handling code
+                        TryStatement.GetTracebackHeader(                        
+                            ag,
+                            exception,
+                            ag.AddDebugInfo(
+                                Ast.Block(
+                                    // exc = False
+                                    ag.MakeAssignment(
+                                        exc,
+                                        AstUtils.Constant(false)
+                                    ),
+                                    Ast.Assign(
+                                        nestedFrames,
+                                        Ast.Call(AstGenerator.GetHelperMethod("GetAndClearDynamicStackFrames"))
+                                    ),
+                                    //  if not exit(*sys.exc_info()):
+                                    //      raise
+                                    AstUtils.IfThen(
+                                        ag.Convert(
+                                            typeof(bool),
+                                            ConversionResultKind.ExplicitCast,
+                                            ag.Operation(
+                                                typeof(bool),
+                                                PythonOperationKind.Not,
+                                                MakeExitCall(ag, exit, exception)
+                                            )
+                                        ),
+                                        ag.UpdateLineUpdated(true),
+                                        Ast.Call(
+                                            AstGenerator.GetHelperMethod("SetDynamicStackFrames"),
+                                            nestedFrames
+                                        ),
+                                        Ast.Throw(
+                                            Ast.Call(
+                                                AstGenerator.GetHelperMethod("MakeRethrowExceptionWorker"),
+                                                exception
+                                            )
+                                        )
+                                    )
+                                ),
+                                _body.Span
+                            )
+                        ),
                         Ast.Call(
-                            AstGenerator.GetHelperMethod("ClearDynamicStackFrames")
+                            AstGenerator.GetHelperMethod("SetDynamicStackFrames"),
+                            nestedFrames
                         ),
-                // exc = False
-                        ag.MakeAssignment(
-                            exc,
-                            Ast.Constant(false)
-                        ),
-                //  if not exit(*sys.exc_info()):
-                //      raise
-                        AstUtils.IfThen(
-                            Binders.Convert(
-                                ag.BinderState,
-                                typeof(bool),
-                                ConversionResultKind.ExplicitCast,
-                                Binders.Operation(
-                                    ag.BinderState,
-                                    typeof(object),
-                                    PythonOperationKind.Not,
-                                    MakeExitCall(ag, exit, exception)
-                                )
-                            ),
-                            Ast.Rethrow()
-                        ),
+                        ag.PopLineUpdated(lineUpdated),
                         Ast.Empty()
                     )
-                // finally:
+                // finally:                    
                 ).Finally(
                 //  if exc:
                 //      exit(None, None, None)
                     AstUtils.IfThen(
                         exc,
                         ag.AddDebugInfo(
-                            Ast.Dynamic(
-                                ag.BinderState.Invoke(
-                                    new CallSignature(3)        // signature doesn't include function
-                                ),
-                                typeof(object),
-                                new MSAst.Expression[] {
-                                    AstUtils.CodeContext(),
-                                    exit,
-                                    Ast.Constant(null),
-                                    Ast.Constant(null),
-                                    Ast.Constant(null)
-                                }
+                            Ast.Block(
+                                Ast.Dynamic(
+                                    ag.PyContext.Invoke(
+                                        new CallSignature(3)        // signature doesn't include function
+                                    ),
+                                    typeof(object),
+                                    new MSAst.Expression[] {
+                                        ag.LocalContext,
+                                        exit,
+                                        AstUtils.Constant(null),
+                                        AstUtils.Constant(null),
+                                        AstUtils.Constant(null)
+                                    }
+                                ),                                    
+                                Ast.Empty()
                             ),
                             _contextManager.Span
                         )
@@ -222,7 +254,7 @@ namespace IronPython.Compiler.Ast {
                 );
             statements[4] = ag.AddDebugInfo(statements[4], Span);
 
-            statements[5] = Ast.Empty();
+            statements[5] = AstUtils.Empty();
             return ag.AddDebugInfo(Ast.Block(statements), _body.Span);
         }
 
@@ -232,18 +264,16 @@ namespace IronPython.Compiler.Ast {
             //    exit(*sys.exc_info())
             // we'll actually do:
             //    exit(*PythonOps.GetExceptionInfoLocal($exception))
-            return Binders.Convert(
-                ag.BinderState,
+            return ag.Convert(
                 typeof(bool),
                 ConversionResultKind.ExplicitCast,
-                Binders.Invoke(
-                    ag.BinderState,
+                ag.Invoke(
                     typeof(object),
                     new CallSignature(ArgumentType.List),
                     exit,
                     Ast.Call(
                         AstGenerator.GetHelperMethod("GetExceptionInfoLocal"),
-                        AstUtils.CodeContext(),
+                        ag.LocalContext,
                         exception
                     )
                 )

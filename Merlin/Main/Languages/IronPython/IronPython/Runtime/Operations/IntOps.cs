@@ -22,6 +22,7 @@ using System.Text;
 
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime.Types;
 
@@ -64,34 +65,28 @@ namespace IronPython.Runtime.Operations {
                 } else {
                     return BigInteger.Create(val);
                 }
-            }
-            if (o is UInt32) {
+            } else if (o is UInt32) {
                 UInt32 val = (UInt32)o;
                 if (val <= Int32.MaxValue) {
                     return (Int32)val;
                 } else {
                     return BigInteger.Create(val);
                 }
-            }
-            if (o is UInt64) {
+            } else if (o is UInt64) {
                 UInt64 val = (UInt64)o;
                 if (val <= Int32.MaxValue) {
                     return (Int32)val;
                 } else {
                     return BigInteger.Create(val);
                 }
-            }
-
-            if (o is Decimal) {
+            } else if (o is Decimal) {
                 Decimal val = (Decimal)o;
                 if (Int32.MinValue <= val && val <= Int32.MaxValue) {
                     return (Int32)val;
                 } else {
                     return BigInteger.Create(val);
                 }
-            }
-
-            if (o is Enum) {
+            } else if (o is Enum) {
                 return ((IConvertible)o).ToInt32(null);
             }
 
@@ -107,12 +102,57 @@ namespace IronPython.Runtime.Operations {
                 return __new__(null, es.Value, 10);
             }
 
-            return PythonContext.GetContext(context).ImplicitConvertTo<int>(o);
+            object result;
+            int intRes;
+            BigInteger bigintRes;
+            if (PythonTypeOps.TryInvokeUnaryOperator(context, o, Symbols.ConvertToInt, out result) &&
+                !Object.ReferenceEquals(result, NotImplementedType.Value)) {
+                if (result is int || result is BigInteger ||
+                    result is Extensible<int> || result is Extensible<BigInteger>) {
+                    return result;
+                } else {
+                    throw PythonOps.TypeError("__int__ returned non-Integral (type {0})",
+                        result is OldInstance ? ((OldInstance)result)._class.__name__ : DynamicHelpers.GetPythonType(result).Name);
+                }
+            } else if (PythonOps.TryGetBoundAttr(context, o, Symbols.Truncate, out result)) {
+                result = PythonOps.CallWithContext(context, result);
+                if (result is int || result is BigInteger ||
+                    result is Extensible<int> || result is Extensible<BigInteger>) {
+                    return result;
+                } else if (Converter.TryConvertToInt32(result, out intRes)) {
+                    return intRes;
+                } else if (Converter.TryConvertToBigInteger(result, out bigintRes)) {
+                    return bigintRes;
+                } else {
+                    throw PythonOps.TypeError("__trunc__ returned non-Integral (type {0})",
+                        result is OldInstance ? ((OldInstance)result)._class.__name__ : DynamicHelpers.GetPythonType(result).Name);
+                }
+            }
+
+            if (o is OldInstance) {
+                throw PythonOps.AttributeError("{0} instance has no attribute '__trunc__'",
+                    ((OldInstance)o)._class.__name__);
+            } else {
+                throw PythonOps.TypeError("int() argument must be a string or a number, not '{0}'",
+                    DynamicHelpers.GetPythonType(o).Name);
+            }
         }
 
         [StaticExtensionMethod]
         public static object __new__(CodeContext context, object o) {
             return __new__(context, TypeCache.Int32, o);
+        }
+
+        [StaticExtensionMethod]
+        public static object __new__(CodeContext context, PythonType cls, Extensible<double> o) {
+            object value;
+            // always succeeds as float defines __int__
+            PythonTypeOps.TryInvokeUnaryOperator(context, o, Symbols.ConvertToInt, out value);
+            if (cls == TypeCache.Int32) {
+                return (int)value;
+            } else {
+                return cls.CreateInstance(context, value);
+            }
         }
 
         private static void ValidateType(PythonType cls) {
@@ -124,10 +164,10 @@ namespace IronPython.Runtime.Operations {
         public static object __new__(PythonType cls, string s, int radix) {
             ValidateType(cls);
 
-            // radix 16 allows a 0x preceding it... We either need a whole new
+            // radix 16/8/2 allows a 0x/0o/0b preceding it... We either need a whole new
             // integer parser, or special case it here.
-            if (radix == 16) {
-                s = TrimRadix(s);
+            if (radix == 16 || radix == 8 || radix == 2) {
+                s = TrimRadix(s, radix);
             }
 
             return LiteralParser.ParseIntegerSign(s, radix);
@@ -152,12 +192,30 @@ namespace IronPython.Runtime.Operations {
             return cls.CreateInstance(context, FastNew(context, s.MakeString()));
         }
 
-        internal static string TrimRadix(string s) {
+        internal static string TrimRadix(string s, int radix) {
             for (int i = 0; i < s.Length; i++) {
                 if (Char.IsWhiteSpace(s[i])) continue;
 
-                if (s[i] == '0' && i < s.Length - 1 && (s[i + 1] == 'x' || s[i + 1] == 'X')) {
-                    s = s.Substring(i + 2);
+                if (s[i] == '0' && i < s.Length - 1) {
+                    switch(radix) {
+                        case 16:
+                            if (s[i + 1] == 'x' || s[i + 1] == 'X') {
+                                s = s.Substring(i + 2);
+                            }
+                            break;
+                        case 8:
+                            if (s[i + 1] == 'o' || s[i + 1] == 'O') {
+                                s = s.Substring(i + 2);
+                            }
+                            break;
+                        case 2:
+                            if (s[i + 1] == 'b' || s[i + 1] == 'B') {
+                                s = s.Substring(i + 2);
+                            }
+                            break;
+                        default:
+                            break;
+                    }
                 }
                 break;
             }
@@ -190,39 +248,12 @@ namespace IronPython.Runtime.Operations {
             if (y == -1 && x == Int32.MinValue) {
                 return -BigInteger.Create(Int32.MinValue);
             }
-            return ScriptingRuntimeHelpers.Int32ToObject(FloorDivideImpl(x, y));
-        }
-
-        internal static int FloorDivideImpl(int x, int y) {
-            int q = x / y;
-
-            if (x >= 0) {
-                if (y > 0) return q;
-                else if (x % y == 0) return q;
-                else return q - 1;
-            } else {
-                if (y > 0) {
-                    if (x % y == 0) return q;
-                    else return q - 1;
-                } else return q;
-            }
+            return ScriptingRuntimeHelpers.Int32ToObject(MathUtils.FloorDivideUnchecked(x, y));
         }
 
         [SpecialName]
         public static int Mod(int x, int y) {
-            if (y == -1) return 0;
-            int r = x % y;
-
-            if (x >= 0) {
-                if (y > 0) return r;
-                else if (r == 0) return 0;
-                else return r + y;
-            } else {
-                if (y > 0) {
-                    if (r == 0) return r;
-                    else return r + y;
-                } else return r;
-            }
+            return MathUtils.FloorRemainder(x, y);
         }
 
         [SpecialName]
@@ -422,8 +453,8 @@ namespace IronPython.Runtime.Operations {
                 case '%': digits = self.ToString("0.000000%", CultureInfo.InvariantCulture); break;
                 case 'e': digits = self.ToString("0.000000e+00", CultureInfo.InvariantCulture); break;
                 case 'E': digits = self.ToString("0.000000E+00", CultureInfo.InvariantCulture); break;
-                case 'f': digits = self.ToString("##########.000000", CultureInfo.InvariantCulture); break;
-                case 'F': digits = self.ToString("##########.000000", CultureInfo.InvariantCulture); break;
+                case 'f': digits = self.ToString("#########0.000000", CultureInfo.InvariantCulture); break;
+                case 'F': digits = self.ToString("#########0.000000", CultureInfo.InvariantCulture); break;
                 case 'g':
                     if (self >= 1000000 || self <= -1000000) {
                         digits = self.ToString("0.#####e+00", CultureInfo.InvariantCulture);
@@ -439,61 +470,16 @@ namespace IronPython.Runtime.Operations {
                     }
                     break;
                 case 'X':
-                    if (self != Int32.MinValue) {
-                        int val = self;
-                        if (self < 0) {
-                            val = -self;
-                        }
-                        digits = val.ToString("X", CultureInfo.InvariantCulture);
-                    } else {
-                        digits = "80000000";
-                    }
-
-                    if (spec.IncludeType) {
-                        digits = "0X" + digits;
-                    }
+                    digits = ToHex(self, false);
                     break;
                 case 'x':
-                    if (self != Int32.MinValue) {
-                        int val = self;
-                        if (self < 0) {
-                            val = -self;
-                        }
-                        digits = val.ToString("x", CultureInfo.InvariantCulture);
-                    } else {
-                        digits = "80000000";
-                    }
-
-                    if (spec.IncludeType) {
-                        digits = "0x" + digits;
-                    }
+                    digits = ToHex(self, true);
+                    break;
+                case 'o': // octal
+                    digits = ToOctal(self, true);
                     break;
                 case 'b': // binary
-                    if (self == 0) {
-                        digits = "0";
-                    } else if (self != Int32.MinValue) {
-                        StringBuilder sbb = new StringBuilder();
-
-                        int val = self;
-                        if (self < 0) {
-                            val = -self;
-                        }
-
-                        for (int i = 31; i >= 0; i--) {
-                            if ((val & (1 << i)) != 0) {
-                                sbb.Append('1');
-                            } else if (sbb.Length != 0) {
-                                sbb.Append('0');
-                            }
-                        }
-                        digits = sbb.ToString();
-                    } else {
-                        digits = "10000000000000000000000000000000";
-                    }
-
-                    if (spec.IncludeType) {
-                        digits = "0b" + digits;
-                    }
+                    digits = ToBinary(self, false);
                     break;
                 case 'c': // single char
                     if (spec.Sign != null) {
@@ -505,31 +491,6 @@ namespace IronPython.Runtime.Operations {
                     }
 
                     digits = Builtin.chr(self);
-                    break;
-                case 'o': // octal
-                    if (self == 0) {
-                        digits = "0";
-                    } else if (self != Int32.MinValue) {
-                        int val = self;
-                        if (self < 0) {
-                            val = -self;
-                        }
-
-                        StringBuilder sbo = new StringBuilder();
-                        for (int i = 30; i >= 0; i -= 3) {
-                            char value = (char)('0' + (val >> i & 0x07));
-                            if (value != '0' || sbo.Length > 0) {
-                                sbo.Append(value);
-                            }
-                        }
-                        digits = sbo.ToString();
-                    } else {
-                        digits = "20000000000";
-                    }
-                    
-                    if (spec.IncludeType) {
-                        digits = "0o" + digits;
-                    }
                     break;
                 default:
                     throw PythonOps.ValueError("Unknown conversion type {0}", spec.Type.ToString());
@@ -544,6 +505,76 @@ namespace IronPython.Runtime.Operations {
 
         public static string/*!*/ __repr__(int self) {
             return self.ToString(CultureInfo.InvariantCulture);
+        }
+
+        internal static string ToHex(int self, bool lowercase) {
+            string digits;
+            if (self != Int32.MinValue) {
+                int val = self;
+                if (self < 0) {
+                    val = -self;
+                }
+                digits = val.ToString(lowercase ? "x" : "X", CultureInfo.InvariantCulture);
+            } else {
+                digits = "80000000";
+            }
+
+            return digits;
+        }
+
+        internal static string ToOctal(int self, bool lowercase) {
+            string digits;
+            if (self == 0) {
+                digits = "0";
+            } else if (self != Int32.MinValue) {
+                int val = self;
+                if (self < 0) {
+                    val = -self;
+                }
+
+                StringBuilder sbo = new StringBuilder();
+                for (int i = 30; i >= 0; i -= 3) {
+                    char value = (char)('0' + (val >> i & 0x07));
+                    if (value != '0' || sbo.Length > 0) {
+                        sbo.Append(value);
+                    }
+                }
+                digits = sbo.ToString();
+            } else {
+                digits = "20000000000";
+            }
+
+            return digits;
+        }
+
+        internal static string ToBinary(int self, bool includeType) {
+            string digits;
+            if (self == 0) {
+                digits = "0";
+            } else if (self != Int32.MinValue) {
+                StringBuilder sbb = new StringBuilder();
+
+                int val = self;
+                if (self < 0) {
+                    val = -self;
+                }
+
+                for (int i = 31; i >= 0; i--) {
+                    if ((val & (1 << i)) != 0) {
+                        sbb.Append('1');
+                    } else if (sbb.Length != 0) {
+                        sbb.Append('0');
+                    }
+                }
+                digits = sbb.ToString();
+            } else {
+                digits = "10000000000000000000000000000000";
+            }
+            
+            if (includeType) {
+                digits = "0b" + digits;
+            }
+            return digits;
         }
     }
 }

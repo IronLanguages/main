@@ -2,7 +2,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>9.0.30718</ProductVersion>
+    <ProductVersion>9.0.21022</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{8103D91B-89D8-4A18-9A40-426992602EA2}</ProjectGuid>
     <OutputType>Exe</OutputType>
@@ -50,7 +50,6 @@
     <Compile Include="Helpers.cs" />
     <Compile Include="Manual.cs" />
     <Compile Include="Parser\AssertTokenizer.cs" />
-    <Compile Include="Parser\BinaryContentProvider.cs" />
     <Compile Include="Parser\DefaultParserLogger.cs" />
     <Compile Include="Parser\CoverageParserLogger.cs" />
     <Compile Include="Parser\TokenizerTestDriver.cs" />
@@ -66,13 +65,18 @@
     <Compile Include="Runtime\ArrayTests.cs" />
     <Compile Include="Runtime\ConstantTests.cs" />
     <Compile Include="Runtime\DeclarationTests.cs" />
+    <Compile Include="Runtime\DlrInteropTests.cs" />
+    <Compile Include="Runtime\InterpreterTests.cs" />
+    <Compile Include="Runtime\IoTests.cs" />
     <Compile Include="Runtime\MethodTests.cs" />
     <Compile Include="Runtime\MiscTests.cs" />
     <Compile Include="Runtime\ModuleTests.cs" />
+    <Compile Include="Runtime\MutableStringTests.cs" />
     <Compile Include="Runtime\OverloadResolutionTests.cs" />
     <Compile Include="Runtime\ProtocolTests.cs" />
     <Compile Include="Runtime\RangeTests.cs" />
     <Compile Include="Runtime\RegexTests.cs" />
+    <Compile Include="Runtime\SplattingTests.cs" />
     <Compile Include="Runtime\StringTests.cs" />
     <Compile Include="Runtime\SuperTests.cs" />
     <Compile Include="Runtime\UndefTests.cs" />

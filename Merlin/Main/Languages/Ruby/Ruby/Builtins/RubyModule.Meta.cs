@@ -17,18 +17,28 @@ using System.Linq.Expressions;
 using System.Dynamic;
 using Microsoft.Scripting.Utils;
 using IronRuby.Runtime.Calls;
+using IronRuby.Runtime;
+using System.Reflection;
+using IronRuby.Compiler;
 
 namespace IronRuby.Builtins {
 
-    public partial class RubyModule : IDynamicMetaObjectProvider {
+    public partial class RubyModule : IRubyDynamicMetaObjectProvider {
         public virtual DynamicMetaObject/*!*/ GetMetaObject(Expression/*!*/ parameter) {
             return new Meta(parameter, BindingRestrictions.Empty, this);
         }
 
-        internal class Meta : DynamicMetaObject {
+        internal class Meta : RubyMetaObject<RubyModule> {
+            public override RubyContext/*!*/ Context {
+                get { return Value.Context; }
+            }
+
+            protected override MethodInfo/*!*/ ContextConverter {
+                get { return Methods.GetContextFromModule; }
+            }
+            
             public Meta(Expression/*!*/ expression, BindingRestrictions/*!*/ restrictions, RubyModule/*!*/ value)
                 : base(expression, restrictions, value) {
-                ContractUtils.RequiresNotNull(value, "value");
             }
 
             // TODO: GetMember, SetMember, Call

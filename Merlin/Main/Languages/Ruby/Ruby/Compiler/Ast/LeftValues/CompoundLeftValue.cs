@@ -21,9 +21,11 @@ using IronRuby.Runtime.Calls;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Utils;
 using MSA = System.Linq.Expressions;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Compiler.Ast {
     using Ast = System.Linq.Expressions.Expression;
+    using System.Collections;
 
     public partial class CompoundLeftValue : LeftValue {
         /// <summary>
@@ -156,26 +158,26 @@ namespace IronRuby.Compiler.Ast {
             ];
 
             int writeIndex = 0;
-            MSA.Expression result = gen.CurrentScope.DefineHiddenVariable("#rhs", typeof(List<object>));
+            MSA.Expression result = gen.CurrentScope.DefineHiddenVariable("#rhs", typeof(IList));
             writes[writeIndex++] = Ast.Assign(result, resultExpression);
 
-            MethodInfo itemGetter = typeof(List<object>).GetMethod("get_Item");
+            MethodInfo itemGetter = typeof(IList).GetMethod("get_Item");
             for (int i = 0; i < _leftValues.Count; i++) {
                 MSA.Expression rvalue;
 
                 if (optimizeReads) {
                     if (i < rightValues.Count) {
                         // unchecked get item:
-                        rvalue = Ast.Call(result, itemGetter, Ast.Constant(i));
+                        rvalue = Ast.Call(result, itemGetter, AstUtils.Constant(i));
                     } else if (splattedValue != null) {
                         // checked get item:
-                        rvalue = Methods.GetArrayItem.OpCall(result, Ast.Constant(i));
+                        rvalue = Methods.GetArrayItem.OpCall(result, AstUtils.Constant(i));
                     } else {
                         // missing item:
-                        rvalue = Ast.Constant(null);
+                        rvalue = AstUtils.Constant(null);
                     }
                 } else {
-                    rvalue = Methods.GetArrayItem.OpCall(result, Ast.Constant(i));
+                    rvalue = Methods.GetArrayItem.OpCall(result, AstUtils.Constant(i));
                 }
 
                 writes[writeIndex++] = _leftValues[i].TransformWrite(gen, rvalue);
@@ -185,7 +187,7 @@ namespace IronRuby.Compiler.Ast {
             if (_unsplattedValue != null) {
                 // copies the rest of resulting array to the *LHS;
                 // the resulting array contains splatted *RHS - no need for additional appending:
-                MSA.Expression array = Methods.GetArraySuffix.OpCall(result, Ast.Constant(_leftValues.Count));
+                MSA.Expression array = Methods.GetArraySuffix.OpCall(result, AstUtils.Constant(_leftValues.Count));
 
                 // assign the array (possibly empty) to *LHS:
                 writes[writeIndex++] = _unsplattedValue.TransformWrite(gen, array);
@@ -224,7 +226,7 @@ namespace IronRuby.Compiler.Ast {
                 }
             }
 
-            return result | (BlockSignatureAttributes)(arity << 2);
+            return BlockDispatcher.MakeAttributes(result, arity);
         }
 
         public override string/*!*/ ToString() {

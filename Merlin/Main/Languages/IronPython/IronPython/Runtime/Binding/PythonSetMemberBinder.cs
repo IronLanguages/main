@@ -18,6 +18,7 @@ using System.Dynamic;
 using System.Linq.Expressions;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 using IronPython.Runtime.Binding;
 using IronPython.Runtime.Operations;
@@ -25,21 +26,22 @@ using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime.Binding {
     using Ast = System.Linq.Expressions.Expression;
+    using System.Runtime.CompilerServices;
 
     class PythonSetMemberBinder : SetMemberBinder, IPythonSite, IExpressionSerializable {
-        private readonly BinderState/*!*/ _state;
+        private readonly PythonContext/*!*/ _context;
 
-        public PythonSetMemberBinder(BinderState/*!*/ binder, string/*!*/ name)
+        public PythonSetMemberBinder(PythonContext/*!*/ context, string/*!*/ name)
             : base(name, false) {
-            _state = binder;
+            _context = context;
         }
 
-        public PythonSetMemberBinder(BinderState/*!*/ binder, string/*!*/ name, bool ignoreCase)
+        public PythonSetMemberBinder(PythonContext/*!*/ context, string/*!*/ name, bool ignoreCase)
             : base(name, ignoreCase) {
-            _state = binder;
+            _context = context;
         }
 
-        public override DynamicMetaObject FallbackSetMember(DynamicMetaObject self, DynamicMetaObject value, DynamicMetaObject onBindingError) {
+        public override DynamicMetaObject FallbackSetMember(DynamicMetaObject self, DynamicMetaObject value, DynamicMetaObject errorSuggestion) {
             if (self.NeedsDeferral()) {
                 return Defer(self, value);
             }
@@ -49,17 +51,45 @@ namespace IronPython.Runtime.Binding {
                 return com;
             }
 #endif
-            return Binder.Binder.SetMember(Name, self, value, Ast.Constant(Binder.Context));
+            return Context.Binder.SetMember(Name, self, value, AstUtils.Constant(Context.SharedContext));
         }
 
-        public BinderState/*!*/ Binder {
+        public override T BindDelegate<T>(CallSite<T> site, object[] args) {
+            IFastSettable fastSet = args[0] as IFastSettable;
+            if (fastSet != null) {
+                T res = fastSet.MakeSetBinding<T>(site, this);
+                if (res != null) {
+                    return res;
+                }
+            }
+
+            IPythonObject ipo = args[0] as IPythonObject;
+            if (ipo != null && !(ipo is IProxyObject)) {
+                FastBindResult<T> res = UserTypeOps.MakeSetBinding<T>(Context.SharedContext, site, ipo, args[1], this);
+
+                if (res.Target != null) {
+                    PerfTrack.NoteEvent(PerfTrack.Categories.BindingFast, "IPythonObject");
+
+                    if (res.ShouldCache) {
+                        CacheTarget(res.Target);
+                    }
+                    return res.Target;
+                }
+
+                PerfTrack.NoteEvent(PerfTrack.Categories.BindingSlow, "IPythonObject Set");
+            }
+
+            return base.BindDelegate(site, args);
+        }
+
+        public PythonContext/*!*/ Context {
             get {
-                return _state;
+                return _context;
             }
         }
 
         public override int GetHashCode() {
-            return base.GetHashCode() ^ _state.Binder.GetHashCode();
+            return base.GetHashCode() ^ _context.Binder.GetHashCode();
         }
 
         public override bool Equals(object obj) {
@@ -68,7 +98,7 @@ namespace IronPython.Runtime.Binding {
                 return false;
             }
 
-            return ob._state.Binder == _state.Binder && base.Equals(obj);
+            return ob._context.Binder == _context.Binder && base.Equals(obj);
         }
 
         public override string ToString() {
@@ -81,11 +111,12 @@ namespace IronPython.Runtime.Binding {
             return Ast.Call(
                 typeof(PythonOps).GetMethod("MakeSetAction"),
                 BindingHelpers.CreateBinderStateExpression(),
-                Ast.Constant(Name)
+                AstUtils.Constant(Name)
             );
         }
 
         #endregion
+
     }
 }
 

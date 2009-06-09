@@ -1,0 +1,3 @@
+critical:Thread#stop? reports aborting on a killed thread
+unstable:Thread#stop? describes a dying sleeping thread
+unstable:Thread.stop causes the current thread to sleep indefinitely

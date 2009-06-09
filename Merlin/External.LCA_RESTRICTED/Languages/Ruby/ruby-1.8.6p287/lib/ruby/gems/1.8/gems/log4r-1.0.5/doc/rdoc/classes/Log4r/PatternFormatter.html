@@ -1,0 +1,120 @@
+
+<html><head>
+  <title>Class: Log4r::PatternFormatter</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <link rel=StyleSheet href="../.././rdoc-style.css" type="text/css" media=screen>
+  <script type="text/javascript" language="JavaScript">
+  <!--
+  function popCode(url) {
+    parent.frames.source.location = url
+  }
+  //-->
+  </script>
+</head>
+<body bgcolor="white">
+
+
+<table width="100%" border=0 cellspacing=0>
+ <tr class="title-row">
+ <td class="big-title-font">
+   <font size=-3><B>Class</B><BR></font>Log4r::PatternFormatter
+ </td>
+ <td align="right">
+   <table cellspacing=0 cellpadding=2>
+     <tr valign="top">
+      <td class="small-title-font">In:</td>
+      <td class="small-title-font">
+<a href="../../files/log4r/formatter/patternformatter_rb.html">log4r/formatter/patternformatter.rb</a>
+      </td>
+     </tr>
+     <tr>
+      <td class="small-title-font">Parent:</td>
+      <td class="small-title-font">
+        <a href="BasicFormatter.html" class="cyan">
+BasicFormatter
+         </a>
+      </td>
+     </tr>
+   </table>
+  </td>
+  </tr>
+</table><br>
+  <!-- banner header -->
+
+
+<div class="description"><p>
+See <a
+href="../../files/log4r/formatter/patternformatter_rb.html">log4r/formatter/patternformatter.rb</a>
+</p>
+</div>
+
+</div>
+
+<table cellpadding=5 width="100%">
+<tr><td class="tablesubtitle">Methods</td></tr>
+</table><br>
+<div class="name-list">
+<a href="#M000046">new</a>,
+</div>
+
+<table cellpadding=5 width="100%">
+<tr><td class="tablesubtitle">Attributes</td></tr>
+</table><br>
+<table cellspacing=5>
+     <tr valign="top">
+       <td align="center" class="attr-rw">&nbsp;[R]&nbsp;</td>
+       <td class="attr-name">date_method</td>
+       <td></td>
+     </tr>
+     <tr valign="top">
+       <td align="center" class="attr-rw">&nbsp;[R]&nbsp;</td>
+       <td class="attr-name">date_pattern</td>
+       <td></td>
+     </tr>
+     <tr valign="top">
+       <td align="center" class="attr-rw">&nbsp;[R]&nbsp;</td>
+       <td class="attr-name">pattern</td>
+       <td></td>
+     </tr>
+</table>
+
+
+  
+
+<table cellpadding=5 width="100%">
+<tr><td class="tablesubtitle">Public Class methods</td></tr>
+</table>
+<table width="100%" cellspacing = 0 cellpadding=5 border=0>
+<tr><td class="methodtitle">
+<a name="M000046">
+<b>new</b>(hash={}) 
+<a href="PatternFormatter.src/M000046.html" target="source" class="srclink">src</a>
+</a></td></tr>
+</table>
+<div class="description">
+<p>
+Accepts the following hash arguments (either a string or a symbol):
+</p>
+<dl>
+<dt><tt>pattern</tt></dt><dd>A pattern format string.
+
+</dd>
+<dt><tt>date_pattern</tt></dt><dd>A Time#strftime format string. See the Ruby Time class for details.
+
+</dd>
+<dt><tt>date_method</tt></dt><dd>As an option to date_pattern, specify which Time.now method to call. For
+example, <tt>usec</tt> or <tt>to_s</tt>. Specify it as a String or Symbol.
+
+</dd>
+</dl>
+<p>
+The default date format is ISO8601, which looks like this:
+</p>
+<pre>
+  yyyy-mm-dd hh:mm:ss    =&gt;    2001-01-12 13:15:50
+</pre>
+</div>
+  <!-- method descriptions -->
+
+</body>
+</html>

@@ -18,6 +18,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Actions {
 
@@ -69,7 +70,7 @@ namespace Microsoft.Scripting.Actions {
             }
 
             if (getter.IsPublic && getter.DeclaringType.IsPublic) {
-                return binder.MakeCallExpression(context, getter);
+                return AstUtils.Convert(binder.MakeCallExpression(context, getter), typeof(object));
             }
 
             // private binding is just a call to the getter method...
@@ -104,18 +105,20 @@ namespace Microsoft.Scripting.Actions {
                 return binder.ReturnMemberTracker(type, BindToInstance(instance));
             }
 
-            MethodInfo getter = ResolveGetter(binder.PrivateBinding);
+            MethodInfo getter = GetGetMethod(true);
             if (getter == null || getter.ContainsGenericParameters) {
                 // no usable getter
                 return null;
             }
 
-            if (getter.IsPublic && getter.DeclaringType.IsVisible) {
-                return binder.MakeCallExpression(context, getter, instance);
+            getter = CompilerHelpers.TryGetCallableMethod(getter);
+
+            if (binder.PrivateBinding || CompilerHelpers.IsVisible(getter)) {
+                return AstUtils.Convert(binder.MakeCallExpression(context, getter, instance), typeof(object));
             }
 
             // private binding is just a call to the getter method...
-            return DefaultBinder.MakeError(((DefaultBinder)binder).MakeNonPublicMemberGetError(context, this, type, instance));
+            return DefaultBinder.MakeError(((DefaultBinder)binder).MakeNonPublicMemberGetError(context, this, type, instance), typeof(object));
         }
 
         public override ErrorInfo GetBoundError(ActionBinder binder, Expression instance) {
@@ -146,16 +149,13 @@ namespace Microsoft.Scripting.Actions {
 
         private MethodInfo ResolveGetter(bool privateBinding) {
             MethodInfo getter = GetGetMethod(true);
-
-            if (getter == null) return null;
-
-            // Allow access to protected getters TODO: this should go, it supports IronPython semantics.
-            if (!getter.IsPublic && !(getter.IsFamily || getter.IsFamilyOrAssembly)) {
-                if (!privateBinding) {
-                    getter = null;
+            if (getter != null) {
+                getter = CompilerHelpers.TryGetCallableMethod(getter);
+                if (privateBinding || CompilerHelpers.IsVisible(getter)) {
+                    return getter;
                 }
             }
-            return CompilerHelpers.GetCallableMethod(getter, privateBinding);
+            return null;
         }
 
         #endregion

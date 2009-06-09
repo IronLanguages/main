@@ -30,8 +30,8 @@ namespace Microsoft.Scripting.ComInterop {
             _lib = lib;
         }
 
-        public override DynamicMetaObject BindGetMember(GetMemberBinder binder) {
-            if (_lib.HasMember(binder.Name)) {
+        private DynamicMetaObject TryBindGetMember(string name) {
+            if (_lib.HasMember(name)) {
                 BindingRestrictions restrictions =
                     BindingRestrictions.GetTypeRestriction(
                         Expression, typeof(ComTypeLibDesc)
@@ -44,20 +44,33 @@ namespace Microsoft.Scripting.ComInterop {
                                     ),
                                     typeof(ComTypeLibDesc).GetProperty("Guid")
                                 ),
-                                Expression.Constant(_lib.Guid)
+                                AstUtils.Constant(_lib.Guid)
                             )
                         )
                     );
 
                 return new DynamicMetaObject(
-                    Expression.Constant(
-                        ((ComTypeLibDesc)Value).GetTypeLibObjectDesc(binder.Name)
+                    AstUtils.Constant(
+                        ((ComTypeLibDesc)Value).GetTypeLibObjectDesc(name)
                     ),
                     restrictions
                 );
             }
 
-            return base.BindGetMember(binder);
+            return null;
+        }
+
+        public override DynamicMetaObject BindGetMember(GetMemberBinder binder) {
+            return TryBindGetMember(binder.Name) ?? base.BindGetMember(binder);
+        }
+
+        public override DynamicMetaObject BindInvokeMember(InvokeMemberBinder binder, DynamicMetaObject[] args) {
+            var result = TryBindGetMember(binder.Name);
+            if (result != null) {
+                return binder.FallbackInvoke(result, args, null);
+            }
+
+            return base.BindInvokeMember(binder, args);
         }
 
         public override IEnumerable<string> GetDynamicMemberNames() {

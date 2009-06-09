@@ -176,7 +176,7 @@ namespace IronPython.Runtime {
         /// the same as the length of the array.  The array is held
         /// onto and may be mutated in the future by the list.
         /// </summary>
-        /// <param name="items"></param>
+        /// <param name="data">params array to use for lists storage</param>
         internal static List FromArrayNoCopy(params object[] data) {
             return new List(data);
         }
@@ -264,7 +264,7 @@ namespace IronPython.Runtime {
                 n = self._size;
                 //??? is this useful optimization
                 //???if (n == 1) return new List(Array.ArrayList.Repeat(this[0], count));
-                newCount = n * count;
+                newCount = checked(n * count);
                 ret = ArrayOps.CopyArray(self._data, newCount);                
             }
 
@@ -299,6 +299,10 @@ namespace IronPython.Runtime {
         }
 
         public virtual bool __contains__(object value) {
+            return ContainsWorker(value);
+        }
+
+        internal bool ContainsWorker(object value) {
             lock (this) {
                 for (int i = 0; i < _size; i++) {
                     object thisIndex = _data[i];
@@ -340,7 +344,7 @@ namespace IronPython.Runtime {
         public List InPlaceMultiply(int count) {
             lock (this) {
                 int n = this._size;
-                int newCount = n * count;
+                int newCount = checked(n * count);
                 EnsureSize(newCount);
 
                 int block = n;
@@ -392,7 +396,6 @@ namespace IronPython.Runtime {
 
         public virtual void __setslice__(int start, int stop, object value) {
             Slice.FixSliceArguments(_size, ref start, ref stop);
-            if (start > stop) return;
 
             if (value is List) {
                 SliceNoStep(start, stop, (List)value);
@@ -413,6 +416,8 @@ namespace IronPython.Runtime {
                 _size -= stop - start;
             }
         }
+
+        private static readonly object _boxedOne = ScriptingRuntimeHelpers.Int32ToObject(1);
 
         public virtual object this[Slice slice] {
             get {
@@ -444,7 +449,7 @@ namespace IronPython.Runtime {
             set {
                 if (slice == null) throw PythonOps.TypeError("list indices must be integer or slice, not None");
 
-                if (slice.step != null) {
+                if (slice.step != null && (!(slice.step is int) || !slice.step.Equals(_boxedOne))) {
                     // try to assign back to self: make a copy first
                     if (this == value) value = new List(value);
 
@@ -452,7 +457,6 @@ namespace IronPython.Runtime {
                 } else {
                     int start, stop, step;
                     slice.indices(_size, out start, out stop, out step);
-                    if (start > stop) return;
 
                     List lstVal = value as List;
                     if (lstVal != null) {
@@ -487,6 +491,7 @@ namespace IronPython.Runtime {
                 } else {
                     // we are resizing the array (either bigger or smaller), we 
                     // will copy the data array and replace it all at once.
+                    stop = Math.Max(stop, start);
                     int newSize = _size - (stop - start) + otherSize;
 
                     object[] newData = new object[GetNewSize(newSize)];
@@ -523,6 +528,7 @@ namespace IronPython.Runtime {
                 } else {
                     // we are resizing the array (either bigger or smaller), we 
                     // will copy the data array and replace it all at once.
+                    stop = Math.Max(stop, start);
                     int newSize = _size - (stop - start) + other.Count;
 
                     object[] newData = new object[GetNewSize(newSize)];
@@ -1039,10 +1045,37 @@ namespace IronPython.Runtime {
             lock (this) return Array.BinarySearch(_data, index, count, value, comparer);
         }
 
+        internal bool EqualsWorker(List l) {
+            using (new OrderedLocker(this, l)) {
+                return PythonOps.ArraysEqual(_data, _size, l._data, l._size);
+            }
+        }
+
         internal int CompareToWorker(List l) {
             using (new OrderedLocker(this, l)) {
                 return PythonOps.CompareArrays(_data, _size, l._data, l._size);
             }
+        }
+
+        internal bool FastSwap(int i, int j) {
+            // ensure i <= j
+            if (i > j) {
+                int tmp = i;
+                i = j;
+                j = tmp;
+            }
+
+            // bounds checking
+            if (i < 0 || j >= _size) {
+                return false;
+            } else if (i == j) {
+                return true;
+            }
+
+            object temp = _data[i];
+            _data[i] = _data[j];
+            _data[j] = temp;
+            return true;
         }
 
         #region IList Members
@@ -1212,10 +1245,11 @@ namespace IronPython.Runtime {
         }
 
         bool IValueEquality.ValueEquals(object other) {
-            List l = other as List;
+            if (Object.ReferenceEquals(this, other)) return true;
 
+            List l = other as List;
             if (l == null || l.__len__() != this.__len__()) return false;
-            return CompareTo(l) == 0;
+            return Equals(l);
         }
 
         #endregion
@@ -1254,6 +1288,15 @@ namespace IronPython.Runtime {
         }
 
         #endregion
+
+        private bool Equals(List other) {
+            CompareUtil.Push(this, other);
+            try {
+                return EqualsWorker(other);
+            } finally {
+                CompareUtil.Pop(this, other);
+            }
+        }
 
         internal int CompareTo(List other) {
             CompareUtil.Push(this, other);

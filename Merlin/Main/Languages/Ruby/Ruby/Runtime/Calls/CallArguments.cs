@@ -37,17 +37,17 @@ namespace IronRuby.Runtime.Calls {
     /// when we want to shift the arguments around during the method binding process.
     /// </summary>
     public sealed class CallArguments {
+        private readonly bool _hasScopeOrContextArg;
         private readonly DynamicMetaObject/*!*/ _context;
+        private DynamicMetaObject _scope;
 
         // _args[0] might be target, if so _target is null:
         private DynamicMetaObject _target;
+        private RubyClass _targetClass;
 
         // Arguments must be readonly if _copyOnWrite is true. 
         private DynamicMetaObject[]/*!*/ _args;
         private bool _copyArgsOnWrite;
-        
-        private Expression _scopeExpression;
-        private Expression _contextExpression;
         
         private RubyCallSignature _signature;
 
@@ -57,8 +57,8 @@ namespace IronRuby.Runtime.Calls {
 
         public int CallSiteArgumentCount {
             get {
-                // context, target, arguments:
-                return 1 + ExplicitArgumentCount; 
+                // (scope|context)?, target, arguments:
+                return (_hasScopeOrContextArg ? 1 : 0) + ExplicitArgumentCount; 
             }
         }
 
@@ -81,43 +81,28 @@ namespace IronRuby.Runtime.Calls {
             }
         }
 
-        public Expression/*!*/ ScopeExpression {
+        public DynamicMetaObject/*!*/ MetaScope {
             get {
-                if (_scopeExpression == null) {
-                    if (_signature.HasScope) {
-                        _scopeExpression = AstUtils.Convert(MetaContext.Expression, typeof(RubyScope));
-                    } else {
-                        _scopeExpression = Methods.GetEmptyScope.OpCall(AstUtils.Convert(MetaContext.Expression, typeof(RubyContext)));
-                    }
+                if (_scope == null) {
+                    Debug.Assert(!_signature.HasScope);
+                    // we can burn the scope as a constant since we'll restrict the context arg to the current context:
+                    var emptyScope = ((RubyContext)_context.Value).EmptyScope;
+                    _scope = new DynamicMetaObject(Ast.Constant(emptyScope, typeof(RubyScope)), BindingRestrictions.Empty, emptyScope);
                 }
-                return _scopeExpression;
+                return _scope;
             }
         }
 
-        public Expression/*!*/ ContextExpression {
-            get {
-                if (_contextExpression == null) {
-                    if (_signature.HasScope) {
-                        _contextExpression = Methods.GetContextFromScope.OpCall(AstUtils.Convert(MetaContext.Expression, typeof(RubyScope)));
-                    } else {
-                        _contextExpression = AstUtils.Convert(MetaContext.Expression, typeof(RubyContext));
-                    }
-                }
-                return _contextExpression;
-            }
+        public DynamicMetaObject/*!*/ MetaContext {
+            get { return _context; }
         }
 
         public RubyScope/*!*/ Scope {
-            get { return (RubyScope)MetaContext.Value; }
+            get { return (RubyScope)MetaScope.Value; }
         }
 
         public RubyContext/*!*/ RubyContext {
-            get { return _signature.HasScope ? Scope.RubyContext : (RubyContext)MetaContext.Value; }
-        }
-
-        // RubyScope or RubyContext
-        public DynamicMetaObject/*!*/ MetaContext {
-            get { return _context; }
+            get { return (RubyContext)MetaContext.Value; }
         }
 
         public DynamicMetaObject/*!*/ MetaTarget {
@@ -126,6 +111,15 @@ namespace IronRuby.Runtime.Calls {
 
         public Expression/*!*/ TargetExpression {
             get { return MetaTarget.Expression; }
+        }
+
+        public RubyClass/*!*/ TargetClass {
+            get {
+                if (_targetClass == null) {
+                    _targetClass = RubyContext.GetImmediateClassOf(Target);
+                }
+                return _targetClass;
+            }
         }
 
         public object Target {
@@ -148,13 +142,26 @@ namespace IronRuby.Runtime.Calls {
             return _signature.HasBlock ? _args[GetBlockIndex()].Expression : null;
         }
 
+        public DynamicMetaObject GetMetaBlock() {
+            return _signature.HasBlock ? _args[GetBlockIndex()] : null;
+        }
+
+        public DynamicMetaObject GetSplattedMetaArgument() {
+            return _signature.HasSplattedArgument ? _args[GetSplattedArgumentIndex()] : null;
+        }
+
         public Expression GetSplattedArgumentExpression() {
             return _signature.HasSplattedArgument ? _args[GetSplattedArgumentIndex()].Expression : null;
+        }
+
+        public DynamicMetaObject GetRhsMetaArgument() {
+            return _signature.HasRhsArgument ? _args[GetRhsArgumentIndex()] : null;
         }
 
         public Expression GetRhsArgumentExpression() {
             return _signature.HasRhsArgument ? _args[GetRhsArgumentIndex()].Expression : null;
         }
+
 
         public Expression[]/*!*/ GetSimpleArgumentExpressions() {
             var result = new Expression[SimpleArgumentCount];
@@ -167,15 +174,18 @@ namespace IronRuby.Runtime.Calls {
         internal Expression[]/*!*/ GetCallSiteArguments(Expression/*!*/ targetExpression) {
             // context, target, arguments:
             var result = new Expression[CallSiteArgumentCount];
-            result[0] = MetaContext.Expression;
-            result[1] = targetExpression;
 
-            int i = 2, j = FirstArgumentIndex;
-            for (; j < _args.Length; i++, j++) {
-                result[i] = _args[j].Expression;
+            int i = 0;
+            if (_hasScopeOrContextArg) {
+                result[i++] = _signature.HasScope ? MetaScope.Expression : MetaContext.Expression;
+            }
+            result[i++] = targetExpression;
+
+            for (int j = FirstArgumentIndex; j < _args.Length; j++) {
+                result[i++] = _args[j].Expression;
             }
 
-            Debug.Assert(i == result.Length && j == _args.Length);
+            Debug.Assert(i == result.Length);
 
             return result;
         }
@@ -185,11 +195,15 @@ namespace IronRuby.Runtime.Calls {
         }
 
         internal object GetSimpleArgument(int i) {
-            return _args[GetSimpleArgumentsIndex(i)].Value;
+            return GetSimpleMetaArgument(i).Value;
         }
 
         internal Expression/*!*/ GetSimpleArgumentExpression(int i) {
-            return _args[GetSimpleArgumentsIndex(i)].Expression;
+            return GetSimpleMetaArgument(i).Expression;
+        }
+
+        internal DynamicMetaObject/*!*/ GetSimpleMetaArgument(int i) {
+            return _args[GetSimpleArgumentsIndex(i)];
         }
         
         internal int GetBlockIndex() {
@@ -207,12 +221,52 @@ namespace IronRuby.Runtime.Calls {
             return _args.Length - 1;
         }
 
+        // Ruby binders: 
+        internal CallArguments(RubyContext context, DynamicMetaObject/*!*/ scopeOrContextOrTarget, DynamicMetaObject/*!*/[]/*!*/ args, RubyCallSignature signature) {
+            Assert.NotNull(scopeOrContextOrTarget);
+            Assert.NotNullItems(args);
+
+            Debug.Assert(signature.HasScope == scopeOrContextOrTarget.Value is RubyScope);
+            Debug.Assert((context == null && !signature.HasScope) == scopeOrContextOrTarget.Value is RubyContext);
+
+            if (context != null) {
+                // bound site:
+                _context = new DynamicMetaObject(AstUtils.Constant(context), BindingRestrictions.Empty, context);
+                if (signature.HasScope) {
+                    _scope = scopeOrContextOrTarget;
+                    _hasScopeOrContextArg = true;
+                } else {
+                    _target = scopeOrContextOrTarget;
+                }
+            } else if (signature.HasScope) {
+                // unbound site with scope:
+                _context = new DynamicMetaObject(
+                    Methods.GetContextFromScope.OpCall(scopeOrContextOrTarget.Expression), BindingRestrictions.Empty, 
+                    ((RubyScope)scopeOrContextOrTarget.Value).RubyContext
+                );
+                _scope = scopeOrContextOrTarget;
+                _hasScopeOrContextArg = true;
+                _target = null;
+            } else {
+                // unbound site with context:
+                _context = scopeOrContextOrTarget;
+                _hasScopeOrContextArg = true;
+                _target = null;
+            }
+
+            Debug.Assert(_target != null || args.Length > 0);
+
+            _args = args;
+            _copyArgsOnWrite = true;
+            _signature = signature;
+        }
+
+        // interop binders: the target is a Ruby meta-object closed over the context
         internal CallArguments(DynamicMetaObject/*!*/ context, DynamicMetaObject/*!*/ target, DynamicMetaObject/*!*/[]/*!*/ args, RubyCallSignature signature) {
             Assert.NotNull(target, context);
             Assert.NotNullItems(args);
 
-            Debug.Assert(signature.HasScope == context.Value is RubyScope);
-            Debug.Assert(!signature.HasScope == context.Value is RubyContext);
+            Debug.Assert(!signature.HasScope);
 
             _target = target;
             _context = context;
@@ -221,19 +275,14 @@ namespace IronRuby.Runtime.Calls {
             _signature = signature;
         }
 
-        internal CallArguments(DynamicMetaObject/*!*/ context, DynamicMetaObject/*!*/[]/*!*/ args, RubyCallSignature signature) {
-            Assert.NotNull(context);
-            Assert.NotNullItems(args);
-            Assert.NotEmpty(args);
-
-            Debug.Assert(signature.HasScope == context.Value is RubyScope);
-            Debug.Assert(!signature.HasScope == context.Value is RubyContext);
-            
-            _target = null;
-            _context = context;
-            _args = args;
-            _copyArgsOnWrite = true;
-            _signature = signature;
+        // interop binders: the target is a foreign meta-object, the binder is context-bound:
+        internal CallArguments(RubyContext/*!*/ context, DynamicMetaObject/*!*/ target, DynamicMetaObject/*!*/[]/*!*/ args, CallInfo/*!*/ callInfo) 
+            : this (
+                new DynamicMetaObject(AstUtils.Constant(context), BindingRestrictions.Empty, context),
+                target,
+                args,
+                RubyCallSignature.Simple(callInfo.ArgumentCount)
+            ) {
         }
 
         public void InsertSimple(int index, DynamicMetaObject/*!*/ arg) {
@@ -246,7 +295,7 @@ namespace IronRuby.Runtime.Calls {
         internal void InsertMethodName(string/*!*/ methodName) {
             // insert the method name argument into the args
             object symbol = SymbolTable.StringToId(methodName);
-            InsertSimple(0, new DynamicMetaObject(Ast.Constant(symbol), BindingRestrictions.Empty, symbol));
+            InsertSimple(0, new DynamicMetaObject(AstUtils.Constant(symbol), BindingRestrictions.Empty, symbol));
         }
 
         public void SetSimpleArgument(int index, DynamicMetaObject/*!*/ arg) {
@@ -278,6 +327,8 @@ namespace IronRuby.Runtime.Calls {
             } else {
                 _target = metaTarget;
             }
+
+            _targetClass = null;
         }
     }
 }

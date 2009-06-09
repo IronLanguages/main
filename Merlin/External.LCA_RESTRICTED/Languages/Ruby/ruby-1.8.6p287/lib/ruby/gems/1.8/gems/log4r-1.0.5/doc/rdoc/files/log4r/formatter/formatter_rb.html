@@ -1,0 +1,152 @@
+
+<html><head>
+  <title>File: formatter.rb</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <link rel=StyleSheet href="../../.././rdoc-style.css" type="text/css" media=screen>
+  <script type="text/javascript" language="JavaScript">
+  <!--
+  function popCode(url) {
+    parent.frames.source.location = url
+  }
+  //-->
+  </script>
+</head>
+<body bgcolor="white">
+
+<table width="100%">
+ <tr class="title-row">
+ <td><table width="100%"><tr>
+   <td class="big-title-font" colspan=2><font size=-3><B>File</B><BR></font>formatter.rb</td>
+   <td align="right"><table cellspacing=0 cellpadding=2>
+         <tr>
+           <td  class="small-title-font">Path:</td>
+           <td class="small-title-font">log4r/formatter/formatter.rb</td>
+         </tr>
+         <tr>
+           <td class="small-title-font">Modified:</td>
+           <td class="small-title-font">Mon Sep 01 15:33:20 PDT 2003</td>
+         </tr>
+        </table>
+    </td></tr></table></td>
+  </tr>
+</table><br>
+  <!-- banner header -->
+
+
+<div class="description"><h1>Formatters</h1>
+<p>
+Formatters are responsible for formatting LogEvent data. An Outputter
+owning a Formatter will invoke the Log4r::Formatter#format method prior to
+writing.
+</p>
+<h2>Available Formatters</h2>
+<ul>
+<li><a
+href="../../../classes/Log4r/BasicFormatter.html">Log4r::BasicFormatter</a>
+- default
+
+</li>
+<li><a
+href="../../../classes/Log4r/PatternFormatter.html">Log4r::PatternFormatter</a>
+- most flexible. See <a
+href="patternformatter_rb.html">log4r/formatter/patternformatter.rb</a>
+
+</li>
+<li><a
+href="../../../classes/Log4r/SimpleFormatter.html">Log4r::SimpleFormatter</a>
+- like BasicFormatter for Strings only (low noise)
+
+</li>
+<li><a
+href="../../../classes/Log4r/ObjectFormatter.html">Log4r::ObjectFormatter</a>
+- for inspecting objects
+
+</li>
+<li>Log4r::NullFormatter - twirls on its feet and does nothing
+
+</li>
+</ul>
+<h1>XML Configuration</h1>
+<p>
+Specify the Formatter and its class (as <tt>type</tt>) under an
+<tt>&lt;outputter&gt;</tt> directive:
+</p>
+<pre>
+  &lt;outputter name=&quot;someout&quot; type=&quot;sometype&quot;&gt;
+    &lt;formatter type=&quot;Log4r::BasicFormatter&quot;/&gt;
+  &lt;/outputter&gt;
+</pre>
+<p>
+As explained in <a
+href="../configurator_rb.html">log4r/configurator.rb</a>, the hash
+arguments you would normally pass to <tt>new</tt> are specified as <em>XML
+parameters</em>. Only PatternFormatter has any of these.
+</p>
+<h1>Custom Formatting</h1>
+<p>
+Building a custom Formatter is extremely easy. Just define a class that
+extends Formatter and override the Formatter#format method. Then give it to
+any interested Outputters.
+</p>
+<p>
+If you&#8217;re interested in setting up your custom formatters in XML,
+please take a look at <a
+href="../configurator_rb.html">log4r/configurator.rb</a>.
+</p>
+<h2>Data Available</h2>
+<p>
+See <a href="../../../classes/Log4r/LogEvent.html">Log4r::LogEvent</a>
+</p>
+<table>
+<tr><td valign="top">Version:</td><td>$Id: formatter.rb,v 1.7 2003/09/01 22:33:20 cepheus Exp $
+
+</td></tr>
+</table>
+</div>
+
+<table cellpadding=5 width="100%">
+<tr><td class="tablesubtitle">Required files</td></tr>
+</table><br>
+<div class="name-list">
+singleton
+log4r/base
+</div>
+
+
+
+<table cellpadding=5 width="100%">
+<tr><td class="tablesubtitle">Classes and Modules</td></tr>
+</table><br>
+Module <a href="../../../classes/Log4r.html" class="link">Log4r</a><br />
+&nbsp;&nbsp;::Class <a href="../../../classes/Log4r/BasicFormatter.html" class="link">Log4r::BasicFormatter</a><br />
+&nbsp;&nbsp;::Class <a href="../../../classes/Log4r/ConfigError.html" class="link">Log4r::ConfigError</a><br />
+&nbsp;&nbsp;::Class <a href="../../../classes/Log4r/Configurator.html" class="link">Log4r::Configurator</a><br />
+&nbsp;&nbsp;::Class <a href="../../../classes/Log4r/DateFileOutputter.html" class="link">Log4r::DateFileOutputter</a><br />
+&nbsp;&nbsp;::Class <a href="../../../classes/Log4r/DefaultFormatter.html" class="link">Log4r::DefaultFormatter</a><br />
+&nbsp;&nbsp;::Class <a href="../../../classes/Log4r/EmailOutputter.html" class="link">Log4r::EmailOutputter</a><br />
+&nbsp;&nbsp;::Class <a href="../../../classes/Log4r/FileOutputter.html" class="link">Log4r::FileOutputter</a><br />
+&nbsp;&nbsp;::Class <a href="../../../classes/Log4r/Formatter.html" class="link">Log4r::Formatter</a><br />
+&nbsp;&nbsp;::Class <a href="../../../classes/Log4r/IOOutputter.html" class="link">Log4r::IOOutputter</a><br />
+&nbsp;&nbsp;::Class <a href="../../../classes/Log4r/Log4rTools.html" class="link">Log4r::Log4rTools</a><br />
+&nbsp;&nbsp;::Class <a href="../../../classes/Log4r/LogEvent.html" class="link">Log4r::LogEvent</a><br />
+&nbsp;&nbsp;::Class <a href="../../../classes/Log4r/LogServer.html" class="link">Log4r::LogServer</a><br />
+&nbsp;&nbsp;::Class <a href="../../../classes/Log4r/Logger.html" class="link">Log4r::Logger</a><br />
+&nbsp;&nbsp;::Class <a href="../../../classes/Log4r/ObjectFormatter.html" class="link">Log4r::ObjectFormatter</a><br />
+&nbsp;&nbsp;::Class <a href="../../../classes/Log4r/Outputter.html" class="link">Log4r::Outputter</a><br />
+&nbsp;&nbsp;::Class <a href="../../../classes/Log4r/PatternFormatter.html" class="link">Log4r::PatternFormatter</a><br />
+&nbsp;&nbsp;::Class <a href="../../../classes/Log4r/RemoteOutputter.html" class="link">Log4r::RemoteOutputter</a><br />
+&nbsp;&nbsp;::Class <a href="../../../classes/Log4r/RollingFileOutputter.html" class="link">Log4r::RollingFileOutputter</a><br />
+&nbsp;&nbsp;::Class <a href="../../../classes/Log4r/RootLogger.html" class="link">Log4r::RootLogger</a><br />
+&nbsp;&nbsp;::Class <a href="../../../classes/Log4r/SimpleFormatter.html" class="link">Log4r::SimpleFormatter</a><br />
+&nbsp;&nbsp;::Class <a href="../../../classes/Log4r/StderrOutputter.html" class="link">Log4r::StderrOutputter</a><br />
+&nbsp;&nbsp;::Class <a href="../../../classes/Log4r/StdoutOutputter.html" class="link">Log4r::StdoutOutputter</a><br />
+&nbsp;&nbsp;::Class <a href="../../../classes/Log4r/SyslogOutputter.html" class="link">Log4r::SyslogOutputter</a><br />
+&nbsp;&nbsp;::Class <a href="../../../classes/Log4r/YamlConfigurator.html" class="link">Log4r::YamlConfigurator</a><br />
+<br>
+
+  
+
+  <!-- method descriptions -->
+
+</body>
+</html>

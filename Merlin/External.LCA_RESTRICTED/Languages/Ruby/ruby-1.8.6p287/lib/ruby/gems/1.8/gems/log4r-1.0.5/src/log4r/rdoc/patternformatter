@@ -1,0 +1,128 @@
+= PatternFormatter
+
+PatternFormatter offers complete control over the appearance of
+Log4r log events without having to write custom Formatter classes.
+In order to take advantage of PatternFormatter, some familarity with
+Kernel#sprintf or the C printf function is recommended. For time formatting,
+please look at Time.strftime.
+
+PatternFormatter accepts three hash arguments:
+
+<tt>pattern</tt>::       Log event format string.
+<tt>date_pattern</tt>::  Date format string.
+<tt>date_method</tt>::   <tt>Time</tt> method to call (instead of using date_pattern).
+
+
+The <tt>pattern</tt> format string is something like "%l [%d] %80M", 
+which resembles a pattern one would normally pass to Kernel#sprintf. However, 
+the directives are specific to Log4r. Before we go on, let's cover some
+terminology.
+
+== Terminology
+
+[<b>%</b>]  The directive identifier. Everything after this up to and 
+            including one of the <em>directive letters</em> defines a 
+            <em>directive</em>.
+[<b>directive letter</b>]  
+  Letters in the set <tt>[cCdtmMl%]</tt>. These 
+  identify what kind of data we're interested in. 
+  They are detailed below.
+[<b>format directive</b>] 
+  The numbers and assorted symbols that appears 
+  between <b>%</b> and a <em>directive letter</em>
+  is a format directive. It is comprised of an
+  integer specifying the field width followed 
+  optionally by a period and an integer specifying 
+  the precision. The field width is the minimum 
+  number of characters to copy from the data string 
+  while the precision is the maximum number to copy. 
+  If the field width is preceded by a - sign, the 
+  data will be left-justified. Otherwise, it is 
+  right-justified.
+[<b>directive</b>]  
+  A statement that says, "I want this data to appear with 
+  this (optional) particular format." A directive starts 
+  with a <b>%</b> and is followed by a format directive and 
+  terminates in a directive letter.
+
+== What the Directive Letters mean
+
+[<b>c</b>]  Produces a logger's name. Fast.
+[<b>C</b>]  Produces a logger's full name. Fast.
+[<b>d</b>]  Produces the time in a format specified by <b>date_pattern</b> or
+            by <b>date_method</b>. If neither is specified, the default will 
+            be used (ISO8601). Slow.
+[<b>t</b>]  Produces the file and line number of the log event. The 
+            appearance varies by Ruby version, but it is the same output 
+            returned by Kernel#caller[0]. Slow.
+[<b>m</b>] The non-inspected log message. That is, to_s called on the object 
+           passed into a log method. Fast.
+[<b>M</b>] The message formatted by the <tt>format_object</tt> method in 
+           BasicFormatter. It will pretty-print Exceptions, print Strings
+           and inspect everything else. Slow.
+[<b>l</b>] The name of the level. That's l as in Lambda. Fast.
+[<b>%</b>] %% just prints a %. Any formatting is <em>probably</em> ignored. 
+           Fast.
+
+== Examples of directives:
+
+
+[<b>%d</b>]    Prints out the date according to our date_pattern or 
+               date_method. By default, it looks like this: 2001-01-12 13:15:50
+[<b>%.120m</b>]  Prints out at most 120 characters of the log message.
+[<b>%15t</b>]    Prints the execution trace and pads it on the left with 
+                 enough whitespace to make the whole thing 15 chars.
+
+== Pattern String
+
+A pattern string is simply a bunch of directives combined with the desired
+format. For instance, to show the level in brackets followed by the date
+and then the log message trimmed to 15 characters, we use the following
+pattern:
+ 
+  "[%l] %d :: %.15m"     #=>     [DEBUG] 2001-01-12 13:15:50 :: This is a messa
+ 
+To create a PatternFormatter with this format:
+ 
+  p = PatternFormatter.new(:pattern => "[%l] %d :: %.15m")
+ 
+== Formatting time
+ 
+To format time, do one of the following:
+ 
+* Specify a date_pattern
+* Specify what class method of Ruby's <tt>Time</tt> class to call.
+* Use the default format
+ 
+If neither date_pattern nor date_method is specified, the default date
+format will be used. Currently, that would be ISO8601,
+ 
+The date_pattern is exactly what one would pass to <tt>Time.strftime</tt>.
+To specify a date_pattern, pass
+<tt>:date_pattern=>"pattern"</tt> to PatternFormat.new.
+ 
+Alternatively, date_method can be specified to produce the output of
+a specific <tt>Time</tt> method, such as <tt>usec</tt> or <tt>to_s</tt> 
+or any other zero argument <tt>Time</tt> method that produces a time. More 
+precisely, the method to call will be invoked on <tt>Time.now</tt>. 
+To specify a date_method, pass <tt>:date_method=>'methodname'</tt> (or a 
+Symbol equivalent) to <tt>PatternFormatter.new</tt>.
+
+= XML Configuration
+
+As explained in log4r/configurator.rb, the hash arguments to PatternFormatter
+are <i>XML parameters</i>. Here's an example:
+
+  <formatter type="PatternFormatter" pattern="[%l] %d :: %.15m">
+    <date_method>usec</date_method>
+  </formatter>
+ 
+= Performace considerations
+ 
+The performance impact of using a particular directive letter is noted in
+the <b>What the Directives Letters mean</b> section.
+ 
+The performance impact of time formatting merits special attention. If you
+aren't aware yet, the Time class is kind of a kludge. Time.now.usec happens
+to be faster than Time.now. If you're concerned about performance, please
+profile the various time methods and patterns.

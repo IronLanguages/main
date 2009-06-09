@@ -30,6 +30,7 @@ using IronRuby.Runtime.Calls;
 using Microsoft.Scripting.Runtime;
 using System.Runtime.InteropServices;
 using Microsoft.Scripting.Generation;
+using IronRuby.Compiler;
 
 internal class LibraryDef {
 
@@ -43,7 +44,6 @@ internal class LibraryDef {
     public static readonly string/*!*/ TypeRubyModule = TypeName(typeof(RubyModule));
     public static readonly string/*!*/ TypeRubyClass = TypeName(typeof(RubyClass));
     public static readonly string/*!*/ TypeActionOfRubyModule = TypeName(typeof(Action<RubyModule>));
-    public static readonly string/*!*/ TypeRubyExecutionContext = TypeName(typeof(RubyContext));
     public static readonly string/*!*/ TypeLibraryInitializer = TypeName(typeof(LibraryInitializer));
     public static readonly string/*!*/ TypeRubyLibraryAttribute = TypeName(typeof(RubyLibraryAttribute));
 
@@ -105,14 +105,34 @@ internal class LibraryDef {
     }
 
     private class ModuleDef {
+        // Full Ruby name (e.g. "IronRuby::Clr::String")
         public string/*!*/ QualifiedName;
+
+        // Name of the constant defined within declaring module (e.g. "String")
         public string/*!*/ SimpleName;
+
+        // Full Ruby name with '::' replaced by '__' (e.g. "IronRuby__Clr__String").
         public string/*!*/ Id;
+
+        // The trait only extends an existing CLR type, it doesn't define/reopen a Ruby module.
         public bool IsExtension;
+
+        // Defines an Exception class.
         public bool IsException;
+
+        // Aliases for the module (constants defined in the declaring type).
         public List<string>/*!*/ Aliases = new List<string>();
 
+        // The type declaring Ruby methods:
         public Type/*!*/ Trait;
+
+        // Type type being extended by trait (same as Trait for non-extension classes):
+        public Type/*!*/ Extends;
+
+        // If non-null, the declaring Ruby module is specified here and is different from the declaring CLR type.
+        // Target declaration must be within the same library.
+        public Type DefineIn;
+
         public IDictionary<string, MethodDef>/*!*/ InstanceMethods = new SortedDictionary<string, MethodDef>();
         public IDictionary<string, MethodDef>/*!*/ ClassMethods = new SortedDictionary<string, MethodDef>();
         public IDictionary<string, ConstantDef>/*!*/ Constants = new SortedDictionary<string, ConstantDef>();
@@ -124,12 +144,9 @@ internal class LibraryDef {
 
         public List<MixinRef>/*!*/ Mixins = new List<MixinRef>();
 
-        // Type real type (same as Trait for non-extension classes):
-        public Type/*!*/ Extends;
-
         public ModuleKind Kind;
         public bool HasCopyInclusions;
-
+        
         public TypeRef Super;              // non-null for all classes except for object
 
         // Non-null for modules nested in other Ruby modules.
@@ -146,7 +163,9 @@ internal class LibraryDef {
 
 
         public string BuildConfig;
-
+        public RubyCompatibility Compatibility;
+        public ModuleRestrictions Restrictions;
+        
         private int _dependencyOrder;
 
         /// <summary>
@@ -231,12 +250,22 @@ internal class LibraryDef {
                 (HasClassInitializer ? "Load" + Id + "_Class" : "null") + ", " +
                 (HasConstantsInitializer ? "Load" + Id + "_Constants" : "null");
         }
+
+        internal string/*!*/ GetModuleAttributes() {
+            RubyModuleAttributes attributes = (RubyModuleAttributes)Restrictions;
+            if (Extends == Trait) {
+                attributes |= RubyModuleAttributes.IsSelfContained;
+            }
+
+            return "0x" + attributes.ToString("X");
+        }
     }
 
     private class MethodDef {
         public string/*!*/ Name;
         public List<MethodInfo>/*!*/ Overloads = new List<MethodInfo>();
         public string BuildConfig;
+        public RubyCompatibility Compatibility;
         public RubyMethodAttributes/*!*/ Attributes;
 
         public bool IsRuleGenerator {
@@ -263,6 +292,18 @@ internal class LibraryDef {
     }
 
     #endregion
+
+    private void WriteRubyCompatibilityCheck(RubyCompatibility compatibility) {
+        if (compatibility != RubyCompatibility.Default) {
+            _output.WriteLine("if (Context.RubyOptions.Compatibility >= RubyCompatibility.{0}) {{", compatibility.ToString());
+        }
+    }
+
+    private void WriteRubyCompatibilityCheckEnd(RubyCompatibility compatibility) {
+        if (compatibility != RubyCompatibility.Default) {
+            _output.WriteLine("}");
+        }
+    }
 
     #region Reflection
 
@@ -323,13 +364,16 @@ internal class LibraryDef {
 
                 def.Trait = trait;
                 def.Extends = (module.Extends != null) ? module.Extends : trait;
+                def.DefineIn = module.DefineIn;
                 def.BuildConfig = module.BuildConfig;
+                def.Compatibility = module.Compatibility;
+                def.Restrictions = module.Restrictions;
 
                 def.Super = null;
-                if (cls != null && def.Extends != typeof(object) && !def.Extends.IsInterface && !def.IsExtension) {
+                if (cls != null && def.Extends != typeof(object) && !def.Extends.IsInterface) {
                     if (cls != null && cls.Inherits != null) {
                         def.Super = new TypeRef(cls.Inherits);
-                    } else {
+                    } else if (!def.IsExtension) {
                         def.Super = new TypeRef(def.Extends.BaseType);
                     }
                 }
@@ -340,15 +384,6 @@ internal class LibraryDef {
                         def.Mixins.Add(new MixinRef(new TypeRef(type), includes.Copy));
                     }
                     def.HasCopyInclusions |= includes.Copy;
-                }
-
-                if (cls != null && cls.MixinInterfaces) {
-                    foreach (Type iface in def.Extends.GetInterfaces()) {
-                        ModuleDef mixin;
-                        if (_moduleDefs.TryGetValue(iface, out mixin)) {
-                            def.Mixins.Add(new MixinRef(new TypeRef(mixin.Extends), false));
-                        }
-                    }
                 }
 
                 _moduleDefs.Add(def.Extends, def);
@@ -383,45 +418,45 @@ internal class LibraryDef {
 
         int defVariableId = 1;
 
-        // qualified names, ids, declaring modules:
+        // declaring modules, build configurations:
         foreach (ModuleDef def in _moduleDefs.Values) {
             if (!def.IsExtension) {
-                def.QualifiedName = def.SimpleName;
-
                 // finds the inner most Ruby module def containing this module def:
-                Type declaringType = def.Trait.DeclaringType;
-                while (declaringType != null) {
-                    ModuleDef declaringDef;
-                    if (_traits.TryGetValue(declaringType, out declaringDef)) {
-                        def.QualifiedName = declaringDef.QualifiedName + "::" + def.SimpleName;
-                        def.DeclaringModule = declaringDef;
-                        def.IsGlobal = false;
+                ModuleDef declaringDef = GetDeclaringModuleDef(def);
+                if (declaringDef != null) {
+                    def.DeclaringModule = declaringDef;
+                    def.IsGlobal = false;
 
-                        // inherits build config:
-                        if (declaringDef.BuildConfig != null) {
-                            if (def.BuildConfig != null) {
-                                def.BuildConfig = declaringDef.BuildConfig + " && " + def.BuildConfig;
-                            } else {
-                                def.BuildConfig = declaringDef.BuildConfig;
-                            }
+                    // inherits build config:
+                    if (declaringDef.BuildConfig != null) {
+                        if (def.BuildConfig != null) {
+                            def.BuildConfig = declaringDef.BuildConfig + " && " + def.BuildConfig;
+                        } else {
+                            def.BuildConfig = declaringDef.BuildConfig;
                         }
-
-                        // we will need a reference for setting the constant:
-                        def.DeclaringTypeRef = declaringDef.GetReference(ref defVariableId);
-                        def.GetReference(ref defVariableId);
-                        break;
-                    } else {
-                        declaringType = declaringType.DeclaringType;
                     }
+
+                    if (declaringDef.Compatibility != RubyCompatibility.Default) {
+                        def.Compatibility = (RubyCompatibility)Math.Max((int)declaringDef.Compatibility, (int)def.Compatibility);
+                    }
+
+                    // we will need a reference for setting the constant:
+                    def.DeclaringTypeRef = declaringDef.GetReference(ref defVariableId);
+                    def.GetReference(ref defVariableId);
                 }
-            } else {
-                def.QualifiedName = RubyUtils.GetQualifiedName(def.Extends);
             }
 
             if (def.Kind == ModuleKind.Singleton) {
                 // we need to refer to the singleton object returned from singelton factory:
                 def.GetReference(ref defVariableId);
+            }
+        }
 
+        // qualified names, ids:
+        foreach (ModuleDef def in _moduleDefs.Values) {
+            SetQualifiedName(def);
+
+            if (def.Kind == ModuleKind.Singleton) {
                 def.Id = "__Singleton_" + def.QualifiedName;
             } else {
                 def.Id = def.QualifiedName.Replace(':', '_');
@@ -470,6 +505,39 @@ internal class LibraryDef {
         // - loops in copy-inclusion
     }
 
+    private void SetQualifiedName(ModuleDef/*!*/ def) {
+        if (def.QualifiedName == null) {
+            if (def.IsExtension) {
+                def.QualifiedName = RubyContext.GetQualifiedNameNoLock(def.Extends, null, true);
+            } else if (def.DeclaringModule == null) {
+                def.QualifiedName = def.SimpleName;
+            } else {
+                SetQualifiedName(def.DeclaringModule);
+                def.QualifiedName = def.DeclaringModule.QualifiedName + "::" + def.SimpleName;
+            }
+        }
+    }
+
+    private ModuleDef GetDeclaringModuleDef(ModuleDef/*!*/ def) {
+        ModuleDef declaringDef;
+        if (def.DefineIn != null) {
+            if (_traits.TryGetValue(def.DefineIn, out declaringDef)) {
+                return declaringDef;
+            }
+            LogError("Declaring type specified by DeclareIn parameter '{0}' is not Ruby module definition or is in different library", def.DefineIn);
+        }
+
+        Type declaringType = def.Trait.DeclaringType;
+        while (declaringType != null) {
+            if (_traits.TryGetValue(declaringType, out declaringDef)) {
+                return declaringDef;
+            } else {
+                declaringType = declaringType.DeclaringType;
+            }
+        }
+        return null;
+    }
+
     private string/*!*/ MakeModuleReference(Type/*!*/ typeRef) {
         string refVariable;
 
@@ -516,21 +584,22 @@ internal class LibraryDef {
                         }
 
                         def.BuildConfig = attr.BuildConfig;
+                        def.Compatibility = attr.Compatibility;
 
                         methods.Add(attr.Name, def);
                     }
                     def.Overloads.Add(method);
                 }
-            } 
-            
+            }
+
             if (method.IsDefined(typeof(RubyConstructorAttribute), false)) {
                 if (!RequireStatic(method)) continue;
                 moduleDef.Factories.Add(method);
-            } 
-            
+            }
+
             if (method.IsDefined(typeof(RubyConstantAttribute), false)) {
                 if (!RequireStatic(method)) continue;
-                
+
                 var parameters = method.GetParameters();
                 if (parameters.Length != 1 || !parameters[0].ParameterType.IsAssignableFrom(typeof(RubyModule)) ||
                     parameters[0].Attributes != ParameterAttributes.None) {
@@ -583,16 +652,16 @@ internal class LibraryDef {
                     if (parameterInfos[i].ParameterType.IsByRef) {
                         LogMethodError("has ref/out parameter", methodDef, overload);
                     }
-                    
+
                     var type = parameterInfos[i].ParameterType;
 
                     if (type == typeof(CodeContext)) {
                         LogMethodError("CodeContext is obsolete use RubyContext instead.", methodDef, overload);
                     }
 
-                    if (type.IsSubclassOf(typeof(SiteLocalStorage))) {
+                    if (type.IsSubclassOf(typeof(RubyCallSiteStorage))) {
                         if (hasSelf || hasContext || hasBlock) {
-                            LogMethodError("SiteLocalStorage must precede all other parameters", methodDef, overload);
+                            LogMethodError("RubyCallSiteStorage must precede all other parameters", methodDef, overload);
                         }
                         storageCount++;
                     } else if (type == typeof(RubyContext) || type == typeof(RubyScope)) {
@@ -601,7 +670,7 @@ internal class LibraryDef {
                         }
 
                         if (i - storageCount != 0) {
-                            LogMethodError("Context parameter must be the first parameter following optional SiteLocalStorage", methodDef, overload);
+                            LogMethodError("Context parameter must be the first parameter following optional RubyCallSiteStorage", methodDef, overload);
                         }
 
                         hasContext = true;
@@ -617,7 +686,7 @@ internal class LibraryDef {
                         }
 
                         if (!hasContext && i - storageCount != 0) {
-                            LogMethodError("Block parameter must be the first parameter following optional SiteLocalStorage", methodDef, overload);
+                            LogMethodError("Block parameter must be the first parameter following optional RubyCallSiteStorage", methodDef, overload);
                         }
 
                         // TODO: we should detect a call to the BlockParam.Yield:
@@ -691,6 +760,7 @@ internal class LibraryDef {
                 continue;
             }
 
+            Debug.Assert(attr.Compatibility == RubyCompatibility.Default);
             moduleDef.Constants.Add(name, new ConstantDef(name, member, attr.BuildConfig));
         }
     }
@@ -739,7 +809,7 @@ internal class LibraryDef {
         AnyErrors = true;
     }
 
-    private void LogMethodWarning(string/*!*/ message, MethodDef methodDef, MethodBase/*!*/ overload,params object[] args) {
+    private void LogMethodWarning(string/*!*/ message, MethodDef methodDef, MethodBase/*!*/ overload, params object[] args) {
         string methodName = (methodDef != null) ? "method \"" + methodDef.Name + '"' : "factory";
         Console.Error.WriteLine("Warning: {0}: {1}", methodName, String.Format(message, args));
         Console.Error.WriteLine("         overload: {0}", ReflectionUtils.FormatSignature(new StringBuilder(), overload));
@@ -832,14 +902,16 @@ internal class LibraryDef {
                 if (def.BuildConfig != null) {
                     _output.WriteLine("#if " + def.BuildConfig);
                 }
+                WriteRubyCompatibilityCheck(def.Compatibility);
 
                 if (def.IsGlobal) {
                     GenerateAliases(def, ModuleDef.ObjectClassRef);
                 } else if (def.DeclaringTypeRef != null) {
                     GenerateAliases(def, def.DeclaringTypeRef);
-                    _output.WriteLine("{0}.SetConstant(\"{1}\", {2});", def.DeclaringTypeRef, def.SimpleName, def.Reference);
+                    GenerateSetConstant(def.DeclaringTypeRef, def.SimpleName, def.Reference);
                 }
 
+                WriteRubyCompatibilityCheckEnd(def.Compatibility);
                 if (def.BuildConfig != null) {
                     _output.WriteLine("#endif");
                 }
@@ -847,9 +919,13 @@ internal class LibraryDef {
         }
     }
 
+    private void GenerateSetConstant(string/*!*/ owner, string/*!*/ name, string/*!*/ expression) {
+        _output.WriteLine("{0}.Set{3}Constant(\"{1}\", {2});", owner, name, expression, Builtins ? "Builtin" : null);
+    }
+
     private void GenerateAliases(ModuleDef/*!*/ def, string/*!*/ ownerRef) {
         foreach (string alias in def.Aliases) {
-            _output.WriteLine("{0}.SetConstant(\"{1}\", {2});", ownerRef, alias, def.Reference);
+            GenerateSetConstant(ownerRef, alias, def.Reference);
         }
     }
 
@@ -862,6 +938,8 @@ internal class LibraryDef {
         if (def.BuildConfig != null) {
             _output.WriteLine("#if " + def.BuildConfig);
         }
+        WriteRubyCompatibilityCheck(def.Compatibility);
+
 
         switch (def.Kind) {
             case ModuleKind.Class:
@@ -892,13 +970,17 @@ internal class LibraryDef {
 #endif
 
                 if (def.IsExtension) {
-                    _output.Write("ExtendClass(typeof({0}), {1}, ", TypeName(def.Extends), def.GetInitializerDelegates());
+                    _output.Write("ExtendClass(typeof({0}), {1}, {2}, ",
+                        TypeName(def.Extends),
+                        def.Super != null ? def.Super.RefName : "null",
+                        def.GetInitializerDelegates()
+                    );
                 } else {
                     _output.Write("Define{0}Class(\"{1}\", typeof({2}), {3}, {4}, {5}, ",
                         def.IsGlobal ? "Global" : "",
                         def.QualifiedName,
                         TypeName(def.Extends),
-                        def.Extends == def.Trait ? "true" : "false", 
+                        def.GetModuleAttributes(),
                         def.Super.RefName,
                         def.GetInitializerDelegates()
                     );
@@ -929,7 +1011,7 @@ internal class LibraryDef {
                         def.IsGlobal ? "Global" : "",
                         def.QualifiedName,
                         TypeName(def.Extends),
-                        def.Extends == def.Trait ? "true" : "false",
+                        def.GetModuleAttributes(),
                         def.GetInitializerDelegates()
                     );
                 }
@@ -955,6 +1037,7 @@ internal class LibraryDef {
                 throw Assert.Unreachable;
         }
 
+        WriteRubyCompatibilityCheckEnd(def.Compatibility);
         if (def.BuildConfig != null) {
             _output.WriteLine("#endif");
         }
@@ -1038,6 +1121,8 @@ internal class LibraryDef {
             if (moduleDef.BuildConfig != null) {
                 _output.WriteLine("#if " + moduleDef.BuildConfig);
             }
+            WriteRubyCompatibilityCheck(moduleDef.Compatibility);
+
             _output.WriteLine("private static void Load{0}_Constants({1}/*!*/ module) {{", moduleDef.Id, TypeRubyModule);
             _output.Indent++;
 
@@ -1046,6 +1131,7 @@ internal class LibraryDef {
 
             _output.Indent--;
             _output.WriteLine("}");
+            WriteRubyCompatibilityCheckEnd(moduleDef.Compatibility);
             if (moduleDef.BuildConfig != null) {
                 _output.WriteLine("#endif");
             }
@@ -1060,14 +1146,11 @@ internal class LibraryDef {
                 _output.WriteLine("#if " + constantDef.BuildConfig);
             }
 
-            _output.Write("module.SetConstant(\"{0}\", {1}.{2}", constantDef.Name,
-                TypeName(constantDef.Member.DeclaringType), constantDef.Member.Name);
-
-            if (constantDef.Member is MethodInfo) {
-                _output.Write("(module)");
-            }
-
-            _output.WriteLine(");");
+            GenerateSetConstant("module",  constantDef.Name, String.Format("{0}.{1}{2}",
+                TypeName(constantDef.Member.DeclaringType), 
+                constantDef.Member.Name,
+                constantDef.Member is MethodInfo ? "(module)" : null
+            ));
 
             if (constantDef.BuildConfig != null) {
                 _output.WriteLine("#endif");
@@ -1088,7 +1171,7 @@ internal class LibraryDef {
     private void GenerateHiddenMethods(IDictionary<string, HiddenMethod>/*!*/ methods) {
         foreach (KeyValuePair<string, HiddenMethod> entry in methods) {
             if (entry.Value == HiddenMethod.Undefined) {
-                _output.WriteLine("module.{0}(\"{1}\");", 
+                _output.WriteLine("module.{0}(\"{1}\");",
                     Builtins ? "UndefineMethodNoEvent" : "UndefineMethod",
                     entry.Key
                 );
@@ -1104,14 +1187,21 @@ internal class LibraryDef {
                 _output.WriteLine("#if " + def.BuildConfig);
             }
 
+            int attributes = (int)def.Attributes;
+            if (def.Compatibility != RubyCompatibility.Default) {
+                int encodedCompat = ((int)def.Compatibility) << RubyMethodAttribute.CompatibilityEncodingShift;
+                Debug.Assert((encodedCompat & attributes) == 0);
+                attributes |= encodedCompat;
+            }
+
             if (def.IsRuleGenerator) {
                 _output.WriteLine("module.DefineRuleGenerator(\"{0}\", 0x{1:x}, {2}.{3}());",
                     def.Name,
-                    (int)def.Attributes,
+                    attributes,
                     TypeName(def.Overloads[0].DeclaringType),
                     def.Overloads[0].Name);
             } else {
-                _output.Write("module.DefineLibraryMethod(\"{0}\", 0x{1:x}", def.Name, (int)def.Attributes);
+                _output.Write("module.DefineLibraryMethod(\"{0}\", 0x{1:x}", def.Name, attributes);
 
                 _output.WriteLine(", ");
 
@@ -1165,6 +1255,7 @@ internal class LibraryDef {
                 if (moduleDef.BuildConfig != null) {
                     _output.WriteLine("#if " + moduleDef.BuildConfig);
                 }
+                WriteRubyCompatibilityCheck(moduleDef.Compatibility);
 
                 // public static Exception/*!*/ Factory(RubyClass/*!*/ self, [DefaultParameterValue(null)]object message) {
                 //     return InitializeException(new Exception(GetClrMessage(self, message)), message);
@@ -1191,6 +1282,7 @@ internal class LibraryDef {
                 _output.WriteLine("}");
                 _output.WriteLine();
 
+                WriteRubyCompatibilityCheckEnd(moduleDef.Compatibility);
                 if (moduleDef.BuildConfig != null) {
                     _output.WriteLine("#endif");
                 }

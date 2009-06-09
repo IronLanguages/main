@@ -26,11 +26,12 @@ using IronRuby.Runtime;
 using Microsoft.Scripting;
 using System.Diagnostics;
 using System.Reflection;
+using System.Text;
 
 namespace IronRuby.Tests {
     public class TestCase {
         public Action TestMethod { get; set; }
-        public RubyCompatibility Compatibility { get; set; }
+        public OptionsAttribute Options { get; set; }
         public string Name { get; set; }
     }
 
@@ -41,6 +42,7 @@ namespace IronRuby.Tests {
     [AttributeUsage(AttributeTargets.Method)]
     public sealed class OptionsAttribute : Attribute {
         public RubyCompatibility Compatibility { get; set; }
+        public bool PrivateBinding { get; set; }
     }
 
     public class TestRuntime {
@@ -59,7 +61,7 @@ namespace IronRuby.Tests {
             _driver = driver;
             _testName = testCase.Name;
 
-            if (_driver.IsDebug) {
+            if (_driver.SaveToAssemblies) {
                 Environment.SetEnvironmentVariable("DLR_AssembliesFileName", _testName);
             }
 
@@ -72,11 +74,11 @@ namespace IronRuby.Tests {
                 }
             }
 
-            // TODO: dynamic modules with symbols are not available in partial trust
-            runtimeSetup.DebugMode = !driver.PartialTrust;
+            runtimeSetup.DebugMode = _driver.IsDebug;
+            runtimeSetup.PrivateBinding = testCase.Options.PrivateBinding;
             languageSetup.Options["InterpretedMode"] = _driver.Interpret;
             languageSetup.Options["Verbosity"] = 2;
-            languageSetup.Options["Compatibility"] = testCase.Compatibility;
+            languageSetup.Options["Compatibility"] = testCase.Options.Compatibility;
 
             _env = Ruby.CreateRuntime(runtimeSetup);
             _engine = Ruby.GetEngine(_env);
@@ -88,32 +90,42 @@ namespace IronRuby.Tests {
 
         private Tests _tests;
 
-        private readonly List<Tuple<string, StackFrame, string, object>>/*!*/ _failedAssertions = new List<Tuple<string, StackFrame, string, object>>();
-        private readonly List<Tuple<string, Exception>>/*!*/ _unexpectedExceptions = new List<Tuple<string, Exception>>();
+        private readonly List<MutableTuple<string, StackFrame, string, object>>/*!*/ _failedAssertions = new List<MutableTuple<string, StackFrame, string, object>>();
+        private readonly List<MutableTuple<string, Exception>>/*!*/ _unexpectedExceptions = new List<MutableTuple<string, Exception>>();
 
         private TestRuntime _testRuntime; 
         private static bool _excludeSelectedCases;
+        private static bool _verbose;
         private static bool _isDebug;
+        private static bool _saveToAssemblies;
         private static bool _runTokenizerDriver;
         private static bool _displayList;
         private static bool _partialTrust;
         private static bool _interpret;
-        private static bool _runPython;
+        private static bool _runPython = true;
 
         public TestRuntime TestRuntime {
             get { return _testRuntime; }
         }
 
-        public List<Tuple<string, StackFrame, string, object>>/*!*/ FailedAssertions {
+        public List<MutableTuple<string, StackFrame, string, object>>/*!*/ FailedAssertions {
             get { return _failedAssertions; }
         }
 
-        public List<Tuple<string, Exception>>/*!*/ UnexpectedExceptions {
+        public List<MutableTuple<string, Exception>>/*!*/ UnexpectedExceptions {
             get { return _unexpectedExceptions; }
+        }
+
+        public bool Verbose {
+            get { return _verbose; }
         }
 
         public bool IsDebug {
             get { return _isDebug; }
+        }
+
+        public bool SaveToAssemblies {
+            get { return _saveToAssemblies; }
         }
 
         public bool PartialTrust {
@@ -130,14 +142,17 @@ namespace IronRuby.Tests {
 
         private static bool ParseArguments(List<string>/*!*/ args) {
             if (args.Contains("/help") || args.Contains("-?") || args.Contains("/?") || args.Contains("-help")) {
-                Console.WriteLine("Partial trust              : /partial");
-                Console.WriteLine("Interpret                  : /interpret");
-                Console.WriteLine("Run Python interop tests   : /py");
-                Console.WriteLine("Run Specific Tests         : [/debug] [/exclude] [test_to_run ...]");
-                Console.WriteLine("List Tests                 : /list");
-                Console.WriteLine("Tokenizer baseline         : /tokenizer <target-dir> <sources-file>");
-                Console.WriteLine("Productions dump           : /tokenizer /prod <target-dir> <sources-file>");
-                Console.WriteLine("Benchmark                  : /tokenizer /bm <target-dir> <sources-file>");
+                Console.WriteLine("Verbose                      : /verbose");
+                Console.WriteLine("Partial trust                : /partial");
+                Console.WriteLine("Interpret                    : /interpret");
+                Console.WriteLine("Save to assemblies           : /save");
+                Console.WriteLine("Debug Mode                   : /debug");
+                Console.WriteLine("Disable Python interop tests : /py-");
+                Console.WriteLine("Run Specific Tests           : [/exclude] [test_to_run ...]");
+                Console.WriteLine("List Tests                   : /list");
+                Console.WriteLine("Tokenizer baseline           : /tokenizer <target-dir> <sources-file>");
+                Console.WriteLine("Productions dump             : /tokenizer /prod <target-dir> <sources-file>");
+                Console.WriteLine("Benchmark                    : /tokenizer /bm <target-dir> <sources-file>");
             }
 
             if (args.Contains("/list")) {
@@ -145,9 +160,24 @@ namespace IronRuby.Tests {
                 return true;
             }
 
+            if (args.Contains("/verbose")) {
+                args.Remove("/verbose");
+                _verbose = true;
+            }
+
             if (args.Contains("/debug")) {
                 args.Remove("/debug");
                 _isDebug = true;
+            }
+
+            if (args.Contains("-D")) {
+                args.Remove("-D");
+                _isDebug = true;
+            }
+
+            if (args.Contains("/save")) {
+                args.Remove("/save");
+                _saveToAssemblies = true;
             }
 
             if (args.Contains("/partial")) {
@@ -163,6 +193,11 @@ namespace IronRuby.Tests {
             if (args.Contains("/interpret")) {
                 args.Remove("/interpret");
                 _interpret = true;
+            }
+
+            if (args.Contains("/py-")) {
+                args.Remove("/py-");
+                _runPython = false;
             }
 
             if (args.Contains("/py")) {
@@ -273,7 +308,7 @@ namespace IronRuby.Tests {
         }
 
         private static void InitializeDomain() {
-            if (_isDebug) {
+            if (_saveToAssemblies) {
                 string _dumpDir = Path.Combine(Path.GetTempPath(), "RubyTests");
 
                 if (Directory.Exists(_dumpDir)) {
@@ -369,9 +404,11 @@ namespace IronRuby.Tests {
                     failedCases.Add(test);
 
                     Console.Error.WriteLine();
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    Console.Error.WriteLine("{0}) {1} {2} : {3}", failedCases.Count, test, frame.GetFileName(), frame.GetFileLineNumber());
-                    Console.ForegroundColor = ConsoleColor.Gray;
+                    if (_partialTrust) {
+                        ColorWrite(ConsoleColor.Red, "{0}) {1}", failedCases.Count, test);
+                    } else {
+                        ColorWrite(ConsoleColor.Red, "{0}) {1} {2} : {3}", failedCases.Count, test, frame.GetFileName(), frame.GetFileLineNumber());
+                    }
                     Console.Error.WriteLine(message);
                 }
             }
@@ -382,21 +419,22 @@ namespace IronRuby.Tests {
                     Exception exception = _unexpectedExceptions[i].Item001;
 
                     Console.Error.WriteLine();
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    Console.Error.WriteLine("{0}) {1} (unexpected exception)", failedCases.Count, test);
-                    Console.ForegroundColor = ConsoleColor.Gray;
+                    ColorWrite(ConsoleColor.Red, "{0}) {1} (unexpected exception)", failedCases.Count, test);
                     Console.Error.WriteLine(exception);
                     failedCases.Add(test);
                 }
             }
 
             if (failedCases.Count == 0) {
-                Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine("PASSED");
-                Console.ForegroundColor = ConsoleColor.Gray;
+                ColorWrite(ConsoleColor.Green, "PASSED");
             } else {
                 Console.WriteLine();
-                Console.Write("Repro: {0}", Environment.CommandLine);
+                // TODO:
+                if (!_partialTrust) { 
+                    Console.Write("Repro: {0}", Environment.CommandLine);
+                } else {
+                    Console.Write("Repro: IronRuby.Tests.exe /partial");
+                }
                 if (largs.Count == 0) {
                     Console.Write(" {0}", String.Join(" ", failedCases.ToArray()));
                 }
@@ -412,13 +450,14 @@ namespace IronRuby.Tests {
                     cases.Add(new TestCase {
                         Name = testMethod.Method.Name,
                         TestMethod = testMethod,
-                        Compatibility = options.Compatibility,
+                        Options = options,
                     });
                 }
             } else {
                 cases.Add(new TestCase {
                     Name = testMethod.Method.Name,
                     TestMethod = testMethod,
+                    Options = new OptionsAttribute(),
                 });
             }
         }
@@ -426,22 +465,31 @@ namespace IronRuby.Tests {
         private void RunTestCase(TestCase/*!*/ testCase) {
             _testRuntime = new TestRuntime(this, testCase);
 
-            Console.WriteLine("Executing {0}", testCase.Name);
+            if (_verbose) {
+                Console.WriteLine("Executing {0}", testCase.Name);
+            } else {
+                Console.Write('.');
+            }
 
             try {
                 testCase.TestMethod();
             } catch (Exception e) {
                 PrintTestCaseFailed();
-                _unexpectedExceptions.Add(new Tuple<string, Exception>(testCase.Name, e));
+                _unexpectedExceptions.Add(new MutableTuple<string, Exception>(testCase.Name, e));
             } finally {
                 Snippets.SaveAndVerifyAssemblies();
             }
         }
 
         private void PrintTestCaseFailed() {
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine("> FAILED");
-            Console.ForegroundColor = ConsoleColor.Gray;
+            ColorWrite(ConsoleColor.Red, "\n> FAILED: {0}", _testRuntime.TestName);
+        }
+
+        internal static void ColorWrite(ConsoleColor color, string/*!*/ str, params object[] args) {
+            var oldColor = Console.ForegroundColor;
+            Console.ForegroundColor = color;
+            Console.WriteLine(str, args);
+            Console.ForegroundColor = oldColor;
         }
 
         [DebuggerHiddenAttribute]
@@ -458,7 +506,7 @@ namespace IronRuby.Tests {
 
             Debug.Assert(frame != null);
 
-            _failedAssertions.Add(new Tuple<string, StackFrame, string, object>(_testRuntime.TestName, frame, msg, null));
+            _failedAssertions.Add(new MutableTuple<string, StackFrame, string, object>(_testRuntime.TestName, frame, msg, null));
             PrintTestCaseFailed();
         }
 
@@ -466,6 +514,27 @@ namespace IronRuby.Tests {
             string dir = Path.Combine(Path.GetTempPath(), _testRuntime.TestName);
             Directory.CreateDirectory(dir);
             return dir;
+        }
+
+        internal static string/*!*/ MakeTempFile(string/*!*/ suffix, string/*!*/ content) {
+            var dir = Path.GetTempPath();
+            int pid = Process.GetCurrentProcess().Id;
+
+            while (true) {
+                string path = Path.Combine(dir, "IR_" + pid + "_" + DateTime.Now.Ticks.ToString("X") + suffix);
+                if (!File.Exists(path)) {
+                    try {
+                        using (var file = File.Open(path, FileMode.CreateNew)) {
+                            var writer = new StreamWriter(file);
+                            writer.Write(content);
+                            writer.Close();
+                        }
+                        return path;
+                    } catch (IOException) {
+                        // nop
+                    }
+                }
+            }
         }
     }
 }

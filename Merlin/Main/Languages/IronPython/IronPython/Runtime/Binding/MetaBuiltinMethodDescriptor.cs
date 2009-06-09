@@ -17,10 +17,12 @@ using System;
 using System.Linq.Expressions;
 using System.Dynamic;
 
+using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Actions.Calls;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
@@ -51,7 +53,7 @@ namespace IronPython.Runtime.Binding {
 
         public override DynamicMetaObject/*!*/ BindInvoke(InvokeBinder/*!*/ call, params DynamicMetaObject/*!*/[]/*!*/ args) {
             // TODO: Context should come from BuiltinFunction
-            return InvokeWorker(call, BinderState.GetCodeContext(call), args);
+            return InvokeWorker(call, PythonContext.GetCodeContext(call), args);
         }
 
         #endregion
@@ -59,6 +61,9 @@ namespace IronPython.Runtime.Binding {
         #region Invoke Implementation
 
         private DynamicMetaObject/*!*/ InvokeWorker(DynamicMetaObjectBinder/*!*/ call, Expression/*!*/ codeContext, DynamicMetaObject/*!*/[] args) {
+            PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "BuiltinMethodDesc Invoke " + Value.DeclaringType + "." + Value.__name__ + " w/ " + args.Length + " args");
+            PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "BuiltinMethodDesc Invoke");
+
             CallSignature signature = BindingHelpers.GetCallSignature(call);
             BindingRestrictions selfRestrict = BindingRestrictions.GetInstanceRestriction(Expression, Value).Merge(Restrictions);
 
@@ -79,24 +84,23 @@ namespace IronPython.Runtime.Binding {
                 this,
                 args,
                 false,  // no self
-                true,
                 selfRestrict,
                 (newArgs) => {
                     BindingTarget target;
-
-                    BinderState state = BinderState.GetBinderState(call);
+                    PythonContext state = PythonContext.GetPythonContext(call);
 
                     DynamicMetaObject res = state.Binder.CallMethod(
-                        new ParameterBinderWithCodeContext(state.Binder, codeContext),
+                        new PythonOverloadResolver(
+                            state.Binder,
+                            newArgs,
+                            signature,
+                            codeContext
+                        ),
                         Value.Template.Targets,
-                        newArgs,
-                        signature,
                         selfRestrict,
-                        NarrowingLevel.None,
-                        Value.Template.IsBinaryOperator ?
-                            PythonNarrowing.BinaryOperator :
-                            NarrowingLevel.All,
                         Value.Template.Name,
+                        NarrowingLevel.None,
+                        Value.Template.IsBinaryOperator ? PythonNarrowing.BinaryOperator : NarrowingLevel.All,
                         out target
                     );
 
@@ -107,7 +111,7 @@ namespace IronPython.Runtime.Binding {
         internal Expression MakeFunctionTest(Expression functionTarget) {
             return Ast.Equal(
                 functionTarget,
-                Ast.Constant(Value.Template)
+                AstUtils.Constant(Value.Template)
             );
         }
 

@@ -14,8 +14,6 @@
  * ***************************************************************************/
 
 using System.Dynamic.Utils;
-using System.Linq.Expressions;
-using Microsoft.Contracts;
 
 namespace System.Dynamic {
     /// <summary>
@@ -29,7 +27,15 @@ namespace System.Dynamic {
         /// </summary>
         /// <param name="callInfo">The signature of the arguments at the call site.</param>
         protected CreateInstanceBinder(CallInfo callInfo) {
+            ContractUtils.RequiresNotNull(callInfo, "callInfo");
             _callInfo = callInfo;
+        }
+
+        /// <summary>
+        /// The result type of the operation.
+        /// </summary>
+        public override sealed Type ReturnType {
+            get { return typeof(object); }
         }
 
         /// <summary>
@@ -71,24 +77,11 @@ namespace System.Dynamic {
             return target.BindCreateInstance(this, args);
         }
 
-        /// <summary>
-        /// Determines whether the specified <see cref="Object" /> is equal to the current object.
-        /// </summary>
-        /// <param name="obj">The <see cref="Object" /> to compare with the current object.</param>
-        /// <returns>true if the specified System.Object is equal to the current object; otherwise false.</returns>
-        [Confined]
-        public override bool Equals(object obj) {
-            CreateInstanceBinder ca = obj as CreateInstanceBinder;
-            return ca != null && ca._callInfo.Equals(_callInfo);
-        }
-
-        /// <summary>
-        /// Returns the hash code for this instance.
-        /// </summary>
-        /// <returns>An <see cref="Int32" /> containing the hash code for this instance.</returns>
-        [Confined]
-        public override int GetHashCode() {
-            return CreateInstanceBinderHash ^ _callInfo.GetHashCode();
+        // this is a standard DynamicMetaObjectBinder
+        internal override sealed bool IsStandardBinder {
+            get {
+                return true;
+            }
         }
     }
 }

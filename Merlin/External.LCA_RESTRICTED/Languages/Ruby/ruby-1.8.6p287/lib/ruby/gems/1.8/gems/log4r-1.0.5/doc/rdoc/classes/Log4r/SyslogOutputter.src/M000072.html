@@ -1,0 +1,21 @@
+
+<html>
+<head><title>close (Log4r::SyslogOutputter)</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<style>
+  .kw { color: #3333FF; font-weight: bold }
+  .cmt { color: green; font-style: italic }
+  .str { color: #662222; font-style: italic }
+  .re  { color: #662222; }
+</style>
+</head>
+<body bgcolor="white">
+<pre><span class="cmt"># File log4r/outputter/syslogoutputter.rb, line 52</span>
+    <span class="kw">def</span> close
+      @syslog.close <span class="kw">unless</span> @syslog.nil?
+      @level = OFF
+      OutputterFactory.create_methods(<span class="kw">self</span>)
+      Logger.log_internal {&quot;Outputter '#{@name}' closed Syslog and set to OFF&quot;}
+    <span class="kw">end</span></pre>
+</body>
+</html>

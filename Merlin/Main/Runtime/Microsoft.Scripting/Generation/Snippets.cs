@@ -216,7 +216,7 @@ namespace Microsoft.Scripting.Generation {
             return RawCreateDynamicMethod(uniqueName, returnType, parameterTypes);
         }
 
-        internal TypeBuilder DefineDelegateType(string name) {
+        public TypeBuilder DefineDelegateType(string name) {
             AssemblyGen assembly = GetAssembly(false);
             return assembly.DefineType(
                 name,
@@ -224,6 +224,11 @@ namespace Microsoft.Scripting.Generation {
                 TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.AnsiClass | TypeAttributes.AutoClass,
                 false
             );
+        }
+
+        internal bool IsSnippetsAssembly(Assembly asm) {
+            return (_assembly != null && asm == _assembly.AssemblyBuilder) ||
+                   (_debugAssembly != null && asm == _debugAssembly.AssemblyBuilder);
         }
 
         private static DynamicMethod RawCreateDynamicMethod(string name, Type returnType, Type[] parameterTypes) {

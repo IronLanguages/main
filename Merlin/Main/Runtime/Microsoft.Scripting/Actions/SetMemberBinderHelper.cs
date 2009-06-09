@@ -39,7 +39,7 @@ namespace Microsoft.Scripting.Actions {
             if (typeof(TypeTracker).IsAssignableFrom(targetType)) {
                 targetType = ((TypeTracker)Target).Type;
                 _isStatic = true;
-                Rule.AddTest(Ast.Equal(Rule.Parameters[0], Ast.Constant(Arguments[0])));
+                Rule.AddTest(Ast.Equal(Rule.Parameters[0], AstUtils.Constant(Arguments[0])));
             } 
 
             MakeSetMemberRule(targetType);
@@ -112,7 +112,7 @@ namespace Microsoft.Scripting.Actions {
             MethodInfo setter = info.GetSetMethod(true);
 
             // Allow access to protected getters TODO: this should go, it supports IronPython semantics.
-            if (setter != null && !setter.IsPublic && !(setter.IsFamily || setter.IsFamilyOrAssembly)) {
+            if (setter != null && !setter.IsPublic && !setter.IsProtected()) {
                 if (!PrivateBinding) {
                     setter = null;
                 }
@@ -153,7 +153,7 @@ namespace Microsoft.Scripting.Actions {
                             Binder,
                             MakeReturnValue(
                                 Ast.Call(
-                                    Ast.Constant(((ReflectedPropertyTracker)info).Property), // TODO: Private binding on extension properties
+                                    AstUtils.Constant(((ReflectedPropertyTracker)info).Property), // TODO: Private binding on extension properties
                                     typeof(PropertyInfo).GetMethod("SetValue", new Type[] { typeof(object), typeof(object), typeof(object[]) }),
                                     AstUtils.Convert(Instance, typeof(object)),
                                     AstUtils.Convert(Rule.Parameters[1], typeof(object)),
@@ -192,7 +192,7 @@ namespace Microsoft.Scripting.Actions {
             } else if (field.IsStatic && targetType != field.DeclaringType) {
                 AddToBody(Binder.MakeStaticAssignFromDerivedTypeError(targetType, field, Rule.Parameters[1], Rule.Context).MakeErrorForRule(Rule, Binder));
             } else if (field.DeclaringType.IsValueType && !field.IsStatic) {
-                AddToBody(Rule.MakeError(Ast.New(typeof(ArgumentException).GetConstructor(new Type[] { typeof(string) }), Ast.Constant("cannot assign to value types"))));
+                AddToBody(Rule.MakeError(Ast.New(typeof(ArgumentException).GetConstructor(new Type[] { typeof(string) }), AstUtils.Constant("cannot assign to value types"))));
             } else if (field.IsPublic && field.DeclaringType.IsVisible) {
                 AddToBody(
                     Rule.MakeReturn(
@@ -216,10 +216,10 @@ namespace Microsoft.Scripting.Actions {
                         Binder,
                         MakeReturnValue(
                             Ast.Call(
-                                AstUtils.Convert(Ast.Constant(field.Field), typeof(FieldInfo)),
+                                AstUtils.Convert(AstUtils.Constant(field.Field), typeof(FieldInfo)),
                                 typeof(FieldInfo).GetMethod("SetValue", new Type[] { typeof(object), typeof(object) }),
                                 field.IsStatic ?
-                                    Ast.Constant(null) :
+                                    AstUtils.Constant(null) :
                                     (Expression)AstUtils.Convert(Instance, typeof(object)),
                                 AstUtils.Convert(Rule.Parameters[1], typeof(object))
                             )
@@ -240,13 +240,13 @@ namespace Microsoft.Scripting.Actions {
         private bool MakeOperatorSetMemberBody(Type type, string name) {
             MethodInfo setMem = GetMethod(type, name);
             if (setMem != null && setMem.IsSpecialName) {
-                Expression call = Binder.MakeCallExpression(Rule.Context, setMem, Rule.Parameters[0], Ast.Constant(StringName), Rule.Parameters[1]);
+                Expression call = Binder.MakeCallExpression(Rule.Context, setMem, Rule.Parameters[0], AstUtils.Constant(StringName), Rule.Parameters[1]);
                 Expression ret;
 
                 if (setMem.ReturnType == typeof(bool)) {
-                    ret = AstUtils.If(call, Rule.MakeReturn(Binder, Rule.Parameters[1]));
+                    ret = AstUtils.If(call, Rule.MakeReturn(Binder, AstUtils.Convert(Rule.Parameters[1], typeof(object))));
                 } else {
-                    ret = Rule.MakeReturn(Binder, Ast.Block(call, Rule.Parameters[1]));
+                    ret = Rule.MakeReturn(Binder, Ast.Block(call, AstUtils.Convert(Rule.Parameters[1], typeof(object))));
                 }
                 AddToBody(ret);
                 return setMem.ReturnType != typeof(bool);

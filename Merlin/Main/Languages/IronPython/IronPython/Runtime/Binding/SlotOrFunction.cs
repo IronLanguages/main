@@ -26,6 +26,7 @@ using Microsoft.Scripting.Actions.Calls;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Runtime;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Runtime.Binding {
     using Ast = System.Linq.Expressions.Expression;
@@ -42,7 +43,8 @@ namespace IronPython.Runtime.Binding {
     sealed class SlotOrFunction {
         private readonly BindingTarget _function;
         private readonly DynamicMetaObject/*!*/ _target;
-        public static readonly SlotOrFunction/*!*/ Empty = new SlotOrFunction(new DynamicMetaObject(Ast.Empty(), BindingRestrictions.Empty));
+        private readonly PythonTypeSlot _slot;
+        public static readonly SlotOrFunction/*!*/ Empty = new SlotOrFunction(new DynamicMetaObject(AstUtils.Empty(), BindingRestrictions.Empty));
 
         private SlotOrFunction() {
         }
@@ -54,6 +56,11 @@ namespace IronPython.Runtime.Binding {
 
         public SlotOrFunction(DynamicMetaObject/*!*/ target) {
             _target = target;
+        }
+
+        public SlotOrFunction(DynamicMetaObject/*!*/ target, PythonTypeSlot slot) {
+            _target = target;
+            _slot = slot;
         }
 
         public NarrowingLevel NarrowingLevel {
@@ -96,6 +103,16 @@ namespace IronPython.Runtime.Binding {
             }
         }
 
+        public bool IsNull {
+            get {
+                if (_slot is PythonTypeUserDescriptorSlot && ((PythonTypeUserDescriptorSlot)_slot).Value == null) {
+                    return true;
+                }
+
+                return false;
+            }
+        }
+
         public DynamicMetaObject/*!*/ Target {
             get {
                 return _target;
@@ -130,14 +147,14 @@ namespace IronPython.Runtime.Binding {
             return true;
         }
 
-        public static SlotOrFunction/*!*/ GetSlotOrFunction(BinderState/*!*/ state, SymbolId op, params DynamicMetaObject[] types) {
+        public static SlotOrFunction/*!*/ GetSlotOrFunction(PythonContext/*!*/ state, SymbolId op, params DynamicMetaObject[] types) {
             PythonTypeSlot slot;
             SlotOrFunction res;
             if (TryGetBinder(state, types, op, SymbolId.Empty, out res)) {
                 if (res != SlotOrFunction.Empty) {
                     return res;
                 }
-            } else if (MetaUserObject.GetPythonType(types[0]).TryResolveSlot(state.Context, op, out slot)) {
+            } else if (MetaUserObject.GetPythonType(types[0]).TryResolveSlot(state.SharedContext, op, out slot)) {
                 ParameterExpression tmp = Ast.Variable(typeof(object), "slotVal");
 
                 Expression[] args = new Expression[types.Length - 1];
@@ -164,21 +181,22 @@ namespace IronPython.Runtime.Binding {
                                 ),
                                 typeof(object),
                                 ArrayUtils.Insert<Expression>(
-                                    Ast.Constant(state.Context),
+                                    AstUtils.Constant(state.SharedContext),
                                     tmp,
                                     args
                                 )
                             )
                         ),
                         BindingRestrictions.Combine(types).Merge(BindingRestrictionsHelpers.GetRuntimeTypeRestriction(types[0].Expression, types[0].GetLimitType()))
-                    )
+                    ),
+                    slot
                 );
             }
 
             return SlotOrFunction.Empty;
         }
 
-        internal static bool TryGetBinder(BinderState/*!*/ state, DynamicMetaObject/*!*/[]/*!*/ types, SymbolId op, SymbolId rop, out SlotOrFunction/*!*/ res) {
+        internal static bool TryGetBinder(PythonContext/*!*/ state, DynamicMetaObject/*!*/[]/*!*/ types, SymbolId op, SymbolId rop, out SlotOrFunction/*!*/ res) {
             PythonType declType;
             return TryGetBinder(state, types, op, rop, out res, out declType);
         }
@@ -192,7 +210,7 @@ namespace IronPython.Runtime.Binding {
         /// 
         /// TODO: Remove rop
         /// </summary>
-        internal static bool TryGetBinder(BinderState/*!*/ state, DynamicMetaObject/*!*/[]/*!*/ types, SymbolId op, SymbolId rop, out SlotOrFunction/*!*/ res, out PythonType declaringType) {
+        internal static bool TryGetBinder(PythonContext/*!*/ state, DynamicMetaObject/*!*/[]/*!*/ types, SymbolId op, SymbolId rop, out SlotOrFunction/*!*/ res, out PythonType declaringType) {
             declaringType = null;
 
             DynamicMetaObject xType = types[0];
@@ -225,7 +243,12 @@ namespace IronPython.Runtime.Binding {
                 xBf = null;
             }
 
-            var mc = new ParameterBinderWithCodeContext(state.Binder, Ast.Constant(state.Context));
+            var mc = new PythonOverloadResolver(
+                state.Binder, 
+                types,
+                new CallSignature(types.Length),                
+                AstUtils.Constant(state.SharedContext)
+            );
 
             if (xBf == null) {
                 if (yBf == null) {
@@ -233,30 +256,12 @@ namespace IronPython.Runtime.Binding {
                     bt = null;
                 } else {
                     declaringType = DynamicHelpers.GetPythonTypeFromType(yBf.DeclaringType);
-                    binder = state.Binder.CallMethod(
-                        mc,
-                        yBf.Targets,
-                        types,
-                        new CallSignature(types.Length),
-                        BindingRestrictions.Empty,
-                        PythonNarrowing.None,
-                        PythonNarrowing.BinaryOperator,
-                        out bt
-                    );
+                    binder = state.Binder.CallMethod(mc, yBf.Targets, BindingRestrictions.Empty, null, PythonNarrowing.None, PythonNarrowing.BinaryOperator, out bt);
                 }
             } else {
                 if (yBf == null) {
                     declaringType = DynamicHelpers.GetPythonTypeFromType(xBf.DeclaringType);
-                    binder = state.Binder.CallMethod(
-                        mc,
-                        xBf.Targets,
-                        types,
-                        new CallSignature(types.Length),
-                        BindingRestrictions.Empty,
-                        PythonNarrowing.None,
-                        PythonNarrowing.BinaryOperator,
-                        out bt
-                    );
+                    binder = state.Binder.CallMethod(mc, xBf.Targets, BindingRestrictions.Empty, null, PythonNarrowing.None, PythonNarrowing.BinaryOperator, out bt);
                 } else {
                     List<MethodBase> targets = new List<MethodBase>();
                     targets.AddRange(xBf.Targets);
@@ -264,16 +269,7 @@ namespace IronPython.Runtime.Binding {
                         if (!ContainsMethodSignature(targets, mb)) targets.Add(mb);
                     }
 
-                    binder = state.Binder.CallMethod(
-                        mc,
-                        targets.ToArray(),
-                        types,
-                        new CallSignature(types.Length),
-                        BindingRestrictions.Empty,
-                        PythonNarrowing.None,
-                        PythonNarrowing.BinaryOperator,
-                        out bt
-                    );
+                    binder = state.Binder.CallMethod(mc, targets.ToArray(), BindingRestrictions.Empty, null, PythonNarrowing.None, PythonNarrowing.BinaryOperator, out bt);
 
                     foreach (MethodBase mb in yBf.Targets) {
                         if (bt.Method == mb) {

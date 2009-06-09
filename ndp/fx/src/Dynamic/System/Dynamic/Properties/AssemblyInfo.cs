@@ -19,9 +19,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
 
-[assembly: System.Security.SecurityTransparent]
-
-#if MICROSOFT_SCRIPTING_CORE
+#if MICROSOFT_DYNAMIC
 
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
@@ -53,9 +51,18 @@ using System.Security;
 // by using the '*' as shown below:
 [assembly: System.Resources.NeutralResourcesLanguage("en-US")]
 
-[assembly: AssemblyVersion("0.9.5.1")]
+[assembly: AssemblyVersion("0.9.6.10")]
 [assembly: AssemblyFileVersion("1.0.0.00")]
 [assembly: AssemblyInformationalVersion("1.0")]
 [assembly: AllowPartiallyTrustedCallers]
+
+#else
+
+[assembly: InternalsVisibleTo("Microsoft.CSharp, PublicKey =" +
+    "002400000480000094000000060200000024000052534131000400000100010007d1fa57c4aed9" +
+    "f0a32e84aa0faefd0de9e8fd6aec8f87fb03766c834c99921eb23be79ad9d5dcc1dd9ad2361321" +
+    "02900b723cf980957fc4e177108fc607774f29e8320e92ea05ece4e821c0a5efe8f1645c4c0c93" +
+    "c1ab99285d622caa652c1dfad63d745d6f2de5f17e5eaf0fc4963d261c8a12436518206dc09334" +
+    "4d5ad293")]
 
 #endif

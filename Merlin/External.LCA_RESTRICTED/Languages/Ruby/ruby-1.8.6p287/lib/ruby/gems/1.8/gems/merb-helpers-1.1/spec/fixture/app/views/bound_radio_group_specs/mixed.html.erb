@@ -1,0 +1,4 @@
+<%= form_for @obj do %>
+  <%= radio_group (:foo, [:bar]) %>
+  <%= radio_group (:foo, [{:value => 'bar', :label => 'Bar'}])%>
+<% end =%>

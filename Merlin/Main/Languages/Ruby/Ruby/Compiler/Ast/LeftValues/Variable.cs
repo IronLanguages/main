@@ -38,7 +38,7 @@ namespace IronRuby.Compiler.Ast {
         }
 
         internal MSA.Expression/*!*/ TransformName(AstGenerator/*!*/ gen) {
-            return Ast.Constant(_name);
+            return AstUtils.Constant(_name);
         }
 
         internal sealed override MSA.Expression TransformTargetRead(AstGenerator/*!*/ gen) {

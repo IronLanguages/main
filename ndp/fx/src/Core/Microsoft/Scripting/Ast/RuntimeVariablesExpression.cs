@@ -15,15 +15,19 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Runtime.CompilerServices;
+using System.Diagnostics;
 using System.Dynamic.Utils;
+using System.Runtime.CompilerServices;
 
 namespace System.Linq.Expressions {
     /// <summary>
     /// An expression that provides runtime read/write access to variables.
-    /// Needed to implement "eval" in dynamic languages.
-    /// Evaluates to an instance of ILocalVariables at run time.
+    /// Needed to implement "eval" in some dynamic languages.
+    /// Evaluates to an instance of <see cref="IList{IStrongBox}" /> when executed.
     /// </summary>
+#if !SILVERLIGHT
+    [DebuggerTypeProxy(typeof(Expression.RuntimeVariablesExpressionProxy))]
+#endif
     public sealed class RuntimeVariablesExpression : Expression {
         private readonly ReadOnlyCollection<ParameterExpression> _variables;
 
@@ -35,8 +39,8 @@ namespace System.Linq.Expressions {
         /// Gets the static type of the expression that this <see cref="Expression" /> represents.
         /// </summary>
         /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
-        protected override Type TypeImpl() {
-            return typeof(IList<IStrongBox>);
+        public sealed override Type Type {
+            get { return typeof(IRuntimeVariables); }
         }
 
         /// <summary>
@@ -44,8 +48,8 @@ namespace System.Linq.Expressions {
         /// ExpressionType.Extension when overriding this method.
         /// </summary>
         /// <returns>The <see cref="ExpressionType"/> of the expression.</returns>
-        protected override ExpressionType NodeTypeImpl() {
-            return ExpressionType.RuntimeVariables;
+        public sealed override ExpressionType NodeType {
+            get { return ExpressionType.RuntimeVariables; }
         }
 
         /// <summary>

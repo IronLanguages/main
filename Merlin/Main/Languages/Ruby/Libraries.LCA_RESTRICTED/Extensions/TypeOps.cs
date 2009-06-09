@@ -18,7 +18,7 @@ using Microsoft.Scripting.Runtime;
 using IronRuby.Runtime;
 
 namespace IronRuby.Builtins {
-    [RubyClass(Extends = typeof(Type))]
+    [RubyClass(Extends = typeof(Type), Restrictions = ModuleRestrictions.None)]
     public static class TypeOps {
         [RubyMethod("to_module")]
         public static RubyModule/*!*/ ToModule(RubyContext/*!*/ context, Type/*!*/ self) {

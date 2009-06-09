@@ -15,9 +15,7 @@
 
 #if !SILVERLIGHT // ComObject
 
-using System.Collections.Generic;
-using System.Dynamic;
-using System.Dynamic.Utils;
+using System.Diagnostics;
 using System.Linq.Expressions;
 
 namespace System.Dynamic {
@@ -104,13 +102,13 @@ namespace System.Dynamic {
         private DynamicMetaObject BindGetMember(ComMethodDesc method, bool canReturnCallables) {
             if (method.IsDataMember) {
                 if (method.ParamCount == 0) {
-                    return BindComInvoke(DynamicMetaObject.EmptyMetaObjects, method, Expression.CallInfo(0) , new bool[]{});
+                    return BindComInvoke(DynamicMetaObject.EmptyMetaObjects, method, new CallInfo(0) , new bool[]{});
                 }
             }
 
             // ComGetMemberBinder does not expect callables. Try to call always.
             if (!canReturnCallables) {
-                return BindComInvoke(DynamicMetaObject.EmptyMetaObjects, method, Expression.CallInfo(0), new bool[0]);
+                return BindComInvoke(DynamicMetaObject.EmptyMetaObjects, method, new CallInfo(0), new bool[0]);
             }
 
             return new DynamicMetaObject(
@@ -141,7 +139,6 @@ namespace System.Dynamic {
 
         public override DynamicMetaObject BindGetIndex(GetIndexBinder binder, DynamicMetaObject[] indexes) {
             ContractUtils.RequiresNotNull(binder, "binder");
-
 
             ComMethodDesc getItem;
             if (_self.TryGetGetItem(out getItem)) {
@@ -194,8 +191,8 @@ namespace System.Dynamic {
                         typeof(IDispatchComObject).GetProperty("DispatchObject")
                     );
 
-                return new ComInvokeBinder(
-                    Expression.CallInfo(1),
+                var result = new ComInvokeBinder(
+                    new CallInfo(1),
                     new[] { value },
                     new bool[] { false },
                     restrictions,
@@ -203,6 +200,17 @@ namespace System.Dynamic {
                     dispatch,
                     method
                 ).Invoke();
+
+                // This condition is guarenteed because we wraped the COM
+                // object and deferred to get here. It's nice because it allows
+                // us to evaluate the "value" expression twice.
+                Debug.Assert(value.Expression is ParameterExpression);
+
+                // Make sure to return the value; some languages that need it.
+                return new DynamicMetaObject(
+                    Expression.Block(result.Expression, Expression.Convert(value.Expression, typeof(object))),
+                    result.Restrictions
+                );
             }
 
             return null;

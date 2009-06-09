@@ -108,6 +108,10 @@ namespace IronPython.Runtime.Operations {
             return new BytesWarningException(string.Format(format, args));
         }
 
+        public static Exception BufferError(string format, params object[] args) {
+            return new BufferException(string.Format(format, args));
+        }
+
         // *** END GENERATED CODE ***
 
         #endregion

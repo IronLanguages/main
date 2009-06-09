@@ -16,6 +16,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Dynamic;
 using System.Linq.Expressions;
 
 namespace Microsoft.Scripting.Actions.Calls {
@@ -41,6 +42,7 @@ namespace Microsoft.Scripting.Actions.Calls {
             : base(builder.ParameterInfo) {
 
             Debug.Assert(BuilderExpectsSingleParameter(builder));
+            Debug.Assert(builder.ConsumedArgumentCount == 1);
             _builder = builder;
 
             Debug.Assert(kwArgIndex < kwArgCount);
@@ -52,6 +54,10 @@ namespace Microsoft.Scripting.Actions.Calls {
             get { return _builder.Priority; }
         }
 
+        public override int ConsumedArgumentCount {
+            get { return 1; }
+        }
+
         /// <summary>
         /// The underlying builder should expect a single parameter as KeywordArgBuilder is responsible
         /// for calculating the correct parameter to use
@@ -61,11 +67,17 @@ namespace Microsoft.Scripting.Actions.Calls {
             return (((SimpleArgBuilder)builder).Index == 0);
         }
 
-        internal protected override Expression ToExpression(ParameterBinder parameterBinder, IList<Expression> parameters, bool[] hasBeenUsed) {
+        internal protected override Expression ToExpression(OverloadResolver resolver, RestrictedArguments args, bool[] hasBeenUsed) {
             Debug.Assert(BuilderExpectsSingleParameter(_builder));
-            int index = GetKeywordIndex(parameters.Count);
+
+            int index = GetKeywordIndex(args.Length);
+            Debug.Assert(!hasBeenUsed[index]);
             hasBeenUsed[index] = true;
-            return _builder.ToExpression(parameterBinder, new Expression[] { parameters[index] }, new bool[1]);
+            return _builder.ToExpression(resolver, MakeRestrictedArg(args, index), new bool[1]);
+        }
+
+        protected internal override Func<object[], object> ToDelegate(OverloadResolver resolver, RestrictedArguments args, bool[] hasBeenUsed) {
+            return null;
         }
 
         public override Type Type {
@@ -74,12 +86,17 @@ namespace Microsoft.Scripting.Actions.Calls {
             }
         }
 
-        internal override Expression ToReturnExpression(ParameterBinder parameterBinder) {
-            return _builder.ToReturnExpression(parameterBinder);
+        internal override Expression ToReturnExpression(OverloadResolver resolver) {
+            return _builder.ToReturnExpression(resolver);
         }
 
-        internal override Expression UpdateFromReturn(ParameterBinder parameterBinder, IList<Expression> parameters) {
-            return _builder.UpdateFromReturn(parameterBinder, new Expression[] { parameters[GetKeywordIndex(parameters.Count)] });
+        internal override Expression UpdateFromReturn(OverloadResolver resolver, RestrictedArguments args) {
+            int index = GetKeywordIndex(args.Length);
+            return _builder.UpdateFromReturn(resolver, MakeRestrictedArg(args, index));
+        }
+
+        private static RestrictedArguments MakeRestrictedArg(RestrictedArguments args, int index) {
+            return new RestrictedArguments(new[] { args.GetObject(index) }, new[] { args.GetType(index) });
         }
 
         private int GetKeywordIndex(int paramCount) {

@@ -13,18 +13,18 @@
  *
  * ***************************************************************************/
 
-using System.Collections;
+using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using IronRuby.Runtime.Calls;
 using Microsoft.Scripting;
-using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 using MSA = System.Linq.Expressions;
-using IronRuby.Runtime.Calls;
 
 namespace IronRuby.Compiler.Ast {
     using Ast = System.Linq.Expressions.Expression;
-
+    
     public partial class CaseExpression : Expression {
         
         //	case value 
@@ -79,11 +79,10 @@ namespace IronRuby.Compiler.Ast {
         // when <expr>
         //   generates into:
         //   RubyOps.IsTrue(<expr>) if the case has no value, otherise:
-        //   RubyOps.IsTrue(InvokeMember("===", <expr>, <value>))
-        private static MSA.Expression/*!*/ MakeTest(AstGenerator/*!*/ gen, MSA.Expression/*!*/ expr, MSA.Expression/*!*/ value) {
+        //   RubyOps.IsTrue(Call("===", <expr>, <value>))
+        private static MSA.Expression/*!*/ MakeTest(AstGenerator/*!*/ gen, MSA.Expression/*!*/ expr, MSA.Expression value) {
             if (value != null) {
-                // InvokeMember("===", <expr>, <value>)
-                expr = Ast.Dynamic(RubyCallAction.Make("===", RubyCallSignature.WithScope(1)), typeof(object), 
+                expr = CallBuilder.InvokeMethod(gen.Context, "===", RubyCallSignature.WithScope(1),
                     gen.CurrentScopeVariable,
                     expr,
                     value
@@ -93,46 +92,12 @@ namespace IronRuby.Compiler.Ast {
         }
 
         // when [<expr>, ...] *<array>
-        //
-        // generates this code:
-        //
-        // IEnumerator<object>/*!*/ enumVar = RubyOps.Unsplat(<array>).GetEnumerator();
-        // bool result = false;
-        // while (enumVar.MoveNext()) {
-        //     if (<MakeTest>(enumVar.Current)) {
-        //         result = true;
-        //         break;
-        //     }
-        // }
         private static MSA.Expression/*!*/ MakeArrayTest(AstGenerator/*!*/ gen, MSA.Expression/*!*/ array, MSA.Expression value) {
-            MSA.Expression enumVariable = gen.CurrentScope.DefineHiddenVariable("#case-enumerator", typeof(IEnumerator<object>));
-            MSA.Expression resultVariable = gen.CurrentScope.DefineHiddenVariable("#case-compare-result", typeof(bool));
-
-            MSA.LabelTarget label = Ast.Label();
-            return AstFactory.Block(
-                Ast.Assign(enumVariable, Ast.Call(
-                    Methods.Unsplat.OpCall(AstFactory.Box(array)),
-                    Methods.IEnumerable_Of_Object_GetEnumerator
-                )),
-
-                Ast.Assign(resultVariable, Ast.Constant(false)),
-                
-                AstUtils.While(
-                    Ast.Call(enumVariable, Methods.IEnumerator_MoveNext),
-                    AstUtils.If(
-                        MakeTest(gen, Ast.Call(enumVariable, Methods.IEnumerator_get_Current), value),
-                        Ast.Block(
-                            Ast.Assign(resultVariable, Ast.Constant(true)),
-                            Ast.Break(label),
-                            Ast.Empty()
-                        )
-                    ), 
-                    null, 
-                    label,
-                    null
-               ), 
-               resultVariable
-            );
+            return Methods.ExistsUnsplat.OpCall(Ast.Constant(
+                CallSite<Func<CallSite, object, object, object>>.Create(
+                    RubyCallAction.Make(gen.Context, "===", RubyCallSignature.WithImplicitSelf(2))
+                )
+            ), AstFactory.Box(array), AstFactory.Box(value));
         }
 
         // when <expr0>, ... [*<array>]
@@ -145,7 +110,7 @@ namespace IronRuby.Compiler.Ast {
             if (comparisonArray != null) {
                 result = MakeArrayTest(gen, comparisonArray.TransformRead(gen), value);
             } else {
-                result = Ast.Constant(false);
+                result = AstUtils.Constant(false);
             }
 
             if (comparisons != null) {
@@ -167,7 +132,7 @@ namespace IronRuby.Compiler.Ast {
                 result = gen.TransformStatementsToExpression(_elseStatements);
             } else {
                 // no else clause => the result of the if-expression is nil:
-                result = Ast.Constant(null);
+                result = AstUtils.Constant(null);
             }
 
             MSA.Expression value;

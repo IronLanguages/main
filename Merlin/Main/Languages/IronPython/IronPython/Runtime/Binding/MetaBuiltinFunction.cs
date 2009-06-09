@@ -20,6 +20,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Dynamic;
 
+using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Actions.Calls;
 using Microsoft.Scripting.Generation;
@@ -34,7 +35,7 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Runtime.Binding {
 
-    class MetaBuiltinFunction : MetaPythonObject, IPythonInvokable, IPythonOperable {
+    class MetaBuiltinFunction : MetaPythonObject, IPythonInvokable, IPythonOperable, IPythonConvertible {
         public MetaBuiltinFunction(Expression/*!*/ expression, BindingRestrictions/*!*/ restrictions, BuiltinFunction/*!*/ value)
             : base(expression, BindingRestrictions.Empty, value) {
             Assert.NotNull(value);
@@ -44,17 +45,31 @@ namespace IronPython.Runtime.Binding {
 
         public override DynamicMetaObject/*!*/ BindInvoke(InvokeBinder/*!*/ call, params DynamicMetaObject/*!*/[]/*!*/ args) {
             // TODO: Context should come from BuiltinFunction
-            return InvokeWorker(call, BinderState.GetCodeContext(call), args);
+            return InvokeWorker(call, PythonContext.GetCodeContext(call), args);
         }
 
         public override DynamicMetaObject BindConvert(ConvertBinder/*!*/ conversion) {
-            if (conversion.Type.IsSubclassOf(typeof(Delegate))) {
-                return MakeDelegateTarget(conversion, conversion.Type, Restrict(typeof(BuiltinFunction)));
+            return ConvertWorker(conversion, conversion.Type, conversion.Explicit ? ConversionResultKind.ExplicitCast : ConversionResultKind.ImplicitCast);
+        }
+
+        public DynamicMetaObject BindConvert(PythonConversionBinder binder) {
+            return ConvertWorker(binder, binder.Type, binder.ResultKind);
+        }
+
+        public DynamicMetaObject ConvertWorker(DynamicMetaObjectBinder binder, Type toType, ConversionResultKind kind) {
+            PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "BuiltinFunc Convert " + toType);
+            PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "BuiltinFunc Convert");
+
+            if (toType.IsSubclassOf(typeof(Delegate))) {
+                return MakeDelegateTarget(binder, toType, Restrict(LimitType));
             }
-            return conversion.FallbackConvert(this);
+
+            return FallbackConvert(binder);
         }
 
         DynamicMetaObject IPythonOperable.BindOperation(PythonOperationBinder action, DynamicMetaObject[] args) {
+            PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "BuiltinFunc Operation " + action.Operation);
+            PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "BuiltinFunc Operation");
             switch (action.Operation) {
                 case PythonOperationKind.CallSignatures:
                     return PythonProtocol.MakeCallSignatureOperation(this, Value.Targets);
@@ -76,6 +91,10 @@ namespace IronPython.Runtime.Binding {
         #region Invoke Implementation
 
         private DynamicMetaObject/*!*/ InvokeWorker(DynamicMetaObjectBinder/*!*/ call, Expression/*!*/ codeContext, DynamicMetaObject/*!*/[]/*!*/ args) {
+            PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "BuiltinFunc Invoke " + Value.DeclaringType.FullName + "." + Value.Name + " with " + args.Length + " args " + Value.IsUnbound);
+            PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "BuiltinFunction " + Value.Targets.Count + ", " + Value.Targets[0].GetParameters().Length);
+            PerfTrack.NoteEvent(PerfTrack.Categories.BindingSlow, "BuiltinFunction " + BindingHelpers.GetCallSignature(call));
+
             if (this.NeedsDeferral()) {
                 return call.Defer(ArrayUtils.Insert(this, args));
             }
@@ -94,10 +113,10 @@ namespace IronPython.Runtime.Binding {
         }
 
         private DynamicMetaObject/*!*/ MakeSelflessCall(DynamicMetaObjectBinder/*!*/ call, Expression/*!*/ codeContext, DynamicMetaObject/*!*/[]/*!*/ args) {
-            // just check if it's the same built-in function.  Because built-in fucntions are
+            // just check if it's the same built-in function.  Because built-in functions are
             // immutable the identity check will suffice.  Because built-in functions are uncollectible
             // anyway we don't use the typical InstanceRestriction.
-            BindingRestrictions selfRestrict = BindingRestrictions.GetExpressionRestriction(Ast.Equal(Expression, Ast.Constant(Value))).Merge(Restrictions);
+            BindingRestrictions selfRestrict = BindingRestrictions.GetExpressionRestriction(Ast.Equal(Expression, AstUtils.Constant(Value))).Merge(Restrictions);
 
             return Value.MakeBuiltinFunctionCall(
                 call,
@@ -105,25 +124,25 @@ namespace IronPython.Runtime.Binding {
                 this,
                 args,
                 false,  // no self
-                false,
                 selfRestrict,
                 (newArgs) => {
                     BindingTarget target;
-                    var binder = BinderState.GetBinderState(call).Binder;
+                    var binder = PythonContext.GetPythonContext(call).Binder;
+
                     DynamicMetaObject res = binder.CallMethod(
-                        new ParameterBinderWithCodeContext(binder, codeContext),
-                        Value.Targets,
-                        newArgs,
-                        BindingHelpers.GetCallSignature(call),
-                        selfRestrict,
-                        PythonNarrowing.None,
-                        Value.IsBinaryOperator ?
-                                PythonNarrowing.BinaryOperator :
-                                NarrowingLevel.All,
+                        new PythonOverloadResolver(
+                            binder,
+                            newArgs,
+                            BindingHelpers.GetCallSignature(call),
+                            codeContext
+                        ), 
+                        Value.Targets, 
+                        selfRestrict, 
                         Value.Name,
+                        PythonNarrowing.None,
+                        Value.IsBinaryOperator ? PythonNarrowing.BinaryOperator : NarrowingLevel.All,
                         out target
                     );
-
                     return new BuiltinFunction.BindingResult(target, res);
                 }
             );
@@ -133,7 +152,7 @@ namespace IronPython.Runtime.Binding {
             BindingRestrictions selfRestrict = Restrictions.Merge(
                 BindingRestrictionsHelpers.GetRuntimeTypeRestriction(
                     Expression,
-                    typeof(BuiltinFunction)
+                    LimitType
                 )
             ).Merge(
                 BindingRestrictions.GetExpressionRestriction(
@@ -158,45 +177,39 @@ namespace IronPython.Runtime.Binding {
                 this,
                 ArrayUtils.Insert(self, args),
                 true,   // has self
-                false,
                 selfRestrict,
                 (newArgs) => {
                     CallSignature signature = BindingHelpers.GetCallSignature(call);
                     DynamicMetaObject res;
-                    BinderState state = BinderState.GetBinderState(call);
+                    PythonContext state = PythonContext.GetPythonContext(call);
                     BindingTarget target;
-                    var mc = new ParameterBinderWithCodeContext(state.Binder, codeContext);
+                    PythonOverloadResolver resolver;
                     if (Value.IsReversedOperator) {
-                        res = state.Binder.CallMethod(
-                            mc,
-                            Value.Targets,
+                        resolver = new PythonOverloadResolver(
+                            state.Binder,
                             newArgs,
                             GetReversedSignature(signature),
-                            self.Restrictions,
-                            NarrowingLevel.None,
-                            Value.IsBinaryOperator ?
-                                PythonNarrowing.BinaryOperator :
-                                NarrowingLevel.All,
-                            Value.Name,
-                            out target
+                            codeContext
                         );
                     } else {
-                        res = state.Binder.CallInstanceMethod(
-                            mc,
-                            Value.Targets,
+                        resolver = new PythonOverloadResolver(
+                            state.Binder,
                             self,
                             args,
                             signature,
-                            self.Restrictions,
-                            NarrowingLevel.None,
-                            Value.IsBinaryOperator ?
-                                PythonNarrowing.BinaryOperator :
-                                NarrowingLevel.All,
-                            Value.Name,
-                            out target
+                            codeContext
                         );
                     }
 
+                    res = state.Binder.CallMethod(
+                        resolver, 
+                        Value.Targets, 
+                        self.Restrictions, 
+                        Value.Name,
+                        NarrowingLevel.None,
+                        Value.IsBinaryOperator ? PythonNarrowing.BinaryOperator : NarrowingLevel.All,
+                        out target
+                    );
                     return new BuiltinFunction.BindingResult(target, res);
                 }
             );
@@ -261,7 +274,7 @@ namespace IronPython.Runtime.Binding {
             );
         }
 
-        private static CallSignature GetReversedSignature(CallSignature signature) {
+        internal static CallSignature GetReversedSignature(CallSignature signature) {
             return new CallSignature(ArrayUtils.Append(signature.GetArgumentInfos(), new Argument(ArgumentType.Simple)));
         }
 

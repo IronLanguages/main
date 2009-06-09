@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Utils;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Compiler.Ast {
     using MSA = System.Linq.Expressions;
@@ -45,7 +46,7 @@ namespace IronRuby.Compiler.Ast {
 
         internal override MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen) {
             // throw new NotImplementedException();
-            return Ast.Constant(null);
+            return AstUtils.Constant(null);
         }
     }
 

@@ -1,2 +1,0 @@
-critical:IO::popen reads from a read-only pipe
-critical:IO::popen allows the io to be closed inside the block

@@ -14,31 +14,52 @@
  * ***************************************************************************/
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Dynamic;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Collections.Generic;
-using System.Dynamic;
-
-using Microsoft.Scripting.Actions;
-using Microsoft.Scripting.Utils;
-
-using Ast = System.Linq.Expressions.Expression;
-using AstFactory = IronRuby.Compiler.Ast.AstFactory;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
+using System.Threading;
 using IronRuby.Builtins;
 using IronRuby.Compiler;
+using Microsoft.Scripting.Actions;
+using Microsoft.Scripting.Utils;
+using Ast = System.Linq.Expressions.Expression;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
+using System.Collections;
 
 namespace IronRuby.Runtime.Calls {
     public sealed class MetaObjectBuilder {
+        // RubyContext the site binder is bound to or null if it is unbound.
+        private readonly RubyContext _siteContext;
+
         private Expression _condition;
-        private Expression _restriction;
+        private BindingRestrictions/*!*/ _restrictions;
         private Expression _result;
         private List<ParameterExpression> _temps;
         private bool _error;
         private bool _treatRestrictionsAsConditions;
 
-        internal MetaObjectBuilder() {
+        internal MetaObjectBuilder(RubyMetaBinder/*!*/ binder, DynamicMetaObject/*!*/[]/*!*/ arguments)
+            : this(binder.Context, (DynamicMetaObject)null, arguments) {
+        }
+
+        internal MetaObjectBuilder(IInteropBinder/*!*/ binder, DynamicMetaObject target, params DynamicMetaObject/*!*/[]/*!*/ arguments)
+            : this(binder.Context, target, arguments) {
+        }
+
+        internal MetaObjectBuilder(DynamicMetaObject target, params DynamicMetaObject/*!*/[]/*!*/ arguments)
+            : this((RubyContext)null, target, arguments) {
+        }
+
+        private MetaObjectBuilder(RubyContext siteContext, DynamicMetaObject target, DynamicMetaObject/*!*/[]/*!*/ arguments) {
+            var restrictions = BindingRestrictions.Combine(arguments);
+            if (target != null) {
+                restrictions = target.Restrictions.Merge(restrictions);
+            }
+
+            _restrictions = restrictions;
+            _siteContext = siteContext;
         }
 
         public bool Error {
@@ -63,211 +84,37 @@ namespace IronRuby.Runtime.Calls {
             set { _treatRestrictionsAsConditions = value; }
         }
 
-        internal DynamicMetaObject/*!*/ CreateMetaObject(DynamicMetaObjectBinder/*!*/ action, DynamicMetaObject/*!*/ context, DynamicMetaObject/*!*/[]/*!*/ args) {
-            return CreateMetaObject(action, ArrayUtils.Insert(context, args));
+        internal DynamicMetaObject/*!*/ CreateMetaObject(DynamicMetaObjectBinder/*!*/ action) {
+            return CreateMetaObject(action, action.ReturnType);
         }
 
-        internal DynamicMetaObject/*!*/ CreateMetaObject(DynamicMetaObjectBinder/*!*/ action, DynamicMetaObject/*!*/[]/*!*/ siteArgs) {
+        internal DynamicMetaObject/*!*/ CreateMetaObject(DynamicMetaObjectBinder/*!*/ action, Type/*!*/ returnType) {
             Debug.Assert(ControlFlowBuilder == null, "Control flow required but not built");
 
-            var expr = _error ? Ast.Throw(_result) : _result;
+            var expr = _error ? Ast.Throw(_result, returnType) : AstUtils.Convert(_result, returnType);
 
-            BindingRestrictions restrictions;
             if (_condition != null) {
-                var deferral = action.Defer(siteArgs);
-                expr = Ast.Condition(_condition, AstUtils.Convert(expr, typeof(object)), deferral.Expression);
-                restrictions = deferral.Restrictions;
-            } else {
-                restrictions = BindingRestrictions.Empty;
+                var deferral = action.GetUpdateExpression(returnType);
+                expr = Ast.Condition(_condition, expr, deferral);
             }
 
             if (_temps != null) {
                 expr = Ast.Block(_temps, expr);
             }
 
-            if (_restriction != null) {
-                restrictions = restrictions.Merge(BindingRestrictions.GetExpressionRestriction(_restriction));
-            }
-
-            return new DynamicMetaObject(expr, restrictions);
-        }
-
-        public void SetError(Expression/*!*/ expression) {
-            Assert.NotNull(expression);
-            Debug.Assert(!_error, "Error already set");
-
-            _result = expression;
-            _error = true;
-        }
-
-        public void SetWrongNumberOfArgumentsError(int actual, int expected) {
-            SetError(Methods.MakeWrongNumberOfArgumentsError.OpCall(Ast.Constant(actual), Ast.Constant(expected)));
-        }
-
-        public void AddCondition(Expression/*!*/ condition) {
-            Assert.NotNull(condition);
-            _condition = (_condition != null) ? Ast.AndAlso(_condition, condition) : condition;
-        }
-
-        public void AddRestriction(Expression/*!*/ restriction) {
-            Assert.NotNull(restriction);
-            if (_treatRestrictionsAsConditions) {
-                AddCondition(restriction);
-            } else {
-                _restriction = (_restriction != null) ? Ast.AndAlso(_restriction, restriction) : restriction;
-            }
-        }
-
-        public static Expression/*!*/ GetObjectTypeTestExpression(object value, Expression/*!*/ expression) {
-            if (value == null) {
-                return Ast.Equal(expression, Ast.Constant(null));
-            } else {
-                return RuleBuilder.MakeTypeTestExpression(value.GetType(), expression);
-            }
-        }
-
-        public void AddTypeRestriction(Type/*!*/ type, Expression/*!*/ expression) {
-            AddRestriction(RuleBuilder.MakeTypeTestExpression(type, expression));
-        }
-
-        public void AddObjectTypeRestriction(object value, Expression/*!*/ expression) {
-            if (value == null) {
-                AddRestriction(Ast.Equal(expression, Ast.Constant(null)));
-            } else {
-                AddTypeRestriction(value.GetType(), expression);
-            }
-        }
-
-        public void AddObjectTypeCondition(object value, Expression/*!*/ expression) {
-            AddCondition(GetObjectTypeTestExpression(value, expression));
-        }
-
-        // TODO: do not test runtime for runtime bound sites
-        public void AddTargetTypeTest(object target, RubyClass/*!*/ targetClass, Expression/*!*/ targetParameter, 
-            RubyContext/*!*/ context, Expression/*!*/ contextExpression) {
-
-            // no changes to the module's class hierarchy while building the test:
-            targetClass.Context.RequiresClassHierarchyLock();
-
-            // initialization changes the version number, so ensure that the module is initialized:
-            targetClass.InitializeMethodsNoLock(); 
-            
-            // singleton nil:
-            if (target == null) {
-                AddRestriction(Ast.Equal(targetParameter, Ast.Constant(null)));
-                AddFullVersionTest(context.NilClass, context, contextExpression);
-                return;
-            }
-
-            // singletons true, false:
-            if (target is bool) {
-                AddRestriction(Ast.AndAlso(
-                    Ast.TypeIs(targetParameter, typeof(bool)),
-                    Ast.Equal(Ast.Convert(targetParameter, typeof(bool)), Ast.Constant(target))
-                ));
-
-                if ((bool)target) {
-                    AddFullVersionTest(context.TrueClass, context, contextExpression);
-                } else {
-                    AddFullVersionTest(context.FalseClass, context, contextExpression);
-                }
-                return;
-
-            }
-
-            // user defined instance singletons, modules, classes:
-            if (targetClass.IsSingletonClass) {
-                AddRestriction(
-                    Ast.Equal(
-                        Ast.Convert(targetParameter, typeof(object)),
-                        Ast.Convert(Ast.Constant(target), typeof(object))
-                    )
-                );
-
-                // we need to check for a runtime (e.g. "foo" .NET string instance could be shared accross runtimes):
-                AddFullVersionTest(targetClass, context, contextExpression);
-                return;
-            }
-
-            Type type = target.GetType();
-            AddTypeRestriction(type, targetParameter);
-            
-            if (typeof(IRubyObject).IsAssignableFrom(type)) {
-                // Ruby objects (get the method directly to prevent interface dispatch):
-                MethodInfo classGetter = type.GetMethod("get_" + RubyObject.ClassPropertyName, BindingFlags.Public | BindingFlags.Instance);
-                if (classGetter != null && classGetter.ReturnType == typeof(RubyClass)) {
-                    AddCondition(
-                        // (#{type})target.Class.Version.Value == #{immediateClass.Version}
-                        Ast.Equal(
-                            Ast.Field(
-                                Ast.Field(
-                                    Ast.Call(Ast.Convert(targetParameter, type), classGetter), 
-                                    Fields.RubyClass_Version
-                                ), 
-                                Fields.StrongBox_Of_Int_Value
-                            ),
-                            Ast.Constant(targetClass.Version.Value)
-                        )
-                    );
-                    return;
-                }
-
-                // TODO: explicit iface-implementation
-                throw new NotSupportedException("Type implementing IRubyObject should have RubyClass getter");
-            } else {
-                // CLR objects:
-                AddFullVersionTest(targetClass, context, contextExpression);
-            }
-        }
-
-        private void AddFullVersionTest(RubyClass/*!*/ cls, RubyContext/*!*/ context, Expression/*!*/ contextExpression) {
-            Assert.NotNull(cls, context, contextExpression);
-            cls.Context.RequiresClassHierarchyLock();
-
-            // check for runtime (note that the module's runtime could be different from the call-site runtime):
-            AddRestriction(Ast.Equal(contextExpression, Ast.Constant(context)));
-
-            AddVersionTest(cls);
-        }
-
-        internal void AddVersionTest(RubyClass/*!*/ cls) {
-            cls.Context.RequiresClassHierarchyLock();
-
-            // check for module version (do not burn a module reference to the rule):
-            AddCondition(Ast.Equal(Ast.Field(Ast.Constant(cls.Version), Fields.StrongBox_Of_Int_Value), Ast.Constant(cls.Version.Value)));
-        }
-
-        internal bool AddSplattedArgumentTest(object value, Expression/*!*/ expression, out int listLength, out ParameterExpression/*!*/ listVariable) {
-            if (value == null) {
-                AddRestriction(Ast.Equal(expression, Ast.Constant(null)));
-            } else {
-                // test exact type:
-                AddTypeRestriction(value.GetType(), expression);
-
-                List<object> list = value as List<object>;
-                if (list != null) {
-                    Type type = typeof(List<object>);
-                    listLength = list.Count;
-                    listVariable = GetTemporary(type, "#list");
-                    AddCondition(Ast.Equal(
-                        Ast.Property(Ast.Assign(listVariable, Ast.Convert(expression, type)), type.GetProperty("Count")),
-                        Ast.Constant(list.Count))
-                    );
-                    return true;
-                }
-            }
-
-            listLength = -1;
-            listVariable = null;
-            return false;
+            RubyBinder.DumpRule(action, _restrictions, expr);
+            return new DynamicMetaObject(expr, _restrictions);
         }
 
         public ParameterExpression/*!*/ GetTemporary(Type/*!*/ type, string/*!*/ name) {
+            return AddTemporary(Ast.Variable(type, name));
+        }
+
+        private ParameterExpression/*!*/ AddTemporary(ParameterExpression/*!*/ variable) {
             if (_temps == null) {
                 _temps = new List<ParameterExpression>();
             }
 
-            var variable = Ast.Variable(type, name);
             _temps.Add(variable);
             return variable;
         }
@@ -278,5 +125,227 @@ namespace IronRuby.Runtime.Calls {
                 ControlFlowBuilder = null;
             }
         }
+
+        #region Result
+
+        public void SetError(Expression/*!*/ expression) {
+            Assert.NotNull(expression);
+            Debug.Assert(!_error, "Error already set");
+
+            _result = expression;
+            _error = true;
+        }
+
+        public void SetWrongNumberOfArgumentsError(int actual, int expected) {
+            SetError(Methods.MakeWrongNumberOfArgumentsError.OpCall(AstUtils.Constant(actual), AstUtils.Constant(expected)));
+        }
+
+        public void SetMetaResult(DynamicMetaObject/*!*/ metaResult, CallArguments/*!*/ args) {
+            // TODO: 
+            // Should NormalizeArguments return a struct that provides us an information whether to treat particular argument's restrictions as conditions?
+            // The splatted array is stored in a local. Therefore we cannot apply restrictions on it.
+            SetMetaResult(metaResult, args.Signature.HasSplattedArgument);
+        }
+
+        public void SetMetaResult(DynamicMetaObject/*!*/ metaResult, bool treatRestrictionsAsConditions) {
+            _result = metaResult.Expression;
+            if (treatRestrictionsAsConditions || _treatRestrictionsAsConditions) {
+                AddCondition(metaResult.Restrictions.ToExpression());
+            } else {
+                Add(metaResult.Restrictions);
+            }
+        }
+
+        #endregion
+
+        #region Restrictions
+
+        public void AddObjectTypeRestriction(object value, Expression/*!*/ expression) {
+            if (value == null) {
+                AddRestriction(Ast.Equal(expression, AstUtils.Constant(null)));
+            } else {
+                AddTypeRestriction(value.GetType(), expression);
+            }
+        }
+
+        public void AddTypeRestriction(Type/*!*/ type, Expression/*!*/ expression) {
+            if (_treatRestrictionsAsConditions) {
+                AddCondition(Ast.TypeEqual(expression, type));
+            } else if (expression.Type != type || !type.IsSealed) {
+                Add(BindingRestrictions.GetTypeRestriction(expression, type));
+            }
+        }
+
+        public void AddRestriction(Expression/*!*/ restriction) {
+            if (_treatRestrictionsAsConditions) {
+                AddCondition(restriction);
+            } else {
+                Add(BindingRestrictions.GetExpressionRestriction(restriction));
+            }
+        }
+
+        public void AddRestriction(BindingRestrictions/*!*/ restriction) {
+            if (_treatRestrictionsAsConditions) {
+                AddCondition(restriction.ToExpression());
+            } else {
+                Add(restriction);
+            }
+        }
+
+        private void Add(BindingRestrictions/*!*/ restriction) {
+            Debug.Assert(!_treatRestrictionsAsConditions);
+            _restrictions = _restrictions.Merge(restriction);
+        }
+
+        #endregion
+
+        #region Conditions
+
+        public void AddCondition(Expression/*!*/ condition) {
+            Assert.NotNull(condition);
+            _condition = (_condition != null) ? Ast.AndAlso(_condition, condition) : condition;
+        }
+
+        public static Expression/*!*/ GetObjectTypeTestExpression(object value, Expression/*!*/ expression) {
+            if (value == null) {
+                return Ast.Equal(expression, AstUtils.Constant(null));
+            } else {
+                return RuleBuilder.MakeTypeTestExpression(value.GetType(), expression);
+            }
+        }
+
+        public void AddObjectTypeCondition(object value, Expression/*!*/ expression) {
+            AddCondition(GetObjectTypeTestExpression(value, expression));
+        }
+
+        #endregion
+
+        #region Tests
+
+        public void AddTargetTypeTest(object target, RubyClass/*!*/ targetClass, Expression/*!*/ targetParameter, DynamicMetaObject/*!*/ metaContext) {
+
+            // no changes to the module's class hierarchy while building the test:
+            targetClass.Context.RequiresClassHierarchyLock();
+
+            // initialization changes the version number, so ensure that the module is initialized:
+            targetClass.InitializeMethodsNoLock();
+
+            var context = (RubyContext)metaContext.Value;
+
+            if (target is IRubyObject) {
+                Type type = target.GetType();
+                AddTypeRestriction(type, targetParameter);
+            
+                // Ruby objects (get the method directly to prevent interface dispatch):
+                MethodInfo classGetter = type.GetMethod(Methods.IRubyObject_get_ImmediateClass.Name, BindingFlags.Public | BindingFlags.Instance);
+                if (type.IsVisible && classGetter != null && classGetter.ReturnType == typeof(RubyClass)) {
+                    AddCondition(
+                        // (#{type})target.ImmediateClass.Version.Value == #{immediateClass.Version}
+                        Ast.Equal(
+                            Ast.Field(
+                                Ast.Field(
+                                    Ast.Call(Ast.Convert(targetParameter, type), classGetter), 
+                                    Fields.RubyClass_Version
+                                ),
+                                Fields.VersionHandle_Value
+                            ),
+                            AstUtils.Constant(targetClass.Version.Value)
+                        )
+                    );
+                    return;
+                }
+
+                // TODO: explicit iface-implementation
+                throw new NotSupportedException("Type implementing IRubyObject should be visible and have ImmediateClass getter");
+            }
+
+            // singleton nil:
+            if (target == null) {
+                AddRestriction(Ast.Equal(targetParameter, AstUtils.Constant(null)));
+                AddFullVersionTest(context.NilClass, metaContext);
+                return;
+            }
+
+            // singletons true, false:
+            if (target is bool) {
+                AddRestriction(Ast.AndAlso(
+                    Ast.TypeIs(targetParameter, typeof(bool)),
+                    Ast.Equal(Ast.Convert(targetParameter, typeof(bool)), AstUtils.Constant(target))
+                ));
+
+                if ((bool)target) {
+                    AddFullVersionTest(context.TrueClass, metaContext);
+                } else {
+                    AddFullVersionTest(context.FalseClass, metaContext);
+                }
+                return;
+            }
+
+            // other CLR type singletons:
+            if (targetClass.IsSingletonClass) {
+                AddRestriction(
+                    Ast.Equal(
+                        Ast.Convert(targetParameter, typeof(object)),
+                        Ast.Convert(AstUtils.Constant(target), typeof(object))
+                    )
+                );
+
+                AddFullVersionTest(targetClass, metaContext);
+                return;
+            }
+
+            // CLR objects:
+            AddTypeRestriction(target.GetType(), targetParameter);
+            AddFullVersionTest(targetClass, metaContext);
+        }
+
+        private void AddFullVersionTest(RubyClass/*!*/ cls, DynamicMetaObject/*!*/ metaContext) {
+            Assert.NotNull(cls, metaContext);
+            cls.Context.RequiresClassHierarchyLock();
+
+            // check for runtime (note that the module's runtime could be different from the call-site runtime):
+            if (_siteContext == null) {
+                // TODO: use holder
+                AddRestriction(Ast.Equal(metaContext.Expression, AstUtils.Constant(metaContext.Value)));
+            } else if (_siteContext != metaContext.Value) {
+                throw new InvalidOperationException("Runtime-bound site called from a different runtime");
+            }
+             
+            AddVersionTest(cls);
+        }
+
+        internal void AddVersionTest(RubyClass/*!*/ cls) {
+            cls.Context.RequiresClassHierarchyLock();
+
+            // check for module version (do not burn a module reference to the rule):
+            AddCondition(Ast.Equal(Ast.Field(AstUtils.Constant(cls.Version), Fields.VersionHandle_Value), AstUtils.Constant(cls.Version.Value)));
+        }
+
+        internal bool AddSplattedArgumentTest(object value, Expression/*!*/ expression, out int listLength, out ParameterExpression/*!*/ listVariable) {
+            if (value == null) {
+                AddRestriction(Ast.Equal(expression, AstUtils.Constant(null)));
+            } else {
+                // test exact type:
+                AddTypeRestriction(value.GetType(), expression);
+
+                IList list = value as IList;
+                if (list != null) {
+                    Type type = typeof(IList);
+                    listLength = list.Count;
+                    listVariable = GetTemporary(type, "#list");
+                    AddCondition(Ast.Equal(
+                        Ast.Property(Ast.Assign(listVariable, Ast.Convert(expression, type)), typeof(ICollection).GetProperty("Count")),
+                        AstUtils.Constant(list.Count))
+                    );
+                    return true;
+                }
+            }
+
+            listLength = -1;
+            listVariable = null;
+            return false;
+        }
+
+        #endregion
     }
 }

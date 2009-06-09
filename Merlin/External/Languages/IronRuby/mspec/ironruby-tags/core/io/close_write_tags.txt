@@ -1,6 +1,0 @@
-critical:IO#close_write closes the write end of a duplex I/O stream
-critical:IO#close_write raises an IOError on subsequent invocations
-critical:IO#close_write raises an IOError if the stream is readable and not duplexed
-critical:IO#close_write closes the stream if it is neither readable nor duplexed
-critical:IO#close_write raises IOError on closed stream
-critical:IO#close_write flushes and closes the write stream

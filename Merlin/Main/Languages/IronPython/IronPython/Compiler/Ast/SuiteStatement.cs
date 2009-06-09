@@ -40,7 +40,7 @@ namespace IronPython.Compiler.Ast {
 
             MSAst.Expression[] stmts = ag.Transform(_statements);
             if (stmts.Length == 0) {
-                return Ast.Empty();
+                return AstUtils.Empty();
             }
 
             foreach (MSAst.Expression stmt in stmts) {
@@ -75,7 +75,11 @@ namespace IronPython.Compiler.Ast {
 
         internal override bool CanThrow {
             get {
-                // statements in the suite can throw, but the suite doesn't throw its self.
+                foreach (Statement stmt in _statements) {
+                    if (stmt.CanThrow) {
+                        return true;
+                    }
+                }
                 return false;
             }
         }

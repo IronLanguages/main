@@ -23,41 +23,19 @@ using Microsoft.Scripting.Runtime;
 using IronRuby.Builtins;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
+using System.Linq.Expressions;
 
 namespace IronRuby.Compiler.Generation {
     public class RubyTypeEmitter : ClsTypeEmitter {
-        private FieldBuilder _classField;
+        private FieldBuilder _immediateClassField;
 
         public RubyTypeEmitter(TypeBuilder tb)
             : base(tb) {
         }
 
-        internal FieldBuilder ClassField {
-            get { return _classField; }
-            set { _classField = value; }
-        }
-
-        public static bool TryGetNonInheritedMethodHelper(object clsObject, object instance, string/*!*/ name, out object callTarget) {
-            // In Ruby, this simply returns the instance object
-            // It's the callable site that's bound to the name through a RubyCallAction
-            // Properties are equivalent to Ruby getter and setter methods
-            RubyClass cls = clsObject as RubyClass;
-            RubyMemberInfo method;
-            // TODO: visibility
-            if (cls == null || (method = cls.ResolveMethod(name, true).Info) == null || (method is RubyMethodGroupInfo)) {
-                callTarget = null;
-                return false;
-            }
-            callTarget = instance;
-            return true;
-        }
-
-        protected override MethodInfo NonInheritedMethodHelper() {
-            return typeof(RubyTypeEmitter).GetMethod("TryGetNonInheritedMethodHelper");
-        }
-
-        protected override MethodInfo NonInheritedValueHelper() {
-            return typeof(RubyTypeEmitter).GetMethod("TryGetNonInheritedMethodHelper");
+        internal FieldBuilder ImmediateClassField {
+            get { return _immediateClassField; }
+            set { _immediateClassField = value; }
         }
 
         public static void AddRemoveEventHelper(object method, object instance, object dt, object eventValue, string name) {
@@ -68,14 +46,7 @@ namespace IronRuby.Compiler.Generation {
             return typeof(RubyTypeEmitter).GetMethod("AddRemoveEventHelper");
         }
 
-        protected override MethodInfo GetFastConvertMethod(Type toType) {
-            return RubyBinder.GetFastConvertMethod(toType);
-        }
-
-        protected override MethodInfo GetGenericConvertMethod(Type toType) {
-            return RubyBinder.GetGenericConvertMethod(toType);
-        }
-
+        [Emitted]
         public static Exception InvokeMethodMissing(object o, string/*!*/ name) {
             return RubyExceptions.CreateMethodMissing(RubyContext._Default, o, name);
         }
@@ -84,24 +55,31 @@ namespace IronRuby.Compiler.Generation {
             return typeof(RubyTypeEmitter).GetMethod("InvokeMethodMissing");
         }
 
-        protected override MethodInfo ConvertToDelegate() {
-            return typeof(Converter).GetMethod("ConvertToDelegate");
+        [Emitted]
+        public static RubyCallAction/*!*/ MakeRubyCallSite(string/*!*/ methodName, int argumentCount) {
+            // TODO: load context from class field?
+            return RubyCallAction.MakeShared(methodName, new RubyCallSignature(argumentCount, RubyCallFlags.HasImplicitSelf | RubyCallFlags.IsVirtualCall));
         }
 
         protected override void EmitMakeCallAction(string name, int nargs, bool isList) {
             ILGen cctor = GetCCtor();
             cctor.Emit(OpCodes.Ldstr, name);
             cctor.EmitInt(nargs);
-            cctor.EmitCall(typeof(RubyCallAction), "Make", new Type[] { typeof(string), typeof(int) });
+            cctor.EmitCall(typeof(RubyTypeEmitter), "MakeRubyCallSite");
         }
 
-        protected override void EmitPropertyGet(ILGen il, MethodInfo mi, string name, LocalBuilder callTarget) {
-            EmitClrCallStub(il, mi, callTarget, name);
-        }
-
-        protected override void EmitPropertySet(ILGen il, MethodInfo mi, string name, LocalBuilder callTarget) {
-            EmitClrCallStub(il, mi, callTarget, name);
-            il.Emit(OpCodes.Pop);
+        protected override FieldInfo GetConversionSite(Type toType) {
+            return AllocateDynamicSite(
+                new Type[] { typeof(CallSite), typeof(RubyContext), typeof(object), toType },
+                (site) => Expression.Assign(
+                    Expression.Field(null, site),
+                    Expression.Call(
+                        null,
+                        site.FieldType.GetMethod("Create"),
+                        ProtocolConversionAction.GetConversionAction(null, toType, true).CreateExpression()
+                    )
+                )
+            );
         }
 
         protected override void EmitImplicitContext(ILGen il) {
@@ -112,28 +90,28 @@ namespace IronRuby.Compiler.Generation {
 
         protected override void EmitClassObjectFromInstance(ILGen il) {
             if (typeof(IRubyObject).IsAssignableFrom(BaseType)) {
-                il.EmitPropertyGet(typeof(IRubyObject), "Class");
+                il.EmitCall(Methods.IRubyObject_get_ImmediateClass);
             } else {
-                il.EmitFieldGet(_classField);
+                il.EmitFieldGet(_immediateClassField);
             }
         }
 
         protected override bool TryGetName(Type clrType, MethodInfo mi, out string name) {
-            name = RubyUtils.MangleName(mi.Name);
+            name = mi.Name;
             return true;
         }
 
         protected override bool TryGetName(Type clrType, EventInfo ei, MethodInfo mi, out string name) {
             // TODO: Determine naming convention?
-            name = RubyUtils.MangleName(ei.Name);
+            name = ei.Name;
             return true;
         }
 
         protected override bool TryGetName(Type clrType, PropertyInfo pi, MethodInfo mi, out string name) {
             if (mi.Name.StartsWith("get_")) {
-                name = RubyUtils.MangleName(pi.Name);
+                name = pi.Name;
             } else if (mi.Name.StartsWith("set_")) {
-                name = RubyUtils.MangleName(pi.Name) + "=";
+                name = pi.Name + "=";
             } else {
                 name = null;
                 return false;

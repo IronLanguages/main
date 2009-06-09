@@ -480,7 +480,6 @@ namespace IronPython.Runtime {
         private static SymbolId _Division;
         private static SymbolId _NestedScopes;
         private static SymbolId _Generators;
-        private static SymbolId _As;
         private static SymbolId _Star;
         private static SymbolId _StarStar;
         private static SymbolId _Locals;
@@ -503,16 +502,17 @@ namespace IronPython.Runtime {
         private static SymbolId _RealPart;
         private static SymbolId _ImaginaryPart;
         private static SymbolId _Missing;
-        private static SymbolId _With;
         private static SymbolId _WithStmt;
         private static SymbolId _Append;
         private static SymbolId _Extend;
         private static SymbolId _Update;
         private static SymbolId _ThisArgument;
         private static SymbolId _Index;
+        private static SymbolId _Truncate;
         private static SymbolId _AbsoluteImport;
         private static SymbolId _PrintFunction;
         private static SymbolId _UnicodeLiterals;
+        private static SymbolId _Package;
         ///<summary>Symbol for '__neg__'</summary> 
         public static SymbolId OperatorNegate {
             get {
@@ -1045,13 +1045,6 @@ namespace IronPython.Runtime {
                 return _Generators;
             }
         }
-        ///<summary>Symbol for 'as'</summary> 
-        public static SymbolId As {
-            get {
-                if (_As == SymbolId.Empty) _As = MakeSymbolId("as");
-                return _As;
-            }
-        }
         ///<summary>Symbol for '*'</summary> 
         public static SymbolId Star {
             get {
@@ -1206,13 +1199,6 @@ namespace IronPython.Runtime {
                 return _Missing;
             }
         }
-        ///<summary>Symbol for 'with'</summary> 
-        public static SymbolId With {
-            get {
-                if (_With == SymbolId.Empty) _With = MakeSymbolId("with");
-                return _With;
-            }
-        }
         ///<summary>Symbol for 'with_statement'</summary> 
         public static SymbolId WithStmt {
             get {
@@ -1255,6 +1241,13 @@ namespace IronPython.Runtime {
                 return _Index;
             }
         }
+        ///<summary>Symbol for '__trunc__'</summary> 
+        public static SymbolId Truncate {
+            get {
+                if (_Truncate == SymbolId.Empty) _Truncate = MakeSymbolId("__trunc__");
+                return _Truncate;
+            }
+        }
         ///<summary>Symbol for 'absolute_import'</summary> 
         public static SymbolId AbsoluteImport {
             get {
@@ -1274,6 +1267,13 @@ namespace IronPython.Runtime {
             get {
                 if (_UnicodeLiterals == SymbolId.Empty) _UnicodeLiterals = MakeSymbolId("unicode_literals");
                 return _UnicodeLiterals;
+            }
+        }
+        ///<summary>Symbol for '__package__'</summary> 
+        public static SymbolId Package {
+            get {
+                if (_Package == SymbolId.Empty) _Package = MakeSymbolId("__package__");
+                return _Package;
             }
         }
 

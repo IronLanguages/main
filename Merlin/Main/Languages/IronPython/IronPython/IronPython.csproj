@@ -20,6 +20,8 @@
     <SignAssembly Condition="'$(SignAssembly)' == '' And Exists('$(AssemblyOriginatorKeyFile)')">true</SignAssembly>
     <SignedSym Condition="'$(SignAssembly)' == 'true'">SIGNED</SignedSym>
     <DelaySign>true</DelaySign>
+    <SilverlightPath Condition="$(SilverlightPath) == ''">..\..\..\Utilities\Silverlight\x86ret\</SilverlightPath>
+    <BaseAddress>879755264</BaseAddress>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
@@ -39,7 +41,8 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <RunCodeAnalysis>false</RunCodeAnalysis>
-    <BaseAddress>1933574144</BaseAddress>
+    <DocumentationFile>..\..\..\Bin\Release\IronPython.XML</DocumentationFile>
+    <NoWarn>1591</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FxCop|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -61,7 +64,6 @@
     <NoStdLib>true</NoStdLib>
     <NoWarn>618</NoWarn>
     <SilverlightBuild>true</SilverlightBuild>
-    <SilverlightSdkPath>..\..\..\Utilities\Silverlight\x86ret\</SilverlightSdkPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight Release|AnyCPU' ">
     <OutputPath>..\..\..\Bin\Silverlight Release\</OutputPath>
@@ -72,17 +74,20 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
     <SilverlightBuild>true</SilverlightBuild>
-    <SilverlightSdkPath>..\..\..\Utilities\Silverlight\x86ret\</SilverlightSdkPath>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DocumentationFile>..\..\..\Bin\Debug\IronPython.XML</DocumentationFile>
+    <NoWarn>1591</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" Condition=" $(SilverlightBuild) != 'true' " />
     <Reference Include="mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" Condition=" '$(SilverlightBuild)' == 'true' ">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(SilverlightSdkPath)\mscorlib.dll</HintPath>
+      <HintPath>$(SilverlightPath)\mscorlib.dll</HintPath>
     </Reference>
     <Reference Include="System, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" Condition=" '$(SilverlightBuild)' == 'true' ">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(SilverlightSdkPath)\System.dll</HintPath>
+      <HintPath>$(SilverlightPath)\System.dll</HintPath>
     </Reference>
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" Condition=" $(SilverlightBuild) != 'true' " />
@@ -93,9 +98,26 @@
     </Compile>
     <Compile Include="Compiler\Ast\AndExpression.cs" />
     <Compile Include="Compiler\Ast\Arg.cs" />
+    <Compile Include="Compiler\ArrayGlobalAllocator.cs" />
     <Compile Include="Compiler\Ast\AssertStatement.cs" />
     <Compile Include="Compiler\Ast\AssignmentStatement.cs" />
     <Compile Include="Compiler\Ast\AstGenerator.cs" />
+    <Compile Include="Runtime\Binding\ContextArgBuilder.cs" />
+    <Compile Include="Runtime\Binding\IFastSettable.cs" />
+    <Compile Include="Runtime\Binding\PythonBinder.Create.cs" />
+    <Compile Include="Runtime\Binding\PythonOverloadResolver.cs" />
+    <Compile Include="Runtime\Binding\SiteLocalStorageBuilder.cs" />
+    <Compile Include="Compiler\ClosureExpression.cs" />
+    <Compile Include="Compiler\ClosureInfo.cs" />
+    <Compile Include="Compiler\CompilationMode.cs" />
+    <Compile Include="Compiler\GeneratorRewriter.cs" />
+    <Compile Include="Compiler\LazyCode.cs" />
+    <Compile Include="Runtime\Exceptions\BufferException.Generated.cs" />
+    <Compile Include="Runtime\FutureBuiltins.cs" />
+    <Compile Include="Runtime\Binding\IPythonConvertible.cs" />
+    <Compile Include="Runtime\ModuleGlobalCache.cs" />
+    <Compile Include="Runtime\Profiler.cs" />
+    <Compile Include="Compiler\GlobalAllocator.cs" />
     <Compile Include="Compiler\Ast\AugmentedAssignStatement.cs" />
     <Compile Include="Compiler\Ast\BackQuoteExpression.cs" />
     <Compile Include="Compiler\Ast\BinaryExpression.cs" />
@@ -128,10 +150,14 @@
     <Compile Include="Compiler\Ast\ListComprehensionFor.cs" />
     <Compile Include="Compiler\Ast\ListComprehensionIf.cs" />
     <Compile Include="Compiler\Ast\ListExpression.cs" />
+    <Compile Include="Compiler\DictionaryGlobalAllocator.cs" />
     <Compile Include="Compiler\Ast\MemberExpression.cs" />
     <Compile Include="Compiler\Ast\ModuleName.cs" />
     <Compile Include="Compiler\Ast\NameExpression.cs" />
     <Compile Include="Compiler\Ast\Node.cs" />
+    <Compile Include="Compiler\ReducableDynamicExpression.cs" />
+    <Compile Include="Compiler\SavableScriptCode.cs" />
+    <Compile Include="Compiler\StaticGlobalAllocator.cs" />
     <Compile Include="Compiler\Ast\OrExpression.cs" />
     <Compile Include="Compiler\Ast\Parameter.cs" />
     <Compile Include="Compiler\Ast\ParenthesisExpression.cs" />
@@ -158,11 +184,25 @@
     <Compile Include="Compiler\Ast\WithStatement.cs" />
     <Compile Include="Compiler\Ast\YieldExpression.cs" />
     <Compile Include="Compiler\OnDiskScriptCode.cs" />
+    <Compile Include="Runtime\Binding\FastBindResult.cs" />
+    <Compile Include="Runtime\Binding\FastGetBase.cs" />
+    <Compile Include="Runtime\Binding\FastSetBase.cs" />
+    <Compile Include="Runtime\Binding\IFastGettable.cs" />
+    <Compile Include="Runtime\Binding\IFastInvokable.cs" />
+    <Compile Include="Runtime\Binding\BinaryRetTypeBinder.cs" />
+    <Compile Include="Runtime\Binding\BinaryRetTypeBinder.Generated.cs" />
+    <Compile Include="Runtime\BuiltinsDictionaryStorage.cs" />
+    <Compile Include="Runtime\CustomDictionaryStorage.cs" />
+    <Compile Include="Runtime\GlobalDictionaryStorage.cs" />
+    <Compile Include="Compiler\SavableGlobalAllocator.cs" />
+    <Compile Include="Compiler\PythonGlobal.cs" />
+    <Compile Include="Compiler\PythonGlobalVariableExpression.cs" />
+    <Compile Include="Compiler\PythonScriptCode.cs" />
+    <Compile Include="Compiler\RuntimeScriptCode.cs" />
     <Compile Include="Hosting\PythonService.cs" />
     <Compile Include="MaybeNotImplementedAttribute.cs" />
     <Compile Include="Runtime\BindingWarnings.cs" />
     <Compile Include="Runtime\Binding\Binders.cs" />
-    <Compile Include="Runtime\Binding\BinderState.cs" />
     <Compile Include="Runtime\Binding\CompatibilityInvokeBinder.cs" />
     <Compile Include="Runtime\Binding\CreateFallbackBinder.cs" />
     <Compile Include="Runtime\Binding\IPythonOperable.cs" />
@@ -198,7 +238,9 @@
     <Compile Include="Runtime\NewStringFormatter.cs" />
     <Compile Include="Runtime\Operations\ByteOps.cs" />
     <Compile Include="Runtime\Operations\IListOfByteOps.cs" />
+    <Compile Include="Runtime\BytesConversionAttribute.cs" />
     <Compile Include="Runtime\Python3Warning.cs" />
+    <Compile Include="Runtime\PythonFunction.Generated.cs" />
     <Compile Include="Runtime\PythonOptions.cs" />
     <Compile Include="Runtime\CompiledLoader.cs" />
     <Compile Include="Runtime\NoLineFeedSourceContentProvider.cs" />
@@ -208,11 +250,14 @@
     <Compile Include="Runtime\PythonHiddenAttribute.cs" />
     <Compile Include="Runtime\PythonModuleAttribute.cs" />
     <Compile Include="Runtime\PythonTypeAttribute.cs" />
+    <Compile Include="Runtime\RuntimeVariablesDictionaryStorage.cs" />
+    <Compile Include="Runtime\SiteLocalStorage.cs" />
     <Compile Include="Runtime\StringFormatSpec.cs" />
+    <Compile Include="Runtime\Types\BuiltinFunction.Generated.cs" />
+    <Compile Include="Runtime\Types\CachedNewTypeInfo.cs" />
     <Compile Include="Runtime\Types\DynamicBaseTypeAttribute.cs" />
     <Compile Include="Runtime\Types\InstanceCreator.cs" />
     <Compile Include="Runtime\Types\NameConverter.cs" />
-    <Compile Include="Runtime\Types\NewSubtypeMaker.cs" />
     <Compile Include="Runtime\Types\NewTypeInfo.cs" />
     <Compile Include="Runtime\Types\NewTypeMaker.cs" />
     <Compile Include="Hosting\PythonCodeDomCodeGen.cs" />
@@ -262,7 +307,6 @@
     <Compile Include="Runtime\Exceptions\RuntimeException.Generated.cs" />
     <Compile Include="Runtime\Exceptions\RuntimeWarningException.Generated.cs" />
     <Compile Include="Runtime\Exceptions\StopIterationException.Generated.cs" />
-    <Compile Include="Runtime\Exceptions\StringException.cs" />
     <Compile Include="Runtime\Exceptions\SyntaxWarningException.Generated.cs" />
     <Compile Include="Runtime\Exceptions\SystemExitException.cs" />
     <Compile Include="Runtime\Exceptions\TabException.cs" />
@@ -320,7 +364,6 @@
     <Compile Include="Runtime\Interfaces.cs" />
     <Compile Include="Runtime\List.cs" />
     <Compile Include="Runtime\LiteralParser.cs" />
-    <Compile Include="Runtime\LocalScopeDictionaryStorage.cs" />
     <Compile Include="Runtime\ObjectAttributesAdapter.cs" />
     <Compile Include="Runtime\Operations\ArrayOps.cs" />
     <Compile Include="Runtime\Operations\BoolOps.cs" />
@@ -339,7 +382,7 @@
     <Compile Include="Runtime\Operations\PythonOps.cs" />
     <Compile Include="Runtime\Operations\PythonOps.Generated.cs" />
     <Compile Include="Runtime\Operations\PythonCalls.cs" />
-    <Compile Include="Runtime\Operations\ReflectedPackageOps.cs" />
+    <Compile Include="Runtime\Operations\NamespaceTrackerOps.cs" />
     <Compile Include="Runtime\Operations\StringOps.cs" />
     <Compile Include="Runtime\Operations\TypeTrackerOps.cs" />
     <Compile Include="Runtime\Operations\TypeGroupOps.cs" />
@@ -366,6 +409,7 @@
     <Compile Include="Runtime\Types\DictProxy.cs" />
     <Compile Include="Runtime\Types\FunctionType.cs" />
     <Compile Include="Runtime\Types\OperatorMapping.cs" />
+    <Compile Include="Runtime\Types\PythonSiteCache.cs" />
     <Compile Include="Runtime\Types\ResolvedMember.cs" />
     <Compile Include="Runtime\Types\SlotFieldAttribute.cs" />
     <Compile Include="Runtime\Types\PythonTypeDictSlot.cs" />
@@ -396,7 +440,6 @@
     <Compile Include="Runtime\Types\ExtensionPropertyInfo.cs" />
     <Compile Include="Runtime\Types\IPythonObject.cs" />
     <Compile Include="Runtime\Types\PythonTypeSlot.cs" />
-    <Compile Include="Runtime\Types\PythonTypeValueSlot.cs" />
     <Compile Include="Runtime\Types\DynamicHelpers.cs" />
     <Compile Include="Runtime\WarningInfo.cs" />
     <Compile Include="Runtime\WeakRef.cs" />
@@ -459,7 +502,13 @@
     <Content Include="Lib\iptest\runner.py">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="Lib\iptest\test_env.py">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Lib\iptest\type_util.py">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Lib\iptest\util.py">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Lib\iptest\warning_util.py">

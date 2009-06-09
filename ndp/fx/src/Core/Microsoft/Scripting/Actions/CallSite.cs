@@ -22,6 +22,7 @@ using System.Linq.Expressions;
 using System.Linq.Expressions.Compiler;
 using System.Reflection;
 using System.Threading;
+using System.Collections;
 
 namespace System.Runtime.CompilerServices {
 
@@ -120,8 +121,14 @@ namespace System.Runtime.CompilerServices {
         /// <returns>The update delegate.</returns>
         public T Update {
             get {
-                Debug.Assert(_CachedUpdate != null, "all normal sites should have Update cached once there is an instance.");
-                return _CachedUpdate;
+                // if this site is set up for match making, then use NoMatch as an Update 
+                if (_match) {
+                    Debug.Assert(_CachedNoMatch != null, "all normal sites should have Update cached once there is an instance.");
+                    return _CachedNoMatch;
+                } else {
+                    Debug.Assert(_CachedUpdate != null, "all normal sites should have Update cached once there is an instance.");
+                    return _CachedUpdate;
+                }
             }
         }
 
@@ -135,15 +142,27 @@ namespace System.Runtime.CompilerServices {
         /// <summary>
         /// The Level 1 cache - a history of the dynamic site.
         /// </summary>
-        internal SmallRuleSet<T> Rules;
+        internal T[] Rules;
 
 
         // Cached update delegate for all sites with a given T
         private static T _CachedUpdate;
 
+        // Cached noMatch delegate for all sites with a given T
+        private static T _CachedNoMatch;
+
         private CallSite(CallSiteBinder binder)
             : base(binder) {
             Target = GetUpdateDelegate();
+        }
+
+        private CallSite()
+            : base(null) {
+        }
+
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
+        internal CallSite<T> CreateMatchMaker() {
+            return new CallSite<T>();
         }
 
         /// <summary>
@@ -190,28 +209,64 @@ namespace System.Runtime.CompilerServices {
             }
         }
 
+        const int MaxRules = 10;
+        internal void AddRule(T newRule) {
+            T[] rules = Rules;
+            if (rules == null) {
+                Rules = new[] { newRule };
+                return;
+            }
+
+            T[] temp;
+            if (rules.Length < (MaxRules - 1)) {
+                temp = new T[rules.Length + 1];
+                Array.Copy(rules, 0, temp, 1, rules.Length);
+            } else {
+                temp = new T[MaxRules];
+                Array.Copy(rules, 0, temp, 1, MaxRules - 1);
+            }
+            temp[0] = newRule;
+            Rules = temp;
+        }
+
+        // moves rule +2 up.
+        internal void MoveRule(int i) {
+            var rules = Rules;
+            var rule = rules[i];
+
+            rules[i] = rules[i - 1];
+            rules[i - 1] = rules[i - 2];
+            rules[i - 2] = rule;
+        }
+
         internal T MakeUpdateDelegate() {
             Type target = typeof(T);
             Type[] args;
             MethodInfo invoke = target.GetMethod("Invoke");
 
+
             if (target.IsGenericType && IsSimpleSignature(invoke, out args)) {
                 MethodInfo method = null;
+                MethodInfo noMatchMethod = null;
 
                 if (invoke.ReturnType == typeof(void)) {
                     if (target == DelegateHelpers.GetActionType(args.AddFirst(typeof(CallSite)))) {
                         method = typeof(UpdateDelegates).GetMethod("UpdateAndExecuteVoid" + args.Length, BindingFlags.NonPublic | BindingFlags.Static);
+                        noMatchMethod = typeof(UpdateDelegates).GetMethod("NoMatchVoid" + args.Length, BindingFlags.NonPublic | BindingFlags.Static);
                     }
                 } else {
                     if (target == DelegateHelpers.GetFuncType(args.AddFirst(typeof(CallSite)))) {
                         method = typeof(UpdateDelegates).GetMethod("UpdateAndExecute" + (args.Length - 1), BindingFlags.NonPublic | BindingFlags.Static);
+                        noMatchMethod = typeof(UpdateDelegates).GetMethod("NoMatch" + (args.Length - 1), BindingFlags.NonPublic | BindingFlags.Static);
                     }
                 }
                 if (method != null) {
+                    _CachedNoMatch = (T)(object)noMatchMethod.MakeGenericMethod(args).CreateDelegate(target);
                     return (T)(object)method.MakeGenericMethod(args).CreateDelegate(target);
                 }
             }
 
+            _CachedNoMatch = CreateCustomNoMatchDelegate(invoke);
             return CreateCustomUpdateDelegate(invoke);
         }
 
@@ -237,6 +292,23 @@ namespace System.Runtime.CompilerServices {
             return supported;
         }
 
+
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
+        private T CreateCustomNoMatchDelegate(MethodInfo invoke) {
+            var @params = invoke.GetParametersCached().Map(p => Expression.Parameter(p.ParameterType, p.Name));
+            var site = @params[0];
+            return Expression.Lambda<T>(
+                Expression.Block(
+                    Expression.Call(
+                        typeof(CallSiteOps).GetMethod("SetNotMatched"),
+                        @params.First()
+                    ),
+                    Expression.Default(invoke.GetReturnType())
+                ),
+                @params
+            ).Compile();
+        }
+
         //
         // WARNING: If you're changing this method, make sure you update the
         // pregenerated versions as well, which are generated by
@@ -259,20 +331,17 @@ namespace System.Runtime.CompilerServices {
             vars.Add(@this);
             body.Add(Expression.Assign(@this, Expression.Convert(site, @this.Type)));
 
-            //CallSiteRule<T>[] applicable;
-            var applicable = Expression.Variable(typeof(CallSiteRule<T>[]), "applicable");
+            //T[] applicable;
+            var applicable = Expression.Variable(typeof(T[]), "applicable");
             vars.Add(applicable);
 
-            //CallSiteRule<T> rule;
-            var rule = Expression.Variable(typeof(CallSiteRule<T>), "rule");
+            //T rule, originalRule = @this.Target;
+            var rule = Expression.Variable(typeof(T), "rule");
             vars.Add(rule);
 
-            //T ruleTarget, startingTarget = @this.Target;
-            var ruleTarget = Expression.Variable(typeof(T), "ruleTarget");
-            vars.Add(ruleTarget);
-            var startingTarget = Expression.Variable(typeof(T), "startingTarget");
-            vars.Add(startingTarget);
-            body.Add(Expression.Assign(startingTarget, Expression.Field(@this, "Target")));
+            var originalRule = Expression.Variable(typeof(T), "originalRule");
+            vars.Add(originalRule);
+            body.Add(Expression.Assign(originalRule, Expression.Field(@this, "Target")));
 
             //TRet result;
             ParameterExpression result = null;
@@ -286,10 +355,6 @@ namespace System.Runtime.CompilerServices {
             var index = Expression.Variable(typeof(int), "index");
             vars.Add(index);
 
-            //CallSiteRule<T> originalRule = null;
-            var originalRule = Expression.Variable(typeof(CallSiteRule<T>), "originalRule");
-            vars.Add(originalRule);
-
             ////
             //// Create matchmaker site. We'll need it regardless.
             ////
@@ -298,7 +363,10 @@ namespace System.Runtime.CompilerServices {
                 Expression.Assign(
                     site,
                     Expression.Call(
-                        typeof(CallSiteOps).GetMethod("CreateMatchmaker")
+                        typeof(CallSiteOps),
+                        "CreateMatchmaker",
+                        typeArgs, 
+                        @this
                     )
                 )
             );
@@ -308,26 +376,23 @@ namespace System.Runtime.CompilerServices {
             ////
             //if ((applicable = CallSiteOps.GetRules(@this)) != null) {
             //    for (index = 0, count = applicable.Length; index < count; index++) {
-            //        rule = applicable[index];
+            //        @this.Target = rule = applicable[i];
 
             //        //
             //        // Execute the rule
             //        //
-            //        ruleTarget = CallSiteOps.SetTarget(@this, rule);
             //
-            //        if ((object)startingTarget == (object)ruleTarget) {
-            //            // if we produce another monomorphic
-            //            // rule we should try and share code between the two.
-            //            originalRule = rule;
-            //        } else {
-            //            %(setResult)s ruleTarget(site, %(args)s);
+            //        // if we've already tried it skip it...
+            //        if ((object)rule != (object)originalRule) {
+            //            %(setResult)s rule(site, %(args)s);
             //            if (CallSiteOps.GetMatch(site)) {
+            //                CallSiteOps.UpdateRules(@this, i);
             //                %(returnResult)s;
             //            }
             //
             //            // Rule didn't match, try the next one
             //            CallSiteOps.ClearMatch(site);
-            //        }                
+            //        }
             //    }
             //}
             Expression invokeRule;
@@ -342,36 +407,35 @@ namespace System.Runtime.CompilerServices {
                 site
             );
 
+            var onMatch = Expression.Call(
+                typeof(CallSiteOps),
+                "UpdateRules",
+                typeArgs,
+                @this,
+                index
+            );
+
             if (@return.Type == typeof(void)) {
                 invokeRule = Expression.Block(
-                    Expression.Invoke(ruleTarget, new TrueReadOnlyCollection<Expression>(@params)),
-                    Expression.IfThen(getMatch, Expression.Return(@return))
+                    Expression.Invoke(rule, new TrueReadOnlyCollection<Expression>(@params)),
+                    Expression.IfThen(
+                        getMatch,
+                        Expression.Block(onMatch, Expression.Return(@return))
+                    )
                 );
             } else {
                 invokeRule = Expression.Block(
-                    Expression.Assign(result, Expression.Invoke(ruleTarget, new TrueReadOnlyCollection<Expression>(@params))),
-                    Expression.IfThen(getMatch, Expression.Return(@return, result))
+                    Expression.Assign(result, Expression.Invoke(rule, new TrueReadOnlyCollection<Expression>(@params))),
+                    Expression.IfThen(
+                        getMatch,
+                        Expression.Block(onMatch, Expression.Return(@return, result))
+                    )
                 );
             }
 
-            var getRule = Expression.Assign(
-                ruleTarget,
-                Expression.Call(
-                    typeof(CallSiteOps),
-                    "SetTarget",
-                    typeArgs,
-                    @this,
-                    Expression.Assign(rule, Expression.ArrayAccess(applicable, index))
-                )
-            );
-
-            var checkOriginalRuleOrInvoke = Expression.IfThenElse(
-                Expression.Equal(
-                    Expression.Convert(startingTarget, typeof(object)),
-                    Expression.Convert(ruleTarget, typeof(object))
-                ),
-                Expression.Assign(originalRule, rule),
-                Expression.Block(invokeRule, resetMatch)
+            Expression getRule = Expression.Assign(
+                rule,
+                Expression.ArrayAccess(applicable, index)
             );
 
             var @break = Expression.Label();
@@ -396,7 +460,20 @@ namespace System.Runtime.CompilerServices {
                             Expression.Block(
                                 breakIfDone,
                                 getRule,
-                                checkOriginalRuleOrInvoke,
+                                Expression.IfThen(
+                                    Expression.NotEqual(
+                                        Expression.Convert(rule, typeof(object)),
+                                        Expression.Convert(originalRule, typeof(object))
+                                    ),
+                                    Expression.Block(
+                                        Expression.Assign(
+                                            Expression.Field(@this, "Target"),
+                                            rule
+                                        ),
+                                        invokeRule,
+                                        resetMatch
+                                    )
+                                ),
                                 incrementIndex
                             ),
                             @break,
@@ -409,47 +486,8 @@ namespace System.Runtime.CompilerServices {
             ////
             //// Level 2 cache lookup
             ////
-            //var cache = @this.Binder.GetRuleCache<%(funcType)s>();
-
-            ////
-            //// Any applicable rules in level 2 cache?
-            ////
-            //if ((applicable = CallSiteOps.FindApplicableRules(@this)) != null) {
-            //    count = applicable.Length;
-            //    for (index = 0; index < count; index++) {
-            //        rule = applicable[index];
-            //
-            //        //
-            //        // Execute the rule
-            //        //
-            //        ruleTarget = CallSiteOps.SetTarget(@this, rule);
-            //
-            //        try {
-            //            result = ruleTarget(site, arg0);
-            //            if (match) {
-            //                return result;
-            //            }
-            //        } finally {
-            //            if (CallSiteOps.GetMatch(site)) {
-            //                //
-            //                // Rule worked. Add it to level 1 cache
-            //                //
-            //
-            //                CallSiteOps.AddRule(@this, rule);
-            //                // and then move it to the front of the L2 cache
-            //                @this.RuleCache.MoveRule(rule);
-            //            }
-            //        }
-            //
-            //        if (startingTarget == ruleTarget) {
-            //            // If we've gone megamorphic we can still template off the L2 cache
-            //            originalRule = rule;
-            //        }
-            //
-            //        // Rule didn't match, try the next one
-            //        CallSiteOps.ClearMatch(site);
-            //    }
-            //}
+            // i = 0;
+            // var cache = @this.Binder.GetRuleCache<%(funcType)s>();
 
             var cache = Expression.Variable(typeof(RuleCache<T>), "cache");
             vars.Add(cache);
@@ -461,51 +499,129 @@ namespace System.Runtime.CompilerServices {
                 )
             );
 
+            body.Add(
+                Expression.Assign(
+                    index,
+                    Expression.Constant(0)
+                )
+            );
+
+            ////
+            //// Any applicable rules in level 2 cache?
+            ////
+            //    foreach (var cachedRule in CallSiteOps.GetCachedRules<%(funcType)s>(cache)) {
+
+            ParameterExpression enumerator = Expression.Parameter(typeof(IEnumerator<>).MakeGenericType(typeArgs), "enum");
+            vars.Add(enumerator);
+
+            body.Add(
+                Expression.Assign(
+                    enumerator,
+                    Expression.Call(
+                        Expression.Call(
+                            typeof(CallSiteOps),
+                            "GetCachedRules",
+                            typeArgs,
+                            cache
+                        ),
+                        typeof(IEnumerable<>).MakeGenericType(typeArgs).GetMethod("GetEnumerator")
+                    )
+                )
+            );
+
+
+            //        @this.Target = rule;
+            //
+            //        //
+            //        // Execute the rule
+            //        //
+            //
+            //        try {
+            //            result = rule(site, arg0);
+            //            if (match) {
+            //                return result;
+            //            }
+            //        } finally {
+            //            if (CallSiteOps.GetMatch(site)) {
+            //                //
+            //                // Rule worked. Add it to level 1 cache
+            //                //
+            //
+            //                CallSiteOps.AddRule(@this, rule);
+            //                // and then move it to the front of the L2 cache
+            //                CallSiteOps.MoveRule(cache, rule, index);
+            //            }
+            //        }
+            //
+            //        // Rule didn't match, try the next one
+            //        CallSiteOps.ClearMatch(site);
+            //    }
+            //
+
+
+            // L2 invokeRule is different (no onMatch)
+            if (@return.Type == typeof(void)) {
+                invokeRule = Expression.Block(
+                    Expression.Invoke(rule, new TrueReadOnlyCollection<Expression>(@params)),
+                    Expression.IfThen(
+                        getMatch,
+                        Expression.Return(@return)
+                    )
+                );
+            } else {
+                invokeRule = Expression.Block(
+                    Expression.Assign(result, Expression.Invoke(rule, new TrueReadOnlyCollection<Expression>(@params))),
+                    Expression.IfThen(
+                        getMatch,
+                        Expression.Return(@return, result)
+                    )
+                );
+            }
+
             var tryRule = Expression.TryFinally(
                 invokeRule,
                 Expression.IfThen(
                     getMatch,
                     Expression.Block(
                         Expression.Call(typeof(CallSiteOps), "AddRule", typeArgs, @this, rule),
-                        Expression.Call(typeof(CallSiteOps), "MoveRule", typeArgs, cache, rule)
+                        Expression.Call(typeof(CallSiteOps), "MoveRule", typeArgs, cache, rule, index)
                     )
                 )
             );
 
-            var checkOriginalRule = Expression.IfThen(
-                Expression.Equal(
-                    Expression.Convert(startingTarget, typeof(object)),
-                    Expression.Convert(ruleTarget, typeof(object))
-                ),
-                Expression.Assign(originalRule, rule)
+            body.Add(
+                Expression.Assign(index, Expression.Constant(0))
             );
 
+            breakIfDone = Expression.IfThen(
+                Expression.Not(
+                    Expression.Call(
+                        enumerator,
+                        typeof(IEnumerator).GetMethod("MoveNext")
+                    )
+                ),
+                Expression.Break(@break)
+            );
+
+            getRule = Expression.Assign(
+                rule,
+                Expression.Assign(
+                    Expression.Field(@this, "Target"),
+                    Expression.Property(enumerator, "Current")
+                )
+            );
 
             body.Add(
-                Expression.IfThen(
-                    Expression.NotEqual(
-                        Expression.Assign(
-                            applicable,
-                            Expression.Call(typeof(CallSiteOps), "FindApplicableRules", typeArgs, cache)
-                        ),
-                        Expression.Constant(null, applicable.Type)
-                    ),
+                Expression.Loop(
                     Expression.Block(
-                        Expression.Assign(count, Expression.ArrayLength(applicable)),
-                        Expression.Assign(index, Expression.Constant(0)),
-                        Expression.Loop(
-                            Expression.Block(
-                                breakIfDone,
-                                getRule,
-                                tryRule,
-                                checkOriginalRule,
-                                resetMatch,
-                                incrementIndex
-                            ),
-                            @break,
-                            null
-                        )
-                    )
+                        breakIfDone,
+                        getRule,
+                        tryRule,
+                        resetMatch,
+                        incrementIndex
+                    ),
+                    @break,
+                    null
                 )
             );
 
@@ -527,12 +643,12 @@ namespace System.Runtime.CompilerServices {
             );
 
             //for (; ; ) {
-            //    rule = CallSiteOps.CreateNewRule(@this, rule, originalRule, args);
+            //    @this.Target = originalRule;
+            //    rule = @this.Target = @this.Binder.BindDelegate(@this, args);
 
             //    //
             //    // Execute the rule on the matchmaker site
             //    //
-            //    ruleTarget = CallSiteOps.SetTarget(@this, rule);
 
             //    try {
             //        %(setResult)s ruleTarget(site, %(args)s);
@@ -552,16 +668,22 @@ namespace System.Runtime.CompilerServices {
             //    match = true;
             //}
 
+            Expression setOldTarget = Expression.Assign(
+                Expression.Field(@this, "Target"),
+                originalRule
+            );
+
             getRule = Expression.Assign(
-                ruleTarget,
-                Expression.Call(
-                    typeof(CallSiteOps),
-                    "SetTarget",
-                    typeArgs,
-                    @this,
-                    Expression.Assign(
-                        rule,
-                        Expression.Call(typeof(CallSiteOps), "CreateNewRule", typeArgs, cache, @this, rule, originalRule, args)
+                Expression.Field(@this, "Target"),
+                Expression.Assign(
+                    rule,
+                    Expression.Call(
+                        typeof(CallSiteOps),
+                        "Bind",
+                        typeArgs,
+                        Expression.Property(@this, "Binder"),
+                        @this,
+                        args
                     )
                 )
             );
@@ -576,7 +698,7 @@ namespace System.Runtime.CompilerServices {
 
             body.Add(
                 Expression.Loop(
-                    Expression.Block(getRule, tryRule, resetMatch),
+                    Expression.Block(setOldTarget, getRule, tryRule, resetMatch),
                     null, null
                 )
             );
@@ -592,6 +714,7 @@ namespace System.Runtime.CompilerServices {
                     )
                 ),
                 "CallSite.Target",
+                true, // always compile the rules with tail call optimization
                 new ReadOnlyCollection<ParameterExpression>(@params)
             );
 
@@ -605,6 +728,11 @@ namespace System.Runtime.CompilerServices {
                 return arg;
             }
             return Expression.Convert(arg, type);
+        }
+
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
+        internal CallSiteRule<T> MakeRule(T target) {
+            return new CallSiteRule<T>(null, target);
         }
     }
 }

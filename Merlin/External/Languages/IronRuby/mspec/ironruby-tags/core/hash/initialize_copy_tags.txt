@@ -1,5 +1,0 @@
-fails:Hash#initialize_copy tries to convert the passed argument to a hash using #to_hash
-fails:Hash#initialize_copy checks whether the passed argument responds to #to_hash
-fails:Hash#initialize_copy calls to_hash on hash subclasses
-fails:Hash#initialize_copy does not transfer default values
-fails:Hash#initialize_copy raises a TypeError if called on a frozen instance

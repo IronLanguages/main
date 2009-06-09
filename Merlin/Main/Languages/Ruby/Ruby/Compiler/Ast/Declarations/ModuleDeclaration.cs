@@ -17,6 +17,7 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Utils;
 using IronRuby.Builtins;
 using IronRuby.Runtime;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Compiler.Ast {
     using Ast = System.Linq.Expressions.Expression;
@@ -72,14 +73,14 @@ namespace IronRuby.Compiler.Ast {
             ScopeBuilder outerLocals = gen.CurrentScope;
                 
             // definition needs to take place outside the defined lexical scope:
-            MSA.Expression definition = MakeDefinitionExpression(gen);
-            MSA.Expression selfVariable = outerLocals.DefineHiddenVariable("#module", typeof(RubyModule));
-            MSA.Expression rfcVariable = gen.CurrentRfcVariable;
-            MSA.Expression parentScope = gen.CurrentScopeVariable;
+            var definition = MakeDefinitionExpression(gen);
+            var selfVariable = outerLocals.DefineHiddenVariable("#module", typeof(RubyModule));
+            var rfcVariable = gen.CurrentRfcVariable;
+            var parentScope = gen.CurrentScopeVariable;
 
             // inner locals:
             ScopeBuilder scope = new ScopeBuilder();
-            MSA.Expression scopeVariable = scope.DefineHiddenVariable("#scope", typeof(RubyScope));
+            var scopeVariable = scope.DefineHiddenVariable("#scope", typeof(RubyScope));
             
             gen.EnterModuleDefinition(
                 scope,
@@ -109,7 +110,7 @@ namespace IronRuby.Compiler.Ast {
                         Ast.Assign(scopeVariable, 
                             Methods.CreateModuleScope.OpCall(scope.VisibleVariables(), parentScope, rfcVariable, selfVariable)),
                         Ast.Assign(resultVariable, transformedBody),
-                        Ast.Empty()
+                        AstUtils.Empty()
                     )
                 ),
                 gen.DebugMarker("END OF " + debugString),

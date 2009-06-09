@@ -84,22 +84,22 @@ namespace IronRuby.Compiler.Ast {
 
             MSA.Expression conditionPositiveStmt, conditionNegativeStmt;
             if (_isWhileLoop) {
-                conditionPositiveStmt = Ast.Empty();
+                conditionPositiveStmt = AstUtils.Empty();
                 conditionNegativeStmt = Ast.Break(breakLabel);
             } else {
                 conditionPositiveStmt = Ast.Break(breakLabel);
-                conditionNegativeStmt = Ast.Empty();
+                conditionNegativeStmt = AstUtils.Empty();
             }
 
             // make the loop first:
             MSA.Expression loop = Ast.Block(
-                Ast.Assign(redoVariable, Ast.Constant(_isPostTest)),
+                Ast.Assign(redoVariable, AstUtils.Constant(_isPostTest)),
 
                 AstFactory.Infinite(breakLabel, continueLabel,
                     AstUtils.Try(
 
                         AstUtils.If(redoVariable, 
-                            Ast.Assign(redoVariable, Ast.Constant(false))
+                            Ast.Assign(redoVariable, AstUtils.Constant(false))
                         ).ElseIf(transformedCondition,
                             conditionPositiveStmt
                         ).Else(
@@ -107,12 +107,12 @@ namespace IronRuby.Compiler.Ast {
                         ),
 
                         transformedBody,
-                        Ast.Empty()
+                        AstUtils.Empty()
 
                     ).Catch(blockUnwinder, 
                         // redo = u.IsRedo
                         Ast.Assign(redoVariable, Ast.Field(blockUnwinder, BlockUnwinder.IsRedoField)),
-                        Ast.Empty()
+                        AstUtils.Empty()
 
                     ).Filter(evalUnwinder, Ast.Equal(Ast.Field(evalUnwinder, EvalUnwinder.ReasonField), AstFactory.BlockReturnReasonBreak),
                         // result = unwinder.ReturnValue
@@ -120,16 +120,16 @@ namespace IronRuby.Compiler.Ast {
                         Ast.Break(breakLabel)
                     )
                 ),
-                Ast.Empty()
+                AstUtils.Empty()
             );
 
             // wrap it to try finally that updates RFC state:
             if (!isInnerLoop) {
                 loop = AstUtils.Try(
-                    Ast.Assign(Ast.Field(gen.CurrentRfcVariable, RuntimeFlowControl.InLoopField), Ast.Constant(true)),
+                    Methods.EnterLoop.OpCall(gen.CurrentScopeVariable),
                     loop
                 ).Finally(
-                    Ast.Assign(Ast.Field(gen.CurrentRfcVariable, RuntimeFlowControl.InLoopField), Ast.Constant(false))
+                    Methods.LeaveLoop.OpCall(gen.CurrentScopeVariable)
                 );
             }
 

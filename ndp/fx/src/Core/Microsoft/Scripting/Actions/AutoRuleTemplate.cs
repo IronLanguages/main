@@ -38,13 +38,18 @@ namespace System.Dynamic {
         /// <param name="from">The original rule that is currently stored in the cache.  This rule may
         /// or may not be a templated rule.</param>
         /// <param name="to">The new rule produced by a binder.</param>
-        internal static CallSiteRule<T> CopyOrCreateTemplatedRule<T>(CallSiteRule<T> from, CallSiteRule<T> to) where T : class {
+        internal static CallSiteRule<T> CopyOrCreateTemplatedRule<T>(CallSiteRule<T> from, Expression to) where T : class {
             List<KeyValuePair<ConstantExpression, int>> replacementList;
+            
+            // we only templaet off of L2 and L2 CallSiteRules. They always have targets, but Bindings could be null.
+            if (from.Binding == null) {
+                return null;
+            }
 
-            TreeCompareResult tc = TreeComparer.CompareTrees(to.Binding, from.Binding, from.TemplatedConsts, out replacementList);
+            TreeCompareResult tc = TreeComparer.CompareTrees(to, from.Binding, from.TemplatedConsts, out replacementList);
 
             if (tc == TreeCompareResult.Incompatible) {
-                return to;
+                return null;
             }
 
             // We have 2 rules which are compatible.  We should create a new template or 
@@ -58,7 +63,7 @@ namespace System.Dynamic {
                 // or we are further generalizing an existing rule.  We need to re-write the incoming tree 
                 // to be templated over the necessary constants and return the new rule bound to the template.
 
-                Expression<Func<Object[], T>> templateExpr = TemplateRuleRewriter.MakeTemplate<T>(to.RuleSet.Stitch(), replacementList);
+                Expression<Func<Object[], T>> templateExpr = TemplateRuleRewriter.MakeTemplate<T>(CallSiteBinder.Stitch<T>(to), replacementList);
 
 #if !MICROSOFT_SCRIPTING_CORE
                 // We cannot compile rules in the heterogeneous app domains since they
@@ -75,7 +80,7 @@ namespace System.Dynamic {
             }
 
             T newBody = template.TemplateFunction(values);
-            return new CallSiteRule<T>(to.Binding, newBody, template);
+            return new CallSiteRule<T>(to, newBody, template);
         }
 
         private static object[] GetConstantValues(List<KeyValuePair<ConstantExpression,int>> newConstants) {
@@ -127,7 +132,7 @@ namespace System.Dynamic {
 
                 int i = 0;
                 foreach(var cur in constToTemplate) {
-                    Type curConstType = TypeUtils.GetConstantType(cur.Key.Type);
+                    Type curConstType = cur.Key.Type;
                     var local = Expression.Parameter(curConstType, null);
                     locals.Add(local);
                     statements.Add(

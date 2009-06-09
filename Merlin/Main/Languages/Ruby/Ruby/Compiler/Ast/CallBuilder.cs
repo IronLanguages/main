@@ -15,23 +15,21 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Dynamic;
-using System.Linq.Expressions;
 using System.Diagnostics;
-using Microsoft.Scripting.Actions;
 using IronRuby.Runtime.Calls;
-using IronRuby.Builtins;
+using IronRuby.Runtime;
+using Microsoft.Scripting.Utils;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
+using MSA = System.Linq.Expressions;
 
 namespace IronRuby.Compiler.Ast {
-    using MSA = System.Linq.Expressions;
     using Ast = System.Linq.Expressions.Expression;
-    using AstUtils = Microsoft.Scripting.Ast.Utils;
 
     /// <summary>
     /// Simple helper for building up method call actions.
     /// </summary>
     internal class CallBuilder {
-        private readonly AstGenerator _gen;
+        private readonly AstGenerator/*!*/ _gen;
 
         private readonly List<MSA.Expression>/*!*/ _args = new List<MSA.Expression>();
         
@@ -41,7 +39,8 @@ namespace IronRuby.Compiler.Ast {
         public MSA.Expression Block;
         public MSA.Expression RhsArgument;
 
-        internal CallBuilder(AstGenerator gen) {
+        internal CallBuilder(AstGenerator/*!*/ gen) {
+            Assert.NotNull(gen);
             _gen = gen;
         }
 
@@ -50,37 +49,64 @@ namespace IronRuby.Compiler.Ast {
         }
 
         private RubyCallSignature MakeCallSignature(bool hasImplicitSelf) {
-            return new RubyCallSignature(false, true, hasImplicitSelf, _args.Count, SplattedArgument != null, Block != null, RhsArgument != null);
+            return new RubyCallSignature(true, hasImplicitSelf, _args.Count, SplattedArgument != null, Block != null, RhsArgument != null);
         }
 
         public MSA.DynamicExpression/*!*/ MakeCallAction(string/*!*/ name, bool hasImplicitSelf) {
-            return MakeCallAction(name, _gen.Binder, MakeCallSignature(hasImplicitSelf), GetExpressions());
-        }
-
-        public static MSA.DynamicExpression/*!*/ MakeCallAction(string/*!*/ name, ActionBinder/*!*/ binder, RubyCallSignature signature, 
-            params MSA.Expression[]/*!*/ args) {
-            RubyCallAction call = RubyCallAction.Make(name, signature);
-            switch (args.Length) {
-                case 0: return Ast.Dynamic(call, typeof(object), AstFactory.EmptyExpressions);
-                case 1: return Ast.Dynamic(call, typeof(object), args[0]);
-                case 2: return Ast.Dynamic(call, typeof(object), args[0], args[1]);
-                case 3: return Ast.Dynamic(call, typeof(object), args[0], args[1], args[2]);
-                case 4: return Ast.Dynamic(call, typeof(object), args[0], args[1], args[2], args[3]);
-                default:
-                    return Ast.Dynamic(
-                        call,
-                        typeof(object),
-                        new ReadOnlyCollection<MSA.Expression>(args)
-                    );
-            }
+            return InvokeMethod(_gen.Context, name, MakeCallSignature(hasImplicitSelf), GetExpressions());
         }
 
         public MSA.Expression/*!*/ MakeSuperCallAction(int lexicalScopeId) {
             return Ast.Dynamic(
-                SuperCallAction.Make(MakeCallSignature(true), lexicalScopeId),
+                SuperCallAction.Make(_gen.Context, MakeCallSignature(true), lexicalScopeId),
                 typeof(object),
                 GetExpressions()
             );
+        }
+
+        internal static MSA.DynamicExpression/*!*/ InvokeMethod(RubyContext/*!*/ context, string/*!*/ name, RubyCallSignature signature,
+            params MSA.Expression[]/*!*/ args) {
+
+            Debug.Assert(args.Length >= 2);
+            var scope = args[0];
+            var target = args[1];
+
+            switch (args.Length) {
+                case 2: return InvokeMethod(context, name, signature, scope, target);
+                case 3: return InvokeMethod(context, name, signature, scope, target, args[2]);
+                case 4: return InvokeMethod(context, name, signature, scope, target, args[2], args[3]);
+                default: return InvokeMethod(context, name, signature, scope, target, args);
+            }
+        }
+
+        internal static MSA.DynamicExpression/*!*/ InvokeMethod(RubyContext/*!*/ context, string/*!*/ name, RubyCallSignature signature,
+            MSA.Expression/*!*/ scope, MSA.Expression/*!*/ target) {
+            Debug.Assert(signature.HasScope);
+
+            return Ast.Dynamic(RubyCallAction.Make(context, name, signature), typeof(object), AstUtils.Convert(scope, typeof(RubyScope)), target);
+        }
+
+        internal static MSA.DynamicExpression/*!*/ InvokeMethod(RubyContext/*!*/ context, string/*!*/ name, RubyCallSignature signature,
+            MSA.Expression/*!*/ scope, MSA.Expression/*!*/ target, MSA.Expression/*!*/ arg0) {
+            Debug.Assert(signature.HasScope);
+
+            return Ast.Dynamic(RubyCallAction.Make(context, name, signature), typeof(object), AstUtils.Convert(scope, typeof(RubyScope)), target, arg0);
+        }
+
+        internal static MSA.DynamicExpression/*!*/ InvokeMethod(RubyContext/*!*/ context, string/*!*/ name, RubyCallSignature signature,
+            MSA.Expression/*!*/ scope, MSA.Expression/*!*/ target, MSA.Expression/*!*/ arg0, MSA.Expression/*!*/ arg1) {
+            Debug.Assert(signature.HasScope);
+
+            return Ast.Dynamic(RubyCallAction.Make(context, name, signature), typeof(object), AstUtils.Convert(scope, typeof(RubyScope)), target, arg0, arg1);
+        }
+
+        internal static MSA.DynamicExpression/*!*/ InvokeMethod(RubyContext/*!*/ context, string/*!*/ name, RubyCallSignature signature,
+            MSA.Expression/*!*/ scope, MSA.Expression/*!*/ target, MSA.Expression/*!*/[]/*!*/ args) {
+            Debug.Assert(signature.HasScope);
+            Debug.Assert(args.Length >= 2);
+
+            args[0] = Ast.Convert(args[0], typeof(RubyScope));
+            return Ast.Dynamic(RubyCallAction.Make(context, name, signature), typeof(object), args);
         }
 
         private MSA.Expression/*!*/[]/*!*/ GetExpressions() {

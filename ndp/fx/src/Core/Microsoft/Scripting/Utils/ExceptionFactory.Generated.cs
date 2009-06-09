@@ -1,4 +1,4 @@
-﻿/* ****************************************************************************
+/* ****************************************************************************
  *
  * Copyright (c) Microsoft Corporation. 
  *
@@ -275,11 +275,11 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// A string like  "Argument must be exception"
+        /// A string like  "Argument must not have a value type."
         /// </summary>
-        internal static string ArgumentMustBeException {
+        internal static string ArgumentMustNotHaveValueType {
             get {
-                return "Argument must be exception";
+                return "Argument must not have a value type.";
             }
         }
 
@@ -316,15 +316,6 @@ namespace System.Linq.Expressions {
         internal static string DefaultBodyMustBeSupplied {
             get {
                 return "Default body must be supplied if case bodies are not System.Void.";
-            }
-        }
-
-        /// <summary>
-        /// A string like  "MethodBuilder does not have a valid ModuleBuilder"
-        /// </summary>
-        internal static string MethodBuilderDoesNotHaveModuleBuilder {
-            get {
-                return "MethodBuilder does not have a valid ModuleBuilder";
             }
         }
 
@@ -433,10 +424,10 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// A string like  "Extension node must override method {0}."
+        /// A string like  "Extension node must override the property {0}."
         /// </summary>
-        internal static string ExtensionNodeMustOverrideMethod(object p0) {
-            return FormatString("Extension node must override method {0}.", p0);
+        internal static string ExtensionNodeMustOverrideProperty(object p0) {
+            return FormatString("Extension node must override the property {0}.", p0);
         }
 
         /// <summary>
@@ -461,10 +452,24 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// A string like  "Cannot convert the result type '{0}' of the dynamic binding to the result type '{1}' expected by the call site."
+        /// A string like  "The result type '{0}' of the dynamic binding produced by binder '{1}' is not compatible with the result type '{2}' expected by the call site."
         /// </summary>
-        internal static string CannotConvertDynamicResult(object p0, object p1) {
-            return FormatString("Cannot convert the result type '{0}' of the dynamic binding to the result type '{1}' expected by the call site.", p0, p1);
+        internal static string DynamicBinderResultNotAssignable(object p0, object p1, object p2) {
+            return FormatString("The result type '{0}' of the dynamic binding produced by binder '{1}' is not compatible with the result type '{2}' expected by the call site.", p0, p1, p2);
+        }
+
+        /// <summary>
+        /// A string like  "The result type '{0}' of the dynamic binding produced by the object with type '{1}' for the binder '{2}' is not compatible with the result type '{3}' expected by the call site."
+        /// </summary>
+        internal static string DynamicObjectResultNotAssignable(object p0, object p1, object p2, object p3) {
+            return FormatString("The result type '{0}' of the dynamic binding produced by the object with type '{1}' for the binder '{2}' is not compatible with the result type '{3}' expected by the call site.", p0, p1, p2, p3);
+        }
+
+        /// <summary>
+        /// A string like  "The result type '{0}' of the binder '{1}' is not compatible with the result type '{2}' expected by the call site."
+        /// </summary>
+        internal static string BinderNotCompatibleWithCallSite(object p0, object p1, object p2) {
+            return FormatString("The result type '{0}' of the binder '{1}' is not compatible with the result type '{2}' expected by the call site.", p0, p1, p2);
         }
 
         /// <summary>
@@ -479,6 +484,13 @@ namespace System.Linq.Expressions {
         /// </summary>
         internal static string BinaryOperatorNotDefined(object p0, object p1, object p2) {
             return FormatString("The binary operator {0} is not defined for the types '{1}' and '{2}'.", p0, p1, p2);
+        }
+
+        /// <summary>
+        /// A string like  "Reference equality is not defined for the types '{0}' and '{1}'."
+        /// </summary>
+        internal static string ReferenceEqualityNotDefined(object p0, object p1) {
+            return FormatString("Reference equality is not defined for the types '{0}' and '{1}'.", p0, p1);
         }
 
         /// <summary>
@@ -882,10 +894,10 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// A string like  "Method '{0}' is not defined for type '{1}'"
+        /// A string like  "Method '{0}' declared on type '{1}' cannot be called with instance of type '{2}'"
         /// </summary>
-        internal static string MethodNotDefinedForType(object p0, object p1) {
-            return FormatString("Method '{0}' is not defined for type '{1}'", p0, p1);
+        internal static string InstanceAndMethodTypeMismatch(object p0, object p1, object p2) {
+            return FormatString("Method '{0}' declared on type '{1}' cannot be called with instance of type '{2}'", p0, p1, p2);
         }
 
         /// <summary>
@@ -1071,6 +1083,13 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
+        /// A string like  "No generic method '{0}' on type '{1}' is compatible with the supplied type arguments and arguments. No type arguments should be provided if the method is non-generic. "
+        /// </summary>
+        internal static string GenericMethodWithArgsDoesNotExistOnType(object p0, object p1) {
+            return FormatString("No generic method '{0}' on type '{1}' is compatible with the supplied type arguments and arguments. No type arguments should be provided if the method is non-generic. ", p0, p1);
+        }
+
+        /// <summary>
         /// A string like  "More than one method '{0}' on type '{1}' is compatible with the supplied arguments."
         /// </summary>
         internal static string MethodWithMoreThanOneMatch(object p0, object p1) {
@@ -1112,12 +1131,10 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// A string like  "More than one matching member is found in the ExpandoObject."
+        /// A string like  "More than one key matching '{0}' was found in the ExpandoObject."
         /// </summary>
-        internal static string AmbiguousMatchInExpandoObject {
-            get {
-                return "More than one matching member is found in the ExpandoObject.";
-            }
+        internal static string AmbiguousMatchInExpandoObject(object p0) {
+            return FormatString("More than one key matching '{0}' was found in the ExpandoObject.", p0);
         }
 
         /// <summary>
@@ -1368,10 +1385,24 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// A string like  "When called from '{0}', rewriting a node of type '{1}' should return a non-null value of the same type. Alternatively, override '{2}' and change it to not visit children of this type."
+        /// A string like  "When called from '{0}', rewriting a node of type '{1}' must return a non-null value of the same type. Alternatively, override '{2}' and change it to not visit children of this type."
         /// </summary>
-        internal static string MustRewriteToSameType(object p0, object p1, object p2) {
-            return FormatString("When called from '{0}', rewriting a node of type '{1}' should return a non-null value of the same type. Alternatively, override '{2}' and change it to not visit children of this type.", p0, p1, p2);
+        internal static string MustRewriteToSameNode(object p0, object p1, object p2) {
+            return FormatString("When called from '{0}', rewriting a node of type '{1}' must return a non-null value of the same type. Alternatively, override '{2}' and change it to not visit children of this type.", p0, p1, p2);
+        }
+
+        /// <summary>
+        /// A string like  "Rewriting child expression from type '{0}' to type '{1}' is not allowed, because it would change the meaning of the operation. If this is intentional, override '{2}' and change it to allow this rewrite."
+        /// </summary>
+        internal static string MustRewriteChildToSameType(object p0, object p1, object p2) {
+            return FormatString("Rewriting child expression from type '{0}' to type '{1}' is not allowed, because it would change the meaning of the operation. If this is intentional, override '{2}' and change it to allow this rewrite.", p0, p1, p2);
+        }
+
+        /// <summary>
+        /// A string like  "Rewritten expression calls operator method '{0}', but the original node had no operator method. If this is is intentional, override '{1}' and change it to allow this rewrite."
+        /// </summary>
+        internal static string MustRewriteWithoutMethod(object p0, object p1) {
+            return FormatString("Rewritten expression calls operator method '{0}', but the original node had no operator method. If this is is intentional, override '{1}' and change it to allow this rewrite.", p0, p1);
         }
 
         /// <summary>
@@ -1421,12 +1452,33 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// A string like  "The operation cannot be performed in heterogeneous app domain."
+        /// A string like  "Dynamic operations can only be performed in homogenous AppDomain."
         /// </summary>
         internal static string HomogenousAppDomainRequired {
             get {
-                return "The operation cannot be performed in heterogeneous app domain.";
+                return "Dynamic operations can only be performed in homogenous AppDomain.";
             }
+        }
+
+        /// <summary>
+        /// A string like  "Test value of type '{0}' cannot be used for the comparison method parameter of type '{1}'"
+        /// </summary>
+        internal static string TestValueTypeDoesNotMatchComparisonMethodParameter(object p0, object p1) {
+            return FormatString("Test value of type '{0}' cannot be used for the comparison method parameter of type '{1}'", p0, p1);
+        }
+
+        /// <summary>
+        /// A string like  "Switch value of type '{0}' cannot be used for the comparison method parameter of type '{1}'"
+        /// </summary>
+        internal static string SwitchValueTypeDoesNotMatchComparisonMethodParameter(object p0, object p1) {
+            return FormatString("Switch value of type '{0}' cannot be used for the comparison method parameter of type '{1}'", p0, p1);
+        }
+
+        /// <summary>
+        /// A string like  "An IDynamicMetaObjectProvider {0} created an invalid DynamicMetaObject instance."
+        /// </summary>
+        internal static string InvalidMetaObjectCreated(object p0) {
+            return FormatString("An IDynamicMetaObjectProvider {0} created an invalid DynamicMetaObject instance.", p0);
         }
 
     }
@@ -1478,10 +1530,10 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// InvalidOperationException with message like "Extension node must override method {0}."
+        /// InvalidOperationException with message like "Extension node must override the property {0}."
         /// </summary>
-        internal static Exception ExtensionNodeMustOverrideMethod(object p0) {
-            return new InvalidOperationException(Strings.ExtensionNodeMustOverrideMethod(p0));
+        internal static Exception ExtensionNodeMustOverrideProperty(object p0) {
+            return new InvalidOperationException(Strings.ExtensionNodeMustOverrideProperty(p0));
         }
 
         /// <summary>
@@ -1506,10 +1558,24 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// InvalidCastException with message like "Cannot convert the result type '{0}' of the dynamic binding to the result type '{1}' expected by the call site."
+        /// InvalidCastException with message like "The result type '{0}' of the dynamic binding produced by binder '{1}' is not compatible with the result type '{2}' expected by the call site."
         /// </summary>
-        internal static Exception CannotConvertDynamicResult(object p0, object p1) {
-            return new InvalidCastException(Strings.CannotConvertDynamicResult(p0, p1));
+        internal static Exception DynamicBinderResultNotAssignable(object p0, object p1, object p2) {
+            return new InvalidCastException(Strings.DynamicBinderResultNotAssignable(p0, p1, p2));
+        }
+
+        /// <summary>
+        /// InvalidCastException with message like "The result type '{0}' of the dynamic binding produced by the object with type '{1}' for the binder '{2}' is not compatible with the result type '{3}' expected by the call site."
+        /// </summary>
+        internal static Exception DynamicObjectResultNotAssignable(object p0, object p1, object p2, object p3) {
+            return new InvalidCastException(Strings.DynamicObjectResultNotAssignable(p0, p1, p2, p3));
+        }
+
+        /// <summary>
+        /// InvalidOperationException with message like "The result type '{0}' of the binder '{1}' is not compatible with the result type '{2}' expected by the call site."
+        /// </summary>
+        internal static Exception BinderNotCompatibleWithCallSite(object p0, object p1, object p2) {
+            return new InvalidOperationException(Strings.BinderNotCompatibleWithCallSite(p0, p1, p2));
         }
 
         /// <summary>
@@ -1524,6 +1590,13 @@ namespace System.Linq.Expressions {
         /// </summary>
         internal static Exception BinaryOperatorNotDefined(object p0, object p1, object p2) {
             return new InvalidOperationException(Strings.BinaryOperatorNotDefined(p0, p1, p2));
+        }
+
+        /// <summary>
+        /// InvalidOperationException with message like "Reference equality is not defined for the types '{0}' and '{1}'."
+        /// </summary>
+        internal static Exception ReferenceEqualityNotDefined(object p0, object p1) {
+            return new InvalidOperationException(Strings.ReferenceEqualityNotDefined(p0, p1));
         }
 
         /// <summary>
@@ -1891,10 +1964,10 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// ArgumentException with message like "Method '{0}' is not defined for type '{1}'"
+        /// ArgumentException with message like "Method '{0}' declared on type '{1}' cannot be called with instance of type '{2}'"
         /// </summary>
-        internal static Exception MethodNotDefinedForType(object p0, object p1) {
-            return new ArgumentException(Strings.MethodNotDefinedForType(p0, p1));
+        internal static Exception InstanceAndMethodTypeMismatch(object p0, object p1, object p2) {
+            return new ArgumentException(Strings.InstanceAndMethodTypeMismatch(p0, p1, p2));
         }
 
         /// <summary>
@@ -2066,6 +2139,13 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
+        /// InvalidOperationException with message like "No generic method '{0}' on type '{1}' is compatible with the supplied type arguments and arguments. No type arguments should be provided if the method is non-generic. "
+        /// </summary>
+        internal static Exception GenericMethodWithArgsDoesNotExistOnType(object p0, object p1) {
+            return new InvalidOperationException(Strings.GenericMethodWithArgsDoesNotExistOnType(p0, p1));
+        }
+
+        /// <summary>
         /// InvalidOperationException with message like "More than one method '{0}' on type '{1}' is compatible with the supplied arguments."
         /// </summary>
         internal static Exception MethodWithMoreThanOneMatch(object p0, object p1) {
@@ -2101,10 +2181,10 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// System.Reflection.AmbiguousMatchException with message like "More than one matching member is found in the ExpandoObject."
+        /// System.Reflection.AmbiguousMatchException with message like "More than one key matching '{0}' was found in the ExpandoObject."
         /// </summary>
-        internal static Exception AmbiguousMatchInExpandoObject() {
-            return new System.Reflection.AmbiguousMatchException(Strings.AmbiguousMatchInExpandoObject);
+        internal static Exception AmbiguousMatchInExpandoObject(object p0) {
+            return new System.Reflection.AmbiguousMatchException(Strings.AmbiguousMatchInExpandoObject(p0));
         }
 
         /// <summary>
@@ -2325,10 +2405,24 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// InvalidOperationException with message like "When called from '{0}', rewriting a node of type '{1}' should return a non-null value of the same type. Alternatively, override '{2}' and change it to not visit children of this type."
+        /// InvalidOperationException with message like "When called from '{0}', rewriting a node of type '{1}' must return a non-null value of the same type. Alternatively, override '{2}' and change it to not visit children of this type."
         /// </summary>
-        internal static Exception MustRewriteToSameType(object p0, object p1, object p2) {
-            return new InvalidOperationException(Strings.MustRewriteToSameType(p0, p1, p2));
+        internal static Exception MustRewriteToSameNode(object p0, object p1, object p2) {
+            return new InvalidOperationException(Strings.MustRewriteToSameNode(p0, p1, p2));
+        }
+
+        /// <summary>
+        /// InvalidOperationException with message like "Rewriting child expression from type '{0}' to type '{1}' is not allowed, because it would change the meaning of the operation. If this is intentional, override '{2}' and change it to allow this rewrite."
+        /// </summary>
+        internal static Exception MustRewriteChildToSameType(object p0, object p1, object p2) {
+            return new InvalidOperationException(Strings.MustRewriteChildToSameType(p0, p1, p2));
+        }
+
+        /// <summary>
+        /// InvalidOperationException with message like "Rewritten expression calls operator method '{0}', but the original node had no operator method. If this is is intentional, override '{1}' and change it to allow this rewrite."
+        /// </summary>
+        internal static Exception MustRewriteWithoutMethod(object p0, object p1) {
+            return new InvalidOperationException(Strings.MustRewriteWithoutMethod(p0, p1));
         }
 
         /// <summary>
@@ -2374,10 +2468,31 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// InvalidOperationException with message like "The operation cannot be performed in heterogeneous app domain."
+        /// InvalidOperationException with message like "Dynamic operations can only be performed in homogenous AppDomain."
         /// </summary>
         internal static Exception HomogenousAppDomainRequired() {
             return new InvalidOperationException(Strings.HomogenousAppDomainRequired);
+        }
+
+        /// <summary>
+        /// ArgumentException with message like "Test value of type '{0}' cannot be used for the comparison method parameter of type '{1}'"
+        /// </summary>
+        internal static Exception TestValueTypeDoesNotMatchComparisonMethodParameter(object p0, object p1) {
+            return new ArgumentException(Strings.TestValueTypeDoesNotMatchComparisonMethodParameter(p0, p1));
+        }
+
+        /// <summary>
+        /// ArgumentException with message like "Switch value of type '{0}' cannot be used for the comparison method parameter of type '{1}'"
+        /// </summary>
+        internal static Exception SwitchValueTypeDoesNotMatchComparisonMethodParameter(object p0, object p1) {
+            return new ArgumentException(Strings.SwitchValueTypeDoesNotMatchComparisonMethodParameter(p0, p1));
+        }
+
+        /// <summary>
+        /// InvalidOperationException with message like "An IDynamicMetaObjectProvider {0} created an invalid DynamicMetaObject instance."
+        /// </summary>
+        internal static Exception InvalidMetaObjectCreated(object p0) {
+            return new InvalidOperationException(Strings.InvalidMetaObjectCreated(p0));
         }
 
     }

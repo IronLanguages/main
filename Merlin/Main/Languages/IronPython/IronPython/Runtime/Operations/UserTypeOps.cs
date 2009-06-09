@@ -14,16 +14,18 @@
  * ***************************************************************************/
 
 using System;
+using System.Diagnostics;
+using System.Dynamic;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
-using System.Dynamic;
 using System.Threading;
-using IronPython.Runtime.Binding;
-using IronPython.Runtime.Types;
+
 using Microsoft.Scripting;
-using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
+
+using IronPython.Runtime.Types;
+using IronPython.Runtime.Binding;
 
 namespace IronPython.Runtime.Operations {
     
@@ -62,17 +64,50 @@ namespace IronPython.Runtime.Operations {
             desc.TrySetValue(DefaultContext.Default, instance, DynamicHelpers.GetPythonType(instance), newValue);
         }
 
-        public static void SetFinalizerWorker(ref WeakRefTracker tracker, WeakRefTracker newVal) {
-            if (Interlocked.CompareExchange(ref tracker, newVal, null) != null) {
-                GC.SuppressFinalize(newVal);
+        public static bool SetWeakRefHelper(IPythonObject obj, WeakRefTracker value) {
+            if (!obj.PythonType.IsWeakReferencable) {
+                return false;
+            }
+
+            object[] slots = obj.GetSlotsCreate();
+            slots[slots.Length - 1] = value;
+            return true;            
+        }
+
+        public static WeakRefTracker GetWeakRefHelper(IPythonObject obj) {
+            object[] slots = obj.GetSlots();
+            if (slots == null) {
+                return null;
+            }
+
+            return (WeakRefTracker)slots[slots.Length - 1];
+        }
+
+        public static void SetFinalizerHelper(IPythonObject obj, WeakRefTracker value) {
+            object[] slots = obj.GetSlotsCreate();
+            if (Interlocked.CompareExchange(ref slots[slots.Length - 1], value, null) != null) {
+                GC.SuppressFinalize(value);
             }
         }
 
-        public static void AddRemoveEventHelper(object method, object instance, PythonType dt, object eventValue, SymbolId name) {
+        public static object[] GetSlotsCreate(IPythonObject obj, ref object[] slots) {
+            if (slots != null) {
+                return slots;
+            }
+
+            Interlocked.CompareExchange(
+                ref slots,
+                new object[obj.PythonType.SlotCount + 1],   // weakref is stored at the end
+                null);
+
+            return slots;
+        }
+
+        public static void AddRemoveEventHelper(object method, IPythonObject instance, object eventValue, SymbolId name) {
             object callable = method;
 
             // TODO: dt gives us a PythonContext which we should use
-
+            PythonType dt = instance.PythonType;
             PythonTypeSlot dts = method as PythonTypeSlot;
             if (dts != null) {
                 if (!dts.TryGetValue(DefaultContext.Default, instance, dt, out callable))
@@ -128,11 +163,19 @@ namespace IronPython.Runtime.Operations {
             return dict[name] = value;
         }
 
-        public static void RemoveDictionaryValue(IPythonObject self, SymbolId name) {
+        public static object FastSetDictionaryValue(ref IAttributesCollection dict, SymbolId name, object value) {
+            if (dict == null) {
+                Interlocked.CompareExchange(ref dict, PythonDictionary.MakeSymbolDictionary(), null);
+            }
+
+            return dict[name] = value;
+        }
+
+        public static object RemoveDictionaryValue(IPythonObject self, SymbolId name) {
             IAttributesCollection dict = self.Dict;
             if (dict != null) {
                 if (dict.Remove(name)) {
-                    return;
+                    return null;
                 }
             }
 
@@ -141,7 +184,7 @@ namespace IronPython.Runtime.Operations {
 
         internal static IAttributesCollection GetDictionary(IPythonObject self) {
             IAttributesCollection dict = self.Dict;
-            if (dict == null) {
+            if (dict == null && self.PythonType.HasDictionary) {
                 dict = self.SetDict(PythonDictionary.MakeSymbolDictionary());
             }
             return dict;
@@ -188,7 +231,8 @@ namespace IronPython.Runtime.Operations {
             return false;
         }
 
-        public static bool TryGetNonInheritedValueHelper(PythonType dt, object instance, SymbolId name, out object callTarget) {
+        public static bool TryGetNonInheritedValueHelper(IPythonObject instance, SymbolId name, out object callTarget) {
+            PythonType dt = instance.PythonType;
             PythonTypeSlot dts;
             // search MRO for other user-types in the chain that are overriding the method
             foreach (PythonType type in dt.ResolutionOrder) {
@@ -219,18 +263,18 @@ namespace IronPython.Runtime.Operations {
             }
 
             try {
-                if (getAttributeSlot.TryGetBoundValue(context, self, ((IPythonObject)self).PythonType, out value)) {
+                if (getAttributeSlot.TryGetValue(context, self, ((IPythonObject)self).PythonType, out value)) {
                     return callSite.Data.Target(callSite.Data, context, value, name);
                 } 
             } catch (MissingMemberException) {
-                if (getAttrSlot != null && getAttrSlot.TryGetBoundValue(context, self, ((IPythonObject)self).PythonType, out value)) {
+                if (getAttrSlot != null && getAttrSlot.TryGetValue(context, self, ((IPythonObject)self).PythonType, out value)) {
                     return callSite.Data.Target(callSite.Data, context, value, name);
                 }
 
                 throw;
             }
 
-            if (getAttrSlot != null && getAttrSlot.TryGetBoundValue(context, self, ((IPythonObject)self).PythonType, out value)) {
+            if (getAttrSlot != null && getAttrSlot.TryGetValue(context, self, ((IPythonObject)self).PythonType, out value)) {
                 return callSite.Data.Target(callSite.Data, context, value, name);
             }
 
@@ -244,12 +288,12 @@ namespace IronPython.Runtime.Operations {
             }
 
             try {
-                if (getAttributeSlot.TryGetBoundValue(context, self, ((IPythonObject)self).PythonType, out value)) {
+                if (getAttributeSlot.TryGetValue(context, self, ((IPythonObject)self).PythonType, out value)) {
                     return callSite.Data.Target(callSite.Data, context, value, name);
                 }
             } catch (MissingMemberException) {
                 try {
-                    if (getAttrSlot != null && getAttrSlot.TryGetBoundValue(context, self, ((IPythonObject)self).PythonType, out value)) {
+                    if (getAttrSlot != null && getAttrSlot.TryGetValue(context, self, ((IPythonObject)self).PythonType, out value)) {
                         return callSite.Data.Target(callSite.Data, context, value, name);
                     }
 
@@ -260,7 +304,7 @@ namespace IronPython.Runtime.Operations {
             }
 
             try {
-                if (getAttrSlot != null && getAttrSlot.TryGetBoundValue(context, self, ((IPythonObject)self).PythonType, out value)) {
+                if (getAttrSlot != null && getAttrSlot.TryGetValue(context, self, ((IPythonObject)self).PythonType, out value)) {
                     return callSite.Data.Target(callSite.Data, context, value, name);
                 }
             } catch (MissingMemberException) {
@@ -271,7 +315,7 @@ namespace IronPython.Runtime.Operations {
 
         private static CallSite<Func<CallSite, CodeContext, object, string, object>> MakeGetAttrSite(CodeContext context) {
             return CallSite<Func<CallSite, CodeContext, object, string, object>>.Create(
-                PythonContext.GetContext(context).DefaultBinderState.InvokeOne
+                PythonContext.GetContext(context).InvokeOne
             );
         }
 
@@ -306,5 +350,83 @@ namespace IronPython.Runtime.Operations {
         }
 
         #endregion
+
+        internal static Binding.FastBindResult<T> MakeGetBinding<T>(CodeContext codeContext, CallSite<T> site, IPythonObject self, Binding.PythonGetMemberBinder getBinder) where T : class {
+            Type finalType = PythonTypeOps.GetFinalSystemType(self.PythonType.UnderlyingSystemType);
+            if (typeof(IDynamicMetaObjectProvider).IsAssignableFrom(finalType) &&
+                !(self is IFastGettable)) {
+                // very tricky, user is inheriting from a class which implements IDO, we
+                // don't optimize this yet.
+                return new Binding.FastBindResult<T>();
+            }
+            return (Binding.FastBindResult<T>)(object)new Binding.MetaUserObject.FastGetBinderHelper(
+                codeContext,
+                (CallSite<Func<CallSite, object, CodeContext, object>>)(object)site, 
+                self, 
+                getBinder).GetBinding(codeContext, getBinder.Name);
+        }
+
+        internal static FastBindResult<T> MakeSetBinding<T>(CodeContext codeContext, CallSite<T> site, IPythonObject self, object value, Binding.PythonSetMemberBinder setBinder) where T : class {
+            if (typeof(IDynamicMetaObjectProvider).IsAssignableFrom(self.GetType().BaseType)) {
+                // very tricky, user is inheriting from a class which implements IDO, we
+                // don't optimize this yet.
+                return new FastBindResult<T>();
+            }
+
+            // optimized versions for possible literals that can show up in code.
+            Type setType = typeof(T);
+            if (setType == typeof(Func<CallSite, object, object, object>)) {
+                return (FastBindResult<T>)(object)new Binding.MetaUserObject.FastSetBinderHelper<object>(
+                    codeContext,
+                    (CallSite<Func<CallSite, object, object, object>>)(object)site,
+                    self,
+                    value,
+                    setBinder).MakeSet();
+            } else if (setType == typeof(Func<CallSite, object, string, object>)) {
+                return (FastBindResult<T>)(object)new Binding.MetaUserObject.FastSetBinderHelper<string>(
+                    codeContext,
+                    (CallSite<Func<CallSite, object, string, object>>)(object)site,
+                    self,
+                    value,
+                    setBinder).MakeSet();
+            } else if (setType == typeof(Func<CallSite, object, int, object>)) {
+                return (FastBindResult<T>)(object)new Binding.MetaUserObject.FastSetBinderHelper<int>(
+                    codeContext,
+                    (CallSite<Func<CallSite, object, int, object>>)(object)site,
+                    self,
+                    value,
+                    setBinder).MakeSet();
+            } else if (setType == typeof(Func<CallSite, object, double, object>)) {
+                return (FastBindResult<T>)(object)new Binding.MetaUserObject.FastSetBinderHelper<double>(
+                    codeContext,
+                    (CallSite<Func<CallSite, object, double, object>>)(object)site,
+                    self,
+                    value,
+                    setBinder).MakeSet();
+            } else if (setType == typeof(Func<CallSite, object, List, object>)) {
+                return (FastBindResult<T>)(object)new Binding.MetaUserObject.FastSetBinderHelper<List>(
+                    codeContext,
+                    (CallSite<Func<CallSite, object, List, object>>)(object)site,
+                    self,
+                    value,
+                    setBinder).MakeSet();
+            } else if (setType == typeof(Func<CallSite, object, PythonTuple, object>)) {
+                return (FastBindResult<T>)(object)new Binding.MetaUserObject.FastSetBinderHelper<PythonTuple>(
+                    codeContext,
+                    (CallSite<Func<CallSite, object, PythonTuple, object>>)(object)site,
+                    self,
+                    value,
+                    setBinder).MakeSet();
+            } else if (setType == typeof(Func<CallSite, object, PythonDictionary, object>)) {
+                return (FastBindResult<T>)(object)new Binding.MetaUserObject.FastSetBinderHelper<PythonDictionary>(
+                    codeContext,
+                    (CallSite<Func<CallSite, object, PythonDictionary, object>>)(object)site,
+                    self,
+                    value,
+                    setBinder).MakeSet();
+            }
+
+            return new FastBindResult<T>();
+        }
     }
 }

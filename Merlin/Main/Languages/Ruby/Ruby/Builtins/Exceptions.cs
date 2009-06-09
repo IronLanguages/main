@@ -16,6 +16,7 @@
 using System;
 using Microsoft.Scripting.Utils;
 using IronRuby.Runtime;
+using System.Runtime.InteropServices;
 
 namespace IronRuby.Builtins {
 
@@ -136,6 +137,30 @@ namespace IronRuby.Builtins {
     }
 
     [Serializable]
+    public class EncodingError : SystemException {
+        public EncodingError() : this(null, null) { }
+        public EncodingError(string message) : this(message, null) { }
+        public EncodingError(string message, Exception inner) : base(message, inner) { }
+
+#if !SILVERLIGHT
+        protected EncodingError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
+            : base(info, context) { }
+#endif
+    }
+
+    [Serializable]
+    public class EncodingCompatibilityError : EncodingError {
+        public EncodingCompatibilityError() : this(null, null) { }
+        public EncodingCompatibilityError(string message) : this(message, null) { }
+        public EncodingCompatibilityError(string message, Exception inner) : base(message, inner) { }
+
+#if !SILVERLIGHT
+        protected EncodingCompatibilityError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
+            : base(info, context) { }
+#endif
+    }
+
+    [Serializable]
     public class SyntaxError : ScriptError {
         private readonly string _file;
         private readonly string _lineSourceCode;
@@ -182,6 +207,34 @@ namespace IronRuby.Builtins {
 #endif
     }
 
-    
+    [Serializable]
+    public class ExistError : ExternalException {
+        private const string/*!*/ M = "File exists";
+
+        public ExistError() : this(null, null) { }
+        public ExistError(string message) : this(message, null) { }
+        public ExistError(string message, Exception inner) : base(RubyErrno.MakeMessage(message, M), inner) { }
+        public ExistError(MutableString message) : base(RubyErrno.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
+
+#if !SILVERLIGHT
+        protected ExistError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
+            : base(info, context) { }
+#endif
+    }
+
+    [Serializable]
+    public class InvalidError : ExternalException {
+        private const string/*!*/ M = "Invalid argument";
+
+        public InvalidError() : this(null, null) { }
+        public InvalidError(string message) : this(message, null) { }
+        public InvalidError(string message, Exception inner) : base(RubyErrno.MakeMessage(message, M), inner) { }
+        public InvalidError(MutableString message) : base(RubyErrno.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
+
+#if !SILVERLIGHT
+        protected InvalidError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
+            : base(info, context) { }
+#endif
+    }
 }
 

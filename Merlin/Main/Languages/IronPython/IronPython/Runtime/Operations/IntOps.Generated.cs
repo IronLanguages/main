@@ -18,6 +18,7 @@ using System.Runtime.CompilerServices;
 using IronPython.Runtime.Types;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 namespace IronPython.Runtime.Operations {
 
@@ -90,6 +91,9 @@ namespace IronPython.Runtime.Operations {
             return (x != 0);
         }
 
+        public static SByte __trunc__(SByte x) {
+            return x;
+        }
         public static int __hash__(SByte x) {
             return unchecked((int)x);
         }
@@ -136,7 +140,7 @@ namespace IronPython.Runtime.Operations {
             if (y == -1 && x == SByte.MinValue) {
                 return -(Int16)SByte.MinValue;
             } else {
-                return (SByte)Int32Ops.FloorDivideImpl((Int32)x, (Int32)y);
+                return (SByte)MathUtils.FloorDivideUnchecked(x, y);
             }
         }
         [SpecialName]
@@ -233,6 +237,27 @@ namespace IronPython.Runtime.Operations {
         public static Double ConvertToDouble(SByte x) {
             return (Double)x;
         }
+
+        // Public API - Numerics
+        [PropertyMethod, SpecialName]
+        public static SByte Getreal(SByte x) {
+            return x;
+        }
+        [PropertyMethod, SpecialName]
+        public static SByte Getimag(SByte x) {
+            return (SByte)0;
+        }
+        public static SByte conjugate(SByte x) {
+            return x;
+        }
+        [PropertyMethod, SpecialName]
+        public static SByte Getnumerator(SByte x) {
+            return x;
+        }
+        [PropertyMethod, SpecialName]
+        public static SByte Getdenominator(SByte x) {
+            return (SByte)1;
+        }
     }
 
     public static partial class ByteOps {
@@ -293,6 +318,9 @@ namespace IronPython.Runtime.Operations {
             return (x != 0);
         }
 
+        public static Byte __trunc__(Byte x) {
+            return x;
+        }
         public static int __hash__(Byte x) {
             return unchecked((int)x);
         }
@@ -519,6 +547,27 @@ namespace IronPython.Runtime.Operations {
         public static Double ConvertToDouble(Byte x) {
             return (Double)x;
         }
+
+        // Public API - Numerics
+        [PropertyMethod, SpecialName]
+        public static Byte Getreal(Byte x) {
+            return x;
+        }
+        [PropertyMethod, SpecialName]
+        public static Byte Getimag(Byte x) {
+            return (Byte)0;
+        }
+        public static Byte conjugate(Byte x) {
+            return x;
+        }
+        [PropertyMethod, SpecialName]
+        public static Byte Getnumerator(Byte x) {
+            return x;
+        }
+        [PropertyMethod, SpecialName]
+        public static Byte Getdenominator(Byte x) {
+            return (Byte)1;
+        }
     }
 
     public static partial class Int16Ops {
@@ -585,6 +634,9 @@ namespace IronPython.Runtime.Operations {
             return (x != 0);
         }
 
+        public static Int16 __trunc__(Int16 x) {
+            return x;
+        }
         public static int __hash__(Int16 x) {
             return unchecked((int)x);
         }
@@ -631,7 +683,7 @@ namespace IronPython.Runtime.Operations {
             if (y == -1 && x == Int16.MinValue) {
                 return -(Int32)Int16.MinValue;
             } else {
-                return (Int16)Int32Ops.FloorDivideImpl((Int32)x, (Int32)y);
+                return (Int16)MathUtils.FloorDivideUnchecked(x, y);
             }
         }
         [SpecialName]
@@ -731,6 +783,27 @@ namespace IronPython.Runtime.Operations {
         public static Double ConvertToDouble(Int16 x) {
             return (Double)x;
         }
+
+        // Public API - Numerics
+        [PropertyMethod, SpecialName]
+        public static Int16 Getreal(Int16 x) {
+            return x;
+        }
+        [PropertyMethod, SpecialName]
+        public static Int16 Getimag(Int16 x) {
+            return (Int16)0;
+        }
+        public static Int16 conjugate(Int16 x) {
+            return x;
+        }
+        [PropertyMethod, SpecialName]
+        public static Int16 Getnumerator(Int16 x) {
+            return x;
+        }
+        [PropertyMethod, SpecialName]
+        public static Int16 Getdenominator(Int16 x) {
+            return (Int16)1;
+        }
     }
 
     public static partial class UInt16Ops {
@@ -791,6 +864,9 @@ namespace IronPython.Runtime.Operations {
             return (x != 0);
         }
 
+        public static UInt16 __trunc__(UInt16 x) {
+            return x;
+        }
         public static int __hash__(UInt16 x) {
             return unchecked((int)x);
         }
@@ -1023,6 +1099,27 @@ namespace IronPython.Runtime.Operations {
         public static Double ConvertToDouble(UInt16 x) {
             return (Double)x;
         }
+
+        // Public API - Numerics
+        [PropertyMethod, SpecialName]
+        public static UInt16 Getreal(UInt16 x) {
+            return x;
+        }
+        [PropertyMethod, SpecialName]
+        public static UInt16 Getimag(UInt16 x) {
+            return (UInt16)0;
+        }
+        public static UInt16 conjugate(UInt16 x) {
+            return x;
+        }
+        [PropertyMethod, SpecialName]
+        public static UInt16 Getnumerator(UInt16 x) {
+            return x;
+        }
+        [PropertyMethod, SpecialName]
+        public static UInt16 Getdenominator(UInt16 x) {
+            return (UInt16)1;
+        }
     }
 
     public static partial class Int32Ops {
@@ -1053,6 +1150,9 @@ namespace IronPython.Runtime.Operations {
             return (x != 0);
         }
 
+        public static Int32 __trunc__(Int32 x) {
+            return x;
+        }
         public static int __hash__(Int32 x) {
             return unchecked((int)x);
         }
@@ -1178,6 +1278,27 @@ namespace IronPython.Runtime.Operations {
         public static Double ConvertToDouble(Int32 x) {
             return (Double)x;
         }
+
+        // Public API - Numerics
+        [PropertyMethod, SpecialName]
+        public static Int32 Getreal(Int32 x) {
+            return x;
+        }
+        [PropertyMethod, SpecialName]
+        public static Int32 Getimag(Int32 x) {
+            return (Int32)0;
+        }
+        public static Int32 conjugate(Int32 x) {
+            return x;
+        }
+        [PropertyMethod, SpecialName]
+        public static Int32 Getnumerator(Int32 x) {
+            return x;
+        }
+        [PropertyMethod, SpecialName]
+        public static Int32 Getdenominator(Int32 x) {
+            return (Int32)1;
+        }
     }
 
     public static partial class UInt32Ops {
@@ -1238,6 +1359,9 @@ namespace IronPython.Runtime.Operations {
             return (x != 0);
         }
 
+        public static UInt32 __trunc__(UInt32 x) {
+            return x;
+        }
         public static int __hash__(UInt32 x) {
             return unchecked((int)x);
         }
@@ -1468,6 +1592,27 @@ namespace IronPython.Runtime.Operations {
         public static Double ConvertToDouble(UInt32 x) {
             return (Double)x;
         }
+
+        // Public API - Numerics
+        [PropertyMethod, SpecialName]
+        public static UInt32 Getreal(UInt32 x) {
+            return x;
+        }
+        [PropertyMethod, SpecialName]
+        public static UInt32 Getimag(UInt32 x) {
+            return (UInt32)0;
+        }
+        public static UInt32 conjugate(UInt32 x) {
+            return x;
+        }
+        [PropertyMethod, SpecialName]
+        public static UInt32 Getnumerator(UInt32 x) {
+            return x;
+        }
+        [PropertyMethod, SpecialName]
+        public static UInt32 Getdenominator(UInt32 x) {
+            return (UInt32)1;
+        }
     }
 
     public static partial class Int64Ops {
@@ -1534,6 +1679,9 @@ namespace IronPython.Runtime.Operations {
             return (x != 0);
         }
 
+        public static Int64 __trunc__(Int64 x) {
+            return x;
+        }
         public static int __hash__(Int64 x) {
             Int64 tmp = x;
             if (tmp < 0) {
@@ -1586,7 +1734,7 @@ namespace IronPython.Runtime.Operations {
             if (y == -1 && x == Int64.MinValue) {
                 return -(BigInteger)Int64.MinValue;
             } else {
-                return (Int64)BigIntegerOps.FloorDivideImpl((BigInteger)x, (BigInteger)y);
+                return (Int64)MathUtils.FloorDivideUnchecked(x, y);
             }
         }
         [SpecialName]
@@ -1684,6 +1832,27 @@ namespace IronPython.Runtime.Operations {
         public static Double ConvertToDouble(Int64 x) {
             return (Double)x;
         }
+
+        // Public API - Numerics
+        [PropertyMethod, SpecialName]
+        public static Int64 Getreal(Int64 x) {
+            return x;
+        }
+        [PropertyMethod, SpecialName]
+        public static Int64 Getimag(Int64 x) {
+            return (Int64)0;
+        }
+        public static Int64 conjugate(Int64 x) {
+            return x;
+        }
+        [PropertyMethod, SpecialName]
+        public static Int64 Getnumerator(Int64 x) {
+            return x;
+        }
+        [PropertyMethod, SpecialName]
+        public static Int64 Getdenominator(Int64 x) {
+            return (Int64)1;
+        }
     }
 
     public static partial class UInt64Ops {
@@ -1744,6 +1913,9 @@ namespace IronPython.Runtime.Operations {
             return (x != 0);
         }
 
+        public static UInt64 __trunc__(UInt64 x) {
+            return x;
+        }
         public static int __hash__(UInt64 x) {
             int total = unchecked((int) (((uint)x) + (uint)(x >> 32)));
             if (x < 0) {
@@ -1982,45 +2154,30 @@ namespace IronPython.Runtime.Operations {
         public static Double ConvertToDouble(UInt64 x) {
             return (Double)x;
         }
+
+        // Public API - Numerics
+        [PropertyMethod, SpecialName]
+        public static UInt64 Getreal(UInt64 x) {
+            return x;
+        }
+        [PropertyMethod, SpecialName]
+        public static UInt64 Getimag(UInt64 x) {
+            return (UInt64)0;
+        }
+        public static UInt64 conjugate(UInt64 x) {
+            return x;
+        }
+        [PropertyMethod, SpecialName]
+        public static UInt64 Getnumerator(UInt64 x) {
+            return x;
+        }
+        [PropertyMethod, SpecialName]
+        public static UInt64 Getdenominator(UInt64 x) {
+            return (UInt64)1;
+        }
     }
 
     public static partial class SingleOps {
-        [StaticExtensionMethod]
-        public static object __new__(PythonType cls) {
-            return __new__(cls, default(Single));
-        }
-
-        [StaticExtensionMethod]
-        public static object __new__(PythonType cls, object value) {
-            if (cls != DynamicHelpers.GetPythonTypeFromType(typeof(Single))) {
-                throw PythonOps.TypeError("Single.__new__: first argument must be Single type.");
-            }
-            IConvertible valueConvertible;
-            if ((valueConvertible = value as IConvertible) != null) {
-                switch (valueConvertible.GetTypeCode()) {
-                    case TypeCode.Byte: return (Single)(Byte)value;
-                    case TypeCode.SByte: return (Single)(SByte)value;
-                    case TypeCode.Int16: return (Single)(Int16)value;
-                    case TypeCode.UInt16: return (Single)(UInt16)value;
-                    case TypeCode.Int32: return (Single)(Int32)value;
-                    case TypeCode.UInt32: return (Single)(UInt32)value;
-                    case TypeCode.Int64: return (Single)(Int64)value;
-                    case TypeCode.UInt64: return (Single)(UInt64)value;
-                    case TypeCode.Single: return (Single)(Single)value;
-                    case TypeCode.Double: return (Single)(Double)value;
-                }
-            }
-            if (value is String) {
-                return Single.Parse((String)value);
-            } else if (value is BigInteger) {
-                return (Single)(BigInteger)value;
-            } else if (value is Extensible<BigInteger>) {
-                return (Single)((Extensible<BigInteger>)value).Value;
-            } else if (value is Extensible<double>) {
-                return (Single)((Extensible<double>)value).Value;
-            }
-            throw PythonOps.ValueError("invalid value for Single.__new__");
-        }
         // Unary Operations
         [SpecialName]
         public static Single Plus(Single x) {
@@ -2038,6 +2195,13 @@ namespace IronPython.Runtime.Operations {
             return (x != 0);
         }
 
+        public static object __trunc__(Single x) {
+            if (x >= int.MaxValue || x <= int.MinValue) {
+                return (BigInteger)x;
+            } else {
+                return (int)x;
+            }
+        }
 
         // Binary Operations - Arithmetic
         [SpecialName]
@@ -2130,6 +2294,19 @@ namespace IronPython.Runtime.Operations {
         public static Double ConvertToDouble(Single x) {
             return (Double)x;
         }
+
+        // Public API - Numerics
+        [PropertyMethod, SpecialName]
+        public static Single Getreal(Single x) {
+            return x;
+        }
+        [PropertyMethod, SpecialName]
+        public static Single Getimag(Single x) {
+            return (Single)0;
+        }
+        public static Single conjugate(Single x) {
+            return x;
+        }
     }
 
     public static partial class DoubleOps {
@@ -2150,6 +2327,13 @@ namespace IronPython.Runtime.Operations {
             return (x != 0);
         }
 
+        public static object __trunc__(Double x) {
+            if (x >= int.MaxValue || x <= int.MinValue) {
+                return (BigInteger)x;
+            } else {
+                return (int)x;
+            }
+        }
 
         // Binary Operations - Arithmetic
         [SpecialName]
@@ -2241,6 +2425,19 @@ namespace IronPython.Runtime.Operations {
         [SpecialName, ImplicitConversionMethod]
         public static Single ConvertToSingle(Double x) {
             return (Single)x;
+        }
+
+        // Public API - Numerics
+        [PropertyMethod, SpecialName]
+        public static Double Getreal(Double x) {
+            return x;
+        }
+        [PropertyMethod, SpecialName]
+        public static Double Getimag(Double x) {
+            return (Double)0;
+        }
+        public static Double conjugate(Double x) {
+            return x;
         }
     }
 

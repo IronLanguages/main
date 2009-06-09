@@ -29,18 +29,12 @@ namespace IronRuby.Runtime.Calls {
             ((RubyClass)args.Target).BuildObjectConstruction(metaBuilder, args, name);
         }
 
-        public static void InstanceConstructorForGroup(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name) {
-            RubyClass cls = args.RubyContext.GetClass(((TypeGroup)args.Target).Type);
-
-            cls.BuildObjectConstruction(metaBuilder, args, name);
-        }
-
         public static void InstanceAllocator(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name) {
             ((RubyClass)args.Target).BuildObjectAllocation(metaBuilder, args, name);
         }
 
         public static void MethodCall(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name) {
-            ((RubyMethod)args.Target).SetRuleForCall(metaBuilder, args);
+            ((RubyMethod)args.Target).BuildInvoke(metaBuilder, args);
         }
     }
 }

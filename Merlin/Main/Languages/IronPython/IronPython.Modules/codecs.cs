@@ -280,10 +280,10 @@ namespace IronPython.Modules {
         #region Utf-16 Big Endian Functions
 
         public static PythonTuple utf_16_be_decode(object input) {
-            return utf_16_be_decode(input, "strict");
+            return utf_16_be_decode(input, "strict", false);
         }
 
-        public static PythonTuple utf_16_be_decode(object input, string errors) {
+        public static PythonTuple utf_16_be_decode(object input, string errors, [Optional]bool ignored) {
             return DoDecode(Encoding.BigEndianUnicode, input, errors);
         }
 
@@ -360,10 +360,10 @@ namespace IronPython.Modules {
         #region Utf-16 Le Functions
 
         public static PythonTuple utf_16_le_decode(object input) {
-            return utf_16_decode(input, "strict");
+            return utf_16_le_decode(input, "strict", false);
         }
 
-        public static PythonTuple utf_16_le_decode(object input, string errors) {
+        public static PythonTuple utf_16_le_decode(object input, string errors, [Optional]bool ignored) {
             return utf_16_decode(input, errors);
         }
 
@@ -381,10 +381,10 @@ namespace IronPython.Modules {
 
 #if !SILVERLIGHT
         public static PythonTuple utf_7_decode(object input) {
-            return utf_7_decode(input, "strict");
+            return utf_7_decode(input, "strict", false);
         }
 
-        public static PythonTuple utf_7_decode(object input, string errors) {
+        public static PythonTuple utf_7_decode(object input, string errors, [Optional]bool ignored) {
             return DoDecode(Encoding.UTF7, input, errors);
         }
 
@@ -402,10 +402,10 @@ namespace IronPython.Modules {
         #region Utf-8 Functions
 
         public static PythonTuple utf_8_decode(object input) {
-            return utf_8_decode(input, "strict");
+            return utf_8_decode(input, "strict", false);
         }
 
-        public static PythonTuple utf_8_decode(object input, string errors) {
+        public static PythonTuple utf_8_decode(object input, string errors, [Optional]bool ignored) {
             return DoDecode(Encoding.UTF8, input, errors);
         }
 

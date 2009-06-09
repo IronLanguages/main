@@ -1,0 +1,2 @@
+fails:Marshal.dump dumps an extended_user_regexp having ivar
+fails:Marshal.dump dumps an extended_user_hash_default

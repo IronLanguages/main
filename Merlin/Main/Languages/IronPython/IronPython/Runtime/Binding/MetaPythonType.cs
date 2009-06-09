@@ -19,34 +19,44 @@ using System.Linq.Expressions;
 using System.Dynamic;
 
 using Microsoft.Scripting;
+using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Utils;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 using IronPython.Runtime.Types;
     
 namespace IronPython.Runtime.Binding {
     using Ast = System.Linq.Expressions.Expression;
 
-    partial class MetaPythonType : MetaPythonObject {
+    partial class MetaPythonType : MetaPythonObject, IPythonConvertible {
         public MetaPythonType(Expression/*!*/ expression, BindingRestrictions/*!*/ restrictions, PythonType/*!*/ value)
             : base(expression, BindingRestrictions.Empty, value) {
             Assert.NotNull(value);
         }
 
         public override DynamicMetaObject BindCreateInstance(CreateInstanceBinder create, params DynamicMetaObject[] args) {
-            return InvokeWorker(create, args, Ast.Constant(BinderState.GetBinderState(create).Context));
+            return InvokeWorker(create, args, AstUtils.Constant(PythonContext.GetPythonContext(create).SharedContext));
         }
 
         public override DynamicMetaObject BindConvert(ConvertBinder/*!*/ conversion) {
-            if (conversion.Type.IsSubclassOf(typeof(Delegate))) {
-                return MakeDelegateTarget(conversion, conversion.Type, Restrict(Value.GetType()));
+            return ConvertWorker(conversion, conversion.Type, conversion.Explicit ? ConversionResultKind.ExplicitCast : ConversionResultKind.ImplicitCast);
+        }
+
+        public DynamicMetaObject BindConvert(PythonConversionBinder binder) {
+            return ConvertWorker(binder, binder.Type, binder.ResultKind);
+        }
+
+        public DynamicMetaObject ConvertWorker(DynamicMetaObjectBinder binder, Type type, ConversionResultKind kind) {
+            if (type.IsSubclassOf(typeof(Delegate))) {
+                return MakeDelegateTarget(binder, type, Restrict(Value.GetType()));
             }
-            return conversion.FallbackConvert(this);
+            return FallbackConvert(binder);
         }
 
         public override System.Collections.Generic.IEnumerable<string> GetDynamicMemberNames() {
             PythonContext pc = Value.PythonContext ?? DefaultContext.DefaultPythonContext;
 
-            foreach (object o in Value.GetMemberNames(pc.DefaultBinderState.Context)) {
+            foreach (object o in Value.GetMemberNames(pc.SharedContext)) {
                 if (o is string) {
                     yield return (string)o;
                 }

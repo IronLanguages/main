@@ -22,14 +22,17 @@ using System.Reflection.Emit;
 namespace System.Linq.Expressions.Compiler {
     partial class LambdaCompiler {
 
-
         private void EmitBinaryExpression(Expression expr) {
+            EmitBinaryExpression(expr, CompilationFlags.EmitAsNoTail);
+        }
+
+        private void EmitBinaryExpression(Expression expr, CompilationFlags flags) {
             BinaryExpression b = (BinaryExpression)expr;
 
             Debug.Assert(b.NodeType != ExpressionType.AndAlso && b.NodeType != ExpressionType.OrElse && b.NodeType != ExpressionType.Coalesce);
 
             if (b.Method != null) {
-                EmitBinaryMethod(b);
+                EmitBinaryMethod(b, flags);
                 return;
             }
 
@@ -51,11 +54,16 @@ namespace System.Linq.Expressions.Compiler {
                     EmitNullEquality(b.NodeType, b.Left, b.IsLiftedToNull);
                     return;
                 }
-            }
 
-            // Otherwise generate it normally.
-            EmitExpression(b.Left);
-            EmitExpression(b.Right);
+                // For EQ and NE, we can avoid some conversions if we're
+                // ultimately just comparing two managed pointers.
+                EmitExpression(GetEqualityOperand(b.Left));
+                EmitExpression(GetEqualityOperand(b.Right));
+            } else {
+                // Otherwise generate it normally
+                EmitExpression(b.Left);
+                EmitExpression(b.Right);
+            }
 
             EmitBinaryOperator(b.NodeType, b.Left.Type, b.Right.Type, b.Type, b.IsLiftedToNull);
         }
@@ -80,7 +88,7 @@ namespace System.Linq.Expressions.Compiler {
         }
 
 
-        private void EmitBinaryMethod(BinaryExpression b) {
+        private void EmitBinaryMethod(BinaryExpression b, CompilationFlags flags) {
             if (b.IsLifted) {
                 ParameterExpression p1 = Expression.Variable(TypeUtils.GetNonNullableType(b.Left.Type), null);
                 ParameterExpression p2 = Expression.Variable(TypeUtils.GetNonNullableType(b.Right.Type), null);
@@ -111,7 +119,7 @@ namespace System.Linq.Expressions.Compiler {
                 ValidateLift(variables, arguments);
                 EmitLift(b.NodeType, resultType, mc, variables, arguments);
             } else {
-                EmitMethodCallExpression(Expression.Call(null, b.Method, b.Left, b.Right));
+                EmitMethodCallExpression(Expression.Call(null, b.Method, b.Left, b.Right), flags);
             }
         }
 
@@ -119,18 +127,11 @@ namespace System.Linq.Expressions.Compiler {
         private void EmitBinaryOperator(ExpressionType op, Type leftType, Type rightType, Type resultType, bool liftedToNull) {
             bool leftIsNullable = TypeUtils.IsNullableType(leftType);
             bool rightIsNullable = TypeUtils.IsNullableType(rightType);
+
             switch (op) {
                 case ExpressionType.ArrayIndex:
-                    if (rightIsNullable) {
-                        LocalBuilder loc = GetLocal(rightType);
-                        _ilg.Emit(OpCodes.Stloc, loc);
-                        _ilg.Emit(OpCodes.Ldloca, loc);
-                        FreeLocal(loc);
-                        _ilg.EmitGetValue(rightType);
-                    }
-                    Type indexType = TypeUtils.GetNonNullableType(rightType);
-                    if (indexType != typeof(int)) {
-                        _ilg.EmitConvertToType(indexType, typeof(int), true);
+                    if (rightType != typeof(int)) {
+                        throw ContractUtils.Unreachable;
                     }
                     _ilg.EmitLoadElement(leftType.GetElementType());
                     return;
@@ -265,23 +266,20 @@ namespace System.Linq.Expressions.Compiler {
                 case ExpressionType.ExclusiveOr:
                     _ilg.Emit(OpCodes.Xor);
                     break;
-                case ExpressionType.LeftShift: {
-                        if (rightType != typeof(int)) {
-                            _ilg.EmitConvertToType(rightType, typeof(int), true);
-                        }
-                        _ilg.Emit(OpCodes.Shl);
+                case ExpressionType.LeftShift:
+                    if (rightType != typeof(int)) {
+                        throw ContractUtils.Unreachable;
                     }
+                    _ilg.Emit(OpCodes.Shl);
                     break;
-                case ExpressionType.RightShift: {
-                        Type shiftType = TypeUtils.GetNonNullableType(rightType);
-                        if (shiftType != typeof(int)) {
-                            _ilg.EmitConvertToType(shiftType, typeof(int), true);
-                        }
-                        if (TypeUtils.IsUnsigned(leftType)) {
-                            _ilg.Emit(OpCodes.Shr_Un);
-                        } else {
-                            _ilg.Emit(OpCodes.Shr);
-                        }
+                case ExpressionType.RightShift:
+                    if (rightType != typeof(int)) {
+                        throw ContractUtils.Unreachable;
+                    }
+                    if (TypeUtils.IsUnsigned(leftType)) {
+                        _ilg.Emit(OpCodes.Shr_Un);
+                    } else {
+                        _ilg.Emit(OpCodes.Shr);
                     }
                     break;
                 default:
@@ -466,7 +464,7 @@ namespace System.Linq.Expressions.Compiler {
                 _ilg.MarkLabel(shortCircuit);
             }
 
-            if (resultType != TypeUtils.GetNonNullableType(resultType)) {
+            if (!TypeUtils.AreEquivalent(resultType, TypeUtils.GetNonNullableType(resultType))) {
                 _ilg.EmitConvertToType(TypeUtils.GetNonNullableType(resultType), resultType, true);
             }
 

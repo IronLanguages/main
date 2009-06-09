@@ -4,23 +4,22 @@
     <AssemblyName>System.Dynamic</AssemblyName>
     <OutputType>Library</OutputType>
     <CreateMetaAssembly>true</CreateMetaAssembly>
-    <AssemblyKeyType>ECMA</AssemblyKeyType>
     <GenerateAssemblyRefs>true</GenerateAssemblyRefs>
     <AllowPartialTrustedCalls>true</AllowPartialTrustedCalls>
+    <SecurityMigration>false</SecurityMigration>
     <PublishMetaAssemblyToSDK>true</PublishMetaAssemblyToSDK>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants)</DefineConstants>
     <RootNamespace>System.Dynamic</RootNamespace>
-    <NoWarn>0688</NoWarn><!-- mscorlib removed all link demands, so don't warn when overriding a method with no link demand -->
     <RunCodeAnalysis>true</RunCodeAnalysis>
     <DocumentationFile>System.Dynamic.xml</DocumentationFile>
     <CodeAnalysisTreatWarningsAsErrors>true</CodeAnalysisTreatWarningsAsErrors>
   </PropertyGroup>
   <ItemGroup>
     <CopyFile Include="$(OutputPath)$(AssemblyName).dll">
-        <DestFolder>$(BinariesDirectory)\SuiteBin\$(BuildArchitecture)\CSharp\</DestFolder>
-        <OverwriteReadonlyFiles>true</OverwriteReadonlyFiles>
+      <DestFolder>$(BinariesDirectory)\SuiteBin\$(BuildArchitecture)\CSharp\</DestFolder>
+      <OverwriteReadonlyFiles>true</OverwriteReadonlyFiles>
     </CopyFile>
   </ItemGroup>
   <ItemGroup>
@@ -38,7 +37,8 @@
       <Parameterize>true</Parameterize>
     </TextStringResource>
   </ItemGroup>
-  <!-- Begin Generated Project Items By GenerateSystemCoreCsproj.py -->     <ItemGroup>
+  <!-- Begin Generated Project Items By GenerateSystemCoreCsproj.py -->
+    <ItemGroup>
       <!--                                   -->
       <!--          System.Dynamic.          -->
       <!--                                   -->
@@ -69,6 +69,7 @@
       <Compile Include="System\Dynamic\ComTypeLibDesc.cs" />
       <Compile Include="System\Dynamic\ContractUtils.cs" />
       <Compile Include="System\Dynamic\ConversionArgBuilder.cs" />
+      <Compile Include="System\Dynamic\ConvertArgBuilder.cs" />
       <Compile Include="System\Dynamic\ConvertibleArgBuilder.cs" />
       <Compile Include="System\Dynamic\CurrencyArgBuilder.cs" />
       <Compile Include="System\Dynamic\DateTimeArgBuilder.cs" />

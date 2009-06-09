@@ -96,9 +96,9 @@ namespace Microsoft.Scripting.Actions {
             if (Method.IsStatic) {
                 return Ast.Convert(
                     Ast.Call(
-                        Ast.Constant(Method),
+                        AstUtils.Constant(Method),
                         typeof(MethodInfo).GetMethod("Invoke", new Type[] { typeof(object), typeof(object[]) }),
-                        Ast.Constant(null),
+                        AstUtils.Constant(null),
                         AstUtils.NewArrayHelper(typeof(object), arguments)
                     ),
                     Method.ReturnType);
@@ -108,7 +108,7 @@ namespace Microsoft.Scripting.Actions {
 
             return Ast.Convert(
                 Ast.Call(
-                    Ast.Constant(Method),
+                    AstUtils.Constant(Method),
                     typeof(MethodInfo).GetMethod("Invoke", new Type[] { typeof(object), typeof(object[]) }),
                     arguments[0],
                     AstUtils.NewArrayHelper(typeof(object), ArrayUtils.RemoveFirst(arguments))

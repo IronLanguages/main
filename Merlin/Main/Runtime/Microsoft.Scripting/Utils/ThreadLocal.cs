@@ -26,6 +26,25 @@ namespace Microsoft.Scripting.Utils {
     public class ThreadLocal<T> {
         private StorageInfo[] _stores;                                         // array of storage indexed by managed thread ID
         private static readonly StorageInfo[] Updating = new StorageInfo[0];   // a marker used when updating the array
+        private readonly bool _refCounted;
+
+        
+        public ThreadLocal() {
+        }
+
+        /// <summary>
+        /// True if the caller will guarantee that all cleanup happens as the thread
+        /// unwinds.
+        /// 
+        /// This is typically used in a case where the thread local is surrounded by
+        /// a try/finally block.  The try block pushes some state, the finally block
+        /// restores the previous state.  Therefore when the thread exits the thread
+        /// local is back to it's original state.  This allows the ThreadLocal object
+        /// to not check the current owning thread on retrieval.
+        /// </summary>
+        public ThreadLocal(bool refCounted) {
+            _refCounted = refCounted;
+        }
 
         #region Public API
 
@@ -68,6 +87,16 @@ namespace Microsoft.Scripting.Utils {
             return si.Value = updater(si.Value);
         }
 
+        /// <summary>
+        /// Replaces the current value with a new one and returns the old value.
+        /// </summary>
+        public T Update(T newValue) {
+            StorageInfo si = GetStorageInfo();
+            var oldValue = si.Value;
+            si.Value = newValue;
+            return oldValue;
+        }
+
         #endregion
 
         #region Storage implementation
@@ -86,7 +115,7 @@ namespace Microsoft.Scripting.Utils {
             if (curStorage != null && curStorage.Length > threadId) {
                 StorageInfo res = curStorage[threadId];
 
-                if (res != null && res.Thread == Thread.CurrentThread) {
+                if (res != null && (_refCounted || res.Thread == Thread.CurrentThread)) {
                     return res;
                 }
             }

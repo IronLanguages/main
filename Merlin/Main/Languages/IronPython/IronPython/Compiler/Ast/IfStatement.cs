@@ -44,7 +44,7 @@ namespace IronPython.Compiler.Ast {
             if (_else != null) {
                 result = ag.Transform(_else);
             } else {
-                result = Ast.Empty();
+                result = AstUtils.Empty();
             }
 
             // Now build from the inside out
