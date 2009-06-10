@@ -1373,6 +1373,12 @@ namespace IronRuby.Runtime {
             return new Range(begin, end, true);
         }
 
+        [Emitted]
+        public static object CreateDefaultInstance() {
+            // nop (stub)
+            return null;
+        }
+
         #region Dynamic Operations
 
         // allocator for struct instances:

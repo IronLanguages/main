@@ -1450,6 +1450,7 @@ namespace IronRuby.Builtins {
         }
         
         private static void LoadFixnum_Class(IronRuby.Builtins.RubyModule/*!*/ module) {
+            module.UndefineMethodNoEvent("new");
             module.DefineLibraryMethod("induced_from", 0x61, 
                 new System.Func<IronRuby.Builtins.RubyClass, System.Int32, System.Int32>(IronRuby.Builtins.Int32Ops.InducedFrom), 
                 new System.Func<IronRuby.Builtins.RubyClass, System.Double, System.Int32>(IronRuby.Builtins.Int32Ops.InducedFrom)
@@ -1478,6 +1479,7 @@ namespace IronRuby.Builtins {
         
         private static void LoadFloat_Class(IronRuby.Builtins.RubyModule/*!*/ module) {
             LoadIronRuby__Clr__Float_Class(module);
+            module.UndefineMethodNoEvent("new");
         }
         
         private static void LoadGC_Instance(IronRuby.Builtins.RubyModule/*!*/ module) {

@@ -1228,10 +1228,16 @@ namespace IronRuby.Builtins {
                 } else {
                     // TODO: handle protected constructors
                     constructionOverloads = type.GetConstructors();
-                    if (constructionOverloads.Length == 0) {
+
+                    if (type.IsValueType) {
+                        if (constructionOverloads.Length == 0 || type.GetConstructor(Type.EmptyTypes) == null) {
+                            constructionOverloads = ArrayUtils.Append(constructionOverloads, Methods.CreateDefaultInstance);
+                        }
+                    } else if (constructionOverloads.Length == 0) {
                         metaBuilder.SetError(Methods.MakeAllocatorUndefinedError.OpCall(Ast.Convert(args.TargetExpression, typeof(RubyClass))));
                         return;
                     }
+
                     callConvention = SelfCallConvention.NoSelf;
                     implicitProtocolConversions = true;
                 }
@@ -1312,6 +1318,11 @@ namespace IronRuby.Builtins {
 
             if ((ctor = type.GetConstructor(Type.EmptyTypes)) != null) {
                 metaBuilder.Result = Ast.New(ctor);
+                return true;
+            }
+
+            if (type.IsValueType && type != typeof(int) && type != typeof(double)) {
+                metaBuilder.Result = Ast.New(type);
                 return true;
             }
 
