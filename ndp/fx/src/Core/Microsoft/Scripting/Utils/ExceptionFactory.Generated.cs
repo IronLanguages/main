@@ -466,6 +466,13 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
+        /// A string like  "The result of the dynamic binding produced by the object with type '{0}' for the binder '{1}' needs at least one restriction."
+        /// </summary>
+        internal static string DynamicBindingNeedsRestrictions(object p0, object p1) {
+            return FormatString("The result of the dynamic binding produced by the object with type '{0}' for the binder '{1}' needs at least one restriction.", p0, p1);
+        }
+
+        /// <summary>
         /// A string like  "The result type '{0}' of the binder '{1}' is not compatible with the result type '{2}' expected by the call site."
         /// </summary>
         internal static string BinderNotCompatibleWithCallSite(object p0, object p1, object p2) {
@@ -1569,6 +1576,13 @@ namespace System.Linq.Expressions {
         /// </summary>
         internal static Exception DynamicObjectResultNotAssignable(object p0, object p1, object p2, object p3) {
             return new InvalidCastException(Strings.DynamicObjectResultNotAssignable(p0, p1, p2, p3));
+        }
+
+        /// <summary>
+        /// InvalidOperationException with message like "The result of the dynamic binding produced by the object with type '{0}' for the binder '{1}' needs at least one restriction."
+        /// </summary>
+        internal static Exception DynamicBindingNeedsRestrictions(object p0, object p1) {
+            return new InvalidOperationException(Strings.DynamicBindingNeedsRestrictions(p0, p1));
         }
 
         /// <summary>

@@ -230,7 +230,12 @@ namespace IronRuby.Runtime.Calls {
             RubyOverloadResolver resolver;
             var bindingTarget = ResolveOverload(metaBuilder, args, name, overloads, callConvention, implicitProtocolConversions, out resolver);
             if (bindingTarget.Success) {
-                metaBuilder.Result = bindingTarget.MakeExpression();
+                if (bindingTarget.Method.MethodHandle == Methods.CreateDefaultInstance.MethodHandle) {
+                    Debug.Assert(args.TargetClass.TypeTracker.Type.IsValueType);
+                    metaBuilder.Result = Ast.New(args.TargetClass.TypeTracker.Type);
+                } else {
+                    metaBuilder.Result = bindingTarget.MakeExpression();
+                }
             } else {
                 metaBuilder.SetError(resolver.MakeInvalidParametersError(bindingTarget).Expression);
             }

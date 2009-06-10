@@ -245,6 +245,7 @@ p Method.allocate rescue p $!
 p UnboundMethod.allocate rescue p $!
 p Bignum.allocate rescue p $!
 p Fixnum.allocate rescue p $!
+p Float.allocate rescue p $!
 p TrueClass.allocate rescue p $!
 p FalseClass.allocate rescue p $!
 p NilClass.allocate rescue p $!
@@ -269,6 +270,7 @@ nil..nil
 #<TypeError: allocator undefined for UnboundMethod>
 #<TypeError: allocator undefined for Bignum>
 #<TypeError: allocator undefined for Fixnum>
+#<TypeError: allocator undefined for Float>
 #<TypeError: allocator undefined for TrueClass>
 #<TypeError: allocator undefined for FalseClass>
 #<TypeError: allocator undefined for NilClass>

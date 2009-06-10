@@ -79,6 +79,8 @@ namespace IronRuby.Compiler {
         private static MethodInfo _CreateBoundMember;
         public static MethodInfo/*!*/ CreateBoundMissingMember { get { return _CreateBoundMissingMember ?? (_CreateBoundMissingMember = GetMethod(typeof(RubyOps), "CreateBoundMissingMember")); } }
         private static MethodInfo _CreateBoundMissingMember;
+        public static MethodInfo/*!*/ CreateDefaultInstance { get { return _CreateDefaultInstance ?? (_CreateDefaultInstance = GetMethod(typeof(RubyOps), "CreateDefaultInstance")); } }
+        private static MethodInfo _CreateDefaultInstance;
         public static MethodInfo/*!*/ CreateDelegateFromMethod { get { return _CreateDelegateFromMethod ?? (_CreateDelegateFromMethod = GetMethod(typeof(RubyOps), "CreateDelegateFromMethod")); } }
         private static MethodInfo _CreateDelegateFromMethod;
         public static MethodInfo/*!*/ CreateDelegateFromProc { get { return _CreateDelegateFromProc ?? (_CreateDelegateFromProc = GetMethod(typeof(RubyOps), "CreateDelegateFromProc")); } }
