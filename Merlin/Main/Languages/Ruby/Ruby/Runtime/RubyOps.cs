@@ -1339,7 +1339,7 @@ namespace IronRuby.Runtime {
         public static Exception/*!*/ MakeClrProtectedMethodCalledError(RubyContext/*!*/ context, object target, string/*!*/ methodName) {
             return new MissingMethodException(
                 RubyExceptions.FormatMethodMissingMessage(context, target, methodName, "CLR protected method `{0}' called for {1}; " +
-                "CLR protected methods can only be called with a receiver whose class is a subclass of the class declaring the method")
+                "CLR protected methods can only be called with a receiver whose class is a Ruby subclass of the class declaring the method")
             );
         }
 
@@ -1408,6 +1408,26 @@ namespace IronRuby.Runtime {
         [Emitted]
         public static RubyMethod/*!*/ CreateBoundMissingMember(object target, RubyMemberInfo/*!*/ info, string/*!*/ name) {
             return new RubyMethod.Curried(target, info, name);
+        }
+
+        [Emitted]
+        public static bool IsClrSingletonRuleValid(RubyContext/*!*/ context, object target, int expectedVersion) {
+            RubyInstanceData data;
+            RubyClass immediate;
+
+            // TODO: optimize this (we can have a hashtable of singletons per class: Weak(object) => Struct { ImmediateClass, InstanceVariables, Flags }):
+            return context.TryGetClrTypeInstanceData(target, out data) && (immediate = data.ImmediateClass) != null && immediate.IsSingletonClass
+                && immediate.Version.Value == expectedVersion;
+        }
+
+        [Emitted]
+        public static bool IsClrNonSingletonRuleValid(RubyContext/*!*/ context, object target, VersionHandle/*!*/ versionHandle, int expectedVersion) {
+            RubyInstanceData data;
+            RubyClass immediate;
+
+            return versionHandle.Value == expectedVersion
+                // TODO: optimize this (we can have a hashtable of singletons per class: Weak(object) => Struct { ImmediateClass, InstanceVariables, Flags }):
+                && !(context.TryGetClrTypeInstanceData(target, out data) && (immediate = data.ImmediateClass) != null && immediate.IsSingletonClass);
         }
         
         #endregion

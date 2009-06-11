@@ -94,21 +94,9 @@ namespace IronRuby.Builtins {
             return new RubyObject(_immediateClass.NominalClass);
         }
 
-        private void CopyInstanceDataFrom(IRubyObject/*!*/ source) {
-            // copy instance data, but not the state:
-            var sourceData = source.TryGetInstanceData();
-            if (sourceData != null) {
-                _instanceData = new RubyInstanceData();
-                sourceData.CopyInstanceVariablesTo(_instanceData);
-            }
-
-            // copy tainted flag:
-            IsTainted = source.IsTainted;
-        }
-
         object IDuplicable.Duplicate(RubyContext/*!*/ context, bool copySingletonMembers) {
             var result = CreateInstance();
-            result.CopyInstanceDataFrom(this);
+            context.CopyInstanceData(this, result, copySingletonMembers);
             return result;
         }
 

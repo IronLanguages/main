@@ -527,8 +527,8 @@ namespace IronRuby.Builtins {
                 }
             }
 
-            // copy instance variables, and frozen, taint flags:
-            _context.CopyInstanceData(this, result, true, false);
+            // copy instance variables:
+            _context.CopyInstanceData(this, result, false);
             return result;
         }
 
@@ -595,7 +595,7 @@ namespace IronRuby.Builtins {
             _referringMethodRulesSinceLastUpdate = 0;
 #endif
 
-            // Updates dependent modules. If dependent modules haven't been initialized yet it means we don't need to follow them.
+            // Updates dependent classes. If dependent classes haven't been initialized yet we don't need to follow them.
             // TODO (opt): stop updating if a module that defines a method of the same name is reached.
             foreach (var cls in GetDependentClasses()) {
                 cls.Updated(ref affectedModules, ref affectedRules);
@@ -1271,6 +1271,7 @@ namespace IronRuby.Builtins {
         internal virtual void PrepareMethodUpdate(string/*!*/ methodName, RubyMemberInfo/*!*/ method) {
             InitializeMethodsNoLock();
 
+            // Prepare all classes where this module is included for a method update.
             // TODO (optimization): we might end up walking some classes multiple times, could we mark them somehow as visited?
             foreach (var dependency in _dependentClasses) {
                 var cls = (RubyClass)dependency.Target;

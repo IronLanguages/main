@@ -709,9 +709,9 @@ var closureScope = scope as RubyClosureScope;
         }
 
         internal RubyTopLevelScope(RubyGlobalScope/*!*/ globalScope, RubyModule scopeModule, RubyModule methodLookupModule,
-            RuntimeFlowControl/*!*/ runtimeFlowControl, object selfObject)
+            RuntimeFlowControl/*!*/ runtimeFlowControl, RubyObject/*!*/ selfObject)
             : base(runtimeFlowControl, selfObject) {
-            Assert.NotNull(globalScope);
+            Assert.NotNull(globalScope, selfObject);
             _globalScope = globalScope;
             _context = globalScope.Context;
             _wrappingModule = scopeModule;
@@ -758,7 +758,7 @@ var closureScope = scope as RubyClosureScope;
             RubyGlobalScope rubyGlobalScope = context.InitializeGlobalScope(globalScope, false, false);
             
             RubyModule module = context.CreateModule(null, null, null, null, null, null, null, ModuleRestrictions.None);
-            object mainObject = new Object();
+            RubyObject mainObject = new RubyObject(context.ObjectClass);
             context.CreateMainSingleton(mainObject, new[] { module });
 
             RubyTopLevelScope scope = new RubyTopLevelScope(rubyGlobalScope, module, null, new RuntimeFlowControl(), mainObject);
