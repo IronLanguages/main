@@ -53,9 +53,16 @@ namespace :test do
   end
 
   desc "Run app specific tests (Rubygems and Rake)"
-  task :apps => :happy do
-    IRTest.test(:RubyGems)
+  task :apps => [:gems, :rake]
+
+  desc "Run rake tests"
+  task :rake => :happy do
     IRTest.test(:Rake)
+  end
+
+  desc "Run gems tests"
+  task :gems => :happy do
+    IRTest.test(:RubyGems)
   end
 
   desc "(NOT IMPLEMENTED) Run tests corresponding to samples"
