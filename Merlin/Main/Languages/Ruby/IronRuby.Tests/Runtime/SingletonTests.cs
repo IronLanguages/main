@@ -189,7 +189,7 @@ bar");
         /// <summary>
         /// IRubyObjects.
         /// </summary>
-        public void SingletonCaching2() {
+        public void SingletonCaching2A() {
             AssertOutput(() => CompilerTest(@"
 class C
 end
@@ -206,18 +206,49 @@ ok
         }
 
         /// <summary>
-        /// CLR objects.
+        /// Object.
         /// </summary>
-        public void SingletonCaching3() {
-            //RubyOptions.ShowRules = true;
-            // TODO:
-            XTestOutput(@"
+        public void SingletonCaching2B() {
+            AssertOutput(() => CompilerTest(@"
 foo = Object.new
 bar = Object.new
-def foo.to_s; 'x'; end
+def foo.to_s; 'ok'; end
+puts bar.to_s
+puts foo.to_s
+"), @"
+#<Object:*>
+ok
+", OutputFlags.Match);
+        }
+
+        /// <summary>
+        /// CLR types.
+        /// </summary>
+        public void SingletonCaching2C() {
+            TestOutput(@"
+A = System::Collections::ArrayList
+class A
+  def to_s
+    'base'
+  end
+end
+
+foo, bar = A.new, A.new
+puts bar.to_s
+puts foo.to_s
+def foo.to_s; 'singleton 1'; end
+puts bar.to_s
+puts foo.to_s
+def foo.to_s; 'singleton 2'; end
 puts bar.to_s
 puts foo.to_s
 ", @"
+base
+base
+base
+singleton 1
+base
+singleton 2
 ");
         }
 

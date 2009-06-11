@@ -59,7 +59,7 @@ namespace IronRuby.Builtins {
         
         // an object that the class is a singleton of (reverse _singletonClass pointer):
         private readonly object _singletonClassOf;
-        
+
         // null for singletons:
         private Type _underlyingSystemType; // interlocked
 
@@ -88,6 +88,16 @@ namespace IronRuby.Builtins {
         // This allows to create modules without locking. 
         private bool _dependenciesInitialized;
 
+        //
+        // Null if this class doesn't represent a CLR type, it represets a CLR type that implements IRubyObject or 
+        // if it doesn't have any singleton-subclasses.
+        // 
+        // Otherwise represents a set of method names for which we need to emit singleton checks into rules.
+        // A name is added to the set whenever a method of that name is defined on any singleton-subclass (or its included modules) of this class.
+        // A name can be removed from this table only if no method of that name exists in any singleton-subclass (or its included modules) of this class.
+        // TODO (opt): Currently we don't remove items from this dictionary. We would need to ref-count the methods.
+        internal Dictionary<string, bool> ClrSingletonMethods { get; set; }
+         
         #endregion
 
         #region Dynamic Sites
@@ -344,11 +354,24 @@ namespace IronRuby.Builtins {
         internal void PrepareMethodUpdate(string/*!*/ methodName, RubyMemberInfo/*!*/ method, int mixinsToSkip) {
             Context.RequiresClassHierarchyLock();
 
-            // Bump versions of dependent classes only if the current method overrides/redefines another one in the inheritance hierarchy.
-            // Method lookup failures are not cached in dynamic sites. 
-            // Therefore a future invocation of the method will trigger resolution in binder that will find just added method.
-            // If, on the other hand, a method is overridden there might be a dynamic site that caches a method call to that method.
-            // In that case we need to update version to invalidate the site.
+            bool superClassUpdated = false;
+
+            /// A singleton subclass of a CLR type that doesn't implement IRubyObject:
+            if (_isSingletonClass && !_superClass.IsSingletonClass && !_superClass.IsRubyClass && !(_singletonClassOf is IRubyObject)) {
+                var ssm = _superClass.ClrSingletonMethods;
+                if (ssm != null) {
+                    if (!ssm.ContainsKey(methodName)) {
+                        ssm[methodName] = true;
+                        _superClass.Updated("SetSingletonMethod: " + methodName);
+                        superClassUpdated = true;
+                    }
+                } else {
+                    _superClass.ClrSingletonMethods = ssm = new Dictionary<string, bool>();
+                    ssm[methodName] = true;
+                    _superClass.Updated("SetSingletonMethod: " + methodName);
+                    superClassUpdated = true;
+                }
+            }
 
             // Method table doesn't need to be initialized here. No site could be bound to this class or its subclass
             // without initializing this class. So there would be nothing to invalidate.
@@ -372,17 +395,20 @@ namespace IronRuby.Builtins {
             RubyMemberInfo overriddenMethod = ResolveOverriddenMethod(methodName, modulesToSkip);
 
             if (overriddenMethod == null) {
-                overriddenMethod = ResolveOverriddenMethod(Symbols.MethodMissing, modulesToSkip);
+                // super class and this class have already been updated, no need to update again:
+                if (!superClassUpdated) {
+                    overriddenMethod = ResolveOverriddenMethod(Symbols.MethodMissing, modulesToSkip);
 
-                var missingMethods = (overriddenMethod != null) ? 
-                    overriddenMethod.DeclaringModule.MissingMethodsCachedInSites : 
-                    Context.KernelModule.MissingMethodsCachedInSites;
+                    var missingMethods = (overriddenMethod != null) ?
+                        overriddenMethod.DeclaringModule.MissingMethodsCachedInSites :
+                        Context.KernelModule.MissingMethodsCachedInSites;
 
-                if (missingMethods != null && missingMethods.ContainsKey(methodName)) {
-                    Updated("SetMethod: " + methodName);
+                    if (missingMethods != null && missingMethods.ContainsKey(methodName)) {
+                        Updated("SetMethod: " + methodName);
+                    }
                 }
             } else {
-                if (overriddenMethod.InvalidateSitesOnOverride) {
+                if (overriddenMethod.InvalidateSitesOnOverride && !superClassUpdated) {
                     Updated("SetMethod: " + methodName);
                 }
 
@@ -520,7 +546,7 @@ namespace IronRuby.Builtins {
                 result.SingletonClass.InitializeMembersFrom(SingletonClass);
 
                 // copy instance variables and taint flag:
-                Context.CopyInstanceData(this, result, true, false);
+                Context.CopyInstanceData(this, result, false);
             }
             
             // members initialized in InitializeClassFrom (invoked by "initialize_copy")
@@ -1227,7 +1253,7 @@ namespace IronRuby.Builtins {
                     constructionOverloads = (MethodBase[])ReflectionUtils.GetMethodInfos(_factories);
                 } else {
                     // TODO: handle protected constructors
-                    constructionOverloads = type.GetConstructors();
+                    constructionOverloads = (type == typeof(object) ? typeof(RubyObject) : type).GetConstructors();
 
                     if (type.IsValueType) {
                         if (constructionOverloads.Length == 0 || type.GetConstructor(Type.EmptyTypes) == null) {

@@ -16,11 +16,12 @@
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using IronRuby.Builtins;
+using System.Diagnostics;
 
 namespace IronRuby.Runtime {
     public class RubyGlobalScope : ScopeExtension {
         private RubyContext/*!*/ _context;
-        private RubyClass/*!*/ _mainSingleton;
+        private RubyObject/*!*/ _mainObject;
         private RubyTopLevelScope _topLocalScope;
         private bool _isHosted;
 
@@ -30,11 +31,11 @@ namespace IronRuby.Runtime {
         }
 
         public RubyClass/*!*/ MainSingleton {
-            get { return _mainSingleton; }
+            get { return _mainObject.ImmediateClass; }
         }
 
-        public object/*!*/ MainObject {
-            get { return _mainSingleton.SingletonClassOf; }
+        public RubyObject/*!*/ MainObject {
+            get { return _mainObject; }
         }
 
         public bool IsHosted {
@@ -46,11 +47,13 @@ namespace IronRuby.Runtime {
             internal set { _topLocalScope = value; }
         }
 
-        public RubyGlobalScope(RubyContext/*!*/ context, Scope/*!*/ scope, RubyClass/*!*/ mainSingleton, bool isHosted)
+        public RubyGlobalScope(RubyContext/*!*/ context, Scope/*!*/ scope, RubyObject/*!*/ mainObject, bool isHosted)
             : base(scope) {
-            Assert.NotNull(context, scope, mainSingleton);
+            Assert.NotNull(context, scope, mainObject);
+            Debug.Assert(mainObject.ImmediateClass.IsSingletonClass);
+                
             _context = context;
-            _mainSingleton = mainSingleton;
+            _mainObject = mainObject;
             _isHosted = isHosted;
         }
     }

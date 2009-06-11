@@ -95,6 +95,7 @@ describe "Hashing" do
   end
   
   it "does not map System.Object.GetHashCode to Object#hash for monkey-patched CLR objects" do
+    # Virtual methods cannot be overriden via monkey-patching. Therefore the GetHashCode virtual call is routed to the default implementation on System.Object.
     o = EmptyClass.new
     class << o
       def hash
@@ -102,14 +103,17 @@ describe "Hashing" do
       end
     end
     o.hash.should_not == Hasher.get_hash_code(o)
+  end
     
+  it "maps System.Object.GetHashCode to Object#hash for monkey-patched CLR objects" do
+    # Object.new returns RubyObject whose GetHashCode is overridden to call hash dynamically.
     o = Object.new
     class << o
       def hash
         super + 1
       end
     end
-    o.hash.should_not == Hasher.get_hash_code(o)
+    o.hash.should == Hasher.get_hash_code(o)
   end
   
   it "allows both Object#hash and System.Object.GetHashCode to be overriden separately" do

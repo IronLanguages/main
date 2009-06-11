@@ -167,7 +167,7 @@ namespace IronRuby.Runtime {
             if (clonable != null) {
                 copy = clonable.Duplicate(context, cloneSemantics);
             } else {
-                // .NET classes and library clases that doesn't implement IDuplicable:
+                // .NET and library classes that don't implement IDuplicable:
                 var allocateSite = allocateStorage.GetCallSite("allocate", 0);
                 copy = allocateSite.Target(allocateSite, context.GetClassOf(obj));
 

@@ -57,6 +57,11 @@ namespace IronRuby.Runtime {
             set { _immediateClass = value; }
         }
 
+        // Updates the immediate class if it has not been initialized yet.
+        internal void UpdateImmediateClass(RubyClass/*!*/ immediate) {
+            Interlocked.CompareExchange(ref _immediateClass, immediate, null);
+        }
+
         internal RubyClass InstanceSingleton {
             get { return (_immediateClass != null && _immediateClass.IsSingletonClass) ? _immediateClass : null; }
         }

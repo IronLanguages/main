@@ -193,7 +193,9 @@ namespace IronRuby.Runtime.Calls {
 
             using (targetClass.Context.ClassHierarchyLocker()) {
                 // check for type version:
-                metaBuilder.AddTargetTypeTest(args.Target, targetClass, args.TargetExpression, args.MetaContext);
+                metaBuilder.AddTargetTypeTest(args.Target, targetClass, args.TargetExpression, args.MetaContext,
+                    ArrayUtils.Insert(Symbols.RespondTo, Symbols.MethodMissing, ArrayUtils.ConvertAll(conversions, (c) => c.ToMethodName))
+                );
 
                 // we can optimize if Kernel#respond_to? method is not overridden:
                 respondToMethod = targetClass.ResolveMethodForSiteNoLock(Symbols.RespondTo, RubyClass.IgnoreVisibility);

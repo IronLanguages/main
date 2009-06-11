@@ -40,21 +40,6 @@ namespace IronRuby.Runtime.Calls {
             return dispatcher;
         }
 
-        internal static MethodDispatcher CreateSingletonDispatcher(Type/*!*/ func, Delegate/*!*/ method, int mandatoryParamCount, 
-            bool hasScope, int version, object singleton, VersionHandle/*!*/ versionHandle) {
-
-            var dispatcher = CreateDispatcher(func, mandatoryParamCount, hasScope, version, 
-                () => hasScope ? (MethodDispatcher)new SingletonMethodDispatcherWithScope() : new SingletonMethodDispatcher(),
-                hasScope ? SingletonMethodDispatchersWithScope : SingletonMethodDispatchers
-            );
-
-            if (dispatcher != null) {
-                dispatcher.Initialize(method, version);
-                dispatcher.InitializeSingleton(singleton, versionHandle);
-            }
-            return dispatcher;
-        }
-
         internal static MethodDispatcher CreateDispatcher(Type/*!*/ func, int mandatoryParamCount, bool hasScope, int version,
             Func<MethodDispatcher> parameterlessFactory, Type[] genericFactories) {
             Type[] funcArgs = func.GetGenericArguments();

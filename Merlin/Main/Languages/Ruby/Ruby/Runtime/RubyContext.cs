@@ -147,7 +147,8 @@ namespace IronRuby.Runtime {
         // Maps objects to InstanceData. The keys store weak references to the objects.
         // Objects are compared by reference (identity). 
         // An entry can be removed as soon as the key object becomes unreachable.
-        private readonly InstanceDataWeakTable/*!*/ _referenceTypeInstanceData;
+        private readonly WeakTable<object, RubyInstanceData>/*!*/ _referenceTypeInstanceData;
+        private object/*!*/ ReferenceTypeInstanceDataLock { get { return _referenceTypeInstanceData; } }
 
         // Maps values to InstanceData. The keys store value representatives. 
         // All objects that has the same value (value-equality) map to the same InstanceData.
@@ -353,7 +354,7 @@ namespace IronRuby.Runtime {
             _globalVariables = new Dictionary<string, GlobalVariable>();
             _moduleCache = new Dictionary<Type, RubyModule>();
             _namespaceCache = new Dictionary<NamespaceTracker, RubyModule>();
-            _referenceTypeInstanceData = new InstanceDataWeakTable();
+            _referenceTypeInstanceData = new WeakTable<object, RubyInstanceData>();
             _valueTypeInstanceData = new Dictionary<object, RubyInstanceData>();
             _inputProvider = new RubyInputProvider(this, _options.Arguments);
             _globalScope = DomainManager.Globals;
@@ -813,8 +814,8 @@ namespace IronRuby.Runtime {
                 return (bool)obj ? _trueClass : _falseClass;
             }
 
-            RubyInstanceData data;
-            RubyClass immediate = GetImmediateClassOf(obj, out data);
+            RubyInstanceData data = null;
+            RubyClass immediate = GetImmediateClassOf(obj, ref data);
             if (immediate.IsSingletonClass) {
                 Debug.Assert(!immediate.IsDummySingletonClass);
                 return immediate;
@@ -826,10 +827,18 @@ namespace IronRuby.Runtime {
             );
 
             using (ClassHierarchyLocker()) {
-                SetInstanceSingletonOf(obj, ref data, result);
+                // singleton might have been created by another thread:
+                immediate = GetImmediateClassOf(obj, ref data);
+                if (immediate.IsSingletonClass) {
+                    Debug.Assert(!immediate.IsDummySingletonClass);
+                    return immediate;
+                }
 
-                // TODO: improve version updates
-                immediate.Updated("CreateInstanceSingleton");
+                SetInstanceSingletonOfNoLock(obj, ref data, result);
+
+                if (!(obj is IRubyObject)) {
+                    PerfTrack.NoteEvent(PerfTrack.Categories.Count, "Non-IRO singleton created " + immediate.NominalClass.Name);
+                }
             }
 
             Debug.Assert(result.IsSingletonClass && !result.IsDummySingletonClass);
@@ -1023,59 +1032,60 @@ namespace IronRuby.Runtime {
         /// Might return a class object from a foreign runtime (if obj is a runtime bound object).
         /// </summary>
         public RubyClass/*!*/ GetImmediateClassOf(object obj) {
-            RubyInstanceData data;
-            return GetImmediateClassOf(obj, out data);
+            RubyInstanceData data = null;
+            return GetImmediateClassOf(obj, ref data);
         }
 
-        private RubyClass/*!*/ GetImmediateClassOf(object obj, out RubyInstanceData data) {
-            RubyClass result = TryGetImmediateClassOf(obj, out data);
+        private RubyClass/*!*/ GetImmediateClassOf(object obj, ref RubyInstanceData data) {
+            RubyClass result = TryGetImmediateClassOf(obj, ref data);
             if (result != null) {
                 return result;
             }
 
             result = GetClassOf(obj);
             if (data != null) {
-                Debug.Assert(data.ImmediateClass == null);
-                data.ImmediateClass = result;
+                data.UpdateImmediateClass(result);
             }
 
             return result;
         }
 
-        private RubyClass TryGetImmediateClassOf(object obj, out RubyInstanceData data) {
+        // thread-safety:
+        // If the immediate class reference is being changed (a singleton is being defined) during this operation
+        // it is undefined which one of the classes we return. 
+        private RubyClass TryGetImmediateClassOf(object obj, ref RubyInstanceData data) {
             IRubyObject rubyObj = obj as IRubyObject;
             if (rubyObj != null) {
-                Debug.Assert(rubyObj.ImmediateClass != null);
-                data = null;
                 return rubyObj.ImmediateClass;
-            }
-
-            data = TryGetInstanceData(obj);
-            if (data != null) {
+            } else if (data != null || (data = TryGetInstanceData(obj)) != null) {
                 return data.ImmediateClass;
+            } else {
+                return null;
             }
-
-            return null;
         }
 
-        public bool IsKindOf(object obj, RubyModule/*!*/ m) {
-            return GetImmediateClassOf(obj).HasAncestor(m);
-        }
-
-        private void SetInstanceSingletonOf(object obj, ref RubyInstanceData data, RubyClass/*!*/ singleton) {
+        // thread-safety: must only be run under a lock that prevents singleton creation on the target object:
+        private void SetInstanceSingletonOfNoLock(object obj, ref RubyInstanceData data, RubyClass/*!*/ singleton) {
+            RequiresClassHierarchyLock();
             Debug.Assert(!(obj is RubyModule) && singleton != null);
 
             IRubyObject rubyObj = obj as IRubyObject;
             if (rubyObj != null) {
                 rubyObj.ImmediateClass = singleton;
-                return;
+            } else if (data != null) {
+                data.ImmediateClass = singleton;
+            } else {
+                (data = GetInstanceData(obj)).ImmediateClass = singleton;
             }
+        }
 
-            if (data == null) {
-                data = GetInstanceData(obj);
-            }
+        internal RubyClass TryGetSingletonOf(object obj, ref RubyInstanceData data) {
+            RubyClass immediate = TryGetImmediateClassOf(obj, ref data);
+            return immediate != null ? (immediate.IsSingletonClass ? immediate : null) : null;
+        }
 
-            data.ImmediateClass = singleton;
+        public bool IsKindOf(object obj, RubyModule/*!*/ m) {
+            return GetImmediateClassOf(obj).HasAncestor(m);
         }
 
         public bool IsInstanceOf(object value, object classObject) {
@@ -1255,8 +1265,14 @@ namespace IronRuby.Runtime {
                 return result;
             }
 
-            _referenceTypeInstanceData.TryGetValue(obj, out result);
+            TryGetClrTypeInstanceData(obj, out result);
             return result;
+        }
+
+        internal bool TryGetClrTypeInstanceData(object obj, out RubyInstanceData result) {
+            lock (ReferenceTypeInstanceDataLock) {
+                return _referenceTypeInstanceData.TryGetValue(obj, out result);
+            }
         }
 
         internal RubyInstanceData/*!*/ GetInstanceData(object obj) {
@@ -1279,7 +1295,13 @@ namespace IronRuby.Runtime {
                 return result;
             }
 
-            return _referenceTypeInstanceData.GetValue(obj);
+            lock (ReferenceTypeInstanceDataLock) {
+                if (!_referenceTypeInstanceData.TryGetValue(obj, out result)) {
+                    _referenceTypeInstanceData.Add(obj, result = new RubyInstanceData());
+                }
+            }
+            
+            return result;
         }
 
         #endregion
@@ -1326,44 +1348,36 @@ namespace IronRuby.Runtime {
             return true;
         }
 
-        /// <summary>
-        /// Copies instance data from source to target object (i.e. instance variables, tainted, frozen flags).
-        /// If the source has a singleton class it's members are copied to the target as well.
-        /// Assumes a fresh instance of target, with no instance data.
-        /// </summary>
-        public void CopyInstanceData(object source, object target, bool copySingletonMembers) {
-            CopyInstanceData(source, target, true, copySingletonMembers);
-        }
-
-        public void CopyInstanceData(object source, object target, bool copyTaint, bool copySingletonMembers) {
+        //
+        // Thread safety: target object must be a fresh object not be shared with other threads:
+        // 
+        // Copies instance variables from source to target object.
+        // If the source has a singleton class it's members are copied to the target as well.
+        // Assumes a fresh instance of target, with no instance data.
+        //
+        internal void CopyInstanceData(object source, object target, bool copySingletonMembers) {
+            RubyInstanceData targetData = null;
             Debug.Assert(!copySingletonMembers || !(source is RubyModule));
             Debug.Assert(TryGetInstanceData(target) == null);
-
-            var sourceData = TryGetInstanceData(source);
+            // target object is not a singleton:
+            Debug.Assert(!copySingletonMembers || TryGetSingletonOf(target, ref targetData) == null && targetData == null);
+            
+            RubyInstanceData sourceData = TryGetInstanceData(source);
             if (sourceData != null) {
-                RubyInstanceData targetData = null;
-
-                if (copyTaint) {
-                    if (targetData == null) targetData = GetInstanceData(target);
-                    targetData.Tainted = sourceData.Tainted;
-                }
-
                 if (sourceData.HasInstanceVariables) {
-                    if (targetData == null) targetData = GetInstanceData(target);
-                    sourceData.CopyInstanceVariablesTo(targetData);
+                    sourceData.CopyInstanceVariablesTo(targetData = GetInstanceData(target));
                 }
+            }
 
-                RubyClass singleton;
-                if (copySingletonMembers && (singleton = sourceData.InstanceSingleton) != null) {
-                    if (targetData == null) targetData = GetInstanceData(target);
+            if (copySingletonMembers) {
+                using (ClassHierarchyLocker()) {
+                    RubyClass singleton = TryGetSingletonOf(source, ref sourceData);
+                    if (singleton != null) {
+                        var singletonDup = singleton.Duplicate(target);
+                        singletonDup.InitializeMembersFrom(singleton);
 
-                    RubyClass dup;
-                    using (ClassHierarchyLocker()) {
-                        dup = singleton.Duplicate(target);
-                        dup.InitializeMembersFrom(singleton);
+                        SetInstanceSingletonOfNoLock(target, ref targetData, singletonDup);
                     }
-
-                    SetInstanceSingletonOf(target, ref targetData, dup);
                 }
             }
         }
@@ -1879,10 +1893,10 @@ namespace IronRuby.Runtime {
                 return (RubyGlobalScope)scopeExtension;
             }
 
-            object mainObject = new Object();
+            RubyObject mainObject = new RubyObject(_objectClass);
             RubyClass mainSingleton = CreateMainSingleton(mainObject, null);
 
-            RubyGlobalScope result = new RubyGlobalScope(this, globalScope, mainSingleton, createHosted);
+            RubyGlobalScope result = new RubyGlobalScope(this, globalScope, mainObject, createHosted);
             globalScope.SetExtension(ContextId, result);
 
             if (bindGlobals) {

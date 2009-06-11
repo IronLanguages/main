@@ -5667,11 +5667,11 @@ namespace IronRuby.Builtins {
             
             module.DefineLibraryMethod("+", 0x51, 
                 new System.Func<System.DateTime, System.Double, System.DateTime>(IronRuby.Builtins.TimeOps.AddSeconds), 
-                new System.Func<System.DateTime, System.DateTime, System.DateTime>(IronRuby.Builtins.TimeOps.AddTime)
+                new System.Func<System.DateTime, System.DateTime, System.DateTime>(IronRuby.Builtins.TimeOps.AddSeconds)
             );
             
             module.DefineLibraryMethod("<=>", 0x51, 
-                new System.Func<System.DateTime, System.Double, System.Int32>(IronRuby.Builtins.TimeOps.CompareSeconds), 
+                new System.Func<System.DateTime, System.Object, System.Object>(IronRuby.Builtins.TimeOps.CompareSeconds), 
                 new System.Func<System.DateTime, System.DateTime, System.Int32>(IronRuby.Builtins.TimeOps.CompareTo)
             );
             

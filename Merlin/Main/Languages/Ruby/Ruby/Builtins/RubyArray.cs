@@ -72,23 +72,16 @@ namespace IronRuby.Builtins {
         }
 
         /// <summary>
-        /// Creates a blank instance of self type with no flags set.
+        /// Creates an empty instance.
+        /// Doesn't copy instance data.
+        /// Preserves the class of the Array.
         /// </summary>
         public virtual RubyArray/*!*/ CreateInstance() {
             return new RubyArray();
         }
 
-        /// <summary>
-        /// Creates a copy of the array that has the same items.
-        /// Doesn't copy instance data.
-        /// Preserves the class of the Array.
-        /// </summary>
-        protected virtual RubyArray/*!*/ Copy() {
-            return new RubyArray(this);
-        }
-
         object IDuplicable.Duplicate(RubyContext/*!*/ context, bool copySingletonMembers) {
-            var result = Copy();
+            var result = CreateInstance();
             context.CopyInstanceData(this, result, copySingletonMembers);
             return result;
         }
