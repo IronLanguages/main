@@ -19,6 +19,7 @@ using Microsoft.Scripting;
 
 namespace IronRuby.Builtins {
     [RubyClass("Fixnum", Extends = typeof(int), Inherits = typeof(Integer)), Includes(typeof(ClrInteger), Copy = true)]
+    [UndefineMethod("new", IsStatic = true)]
     public static partial class Int32Ops {
         #region to_sym
 
