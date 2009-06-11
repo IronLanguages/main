@@ -161,6 +161,8 @@ namespace IronRuby.Runtime {
         }
     }
 
+#if DEV10
+
     // thread-safe
     internal class InstanceDataWeakTable {
 
@@ -214,4 +216,5 @@ namespace IronRuby.Runtime {
             }
         }
     }
+#endif
 }

@@ -127,6 +127,7 @@ namespace IronRuby.Builtins {
             return new Proc(this);
         }
 
+        // Proc doesn't have "initialize_copy", it's entirely initialized in dup:
         object IDuplicable.Duplicate(RubyContext/*!*/ context, bool copySingletonMembers) {
             var result = Copy();
             context.CopyInstanceData(this, result, copySingletonMembers);

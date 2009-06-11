@@ -110,18 +110,13 @@ namespace IronRuby.Runtime.Calls {
                 target = args[0];
             }
 
-            // TODO:
-            if (target == null || target is bool) {
-                return base.BindDelegate<T>(site, args);
-            }
-
-            RubyClass targetClass = Context.GetImmediateClassOf(target);
-            if (!targetClass.IsSingletonClass && !(target is IRubyObject)) {
+            if (!(target is IRubyObject)) {
                 return base.BindDelegate<T>(site, args);
             }
 
             int version;
             MethodResolutionResult method;
+            RubyClass targetClass = Context.GetImmediateClassOf(target);
             using (targetClass.Context.ClassHierarchyLocker()) {
                 version = targetClass.Version.Value;
                 method = targetClass.ResolveMethodForSiteNoLock(_methodName, GetVisibilityContext(Signature, scope));
@@ -133,16 +128,7 @@ namespace IronRuby.Runtime.Calls {
                 return base.BindDelegate<T>(site, args);
             }
 
-            MethodDispatcher dispatcher;
-            if (target is IRubyObject) {
-                dispatcher = MethodDispatcher.CreateRubyObjectDispatcher(typeof(T), d, mandatoryParamCount, Signature.HasScope, 
-                    version);
-            } else {
-                Debug.Assert(targetClass.IsSingletonClass);
-                dispatcher = MethodDispatcher.CreateSingletonDispatcher(typeof(T), d, mandatoryParamCount, Signature.HasScope, 
-                    version, target, targetClass.Version);
-            }
-
+            var dispatcher = MethodDispatcher.CreateRubyObjectDispatcher(typeof(T), d, mandatoryParamCount, Signature.HasScope, version);
             if (dispatcher != null) {
                 T result = (T)dispatcher.CreateDelegate();
                 CacheTarget(result);
@@ -250,7 +236,9 @@ namespace IronRuby.Runtime.Calls {
             MethodResolutionResult method;
             RubyClass targetClass = args.TargetClass;
             using (targetClass.Context.ClassHierarchyLocker()) {
-                metaBuilder.AddTargetTypeTest(args.Target, targetClass, args.TargetExpression, args.MetaContext);
+                metaBuilder.AddTargetTypeTest(args.Target, targetClass, args.TargetExpression, args.MetaContext, 
+                    new[] { methodName, Symbols.MethodMissing }
+                );
 
                 var options = args.Signature.IsVirtualCall ? MethodLookup.Virtual : MethodLookup.Default;
                 method = targetClass.ResolveMethodForSiteNoLock(methodName, GetVisibilityContext(args.Signature, args.Scope), options);

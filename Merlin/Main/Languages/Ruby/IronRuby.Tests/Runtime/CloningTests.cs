@@ -24,6 +24,7 @@ objects = [{}, [], '', Regexp.new('foo'), Object.new, Module.new, Class.new]
 
 objects.each do |x| 
   puts x.class.name
+  x.taint
   
   class << x
     CONST = 1
@@ -38,6 +39,8 @@ objects.each do |x|
   x.instance_variable_set(:@iv_x, 4);
   y = x.clone
   
+  raise unless y.tainted?
+
   class << y
     raise unless CONST == 1                                     # singleton constants copied
     raise unless instance_variables.size == 0                   # singleton instance variables not copied

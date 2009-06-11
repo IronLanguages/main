@@ -110,7 +110,7 @@ namespace IronRuby.Builtins {
                 expandedMixins = RubyModule.ExpandMixinsNoLock(_context.ObjectClass, mixins);
             }
 
-            object result = new object();
+            object result = new RubyObject(_context.ObjectClass);
             RubyClass singleton = _context.CreateInstanceSingleton(result, instanceTrait, classTrait, constantsInitializer, expandedMixins);
 
             return result;

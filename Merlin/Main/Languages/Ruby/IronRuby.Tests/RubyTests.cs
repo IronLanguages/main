@@ -478,7 +478,9 @@ namespace IronRuby.Tests {
                 Singletons2,
                 Singletons3,
                 SingletonCaching1,
-                SingletonCaching2,
+                SingletonCaching2A,
+                SingletonCaching2B,
+                SingletonCaching2C,
                 Scenario_ClassVariables_Singletons,
                 AllowedSingletons1,
 

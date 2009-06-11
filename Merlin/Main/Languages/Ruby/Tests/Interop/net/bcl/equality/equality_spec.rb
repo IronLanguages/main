@@ -98,6 +98,7 @@ describe "Equality" do
   end
   
   it "does not map System.Object.Equals to Object#== for monkey-patched CLR objects" do
+    # Virtual methods cannot be overriden via monkey-patching. Therefore the Equals virtual call from EqualityChecker is routed to the default implementation on System.Object.
     o = EmptyClass.new
     class << o
       def ==(other)
@@ -105,14 +106,17 @@ describe "Equality" do
       end
     end
     EqualityChecker.equals(o, EmptyClass.new).should be_false
-    
+  end
+
+  it "maps System.Object.Equals to Object#== for Object" do
+    # Object.new returns RubyObject whose Equals is overridden to call == dynamically.
     o = Object.new
     class << o
       def ==(other)
-        flunk
+        true
       end
     end
-    EqualityChecker.equals(o, Object.new).should be_false
+    EqualityChecker.equals(o, Object.new).should be_true
   end
   
   it "allows both Object#== and System.Object.Equals to be overriden separately" do
