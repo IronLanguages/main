@@ -57,8 +57,8 @@ describe "Generic Reference array delegate invocation" do
   before(:each) do
     ScratchPad.clear
     ScratchPad.record []
-    ab = System::Array.of(System::String).new(["a".to_clr_string,"b".to_clr_string])
-    cd = System::Array.of(System::String).new(["c".to_clr_string, "d".to_clr_string])
+    ab = %w{a b}.to_clr_array(System::String, :to_clr_string)
+    cd = %w{c d}.to_clr_array(System::String, :to_clr_string)
     @class = DelegateHolder::GenericARefDelegate.of(Symbol)
     @args = [ab, cd]
     @result = [ab, cd]
@@ -73,8 +73,8 @@ describe "Generic Value array delegate invocation" do
   before(:each) do
     ScratchPad.clear
     ScratchPad.record []
-    a1 = System::Array.of(Fixnum).new([1, 2])
-    a2 = System::Array.of(Fixnum).new([3, 4])
+    a1 = [1,2].to_clr_array(Fixnum)
+    a2 = [1,2].to_clr_array(Fixnum)
     @class = DelegateHolder::GenericAValDelegate.of(Symbol)
     @args = [a1, a2]
     @result = [a1, a2]

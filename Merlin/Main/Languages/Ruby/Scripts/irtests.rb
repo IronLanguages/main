@@ -10,9 +10,10 @@ class IRTest
     @root = ENV["MERLIN_ROOT"]
     mspec_base = "mspec ci -fd"
     ir = "#{@root}\\bin\\debug\\ir.exe"
+    @start = Time.now
     @suites = {
       :Smoke => "#{@root}\\Languages\\Ruby\\Tests\\Scripts\\irtest.bat",
-      :Legacy => "#{@root}\\Languages\\Ruby\\Tests\\run.bat",
+      #:Legacy => "#{@root}\\Languages\\Ruby\\Tests\\run.bat",
       :RubySpec_A => "#{mspec_base} :lang :cli :netinterop :cominterop :thread, :netcli",
       :RubySpec_B => "#{mspec_base} :core1 :lib1",
       :RubySpec_C => "#{mspec_base} :core2 :lib2",
@@ -26,10 +27,17 @@ class IRTest
   end
 
   def run
+    time("Starting")
     kill
+    time("Compiling")
     build_all
+    time("Running tests")
     test_all
     report
+  end
+  
+  def time(str, diff = 0)
+    puts str + " " + (Time.now - diff).to_s
   end
 
   def kill
@@ -66,7 +74,6 @@ class IRTest
   end
 
   def test(suite)
-    
     title = suite.to_s.gsub("_", " ") << " Tests"
     test = @suites[suite]
     cmd = nil
@@ -76,6 +83,7 @@ class IRTest
       puts title
       cmd = test
     end
+    time(title)
     run_cmd(cmd) { @results << "#{title} failed!!!"}
   end
 
@@ -84,13 +92,17 @@ class IRTest
   end
   
   def report
-    if @results.size == 1
+    exit_code = if @results.size == 1
       puts "Success!!"
-      exit 0
+      0
     else
       puts @results.join("\n")
-      exit 1
+      1
     end
+    
+    time("Finished")
+    time("Total Elapsed time: ", @start)
+    exit exit_code
   end
 end
 

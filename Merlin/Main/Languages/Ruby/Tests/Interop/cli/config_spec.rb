@@ -1,16 +1,18 @@
 require File.dirname(__FILE__) + '/../spec_helper'
 
 describe "ir.exe without ir.exe.config" do
-  before(:each) do
+  before(:all) do
     bin = ENV['ROWAN_BIN'] || File.join(ENV['MERLIN_ROOT'], "bin", "debug")
-    @config_old = File.join(bin, "ir.exe.config")
-    @config_temp = File.join(bin, "not_ir.exe.config")
-
-    FileUtils.mv(@config_old, @config_temp)
+    temp_bin = tmp("bin")
+    Dir.foreach(bin) do |file|
+      FileUtils.cp(File.join(bin, file), temp_bin) if file =~ /^(IronRuby|ir|Microsoft)/
+    end
+    FileUtils.rm_f(File.join(temp_bin, "ir.exe.config"))
+    @old_ruby_exe, ENV['RUBY_EXE'] = ENV['RUBY_EXE'], File.join(temp_bin, "ir.exe")
   end
 
-  after(:each) do
-    FileUtils.mv(@config_temp, @config_old)
+  after(:all) do
+    ENV['RUBY_EXE'] = @old_ruby_exe
   end
 
   it "still runs" do
@@ -18,8 +20,6 @@ describe "ir.exe without ir.exe.config" do
   end
 
   it "can still host IR.exe" do
-    require System::Reflection::Assembly.get_assembly(IronRuby.create_engine.class.to_clr_type).to_s
-    engine = IronRuby.create_engine(System::Action.of(Microsoft::Scripting::Hosting::LanguageSetup).new {|a| })
-    engine.execute("1+1").should == 2
+    ruby_exe(fixture(__FILE__, "hosting.rb")).chomp.should == "2"
   end
 end

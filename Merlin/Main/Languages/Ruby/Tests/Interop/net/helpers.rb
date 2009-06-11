@@ -27,3 +27,12 @@ class Object
     end
   end
 end
+
+class Array
+  def to_clr_array(type = Object, convert = nil)
+    result = convert ? map {|el| el.send(convert)} : self
+    System::Array.of(type).new(result)
+  end
+end
+
+
