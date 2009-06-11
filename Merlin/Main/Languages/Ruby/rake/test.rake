@@ -29,7 +29,7 @@ namespace :test do
      load "#{ENV['MERLIN_ROOT']}\\Languages\\Ruby\\Tests\\Scripts\\irtest.rb"
   end
   
-  desc "Run mspec psuedo-folders :lang, :cli, :netinterop, :cominterop, :thread"
+  desc "Run mspec psuedo-folders :lang, :cli, :netinterop, :cominterop, :thread, :netcli"
   task :spec_a => :happy do
     IRTest.test(:RubySpec_A)
   end

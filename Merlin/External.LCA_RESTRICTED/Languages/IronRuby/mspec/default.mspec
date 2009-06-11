@@ -36,6 +36,10 @@ class MSpecScript
   set :netinterop, [
     "..\\..\\..\\..\\..\\Main\\Languages\\Ruby\\Tests\\Interop\\net"
     ]
+  
+  set :netcli, [
+    "..\\..\\..\\..\\..\\Main\\Languages\\Ruby\\Tests\\Interop\\cli"
+    ]
 
   set :cominterop, [
     "..\\..\\..\\..\\..\\Main\\Languages\\Ruby\\Tests\\Interop\\com"

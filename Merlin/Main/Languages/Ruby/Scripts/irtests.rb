@@ -13,7 +13,7 @@ class IRTest
     @suites = {
       :Smoke => "#{@root}\\Languages\\Ruby\\Tests\\Scripts\\irtest.bat",
       :Legacy => "#{@root}\\Languages\\Ruby\\Tests\\run.bat",
-      :RubySpec_A => "#{mspec_base} :lang :cli :netinterop :cominterop :thread",
+      :RubySpec_A => "#{mspec_base} :lang :cli :netinterop :cominterop :thread, :netcli",
       :RubySpec_B => "#{mspec_base} :core1 :lib1",
       :RubySpec_C => "#{mspec_base} :core2 :lib2",
       :RubyGems => "#{ir} #{@root}\\Languages\\Ruby\\Scripts\\RubyGemsTests.rb",
