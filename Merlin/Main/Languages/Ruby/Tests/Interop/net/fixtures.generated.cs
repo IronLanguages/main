@@ -174,6 +174,60 @@ public partial class DelegateConversionClass {
       return d("1");
     }
   }
+#line 5 "./delegate/instantiation/array_ref_spec.rb"
+public partial class DelegateHolder {
+      public delegate string[] ARefVoidDelegate();
+      public delegate string[] ARefRefDelegate(string foo);
+      public delegate string[] ARefValDelegate(int foo);
+      public delegate string[] ARefARefDelegate(string[] foo);
+      public delegate string[] ARefAValDelegate(int[] foo);
+      public delegate string[] ARefGenericDelegate<T>(T foo);
+    }
+#line 5 "./delegate/instantiation/array_val_spec.rb"
+public partial class DelegateHolder {
+      public delegate int[] AValVoidDelegate();
+      public delegate int[] AValRefDelegate(string foo);
+      public delegate int[] AValValDelegate(int foo);
+      public delegate int[] AValARefDelegate(string[] foo);
+      public delegate int[] AValAValDelegate(int[] foo);
+      public delegate int[] AValGenericDelegate<T>(T foo);
+    }
+#line 5 "./delegate/instantiation/generic_spec.rb"
+public partial class DelegateHolder {
+      public delegate U GenericVoidDelegate<U>();
+      public delegate U GenericRefDelegate<U>(string foo);
+      public delegate U GenericValDelegate<U>(int foo);
+      public delegate U GenericARefDelegate<U>(string[] foo);
+      public delegate U GenericAValDelegate<U>(int[] foo);
+      public delegate U GenericGenericDelegate<T, U>(T foo);
+    }
+#line 5 "./delegate/instantiation/ref_spec.rb"
+public partial class DelegateHolder {
+      public delegate string RefVoidDelegate();
+      public delegate string RefRefDelegate(string foo);
+      public delegate string RefValDelegate(int foo);
+      public delegate string RefARefDelegate(string[] foo);
+      public delegate string RefAValDelegate(int[] foo);
+      public delegate string RefGenericDelegate<T>(T foo);
+    }
+#line 5 "./delegate/instantiation/val_spec.rb"
+public partial class DelegateHolder {
+      public delegate int ValVoidDelegate();
+      public delegate int ValRefDelegate(string foo);
+      public delegate int ValValDelegate(int foo);
+      public delegate int ValARefDelegate(string[] foo);
+      public delegate int ValAValDelegate(int[] foo);
+      public delegate int ValGenericDelegate<T>(T foo);
+    }
+#line 5 "./delegate/instantiation/void_spec.rb"
+public partial class DelegateHolder {
+      public delegate void VoidVoidDelegate();
+      public delegate void VoidRefDelegate(string foo);
+      public delegate void VoidValDelegate(int foo);
+      public delegate void VoidARefDelegate(string[] foo);
+      public delegate void VoidAValDelegate(int[] foo);
+      public delegate void VoidGenericDelegate<T>(T foo);
+    }
 #line 4 "./delegate/mapping_spec.rb"
 public delegate void VoidVoidDelegate();
 #line 4 "./enum/mapping_spec.rb"

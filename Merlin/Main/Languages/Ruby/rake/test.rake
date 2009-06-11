@@ -64,7 +64,7 @@ namespace :test do
   end
 
   desc "Run all tests"
-  task :all => [:compile, :smoke, :legacy, :spec_a, :spec_b, :spec_c, :apps]
+  task :all => [:compile, "compile:ironpython", :smoke, :legacy, :spec_a, :spec_b, :spec_c, :apps]
 end
 
 task :default => "test:all"
