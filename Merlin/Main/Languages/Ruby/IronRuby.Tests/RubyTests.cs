@@ -364,6 +364,7 @@ namespace IronRuby.Tests {
                 ClrOverloadInheritance5,
                 ClrOverloadInheritance6,
                 ClrMethodEnumeration1,
+                ClrMethodEnumeration2,
                 ClrIndexers1,
                 ClrGenericMethods1,
                 ClrOverloadSelection1,

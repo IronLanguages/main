@@ -60,7 +60,7 @@ namespace IronRuby.Runtime.Calls {
         internal MethodBase/*!*/[]/*!*/ SetMethodBasesNoLock(MethodBase/*!*/[]/*!*/ methods) {
             Debug.Assert(
                 CollectionUtils.TrueForAll(methods, (method) => method.IsStatic || method.DeclaringType == typeof(Object)) ||
-                CollectionUtils.TrueForAll(methods, (method) => !method.IsStatic || CompilerHelpers.IsExtension(method) || RubyClass.IsOperator(method))
+                CollectionUtils.TrueForAll(methods, (method) => !method.IsStatic || CompilerHelpers.IsExtension(method) || RubyUtils.IsOperator(method))
             );
 
             return _methodBases = methods;

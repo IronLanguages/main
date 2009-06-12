@@ -34,10 +34,6 @@ namespace IronPython.Compiler.Ast {
         internal override MSAst.Expression Transform(AstGenerator ag) {
             if (ag.IsGenerator) {
                 if (_expression != null) {
-                    // Return statements in Generators can not have an expression.
-                    // Generators only return values via the yield keyword.
-                    ag.AddError("'return' with argument inside generator", this.Span);
-
                     // Statements can't return null, so return a rethrow. 
                     // Callers should detecet the ag.AddError and avoid trying to execute the tree, 
                     // but if they accidentally do, use Throw instead of empty so that

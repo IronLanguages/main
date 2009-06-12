@@ -48,7 +48,7 @@ namespace IronRuby.Builtins {
                 var cls = self.ImmediateClass;
 
                 using (cls.Context.ClassHierarchyLocker()) {
-                    cls.ForEachMember(true, RubyMethodAttributes.DefaultVisibility, (name, member) => names.Add(name));
+                    cls.ForEachMember(true, RubyMethodAttributes.DefaultVisibility, (name, module, member) => names.Add(name));
                 }
 
                 return names;

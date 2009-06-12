@@ -89,9 +89,6 @@ namespace IronPython.Compiler.Ast {
 
                 // 3. e = right_temp
                 MSAst.Expression transformed = e.TransformSet(ag, Span, right_temp, PythonOperationKind.None);
-                if (transformed == null) {
-                    throw PythonOps.SyntaxError(String.Format("can't assign to {0}", e.NodeName), ag.Context.SourceUnit, e.Span, -1);
-                }
 
                 statements.Add(transformed);
             }

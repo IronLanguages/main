@@ -25,13 +25,14 @@ namespace IronRuby.Runtime.Calls {
 
     public class RubyMemberInfo {
         // Singleton used to undefine methods: stops method resolution
-        internal static readonly RubyMemberInfo/*!*/ UndefinedMethod = new RubyMemberInfo();
+        internal static readonly RubyMemberInfo/*!*/ UndefinedMethod = new RubyMemberInfo(RubyMemberFlags.Empty);
 
         // Singleton used to hide CLR methods: method resolution skips all CLR methods since encountering a hidden method.
-        internal static readonly RubyMemberInfo/*!*/ HiddenMethod = new RubyMemberInfo();
+        internal static readonly RubyMemberInfo/*!*/ HiddenMethod = new RubyMemberInfo(RubyMemberFlags.Empty);
 
-        // Singleton used to represent foreign members (these are not in method tables):
-        internal static readonly RubyMemberInfo/*!*/ ForeignMember = new RubyMemberInfo();
+        // Singleton used to represent interop members (these are not in method tables). This includes foreign meta-object members and CLR members.
+        // Interop member represents a Ruby-public method.
+        internal static readonly RubyMemberInfo/*!*/ InteropMember = new RubyMemberInfo(RubyMemberFlags.Public);
 
         private readonly RubyMemberFlags _flags;
 
@@ -186,8 +187,13 @@ namespace IronRuby.Runtime.Calls {
             get { return ReferenceEquals(this, HiddenMethod); }
         }
 
-        // undefined, hidden method:
-        private RubyMemberInfo() {
+        public bool IsInteropMember {
+            get { return ReferenceEquals(this, InteropMember); }
+        }
+
+        // undefined, hidden, interop method:
+        private RubyMemberInfo(RubyMemberFlags flags) {
+            _flags = flags;
         }
 
         internal RubyMemberInfo(RubyMemberFlags flags, RubyModule/*!*/ declaringModule) {

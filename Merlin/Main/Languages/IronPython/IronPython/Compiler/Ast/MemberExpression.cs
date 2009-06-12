@@ -78,6 +78,14 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
+        internal override string CheckAssign() {
+            return null;
+        }
+
+        internal override string CheckDelete() {
+            return null;
+        }
+
         private MSAst.Expression SetMemberOperator(AstGenerator ag, MSAst.Expression right, PythonOperationKind op, MSAst.ParameterExpression temp) {
             return ag.Set(
                 typeof(object),
