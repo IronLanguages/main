@@ -27,6 +27,7 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Hosting;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 namespace IronRuby.Tests {
     public partial class Tests {
@@ -117,7 +118,7 @@ namespace IronRuby.Tests {
 
             Assert(tokens.Count == 5 &&
                 tokens[0] == Tokens.Identifier &&
-                tokens[1] == Tokens.StringBeg &&
+                tokens[1] == Tokens.StringBegin &&
                 tokens[2] == Tokens.StringContent &&
                 tokens[3] == Tokens.StringEnd &&
                 tokens[4] == Tokens.EndOfFile);
@@ -132,7 +133,7 @@ namespace IronRuby.Tests {
 
             Assert(tokens.Count == 4 &&
                 tokens[0] == Tokens.Identifier &&
-                tokens[1] == Tokens.StringBeg &&
+                tokens[1] == Tokens.StringBegin &&
                 tokens[2] == Tokens.StringEnd &&
                 tokens[3] == Tokens.EndOfFile);
         }
@@ -271,11 +272,11 @@ namespace IronRuby.Tests {
         }
 
         private void Identifiers2() {
-            AssertTokenizer t = AssertTokens();
+            AssertTokenizer t = NewAssertTokenizer();
 
             // 'variable' non-terminal needs to set $<String>$ even for keywords, 
             // otherwise the content of previous token is stored in token value and is interpreted as string.
-            t.Load("//\ntrue")[Tokens.RegexpBeg][Tokens.RegexpEnd][(Tokens)'\n'][Tokens.True].EOF();
+            t.Load("//\ntrue")[Tokens.RegexpBegin][Tokens.RegexpEnd][(Tokens)'\n'][Tokens.True].EOF();
 
             t.Load("Σ = CΣ", (tok) => tok.AllowNonAsciiIdentifiers = true).
                 ReadSymbol(Tokens.Identifier, "Σ")[(Tokens)'='].ReadSymbol(Tokens.ConstantIdentifier, "CΣ").EOF();
@@ -354,7 +355,7 @@ namespace IronRuby.Tests {
         }
 
         private void Scenario_ParseNumbers1() {
-            AssertTokenizer t = AssertTokens();
+            AssertTokenizer t = NewAssertTokenizer();
 
             t.Load("0").Read(0);
             t.Load("0000").Read(0);
@@ -440,7 +441,7 @@ namespace IronRuby.Tests {
         }
 
         private void Scenario_ParseInstanceClassVariables1() {
-            AssertTokenizer t = AssertTokens();
+            AssertTokenizer t = NewAssertTokenizer();
 
             t.Load("@").Read((Tokens)'@');
             t.Load("@@").Read((Tokens)'@');
@@ -455,7 +456,7 @@ namespace IronRuby.Tests {
         }
 
         private void ParseGlobalVariables1() {
-            AssertTokenizer t = AssertTokens();
+            AssertTokenizer t = NewAssertTokenizer();
 
             t.Load("$")[(Tokens)'$'].EOF();
             t.Load("$_")[Tokens.GlobalVariable, "_"].EOF();
@@ -471,7 +472,7 @@ namespace IronRuby.Tests {
         }
 
         private void ParseEolns1() {
-            AssertTokenizer t = AssertTokens();
+            AssertTokenizer t = NewAssertTokenizer();
 
             // empty source:
             t.Load("").EOF();
@@ -482,13 +483,13 @@ namespace IronRuby.Tests {
             t.Load("[\\\r]")[Tokens.Lbrack][(Tokens)'\\'][(Tokens)']'].EOF();
 
             // eoln used to quote a string:
-            t.Load("x = %\r\nhello\r\n")[Tokens.Identifier][(Tokens)'='][Tokens.StringBeg][Tokens.StringContent, "hello"][Tokens.StringEnd].EOF();
-            t.Load("x = %\nhello\r\n")[Tokens.Identifier][(Tokens)'='][Tokens.StringBeg][Tokens.StringContent, "hello"][Tokens.StringEnd].EOF();
-            t.Load("x = %\rhello\r\n\r")[Tokens.Identifier][(Tokens)'='][Tokens.StringBeg][Tokens.StringContent, "hello\n"][Tokens.StringEnd].EOF();
+            t.Load("x = %\r\nhello\r\n")[Tokens.Identifier][(Tokens)'='][Tokens.StringBegin][Tokens.StringContent, "hello"][Tokens.StringEnd].EOF();
+            t.Load("x = %\nhello\r\n")[Tokens.Identifier][(Tokens)'='][Tokens.StringBegin][Tokens.StringContent, "hello"][Tokens.StringEnd].EOF();
+            t.Load("x = %\rhello\r\n\r")[Tokens.Identifier][(Tokens)'='][Tokens.StringBegin][Tokens.StringContent, "hello\n"][Tokens.StringEnd].EOF();
 
-            t.Load("%Q\r\nhello\n")[Tokens.StringBeg][Tokens.StringContent, "hello"][Tokens.StringEnd].EOF();
-            t.Load("%Q\nhello\n")[Tokens.StringBeg][Tokens.StringContent, "hello"][Tokens.StringEnd].EOF();
-            t.Load("%Q\rhello\r\n\r")[Tokens.StringBeg][Tokens.StringContent, "hello\n"][Tokens.StringEnd].EOF();
+            t.Load("%Q\r\nhello\n")[Tokens.StringBegin][Tokens.StringContent, "hello"][Tokens.StringEnd].EOF();
+            t.Load("%Q\nhello\n")[Tokens.StringBegin][Tokens.StringContent, "hello"][Tokens.StringEnd].EOF();
+            t.Load("%Q\rhello\r\n\r")[Tokens.StringBegin][Tokens.StringContent, "hello\n"][Tokens.StringEnd].EOF();
 
             t.Load("%w[  foo]")[Tokens.VerbatimWordsBegin][Tokens.StringContent, "foo"][Tokens.WordSeparator][Tokens.StringEnd].EOF();
             t.Load("%w[\n   foo]")[Tokens.VerbatimWordsBegin][Tokens.StringContent, "foo"][Tokens.WordSeparator][Tokens.StringEnd].EOF();
@@ -498,13 +499,13 @@ namespace IronRuby.Tests {
             t.Load("%1")[(Tokens)'%'].Expect(Errors.UnknownQuotedStringType)[1].EOF();
 
             // heredoc:
-            t.Load("p <<E\n\n1\n2\r3\r\nE\n")[Tokens.Identifier][Tokens.StringBeg]["\n1\n2\r3\n"][Tokens.StringEnd][(Tokens)'\n'].EOF();
-            t.Load("p <<E\nE\r\n")[Tokens.Identifier][Tokens.StringBeg][Tokens.StringEnd][(Tokens)'\n'].EOF();
+            t.Load("p <<E\n\n1\n2\r3\r\nE\n")[Tokens.Identifier][Tokens.StringBegin]["\n1\n2\r3\n"][Tokens.StringEnd][(Tokens)'\n'].EOF();
+            t.Load("p <<E\nE\r\n")[Tokens.Identifier][Tokens.StringBegin][Tokens.StringEnd][(Tokens)'\n'].EOF();
             t.Expect();
         }
 
         private void ParseEscapes1() {
-            AssertTokenizer t = AssertTokens();
+            AssertTokenizer t = NewAssertTokenizer();
             t.DefaultEncoding = RubyEncoding.Binary;
 
             const string CR = "\r";
@@ -514,48 +515,48 @@ namespace IronRuby.Tests {
 
             // string:
 
-            t.Load(Q + BS + CR + LF + Q)[Tokens.StringBeg][Tokens.StringContent, ""][Tokens.StringEnd].EOF();
-            t.Load(Q + BS + LF + Q)[Tokens.StringBeg][Tokens.StringContent, ""][Tokens.StringEnd].EOF();
-            t.Load(Q + BS + CR + Q)[Tokens.StringBeg][Tokens.StringContent, "\r"][Tokens.StringEnd].EOF();
+            t.Load(Q + BS + CR + LF + Q)[Tokens.StringBegin][Tokens.StringContent, ""][Tokens.StringEnd].EOF();
+            t.Load(Q + BS + LF + Q)[Tokens.StringBegin][Tokens.StringContent, ""][Tokens.StringEnd].EOF();
+            t.Load(Q + BS + CR + Q)[Tokens.StringBegin][Tokens.StringContent, "\r"][Tokens.StringEnd].EOF();
 
-            t.Load(Q + BS + "M-" + CR + LF + Q)[Tokens.StringBeg][Tokens.StringContent, "\u008A"][Tokens.StringEnd].EOF();
-            t.Load(Q + BS + "M-" + LF + Q)[Tokens.StringBeg][Tokens.StringContent, "\u008A"][Tokens.StringEnd].EOF();
-            t.Load(Q + BS + "M-" + CR + Q)[Tokens.StringBeg][Tokens.StringContent, "\u008D"][Tokens.StringEnd].EOF();
+            t.Load(Q + BS + "M-" + CR + LF + Q)[Tokens.StringBegin][Tokens.StringContent, "\u008A"][Tokens.StringEnd].EOF();
+            t.Load(Q + BS + "M-" + LF + Q)[Tokens.StringBegin][Tokens.StringContent, "\u008A"][Tokens.StringEnd].EOF();
+            t.Load(Q + BS + "M-" + CR + Q)[Tokens.StringBegin][Tokens.StringContent, "\u008D"][Tokens.StringEnd].EOF();
 
-            t.Load(Q + BS + "C-" + CR + LF + Q)[Tokens.StringBeg][Tokens.StringContent, "\n"][Tokens.StringEnd].EOF();
-            t.Load(Q + BS + "C-" + LF + Q)[Tokens.StringBeg][Tokens.StringContent, "\n"][Tokens.StringEnd].EOF();
-            t.Load(Q + BS + "C-" + CR + Q)[Tokens.StringBeg][Tokens.StringContent, "\r"][Tokens.StringEnd].EOF();
+            t.Load(Q + BS + "C-" + CR + LF + Q)[Tokens.StringBegin][Tokens.StringContent, "\n"][Tokens.StringEnd].EOF();
+            t.Load(Q + BS + "C-" + LF + Q)[Tokens.StringBegin][Tokens.StringContent, "\n"][Tokens.StringEnd].EOF();
+            t.Load(Q + BS + "C-" + CR + Q)[Tokens.StringBegin][Tokens.StringContent, "\r"][Tokens.StringEnd].EOF();
 
-            t.Load(Q + BS + "c" + CR + LF + Q)[Tokens.StringBeg][Tokens.StringContent, "\n"][Tokens.StringEnd].EOF();
-            t.Load(Q + BS + "c" + LF + Q)[Tokens.StringBeg][Tokens.StringContent, "\n"][Tokens.StringEnd].EOF();
-            t.Load(Q + BS + "c" + CR + Q)[Tokens.StringBeg][Tokens.StringContent, "\r"][Tokens.StringEnd].EOF();
+            t.Load(Q + BS + "c" + CR + LF + Q)[Tokens.StringBegin][Tokens.StringContent, "\n"][Tokens.StringEnd].EOF();
+            t.Load(Q + BS + "c" + LF + Q)[Tokens.StringBegin][Tokens.StringContent, "\n"][Tokens.StringEnd].EOF();
+            t.Load(Q + BS + "c" + CR + Q)[Tokens.StringBegin][Tokens.StringContent, "\r"][Tokens.StringEnd].EOF();
 
             // regex:
 
-            t.Load("/" + BS + CR + LF + "/")[Tokens.RegexpBeg][Tokens.StringContent, ""][Tokens.RegexpEnd].EOF();
-            t.Load("/" + BS + LF + "/")[Tokens.RegexpBeg][Tokens.StringContent, ""][Tokens.RegexpEnd].EOF();
-            t.Load("/" + BS + CR + "/")[Tokens.RegexpBeg][Tokens.StringContent, BS + CR][Tokens.RegexpEnd].EOF();
+            t.Load("/" + BS + CR + LF + "/")[Tokens.RegexpBegin][Tokens.StringContent, ""][Tokens.RegexpEnd].EOF();
+            t.Load("/" + BS + LF + "/")[Tokens.RegexpBegin][Tokens.StringContent, ""][Tokens.RegexpEnd].EOF();
+            t.Load("/" + BS + CR + "/")[Tokens.RegexpBegin][Tokens.StringContent, BS + CR][Tokens.RegexpEnd].EOF();
 
-            t.Load("/" + BS + "M-" + CR + LF + "/")[Tokens.RegexpBeg][Tokens.StringContent, BS + "M-\n"][Tokens.RegexpEnd].EOF();
-            t.Load("/" + BS + "M-" + LF + "/")[Tokens.RegexpBeg][Tokens.StringContent, BS + "M-\n"][Tokens.RegexpEnd].EOF();
-            t.Load("/" + BS + "M-" + CR + "/")[Tokens.RegexpBeg][Tokens.StringContent, BS + "M-\r"][Tokens.RegexpEnd].EOF();
+            t.Load("/" + BS + "M-" + CR + LF + "/")[Tokens.RegexpBegin][Tokens.StringContent, BS + "M-\n"][Tokens.RegexpEnd].EOF();
+            t.Load("/" + BS + "M-" + LF + "/")[Tokens.RegexpBegin][Tokens.StringContent, BS + "M-\n"][Tokens.RegexpEnd].EOF();
+            t.Load("/" + BS + "M-" + CR + "/")[Tokens.RegexpBegin][Tokens.StringContent, BS + "M-\r"][Tokens.RegexpEnd].EOF();
 
-            t.Load("/" + BS + "C-" + CR + LF + "/")[Tokens.RegexpBeg][Tokens.StringContent, BS + "C-\n"][Tokens.RegexpEnd].EOF();
-            t.Load("/" + BS + "C-" + LF + "/")[Tokens.RegexpBeg][Tokens.StringContent, BS + "C-\n"][Tokens.RegexpEnd].EOF();
-            t.Load("/" + BS + "C-" + CR + "/")[Tokens.RegexpBeg][Tokens.StringContent, BS + "C-\r"][Tokens.RegexpEnd].EOF();
+            t.Load("/" + BS + "C-" + CR + LF + "/")[Tokens.RegexpBegin][Tokens.StringContent, BS + "C-\n"][Tokens.RegexpEnd].EOF();
+            t.Load("/" + BS + "C-" + LF + "/")[Tokens.RegexpBegin][Tokens.StringContent, BS + "C-\n"][Tokens.RegexpEnd].EOF();
+            t.Load("/" + BS + "C-" + CR + "/")[Tokens.RegexpBegin][Tokens.StringContent, BS + "C-\r"][Tokens.RegexpEnd].EOF();
 
-            t.Load("/" + BS + "c" + CR + LF + "/")[Tokens.RegexpBeg][Tokens.StringContent, BS + "c\n"][Tokens.RegexpEnd].EOF();
-            t.Load("/" + BS + "c" + LF + "/")[Tokens.RegexpBeg][Tokens.StringContent, BS + "c\n"][Tokens.RegexpEnd].EOF();
-            t.Load("/" + BS + "c" + CR + "/")[Tokens.RegexpBeg][Tokens.StringContent, BS + "c\r"][Tokens.RegexpEnd].EOF();
+            t.Load("/" + BS + "c" + CR + LF + "/")[Tokens.RegexpBegin][Tokens.StringContent, BS + "c\n"][Tokens.RegexpEnd].EOF();
+            t.Load("/" + BS + "c" + LF + "/")[Tokens.RegexpBegin][Tokens.StringContent, BS + "c\n"][Tokens.RegexpEnd].EOF();
+            t.Load("/" + BS + "c" + CR + "/")[Tokens.RegexpBegin][Tokens.StringContent, BS + "c\r"][Tokens.RegexpEnd].EOF();
 
             t.Expect();
         }
 
         private void Scenario_ParseRegex1() {
-            AssertTokenizer t = AssertTokens();
+            AssertTokenizer t = NewAssertTokenizer();
 
-            t.Load("//")[Tokens.RegexpBeg][Tokens.RegexpEnd].EOF();
-            t.Load("/foo/")[Tokens.RegexpBeg]["foo"][Tokens.RegexpEnd].EOF();
+            t.Load("//")[Tokens.RegexpBegin][Tokens.RegexpEnd].EOF();
+            t.Load("/foo/")[Tokens.RegexpBegin]["foo"][Tokens.RegexpEnd].EOF();
 
             t.Load("/foo/aib").Skip(2).Read(RubyRegexOptions.IgnoreCase).Expect(Errors.UnknownRegexOption, Errors.UnknownRegexOption);
             t.Load("/foo/9").Skip(2).Read(Tokens.RegexpEnd); // TODO: unexpected token 9
@@ -566,7 +567,7 @@ namespace IronRuby.Tests {
         }
 
         private void StringLiterals1() {
-            AssertTokenizer t = AssertTokens();
+            AssertTokenizer t = NewAssertTokenizer();
 
             for (int i = 0; i < 128; i++) {
                 switch (i) {
@@ -593,7 +594,7 @@ namespace IronRuby.Tests {
                         } else if (Tokenizer.IsLowerLetter(i)) {
                             t.Load(str)[(Tokens)'%'][Tokens.Identifier].Expect(Errors.UnknownQuotedStringType).EOF();
                         } else {
-                            t.Load(str)[Tokens.StringBeg]["foo"][Tokens.StringEnd].EOF();
+                            t.Load(str)[Tokens.StringBegin]["foo"][Tokens.StringEnd].EOF();
                         }
                         break;
                 }
@@ -603,109 +604,116 @@ namespace IronRuby.Tests {
         }
 
         private void Escapes1() {
-            AssertTokenizer t = AssertTokens();
+            AssertTokenizer t = NewAssertTokenizer();
      
             // hexa:
-            t.Load("\"\\x\n20\"")[Tokens.StringBeg]["?\n20"][Tokens.StringEnd].Expect(Errors.InvalidEscapeCharacter);
-            t.Load("\"\\x2\n0\"")[Tokens.StringBeg]["\u0002\n0"][Tokens.StringEnd].EOF();
-            t.Load("\"\\x20\n\"")[Tokens.StringBeg][" \n"][Tokens.StringEnd].EOF();
+            t.Load("\"\\x\n20\"")[Tokens.StringBegin]["?\n20"][Tokens.StringEnd].Expect(Errors.InvalidEscapeCharacter);
+            t.Load("\"\\x2\n0\"")[Tokens.StringBegin]["\u0002\n0"][Tokens.StringEnd].EOF();
+            t.Load("\"\\x20\n\"")[Tokens.StringBegin][" \n"][Tokens.StringEnd].EOF();
             
             // octal:
-            t.Load("\"\\0\n40\"")[Tokens.StringBeg]["\0\n40"][Tokens.StringEnd].EOF();
-            t.Load("\"\\04\n0\"")[Tokens.StringBeg]["\u0004\n0"][Tokens.StringEnd].EOF();
-            t.Load("\"\\040\n\"")[Tokens.StringBeg][" \n"][Tokens.StringEnd].EOF();
-            t.Load("\"\\123\"")[Tokens.StringBeg]["S"][Tokens.StringEnd].EOF();
+            t.Load("\"\\0\n40\"")[Tokens.StringBegin]["\0\n40"][Tokens.StringEnd].EOF();
+            t.Load("\"\\04\n0\"")[Tokens.StringBegin]["\u0004\n0"][Tokens.StringEnd].EOF();
+            t.Load("\"\\040\n\"")[Tokens.StringBegin][" \n"][Tokens.StringEnd].EOF();
+            t.Load("\"\\123\"")[Tokens.StringBegin]["S"][Tokens.StringEnd].EOF();
 
             // multi-byte characters:
-            t.Load(@"""abΣ\xce\xa3cd\xce\xa3e""")[Tokens.StringBeg]["abΣΣcdΣe", Encoding.UTF8][Tokens.StringEnd].EOF();
+            t.Load(@"""abΣ\xce\xa3cd\xce\xa3e""")[Tokens.StringBegin]["abΣΣcdΣe", Encoding.UTF8][Tokens.StringEnd].EOF();
 
             // an incomplete character:
-            t.Load(@"""ab\xce""")[Tokens.StringBeg][new byte[] { (byte)'a', (byte)'b', 0xce }][Tokens.StringEnd].EOF();
+            t.Load(@"""ab\xce""")[Tokens.StringBegin][new byte[] { (byte)'a', (byte)'b', 0xce }][Tokens.StringEnd].EOF();
 
             t.Expect();
         }
 
         [Options(Compatibility = RubyCompatibility.Ruby19)]
         private void UnicodeEscapes1() {
-            AssertTokenizer t = AssertTokens();
+            AssertTokenizer t = NewAssertTokenizer();
 
             int[] values = new[] { 0x20, 0x102020, 0x20, 0x20, 0 };
             int[] width = new[] { 2, 6, 6, 5, 1 };
 
             for (int i = 0; i < values.Length; i++) {
-                t.Load(@"""\u{" + i.ToString("x" + width[i]) + @"}""")[Tokens.StringBeg][Char.ConvertFromUtf32(i)][Tokens.StringEnd].EOF();
+                t.Load(@"""\u{" + i.ToString("x" + width[i]) + @"}""")[Tokens.StringBegin][Char.ConvertFromUtf32(i)][Tokens.StringEnd].EOF();
             }
 
-            t.Load(@":""\u{123456}""")[Tokens.Symbeg][Tokens.StringContent].Expect(Errors.TooLargeUnicodeCodePoint);
-            t.Load(@":""\u{0}""")[Tokens.Symbeg][Tokens.StringContent].Expect(Errors.NullCharacterInSymbol);
-            t.Load(@":""\u0000""")[Tokens.Symbeg][Tokens.StringContent].Expect(Errors.NullCharacterInSymbol);
-            t.Load(@":""\u111""")[Tokens.Symbeg][Tokens.StringContent].Expect(Errors.InvalidEscapeCharacter);
-            t.Load(@":""\u""")[Tokens.Symbeg][Tokens.StringContent].Expect(Errors.InvalidEscapeCharacter);
-            t.Load(@":""\u{123""")[Tokens.Symbeg][Tokens.StringContent].Expect(Errors.InvalidEscapeCharacter);
-            t.Load(@":""\u{123g}""")[Tokens.Symbeg][Tokens.StringContent].Expect(Errors.InvalidEscapeCharacter);
+            t.Load(@":""\u{123456}""")[Tokens.SymbolBegin][Tokens.StringContent].Expect(Errors.TooLargeUnicodeCodePoint);
+            t.Load(@":""\u{0}""")[Tokens.SymbolBegin][Tokens.StringContent].Expect(Errors.NullCharacterInSymbol);
+            t.Load(@":""\u0000""")[Tokens.SymbolBegin][Tokens.StringContent].Expect(Errors.NullCharacterInSymbol);
+            t.Load(@":""\u111""")[Tokens.SymbolBegin][Tokens.StringContent].Expect(Errors.InvalidEscapeCharacter);
+            t.Load(@":""\u""")[Tokens.SymbolBegin][Tokens.StringContent].Expect(Errors.InvalidEscapeCharacter);
+            t.Load(@":""\u{123""")[Tokens.SymbolBegin][Tokens.StringContent].Expect(Errors.InvalidEscapeCharacter);
+            t.Load(@":""\u{123g}""")[Tokens.SymbolBegin][Tokens.StringContent].Expect(Errors.InvalidEscapeCharacter);
 
             // regex:
-            t.Load(@"/\x20/")[Tokens.RegexpBeg][@"\x20"][Tokens.RegexpEnd].EOF();
-            t.Load(@"/\u1234/")[Tokens.RegexpBeg][@"\u1234"][Tokens.RegexpEnd].EOF();
-            t.Load(@"/\u{101234}/")[Tokens.RegexpBeg][@"\u{101234}"][Tokens.RegexpEnd].EOF();
+            t.Load(@"/\x20/")[Tokens.RegexpBegin][@"\x20"][Tokens.RegexpEnd].EOF();
+            t.Load(@"/\u1234/")[Tokens.RegexpBegin][@"\u1234"][Tokens.RegexpEnd].EOF();
+            t.Load(@"/\u{101234}/")[Tokens.RegexpBegin][@"\u{101234}"][Tokens.RegexpEnd].EOF();
 
             // braces:
-            t.Load(@"%{{\u{05d0}}}")[Tokens.StringBeg]["{\u05d0}"][Tokens.StringEnd].EOF();
+            t.Load(@"%{{\u{05d0}}}")[Tokens.StringBegin]["{\u05d0}"][Tokens.StringEnd].EOF();
 
             // eoln in the middle of \u escape:
-            t.Load("\"\\u0020\n\"")[Tokens.StringBeg][" \n"][Tokens.StringEnd].EOF();
-            t.Load("\"\\u002\n0\"")[Tokens.StringBeg]["?002\n0"][Tokens.StringEnd].Expect(Errors.InvalidEscapeCharacter).EOF();
-            t.Load("\"\\u00\n20\"")[Tokens.StringBeg]["?00\n20"][Tokens.StringEnd].Expect(Errors.InvalidEscapeCharacter).EOF();
-            t.Load("\"\\u0\n020\"")[Tokens.StringBeg]["?0\n020"][Tokens.StringEnd].Expect(Errors.InvalidEscapeCharacter).EOF();
-            t.Load("\"\\u\n0020\"")[Tokens.StringBeg]["?\n0020"][Tokens.StringEnd].Expect(Errors.InvalidEscapeCharacter).EOF();
+            t.Load("\"\\u0020\n\"")[Tokens.StringBegin][" \n"][Tokens.StringEnd].EOF();
+            t.Load("\"\\u002\n0\"")[Tokens.StringBegin]["?002\n0"][Tokens.StringEnd].Expect(Errors.InvalidEscapeCharacter).EOF();
+            t.Load("\"\\u00\n20\"")[Tokens.StringBegin]["?00\n20"][Tokens.StringEnd].Expect(Errors.InvalidEscapeCharacter).EOF();
+            t.Load("\"\\u0\n020\"")[Tokens.StringBegin]["?0\n020"][Tokens.StringEnd].Expect(Errors.InvalidEscapeCharacter).EOF();
+            t.Load("\"\\u\n0020\"")[Tokens.StringBegin]["?\n0020"][Tokens.StringEnd].Expect(Errors.InvalidEscapeCharacter).EOF();
 
             // TODO:
             t.DefaultEncoding = RubyEncoding.Binary;
-            t.Load(@"""\u{5d0}""")[Tokens.StringBeg][@"\u{5d0}"][Tokens.StringEnd].Expect(Errors.EncodingsMixed).EOF();
+            t.Load(@"""\u{5d0}""")[Tokens.StringBegin][@"\u{5d0}"][Tokens.StringEnd].Expect(Errors.EncodingsMixed).EOF();
 
             t.Expect();
         }
 
         [Options(Compatibility = RubyCompatibility.Ruby18)]
         private void UnicodeEscapes2() {
-            AssertTokenizer t = AssertTokens();
+            AssertTokenizer t = NewAssertTokenizer();
 
-            t.Load(@":""\u{123456789}""")[Tokens.Symbeg][@"u{123456789}"][Tokens.StringEnd].EOF();
-            t.Load(@":""\u123456789""")[Tokens.Symbeg][@"u123456789"][Tokens.StringEnd].EOF();
-            t.Load(@"/\u1234/")[Tokens.RegexpBeg][@"\u1234"][Tokens.RegexpEnd].EOF();
-            t.Load(@"/\u{101234}/")[Tokens.RegexpBeg][@"\u{101234}"][Tokens.RegexpEnd].EOF();
+            t.Load(@":""\u{123456789}""")[Tokens.SymbolBegin][@"u{123456789}"][Tokens.StringEnd].EOF();
+            t.Load(@":""\u123456789""")[Tokens.SymbolBegin][@"u123456789"][Tokens.StringEnd].EOF();
+            t.Load(@"/\u1234/")[Tokens.RegexpBegin][@"\u1234"][Tokens.RegexpEnd].EOF();
+            t.Load(@"/\u{101234}/")[Tokens.RegexpBegin][@"\u{101234}"][Tokens.RegexpEnd].EOF();
 
             t.Expect();
         }
 
         private void Heredoc1() {
-            AssertTokenizer t = AssertTokens();
+            AssertTokenizer t = NewAssertTokenizer();
 
             t.Load("<<LABEL\nhello\nLABEL")
-                [Tokens.StringBeg]["hello\n"][Tokens.StringEnd][(Tokens)'\n'].EOF();
+                [Tokens.StringBegin]["hello\n"][Tokens.StringEnd][(Tokens)'\n'].EOF();
 
             t.Load("<<\"LABEL\"\nhello\nLABEL")
-                [Tokens.StringBeg]["hello\n"][Tokens.StringEnd][(Tokens)'\n'].EOF();
+                [Tokens.StringBegin]["hello\n"][Tokens.StringEnd][(Tokens)'\n'].EOF();
 
             t.Load("<<'LABEL'\nhello\nLABEL")
-                [Tokens.StringBeg]["hello\n"][Tokens.StringEnd][(Tokens)'\n'].EOF();
+                [Tokens.StringBegin]["hello\n"][Tokens.StringEnd][(Tokens)'\n'].EOF();
 
             t.Load("<<`LABEL`\nhello\nLABEL")
                 [Tokens.ShellStringBegin]["hello\n"][Tokens.StringEnd][(Tokens)'\n'].EOF();
 
             t.Load("<<LABEL\nLABEL123\nLABEL")
-                [Tokens.StringBeg]["LABEL123\n"][Tokens.StringEnd][(Tokens)'\n'].EOF();
+                [Tokens.StringBegin]["LABEL123\n"][Tokens.StringEnd][(Tokens)'\n'].EOF();
 
             t.Expect();
         }
 
         public void Symbols1() {
-            // TODO: we need AssertParser
-            //AssertTokenizer t = AssertTokens();
+            AssertTokens(":''", Tokens.SymbolBegin, Tokens.StringEnd, Tokens.EndOfFile);
+            AssertTokens(":do", Tokens.SymbolBegin, Tokens.Do, Tokens.EndOfFile);
+            AssertTokens("foo :do", Tokens.Identifier, Tokens.SymbolBegin, Tokens.BlockDo, Tokens.EndOfFile);
+        }
 
-            //t.Load(":''")[Tokens.Symbeg][Tokens.StringEnd].Expect(Errors.EmptySymbolLiteral).EOF();
-            
-            //t.Expect();
+        private void AssertTokens(string/*!*/ source, params Tokens[] expected) {
+            var tokens = new List<Tokens>();
+            var parser = new Parser() {
+                TokenSink = (token, span) => tokens.Add(token)
+            };
+
+            parser.Parse(Context.CreateSnippet(source, SourceCodeKind.AutoDetect), new RubyCompilerOptions(), ErrorSink.Null);
+            Assert(tokens.ToArray().ValueEquals(expected));
         }
 
         public void KCode1() {
@@ -1010,11 +1018,7 @@ add 'foo', 'bar'
             return new AssertTokenizer(this).Load(source).ReadBigInteger(source.Replace("_", "").TrimStart('0'), @base);
         }
 
-        private AssertTokenizer/*!*/ AssertTokens(string/*!*/ source) {
-            return new AssertTokenizer(this).Load(source);
-        }
-
-        private AssertTokenizer/*!*/ AssertTokens() {
+        private AssertTokenizer/*!*/ NewAssertTokenizer() {
             return new AssertTokenizer(this);
         }
 
