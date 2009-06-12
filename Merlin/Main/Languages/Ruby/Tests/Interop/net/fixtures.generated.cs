@@ -89,7 +89,7 @@ public partial class NumericHelper {
       return sizeof(UInt64);
     }
   }
-#line 25 "./bcl/string/construction_spec.rb"
+#line 4 "./bcl/string/construction_spec.rb"
 public partial class Klass {
     public string A(){
       return "a";
@@ -773,6 +773,22 @@ namespace NotEmptyNamespace {
       public static int Bar() { return 1; }
     }
   }
+#line 4 "./ruby/name_mangling/public_spec.rb"
+public class PublicNameHolder {
+      public string a() { return "a";}
+      public string A() { return "A";}
+      public string Unique() { return "Unique"; }
+      public string snake_case() {return "snake_case";}
+      public string CamelCase() {return "CamelCase";}
+      public string Mixed_Snake_case() {return "Mixed_Snake_case";}
+      public string CAPITAL() { return "CAPITAL";}
+      public string PartialCapitalID() { return "PartialCapitalID";}
+      public string __LeadingCamelCase() { return "__LeadingCamelCase";}
+      public string __leading_snake_case() { return "__leading_snake_case";}
+    }
+
+    public class SubPublicNameHolder : PublicNameHolder {
+    }
 #line 4 "./struct/mapping_spec.rb"
 public struct EmptyStruct {}
     public struct Struct { public int m1() {return 1;}}

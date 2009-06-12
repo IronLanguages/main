@@ -17,43 +17,25 @@ require "../util/assert.rb"
 
 require "mscorlib"
 
-  # TODO: more interesting tests when more features of .NET interop are working
-  class Bob_test_inherit < System::Collections::ArrayList
-    def foo
-      count
-    end
-  end
-
-def test_inherit
-
-  a = Bob_test_inherit.new
-  a.add 1
-  a.Add 2
-  a.add 3
-  assert_equal(a.foo, 3)
-  assert_equal(a.Count, 3)
-
-end
-
-class System::Collections::ArrayList
-        def total
-            sum = 0
-            each { |i| sum += i }
-            sum
-        end
-end
-
-def test_monkeypatch
-  a = System::Collections::ArrayList.new
+def test_unmangling
+  max = 2147483647
+  assert_equal(System::Int32.MaxValue, max)
+  assert_equal(System::Int32.max_value, max)
   
-  b = System::Collections::ArrayList.new
-  a.add 3
-  a << 2 << 1
-  assert_equal(a.total, 6)
-  b.replace [4,5,6]
-  assert_equal(b.total, 15)
-end
+  # Can't unmangle names with leading, trailing, or consecutive underscores
+  assert_raise(NoMethodError) { System::Int32.max_value_ }
+  assert_raise(NoMethodError) { System::Int32._max_value }
+  assert_raise(NoMethodError) { System::Int32.max__value }
+  assert_raise(NoMethodError) { System::Int32.MaxValue_ }
+  assert_raise(NoMethodError) { System::Int32._MaxValue }
   
+  # Also can't unmangle names with uppercase letters
+  assert_raise(NoMethodError) { System::Int32.maxValue }
+  assert_raise(NoMethodError) { System::Int32.max_Value }
+  assert_raise(NoMethodError) { System::Int32.Maxvalue }
+  assert_raise(NoMethodError) { System::Int32.Max_value }  
+end
+
 def test_invisible_types
   # we should be able to call methods on a type
   # that's not visible--as long as the method itself is
@@ -97,6 +79,10 @@ def test_include_interface_after_type_creation
   end
 end
 
+<<<<<<< Updated upstream:Merlin/Main/Languages/Ruby/Tests/Interop/test_basic.rb
 test_inherit
 test_monkeypatch
+=======
+test_unmangling
+>>>>>>> Stashed changes:Merlin/Main/Languages/Ruby/Tests/Interop/test_basic.rb
 test_invisible_types
