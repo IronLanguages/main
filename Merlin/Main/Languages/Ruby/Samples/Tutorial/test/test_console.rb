@@ -38,12 +38,12 @@ class ConsoleTutorialTest < Test::Unit::TestCase
     end
 end
 
-class TutorialTests < Test::Unit::TestCase
+module TutorialTests
     def self.clean_name n
-        n.gsub(/[^[:alnum:]]+/, "").gsub(/\s/, "_")
+        n.gsub(/(\s|-)/, "_").gsub(/[^[:alnum:]_]+/, "")
     end
     
-    app = ConsoleTutorial.new
+    app = ConsoleTutorial.new @tutorial_path
     app.tutorial.sections.each_index do |s|
         section = app.tutorial.sections[s]
         section.chapters.each_index do |c|
@@ -66,6 +66,16 @@ class TutorialTests < Test::Unit::TestCase
         @app.run
         assert_match /Chapter completed successfully!/, @out.string
     end    
+end
+
+class IronRubyTutorialTests < Test::Unit::TestCase
+    @tutorial_path = File.dirname(__FILE__) + '../Tutorials/ironruby_tutorial.rb'
+    include TutorialTests
+end
+
+class TryRubyTutorialTests < Test::Unit::TestCase
+    @tutorial_path = File.dirname(__FILE__) + '../Tutorials/tryruby_tutorial.rb'
+    include TutorialTests
 end
 
 class HtmlGeneratorTests < Test::Unit::TestCase

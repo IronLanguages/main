@@ -40,11 +40,6 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal override MSAst.Expression TransformSet(AstGenerator ag, SourceSpan span, MSAst.Expression right, PythonOperationKind op) {
-            if (op != PythonOperationKind.None) {
-                ag.AddError("augmented assign to sequence prohibited", Span);
-                return null;
-            }
-
             // if we just have a simple named multi-assignment  (e.g. a, b = 1,2)
             // then go ahead and step over the entire statement at once.  If we have a 
             // more complex statement (e.g. a.b, c.d = 1, 2) then we'll step over the
@@ -125,9 +120,6 @@ namespace IronPython.Compiler.Ast {
                     element,
                     PythonOperationKind.None
                 );
-                if (set == null) {
-                    throw PythonOps.SyntaxError(string.Format("can't assign to {0}", target.NodeName), ag.Context.SourceUnit, target.Span, -1);
-                }
 
                 sets[i] = set;
             }
@@ -142,6 +134,18 @@ namespace IronPython.Compiler.Ast {
             // 11. Return the suite statement (block)
             statements[3] = AstUtils.Empty();
             return ag.AddDebugInfo(Ast.Block(statements), totalSpan);
+        }
+
+        internal override string CheckAssign() {
+            return null;
+        }
+
+        internal override string CheckDelete() {
+            return null;
+        }
+
+        internal override string CheckAugmentedAssign() {
+            return "illegal expression for augmented assignment";
         }
 
         private static bool IsComplexAssignment(Expression expr) {

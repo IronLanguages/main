@@ -1476,7 +1476,7 @@ namespace IronRuby.Builtins {
                 if (foreignMembers.Count > 0) {
                     var symbolicNames = context.RubyOptions.Compatibility > RubyCompatibility.Ruby18;
                     foreach (var name in foreignMembers) {
-                        result.Add(ModuleOps.CreateMethodName(name, symbolicNames));
+                        result.Add(new ClrName(name));
                     }
                 }
                 return result;

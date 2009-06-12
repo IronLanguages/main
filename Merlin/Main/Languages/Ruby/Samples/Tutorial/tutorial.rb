@@ -13,6 +13,8 @@
 #
 # ****************************************************************************
 
+require "stringio"
+
 module Tutorial
 
     class Summary
@@ -37,11 +39,13 @@ module Tutorial
         attr :description
         attr :code
         attr :title
+        attr :source_files # Files used by the task. The user might want to browse these files
 
-        def initialize title, description, code, &success_evaluator	                
+        def initialize title, description, code, source_files, &success_evaluator	                
             @title = title
             @description = description
             @code = code
+            @source_files = source_files
             @success_evaluator = success_evaluator
         end
 
@@ -50,7 +54,7 @@ module Tutorial
                 if @success_evaluator
                   return @success_evaluator.call(interaction)
                 else
-                  return eval(@code) == interaction.result
+                  return eval(@code, interaction.bind) == interaction.result
                 end
             rescue
                 false
@@ -98,13 +102,15 @@ module Tutorial
         attr :name
         attr :file
         attr :introduction, true
+        attr :legal_notice, true
         attr :summary, true
         attr :sections, true
 
-        def initialize name, file, introduction = nil, summary = nil, sections = []
+        def initialize name, file, introduction = nil, notice = nil, summary = nil, sections = []
             @name = name
             @file = file
             @introduction = introduction
+            @legal_notice = notice
             @summary = summary
             @sections = sections
         end
@@ -123,7 +129,9 @@ module Tutorial
     @@ironruby_tutorial_path = File.expand_path("Tutorials/ironruby_tutorial.rb", File.dirname(__FILE__))
     @@tryruby_tutorial_path  = File.expand_path("Tutorials/tryruby_tutorial.rb" , File.dirname(__FILE__))
 
-    def self.get_tutorial path = @@tryruby_tutorial_path
+    def self.get_tutorial path = nil
+        path ||= @@ironruby_tutorial_path
+        path = File.expand_path path
         if not @@tutorials.has_key? path
             require path
             raise "#{path} does not contains a tutorial definition" if not @@tutorials.has_key? path
@@ -132,23 +140,57 @@ module Tutorial
         return @@tutorials[path]
     end
     
+    class ReplContext
+        def initialize
+            @scope = Object.new
+
+            class << @scope            
+                def include(*a)
+                    self.class.instance_eval { include(*a) }
+                end
+                
+                def to_s
+                    "main (tutorial)"
+                end
+            end
+
+            @bind = @scope.instance_eval { binding }
+        end
+        
+        def interact input
+            output = StringIO.new
+            old_stdout, $stdout = $stdout, output
+            result = nil
+            error = nil
+            begin
+                result = eval(input.to_s, @bind) # TODO - to_s should not be needed here
+            rescue Exception, SyntaxError, LoadError => error
+            ensure
+                $stdout = old_stdout
+            end
+
+            InteractionResult.new(@bind, output.string, result, error)
+        end
+    end
+    
     class InteractionResult
         attr :bind
         attr :output
         attr :result
-        attr :exception
+        attr :error
         
-        def initialize(bind, output, result, exception = nil)
+        def initialize(bind, output, result, error = nil)
             @bind = bind
             @output = output
             @result = result
-            @exception = exception
+            @error = error
             
-            raise "result should be nil if an exception was raised" if result and exception
+            puts "#{result}\n#{error}" if result and error
+            raise "result should be nil if an exception was raised" if result and error
         end
         
         def result
-            raise "Interaction resulted in an exception" if exception
+            raise "Interaction resulted in an exception" if error
             @result
         end
     end
@@ -178,6 +220,11 @@ class Object
         else
             raise "introduction should only be used within a tutorial definition"
         end
+    end
+    
+    def legal notice
+        raise "legal should only be used within a tutorial definition" unless Thread.current[:tutorial]
+        Thread.current[:tutorial].legal_notice = notice
     end
     
     def summary s
@@ -226,7 +273,7 @@ class Object
     def task(options, &success_evaluator)
         options = {}.merge(options)
         Thread.current[:chapter].tasks << Tutorial::Task.new(
-          options[:title], options[:body], options[:code], &success_evaluator)
+          options[:title], options[:body], options[:code], options[:source_files], &success_evaluator)
     end
 
     # This represents an operation that consists of several closely realated task. It is useful to have

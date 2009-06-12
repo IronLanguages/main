@@ -123,6 +123,7 @@
     <Compile Include="Extensions\ClrInteger.cs" />
     <None Include="Extensions\ClrInteger.Generator.rb" />
     <Compile Include="Extensions\ClrInteger.Generated.cs" />
+    <Compile Include="Extensions\ClrNameOps.cs" />
     <Compile Include="Extensions\ClrStringOps.cs" />
     <Compile Include="Extensions\FlagEnumOps.cs" />
     <Compile Include="Extensions\IComparableOps.cs" />

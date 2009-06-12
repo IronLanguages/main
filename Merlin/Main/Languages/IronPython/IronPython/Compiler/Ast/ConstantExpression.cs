@@ -50,9 +50,12 @@ namespace IronPython.Compiler.Ast {
             return ag.Globals.GetConstant(_value);
         }
 
-        internal override MSAst.Expression TransformSet(AstGenerator ag, SourceSpan span, MSAst.Expression right, PythonOperationKind op) {
-            ag.AddError(_value == null ? "assignment to None" : "can't assign to literal", Span);
-            return null;
+        internal override string CheckAssign() {
+            if (_value == null) {
+                return "assignment to None";
+            }
+
+            return "can't assign to literal";
         }
 
         public override void Walk(PythonWalker walker) {

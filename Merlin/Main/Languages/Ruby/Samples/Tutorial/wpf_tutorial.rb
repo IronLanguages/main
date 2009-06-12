@@ -14,7 +14,6 @@
 # ****************************************************************************
 
 require "tutorial"
-require "stringio"
 require 'wpf'
 
 begin
@@ -144,15 +143,10 @@ class WpfTutorial
 
   attr_reader :window
 
-  def initialize tutorial = nil
-    if tutorial
-        @tutorial = tutorial
-    else
-        @tutorial = Tutorial.get_tutorial
-    end
+  def initialize tutorial_path = nil
+    @tutorial = Tutorial.get_tutorial tutorial_path
 
-    scope = Object.new
-    @bind = scope.instance_eval { binding }
+    @context = Tutorial::ReplContext.new
 
     @window = XamlReader.load System::Xml::XmlReader.create(System::IO::StringReader.new(@@xaml))
 
@@ -319,25 +313,22 @@ class WpfTutorial
       input = @window.repl_input.text
       print_to_repl ">>> " + input
       @window.repl_input.text = ""
-      begin
-        output = StringIO.new
-        old_stdout, $stdout = $stdout, output
-        result = nil
-        result = eval(input.to_s, @bind) # TODO - to_s should not be needed here
-        print_to_repl(output.string, false) if not output.string.empty?
-        print_to_repl "=> #{result.inspect}"
-      rescue Exception, SyntaxError, LoadError => e
-        print_to_repl output.string if not output.string.empty?
-        print_to_repl e.to_s
-      ensure
-        $stdout = old_stdout
-        if @window.repl_history.text.size > 1
-          # BUG: should be able to do str[-1] on a clrstring
-          @prev_newline = @window.repl_history.text.to_s[-1] == 10 # '\n'
-          @window.repl_history.text = @window.repl_history.text.to_s[0..-2].to_clr_string
-        end
+      
+      result = @context.interact input
+      print_to_repl result.output if not result.output.empty?
+      if result.error
+        print_to_repl result.error.to_s
+      else
+        print_to_repl "=> #{result.result.inspect}"
       end
-      if @task and @task.success?(Tutorial::InteractionResult.new(@bind, output.string, result, e))
+      
+      if @window.repl_history.text.size > 1
+        # BUG: should be able to do str[-1] on a clrstring
+        @prev_newline = @window.repl_history.text.to_s[-1] == 10 # '\n'
+        @window.repl_history.text = @window.repl_history.text.to_s[0..-2].to_clr_string
+      end
+      
+      if @task and @task.success?(result)
         select_next_task
       end
     end
@@ -380,7 +371,7 @@ class WpfTutorial
 end
 
 if $0 == __FILE__
-  WpfTutorial.new.run
+  WpfTutorial.new(ARGV[0]).run
 elsif $0 == nil or $0 == "iirb"
   def reload
     load __FILE__

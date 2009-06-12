@@ -188,6 +188,7 @@
     <Compile Include="Runtime\Calls\SuperForwarderInfo.cs" />
     <Compile Include="Runtime\Calls\VersionHandle.cs" />
     <Compile Include="Runtime\CheckedMonitor.cs" />
+    <Compile Include="Runtime\ClrName.cs" />
     <Compile Include="Runtime\CustomTypeDescHelpers.cs" />
     <Compile Include="Compiler\Generation\OverriddenMembers.cs" />
     <Compile Include="Compiler\Generation\RubyTypeDispenser.cs" />

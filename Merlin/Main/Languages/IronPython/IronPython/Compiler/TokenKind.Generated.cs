@@ -117,11 +117,14 @@ namespace IronPython.Compiler {
         // *** END GENERATED CODE ***
 
         #endregion
+
+        NLToken,
     }
 
     public static class Tokens {
         public static readonly Token EndOfFileToken = new SymbolToken(TokenKind.EndOfFile, "<eof>");
         public static readonly Token NewLineToken = new SymbolToken(TokenKind.NewLine, "<newline>");
+        public static readonly Token NLToken = new SymbolToken(TokenKind.NLToken, "<NL>");  // virtual token used for error reporting
         public static readonly Token IndentToken = new SymbolToken(TokenKind.Indent, "<indent>");
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Dedent")]

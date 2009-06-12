@@ -108,6 +108,14 @@ namespace IronPython.Compiler.Ast {
             return ag.AddDebugInfoAndVoid(assignment, aspan);
         }
 
+        internal override string CheckAssign() {
+            return null;
+        }
+
+        internal override string CheckDelete() {
+            return null;
+        }
+
         internal override MSAst.Expression TransformDelete(AstGenerator ag) {
             if (_reference.PythonVariable != null && !ag.IsGlobal) {
                 MSAst.Expression variable = ag.Globals.GetVariable(ag, _reference.PythonVariable);

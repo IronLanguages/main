@@ -54,25 +54,6 @@ def test_monkeypatch
   assert_equal(b.total, 15)
 end
   
-def test_unmangling
-  max = 2147483647
-  assert_equal(System::Int32.MaxValue, max)
-  assert_equal(System::Int32.max_value, max)
-  
-  # Can't unmangle names with leading, trailing, or consecutive underscores
-  assert_raise(NoMethodError) { System::Int32.max_value_ }
-  assert_raise(NoMethodError) { System::Int32._max_value }
-  assert_raise(NoMethodError) { System::Int32.max__value }
-  assert_raise(NoMethodError) { System::Int32.MaxValue_ }
-  assert_raise(NoMethodError) { System::Int32._MaxValue }
-  
-  # Also can't unmangle names with uppercase letters
-  assert_raise(NoMethodError) { System::Int32.maxValue }
-  assert_raise(NoMethodError) { System::Int32.max_Value }
-  assert_raise(NoMethodError) { System::Int32.Maxvalue }
-  assert_raise(NoMethodError) { System::Int32.Max_value }  
-end
-
 def test_invisible_types
   # we should be able to call methods on a type
   # that's not visible--as long as the method itself is
@@ -118,5 +99,4 @@ end
 
 test_inherit
 test_monkeypatch
-test_unmangling
 test_invisible_types
