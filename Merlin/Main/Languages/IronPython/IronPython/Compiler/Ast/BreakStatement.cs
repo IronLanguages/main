@@ -26,7 +26,6 @@ namespace IronPython.Compiler.Ast {
             if (ag.InLoop) {
                 return ag.AddDebugInfo(MSAst.Expression.Break(ag.BreakLabel), Span);
             } else {
-                ag.AddError("'break' outside loop", Span);
                 return null;
             }
         }

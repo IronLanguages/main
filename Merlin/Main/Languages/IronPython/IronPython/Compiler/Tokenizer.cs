@@ -35,7 +35,8 @@ namespace IronPython.Compiler {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Tokenizer")]
     public sealed partial class Tokenizer : TokenizerService {
         private State _state;
-        private readonly bool _verbatim, _dontImplyDedent;
+        private readonly bool _verbatim;
+        internal bool _dontImplyDedent;
         private bool _disableLineFeedLineSeparator;
         private SourceUnit _sourceUnit;
         private TokenizerBuffer _buffer;
@@ -51,14 +52,14 @@ namespace IronPython.Compiler {
             _errors = ErrorSink.Null;
             _verbatim = true;
             _state = new State(null);
-            _dontImplyDedent = true;
+            _dontImplyDedent = false;
         }
 
         public Tokenizer(ErrorSink errorSink) {
             _errors = errorSink;
             _verbatim = false;
             _state = new State(null);
-            _dontImplyDedent = true;
+            _dontImplyDedent = false;
         }
 
         [Obsolete("Use the overload that takes a PythonCompilerOptions instead")]
@@ -381,23 +382,29 @@ namespace IronPython.Compiler {
 
                     case '\"':
                     case '\'':
+                        _state.LastNewLine = false;
                         return ReadString((char)ch, false, false, false);
 
                     case 'u':
                     case 'U':
+                        _state.LastNewLine = false;
                         return ReadNameOrUnicodeString();
 
                     case 'r':
                     case 'R':
+                        _state.LastNewLine = false;
                         return ReadNameOrRawString();
                     case 'b':
                     case 'B':
+                        _state.LastNewLine = false;
                         return ReadNameOrBytes();
 
                     case '_':
+                        _state.LastNewLine = false;
                         return ReadName();
 
                     case '.':
+                        _state.LastNewLine = false;
                         ch = _buffer.Peek();
                         if (ch >= '0' && ch <= '9')
                             return ReadFraction();
@@ -415,20 +422,29 @@ namespace IronPython.Compiler {
                     case '7':
                     case '8':
                     case '9':
+                        _state.LastNewLine = false;
                         return ReadNumber(ch);
 
                     default:
 
                         if (_buffer.ReadEolnOpt(ch) > 0) {
                             // token marked by the callee:
-                            if (ReadNewline()) return Tokens.NewLineToken;
+                            if (ReadNewline()) {
+                                if (_state.LastNewLine) {
+                                    return Tokens.NLToken;
+                                } else {
+                                    _state.LastNewLine = true;
+                                    return Tokens.NewLineToken;
+                                }
+                            }
 
-                            // ignore end-of-line and whitespace:
+                            // we're in a grouping, white space is ignored
                             _buffer.DiscardToken();
                             ch = NextChar();
                             break;
                         }
 
+                        _state.LastNewLine = false;
                         Token res = NextOperator(ch);
                         if (res != null) {
                             _buffer.MarkSingleLineTokenEnd();
@@ -510,17 +526,21 @@ namespace IronPython.Compiler {
         private Token ReadEof() {
             _buffer.MarkSingleLineTokenEnd();
 
-            if (_state.PendingNewlines-- > 0) {
-                if (!_dontImplyDedent) {
-                    // if the input doesn't end in a EOLN or we're in an indented block then add a newline to the end
-                    // but only if we're implying dedents
-                    SetIndent(0, null);
+            if (!_dontImplyDedent && _state.IndentLevel > 0) {
+                // before we imply dedents we need to make sure the last thing we returned was
+                // a new line.
+                if (!_state.LastNewLine) {
+                    _state.LastNewLine = true;
+                    return Tokens.NewLineToken;
                 }
 
-                return Tokens.NewLineToken;
-            } else {
-                return Tokens.EndOfFileToken;
+                // and then go ahead and imply the dedents.
+                SetIndent(0, null);
+                _state.PendingDedents--;
+                return Tokens.DedentToken;
             }
+
+            return Tokens.EndOfFileToken;
         }
 
         private ErrorToken BadChar(int ch) {
@@ -1017,20 +1037,7 @@ namespace IronPython.Compiler {
                             ch = _buffer.ReadLine();
                             break;
                         }
-                    case EOF:
-                        // EOF after a new-line, set the spaces back to
-                        // zero and back off the EOF so ReadEof can process it
-                        _buffer.Back();
-                        _buffer.MarkMultiLineTokenEnd();
-                        SetIndent(0, null);
-                        return true;
                     default:
-
-                        if (_buffer.ReadEolnOpt(ch) > 0) {
-                            spaces = 0;
-                            break;
-                        }
-
                         _buffer.Back();
 
                         if (GroupingLevel > 0) {
@@ -1039,7 +1046,22 @@ namespace IronPython.Compiler {
 
                         _buffer.MarkMultiLineTokenEnd();
 
-                        SetIndent(spaces, null);
+                        // if there's a blank line then we don't want to mess w/ the
+                        // indentation level - Python says that blank lines are ignored.
+                        // And if we're the last blank line in a file we don't want to
+                        // increase the new indentation level.
+                        if (ch == EOF) {
+                            if (spaces < _state.Indent[_state.IndentLevel]) {
+                                if (_sourceUnit.Kind == SourceCodeKind.InteractiveCode ||
+                                    _sourceUnit.Kind == SourceCodeKind.Statements) {
+                                    SetIndent(spaces, null);
+                                } else {
+                                    DoDedent(spaces, _state.Indent[_state.IndentLevel]);
+                                }
+                            }
+                        } else if (ch != '\n' && ch != '\r') {
+                            SetIndent(spaces, null);
+                        }
 
                         return true;
                 }
@@ -1073,12 +1095,6 @@ namespace IronPython.Compiler {
                             break;
                         }
 
-                    case EOF:
-                        _buffer.Back();
-                        _buffer.MarkMultiLineTokenEnd();
-                        SetIndent(0, null);
-                        return true;
-
                     default:
                         if (_buffer.ReadEolnOpt(ch) > 0) {
                             spaces = 0;
@@ -1100,7 +1116,23 @@ namespace IronPython.Compiler {
                         // and tabs etc.).
                         CheckIndent(sb);
 
-                        SetIndent(spaces, sb);
+                        // if there's a blank line then we don't want to mess w/ the
+                        // indentation level - Python says that blank lines are ignored.
+                        // And if we're the last blank line in a file we don't want to
+                        // increase the new indentation level.
+                        if (ch == EOF) {
+                            if (spaces < _state.Indent[_state.IndentLevel]) {
+                                if (_sourceUnit.Kind == SourceCodeKind.InteractiveCode ||
+                                    _sourceUnit.Kind == SourceCodeKind.Statements) {
+                                    SetIndent(spaces, sb);
+                                } else {
+                                    DoDedent(spaces, _state.Indent[_state.IndentLevel]);
+                                }
+                            }
+                        } else if (ch != '\n' && ch != '\r') {
+                            SetIndent(spaces, sb);
+                        }
+
 
                         return true;
                 }
@@ -1140,18 +1172,24 @@ namespace IronPython.Compiler {
                 _state.PendingDedents = -1;
                 return;
             } else {
-                while (spaces < current) {
-
-                    _state.IndentLevel -= 1;
-                    _state.PendingDedents += 1;
-                    current = _state.Indent[_state.IndentLevel];
-                }
+                current = DoDedent(spaces, current);
 
                 if (spaces != current) {
-                    ReportSyntaxError(new SourceSpan(_buffer.TokenEnd, _buffer.TokenEnd),
+                    ReportSyntaxError(
+                        new SourceSpan(new SourceLocation(_buffer.TokenEnd.Index, _buffer.TokenEnd.Line, _buffer.TokenEnd.Column-1), 
+                            _buffer.TokenEnd),
                         Resources.IndentationMismatch, ErrorCodes.IndentationError);
                 }
             }
+        }
+
+        private int DoDedent(int spaces, int current) {
+            while (spaces < current) {
+                _state.IndentLevel -= 1;
+                _state.PendingDedents += 1;
+                current = _state.Indent[_state.IndentLevel];
+            }
+            return current;
         }
 
         private object ParseInteger(string s, int radix) {
@@ -1237,7 +1275,7 @@ namespace IronPython.Compiler {
             public int[] Indent;
             public int IndentLevel;
             public int PendingDedents;
-            public int PendingNewlines;
+            public bool LastNewLine;        // true if the last token we emitted was a new line.
             public IncompleteStringToken IncompleteString;
 
             // Indentation state used only when we're reporting on inconsistent identation format.
@@ -1248,7 +1286,7 @@ namespace IronPython.Compiler {
 
             public State(State state) {
                 Indent = (int[])state.Indent.Clone();
-                PendingNewlines = state.PendingNewlines;
+                LastNewLine = state.LastNewLine;
                 BracketLevel = state.BraceLevel;
                 ParenLevel = state.ParenLevel;
                 BraceLevel = state.BraceLevel;
@@ -1260,7 +1298,7 @@ namespace IronPython.Compiler {
 
             public State(object dummy) {
                 Indent = new int[MaxIndent]; // TODO
-                PendingNewlines = 1;
+                LastNewLine = false;
                 BracketLevel = ParenLevel = BraceLevel = PendingDedents = IndentLevel = 0;
                 IndentFormat = null;
                 IncompleteString = null;
@@ -1293,7 +1331,7 @@ namespace IronPython.Compiler {
                        left.IndentLevel == right.IndentLevel &&
                        left.ParenLevel == right.ParenLevel &&
                        left.PendingDedents == right.PendingDedents &&
-                       left.PendingNewlines == right.PendingNewlines;
+                       left.LastNewLine == right.LastNewLine;
             }
 
             public static bool operator !=(State left, State right) {

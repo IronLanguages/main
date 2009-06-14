@@ -730,7 +730,7 @@ namespace IronRuby.Builtins {
             }
 
             string operatorName;
-            if (!_isSingletonClass && (operatorName = MapOperator(name)) != null) {
+            if (!_isSingletonClass && (operatorName = RubyUtils.MapOperator(name)) != null) {
                 // instance invocation of an operator:
                 if (TryGetClrMethod(type, basicBindingFlags | BindingFlags.Static, true, name, null, operatorName, null, out method)) {
                     return true;
@@ -773,102 +773,69 @@ namespace IronRuby.Builtins {
             return false;
         }
 
-        private static string MapOperator(string/*!*/ name) {
-            switch (name) {
-                case "+": return "op_Addition";
-                case "-": return "op_Subtraction";
-                case "/": return "op_Division";
-                case "*": return "op_Multiply";
-                case "%": return "op_Modulus";
-                case "==": return "op_Equality";
-                case "!=": return "op_Inequality";
-                case ">": return "op_GreaterThan";
-                case ">=": return "op_GreaterThanOrEqual";
-                case "<": return "op_LessThan";
-                case "<=": return "op_LessThanOrEqual";
-                case "-@": return "op_UnaryNegation";
-                case "+@": return "op_UnaryPlus";
+        protected override IEnumerable<string/*!*/>/*!*/ EnumerateClrMembers(Type/*!*/ type) {
+            var basicBindingFlags = BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.NonPublic;
 
-                // TODO:
-                case "**": return "Power"; 
-                case "<<": return "LeftShift";  
-                case ">>": return "RightShift"; 
-                case "&": return "BitwiseAnd";  
-                case "|": return "BitwiseOr";   
-                case "^": return "ExclusiveOr"; 
-                case "<=>": return "Compare";
-                case "~": return "OnesComplement";
-
-                default:
-                    return null;
+            // default indexer:
+            string defaultIndexerName = null;
+            if (!_isSingletonClass) {
+                object[] attrs = type.GetCustomAttributes(typeof(DefaultMemberAttribute), false);
+                if (attrs.Length == 1) {
+                    defaultIndexerName = ((DefaultMemberAttribute)attrs[0]).MemberName;
+                }
             }
+
+            foreach (MethodInfo method in type.GetMethods(basicBindingFlags | BindingFlags.Static | BindingFlags.Instance)) {
+                if (IsVisible(method, false)) {
+                    if (method.IsSpecialName) {
+                        var name = RubyUtils.MapOperator(method);
+                        if (name != null) {
+                            yield return name;
+                        }
+
+                        if (method.IsStatic == _isSingletonClass) {
+                            if (method.Name.StartsWith("get_")) {
+                                var propertyName = method.Name.Substring(4);
+                                yield return propertyName;
+
+                                if (propertyName == defaultIndexerName) {
+                                    yield return "[]";
+                                }
+                            }
+
+                            if (method.Name.StartsWith("set_")) {
+                                var propertyName = method.Name.Substring(4);
+                                yield return propertyName + "=";
+
+                                if (propertyName == defaultIndexerName) {
+                                    yield return "[]=";
+                                }
+                            }
+                        }
+                    } else if (method.IsStatic == _isSingletonClass) {
+                        yield return method.Name;
+                    }
+                }
+            }
+
+            var bindingFlags = basicBindingFlags | (_isSingletonClass ? BindingFlags.Static : BindingFlags.Instance);
+
+            foreach (FieldInfo field in type.GetFields(bindingFlags)) {
+                if (IsVisible(field)) {
+                    yield return field.Name;
+
+                    if (IsWriteable(field)) {
+                        yield return field.Name + "=";
+                    }
+                }
+            }
+
+            foreach (EventInfo evnt in type.GetEvents(bindingFlags)) {
+                yield return evnt.Name;
+            }
+
         }
-
-        internal static string MapOperator(ExpressionType/*!*/ op) {
-            switch (op) {
-                case ExpressionType.Add: return "+";
-                case ExpressionType.Subtract: return "-";
-                case ExpressionType.Divide: return "/";
-                case ExpressionType.Multiply: return "*";
-                case ExpressionType.Modulo: return "%";
-                case ExpressionType.Equal: return "==";
-                case ExpressionType.NotEqual: return "!=";
-                case ExpressionType.GreaterThan: return ">";
-                case ExpressionType.GreaterThanOrEqual: return ">=";
-                case ExpressionType.LessThan: return "<";
-                case ExpressionType.LessThanOrEqual: return "<=";
-                case ExpressionType.Negate: return "-@";
-                case ExpressionType.UnaryPlus: return "+@";
-                
-                case ExpressionType.Power: return "**";
-                case ExpressionType.LeftShift: return "<<";
-                case ExpressionType.RightShift: return ">>";
-                case ExpressionType.And: return "&";
-                case ExpressionType.Or: return "|";
-                case ExpressionType.ExclusiveOr: return "^";
-                case ExpressionType.OnesComplement: return "~";
-
-                default:
-                    return null;
-            }
-        }
-
-        internal static bool IsOperator(MethodBase/*!*/ method) {
-            if (!method.IsStatic || !method.IsSpecialName) {
-                return false;
-            }
-
-            switch (method.Name) {
-                case "op_Addition": 
-                case "op_Subtraction":
-                case "op_Division": 
-                case "op_Multiply": 
-                case "op_Modulus":
-                case "op_Equality": 
-                case "op_Inequality": 
-                case "op_GreaterThan":
-                case "op_GreaterThanOrEqual":
-                case "op_LessThan":
-                case "op_LessThanOrEqual":
-                case "op_UnaryNegation":
-                case "op_UnaryPlus": 
-
-                // TODO:
-                case "Power":
-                case "LeftShift": 
-                case "RightShift":
-                case "BitwiseAnd":
-                case "BitwiseOr": 
-                case "ExclusiveOr":
-                case "Compare": 
-                case "OnesComplement":
-                    return true;
-
-                default:
-                    return false;
-            }
-        }
-
+        
         private sealed class ClrOverloadInfo {
             public MethodBase Overload { get; set; }
             public RubyOverloadGroupInfo Owner { get; set; }
@@ -1049,6 +1016,26 @@ namespace IronRuby.Builtins {
             return true;
         }
 
+        private bool IsVisible(FieldInfo/*!*/ field) {
+            if (Context.DomainManager.Configuration.PrivateBinding) {
+                return true;
+            }
+
+            if (field.IsPrivate || field.IsAssembly || field.IsFamilyAndAssembly) {
+                return false;
+            }
+
+            if (field.IsProtected()) {
+                return field.DeclaringType != null && field.DeclaringType.IsVisible && !field.DeclaringType.IsSealed;
+            }
+
+            return true;
+        }
+
+        private bool IsWriteable(FieldInfo/*!*/ field) {
+            return !field.IsInitOnly && !field.IsLiteral;
+        }
+
         private int GetVisibleMethodCount(MemberInfo[]/*!*/ members, bool specialNameOnly) {
             int count = 0;
             foreach (MethodBase method in members) {
@@ -1129,7 +1116,7 @@ namespace IronRuby.Builtins {
 
         private bool TryGetClrField(Type/*!*/ type, BindingFlags bindingFlags, bool isWrite, string/*!*/ name, out RubyMemberInfo method) {
             FieldInfo fieldInfo = type.GetField(name, bindingFlags);
-            if (fieldInfo != null && !fieldInfo.IsPrivate && (!isWrite || !fieldInfo.IsInitOnly && !fieldInfo.IsLiteral)) {
+            if (fieldInfo != null && IsVisible(fieldInfo) && (!isWrite || IsWriteable(fieldInfo))) {
                 method = new RubyFieldInfo(fieldInfo, RubyMemberFlags.Public, this, isWrite);
                 return true;
             }
@@ -1158,6 +1145,7 @@ namespace IronRuby.Builtins {
         }
 
         #endregion
+
 
         #region Dynamic operations
 

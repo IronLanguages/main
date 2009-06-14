@@ -133,16 +133,14 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal override void Init(AstGenerator inner, List<MSAst.Expression> init) {
-            MSAst.Expression stmt = _tuple.TransformSet(
-                inner,
-                Span,
-                inner.Globals.GetVariable(inner, Variable),
-                PythonOperationKind.None
+            init.Add(
+                _tuple.TransformSet(
+                    inner,
+                    Span,
+                    inner.Globals.GetVariable(inner, Variable),
+                    PythonOperationKind.None
+                )
             );
-
-            if (stmt != null) {
-                init.Add(stmt);
-            }
         }
 
         public override void Walk(PythonWalker walker) {

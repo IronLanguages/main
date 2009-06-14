@@ -34,13 +34,20 @@ namespace IronPython.Compiler.Ast {
             _expandable = expandable;
         }
 
-        internal override MSAst.Expression TransformSet(AstGenerator ag, SourceSpan span, MSAst.Expression right, PythonOperationKind op) {
+        internal override string CheckAssign() {
             if (Items.Length == 0) {
-                ag.AddError("can't assign to ()", Span);
-                return null;
+                return "can't assign to ()";
             }
-
-            return base.TransformSet(ag, span, right, op);
+            for (int i = 0; i < Items.Length; i++) {
+                Expression e = Items[i];
+                if (e.CheckAssign() != null) {
+                    // we don't return the same message here as CPython doesn't seem to either, 
+                    // for example ((yield a), 2,3) = (2,3,4) gives a different error than
+                    // a = yield 3 = yield 4.
+                    return "can't assign to " + e.NodeName;
+                }
+            }
+            return null;
         }
 
         internal override MSAst.Expression Transform(AstGenerator ag, Type type) {

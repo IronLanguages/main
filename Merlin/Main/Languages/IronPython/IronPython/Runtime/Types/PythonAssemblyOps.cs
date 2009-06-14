@@ -18,12 +18,18 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using IronPython.Runtime.Types;
+using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime.Operations {
     public static class PythonAssemblyOps {
-        private static readonly Dictionary<Assembly, TopNamespaceTracker> assemblyMap = new Dictionary<Assembly, TopNamespaceTracker>();
+        [MultiRuntimeAware]
+        private static readonly object _key = new object();
+
+        private static Dictionary<Assembly, TopNamespaceTracker> GetAssemblyMap(PythonContext/*!*/ context) {
+            return context.GetOrCreateModuleState(_key, () => new Dictionary<Assembly, TopNamespaceTracker>());
+        }
 
         [SpecialName]
         public static object GetBoundMember(CodeContext/*!*/ context, Assembly self, string name) {
@@ -65,6 +71,7 @@ namespace IronPython.Runtime.Operations {
 
         private static TopNamespaceTracker GetReflectedAssembly(CodeContext/*!*/ context, Assembly assem) {
             Debug.Assert(assem != null);
+            var assemblyMap = GetAssemblyMap(context.LanguageContext as PythonContext);
             lock (assemblyMap) {
                 TopNamespaceTracker reflectedAssembly;
                 if (assemblyMap.TryGetValue(assem, out reflectedAssembly))

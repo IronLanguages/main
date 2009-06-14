@@ -90,6 +90,10 @@ namespace IronPython.Compiler.Ast {
             walker.PostWalk(this);
         }
 
+        internal override string CheckAssign() {
+            return "assignment to yield expression not possible";
+        }
+
         public override string NodeName {
             get {
                 return "yield expression";

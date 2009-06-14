@@ -57,6 +57,7 @@ namespace IronPython.Compiler {
         private bool _fromFutureAllowed;
         private string _privatePrefix;
         private bool _parsingStarted, _allowIncomplete;
+        private bool _inLoop, _inFinally, _isGenerator, _returnWithValue;
         private SourceCodeReader _sourceReader;
         private int _errorCode;
 
@@ -150,6 +151,8 @@ namespace IronPython.Compiler {
             bool parsingMultiLineCmpdStmt;
             bool isEmptyStmt = false;
 
+            // ugly but it's difficult to flow this in at creation time.
+            _tokenizer._dontImplyDedent = true;
             properties = ScriptCodeParseResult.Complete;
 
 
@@ -194,7 +197,7 @@ namespace IronPython.Compiler {
             try {
                 StartParsing();
 
-                EatOptionalNewlines();
+                MaybeEatNewLine();
                 Statement statement = ParseStmt();
                 EatEndOfInput();
                 return new PythonAst(statement, false, _languageFeatures, true);
@@ -299,25 +302,27 @@ namespace IronPython.Compiler {
         private void ReportSyntaxError(Token t, SourceSpan span, int errorCode, bool allowIncomplete) {
             SourceLocation start = span.Start;
             SourceLocation end = span.End;
-            if (t.Kind == TokenKind.NewLine || t.Kind == TokenKind.Dedent) {
-                if (_tokenizer.IsEndOfFile) {
-                    t = EatEndOfInput();
-                    end = _token.Span.End;
-                }
-            }
 
-            if (allowIncomplete && t.Kind == TokenKind.EndOfFile) {
+            if (allowIncomplete && (t.Kind == TokenKind.EndOfFile || (_tokenizer.IsEndOfFile && t.Kind == TokenKind.Dedent))) {
                 errorCode |= ErrorCodes.IncompleteStatement;
             }
 
-            string msg;
-            switch (errorCode) {
-                case ErrorCodes.IndentationError: msg = Resources.ExpectedIndentation; break;
-                default: msg = Resources.UnexpectedToken; break;
-            }
+            string msg = String.Format(System.Globalization.CultureInfo.InvariantCulture, GetErrorMessage(t, errorCode), t.Image);
 
-            ReportSyntaxError(start, end, String.Format(System.Globalization.CultureInfo.InvariantCulture,
-                msg, t.Image), errorCode);
+            ReportSyntaxError(start, end, msg, errorCode);
+        }
+
+        private static string GetErrorMessage(Token t, int errorCode) {
+            string msg;
+            if ((errorCode & ~ErrorCodes.IncompleteMask) == ErrorCodes.IndentationError) {
+                msg = Resources.ExpectedIndentation;
+            } else if (t.Kind != TokenKind.EndOfFile) {
+                msg = Resources.UnexpectedToken;
+            } else {
+                msg = "unexpected EOF while parsing";
+            }
+            
+            return msg;
         }
 
         private void ReportSyntaxError(string message) {
@@ -414,26 +419,30 @@ namespace IronPython.Compiler {
                 List<Statement> l = new List<Statement>();
                 l.Add(s);
                 while (true) {
-                    if (MaybeEat(TokenKind.NewLine)) break;
-                    l.Add(ParseSmallStmt());
-                    if (!MaybeEat(TokenKind.Semicolon)) {
-                        Eat(TokenKind.NewLine);
+                    if (MaybeEatNewLine() || MaybeEat(TokenKind.EndOfFile)) {
                         break;
                     }
-                    if (MaybeEat(TokenKind.EndOfFile)) break; // error recovery
+
+                    l.Add(ParseSmallStmt());
+
+                    if (MaybeEat(TokenKind.EndOfFile)) {
+                        // implies a new line
+                        break;
+                    } else if (!MaybeEat(TokenKind.Semicolon)) {
+                        EatNewLine();
+                        break;
+                    }
                 }
                 Statement[] stmts = l.ToArray();
 
                 SuiteStatement ret = new SuiteStatement(stmts);
                 ret.SetLoc(start, GetEnd());
                 return ret;
-            } else {
-                if (!Eat(TokenKind.NewLine)) {
-                    // error handling, make sure we're making forward progress
-                    NextToken();
-                }
-                return s;
+            } else if (!MaybeEat(TokenKind.EndOfFile) && !EatNewLine()) {
+                // error handling, make sure we're making forward progress
+                NextToken();                
             }
+            return s;
         }
 
         /*
@@ -454,8 +463,16 @@ namespace IronPython.Compiler {
                 case TokenKind.KeywordPass:
                     return FinishSmallStmt(new EmptyStatement());
                 case TokenKind.KeywordBreak:
+                    if (!_inLoop) {
+                        ReportSyntaxError("'break' outside loop");
+                    }
                     return FinishSmallStmt(new BreakStatement());
                 case TokenKind.KeywordContinue:
+                    if (!_inLoop) {
+                        ReportSyntaxError("'continue' not properly in loop");
+                    } else if (_inFinally) {
+                        ReportSyntaxError("'continue' not supported inside 'finally' clause");
+                    }
                     return FinishSmallStmt(new ContinueStatement());
                 case TokenKind.KeywordReturn:
                     return ParseReturnStmt();
@@ -487,6 +504,13 @@ namespace IronPython.Compiler {
             NextToken();
             SourceLocation start = GetStart();
             List<Expression> l = ParseExprList();
+            foreach (Expression e in l) {
+                string delError = e.CheckDelete();
+                if (delError != null) {
+                    ReportSyntaxError(e.Span.Start, e.Span.End, delError, ErrorCodes.SyntaxError);
+                }
+            }
+
             DelStatement ret = new DelStatement(l.ToArray());
             ret.SetLoc(start, GetEnd());
             return ret;
@@ -502,6 +526,14 @@ namespace IronPython.Compiler {
             if (!NeverTestToken(PeekToken())) {
                 expr = ParseTestListAsExpr(true);
             }
+
+            if (expr != null) {
+                _returnWithValue = true;
+                if (_isGenerator) {
+                    ReportSyntaxError("'return' with argument inside generator");
+                }
+            }
+
             ReturnStatement ret = new ReturnStatement(expr);
             ret.SetLoc(start, GetEnd());
             return ret;
@@ -520,6 +552,11 @@ namespace IronPython.Compiler {
             FunctionDefinition current = CurrentFunction;
             if (current == null) {
                 ReportSyntaxError(IronPython.Resources.MisplacedYield);
+            }
+
+            _isGenerator = true;
+            if (_returnWithValue) {
+                ReportSyntaxError("'return' with argument inside generator");
             }
 
             Eat(TokenKind.KeywordYield);
@@ -582,6 +619,11 @@ namespace IronPython.Compiler {
             List<Expression> left = new List<Expression>();
 
             while (MaybeEat(TokenKind.Assign)) {
+                string assignError = right.CheckAssign();
+                if (assignError != null) {
+                    ReportSyntaxError(right.Span.Start, right.Span.End, assignError, ErrorCodes.SyntaxError);
+                }
+
                 left.Add(right);
 
                 if (MaybeEat(TokenKind.KeywordYield)) {
@@ -628,8 +670,9 @@ namespace IronPython.Compiler {
                         rhs = ParseTestListAsExpr(false);
                     }
 
-                    if (ret is ListExpression || ret is TupleExpression) {
-                        ReportSyntaxError(ret.Start, ret.End, "illegal expression for augmented assignment");
+                    string assignError = ret.CheckAugmentedAssign();
+                    if (assignError != null) {
+                        ReportSyntaxError(assignError);
                     }
 
                     AugmentedAssignStatement aug = new AugmentedAssignStatement(op, ret, rhs);
@@ -998,7 +1041,7 @@ namespace IronPython.Compiler {
             string savedPrefix = SetPrivatePrefix(name);
 
             // Parse the class body
-            Statement body = ParseSuite();
+            Statement body = ParseClassOrFuncBody();
 
             // Restore the private prefix
             _privatePrefix = savedPrefix;
@@ -1034,7 +1077,7 @@ namespace IronPython.Compiler {
                     decorator = FinishCallExpr(decorator, args);
                 }
                 decorator.SetLoc(start, GetEnd());
-                Eat(TokenKind.NewLine);
+                EatNewLine();
 
                 decorators.Add(decorator);
             }
@@ -1091,7 +1134,8 @@ namespace IronPython.Compiler {
             FunctionDefinition ret = new FunctionDefinition(name, parameters, _sourceUnit);
             PushFunction(ret);
 
-            Statement body = ParseSuite();
+
+            Statement body = ParseClassOrFuncBody();
             FunctionDefinition ret2 = PopFunction();
             System.Diagnostics.Debug.Assert(ret == ret2);
 
@@ -1361,7 +1405,7 @@ namespace IronPython.Compiler {
             SourceLocation start = GetStart();
             Expression expr = ParseExpression();
             SourceLocation mid = GetEnd();
-            Statement body = ParseSuite();
+            Statement body = ParseLoopSuite();
             Statement else_ = null;
             if (MaybeEat(TokenKind.KeywordElse)) {
                 else_ = ParseSuite();
@@ -1409,7 +1453,7 @@ namespace IronPython.Compiler {
             Eat(TokenKind.KeywordIn);
             Expression list = ParseTestListAsExpr(false);
             SourceLocation header = GetEnd();
-            Statement body = ParseSuite();
+            Statement body = ParseLoopSuite();
             Statement else_ = null;
             if (MaybeEat(TokenKind.KeywordElse)) {
                 else_ = ParseSuite();
@@ -1418,6 +1462,36 @@ namespace IronPython.Compiler {
             ret.Header = header;
             ret.SetLoc(start, GetEnd());
             return ret;
+        }
+
+        private Statement ParseLoopSuite() {
+            Statement body;
+            bool inLoop = _inLoop;
+            try {
+                _inLoop = true;
+                body = ParseSuite();
+            } finally {
+                _inLoop = inLoop;
+            }
+            return body;
+        }
+
+        private Statement ParseClassOrFuncBody() {
+            Statement body;
+            bool inLoop = _inLoop, inFinally = _inFinally, isGenerator = _isGenerator, returnWithValue = _returnWithValue;
+            try {
+                _inLoop = false;
+                _inFinally = false;
+                _isGenerator = false;
+                _returnWithValue = false;
+                body = ParseSuite();
+            } finally {
+                _inLoop = inLoop;
+                _inFinally = inFinally;
+                _isGenerator = isGenerator;
+                _returnWithValue = returnWithValue;
+            }
+            return body;
         }
 
         // if_stmt: 'if' expression ':' suite ('elif' expression ':' suite)* ['else' ':' suite]
@@ -1478,9 +1552,8 @@ namespace IronPython.Compiler {
             Statement ret;
 
             if (MaybeEat(TokenKind.KeywordFinally)) {
-                MarkFunctionContainsFinally();
+                finallySuite = ParseFinallySuite(finallySuite);
 
-                finallySuite = ParseSuite();
                 TryStatement tfs = new TryStatement(body, null, elseSuite, finallySuite);
                 tfs.Header = mid;
                 ret = tfs;
@@ -1505,9 +1578,7 @@ namespace IronPython.Compiler {
 
                 if (MaybeEat(TokenKind.KeywordFinally)) {
                     // If this function has an except block, then it can set the current exception.
-                    MarkFunctionContainsFinally();
-
-                    finallySuite = ParseSuite();
+                    finallySuite = ParseFinallySuite(finallySuite);
                 }
 
                 TryStatement ts = new TryStatement(body, handlers.ToArray(), elseSuite, finallySuite);
@@ -1516,6 +1587,18 @@ namespace IronPython.Compiler {
             }
             ret.SetLoc(start, GetEnd());
             return ret;
+        }
+
+        private Statement ParseFinallySuite(Statement finallySuite) {
+            MarkFunctionContainsFinally();
+            bool inFinally = _inFinally;
+            try {
+                _inFinally = true;
+                finallySuite = ParseSuite();
+            } finally {
+                _inFinally = inFinally;
+            }
+            return finallySuite;
         }
 
         private void MarkFunctionContainsFinally() {
@@ -1559,12 +1642,32 @@ namespace IronPython.Compiler {
                 return new ExpressionStatement(new ErrorExpression());
             }
 
+            TokenWithSpan cur = _lookahead;
             List<Statement> l = new List<Statement>();
+            
+            // we only read a real NewLine here because we need to adjust error reporting
+            // for the interpreter.
             if (MaybeEat(TokenKind.NewLine)) {
+                CheckSuiteEofError(cur);
+
+                // for error reporting we track the NL tokens and report the error on
+                // the last one.  This matches CPython.
+                cur = _lookahead;
+                while (PeekToken(TokenKind.NLToken)) {
+                    cur = _lookahead;
+                    NextToken();
+                }
+                    
                 if (!MaybeEat(TokenKind.Indent)) {
-                    ReportSyntaxError(_lookahead, ErrorCodes.IndentationError);
+                    // no indent?  report the indentation error.
+                    if (cur.Token.Kind == TokenKind.Dedent) {
+                        ReportSyntaxError(_lookahead.Span.Start, _lookahead.Span.End, "expected an indented block", ErrorCodes.SyntaxError | ErrorCodes.IncompleteStatement);
+                    } else {
+                        ReportSyntaxError(cur, ErrorCodes.IndentationError);
+                    }
                     return new ExpressionStatement(new ErrorExpression());
                 }
+
                 while (true) {
                     Statement s = ParseStmt();
 
@@ -1584,6 +1687,13 @@ namespace IronPython.Compiler {
                 //  ParseSimpleStmt takes care of the NEWLINE
                 Statement s = ParseSimpleStmt();
                 return s;
+            }
+        }
+
+        private void CheckSuiteEofError(TokenWithSpan cur) {
+            if (MaybeEat(TokenKind.EndOfFile)) {
+                // for interactive parsing we allow the user to continue in this case
+                ReportSyntaxError(_lookahead.Token, cur.Span, ErrorCodes.SyntaxError, true);
             }
         }
 
@@ -2259,7 +2369,7 @@ namespace IronPython.Compiler {
                     NextToken();
                     ReportSyntaxError(GetStart(), GetEnd(), "unexpected indent", ErrorCodes.IndentationError);
                 } else {
-                    ReportSyntaxError("invalid syntax");
+                    ReportSyntaxError(_lookahead);
                 }
             }
             return MakeTupleOrExpr(l, trailingComma);
@@ -2613,6 +2723,7 @@ namespace IronPython.Compiler {
                 case TokenKind.Indent:
                 case TokenKind.Dedent:
                 case TokenKind.NewLine:
+                case TokenKind.EndOfFile:
                 case TokenKind.Semicolon:
 
                 case TokenKind.Assign:
@@ -2714,7 +2825,7 @@ namespace IronPython.Compiler {
             // - other future statements. 
             // 
 
-            while (MaybeEat(TokenKind.NewLine)) ;
+            MaybeEatNewLine();
 
             if (PeekToken(TokenKind.Constant)) {
                 Statement s = ParseStmt();
@@ -2730,7 +2841,7 @@ namespace IronPython.Compiler {
                 }
             }
 
-            while (MaybeEat(TokenKind.NewLine)) ;
+            MaybeEatNewLine();
 
             // from __future__
             if (_fromFutureAllowed) {
@@ -2750,7 +2861,7 @@ namespace IronPython.Compiler {
 
             while (true) {
                 if (MaybeEat(TokenKind.EndOfFile)) break;
-                if (MaybeEat(TokenKind.NewLine)) continue;
+                if (MaybeEatNewLine()) continue;
 
                 Statement s = ParseStmt();
                 l.Add(s);
@@ -2778,7 +2889,7 @@ namespace IronPython.Compiler {
 
                 switch (PeekToken().Kind) {
                     case TokenKind.NewLine:
-                        EatOptionalNewlines();
+                        MaybeEatNewLine();
                         Eat(TokenKind.EndOfFile);
                         if (_tokenizer.EndContinues) {
                             parsingMultiLineCmpdStmt = true;
@@ -2804,7 +2915,7 @@ namespace IronPython.Compiler {
                     default:
                         //  parseSimpleStmt takes care of one or more simple_stmts and the Newline
                         s = ParseSimpleStmt();
-                        EatOptionalNewlines();
+                        MaybeEatNewLine();
                         Eat(TokenKind.EndOfFile);
                         break;
                 }
@@ -2824,12 +2935,43 @@ namespace IronPython.Compiler {
             return expression;
         }
 
-        private void EatOptionalNewlines() {
-            while (MaybeEat(TokenKind.NewLine)) ;
+        /// <summary>
+        /// Maybe eats a new line token returning true if the token was
+        /// eaten.
+        /// 
+        /// Python always tokenizes to have only 1  new line character in a 
+        /// row.  But we also craete NLToken's and ignore them except for 
+        /// error reporting purposes.  This gives us the same errors as 
+        /// CPython and also matches the behavior of the standard library 
+        /// tokenize module.  This function eats any present NL tokens and throws
+        /// them away.
+        /// </summary>
+        private bool MaybeEatNewLine() {
+            if (MaybeEat(TokenKind.NewLine)) {
+                while (MaybeEat(TokenKind.NLToken)) ;
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Eats a new line token throwing if the next token isn't a new line.  
+        /// 
+        /// Python always tokenizes to have only 1  new line character in a 
+        /// row.  But we also craete NLToken's and ignore them except for 
+        /// error reporting purposes.  This gives us the same errors as 
+        /// CPython and also matches the behavior of the standard library 
+        /// tokenize module.  This function eats any present NL tokens and throws
+        /// them away.
+        /// </summary>
+        private bool EatNewLine() {
+            bool res = Eat(TokenKind.NewLine);
+            while (MaybeEat(TokenKind.NLToken)) ;
+            return res;
         }
 
         private Token EatEndOfInput() {
-            while (MaybeEat(TokenKind.NewLine) || MaybeEat(TokenKind.Dedent)) {
+            while (MaybeEatNewLine() || MaybeEat(TokenKind.Dedent)) {
                 ;
             }
 

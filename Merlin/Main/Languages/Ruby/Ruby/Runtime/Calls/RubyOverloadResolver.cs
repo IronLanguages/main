@@ -91,7 +91,7 @@ namespace IronRuby.Runtime.Calls {
 
             if (_callConvention == SelfCallConvention.SelfIsInstance) {
                 if (CompilerHelpers.IsStatic(method)) {
-                    Debug.Assert(RubyClass.IsOperator(method) || CompilerHelpers.IsExtension(method) || 
+                    Debug.Assert(RubyUtils.IsOperator(method) || CompilerHelpers.IsExtension(method) || 
                         method.Name.EndsWith(RubyMethodGroupInfo.SuperCallMethodWrapperNameSuffix)
                     );
 
@@ -178,7 +178,7 @@ namespace IronRuby.Runtime.Calls {
 
             if (callConvention == SelfCallConvention.SelfIsInstance) {
                 if (CompilerHelpers.IsStatic(method)) {
-                    Debug.Assert(RubyClass.IsOperator(method) || CompilerHelpers.IsExtension(method));
+                    Debug.Assert(RubyUtils.IsOperator(method) || CompilerHelpers.IsExtension(method));
                     i++;
                 }
             }

@@ -128,7 +128,7 @@ namespace IronRuby.Runtime {
 
             var properties = new Dictionary<string, int>();
             using (context.ClassHierarchyLocker()) {
-                immediateClass.ForEachMember(true, RubyMethodAttributes.DefaultVisibility, delegate(string/*!*/ name, RubyMemberInfo/*!*/ member) {
+                immediateClass.ForEachMember(true, RubyMethodAttributes.DefaultVisibility, delegate(string/*!*/ name, RubyModule/*!*/ module, RubyMemberInfo/*!*/ member) {
                     int flag = 0;
                     if (member is RubyAttributeReaderInfo) {
                         flag = readable;
