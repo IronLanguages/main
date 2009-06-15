@@ -414,10 +414,16 @@ namespace IronRuby.Builtins {
             Context.RequiresClassHierarchyLock();
             Debug.Assert(_constants != null && _constants.Count == 0);
 
-            // TODO: protected types
             // TODO: Inherited generic overloads. We need a custom TypeGroup to do it right - part of the type group might be removed
+
+            // TODO: protected types
+            var bindingFlags = BindingFlags.Public | BindingFlags.DeclaredOnly;
+            if (Context.DomainManager.Configuration.PrivateBinding) {
+                bindingFlags |= BindingFlags.NonPublic;
+            }
+
             // if the constant is redefined/removed from the base class. This is similar to method overload inheritance.
-            Type[] types = _typeTracker.Type.GetNestedTypes(BindingFlags.Public | BindingFlags.DeclaredOnly);
+            Type[] types = _typeTracker.Type.GetNestedTypes(bindingFlags);
             var trackers = new List<TypeTracker>();
             var names = new List<string>();
             foreach (var type in types) {

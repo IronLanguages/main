@@ -74,6 +74,10 @@ class ToStyledHtml < SM::ToHtml
     def self.convert text, paragraph_tag = '<p class="Body">'
         if not text then return "" end
         
+        if text =~ /\A(\s+)/
+            text = "#{$1}dummy\n\n" + text # TODO - This is a workaround for http://ironruby.codeplex.com/WorkItem/View.aspx?WorkItemId=1301
+        end
+        
         if not @markupParser
             @markupParser = SM::SimpleMarkup.new
             # external hyperlinks
@@ -103,24 +107,9 @@ class HtmlTutorial
             @tutorial = Tutorial.get_tutorial
         end
 
-        @bind = Object.new.instance_eval { binding }
+        @context = Tutorial::ReplContext.new
     end
 
-    def task_output code
-      begin
-          output = StringIO.new
-          old_stdout, $stdout = $stdout, output
-          result = eval(code, @bind)
-      rescue => e
-          puts e.to_s
-      else
-          puts "=> #{result.inspect}"
-      ensure
-          $stdout = old_stdout
-      end
-      output.string
-    end
-    
     @@rhtml = %q{
       <head>
         <title><%= @tutorial.name %></title>
@@ -154,13 +143,31 @@ class HtmlTutorial
             <h3><%= chapter.name %></h3>
             <p class="Body"><%= ToStyledHtml.convert(chapter.introduction) %></p>
             <% chapter.tasks.each do |task| %>
+              <% task.setup.call(@context.bind) if task.setup %>
               <p class="Body"><%= ToStyledHtml.convert(task.description) %></p>
               <p class="Code-Highlighted">
-              <b>
+              <% if task.code.respond_to?(:to_ary) %>
+                <% task.code.to_ary.each do |code| %>
+                  <b>
+                  >>> <%= code %>
+                  </b>
+                  <br>
+                  <% result = @context.interact code %>
+                  <%= "#{result.output.gsub(/\n/, '<br>')}<br>" if not result.output.empty? %>
+                  <%= "#{result.error.inspect.gsub(/\n/, '<br>')}<br>" if result.error %>
+                  <%= "=> #{result.result.inspect.gsub(/\n/, '<br>')}<br>" if not result.error %>
+                  <br>                
+                <% end %>
+              <% else %>
+                <b>
                 >>> <%= task.code %>
-              </b>
-              <br>
-              <%= task_output(task.code).gsub(/\n/, "<br>") %>
+                </b>
+                <br>
+                  <% result = @context.interact task.code %>
+                  <%= "#{result.output.gsub(/\n/, '<br>')}<br>" if not result.output.empty? %>
+                  <%= "#{result.error.inspect.gsub(/\n/, '<br>')}<br>" if result.error %>
+                  <%= "=> #{result.result.inspect.gsub(/\n/, '<br>')}<br>" if not result.error %>
+              <% end %>
               </p>
             <% end %>
           <% end %>

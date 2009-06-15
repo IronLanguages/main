@@ -131,7 +131,7 @@ namespace IronPython.Runtime.Binding {
 
             GetMemberBinder gma = (GetMemberBinder)member;
 
-            return gma.FallbackGetMember(self);
+            return gma.FallbackGetMember(self.Restrict(self.GetLimitType()));
         }
 
         protected static string GetGetMemberName(DynamicMetaObjectBinder member) {

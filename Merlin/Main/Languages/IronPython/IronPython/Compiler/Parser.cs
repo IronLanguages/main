@@ -3118,7 +3118,7 @@ namespace IronPython.Compiler {
             }
 
             public override void Add(SourceUnit sourceUnit, string message, SourceSpan span, int errorCode, Severity severity) {
-                if (_parser._errorCode == 0) {
+                if (_parser._errorCode == 0 && (severity == Severity.Error || severity == Severity.FatalError)) {
                     _parser._errorCode = errorCode;
                 }
                 _parser.ErrorSink.Add(sourceUnit, message, span, errorCode, severity);

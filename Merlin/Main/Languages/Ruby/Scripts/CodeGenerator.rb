@@ -88,6 +88,20 @@ end
 # Helpers
 #
 
+def using(file)
+  content = read_file_content(file)
+  
+  snippet_count = 0
+  content.match(/^\s*#if RUBY\s*(.*?)#endif/m) do
+    snippet_count += 1
+    
+    snippet = $1
+    module_eval(snippet)
+  end
+  
+  puts "Loaded #{snippet_count} snippet(s) from #{file}."
+end
+
 def eval_metavariables(content)
   content.match(/\/\*\$\$\*\/([^;]*)/) do
     eval('$' + $1)

@@ -237,6 +237,10 @@ namespace IronRuby.Runtime.Calls {
 
         #region Dynamic Operations
 
+        internal virtual MethodDispatcher GetDispatcher<T>(RubyCallSignature signature, object target, int version) {
+            return null;
+        }
+
         internal virtual void BuildCallNoFlow(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name) {
             throw Assert.Unreachable;
         }

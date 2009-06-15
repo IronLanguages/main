@@ -530,6 +530,13 @@ namespace IronPython.Runtime.Operations {
                 // methods for two different types - for example object.MemberwiseClone for
                 // ExtensibleInt & object.  We need to reset our type to the common base type.
                 type = GetCommonBaseType(x.DeclaringType, y.DeclaringType) ?? typeof(object);
+
+                // generic type definitions will have a null name.
+                if (x.DeclaringType.FullName == null) {
+                    return -1;
+                } else if (y.DeclaringType.FullName == null) {
+                    return 1;
+                }
                 return x.DeclaringType.FullName.CompareTo(y.DeclaringType.FullName);
             });
 

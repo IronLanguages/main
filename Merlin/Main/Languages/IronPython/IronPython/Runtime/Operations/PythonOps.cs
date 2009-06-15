@@ -1027,45 +1027,28 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static IList<object> GetAttrNames(CodeContext/*!*/ context, object o) {
-
             IMembersList memList = o as IMembersList;
             if (memList != null) {
                 return memList.GetMemberNames(context);
             }
 
-            List res;
-            if (o is IDynamicMetaObjectProvider) {
-                res = new List();
+            IPythonObject po = o as IPythonObject;
+            if (po != null) {
+                return po.PythonType.GetMemberNames(context, o);
+            }
 
-                PythonContext pc = PythonContext.GetContext(context);
-                foreach (object x in pc.MemberNamesSite.Target.Invoke(pc.MemberNamesSite, context, o)) {
-                    res.AddNoLock(x);
-                }
-            } else {
-                res = DynamicHelpers.GetPythonType(o).GetMemberNames(context, o);
+            List res = DynamicHelpers.GetPythonType(o).GetMemberNames(context, o);
 
 #if !SILVERLIGHT
-                if (o != null && ComOps.IsComObject(o)) {
-                    foreach (string name in System.Dynamic.ComBinder.GetDynamicMemberNames(o)) {
-                        if (!res.Contains(name)) {
-                            res.AddNoLock(name);
-                        }
+
+            if (o != null && ComOps.IsComObject(o)) {
+                foreach (string name in System.Dynamic.ComBinder.GetDynamicMemberNames(o)) {
+                    if (!res.Contains(name)) {
+                        res.AddNoLock(name);
                     }
                 }
+            }
 #endif
-            }
-
-            //!!! ugly, we need to check for non-SymbolID keys
-            IPythonObject dyno = o as IPythonObject;
-            if (dyno != null) {
-                IAttributesCollection iac = dyno.Dict;
-                if (iac != null) {
-                    foreach (object id in iac.Keys) {
-                        if (!res.__contains__(id)) res.append(id);
-                    }
-                }
-            }
-
             return res;
         }
 
@@ -3188,17 +3171,37 @@ namespace IronPython.Runtime.Operations {
                 warn = PythonOps.GetBoundAttr(context, warnings, SymbolTable.StringToId("warn"));
             }
 
-            for (int i = 0; i < args.Length; i++) {
-                args[i] = PythonOps.ToString(args[i]);
-            }
-
-            message = String.Format(message, args);
+            message = FormatWarning(message, args);
 
             if (warn == null) {
                 PythonOps.PrintWithDest(context, pc.SystemStandardError, "warning: " + category.Name + ": " + message);
             } else {
                 PythonOps.CallWithContext(context, warn, message, category);
             }
+        }
+
+        public static void ShowWarning(CodeContext/*!*/ context, PythonType category, string message, string filename, int lineNo) {
+            PythonContext pc = PythonContext.GetContext(context);
+            object warnings = pc.GetWarningsModule(), warn = null;
+
+            if (warnings != null) {
+                warn = PythonOps.GetBoundAttr(context, warnings, SymbolTable.StringToId("showwarning"));
+            }
+
+            if (warn == null) {
+                PythonOps.PrintWithDestNoNewline(context, pc.SystemStandardError, String.Format("{0}:{1}: {2}: {3}\n", filename, lineNo, category.Name, message));
+            } else {
+                PythonOps.CallWithContext(context, warn, message, category, filename ?? "", lineNo);
+            }
+        }
+
+        private static string FormatWarning(string message, object[] args) {
+            for (int i = 0; i < args.Length; i++) {
+                args[i] = PythonOps.ToString(args[i]);
+            }
+
+            message = String.Format(message, args);
+            return message;
         }
 
         private static bool IsPrimitiveNumber(object o) {
@@ -3752,15 +3755,11 @@ namespace IronPython.Runtime.Operations {
             return new SystemExitException();
         }
 
-        public static Exception SyntaxWarning(string message, SourceUnit sourceUnit, SourceSpan span, int errorCode) {
-            int line = span.Start.Line;
-            string fileName = sourceUnit.Path ?? "?";
+        public static void SyntaxWarning(string message, SourceUnit sourceUnit, SourceSpan span, int errorCode) {
+            PythonContext pc = (PythonContext)sourceUnit.LanguageContext;
+            CodeContext context = pc.SharedContext;
 
-            if (sourceUnit != null) {
-                message = String.Format("{0} ({1}, line {2})", message, fileName, line);
-            }
-
-            return SyntaxWarning(message, fileName, span.Start.Line, span.Start.Column, sourceUnit.GetCodeLine(line), Severity.FatalError);
+            ShowWarning(context, PythonExceptions.SyntaxWarning, message, sourceUnit.Path, span.Start.Line);
         }
 
         public static SyntaxErrorException SyntaxError(string message, SourceUnit sourceUnit, SourceSpan span, int errorCode) {

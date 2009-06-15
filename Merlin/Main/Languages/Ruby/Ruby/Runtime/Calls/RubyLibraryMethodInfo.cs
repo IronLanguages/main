@@ -95,6 +95,26 @@ namespace IronRuby.Runtime.Calls {
             return new RubyLibraryMethodInfo(this, methods);
         }
 
+        internal override MethodDispatcher GetDispatcher<T>(RubyCallSignature signature, object target, int version) {
+            if (!(target is IRubyObject)) {
+                return null;
+            }
+
+            int arity;
+            if (!IsEmpty || (arity = GetArity()) != 1) {
+                return null;
+            }
+
+            return MethodDispatcher.CreateRubyObjectDispatcher(
+                typeof(T), new Func<object, Proc, object, object>(EmptyRubyMethodStub1), arity, signature.HasScope, signature.HasBlock, version
+            );
+        }
+
+        public static object EmptyRubyMethodStub1(object self, Proc block, object arg0) {
+            // nop
+            return null;
+        }
+
         internal override void BuildCallNoFlow(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name) {
             BuildCallNoFlow(metaBuilder, args, name, MethodBases, CallConvention, ImplicitProtocolConversions);
         }
