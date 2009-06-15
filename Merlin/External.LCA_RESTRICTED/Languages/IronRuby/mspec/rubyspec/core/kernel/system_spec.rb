@@ -60,7 +60,7 @@ describe "Kernel#system" do
   end
 
   it "sets $?" do
-    system("cd")
+    system("cd > #{tmp('system_spec.txt')}")
     $?.exitstatus.should == 0
 
     system("cd non-existent")

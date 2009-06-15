@@ -594,6 +594,7 @@ namespace IronRuby.Tests {
                 Backtrace3,
                 Backtrace4,
 
+                Dlr_RubySnippet,
                 Dlr_ClrSubtype,
                 Dlr_MethodMissing,
                 Dlr_Miscellaneous,

@@ -909,6 +909,8 @@ namespace IronRuby.Runtime {
                 basePath + "/" + path;
         }
 
+        public static bool FileSystemUsesDriveLetters { get { return System.IO.Path.DirectorySeparatorChar == '\\'; } }
+
         // Is path something like "/foo/bar" (or "c:/foo/bar" on Windows)
         // We need this instead of Path.IsPathRooted since we need to be able to deal with Unix-style path names even on Windows
         public static bool IsAbsolutePath(string path) {
@@ -929,7 +931,7 @@ namespace IronRuby.Runtime {
                 return false;
             }
 
-            if (Environment.OSVersion.Platform == PlatformID.Unix) {
+            if (!FileSystemUsesDriveLetters) {
                 return false;
             }
 
@@ -950,8 +952,8 @@ namespace IronRuby.Runtime {
                 int initialSlashesCount = path.Length - withoutInitialSlashes.Length;
                 string initialSlashes = path.Substring(0, initialSlashesCount);
                 pathAfterRoot = path.Substring(initialSlashesCount);
-                
-                if (Environment.OSVersion.Platform == PlatformID.Unix || initialSlashesCount > 1) {
+
+                if (!FileSystemUsesDriveLetters || initialSlashesCount > 1) {
                     return initialSlashes;
                 } else {
                     string currentDirectory = RubyUtils.CanonicalizePath(context.DomainManager.Platform.CurrentDirectory);
@@ -971,7 +973,7 @@ namespace IronRuby.Runtime {
                 return false;
             }
 
-            if (Environment.OSVersion.Platform == PlatformID.Unix) {
+            if (!FileSystemUsesDriveLetters) {
                 return false;
             }
 
