@@ -48,10 +48,6 @@ builtin\test_dir.rb                                         coreclr-
 # end 
 
 # begin
-interop\test_basic.rb                                       ironm3
-# end
-
-# begin
 runtime\block\test_block_given.rb                           all
 runtime\block\test_break.rb                                 all
 runtime\block\test_closure.rb                               all

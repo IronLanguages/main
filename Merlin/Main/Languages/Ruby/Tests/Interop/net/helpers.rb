@@ -35,4 +35,9 @@ class Array
   end
 end
 
+class String
+  def to_snake_case
+    gsub(/(.)([A-Z])/) {|el| "#{$1 == "_" ? "" : $1}_#{$2}"}.downcase
+  end
+end
 

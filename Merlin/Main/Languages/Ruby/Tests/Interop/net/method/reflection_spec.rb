@@ -55,7 +55,6 @@ describe "Reflecting on abstract .NET methods" do
     @meth = AbstractClassWithMethods.instance_method(:public_method)
     @meth.should be_kind_of UnboundMethod
   end
-
 end
 
 describe "Reflecting on .NET method objects" do
