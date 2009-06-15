@@ -26,8 +26,6 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Utils;
 using Ast = System.Linq.Expressions.Expression;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
-using System.Diagnostics;
-using System.Threading;
 
 namespace IronRuby.Runtime.Calls {
 
@@ -94,9 +92,9 @@ namespace IronRuby.Runtime.Calls {
         #region Precompiled Rules
 
         public override T BindDelegate<T>(CallSite<T>/*!*/ site, object[]/*!*/ args) {
-            PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "Ruby: RubyCallAction" + _signature.ToString() + ": BindDelegate");
+            PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "Ruby: RubyCallAction" + Signature.ToString() + ": BindDelegate");
 
-            if (Context == null || (Signature.Flags & ~(RubyCallFlags.HasImplicitSelf | RubyCallFlags.HasScope)) != 0) {
+            if (Context == null || (Signature.Flags & ~(RubyCallFlags.HasImplicitSelf | RubyCallFlags.HasScope | RubyCallFlags.HasBlock)) != 0) {
                 return base.BindDelegate<T>(site, args);
             }
 
@@ -110,10 +108,6 @@ namespace IronRuby.Runtime.Calls {
                 target = args[0];
             }
 
-            if (!(target is IRubyObject)) {
-                return base.BindDelegate<T>(site, args);
-            }
-
             int version;
             MethodResolutionResult method;
             RubyClass targetClass = Context.GetImmediateClassOf(target);
@@ -122,13 +116,11 @@ namespace IronRuby.Runtime.Calls {
                 method = targetClass.ResolveMethodForSiteNoLock(_methodName, GetVisibilityContext(Signature, scope));
             }
 
-            int mandatoryParamCount;
-            Delegate d;
-            if (!method.Found || !TryGetDispatchableDelegate(method.Info, out d, out mandatoryParamCount)) {
+            if (!method.Found || method.Info.IsProtected && !Signature.HasImplicitSelf) {
                 return base.BindDelegate<T>(site, args);
             }
 
-            var dispatcher = MethodDispatcher.CreateRubyObjectDispatcher(typeof(T), d, mandatoryParamCount, Signature.HasScope, version);
+            var dispatcher = method.Info.GetDispatcher<T>(Signature, target, version);
             if (dispatcher != null) {
                 T result = (T)dispatcher.CreateDelegate();
                 CacheTarget(result);
@@ -137,34 +129,6 @@ namespace IronRuby.Runtime.Calls {
             }
 
             return base.BindDelegate<T>(site, args);
-        }
-
-        private bool TryGetDispatchableDelegate(RubyMemberInfo/*!*/ memberInfo, out Delegate d, out int mandatoryParamCount) {
-            if (!memberInfo.IsProtected || Signature.HasImplicitSelf) {
-                RubyMethodInfo ruby;
-                RubyLibraryMethodInfo lib;
-                if ((ruby = memberInfo as RubyMethodInfo) != null) {
-                    if (!ruby.HasUnsplatParameter && ruby.OptionalParamCount == 0) {
-                        d = ruby.GetDelegate();
-                        mandatoryParamCount = ruby.MandatoryParamCount;
-                        return true;
-                    }
-                } else if ((lib = memberInfo as RubyLibraryMethodInfo) != null) {
-                    if (lib.IsEmpty && (mandatoryParamCount = lib.GetArity()) == 1) {
-                        d = new Func<object, Proc, object, object>(EmptyRubyMethodStub1);
-                        return true;
-                    }
-                }
-            }
-
-            d = null;
-            mandatoryParamCount = 0;
-            return false;            
-        }
-
-        public static object EmptyRubyMethodStub1(object self, Proc block, object arg0) {
-            // nop
-            return null;
         }
 
         #endregion

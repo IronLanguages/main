@@ -1448,6 +1448,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             }
 
             Dictionary<string, string> keys = new Dictionary<string, string>();
+            res = new List();
 
             for (int i = 0; i < _resolutionOrder.Count; i++) {
                 PythonType dt = _resolutionOrder[i];
@@ -1455,14 +1456,11 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 if (dt.IsSystemType) {
                     PythonBinder.GetBinder(context).ResolveMemberNames(context, dt, this, keys);
                 } else {
-                    AddUserTypeMembers(context, keys, dt);
+                    AddUserTypeMembers(context, keys, dt, res);
                 }
             }
-            
 
-            AddInstanceMembers(self, keys);
-
-            return new List(keys.Keys);
+            return AddInstanceMembers(self, keys, res);
         }
 
         private List TryGetCustomDir(CodeContext context, object self) {
@@ -1486,29 +1484,50 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         /// <summary>
         /// Adds members from a user defined type.
         /// </summary>
-        private void AddUserTypeMembers(CodeContext context, Dictionary<string, string> keys, PythonType dt) {
-            foreach (KeyValuePair<SymbolId, PythonTypeSlot> kvp in dt._dict) {
-                if (keys.ContainsKey(SymbolTable.IdToString(kvp.Key))) continue;
+        private void AddUserTypeMembers(CodeContext context, Dictionary<string, string> keys, PythonType dt, List res) {
+            if (dt.OldClass != null) {
+                foreach (KeyValuePair<object, object> kvp in dt.OldClass.__dict__) {
+                    AddOneMember(keys, res, kvp.Key);
+                }
+            } else {
+                foreach (KeyValuePair<SymbolId, PythonTypeSlot> kvp in dt._dict) {
+                    if (keys.ContainsKey(SymbolTable.IdToString(kvp.Key))) continue;
 
-                keys[SymbolTable.IdToString(kvp.Key)] = SymbolTable.IdToString(kvp.Key);
+                    keys[SymbolTable.IdToString(kvp.Key)] = SymbolTable.IdToString(kvp.Key);
+                }
+            }
+        }
+
+        private static void AddOneMember(Dictionary<string, string> keys, List res, object name) {
+            string strKey = name as string;
+            if (strKey != null) {
+                keys[strKey] = strKey;
+            } else {
+                res.Add(name);
             }
         }
 
         /// <summary>
         /// Adds members from a user defined type instance
         /// </summary>
-        private static void AddInstanceMembers(object self, Dictionary<string, string> keys) {
+        private static List AddInstanceMembers(object self, Dictionary<string, string> keys, List res) {
             IPythonObject dyno = self as IPythonObject;
             if (dyno != null) {
                 IAttributesCollection iac = dyno.Dict;
                 if (iac != null) {
                     lock (iac) {
-                        foreach (SymbolId id in iac.SymbolAttributes.Keys) {
-                            keys[SymbolTable.IdToString(id)] = SymbolTable.IdToString(id);
+                        foreach (object name in iac.Keys) {
+                            AddOneMember(keys, res, name);
                         }
                     }
                 }
             }
+
+            List<string> strKeys = new List<string>(keys.Keys);
+            strKeys.Sort();
+            res.extend(strKeys);
+
+            return res;
         }
 
         internal PythonDictionary GetMemberDictionary(CodeContext context) {

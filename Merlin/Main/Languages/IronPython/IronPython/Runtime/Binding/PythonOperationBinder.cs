@@ -331,7 +331,6 @@ namespace IronPython.Runtime.Binding {
             get {
                 switch (Operation & (~PythonOperationKind.DisableCoerce)) {
                     case PythonOperationKind.Compare: return typeof(int);
-                    case PythonOperationKind.MemberNames: return typeof(IList<string>);
                     case PythonOperationKind.IsCallable: return typeof(bool);
                     case PythonOperationKind.Hash: return typeof(int);
                     case PythonOperationKind.Contains: return typeof(bool);

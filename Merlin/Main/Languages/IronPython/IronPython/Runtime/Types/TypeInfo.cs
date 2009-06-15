@@ -873,7 +873,14 @@ namespace IronPython.Runtime.Types {
         }
 
         private static MemberGroup/*!*/ DirResolver(MemberBinder/*!*/ binder, Type/*!*/ type) {
-            return binder.GetMember(type, "GetMemberNames");
+            MemberGroup res = binder.GetMember(type, "GetMemberNames");
+            if (res == MemberGroup.EmptyGroup && 
+                !typeof(IPythonObject).IsAssignableFrom(type) &&
+                typeof(IDynamicMetaObjectProvider).IsAssignableFrom(type)) {
+                res = GetInstanceOpsMethod(type, "DynamicDir");
+            }
+
+            return res;
         }
 
         class DocumentationDescriptor : PythonTypeSlot {

@@ -136,7 +136,9 @@ class WpfTutorial
     end
 
     private :sanitize_xaml, :load_xaml, :generate_xaml
-  end
+    
+    attr :tutorial, true
+end
  
   @@xaml = load_xaml
   generate_xaml
@@ -163,6 +165,30 @@ class WpfTutorial
       select_section_or_chapter @chapter.next_item
     end
     @window.chapters.mouse_left_button_up { |target, event_args| select_section_or_chapter target.SelectedItem }
+    
+    WpfTutorial.tutorial = self
+    
+    # Hook-up "puts" so that we can redirect asynchronous "puts" (typically called from event-handlers) - atleast
+    # the ones that are entered into the REPL
+    class << @context.scope
+      def puts *a
+        begin raise; rescue => e; end
+        
+        repl_visible = WpfTutorial.tutorial.window.complete.visibility == System::Windows::Visibility.visible rescue false
+        if /on_repl_input/ =~ e.backtrace.join("\n") or not repl_visible
+          # This is a synchronous "puts" being executed when the user has pressed "Enter" to execute
+          # a command. In this case, we do the default processing. This ensures that the output
+          # will get captured in Tutorial::InteractionResult.output, along with any "puts" executed
+          # by any Ruby files that run
+          ::Kernel.puts *a
+        else
+          # This is an async "puts". It does not make sense to capture this into Tutorial::InteractionResult.output.
+          # We just ensure that it gets printed in the REPL
+          a.each { |i| WpfTutorial.tutorial.print_to_repl i.to_s, true }
+          nil
+        end
+      end
+    end
   end
 
   def select_next_task
@@ -205,15 +231,16 @@ class WpfTutorial
       @prev_newline = nil
 
       # TODO - Should use TextChanged here
-      @window.repl_input.key_up.add method(:on_repl_input) 
+      @window.repl_input.key_up.add method(:on_repl_key_up) 
 
       @task = @tasks.shift
       
       if @task.description 
         flowDoc = FlowDocument.from_simple_markup(@task.description)
+        @task.setup.call(@context.bind) if @task.setup
         #flowDoc.Blocks.Add(Paragraph.new(Run.new("Enter the following code:")))
         if @task.code
-          p = Paragraph.new(Run.new(@task.code))
+          p = Paragraph.new(Run.new(@task.code_string))
           p.font_family = FontFamily.new "Consolas"
           p.font_weight = FontWeights.Bold
           flowDoc.Blocks.Add(p)
@@ -304,18 +331,31 @@ class WpfTutorial
     @window.repl_history.text += s
     @window.repl_history.text += "\n" if new_line
     @window.repl_history.scroll_to_line(@window.repl_history.line_count - 1)
+    @window.repl_history.visibility = Visibility.visible
   end
 
-  def on_repl_input target, event_args
+  def on_repl_key_up target, event_args
     if event_args.Key == Key.Enter
+      on_repl_input @window.repl_input.text
+    elsif event_args.Key == Key.System
+      # This allows hitting Alt-Enter to automatically enter the code
+      # It is useful during manual testing of a tutorial's content
+      if @task.code.respond_to? :to_ary
+        @task.code.to_ary.each {|code| on_repl_input code }
+      else
+        on_repl_input @task.code
+      end
+    end
+  end
+  
+  def on_repl_input input
       print_to_repl '' if @prev_newline
-      @window.repl_history.visibility = Visibility.visible
-      input = @window.repl_input.text
+      
       print_to_repl ">>> " + input
       @window.repl_input.text = ""
       
       result = @context.interact input
-      print_to_repl result.output if not result.output.empty?
+      print_to_repl(result.output, false) if not result.output.empty?
       if result.error
         print_to_repl result.error.to_s
       else
@@ -331,7 +371,6 @@ class WpfTutorial
       if @task and @task.success?(result)
         select_next_task
       end
-    end
   end
 
   def run explicit_shutdown = false

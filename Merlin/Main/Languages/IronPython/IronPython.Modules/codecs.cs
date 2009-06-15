@@ -158,24 +158,25 @@ namespace IronPython.Modules {
             throw PythonOps.ValueError("invalid hexadecimal digit");
         }
 
-        public static object escape_encode(string text) {
+        public static PythonTuple/*!*/ escape_encode(string text) {
             StringBuilder res = new StringBuilder();
             for (int i = 0; i < text.Length; i++) {
                 switch (text[i]) {
                     case '\n': res.Append("\\n"); break;
                     case '\r': res.Append("\\r"); break;
                     case '\t': res.Append("\\t"); break;
-                    case (char)0x07: res.Append("\\a"); break;
-                    case (char)0x08: res.Append("\\b"); break;
                     case '\\': res.Append("\\\\"); break;
-                    case (char)0x0c: res.Append("\\f"); break;
-                    case (char)0x0b: res.Append("\\v"); break;
+                    case '\'': res.Append("\\'"); break;
                     default:
-                        res.Append(text[i]);
+                        if (text[i] < 0x20 || text[i] >= 0x7f) {
+                            res.AppendFormat("\\x{0:x2}", (int)text[i]);
+                        } else {
+                            res.Append(text[i]);
+                        }
                         break;
                 }
             }
-            return res.ToString();
+            return PythonTuple.MakeTuple(res.ToString(), ScriptingRuntimeHelpers.Int32ToObject(res.Length));
         }
 
         #region Latin-1 Functions

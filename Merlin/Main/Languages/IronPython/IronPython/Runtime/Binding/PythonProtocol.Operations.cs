@@ -177,10 +177,6 @@ namespace IronPython.Runtime.Binding {
                 case PythonOperationKind.Documentation:
                     res = BindingHelpers.AddPythonBoxing(MakeDocumentationOperation(operation, args));
                     break;
-                case PythonOperationKind.MemberNames:
-                    deferType = typeof(IList<string>);
-                    res = MakeMemberNamesOperation(operation, args);
-                    break;
                 case PythonOperationKind.CallSignatures:
                     res = BindingHelpers.AddPythonBoxing(MakeCallSignatureOperation(args[0], CompilerHelpers.GetMethodTargets(args[0].Value)));
                     break;

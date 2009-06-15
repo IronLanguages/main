@@ -24,6 +24,7 @@ using AstFactory = IronRuby.Compiler.Ast.AstFactory;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 using MethodDeclaration = IronRuby.Compiler.Ast.MethodDeclaration;
 using MSA = System.Linq.Expressions;
+using System.Diagnostics;
 
 namespace IronRuby.Runtime.Calls {
     public sealed class RubyMethodInfo : RubyMemberInfo {
@@ -84,11 +85,27 @@ namespace IronRuby.Runtime.Calls {
 
         #region Dynamic Sites
 
+        internal override MethodDispatcher GetDispatcher<T>(RubyCallSignature signature, object target, int version) {
+            if (HasUnsplatParameter || OptionalParamCount > 0) {
+                return null;
+            }
+
+            if (!(target is IRubyObject)) {
+                return null;
+            }
+
+            return MethodDispatcher.CreateRubyObjectDispatcher(
+                typeof(T), GetDelegate(), MandatoryParamCount, signature.HasScope, signature.HasBlock, version
+            );
+        }
+
         internal override void BuildCallNoFlow(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name) {
             Assert.NotNull(metaBuilder, args, name);
 
             // any user method can yield to a block (regardless of whether block parameter is present or not):
-            metaBuilder.ControlFlowBuilder = RuleControlFlowBuilder;
+            if (args.Signature.HasBlock) {
+                metaBuilder.ControlFlowBuilder = RuleControlFlowBuilder;
+            }
 
             // 2 implicit args: self, block
             var argsBuilder = new ArgsBuilder(2, MandatoryParamCount, OptionalParamCount, _body.HasUnsplatParameter);
@@ -126,14 +143,15 @@ namespace IronRuby.Runtime.Calls {
         /// Sets up a RFC frame similarly to MethodDeclaration.
         /// </summary>
         public static void RuleControlFlowBuilder(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
+            Debug.Assert(args.Signature.HasBlock);
+            if (metaBuilder.Error) {
+                return;
+            }
+
             // TODO (improvement):
             // We don't special case null block here, although we could (we would need a test for that then).
             // We could also statically know (via call-site flag) that the current method is not a proc-converter (passed by ref),
             // which would make such calls faster.
-            if (metaBuilder.Error || !args.Signature.HasBlock) {
-                return;
-            } 
-
             var rfcVariable = metaBuilder.GetTemporary(typeof(RuntimeFlowControl), "#rfc");
             var methodUnwinder = metaBuilder.GetTemporary(typeof(MethodUnwinder), "#unwinder");
             var resultVariable = metaBuilder.GetTemporary(typeof(object), "#result");

@@ -16,6 +16,10 @@
 require "tutorial"
 
 module IronRubyTutorial
+  class << self
+    attr :flag, true
+  end
+  
   def self.files_path
     File.dirname(__FILE__) + '/ironruby_files'
   end
@@ -98,7 +102,7 @@ tutorial "IronRuby tutorial" do
                  :code => "puts 'Hello world'") { |i| i.output =~ /Hello world/i }
 
             task(:body => "Let's use a local variable.",
-                 :code => "x = 1") { |i| eval "x == 1", i.bind }
+                 :code => "x = 1") { |i| i.bind.x == 1 }
 
             task(:body => "And then print the local variable.",
                  :code => "puts x") { |i| i.output.chomp == "1" }
@@ -216,27 +220,17 @@ tutorial "IronRuby tutorial" do
                 :code => 'System::Environment.OSVersion'
 
             task :body => %{
-                    You can assign the class names to local constants for easier access.
+                    You can assign the class names to local constants for easier access. Here is how you can
+                    use just <tt>E.OSVersion</tt> instead of having to say <tt>System::Environment.OSVersion</tt>
                 },
-                :code => 'E = System::Environment'
-
-            task :body => %{
-                    Now try just <tt>E.OSVersion</tt> instead of having to say 
-                    <tt>System::Environment.OSVersion</tt>
-                },
-                :code => 'E.OSVersion'
+                :code => ['E = System::Environment', 'E.OSVersion']
 
             task :body => %{
                     You can also use the +include+ method to import contents of a class or namespace. This
-                    will allow direct access to all the classes.
-                },
-                :code => 'include System'
-
-            task :body => %{
-                    Now you have direct access to all the classes and sub-namespaces under +System+. For
+                    will allow direct access to all the classes and sub-namespaces under +System+. For
                     example, <tt>System::Environment</tt> is now directly accessible.
                 },
-                :code => 'Environment.OSVersion'
+                :code => ['include System', 'Environment.OSVersion']
         end
 
         chapter "Working with .NET classes" do
@@ -341,20 +335,72 @@ tutorial "IronRuby tutorial" do
     end
 
     section "Advanced IronRuby - Windows Forms" do
-        introduction %{
-            Template
-        }
         
         chapter "Simple Windows Forms application" do
             introduction %{
-                Template
+                In this exercise, you will create simple Windows Forms applications dynamically.
             }
 
             task :body => %{
-                    Template
+                    First, we need to load <tt>System.Windows.Forms.dll</tt>
                 },
-                :code => '2+2'
+                :code => "load_assembly('System.Windows.Forms')"
+
+            task :body => %{
+                    Import the contents of the <tt>System::Windows::Forms</tt> namespaces into the global 
+                    namespace.
+                },
+                :code => 'include System::Windows::Forms'
+
+            task(:body => %{
+                    Create an instance of the Form class and display it.
+                },
+                :code => ['f = Form.new', 'f.show']) { |i| i.bind.f.visible }
+
+            task(:body => %{
+                    You may need to alt-tab or look for the running application since it may not have popped
+                    to the top level on your desktop.
+                    
+                    Now set the form Text property.
+                },
+                :code => "f.text = 'Hello'") { |i| /hello/i =~ i.bind.f.text }
+
+            task(:body => %{
+                    To bring the application alive, let's focus on the +click+ event of the form. Create an 
+                    event handler for the +click+ event and click on the form to receive the event. 
+                },
+                :setup => Proc.new { |bind|
+                    IronRubyTutorial.flag = false
+                    class << bind.f
+                        alias :old_click :click
+                        def click *a, &b
+                            if block_given?
+                              old_click *a, &b
+                              IronRubyTutorial.flag = true
+                            else
+                              old_click *a
+                            end
+                        end
+                    end
+                },
+                :code => 'f.click { |*args| puts args }') { IronRubyTutorial.flag }
+
+            task(:body => %{
+                    Now click the form. You should see the output in the REPL window ------ TODO..
+                    Now remove the event handler and close the form
+                },
+                :code => 'f.close') { |i| not i.bind.f.visible }
         end
+        
+        summary %{
+            Note that if you develop Windows applications interactively using the <tt>ir.exe</tt> from the
+            <b>Command Prompt</b>, IronRuby must be initialized specially for that purpose. By default,
+            <tt>ir.exe</tt>executes on one thread only. While this thread awaits text input, the Windows
+            application being dynamically created from the console is not able to process Windows messages.
+            Therefore, the application does not repaint itself or handle input to the UI.
+            
+            TODO - Explain what the solution to this problem is
+        }
     end
 
     section "Advanced IronRuby - Windows Presentation Foundation" do

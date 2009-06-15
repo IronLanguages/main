@@ -726,6 +726,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static string ljust(this string self, int width, char fillchar) {
+            if (width < 0) return self;
             int spaces = width - self.Length;
             if (spaces <= 0) return self;
 
@@ -1543,33 +1544,7 @@ namespace IronPython.Runtime.Operations {
 
             Encoding e;
             if (TryGetEncoding(encoding, out e)) {
-#if !SILVERLIGHT // DecoderFallback
-                // CLR's encoder exceptions have a 1-1 mapping w/ Python's encoder exceptions
-                // so we just clone the encoding & set the fallback to throw in strict mode.
-                e = (Encoding)e.Clone();
-                
-                switch (errors) {
-                    case "backslashreplace":
-                    case "xmlcharrefreplace":
-                    case "strict": e.DecoderFallback = DecoderFallback.ExceptionFallback; break;
-                    case "replace": e.DecoderFallback = DecoderFallback.ReplacementFallback; break;
-                    case "ignore":
-                        e.DecoderFallback = new PythonDecoderFallback(encoding,
-                            s,
-                            null);
-                        break;
-                    default:
-                        e.DecoderFallback = new PythonDecoderFallback(encoding,
-                            s,
-                            PythonOps.LookupEncodingError(context, errors));
-                        break;
-                }
-#endif
-
-                byte[] bytes = s.MakeByteArray();
-                int start = GetStartingOffset(e, bytes);
-
-                return e.GetString(bytes, start, bytes.Length - start);
+                return DoDecode(context, s, errors, encoding, e);
             }
 
             // look for user-registered codecs
@@ -1579,6 +1554,36 @@ namespace IronPython.Runtime.Operations {
             }
 
             throw PythonOps.LookupError("unknown encoding: {0}", encoding);
+        }
+
+        internal static string DoDecode(CodeContext context, string s, string errors, string encoding, Encoding e) {
+#if !SILVERLIGHT // DecoderFallback
+            // CLR's encoder exceptions have a 1-1 mapping w/ Python's encoder exceptions
+            // so we just clone the encoding & set the fallback to throw in strict mode.
+            e = (Encoding)e.Clone();
+
+            switch (errors) {
+                case "backslashreplace":
+                case "xmlcharrefreplace":
+                case "strict": e.DecoderFallback = DecoderFallback.ExceptionFallback; break;
+                case "replace": e.DecoderFallback = DecoderFallback.ReplacementFallback; break;
+                case "ignore":
+                    e.DecoderFallback = new PythonDecoderFallback(encoding,
+                        s,
+                        null);
+                    break;
+                default:
+                    e.DecoderFallback = new PythonDecoderFallback(encoding,
+                        s,
+                        PythonOps.LookupEncodingError(context, errors));
+                    break;
+            }
+#endif
+
+            byte[] bytes = s.MakeByteArray();
+            int start = GetStartingOffset(e, bytes);
+
+            return e.GetString(bytes, start, bytes.Length - start);
         }
 
         /// <summary>
@@ -1622,30 +1627,7 @@ namespace IronPython.Runtime.Operations {
 
             Encoding e;
             if (TryGetEncoding(encoding, out e)) {
-#if !SILVERLIGHT
-                // CLR's encoder exceptions have a 1-1 mapping w/ Python's encoder exceptions
-                // so we just clone the encoding & set the fallback to throw in strict mode
-                e = (Encoding)e.Clone();
-
-                switch (errors) {
-                    case "strict": e.EncoderFallback = EncoderFallback.ExceptionFallback; break;
-                    case "replace": e.EncoderFallback = EncoderFallback.ReplacementFallback; break;
-                    case "backslashreplace": e.EncoderFallback = new BackslashEncoderReplaceFallback(); break;
-                    case "xmlcharrefreplace": e.EncoderFallback = new XmlCharRefEncoderReplaceFallback(); break;
-                    case "ignore":
-                        e.EncoderFallback = new PythonEncoderFallback(encoding,
-                            s,
-                            null);
-                        break;
-                    default:
-                        e.EncoderFallback = new PythonEncoderFallback(encoding,
-                            s,
-                            PythonOps.LookupEncodingError(context, errors));
-                        break;
-                }
-
-#endif                
-                return PythonOps.MakeString(e.GetPreamble(), e.GetBytes(s));
+                return DoEncode(context, s, errors, encoding, e);
             }
 
                 // look for user-registered codecs
@@ -1655,6 +1637,33 @@ namespace IronPython.Runtime.Operations {
             }
 
             throw PythonOps.LookupError("unknown encoding: {0}", encoding);
+        }
+
+        internal static string DoEncode(CodeContext context, string s, string errors, string encoding, Encoding e) {
+#if !SILVERLIGHT
+            // CLR's encoder exceptions have a 1-1 mapping w/ Python's encoder exceptions
+            // so we just clone the encoding & set the fallback to throw in strict mode
+            e = (Encoding)e.Clone();
+
+            switch (errors) {
+                case "strict": e.EncoderFallback = EncoderFallback.ExceptionFallback; break;
+                case "replace": e.EncoderFallback = EncoderFallback.ReplacementFallback; break;
+                case "backslashreplace": e.EncoderFallback = new BackslashEncoderReplaceFallback(); break;
+                case "xmlcharrefreplace": e.EncoderFallback = new XmlCharRefEncoderReplaceFallback(); break;
+                case "ignore":
+                    e.EncoderFallback = new PythonEncoderFallback(encoding,
+                        s,
+                        null);
+                    break;
+                default:
+                    e.EncoderFallback = new PythonEncoderFallback(encoding,
+                        s,
+                        PythonOps.LookupEncodingError(context, errors));
+                    break;
+            }
+
+#endif
+            return PythonOps.MakeString(e.GetPreamble(), e.GetBytes(s));
         }
 
 
