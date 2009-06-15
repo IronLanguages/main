@@ -186,7 +186,7 @@ namespace Microsoft.Scripting.Actions {
             MethodInfo setter = info.GetSetMethod(true);
 
             // Allow access to protected getters TODO: this should go, it supports IronPython semantics.
-            if (setter != null && !setter.IsPublic && !(setter.IsFamily || setter.IsFamilyOrAssembly)) {
+            if (setter != null && !setter.IsPublic && !setter.IsProtected()) {
                 if (!PrivateBinding) {
                     setter = null;
                 }

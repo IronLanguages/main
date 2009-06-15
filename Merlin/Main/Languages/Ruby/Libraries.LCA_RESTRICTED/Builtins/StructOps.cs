@@ -31,7 +31,7 @@ using Ast = System.Linq.Expressions.Expression;
 
 namespace IronRuby.Builtins {
 
-    [RubyClass("Struct", Extends = typeof(RubyStruct)), Includes(typeof(Enumerable))]
+    [RubyClass("Struct", Extends = typeof(RubyStruct), Inherits = typeof(object)), Includes(typeof(Enumerable))]
     public static partial class RubyStructOps {
         [RubyConstructor]
         public static void AllocatorUndefined(RubyClass/*!*/ self, params object[] args) {
@@ -101,7 +101,8 @@ namespace IronRuby.Builtins {
         // Copies data from one Struct instance into another:
         [RubyMethod("initialize_copy", RubyMethodAttributes.PrivateInstance)]
         public static RubyStruct/*!*/ InitializeCopy(RubyStruct/*!*/ self, [NotNull]RubyStruct/*!*/ source) {
-            if (self.Class != source.Class) {
+            // TODO: compare non-singleton classes?
+            if (self.ImmediateClass.GetNonSingletonClass() != source.ImmediateClass.GetNonSingletonClass()) {
                 throw RubyExceptions.CreateTypeError("wrong argument class");
             }
 
@@ -232,7 +233,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("to_s")]
         [RubyMethod("inspect")]
         public static MutableString/*!*/ Inspect(RubyStruct/*!*/ self) {
-            RubyContext context = self.Class.Context;
+            RubyContext context = self.ImmediateClass.Context;
 
             using (IDisposable handle = RubyUtils.InfiniteInspectTracker.TrackObject(self)) {
                 // #<struct Struct::Foo name=nil, val=nil>

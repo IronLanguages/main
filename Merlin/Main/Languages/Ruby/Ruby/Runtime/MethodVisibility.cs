@@ -78,13 +78,6 @@ namespace IronRuby.Runtime {
 
         // method is empty:
         Empty = RubyMethodAttributes.Empty,
-
-        // used internally in RubyOps.DefineMethod
-        ModuleFunction = 16,
-
-        // Used internally for implementation of methods defined by Kernel#public/protected/private.
-        // Such a method is just a stub that calls "super" - a method resolution thus forwards to its super method.
-        SuperForwarder = 32,
     }
 
     public enum RubyMethodVisibility {

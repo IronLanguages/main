@@ -17,6 +17,7 @@ require 'rubygems'
 require "test/spec"
 require "stringio"
 require "console_tutorial"
+require "html_tutorial"
 
 describe "ConsoleTutorial" do 
   before(:each) do
@@ -60,3 +61,22 @@ describe "Tutorial" do
     end
   end
 end
+
+# TODO: Fix me!
+#class IronRubyTutorialTests < Test::Unit::TestCase
+#    @tutorial_path = File.dirname(__FILE__) + '../Tutorials/ironruby_tutorial.rb'
+#    include TutorialTests
+#end
+#
+#class TryRubyTutorialTests < Test::Unit::TestCase
+#    @tutorial_path = File.dirname(__FILE__) + '../Tutorials/tryruby_tutorial.rb'
+#    include TutorialTests
+#end
+#
+#class HtmlGeneratorTests < Test::Unit::TestCase
+#  def test_sanity
+#    html_tutorial = HtmlTutorial.new
+#    html = html_tutorial.generate_html
+#    assert_match %r{<h2>Table of Contents</h2>}, html
+#  end
+#end

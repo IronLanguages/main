@@ -42,12 +42,12 @@ namespace Microsoft.Scripting.Ast {
             get { return true; }
         }
 
-        protected override Type TypeImpl() {
-            return typeof(SymbolId);
+        public sealed override Type Type {
+            get { return typeof(SymbolId); }
         }
 
-        protected override ExpressionType NodeTypeImpl() {
-            return ExpressionType.Extension;
+        public sealed override ExpressionType NodeType {
+            get { return ExpressionType.Extension; }
         }
         
         public SymbolId Value {

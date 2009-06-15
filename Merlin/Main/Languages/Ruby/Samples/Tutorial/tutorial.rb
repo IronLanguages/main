@@ -13,19 +13,10 @@
 #
 # ****************************************************************************
 
+require "stringio"
+
 module Tutorial
 
-    # If the first line contains "heredoc:", the first line is removed. This allows
-    # use of simple multi-line strings which are easier to use than heredoc strings. Heredoc strings
-    # cannot be used easily as arguments to functions if the arguments are written on separate lines.
-    def self.check_pseudo_heredoc text
-        if text =~ /\Aheredoc:\n(.*)/m
-            text = $1
-        end
-        
-        text
-    end
-   
     class Summary
       attr :title
       attr :description
@@ -46,13 +37,17 @@ module Tutorial
 
     class Task
         attr :description
+        attr :setup
         attr :code
         attr :title
+        attr :source_files # Files used by the task. The user might want to browse these files
 
-        def initialize title, description, code, &success_evaluator	                
+        def initialize title, description, setup, code, source_files, &success_evaluator	                
             @title = title
-            @description = ::Tutorial.check_pseudo_heredoc description
+            @description = description
+            @setup = setup
             @code = code
+            @source_files = source_files
             @success_evaluator = success_evaluator
         end
 
@@ -61,14 +56,21 @@ module Tutorial
                 if @success_evaluator
                   return @success_evaluator.call(interaction)
                 else
-                  return eval(@code) == interaction.result
+                  return eval(code_string, interaction.bind) == interaction.result
                 end
-            rescue
+            rescue => e
+                warn %{success_evaluator raised error: #{e}\n#{e.backtrace.join("\n")}} if $DEBUG
                 false
             end
         end
+        
+        def code_string
+            c = code
+            c = c.to_ary.join("\n") if c.respond_to? :to_ary
+            c
+        end
     end
-
+    
     class Chapter
         attr :name, true # TODO - true is needed only to workaround data-binding bug
         attr :introduction, true
@@ -107,13 +109,17 @@ module Tutorial
 
     class Tutorial
         attr :name
+        attr :file
         attr :introduction, true
+        attr :legal_notice, true
         attr :summary, true
         attr :sections, true
 
-        def initialize name, introduction = nil, summary = nil, sections = []
+        def initialize name, file, introduction = nil, notice = nil, summary = nil, sections = []
             @name = name
+            @file = file
             @introduction = introduction
+            @legal_notice = notice
             @summary = summary
             @sections = sections
         end
@@ -127,7 +133,7 @@ module Tutorial
 
     def self.all
       Dir[File.expand_path("Tutorials", File.dirname(__FILE__)) + '/*'].each do |t|
-        self.get_tutorial t
+        self.get_tutorial t unless File.directory?(t)
       end
       @@tutorials
     end
@@ -135,7 +141,7 @@ module Tutorial
     def self.get_tutorial path = @@tutorials.first
         if not @@tutorials.has_key? path
             require path
-            raise "path does not contains a tutorial definition" if not Thread.current[:tutorial]
+            raise "#{path} does not contains a tutorial definition" if not Thread.current[:tutorial]
             @@tutorials[path] = Thread.current[:tutorial]
             Thread.current[:tutorial] = nil
         end
@@ -143,23 +149,68 @@ module Tutorial
         return @@tutorials[path]
     end
     
+    class ReplContext
+        attr :scope
+        attr :bind
+        
+        def initialize
+            @scope = Object.new
+
+            class << @scope            
+                def include(*a)
+                    self.class.instance_eval { include(*a) }
+                end
+                
+                def to_s
+                    "main (tutorial)"
+                end
+            end
+
+            @bind = @scope.instance_eval { binding }
+            
+            def @bind.method_missing n
+                eval(n.to_s, self)               
+            end
+        end
+        
+        def interact input
+            # Redirect stdout. Note that this affects the entire process. If the program calls "puts"
+            # for some reason on another thread, the user may not expect to see the output. But it is 
+            # hard to distinguish between printing that the user initiated, and printing that the program 
+            # itself is doing.
+            output = StringIO.new
+            old_stdout, $stdout = $stdout, output
+            
+            result = nil
+            error = nil
+            begin
+                result = eval(input.to_s, @bind) # TODO - to_s should not be needed here
+            rescue Exception, SyntaxError, LoadError => error
+            ensure
+                $stdout = old_stdout
+            end
+
+            InteractionResult.new(@bind, output.string, result, error)
+        end
+    end
+    
     class InteractionResult
         attr :bind
         attr :output
         attr :result
-        attr :exception
+        attr :error
         
-        def initialize(bind, output, result, exception = nil)
+        def initialize(bind, output, result, error = nil)
             @bind = bind
             @output = output
             @result = result
-            @exception = exception
+            @error = error
             
-            raise "result should be nil if an exception was raised" if result and exception
+            raise "result should be nil if an exception was raised" if result and error
         end
         
         def result
-            raise "Interaction resulted in an exception" if exception
+            raise "Interaction resulted in an exception" if error
             @result
         end
     end
@@ -167,15 +218,18 @@ end
 
 class Object
     def tutorial name
-        Thread.current[:tutorial] = Tutorial::Tutorial.new name
+        caller[0] =~ /\A(.*):[0-9]+/
+        tutorial_file = $1
+        t = Tutorial::Tutorial.new name, tutorial_file
+        Thread.current[:tutorial] = t
         Thread.current[:tutorials] ||= []
         Thread.current[:tutorials] << Thread.current[:tutorial]
         Thread.current[:prev_chapter] = nil
+
         yield
     end
 
     def introduction intro
-        intro = Tutorial.check_pseudo_heredoc intro
         if Thread.current[:chapter]
             Thread.current[:chapter].introduction = intro
         elsif Thread.current[:section]
@@ -185,6 +239,11 @@ class Object
         else
             raise "introduction should only be used within a tutorial definition"
         end
+    end
+    
+    def legal notice
+        raise "legal should only be used within a tutorial definition" unless Thread.current[:tutorial]
+        Thread.current[:tutorial].legal_notice = notice
     end
     
     def summary s
@@ -233,7 +292,7 @@ class Object
     def task(options, &success_evaluator)
         options = {}.merge(options)
         Thread.current[:chapter].tasks << Tutorial::Task.new(
-          options[:title], options[:body], options[:code], &success_evaluator)
+          options[:title], options[:body], options[:setup], options[:code], options[:source_files], &success_evaluator)
     end
 
     # This represents an operation that consists of several closely realated task. It is useful to have

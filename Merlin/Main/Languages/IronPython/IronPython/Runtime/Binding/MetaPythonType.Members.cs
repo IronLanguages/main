@@ -25,6 +25,7 @@ using System.Threading;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
+using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime.Operations;
@@ -812,14 +813,14 @@ namespace IronPython.Runtime.Binding {
             PropertyTracker pt = mt as PropertyTracker;
             if (pt != null) {
                 MethodInfo mi = pt.GetSetMethod(true);
-                if (mi != null && (mi.IsFamily || mi.IsFamilyOrAssembly)) {
+                if (mi != null && mi.IsProtected()) {
                     return true;
                 }
             }
 
             FieldTracker ft = mt as FieldTracker;
             if (ft != null) {
-                return ft.Field.IsFamily || ft.Field.IsFamilyOrAssembly;
+                return ft.Field.IsProtected();
             }
 
             return false;

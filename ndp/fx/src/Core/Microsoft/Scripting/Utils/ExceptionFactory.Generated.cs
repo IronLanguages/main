@@ -424,10 +424,10 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// A string like  "Extension node must override method {0}."
+        /// A string like  "Extension node must override the property {0}."
         /// </summary>
-        internal static string ExtensionNodeMustOverrideMethod(object p0) {
-            return FormatString("Extension node must override method {0}.", p0);
+        internal static string ExtensionNodeMustOverrideProperty(object p0) {
+            return FormatString("Extension node must override the property {0}.", p0);
         }
 
         /// <summary>
@@ -463,6 +463,13 @@ namespace System.Linq.Expressions {
         /// </summary>
         internal static string DynamicObjectResultNotAssignable(object p0, object p1, object p2, object p3) {
             return FormatString("The result type '{0}' of the dynamic binding produced by the object with type '{1}' for the binder '{2}' is not compatible with the result type '{3}' expected by the call site.", p0, p1, p2, p3);
+        }
+
+        /// <summary>
+        /// A string like  "The result of the dynamic binding produced by the object with type '{0}' for the binder '{1}' needs at least one restriction."
+        /// </summary>
+        internal static string DynamicBindingNeedsRestrictions(object p0, object p1) {
+            return FormatString("The result of the dynamic binding produced by the object with type '{0}' for the binder '{1}' needs at least one restriction.", p0, p1);
         }
 
         /// <summary>
@@ -1530,10 +1537,10 @@ namespace System.Linq.Expressions {
         }
 
         /// <summary>
-        /// InvalidOperationException with message like "Extension node must override method {0}."
+        /// InvalidOperationException with message like "Extension node must override the property {0}."
         /// </summary>
-        internal static Exception ExtensionNodeMustOverrideMethod(object p0) {
-            return new InvalidOperationException(Strings.ExtensionNodeMustOverrideMethod(p0));
+        internal static Exception ExtensionNodeMustOverrideProperty(object p0) {
+            return new InvalidOperationException(Strings.ExtensionNodeMustOverrideProperty(p0));
         }
 
         /// <summary>
@@ -1569,6 +1576,13 @@ namespace System.Linq.Expressions {
         /// </summary>
         internal static Exception DynamicObjectResultNotAssignable(object p0, object p1, object p2, object p3) {
             return new InvalidCastException(Strings.DynamicObjectResultNotAssignable(p0, p1, p2, p3));
+        }
+
+        /// <summary>
+        /// InvalidOperationException with message like "The result of the dynamic binding produced by the object with type '{0}' for the binder '{1}' needs at least one restriction."
+        /// </summary>
+        internal static Exception DynamicBindingNeedsRestrictions(object p0, object p1) {
+            return new InvalidOperationException(Strings.DynamicBindingNeedsRestrictions(p0, p1));
         }
 
         /// <summary>

@@ -19,8 +19,9 @@ describe "Single time loading of a .NET BCL assembly without Strong Name" do
     lambda {@engine.execute("load 'System.Core'")}.should raise_error(LoadError)
   end
 
-  it "raises LoadError via load_assembly" do
-    lambda {@engine.execute("load_assembly 'System.Core'")}.should raise_error(LoadError)
+  it "works via load_assembly" do
+      @engine.execute("load_assembly 'System.Core'")
+      lambda {@engine.execute("System::Linq")}.should_not raise_error(NameError)
   end
 end
 

@@ -127,7 +127,7 @@ namespace IronRuby.StandardLibrary.Yaml {
         [RubyMethod("taguri")]
         public static MutableString TagUri(RubyStruct/*!*/ self) {
             MutableString str = MutableString.Create("tag:ruby.yaml.org,2002:struct:");
-            string name = self.Class.Name;
+            string name = self.ImmediateClass.GetNonSingletonClass().Name;
             if (name != null) {
                 string structPrefix = "Struct::";
                 if (name.StartsWith(structPrefix)) {

@@ -27,37 +27,31 @@ class ConsoleTutorial
         else
             @tutorial = Tutorial.get_tutorial
         end
+        @context = Tutorial::ReplContext.new
     end
     
     def run_chapter chapter
         @out.puts "---------------------"
         @out.puts "Starting #{chapter.name}"
         @out.print chapter.introduction
-        scope = Object.new
-        bind = scope.instance_eval { binding }
         chapter.tasks.each do |task|
             @out.puts task.description
+            task.setup.call(@context.bind) if task.setup
             @out.puts "Enter the following code:"
-            @out.puts task.code
+            @out.puts task.code_string
             begin
                 @out.print "> "
-                if @in.eof? then raise "No more input..." end
+                if @in.eof? then raise "No more input... (Task description: #{task.description}\nTask code: #{task.code_string})" end
                 input = @in.gets
-                begin
-                    output = StringIO.new
-                    old_stdout, $stdout = $stdout, output
-                    result = nil
-                    result = eval(input, bind)
-                rescue => e
-                    @out.puts output.string if not output.string.empty?
-                    @out.puts e.to_s
+                
+                result = @context.interact input
+                @out.puts result.output if not result.output.empty?
+                if result.error
+                  @out.puts result.error.to_s
                 else
-                    @out.puts output.string if not output.string.empty?
-                    @out.puts "=> #{result.inspect}"
-                ensure
-                    $stdout = old_stdout
-                end
-            end until task.success?(Tutorial::InteractionResult.new(bind, output.string, result, e))
+                  @out.puts "=> #{result.result.inspect}"
+                end      
+            end until task.success?(result)
         end
         @out.puts "Chapter completed successfully!"
         @out.puts

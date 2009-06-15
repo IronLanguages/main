@@ -266,23 +266,20 @@ namespace System.Linq.Expressions.Compiler {
                 case ExpressionType.ExclusiveOr:
                     _ilg.Emit(OpCodes.Xor);
                     break;
-                case ExpressionType.LeftShift: {
-                        if (rightType != typeof(int)) {
-                            _ilg.EmitConvertToType(rightType, typeof(int), true);
-                        }
-                        _ilg.Emit(OpCodes.Shl);
+                case ExpressionType.LeftShift:
+                    if (rightType != typeof(int)) {
+                        throw ContractUtils.Unreachable;
                     }
+                    _ilg.Emit(OpCodes.Shl);
                     break;
-                case ExpressionType.RightShift: {
-                        Type shiftType = TypeUtils.GetNonNullableType(rightType);
-                        if (shiftType != typeof(int)) {
-                            _ilg.EmitConvertToType(shiftType, typeof(int), true);
-                        }
-                        if (TypeUtils.IsUnsigned(leftType)) {
-                            _ilg.Emit(OpCodes.Shr_Un);
-                        } else {
-                            _ilg.Emit(OpCodes.Shr);
-                        }
+                case ExpressionType.RightShift:
+                    if (rightType != typeof(int)) {
+                        throw ContractUtils.Unreachable;
+                    }
+                    if (TypeUtils.IsUnsigned(leftType)) {
+                        _ilg.Emit(OpCodes.Shr_Un);
+                    } else {
+                        _ilg.Emit(OpCodes.Shr);
                     }
                     break;
                 default:

@@ -53,6 +53,9 @@ if defined PARALLEL_IRTESTS (
     )
 )
 
+time /t
+echo Legacy Tests
+
 if defined PARALLEL_IRTESTS (
     start "Legacy Tests" %MERLIN_ROOT%\Languages\Ruby\Tests\run.bat
 ) else (
@@ -66,15 +69,25 @@ if defined PARALLEL_IRTESTS (
 :==============================================================================
 : RubySpecs
 
+REM We use mspec-run instead of mspec so that we can specify "-G thread" to disable the volatile thread tests
+
+set MSPEC_RUN=%MERLIN_ROOT%\..\External.LCA_RESTRICTED\Languages\IronRuby\mspec\mspec\bin\mspec-run
+
+time /t
+echo RubySpec A tests
+
 if defined PARALLEL_IRTESTS (
-    start "RubySpec A tests" mspec ci -fd -V :lang :cli :netinterop :cominterop :thread
+    start "RubySpec A tests" cmd.exe /k %MERLIN_ROOT%\bin\Debug\ir.exe %MSPEC_RUN% -G fails -G unstable -G thread -G critical -fd :lang :cli :netinterop :cominterop :thread
 ) else (
-    call mspec ci -fd :lang :cli :netinterop :cominterop :thread
+    %MERLIN_ROOT%\bin\Debug\ir.exe %MSPEC_RUN% -G fails -G unstable -G thread -G critical -fd :lang :cli :netinterop :cominterop :thread
     if not %ERRORLEVEL%==0 (
         set IRTESTS_ERRORS=%IRTESTS_ERRORS% RubySpec A tests failed!!! 
         echo %IRTESTS_ERRORS%
     )
 )
+
+time /t
+echo RubySpec B tests
 
 if defined PARALLEL_IRTESTS (
     start "RubySpec B tests" mspec ci -fd -V :core1 :lib1 
@@ -86,6 +99,9 @@ if defined PARALLEL_IRTESTS (
     )
 )
 
+time /t
+echo RubySpec C tests
+
 if defined PARALLEL_IRTESTS (
     start "RubySpec C tests" mspec ci -fd -V :core2 :lib2
 ) else (
@@ -96,8 +112,10 @@ if defined PARALLEL_IRTESTS (
     )
 )
 
+time /t
+
 :==============================================================================
-: RubyGems
+: RubyGems, Rake
 
 if defined PARALLEL_IRTESTS (
     start "RubyGems tests" cmd.exe /k %MERLIN_ROOT%\bin\Debug\ir.exe %MERLIN_ROOT%\Languages\Ruby\Scripts\RubyGemsTests.rb
@@ -105,6 +123,16 @@ if defined PARALLEL_IRTESTS (
     %MERLIN_ROOT%\bin\Debug\ir.exe %MERLIN_ROOT%\Languages\Ruby\Scripts\RubyGemsTests.rb 
     if not %ERRORLEVEL%==0 (
         set IRTESTS_ERRORS=%IRTESTS_ERRORS% RubyGems tests failed!!!
+        echo %IRTESTS_ERRORS%
+   )
+)
+
+if defined PARALLEL_IRTESTS (
+    start "Rake tests" cmd.exe /k %MERLIN_ROOT%\bin\Debug\ir.exe %MERLIN_ROOT%\Languages\Ruby\Scripts\RakeTests.rb
+) else (
+    %MERLIN_ROOT%\bin\Debug\ir.exe %MERLIN_ROOT%\Languages\Ruby\Scripts\RakeTests.rb 
+    if not %ERRORLEVEL%==0 (
+        set IRTESTS_ERRORS=%IRTESTS_ERRORS% Rake tests failed!!!
         echo %IRTESTS_ERRORS%
    )
 )

@@ -36,10 +36,5 @@ namespace IronRuby.Builtins {
             }
             return self;
         }
-
-        [RubyMethod("GetEnumerator")]
-        public static IEnumerator/*!*/ GetEnumerator(IEnumerable/*!*/ self) {
-            return self.GetEnumerator();
-        }
     }
 }

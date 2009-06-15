@@ -84,10 +84,6 @@ namespace IronRuby.Runtime.Calls {
             set { _treatRestrictionsAsConditions = value; }
         }
 
-#if DEBUG && !SILVERLIGHT && !SYSTEM_CORE
-        private static int _ruleCounter;
-#endif
-
         internal DynamicMetaObject/*!*/ CreateMetaObject(DynamicMetaObjectBinder/*!*/ action) {
             return CreateMetaObject(action, action.ReturnType);
         }
@@ -106,33 +102,9 @@ namespace IronRuby.Runtime.Calls {
                 expr = Ast.Block(_temps, expr);
             }
 
-#if DEBUG && !SILVERLIGHT && !SYSTEM_CORE
-            if (RubyOptions.ShowRules) {
-                var oldColor = Console.ForegroundColor;
-                try {
-                    Console.ForegroundColor = ConsoleColor.Cyan;
-                    Console.WriteLine("Rule #{0}: {1}", Interlocked.Increment(ref _ruleCounter), action);
-                    Console.ForegroundColor = ConsoleColor.DarkGray;
-                    if (!_DumpingExpression) {
-                        var d = (_restrictions != BindingRestrictions.Empty) ? Ast.IfThen(_restrictions.ToExpression(), expr) : expr;
-                        _DumpingExpression = true;
-                        d.DumpExpression(Console.Out);
-                    }
-                } finally {
-                    _DumpingExpression = false;
-                    Console.ForegroundColor = oldColor;
-                }
-            }
-#endif
+            RubyBinder.DumpRule(action, _restrictions, expr);
             return new DynamicMetaObject(expr, _restrictions);
         }
-
-#if DEBUG
-        // ExpressionWriter might call ToString on a live object that might dynamically invoke a method.
-        // We need to prevent recursion in such case.
-        [ThreadStatic]
-        internal static bool _DumpingExpression;
-#endif
 
         public ParameterExpression/*!*/ GetTemporary(Type/*!*/ type, string/*!*/ name) {
             return AddTemporary(Ast.Variable(type, name));
@@ -250,7 +222,8 @@ namespace IronRuby.Runtime.Calls {
 
         #region Tests
 
-        public void AddTargetTypeTest(object target, RubyClass/*!*/ targetClass, Expression/*!*/ targetParameter, DynamicMetaObject/*!*/ metaContext) {
+        public void AddTargetTypeTest(object target, RubyClass/*!*/ targetClass, Expression/*!*/ targetParameter, DynamicMetaObject/*!*/ metaContext,
+            IEnumerable<string>/*!*/ resolvedNames) {
 
             // no changes to the module's class hierarchy while building the test:
             targetClass.Context.RequiresClassHierarchyLock();
@@ -260,51 +233,15 @@ namespace IronRuby.Runtime.Calls {
 
             var context = (RubyContext)metaContext.Value;
 
-            // singleton nil:
-            if (target == null) {
-                AddRestriction(Ast.Equal(targetParameter, AstUtils.Constant(null)));
-                AddFullVersionTest(context.NilClass, metaContext);
-                return;
-            }
-
-            // singletons true, false:
-            if (target is bool) {
-                AddRestriction(Ast.AndAlso(
-                    Ast.TypeIs(targetParameter, typeof(bool)),
-                    Ast.Equal(Ast.Convert(targetParameter, typeof(bool)), AstUtils.Constant(target))
-                ));
-
-                if ((bool)target) {
-                    AddFullVersionTest(context.TrueClass, metaContext);
-                } else {
-                    AddFullVersionTest(context.FalseClass, metaContext);
-                }
-                return;
-
-            }
-
-            // user defined instance singletons, modules, classes:
-            if (targetClass.IsSingletonClass) {
-                AddRestriction(
-                    Ast.Equal(
-                        Ast.Convert(targetParameter, typeof(object)),
-                        Ast.Convert(AstUtils.Constant(target), typeof(object))
-                    )
-                );
-
-                AddFullVersionTest(targetClass, metaContext);
-                return;
-            }
-
-            Type type = target.GetType();
-            AddTypeRestriction(type, targetParameter);
+            if (target is IRubyObject) {
+                Type type = target.GetType();
+                AddTypeRestriction(type, targetParameter);
             
-            if (typeof(IRubyObject).IsAssignableFrom(type)) {
                 // Ruby objects (get the method directly to prevent interface dispatch):
-                MethodInfo classGetter = type.GetMethod("get_" + RubyObject.ClassPropertyName, BindingFlags.Public | BindingFlags.Instance);
-                if (classGetter != null && classGetter.ReturnType == typeof(RubyClass)) {
+                MethodInfo classGetter = type.GetMethod(Methods.IRubyObject_get_ImmediateClass.Name, BindingFlags.Public | BindingFlags.Instance);
+                if (type.IsVisible && classGetter != null && classGetter.ReturnType == typeof(RubyClass)) {
                     AddCondition(
-                        // (#{type})target.Class.Version.Value == #{immediateClass.Version}
+                        // (#{type})target.ImmediateClass.Version.Value == #{immediateClass.Version}
                         Ast.Equal(
                             Ast.Field(
                                 Ast.Field(
@@ -320,16 +257,66 @@ namespace IronRuby.Runtime.Calls {
                 }
 
                 // TODO: explicit iface-implementation
-                throw new NotSupportedException("Type implementing IRubyObject should have RubyClass getter");
+                throw new NotSupportedException("Type implementing IRubyObject should be visible and have ImmediateClass getter");
+            }
+
+            AddRuntimeTest(metaContext);
+
+            // singleton nil:
+            if (target == null) {
+                AddRestriction(Ast.Equal(targetParameter, AstUtils.Constant(null)));
+                AddVersionTest(context.NilClass);
+                return;
+            }
+
+            // singletons true, false:
+            if (target is bool) {
+                AddRestriction(Ast.AndAlso(
+                    Ast.TypeIs(targetParameter, typeof(bool)),
+                    Ast.Equal(Ast.Convert(targetParameter, typeof(bool)), AstUtils.Constant(target))
+                ));
+
+                AddVersionTest((bool)target ? context.TrueClass : context.FalseClass);
+                return;
+            }
+
+            var nominalClass = targetClass.NominalClass;
+
+            Debug.Assert(!nominalClass.IsSingletonClass);
+            Debug.Assert(!nominalClass.IsRubyClass);
+
+            // Do we need a singleton check?
+            if (nominalClass.ClrSingletonMethods == null ||
+                CollectionUtils.TrueForAll(resolvedNames, (methodName) => !nominalClass.ClrSingletonMethods.ContainsKey(methodName))) {
+
+                // no: there is no singleton subclass of target class that defines any method being called:
+                AddTypeRestriction(target.GetType(), targetParameter);
+                AddVersionTest(targetClass);
+
+            } else if (targetClass.IsSingletonClass) {
+
+                // yes: check whether the incoming object is a singleton and the singleton has the right version:
+                AddCondition(Methods.IsClrSingletonRuleValid.OpCall(
+                    metaContext.Expression,
+                    targetParameter,
+                    AstUtils.Constant(targetClass.Version.Value)
+                ));
+
             } else {
-                // CLR objects:
-                AddFullVersionTest(targetClass, metaContext);
+
+                // yes: check whether the incoming object is NOT a singleton and the class has the right version:
+                AddTypeRestriction(target.GetType(), targetParameter);
+                AddCondition(Methods.IsClrNonSingletonRuleValid.OpCall(
+                    metaContext.Expression, 
+                    targetParameter,
+                    Ast.Constant(targetClass.Version),
+                    AstUtils.Constant(targetClass.Version.Value)
+                ));
             }
         }
 
-        private void AddFullVersionTest(RubyClass/*!*/ cls, DynamicMetaObject/*!*/ metaContext) {
-            Assert.NotNull(cls, metaContext);
-            cls.Context.RequiresClassHierarchyLock();
+        private void AddRuntimeTest(DynamicMetaObject/*!*/ metaContext) {
+            Assert.NotNull(metaContext);
 
             // check for runtime (note that the module's runtime could be different from the call-site runtime):
             if (_siteContext == null) {
@@ -338,8 +325,6 @@ namespace IronRuby.Runtime.Calls {
             } else if (_siteContext != metaContext.Value) {
                 throw new InvalidOperationException("Runtime-bound site called from a different runtime");
             }
-             
-            AddVersionTest(cls);
         }
 
         internal void AddVersionTest(RubyClass/*!*/ cls) {

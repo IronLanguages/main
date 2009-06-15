@@ -209,7 +209,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("exec", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
         public static void Execute(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]MutableString/*!*/ command) {
             Process p = ExecuteCommandInShell(context, command);
-            context.ChildProcessExitStatus = p.ExitCode;
+            context.ChildProcessExitStatus = new RubyProcess.Status(p);
             Exit(self, p.ExitCode);
         }
 
@@ -218,7 +218,7 @@ namespace IronRuby.Builtins {
         public static void Execute(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]MutableString/*!*/ command,
             [DefaultProtocol, NotNull, NotNullItems]params MutableString[]/*!*/ args) {
             Process p = ExecuteCommand(command, args);
-            context.ChildProcessExitStatus = p.ExitCode;
+            context.ChildProcessExitStatus = new RubyProcess.Status(p);
             Exit(self, p.ExitCode);
         }
 
@@ -226,7 +226,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("system", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
         public static bool System(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]MutableString/*!*/ command) {
             Process p = ExecuteCommandInShell(context, command);
-            context.ChildProcessExitStatus = p.ExitCode;
+            context.ChildProcessExitStatus = new RubyProcess.Status(p);
             return p.ExitCode == 0;
         }
 
@@ -235,7 +235,7 @@ namespace IronRuby.Builtins {
         public static bool System(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]MutableString/*!*/ command,
             [DefaultProtocol, NotNull, NotNullItems]params MutableString/*!*/[]/*!*/ args) {
             Process p = ExecuteCommand(command, args);
-            context.ChildProcessExitStatus = p.ExitCode;
+            context.ChildProcessExitStatus = new RubyProcess.Status(p);
             return p.ExitCode == 0;
         }
 #endif
@@ -413,7 +413,7 @@ namespace IronRuby.Builtins {
             [DefaultProtocol, NotNull]MutableString/*!*/ assemblyName, [DefaultProtocol, Optional, NotNull]MutableString libraryNamespace) {
 
             string initializer = libraryNamespace != null ? LibraryInitializer.GetFullTypeName(libraryNamespace.ConvertToString()) : null;
-            return context.Loader.LoadAssembly(assemblyName.ConvertToString(), initializer, true);
+            return context.Loader.LoadAssembly(assemblyName.ConvertToString(), initializer, true, true);
         }
 
         [RubyMethod("require", RubyMethodAttributes.PrivateInstance)]
@@ -1432,7 +1432,7 @@ namespace IronRuby.Builtins {
         // thread-safe:
         /// <summary>
         /// Returns a RubyMethod instance that represents one or more CLR members of given name.
-        /// An exception is thrown if the class of self doesn't represent a CLR type or if the member is not found.
+        /// An exception is thrown if the member is not found.
         /// Name could be of Ruby form (foo_bar) or CLR form (FooBar). Operator names are translated 
         /// (e.g. "+" to op_Addition, "[]"/"[]=" to a default index getter/setter).
         /// The resulting RubyMethod might represent multiple CLR members (overloads).
@@ -1440,18 +1440,14 @@ namespace IronRuby.Builtins {
         /// Includes all CLR members that match the name even if they are not callable from Ruby - 
         /// they are hidden by a Ruby member or their declaring type is not included in the ancestors list of the class.
         /// Includes members of any Ruby visibility.
-        /// Includes CLR protected members. 
+        /// Includes CLR protected members.
         /// Includes CLR private members if PrivateBinding is on.
         /// </summary>
         [RubyMethod("clr_member")]
         public static RubyMethod/*!*/ GetClrMember(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]string/*!*/ name) {
             RubyMemberInfo info;
+
             RubyClass cls = context.GetClassOf(self);
-
-            if (cls.TypeTracker == null) {
-                throw RubyExceptions.CreateNotClrTypeError(cls);
-            }
-
             if (!cls.TryGetClrMember(name, out info)) {
                 throw RubyExceptions.CreateNameError(String.Format("undefined CLR method `{0}' for class `{1}'", name, cls.Name));
             }
@@ -1480,7 +1476,7 @@ namespace IronRuby.Builtins {
                 if (foreignMembers.Count > 0) {
                     var symbolicNames = context.RubyOptions.Compatibility > RubyCompatibility.Ruby18;
                     foreach (var name in foreignMembers) {
-                        result.Add(ModuleOps.CreateMethodName(name, symbolicNames));
+                        result.Add(new ClrName(name));
                     }
                 }
                 return result;

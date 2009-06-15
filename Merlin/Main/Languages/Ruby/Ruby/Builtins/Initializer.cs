@@ -74,7 +74,7 @@ namespace IronRuby.Builtins {
             Action<RubyModule> instanceTrait, Action<RubyModule> classTrait, Action<RubyModule> constantsInitializer,
             RubyModule/*!*/[]/*!*/ mixins) {
 
-            RubyModule module = _context.DefineLibraryModule(name, type, instanceTrait, classTrait, constantsInitializer, mixins, (RubyModuleAttributes)attributes);
+            RubyModule module = _context.DefineLibraryModule(name, type, instanceTrait, classTrait, constantsInitializer, mixins, (RubyModuleAttributes)attributes, _builtin);
             _context.ObjectClass.SetConstant(module.Name, module);
             return module;
         }
@@ -91,13 +91,13 @@ namespace IronRuby.Builtins {
         protected RubyModule/*!*/ DefineModule(string/*!*/ name, Type/*!*/ type, int attributes,
             Action<RubyModule> instanceTrait, Action<RubyModule> classTrait, Action<RubyModule> constantsInitializer,
             params RubyModule/*!*/[]/*!*/ mixins) {
-            return _context.DefineLibraryModule(name, type, instanceTrait, classTrait, constantsInitializer, mixins, (RubyModuleAttributes)attributes);
+            return _context.DefineLibraryModule(name, type, instanceTrait, classTrait, constantsInitializer, mixins, (RubyModuleAttributes)attributes, _builtin);
         }
 
         protected RubyModule/*!*/ ExtendModule(Type/*!*/ type,
             Action<RubyModule> instanceTrait, Action<RubyModule> classTrait, Action<RubyModule> constantsInitializer,
             params RubyModule/*!*/[]/*!*/ mixins) {
-            return _context.DefineLibraryModule(null, type, instanceTrait, classTrait, constantsInitializer, mixins, RubyModuleAttributes.None);
+            return _context.DefineLibraryModule(null, type, instanceTrait, classTrait, constantsInitializer, mixins, RubyModuleAttributes.None, _builtin);
         }
 
         protected object/*!*/ DefineSingleton(Action<RubyModule> instanceTrait, Action<RubyModule> classTrait, Action<RubyModule> constantsInitializer,
@@ -110,7 +110,7 @@ namespace IronRuby.Builtins {
                 expandedMixins = RubyModule.ExpandMixinsNoLock(_context.ObjectClass, mixins);
             }
 
-            object result = new object();
+            object result = new RubyObject(_context.ObjectClass);
             RubyClass singleton = _context.CreateInstanceSingleton(result, instanceTrait, classTrait, constantsInitializer, expandedMixins);
 
             return result;

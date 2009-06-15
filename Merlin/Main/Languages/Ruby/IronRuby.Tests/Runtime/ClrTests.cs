@@ -26,15 +26,23 @@ using System.Runtime.InteropServices;
 
 namespace InteropTests.Generics1 {
     public class C {
-        public int Arity { get { return 0; } }
+        public virtual int Arity { get { return 0; } }
     }
 
     public class C<T> {
-        public int Arity { get { return 1; } }
+        public virtual int Arity { get { return 1; } }
     }
 
     public class C<T,S> {
-        public int Arity { get { return 2; } }
+        public virtual int Arity { get { return 2; } }
+    }
+
+    public class D : C {
+        public override int Arity { get { return 10; } }
+    }
+
+    public class D<T> : C<T> {
+        public override int Arity { get { return 11; } }
     }
 }
 
@@ -197,25 +205,38 @@ p m.overloads(Object).clr_members
 3
 [Int32 BinarySearch(System.Object)]
 ");
+
+            TestOutput(@"
+class C < Array
+end
+
+p C.new.clr_member(:get_enumerator).call.move_next
+", @"
+false
+");
         }
 
         public class ProtectedA {
             protected string Foo(int a) { return "Foo(I): " + a; }
             public string Bar(int a) { return "Bar(I): " + a; }
+
+            protected string PG<T>(T a) { return "PG<T>(T)"; }
         }
 
         public class ProtectedB : ProtectedA {
             public string Foo(object a) { return "Foo(O): " + a.ToString(); }
-            protected string Bar(object a) { return "Bar(O): " + a; }
+            internal protected string Bar(object a) { return "Bar(O): " + a; }
 
             protected int Prop1 { get; set; }
-            public int Prop2 { get; protected set; }
+            public int Prop2 { get; internal protected set; }
 
             private string Baz(int a) { return "Baz(I): " + a; }
             public string Baz(object a) { return "Baz(O): " + a; }
 
             protected static string StaticM() { return "StaticM"; }
             protected static string StaticGenericM<T>(T f) { return "StaticGenericM: " + f.ToString(); }
+
+            internal protected string PG<T>(T a, int b) { return "PG<T>(T,int)"; }
 
             // TODO:
             // protected int Fld;
@@ -261,6 +282,18 @@ Foo(O): 6
 StaticM
 StaticGenericM: 123
 ", OutputFlags.Match);
+
+            // generic methods:
+            TestOutput(@"
+class C < B; end
+c = C.new
+
+puts c.method(:PG).of(Fixnum).call(1)
+puts c.method(:PG).of(Fixnum).call(1,2)
+", @"
+PG<T>(T)
+PG<T>(T,int)
+");
 
             // properties:
             AssertOutput(delegate() {
@@ -422,16 +455,60 @@ Hidden: 1, 2
 ");
         }
 
+        /// <summary>
+        /// No CLR names should be returned for builtin types and singletons.
+        /// </summary>
         public void ClrMethodEnumeration1() {
-            // TODO:
-//            Context.ObjectClass.SetConstant("Obj", Context.GetClass(typeof(OverloadInheritance1.B)));
+            // built-ins:
+            var irModules = new[] { "IronRuby" };
 
-//            Context.GetClass(typeof(OverloadInheritance1.B)).HideMethod("hidden");
+            using (Context.ClassHierarchyLocker()) {
+                Context.ObjectClass.EnumerateConstants((module, name, value) => {
+                    RubyModule m = value as RubyModule;
+                    if (m != null && Array.IndexOf(irModules, m.Name) == -1) {
+                        AssertNoClrNames(ModuleOps.GetInstanceMethods(m, true), m.Name);
+                        AssertNoClrNames(ModuleOps.GetPrivateInstanceMethods(m, true), m.Name);
+                        AssertNoClrNames(ModuleOps.GetInstanceMethods(m.SingletonClass, true), m.Name);
+                        AssertNoClrNames(ModuleOps.GetPrivateInstanceMethods(m.SingletonClass, true), m.Name);
+                    }
+                    return false;
+                });
+            }
 
-//            XAssertOutput(() => CompilerTest(@"
-//p Obj.instance_methods(false)
-//"), @"
-//");
+            // singletons:
+            AssertNoClrNames(Engine.Execute(@"class << self; instance_methods + private_instance_methods; end"), null);
+            AssertNoClrNames(Engine.Execute(@"class << self; class << self; instance_methods + private_instance_methods; end; end"), null);
+            AssertNoClrNames(Engine.Execute(@"class << Class; instance_methods + private_instance_methods; end"), null);
+        }
+
+        public void ClrMethodEnumeration2() {
+            TestOutput(@"
+class System::Decimal
+  instance_methods(false).each do |name|
+    mangled = '__' + name
+    
+    alias_method(mangled, name)
+    private mangled
+    
+    define_method(name) do |*args|
+      puts ""method called: #{name}""
+      send mangled, *args
+    end
+  end
+end
+x, y = System::Decimal.new(1), System::Decimal.new(2)
+x + y       
+x.CompareTo(y)
+", @"
+method called: +
+method called: compare_to
+");
+        }
+
+        private void AssertNoClrNames(object/*!*/ methods, string moduleName) {
+            var array = (RubyArray)methods;
+            int idx = array.FindIndex((name) => name is ClrName);
+            Assert(idx == -1, moduleName + "::" + (idx == -1 ? null : ((ClrName)array[idx]).ActualName));
         }
 
         public static class OverloadInheritance2 {
@@ -1088,7 +1165,7 @@ puts $type.static_method rescue puts $!.class
 {1}
 2
 NoMethodError
-", type, RubyUtils.GetQualifiedName(typeof(ClassWithMethods1), true)), OutputFlags.Match);
+", type, Context.GetTypeName(typeof(ClassWithMethods1), false)), OutputFlags.Match);
         }
 
         public void ClrNamespaces1() {
@@ -1114,19 +1191,42 @@ System::Collections
         public void ClrGenerics1() {
             Runtime.LoadAssembly(typeof(Tests).Assembly);
 
-            AssertOutput(delegate() {
-                CompilerTest(@"
+            TestOutput(@"
 include InteropTests::Generics1
 p C
+p D
+p C.new
+p D.new                               # test if we don't use cached dispatch to C.new again
+p C.clr_new
+p D.clr_new
+p C.superclass
+p D.superclass
+", @"
+#<TypeGroup: InteropTests::Generics1::C, InteropTests::Generics1::C[T], InteropTests::Generics1::C[T, S]>
+#<TypeGroup: InteropTests::Generics1::D, InteropTests::Generics1::D[T]>
+InteropTests.Generics1.C
+InteropTests.Generics1.D
+InteropTests.Generics1.C
+InteropTests.Generics1.D
+Object
+InteropTests::Generics1::C
+");
+
+            TestOutput(@"
+include InteropTests::Generics1
 p C.new.arity
 p C[String].new.arity
+p D[String].new.arity
 p C[Fixnum, Fixnum].new.arity
-");
-            }, @"
-#<TypeGroup: InteropTests::Generics1::C, InteropTests::Generics1::C[T], InteropTests::Generics1::C[T, S]>
+p D[String]
+p C[Fixnum, Fixnum]
+", @"
 0
 1
+11
 2
+InteropTests::Generics1::D[String]
+InteropTests::Generics1::C[Fixnum, Fixnum]
 ");
         }
 
@@ -1334,12 +1434,16 @@ $d = D.new { |foo, bar| $foo = foo; $bar = bar; 777 }
         
         public void ClrDelegates2() {
             Runtime.LoadAssembly(typeof(Func<>).Assembly);
+            Runtime.LoadAssembly(typeof(Action).Assembly);
 
-            var f = Engine.Execute<Func<int, int>>(@"
-System::Func.of(Fixnum, Fixnum).new { |a| a + 1 }
-");
-
+            var f = Engine.Execute<Func<int, int>>(@"System::Func.of(Fixnum, Fixnum).new { |a| a + 1 }");
             Assert(f(1) == 2);
+
+            Engine.Execute<Action>(@"System::Action.new { $x = 1 }")();
+            Assert((int)Context.GetGlobalVariable("x") == 1);
+
+            Engine.Execute<Action<int>>(@"System::Action[Fixnum].new { |x| $x = x + 1 }")(10);
+            Assert((int)Context.GetGlobalVariable("x") == 11);
         }
 
         public void ClrEvents1() {
@@ -1521,6 +1625,58 @@ class C < Object
 end
 ");
             Assert(obj.Equals(obj));
+        }
+
+        public class ClassCallingVirtualInCtor1 {
+            public ClassCallingVirtualInCtor1() {
+                VirtualMethod();
+            }
+
+            public virtual int VirtualMethod() {
+                return 1;
+            }
+        }
+
+        /// <summary>
+        /// We need to fully initialize the derived type before calling base ctor.
+        /// The ebase ctor can call virtual methods that require _class to be set.
+        /// </summary>
+        public void ClrOverride3() {
+            Context.ObjectClass.SetConstant("C", Context.GetClass(typeof(ClassCallingVirtualInCtor1)));
+            TestOutput(@"
+class D < C
+end
+
+p D.new.virtual_method
+", @"
+1
+");
+        }
+
+        /// <summary>
+        /// Super call in an override.
+        /// </summary>
+        public void ClrOverride4() {
+            Context.ObjectClass.SetConstant("C", Context.GetClass(typeof(ClassCallingVirtualInCtor1)));
+            TestOutput(@"
+class D < C
+  def virtual_method 
+    10 + super
+  end
+end
+
+class E < C
+  def VirtualMethod 
+    20 + super
+  end
+end
+
+p D.new.VirtualMethod
+p E.new.virtual_method
+", @"
+11
+21
+");
         }
 
         public class ClassWithNonEmptyConstructor {

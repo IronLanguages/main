@@ -2,11 +2,17 @@ require File.dirname(__FILE__) + '/../../spec_helper'
 
 describe "System::DateTime instantiation" do
   it "via Time.now" do
-    System::DateTime.now.should be_close(Time.now, TOLERANCE)
+    t1 = System::DateTime.now
+    t2 = Time.now
+
+    (t2 - t1).should < 60.0
   end
   
   it "via Ruby's time constructor" do
-    System::DateTime.new.should be_close(Time.now, TOLERANCE)
+    t1 = System::DateTime.new
+    t2 = Time.now
+
+    (t2 - t1).should < 60.0
   end
   
   it "via System::DateTime's constructors" do

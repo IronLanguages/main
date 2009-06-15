@@ -75,18 +75,16 @@ namespace IronRuby.Compiler.Ast {
             MSA.ParameterExpression rfcVariable;
             MSA.ParameterExpression runtimeScopeVariable;
             MSA.ParameterExpression blockParameter;
-            MSA.ParameterExpression currentMethodVariable;
 
             if (gen.CompilerOptions.FactoryKind == TopScopeFactoryKind.None ||
                 gen.CompilerOptions.FactoryKind == TopScopeFactoryKind.Module) {
-                parameters = new MSA.ParameterExpression[6];
+                parameters = new MSA.ParameterExpression[5];
 
                 runtimeScopeVariable = parameters[0] = Ast.Parameter(typeof(RubyScope), "#scope");
                 selfVariable = parameters[1] = Ast.Parameter(typeof(object), "#self");
                 parameters[2] = Ast.Parameter(typeof(RubyModule), "#module");
                 blockParameter = parameters[3] = Ast.Parameter(typeof(Proc), "#block");
-                currentMethodVariable = parameters[4] = Ast.Parameter(typeof(RubyMethodInfo), "#method");
-                rfcVariable = parameters[5] = Ast.Parameter(typeof(RuntimeFlowControl), "#rfc");
+                rfcVariable = parameters[4] = Ast.Parameter(typeof(RuntimeFlowControl), "#rfc");
             } else {
                 parameters = new MSA.ParameterExpression[3];
 
@@ -95,7 +93,6 @@ namespace IronRuby.Compiler.Ast {
                 selfVariable = parameters[2] = Ast.Parameter(typeof(object), "#self");
 
                 blockParameter = null;
-                currentMethodVariable = null;
             }
 
             if (_statements.Count == 0) {
@@ -108,7 +105,6 @@ namespace IronRuby.Compiler.Ast {
                 runtimeScopeVariable,
                 blockParameter,
                 rfcVariable,
-                currentMethodVariable,
                 gen.CompilerOptions.TopLevelMethodName, // method name
                 null                                    // parameters
             );
@@ -136,7 +132,7 @@ namespace IronRuby.Compiler.Ast {
                             prologue, 
                             Methods.SetDataConstant.OpCall(
                                 runtimeScopeVariable,
-                                AstUtils.Constant(gen.SourceUnit.Path, typeof(string)),
+                                gen.SourcePathConstant,
                                 AstUtils.Constant(_dataOffset)
                             )
                         );
@@ -147,7 +143,7 @@ namespace IronRuby.Compiler.Ast {
                     throw Assert.Unreachable;
             }
 
-            if (gen.SourceUnit.Kind == SourceCodeKind.InteractiveCode) {
+            if (gen.PrintInteractiveResult) {
                 var resultVariable = scope.DefineHiddenVariable("#result", typeof(object));
 
                 var epilogue = Methods.PrintInteractiveResult.OpCall(runtimeScopeVariable,
@@ -180,7 +176,7 @@ namespace IronRuby.Compiler.Ast {
         }
 
         private static string/*!*/ GetEncodedName(AstGenerator/*!*/ gen) {
-            return RubyExceptionData.EncodeMethodName(gen.SourceUnit, RubyExceptionData.TopLevelMethodName, SourceSpan.None);
+            return RubyExceptionData.EncodeMethodName(RubyExceptionData.TopLevelMethodName, gen.SourcePath, SourceSpan.None);
         }
     }
 }

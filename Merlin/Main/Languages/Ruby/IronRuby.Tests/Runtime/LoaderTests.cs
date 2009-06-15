@@ -19,6 +19,7 @@ using System.IO;
 using System.Dynamic;
 using IronRuby.Builtins;
 using IronRuby.Runtime;
+using Microsoft.Scripting.Actions;
 
 namespace IronRuby.Tests {
     public partial class Tests {
@@ -41,14 +42,14 @@ namespace IronRuby.Tests {
             b = Loader.TryParseAssemblyName(str, out type, out assembly);
             Assert(b == false);
             
-            str = "IronRuby.Runtime.RubyContext, IronRuby, Version=0.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35";
+            str = "IronRuby.Runtime.RubyContext, IronRuby, Version=" + RubyContext.IronRubyVersionString + ", Culture=neutral, PublicKeyToken=31bf3856ad364e35";
             b = Loader.TryParseAssemblyName(str, out type, out assembly);
-            Assert(b == true && 
-                assembly == "IronRuby, Version=0.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35" &&
+            Assert(b == true &&
+                assembly == "IronRuby, Version=" + RubyContext.IronRubyVersionString + ", Culture=neutral, PublicKeyToken=31bf3856ad364e35" &&
                 type == "IronRuby.Runtime.RubyContext"
             );
-            
-            str = "IronRuby, Version=0.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35";
+
+            str = "IronRuby, Version=" + RubyContext.IronRubyVersionString + ", Culture=neutral, PublicKeyToken=31bf3856ad364e35";
             b = Loader.TryParseAssemblyName(str, out type, out assembly);
             Assert(b == true && assembly == str && type == null);
 
@@ -56,7 +57,7 @@ namespace IronRuby.Tests {
             b = Loader.TryParseAssemblyName(str, out type, out assembly);
             Assert(b == true && assembly == str && type == null);
 
-            str = "IronRuby, Version=0.5.0.0";
+            str = "IronRuby, Version=" + RubyContext.IronRubyVersionString;
             b = Loader.TryParseAssemblyName(str, out type, out assembly);
             Assert(b == true && assembly == str && type == null);
         }

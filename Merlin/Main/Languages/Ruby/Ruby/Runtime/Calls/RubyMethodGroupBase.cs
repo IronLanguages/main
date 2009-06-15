@@ -60,7 +60,7 @@ namespace IronRuby.Runtime.Calls {
         internal MethodBase/*!*/[]/*!*/ SetMethodBasesNoLock(MethodBase/*!*/[]/*!*/ methods) {
             Debug.Assert(
                 CollectionUtils.TrueForAll(methods, (method) => method.IsStatic || method.DeclaringType == typeof(Object)) ||
-                CollectionUtils.TrueForAll(methods, (method) => !method.IsStatic || CompilerHelpers.IsExtension(method) || RubyClass.IsOperator(method))
+                CollectionUtils.TrueForAll(methods, (method) => !method.IsStatic || CompilerHelpers.IsExtension(method) || RubyUtils.IsOperator(method))
             );
 
             return _methodBases = methods;
@@ -230,7 +230,12 @@ namespace IronRuby.Runtime.Calls {
             RubyOverloadResolver resolver;
             var bindingTarget = ResolveOverload(metaBuilder, args, name, overloads, callConvention, implicitProtocolConversions, out resolver);
             if (bindingTarget.Success) {
-                metaBuilder.Result = bindingTarget.MakeExpression();
+                if (ReferenceEquals(bindingTarget.Method, Methods.CreateDefaultInstance)) {
+                    Debug.Assert(args.TargetClass.TypeTracker.Type.IsValueType);
+                    metaBuilder.Result = Ast.New(args.TargetClass.TypeTracker.Type);
+                } else {
+                    metaBuilder.Result = bindingTarget.MakeExpression();
+                }
             } else {
                 metaBuilder.SetError(resolver.MakeInvalidParametersError(bindingTarget).Expression);
             }

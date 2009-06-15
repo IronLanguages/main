@@ -236,7 +236,7 @@ namespace IronRuby.Builtins {
         /// Creates an empty copy of this instance, taint and instance variables. 
         /// </summary>
         public MutableString/*!*/ Duplicate(RubyContext/*!*/ context, bool copySingletonMembers, MutableString/*!*/ result) {
-            context.CopyInstanceData(this, result, false, false, copySingletonMembers);
+            context.CopyInstanceData(this, result, copySingletonMembers);
             return result;
         }
 

@@ -27,15 +27,15 @@ using System.Linq.Expressions;
 
 namespace IronRuby.Compiler.Generation {
     public class RubyTypeEmitter : ClsTypeEmitter {
-        private FieldBuilder _classField;
+        private FieldBuilder _immediateClassField;
 
         public RubyTypeEmitter(TypeBuilder tb)
             : base(tb) {
         }
 
-        internal FieldBuilder ClassField {
-            get { return _classField; }
-            set { _classField = value; }
+        internal FieldBuilder ImmediateClassField {
+            get { return _immediateClassField; }
+            set { _immediateClassField = value; }
         }
 
         public static void AddRemoveEventHelper(object method, object instance, object dt, object eventValue, string name) {
@@ -90,9 +90,9 @@ namespace IronRuby.Compiler.Generation {
 
         protected override void EmitClassObjectFromInstance(ILGen il) {
             if (typeof(IRubyObject).IsAssignableFrom(BaseType)) {
-                il.EmitPropertyGet(typeof(IRubyObject), "Class");
+                il.EmitCall(Methods.IRubyObject_get_ImmediateClass);
             } else {
-                il.EmitFieldGet(_classField);
+                il.EmitFieldGet(_immediateClassField);
             }
         }
 

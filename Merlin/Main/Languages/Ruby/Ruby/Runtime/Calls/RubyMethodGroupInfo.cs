@@ -23,6 +23,8 @@ using IronRuby.Compiler;
 using IronRuby.Compiler.Generation;
 using Microsoft.Scripting.Utils;
 using Ast = System.Linq.Expressions.Expression;
+using Microsoft.Scripting;
+using Microsoft.Scripting.Generation;
 
 namespace IronRuby.Runtime.Calls {
     /// <summary>
@@ -126,21 +128,38 @@ namespace IronRuby.Runtime.Calls {
             return _staticDispatchMethods;
         }
 
+#if DEBUG
+        internal const string SuperCallMethodWrapperNameSuffix = "$RubyMethodGroupInfo.SuperCallMethodWrapper";
+#else
+        internal const string SuperCallMethodWrapperNameSuffix = "";
+#endif
+
         public static DynamicMethod/*!*/ WrapMethod(MethodInfo/*!*/ info, Type/*!*/ associatedType) {
             var originalParams = info.GetParameters();
             var newParams = new Type[originalParams.Length + 1];
-            string name = "";
+            
             newParams[0] = info.DeclaringType;
             for (int i = 0; i < originalParams.Length; i++) {
                 newParams[i + 1] = originalParams[i].ParameterType;
             }
-            DynamicMethod result = new DynamicMethod(name, info.ReturnType, newParams, associatedType);
+
+            DynamicMethod result = new DynamicMethod(
+                RubyExceptionData.EncodeMethodName(null, info.Name, SourceSpan.None) + SuperCallMethodWrapperNameSuffix,
+                info.ReturnType, newParams, associatedType
+            );
+
             ILGenerator ilg = result.GetILGenerator();
-            for (int i = 0; i < newParams.Length; i++) {
-                ilg.Emit(OpCodes.Ldarg, i);
+            if (info.IsAbstract) {
+                ilg.Emit(OpCodes.Ldtoken, info);
+                ilg.EmitCall(OpCodes.Call, Methods.MakeAbstractMethodCalledError, null);
+                ilg.Emit(OpCodes.Throw);
+            } else {
+                for (int i = 0; i < newParams.Length; i++) {
+                    ilg.Emit(OpCodes.Ldarg, i);
+                }
+                ilg.EmitCall(OpCodes.Call, info, null);
+                ilg.Emit(OpCodes.Ret);
             }
-            ilg.EmitCall(OpCodes.Call, info, null);
-            ilg.Emit(OpCodes.Ret);
             return result;
         }
 
@@ -176,7 +195,7 @@ namespace IronRuby.Runtime.Calls {
 
                 for (int i = 0; i < overloads.Count; i++) {
                     var overload = overloads[i];
-                    if (overload.IsFamily || overload.IsFamilyOrAssembly) {
+                    if (overload.IsProtected()) {
                         if (newOverloads == null) {
                             newOverloads = CollectionUtils.GetRange(overloads, 0, i);
 
@@ -209,10 +228,6 @@ namespace IronRuby.Runtime.Calls {
 
                             Debug.Assert(visibleMethod != null);
 
-                            if (overload.IsGenericMethod) {
-                                visibleMethod = visibleMethod.MakeGenericMethod(genericArguments);
-                            }
-
                             newOverloads.Add(visibleMethod);
                         }
                     } else if (newOverloads != null) {
@@ -228,10 +243,20 @@ namespace IronRuby.Runtime.Calls {
             Type/*!*/ type, string/*!*/ name, BindingFlags bindingFlags) {
 
             var overloads = type.GetMember(name, MemberTypes.Method, bindingFlags);
-            foreach (MethodInfo overload in overloads) {
-                if ((genericParameterTypes != null) == overload.IsGenericMethod &&
-                    ReflectionUtils.GetParameterTypes(overload.GetParameters()).ValueEquals(parameterTypes) &&
-                    !overload.IsGenericMethod || overload.GetGenericArguments().Length == genericParameterTypes.Length) {
+            for (int i = 0; i < overloads.Length; i++) {
+                MethodInfo overload = (MethodInfo)overloads[i];
+                if ((genericParameterTypes != null) != overload.IsGenericMethod) {
+                    continue;
+                }
+
+                if (overload.IsGenericMethod) {
+                    if (overload.GetGenericArguments().Length != genericParameterTypes.Length) {
+                        continue;
+                    }
+                    overload = overload.MakeGenericMethod(genericParameterTypes);
+                }
+
+                if (ReflectionUtils.GetParameterTypes(overload.GetParameters()).ValueEquals(parameterTypes)) {
                     return overload;
                 }
             }

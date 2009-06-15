@@ -172,6 +172,12 @@ namespace Microsoft.Scripting.Actions {
             }
         }
 
+        public IDictionary<int, Type> TypesByArity {
+            get {
+                return new ReadOnlyDictionary<int, Type>(_typesByArity);
+            }
+        }
+
 
         #region MemberTracker overrides
 

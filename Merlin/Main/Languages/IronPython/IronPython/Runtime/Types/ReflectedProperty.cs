@@ -58,7 +58,7 @@ namespace IronPython.Runtime.Types {
                 foreach (MethodInfo mi in Setter) {
                     if(mi.IsStatic && DeclaringType != owner.UnderlyingSystemType) {
                         return false;
-                    } else if (mi.IsFamily || mi.IsFamilyAndAssembly) {
+                    } else if (mi.IsProtected()) {
                         throw PythonOps.TypeErrorForProtectedMember(owner.UnderlyingSystemType, _info.Name);
                     }
                 }

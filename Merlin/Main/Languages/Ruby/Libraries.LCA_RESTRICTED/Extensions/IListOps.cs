@@ -529,25 +529,33 @@ namespace IronRuby.Builtins {
             return result;
         }
 
+        private static void AddUniqueItems(IList/*!*/ list, IList/*!*/ result, Dictionary<object, bool> seen, ref bool nilSeen) {
+            foreach (object item in list) {
+                if (item == null) {
+                    if (!nilSeen) {
+                        nilSeen = true;
+                        result.Add(null);
+                    }
+                    continue;
+                }
+
+                if (!seen.ContainsKey(item)) {
+                    seen.Add(item, true);
+                    result.Add(item);
+                }
+            }
+        }
+
         [RubyMethod("|")]
         public static RubyArray/*!*/ Union(RubyContext/*!*/ context, IList/*!*/ self, [DefaultProtocol]IList other) {
             var seen = new Dictionary<object, bool>(context.EqualityComparer);
+            bool nilSeen = false;
             var result = new RubyArray();
 
             // Union merges the two arrays, removing duplicates
-            foreach (object item in self) {
-                if (!seen.ContainsKey(item)) {
-                    seen.Add(item, true);
-                    result.Add(item);
-                }
-            }
+            AddUniqueItems(self, result, seen, ref nilSeen);
 
-            foreach (object item in other) {
-                if (!seen.ContainsKey(item)) {
-                    seen.Add(item, true);
-                    result.Add(item);
-                }
-            }
+            AddUniqueItems(other, result, seen, ref nilSeen);
 
             return result;
         }
@@ -1445,25 +1453,25 @@ namespace IronRuby.Builtins {
             IList result = CreateResultArray(allocateStorage, self);
 
             var seen = new Dictionary<object, bool>(allocateStorage.Context.EqualityComparer);
-            foreach (object item in self) {
-                if (!seen.ContainsKey(item)) {
-                    result.Add(item);
-                    seen.Add(item, true);
-                }
-            }
-
+            bool nilSeen = false;
+            
+            AddUniqueItems(self, result, seen, ref nilSeen);
             return result;
         }
 
         [RubyMethod("uniq!")]
         public static IList UniqueSelf(RubyContext/*!*/ context, IList/*!*/ self) {
             var seen = new Dictionary<object, bool>(context.EqualityComparer);
+            bool nilSeen = false;
             bool modified = false;
             int i = 0;
             while (i < self.Count) {
                 object key = self[i];
-                if (!seen.ContainsKey(key)) {
+                if (key != null && !seen.ContainsKey(key)) {
                     seen.Add(key, true);
+                    i++;
+                } else if (key == null && !nilSeen) {
+                    nilSeen = true;
                     i++;
                 } else {
                     if (context.IsObjectFrozen(self)) {

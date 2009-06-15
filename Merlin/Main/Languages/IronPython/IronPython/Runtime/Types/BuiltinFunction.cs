@@ -419,7 +419,7 @@ namespace IronPython.Runtime.Types {
             BindingTarget target = result.Target;
             res = result.MetaObject;
             
-            if (target.Method != null && (target.Method.IsFamily || target.Method.IsFamilyOrAssembly)) {
+            if (target.Method != null && target.Method.IsProtected()) {
                 // report an error when calling a protected member
                 res = new DynamicMetaObject(
                     BindingHelpers.TypeErrorForProtectedMember(
@@ -618,7 +618,7 @@ namespace IronPython.Runtime.Types {
             BindingTarget target = result.Target;
             res = result.Function;
 
-            if (target.Method != null && (target.Method.IsFamily || target.Method.IsFamilyOrAssembly)) {
+            if (target.Method != null && target.Method.IsProtected()) {
                 MethodBase method = target.Method;
                 // report an error when calling a protected member
                 res = delegate(object[] callArgs, out bool shouldOptimize) { 

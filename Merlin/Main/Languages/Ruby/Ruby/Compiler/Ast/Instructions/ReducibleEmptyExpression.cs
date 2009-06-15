@@ -21,12 +21,12 @@ namespace IronRuby.Compiler.Ast {
     using Ast = System.Linq.Expressions.Expression;
 
     internal abstract class ReducibleEmptyExpression : MSA.Expression {
-        protected override MSA.ExpressionType NodeTypeImpl() {
-            return MSA.ExpressionType.Extension;
+        public sealed override MSA.ExpressionType NodeType {
+            get { return MSA.ExpressionType.Extension; }
         }
 
-        protected override Type/*!*/ TypeImpl() {
-            return typeof(void);
+        public override Type/*!*/ Type {
+            get { return typeof(void); }
         }
 
         public override bool CanReduce {

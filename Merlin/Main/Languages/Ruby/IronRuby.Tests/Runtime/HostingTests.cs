@@ -277,10 +277,10 @@ class C
 end
 ");
             var obj = Engine.Operations.CreateInstance(cls) as RubyObject;
-            Assert(obj != null && obj.Class.Name == "C");
+            Assert(obj != null && obj.ImmediateClass.Name == "C");
 
             obj = Engine.Operations.InvokeMember(cls, "new") as RubyObject;
-            Assert(obj != null && obj.Class.Name == "C");
+            Assert(obj != null && obj.ImmediateClass.Name == "C");
 
             var foo = Engine.Operations.GetMember(obj, "foo") as RubyMethod;
             Assert(foo != null && foo.Name == "foo" && foo.Target == obj);

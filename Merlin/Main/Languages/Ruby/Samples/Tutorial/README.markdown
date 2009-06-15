@@ -21,13 +21,13 @@ Topics covered
 Running the app
 ---------------
 
-  cd Samples\Tutorial
   ir.exe wpf_tutorial.rb
+  
+  ir.exe wpf_tutorial.rb <tutorial_file_path>
 
 Running the app interactively
 -----------------------------
 
-  cd Samples\Tutorial
   ir.exe
   >>> load "wpf_tutorial.rb"
   => true
@@ -40,6 +40,5 @@ Running the app interactively
 Running the tests
 -----------------
 
-  cd Samples\Tutorial
   ir.exe test\test_console.rb
 

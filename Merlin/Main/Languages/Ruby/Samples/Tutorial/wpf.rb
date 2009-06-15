@@ -20,6 +20,7 @@ require 'PresentationCore, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf
 require 'windowsbase, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35'
 
 class System::Windows::FrameworkElement
+  # Monkey-patch FrameworkElement to allow window.child_name instead of window.FindName("child_name")
   def method_missing name, *args
     find_name(name.to_s.to_clr_string) || super
   end
@@ -77,6 +78,14 @@ class Module
       end
     end
   end
+end
+
+class System::Windows::Threading::DispatcherObject
+    def invoke &block
+        require "system.core, Version=3.5.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+        dispatch_callback = System::Action[].new block
+        self.dispatcher.invoke(System::Windows::Threading::DispatcherPriority.Normal, dispatch_callback)
+    end
 end
 
 class System::Windows::Documents::FlowDocument
@@ -154,6 +163,7 @@ module Wpf
     def start_accepting
       @@bold_mask = SM::Attribute.bitmap_for :BOLD
       @@italics_mask = SM::Attribute.bitmap_for :EM
+      @@tt_mask = SM::Attribute.bitmap_for :TT
       @@hyperlink_mask = SM::Attribute.bitmap_for :HYPERLINK
       @@tidylink_mask = SM::Attribute.bitmap_for :TIDYLINK
 
@@ -183,6 +193,11 @@ module Wpf
             @attributes.clear
           when @@italics_mask
             paragraph.inlines.add(Italic.new(Run.new(item)))
+          when @@tt_mask
+              run = Run.new(item)
+              run.font_family = FontFamily.new "Consolas"
+              run.font_weight = FontWeights.Bold
+              paragraph.inlines.add(run)
           when nil
             paragraph.inlines.add(Run.new(item))
           else
@@ -212,7 +227,11 @@ module Wpf
     end
 
     def accept_verbatim(am, fragment)
-      raise NotImplementedError
+        paragraph = Paragraph.new
+        paragraph.font_family = FontFamily.new "Consolas"
+        paragraph.font_weight = FontWeights.Bold
+        paragraph.inlines.add(Run.new(fragment.txt))
+        @flowDoc.blocks.add paragraph
     end
 
     def accept_list_start(am, fragment)

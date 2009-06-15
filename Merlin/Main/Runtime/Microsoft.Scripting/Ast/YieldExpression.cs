@@ -39,12 +39,12 @@ namespace Microsoft.Scripting.Ast {
             get { return false; }
         }
 
-        protected override Type TypeImpl() {
-            return typeof(void);
+        public sealed override Type Type {
+            get { return typeof(void); }
         }
 
-        protected override ExpressionType NodeTypeImpl() {
-            return ExpressionType.Extension;
+        public sealed override ExpressionType NodeType {
+            get { return ExpressionType.Extension; }
         }
 
         /// <summary>

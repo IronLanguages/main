@@ -873,7 +873,14 @@ namespace IronPython.Runtime.Types {
         }
 
         private static MemberGroup/*!*/ DirResolver(MemberBinder/*!*/ binder, Type/*!*/ type) {
-            return binder.GetMember(type, "GetMemberNames");
+            MemberGroup res = binder.GetMember(type, "GetMemberNames");
+            if (res == MemberGroup.EmptyGroup && 
+                !typeof(IPythonObject).IsAssignableFrom(type) &&
+                typeof(IDynamicMetaObjectProvider).IsAssignableFrom(type)) {
+                res = GetInstanceOpsMethod(type, "DynamicDir");
+            }
+
+            return res;
         }
 
         class DocumentationDescriptor : PythonTypeSlot {
@@ -1535,15 +1542,15 @@ namespace IronPython.Runtime.Types {
 
             switch (input.MemberType) {
                 case MemberTypes.Method:
-                    return ((MethodInfo)input).IsFamily || ((MethodInfo)input).IsFamilyOrAssembly;
+                    return ((MethodInfo)input).IsProtected();
                 case MemberTypes.Property:
                     MethodInfo mi = ((PropertyInfo)input).GetGetMethod(true);
                     if (mi != null) return ProtectedOnly(mi);
                     return false;
                 case MemberTypes.Field:
-                    return ((FieldInfo)input).IsFamily || ((FieldInfo)input).IsFamilyOrAssembly;
+                    return ((FieldInfo)input).IsProtected();
                 case MemberTypes.NestedType:
-                    return ((Type)input).IsNestedFamily || ((Type)input).IsNestedFamORAssem;
+                    return ((Type)input).IsProtected();
                 default:
                     return false;
             }

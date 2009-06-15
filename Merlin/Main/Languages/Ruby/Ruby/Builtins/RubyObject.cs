@@ -31,24 +31,23 @@ namespace IronRuby.Builtins {
     /// </summary>
     [DebuggerDisplay("{Inspect().ConvertToString()}")]
     public partial class RubyObject : IRubyObject, IDuplicable, ISerializable {
-        internal const string ClassPropertyName = "Class";
-
         private RubyInstanceData _instanceData;
-        private readonly RubyClass/*!*/ _class;
+        private RubyClass/*!*/ _immediateClass;
 
         public RubyObject(RubyClass/*!*/ cls) {
             Assert.NotNull(cls);
-            _class = cls;
+            Debug.Assert(!cls.IsSingletonClass);
+            _immediateClass = cls;
         }
 
         public override string/*!*/ ToString() {
 #if DEBUG && !SILVERLIGHT && !SYSTEM_CORE
-            if (MetaObjectBuilder._DumpingExpression) {
+            if (RubyBinder._DumpingExpression) {
                 return ToMutableString().ToString();
             }
 #endif
             // Translate ToString to to_s conversion for .NET callers.
-            var site = _class.StringConversionSite;
+            var site = _immediateClass.StringConversionSite;
             return site.Target(site, this).ToString();
         }
 
@@ -59,74 +58,54 @@ namespace IronRuby.Builtins {
                 return true;
             }
 
-            var site = _class.EqlSite;
+            var site = _immediateClass.EqlSite;
             return Protocols.IsTrue(site.Target(site, this, obj));
         }
 
         public override int GetHashCode() {
-            var site = _class.HashSite;
+            var site = _immediateClass.HashSite;
             object hash = site.Target(site, this);
             if (!((hash is int)  || (hash is Microsoft.Scripting.Math.BigInteger))) {
-                throw RubyExceptions.CreateUnexpectedTypeError(_class.Context, "hash", "Integer");
+                throw RubyExceptions.CreateUnexpectedTypeError(_immediateClass.Context, "hash", "Integer");
             }
             return hash.GetHashCode();
         }
 
         public MutableString/*!*/ ToMutableString() {
-            return RubyUtils.FormatObject(_class.Name, GetInstanceData().ObjectId, IsTainted);
+            return RubyUtils.FormatObject(_immediateClass.GetNonSingletonClass().Name, GetInstanceData().ObjectId, IsTainted);
         }
 
         public MutableString/*!*/ Inspect() {
-            return _class.Context.Inspect(this);
+            return _immediateClass.Context.Inspect(this);
         }
 
 #if !SILVERLIGHT
         protected RubyObject(SerializationInfo/*!*/ info, StreamingContext context) {
-            RubyOps.DeserializeObject(out _instanceData, out _class, info);
+            RubyOps.DeserializeObject(out _instanceData, out _immediateClass, info);
         }
 
         [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.SerializationFormatter)]
         public virtual void GetObjectData(SerializationInfo/*!*/ info, StreamingContext context) {
-            RubyOps.SerializeObject(_instanceData, _class, info);
+            RubyOps.SerializeObject(_instanceData, _immediateClass, info);
         }
 #endif
 
-        public RubyClass/*!*/ ImmediateClass {
-            get {
-                return (_instanceData == null) ? _class : (_instanceData.ImmediateClass ?? _class);
-            }
-        }
-
         protected virtual RubyObject/*!*/ CreateInstance() {
-            return new RubyObject(_class);
-        }
-
-        private void CopyInstanceDataFrom(IRubyObject/*!*/ source, bool copyFrozenState) {
-            // copy instance data, but not the state:
-            var sourceData = source.TryGetInstanceData();
-            if (sourceData != null) {
-                _instanceData = new RubyInstanceData();
-                sourceData.CopyInstanceVariablesTo(_instanceData);
-            }
-
-            // copy flags:
-            IsTainted = source.IsTainted;
-            if (copyFrozenState && source.IsFrozen) {
-                Freeze();
-            }
+            return new RubyObject(_immediateClass.NominalClass);
         }
 
         object IDuplicable.Duplicate(RubyContext/*!*/ context, bool copySingletonMembers) {
             var result = CreateInstance();
-            result.CopyInstanceDataFrom(this, copySingletonMembers);
+            context.CopyInstanceData(this, result, copySingletonMembers);
             return result;
         }
 
         #region IRubyObject
 
         [Emitted]
-        public RubyClass/*!*/ Class {
-            get { return _class; }
+        public RubyClass/*!*/ ImmediateClass {
+            get { return _immediateClass; }
+            set { _immediateClass = value; }
         }
 
         public RubyInstanceData/*!*/ GetInstanceData() {

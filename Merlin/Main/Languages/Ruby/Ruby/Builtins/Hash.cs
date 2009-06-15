@@ -78,7 +78,7 @@ namespace IronRuby.Builtins {
         /// <summary>
         /// Creates an empty instance.
         /// Doesn't copy instance data.
-        /// Preserves the class of the Array.
+        /// Preserves the class of the Hash.
         /// </summary>
         protected virtual Hash/*!*/ CreateInstance() {
             return new Hash(Comparer);
