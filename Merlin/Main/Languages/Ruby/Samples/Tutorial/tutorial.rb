@@ -130,20 +130,20 @@ module Tutorial
     end
     
     @@tutorials = {}
-    
-    def self.tutorials
-        @@tutorials
+
+    def self.all
+      Dir[File.expand_path("Tutorials", File.dirname(__FILE__)) + '/*'].each do |t|
+        self.get_tutorial t unless File.directory?(t)
+      end
+      @@tutorials
     end
 
-    @@ironruby_tutorial_path = File.expand_path("Tutorials/ironruby_tutorial.rb", File.dirname(__FILE__))
-    @@tryruby_tutorial_path  = File.expand_path("Tutorials/tryruby_tutorial.rb" , File.dirname(__FILE__))
-
-    def self.get_tutorial path = nil
-        path ||= @@ironruby_tutorial_path
-        path = File.expand_path path
+    def self.get_tutorial path = @@tutorials.first
         if not @@tutorials.has_key? path
             require path
-            raise "#{path} does not contains a tutorial definition" if not @@tutorials.has_key? path
+            raise "#{path} does not contains a tutorial definition" if not Thread.current[:tutorial]
+            @@tutorials[path] = Thread.current[:tutorial]
+            Thread.current[:tutorial] = nil
         end
         
         return @@tutorials[path]
@@ -222,12 +222,11 @@ class Object
         tutorial_file = $1
         t = Tutorial::Tutorial.new name, tutorial_file
         Thread.current[:tutorial] = t
+        Thread.current[:tutorials] ||= []
+        Thread.current[:tutorials] << Thread.current[:tutorial]
         Thread.current[:prev_chapter] = nil
 
         yield
-
-        Tutorial.tutorials[tutorial_file] = t
-        Thread.current[:tutorial] = nil
     end
 
     def introduction intro
