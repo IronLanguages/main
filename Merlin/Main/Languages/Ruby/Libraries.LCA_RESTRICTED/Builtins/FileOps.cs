@@ -602,7 +602,7 @@ namespace IronRuby.Builtins {
             internal MutableString/*!*/ GetResult() {
                 StringBuilder result = new StringBuilder(_root);
                 
-                if (_pathComponents.Count > 1) {
+                if (_pathComponents.Count >= 1) {
                     // Here we make this work:
                     //   File.expand_path("c:/..a..") -> "c:/..a"
                     string lastComponent = _pathComponents[_pathComponents.Count - 1];
