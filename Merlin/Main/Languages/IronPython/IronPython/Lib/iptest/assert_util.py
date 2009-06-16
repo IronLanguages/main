@@ -558,6 +558,19 @@ def AddReferenceToDlrCore():
             clr.AddReference("Microsoft.Dynamic")
 
     
+class stderr_trapper(object):
+    class myfile(object):
+        def __init__(self, messages):
+            self.messages = messages
+        def write(self, *args):
+            self.messages.append(args)
+    def __init__(self):
+        self.messages = []
+    def __enter__(self):
+        self.oldstderr, sys.stderr = sys.stderr, stderr_trapper.myfile(self.messages)
+        return self
+    def __exit__(self, *args):
+        sys.stderr = self.oldstderr
 
 #------------------------------------------------------------------------------
 MAX_FAILURE_RETRY = 3

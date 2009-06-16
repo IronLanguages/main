@@ -647,14 +647,14 @@ namespace IronRuby.Builtins {
         /// Stores unsucessfull look-ups of CLR type members.
         /// Reflection is not efficient at caching look-ups and we do multiple of them (due to mangling) each time a method is being resolved.
         /// </summary>
-        private static Dictionary<Key<Type, string>, bool> _clrFailedMemberLookupCache = new Dictionary<Key<Type, string>, bool>();
+        private static Dictionary<Key<Type, string, bool>, bool> _clrFailedMemberLookupCache = new Dictionary<Key<Type, string, bool>, bool>();
 
-        private static bool IsFailureCached(Type/*!*/ type, string/*!*/ methodName) {
+        private static bool IsFailureCached(Type/*!*/ type, string/*!*/ methodName, bool isStatic) {
             // check for cached lookup failure (if the cache is available):
             bool result = false;
             var cache = Interlocked.Exchange(ref _clrFailedMemberLookupCache, null);
             if (cache != null) {
-                result = cache.ContainsKey(Key.Create(type, methodName));
+                result = cache.ContainsKey(Key.Create(type, methodName, isStatic));
                 Interlocked.Exchange(ref _clrFailedMemberLookupCache, cache);
             }
 
@@ -664,11 +664,11 @@ namespace IronRuby.Builtins {
             return result;
         }
 
-        private static void CacheFailure(Type/*!*/ type, string/*!*/ methodName) {
+        private static void CacheFailure(Type/*!*/ type, string/*!*/ methodName, bool isStatic) {
             // store failure to the cache if the cache is not owned by another thread:
             var cache = Interlocked.Exchange(ref _clrFailedMemberLookupCache, null);
             if (cache != null) {
-                cache[Key.Create(type, methodName)] = true;
+                cache[Key.Create(type, methodName, isStatic)] = true;
                 Interlocked.Exchange(ref _clrFailedMemberLookupCache, cache);
             }
         }
@@ -704,7 +704,7 @@ namespace IronRuby.Builtins {
         protected override bool TryGetClrMember(Type/*!*/ type, string/*!*/ name, bool tryUnmangle, out RubyMemberInfo method) {
             Context.RequiresClassHierarchyLock();
 
-            if (IsFailureCached(type, name)) {
+            if (IsFailureCached(type, name, _isSingletonClass)) {
                 method = null;
                 return false;
             }
@@ -713,7 +713,7 @@ namespace IronRuby.Builtins {
                 return true;
             }
 
-            CacheFailure(type, name);
+            CacheFailure(type, name, _isSingletonClass);
             method = null;
             return false;
         }
@@ -1297,7 +1297,9 @@ namespace IronRuby.Builtins {
                 );
 
                 // we need to handle break, which unwinds to a proc-converter that could be this method's frame:
-                metaBuilder.ControlFlowBuilder = RubyMethodInfo.RuleControlFlowBuilder;
+                if (args.Signature.HasBlock) {
+                    metaBuilder.ControlFlowBuilder = RubyMethodInfo.RuleControlFlowBuilder;
+                }
             }
         }
 

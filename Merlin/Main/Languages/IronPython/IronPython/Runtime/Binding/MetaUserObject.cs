@@ -142,7 +142,7 @@ namespace IronPython.Runtime.Binding {
                     return _baseMetaObject.BindInvoke(ib, args);
                 }
 
-                return ib.FallbackInvoke(this, args);
+                return ib.FallbackInvoke(this.Restrict(this.GetLimitType()), args);
             }
 
             PythonInvokeBinder pib = action as PythonInvokeBinder;

@@ -1653,6 +1653,32 @@ p D.new.virtual_method
 ");
         }
 
+        /// <summary>
+        /// Super call in an override.
+        /// </summary>
+        public void ClrOverride4() {
+            Context.ObjectClass.SetConstant("C", Context.GetClass(typeof(ClassCallingVirtualInCtor1)));
+            TestOutput(@"
+class D < C
+  def virtual_method 
+    10 + super
+  end
+end
+
+class E < C
+  def VirtualMethod 
+    20 + super
+  end
+end
+
+p D.new.VirtualMethod
+p E.new.virtual_method
+", @"
+11
+21
+");
+        }
+
         public class ClassWithNonEmptyConstructor {
             public int P { get; set; }
 

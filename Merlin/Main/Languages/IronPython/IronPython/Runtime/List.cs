@@ -731,8 +731,6 @@ namespace IronPython.Runtime {
         }
 
         public void extend(object seq) {
-            //!!! optimize case of easy sequence (List or Tuple)
-
             IEnumerator i = PythonOps.GetEnumerator(seq);
             if (seq == (object)this) {
                 List other = new List(i);

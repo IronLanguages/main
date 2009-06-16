@@ -37,13 +37,15 @@ module Tutorial
 
     class Task
         attr :description
+        attr :setup
         attr :code
         attr :title
         attr :source_files # Files used by the task. The user might want to browse these files
 
-        def initialize title, description, code, source_files, &success_evaluator	                
+        def initialize title, description, setup, code, source_files, &success_evaluator	                
             @title = title
             @description = description
+            @setup = setup
             @code = code
             @source_files = source_files
             @success_evaluator = success_evaluator
@@ -54,11 +56,18 @@ module Tutorial
                 if @success_evaluator
                   return @success_evaluator.call(interaction)
                 else
-                  return eval(@code, interaction.bind) == interaction.result
+                  return eval(code_string, interaction.bind) == interaction.result
                 end
-            rescue
+            rescue => e
+                warn %{success_evaluator raised error: #{e}\n#{e.backtrace.join("\n")}} if $DEBUG
                 false
             end
+        end
+        
+        def code_string
+            c = code
+            c = c.to_ary.join("\n") if c.respond_to? :to_ary
+            c
         end
     end
     
@@ -141,6 +150,9 @@ module Tutorial
     end
     
     class ReplContext
+        attr :scope
+        attr :bind
+        
         def initialize
             @scope = Object.new
 
@@ -155,11 +167,20 @@ module Tutorial
             end
 
             @bind = @scope.instance_eval { binding }
+            
+            def @bind.method_missing n
+                eval(n.to_s, self)               
+            end
         end
         
         def interact input
+            # Redirect stdout. Note that this affects the entire process. If the program calls "puts"
+            # for some reason on another thread, the user may not expect to see the output. But it is 
+            # hard to distinguish between printing that the user initiated, and printing that the program 
+            # itself is doing.
             output = StringIO.new
             old_stdout, $stdout = $stdout, output
+            
             result = nil
             error = nil
             begin
@@ -185,7 +206,6 @@ module Tutorial
             @result = result
             @error = error
             
-            puts "#{result}\n#{error}" if result and error
             raise "result should be nil if an exception was raised" if result and error
         end
         
@@ -273,7 +293,7 @@ class Object
     def task(options, &success_evaluator)
         options = {}.merge(options)
         Thread.current[:chapter].tasks << Tutorial::Task.new(
-          options[:title], options[:body], options[:code], options[:source_files], &success_evaluator)
+          options[:title], options[:body], options[:setup], options[:code], options[:source_files], &success_evaluator)
     end
 
     # This represents an operation that consists of several closely realated task. It is useful to have

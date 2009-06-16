@@ -129,6 +129,7 @@ namespace IronRuby.Tests {
                 Send1,
                 Send2,
                 MethodCallCaching7,
+                MethodCallCaching8,
                 
                 AttributeAccessors1,
                 AttributeAccessors2,
@@ -387,6 +388,7 @@ namespace IronRuby.Tests {
                 ClrOverride1,
                 ClrOverride2,
                 ClrOverride3,
+                ClrOverride4,
                 ClrConstructor1,
                 ClrConstructor2,
                 ClrConstructor3,

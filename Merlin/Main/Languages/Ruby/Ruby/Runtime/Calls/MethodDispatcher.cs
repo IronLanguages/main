@@ -27,11 +27,16 @@ namespace IronRuby.Runtime.Calls {
         internal int Version;
 
         internal static MethodDispatcher CreateRubyObjectDispatcher(Type/*!*/ func, Delegate/*!*/ method, int mandatoryParamCount, 
-            bool hasScope, int version) {
+            bool hasScope, bool hasBlock, int version) {
 
-            var dispatcher = CreateDispatcher(func, mandatoryParamCount, hasScope, version,
-                () => hasScope ? (MethodDispatcher)new RubyObjectMethodDispatcherWithScope() : new RubyObjectMethodDispatcher(),
-                hasScope ? RubyObjectMethodDispatchersWithScope : RubyObjectMethodDispatchers
+            var dispatcher = CreateDispatcher(func, mandatoryParamCount, hasScope, hasBlock, version,
+                () => 
+                hasScope ?
+                    (hasBlock ? (MethodDispatcher)new RubyObjectMethodDispatcherWithScopeAndBlock() : new RubyObjectMethodDispatcherWithScope()) :
+                    (hasBlock ? (MethodDispatcher)new RubyObjectMethodDispatcherWithBlock() : new RubyObjectMethodDispatcher()),
+                hasScope ? 
+                    (hasBlock ? RubyObjectMethodDispatchersWithScopeAndBlock : RubyObjectMethodDispatchersWithScope) :
+                    (hasBlock ? RubyObjectMethodDispatchersWithBlock : RubyObjectMethodDispatchers)
             );
 
             if (dispatcher != null) {
@@ -40,12 +45,13 @@ namespace IronRuby.Runtime.Calls {
             return dispatcher;
         }
 
-        internal static MethodDispatcher CreateDispatcher(Type/*!*/ func, int mandatoryParamCount, bool hasScope, int version,
+        internal static MethodDispatcher CreateDispatcher(Type/*!*/ func, int mandatoryParamCount, bool hasScope, bool hasBlock, int version,
             Func<MethodDispatcher> parameterlessFactory, Type[] genericFactories) {
             Type[] funcArgs = func.GetGenericArguments();
 
-            // Func<CallSite, (RubyScope)?, TSelf, T1, ... TN, object>
-            int firstParameterIndex = hasScope ? 3 : 2;
+            // Func<CallSite, (RubyScope)?, TSelf, (Proc)?, T1, ... TN, object>
+            int selfIndex = 1 + (hasScope ? 1 : 0);
+            int firstParameterIndex = selfIndex + 1 + (hasBlock ? 1 : 0);
             int parameterCount = funcArgs.Length - firstParameterIndex - 1;
 
             // invalid number of arguments passed to the site:
@@ -58,7 +64,7 @@ namespace IronRuby.Runtime.Calls {
             }
 
             // self must be an object:
-            if (funcArgs[firstParameterIndex - 1] != typeof(object)) {
+            if (funcArgs[selfIndex] != typeof(object)) {
                 return null;
             }
 
@@ -88,17 +94,6 @@ namespace IronRuby.Runtime.Calls {
             Assert.NotNull(method);
             Method = (TRubyFunc)(object)method;
             Version = version;
-        }
-    }
-
-    public abstract class SingletonMethodDispatcherBase<TRubyFunc> : MethodDispatcher<TRubyFunc> {
-        internal object Singleton;
-        internal VersionHandle/*!*/ VersionHandle;
-
-        internal override void InitializeSingleton(object singleton, VersionHandle/*!*/ versionHandle) {
-            Assert.NotNull(versionHandle);
-            Singleton = singleton;
-            VersionHandle = versionHandle;
         }
     }
 }

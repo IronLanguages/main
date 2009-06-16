@@ -36,11 +36,12 @@ class ConsoleTutorial
         @out.print chapter.introduction
         chapter.tasks.each do |task|
             @out.puts task.description
+            task.setup.call(@context.bind) if task.setup
             @out.puts "Enter the following code:"
-            @out.puts task.code
+            @out.puts task.code_string
             begin
                 @out.print "> "
-                if @in.eof? then raise "No more input... (Task description: #{task.description}\nTask code: #{task.code})" end
+                if @in.eof? then raise "No more input... (Task description: #{task.description}\nTask code: #{task.code_string})" end
                 input = @in.gets
                 
                 result = @context.interact input
