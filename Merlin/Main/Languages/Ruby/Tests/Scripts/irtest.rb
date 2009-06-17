@@ -18,7 +18,7 @@ flags.each do |flag|
   cmd = "IronRuby.Tests.exe #{flag}"
   banner cmd
   Dir.chdir(ENV['ROWAN_BIN']) do
-    system cmd
+    exit 1 unless system cmd
   end
 end
 

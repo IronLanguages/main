@@ -85,7 +85,13 @@ namespace System.Dynamic {
 
                 bool[] isByRef = ComBinderHelpers.ProcessArgumentsForCom(ref indexes);
                 isByRef = isByRef.AddLast(false);
-                return BindComInvoke(method, indexes.AddLast(value), binder.CallInfo, isByRef);
+                var result = BindComInvoke(method, indexes.AddLast(value), binder.CallInfo, isByRef);
+
+                // Make sure to return the value; some languages need it.
+                return new DynamicMetaObject(
+                    Expression.Block(result.Expression, Expression.Convert(value.Expression, typeof(object))),
+                    result.Restrictions
+                );
             }
 
             return base.BindSetIndex(binder, indexes, value);

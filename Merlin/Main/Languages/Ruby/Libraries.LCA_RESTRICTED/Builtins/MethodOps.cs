@@ -74,7 +74,7 @@ namespace IronRuby.Builtins {
             return result;
         }
 
-        internal static RubyMemberInfo/*!*/ GetOverloads(RubyContext/*!*/ context, RubyMemberInfo/*!*/ info, string/*!*/ name, object[]/*!*/ typeArgs) {
+        internal static RubyMemberInfo/*!*/ SelectOverload(RubyContext/*!*/ context, RubyMemberInfo/*!*/ info, string/*!*/ name, object[]/*!*/ typeArgs) {
             RubyMemberInfo result = info.TrySelectOverload(Protocols.ToTypes(context, typeArgs));
             if (result == null) {
                 throw RubyExceptions.CreateArgumentError(String.Format("no overload of `{0}' matches given parameter types", name));
@@ -88,8 +88,13 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("overloads")]
-        public static RubyMethod/*!*/ GetOverloads(RubyContext/*!*/ context, RubyMethod/*!*/ self, [NotNull]params object[]/*!*/ parameterTypes) {
-            return new RubyMethod(self.Target, GetOverloads(context, self.Info, self.Name, parameterTypes), self.Name);
+        public static RubyMethod/*!*/ SelectOverload_old(RubyContext/*!*/ context, RubyMethod/*!*/ self, [NotNull]params object[]/*!*/ parameterTypes) {
+            throw RubyExceptions.CreateNameError("Method#overloads is an obsolete name, use Method#overload.");
+        }
+
+        [RubyMethod("overload")]
+        public static RubyMethod/*!*/ SelectOverload(RubyContext/*!*/ context, RubyMethod/*!*/ self, [NotNull]params object[]/*!*/ parameterTypes) {
+            return new RubyMethod(self.Target, SelectOverload(context, self.Info, self.Name, parameterTypes), self.Name);
         }
 
         [RubyMethod("clr_members")]

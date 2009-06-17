@@ -755,13 +755,13 @@ public abstract partial class AbstractClassWithMethods {
       public abstract string PublicMethod();
       protected abstract string ProtectedMethod();
     }
-#line 88 "./method/reflection_spec.rb"
+#line 87 "./method/reflection_spec.rb"
 public partial class ClassWithOverloads {
       public string Overloaded() { return "empty"; }
       public string Overloaded(int arg) { return "one arg"; }
       public string Overloaded(int arg1, int arg2) { return "two args"; }
     }
-#line 128 "./method/reflection_spec.rb"
+#line 127 "./method/reflection_spec.rb"
 public partial class Klass{
       public static int StaticVoidMethod() {
         return 1;

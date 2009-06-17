@@ -2382,8 +2382,15 @@ namespace IronRuby.Builtins {
         private static void LoadIronRuby__Clr__Name_Instance(IronRuby.Builtins.RubyModule/*!*/ module) {
             module.DefineLibraryMethod("<=>", 0x51, 
                 new System.Func<IronRuby.Runtime.ClrName, System.String, System.Int32>(IronRuby.Builtins.ClrNameOps.Compare), 
+                new System.Func<IronRuby.Runtime.ClrName, IronRuby.Runtime.ClrName, System.Int32>(IronRuby.Builtins.ClrNameOps.Compare), 
                 new System.Func<IronRuby.Runtime.ClrName, IronRuby.Builtins.MutableString, System.Int32>(IronRuby.Builtins.ClrNameOps.Compare), 
                 new System.Func<IronRuby.Runtime.BinaryOpStorage, IronRuby.Runtime.RespondToStorage, IronRuby.Runtime.ClrName, System.Object, System.Object>(IronRuby.Builtins.ClrNameOps.Compare)
+            );
+            
+            module.DefineLibraryMethod("==", 0x51, 
+                new System.Func<IronRuby.Runtime.ClrName, System.String, System.Boolean>(IronRuby.Builtins.ClrNameOps.IsEqual), 
+                new System.Func<IronRuby.Runtime.ClrName, IronRuby.Builtins.MutableString, System.Boolean>(IronRuby.Builtins.ClrNameOps.IsEqual), 
+                new System.Func<IronRuby.Runtime.ClrName, IronRuby.Runtime.ClrName, System.Boolean>(IronRuby.Builtins.ClrNameOps.IsEqual)
             );
             
             module.DefineLibraryMethod("clr_name", 0x51, 
@@ -3490,8 +3497,12 @@ namespace IronRuby.Builtins {
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.RubyMethod, System.Object[], IronRuby.Builtins.RubyMethod>(IronRuby.Builtins.MethodOps.BindGenericParameters)
             );
             
+            module.DefineLibraryMethod("overload", 0x51, 
+                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.RubyMethod, System.Object[], IronRuby.Builtins.RubyMethod>(IronRuby.Builtins.MethodOps.SelectOverload)
+            );
+            
             module.DefineLibraryMethod("overloads", 0x51, 
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.RubyMethod, System.Object[], IronRuby.Builtins.RubyMethod>(IronRuby.Builtins.MethodOps.GetOverloads)
+                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.RubyMethod, System.Object[], IronRuby.Builtins.RubyMethod>(IronRuby.Builtins.MethodOps.SelectOverload_old)
             );
             
             module.DefineLibraryMethod("to_proc", 0x51, 
@@ -5988,8 +5999,12 @@ namespace IronRuby.Builtins {
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.UnboundMethod, System.Object[], IronRuby.Builtins.UnboundMethod>(IronRuby.Builtins.UnboundMethod.BingGenericParameters)
             );
             
+            module.DefineLibraryMethod("overload", 0x51, 
+                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.UnboundMethod, System.Object[], IronRuby.Builtins.UnboundMethod>(IronRuby.Builtins.UnboundMethod.SelectOverload)
+            );
+            
             module.DefineLibraryMethod("overloads", 0x51, 
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.UnboundMethod, System.Object[], IronRuby.Builtins.UnboundMethod>(IronRuby.Builtins.UnboundMethod.GetOverloads)
+                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Builtins.RubyMethod, System.Object[], IronRuby.Builtins.RubyMethod>(IronRuby.Builtins.UnboundMethod.SelectOverload_old)
             );
             
             module.DefineLibraryMethod("to_s", 0x51, 

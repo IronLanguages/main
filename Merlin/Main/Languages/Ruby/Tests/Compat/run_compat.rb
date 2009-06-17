@@ -27,7 +27,7 @@
 # to do:
 #   * support "smart" compare
 
-require "../common"
+require  File.dirname(__FILE__) + "/../common"
 begin
     require 'fileutils'
 rescue LoadError => e
@@ -93,13 +93,13 @@ def run_one_test(f)
     if File.exist?(baseline)
         FileUtils.cp(baseline,clog)
         printf " S"
-    elsif CRubyDriver.run(f, clog) != 0
+    elsif CRubyDriver.run(File.expand_path(f, File.dirname(__FILE__)), clog) != 0
         log_error("failed while running CRuby\n")
         return  
     end
 
     $applicable_drivers.each do |d|    
-        if d.run(f, ilog) != 0
+        if d.run(File.expand_path(f, File.dirname(__FILE__)), ilog) != 0
             log_error("failed while running #{d}\n")
         end
         

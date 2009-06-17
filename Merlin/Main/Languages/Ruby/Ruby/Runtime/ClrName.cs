@@ -24,7 +24,7 @@ namespace IronRuby.Runtime {
     /// <summary>
     /// Represents a CLR member name that is subject to name mangling.
     /// </summary>
-    public class ClrName {
+    public class ClrName : IEquatable<ClrName> {
         private readonly string/*!*/ _actual;
         private string _mangled;
 
@@ -44,6 +44,18 @@ namespace IronRuby.Runtime {
         public ClrName(string/*!*/ actualName) {
             ContractUtils.RequiresNotNull(actualName, "actualName");
             _actual = actualName;
+        }
+
+        public bool Equals(ClrName other) {
+            return other != null && _actual == other._actual;
+        }
+
+        public override bool Equals(object obj) {
+            return Equals(obj as ClrName);
+        }
+
+        public override int GetHashCode() {
+            return _actual.GetHashCode();
         }
     }
 }

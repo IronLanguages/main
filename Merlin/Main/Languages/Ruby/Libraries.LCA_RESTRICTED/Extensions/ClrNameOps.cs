@@ -53,9 +53,29 @@ namespace IronRuby.Builtins {
             return SymbolTable.StringToId(self.MangledName);
         }
 
+        [RubyMethod("==")]
+        public static bool IsEqual(ClrName/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ other) {
+            return self.MangledName == other;
+        }
+
+        [RubyMethod("==")]
+        public static bool IsEqual(ClrName/*!*/ self, [NotNull]MutableString/*!*/ other) {
+            return self.MangledName == other.ConvertToString();
+        }
+
+        [RubyMethod("==")]
+        public static bool IsEqual(ClrName/*!*/ self, [NotNull]ClrName/*!*/ other) {
+            return self.Equals(other);
+        }
+
         [RubyMethod("<=>")]
-        public static int Compare(ClrName/*!*/ self, [NotNull]string/*!*/ other) {
+        public static int Compare(ClrName/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ other) {
             return Math.Sign(self.MangledName.CompareTo(other));
+        }
+
+        [RubyMethod("<=>")]
+        public static int Compare(ClrName/*!*/ self, [NotNull]ClrName/*!*/ other) {
+            return self.MangledName.CompareTo(other.MangledName);
         }
 
         [RubyMethod("<=>")]

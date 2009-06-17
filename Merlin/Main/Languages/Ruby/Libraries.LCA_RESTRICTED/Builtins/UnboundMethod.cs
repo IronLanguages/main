@@ -118,8 +118,13 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("overloads")]
-        public static UnboundMethod/*!*/ GetOverloads(RubyContext/*!*/ context, UnboundMethod/*!*/ self, [NotNull]params object[]/*!*/ parameterTypes) {
-            return new UnboundMethod(self.TargetConstraint, self.Name, MethodOps.GetOverloads(context, self.Info, self.Name, parameterTypes));
+        public static RubyMethod/*!*/ SelectOverload_old(RubyContext/*!*/ context, RubyMethod/*!*/ self, [NotNull]params object[]/*!*/ parameterTypes) {
+            throw RubyExceptions.CreateNameError("UnboundMethod#overloads is an obsolete name, use UnboundMethod#overload.");
+        }
+        
+        [RubyMethod("overload")]
+        public static UnboundMethod/*!*/ SelectOverload(RubyContext/*!*/ context, UnboundMethod/*!*/ self, [NotNull]params object[]/*!*/ parameterTypes) {
+            return new UnboundMethod(self.TargetConstraint, self.Name, MethodOps.SelectOverload(context, self.Info, self.Name, parameterTypes));
         }
 
         [RubyMethod("clr_members")]
