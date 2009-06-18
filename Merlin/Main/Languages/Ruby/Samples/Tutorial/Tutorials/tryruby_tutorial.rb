@@ -102,7 +102,7 @@ tutorial 'Try Ruby tutorial' do
            :body => %{
               Okay, let's do something uncomfortable. Try reversing a number:
            },
-           :code => '40.reverse'){ |i| i.exception }
+           :code => '40.reverse'){ |i| i.error }
 
       task :title => "Stop, You're Barking Mad!",
            :body => %{

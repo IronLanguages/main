@@ -1411,7 +1411,7 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted]
-        public static bool IsClrSingletonRuleValid(RubyContext/*!*/ context, object target, int expectedVersion) {
+        public static bool IsClrSingletonRuleValid(RubyContext/*!*/ context, object/*!*/ target, int expectedVersion) {
             RubyInstanceData data;
             RubyClass immediate;
 
@@ -1421,7 +1421,7 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted]
-        public static bool IsClrNonSingletonRuleValid(RubyContext/*!*/ context, object target, VersionHandle/*!*/ versionHandle, int expectedVersion) {
+        public static bool IsClrNonSingletonRuleValid(RubyContext/*!*/ context, object/*!*/ target, VersionHandle/*!*/ versionHandle, int expectedVersion) {
             RubyInstanceData data;
             RubyClass immediate;
 

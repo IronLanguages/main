@@ -14,16 +14,18 @@
 # ****************************************************************************
 
 require 'rubygems'
-require "test/spec"
-require "stringio"
-require "console_tutorial"
-require "html_tutorial"
+require 'test/spec'
+require 'stringio'
+require 'tutorial'
+require 'console_tutorial'
+require 'html_tutorial'
 
 describe "ConsoleTutorial" do 
   before(:each) do
     @in = StringIO.new
     @out = StringIO.new
-    @app = ConsoleTutorial.new nil, @in, @out
+    tutorial = Tutorial.get_tutorial(File.dirname(__FILE__) + '/../Tutorials/tryruby_tutorial.rb')
+    @app = ConsoleTutorial.new tutorial, @in, @out
   end
   
   it "should early out" do
@@ -39,44 +41,66 @@ describe "ConsoleTutorial" do
   end
 end
 
-describe "Tutorial" do
-  before(:each) do
-    @in = StringIO.new
-    @out = StringIO.new
-    @app = ConsoleTutorial.new nil, @in, @out
+# Helper module to programatically create "test_xxx" methods for each task in each chapter
+module TutorialTests  
+  def self.format_interaction_result code, result
+    "code = #{code.inspect} #{result}"
+  end
+  
+  def self.create_tests testcase, tutorial_path
+    tutorial = Tutorial.get_tutorial tutorial_path
+    context = Tutorial::ReplContext.new
+    tutorial.sections.each_index do |s|
+      section = tutorial.sections[s]
+      section.chapters.each_index do |c|
+        chapter = section.chapters[c]
+        test_name = "#{section.name} - #{chapter.name}"
+        
+        testcase.it(test_name) { TutorialTests.run_test context, chapter }
+      end
+    end
+  end
+  
+  def self.assert_task_success(task, code, result, success=true)
+    res = TutorialTests.format_interaction_result(code, result)
+    if success
+      task.success?(result, true).should.blaming(res) == true
+    else
+      task.success?(result).should.blaming(res) == false
+    end
   end
 
-  app = ConsoleTutorial.new
-  app.tutorial.sections.each_index do |s|
-    section = app.tutorial.sections[s]
-    section.chapters.each_index do |c|
-      chapter = section.chapters[c]
-      test_name = "should test #{section.name} #{chapter.name}"
-      it test_name do
-        codes = chapter.tasks.collect { |task| task.code }
-        @in.string = ([(s + 1).to_s, (c + 1).to_s] + codes).join("\n")
-        @app.run
-        @out.string.should =~ /Chapter completed successfully!/
+  def self.run_test context, chapter
+    chapter.tasks.each do |task| 
+      task.setup.call(context.bind) if task.setup
+      result = context.interact "" # Ensure that the user can try unrelated code snippets without moving to the next task
+      if task.code.respond_to? :to_ary
+        task.code.each do |code|
+          assert_task_success task, "before : #{code}", result, false
+          result = context.interact code
+        end
+        assert_task_success task, task.code.last, result
+      else
+        assert_task_success task, "before : #{task.code_string}", result, false
+        result = context.interact task.code_string
+        assert_task_success task, task.code_string, result
       end
     end
   end
 end
 
-# TODO: Fix me!
-#class IronRubyTutorialTests < Test::Unit::TestCase
-#    @tutorial_path = File.dirname(__FILE__) + '../Tutorials/ironruby_tutorial.rb'
-#    include TutorialTests
-#end
-#
-#class TryRubyTutorialTests < Test::Unit::TestCase
-#    @tutorial_path = File.dirname(__FILE__) + '../Tutorials/tryruby_tutorial.rb'
-#    include TutorialTests
-#end
-#
-#class HtmlGeneratorTests < Test::Unit::TestCase
-#  def test_sanity
-#    html_tutorial = HtmlTutorial.new
-#    html = html_tutorial.generate_html
-#    assert_match %r{<h2>Table of Contents</h2>}, html
-#  end
-#end
+describe "IronRubyTutorial" do
+  TutorialTests.create_tests self, File.dirname(__FILE__) + '/../Tutorials/ironruby_tutorial.rb'
+end
+
+describe "TryRubyTutorial" do
+  TutorialTests.create_tests self, File.dirname(__FILE__) + '/../Tutorials/tryruby_tutorial.rb'
+end
+
+describe "HtmlGeneratorTests" do
+  it "basically works" do
+    html_tutorial = HtmlTutorial.new
+    html = html_tutorial.generate_html
+    assert_match %r{<h2>Table of Contents</h2>}, html
+  end
+end

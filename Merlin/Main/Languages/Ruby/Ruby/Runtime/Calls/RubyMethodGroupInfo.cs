@@ -245,6 +245,7 @@ namespace IronRuby.Runtime.Calls {
             var overloads = type.GetMember(name, MemberTypes.Method, bindingFlags);
             for (int i = 0; i < overloads.Length; i++) {
                 MethodInfo overload = (MethodInfo)overloads[i];
+                MethodInfo originalOverload = overload;
                 if ((genericParameterTypes != null) != overload.IsGenericMethod) {
                     continue;
                 }
@@ -257,7 +258,7 @@ namespace IronRuby.Runtime.Calls {
                 }
 
                 if (ReflectionUtils.GetParameterTypes(overload.GetParameters()).ValueEquals(parameterTypes)) {
-                    return overload;
+                    return originalOverload;
                 }
             }
             return null;

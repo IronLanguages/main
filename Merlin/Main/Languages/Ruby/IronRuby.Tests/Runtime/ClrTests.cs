@@ -500,7 +500,7 @@ M1()
 M1()
 M1<MutableString>()
 M1<MutableString, Int32>()
-#<ArgumentError: wrong number of arguments (1 for 0)>
+#<ArgumentError: generic arguments could not be infered for method 'M1'>
 #<ArgumentError: wrong number of generic arguments for `M1'>
 "
             );

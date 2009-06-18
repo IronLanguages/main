@@ -20,7 +20,8 @@ require 'PresentationCore, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf
 require 'windowsbase, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35'
 
 class System::Windows::FrameworkElement
-  # Monkey-patch FrameworkElement to allow window.child_name instead of window.FindName("child_name")
+  # Monkey-patch FrameworkElement to allow window.ChildName instead of window.FindName("ChildName")
+  # TODO - Make window.child_name work as well
   def method_missing name, *args
     find_name(name.to_s.to_clr_string) || super
   end
@@ -44,11 +45,16 @@ class System::Windows::FrameworkElement
 end
 
 class System::Windows::Markup::XamlReader
+  class << self
+    alias raw_load load
+  end
+  
   def self.load(xaml)
-    return super(xaml) if xaml.kind_of?(System::Xml::XmlReader)
+    return raw_load(xaml) unless xaml.respond_to? :to_clr_string
+    
     obj = self.Load(
       System::Xml::XmlReader.create(
-        System::IO::StringReader.new(xaml)))
+        System::IO::StringReader.new(xaml.to_clr_string)))
     yield obj if block_given?
     obj
   end
@@ -89,6 +95,12 @@ class System::Windows::Threading::DispatcherObject
 end
 
 class System::Windows::Documents::FlowDocument
+  def <<(text)
+    paragraph = System::Windows::Documents::Paragraph.new
+    paragraph.inlines.add(System::Windows::Documents::Run.new(text))
+    self.blocks.add paragraph
+  end
+    
   def self.from_simple_markup text
     require 'rdoc/markup/simple_markup'
     require 'rdoc/markup/simple_markup/inline'
@@ -123,6 +135,37 @@ module Wpf
   include System::Windows::Input
   include System::Windows::Markup
   include System::Windows::Media
+
+
+  def self.load_xaml_file(filename)
+    f = System::IO::FileStream.new filename, System::IO::FileMode.open, System::IO::FileAccess.read
+    begin
+        element = XamlReader.load f
+    ensure
+        f.close
+    end
+    element
+  end
+  
+  # Returns an array with all the children, or invokes the block (if given) for each child
+  # Note that it also includes content (which could be just strings).
+  def self.walk(tree, &b)
+    if not block_given?
+        result = []
+        walk(tree) { |child| result << child }
+        return result
+    end
+
+    yield tree
+
+    if tree.respond_to? :Children
+        tree.Children.each { |child| walk child, &b }
+    elsif tree.respond_to? :Child
+        walk tree.Child, &b
+    elsif tree.respond_to? :Content
+        walk tree.Content, &b
+    end
+  end
 
   def self.select_tree_view_item(tree_view, item)
     return false unless self and item
@@ -235,22 +278,20 @@ module Wpf
     end
 
     def accept_list_start(am, fragment)
-      raise NotImplementedError
+      @list = System::Windows::Documents::List.new
     end
 
     def accept_list_end(am, fragment)
-      raise NotImplementedError
+      @flowDoc.blocks.add @list
     end
 
     def accept_list_item(am, fragment)
-      raise NotImplementedError
+      paragraph = convert_flow(am.flow(fragment.txt))
+      list_item = ListItem.new paragraph
+      @list.list_items.add list_item
     end
 
     def accept_blank_line(am, fragment)
-    end
-
-    def accept_heading(am, fragment)
-      raise NotImplementedError
     end
 
     def accept_rule(am, fragment)

@@ -2,7 +2,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>9.0.21022</ProductVersion>
+    <ProductVersion>9.0.30729</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{EB66B766-6354-4208-A3D4-AACBDCB5C3B3}</ProjectGuid>
     <OutputType>Library</OutputType>
@@ -133,6 +133,7 @@
     <Compile Include="Actions\Calls\ReturnBuilder.cs" />
     <Compile Include="Actions\Calls\ReturnReferenceArgBuilder.cs" />
     <Compile Include="Actions\Calls\SimpleArgBuilder.cs" />
+    <Compile Include="Actions\Calls\TypeInferer.cs" />
     <Compile Include="Actions\DefaultBinder.Operations.cs" />
     <Compile Include="Actions\Interceptor.cs" />
     <Compile Include="Actions\DynamicSiteHelper.cs" />

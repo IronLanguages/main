@@ -55,7 +55,7 @@ class MSpecScript
   set :core, get(:core1) + get(:core2)
   set :lib, get(:lib1) + get(:lib2)
   set :interop, get(:netinterop) + get(:cominterop)
-  set :ci_files, get(:core) + get(:lang) + get(:cli) + get(:lib) + get(:netinterop) + get(:cominterop)
+  set :ci_files, get(:core) + get(:lang) + get(:cli) + get(:lib) + get(:interop)
 
 
   # The set of substitutions to transform a spec filename

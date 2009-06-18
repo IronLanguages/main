@@ -138,6 +138,17 @@ namespace IronPython.Runtime.Binding {
             return Expression.Dynamic(OldConvertToAction.Make(Binder, type), type, _context, value);
         }
 
+        public override Type GetGenericInferenceType(DynamicMetaObject dynamicObject) {            
+            Type res = PythonTypeOps.GetFinalSystemType(dynamicObject.LimitType);
+            if (res == typeof(ExtensibleString) ||
+                res == typeof(ExtensibleComplex) || 
+                (res.IsGenericType && res.GetGenericTypeDefinition() == typeof(Extensible<>))) {
+                return typeof(object);
+            }
+
+            return res;
+        }
+
         public override Func<object[], object> GetConvertor(int index, DynamicMetaObject metaObject, ParameterInfo info, Type toType) {
             return Binder.ConvertObject(index, metaObject, toType, ConversionResultKind.ExplicitCast);
         }

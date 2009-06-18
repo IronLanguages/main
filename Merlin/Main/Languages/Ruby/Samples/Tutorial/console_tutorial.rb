@@ -22,11 +22,7 @@ class ConsoleTutorial
     def initialize(tutorial = nil, inp = $stdin, out = $stdout)
         @in = inp
         @out = out
-        if tutorial
-            @tutorial = tutorial
-        else
-            @tutorial = Tutorial.get_tutorial
-        end
+        @tutorial = tutorial || Tutorial.get_tutorial
         @context = Tutorial::ReplContext.new
     end
     

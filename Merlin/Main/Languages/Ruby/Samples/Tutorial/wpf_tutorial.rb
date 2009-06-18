@@ -13,7 +13,6 @@
 #
 # ****************************************************************************
 
-require "stringio"
 require 'erb'
 
 begin
@@ -31,10 +30,10 @@ if ARGV.include?('TRACE')
   end
 end
 
-require 'wpf'
+require File.dirname(__FILE__) + '/wpf'
 include Wpf
 
-require "tutorial"
+require File.dirname(__FILE__) + '/tutorial'
 
 module WpfTutorial
 
@@ -150,8 +149,10 @@ module WpfTutorial
         @task = @tasks.shift
         if @task.description
           fd = FlowDocument.from_simple_markup @task.description
+          fd << "Full path: #{@task.source_files.tr('/', '\\')}" if @task.source_files
+          @task.setup.call(Window.repl.context.bind) if @task.setup
           if @task.code
-            p = Paragraph.new Run.new(@task.code)
+            p = Paragraph.new Run.new(@task.code_string)
             p.font_family = FontFamily.new "Consolas"
             p.font_weight = FontWeights.Bold
             fd.Blocks.Add p
@@ -191,7 +192,7 @@ module WpfTutorial
     end
 
     def process_result(result)
-      if @task and @task.success?(::Tutorial::InteractionResult.new(*result))
+      if @task and @task.success?(result)
         select_next_task
       end
     end
@@ -310,18 +311,19 @@ module WpfTutorial
       end
 
       def xaml
+        design = File.dirname(__FILE__) + '/design'
         @step_xaml, @tut_xaml = ['Step', 'Tutorial'].map do |i|
-          sx = sanitize_xaml(File.read("design/Tutorial/#{i}Control.xaml"))
+          sx = sanitize_xaml(File.read(design + "/Tutorial/#{i}Control.xaml"))
           sx.sub!(/<UserControl.*?>(.*?)<\/UserControl>/, '\1') if i == 'Step'
           sx.gsub!(/("|\{StaticResource )(\S*?)_id(\S*?)("|\})/, '\1<%= \2_id %>\3\4')
           sx.strip
         end
 
         sanitize_xaml(
-          File.read('design/Tutorial/MainWindow.xaml').
+          File.read(design + '/Tutorial/MainWindow.xaml').
                gsub(
                  /<local:TutorialPage.*?\/>/, 
-                 File.read('design/Tutorial/TutorialPage.xaml').
+                 File.read(design + '/Tutorial/TutorialPage.xaml').
                       gsub(/<local:StepControl.*?\/>/, '')).
                gsub(/<local:TutorialControl.*?\/>/, ''))
       end
@@ -379,6 +381,18 @@ module WpfTutorial
       @window.repl_input.key_up do |target, event_args|
         if event_args.key == Key.enter
           Window.tutorial.process_result Window.repl.on_repl_input
+        elsif event_args.Key == Key.System and @task        
+          # This allows hitting Alt-Enter to automatically enter the code
+          # It is useful during manual testing of a tutorial's content
+          if @task.code.respond_to? :to_ary
+            @task.code.to_ary.each do |code| 
+              Window.current.repl_input.text = code
+              Window.tutorial.process_result Window.repl.on_repl_input
+            end
+          else
+            Window.current.repl_input.text = @task.code
+            Window.tutorial.process_result Window.repl.on_repl_input
+          end
         end
       end
       @window.repl_input_arrow.show!
@@ -397,11 +411,35 @@ module WpfTutorial
 
   class Repl
     attr_accessor :prev_newline
+    attr_accessor :context
 
+    def self.repl_puts *a
+      repl_visible = Window.complete.visibility == System::Windows::Visibility.visible rescue false
+      if Thread.current[:evaluating_tutorial_input] or not repl_visible
+        # This is a synchronous "puts" being executed when the user has pressed "Enter" to execute
+        # a command. In this case, we do the default processing. This ensures that the output
+        # will get captured in Tutorial::InteractionResult.output, along with any "puts" executed
+        # by any Ruby files that run
+        ::Kernel.puts *a
+      else
+        # This is an async "puts". It does not make sense to capture this into Tutorial::InteractionResult.output.
+        # We just ensure that it gets printed in the REPL
+        a.each { |i| WpfTutorial.tutorial.print_to_repl i.to_s, true }
+        nil
+      end
+    end
+    
     def initialize
-      @scope = Object.new
-      @bind = @scope.__send__ :binding
+      @context = ::Tutorial::ReplContext.new
       @prev_newline = nil
+            
+      # Hook-up "puts" so that we can redirect asynchronous "puts" (typically called from event-handlers) - atleast
+      # the ones that are entered into the REPL
+      class << @context.scope
+        def puts *a
+          WpfTutorial::Repl.repl_puts *a
+        end
+      end
     end
 
     def history
@@ -426,25 +464,20 @@ module WpfTutorial
       print ">>> #{input}"
       self.input.text = ''
 
-      begin
-        output = StringIO.new
-        prev_stdout, $stdout = $stdout, output
-        result = eval(input.to_s, @bind) # TODO - to_s should not be needed here
-        
-        print output.string, false unless output.string.empty?
-        print "=> #{result.inspect}"
-      rescue Exception, SyntaxError, LoadError => e
-        print output.string unless output.string.empty?
-        print e.to_s
-      ensure
-        $stdout = prev_stdout
-        if history.text.size > 1
-          # TODO should be able to do str[-1] on a clrstring
-          @prev_newline = history.text.to_s[-1] == 10 # '\n'
-          history.text = history.text.to_s[0..-2].to_clr_string
-        end
+      result = @context.interact input
+      print result.output, false unless result.output.empty?
+      if result.error
+        print result.error.to_s
+      else
+        print "=> #{result.result.inspect}"
       end
-      [@bind, output.string, result, e]
+      
+      if history.text.size > 1
+        # TODO should be able to do str[-1] on a clrstring
+        @prev_newline = history.text.to_s[-1] == 10 # '\n'
+        history.text = history.text.to_s[0..-2].to_clr_string
+      end
+      result
     end
   end
 
