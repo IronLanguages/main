@@ -55,17 +55,6 @@ module WpfTutorial
         end
       end
 
-      def create_sta_thread &block
-        ts = System::Threading::ThreadStart.new &block
-
-        # Workaround for http://ironruby.codeplex.com/WorkItem/View.aspx?WorkItemId=1306
-        param_types = System::Array[System::Type].new(1) { |i| System::Threading::ThreadStart.to_clr_type }
-        ctor = System::Threading::Thread.to_clr_type.get_constructor param_types    
-        t = ctor.Invoke(System::Array[Object].new(1) { ts })
-        t.ApartmentState = System::Threading::ApartmentState.STA
-        t.Start
-      end
-
       def run_interactive(proc_obj)
         if Application.Current
           app_callback = System::Threading::ThreadStart.new { proc_obj.call rescue puts $! }
@@ -73,7 +62,7 @@ module WpfTutorial
         else
           warn "Setting explicit shutdown. Exit the process by calling 'unload'"
           # Run the app on another thread so that the interactive REPL can stay on the main thread
-          create_sta_thread { proc_obj.call rescue puts $! }
+          Wpf.create_sta_thread { proc_obj.call rescue puts $! }
         end
       end
     end
@@ -377,6 +366,8 @@ module WpfTutorial
 
       @window.repl_input.show!
       @window.repl_input.focus
+      Window.repl.set_prompt
+      Window.repl.context.reset_input
       # TODO - Should use TextChanged here
       @window.repl_input.key_up do |target, event_args|
         if event_args.key == Key.enter
@@ -432,7 +423,7 @@ module WpfTutorial
     def initialize
       @context = ::Tutorial::ReplContext.new
       @prev_newline = nil
-            
+      
       # Hook-up "puts" so that we can redirect asynchronous "puts" (typically called from event-handlers) - atleast
       # the ones that are entered into the REPL
       class << @context.scope
@@ -456,17 +447,25 @@ module WpfTutorial
       history.scroll_to_line(history.line_count - 1)
     end
 
+    def set_prompt p = ">>>"
+      @prompt = p
+      Window.current.repl_input_arrow.content = p
+    end
+    
     def on_repl_input
       print '' if @prev_newline
       history.show!
 
       input = self.input.text
-      print ">>> #{input}"
+      print "#{@prompt} #{input}"
+      set_prompt
       self.input.text = ''
 
       result = @context.interact input
       print result.output, false unless result.output.empty?
-      if result.error
+      if result.partial_input?
+        set_prompt "..."
+      elsif result.error
         print result.error.to_s
       else
         print "=> #{result.result.inspect}"

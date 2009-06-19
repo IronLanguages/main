@@ -13,18 +13,56 @@
 #
 # ****************************************************************************
 
+orig_dir = Dir.pwd
+if $0 == __FILE__
+  filename = File.expand_path __FILE__, orig_dir
+else
+  filename = __FILE__
+end
+dirname = File.dirname filename
+
 require 'rubygems'
 require 'test/spec'
 require 'stringio'
-require 'tutorial'
-require 'console_tutorial'
-require 'html_tutorial'
+require 'fileutils'
+require dirname + '/../tutorial.rb'
+require dirname + '/../console_tutorial'
+require dirname + '/../html_tutorial'
+
+FileUtils.cd(File.expand_path('/')) # This ensures that the tutorial can be launched from any folder
+
+describe "ReplContext" do
+  before(:each) do
+    @context = Tutorial::ReplContext.new
+  end
+  
+  it "works with single-line input" do
+    @context.interact("2+2").result.should == 4
+  end
+
+  it "works with multi-line code" do
+    code = ["if true", "101", "else", "102", "end"].join("\n")
+    @context.interact(code).result.should == 101
+  end
+
+  it "works with multi-line input" do
+    result = nil
+    ["if true", "101", "else", "102", "end"].each {|i| result = @context.interact i }
+    result.result.should == 101
+  end
+
+  it "can be reset" do
+    ["if true", "101", "else"].each {|i| @context.interact i }
+    @context.reset_input
+    @context.interact("2+2").result.should == 4
+  end
+end
 
 describe "ConsoleTutorial" do 
   before(:each) do
     @in = StringIO.new
     @out = StringIO.new
-    tutorial = Tutorial.get_tutorial(File.dirname(__FILE__) + '/../Tutorials/tryruby_tutorial.rb')
+    tutorial = Tutorial.get_tutorial(dirname + '/../Tutorials/tryruby_tutorial.rb')
     @app = ConsoleTutorial.new tutorial, @in, @out
   end
   
@@ -90,16 +128,17 @@ module TutorialTests
 end
 
 describe "IronRubyTutorial" do
-  TutorialTests.create_tests self, File.dirname(__FILE__) + '/../Tutorials/ironruby_tutorial.rb'
+  TutorialTests.create_tests self, dirname + '/../Tutorials/ironruby_tutorial.rb'
 end
 
 describe "TryRubyTutorial" do
-  TutorialTests.create_tests self, File.dirname(__FILE__) + '/../Tutorials/tryruby_tutorial.rb'
+  TutorialTests.create_tests self, dirname + '/../Tutorials/tryruby_tutorial.rb'
 end
 
 describe "HtmlGeneratorTests" do
   it "basically works" do
-    html_tutorial = HtmlTutorial.new
+    tutorial = Tutorial.get_tutorial(dirname + '/../Tutorials/tryruby_tutorial.rb')
+    html_tutorial = HtmlTutorial.new tutorial
     html = html_tutorial.generate_html
     assert_match %r{<h2>Table of Contents</h2>}, html
   end

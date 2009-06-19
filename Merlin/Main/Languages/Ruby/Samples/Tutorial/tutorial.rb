@@ -46,8 +46,6 @@ module Tutorial
             @title = title
             @description = description
             @setup = setup
-            # Since we do not support multi-line commands yet, convert multi-line commands into a single ;-separated line
-            code = code.gsub(/\n\s*/, ' ; ') unless code.respond_to? :to_ary
             @code = code
             @source_files = source_files
             @success_evaluator = success_evaluator
@@ -170,6 +168,7 @@ module Tutorial
         attr :bind
         
         def initialize
+            @partial_input = ""
             @scope = Object.new
 
             class << @scope            
@@ -209,7 +208,7 @@ module Tutorial
             Thread.current[:evaluating_tutorial_input] = true
             
             begin
-                result = eval(input.to_s, @bind) # TODO - to_s should not be needed here
+                result = eval(@partial_input + input.to_s, @bind) # TODO - to_s should not be needed here
             rescue Exception => error
                 raise error if error.kind_of? SystemExit
             ensure
@@ -218,7 +217,18 @@ module Tutorial
                 $VERBOSE = old_verbose
             end
 
-            InteractionResult.new(@bind, output.string, result, error)
+            if error.kind_of? SyntaxError and error.message =~ /unexpected (\$end|END_OF_FILE)/
+                @partial_input += input
+                @partial_input += "\n" unless input[input.size-1] == "\n" # TODO - input[-1] seems to cause IndexError
+                InteractionResult.new(@bind, "", nil, nil, true)
+            else
+                @partial_input = ""
+                InteractionResult.new(@bind, output.string, result, error)
+            end
+        end
+        
+        def reset_input
+          @partial_input = ""
         end
     end
     
@@ -228,11 +238,12 @@ module Tutorial
         attr :result
         attr :error
         
-        def initialize(bind, output, result, error = nil)
+        def initialize(bind, output, result, error = nil, partial_input = false)
             @bind = bind
             @output = output
             @result = result
             @error = error
+            @partial_input = partial_input
             
             raise "result should be nil if an exception was raised" if result and error
         end
@@ -242,13 +253,22 @@ module Tutorial
         end
         
         def result
-            raise "Interaction resulted in an exception" if error
+            raise "Interaction resulted in an exception" if error or @partial_input
             @result
+        end
+        
+        def error
+            raise "Partial input received" if @partial_input
+            @error
+        end
+        
+        def partial_input?
+          @partial_input
         end
     end
     
-    # We define a simple Stub class here instead of using one of the existing gems to avoid dependencies.
-    # Ideally, we could provide a simpler implementation of some existing mocking API to make this easy for folks to use
+    # Simple stub class for mocking.
+    # TODO - move to a real mocking framework
     class Stub
         def initialize() @calls = [] end
         
@@ -387,4 +407,12 @@ class Object
     def multi_step_task(name, *tasks, &success_evaluator)
         raise NotImplementedError
     end
+end
+
+class String
+  def strip_margin
+    /( *)\w/ =~ self
+    match = $1
+    gsub(/^#{match}/, "")
+  end
 end

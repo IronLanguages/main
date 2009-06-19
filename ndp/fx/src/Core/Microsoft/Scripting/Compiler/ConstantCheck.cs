@@ -26,34 +26,6 @@ namespace System.Linq.Expressions {
 
     internal static class ConstantCheck {
 
-        /// <summary>
-        /// Tests to see if the expression is a constant with the given value.
-        /// </summary>
-        /// <param name="e">The expression to examine</param>
-        /// <param name="value">The constant value to check for.</param>
-        /// <returns>true/false</returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1800:DoNotCastUnnecessarily")]
-        internal static bool IsConstant(Expression e, bool value) {
-            switch (e.NodeType) {
-                case ExpressionType.AndAlso:
-                    return CheckAndAlso((BinaryExpression)e, value);
-
-                case ExpressionType.OrElse:
-                    return CheckOrElse((BinaryExpression)e, value);
-
-                case ExpressionType.Constant:
-                    return value.Equals(((ConstantExpression)e).Value);
-
-                case ExpressionType.TypeIs:
-                    AnalyzeTypeIsResult result = AnalyzeTypeIs((TypeBinaryExpression)e);
-                    if (value) {
-                        return result == AnalyzeTypeIsResult.KnownTrue;
-                    }
-                    return result == AnalyzeTypeIsResult.KnownFalse;
-            }
-            return false;
-        }
-
         internal static bool IsNull(Expression e) {
             switch (e.NodeType) {
                 case ExpressionType.Constant:
@@ -67,35 +39,6 @@ namespace System.Linq.Expressions {
             return false;
         }
 
-
-        private static bool CheckAndAlso(BinaryExpression node, bool value) {
-            Debug.Assert(node.NodeType == ExpressionType.AndAlso);
-
-            if (node.Method != null || node.IsLifted) {
-                return false;
-            }
-    
-            if (value) {
-                return IsConstant(node.Left, true) && IsConstant(node.Right, true);
-            } else {
-                // if left isn't a constant it has to be evaluated
-                return IsConstant(node.Left, false);
-            }
-        }
-
-        private static bool CheckOrElse(BinaryExpression node, bool value) {
-            Debug.Assert(node.NodeType == ExpressionType.OrElse);
-
-            if (node.Method != null || node.IsLifted) {
-                return false;
-            }
-
-            if (value) {
-                return IsConstant(node.Left, true);
-            } else {
-                return IsConstant(node.Left, false) && IsConstant(node.Right, false);
-            }
-        }
 
         /// <summary>
         /// If the result of a TypeBinaryExpression is known statically, this

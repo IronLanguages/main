@@ -46,7 +46,7 @@ end
 
 class System::Windows::Markup::XamlReader
   class << self
-    alias raw_load load
+    alias raw_load load unless method_defined? :raw_load
   end
   
   def self.load(xaml)
@@ -87,11 +87,11 @@ class Module
 end
 
 class System::Windows::Threading::DispatcherObject
-    def invoke &block
-        require "system.core, Version=3.5.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
-        dispatch_callback = System::Action[].new block
-        self.dispatcher.invoke(System::Windows::Threading::DispatcherPriority.Normal, dispatch_callback)
-    end
+  def invoke &block
+    require "system.core, Version=3.5.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+    dispatch_callback = System::Action[].new block
+    self.dispatcher.invoke(System::Windows::Threading::DispatcherPriority.Normal, dispatch_callback)
+  end
 end
 
 class System::Windows::Documents::FlowDocument
@@ -100,7 +100,8 @@ class System::Windows::Documents::FlowDocument
     paragraph.inlines.add(System::Windows::Documents::Run.new(text))
     self.blocks.add paragraph
   end
-    
+  
+  # Converts text in RDoc simple markup format to a WPF FlowDocument object
   def self.from_simple_markup text
     require 'rdoc/markup/simple_markup'
     require 'rdoc/markup/simple_markup/inline'
@@ -140,9 +141,9 @@ module Wpf
   def self.load_xaml_file(filename)
     f = System::IO::FileStream.new filename, System::IO::FileMode.open, System::IO::FileAccess.read
     begin
-        element = XamlReader.load f
+      element = XamlReader.load f
     ensure
-        f.close
+      f.close
     end
     element
   end
@@ -151,19 +152,19 @@ module Wpf
   # Note that it also includes content (which could be just strings).
   def self.walk(tree, &b)
     if not block_given?
-        result = []
-        walk(tree) { |child| result << child }
-        return result
+      result = []
+      walk(tree) { |child| result << child }
+      return result
     end
 
     yield tree
 
     if tree.respond_to? :Children
-        tree.Children.each { |child| walk child, &b }
+      tree.Children.each { |child| walk child, &b }
     elsif tree.respond_to? :Child
-        walk tree.Child, &b
+      walk tree.Child, &b
     elsif tree.respond_to? :Content
-        walk tree.Content, &b
+      walk tree.Content, &b
     end
   end
 
@@ -197,6 +198,57 @@ module Wpf
     end
 
     false
+  end
+
+  def self.create_sta_thread &block
+    ts = System::Threading::ThreadStart.new &block
+
+    # Workaround for http://ironruby.codeplex.com/WorkItem/View.aspx?WorkItemId=1306
+    param_types = System::Array[System::Type].new(1) { |i| System::Threading::ThreadStart.to_clr_type }
+    ctor = System::Threading::Thread.to_clr_type.get_constructor param_types    
+    t = ctor.Invoke(System::Array[Object].new(1) { ts })
+    t.ApartmentState = System::Threading::ApartmentState.STA
+    t.Start
+  end
+
+  # Some setup is needed to use WPF from an interactive session console (like iirb). This is because
+  # WPF needs to do message pumping on a thread, iirb also requires a thread to read user input,
+  # and all commands that interact with UI need to be executed on the message pump thread.
+  def self.interact
+    raise NotImplementedError
+    def CallBack(function, priority = DispatcherPriority.Normal)
+      Application.Current.Dispatcher.BeginInvoke(priority, System::Action[].new(function))
+    end
+    
+    def CallBack1(function, arg0, priority = DispatcherPriority.Normal)
+       Application.Current.Dispatcher.BeginInvoke(priority, System::Action[arg0.class].new(function), arg0)
+    end
+    
+    dispatcher = nil    
+    message_pump_started = System::Threading::AutoResetEvent.new false
+
+    create_sta_thread do
+      app = Application.new
+      app.startup do
+        dispatcher = Dispatcher.FromThread System::Threading::Thread.current_thread
+        message_pump_started.set
+      end
+      begin
+        app.run
+      ensure
+        IronRuby::Ruby.SetCommandDispatcher(None) # This is a non-existent method that will need to be implemented
+      end
+    end
+    
+    message_pump_started.wait_one
+    
+    def dispatch_console_command(console_command)
+      if console_command
+        dispatcher.invoke DispatcherPriority.Normal, console_command
+      end
+    end
+    
+    IronRuby::Ruby.SetCommandDispatcher dispatch_console_command # This is a non-existent method that will need to be implemented
   end
 
   class ToFlowDocument

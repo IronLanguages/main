@@ -92,8 +92,6 @@ namespace IronRuby.Runtime.Calls {
         #region Precompiled Rules
 
         public override T BindDelegate<T>(CallSite<T>/*!*/ site, object[]/*!*/ args) {
-            PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "Ruby: RubyCallAction" + Signature.ToString() + ": BindDelegate");
-
             if (Context == null || (Signature.Flags & ~(RubyCallFlags.HasImplicitSelf | RubyCallFlags.HasScope | RubyCallFlags.HasBlock)) != 0) {
                 return base.BindDelegate<T>(site, args);
             }

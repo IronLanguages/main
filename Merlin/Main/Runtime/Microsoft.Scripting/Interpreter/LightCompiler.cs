@@ -21,6 +21,7 @@ using System.Reflection;
 using System.Threading;
 using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
+using Microsoft.Scripting.Generation;
 
 namespace Microsoft.Scripting.Interpreter {
 
@@ -564,8 +565,12 @@ namespace Microsoft.Scripting.Interpreter {
 
             FieldInfo fi = member.Member as FieldInfo;
             if (fi != null) {
-                this.Compile(member.Expression);
-                this.Compile(node.Right);
+                if (member.Expression != null) {
+                    Compile(member.Expression);
+                } else {
+                    PushConstant(null);
+                }
+                Compile(node.Right);
 
                 int index = 0;
                 if (!asVoid) {
@@ -639,6 +644,10 @@ namespace Microsoft.Scripting.Interpreter {
                         CompileNotEqual(node.Left, node.Right);
                         return;
 
+                    case ExpressionType.LessThan:
+                        CompileLessThan(node.Left, node.Right);
+                        return;
+
                     default:
                         throw new NotImplementedException();
                 }
@@ -657,6 +666,17 @@ namespace Microsoft.Scripting.Interpreter {
             Compile(left);
             Compile(right);
             AddInstruction(NotEqualInstruction.Instance(left.Type));
+        }
+
+        private void CompileLessThan(Expression left, Expression right) {
+            Debug.Assert(left.Type == right.Type && TypeUtils.IsNumeric(left.Type));
+
+            // TODO:
+            // if (TypeUtils.IsNullableType(left.Type) && liftToNull) ...
+
+            Compile(left);
+            Compile(right);
+            AddInstruction(LessThanInstruction.Instance(left.Type));
         }
 
         private void CompileAdd(Expression left, Expression right) {
@@ -688,7 +708,8 @@ namespace Microsoft.Scripting.Interpreter {
                 Compile(index);
                 AddInstruction(SetArrayItemInstruction<object>.Instance);
             } else {
-                throw new NotImplementedException();
+                // TODO: this code doesn't work, we just need to visit the expressions and force compilation
+                _forceCompile = true;
             }
         }
 
@@ -707,16 +728,42 @@ namespace Microsoft.Scripting.Interpreter {
 
         private void CompileConvertUnaryExpression(Expression expr) {
             var node = (UnaryExpression)expr;
-
-            // TODO: check the logic on this, but we think we can ignore conversions in this boxed world
-            Compile(node.Operand);
-
             if (node.Method != null) {
+                Compile(node.Operand);
+
                 // We should be able to ignore Int32ToObject
                 if (node.Method != Runtime.ScriptingRuntimeHelpers.Int32ToObjectMethod) {
                     AddInstruction(new CallInstruction(node.Method));
                 }
+            } else if (node.Type == typeof(void)) {
+                CompileAsVoid(node.Operand);
+            } else {
+                Compile(node.Operand);
+                CompileConvertToType(node.Operand.Type, node.Type, node.NodeType == ExpressionType.ConvertChecked);
             }
+        }
+
+        private void CompileConvertToType(Type typeFrom, Type typeTo, bool isChecked) {
+            Debug.Assert(typeFrom != typeof(void) && typeTo != typeof(void));
+
+            if (TypeUtils.AreEquivalent(typeTo, typeFrom)) {
+                return;
+            }
+
+            TypeCode from = Type.GetTypeCode(typeFrom);
+            TypeCode to = Type.GetTypeCode(typeTo);
+            if (TypeUtils.IsNumeric(from) && TypeUtils.IsNumeric(to)) {
+                if (isChecked) {
+                    AddInstruction(new NumericConvertInstruction.Checked(from, to));
+                } else {
+                    AddInstruction(new NumericConvertInstruction.Unchecked(from, to));
+                }
+                return;
+            }
+
+            // TODO: Conversions to a super-class or implemented interfaces are no-op. 
+            // A conversion to a non-implemented interface or an unrelated class, etc. should fail.
+            return;
         }
 
         private void CompileNotExpression(UnaryExpression node) {
@@ -1081,7 +1128,11 @@ namespace Microsoft.Scripting.Interpreter {
                 return;
             }
 
-            //TODO support pass by reference and lots of other fancy stuff
+            //TODO support pass by reference and lots of other fancy stuff;
+            // force compilation for now:
+            if (!CollectionUtils.TrueForAll(node.Method.GetParameters(), (p) => !p.IsByRefParameter())) {
+                _forceCompile = true;
+            }
 
             if (!node.Method.IsStatic) {
                 this.Compile(node.Object);
@@ -1319,7 +1370,15 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         private void CompileInvocationExpression(Expression expr) {
-            throw new System.NotImplementedException();
+            var node = (InvocationExpression)expr;
+
+            // TODO: LambdaOperand optimization (see compiler)
+            if (typeof(LambdaExpression).IsAssignableFrom(node.Expression.Type)) {
+                throw new System.NotImplementedException();
+            }
+
+            // TODO: do not create a new Call Expression
+            CompileMethodCallExpression(Expression.Call(node.Expression, node.Expression.Type.GetMethod("Invoke"), node.Arguments));
         }
 
         private void CompileListInitExpression(Expression expr) {
@@ -1335,10 +1394,33 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         private void CompileUnboxUnaryExpression(Expression expr) {
-            throw new System.NotImplementedException();
+            var node = (UnaryExpression)expr;
+            // unboxing is a nop:
+            Compile(node.Operand);
         }
 
-        private void CompileTypeBinaryExpression(Expression expr) {
+        private void CompileTypeEqualExpression(Expression expr) {
+            Debug.Assert(expr.NodeType == ExpressionType.TypeEqual);
+            var node = (TypeBinaryExpression)expr;
+
+            Compile(node.Expression);
+            PushConstant(node.TypeOperand);
+            AddInstruction(TypeEqualsInstruction.Instance);
+        }
+
+        private void CompileTypeIsExpression(Expression expr) {
+            Debug.Assert(expr.NodeType == ExpressionType.TypeIs);
+            var node = (TypeBinaryExpression)expr;
+
+            // use TypeEqual for sealed types:
+            if (node.TypeOperand.IsSealed) {
+                Compile(node.Expression);
+                PushConstant(node.TypeOperand);
+                AddInstruction(TypeEqualsInstruction.Instance);
+                return;
+            }
+
+            // TODO:
             throw new System.NotImplementedException();
         }
 
@@ -1434,7 +1516,7 @@ namespace Microsoft.Scripting.Interpreter {
                 case ExpressionType.Subtract: CompileBinaryExpression(expr); break;
                 case ExpressionType.SubtractChecked: CompileBinaryExpression(expr); break;
                 case ExpressionType.TypeAs: CompileUnaryExpression(expr); break;
-                case ExpressionType.TypeIs: CompileTypeBinaryExpression(expr); break;
+                case ExpressionType.TypeIs: CompileTypeIsExpression(expr); break;
                 case ExpressionType.Assign: CompileAssignBinaryExpression(expr, expr.Type == typeof(void)); break;
                 case ExpressionType.Block: CompileBlockExpression(expr, expr.Type == typeof(void)); break;
                 case ExpressionType.DebugInfo: CompileDebugInfoExpression(expr); break;
@@ -1452,7 +1534,7 @@ namespace Microsoft.Scripting.Interpreter {
                 case ExpressionType.Throw: CompileThrowUnaryExpression(expr, expr.Type == typeof(void)); break;
                 case ExpressionType.Try: CompileTryExpression(expr); break;
                 case ExpressionType.Unbox: CompileUnboxUnaryExpression(expr); break;
-                case ExpressionType.TypeEqual: CompileTypeBinaryExpression(expr); break;
+                case ExpressionType.TypeEqual: CompileTypeEqualExpression(expr); break;
                 case ExpressionType.OnesComplement: CompileUnaryExpression(expr); break;
                 case ExpressionType.IsTrue: CompileUnaryExpression(expr); break;
                 case ExpressionType.IsFalse: CompileUnaryExpression(expr); break;

@@ -123,28 +123,32 @@ tutorial "IronRuby tutorial" do
                   :code => '2 + 2'
 
             task(:body => "Now let's do some printing. This is done with the puts function.",
-                 :code => "puts 'Hello world'") { |i| i.output =~ /Hello/i }
+                 :code => "puts 'Hello world'"
+                 ) { |i| i.output =~ /Hello/i }
 
             task(:body => "Let's use a local variable.",
-                 :code => "x = 1") { |i| i.bind.x == 1 }
+                 :code => "x = 1"
+                 ) { |i| i.bind.x == 1 }
 
             task(:body => "And then print the local variable.",
-                 :code => "puts x") { |i| i.output.chomp == "1" }
+                 :code => "puts x"
+                 ) { |i| i.output.chomp == "1" }
         end
         
         chapter "Multi-line statements" do
             introduction "This chapter explains how multi-line statements can be used in the tutorial"
             task(
               :body => %{
-                Entering multiple lines in an interactive console is a bit tricky as it can be ambigous when
-                you are done entering a statement. When you press the +Enter+ key, you may either be expecting
-                to execute the code you have typed already, or you may want to enter more code. Also,
-                sometimes you might want to go back and edit a line above.
+                Entering multiple lines in an interactive console can be a bit tricky as it is not an editor.
+                You cannot go back and change a prior line. If you realized you mis-typed something, you
+                need to enter all the lines again.
                 
-                The tutorial currently only handles single line input. Use <tt>;</tt> to separate statements
+                After you enter the first line, the prompt characters shown at the start of the input textbox 
+                change from ">>>" to "..." to indicate to the user that more lines are expected before the 
+                input will be evaluated.
               },
-              :code => "if 2 < 3 then puts 'this'; puts 'that' end"
-              ) { |interaction| interaction.output =~ /this\nthat/ }
+              :code => "if 2 < 3\n  puts 1\nelse\n  puts 2\nend"
+              ) { |interaction| interaction.output.chomp == '1' }
         end
         
         chapter "Built-in modules and interactive exploration" do
@@ -181,7 +185,8 @@ tutorial "IronRuby tutorial" do
                      function. Let's load the +thread+ module.
                  },
                  :setup => Proc.new { $LOADED_FEATURES.delete "thread.rb" },
-                 :code => "require 'thread'") { $LOADED_FEATURES.include? 'thread.rb' }
+                 :code => "require 'thread'"
+                 ) { $LOADED_FEATURES.include? 'thread.rb' }
                  
             task :body => %{
                      Now let's see which new classes were loaded. Can you spot the new classes using
@@ -209,7 +214,8 @@ tutorial "IronRuby tutorial" do
                  },
                  :source_files => IronRubyTutorial.primes_path,
                  :setup => Proc.new { $LOADED_FEATURES.delete "primes.rb" },
-                 :code => "require 'primes.rb'") { $LOADED_FEATURES.include? 'primes.rb' }
+                 :code => "require 'primes.rb'"
+                 ) { $LOADED_FEATURES.include? 'primes.rb' }
 
             task :body => %{
                     We know that the file defines a module called +Primes+. Let's explore the methods defined
@@ -281,7 +287,10 @@ tutorial "IronRuby tutorial" do
             task(:body => %{
                     Insert a few elements into the hash table
                 },
-                :code => ["h[:a] = 'IronRuby'", "h[:b] = 'Tutorial'"]) { |i| i.bind.h.count == 2 }
+                :code => [
+                    "h[:a] = 'IronRuby'", 
+                    "h[:b] = 'Tutorial'"]
+                ) { |i| i.bind.h.count == 2 }
 
             task :body => %{
                     IronRuby supports the C# - style syntax for accessing the hash table elements. The same 
@@ -294,13 +303,17 @@ tutorial "IronRuby tutorial" do
                     are instances of the +DictionaryEntry+ class. Print the +Key+ and +Value+ properties of
                     each entry.
                 },
-                :code => 'h.each { |e| puts "#{e.Key}=>#{e.Value}" }') { |i| /a=>IronRuby/ =~ i.output }
+                :code => 'h.each { |e| puts "#{e.Key}=>#{e.Value}" }'
+                ) { |i| /a=>IronRuby/ =~ i.output }
 
             task(:body => %{
                     You can initialize the collection classes by passing in the Ruby built-in list as
                     arguments.
                 },
-                :code => ['l = ArrayList.new([1,2,3])', 'l.each { |i| puts i }']) { |i| /1\n2\n3/ =~ i.output }
+                :code => [
+                    'l = ArrayList.new([1,2,3])', 
+                    'l.each { |i| puts i }']
+                ) { |i| /1\n2\n3/ =~ i.output }
         end
 
         chapter "Generics" do
@@ -317,22 +330,28 @@ tutorial "IronRuby tutorial" do
                    
                    Create an instance of a generic dictionary mapping Strings to Fixnums
                 },
-                :code => 'd = Dictionary[String, Fixnum].new') { |i| i.bind.d.class == Dictionary[String, Fixnum] }
+                :code => 'd = Dictionary[String, Fixnum].new'
+                ) { |i| i.bind.d.class == Dictionary[String, Fixnum] }
 
             task(:body => %{
                     Add string values into the list. Since we created a list of string, adding strings is possible.
                 },
-                :code => ["d['Hello'] = 1", "d['Hi'] = 2"]) { |i| i.bind.d.count == 2 }
+                :code => [
+                    "d['Hello'] = 1", 
+                    "d['Hi'] = 2"]
+                ) { |i| i.bind.d.count == 2 }
 
             task(:body => %{
                     Try adding objects of types other than string. It will fail with a TypeError
                 },
-                :code => 'd[3] = 3') { |i| i.error.kind_of? TypeError }
+                :code => 'd[3] = 3'
+                ) { |i| i.error.kind_of? TypeError }
 
             task(:body => %{
                     Enumerate the generic collection
                 },
-                :code => 'd.each { |kvp| puts kvp }') { |i| /Hello/ =~ i.output }
+                :code => 'd.each { |kvp| puts kvp }'
+                ) { |i| /Hello/ =~ i.output }
         end
     end
 
@@ -378,7 +397,8 @@ tutorial "IronRuby tutorial" do
                 },
                 :code => [
                     "n = d.select_nodes '//Puzzle/SavedGames/Game/@caption'", 
-                    'n.each { |e| puts e.value }']) { |i| /Seattle/ =~ i.output }
+                    'n.each { |e| puts e.value }']
+                ) { |i| /Seattle/ =~ i.output }
         end
 
         chapter "Loading .NET libraries from a given path" do
@@ -412,7 +432,8 @@ tutorial "IronRuby tutorial" do
                 },
                 :code => [
                     'include System::IO', 
-                    'w = FileSystemWatcher.new']) { |i| i.bind.w.class == System::IO::FileSystemWatcher }
+                    'w = FileSystemWatcher.new']
+                ) { |i| i.bind.w.class == System::IO::FileSystemWatcher }
 
             task(:body => %{
                     Inspect the methods available on the instance, and then set the +path+ property to watch
@@ -420,7 +441,8 @@ tutorial "IronRuby tutorial" do
                 },
                 :code => [
                     'w.class.instance_methods false', 
-                    "w.path = '.'"]) { |i| i.bind.w.path == '.' }
+                    "w.path = '.'"]
+                ) { |i| i.bind.w.path == '.' }
 
             task(:body => %{
                     Register a block as an event handler for the +changed+, +created+, and +deleted+ events. 
@@ -431,12 +453,14 @@ tutorial "IronRuby tutorial" do
                 :code => [
                     'w.changed { |*a| puts a.inspect }', 
                     'w.created { |*a| puts a.inspect }', 
-                    'w.deleted { |*a| puts a.inspect }']) { IronRubyTutorial.deleted_flag }
+                    'w.deleted { |*a| puts a.inspect }']
+                ) { IronRubyTutorial.deleted_flag }
 
             task(:body => %{
                     Enable the watcher to raise events.
                 },
-                :code => 'w.enable_raising_events = true') { |i| i.bind.w.enable_raising_events }
+                :code => 'w.enable_raising_events = true'
+                ) { |i| i.bind.w.enable_raising_events }
 
             task(:body => %{
                     Now open the Tutorial folder and create a file. An 
@@ -454,7 +478,8 @@ tutorial "IronRuby tutorial" do
                     
                     Finally disable the watcher.
                 },
-                :code => 'w.enable_raising_events = false') { |i| not i.bind.w.enable_raising_events }
+                :code => 'w.enable_raising_events = false'
+                ) { |i| not i.bind.w.enable_raising_events }
         end
 
         chapter "Improving the event handler" do
@@ -486,30 +511,51 @@ tutorial "IronRuby tutorial" do
                 :code => [
                     'w.changed { |w1,a| puts a.change_type, a.full_path }',
                     'w.created { |w1,a| puts a.change_type, a.full_path }',
-                    'w.deleted { |w1,a| puts a.change_type, a.full_path }']) { IronRubyTutorial.deleted_flag }
+                    'w.deleted { |w1,a| puts a.change_type, a.full_path }']
+                ) { IronRubyTutorial.deleted_flag }
 
             task(:body => %{
                     Make sure the raising of the events is enabled:
                 },
-                :code => 'w.enable_raising_events = true') { |i| i.bind.w.enable_raising_events }
+                :code => 'w.enable_raising_events = true'
+                ) { |i| i.bind.w.enable_raising_events }
 
             task(:body => %{
                     Finally disable the watcher.
                 },
-                :code => 'w.enable_raising_events = false') { |i| not i.bind.w.enable_raising_events }
+                :code => 'w.enable_raising_events = false'
+                ) { |i| not i.bind.w.enable_raising_events }
         end
 
     end
 
     section "Advanced IronRuby - Windows Forms" do
-        
+
+        introduction %{
+            Note that if you develop Windows applications interactively using the <tt>ir.exe</tt> from the
+            <b>Command Prompt</b>, IronRuby must be initialized specially for that purpose. <tt>ir.exe</tt>
+            blocks the main thread so that it can read user input. While this thread awaits text input, the 
+            Windows application being dynamically created from the console needs to run on a separate thread
+            so that it can process Windows messages. Also, all interactive commands that interact with UI 
+            need to be executed on the message pump thread. <tt>wpf.rb</tt> includes a helper method to deal 
+            with this. If you are using a console interactive session, do the following:
+            
+                require "wpf.rb"
+                Wpf.interact
+        }
+                
         chapter "Creating a simple Form" do
             introduction %{
                 In this exercise, you will create simple Windows Forms applications dynamically.
             }
 
             task :body => %{
-                    First, we need to load <tt>System.Windows.Forms.dll</tt>
+                    First, we need to load <tt>System.Windows.Forms.dll</tt>. Note that it is recommended to
+                    use the full assembly name in larger programs as such:
+                    
+                        load_assembly("System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")                    
+                    
+                    However, for interactive use, we will use the short form.
                 },
                 :code => "load_assembly('System.Windows.Forms')"
 
@@ -522,7 +568,8 @@ tutorial "IronRuby tutorial" do
             task(:body => %{
                     Create an instance of the Form class and display it.
                 },
-                :code => ['f = Form.new', 'f.show']) { |i| i.bind.f.visible }
+                :code => ['f = Form.new', 'f.show']
+                ) { |i| i.bind.f.visible }
 
             task(:body => %{
                     You may need to alt-tab or look for the running application since it may not have popped
@@ -533,7 +580,8 @@ tutorial "IronRuby tutorial" do
                 :setup => Proc.new {
                     # TODO - Position the form so that it is not hidden behind the current window
                 },
-                :code => "f.text = 'Hello'") { |i| /hello/i =~ i.bind.f.text }
+                :code => "f.text = 'Hello'"
+                ) { |i| /hello/i =~ i.bind.f.text }
         end
         
         chapter "Adding event handlers to the Form" do
@@ -551,7 +599,8 @@ tutorial "IronRuby tutorial" do
 
                     IronRubyTutorial.snoop_add_handler "click", bind.f
                 },
-                :code => 'f.click { |*args| puts args }') { IronRubyTutorial.click_flag }
+                :code => 'f.click { |*args| puts args }'
+                ) { IronRubyTutorial.click_flag }
 
             task :body => %{
                     Now click the form. You should see output printed in the REPL window, looking something
@@ -573,21 +622,22 @@ tutorial "IronRuby tutorial" do
                         l = Label.new
                         l.text = 'Hello'
                         l.location = a.location
-                        f.controls.add(l)
-                    end
-                    }) do |i|
-                        f = Tutorial.stub
-                        a = Tutorial.stub
-                        # "l.location = a.location" is expected to fail because "a.location" currently just returns a Stub
-                        i.bind.on_click(f, a) rescue TypeError
-                        a.called? :location
-                    end
+                        f.controls.add l
+                    end}.strip_margin
+                ) do |i|
+                    f = Tutorial.stub
+                    a = Tutorial.stub
+                    # "l.location = a.location" is expected to fail because "a.location" currently just returns a Stub
+                    i.bind.on_click(f, a) rescue TypeError
+                    a.called? :location
+                end
 
             task(:body => %{
                     Now add the method as a +click+ handler
                 },
                 :setup => Proc.new { |bind| IronRubyTutorial.snoop_add_handler "click", bind.f },
-                :code => 'f.click { |f, a| on_click(f, a) }') { IronRubyTutorial.click_flag }
+                :code => 'f.click { |f, a| on_click(f, a) }'
+                ) { IronRubyTutorial.click_flag }
 
             task :body => %{
                     Now clicking on the form with the mouse will add 'Hello' labels. We can also access the 
@@ -599,18 +649,12 @@ tutorial "IronRuby tutorial" do
                     After a few moments of clicking, the form will get quite crowded, so we can clear it out.
                     Also, don't forget to close the form.
                 },
-                :code => ['f.controls.clear', 'f.close']) { |i| not i.bind.f.visible }
+                :code => [
+                    'f.controls.clear', 
+                    'f.close']
+                ) { |i| not i.bind.f.visible }
         end
-        
-        summary %{
-            Note that if you develop Windows applications interactively using the <tt>ir.exe</tt> from the
-            <b>Command Prompt</b>, IronRuby must be initialized specially for that purpose. By default,
-            <tt>ir.exe</tt>executes on one thread only. While this thread awaits text input, the Windows
-            application being dynamically created from the console is not able to process Windows messages.
-            Therefore, the application does not repaint itself or handle input to the UI.
-            
-            TODO - Explain what the solution to this problem is
-        }
+
     end
 
     section "Advanced IronRuby - Windows Presentation Foundation" do
@@ -628,6 +672,11 @@ tutorial "IronRuby tutorial" do
             task :body => %{
                     It is useful to have common initialization code while using Windows Presentation Foundation
                     in interactive development. This is available in the +Wpf+ module in the <tt>wpf.rb</tt> file.
+                },
+                :source_files => IronRubyTutorial.wpf_path,
+                :code => "require 'wpf.rb'"
+
+            task(:body => %{
                     To make all the WPF class names directly available, you could do:
                     
                         include Wpf
@@ -636,14 +685,13 @@ tutorial "IronRuby tutorial" do
                     For example, <tt>System::Collections::Generic::List</tt> and
                     <tt>System::Windows::Documents::List</tt>. For this reason, it is preferable to
                     use scope access like <tt>Wpf::List</tt> instead of doing <tt>include Wpf</tt>.
+                    
+                    Now let's create a window.
                 },
-                :source_files => IronRubyTutorial.wpf_path,
-                :code => "require 'wpf.rb'"
-
-            task(:body => %{
-                    Coming_soon
-                },
-                :code => ['w = Wpf::Window.new', 'w.show']) { |i| i.bind.w.visibility == System::Windows::Visibility.visible }
+                :code => [
+                    'w = Wpf::Window.new', 
+                    'w.show']
+                ) { |i| i.bind.w.visibility == System::Windows::Visibility.visible }
 
             task(:body => %{
                     You may need to alt-tab or look for the running application since it may not have popped 
@@ -654,7 +702,8 @@ tutorial "IronRuby tutorial" do
                 },
                 :code => [
                     'w.size_to_content = Wpf::SizeToContent.width_and_height', 
-                    "w.title = 'Hello'"]) { |i| String.new(i.bind.w.title) =~ /Hello/i } # TODO - String.new should not be needed here
+                    "w.title = 'Hello'"]
+                ) { |i| String.new(i.bind.w.title) =~ /Hello/i } # TODO - String.new should not be needed here
 
             task(:body => %{
                     Let's add the content now
@@ -662,12 +711,19 @@ tutorial "IronRuby tutorial" do
                 :code => [
                     'w.content = Wpf::TextBlock.new',
                     'w.content.text = "Hello IronRuby!"',
-                    'w.content.font_size = 50']) { |i| i.bind.w.content.font_size == 50 }
+                    'w.content.font_size = 50']
+                ) { |i| i.bind.w.content.font_size == 50 }
 
             task(:body => %{
-                    Remove the window content
+                    You can close the window like this"
+                    
+                        w.close
+                    
+                    However, we will just clear out the content so that we can use the same window in the
+                    next chapter.
                 },
-                :code => 'w.content = nil') { |i| not i.bind.w.content }
+                :code => 'w.content = nil'
+                ) { |i| not i.bind.w.content }
         end
 
         chapter "WPF calculator" do
@@ -680,17 +736,20 @@ tutorial "IronRuby tutorial" do
                     eval %{
                         w = Wpf::Window.new unless defined? w and w.class == Wpf::Window
                         w.size_to_content = Wpf::SizeToContent.width_and_height
+                        w.content = nil
                         w.show
                     }, bind
                 },
                 :source_files => IronRubyTutorial.calc_xaml_path,
-                :code => "w.content = Wpf.load_xaml_file '#{IronRubyTutorial.calc_xaml_relative_path}'") { |i| i.bind.w.content }
+                :code => "w.content = Wpf.load_xaml_file '#{IronRubyTutorial.calc_xaml_relative_path}'"
+                ) { |i| i.bind.w.content }
 
             task(:body => %{
                     Let's walk the calculator's object model using the +walk+ method defined in the "wpf.rb" 
                     file.
                 },
-                :code => 'Wpf.walk(w) { |c| puts c }') { |i| i.output =~ /Button: \+/ }
+                :code => 'Wpf.walk(w) { |c| puts c }'
+                ) { |i| i.output =~ /Button: \+/ }
 
             task :body => %{
                     Let's filter the results to button only
@@ -726,21 +785,23 @@ tutorial "IronRuby tutorial" do
                         else 
                             c.Result.text = c.Result.text + text
                         end
-                    end
-                }) { |i| i.bind.on_click(Tutorial.stub, '=') == '' }
+                    end}.strip_margin
+                ) { |i| i.bind.on_click(Tutorial.stub, '=') == '' }
 
             task(:body => %{
                     Let's hook up the event handler
                 },
                 :setup => Proc.new { |bind| IronRubyTutorial.snoop_add_handler "click", bind.buttons.first },
-                :code => 'buttons.each { |b| b.click { on_click w.content, b.content } }') { |i| IronRubyTutorial.click_flag }
+                :code => 'buttons.each { |b| b.click { on_click w.content, b.content } }'
+                ) { |i| IronRubyTutorial.click_flag }
 
             task(:body => %{
                     Now you should be able to use the calculator!
                     
                     When you are done, close the calculator window.
                 },
-                :code => 'w.close') { |i| not i.bind.w.is_visible }
+                :code => 'w.close'
+                ) { |i| not i.bind.w.is_visible }
         end
     end
 

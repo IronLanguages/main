@@ -58,7 +58,7 @@ class IRTest
 
     if File.exists?(file = "#{@root}\\Scripts\\Python\\GenerateSystemCoreCsproj.py")
       cmd = "#{@root}\\Bin\\Debug\\ipy.exe #{file}"
-      run_cmd cmd { @results << "Dev10 Build failed!!!" }
+      run_cmd(cmd) { @results << "Dev10 Build failed!!!" }
     end
   end
 
