@@ -464,18 +464,28 @@ namespace IronPython.Runtime.Binding {
                     ),
                     self.Restrictions
                 );
-            } else if (self.GetLimitType() == typeof(PythonDictionary)) {
+            } else if (self.GetLimitType() == typeof(Bytes)) {
                 self = self.Restrict(self.GetLimitType());
 
-                return new DynamicMetaObject(
-                    Expression.Call(
-                        typeof(PythonOps).GetMethod("MakeDictionaryKeyEnumerator"),
-                        self.Expression
-                    ),
-                    self.Restrictions
-                );
+                if (operation.Context.PythonOptions.Python30) {
+                    return new DynamicMetaObject(
+                        Expression.Call(
+                            typeof(PythonOps).GetMethod("BytesIntEnumerator"),
+                            self.Expression
+                        ),
+                        self.Restrictions
+                    );
+                } else {
+                    return new DynamicMetaObject(
+                        Expression.Call(
+                            typeof(PythonOps).GetMethod("BytesEnumerator"),
+                            self.Expression
+                        ),
+                        self.Restrictions
+                    );
+                }
             } else if (self.Value is IEnumerable ||
-                       typeof(IEnumerable).IsAssignableFrom(self.GetLimitType())) {
+                    typeof(IEnumerable).IsAssignableFrom(self.GetLimitType())) {
                 self = self.Restrict(self.GetLimitType());
 
                 return new DynamicMetaObject(
@@ -489,8 +499,8 @@ namespace IronPython.Runtime.Binding {
                     self.Restrictions
                 );
 
-            } else if (self.Value is IEnumerator ||                                 // check for COM object (and fast check when we have values)
-                       typeof(IEnumerator).IsAssignableFrom(self.GetLimitType())) { // check if we don't have a value
+            } else if (self.Value is IEnumerator ||                              // check for COM object (and fast check when we have values)
+                    typeof(IEnumerator).IsAssignableFrom(self.GetLimitType())) { // check if we don't have a value
                 DynamicMetaObject ieres = new DynamicMetaObject(
                     Ast.Convert(
                         self.Expression,
@@ -520,7 +530,7 @@ namespace IronPython.Runtime.Binding {
 
             ParameterExpression tmp = Ast.Parameter(typeof(IEnumerator), "enum");
             IPythonConvertible pyConv = self as IPythonConvertible;
-            PythonConversionBinder convBinder = new PythonConversionBinder(PythonContext.GetPythonContext(operation), typeof(IEnumerator), ConversionResultKind.ExplicitTry);
+            PythonConversionBinder convBinder = PythonContext.GetPythonContext(operation).Convert(typeof(IEnumerator), ConversionResultKind.ExplicitTry);
 
             DynamicMetaObject res;
             if (pyConv != null) {

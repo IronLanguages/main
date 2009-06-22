@@ -51,24 +51,38 @@ namespace IronRuby.Builtins {
             return site.Target(site, this).ToString();
         }
 
-        public override bool Equals(object obj) {
-            if (object.ReferenceEquals(this, obj)) {
+        public override bool Equals(object other) {
+            if (ReferenceEquals(this, other)) {
                 // Handle this directly here. Otherwise it can cause infinite recurion when running
                 // script code below as the DLR code needs to call Equals for templating of rules
                 return true;
             }
+            
+            var site = _immediateClass.EqualsSite;
+            object equalsResult = site.Target(site, this, other);
+            if (equalsResult == RubyOps.ForwardToBase) {
+                return base.Equals(other);
+            }
 
-            var site = _immediateClass.EqlSite;
-            return Protocols.IsTrue(site.Target(site, this, obj));
+            return RubyOps.IsTrue(equalsResult);
+        }
+
+        public bool BaseEquals(object other) {
+            return base.Equals(other);
         }
 
         public override int GetHashCode() {
-            var site = _immediateClass.HashSite;
-            object hash = site.Target(site, this);
-            if (!((hash is int)  || (hash is Microsoft.Scripting.Math.BigInteger))) {
-                throw RubyExceptions.CreateUnexpectedTypeError(_immediateClass.Context, "hash", "Integer");
+            var site = _immediateClass.GetHashCodeSite;
+            object hashResult = site.Target(site, this);
+            if (ReferenceEquals(hashResult, RubyOps.ForwardToBase)) {
+                return base.GetHashCode();
             }
-            return hash.GetHashCode();
+
+            return Protocols.ToHashCode(hashResult);
+        }
+
+        public int BaseGetHashCode() {
+            return base.GetHashCode();
         }
 
         public MutableString/*!*/ ToMutableString() {

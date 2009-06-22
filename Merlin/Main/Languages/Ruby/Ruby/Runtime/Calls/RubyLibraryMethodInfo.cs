@@ -58,10 +58,6 @@ namespace IronRuby.Runtime.Calls {
             : base(methods, info.Flags, info.DeclaringModule) {
         }
 
-        internal override bool IsRemovable {
-            get { return true; }
-        }
-
         internal Delegate/*!*/[]/*!*/ Overloads {
             get { return _overloads; }
         }

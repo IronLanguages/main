@@ -5,30 +5,17 @@
 	xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 	mc:Ignorable="d"
 	x:Class="Tutorial.TutorialControl"
-	d:DesignWidth="591" d:DesignHeight="71.373" Margin="0">
+	d:DesignWidth="591" d:DesignHeight="97.373" Margin="0">
 	<UserControl.Resources>
 		<Storyboard x:Key="tutorial_id_OnMouseEnter">
 			<ColorAnimationUsingKeyFrames BeginTime="00:00:00" Storyboard.TargetName="tutorial_id" Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)">
 				<SplineColorKeyFrame KeyTime="00:00:00.0560000" Value="#FFFFFF4C"/>
 			</ColorAnimationUsingKeyFrames>
-			<ObjectAnimationUsingKeyFrames BeginTime="00:00:00" Storyboard.TargetName="tutorial_desc_id" Storyboard.TargetProperty="(UIElement.Visibility)" Duration="00:00:00.0010000">
-				<DiscreteObjectKeyFrame KeyTime="00:00:00" Value="{x:Static Visibility.Visible}"/>
-			</ObjectAnimationUsingKeyFrames>
-			<ThicknessAnimationUsingKeyFrames BeginTime="00:00:00" Storyboard.TargetName="tutorial_desc_id" Storyboard.TargetProperty="(FrameworkElement.Margin)">
-				<SplineThicknessKeyFrame KeyTime="00:00:00" Value="32,-27,8,8"/>
-				<SplineThicknessKeyFrame KeyTime="00:00:00.0540000" Value="32,0,8,8" KeySpline="0.5,0,0.5,1"/>
-			</ThicknessAnimationUsingKeyFrames>
 		</Storyboard>
 		<Storyboard x:Key="tutorial_id_OnMouseLeave">
 			<ColorAnimationUsingKeyFrames BeginTime="00:00:00" Storyboard.TargetName="tutorial_id" Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)">
 				<SplineColorKeyFrame KeyTime="00:00:00.0610000" Value="#FFC8C8C8"/>
 			</ColorAnimationUsingKeyFrames>
-			<ThicknessAnimationUsingKeyFrames BeginTime="00:00:00" Storyboard.TargetName="tutorial_desc_id" Storyboard.TargetProperty="(FrameworkElement.Margin)">
-				<SplineThicknessKeyFrame KeyTime="00:00:00.0600000" Value="32,-27,8,8"/>
-			</ThicknessAnimationUsingKeyFrames>
-			<ObjectAnimationUsingKeyFrames BeginTime="00:00:00" Storyboard.TargetName="tutorial_desc_id" Storyboard.TargetProperty="(UIElement.Visibility)">
-				<DiscreteObjectKeyFrame KeyTime="00:00:00.0600000" Value="{x:Static Visibility.Collapsed}"/>
-			</ObjectAnimationUsingKeyFrames>
 		</Storyboard>
 	</UserControl.Resources>
 	<UserControl.Triggers>
@@ -44,7 +31,7 @@
 		<Border x:Name="tutorial_id" BorderBrush="#FFC8C8C8" BorderThickness="5" CornerRadius="10" Padding="0" Margin="0" Background="White" OpacityMask="{x:Null}" d:LayoutOverrides="Width" Cursor="Hand">
 			<StackPanel Margin="0">
 				<TextBlock x:Name="tutorial_title_id" Margin="8" VerticalAlignment="Bottom" FontSize="21.333" Padding="0" TextWrapping="Wrap" Background="White" Panel.ZIndex="1" Cursor="Hand"><Run Text="Example tu"/><Run Text="torial"/></TextBlock>
-				<RichTextBox x:Name="tutorial_desc_id" Focusable="False" IsReadOnly="True" IsUndoEnabled="False" BorderThickness="0" HorizontalAlignment="Left" FontSize="13.333" Padding="0" Margin="32,0,8,8" Background="{x:Null}" BorderBrush="{x:Null}" Visibility="Collapsed" RenderTransformOrigin="0.5,0.5" Cursor="Hand">
+				<RichTextBox x:Name="tutorial_desc_id" Focusable="False" IsReadOnly="True" IsUndoEnabled="False" BorderThickness="0" HorizontalAlignment="Left" FontSize="13.333" Padding="0" Margin="32,0,8,8" Background="{x:Null}" BorderBrush="{x:Null}" RenderTransformOrigin="0.5,0.5" Cursor="Hand">
 					<RichTextBox.RenderTransform>
 						<TransformGroup>
 							<ScaleTransform/>

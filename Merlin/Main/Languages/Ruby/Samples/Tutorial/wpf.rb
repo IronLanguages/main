@@ -40,7 +40,12 @@ class System::Windows::FrameworkElement
 
   def set_or_collapse(property, value)
     obj = send(property)
-    obj && value ? yield(obj, value) : obj.collapse!
+    if obj && value
+      yield obj, value
+      obj.show!
+    else
+      obj.collapse!
+    end
   end
 end
 
@@ -168,6 +173,21 @@ module Wpf
     end
   end
 
+  # If you constructed your treeview with XAML, you should
+  # use this XAML snippet instead to auto-expand items:
+  #
+  # <TreeView.ItemContainerStyle>
+  #   <Style>
+  #     <Setter Property="TreeViewItem.IsExpanded" Value="True"/>
+  #     <Style.Triggers>
+  #       <DataTrigger Binding="{Binding Type}" Value="menu">
+  #         <Setter Property="TreeViewItem.IsSelected" Value="True"/>
+  #       </DataTrigger>
+  #     </Style.Triggers>
+  #   </Style>
+  # </TreeView.ItemContainerStyle>
+  #
+  # If your treeview was constructed with code, use this method
   def self.select_tree_view_item(tree_view, item)
     return false unless self and item
 
@@ -380,3 +400,4 @@ module Wpf
     end
   end
 end
+

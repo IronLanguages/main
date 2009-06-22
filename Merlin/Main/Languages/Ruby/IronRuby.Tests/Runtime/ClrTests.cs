@@ -23,6 +23,7 @@ using IronRuby.Runtime;
 using IronRuby.Builtins;
 using Microsoft.Scripting.Math;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 
 namespace InteropTests.Generics1 {
     public class C {
@@ -1559,6 +1560,192 @@ p E.new.virtual_method
 11
 21
 ");
+        }
+
+
+
+        public class ClassWithToStringHashEquals1 {
+            public override string ToString() {
+                return "hello";
+            }
+
+            public override int GetHashCode() {
+                return 1234;
+            }
+
+            public int Foo() {
+                return 10;
+            }
+
+            public int Field = 11;
+
+            public override bool Equals(object obj) {
+                return obj is int && (int)obj == 0;
+            }
+        }
+
+        public void ClrToString1() {
+            Engine.Runtime.Globals.SetVariable("B", Context.GetClass(typeof(ClassWithToStringHashEquals1)));
+
+            var objs = Engine.Execute<RubyArray>(@"
+class C
+  def to_s
+    '123'
+  end
+end
+
+class D
+end
+
+class E < B
+end
+
+class F < B
+  def to_s
+    'abc'
+  end
+end
+
+[C.new, D.new, E.new, E.new.to_s, F.new]
+");
+
+            Assert(objs[0].ToString() == "123");
+
+            string s = objs[1].ToString();
+            Assert(s.StartsWith("#<D:0x") && s.EndsWith(">"));
+
+            s = objs[2].ToString();
+            Assert(s == "hello");
+
+            s = objs[3].ToString();
+            Assert(s == "hello");
+
+            //TODO:
+            //s = objs[4].ToString();
+            //Assert(s == "abc");
+
+            var range = new Range(1, 2, true);
+            Assert(range.ToString() == "1...2");
+
+            var regex = new RubyRegex("hello", RubyRegexOptions.IgnoreCase | RubyRegexOptions.Multiline);
+            Assert(regex.ToString() == "(?mi-x:hello)");
+        }
+
+        public void ClrHashEquals1() {
+            Test_HashClr("get_hash_code", "equals");
+        }
+
+        public void ClrHashEquals2() {
+            Test_HashClr("GetHashCode", "Equals");
+        }
+
+        public void ClrHashEquals3() {
+            Test_HashClr("hash", "eql?");
+        }
+
+        private void Test_HashClr(string/*!*/ hashMethodName, string/*!*/ equalsMethodName) {
+            Engine.Runtime.Globals.SetVariable("B", Context.GetClass(typeof(ClassWithToStringHashEquals1)));
+
+            var objs = Engine.Execute<RubyArray>(String.Format(@"
+class C
+  def {0}
+    789
+  end
+
+  def {1}(other)
+    other == 1
+  end
+end
+
+class D
+end
+
+class E < B
+end
+
+class F < B
+  def {0}
+    1000
+  end
+
+  def {1}(other)
+    other == 2
+  end
+end
+
+[C.new, D.new, E.new, F.new, E.new.{0}, E.new.{1}(0)]
+", hashMethodName, equalsMethodName));
+
+            object c = objs[0], d = objs[1], e = objs[2], f = objs[3], eHash = objs[4], eEquals = objs[5];
+
+            int h = c.GetHashCode();
+            Assert(h == 789);
+            Assert(objs[0].Equals(1));
+
+            h = d.GetHashCode();
+            Assert(h == RuntimeHelpers.GetHashCode(objs[1]));
+            Assert(d.Equals(d) && !d.Equals(1));
+
+            h = e.GetHashCode();
+            Assert(h == 1234);
+            Assert(e.Equals(0));
+
+            h = f.GetHashCode();
+            Assert(h == 1000);
+            Assert(f.Equals(2));
+
+            Assert((int)eHash == 1234);
+            Assert((bool)eEquals);
+        }
+
+        public void ClrHashEquals4() {
+            var e = new RubyObject(Context.ObjectClass);
+            int h;
+
+            Engine.Runtime.Globals.SetVariable("B", Context.GetClass(typeof(ClassWithToStringHashEquals1)));
+            Engine.Runtime.Globals.SetVariable("Empty", e);
+
+            // removing GetHashCode doesn't cause infinite recursion (Kernel#hash call doesn't dynamically dispatch to GHC):
+            h = Engine.Execute<int>(@"
+class Object
+  remove_method :GetHashCode
+end
+
+Empty.hash
+");
+            Assert(h == RuntimeHelpers.GetHashCode(e));
+
+            // Z#eql? calls Kernel#== which should not do virtual dynamic dispatch to Equals since that would call eql? again.
+            bool b = Engine.Execute<bool>(@"
+class Z
+  def eql?(other)
+    self == other
+  end
+end
+
+Z.eql?(1)
+");
+            Assert(!b);
+
+            // detached method groups should be considered user-defined methods:
+            var objs = Engine.Execute<RubyArray>(@"
+class C < B
+  alias hash foo
+end
+
+class D < B
+  define_method(:hash, instance_method(:field))
+end
+
+[C.new, D.new]
+");
+            object c = objs[0], d = objs[1];
+
+            h = c.GetHashCode();
+            Assert(h == 10);
+            
+            h = d.GetHashCode();
+            Assert(h == 11);
         }
 
         #endregion

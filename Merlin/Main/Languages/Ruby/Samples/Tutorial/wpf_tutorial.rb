@@ -69,7 +69,20 @@ module WpfTutorial
   end
 
   class Tutorial
-    attr_reader :tasks, :task, :chapter, :current_tutorial
+    attr_reader :tasks, :task, :chapter, :current_tutorial 
+
+    # TODO: Figure out how to remove this condition:
+    # 
+    # When the "next_chapter" button is focused and the enter-button is pressed,
+    # somewhere along that process the "repl_input" TextBox gets focus, but 
+    # then the "repl_input.key_up" fires from the previous enter-button press,
+    # causing two extra lines in the repl history.
+    #
+    # This flag shunts the first key_up event, and then is set back to false. 
+    # This ignores all first-keypresses that are "enter", hackily removing the
+    # issue, since "enter" should never really be the first key pressed. 
+    # Definitely not a a perfect solution.
+    attr_accessor :handling_next_chapter
 
     def initialize(t)
       @current_tutorial ||= ::Tutorial.get_tutorial(t)
@@ -90,22 +103,21 @@ module WpfTutorial
       reset
       Window.show_tutorial
 
-      @window.set_or_collapse(:exercise, @current_tutorial.introduction) do |obj, value|
-        obj.document = FlowDocument.from_simple_markup(value)
-      end
       @window.chapters.items_source = @current_tutorial.sections
-
-      @window.next_chapter.click do |t, e|
-        select_section_or_chapter @chapter.next_item if @chapter
-      end
       @window.chapters.mouse_left_button_up do |t, e|
         select_section_or_chapter t.selected_item
       end
+
+      @window.next_chapter.click do |t, e|
+        @handling_next_chapter = true
+        select_section_or_chapter @chapter.next_item if @chapter
+      end
+
+      select_chapter(@current_tutorial.first_chapter, @current_tutorial.first_section)
     end
 
     def select_section_or_chapter(item)
       return unless item
-      Wpf::select_tree_view_item @window.chapters, item
       case item
       when ::Tutorial::Section: select_section item
       when ::Tutorial::Chapter: select_chapter item
@@ -114,11 +126,19 @@ module WpfTutorial
       end
     end
 
-    def select_chapter(chapter)
+    def select_chapter(chapter, section = nil)
+      if section
+        @window.set_or_collapse(:pre_exercise, section.introduction) do |obj, value|
+          obj.document = FlowDocument.from_simple_markup value
+        end
+      else
+        @window.pre_exercise.collapse!
+      end
       @chapter = chapter
       @window.set_or_collapse(:exercise, @chapter.introduction) do |obj, value|
         obj.document = FlowDocument.from_simple_markup value
       end
+
       @window.tutorial_body.children.clear
       @tasks = @chapter.tasks.clone
       select_next_task
@@ -129,13 +149,13 @@ module WpfTutorial
       @window.set_or_collapse(:exercise, section.introduction) do |obj, value|
         obj.document = FlowDocument.from_simple_markup value
       end
+      @window.pre_exercise.collapse!
     end
 
     def select_next_task
       unless @tasks.empty?
-        @window.next_step
-
         @task = @tasks.shift
+        @window.next_step
         if @task.description
           fd = FlowDocument.from_simple_markup @task.description
           fd << "Full path: #{@task.source_files.tr('/', '\\')}" if @task.source_files
@@ -167,6 +187,7 @@ module WpfTutorial
           @window.set_or_collapse(:complete_body, @chapter.summary.body) do |obj, value|
             obj.document = FlowDocument.from_simple_markup value
           end if @chapter.summary
+          @window.next_chapter.focus
         else
           if @current_tutorial.summary && @current_tutorial.summary.body
             @window.exercise.document = FlowDocument.from_simple_markup(@current_tutorial.summary.body)
@@ -365,14 +386,14 @@ module WpfTutorial
       @window.repl_history.text = ''
 
       @window.repl_input.show!
-      @window.repl_input.focus
       Window.repl.set_prompt
       Window.repl.context.reset_input
+
       # TODO - Should use TextChanged here
       @window.repl_input.key_up do |target, event_args|
-        if event_args.key == Key.enter
+        if event_args.key == Key.enter && !Window.tutorial.handling_next_chapter
           Window.tutorial.process_result Window.repl.on_repl_input
-        elsif event_args.Key == Key.System and @task        
+        elsif event_args.Key == Key.System
           # This allows hitting Alt-Enter to automatically enter the code
           # It is useful during manual testing of a tutorial's content
           if @task.code.respond_to? :to_ary
@@ -385,8 +406,11 @@ module WpfTutorial
             Window.tutorial.process_result Window.repl.on_repl_input
           end
         end
+        Window.tutorial.handling_next_chapter = false
       end
+
       @window.repl_input_arrow.show!
+      @window.repl_input.focus
     end
 
     private
@@ -444,7 +468,6 @@ module WpfTutorial
     def print(s, new_line = true)
       history.text += s
       history.text += "\n" if new_line
-      history.scroll_to_line(history.line_count - 1)
     end
 
     def set_prompt p = ">>>"

@@ -1,2 +1,0 @@
-fails:Array#eql? returns true if corresponding elements are #eql?
-fails:Array#eql? returns false if any corresponding elements are not #eql?

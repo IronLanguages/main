@@ -179,8 +179,30 @@ namespace IronPython.Runtime.Operations {
             return type\u00F8.CreateInstance(context, args, names);
         }
 
-        public static object IterMethod(CodeContext/*!*/ context, object self) {
+        // 3.0-only
+        public static object IterMethodForString(string self) {
+            return PythonOps.StringEnumerator(self);
+        }
+
+        // 3.0-only
+        public static object IterMethodForBytes(Bytes self) {
+            return PythonOps.BytesIntEnumerator(self);
+        }
+
+        public static object IterMethodForEnumerator(IEnumerator self) {
             return self;
+        }
+
+        public static object IterMethodForEnumerable(IEnumerable self) {
+            return self.GetEnumerator();
+        }
+
+        public static object IterMethodForGenericEnumerator<T>(IEnumerator<T> self) {
+            return self;
+        }
+
+        public static object IterMethodForGenericEnumerable<T>(IEnumerable<T> self) {
+            return self.GetEnumerator();
         }
 
         public static object NextMethod(object self) {

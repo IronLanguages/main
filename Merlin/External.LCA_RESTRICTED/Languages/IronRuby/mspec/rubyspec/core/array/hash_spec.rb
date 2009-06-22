@@ -58,6 +58,9 @@ describe "Array#hash" do
     a.fill 'a', 0..3
     b = %w|a a a a|
     a.hash.should == b.hash
+
+    # recursively:
+    [[a], [[a]]].hash.should == [[a], [[a]]].hash
   end
 
   it "returns the same value if arrays are #eql?" do

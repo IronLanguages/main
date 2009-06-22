@@ -5,10 +5,11 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
 	xmlns:local="clr-namespace:Tutorial"
+	xmlns:Custom="http://schemas.microsoft.com/wpf/2008/toolkit"
 	x:Class="Tutorial.MainWindow"
 	x:Name="Window"
 	Title="IronRuby Tutorial"
-	Width="640" Margin="0,0,0,12372" Height="510">
+	Width="640" Margin="0,0,0,12372" Height="700">
 	<Window.Resources>
 		<Storyboard x:Key="tutorial_nav_OnMouseEnter" AutoReverse="False">
 			<DoubleAnimationUsingKeyFrames BeginTime="00:00:00" Storyboard.TargetName="tutorial_nav" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[3].(TranslateTransform.X)">
@@ -17,7 +18,7 @@
 		</Storyboard>
 		<Storyboard x:Key="tutorial_nav_OnMouseLeave">
 			<DoubleAnimationUsingKeyFrames BeginTime="00:00:00" Storyboard.TargetName="tutorial_nav" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[3].(TranslateTransform.X)">
-				<SplineDoubleKeyFrame KeyTime="00:00:00.2000000" Value="170" KeySpline="0.5,0,0.5,1"/>
+				<SplineDoubleKeyFrame KeyTime="00:00:00.2000000" Value="275" KeySpline="0.5,0,0.5,1"/>
 			</DoubleAnimationUsingKeyFrames>
 		</Storyboard>
 		<Storyboard x:Key="action_MouseEnter">
@@ -83,7 +84,14 @@
 			</Border>
 		</Grid>
 		<Grid x:Name="Page">
-			<Border x:Name="header" BorderBrush="Black" BorderThickness="0,0,0,1" Padding="8,10,8,0" Background="#FFEFEFEF" Panel.ZIndex="1" Margin="0" VerticalAlignment="Top">
+			<Border x:Name="header" BorderBrush="Black" BorderThickness="0" Padding="8,10,8,20" Margin="0" VerticalAlignment="Top" Panel.ZIndex="1">
+				<Border.Background>
+					<LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+						<GradientStop Color="#55000000" Offset="0.777"/>
+						<GradientStop Offset="1"/>
+						<GradientStop Color="#FFEFEFEF" Offset="0.773"/>
+					</LinearGradientBrush>
+				</Border.Background>
 				<TextBlock x:Name="header_name" HorizontalAlignment="Left" FontSize="32" Text="Pick a tutorial" TextWrapping="Wrap" Margin="0,0,0,-8"/>
 			</Border>
 			<Border x:Name="header_navigation" VerticalAlignment="Top" BorderBrush="#FF424242" BorderThickness="1" Panel.ZIndex="2" Margin="5,0" d:LayoutOverrides="Width" Background="#FF424242" CornerRadius="0,0,10,10" RenderTransformOrigin="0.5,0.5">
@@ -106,9 +114,9 @@
 					</TextBlock>
 				</StackPanel>
 			</Border>
-			<Grid x:Name="body" Margin="0,45,0,0">
+			<Grid x:Name="body" Margin="0,50,0,0" Background="{x:Null}">
 				<ScrollViewer x:Name="tutorial_scroll" Margin="0,0,30,0" Padding="0" VerticalScrollBarVisibility="Auto">
-					<local:TutorialPage Margin="0"/>
+					<local:TutorialPage Margin="0" Background="{x:Null}" Padding="0"/>
 				</ScrollViewer>
 				<ScrollViewer x:Name="main_scroll" Margin="0" Padding="8,0,8,16" VerticalScrollBarVisibility="Auto" Visibility="Collapsed">
 					<StackPanel x:Name="main" VerticalAlignment="Top" Background="White" Margin="0">
@@ -117,7 +125,7 @@
 					</StackPanel>
 				</ScrollViewer>
 			</Grid>
-			<Border x:Name="tutorial_nav" HorizontalAlignment="Right" Width="200" Background="White" BorderBrush="#FF7B7B7B" BorderThickness="5,2,0,2" CornerRadius="10,0,0,10" Padding="2,2,0,2" Margin="0,30,0,10" Panel.ZIndex="3" RenderTransformOrigin="0.5,0.5">
+			<Border x:Name="tutorial_nav" HorizontalAlignment="Right" Width="300" Background="White" BorderBrush="#FF7B7B7B" BorderThickness="5,2,0,2" CornerRadius="10,0,0,10" Padding="2,2,0,2" Margin="0,30,0,10" Panel.ZIndex="3" RenderTransformOrigin="0.5,0.5">
 				<Border.Resources>
 					<!-- Chapter TEMPLATE -->
 					<DataTemplate x:Key="ChapterTemplate">
@@ -138,7 +146,7 @@
 						<ScaleTransform/>
 						<SkewTransform/>
 						<RotateTransform/>
-						<TranslateTransform X="170"/>
+						<TranslateTransform X="275"/>
 					</TransformGroup>
 				</Border.RenderTransform>
 				<Grid>
@@ -148,11 +156,26 @@
 								<ScaleTransform/>
 								<SkewTransform/>
 								<RotateTransform Angle="-90"/>
-								<TranslateTransform X="-55"/>
+								<TranslateTransform X="-58"/>
 							</TransformGroup>
 						</TextBlock.RenderTransform>
 					</TextBlock>
-					<TreeView x:Name="chapters" BorderBrush="{x:Null}" FontSize="16" HorizontalAlignment="Right" Margin="0" Height="444" RenderTransformOrigin="0.5,0.5" Width="170" Padding="0" BorderThickness="0" VerticalAlignment="Top"/>
+					<TreeView x:Name="chapters" BorderBrush="{x:Null}" FontSize="13.333" Margin="20,0,0,0" RenderTransformOrigin="0.5,0.5" Padding="0" BorderThickness="0" d:LayoutOverrides="Width" Background="{x:Null}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" ScrollViewer.HorizontalScrollBarVisibility="Auto" MaxWidth="293">
+						<TreeView.ItemContainerStyle>
+							<Style>
+								<Setter Property="TreeViewItem.IsExpanded" Value="True"/>
+
+								<Style.Triggers>
+
+									<DataTrigger Binding="{Binding Type}" Value="menu">
+										<Setter Property="TreeViewItem.IsSelected" Value="True"/>
+									</DataTrigger>
+
+								</Style.Triggers>
+
+							</Style>
+						</TreeView.ItemContainerStyle>
+					</TreeView>
 
 				</Grid>
 

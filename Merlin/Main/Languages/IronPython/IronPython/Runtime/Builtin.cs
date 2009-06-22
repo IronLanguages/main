@@ -132,7 +132,7 @@ namespace IronPython.Runtime {
                 return value;
             }
 
-            throw PythonOps.TypeError("bad operand type for abs(): '{0}'", DynamicHelpers.GetPythonType(o).Name);
+            throw PythonOps.TypeError("bad operand type for abs(): '{0}'", PythonTypeOps.GetName(o));
         }
 
         public static bool all(object x) {
@@ -987,8 +987,8 @@ namespace IronPython.Runtime {
             return false;
         }
 
-        public static IEnumerator iter(object o) {
-            return PythonOps.GetEnumerator(o);
+        public static object iter(CodeContext/*!*/ context, object o) {
+            return PythonOps.GetEnumeratorObject(context, o);
         }
 
         public static object iter(CodeContext/*!*/ context, object func, object sentinel) {
@@ -1048,11 +1048,9 @@ namespace IronPython.Runtime {
             );
         }
 
-        public static List map(CodeContext/*!*/ context, object func, IEnumerable enumerator) {
-            if (enumerator == null) {
-                throw PythonOps.TypeError("NoneType is not iterable");
-            }
-
+        public static List map(CodeContext/*!*/ context, object func, [NotNull]IEnumerable enumerator) {
+            IEnumerator en = PythonOps.GetEnumerator(enumerator);
+            
             List ret = new List();            
             CallSite<Func<CallSite, CodeContext, object, object, object>> mapSite = null;
 
@@ -1060,18 +1058,23 @@ namespace IronPython.Runtime {
                 mapSite = MakeMapSite<object, object>(context);
             }
 
-            foreach (object o in enumerator) {
+            while (en.MoveNext()) {
                 if (func == null) {
-                    ret.AddNoLock(o);
+                    ret.AddNoLock(en.Current);
                 } else {
-                    ret.AddNoLock(mapSite.Target(mapSite, context, func, o));
+                    ret.AddNoLock(mapSite.Target(mapSite, context, func, en.Current));
                 }
             }
         
             return ret;
         }
 
-        public static List map(CodeContext/*!*/ context, SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object, object, object>>> storage, object func, [NotNull]string enumerator) {
+        public static List map(
+            CodeContext/*!*/ context,
+            SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object, object, object>>> storage,
+            object func,
+            [NotNull]string enumerator
+        ) {
             CallSite<Func<CallSite, CodeContext, object, object, object>> mapSite;
             if (storage.Data == null && func != null) {
                 storage.Data = MakeMapSite<object, object>(context);
@@ -1090,68 +1093,96 @@ namespace IronPython.Runtime {
             return ret;
         }
 
-        public static List map(CodeContext/*!*/ context, SiteLocalStorage<CallSite<Func<CallSite, CodeContext, PythonType, object, object>>> storage, [NotNull]PythonType/*!*/ func, [NotNull]IEnumerable enumerator) {
+        public static List map(
+            CodeContext/*!*/ context,
+            SiteLocalStorage<CallSite<Func<CallSite, CodeContext, PythonType, object, object>>> storage,
+            [NotNull]PythonType/*!*/ func,
+            [NotNull]string enumerator
+        ) {
+            CallSite<Func<CallSite, CodeContext, PythonType, string, object>> mapSite = MakeMapSite<PythonType, string>(context);
+
+            List ret = new List(enumerator.Length);
+            foreach (char o in enumerator) {
+                ret.AddNoLock(mapSite.Target(mapSite, context, func, ScriptingRuntimeHelpers.CharToString(o)));
+            }
+            return ret;
+        }
+
+        public static List map(
+            CodeContext/*!*/ context,
+            SiteLocalStorage<CallSite<Func<CallSite, CodeContext, PythonType, object, object>>> storage,
+            [NotNull]PythonType/*!*/ func,
+            [NotNull]IEnumerable enumerator
+        ) {
             CallSite<Func<CallSite, CodeContext, PythonType, object, object>> mapSite;
             if (storage.Data == null) {
                 storage.Data = MakeMapSite<PythonType, object>(context);
             }
             mapSite = storage.Data;
 
+            IEnumerator en = PythonOps.GetEnumerator(enumerator);
             List ret = new List();
-            foreach (object o in enumerator) {
-                ret.AddNoLock(mapSite.Target(mapSite, context, func, o));
+            while (en.MoveNext()) {
+                ret.AddNoLock(mapSite.Target(mapSite, context, func, en.Current));
             }
             return ret;
         }
 
-        public static List map(CodeContext/*!*/ context, SiteLocalStorage<CallSite<Func<CallSite, CodeContext, BuiltinFunction, object, object>>> storage, [NotNull]BuiltinFunction/*!*/ func, [NotNull]IEnumerable enumerator) {
+        public static List map(
+            CodeContext/*!*/ context,
+            SiteLocalStorage<CallSite<Func<CallSite, CodeContext, BuiltinFunction, object, object>>> storage,
+            [NotNull]BuiltinFunction/*!*/ func,
+            [NotNull]string enumerator
+        ) {
             CallSite<Func<CallSite, CodeContext, BuiltinFunction, object, object>> mapSite;
             if (storage.Data == null) {
                 storage.Data = MakeMapSite<BuiltinFunction, object>(context);
             }
             mapSite = storage.Data;
 
-            List ret = new List();
-            foreach (object o in enumerator) {
-                ret.AddNoLock(mapSite.Target(mapSite, context, func, o));
+            List ret = new List(enumerator.Length);
+            foreach (char o in enumerator) {
+                ret.AddNoLock(mapSite.Target(mapSite, context, func, ScriptingRuntimeHelpers.CharToString(o)));
             }
             return ret;
         }
 
-        public static List map(CodeContext/*!*/ context, SiteLocalStorage<CallSite<Func<CallSite, CodeContext, PythonFunction, object, object>>> storage, [NotNull]PythonFunction/*!*/ func, [NotNull]IList enumerator) {
+        public static List map(
+            CodeContext/*!*/ context,
+            SiteLocalStorage<CallSite<Func<CallSite, CodeContext, BuiltinFunction, object, object>>> storage,
+            [NotNull]BuiltinFunction/*!*/ func,
+            [NotNull]IEnumerable enumerator
+        ) {
+            CallSite<Func<CallSite, CodeContext, BuiltinFunction, object, object>> mapSite;
+            if (storage.Data == null) {
+                storage.Data = MakeMapSite<BuiltinFunction, object>(context);
+            }
+            mapSite = storage.Data;
+
+            IEnumerator en = PythonOps.GetEnumerator(enumerator);
+            List ret = new List();
+            while (en.MoveNext()) {
+                ret.AddNoLock(mapSite.Target(mapSite, context, func, en.Current));
+            }
+            return ret;
+        }
+
+        public static List map(
+            CodeContext/*!*/ context,
+            SiteLocalStorage<CallSite<Func<CallSite, CodeContext, PythonFunction, object, object>>> storage,
+            [NotNull]PythonFunction/*!*/ func,
+            [NotNull]IList enumerator
+        ) {
             CallSite<Func<CallSite, CodeContext, PythonFunction, object, object>> mapSite;
             if (storage.Data == null) {
                 storage.Data = MakeMapSite<PythonFunction, object>(context);
             }
             mapSite = storage.Data;
 
+            IEnumerator en = PythonOps.GetEnumerator(enumerator);
             List ret = new List(enumerator.Count);
-            foreach (object o in enumerator) {
-                ret.AddNoLock(mapSite.Target(mapSite, context, func, o));
-            }
-            return ret;
-        }
-
-        public static List map(CodeContext/*!*/ context, SiteLocalStorage<CallSite<Func<CallSite, CodeContext, BuiltinFunction, object, object>>> storage, [NotNull]BuiltinFunction/*!*/ func, [NotNull]string enumerator) {
-            CallSite<Func<CallSite, CodeContext, BuiltinFunction, object, object>> mapSite;
-            if (storage.Data == null) {
-                storage.Data = MakeMapSite<BuiltinFunction, object>(context);
-            }
-            mapSite = storage.Data;
-
-            List ret = new List(enumerator.Length);
-            foreach (char o in enumerator) {
-                ret.AddNoLock(mapSite.Target(mapSite, context, func, ScriptingRuntimeHelpers.CharToString(o)));
-            }
-            return ret;
-        }
-
-        public static List map(CodeContext/*!*/ context, SiteLocalStorage<CallSite<Func<CallSite, CodeContext, PythonType, object, object>>> storage, [NotNull]PythonType/*!*/ func, [NotNull]string enumerator) {
-            CallSite<Func<CallSite, CodeContext, PythonType, string, object>> mapSite = MakeMapSite<PythonType, string>(context);
-
-            List ret = new List(enumerator.Length);
-            foreach (char o in enumerator) {
-                ret.AddNoLock(mapSite.Target(mapSite, context, func, ScriptingRuntimeHelpers.CharToString(o)));
+            while (en.MoveNext()) {
+                ret.AddNoLock(mapSite.Target(mapSite, context, func, en.Current));
             }
             return ret;
         }
@@ -1443,7 +1474,7 @@ namespace IronPython.Runtime {
                 return bytes[0];
             }
                 
-            throw PythonOps.TypeError("expected a character, but {0} found", DynamicHelpers.GetPythonType(value));
+            throw PythonOps.TypeError("expected a character, but {0} found", PythonTypeOps.GetName(value));
         }
 
         public static object pow(CodeContext/*!*/ context, object x, object y) {
@@ -1465,12 +1496,12 @@ namespace IronPython.Runtime {
         public static void print(CodeContext/*!*/ context, [ParamDictionary]IAttributesCollection kwargs, params object[] args) {
             object sep = AttrCollectionPop(kwargs, "sep", " ");
             if (sep != null && !(sep is string)) {
-                throw PythonOps.TypeError("sep must be None or str, not {0}", DynamicHelpers.GetPythonType(sep));
+                throw PythonOps.TypeError("sep must be None or str, not {0}", PythonTypeOps.GetName(sep));
             }
 
             object end = AttrCollectionPop(kwargs, "end", "\n");
             if (sep != null && !(sep is string)) {
-                throw PythonOps.TypeError("end must be None or str, not {0}", DynamicHelpers.GetPythonType(end));
+                throw PythonOps.TypeError("end must be None or str, not {0}", PythonTypeOps.GetName(end));
             }
 
             object file = AttrCollectionPop(kwargs, "file", null);

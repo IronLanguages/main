@@ -18,7 +18,7 @@ describe "Hashing" do
       end
 
       class ToIntClass
-        def to_int() 123 end
+        def to_int() 123 end        
       end
 
       class RubyClassWithHashAndGetHashCode
@@ -60,9 +60,10 @@ describe "Hashing" do
     Hasher.get_hash_code(o).class.should == Fixnum
   end
 
-  it "requires Object#hash to return an Integer" do
-    o = HashingSpecs::RubyClassWithHash.new(HashingSpecs::ToIntClass.new)
-    lambda { Hasher.get_hash_code(o) }.should raise_error(TypeError)
+  it "returns a reference based hash code of an object returned from Object#hash if it is not a Fixnum or Bignum" do
+    hashResult = HashingSpecs::ToIntClass.new
+    o = HashingSpecs::RubyClassWithHash.new(hashResult)
+    Hasher.get_hash_code(o).should == System::Runtime::CompilerServices::RuntimeHelpers.get_hash_code(hashResult)
   end
 
   it "uses reference hashing for Array" do

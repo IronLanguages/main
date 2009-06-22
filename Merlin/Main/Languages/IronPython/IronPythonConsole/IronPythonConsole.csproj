@@ -22,6 +22,7 @@
     <SignedDir Condition="'$(SignAssembly)' == 'true'">Signed</SignedDir>
     <SignedDir Condition="$(SignAssembly) != true">Unsigned</SignedDir>
     <DelaySign>true</DelaySign>
+    <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>

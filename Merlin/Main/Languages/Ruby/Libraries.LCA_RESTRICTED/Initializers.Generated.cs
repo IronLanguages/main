@@ -2551,7 +2551,7 @@ namespace IronRuby.Builtins {
             );
             
             module.DefineLibraryMethod("===", 0x51, 
-                new System.Func<IronRuby.Runtime.BinaryOpStorage, System.Object, System.Object, System.Boolean>(IronRuby.Builtins.KernelOps.HashEquals)
+                new System.Func<IronRuby.Runtime.BinaryOpStorage, System.Object, System.Object, System.Boolean>(IronRuby.Builtins.KernelOps.CaseEquals)
             );
             
             module.DefineLibraryMethod("abort", 0x52, 
@@ -2617,7 +2617,7 @@ namespace IronRuby.Builtins {
             );
             
             module.DefineLibraryMethod("equal?", 0x51, 
-                new System.Func<System.Object, System.Object, System.Boolean>(IronRuby.Builtins.KernelOps.Equal)
+                new System.Func<System.Object, System.Object, System.Boolean>(IronRuby.Builtins.KernelOps.IsEqual)
             );
             
             module.DefineLibraryMethod("eval", 0x52, 
@@ -5135,7 +5135,7 @@ namespace IronRuby.Builtins {
         
         private static void LoadSystem__Collections__IList_Instance(IronRuby.Builtins.RubyModule/*!*/ module) {
             module.DefineLibraryMethod("-", 0x51, 
-                new System.Func<IronRuby.Runtime.RubyContext, System.Collections.IList, System.Collections.IList, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.IListOps.Difference)
+                new System.Func<IronRuby.Runtime.UnaryOpStorage, IronRuby.Runtime.BinaryOpStorage, IronRuby.Runtime.RubyContext, System.Collections.IList, System.Collections.IList, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.IListOps.Difference)
             );
             
             module.DefineLibraryMethod("&", 0x51, 
@@ -5235,7 +5235,7 @@ namespace IronRuby.Builtins {
             );
             
             module.DefineLibraryMethod("eql?", 0x51, 
-                new System.Func<System.Collections.IList, System.Object, System.Boolean>(IronRuby.Builtins.IListOps.HashEquals)
+                new System.Func<IronRuby.Runtime.BinaryOpStorage, System.Collections.IList, System.Object, System.Boolean>(IronRuby.Builtins.IListOps.HashEquals)
             );
             
             module.DefineLibraryMethod("fetch", 0x51, 
@@ -5267,7 +5267,7 @@ namespace IronRuby.Builtins {
             );
             
             module.DefineLibraryMethod("hash", 0x51, 
-                new System.Func<System.Collections.IList, System.Int32>(IronRuby.Builtins.IListOps.GetHashCode)
+                new System.Func<IronRuby.Runtime.UnaryOpStorage, IronRuby.Runtime.ConversionStorage<System.Int32>, System.Collections.IList, System.Int32>(IronRuby.Builtins.IListOps.GetHashCode)
             );
             
             module.DefineLibraryMethod("include?", 0x51, 

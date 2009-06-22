@@ -2,7 +2,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>9.0.30729</ProductVersion>
+    <ProductVersion>9.0.21022</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{155CE436-1669-4A48-8095-410F2430237F}</ProjectGuid>
     <OutputType>Library</OutputType>
@@ -90,8 +90,9 @@
     <Compile Include="array.cs" />
     <Compile Include="binascii.cs" />
     <Compile Include="cmath.cs" />
-    <Compile Include="codecs.cs" />
+    <Compile Include="_codecs.cs" />
     <Compile Include="ModuleOps.cs" />
+    <Compile Include="_bytesio.cs" />
     <Compile Include="_codecs_cn.cs" />
     <Compile Include="_collections.cs" />
     <Compile Include="copy_reg.cs" />
@@ -106,6 +107,7 @@
     <Compile Include="marshal.cs" />
     <Compile Include="math.cs" />
     <Compile Include="math.Generated.cs" />
+    <Compile Include="_fileio.cs" />
     <Compile Include="_md5.cs" />
     <Compile Include="nt.cs" />
     <Compile Include="operator.cs" />

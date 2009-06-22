@@ -135,59 +135,6 @@ namespace IronPython.Runtime {
 
         #endregion
 
-        class XRangeIterator : IEnumerator, IEnumerator<int> {
-            private XRange _xrange;
-            private int _value;
-            private int _position;
-
-            public XRangeIterator(XRange xrange) {
-                _xrange = xrange;
-                _value = xrange._start - xrange._step; // this could cause overflow, fine
-                _position = 0;
-            }
-
-            public object Current {
-                get {
-                    return ScriptingRuntimeHelpers.Int32ToObject(_value);
-                }
-            }
-
-            public bool MoveNext() {
-                if (_position >= _xrange._length) {
-                    return false;
-                }
-
-                _position++;
-                _value = _value + _xrange._step;
-                return true;
-            }
-
-            public void Reset() {
-                _value = _xrange._start - _xrange._step;
-                _position = 0;
-            }
-
-            #region IEnumerator<int> Members
-
-            int IEnumerator<int>.Current {
-                get { return _value; }
-            }
-
-            #endregion
-
-            #region IDisposable Members
-
-            public void Dispose() {
-                Dispose(true);
-                GC.SuppressFinalize(this);
-            }
-
-            protected virtual void Dispose(bool notFinalizing) {
-            }
-
-            #endregion
-        }
-
         #region ICodeFormattable Members
 
         public string/*!*/ __repr__(CodeContext/*!*/ context) {
@@ -222,6 +169,64 @@ namespace IronPython.Runtime {
 
         object ICollection.SyncRoot {
             get { return null; }
+        }
+
+        #endregion
+    }
+
+    [PythonType("rangeiterator")]
+    public sealed class XRangeIterator : IEnumerable, IEnumerator, IEnumerator<int> {
+        private XRange _xrange;
+        private int _value;
+        private int _position;
+
+        public XRangeIterator(XRange xrange) {
+            _xrange = xrange;
+            _value = xrange.Start - xrange.Step; // this could cause overflow, fine
+            _position = 0;
+        }
+
+        public object Current {
+            get {
+                return ScriptingRuntimeHelpers.Int32ToObject(_value);
+            }
+        }
+
+        public bool MoveNext() {
+            if (_position >= _xrange.__len__()) {
+                return false;
+            }
+
+            _position++;
+            _value = _value + _xrange.Step;
+            return true;
+        }
+
+        public void Reset() {
+            _value = _xrange.Start - _xrange.Step;
+            _position = 0;
+        }
+
+        #region IEnumerator<int> Members
+
+        int IEnumerator<int>.Current {
+            get { return _value; }
+        }
+
+        #endregion
+
+        #region IDisposable Members
+
+        public void Dispose() {
+            GC.SuppressFinalize(this);
+        }
+
+        #endregion
+
+        #region IEnumerable Members
+
+        public IEnumerator GetEnumerator() {
+            return this;
         }
 
         #endregion

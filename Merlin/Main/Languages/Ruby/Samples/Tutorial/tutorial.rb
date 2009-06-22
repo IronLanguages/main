@@ -110,7 +110,11 @@ module Tutorial
 
         def to_s
             @name
-        end    
+        end
+
+        def first_chapter
+          @chapters.first rescue nil
+        end
     end
 
     class Tutorial
@@ -132,6 +136,14 @@ module Tutorial
         
         def to_s
             @name
+        end
+
+        def first_chapter
+          first_section.first_chapter rescue nil
+        end
+
+        def first_section
+          @sections.first rescue nil
         end
     end
     

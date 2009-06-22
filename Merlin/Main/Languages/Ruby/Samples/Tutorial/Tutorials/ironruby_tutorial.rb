@@ -147,8 +147,13 @@ tutorial "IronRuby tutorial" do
                 change from ">>>" to "..." to indicate to the user that more lines are expected before the 
                 input will be evaluated.
               },
-              :code => "if 2 < 3\n  puts 1\nelse\n  puts 2\nend"
-              ) { |interaction| interaction.output.chomp == '1' }
+              :code => %{
+                if 2 < 3
+                  puts "Ofcourse"
+                else
+                  puts "No way!"
+                end}.strip_margin
+              ) { |interaction| interaction.output =~ /ofcourse/i }
         end
         
         chapter "Built-in modules and interactive exploration" do
@@ -532,13 +537,13 @@ tutorial "IronRuby tutorial" do
     section "Advanced IronRuby - Windows Forms" do
 
         introduction %{
-            Note that if you develop Windows applications interactively using the <tt>ir.exe</tt> from the
-            <b>Command Prompt</b>, IronRuby must be initialized specially for that purpose. <tt>ir.exe</tt>
+            Note that if you develop Windows applications interactively using <tt>ir.exe</tt> or +iirb+ from
+            the <b>Command Prompt</b> console, IronRuby must be initialized specially for that purpose. <tt>ir.exe</tt>
             blocks the main thread so that it can read user input. While this thread awaits text input, the 
             Windows application being dynamically created from the console needs to run on a separate thread
-            so that it can process Windows messages. Also, all interactive commands that interact with UI 
-            need to be executed on the message pump thread. <tt>wpf.rb</tt> includes a helper method to deal 
-            with this. If you are using a console interactive session, do the following:
+            so that it can process Windows messages. Further, WPF requires that all commands that interact
+            with UI controls need to be executed on the message pump thread. <tt>wpf.rb</tt> includes a helper 
+            method to deal with this. If you are using a _console_ interactive session, do the following:
             
                 require "wpf.rb"
                 Wpf.interact
@@ -553,11 +558,11 @@ tutorial "IronRuby tutorial" do
                     First, we need to load <tt>System.Windows.Forms.dll</tt>. Note that it is recommended to
                     use the full assembly name in larger programs as such:
                     
-                        load_assembly("System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")                    
+                        load_assembly "System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
                     
                     However, for interactive use, we will use the short form.
                 },
-                :code => "load_assembly('System.Windows.Forms')"
+                :code => "load_assembly 'System.Windows.Forms'"
 
             task :body => %{
                     Import the contents of the <tt>System::Windows::Forms</tt> namespaces into the global 
@@ -590,7 +595,7 @@ tutorial "IronRuby tutorial" do
                     event handler for the +click+ event and click on the form to receive the event. 
                 },
                 :setup => Proc.new { |bind|
-                    load_assembly('System.Windows.Forms')
+                    load_assembly 'System.Windows.Forms'
                     include System::Windows::Forms
                     eval %{
                         f = Form.new unless defined? f and f.class == Form

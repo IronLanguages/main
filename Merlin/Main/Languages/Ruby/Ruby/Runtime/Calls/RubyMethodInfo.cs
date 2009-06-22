@@ -53,10 +53,6 @@ namespace IronRuby.Runtime.Calls {
             return new RubyMethodInfo(_body, _declaringScope, module, flags);
         }
         
-        internal override bool IsRemovable {
-            get { return true; }
-        }
-
         public override RubyMemberInfo TrySelectOverload(Type/*!*/[]/*!*/ parameterTypes) {
             return parameterTypes.Length >= MandatoryParamCount 
                 && (HasUnsplatParameter || parameterTypes.Length <= MandatoryParamCount + OptionalParamCount)

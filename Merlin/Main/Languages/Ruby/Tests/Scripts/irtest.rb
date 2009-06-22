@@ -10,7 +10,7 @@ def error?(msg = "At least 1 of the dev unit tests failed")
   end
 end
 
-flags = ["", "/partial", "/interpret", "/partial /interpret"]
+flags = ["", "/partial", "/noadaptive", "/partial /noadaptive"]
 
 ENV['ROWAN_BIN'] ||= "#{ENV['MERLIN_ROOT']}\\bin\\debug"
 

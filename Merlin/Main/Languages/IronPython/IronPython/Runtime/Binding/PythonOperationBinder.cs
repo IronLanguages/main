@@ -205,12 +205,12 @@ namespace IronPython.Runtime.Binding {
         }
         
         private IEnumerator GetListEnumerator(CallSite site, List value) {
-            return new listiterator(value);
+            return new ListIterator(value);
         }
 
         private IEnumerator GetListEnumerator(CallSite site, object value) {
             if (value != null && value.GetType() == typeof(List)) {
-                return new listiterator((List)value);
+                return new ListIterator((List)value);
             }
 
             return ((CallSite<Func<CallSite, object, IEnumerator>>)site).Update(site, value);

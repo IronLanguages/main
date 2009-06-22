@@ -64,7 +64,7 @@ namespace IronPython.Runtime {
                                 buf.Append((char)val);
                                 i += len;
                             } else {
-                                throw PythonOps.UnicodeDecodeError(@"'unicodeescape' codec can't decode bytes in position {0}: truncated \uXXXX escape", i);
+                                throw PythonOps.UnicodeEncodeError(@"'unicodeescape' codec can't decode bytes in position {0}: truncated \uXXXX escape", i);
                             }
                         } else {
                             buf.Append('\\');

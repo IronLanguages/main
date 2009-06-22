@@ -788,22 +788,41 @@ namespace IronPython.Runtime.Types {
         /// Provides a resolution for __iter__
         /// </summary>
         private static MemberGroup/*!*/ IterResolver(MemberBinder/*!*/ binder, Type/*!*/ type) {
-            // no __iter__ on string, just __getitem__
-            if (type != typeof(string)) {
-                if (typeof(System.Collections.IEnumerable).IsAssignableFrom(type)) {
-                    foreach (Type t in binder.GetContributingTypes(type)) {
-                        MemberInfo[] news = t.GetMember("__iter__");
-                        if (news.Length > 0) {
-                            // type has a specific __i__ overload, we'll pick it up later
-                            return MemberGroup.EmptyGroup;
-                        }
-                    }
+            if (type == typeof(string)) {
+                // __iter__ is only exposed in 3.0
+                if (binder.Binder.Context.PythonOptions.Python30) {
+                    return GetInstanceOpsMethod(type, "IterMethodForString");
+                }
+                return MemberGroup.EmptyGroup;
+            }
 
-                    // no special __iter__, use the default.
-                    return GetInstanceOpsMethod(type, "IterMethod");
+            if (typeof(Bytes).IsAssignableFrom(type)) {
+                // __iter__ is only exposed in 3.0
+                if (binder.Binder.Context.PythonOptions.Python30) {
+                    return GetInstanceOpsMethod(type, "IterMethodForBytes");
+                }
+                return MemberGroup.EmptyGroup;
+            }
+
+            foreach (Type t in binder.GetContributingTypes(type)) {
+                MemberInfo[] news = t.GetMember("__iter__");
+                if (news.Length > 0) {
+                    // type has a specific __iter__ overload, we'll pick it up later
+                    return MemberGroup.EmptyGroup;
                 }
             }
 
+            // no special __iter__, use the default.
+            if (typeof(System.Collections.Generic.IEnumerable<>).IsAssignableFrom(type)) {
+                return GetInstanceOpsMethod(type, "IterMethodForGenericEnumerable");
+            } else if (typeof(System.Collections.IEnumerable).IsAssignableFrom(type)) {
+                return GetInstanceOpsMethod(type, "IterMethodForEnumerable");
+            } else if (typeof(System.Collections.Generic.IEnumerator<>).IsAssignableFrom(type)) {
+                return GetInstanceOpsMethod(type, "IterMethodForGenericEnumerator");
+            } else if (typeof(System.Collections.IEnumerator).IsAssignableFrom(type)) {
+                return GetInstanceOpsMethod(type, "IterMethodForEnumerator");
+            }
+            
             return MemberGroup.EmptyGroup;
         }
 
@@ -1180,7 +1199,7 @@ namespace IronPython.Runtime.Types {
 
             public abstract MemberGroup/*!*/ GetMember(Type/*!*/ type, string/*!*/ name);
 
-            protected PythonBinder/*!*/ Binder {
+            public PythonBinder/*!*/ Binder {
                 get {
                     return _binder;
                 }

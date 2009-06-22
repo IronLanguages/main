@@ -76,18 +76,24 @@ namespace IronPython.Runtime.Binding {
         }
 
         public override bool CanConvertFrom(Type fromType, ParameterWrapper toParameter, NarrowingLevel level) {
-            if ((fromType == typeof(List) || fromType.IsSubclassOf(typeof(List))) && 
-                toParameter.Type.IsGenericType && 
-                toParameter.Type.GetGenericTypeDefinition() == typeof(IList<>)) {
-                if (toParameter.ParameterInfo.IsDefined(typeof(BytesConversionAttribute), false) ||
-                    toParameter.ParameterInfo.IsDefined(typeof(BytesConversionNoStringAttribute), false)) {
+            if ((fromType == typeof(List) || fromType.IsSubclassOf(typeof(List)))) {
+                if (toParameter.Type.IsGenericType &&
+                    toParameter.Type.GetGenericTypeDefinition() == typeof(IList<>) &&
+                    (toParameter.ParameterInfo.IsDefined(typeof(BytesConversionAttribute), false) ||
+                     toParameter.ParameterInfo.IsDefined(typeof(BytesConversionNoStringAttribute), false))) {
                     return false;
                 }
-            } else if (fromType == typeof(string) && 
-                toParameter.Type == typeof(IList<byte>) && 
-                !Binder.Context.PythonOptions.Python30) {                
-                // string -> byte array, we allow this in Python 2.6
-                if (toParameter.ParameterInfo.IsDefined(typeof(BytesConversionAttribute), false)) {
+            } else if (fromType == typeof(string)) {
+                if (toParameter.Type == typeof(IList<byte>) &&
+                    !Binder.Context.PythonOptions.Python30 &&
+                    toParameter.ParameterInfo.IsDefined(typeof(BytesConversionAttribute), false)) {
+                    // string -> byte array, we allow this in Python 2.6
+                    return true;
+                }
+            } else if (fromType == typeof(Bytes)) {
+                if (toParameter.Type == typeof(string) &&
+                    !Binder.Context.PythonOptions.Python30 &&
+                    toParameter.ParameterInfo.IsDefined(typeof(BytesConversionAttribute), false)) {
                     return true;
                 }
             }

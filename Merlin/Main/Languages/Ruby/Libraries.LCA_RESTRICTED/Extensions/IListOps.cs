@@ -237,29 +237,33 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("-")]
-        public static RubyArray/*!*/ Difference(RubyContext/*!*/ context, IList/*!*/ self, [DefaultProtocol, NotNull]IList/*!*/ other) {
-            // MRI follows hashing semantics here, so doesn't actually call eql?/hash for Fixnum/Symbol
-            IEqualityComparer<object> comparer = context.EqualityComparer;
+        public static RubyArray/*!*/ Difference(UnaryOpStorage/*!*/ hashStorage, BinaryOpStorage/*!*/ eqlStorage, 
+            RubyContext/*!*/ context, IList/*!*/ self, [DefaultProtocol, NotNull]IList/*!*/ other) {
+
             RubyArray result = new RubyArray();
+            
+            // cost: (|self| + |other|) * (hash + eql) + dict
+            var remove = new Dictionary<object, bool>(new EqualityComparer(hashStorage, eqlStorage));
+            foreach (var item in other) {
+                remove[item] = true;
+            }
 
-            // TODO: optimize this
-            foreach (object selfElement in self) {
-                bool found = false;
-                foreach (object otherElement in other) {
-                    bool sameHashcode = comparer.GetHashCode(selfElement) == comparer.GetHashCode(otherElement);
-                    bool isEql = comparer.Equals(selfElement, otherElement);
-                    if (sameHashcode && isEql) {
-                        found = true;
-                        break;
-                    }
-                }
-
-                if (!found) {
-                    result.Add(selfElement);
+            foreach (var item in self) {
+                if (!remove.ContainsKey(item)) {
+                    result.Add(item);
                 }
             }
 
             return result;
+        }
+
+        internal static int IndexOf(CallSite<Func<CallSite, object, object, object>>/*!*/ equalitySite, IList/*!*/ self, object item) {
+            for (int i = 0; i < self.Count; i++) {
+                if (Protocols.IsTrue(equalitySite.Target(equalitySite, item, self[i]))) {
+                    return i;
+                }
+            }
+            return -1;
         }
 
         #endregion
@@ -329,13 +333,13 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("eql?")]
-        public static bool HashEquals(IList/*!*/ self, object other) {
-            return RubyArray.Equals(self, other);
+        public static bool HashEquals(BinaryOpStorage/*!*/ eqlStorage, IList/*!*/ self, object other) {
+            return RubyArray.Equals(eqlStorage, self, other);
         }
 
         [RubyMethod("hash")]
-        public static int GetHashCode(IList/*!*/ self) {
-            return RubyArray.GetHashCode(self);
+        public static int GetHashCode(UnaryOpStorage/*!*/ hashStorage, ConversionStorage<int>/*!*/ fixnumCast, IList/*!*/ self) {
+            return RubyArray.GetHashCode(hashStorage, fixnumCast, self);
         }
 
         #endregion

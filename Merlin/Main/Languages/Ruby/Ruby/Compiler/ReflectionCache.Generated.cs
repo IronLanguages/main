@@ -253,6 +253,10 @@ namespace IronRuby.Compiler {
         private static MethodInfo _InitializeScope;
         public static MethodInfo/*!*/ InitializeScopeNoLocals { get { return _InitializeScopeNoLocals ?? (_InitializeScopeNoLocals = GetMethod(typeof(RubyOps), "InitializeScopeNoLocals")); } }
         private static MethodInfo _InitializeScopeNoLocals;
+        public static MethodInfo/*!*/ IRubyObject_BaseEquals { get { return _IRubyObject_BaseEquals ?? (_IRubyObject_BaseEquals = GetMethod(typeof(IRubyObject), "BaseEquals")); } }
+        private static MethodInfo _IRubyObject_BaseEquals;
+        public static MethodInfo/*!*/ IRubyObject_BaseGetHashCode { get { return _IRubyObject_BaseGetHashCode ?? (_IRubyObject_BaseGetHashCode = GetMethod(typeof(IRubyObject), "BaseGetHashCode")); } }
+        private static MethodInfo _IRubyObject_BaseGetHashCode;
         public static MethodInfo/*!*/ IRubyObject_get_ImmediateClass { get { return _IRubyObject_get_ImmediateClass ?? (_IRubyObject_get_ImmediateClass = GetMethod(typeof(IRubyObject), "get_ImmediateClass")); } }
         private static MethodInfo _IRubyObject_get_ImmediateClass;
         public static MethodInfo/*!*/ IRubyObject_GetInstanceData { get { return _IRubyObject_GetInstanceData ?? (_IRubyObject_GetInstanceData = GetMethod(typeof(IRubyObject), "GetInstanceData")); } }

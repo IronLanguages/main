@@ -237,6 +237,7 @@ namespace IronPython.Modules {
             public void remove(object value) {
                 lock (_lockObj) {
                     int found = -1;
+                    int startVersion = _version;
                     WalkDeque(delegate(int index) {
                         if (PythonOps.EqualRetBool(_data[index], value)) {
                             found = index;
@@ -244,6 +245,9 @@ namespace IronPython.Modules {
                         }
                         return true;
                     });
+                    if (_version != startVersion) {
+                        throw PythonOps.IndexError("deque mutated during remove().");
+                    }
 
                     if (found == _head) {
                         popleft();
@@ -481,15 +485,15 @@ namespace IronPython.Modules {
             #region IEnumerable Members
 
             IEnumerator IEnumerable.GetEnumerator() {
-                return new deque_iterator(this);
+                return new DequeIterator(this);
             }
 
-            [PythonType]
-            private class deque_iterator : IEnumerator {
+            [PythonType("deque_iterator")]
+            private sealed class DequeIterator : IEnumerable, IEnumerator {
                 private readonly deque _deque;
                 private int _curIndex, _moveCnt, _version;
 
-                public deque_iterator(deque d) {
+                public DequeIterator(deque d) {
                     lock (d._lockObj) {
                         _deque = d;
                         _curIndex = d._head - 1;
@@ -526,6 +530,14 @@ namespace IronPython.Modules {
                 void IEnumerator.Reset() {
                     _moveCnt = 0;
                     _curIndex = _deque._head - 1;
+                }
+
+                #endregion
+
+                #region IEnumerable Members
+
+                public IEnumerator GetEnumerator() {
+                    return this;
                 }
 
                 #endregion

@@ -23,11 +23,15 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Scripting.Extensi
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Dynamic", "..\..\..\..\ndp\fx\src\Dynamic\System\Dynamic\Microsoft.Dynamic.csproj", "{D4AE44AD-07B9-41DC-BB3B-1FDCDE3C987D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronPythonConsoleAny", "IronPythonConsoleAny\IronPythonConsoleAny.csproj", "{F1D861C5-D9D5-4CDA-968B-8275F5D9F6D2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronPythonWindowAny", "IronPythonWindowAny\IronPythonWindowAny.csproj", "{7F6F9AB3-9943-4316-BD4C-A10F580BC75C}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Scripting.Debugging", "..\..\Debugging\Microsoft.Scripting.Debugging\Microsoft.Scripting.Debugging.csproj", "{ED82A346-1CD9-4CB0-9C00-4CDD4CF577CF}"
 EndProject
 Global
 	GlobalSection(TeamFoundationVersionControl) = preSolution
-		SccNumberOfProjects = 12
+		SccNumberOfProjects = 13
 		SccEnterpriseProvider = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
 		SccTeamFoundationServer = http://vstfdevdiv:8080/
 		SccProjectUniqueName0 = IronPython\\IronPython.csproj
@@ -85,11 +89,21 @@ Global
 		SccAuxPath10 = http://vstfdevdiv:8080
 		SccLocalPath10 = ..\\..\\..\\..\\ndp\\fx\\src\\Dynamic\\System\\Dynamic
 		SccProvider10 = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
-		SccProjectUniqueName11 = ..\\..\\Debugging\\Microsoft.Scripting.Debugging\\Microsoft.Scripting.Debugging.csproj
-		SccProjectName11 = ../../Debugging/Microsoft.Scripting.Debugging
+		SccProjectUniqueName11 = IronPythonConsoleAny\\IronPythonConsoleAny.csproj
+		SccProjectName11 = IronPythonConsoleAny
+		SccLocalPath11 = IronPythonConsoleAny
 		SccAuxPath11 = http://vstfdevdiv:8080
-		SccLocalPath11 = ..\\..\\Debugging\\Microsoft.Scripting.Debugging
 		SccProvider11 = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
+		SccProjectUniqueName12 = IronPythonWindowAny\\IronPythonWindowAny.csproj
+		SccProjectName12 = IronPythonWindowAny
+		SccLocalPath12 = IronPythonWindowAny
+		SccAuxPath12 = http://vstfdevdiv:8080
+		SccProvider12 = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
+		SccProjectUniqueName13 = ..\\..\\Debugging\\Microsoft.Scripting.Debugging\\Microsoft.Scripting.Debugging.csproj
+		SccProjectName13 = ../../Debugging/Microsoft.Scripting.Debugging
+		SccAuxPath13 = http://vstfdevdiv:8080
+		SccLocalPath13 = ..\\..\\Debugging\\Microsoft.Scripting.Debugging
+		SccProvider13 = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Build Debug|Any CPU = Build Debug|Any CPU
@@ -249,6 +263,18 @@ Global
 		{D4AE44AD-07B9-41DC-BB3B-1FDCDE3C987D}.Signed Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D4AE44AD-07B9-41DC-BB3B-1FDCDE3C987D}.Silverlight Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{D4AE44AD-07B9-41DC-BB3B-1FDCDE3C987D}.Silverlight Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F1D861C5-D9D5-4CDA-968B-8275F5D9F6D2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F1D861C5-D9D5-4CDA-968B-8275F5D9F6D2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F1D861C5-D9D5-4CDA-968B-8275F5D9F6D2}.FxCop|Any CPU.ActiveCfg = Release|Any CPU
+		{F1D861C5-D9D5-4CDA-968B-8275F5D9F6D2}.FxCop|Any CPU.Build.0 = Release|Any CPU
+		{F1D861C5-D9D5-4CDA-968B-8275F5D9F6D2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F1D861C5-D9D5-4CDA-968B-8275F5D9F6D2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7F6F9AB3-9943-4316-BD4C-A10F580BC75C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7F6F9AB3-9943-4316-BD4C-A10F580BC75C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7F6F9AB3-9943-4316-BD4C-A10F580BC75C}.FxCop|Any CPU.ActiveCfg = Release|Any CPU
+		{7F6F9AB3-9943-4316-BD4C-A10F580BC75C}.FxCop|Any CPU.Build.0 = Release|Any CPU
+		{7F6F9AB3-9943-4316-BD4C-A10F580BC75C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7F6F9AB3-9943-4316-BD4C-A10F580BC75C}.Release|Any CPU.Build.0 = Release|Any CPU
 		{ED82A346-1CD9-4CB0-9C00-4CDD4CF577CF}.Build Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{ED82A346-1CD9-4CB0-9C00-4CDD4CF577CF}.Build Debug|Any CPU.Build.0 = Debug|Any CPU
 		{ED82A346-1CD9-4CB0-9C00-4CDD4CF577CF}.Build Release|Any CPU.ActiveCfg = Release|Any CPU

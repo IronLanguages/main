@@ -344,6 +344,21 @@ namespace IronRuby.Compiler.Generation {
             il.EmitLoadArg(1);
             il.EmitCall(Methods.SetObjectTaint);
             il.Emit(OpCodes.Ret);
+
+            // TODO: can we merge this with #base#GetHashCode/Equals?
+
+            // int IRubyObject.BaseGetHashCode() { return base.GetHashCode; }
+            il = DefineMethodOverride(_tb, Methods.IRubyObject_BaseGetHashCode);
+            il.EmitLoadArg(0);
+            il.EmitCall(_tb.BaseType.GetMethod("GetHashCode", Type.EmptyTypes));
+            il.Emit(OpCodes.Ret);
+
+            // int IRubyObject.BaseEquals(object other) { return base.Equals(other); }
+            il = DefineMethodOverride(_tb, Methods.IRubyObject_BaseEquals);
+            il.EmitLoadArg(0);
+            il.EmitLoadArg(1);
+            il.EmitCall(_tb.BaseType.GetMethod("Equals", new[] { typeof(object) }));
+            il.Emit(OpCodes.Ret);
         }
 
         private void DefineSerializer() {
@@ -381,63 +396,6 @@ namespace IronRuby.Compiler.Generation {
             il.Emit(OpCodes.Ret);
 #endif
         }
-
-        // we need to get the right execution context
-#if OBSOLETE
-        private static void EmitOverrideEquals(TypeGen typeGen) {
-            Type baseType = typeGen.TypeBuilder.BaseType;
-            MethodInfo baseMethod = baseType.GetMethod("Equals", new Type[] { typeof(object) });
-            Compiler cg = typeGen.DefineMethodOverride(baseMethod);
-
-            // Check if an "eql?" method exists on this class
-            cg.EmitType(typeGen.TypeBuilder);
-            cg.EmitString("eql?");
-            cg.EmitCall(typeof(RubyOps).GetMethod("ResolveDeclaredInstanceMethod"));
-            Label callBase = cg.DefineLabel();
-            cg.Emit(OpCodes.Brfalse_S, callBase);
-
-            // If so, call it
-            cg.EmitThis();
-            cg.EmitArgGet(0);
-            cg.EmitCall(typeof(RubyOps).GetMethod("CallEql"));
-            cg.EmitReturn();
-
-            // Otherwise, call base class
-            cg.MarkLabel(callBase);
-            cg.EmitThis();
-            cg.EmitArgGet(0);
-            cg.Emit(OpCodes.Call, baseMethod); // base call must be non-virtual
-            cg.EmitReturn();
-
-            cg.Finish();
-        }
-
-        private static void EmitOverrideGetHashCode(TypeGen typeGen) {
-            Type baseType = typeGen.TypeBuilder.BaseType;
-            MethodInfo baseMethod = baseType.GetMethod("GetHashCode", Type.EmptyTypes);
-            Compiler cg = typeGen.DefineMethodOverride(baseMethod);
-
-            // Check if a "hash" method exists on this class
-            cg.EmitType(typeGen.TypeBuilder);
-            cg.EmitString("hash");
-            cg.EmitCall(typeof(RubyOps).GetMethod("ResolveDeclaredInstanceMethod"));
-            Label callBase = cg.DefineLabel();
-            cg.Emit(OpCodes.Brfalse_S, callBase);
-
-            // If so, call it
-            cg.EmitThis();
-            cg.EmitCall(typeof(RubyOps).GetMethod("CallHash"));
-            cg.EmitReturn();
-
-            // Otherwise, call base class
-            cg.MarkLabel(callBase);
-            cg.EmitThis();
-            cg.Emit(OpCodes.Call, baseMethod); // base call must be non-virtual
-            cg.EmitReturn();
-
-            cg.Finish();
-        }
-#endif
 
         private void DefineDynamicObjectImplementation() {
             _tb.AddInterfaceImplementation(typeof(IDynamicMetaObjectProvider));

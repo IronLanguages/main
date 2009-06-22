@@ -20,6 +20,7 @@ using System.Diagnostics;
 using IronRuby.Runtime;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Utils;
+using IronRuby.Runtime.Calls;
 
 namespace IronRuby.Builtins {
 
@@ -91,7 +92,7 @@ namespace IronRuby.Builtins {
         [MultiRuntimeAware]
         private static RubyUtils.RecursionTracker _HashTracker = new RubyUtils.RecursionTracker();
 
-        public static int GetHashCode(IList/*!*/ self) {
+        public static int GetHashCode(UnaryOpStorage/*!*/ hashStorage, ConversionStorage<int>/*!*/ fixnumCast, IList/*!*/ self) {
             int hash = self.Count;
             using (IDisposable handle = _HashTracker.TrackObject(self)) {
                 if (handle == null) {
@@ -99,9 +100,10 @@ namespace IronRuby.Builtins {
                     return 0;
                 }
 
-                foreach (object obj in self) {
-                    hash <<= 1;
-                    hash ^= RubyUtils.GetHashCode(obj);
+                var hashSite = hashStorage.GetCallSite("hash");
+                var toIntSite = fixnumCast.GetSite(ConvertToFixnumAction.Make(fixnumCast.Context));
+                foreach (object item in self) {
+                    hash = (hash << 1) ^ toIntSite.Target(toIntSite, hashSite.Target(hashSite, item));
                 }
             }
             return hash;
@@ -110,9 +112,14 @@ namespace IronRuby.Builtins {
         [MultiRuntimeAware]
         private static RubyUtils.RecursionTracker _EqualsTracker = new RubyUtils.RecursionTracker();
 
-        public static bool Equals(IList/*!*/ self, object obj) {
-            if (object.ReferenceEquals(self, obj)) {
+        public static bool Equals(BinaryOpStorage/*!*/ eqlStorage, IList/*!*/ self, object obj) {
+            if (ReferenceEquals(self, obj)) {
                 return true;
+            }
+
+            IList other = obj as IList;
+            if (other == null || self.Count != other.Count) {
+                return false;
             }
 
             using (IDisposable handle = _EqualsTracker.TrackObject(self)) {
@@ -121,13 +128,9 @@ namespace IronRuby.Builtins {
                     return false;
                 }
 
-                IList other = obj as IList;
-                if (other == null || self.Count != other.Count) {
-                    return false;
-                }
-
-                for (int i = 0; i < self.Count; ++i) {
-                    if (!RubyUtils.ValueEquals(self[i], other[i])) {
+                var site = eqlStorage.GetCallSite("eql?");
+                for (int i = 0; i < self.Count; i++) {
+                    if (!Protocols.IsTrue(site.Target(site, self[i], other[i]))) {
                         return false;
                     }
                 }
