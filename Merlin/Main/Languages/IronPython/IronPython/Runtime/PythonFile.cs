@@ -796,14 +796,23 @@ namespace IronPython.Runtime {
     #region File Manager
 
     internal class PythonFileManager {
-        private HybridMapping<PythonFile> mapping = new HybridMapping<PythonFile>(3);
+        private HybridMapping<PythonFile> fileMapping = new HybridMapping<PythonFile>(3);
+        private HybridMapping<object> objMapping = new HybridMapping<object>(3);
 
         public int AddToStrongMapping(PythonFile pf) {
-            return mapping.StrongAdd(pf);
+            return fileMapping.StrongAdd(pf);
+        }
+
+        public int AddToStrongMapping(object o) {
+            return objMapping.StrongAdd(o);
         }
 
         public void Remove(PythonFile pf) {
-            mapping.RemoveOnObject(pf);
+            fileMapping.RemoveOnObject(pf);
+        }
+
+        public void Remove(object o) {
+            objMapping.RemoveOnObject(o);
         }
 
         public PythonFile GetFileFromId(PythonContext context, int id) {
@@ -819,7 +828,7 @@ namespace IronPython.Runtime {
                     pf = (context.GetSystemStateValue("__stderr__") as PythonFile);
                     break;
                 default:
-                    pf = mapping.GetObjectFromId(id);
+                    pf = fileMapping.GetObjectFromId(id);
                     break;
             }
 
@@ -827,6 +836,15 @@ namespace IronPython.Runtime {
                 throw PythonOps.OSError("Bad file descriptor");
             }
             return pf;
+        }
+
+        public object GetObjectFromId(PythonContext context, int id) {
+            object o = objMapping.GetObjectFromId(id);
+
+            if (o == null) {
+                throw PythonOps.OSError("Bad file descriptor");
+            }
+            return o;
         }
 
         public int GetIdFromFile(PythonFile pf) {
@@ -838,10 +856,19 @@ namespace IronPython.Runtime {
                 }
             }
 
-            int res = mapping.GetIdFromObject(pf);
+            int res = fileMapping.GetIdFromObject(pf);
             if (res == -1) {
                 // lazily created weak mapping
-                res = mapping.WeakAdd(pf);
+                res = fileMapping.WeakAdd(pf);
+            }
+            return res;
+        }
+
+        public int GetIdFromObject(object o) {
+            int res = objMapping.GetIdFromObject(o);
+            if (res == -1) {
+                // lazily created weak mapping
+                res = objMapping.WeakAdd(o);
             }
             return res;
         }
@@ -1424,7 +1451,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public virtual void write(string s) {
+        public virtual void write([BytesConversion]string s) {
             lock (this) {
                 PythonStreamWriter writer = GetWriter();
                 int bytesWritten = writer.Write(s);
@@ -1474,9 +1501,15 @@ namespace IronPython.Runtime {
             while (e.MoveNext()) {
                 string line = e.Current as string;
                 if (line == null) {
-                    PythonBuffer b = e.Current as PythonBuffer;
+                    Bytes b = e.Current as Bytes;
                     if (b != null) {
                         write(b);
+                        continue;
+                    }
+
+                    PythonBuffer buf = e.Current as PythonBuffer;
+                    if (buf != null) {
+                        write(buf);
                         continue;
                     }
 

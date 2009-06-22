@@ -1,0 +1,1 @@
+fails:Name mangling on public types works with mangled name if not conflicting

@@ -13,6 +13,8 @@
 #
 # ****************************************************************************
 
+require "stringio"
+
 module Tutorial
 
     class Summary
@@ -35,26 +37,43 @@ module Tutorial
 
     class Task
         attr :description
+        attr :setup
         attr :code
         attr :title
+        attr :source_files # Files used by the task. The user might want to browse these files
 
-        def initialize title, description, code, &success_evaluator	                
+        def initialize title, description, setup, code, source_files, &success_evaluator	                
             @title = title
             @description = description
+            @setup = setup
             @code = code
+            @source_files = source_files
             @success_evaluator = success_evaluator
+            
         end
 
-        def success? interaction
+        def success?(interaction, show_errors=false)
             begin
                 if @success_evaluator
-                  return @success_evaluator.call(interaction)
+                  return (@success_evaluator.call(interaction) ? true : false)
                 else
-                  return eval(@code) == interaction.result
+                  old_verbose, $VERBOSE = $VERBOSE, nil                
+                  begin
+                    return eval(code_string, interaction.bind) == interaction.result
+                  ensure
+                    $VERBOSE = old_verbose
+                  end
                 end
-            rescue
-                false
+            rescue => e
+                warn %{success_evaluator raised error: #{e}} if show_errors
+                return false
             end
+        end
+        
+        def code_string
+            c = code
+            c = c.to_ary.join("\n") if c.respond_to? :to_ary
+            c
         end
     end
     
@@ -91,20 +110,26 @@ module Tutorial
 
         def to_s
             @name
-        end    
+        end
+
+        def first_chapter
+          @chapters.first rescue nil
+        end
     end
 
     class Tutorial
         attr :name
         attr :file
         attr :introduction, true
+        attr :legal_notice, true
         attr :summary, true
         attr :sections, true
 
-        def initialize name, file, introduction = nil, summary = nil, sections = []
+        def initialize name, file, introduction = nil, notice = nil, summary = nil, sections = []
             @name = name
             @file = file
             @introduction = introduction
+            @legal_notice = notice
             @summary = summary
             @sections = sections
         end
@@ -112,18 +137,36 @@ module Tutorial
         def to_s
             @name
         end
+
+        def first_chapter
+          first_section.first_chapter rescue nil
+        end
+
+        def first_section
+          @sections.first rescue nil
+        end
     end
     
-    @@tutorials = {}
+    @@tutorials = {} unless class_variable_defined? :@@tutorials
     
-    def self.tutorials
-        @@tutorials
+    def self.add_tutorial(tutorial)
+        @@tutorials[tutorial.file] = tutorial
     end
 
-    @@ironruby_tutorial_path = File.expand_path("Tutorials/ironruby_tutorial.rb", File.dirname(__FILE__))
-    @@tryruby_tutorial_path  = File.expand_path("Tutorials/tryruby_tutorial.rb" , File.dirname(__FILE__))
+    def self.all
+      Dir[File.expand_path("Tutorials/*_tutorial.rb", File.dirname(__FILE__))].each do |t|
+        self.get_tutorial t unless File.directory?(t)
+      end
+      @@tutorials
+    end
 
-    def self.get_tutorial path = @@tryruby_tutorial_path
+    def self.get_tutorial path = nil
+        if not path
+          all
+          return @@tutorials.values.first
+        end
+
+        path = File.expand_path path
         if not @@tutorials.has_key? path
             require path
             raise "#{path} does not contains a tutorial definition" if not @@tutorials.has_key? path
@@ -132,30 +175,164 @@ module Tutorial
         return @@tutorials[path]
     end
     
+    class ReplContext
+        attr :scope
+        attr :bind
+        
+        def initialize
+            @partial_input = ""
+            @scope = Object.new
+
+            class << @scope            
+                def include(*a)
+                    self.class.instance_eval { include(*a) }
+                end
+                
+                def to_s
+                    "main (tutorial)"
+                end
+            end
+
+            @bind = @scope.instance_eval { binding }
+            
+            # Allow the tutorial DSL to use i.bind.foo in the success-evaluator blocks
+            def @bind.method_missing name, *args
+                if args.empty?
+                    eval name.to_s, self
+                else
+                    m = eval "method #{name.inspect}", self
+                    m.call *args
+                end
+            end
+        end
+        
+        def interact input
+            # Redirect stdout. Note that this affects the entire process. If the program calls "puts"
+            # for some reason on another thread, the user may not expect to see the output. But it is 
+            # hard to distinguish between printing that the user initiated, and printing that the program 
+            # itself is doing.
+            output = StringIO.new
+            old_stdout, $stdout = $stdout, output
+            old_verbose, $VERBOSE = $VERBOSE, nil
+            
+            result = nil
+            error = nil
+            Thread.current[:evaluating_tutorial_input] = true
+            
+            begin
+                result = eval(@partial_input + input.to_s, @bind) # TODO - to_s should not be needed here
+            rescue Exception => error
+                raise error if error.kind_of? SystemExit
+            ensure
+                $stdout = old_stdout
+                Thread.current[:evaluating_tutorial_input] = nil
+                $VERBOSE = old_verbose
+            end
+
+            if error.kind_of? SyntaxError and error.message =~ /unexpected (\$end|END_OF_FILE)/
+                @partial_input += input
+                @partial_input += "\n" unless input[input.size-1] == "\n" # TODO - input[-1] seems to cause IndexError
+                InteractionResult.new(@bind, "", nil, nil, true)
+            else
+                @partial_input = ""
+                InteractionResult.new(@bind, output.string, result, error)
+            end
+        end
+        
+        def reset_input
+          @partial_input = ""
+        end
+    end
+    
     class InteractionResult
         attr :bind
         attr :output
         attr :result
-        attr :exception
+        attr :error
         
-        def initialize(bind, output, result, exception = nil)
+        def initialize(bind, output, result, error = nil, partial_input = false)
             @bind = bind
             @output = output
             @result = result
-            @exception = exception
+            @error = error
+            @partial_input = partial_input
             
-            raise "result should be nil if an exception was raised" if result and exception
+            raise "result should be nil if an exception was raised" if result and error
+        end
+        
+        def to_s
+            %{InteractionResult output=#{@output}, result=#{@error ? "(error)" : @result.inspect}, error=#{@error ? @error : "(none)"}}
         end
         
         def result
-            raise "Interaction resulted in an exception" if exception
+            raise "Interaction resulted in an exception" if error or @partial_input
             @result
         end
+        
+        def error
+            raise "Partial input received" if @partial_input
+            @error
+        end
+        
+        def partial_input?
+          @partial_input
+        end
     end
+    
+    # Simple stub class for mocking.
+    # TODO - move to a real mocking framework
+    class Stub
+        def initialize() @calls = [] end
+        
+        def respond_to?(name) true end
+        
+        def method_missing name, *args
+            @calls << name
+            Stub.new
+        end
+        
+        def called?(name) @calls.include? name end
+    end
+    
+    def self.stub() Stub.new end
+
+  # Utility method to verify that a handler was added to an event
+  # Since there is no easily visible side-effect to adding a handler, we monkey-patch the event
+  # with a method that will set a flag attribute in a given module
+  def self.snoop_add_handler tutorial_module, event_name, obj
+    flag_name = event_name + "_flag"
+
+    klass = class << tutorial_module
+      self
+    end
+    klass.module_eval do
+      attr_accessor(flag_name.to_sym)
+    end
+    tutorial_module.instance_variable_set(("@" + flag_name).to_sym, false)
+    
+    before_tutorial_name = "before_tutorial_" + event_name
+    klass = class << obj
+      self
+    end
+    if not klass.method_defined?(before_tutorial_name.to_sym)
+      klass.instance_eval { alias_method(before_tutorial_name.to_sym, event_name.to_sym) }
+      klass.class_eval %{
+        def #{event_name} *a, &b
+          if block_given?
+            #{before_tutorial_name} *a, &b
+            #{tutorial_module}.#{flag_name} = true
+          else
+            #{before_tutorial_name} *a
+          end
+        end
+      }
+    end
+  end
 end
 
 class Object
     def tutorial name
+        raise "Only one tutorial can be under creation at a time" if Thread.current[:tutorial]
         caller[0] =~ /\A(.*):[0-9]+/
         tutorial_file = $1
         t = Tutorial::Tutorial.new name, tutorial_file
@@ -164,7 +341,7 @@ class Object
 
         yield
 
-        Tutorial.tutorials[tutorial_file] = t
+        Tutorial.add_tutorial t
         Thread.current[:tutorial] = nil
     end
 
@@ -178,6 +355,11 @@ class Object
         else
             raise "introduction should only be used within a tutorial definition"
         end
+    end
+    
+    def legal notice
+        raise "legal should only be used within a tutorial definition" unless Thread.current[:tutorial]
+        Thread.current[:tutorial].legal_notice = notice
     end
     
     def summary s
@@ -197,6 +379,7 @@ class Object
     end
         
     def section name
+        raise "Only one section can be under creation at a time" if Thread.current[:section]
         section = Tutorial::Section.new name
         Thread.current[:section] = section
         if Thread.current[:prev_chapter]
@@ -210,6 +393,7 @@ class Object
     end
 
     def chapter name
+        raise "Only one chapter can be under creation at a time" if Thread.current[:chapter]
         chapter = Tutorial::Chapter.new name
         Thread.current[:chapter] = chapter
         if Thread.current[:prev_chapter]
@@ -226,7 +410,7 @@ class Object
     def task(options, &success_evaluator)
         options = {}.merge(options)
         Thread.current[:chapter].tasks << Tutorial::Task.new(
-          options[:title], options[:body], options[:code], &success_evaluator)
+          options[:title], options[:body], options[:setup], options[:code], options[:source_files], &success_evaluator)
     end
 
     # This represents an operation that consists of several closely realated task. It is useful to have
@@ -235,4 +419,12 @@ class Object
     def multi_step_task(name, *tasks, &success_evaluator)
         raise NotImplementedError
     end
+end
+
+class String
+  def strip_margin
+    /( *)\w/ =~ self
+    match = $1
+    gsub(/^#{match}/, "")
+  end
 end

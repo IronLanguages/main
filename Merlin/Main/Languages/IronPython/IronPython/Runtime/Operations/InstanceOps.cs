@@ -17,14 +17,16 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Dynamic;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using IronPython.Runtime.Types;
+
 using Microsoft.Scripting;
-using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+
+using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime.Operations {
     /// <summary>
@@ -177,14 +179,54 @@ namespace IronPython.Runtime.Operations {
             return type\u00F8.CreateInstance(context, args, names);
         }
 
-        public static object IterMethod(CodeContext/*!*/ context, object self) {
+        // 3.0-only
+        public static object IterMethodForString(string self) {
+            return PythonOps.StringEnumerator(self);
+        }
+
+        // 3.0-only
+        public static object IterMethodForBytes(Bytes self) {
+            return PythonOps.BytesIntEnumerator(self);
+        }
+
+        public static object IterMethodForEnumerator(IEnumerator self) {
             return self;
+        }
+
+        public static object IterMethodForEnumerable(IEnumerable self) {
+            return self.GetEnumerator();
+        }
+
+        public static object IterMethodForGenericEnumerator<T>(IEnumerator<T> self) {
+            return self;
+        }
+
+        public static object IterMethodForGenericEnumerable<T>(IEnumerable<T> self) {
+            return self.GetEnumerator();
         }
 
         public static object NextMethod(object self) {
             IEnumerator i = (IEnumerator)self;
             if (i.MoveNext()) return i.Current;
             throw PythonOps.StopIteration();
+        }
+
+        /// <summary>
+        /// __dir__(self) -> Returns the list of members defined on a foreign IDynamicMetaObjectProvider.
+        /// </summary>
+        public static List DynamicDir(CodeContext/*!*/ context, IDynamicMetaObjectProvider self) {
+            List res = new List(self.GetMetaObject(Expression.Parameter(typeof(object))).GetDynamicMemberNames());
+            
+            // add in the non-dynamic members from the dynamic objects base class.
+            Type t = self.GetType();
+            while (typeof(IDynamicMetaObjectProvider).IsAssignableFrom(t)) {
+                t = t.BaseType;
+            }
+
+            res.extend(DynamicHelpers.GetPythonTypeFromType(t).GetMemberNames(context));
+
+            res.sort(context);
+            return res;
         }
 
         public static int LengthMethod(ICollection self) {

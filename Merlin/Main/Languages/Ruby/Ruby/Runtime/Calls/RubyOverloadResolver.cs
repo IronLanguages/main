@@ -91,7 +91,7 @@ namespace IronRuby.Runtime.Calls {
 
             if (_callConvention == SelfCallConvention.SelfIsInstance) {
                 if (CompilerHelpers.IsStatic(method)) {
-                    Debug.Assert(RubyClass.IsOperator(method) || CompilerHelpers.IsExtension(method) || 
+                    Debug.Assert(RubyUtils.IsOperator(method) || CompilerHelpers.IsExtension(method) || 
                         method.Name.EndsWith(RubyMethodGroupInfo.SuperCallMethodWrapperNameSuffix)
                     );
 
@@ -178,7 +178,7 @@ namespace IronRuby.Runtime.Calls {
 
             if (callConvention == SelfCallConvention.SelfIsInstance) {
                 if (CompilerHelpers.IsStatic(method)) {
-                    Debug.Assert(RubyClass.IsOperator(method) || CompilerHelpers.IsExtension(method));
+                    Debug.Assert(RubyUtils.IsOperator(method) || CompilerHelpers.IsExtension(method));
                     i++;
                 }
             }
@@ -771,7 +771,11 @@ namespace IronRuby.Runtime.Calls {
                             }
                         }
                         break;
-
+                    case CallFailureReason.TypeInference:
+                        // TODO: Display generic parameters so it's clear what we couldn't infer.
+                        return Methods.CreateArgumentsError.OpCall(
+                            AstUtils.Constant(String.Format("generic arguments could not be infered for method '{0}'", target.Name))
+                        );
                     case CallFailureReason.DuplicateKeyword:
                     case CallFailureReason.UnassignableKeyword:
                     default: throw new InvalidOperationException();

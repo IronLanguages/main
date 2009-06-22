@@ -285,17 +285,17 @@ namespace IronRuby.Builtins {
         #endregion _dump, _load
 
         [RubyMethod("+")]
-        public static DateTime AddSeconds(DateTime self, double seconds) {
+        public static DateTime AddSeconds(DateTime self, [DefaultProtocol]double seconds) {
             return self.AddSeconds(seconds);
         }
 
         [RubyMethod("+")]
-        public static DateTime AddTime(DateTime self, DateTime other) {
-            return new DateTime(self.Ticks + (other.Ticks - epoch.Ticks));
+        public static DateTime AddSeconds(DateTime self, DateTime seconds) {
+            throw RubyExceptions.CreateTypeError("time + time?");
         }
 
         [RubyMethod("-")]
-        public static DateTime SubtractSeconds(DateTime self, double seconds) {
+        public static DateTime SubtractSeconds(DateTime self, [DefaultProtocol]double seconds) {
             return self.AddSeconds(-1 * seconds);
         }
 
@@ -305,9 +305,8 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("<=>")]
-        public static int CompareSeconds(DateTime self, double seconds) {
-            DateTime other = epoch.AddSeconds(seconds);
-            return self.CompareTo(other);
+        public static object CompareSeconds(DateTime self, object other) {
+            return null;
         }
 
         [RubyMethod("<=>")]

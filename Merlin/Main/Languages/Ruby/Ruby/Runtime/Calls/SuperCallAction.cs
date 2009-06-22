@@ -98,7 +98,9 @@ namespace IronRuby.Runtime.Calls {
 
                 // target is stored in a local, therefore it cannot be part of the restrictions:
                 metaBuilder.TreatRestrictionsAsConditions = true;
-                metaBuilder.AddTargetTypeTest(target, targetClass, targetExpression, args.MetaContext);
+                metaBuilder.AddTargetTypeTest(target, targetClass, targetExpression, args.MetaContext, 
+                    new[] { Symbols.MethodMissing } // currentMethodName is resolved for super, which cannot be an instance singleton
+                );
                 metaBuilder.TreatRestrictionsAsConditions = false;
 
                 method = targetClass.ResolveSuperMethodNoLock(currentMethodName, currentDeclaringModule).InvalidateSitesOnOverride().Info;

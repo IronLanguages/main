@@ -261,6 +261,20 @@ namespace IronRuby.Runtime {
             site.Target(site, target, value);
         }
 
+        public static int ToHashCode(object hashResult) {
+            if (hashResult is int) {
+                return (int)hashResult;
+            }
+
+            // MRI calls %(number) on the resulting object if it is not Fixnum and takes internal hash code of the result.
+            // It seems to be an implementation detail that we don't need to follow exactly.
+            if (hashResult is BigInteger) {
+                return hashResult.GetHashCode();
+            }
+
+            return hashResult == null ? RubyUtils.NilObjectId : RuntimeHelpers.GetHashCode(hashResult);
+        }
+
         #endregion
 
         #region Coercion

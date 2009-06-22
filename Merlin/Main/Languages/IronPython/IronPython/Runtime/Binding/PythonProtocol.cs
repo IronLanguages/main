@@ -106,108 +106,6 @@ namespace IronPython.Runtime.Binding {
             return Ast.NotEqual(callAsInt, AstUtils.Constant(0));
         }
 
-        internal static DynamicMetaObject ConvertToIEnumerable(DynamicMetaObjectBinder/*!*/ conversion, DynamicMetaObject/*!*/ metaUserObject) {
-            PythonType pt = MetaPythonObject.GetPythonType(metaUserObject);
-            PythonContext pyContext = PythonContext.GetPythonContext(conversion);
-            CodeContext context = pyContext.SharedContext;
-            PythonTypeSlot pts;
-
-            if (pt.TryResolveSlot(context, Symbols.Iterator, out pts)) {
-                return MakeIterRule(metaUserObject, "CreatePythonEnumerable");
-            } else if (pt.TryResolveSlot(context, Symbols.GetItem, out pts)) {
-                return MakeGetItemIterable(metaUserObject, pyContext, pts, "CreateItemEnumerable");
-            }
-
-            return null;
-        }
-
-        internal static DynamicMetaObject ConvertToIEnumerator(DynamicMetaObjectBinder/*!*/ conversion, DynamicMetaObject/*!*/ metaUserObject) {
-            PythonType pt = MetaPythonObject.GetPythonType(metaUserObject);
-            PythonContext state = PythonContext.GetPythonContext(conversion);
-            CodeContext context = state.SharedContext;
-            PythonTypeSlot pts;
-
-            
-            if (pt.TryResolveSlot(context, Symbols.Iterator, out pts)) {
-                ParameterExpression tmp = Ast.Parameter(typeof(object), "iterVal");
-
-                return new DynamicMetaObject(
-                    Expression.Block(
-                        new [] { tmp },
-                        Expression.Call(
-                            typeof(PythonOps).GetMethod("MakePythonEnumerator"),
-                            Ast.Block(
-                                MetaPythonObject.MakeTryGetTypeMember(
-                                    state,
-                                    pts,
-                                    metaUserObject.Expression,
-                                    tmp
-                                ),
-                                Ast.Dynamic(
-                                    new PythonInvokeBinder(
-                                        state,
-                                        new CallSignature(0)
-                                    ),
-                                    typeof(object),
-                                    AstUtils.Constant(context),
-                                    tmp
-                                )
-                            )
-                        )
-                    ),
-                    metaUserObject.Restrictions
-                );
-            } else if (pt.TryResolveSlot(context, Symbols.GetItem, out pts)) {
-                return MakeGetItemIterable(metaUserObject, state, pts, "CreateItemEnumerator");
-            }
-
-            return null;
-        }
-
-        private static DynamicMetaObject MakeGetItemIterable(DynamicMetaObject metaUserObject, PythonContext state, PythonTypeSlot pts, string method) {
-            ParameterExpression tmp = Ast.Parameter(typeof(object), "getitemVal");
-            return new DynamicMetaObject(
-                Expression.Block(
-                    new[] { tmp },
-                    Expression.Call(
-                        typeof(PythonOps).GetMethod(method),
-                        Ast.Block(
-                            MetaPythonObject.MakeTryGetTypeMember(
-                                state,
-                                pts,
-                                tmp,
-                                metaUserObject.Expression,
-                                Ast.Call(
-                                    typeof(DynamicHelpers).GetMethod("GetPythonType"),
-                                    AstUtils.Convert(
-                                        metaUserObject.Expression,
-                                        typeof(object)
-                                    )
-                                )
-                            ),
-                            tmp
-                        ),
-                        AstUtils.Constant(
-                            CallSite<Func<CallSite, CodeContext, object, int, object>>.Create(
-                                new PythonInvokeBinder(state, new CallSignature(1))
-                            )
-                        )
-                    )
-                ),
-                metaUserObject.Restrictions
-            );
-        }
-
-        private static DynamicMetaObject/*!*/ MakeIterRule(DynamicMetaObject/*!*/ self, string methodName) {            
-            return new DynamicMetaObject(
-                Ast.Call(
-                    typeof(PythonOps).GetMethod(methodName),
-                    AstUtils.Convert(self.Expression, typeof(object))
-                ),
-                self.Restrictions
-            );
-        }
-
         #endregion
 
         #region Calls
@@ -269,6 +167,16 @@ namespace IronPython.Runtime.Binding {
                     typeof(object),
                     callArgs
                 );
+
+                if (PythonFunction._MaximumDepth != Int32.MaxValue) {
+                    body = Ast.TryFinally(
+                        Ast.Block(
+                            Ast.Call(typeof(PythonOps).GetMethod("FunctionPushFrame")),
+                            body
+                        ),
+                        Ast.Call(typeof(PythonOps).GetMethod("FunctionPopFrame"))
+                    );
+                }
 
                 return BindingHelpers.AddDynamicTestAndDefer(
                     call,

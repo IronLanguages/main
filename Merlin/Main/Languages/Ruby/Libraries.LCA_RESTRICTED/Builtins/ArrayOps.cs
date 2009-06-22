@@ -59,9 +59,11 @@ namespace IronRuby.Builtins {
             var site = toAryToInt.GetSite(CompositeConversionAction.Make(toAryToInt.Context, CompositeConversion.ToAryToInt));
             var union = site.Target(site, arrayOrSize);
 
+
             if (union.First != null) {
                 // block ignored
-                return CreateArray(union.First);
+                // TODO: implement copy-on-write
+                return new RubyArray(union.First);
             } else if (block != null) {
                 return CreateArray(block, union.Second);
             } else {
@@ -87,10 +89,6 @@ namespace IronRuby.Builtins {
             } else {
                 return ReinitializeByRepeatedValue(context, self, union.Second, null);
             }
-        }
-
-        private static RubyArray/*!*/ CreateArray(IList/*!*/ other) {
-            return Reinitialize(new RubyArray(other.Count), other);
         }
 
         private static RubyArray/*!*/ Reinitialize(RubyArray/*!*/ self, IList/*!*/ other) {

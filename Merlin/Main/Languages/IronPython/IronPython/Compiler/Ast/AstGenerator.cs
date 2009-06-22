@@ -225,11 +225,6 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-        public void AddError(string message, SourceSpan span) {
-            // TODO: error code
-            _context.Errors.Add(_context.SourceUnit, message, span, -1, Severity.Error);
-        }
-
         public MSAst.ParameterExpression/*!*/ GetTemporary(string name) {
             return GetTemporary(name, typeof(object));
         }

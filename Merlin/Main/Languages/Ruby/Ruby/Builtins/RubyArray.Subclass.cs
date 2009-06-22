@@ -33,10 +33,6 @@ namespace IronRuby.Builtins {
                 ImmediateClass = array.ImmediateClass.NominalClass;
             }
 
-            protected override RubyArray/*!*/ Copy() {
-                return new Subclass(this);
-            }
-
             public override RubyArray/*!*/ CreateInstance() {
                 return new Subclass(ImmediateClass.NominalClass);
             }

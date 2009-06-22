@@ -41,12 +41,12 @@ describe "Selecting .NET overloads" do
   end
   
   it "is allowed" do
-    @methods.overloads(Fixnum,Fixnum).call(100,100).should equal_clr_string("two args")
+    @methods.overload(Fixnum,Fixnum).call(100,100).should equal_clr_string("two args")
   end
 
   it "correctly reports error message" do
     #regression test for RubyForge 24112
-    lambda {@methods.overloads(Fixnum).call}.should raise_error(ArgumentError, /0 for 1/)
+    lambda {@methods.overload(Fixnum).call}.should raise_error(ArgumentError, /0 for 1/)
   end
 end
 

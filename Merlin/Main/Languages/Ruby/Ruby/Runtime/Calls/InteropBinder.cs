@@ -509,14 +509,14 @@ namespace IronRuby.Runtime.Calls {
             }
 
             public override DynamicMetaObject/*!*/ FallbackBinaryOperation(DynamicMetaObject/*!*/ target, DynamicMetaObject/*!*/ arg, DynamicMetaObject errorSuggestion) {
-                return InvokeMember.FallbackInvokeMember(this, RubyClass.MapOperator(Operation), _CallInfo, target, new[] { arg }, errorSuggestion);
+                return InvokeMember.FallbackInvokeMember(this, RubyUtils.MapOperator(Operation), _CallInfo, target, new[] { arg }, errorSuggestion);
             }
 
             public static DynamicMetaObject/*!*/ Bind(DynamicMetaObject/*!*/ context, BinaryOperationBinder/*!*/ binder,
                 DynamicMetaObject/*!*/ target, DynamicMetaObject/*!*/ arg, 
                 Func<DynamicMetaObject, DynamicMetaObject, DynamicMetaObject>/*!*/ fallback) {
 
-                return InvokeMember.Bind(context, RubyClass.MapOperator(binder.Operation), _CallInfo, binder, target, new[] { arg },
+                return InvokeMember.Bind(context, RubyUtils.MapOperator(binder.Operation), _CallInfo, binder, target, new[] { arg },
                     (trgt, args) => fallback(trgt, args[0])
                 );
             }
@@ -544,12 +544,12 @@ namespace IronRuby.Runtime.Calls {
             }
 
             public override DynamicMetaObject/*!*/ FallbackUnaryOperation(DynamicMetaObject/*!*/ target, DynamicMetaObject errorSuggestion) {
-                return InvokeMember.FallbackInvokeMember(this, RubyClass.MapOperator(Operation), _CallInfo, target, DynamicMetaObject.EmptyMetaObjects, errorSuggestion);
+                return InvokeMember.FallbackInvokeMember(this, RubyUtils.MapOperator(Operation), _CallInfo, target, DynamicMetaObject.EmptyMetaObjects, errorSuggestion);
             }
 
             public static DynamicMetaObject/*!*/ Bind(DynamicMetaObject/*!*/ context, UnaryOperationBinder/*!*/ binder,
                 DynamicMetaObject/*!*/ target, Func<DynamicMetaObject, DynamicMetaObject>/*!*/ fallback) {
-                return InvokeMember.Bind(context, RubyClass.MapOperator(binder.Operation), _CallInfo, binder, target, DynamicMetaObject.EmptyMetaObjects,
+                return InvokeMember.Bind(context, RubyUtils.MapOperator(binder.Operation), _CallInfo, binder, target, DynamicMetaObject.EmptyMetaObjects,
                     (trgt, _) => fallback(trgt)
                 );
             }

@@ -414,10 +414,16 @@ namespace IronRuby.Builtins {
             Context.RequiresClassHierarchyLock();
             Debug.Assert(_constants != null && _constants.Count == 0);
 
-            // TODO: protected types
             // TODO: Inherited generic overloads. We need a custom TypeGroup to do it right - part of the type group might be removed
+
+            // TODO: protected types
+            var bindingFlags = BindingFlags.Public | BindingFlags.DeclaredOnly;
+            if (Context.DomainManager.Configuration.PrivateBinding) {
+                bindingFlags |= BindingFlags.NonPublic;
+            }
+
             // if the constant is redefined/removed from the base class. This is similar to method overload inheritance.
-            Type[] types = _typeTracker.Type.GetNestedTypes(BindingFlags.Public | BindingFlags.DeclaredOnly);
+            Type[] types = _typeTracker.Type.GetNestedTypes(bindingFlags);
             var trackers = new List<TypeTracker>();
             var names = new List<string>();
             foreach (var type in types) {
@@ -527,8 +533,8 @@ namespace IronRuby.Builtins {
                 }
             }
 
-            // copy instance variables, and frozen, taint flags:
-            _context.CopyInstanceData(this, result, true, false);
+            // copy instance variables:
+            _context.CopyInstanceData(this, result, false);
             return result;
         }
 
@@ -595,7 +601,7 @@ namespace IronRuby.Builtins {
             _referringMethodRulesSinceLastUpdate = 0;
 #endif
 
-            // Updates dependent modules. If dependent modules haven't been initialized yet it means we don't need to follow them.
+            // Updates dependent classes. If dependent classes haven't been initialized yet we don't need to follow them.
             // TODO (opt): stop updating if a module that defines a method of the same name is reached.
             foreach (var cls in GetDependentClasses()) {
                 cls.Updated(ref affectedModules, ref affectedRules);
@@ -684,6 +690,14 @@ namespace IronRuby.Builtins {
             set { GetInstanceData().Tainted = value; }
         }
 
+        public int BaseGetHashCode() {
+            return base.GetHashCode();
+        }
+
+        public bool BaseEquals(object other) {
+            return base.Equals(other);
+        }
+
         #endregion
 
         #region Factories (thread-safe)
@@ -726,8 +740,11 @@ namespace IronRuby.Builtins {
             // real class object and it's singleton share the tracker:
             TypeTracker tracker = (IsSingletonClass) ? null : _typeTracker;
 
+            // Singleton should have the same restrictions as the module it is singleton for.
+            // Reason: We need static methods of builtins (e.g. Object#Equals) not to be exposed under Ruby names (Object#equals).
+            // We also want static methods of non-builtins to be visible under both CLR and Ruby names. 
             var result = new RubyClass(
-                Context, null, null, this, trait, null, null, superClass, null, tracker, null, false, true, ModuleRestrictions.None
+                Context, null, null, this, trait, null, null, superClass, null, tracker, null, false, true, this.Restrictions
             );
 #if DEBUG
             result.Version.SetName(result.DebugName);
@@ -1202,7 +1219,17 @@ namespace IronRuby.Builtins {
 
                 // Alias preserves visibility and declaring module even though the alias is declared in a different module (e.g. subclass) =>
                 // we can share method info (in fact, sharing is sound with Method#== semantics - it returns true on aliased methods).
-                SetMethodNoEventNoLock(Context, newName, method);
+                // 
+                // CLR members: 
+                // Detaches the member from its underlying type (by creating a copy).
+                // Note: We need to copy overload group since otherwise it might mess up caching if the alias is defined in a sub-module and 
+                // overloads of the same name that are not included in the overload group are inherited to this module.
+                // EnumerateMethods also relies on overload groups only representing cached CLR members.
+                if (!method.IsRubyMember) {
+                    SetMethodNoEventNoLock(Context, newName, method.Copy(method.Flags, method.DeclaringModule));
+                } else {
+                    SetMethodNoEventNoLock(Context, newName, method);
+                }
             }
 
             MethodAdded(newName);
@@ -1210,7 +1237,8 @@ namespace IronRuby.Builtins {
 
         // Module#define_method:
         public void SetDefinedMethodNoEventNoLock(RubyContext/*!*/ callerContext, string/*!*/ name, RubyMemberInfo/*!*/ method, RubyMethodVisibility visibility) {
-            // copy method, Method#== returns false on defined methods and redefining the original method doesn't affect the new one:
+            // CLR members: Detaches the member from its underlying type (by creating a copy).
+            // Note: Method#== returns false on defined methods and redefining the original method doesn't affect the new one:
             SetMethodNoEventNoLock(callerContext, name, method.Copy((RubyMemberFlags)visibility, this));
         }
 
@@ -1221,6 +1249,7 @@ namespace IronRuby.Builtins {
             RubyMemberInfo existing;
             bool skipHidden = false;
             if (TryGetMethod(name, ref skipHidden, out existing)) {
+                // CLR members: Detaches the member from its underlying type (by creating a copy).
                 SetMethodNoEventNoLock(callerContext, name, method.Copy((RubyMemberFlags)visibility, this));
             } else {
                 SetMethodNoEventNoLock(callerContext, name, new SuperForwarderInfo((RubyMemberFlags)visibility, method.DeclaringModule, name));
@@ -1229,6 +1258,7 @@ namespace IronRuby.Builtins {
 
         // Module#module_function:
         public void SetModuleFunctionNoEventNoLock(RubyContext/*!*/ callerContext, string/*!*/ name, RubyMemberInfo/*!*/ method) {
+            // CLR members: Detaches the member from its underlying type (by creating a copy).
             // TODO: check for CLR instance members, it should be an error to call module_function on them:
             SingletonClass.SetMethodNoEventNoLock(callerContext, name, method.Copy(RubyMemberFlags.Public, SingletonClass));
         }
@@ -1271,6 +1301,7 @@ namespace IronRuby.Builtins {
         internal virtual void PrepareMethodUpdate(string/*!*/ methodName, RubyMemberInfo/*!*/ method) {
             InitializeMethodsNoLock();
 
+            // Prepare all classes where this module is included for a method update.
             // TODO (optimization): we might end up walking some classes multiple times, could we mark them somehow as visited?
             foreach (var dependency in _dependentClasses) {
                 var cls = (RubyClass)dependency.Target;
@@ -1382,6 +1413,10 @@ namespace IronRuby.Builtins {
                     } else {
                         SetMethodNoEventNoLock(Context, name, RubyMemberInfo.HiddenMethod);
                     }
+                    return true;
+                } else if (TryGetClrMember(name, false, out method)) {
+                    Debug.Assert(!method.IsRemovable);
+                    SetMethodNoEventNoLock(Context, name, RubyMemberInfo.HiddenMethod);
                     return true;
                 } else {
                     return false;
@@ -1599,14 +1634,31 @@ namespace IronRuby.Builtins {
                 return true;
             }
 
-            string mangled;
-            if (virtualLookup && (mangled = RubyUtils.MangleName(name)) != name && TryGetDefinedMethod(mangled, ref skipHidden, out method)) {
-                return true;
+            if (virtualLookup) {
+                string mangled;
+                if ((mangled = RubyUtils.MangleName(name)) != name && TryGetDefinedMethod(mangled, ref skipHidden, out method)
+                    && method.IsRubyMember) {
+                    return true;
+                }
+
+                // Special mappings:
+                // Do not map to Kernel#hash/eql? to prevent recursion in case Object.GetHashCode/Equals is removed.
+                if (this != Context.KernelModule) {
+                    if (name == "GetHashCode" && TryGetDefinedMethod("hash", out method) && method.IsRubyMember) {
+                        return true;
+                    } else if (name == "Equals" && TryGetDefinedMethod("eql?", out method) && method.IsRubyMember) {
+                        return true;
+                    }
+                }
             }
 
+            return !skipHidden && TryGetClrMember(name, virtualLookup, out method);
+        }
+
+        private bool TryGetClrMember(string/*!*/ name, bool virtualLookup, out RubyMemberInfo method) {
             // Skip hidden CLR overloads.
             // Skip lookup on types that are not visible or interfaces.
-            if (!skipHidden && _typeTracker != null && !_typeTracker.Type.IsInterface) {
+            if (_typeTracker != null && !_typeTracker.Type.IsInterface) {
                 // Note: Do not allow mangling for CLR virtual lookups - we want to match the overridden name exactly as is, 
                 // so that it corresponds to the base method call the override stub performs.
                 bool tryUnmangle = !virtualLookup && (_restrictions & ModuleRestrictions.NoNameMangling) == 0;
@@ -1617,6 +1669,7 @@ namespace IronRuby.Builtins {
                 }
             }
 
+            method = null;
             return false;
         }
 
@@ -1631,14 +1684,29 @@ namespace IronRuby.Builtins {
             InitializeMethodsNoLock();
 
             foreach (KeyValuePair<string, RubyMemberInfo> method in _methods) {
-                if (action(this, method.Key, method.Value)) return true;
+                // Exclude attached CLR members as they only represent cached CLR method calls and these methods are enumerated below.
+                // Include undefined and CLR hidden members - the action uses them to hide the names.
+                if (method.Value.IsRubyMember) {
+                    if (action(this, method.Key, method.Value)) {
+                        return true;
+                    }
+                }
             }
 
-            if (_typeTracker != null) {
-                // TODO: CLR methods but removed, hidden...
+            // CLR members (do not include interface members - they are not callable methods, just metadata):
+            if (_typeTracker != null && !_typeTracker.Type.IsInterface) {
+                foreach (string name in EnumerateClrMembers(_typeTracker.Type)) {
+                    if (action(this, name, RubyMemberInfo.InteropMember)) {
+                        return true;
+                    }
+                }
             }
 
             return false;
+        }
+
+        protected virtual IEnumerable<string/*!*/>/*!*/ EnumerateClrMembers(Type/*!*/ type) {
+            return ArrayUtils.EmptyStrings;
         }
 
         /// <summary>
@@ -1661,11 +1729,11 @@ namespace IronRuby.Builtins {
         /// Not thread safe.
         /// </remarks>
         public void ForEachMember(bool inherited, RubyMethodAttributes attributes, IEnumerable<string> foreignMembers, 
-            Action<string/*!*/, RubyMemberInfo/*!*/>/*!*/ action) {
+            Action<string/*!*/, RubyModule/*!*/, RubyMemberInfo/*!*/>/*!*/ action) {
 
             Context.RequiresClassHierarchyLock();
 
-            var visited = new Dictionary<string, bool>();
+            var visited = new Dictionary<string, RubyMemberInfo>();
 
             // We can look for instance methods, singleton methods or all methods.
             // The difference is when we stop searching.
@@ -1675,8 +1743,8 @@ namespace IronRuby.Builtins {
             // TODO: if we allow creating singletons for foreign objects we need to change this:
             if (foreignMembers != null) {
                 foreach (var name in foreignMembers) {
-                    action(name, RubyMethodInfo.ForeignMember);
-                    visited.Add(name, true);
+                    action(name, this, RubyMethodInfo.InteropMember);
+                    visited.Add(name, RubyMethodInfo.InteropMember);
                 }
             }
 
@@ -1702,20 +1770,20 @@ namespace IronRuby.Builtins {
 
                 } else if (!visited.ContainsKey(name)) {
                     // yield the member only if it has the right visibility:
-                    if (!member.IsUndefined && ((RubyMethodAttributes)member.Visibility & attributes) != 0) {
-                        action(name, member);
+                    if (!member.IsUndefined && !member.IsHidden && (((RubyMethodAttributes)member.Visibility & attributes) != 0)) {
+                        action(name, module, member);
                     }
 
                     // visit the member even if it doesn't have the right visibility so that any overridden member with the right visibility
                     // won't later be visited:
-                    visited.Add(name, true);
+                    visited.Add(name, member);
                 }
 
                 return false;
             });
         }
 
-        public void ForEachMember(bool inherited, RubyMethodAttributes attributes, Action<string/*!*/, RubyMemberInfo/*!*/>/*!*/ action) {
+        public void ForEachMember(bool inherited, RubyMethodAttributes attributes, Action<string/*!*/, RubyModule/*!*/, RubyMemberInfo/*!*/>/*!*/ action) {
             ForEachMember(inherited, attributes, null, action);
         }
 

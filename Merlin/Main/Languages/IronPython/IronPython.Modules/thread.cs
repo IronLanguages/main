@@ -209,9 +209,9 @@ namespace IronPython.Modules {
                 } catch (SystemExitException) {
                     // ignore and quit
                 } catch (Exception e) {
-                    PythonOps.Print(_context, "Unhandled exception on thread");
+                    PythonOps.PrintWithDest(_context, PythonContext.GetContext(_context).SystemStandardError, "Unhandled exception on thread");
                     string result = _context.LanguageContext.FormatException(e);
-                    PythonOps.Print(_context, result);
+                    PythonOps.PrintWithDest(_context, PythonContext.GetContext(_context).SystemStandardError, result);
                 }
             }
         }

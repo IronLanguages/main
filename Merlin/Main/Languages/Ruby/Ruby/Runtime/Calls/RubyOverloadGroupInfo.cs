@@ -41,6 +41,10 @@ namespace IronRuby.Runtime.Calls {
             _overloadOwners = overloadOwners;
         }
 
+        internal override bool IsRubyMember {
+            get { return false; }
+        }
+
         internal RubyOverloadGroupInfo[] OverloadOwners {
             get { return _overloadOwners; }
         }

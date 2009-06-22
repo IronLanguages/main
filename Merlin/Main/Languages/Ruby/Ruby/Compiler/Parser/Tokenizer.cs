@@ -1540,7 +1540,7 @@ namespace IronRuby.Compiler {
             if (_lexicalState == LexicalState.EXPR_BEG || _lexicalState == LexicalState.EXPR_MID) {
                 _currentString = new StringContentTokenizer(StringType.RegularExpression | StringType.ExpandsEmbedded, '/');
                 _tokenValue.SetStringTokenizer(_currentString);
-                return Tokens.RegexpBeg;
+                return Tokens.RegexpBegin;
             }
 
             int c = Peek();
@@ -1556,7 +1556,7 @@ namespace IronRuby.Compiler {
                     ReportWarning(Errors.AmbiguousFirstArgument);
                     _currentString = new StringContentTokenizer(StringType.RegularExpression | StringType.ExpandsEmbedded, '/');
                     _tokenValue.SetStringTokenizer(_currentString);
-                    return Tokens.RegexpBeg;
+                    return Tokens.RegexpBegin;
                 }
             }
 
@@ -1614,7 +1614,7 @@ namespace IronRuby.Compiler {
 
             _lexicalState = LexicalState.EXPR_FNAME;
             _tokenValue.SetStringTokenizer(_currentString);
-            return Tokens.Symbeg;
+            return Tokens.SymbolBegin;
         }
 
         // Assignments: **= *= 
@@ -2324,14 +2324,14 @@ namespace IronRuby.Compiler {
         private Tokens ReadDoubleQuote() {
             _currentString = new StringContentTokenizer(StringType.ExpandsEmbedded, '"');
             _tokenValue.SetStringTokenizer(_currentString);
-            return Tokens.StringBeg;
+            return Tokens.StringBegin;
         }
 
         // String: '...
         private Tokens ReadSingleQuote() {
             _currentString = new StringContentTokenizer(StringType.Default, '\'');
             _tokenValue.SetStringTokenizer(_currentString);
-            return Tokens.StringBeg;
+            return Tokens.StringBegin;
         }
 
         // returns last character read
@@ -2615,7 +2615,7 @@ namespace IronRuby.Compiler {
             _lineBuffer = new char[InitialBufferSize];
             _tokenValue.SetStringTokenizer(_currentString);
 
-            return term == '`' ? Tokens.ShellStringBegin : Tokens.StringBeg;
+            return term == '`' ? Tokens.ShellStringBegin : Tokens.StringBegin;
         }
 
         private void HeredocRestore(HeredocTokenizer/*!*/ here) {
@@ -2794,19 +2794,19 @@ namespace IronRuby.Compiler {
             switch (c) {
                 case 'Q':
                     type = StringType.ExpandsEmbedded;
-                    token = Tokens.StringBeg;
+                    token = Tokens.StringBegin;
                     terminator = ReadNormalizeEndOfLine();
                     break;
 
                 case 'q':
                     type = StringType.Default;
-                    token = Tokens.StringBeg;
+                    token = Tokens.StringBegin;
                     terminator = ReadNormalizeEndOfLine();
                     break;
 
                 case 'W':
                     type = StringType.Words | StringType.ExpandsEmbedded;
-                    token = Tokens.WordsBeg;
+                    token = Tokens.WordsBegin;
                     // if the terminator is a whitespace the end will never be matched and syntax error will be reported
                     terminator = ReadNormalizeEndOfLine();
                     break;
@@ -2826,20 +2826,20 @@ namespace IronRuby.Compiler {
 
                 case 'r':
                     type = StringType.RegularExpression | StringType.ExpandsEmbedded;
-                    token = Tokens.RegexpBeg;
+                    token = Tokens.RegexpBegin;
                     terminator = ReadNormalizeEndOfLine();
                     break;
 
                 case 's':
                     type = StringType.Symbol;
-                    token = Tokens.Symbeg;
+                    token = Tokens.SymbolBegin;
                     terminator = ReadNormalizeEndOfLine();
                     _lexicalState = LexicalState.EXPR_FNAME;
                     break;
 
                 default:
                     type = StringType.ExpandsEmbedded;
-                    token = Tokens.StringBeg;
+                    token = Tokens.StringBegin;
                     terminator = c;
                     break;
             }
@@ -3921,12 +3921,12 @@ namespace IronRuby.Compiler {
                     break;
 
                 case Tokens.StringContent:
-                case Tokens.StringBeg:
+                case Tokens.StringBegin:
                 case Tokens.ShellStringBegin:
-                case Tokens.Symbeg:
-                case Tokens.WordsBeg:
+                case Tokens.SymbolBegin:
+                case Tokens.WordsBegin:
                 case Tokens.VerbatimWordsBegin:
-                case Tokens.RegexpBeg:
+                case Tokens.RegexpBegin:
                 case Tokens.RegexpEnd:
                     // TODO: distingush various kinds of string content (regex, string, heredoc)
                     result.Category = TokenCategory.StringLiteral;

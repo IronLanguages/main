@@ -36,10 +36,6 @@ namespace IronRuby.Runtime.Calls {
             _instanceVariableName = variableName;
         }
 
-        internal override bool IsRemovable {
-            get { return true; }
-        }
-
         internal override bool IsDataMember {
             get { return true; }
         }

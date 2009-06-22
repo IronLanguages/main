@@ -26,6 +26,13 @@ class warning_trapper(object):
             return default
         return dict[key]
     
+    def __enter__(self, *args):
+        self.hook()
+        return self
+        
+    def __exit__(self, *args):
+        self.unhook()
+    
     def hook(self):
         if self.is_hooked:
             return

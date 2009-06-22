@@ -443,12 +443,38 @@ namespace System.Linq.Expressions.Compiler {
 
         #region Optimized branching
 
+        /// <summary>
+        /// Emits the expression and then either brtrue/brfalse to the label.
+        /// </summary>
+        /// <param name="branchValue">True for brtrue, false for brfalse.</param>
+        /// <param name="node">The expression to emit.</param>
+        /// <param name="label">The label to conditionally branch to.</param>
+        /// <remarks>
+        /// This function optimizes equality and short circuiting logical
+        /// operators to avoid double-branching, minimize instruction count,
+        /// and generate similar IL to the C# compiler. This is important for
+        /// the JIT to optimize patterns like:
+        ///     x != null AndAlso x.GetType() == typeof(SomeType)
+        ///     
+        /// One optimization we don't do: we always emits at least one
+        /// conditional branch to the label, and always possibly falls through,
+        /// even if we know if the branch will always succeed or always fail.
+        /// We do this to avoid generating unreachable code, which is fine for
+        /// the CLR JIT, but doesn't verify with peverify.
+        /// 
+        /// This kind of optimization could be implemented safely, by doing
+        /// constant folding over conditionals and logical expressions at the
+        /// tree level.
+        /// </remarks>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1800:DoNotCastUnnecessarily")]
         private void EmitExpressionAndBranch(bool branchValue, Expression node, Label label) {
             CompilationFlags startEmitted = EmitExpressionStart(node);
             try {
                 if (node.Type == typeof(bool)) {
                     switch (node.NodeType) {
+                        case ExpressionType.Not:
+                            EmitBranchNot(branchValue, (UnaryExpression)node, label);
+                            return;
                         case ExpressionType.AndAlso:
                         case ExpressionType.OrElse:
                             EmitBranchLogical(branchValue, (BinaryExpression)node, label);
@@ -471,6 +497,15 @@ namespace System.Linq.Expressions.Compiler {
 
         private void EmitBranchOp(bool branch, Label label) {
             _ilg.Emit(branch ? OpCodes.Brtrue : OpCodes.Brfalse, label);
+        }
+
+        private void EmitBranchNot(bool branch, UnaryExpression node, Label label) {
+            if (node.Method != null) {
+                EmitExpression(node, CompilationFlags.EmitAsNoTail | CompilationFlags.EmitNoExpressionStart);
+                EmitBranchOp(branch, label);
+                return;
+            }
+            EmitExpressionAndBranch(!branch, node.Operand, label);
         }
 
         private void EmitBranchComparison(bool branch, BinaryExpression node, Label label) {
@@ -555,35 +590,29 @@ namespace System.Linq.Expressions.Compiler {
             //     if (!(left && right)) branch value
             // becomes:
             //     if (!left || !right) branch value
-
+            //
+            // The observation is that "brtrue(x && y)" has the same codegen as
+            // "brfalse(x || y)" except the branches have the opposite sign.
+            // Same for "brfalse(x && y)" and "brtrue(x || y)".
+            //
             if (branch == isAnd) {
-                EmitBranchAnd(branch, (BinaryExpression)node, label);
+                EmitBranchAnd(branch, node, label);
             } else {
-                EmitBranchOr(branch, (BinaryExpression)node, label);
+                EmitBranchOr(branch, node, label);
             }
         }
 
         // Generates optimized AndAlso with branch == true
         // or optimized OrElse with branch == false
         private void EmitBranchAnd(bool branch, BinaryExpression node, Label label) {
-            // if (left AND right) branch label
+            // if (left) then 
+            //   if (right) branch label
+            // endif
 
-            if (!ConstantCheck.IsConstant(node.Left, !branch) && !ConstantCheck.IsConstant(node.Right, !branch)) {
-                if (ConstantCheck.IsConstant(node.Left, branch)) {
-                    EmitExpressionAndBranch(branch, node.Right, label);
-                } else if (ConstantCheck.IsConstant(node.Right, branch)) {
-                    EmitExpressionAndBranch(branch, node.Left, label);
-                } else {
-                    // if (left) then 
-                    //   if (right) branch label
-                    // endif
-
-                    Label endif = _ilg.DefineLabel();
-                    EmitExpressionAndBranch(!branch, node.Left, endif);
-                    EmitExpressionAndBranch(branch, node.Right, label);
-                    _ilg.MarkLabel(endif);
-                }
-            }
+            Label endif = _ilg.DefineLabel();
+            EmitExpressionAndBranch(!branch, node.Left, endif);
+            EmitExpressionAndBranch(branch, node.Right, label);
+            _ilg.MarkLabel(endif);
         }
 
         // Generates optimized OrElse with branch == true
@@ -591,19 +620,8 @@ namespace System.Linq.Expressions.Compiler {
         private void EmitBranchOr(bool branch, BinaryExpression node, Label label) {
             // if (left OR right) branch label
 
-            if (ConstantCheck.IsConstant(node.Left, branch)) {
-                _ilg.Emit(OpCodes.Br, label);
-            } else {
-                if (!ConstantCheck.IsConstant(node.Left, !branch)) {
-                    EmitExpressionAndBranch(branch, node.Left, label);
-                }
-
-                if (ConstantCheck.IsConstant(node.Right, branch)) {
-                    _ilg.Emit(OpCodes.Br, label);
-                } else if (!ConstantCheck.IsConstant(node.Right, !branch)) {
-                    EmitExpressionAndBranch(branch, node.Right, label);
-                }
-            }
+            EmitExpressionAndBranch(branch, node.Left, label);
+            EmitExpressionAndBranch(branch, node.Right, label);
         }
 
         private void EmitBranchBlock(bool branch, BlockExpression node, Label label) {

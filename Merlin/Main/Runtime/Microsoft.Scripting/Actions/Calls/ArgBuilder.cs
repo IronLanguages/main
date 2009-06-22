@@ -104,5 +104,9 @@ namespace Microsoft.Scripting.Actions.Calls {
         internal virtual Expression ByRefArgument {
             get { return null;  }
         }
+
+        public virtual ArgBuilder Clone(ParameterInfo newType) {
+            return null;
+        }
     }
 }

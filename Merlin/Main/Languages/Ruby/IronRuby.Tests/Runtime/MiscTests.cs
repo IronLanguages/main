@@ -108,8 +108,7 @@ puts a.foo, b.foo, c.foo
 
         // Float has an identity in Ruby
         public void InstanceVariables2() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
+            TestOutput(@"
 class Float
   def foo= a
     @x = a
@@ -125,11 +124,10 @@ b = 1.0
 a.foo = 1
 b.foo = 2
 puts a.foo, b.foo
-");
-            },
-            @"
+",@"
 1
-2");
+2
+");
         }
 
 

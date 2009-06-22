@@ -62,6 +62,11 @@ namespace IronPython.Runtime.Operations {
 
                     curType = curType.DeclaringType;
                 }
+
+                FieldInfo modField = type.GetField("__module__");
+                if (modField != null && modField.IsLiteral && modField.FieldType == typeof(string)) {
+                    return (string)modField.GetRawConstantValue();
+                }
                 return "__builtin__";
             }
 
@@ -200,8 +205,19 @@ namespace IronPython.Runtime.Operations {
                 (cls != TypeCache.PythonType || argCnt > 1);
         }
 
+        // note: returns "instance" rather than type name if o is an OldInstance
         internal static string GetName(object o) {
             return DynamicHelpers.GetPythonType(o).Name;
+        }
+
+        // a version of GetName that also works on old-style classes
+        internal static string GetOldName(object o) {
+            return o is OldInstance ? GetOldName((OldInstance)o) : GetName(o);
+        }
+
+        // a version of GetName that also works on old-style classes
+        internal static string GetOldName(OldInstance instance) {
+            return instance._class.__name__;
         }
 
         internal static PythonType[] ObjectTypes(object[] args) {
@@ -530,6 +546,13 @@ namespace IronPython.Runtime.Operations {
                 // methods for two different types - for example object.MemberwiseClone for
                 // ExtensibleInt & object.  We need to reset our type to the common base type.
                 type = GetCommonBaseType(x.DeclaringType, y.DeclaringType) ?? typeof(object);
+
+                // generic type definitions will have a null name.
+                if (x.DeclaringType.FullName == null) {
+                    return -1;
+                } else if (y.DeclaringType.FullName == null) {
+                    return 1;
+                }
                 return x.DeclaringType.FullName.CompareTo(y.DeclaringType.FullName);
             });
 

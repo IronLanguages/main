@@ -111,8 +111,7 @@ namespace IronPython.Runtime.Operations {
                     result is Extensible<int> || result is Extensible<BigInteger>) {
                     return result;
                 } else {
-                    throw PythonOps.TypeError("__int__ returned non-Integral (type {0})",
-                        result is OldInstance ? ((OldInstance)result)._class.__name__ : DynamicHelpers.GetPythonType(result).Name);
+                    throw PythonOps.TypeError("__int__ returned non-Integral (type {0})", PythonTypeOps.GetOldName(result));
                 }
             } else if (PythonOps.TryGetBoundAttr(context, o, Symbols.Truncate, out result)) {
                 result = PythonOps.CallWithContext(context, result);
@@ -124,17 +123,14 @@ namespace IronPython.Runtime.Operations {
                 } else if (Converter.TryConvertToBigInteger(result, out bigintRes)) {
                     return bigintRes;
                 } else {
-                    throw PythonOps.TypeError("__trunc__ returned non-Integral (type {0})",
-                        result is OldInstance ? ((OldInstance)result)._class.__name__ : DynamicHelpers.GetPythonType(result).Name);
+                    throw PythonOps.TypeError("__trunc__ returned non-Integral (type {0})", PythonTypeOps.GetOldName(result));
                 }
             }
 
             if (o is OldInstance) {
-                throw PythonOps.AttributeError("{0} instance has no attribute '__trunc__'",
-                    ((OldInstance)o)._class.__name__);
+                throw PythonOps.AttributeError("{0} instance has no attribute '__trunc__'", PythonTypeOps.GetOldName((OldInstance)o));
             } else {
-                throw PythonOps.TypeError("int() argument must be a string or a number, not '{0}'",
-                    DynamicHelpers.GetPythonType(o).Name);
+                throw PythonOps.TypeError("int() argument must be a string or a number, not '{0}'", PythonTypeOps.GetName(o));
             }
         }
 

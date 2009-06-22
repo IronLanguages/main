@@ -32,5 +32,13 @@ namespace IronRuby.Runtime {
         // Returns the instance object data.
         [Emitted]
         RubyInstanceData/*!*/ GetInstanceData();
+
+        // Calls GetHashCode via static virtual dispatch, not virtual dynamic dispatch.
+        [Emitted]
+        int BaseGetHashCode();
+
+        // Calls Equals via static virtual dispatch, not virtual dynamic dispatch.
+        [Emitted]
+        bool BaseEquals(object other);
     }
 }

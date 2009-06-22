@@ -20,6 +20,11 @@ using IronRuby.Builtins;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
 using Microsoft.Scripting.Utils;
+using System.Linq.Expressions;
+using Microsoft.Scripting.Generation;
+using System.Collections.ObjectModel;
+using Microsoft.Scripting.Interpreter;
+using Microsoft.Scripting;
 
 namespace IronRuby.Runtime.Calls {
     
@@ -27,11 +32,16 @@ namespace IronRuby.Runtime.Calls {
         internal int Version;
 
         internal static MethodDispatcher CreateRubyObjectDispatcher(Type/*!*/ func, Delegate/*!*/ method, int mandatoryParamCount, 
-            bool hasScope, int version) {
+            bool hasScope, bool hasBlock, int version) {
 
-            var dispatcher = CreateDispatcher(func, mandatoryParamCount, hasScope, version,
-                () => hasScope ? (MethodDispatcher)new RubyObjectMethodDispatcherWithScope() : new RubyObjectMethodDispatcher(),
-                hasScope ? RubyObjectMethodDispatchersWithScope : RubyObjectMethodDispatchers
+            var dispatcher = CreateDispatcher(func, mandatoryParamCount, hasScope, hasBlock, version,
+                () => 
+                hasScope ?
+                    (hasBlock ? (MethodDispatcher)new RubyObjectMethodDispatcherWithScopeAndBlock() : new RubyObjectMethodDispatcherWithScope()) :
+                    (hasBlock ? (MethodDispatcher)new RubyObjectMethodDispatcherWithBlock() : new RubyObjectMethodDispatcher()),
+                hasScope ? 
+                    (hasBlock ? RubyObjectMethodDispatchersWithScopeAndBlock : RubyObjectMethodDispatchersWithScope) :
+                    (hasBlock ? RubyObjectMethodDispatchersWithBlock : RubyObjectMethodDispatchers)
             );
 
             if (dispatcher != null) {
@@ -40,27 +50,13 @@ namespace IronRuby.Runtime.Calls {
             return dispatcher;
         }
 
-        internal static MethodDispatcher CreateSingletonDispatcher(Type/*!*/ func, Delegate/*!*/ method, int mandatoryParamCount, 
-            bool hasScope, int version, object singleton, VersionHandle/*!*/ versionHandle) {
-
-            var dispatcher = CreateDispatcher(func, mandatoryParamCount, hasScope, version, 
-                () => hasScope ? (MethodDispatcher)new SingletonMethodDispatcherWithScope() : new SingletonMethodDispatcher(),
-                hasScope ? SingletonMethodDispatchersWithScope : SingletonMethodDispatchers
-            );
-
-            if (dispatcher != null) {
-                dispatcher.Initialize(method, version);
-                dispatcher.InitializeSingleton(singleton, versionHandle);
-            }
-            return dispatcher;
-        }
-
-        internal static MethodDispatcher CreateDispatcher(Type/*!*/ func, int mandatoryParamCount, bool hasScope, int version,
+        internal static MethodDispatcher CreateDispatcher(Type/*!*/ func, int mandatoryParamCount, bool hasScope, bool hasBlock, int version,
             Func<MethodDispatcher> parameterlessFactory, Type[] genericFactories) {
             Type[] funcArgs = func.GetGenericArguments();
 
-            // Func<CallSite, (RubyScope)?, TSelf, T1, ... TN, object>
-            int firstParameterIndex = hasScope ? 3 : 2;
+            // Func<CallSite, (RubyScope)?, TSelf, (Proc)?, T1, ... TN, object>
+            int selfIndex = 1 + (hasScope ? 1 : 0);
+            int firstParameterIndex = selfIndex + 1 + (hasBlock ? 1 : 0);
             int parameterCount = funcArgs.Length - firstParameterIndex - 1;
 
             // invalid number of arguments passed to the site:
@@ -68,12 +64,12 @@ namespace IronRuby.Runtime.Calls {
                 return null;
             }
 
-            if (parameterCount > PrecompiledParameterCount) {
+            if (parameterCount > MaxPrecompiledArity) {
                 return null;
             }
 
             // self must be an object:
-            if (funcArgs[firstParameterIndex - 1] != typeof(object)) {
+            if (funcArgs[selfIndex] != typeof(object)) {
                 return null;
             }
 
@@ -88,16 +84,35 @@ namespace IronRuby.Runtime.Calls {
             }
         }
 
+        internal static InterpretedDispatcher CreateInterpreted(Type/*!*/ delegateType, int parameterCount) {
+            if (parameterCount > MaxInterpretedArity) {
+                return null;
+            }
+
+            // Func<CallSite, T1, ... TN, TReturn>
+            // Action<CallSite, T1, ... TN>
+            var types = delegateType.GetGenericArguments();
+            types = types.GetSlice(1, types.Length - 1);
+
+            Type dispatcherType;
+            if (parameterCount != types.Length) {
+                // Func
+                Debug.Assert(parameterCount + 1 == types.Length);
+                dispatcherType = InterpretedFuncDispatchers[parameterCount];
+            } else {
+                // Action
+                dispatcherType = InterpretedActionDispatchers[parameterCount];
+            }
+
+            return (InterpretedDispatcher)Activator.CreateInstance(dispatcherType.MakeGenericType(types));
+        }
+
         public abstract object/*!*/ CreateDelegate();
         internal abstract void Initialize(Delegate/*!*/ method, int version);
-
-        internal virtual void InitializeSingleton(object singleton, VersionHandle/*!*/ versionHandle) {
-            throw Assert.Unreachable;
-        }
     }
 
     public abstract class MethodDispatcher<TRubyFunc> : MethodDispatcher {
-        internal TRubyFunc/*!*/ Method;
+        internal TRubyFunc Method;
 
         internal override void Initialize(Delegate/*!*/ method, int version) {
             Assert.NotNull(method);
@@ -106,14 +121,64 @@ namespace IronRuby.Runtime.Calls {
         }
     }
 
-    public abstract class SingletonMethodDispatcherBase<TRubyFunc> : MethodDispatcher<TRubyFunc> {
-        internal object Singleton;
-        internal VersionHandle/*!*/ VersionHandle;
+    public abstract class InterpretedDispatcher {
+        internal object _rule;
+        internal Delegate _compiled;
 
-        internal override void InitializeSingleton(object singleton, VersionHandle/*!*/ versionHandle) {
-            Assert.NotNull(versionHandle);
-            Singleton = singleton;
-            VersionHandle = versionHandle;
+        internal T/*!*/ CreateDelegate<T>(Expression/*!*/ binding) where T : class {
+            Delegate d = CompilerHelpers.LightCompile(Stitch<T>(binding));
+            T result = (T)(object)d;
+
+            LightLambda lambda = d.Target as LightLambda;
+            if (lambda != null) {
+                _rule = result;
+                lambda.Compile += (_, e) => _compiled = e.Compiled;
+                return (T)GetInterpretingDelegate();
+            } else {
+                PerfTrack.NoteEvent(PerfTrack.Categories.Rules, "Rule not interpreted");
+                return result;
+            }
         }
+
+        // TODO: This is a copy of CallSiteBinder.Stitch.
+        private LambdaExpression/*!*/ Stitch<T>(Expression/*!*/ binding) where T : class {
+            Expression updLabel = Expression.Label(CallSiteBinder.UpdateLabel);
+
+            var site = Expression.Parameter(typeof(CallSite), "$site");
+            var @params = ArrayUtils.Insert(site, Parameters);
+
+            var body = Expression.Block(
+                binding,
+                updLabel,
+                Expression.Label(
+                    ReturnLabel,
+                    Expression.Condition(
+                        Expression.Call(
+                            typeof(CallSiteOps).GetMethod("SetNotMatched"),
+                            @params[0]
+                        ),
+                        Expression.Default(ReturnLabel.Type),
+                        Expression.Invoke(
+                            Expression.Property(
+                                Expression.Convert(site, typeof(CallSite<T>)),
+                                typeof(CallSite<T>).GetProperty("Update")
+                            ),
+                            @params
+                        )
+                    )
+                )
+            );
+
+            return Expression.Lambda<T>(
+                body,
+                "CallSite.Target",
+                true, // always compile the rules with tail call optimization
+                @params
+            );
+        }
+
+        internal abstract ReadOnlyCollection<ParameterExpression> Parameters { get; }
+        internal abstract LabelTarget ReturnLabel { get; }
+        internal abstract object/*!*/ GetInterpretingDelegate();
     }
 }

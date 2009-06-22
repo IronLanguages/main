@@ -222,7 +222,8 @@ namespace IronRuby.Runtime.Calls {
 
         #region Tests
 
-        public void AddTargetTypeTest(object target, RubyClass/*!*/ targetClass, Expression/*!*/ targetParameter, DynamicMetaObject/*!*/ metaContext) {
+        public void AddTargetTypeTest(object target, RubyClass/*!*/ targetClass, Expression/*!*/ targetParameter, DynamicMetaObject/*!*/ metaContext,
+            IEnumerable<string>/*!*/ resolvedNames) {
 
             // no changes to the module's class hierarchy while building the test:
             targetClass.Context.RequiresClassHierarchyLock();
@@ -259,10 +260,12 @@ namespace IronRuby.Runtime.Calls {
                 throw new NotSupportedException("Type implementing IRubyObject should be visible and have ImmediateClass getter");
             }
 
+            AddRuntimeTest(metaContext);
+
             // singleton nil:
             if (target == null) {
                 AddRestriction(Ast.Equal(targetParameter, AstUtils.Constant(null)));
-                AddFullVersionTest(context.NilClass, metaContext);
+                AddVersionTest(context.NilClass);
                 return;
             }
 
@@ -273,35 +276,48 @@ namespace IronRuby.Runtime.Calls {
                     Ast.Equal(Ast.Convert(targetParameter, typeof(bool)), AstUtils.Constant(target))
                 ));
 
-                if ((bool)target) {
-                    AddFullVersionTest(context.TrueClass, metaContext);
-                } else {
-                    AddFullVersionTest(context.FalseClass, metaContext);
-                }
+                AddVersionTest((bool)target ? context.TrueClass : context.FalseClass);
                 return;
             }
 
-            // other CLR type singletons:
-            if (targetClass.IsSingletonClass) {
-                AddRestriction(
-                    Ast.Equal(
-                        Ast.Convert(targetParameter, typeof(object)),
-                        Ast.Convert(AstUtils.Constant(target), typeof(object))
-                    )
-                );
+            var nominalClass = targetClass.NominalClass;
 
-                AddFullVersionTest(targetClass, metaContext);
-                return;
+            Debug.Assert(!nominalClass.IsSingletonClass);
+            Debug.Assert(!nominalClass.IsRubyClass);
+
+            // Do we need a singleton check?
+            if (nominalClass.ClrSingletonMethods == null ||
+                CollectionUtils.TrueForAll(resolvedNames, (methodName) => !nominalClass.ClrSingletonMethods.ContainsKey(methodName))) {
+
+                // no: there is no singleton subclass of target class that defines any method being called:
+                AddTypeRestriction(target.GetType(), targetParameter);
+                AddVersionTest(targetClass);
+
+            } else if (targetClass.IsSingletonClass) {
+
+                // yes: check whether the incoming object is a singleton and the singleton has the right version:
+                AddTypeRestriction(target.GetType(), targetParameter);
+                AddCondition(Methods.IsClrSingletonRuleValid.OpCall(
+                    metaContext.Expression,
+                    targetParameter,
+                    AstUtils.Constant(targetClass.Version.Value)
+                ));
+
+            } else {
+
+                // yes: check whether the incoming object is NOT a singleton and the class has the right version:
+                AddTypeRestriction(target.GetType(), targetParameter);
+                AddCondition(Methods.IsClrNonSingletonRuleValid.OpCall(
+                    metaContext.Expression, 
+                    targetParameter,
+                    Ast.Constant(targetClass.Version),
+                    AstUtils.Constant(targetClass.Version.Value)
+                ));
             }
-
-            // CLR objects:
-            AddTypeRestriction(target.GetType(), targetParameter);
-            AddFullVersionTest(targetClass, metaContext);
         }
 
-        private void AddFullVersionTest(RubyClass/*!*/ cls, DynamicMetaObject/*!*/ metaContext) {
-            Assert.NotNull(cls, metaContext);
-            cls.Context.RequiresClassHierarchyLock();
+        private void AddRuntimeTest(DynamicMetaObject/*!*/ metaContext) {
+            Assert.NotNull(metaContext);
 
             // check for runtime (note that the module's runtime could be different from the call-site runtime):
             if (_siteContext == null) {
@@ -310,8 +326,6 @@ namespace IronRuby.Runtime.Calls {
             } else if (_siteContext != metaContext.Value) {
                 throw new InvalidOperationException("Runtime-bound site called from a different runtime");
             }
-             
-            AddVersionTest(cls);
         }
 
         internal void AddVersionTest(RubyClass/*!*/ cls) {

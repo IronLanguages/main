@@ -14,11 +14,13 @@
  * ***************************************************************************/
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 
+using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-using System.Diagnostics;
 
 namespace IronPython.Runtime.Operations {
     internal static class IListOfByteOps {
@@ -38,6 +40,24 @@ namespace IronPython.Runtime.Operations {
             }
 
             return self.Count > other.Count ? +1 : -1;
+        }
+
+        internal static int Compare(this IList<byte>/*!*/ self, string other) {
+            for (int i = 0; i < self.Count && i < other.Length; i++) {
+                if ((char)self[i] != other[i]) {
+                    if ((char)self[i] > other[i]) {
+                        return 1;
+                    } else {
+                        return -1;
+                    }
+                }
+            }
+
+            if (self.Count == other.Length) {
+                return 0;
+            }
+
+            return self.Count > other.Length ? +1 : -1;
         }
 
         internal static bool EndsWith(this IList<byte>/*!*/ self, IList<byte>/*!*/ suffix) {
@@ -93,7 +113,7 @@ namespace IronPython.Runtime.Operations {
 
         internal static bool EndsWith(this IList<byte>/*!*/ bytes, PythonTuple/*!*/ suffix) {
             foreach (object obj in suffix) {
-                if (bytes.EndsWith(ByteOps.GetBytes(obj))) {
+                if (bytes.EndsWith(ByteOps.CoerceBytes(obj))) {
                     return true;
                 }
             }
@@ -111,7 +131,7 @@ namespace IronPython.Runtime.Operations {
                 }
             }
             foreach (object obj in suffix) {
-                if (bytes.Substring(start).EndsWith(ByteOps.GetBytes(obj))) {
+                if (bytes.Substring(start).EndsWith(ByteOps.CoerceBytes(obj))) {
                     return true;
                 }
             }
@@ -141,7 +161,7 @@ namespace IronPython.Runtime.Operations {
             }
 
             foreach (object obj in suffix) {
-                if (bytes.Substring(start, end - start).EndsWith(ByteOps.GetBytes(obj))) {
+                if (bytes.Substring(start, end - start).EndsWith(ByteOps.CoerceBytes(obj))) {
                     return true;
                 }
             }
@@ -1004,7 +1024,7 @@ namespace IronPython.Runtime.Operations {
             if (end < start) return false;
 
             foreach (object obj in prefix) {
-                if (bytes.Substring(start, end - start).StartsWith(ByteOps.GetBytes(obj))) {
+                if (bytes.Substring(start, end - start).StartsWith(ByteOps.CoerceBytes(obj))) {
                     return true;
                 }
             }
@@ -1021,7 +1041,7 @@ namespace IronPython.Runtime.Operations {
                 }
             }
             foreach (object obj in prefix) {
-                if (bytes.Substring(start).StartsWith(ByteOps.GetBytes(obj))) {
+                if (bytes.Substring(start).StartsWith(ByteOps.CoerceBytes(obj))) {
                     return true;
                 }
             }
@@ -1030,7 +1050,7 @@ namespace IronPython.Runtime.Operations {
 
         internal static bool StartsWith(this IList<byte>/*!*/ bytes, PythonTuple/*!*/ prefix) {
             foreach (object obj in prefix) {
-                if (bytes.StartsWith(ByteOps.GetBytes(obj))) {
+                if (bytes.StartsWith(ByteOps.CoerceBytes(obj))) {
                     return true;
                 }
             }
@@ -1231,5 +1251,92 @@ namespace IronPython.Runtime.Operations {
             }
             return res;
         }
+
+        #region Conversion and Enumeration
+
+        [PythonType("bytes_iterator")]
+        private class PythonBytesEnumerator<T> : IEnumerable, IEnumerator<T> {
+            private readonly IList<byte>/*!*/ _bytes;
+            private readonly Func<byte, T>/*!*/ _conversion;
+            private int _index;
+
+            public PythonBytesEnumerator(IList<byte> bytes, Func<byte, T> conversion) {
+                Assert.NotNull(bytes);
+                Assert.NotNull(conversion);
+
+                _bytes = bytes;
+                _conversion = conversion;
+                _index = -1;
+            }
+
+            #region IEnumerator<T> Members
+
+            public T Current {
+                get {
+                    if (_index < 0) {
+                        throw PythonOps.SystemError("Enumeration has not started. Call MoveNext.");
+                    } else if (_index >= _bytes.Count) {
+                        throw PythonOps.SystemError("Enumeration already finished.");
+                    }
+                    return _conversion(_bytes[_index]);
+                }
+            }
+
+            #endregion
+
+            #region IDisposable Members
+
+            public void Dispose() { }
+
+            #endregion
+
+            #region IEnumerator Members
+
+            object IEnumerator.Current {
+                get {
+                    return ((IEnumerator<T>)this).Current;
+                }
+            }
+
+            public bool MoveNext() {
+                if (_index >= _bytes.Count) {
+                    return false;
+                }
+                _index++;
+                return _index != _bytes.Count;
+            }
+
+            public void Reset() {
+                _index = -1;
+            }
+
+            #endregion
+
+            #region IEnumerable Members
+
+            public IEnumerator GetEnumerator() {
+                return this;
+            }
+
+            #endregion
+        }
+
+        internal static IEnumerable BytesEnumerable(IList<byte> bytes) {
+            return new PythonBytesEnumerator<Bytes>(bytes, b => Bytes.Make(new byte[] { b }));
+        }
+
+        internal static IEnumerable BytesIntEnumerable(IList<byte> bytes) {
+            return new PythonBytesEnumerator<int>(bytes, b => (int)b);
+        }
+
+        internal static IEnumerator<Bytes> BytesEnumerator(IList<byte> bytes) {
+            return new PythonBytesEnumerator<Bytes>(bytes, b => Bytes.Make(new byte[] { b }));
+        }
+
+        internal static IEnumerator<int> BytesIntEnumerator(IList<byte> bytes) {
+            return new PythonBytesEnumerator<int>(bytes, b => (int)b);
+        }
+
+        #endregion
     }
 }

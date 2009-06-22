@@ -14,6 +14,7 @@
  * ***************************************************************************/
 
 using System;
+using IronRuby.Runtime;
 
 namespace IronRuby.Tests {
     public partial class Tests {
@@ -320,6 +321,19 @@ error
 101
 ");
 
+        }
+
+        /// <summary>
+        /// Caching of lookup failures on CLR types must distinguish between static and instance methods.
+        /// </summary>
+        public void MethodCallCaching8() {
+            TestOutput(@"
+System::Decimal.+(2) rescue puts 'error'
+p System::Decimal.new(1).+(1) rescue p $!
+", @"
+error
+2
+");
         }
 
         public void Send1() {

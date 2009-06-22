@@ -150,6 +150,10 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
+        internal override string CheckAssign() {
+            return "can't assign to operator";
+        }
+
         private static MSAst.Expression MakeBinaryOperation(AstGenerator ag, PythonOperator op, MSAst.Expression left, MSAst.Expression right, Type type, SourceSpan span) {
             if (op == PythonOperator.NotIn) {                
                 return AstUtils.Convert(

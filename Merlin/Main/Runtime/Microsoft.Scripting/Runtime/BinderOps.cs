@@ -216,6 +216,10 @@ namespace Microsoft.Scripting.Runtime {
             return new ArgumentTypeException(String.Format("{0}() got multiple values for keyword argument '{1}'", name, argumentName));
         }
 
+        public static ArgumentTypeException TypeErrorForNonInferrableMethod(string name) {
+            return new ArgumentTypeException(String.Format("The type arguments for method '{0}' cannot be inferred from the usage. Try specifying the type arguments explicitly.", name));
+        }
+
         public static ArgumentTypeException SimpleTypeError(string message) {
             return new ArgumentTypeException(message);
         }

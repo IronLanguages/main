@@ -22,7 +22,7 @@ trap("INT") {
 THIS_DIRECTORY = File.expand_path(File.dirname(__FILE__))
 CURR_DIRECTORY = Dir.pwd
 
-require 'common'
+require File.dirname(__FILE__) + '/common'
 require 'benchmark'
 
 $failures = 0

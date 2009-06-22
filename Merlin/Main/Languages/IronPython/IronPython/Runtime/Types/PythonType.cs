@@ -399,8 +399,31 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
 
         [SpecialName, PropertyMethod, WrapperDescriptor]
-        public static string Get__module__(CodeContext/*!*/ context, PythonType self) {
+        public static object Get__module__(CodeContext/*!*/ context, PythonType self) {
+            PythonTypeSlot pts;
+            object res;
+            if (self._dict != null && 
+                self._dict.TryGetValue(Symbols.Module, out pts) && 
+                pts.TryGetValue(context, self, DynamicHelpers.GetPythonType(self), out res)) {
+                return res;
+            }
             return PythonTypeOps.GetModuleName(context, self.UnderlyingSystemType);
+        }
+
+        [SpecialName, PropertyMethod, WrapperDescriptor]
+        public static void Set__module__(CodeContext/*!*/ context, PythonType self, object value) {
+            if (self.IsSystemType) {
+                throw PythonOps.TypeError("can't set {0}.__module__", self.Name);
+            }
+
+            Debug.Assert(self._dict != null);
+            self._dict[Symbols.Module] = new PythonTypeUserDescriptorSlot(value);
+            self.UpdateVersion();
+        }
+
+        [SpecialName, PropertyMethod, WrapperDescriptor]
+        public static void Delete__module__(CodeContext/*!*/ context, PythonType self) {
+            throw PythonOps.TypeError("can't delete {0}.__module__", self.Name);
         }
 
         [SpecialName, PropertyMethod, WrapperDescriptor]
@@ -427,8 +450,8 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
             if (IsSystemType) {
                 if (PythonTypeOps.IsRuntimeAssembly(UnderlyingSystemType.Assembly) || IsPythonType) {
-                    string module = Get__module__(context, this);
-                    if (module != "__builtin__") {
+                    object module = Get__module__(context, this);
+                    if (!module.Equals("__builtin__")) {
                         return string.Format("<type '{0}.{1}'>", module, Name);
                     }
                 }
@@ -1448,6 +1471,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             }
 
             Dictionary<string, string> keys = new Dictionary<string, string>();
+            res = new List();
 
             for (int i = 0; i < _resolutionOrder.Count; i++) {
                 PythonType dt = _resolutionOrder[i];
@@ -1455,14 +1479,11 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 if (dt.IsSystemType) {
                     PythonBinder.GetBinder(context).ResolveMemberNames(context, dt, this, keys);
                 } else {
-                    AddUserTypeMembers(context, keys, dt);
+                    AddUserTypeMembers(context, keys, dt, res);
                 }
             }
-            
 
-            AddInstanceMembers(self, keys);
-
-            return new List(keys.Keys);
+            return AddInstanceMembers(self, keys, res);
         }
 
         private List TryGetCustomDir(CodeContext context, object self) {
@@ -1486,29 +1507,50 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         /// <summary>
         /// Adds members from a user defined type.
         /// </summary>
-        private void AddUserTypeMembers(CodeContext context, Dictionary<string, string> keys, PythonType dt) {
-            foreach (KeyValuePair<SymbolId, PythonTypeSlot> kvp in dt._dict) {
-                if (keys.ContainsKey(SymbolTable.IdToString(kvp.Key))) continue;
+        private void AddUserTypeMembers(CodeContext context, Dictionary<string, string> keys, PythonType dt, List res) {
+            if (dt.OldClass != null) {
+                foreach (KeyValuePair<object, object> kvp in dt.OldClass.__dict__) {
+                    AddOneMember(keys, res, kvp.Key);
+                }
+            } else {
+                foreach (KeyValuePair<SymbolId, PythonTypeSlot> kvp in dt._dict) {
+                    if (keys.ContainsKey(SymbolTable.IdToString(kvp.Key))) continue;
 
-                keys[SymbolTable.IdToString(kvp.Key)] = SymbolTable.IdToString(kvp.Key);
+                    keys[SymbolTable.IdToString(kvp.Key)] = SymbolTable.IdToString(kvp.Key);
+                }
+            }
+        }
+
+        private static void AddOneMember(Dictionary<string, string> keys, List res, object name) {
+            string strKey = name as string;
+            if (strKey != null) {
+                keys[strKey] = strKey;
+            } else {
+                res.Add(name);
             }
         }
 
         /// <summary>
         /// Adds members from a user defined type instance
         /// </summary>
-        private static void AddInstanceMembers(object self, Dictionary<string, string> keys) {
+        private static List AddInstanceMembers(object self, Dictionary<string, string> keys, List res) {
             IPythonObject dyno = self as IPythonObject;
             if (dyno != null) {
                 IAttributesCollection iac = dyno.Dict;
                 if (iac != null) {
                     lock (iac) {
-                        foreach (SymbolId id in iac.SymbolAttributes.Keys) {
-                            keys[SymbolTable.IdToString(id)] = SymbolTable.IdToString(id);
+                        foreach (object name in iac.Keys) {
+                            AddOneMember(keys, res, name);
                         }
                     }
                 }
             }
+
+            List<string> strKeys = new List<string>(keys.Keys);
+            strKeys.Sort();
+            res.extend(strKeys);
+
+            return res;
         }
 
         internal PythonDictionary GetMemberDictionary(CodeContext context) {

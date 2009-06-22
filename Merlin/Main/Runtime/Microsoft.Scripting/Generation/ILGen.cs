@@ -1182,7 +1182,7 @@ namespace Microsoft.Scripting.Generation {
         //CONFORMING
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         private void EmitNumericConversion(Type typeFrom, Type typeTo, bool isChecked) {
-            bool isFromUnsigned = TypeUtils.IsUnsigned(typeFrom);
+            bool isFromUnsigned = TypeUtils.IsUnsignedInt(typeFrom);
             bool isFromFloatingPoint = TypeUtils.IsFloatingPoint(typeFrom);
             if (typeTo == typeof(Single)) {
                 if (isFromUnsigned)

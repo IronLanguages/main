@@ -159,7 +159,13 @@ namespace System.Dynamic {
                 bool[] isByRef = ComBinderHelpers.ProcessArgumentsForCom(ref indexes);
                 isByRef = isByRef.AddLast(false);
 
-                return BindComInvoke(indexes.AddLast(value), setItem, binder.CallInfo, isByRef);
+                var result = BindComInvoke(indexes.AddLast(value), setItem, binder.CallInfo, isByRef);
+
+                // Make sure to return the value; some languages need it.
+                return new DynamicMetaObject(
+                    Expression.Block(result.Expression, Expression.Convert(value.Expression, typeof(object))),
+                    result.Restrictions
+                );
             }
 
             return base.BindSetIndex(binder, indexes, value);
@@ -201,12 +207,7 @@ namespace System.Dynamic {
                     method
                 ).Invoke();
 
-                // This condition is guarenteed because we wraped the COM
-                // object and deferred to get here. It's nice because it allows
-                // us to evaluate the "value" expression twice.
-                Debug.Assert(value.Expression is ParameterExpression);
-
-                // Make sure to return the value; some languages that need it.
+                // Make sure to return the value; some languages need it.
                 return new DynamicMetaObject(
                     Expression.Block(result.Expression, Expression.Convert(value.Expression, typeof(object))),
                     result.Restrictions

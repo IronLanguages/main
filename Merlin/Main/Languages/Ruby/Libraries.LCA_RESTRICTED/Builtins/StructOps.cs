@@ -31,7 +31,7 @@ using Ast = System.Linq.Expressions.Expression;
 
 namespace IronRuby.Builtins {
 
-    [RubyClass("Struct", Extends = typeof(RubyStruct)), Includes(typeof(Enumerable))]
+    [RubyClass("Struct", Extends = typeof(RubyStruct), Inherits = typeof(object)), Includes(typeof(Enumerable))]
     public static partial class RubyStructOps {
         [RubyConstructor]
         public static void AllocatorUndefined(RubyClass/*!*/ self, params object[] args) {

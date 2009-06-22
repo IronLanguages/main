@@ -40,8 +40,10 @@ namespace IronPython.Modules {
             private char _typeCode;
             private WeakRefTracker _tracker;
 
-            public PythonArray(string type, [Optional]object initializer) {
-                if (type == null || type.Length != 1) throw PythonOps.TypeError("expected character, got {0}", DynamicHelpers.GetPythonType(type));
+            public PythonArray([BytesConversion]string type, [Optional]object initializer) {
+                if (type == null || type.Length != 1) {
+                    throw PythonOps.TypeError("expected character, got {0}", PythonTypeOps.GetName(type));
+                }
 
                 _typeCode = type[0];
                 _data = CreateData(_typeCode);
@@ -201,8 +203,20 @@ namespace IronPython.Modules {
                     throw PythonOps.TypeError("cannot extend with different typecode");
                 }
 
-                string buf = iterable as string;
-                if (buf != null && _typeCode != 'u') {
+                string str = iterable as string;
+                if (str != null && _typeCode != 'u') {
+                    fromstring(str);
+                    return;
+                }
+
+                Bytes bytes = iterable as Bytes;
+                if (bytes != null) {
+                    fromstring(bytes);
+                    return;
+                }
+
+                PythonBuffer buf = iterable as PythonBuffer;
+                if (buf != null) {
                     fromstring(buf);
                     return;
                 }
@@ -237,15 +251,25 @@ namespace IronPython.Modules {
                 fromstring(bytes);
             }
 
-            public void fromstring(string s) {
+            public void fromstring([NotNull]Bytes b) {
+                if ((b.Count % itemsize) != 0) throw PythonOps.ValueError("string length not a multiple of itemsize");
+                
+                FromStream(new MemoryStream(b._bytes, false));
+            }
+
+            public void fromstring([NotNull]string s) {
                 if ((s.Length % itemsize) != 0) throw PythonOps.ValueError("string length not a multiple of itemsize");
                 byte[] bytes = new byte[s.Length];
                 for (int i = 0; i < bytes.Length; i++) {
-                    bytes[i] = (byte)s[i];
+                    bytes[i] = checked((byte)s[i]);
                 }
                 MemoryStream ms = new MemoryStream(bytes);
 
                 FromStream(ms);
+            }
+
+            public void fromstring([NotNull]PythonBuffer buf) {
+                fromstring(buf.ToString());
             }
 
             public void fromunicode(CodeContext/*!*/ context, string s) {
@@ -341,16 +365,11 @@ namespace IronPython.Modules {
                         case 'u': return new string((char)val, 1);
                         case 'h': return (int)(short)val;
                         case 'H': return (int)(ushort)val;
-                        case 'l': return BigInteger.Create((int)val);
+                        case 'l': return val;
                         case 'i': return val;
                         case 'L': return BigInteger.Create((uint)val);
                         case 'I':
-                            uint tmp = (uint)val;
-                            if (tmp <= Int32.MaxValue) {
-                                return (int)(uint)val;
-                            }
-
-                            return (BigInteger)tmp;
+                            return (BigInteger)(uint)val;
                         case 'f': return (double)(float)val;
                         case 'd': return val;
                         default:
@@ -360,6 +379,26 @@ namespace IronPython.Modules {
                 set {
                     _data.SetData(PythonOps.FixIndex(index, _data.Length), value);
                 }
+            }
+
+            internal byte[] RawGetItem(int index) {
+                MemoryStream ms = new MemoryStream();
+                BinaryWriter bw = new BinaryWriter(ms);
+                switch (_typeCode) {
+                    case 'c': bw.Write((byte)(char)_data.GetData(index)); break;
+                    case 'b': bw.Write((sbyte)_data.GetData(index)); break;
+                    case 'B': bw.Write((byte)_data.GetData(index)); break;
+                    case 'u': bw.Write((char)_data.GetData(index)); break;
+                    case 'h': bw.Write((short)_data.GetData(index)); break;
+                    case 'H': bw.Write((ushort)_data.GetData(index)); break;
+                    case 'l':
+                    case 'i': bw.Write((int)_data.GetData(index)); break;
+                    case 'L':
+                    case 'I': bw.Write((uint)_data.GetData(index)); break;
+                    case 'f': bw.Write((float)_data.GetData(index)); break;
+                    case 'd': bw.Write((double)_data.GetData(index)); break;
+                }
+                return ms.ToArray();
             }
 
             public void __delitem__(int index) {
@@ -474,8 +513,10 @@ namespace IronPython.Modules {
 
             private void CheckSliceAssignType(object value) {
                 PythonArray pa = value as PythonArray;
-                if (pa != null && pa._typeCode != _typeCode) {
-                    throw PythonOps.TypeError("bad array type");
+                if (pa == null) {
+                    throw PythonOps.TypeError("can only assign array (not \"{0}\") to array slice", PythonTypeOps.GetName(value));
+                } else if (pa != null && pa._typeCode != _typeCode) {
+                    throw PythonOps.TypeError("bad argument type for built-in operation");
                 }
             }
 
@@ -603,8 +644,14 @@ namespace IronPython.Modules {
                 public abstract IntPtr GetAddress();
             }
 
-            private MemoryStream ToStream() {
+            internal MemoryStream ToStream() {
                 MemoryStream ms = new MemoryStream();
+                ToStream(ms);
+                ms.Seek(0, SeekOrigin.Begin);
+                return ms;
+            }
+
+            internal void ToStream(Stream ms) {
                 BinaryWriter bw = new BinaryWriter(ms);
                 for (int i = 0; i < _data.Length; i++) {
                     switch (_typeCode) {
@@ -622,8 +669,6 @@ namespace IronPython.Modules {
                         case 'd': bw.Write((double)_data.GetData(i)); break;
                     }
                 }
-                ms.Seek(0, SeekOrigin.Begin);
-                return ms;                
             }
 
             internal byte[] ToByteArray() {
@@ -659,7 +704,7 @@ namespace IronPython.Modules {
             }
 
             // a version of FromStream that overwrites starting at 'index'
-            internal void FromStream(int index, Stream ms) {
+            internal void FromStream(Stream ms, int index) {
                 BinaryReader br = new BinaryReader(ms);
 
                 for (int i = index; i < ms.Length / itemsize + index; i++) {
@@ -681,6 +726,68 @@ namespace IronPython.Modules {
                     }
                     _data.SetData(i, value);
                 }
+            }
+
+            // a version of FromStream that overwrites up to 'nbytes' bytes, starting at 'index' (padding
+            // with trailing zeros if necessary for alignment). Returns the number of bytes written.
+            internal long FromStream(Stream ms, int index, int nbytes) {
+                BinaryReader br = new BinaryReader(ms);
+
+                if (nbytes <= 0) {
+                    return 0;
+                }
+
+                int len = Math.Min((int)(ms.Length - ms.Position), nbytes);
+                for (int i = index; i < len / itemsize + index; i++) {
+                    object value;
+                    switch (_typeCode) {
+                        case 'c': value = (char)br.ReadByte(); break;
+                        case 'b': value = (sbyte)br.ReadByte(); break;
+                        case 'B': value = br.ReadByte(); break;
+                        case 'u': value = br.ReadChar(); break;
+                        case 'h': value = br.ReadInt16(); break;
+                        case 'H': value = br.ReadUInt16(); break;
+                        case 'i': value = br.ReadInt32(); break;
+                        case 'I': value = br.ReadUInt32(); break;
+                        case 'l': value = br.ReadInt32(); break;
+                        case 'L': value = br.ReadUInt32(); break;
+                        case 'f': value = br.ReadSingle(); break;
+                        case 'd': value = br.ReadDouble(); break;
+                        default: throw new InvalidOperationException(); // should never happen
+                    }
+                    _data.SetData(i, value);
+                }
+
+                if (len % itemsize > 0) {
+                    Int64 value = 0;
+                    for (int i = 0; i < len % itemsize; i++) {
+                        value <<= 8;
+                        value |= br.ReadByte();
+                    }
+
+                    switch (_typeCode) {
+                        case 'c': _data.SetData(len / itemsize + index, (char)value); break;
+                        case 'b': _data.SetData(len / itemsize + index, (sbyte)value); break;
+                        case 'B': _data.SetData(len / itemsize + index, (byte)value); break;
+                        case 'u': _data.SetData(len / itemsize + index, (char)value); break;
+                        case 'h': _data.SetData(len / itemsize + index, (short)value); break;
+                        case 'H': _data.SetData(len / itemsize + index, (ushort)value); break;
+                        case 'l':
+                        case 'i': _data.SetData(len / itemsize + index, (int)value); break;
+                        case 'L':
+                        case 'I': _data.SetData(len / itemsize + index, (uint)value); break;
+                        case 'f': _data.SetData(len / itemsize + index, BitConverter.ToSingle(BitConverter.GetBytes((Int32)value), 0)); break;
+#if !SILVERLIGHT
+                        case 'd': _data.SetData(len / itemsize + index, BitConverter.Int64BitsToDouble(value)); break;
+#else
+                        case 'd': _data.SetData(len / itemsize + index, BitConverter.ToDouble(BitConverter.GetBytes(value), 0)); break;
+#endif
+                        default:
+                            throw PythonOps.ValueError("Bad type code (expected one of 'c', 'b', 'B', 'u', 'H', 'h', 'i', 'I', 'l', 'L', 'f', 'd')");
+                    }
+                }
+
+                return len;
             }
 
             private class ArrayData<T> : ArrayData {
@@ -870,8 +977,12 @@ namespace IronPython.Modules {
                 }
 
                 StringBuilder sb = new StringBuilder(res);
-                if (_typeCode == 'c') {
-                    sb.Append(", '");
+                if (_typeCode == 'c' || _typeCode == 'u') {
+                    if (_typeCode == 'u') {
+                        sb.Append(", u'");
+                    } else {
+                        sb.Append(", '");
+                    }
                     for (int i = 0; i < _data.Length; i++) {
                         sb.Append((char)_data.GetData(i));
                     }

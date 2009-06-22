@@ -1339,7 +1339,7 @@ namespace IronRuby.Runtime {
         public static Exception/*!*/ MakeClrProtectedMethodCalledError(RubyContext/*!*/ context, object target, string/*!*/ methodName) {
             return new MissingMethodException(
                 RubyExceptions.FormatMethodMissingMessage(context, target, methodName, "CLR protected method `{0}' called for {1}; " +
-                "CLR protected methods can only be called with a receiver whose class is a subclass of the class declaring the method")
+                "CLR protected methods can only be called with a receiver whose class is a Ruby subclass of the class declaring the method")
             );
         }
 
@@ -1373,6 +1373,12 @@ namespace IronRuby.Runtime {
             return new Range(begin, end, true);
         }
 
+        [Emitted]
+        public static object CreateDefaultInstance() {
+            // nop (stub)
+            return null;
+        }
+
         #region Dynamic Operations
 
         // allocator for struct instances:
@@ -1403,7 +1409,27 @@ namespace IronRuby.Runtime {
         public static RubyMethod/*!*/ CreateBoundMissingMember(object target, RubyMemberInfo/*!*/ info, string/*!*/ name) {
             return new RubyMethod.Curried(target, info, name);
         }
-        
+
+        [Emitted]
+        public static bool IsClrSingletonRuleValid(RubyContext/*!*/ context, object/*!*/ target, int expectedVersion) {
+            RubyInstanceData data;
+            RubyClass immediate;
+
+            // TODO: optimize this (we can have a hashtable of singletons per class: Weak(object) => Struct { ImmediateClass, InstanceVariables, Flags }):
+            return context.TryGetClrTypeInstanceData(target, out data) && (immediate = data.ImmediateClass) != null && immediate.IsSingletonClass
+                && immediate.Version.Value == expectedVersion;
+        }
+
+        [Emitted]
+        public static bool IsClrNonSingletonRuleValid(RubyContext/*!*/ context, object/*!*/ target, VersionHandle/*!*/ versionHandle, int expectedVersion) {
+            RubyInstanceData data;
+            RubyClass immediate;
+
+            return versionHandle.Value == expectedVersion
+                // TODO: optimize this (we can have a hashtable of singletons per class: Weak(object) => Struct { ImmediateClass, InstanceVariables, Flags }):
+                && !(context.TryGetClrTypeInstanceData(target, out data) && (immediate = data.ImmediateClass) != null && immediate.IsSingletonClass);
+        }
+
         #endregion
 
         #region Conversions
@@ -1594,32 +1620,7 @@ namespace IronRuby.Runtime {
         }
 
         #endregion
-
-        #region Called by GetHashCode/Equals methods in generated .NET classes
-
-        // we need to get the right execution context here
-#if OBSOLETE
-        [Emitted]
-        public static bool ResolveDeclaredInstanceMethod(Type myType, string name) {
-            RubyModule module = RubyUtils.GetExecutionContext(null).GetOrCreateClass(myType);
-            return module.ResolveDeclaredMethod(SymbolTable.StringToId(name)) != null;
-        }
-
-        [Emitted]
-        public static int CallHash(object obj) {
-            // TODO: do not use default context:
-            return _HashSharedSite.Invoke(RubyContext._DefaultContext, obj);
-        }
-
-        [Emitted]
-        public static bool CallEql(object lhs, object rhs) {
-            // TODO: do not use default context:
-            return _EqlSharedSite.Invoke(RubyContext._DefaultContext, lhs, rhs);
-        }
-#endif
-
-        #endregion
-
+        
         #region Instance variable support
 
         [Emitted]
