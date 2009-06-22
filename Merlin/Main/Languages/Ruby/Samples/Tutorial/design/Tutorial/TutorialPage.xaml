@@ -9,11 +9,13 @@
 	x:Name="TutorialPageUserControl"
 	d:DesignWidth="624" d:DesignHeight="450" Background="White">
 
-	<StackPanel x:Name="tutorial_page" VerticalAlignment="Top">
-		<Border x:Name="header" BorderBrush="Black" BorderThickness="0,0,0,1" Padding="8,8,8,34" Background="#FFEFEFEF" Panel.ZIndex="1" Margin="0,0,0,8">
-			<TextBlock x:Name="tutorial_name" HorizontalAlignment="Left" FontSize="32" Text="IronRuby tutorial" TextWrapping="Wrap" Margin="0,0,0,-45"/>
-		</Border>
-        <RichTextBox x:Name="exercise" Focusable="False" IsReadOnly="True" IsUndoEnabled="False" BorderThickness="0" HorizontalAlignment="Left" FontSize="13.333" Padding="4,8">
+	<StackPanel x:Name="tutorial_page" VerticalAlignment="Top" Margin="0,8,0,0">
+        <RichTextBox x:Name="pre_exercise" Focusable="False" IsReadOnly="True" IsUndoEnabled="False" BorderThickness="0" HorizontalAlignment="Left" FontSize="13.333" Padding="4,8" Visibility="Collapsed">
+			<FlowDocument>
+				<Paragraph><Run Text="This section blah blah blah ..."/></Paragraph>
+			</FlowDocument>
+		</RichTextBox>
+        <RichTextBox x:Name="exercise" Focusable="False" IsReadOnly="True" IsUndoEnabled="False" BorderThickness="0" HorizontalAlignment="Left" FontSize="13.333" Padding="4,8" Background="{x:Null}">
         	<FlowDocument>
         		<Paragraph><Run Text="This section blah blah blah ..."/></Paragraph>
         	</FlowDocument>
@@ -21,7 +23,7 @@
         <StackPanel x:Name="start_tutorial" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="8,0,8,8" Visibility="Collapsed">
         	<Button Content="Start tutorial"/>
         </StackPanel>
-		<StackPanel x:Name="body" Margin="8,0" VerticalAlignment="Top">
+		<StackPanel x:Name="tutorial_body" Margin="8,0" VerticalAlignment="Top">
 			<local:StepControl />
 			<local:StepControl />
 		</StackPanel>

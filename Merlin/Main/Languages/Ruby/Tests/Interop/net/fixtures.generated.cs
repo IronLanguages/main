@@ -89,7 +89,7 @@ public partial class NumericHelper {
       return sizeof(UInt64);
     }
   }
-#line 25 "./bcl/string/construction_spec.rb"
+#line 4 "./bcl/string/construction_spec.rb"
 public partial class Klass {
     public string A(){
       return "a";
@@ -174,6 +174,60 @@ public partial class DelegateConversionClass {
       return d("1");
     }
   }
+#line 5 "./delegate/instantiation/array_ref_spec.rb"
+public partial class DelegateHolder {
+      public delegate string[] ARefVoidDelegate();
+      public delegate string[] ARefRefDelegate(string foo);
+      public delegate string[] ARefValDelegate(int foo);
+      public delegate string[] ARefARefDelegate(string[] foo);
+      public delegate string[] ARefAValDelegate(int[] foo);
+      public delegate string[] ARefGenericDelegate<T>(T foo);
+    }
+#line 5 "./delegate/instantiation/array_val_spec.rb"
+public partial class DelegateHolder {
+      public delegate int[] AValVoidDelegate();
+      public delegate int[] AValRefDelegate(string foo);
+      public delegate int[] AValValDelegate(int foo);
+      public delegate int[] AValARefDelegate(string[] foo);
+      public delegate int[] AValAValDelegate(int[] foo);
+      public delegate int[] AValGenericDelegate<T>(T foo);
+    }
+#line 5 "./delegate/instantiation/generic_spec.rb"
+public partial class DelegateHolder {
+      public delegate U GenericVoidDelegate<U>();
+      public delegate U GenericRefDelegate<U>(string foo);
+      public delegate U GenericValDelegate<U>(int foo);
+      public delegate U GenericARefDelegate<U>(string[] foo);
+      public delegate U GenericAValDelegate<U>(int[] foo);
+      public delegate U GenericGenericDelegate<T, U>(T foo);
+    }
+#line 5 "./delegate/instantiation/ref_spec.rb"
+public partial class DelegateHolder {
+      public delegate string RefVoidDelegate();
+      public delegate string RefRefDelegate(string foo);
+      public delegate string RefValDelegate(int foo);
+      public delegate string RefARefDelegate(string[] foo);
+      public delegate string RefAValDelegate(int[] foo);
+      public delegate string RefGenericDelegate<T>(T foo);
+    }
+#line 5 "./delegate/instantiation/val_spec.rb"
+public partial class DelegateHolder {
+      public delegate int ValVoidDelegate();
+      public delegate int ValRefDelegate(string foo);
+      public delegate int ValValDelegate(int foo);
+      public delegate int ValARefDelegate(string[] foo);
+      public delegate int ValAValDelegate(int[] foo);
+      public delegate int ValGenericDelegate<T>(T foo);
+    }
+#line 5 "./delegate/instantiation/void_spec.rb"
+public partial class DelegateHolder {
+      public delegate void VoidVoidDelegate();
+      public delegate void VoidRefDelegate(string foo);
+      public delegate void VoidValDelegate(int foo);
+      public delegate void VoidARefDelegate(string[] foo);
+      public delegate void VoidAValDelegate(int[] foo);
+      public delegate void VoidGenericDelegate<T>(T foo);
+    }
 #line 4 "./delegate/mapping_spec.rb"
 public delegate void VoidVoidDelegate();
 #line 4 "./enum/mapping_spec.rb"
@@ -276,7 +330,7 @@ public interface IEmptyInterfaceGroup { }
 
     public interface IInterfaceGroup1<T> {void m1();}
     public interface IInterfaceGroup1<T,V> {void m1();}
-#line 224 "./method/invocation/generic_spec.rb"
+#line 226 "./method/invocation/generic_spec.rb"
 public partial class ClassWithMethods {
         #region private methods
   private string Private1Generic0Arg<T>() {
@@ -405,7 +459,7 @@ public partial class ClassWithMethods {
     }
 
     public partial class SubKlass : Klass {}
-#line 262 "./method/invocation/generic_spec.rb"
+#line 264 "./method/invocation/generic_spec.rb"
 #pragma warning disable 693
     public partial class GenericClassWithMethods<K> {
       #region private methods
@@ -530,7 +584,7 @@ public partial class ClassWithMethods {
 
     }
     #pragma warning restore 693
-#line 289 "./method/invocation/generic_spec.rb"
+#line 291 "./method/invocation/generic_spec.rb"
 #pragma warning disable 693
     public partial class GenericClass2Params<K, J> {
       #region private methods
@@ -701,13 +755,13 @@ public abstract partial class AbstractClassWithMethods {
       public abstract string PublicMethod();
       protected abstract string ProtectedMethod();
     }
-#line 88 "./method/reflection_spec.rb"
+#line 87 "./method/reflection_spec.rb"
 public partial class ClassWithOverloads {
       public string Overloaded() { return "empty"; }
       public string Overloaded(int arg) { return "one arg"; }
       public string Overloaded(int arg1, int arg2) { return "two args"; }
     }
-#line 128 "./method/reflection_spec.rb"
+#line 127 "./method/reflection_spec.rb"
 public partial class Klass{
       public static int StaticVoidMethod() {
         return 1;
@@ -719,6 +773,22 @@ namespace NotEmptyNamespace {
       public static int Bar() { return 1; }
     }
   }
+#line 4 "./ruby/name_mangling/public_spec.rb"
+public class PublicNameHolder {
+      public string a() { return "a";}
+      public string A() { return "A";}
+      public string Unique() { return "Unique"; }
+      public string snake_case() {return "snake_case";}
+      public string CamelCase() {return "CamelCase";}
+      public string Mixed_Snake_case() {return "Mixed_Snake_case";}
+      public string CAPITAL() { return "CAPITAL";}
+      public string PartialCapitalID() { return "PartialCapitalID";}
+      public string __LeadingCamelCase() { return "__LeadingCamelCase";}
+      public string __leading_snake_case() { return "__leading_snake_case";}
+    }
+
+    public class SubPublicNameHolder : PublicNameHolder {
+    }
 #line 4 "./struct/mapping_spec.rb"
 public struct EmptyStruct {}
     public struct Struct { public int m1() {return 1;}}

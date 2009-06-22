@@ -399,8 +399,31 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
 
         [SpecialName, PropertyMethod, WrapperDescriptor]
-        public static string Get__module__(CodeContext/*!*/ context, PythonType self) {
+        public static object Get__module__(CodeContext/*!*/ context, PythonType self) {
+            PythonTypeSlot pts;
+            object res;
+            if (self._dict != null && 
+                self._dict.TryGetValue(Symbols.Module, out pts) && 
+                pts.TryGetValue(context, self, DynamicHelpers.GetPythonType(self), out res)) {
+                return res;
+            }
             return PythonTypeOps.GetModuleName(context, self.UnderlyingSystemType);
+        }
+
+        [SpecialName, PropertyMethod, WrapperDescriptor]
+        public static void Set__module__(CodeContext/*!*/ context, PythonType self, object value) {
+            if (self.IsSystemType) {
+                throw PythonOps.TypeError("can't set {0}.__module__", self.Name);
+            }
+
+            Debug.Assert(self._dict != null);
+            self._dict[Symbols.Module] = new PythonTypeUserDescriptorSlot(value);
+            self.UpdateVersion();
+        }
+
+        [SpecialName, PropertyMethod, WrapperDescriptor]
+        public static void Delete__module__(CodeContext/*!*/ context, PythonType self) {
+            throw PythonOps.TypeError("can't delete {0}.__module__", self.Name);
         }
 
         [SpecialName, PropertyMethod, WrapperDescriptor]
@@ -427,8 +450,8 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
             if (IsSystemType) {
                 if (PythonTypeOps.IsRuntimeAssembly(UnderlyingSystemType.Assembly) || IsPythonType) {
-                    string module = Get__module__(context, this);
-                    if (module != "__builtin__") {
+                    object module = Get__module__(context, this);
+                    if (!module.Equals("__builtin__")) {
                         return string.Format("<type '{0}.{1}'>", module, Name);
                     }
                 }

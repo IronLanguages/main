@@ -22,5 +22,4 @@ describe "Type Groups" do
         klass.should be_kind_of Microsoft::Scripting::Actions::TypeGroup
       end
   end
-  
 end

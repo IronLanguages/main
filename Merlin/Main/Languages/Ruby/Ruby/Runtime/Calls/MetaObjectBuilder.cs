@@ -296,6 +296,7 @@ namespace IronRuby.Runtime.Calls {
             } else if (targetClass.IsSingletonClass) {
 
                 // yes: check whether the incoming object is a singleton and the singleton has the right version:
+                AddTypeRestriction(target.GetType(), targetParameter);
                 AddCondition(Methods.IsClrSingletonRuleValid.OpCall(
                     metaContext.Expression,
                     targetParameter,

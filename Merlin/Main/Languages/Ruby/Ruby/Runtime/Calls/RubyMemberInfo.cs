@@ -112,11 +112,11 @@ namespace IronRuby.Runtime.Calls {
         }
 
         /// <summary>
-        /// Whether the member can be permanently removed (CLR members can't).
+        /// True if the member can be permanently removed (attached CLR members can't).
         /// If the member cannot be removed we hide it.
         /// </summary>
-        internal virtual bool IsRemovable {
-            get { return IsSuperForwarder; }
+        internal bool IsRemovable {
+            get { return IsRubyMember && !IsHidden && !IsUndefined && !IsInteropMember; }
         }
 
         internal RubyMemberFlags Flags {

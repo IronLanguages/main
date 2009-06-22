@@ -994,19 +994,6 @@ namespace IronRuby.Builtins {
 
         #region ==, ===, =~, eql?, equal?, hash
 
-        [RubyMethod("==")]
-        [RubyMethod("eql?")]
-        public static bool ValueEquals(IRubyObject self, object other) {
-            return object.ReferenceEquals(self, other);
-        }
-
-        [RubyMethod("==")]
-        [RubyMethod("eql?")]
-        public static bool ValueEquals(object self, object other) {
-            Debug.Assert(self == null || !(self is IRubyObject));
-            return RubyUtils.ValueEquals(self, other);
-        }
-
         [RubyMethod("=~")]
         public static bool Match(object self, object other) {
             // Default implementation of match that is overridden in descendents (notably String and Regexp)
@@ -1015,23 +1002,34 @@ namespace IronRuby.Builtins {
 
         // calls == by default
         [RubyMethod("===")]
-        public static bool HashEquals(BinaryOpStorage/*!*/ equals, object self, object other) {
+        public static bool CaseEquals(BinaryOpStorage/*!*/ equals, object self, object other) {
             return Protocols.IsEqual(equals, self, other);
         }
 
+        [RubyMethod("==")]
+        [RubyMethod("eql?")]
+        public static bool ValueEquals([NotNull]IRubyObject/*!*/ self, object other) {
+            return self.BaseEquals(other);
+        }
+
+        [RubyMethod("==")]
+        [RubyMethod("eql?")]
+        public static bool ValueEquals(object self, object other) {
+            return Object.Equals(self, other);
+        }
+
         [RubyMethod("hash")]
-        public static int Hash(IRubyObject self) {
-            return self == null ? RubyUtils.NilObjectId : RuntimeHelpers.GetHashCode(self);
+        public static int Hash([NotNull]IRubyObject/*!*/ self) {
+            return self.BaseGetHashCode();
         }
 
         [RubyMethod("hash")]
         public static int Hash(object self) {
-            Debug.Assert(self == null || !(self is IRubyObject));
-            return RubyUtils.GetHashCode(self);
+            return self == null ? RubyUtils.NilObjectId : self.GetHashCode();
         }
 
         [RubyMethod("equal?")]
-        public static bool Equal(object self, object other) {
+        public static bool IsEqual(object self, object other) {
             // Comparing object IDs is (potentially) expensive because it forces us
             // to generate InstanceData and a new object ID
             //return GetObjectId(self) == GetObjectId(other);

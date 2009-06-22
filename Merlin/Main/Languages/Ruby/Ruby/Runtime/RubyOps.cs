@@ -1411,7 +1411,7 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted]
-        public static bool IsClrSingletonRuleValid(RubyContext/*!*/ context, object target, int expectedVersion) {
+        public static bool IsClrSingletonRuleValid(RubyContext/*!*/ context, object/*!*/ target, int expectedVersion) {
             RubyInstanceData data;
             RubyClass immediate;
 
@@ -1421,7 +1421,7 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted]
-        public static bool IsClrNonSingletonRuleValid(RubyContext/*!*/ context, object target, VersionHandle/*!*/ versionHandle, int expectedVersion) {
+        public static bool IsClrNonSingletonRuleValid(RubyContext/*!*/ context, object/*!*/ target, VersionHandle/*!*/ versionHandle, int expectedVersion) {
             RubyInstanceData data;
             RubyClass immediate;
 
@@ -1429,7 +1429,7 @@ namespace IronRuby.Runtime {
                 // TODO: optimize this (we can have a hashtable of singletons per class: Weak(object) => Struct { ImmediateClass, InstanceVariables, Flags }):
                 && !(context.TryGetClrTypeInstanceData(target, out data) && (immediate = data.ImmediateClass) != null && immediate.IsSingletonClass);
         }
-        
+
         #endregion
 
         #region Conversions
@@ -1620,32 +1620,7 @@ namespace IronRuby.Runtime {
         }
 
         #endregion
-
-        #region Called by GetHashCode/Equals methods in generated .NET classes
-
-        // we need to get the right execution context here
-#if OBSOLETE
-        [Emitted]
-        public static bool ResolveDeclaredInstanceMethod(Type myType, string name) {
-            RubyModule module = RubyUtils.GetExecutionContext(null).GetOrCreateClass(myType);
-            return module.ResolveDeclaredMethod(SymbolTable.StringToId(name)) != null;
-        }
-
-        [Emitted]
-        public static int CallHash(object obj) {
-            // TODO: do not use default context:
-            return _HashSharedSite.Invoke(RubyContext._DefaultContext, obj);
-        }
-
-        [Emitted]
-        public static bool CallEql(object lhs, object rhs) {
-            // TODO: do not use default context:
-            return _EqlSharedSite.Invoke(RubyContext._DefaultContext, lhs, rhs);
-        }
-#endif
-
-        #endregion
-
+        
         #region Instance variable support
 
         [Emitted]

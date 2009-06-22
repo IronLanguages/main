@@ -51,6 +51,11 @@ namespace Microsoft.Scripting.Actions.Calls {
             _keywordArgs = keywordArgs;
         }
 
+        internal CallFailure(MethodCandidate candidate, CallFailureReason reason) {
+            _candidate = candidate;
+            _reason = reason;
+        }
+
         /// <summary>
         /// Gets the MethodTarget which the call failed for.
         /// </summary>

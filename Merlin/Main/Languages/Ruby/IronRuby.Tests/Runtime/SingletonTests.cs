@@ -240,8 +240,7 @@ def foo.to_s; 'singleton 1'; end
 puts bar.to_s
 puts foo.to_s
 def foo.to_s; 'singleton 2'; end
-puts bar.to_s
-puts foo.to_s
+[bar, foo, nil, 1].each { |x| puts x.to_s }
 ", @"
 base
 base
@@ -249,6 +248,8 @@ base
 singleton 1
 base
 singleton 2
+
+1
 ");
         }
 

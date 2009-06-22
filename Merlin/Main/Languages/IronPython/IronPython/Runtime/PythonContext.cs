@@ -685,16 +685,15 @@ namespace IronPython.Runtime {
             StreamReader sr = new StreamReader(stream, PythonAsciiEncoding.SourceEncoding);
             byte[] bomBuffer = new byte[3];
             int bomRead = stream.Read(bomBuffer, 0, 3);
+            int bytesRead = 0;
             bool isUtf8 = false;
-            if (bomRead == 3) {
-                if (bomBuffer[0] == 0xef && bomBuffer[1] == 0xbb && bomBuffer[2] == 0xbf) {
-                    isUtf8 = true;
-                } else {
-                    stream.Seek(0, SeekOrigin.Begin);
-                }
+            if (bomRead == 3 && (bomBuffer[0] == 0xef && bomBuffer[1] == 0xbb && bomBuffer[2] == 0xbf)) {
+                isUtf8 = true;
+                bytesRead = 3;
+            } else {
+                stream.Seek(0, SeekOrigin.Begin);
             }
 
-            int bytesRead = 0;
             string line;
             try {
                 line = ReadOneLine(sr, ref bytesRead);

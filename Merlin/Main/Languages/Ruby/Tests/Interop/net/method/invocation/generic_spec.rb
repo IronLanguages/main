@@ -169,13 +169,15 @@ describe :generic_methods, :shared => true do
     end
   end
 
-  it "cannot be called directly" do
+  it "can be called directly when inferrable" do
     [[@klass, @public_method_list], [@subklass, @protected_method_list]].each do |obj, ms|
       ms.each do |m|
         generic_count, arity = m.match(/_(\d)_generic_(\d)_/)[1..2].map {|e| e.to_i}
         args = Array.new(arity, 1)
         args << args.pop.to_s.to_clr_string if arity > generic_count
-        lambda {obj.send(m, *args)}.should raise_error(ArgumentError)
+
+        obj.method(m).call(*args).should equal_clr_string(args.join(" "))
+        obj.method(m)[*args].should equal_clr_string(args.join(" "))
       end
     end
   end

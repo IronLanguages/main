@@ -19,6 +19,8 @@ using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Reflection.Emit;
 using System.Runtime.InteropServices;
+using System.Text;
+using System.Threading;
 
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
@@ -37,12 +39,12 @@ namespace IronPython.Runtime {
             _bytes = new byte[0];
         }
 
-        public Bytes(IList<byte>/*!*/ bytes) {
+        public Bytes([BytesConversion, NotNull]IList<byte>/*!*/ bytes) {
             _bytes = ArrayUtils.ToArray(bytes);
         }
 
-        public Bytes(List bytes) {
-            _bytes = ByteOps.GetBytes(bytes).ToArray();
+        public Bytes([NotNull]List bytes) {
+            _bytes = ByteOps.GetBytes(bytes, ByteOps.GetByteListOk).ToArray();
         }
 
         public Bytes(int size) {
@@ -617,8 +619,33 @@ namespace IronPython.Runtime {
             return this.IndexOf(bytes, 0) != -1;
         }
 
-        public bool __contains__(int value) {
+        public bool __contains__(CodeContext/*!*/ context, int value) {
+            if (!PythonContext.GetContext(context).PythonOptions.Python30) {
+                throw PythonOps.TypeError("'in <bytes>' requires string or bytes as left operand, not int");
+            }
+
             return IndexOf(value.ToByteChecked()) != -1;
+        }
+
+        public bool __contains__(CodeContext/*!*/ context, object value) {
+            if (!PythonContext.GetContext(context).PythonOptions.Python30) {
+                throw PythonOps.TypeError("'in <bytes>' requires string or bytes as left operand, not {0}", PythonTypeOps.GetName(value));
+            }
+
+            if (value is Extensible<int>) {
+                return IndexOf(((Extensible<int>)value).Value.ToByteChecked()) != -1;
+            }
+
+            BigInteger biVal = value as BigInteger;
+            if (biVal == null && value is Extensible<BigInteger>) {
+                biVal = ((Extensible<BigInteger>)value).Value;
+            }
+            if (biVal != null) {
+                return IndexOf(biVal.ToByteChecked()) != -1;
+            }
+
+            // 3.0 error message
+            throw PythonOps.TypeError("Type {0} doesn't support the buffer API", PythonTypeOps.GetOldName(value));
         }
 
         public PythonTuple __reduce__(CodeContext/*!*/ context) {
@@ -634,6 +661,10 @@ namespace IronPython.Runtime {
 
         public virtual string/*!*/ __repr__(Microsoft.Scripting.Runtime.CodeContext context) {
             return _bytes.BytesRepr();
+        }
+        
+        public override string/*!*/ ToString() {
+            return PythonOps.MakeString(this);
         }
 
         public static Bytes/*!*/ operator +(Bytes/*!*/ self, Bytes/*!*/ other) {
@@ -659,6 +690,14 @@ namespace IronPython.Runtime {
             }
 
             return new ByteArray(bytes);
+        }
+
+        public static string/*!*/ operator +(Bytes/*!*/ self, string/*!*/ other) {
+            return self.ToString() + other;
+        }
+
+        public static string/*!*/ operator +(string/*!*/ other, Bytes/*!*/ self) {
+            return other + self.ToString();
         }
 
         public static Bytes/*!*/ operator *(Bytes/*!*/ x, int y) {
@@ -845,20 +884,27 @@ namespace IronPython.Runtime {
 
         public override bool Equals(object obj) {
             IList<byte> bytes = obj as IList<byte>;
-            if (bytes == null) {
-                return false;
+            if (bytes != null) {
+                return _bytes.Compare(bytes) == 0;
             }
 
-            return _bytes.Compare(bytes) == 0;
+            string s = obj as string;
+            if (s == null) {
+                Extensible<string> es = obj as Extensible<string>;
+                if (es != null) {
+                    s = es.Value;
+                }
+            }
+
+            if (s != null) {
+                return ToString() == s;
+            }
+
+            return false;
         }
 
         public override int GetHashCode() {
-            int res = 6551;
-            for (int i = 0; i < _bytes.Length; i++) {
-                res = (res << 5) ^ _bytes[i].GetHashCode();
-            }
-
-            return res;
+            return ToString().GetHashCode();
         }
 
         #endregion

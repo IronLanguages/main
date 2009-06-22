@@ -45,10 +45,6 @@ namespace IronRuby.Runtime.Calls {
             get { return _definitionName; }
         }
 
-        internal override bool IsRemovable {
-            get { return true; }
-        }
-
         public override MemberInfo/*!*/[]/*!*/ GetMembers() {
             return new MemberInfo[] { _lambda.Dispatcher.Method.Method };
         }

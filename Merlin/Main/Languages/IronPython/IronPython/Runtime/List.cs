@@ -291,11 +291,11 @@ namespace IronPython.Runtime {
             // we can call it w/o requiring an explicit conversion.  If the
             // user overrides this we'll place a conversion in the wrapper
             // helper
-            return new listiterator(this);
+            return new ListIterator(this);
         }
 
         public virtual IEnumerator __reversed__() {
-            return new listreverseiterator(this);
+            return new ListReverseIterator(this);
         }
 
         public virtual bool __contains__(object value) {
@@ -1342,12 +1342,13 @@ namespace IronPython.Runtime {
         #endregion
     }
 
-    public sealed class listiterator : IEnumerator, IEnumerable, IEnumerable<object>, IEnumerator<object> {
+    [PythonType("listiterator")]
+    public sealed class ListIterator : IEnumerator, IEnumerable, IEnumerable<object>, IEnumerator<object> {
         private int _index;
         private readonly List _list;
         private bool _iterating;
 
-        public listiterator(List l) {
+        public ListIterator(List l) {
             _list = l;
             Reset();
         }
@@ -1373,15 +1374,11 @@ namespace IronPython.Runtime {
             return _iterating;
         }
 
-        public object __iter__() {
-            return this;
-        }
-
         #endregion
 
         #region IEnumerable Members
 
-        IEnumerator IEnumerable.GetEnumerator() {
+        public IEnumerator GetEnumerator() {
             return this;
         }
 
@@ -1403,12 +1400,13 @@ namespace IronPython.Runtime {
         #endregion
     }
 
-    public sealed class listreverseiterator : IEnumerator, IEnumerable, IEnumerable<object>, IEnumerator<object> {
+    [PythonType("listreverseiterator")]
+    public sealed class ListReverseIterator : IEnumerator, IEnumerable, IEnumerable<object>, IEnumerator<object> {
         private int _index;
         private readonly List _list;
         private bool _iterating;
 
-        public listreverseiterator(List l) {
+        public ListReverseIterator(List l) {
             _list = l;
             Reset();
         }
@@ -1434,15 +1432,11 @@ namespace IronPython.Runtime {
             return _iterating;
         }
 
-        public object __iter__() {
-            return this;
-        }
-
         #endregion
 
         #region IEnumerable Members
 
-        IEnumerator IEnumerable.GetEnumerator() {
+        public IEnumerator GetEnumerator() {
             return this;
         }
 

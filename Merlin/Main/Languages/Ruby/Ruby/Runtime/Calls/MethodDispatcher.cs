@@ -20,6 +20,11 @@ using IronRuby.Builtins;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
 using Microsoft.Scripting.Utils;
+using System.Linq.Expressions;
+using Microsoft.Scripting.Generation;
+using System.Collections.ObjectModel;
+using Microsoft.Scripting.Interpreter;
+using Microsoft.Scripting;
 
 namespace IronRuby.Runtime.Calls {
     
@@ -59,7 +64,7 @@ namespace IronRuby.Runtime.Calls {
                 return null;
             }
 
-            if (parameterCount > PrecompiledParameterCount) {
+            if (parameterCount > MaxPrecompiledArity) {
                 return null;
             }
 
@@ -79,21 +84,101 @@ namespace IronRuby.Runtime.Calls {
             }
         }
 
+        internal static InterpretedDispatcher CreateInterpreted(Type/*!*/ delegateType, int parameterCount) {
+            if (parameterCount > MaxInterpretedArity) {
+                return null;
+            }
+
+            // Func<CallSite, T1, ... TN, TReturn>
+            // Action<CallSite, T1, ... TN>
+            var types = delegateType.GetGenericArguments();
+            types = types.GetSlice(1, types.Length - 1);
+
+            Type dispatcherType;
+            if (parameterCount != types.Length) {
+                // Func
+                Debug.Assert(parameterCount + 1 == types.Length);
+                dispatcherType = InterpretedFuncDispatchers[parameterCount];
+            } else {
+                // Action
+                dispatcherType = InterpretedActionDispatchers[parameterCount];
+            }
+
+            return (InterpretedDispatcher)Activator.CreateInstance(dispatcherType.MakeGenericType(types));
+        }
+
         public abstract object/*!*/ CreateDelegate();
         internal abstract void Initialize(Delegate/*!*/ method, int version);
-
-        internal virtual void InitializeSingleton(object singleton, VersionHandle/*!*/ versionHandle) {
-            throw Assert.Unreachable;
-        }
     }
 
     public abstract class MethodDispatcher<TRubyFunc> : MethodDispatcher {
-        internal TRubyFunc/*!*/ Method;
+        internal TRubyFunc Method;
 
         internal override void Initialize(Delegate/*!*/ method, int version) {
             Assert.NotNull(method);
             Method = (TRubyFunc)(object)method;
             Version = version;
         }
+    }
+
+    public abstract class InterpretedDispatcher {
+        internal object _rule;
+        internal Delegate _compiled;
+
+        internal T/*!*/ CreateDelegate<T>(Expression/*!*/ binding) where T : class {
+            Delegate d = CompilerHelpers.LightCompile(Stitch<T>(binding));
+            T result = (T)(object)d;
+
+            LightLambda lambda = d.Target as LightLambda;
+            if (lambda != null) {
+                _rule = result;
+                lambda.Compile += (_, e) => _compiled = e.Compiled;
+                return (T)GetInterpretingDelegate();
+            } else {
+                PerfTrack.NoteEvent(PerfTrack.Categories.Rules, "Rule not interpreted");
+                return result;
+            }
+        }
+
+        // TODO: This is a copy of CallSiteBinder.Stitch.
+        private LambdaExpression/*!*/ Stitch<T>(Expression/*!*/ binding) where T : class {
+            Expression updLabel = Expression.Label(CallSiteBinder.UpdateLabel);
+
+            var site = Expression.Parameter(typeof(CallSite), "$site");
+            var @params = ArrayUtils.Insert(site, Parameters);
+
+            var body = Expression.Block(
+                binding,
+                updLabel,
+                Expression.Label(
+                    ReturnLabel,
+                    Expression.Condition(
+                        Expression.Call(
+                            typeof(CallSiteOps).GetMethod("SetNotMatched"),
+                            @params[0]
+                        ),
+                        Expression.Default(ReturnLabel.Type),
+                        Expression.Invoke(
+                            Expression.Property(
+                                Expression.Convert(site, typeof(CallSite<T>)),
+                                typeof(CallSite<T>).GetProperty("Update")
+                            ),
+                            @params
+                        )
+                    )
+                )
+            );
+
+            return Expression.Lambda<T>(
+                body,
+                "CallSite.Target",
+                true, // always compile the rules with tail call optimization
+                @params
+            );
+        }
+
+        internal abstract ReadOnlyCollection<ParameterExpression> Parameters { get; }
+        internal abstract LabelTarget ReturnLabel { get; }
+        internal abstract object/*!*/ GetInterpretingDelegate();
     }
 }

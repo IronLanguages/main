@@ -1,0 +1,6 @@
+fails:Generic Void delegate instantiation requires a proc-like object
+fails:Generic Reference delegate requires a proc-like object
+fails:Generic Value delegate requires a proc-like object
+fails:Generic Reference array delegate requires a proc-like object
+fails:Generic Value array delegate requires a proc-like object
+fails:Generic Generic delegate requires a proc-like object

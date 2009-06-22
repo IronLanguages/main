@@ -11,7 +11,7 @@
 	<StackPanel 
 	        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 			xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" 
-			x:Name="step_id">
+			x:Name="step_id" Background="{x:Null}">
 
 		<TextBlock x:Name="step_title_id" Text="Step Title" TextWrapping="Wrap" FontSize="16" Margin="5,0,5,8" FontWeight="Bold"/>
 
@@ -22,7 +22,7 @@
 						<Paragraph><Run Text="This is a step description"/></Paragraph>
 					</FlowDocument>
 				</RichTextBox>
-				<Border BorderThickness="5" CornerRadius="0,0,10,10" Background="#FFC8C8C8" DockPanel.Dock="Bottom" BorderBrush="{x:Null}" Padding="7,7,7,2" OpacityMask="#FF2E2E2E" Margin="-5">
+				<Border BorderThickness="4" CornerRadius="0,0,10,10" Background="#FFC8C8C8" DockPanel.Dock="Bottom" BorderBrush="{x:Null}" Padding="8,8,8,4" OpacityMask="#FF2E2E2E" Margin="-6">
 					<StackPanel x:Name="step_repl_id" Orientation="Vertical" VerticalAlignment="Top">
 						<TextBox x:Name="step_repl_history_id" 
 							Background="{x:Null}" VerticalAlignment="Top" FontFamily="Consolas"
@@ -33,10 +33,17 @@
 							IsTabStop="False" 
 							IsUndoEnabled="False" 
 							IsReadOnly="True" 
-							BorderThickness="0" FontSize="16" Margin="-2,0,0,0" Visibility="Collapsed" />
-						<StackPanel Orientation="Horizontal" VerticalAlignment="Top" Background="{x:Null}">
+							BorderThickness="0" FontSize="16" Margin="1,0,0,0" Visibility="Collapsed" />
+						<StackPanel Orientation="Horizontal" VerticalAlignment="Top" Background="{x:Null}" Margin="3,0,0,0">
 							<Label x:Name="step_repl_input_arrow_id" Content="&gt;&gt;&gt;" FontFamily="Consolas" FontSize="16" Padding="0" Foreground="Black" Margin="0,0,5,0"/>
-							<TextBox x:Name="step_repl_input_id" FontFamily="Consolas" VerticalAlignment="Top" BorderThickness="0" FontSize="16" Foreground="Black" Padding="0" Background="#FFB2B2B2" HorizontalContentAlignment="Stretch" Width="2000" Margin="2,0,0,0" />
+							<TextBox x:Name="step_repl_input_id" FontFamily="Consolas" VerticalAlignment="Top" BorderThickness="0" FontSize="16" Foreground="Black" Padding="0" HorizontalContentAlignment="Stretch" Width="2000" Margin="2,0,0,0" BorderBrush="{x:Null}" OpacityMask="#FF2E2E2E" >
+								<TextBox.Background>
+									<LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+										<GradientStop Color="#FFBFBFBF" Offset="0"/>
+										<GradientStop Offset="1" Color="#FFC8C8C8"/>
+									</LinearGradientBrush>
+								</TextBox.Background>
+							</TextBox>
 						</StackPanel>
 					</StackPanel>
 				</Border>

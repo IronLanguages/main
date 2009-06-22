@@ -13,12 +13,12 @@
 #
 # ****************************************************************************
 
-require "tutorial"
 require "stringio"
 require "pathname"
 require "erb"
 require "rdoc/markup/simple_markup"
 require "rdoc/markup/simple_markup/to_html"
+require File.dirname(__FILE__) + "/tutorial"
 
 # Utility class to convert from RDoc SimpleMarkup text to WPF FlowDocument.
 # It adds hyperlinking functinality to SM::ToHtml similar to Generators::HyperlinkHtml,

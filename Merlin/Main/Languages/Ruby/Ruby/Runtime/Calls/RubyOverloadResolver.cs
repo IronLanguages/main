@@ -771,7 +771,11 @@ namespace IronRuby.Runtime.Calls {
                             }
                         }
                         break;
-
+                    case CallFailureReason.TypeInference:
+                        // TODO: Display generic parameters so it's clear what we couldn't infer.
+                        return Methods.CreateArgumentsError.OpCall(
+                            AstUtils.Constant(String.Format("generic arguments could not be infered for method '{0}'", target.Name))
+                        );
                     case CallFailureReason.DuplicateKeyword:
                     case CallFailureReason.UnassignableKeyword:
                     default: throw new InvalidOperationException();

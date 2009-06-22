@@ -27,33 +27,46 @@ namespace IronRuby.Runtime {
     // (including instances of arbitrary .NET types via singleton methods)
     // TODO: optimize this by caching hash values?
     public class EqualityComparer : IEqualityComparer<object> {
-        private readonly RubyContext/*!*/ _context;
-
         private readonly CallSite<Func<CallSite, object, object>>/*!*/ _hashSite;
         private readonly CallSite<Func<CallSite, object, object, object>>/*!*/ _eqlSite;
 
         // friend: RubyContext
-        internal EqualityComparer(RubyContext/*!*/ context) {
-            Assert.NotNull(context);
-            _context = context;
-            _hashSite = CallSite<Func<CallSite, object, object>>.Create(
-                RubyCallAction.Make(context, "hash", RubyCallSignature.WithImplicitSelf(0))
-             );
-            _eqlSite = CallSite<Func<CallSite, object, object, object>>.Create(
-                RubyCallAction.Make(context, "eql?", RubyCallSignature.WithImplicitSelf(1))
-            );
+        internal EqualityComparer(RubyContext/*!*/ context)
+            : this(
+                CallSite<Func<CallSite, object, object>>.Create(RubyCallAction.Make(context, "hash", RubyCallSignature.WithImplicitSelf(0))),
+                CallSite<Func<CallSite, object, object, object>>.Create(RubyCallAction.Make(context, "eql?", RubyCallSignature.WithImplicitSelf(1)))
+            ) {
+        }
+
+        public EqualityComparer(UnaryOpStorage/*!*/ hashStorage, BinaryOpStorage/*!*/ eqlStorage) 
+            : this(hashStorage.GetCallSite("hash"), eqlStorage.GetCallSite("eql?")) {
+        }
+
+        public EqualityComparer(CallSite<Func<CallSite, object, object>>/*!*/ hashSite, CallSite<Func<CallSite, object, object, object>>/*!*/ eqlSite) {
+            ContractUtils.RequiresNotNull(hashSite, "hashSite");
+            ContractUtils.RequiresNotNull(eqlSite, "eqlSite");
+            _hashSite = hashSite;
+            _eqlSite = eqlSite;
         }
 
         bool IEqualityComparer<object>.Equals(object x, object y) {
-            return x == y || RubyOps.IsTrue(_eqlSite.Target(_eqlSite, x, y));
+            if (x == y) {
+                return true;
+            }
+
+            if (x is int) {
+                return y is int && (int)x == (int)y;
+            }
+
+            return RubyOps.IsTrue(_eqlSite.Target(_eqlSite, x, y));
         }
 
         int IEqualityComparer<object>.GetHashCode(object obj) {
-            object result = _hashSite.Target(_hashSite, obj);
-            if (result is int) {
-                return (int)result;
+            if (obj is int) {
+                return (int)obj;
             }
-            return result.GetHashCode();
+
+            return Protocols.ToHashCode(_hashSite.Target(_hashSite, obj));
         }
     }
 }

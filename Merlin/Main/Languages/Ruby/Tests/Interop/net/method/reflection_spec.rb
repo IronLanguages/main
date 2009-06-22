@@ -11,6 +11,26 @@ describe "Reflecting on regular .NET methods" do
   before(:each) do
     @obj = ClassWithMethods.new
   end
+  
+  it "IronRuby::Clr::Name implements equality comparison so that include? works on dual names" do
+    System::AppDomain.singleton_methods.include?(:unload).should be_true
+    System::AppDomain.singleton_methods.include?("unload").should be_true
+    System::AppDomain.singleton_methods.include?("Unload").should be_false
+  end
+  
+  ruby_version_is "".."1.8.6" do
+    it "simple names are represented by strings" do
+      System::AppDomain.singleton_methods.include?(:Equals).should be_false
+      System::AppDomain.singleton_methods.include?("Equals").should be_true
+    end
+  end
+
+  ruby_version_is "1.9" do
+    it "simple names are represented by symbols" do
+      System::AppDomain.singleton_methods.include?(:Equals).should be_true
+      System::AppDomain.singleton_methods.include?("Equals").should be_false
+    end
+  end
 
   it "are included in an objects method list" do
     #.instance_methods(true)
@@ -55,7 +75,6 @@ describe "Reflecting on abstract .NET methods" do
     @meth = AbstractClassWithMethods.instance_method(:public_method)
     @meth.should be_kind_of UnboundMethod
   end
-
 end
 
 describe "Reflecting on .NET method objects" do

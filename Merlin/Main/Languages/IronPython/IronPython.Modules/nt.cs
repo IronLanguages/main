@@ -37,10 +37,16 @@ using IronPython.Runtime.Types;
 [assembly: PythonModule("nt", typeof(IronPython.Modules.PythonNT))]
 namespace IronPython.Modules {
     public static class PythonNT {
+#if !SILVERLIGHT
+        private static Dictionary<int, Process> _processToIdMapping = new Dictionary<int, Process>();
+        private static List<int> _freeProcessIds = new List<int>();
+        private static int _processCount;
+#endif
+
         #region Public API Surface
 
 #if !SILVERLIGHT // FailFast
-        public static void abort() {
+        public static void abort() {            
             System.Environment.FailFast("IronPython os.abort");
         }
 #endif
@@ -404,10 +410,30 @@ namespace IronPython.Modules {
         }
 
 #if !SILVERLIGHT
+        /// <summary>
+        /// spawns a new process.
+        /// 
+        /// If mode is nt.P_WAIT then then the call blocks until the process exits and the return value
+        /// is the exit code.
+        /// 
+        /// Otherwise the call returns a handle to the process.  The caller must then call nt.waitpid(pid, options)
+        /// to free the handle and get the exit code of the process.  Failure to call nt.waitpid will result
+        /// in a handle leak.
+        /// </summary>
         public static object spawnl(CodeContext/*!*/ context, int mode, string path, params object[] args) {
             return SpawnProcessImpl(context, MakeProcess(), mode, path, args);
         }
 
+        /// <summary>
+        /// spawns a new process.
+        /// 
+        /// If mode is nt.P_WAIT then then the call blocks until the process exits and the return value
+        /// is the exit code.
+        /// 
+        /// Otherwise the call returns a handle to the process.  The caller must then call nt.waitpid(pid, options)
+        /// to free the handle and get the exit code of the process.  Failure to call nt.waitpid will result
+        /// in a handle leak.
+        /// </summary>
         public static object spawnle(CodeContext/*!*/ context, int mode, string path, params object[] args) {
             if (args.Length < 1) {
                 throw PythonOps.TypeError("spawnle() takes at least three arguments ({0} given)", 2 + args.Length);
@@ -422,10 +448,30 @@ namespace IronPython.Modules {
             return SpawnProcessImpl(context, process, mode, path, slicedArgs);
         }
 
+        /// <summary>
+        /// spawns a new process.
+        /// 
+        /// If mode is nt.P_WAIT then then the call blocks until the process exits and the return value
+        /// is the exit code.
+        /// 
+        /// Otherwise the call returns a handle to the process.  The caller must then call nt.waitpid(pid, options)
+        /// to free the handle and get the exit code of the process.  Failure to call nt.waitpid will result
+        /// in a handle leak.
+        /// </summary>
         public static object spawnv(CodeContext/*!*/ context, int mode, string path, object args) {
             return SpawnProcessImpl(context, MakeProcess(), mode, path, args);
         }
 
+        /// <summary>
+        /// spawns a new process.
+        /// 
+        /// If mode is nt.P_WAIT then then the call blocks until the process exits and the return value
+        /// is the exit code.
+        /// 
+        /// Otherwise the call returns a handle to the process.  The caller must then call nt.waitpid(pid, options)
+        /// to free the handle and get the exit code of the process.  Failure to call nt.waitpid will result
+        /// in a handle leak.
+        /// </summary>
         public static object spawnve(CodeContext/*!*/ context, int mode, string path, object args, object env) {
             Process process = MakeProcess();
             SetEnvironment(process.StartInfo.EnvironmentVariables, env);
@@ -453,13 +499,30 @@ namespace IronPython.Modules {
             if (!process.Start()) {
                 throw PythonOps.OSError("Cannot start process: {0}", path);
             }
-            if (mode == (int)P_WAIT) {
+            if (mode == P_WAIT) {
                 process.WaitForExit();
                 int exitCode = process.ExitCode;
                 process.Close();
                 return exitCode;
-            } else {
-                return process.Id;
+            }
+
+            lock (_processToIdMapping) {
+                int id;
+                if (_freeProcessIds.Count > 0) {
+                    id = _freeProcessIds[_freeProcessIds.Count - 1];
+                    _freeProcessIds.RemoveAt(_freeProcessIds.Count - 1);
+                } else {
+                    // process IDs are handles on CPython/Win32 so we match
+                    // that behavior and return something that is handle like.  Handles
+                    // on NT are guaranteed to have the low 2 bits not set and users
+                    // could use these for their own purposes.  We therefore match that
+                    // behavior here.
+                    _processCount += 4; 
+                    id = _processCount;
+                }
+
+                _processToIdMapping[id] = process;
+                return ScriptingRuntimeHelpers.Int32ToObject(id);
             }
         }
 
@@ -824,6 +887,54 @@ namespace IronPython.Modules {
             return sr;
         }
 
+        public static string strerror(int code) {
+            switch(code) {
+                case PythonErrorNumber.E2BIG: return "Arg list too long";
+                case PythonErrorNumber.EACCES: return "Permission denied";
+                case PythonErrorNumber.EAGAIN: return "Resource temporarily unavailable";
+                case PythonErrorNumber.EBADF: return "Bad file descriptor";
+                case PythonErrorNumber.EBUSY: return "Resource device";
+                case PythonErrorNumber.ECHILD: return "No child processes";
+                case PythonErrorNumber.EDEADLK: return "Resource deadlock avoided";
+                case PythonErrorNumber.EDOM: return "Domain error";
+                case PythonErrorNumber.EDQUOT: return "Unknown error";
+                case PythonErrorNumber.EEXIST: return "File exists";
+                case PythonErrorNumber.EFAULT: return "Bad address";
+                case PythonErrorNumber.EFBIG: return "File too large";
+                case PythonErrorNumber.EILSEQ: return "Illegal byte sequence";
+                case PythonErrorNumber.EINTR: return "Interrupted function call";
+                case PythonErrorNumber.EINVAL: return "Invalid argument";
+                case PythonErrorNumber.EIO: return "Input/output error";
+                case PythonErrorNumber.EISCONN: return "Unknown error";
+                case PythonErrorNumber.EISDIR: return "Is a directory";
+                case PythonErrorNumber.EMFILE: return "Too many open files";
+                case PythonErrorNumber.EMLINK: return "Too many links";
+                case PythonErrorNumber.ENAMETOOLONG: return "Filename too long";
+                case PythonErrorNumber.ENFILE: return "Too many open files in system";
+                case PythonErrorNumber.ENODEV: return "No such device";
+                case PythonErrorNumber.ENOENT: return "No such file or directory";
+                case PythonErrorNumber.ENOEXEC: return "Exec format error";
+                case PythonErrorNumber.ENOLCK: return "No locks available";
+                case PythonErrorNumber.ENOMEM: return "Not enough space";
+                case PythonErrorNumber.ENOSPC: return "No space left on device";
+                case PythonErrorNumber.ENOSYS: return "Function not implemented";
+                case PythonErrorNumber.ENOTDIR: return "Not a directory";
+                case PythonErrorNumber.ENOTEMPTY: return "Directory not empty";
+                case PythonErrorNumber.ENOTSOCK: return "Unknown error";
+                case PythonErrorNumber.ENOTTY: return "Inappropriate I/O control operation";
+                case PythonErrorNumber.ENXIO: return "No such device or address";
+                case PythonErrorNumber.EPERM: return "Operation not permitted";
+                case PythonErrorNumber.EPIPE: return "Broken pipe";
+                case PythonErrorNumber.ERANGE: return "Result too large";
+                case PythonErrorNumber.EROFS: return "Read-only file system";
+                case PythonErrorNumber.ESPIPE: return "Invalid seek";
+                case PythonErrorNumber.ESRCH: return "No such process";
+                case PythonErrorNumber.EXDEV: return "Improper link";
+                default:
+                    return "Unknown error " + code;
+            }
+        }
+
         private static PythonType WindowsError {
             get {
 #if !SILVERLIGHT
@@ -963,12 +1074,23 @@ namespace IronPython.Modules {
         }
 
         public static PythonTuple waitpid(int pid, object options) {
-            System.Diagnostics.Process process = System.Diagnostics.Process.GetProcessById(pid);
-            if (process == null) {
-                throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, PythonErrorNumber.ECHILD, "Cannot find process " + pid);
+            Process process;
+            lock (_processToIdMapping) {
+                if (!_processToIdMapping.TryGetValue(pid, out process)) {
+                    throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, PythonErrorNumber.ECHILD, "No child processes");
+                }
             }
+
             process.WaitForExit();
-            return PythonTuple.MakeTuple(pid, process.ExitCode);
+            PythonTuple res = PythonTuple.MakeTuple(pid, process.ExitCode);
+
+            lock (_processToIdMapping) {
+                // lower 3 bits are user defined and ignored (matching NT's handle semantics)
+                _processToIdMapping.Remove(pid & ~0x03);
+                _freeProcessIds.Add(pid & ~0x03);
+            }
+
+            return res;
         }
 #endif
 

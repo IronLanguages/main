@@ -30,16 +30,20 @@ namespace IronRuby.Runtime.Calls {
     public sealed class RubyEventInfo : RubyMemberInfo {
         private readonly EventTracker/*!*/ _tracker;
 
+        // True if the member is defined in Ruby (e.g. via alias) - such definition "detaches" it from the underlying type.
+        private readonly bool _isDetached;
+
         public EventTracker/*!*/ Tracker { get { return _tracker; } }
 
-        public RubyEventInfo(EventTracker/*!*/ tracker, RubyMemberFlags flags, RubyModule/*!*/ declaringModule)
+        public RubyEventInfo(EventTracker/*!*/ tracker, RubyMemberFlags flags, RubyModule/*!*/ declaringModule, bool isDetached)
             : base(flags, declaringModule) {
             Assert.NotNull(tracker, declaringModule);
             _tracker = tracker;
+            _isDetached = isDetached;
         }
 
         protected internal override RubyMemberInfo/*!*/ Copy(RubyMemberFlags flags, RubyModule/*!*/ module) {
-            return new RubyEventInfo(_tracker, flags, module);
+            return new RubyEventInfo(_tracker, flags, module, true);
         }
 
         internal override bool IsDataMember {
@@ -47,7 +51,7 @@ namespace IronRuby.Runtime.Calls {
         }
 
         internal override bool IsRubyMember {
-            get { return false; }
+            get { return _isDetached; }
         }
 
         public override MemberInfo/*!*/[]/*!*/ GetMembers() {

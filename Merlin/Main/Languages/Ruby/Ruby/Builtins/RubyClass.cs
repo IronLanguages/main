@@ -115,13 +115,20 @@ namespace IronRuby.Builtins {
             get { return RubyUtils.GetCallSite(ref _stringConversionSite, ConvertToSAction.Make(Context)); } 
         }
 
-        public CallSite<Func<CallSite, object, object, object>>/*!*/ EqlSite {
-            get { return RubyUtils.GetCallSite(ref _eqlSite, Context, "==", 1); }
+        public CallSite<Func<CallSite, object, object, object>>/*!*/ EqualsSite {
+            get { 
+                return RubyUtils.GetCallSite(ref _eqlSite, Context, "Equals",
+                    new RubyCallSignature(1, RubyCallFlags.HasImplicitSelf | RubyCallFlags.IsVirtualCall)
+                );
+            }
         }
 
-        public CallSite<Func<CallSite, object, object>>/*!*/ HashSite {
-            get { return RubyUtils.GetCallSite(ref _hashSite, Context, "hash", 0); }
-
+        internal CallSite<Func<CallSite, object, object>>/*!*/ GetHashCodeSite {
+            get { 
+                return RubyUtils.GetCallSite(ref _hashSite, Context, "GetHashCode", 
+                    new RubyCallSignature(0, RubyCallFlags.HasImplicitSelf | RubyCallFlags.IsVirtualCall)
+                );
+            }
         }
         
         // RubyClass, RubyClass -> object
@@ -870,7 +877,8 @@ namespace IronRuby.Builtins {
                 return false;
             }
 
-            // if all CLR inherited members are to be returned we are done:
+            // If all CLR inherited members are to be returned we are done.
+            // (creates a detached info; used by Kernel#clr_member)
             if ((bindingFlags & BindingFlags.DeclaredOnly) == 0) {
                 method = MakeGroup(initialMembers, initialVisibleMemberCount, specialNameOnly, true);
                 return true;
@@ -1117,7 +1125,9 @@ namespace IronRuby.Builtins {
         private bool TryGetClrField(Type/*!*/ type, BindingFlags bindingFlags, bool isWrite, string/*!*/ name, out RubyMemberInfo method) {
             FieldInfo fieldInfo = type.GetField(name, bindingFlags);
             if (fieldInfo != null && IsVisible(fieldInfo) && (!isWrite || IsWriteable(fieldInfo))) {
-                method = new RubyFieldInfo(fieldInfo, RubyMemberFlags.Public, this, isWrite);
+                // creates detached info if only declared members are requested (used by Kernel#clr_member):
+                bool createDetached = (bindingFlags & BindingFlags.DeclaredOnly) != 0;
+                method = new RubyFieldInfo(fieldInfo, RubyMemberFlags.Public, this, isWrite, createDetached);
                 return true;
             }
 
@@ -1136,7 +1146,9 @@ namespace IronRuby.Builtins {
 
             EventInfo eventInfo = type.GetEvent(name, bindingFlags);
             if (eventInfo != null) {
-                method = new RubyEventInfo((EventTracker)MemberTracker.FromMemberInfo(eventInfo), RubyMemberFlags.Public, this);
+                // creates detached info if only declared members are requested (used by Kernel#clr_member):
+                bool createDetached = (bindingFlags & BindingFlags.DeclaredOnly) != 0;
+                method = new RubyEventInfo((EventTracker)MemberTracker.FromMemberInfo(eventInfo), RubyMemberFlags.Public, this, createDetached);
                 return true;
             }
 

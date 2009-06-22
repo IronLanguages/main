@@ -22,6 +22,7 @@ using Microsoft.Scripting.Runtime;
 
 namespace Microsoft.Scripting.Utils {
     static class TypeUtils {
+        // keep in sync with System.Core version
         internal static Type GetNonNullableType(Type type) {
             if (IsNullableType(type)) {
                 return type.GetGenericArguments()[0];
@@ -29,35 +30,44 @@ namespace Microsoft.Scripting.Utils {
             return type;
         }
 
+        // keep in sync with System.Core version
         internal static bool IsNullableType(Type type) {
             return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>);
         }
 
+        // keep in sync with System.Core version
         internal static bool IsBool(Type type) {
             return GetNonNullableType(type) == typeof(bool);
         }
 
+        // keep in sync with System.Core version
         internal static bool IsNumeric(Type type) {
             type = GetNonNullableType(type);
             if (!type.IsEnum) {
-                switch (Type.GetTypeCode(type)) {
-                    case TypeCode.Char:
-                    case TypeCode.SByte:
-                    case TypeCode.Byte:
-                    case TypeCode.Int16:
-                    case TypeCode.Int32:
-                    case TypeCode.Int64:
-                    case TypeCode.Double:
-                    case TypeCode.Single:
-                    case TypeCode.UInt16:
-                    case TypeCode.UInt32:
-                    case TypeCode.UInt64:
-                        return true;
-                }
+                return IsNumeric(Type.GetTypeCode(type));
             }
             return false;
         }
 
+        internal static bool IsNumeric(TypeCode typeCode) {
+            switch (typeCode) {
+                case TypeCode.Char:
+                case TypeCode.SByte:
+                case TypeCode.Byte:
+                case TypeCode.Int16:
+                case TypeCode.Int32:
+                case TypeCode.Int64:
+                case TypeCode.Double:
+                case TypeCode.Single:
+                case TypeCode.UInt16:
+                case TypeCode.UInt32:
+                case TypeCode.UInt64:
+                    return true;
+            }
+            return false;
+        }
+
+        // keep in sync with System.Core version
         internal static bool IsArithmetic(Type type) {
             type = GetNonNullableType(type);
             if (!type.IsEnum) {
@@ -76,7 +86,8 @@ namespace Microsoft.Scripting.Utils {
             return false;
         }
 
-        internal static bool IsUnsigned(Type type) {
+        // keep in sync with System.Core version
+        internal static bool IsUnsignedInt(Type type) {
             type = GetNonNullableType(type);
             if (!type.IsEnum) {
                 switch (Type.GetTypeCode(type)) {
@@ -89,6 +100,7 @@ namespace Microsoft.Scripting.Utils {
             return false;
         }
 
+        // keep in sync with System.Core version
         internal static bool IsIntegerOrBool(Type type) {
             type = GetNonNullableType(type);
             if (!type.IsEnum) {
@@ -223,6 +235,15 @@ namespace Microsoft.Scripting.Utils {
 
         private static bool NullVsNullable(Type left, Type right) {
             return IsNullableType(left) && right == typeof(DynamicNull);
+        }
+
+        // keep in sync with System.Core version
+        internal static bool AreEquivalent(Type t1, Type t2) {
+#if !SYSTEM_CORE
+            return t1 == t2;
+#else
+            return t1 == t2 || t1.IsEquivalentTo(t2);
+#endif
         }
 
         // keep in sync with System.Core version

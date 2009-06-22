@@ -13,8 +13,8 @@
 #
 # ****************************************************************************
 
-require "tutorial"
 require "stringio"
+require File.dirname(__FILE__) + "/tutorial"
 
 class ConsoleTutorial
     attr :tutorial
@@ -22,11 +22,7 @@ class ConsoleTutorial
     def initialize(tutorial = nil, inp = $stdin, out = $stdout)
         @in = inp
         @out = out
-        if tutorial
-            @tutorial = tutorial
-        else
-            @tutorial = Tutorial.get_tutorial
-        end
+        @tutorial = tutorial || Tutorial.get_tutorial
         @context = Tutorial::ReplContext.new
     end
     
@@ -34,23 +30,28 @@ class ConsoleTutorial
         @out.puts "---------------------"
         @out.puts "Starting #{chapter.name}"
         @out.print chapter.introduction
+        prompt = "> "
         chapter.tasks.each do |task|
             @out.puts task.description
             task.setup.call(@context.bind) if task.setup
             @out.puts "Enter the following code:"
             @out.puts task.code_string
             begin
-                @out.print "> "
+                @out.print prompt
                 if @in.eof? then raise "No more input... (Task description: #{task.description}\nTask code: #{task.code_string})" end
                 input = @in.gets
                 
                 result = @context.interact input
                 @out.puts result.output if not result.output.empty?
-                if result.error
+                if result.partial_input?
+                  prompt = "* "
+                  next
+                elsif result.error
                   @out.puts result.error.to_s
                 else
                   @out.puts "=> #{result.result.inspect}"
-                end      
+                end
+                prompt = "> "
             end until task.success?(result)
         end
         @out.puts "Chapter completed successfully!"

@@ -171,5 +171,9 @@ namespace Microsoft.Scripting.Actions.Calls {
                 return _elementType.MakeArrayType();
             }
         }
+
+        public override ArgBuilder Clone(ParameterInfo newType) {
+            return new ParamsArgBuilder(newType, newType.ParameterType.GetElementType(), _start, _expandedCount);
+        }
     }
 }

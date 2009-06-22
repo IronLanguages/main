@@ -24,14 +24,16 @@ namespace Microsoft.Scripting.Actions.Calls {
     public sealed class RestrictedArguments {
         private readonly DynamicMetaObject[] _objects;
         private readonly Type[] _types;
+        private readonly bool _hasUntypedRestrictions;
 
-        public RestrictedArguments(DynamicMetaObject[] objects, Type[] types) {
+        public RestrictedArguments(DynamicMetaObject[] objects, Type[] types, bool hasUntypedRestrictions) {
             Assert.NotNullItems(objects);
             Assert.NotNull(types);
             Debug.Assert(objects.Length == types.Length);
 
             _objects = objects;
             _types = types;
+            _hasUntypedRestrictions = hasUntypedRestrictions;
         }
 
         public int Length {
@@ -44,6 +46,15 @@ namespace Microsoft.Scripting.Actions.Calls {
 
         public Type GetType(int i) {
             return _types[i];
+        }
+
+        /// <summary>
+        /// True if there are restrictions beyond just simple type restrictions
+        /// </summary>
+        public bool HasUntypedRestrictions {
+            get {
+                return _hasUntypedRestrictions;
+            }
         }
 
         public BindingRestrictions GetAllRestrictions() {
