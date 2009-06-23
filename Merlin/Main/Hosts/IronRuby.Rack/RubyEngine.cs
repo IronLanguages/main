@@ -42,6 +42,16 @@ namespace IronRuby.Rack {
         public static object Execute(string code, ScriptScope aScope) {
             return Engine.CreateScriptSourceFromString(code).Execute(aScope);
         }
+
+        public static T Execute<T>(string code)
+        {
+            return Execute<T>(code, scope);
+        }
+
+        public static T Execute<T>(string code, ScriptScope aScope)
+        {
+            return (T)Engine.CreateScriptSourceFromString(code).Execute(aScope);
+        }
         
         public static T ExecuteMethod<T>(object instance, string methodName, params object[] args)
         {
