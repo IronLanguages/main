@@ -21,24 +21,23 @@ Topics covered
 Running the app
 ---------------
 
-  ir.exe wpf_tutorial.rb
+    ir.exe wpf_tutorial.rb
   
-  ir.exe wpf_tutorial.rb <tutorial_file_path>
+    ir.exe wpf_tutorial.rb <tutorial_file_path>
 
 Running the app interactively
 -----------------------------
 
-  ir.exe
-  >>> load "wpf_tutorial.rb"
-  => true
-  >>> # Edit wpf_tutorial.rb. For example, change the settings on the window in
-  >>> # the XAML
-  >>> reload # This should show the new window now...
-  => true
+Launch ir.exe:
 
+    load "wpf_tutorial.rb"
+    #=> true
+    # Edit wpf_tutorial.rb. For example, change the settings on the window in
+    # the XAML
+    reload # This should show the new window now...
+    #=> true
 
 Running the tests
 -----------------
 
-  ir.exe test\test_console.rb
-
+    ir.exe test\test_console.rb
