@@ -77,4 +77,10 @@ describe "Array#-" do
     a - [:a, :b, :c]
     a.should == [1, 2, 3]
   end
+  
+  it "handles nil correctly" do
+    a = [nil, 1, nil]
+    (a - [nil]).should == [1]
+    (a - [1]).should == [nil, nil]
+  end
 end

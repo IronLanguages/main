@@ -112,7 +112,7 @@ class Gem::Dependency
   end
 
   def hash # :nodoc:
-    name.hash + type.hash + version_requirements.hash
+    name.hash ^ type.hash ^ version_requirements.hash
   end
 
 end

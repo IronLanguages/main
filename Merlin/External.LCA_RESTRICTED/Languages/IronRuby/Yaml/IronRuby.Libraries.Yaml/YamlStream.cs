@@ -60,8 +60,8 @@ namespace IronRuby.StandardLibrary.Yaml {
             }
 
             [RubyMethod("add")]
-            public static RubyArray Add(RubyContext/*!*/ context, YamlStream/*!*/ self, object document) {
-                IListOps.Append(context, self._documents, document);
+            public static RubyArray Add(YamlStream/*!*/ self, object document) {
+                IListOps.Append(self._documents, document);
                 return self._documents;
             }
 
@@ -71,8 +71,8 @@ namespace IronRuby.StandardLibrary.Yaml {
             }
 
             [RubyMethod("edit")]
-            public static object EditDocument(RubyContext/*!*/ context, YamlStream/*!*/ self, [DefaultProtocol]int index, object document) {
-                return IListOps.SetElement(context, self._documents, index, document);
+            public static object EditDocument(YamlStream/*!*/ self, [DefaultProtocol]int index, object document) {
+                return IListOps.SetElement(self._documents, index, document);
             }
 
             [RubyMethod("documents")]
