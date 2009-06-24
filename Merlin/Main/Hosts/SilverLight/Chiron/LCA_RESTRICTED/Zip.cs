@@ -617,8 +617,8 @@ namespace Chiron {
         internal const uint SignatureFileEntry = 0x04034b50;
         internal const uint SignatureArchiveDirectory = 0x02014b50;
         internal const uint SignatureArchiveDirectoryEnd = 0x06054b50;
-        internal const ushort VersionNeededToExtract = 0x0100; // version 1.0, TODO
-        internal const ushort MaximumVersionExtractable = 0x0100;
+        internal const ushort VersionNeededToExtract = 0x0014; // version 1.0, TODO
+        internal const ushort MaximumVersionExtractable = 0x0014;
         internal const ushort VersionMadeBy = 0;               // MS-DOS, TODO: should this be NTFS?
         internal const ushort GeneralPurposeBitFlag = 0;       // TODO
         internal const ushort ExtraFieldLength = 0;
