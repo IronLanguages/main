@@ -103,11 +103,17 @@ namespace IronPython.Runtime.Binding {
                     Restrictions.Merge(BindingRestrictions.GetInstanceRestriction(Expression, Value))
                 );
             } else {
+                string msg;
+                if (Value.UnderlyingSystemType.IsAbstract) {
+                    msg = String.Format("Cannot create instances of {0} because it is abstract", Value.Name);
+                }else{
+                    msg = String.Format("Cannot create instances of {0} because it has no public constructors", Value.Name);
+                }
                 return new DynamicMetaObject(
                    Ast.Throw(
                        Ast.New(
                            typeof(ArgumentTypeException).GetConstructor(new Type[] { typeof(string) }),
-                           AstUtils.Constant("Cannot create instances of " + Value.Name)
+                           AstUtils.Constant(msg)
                        )
                    ),
                    Restrictions.Merge(BindingRestrictions.GetInstanceRestriction(Expression, Value))

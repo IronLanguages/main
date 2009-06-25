@@ -19,6 +19,7 @@ import sys
 import time
 
 from iptest.test_env import *
+from iptest import options, l
 
 if not is_silverlight:
     import nt
@@ -477,6 +478,10 @@ def print_failures(total, failures):
     print '%d total, %d passed, %d failed' % (total, total - failcount, failcount)
 		
 def run_test(mod_name, noOutputPlease=False):
+    if not options.RUN_TESTS:
+        l.debug("Will not invoke any test cases from '%s'." % mod_name)
+        return
+        
     import sys
     module = sys.modules[mod_name]
     stdout = sys.stdout
@@ -553,6 +558,19 @@ def AddReferenceToDlrCore():
             clr.AddReference("Microsoft.Dynamic")
 
     
+class stderr_trapper(object):
+    class myfile(object):
+        def __init__(self, messages):
+            self.messages = messages
+        def write(self, *args):
+            self.messages.append(args)
+    def __init__(self):
+        self.messages = []
+    def __enter__(self):
+        self.oldstderr, sys.stderr = sys.stderr, stderr_trapper.myfile(self.messages)
+        return self
+    def __exit__(self, *args):
+        sys.stderr = self.oldstderr
 
 #------------------------------------------------------------------------------
 MAX_FAILURE_RETRY = 3

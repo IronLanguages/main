@@ -35,4 +35,15 @@ describe "Array#reverse_each" do
 
     count.should == 2
   end
+
+  it "returns self unless the block contains break" do
+    a = [1,2,3]
+    a.reverse_each {|el| el}.should equal a 
+    a.reverse_each {|el| break :ret}.should equal :ret
+  end
+  
+  it "raises error when not given a block if it has elements" do
+    lambda { [1,2,3].reverse_each }.should raise_error(LocalJumpError)
+    [].reverse_each.should == []
+  end
 end

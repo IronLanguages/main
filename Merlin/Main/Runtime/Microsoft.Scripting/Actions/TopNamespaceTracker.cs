@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Threading;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
@@ -29,6 +30,7 @@ namespace Microsoft.Scripting.Actions {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1823:AvoidUnusedPrivateFields")] // TODO: fix
         private int _lastDiscovery = 0;
         private readonly ScriptDomainManager _manager;
+        internal readonly object HierarchyLock;
 #if !SILVERLIGHT
         private static Dictionary<Guid, Type> _comTypeCache = new Dictionary<Guid, Type>();
 #endif
@@ -37,8 +39,8 @@ namespace Microsoft.Scripting.Actions {
             : base(null) {
             ContractUtils.RequiresNotNull(manager, "manager");
             SetTopPackage(this);
-
             _manager = manager;
+            HierarchyLock = new object();
         }
 
         #region Public API Surface
@@ -72,7 +74,7 @@ namespace Microsoft.Scripting.Actions {
         }
 
         public MemberTracker TryGetPackageLazy(SymbolId name) {
-            lock (this) {
+            lock (HierarchyLock) {
                 MemberTracker ret;
                 if (_dict.TryGetValue(SymbolTable.IdToString(name), out ret)) {
                     return ret;
@@ -90,14 +92,14 @@ namespace Microsoft.Scripting.Actions {
         public bool LoadAssembly(Assembly assem) {
             ContractUtils.RequiresNotNull(assem, "assem");
 
-            lock (this) {
+            lock (HierarchyLock) {
                 if (_packageAssemblies.Contains(assem)) {
                     // The assembly is already loaded. There is nothing more to do
                     return false;
                 }
 
                 _packageAssemblies.Add(assem);
-                UpdateId();
+                UpdateSubtreeIds();
                 PublishComTypes(assem);
             }
 
@@ -141,7 +143,7 @@ namespace Microsoft.Scripting.Actions {
         }
 
         protected override void LoadNamespaces() {
-            lock (this) {
+            lock (HierarchyLock) {
                 for (int i = _lastDiscovery; i < _packageAssemblies.Count; i++) {
                     DiscoverAllTypes(_packageAssemblies[i]);
                 }

@@ -135,8 +135,8 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             : this(baseType, name) {
             EnsureDict();
 
-            _dict[Symbols.Doc] = new PythonTypeValueSlot(doc);
-            _dict[Symbols.Module] = new PythonTypeValueSlot(module);
+            _dict[Symbols.Doc] = new PythonTypeUserDescriptorSlot(doc, true);
+            _dict[Symbols.Module] = new PythonTypeUserDescriptorSlot(module, true);
             IsSystemType = false;
             IsPythonType = false;
             _pythonContext = context;
@@ -163,7 +163,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
             _bases = ocs.ToArray(); 
             _resolutionOrder = mro;
-            AddSlot(Symbols.Class, new PythonTypeValueSlot(this));
+            AddSlot(Symbols.Class, new PythonTypeUserDescriptorSlot(this, true));
         }
 
         internal BuiltinFunction Ctor {
@@ -325,13 +325,11 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             return false;
         }
 
-        [SpecialName]
-        public object Call(CodeContext context, params object[] args) {
+        public object __call__(CodeContext context, params object[] args) {
             return PythonTypeOps.CallParams(context, this, args);
         }
 
-        [SpecialName]
-        public object Call(CodeContext context, [ParamDictionary]IAttributesCollection kwArgs, params object[] args) {
+        public object __call__(CodeContext context, [ParamDictionary]IAttributesCollection kwArgs, params object[] args) {
             return PythonTypeOps.CallWorker(context, this, kwArgs, args);
         }
 
@@ -401,8 +399,31 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
 
         [SpecialName, PropertyMethod, WrapperDescriptor]
-        public static string Get__module__(CodeContext/*!*/ context, PythonType self) {
+        public static object Get__module__(CodeContext/*!*/ context, PythonType self) {
+            PythonTypeSlot pts;
+            object res;
+            if (self._dict != null && 
+                self._dict.TryGetValue(Symbols.Module, out pts) && 
+                pts.TryGetValue(context, self, DynamicHelpers.GetPythonType(self), out res)) {
+                return res;
+            }
             return PythonTypeOps.GetModuleName(context, self.UnderlyingSystemType);
+        }
+
+        [SpecialName, PropertyMethod, WrapperDescriptor]
+        public static void Set__module__(CodeContext/*!*/ context, PythonType self, object value) {
+            if (self.IsSystemType) {
+                throw PythonOps.TypeError("can't set {0}.__module__", self.Name);
+            }
+
+            Debug.Assert(self._dict != null);
+            self._dict[Symbols.Module] = new PythonTypeUserDescriptorSlot(value);
+            self.UpdateVersion();
+        }
+
+        [SpecialName, PropertyMethod, WrapperDescriptor]
+        public static void Delete__module__(CodeContext/*!*/ context, PythonType self) {
+            throw PythonOps.TypeError("can't delete {0}.__module__", self.Name);
         }
 
         [SpecialName, PropertyMethod, WrapperDescriptor]
@@ -429,8 +450,8 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
             if (IsSystemType) {
                 if (PythonTypeOps.IsRuntimeAssembly(UnderlyingSystemType.Assembly) || IsPythonType) {
-                    string module = Get__module__(context, this);
-                    if (module != "__builtin__") {
+                    object module = Get__module__(context, this);
+                    if (!module.Equals("__builtin__")) {
                         return string.Format("<type '{0}.{1}'>", module, Name);
                     }
                 }
@@ -1063,9 +1084,13 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 throw new MissingMemberException(String.Format("'{0}' object has no attribute '{1}'", Name, SymbolTable.IdToString(name)));
             }
 
-            _dict[name] = ToTypeSlot(value);
-
-            UpdateVersion();
+            PythonTypeSlot curSlot;
+            if (!(value is PythonTypeSlot) && _dict.TryGetValue(name, out curSlot) && curSlot is PythonTypeUserDescriptorSlot) {
+                ((PythonTypeUserDescriptorSlot)curSlot).Value = value;
+            } else {
+                _dict[name] = ToTypeSlot(value);
+                UpdateVersion();
+            }
         }
 
         internal static PythonTypeSlot ToTypeSlot(object value) {
@@ -1077,9 +1102,9 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             // We could do more checks for things which aren't descriptors
             if (value != null) { 
                 return new PythonTypeUserDescriptorSlot(value);
-            } 
-                
-            return new PythonTypeValueSlot(value);
+            }
+
+            return new PythonTypeUserDescriptorSlot(value, true);
         }
 
 
@@ -1446,6 +1471,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             }
 
             Dictionary<string, string> keys = new Dictionary<string, string>();
+            res = new List();
 
             for (int i = 0; i < _resolutionOrder.Count; i++) {
                 PythonType dt = _resolutionOrder[i];
@@ -1453,14 +1479,11 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 if (dt.IsSystemType) {
                     PythonBinder.GetBinder(context).ResolveMemberNames(context, dt, this, keys);
                 } else {
-                    AddUserTypeMembers(context, keys, dt);
+                    AddUserTypeMembers(context, keys, dt, res);
                 }
             }
-            
 
-            AddInstanceMembers(self, keys);
-
-            return new List(keys.Keys);
+            return AddInstanceMembers(self, keys, res);
         }
 
         private List TryGetCustomDir(CodeContext context, object self) {
@@ -1484,29 +1507,50 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         /// <summary>
         /// Adds members from a user defined type.
         /// </summary>
-        private void AddUserTypeMembers(CodeContext context, Dictionary<string, string> keys, PythonType dt) {
-            foreach (KeyValuePair<SymbolId, PythonTypeSlot> kvp in dt._dict) {
-                if (keys.ContainsKey(SymbolTable.IdToString(kvp.Key))) continue;
+        private void AddUserTypeMembers(CodeContext context, Dictionary<string, string> keys, PythonType dt, List res) {
+            if (dt.OldClass != null) {
+                foreach (KeyValuePair<object, object> kvp in dt.OldClass.__dict__) {
+                    AddOneMember(keys, res, kvp.Key);
+                }
+            } else {
+                foreach (KeyValuePair<SymbolId, PythonTypeSlot> kvp in dt._dict) {
+                    if (keys.ContainsKey(SymbolTable.IdToString(kvp.Key))) continue;
 
-                keys[SymbolTable.IdToString(kvp.Key)] = SymbolTable.IdToString(kvp.Key);
+                    keys[SymbolTable.IdToString(kvp.Key)] = SymbolTable.IdToString(kvp.Key);
+                }
+            }
+        }
+
+        private static void AddOneMember(Dictionary<string, string> keys, List res, object name) {
+            string strKey = name as string;
+            if (strKey != null) {
+                keys[strKey] = strKey;
+            } else {
+                res.Add(name);
             }
         }
 
         /// <summary>
         /// Adds members from a user defined type instance
         /// </summary>
-        private static void AddInstanceMembers(object self, Dictionary<string, string> keys) {
+        private static List AddInstanceMembers(object self, Dictionary<string, string> keys, List res) {
             IPythonObject dyno = self as IPythonObject;
             if (dyno != null) {
                 IAttributesCollection iac = dyno.Dict;
                 if (iac != null) {
                     lock (iac) {
-                        foreach (SymbolId id in iac.SymbolAttributes.Keys) {
-                            keys[SymbolTable.IdToString(id)] = SymbolTable.IdToString(id);
+                        foreach (object name in iac.Keys) {
+                            AddOneMember(keys, res, name);
                         }
                     }
                 }
             }
+
+            List<string> strKeys = new List<string>(keys.Keys);
+            strKeys.Sort();
+            res.extend(strKeys);
+
+            return res;
         }
 
         internal PythonDictionary GetMemberDictionary(CodeContext context) {
@@ -1528,7 +1572,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                         //??? why check for DTVS?
                         object val;
                         if (dts.TryGetValue(context, null, this, out val)) {
-                            if (dts is IValueSlot) {
+                            if (dts is PythonTypeUserDescriptorSlot) {
                                 ((IAttributesCollection)iac)[x] = val;
                             } else {
                                 ((IAttributesCollection)iac)[x] = dts;
@@ -2173,7 +2217,9 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         None,
         SlotDict,
         SlotOnly,
-        UserSlot
+        PropertySlot,
+        UserSlotDict,
+        UserSlotOnly,
     }
 
     class UserGetBase : FastGetBase {
@@ -2253,7 +2299,21 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             switch (getKind) {
                 case OptimizedGetKind.SlotDict: _func = SlotDict; break;
                 case OptimizedGetKind.SlotOnly: _func = SlotOnly; break;
-                case OptimizedGetKind.UserSlot: _func = UserSlot; break;
+                case OptimizedGetKind.PropertySlot: _func = UserSlot; break;
+                case OptimizedGetKind.UserSlotDict:
+                    if (_getattrSlot != null) {
+                        _func = UserSlotDictGetAttr;
+                    } else {
+                        _func = UserSlotDict;
+                    } 
+                    break;
+                case OptimizedGetKind.UserSlotOnly:
+                    if (_getattrSlot != null) {
+                        _func = UserSlotOnlyGetAttr;
+                    } else {
+                        _func = UserSlotOnly; 
+                    }
+                    break;
                 default: throw new InvalidOperationException();
             }
         }
@@ -2302,6 +2362,71 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             return Update(site, self, context);
         }
 
+        public object UserSlotDict(CallSite site, object self, CodeContext context) {
+            IPythonObject ipo = self as IPythonObject;
+            if (ipo != null && ipo.PythonType.Version == _version) {
+                object res;
+                if (ipo.Dict != null && ipo.Dict.TryGetValue(_name, out res)) {
+                    return res;
+                }
+
+                return ((PythonTypeUserDescriptorSlot)_slot).GetValue(context, self, ipo.PythonType);
+            }
+
+            return Update(site, self, context);
+        }
+
+        public object UserSlotOnly(CallSite site, object self, CodeContext context) {
+            IPythonObject ipo = self as IPythonObject;
+            if (ipo != null && ipo.PythonType.Version == _version) {
+                return ((PythonTypeUserDescriptorSlot)_slot).GetValue(context, self, ipo.PythonType);
+            }
+
+            return Update(site, self, context);
+        }
+
+        public object UserSlotDictGetAttr(CallSite site, object self, CodeContext context) {
+            IPythonObject ipo = self as IPythonObject;
+            if (ipo != null && ipo.PythonType.Version == _version) {
+                object res;
+                if (ipo.Dict != null && ipo.Dict.TryGetValue(_name, out res)) {
+                    return res;
+                }
+
+                try {
+                    return ((PythonTypeUserDescriptorSlot)_slot).GetValue(context, self, ipo.PythonType);
+                } catch (MissingMemberException) {
+                }
+
+                if (_getattrSlot.TryGetValue(context, self, ipo.PythonType, out res)) {
+                    return GetAttr(context, res);
+                }
+
+                return TypeError(site, ipo, context);
+            }
+
+            return Update(site, self, context);
+        }
+
+        public object UserSlotOnlyGetAttr(CallSite site, object self, CodeContext context) {
+            IPythonObject ipo = self as IPythonObject;
+            if (ipo != null && ipo.PythonType.Version == _version) {
+                try {
+                    return ((PythonTypeUserDescriptorSlot)_slot).GetValue(context, self, ipo.PythonType);
+                } catch (MissingMemberException) {
+                }
+
+                object res;
+                if (_getattrSlot.TryGetValue(context, self, ipo.PythonType, out res)) {
+                    return GetAttr(context, res);
+                }
+
+                return TypeError(site, ipo, context);
+            }
+
+            return Update(site, self, context);
+        }
+
         public object UserSlot(CallSite site, object self, CodeContext context) {
             IPythonObject ipo = self as IPythonObject;
             if (ipo != null && ipo.PythonType.Version == _version && ShouldUseNonOptimizedSite) {
@@ -2323,12 +2448,12 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         private object GetAttr(CodeContext context, object res) {
             if (_isNoThrow) {
                 try {
-                    return PythonOps.CallWithContext(context, res, SymbolTable.IdToString(_name));
+                    return PythonContext.GetContext(context).Call(context, res, SymbolTable.IdToString(_name));
                 } catch (MissingMemberException) {
                     return OperationFailed.Value;
                 }
             } else {
-                return PythonOps.CallWithContext(context, res, SymbolTable.IdToString(_name));
+                return PythonContext.GetContext(context).Call(context, res, SymbolTable.IdToString(_name));
             }
         }
 

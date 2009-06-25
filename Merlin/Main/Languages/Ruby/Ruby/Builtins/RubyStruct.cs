@@ -15,27 +15,23 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using Microsoft.Scripting;
-using System.Dynamic;
-using System.Linq.Expressions;
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
-using Microsoft.Scripting.Actions;
-using IronRuby.Runtime;
-using IronRuby.Runtime.Calls;
-using Ast = System.Linq.Expressions.Expression;
-using IronRuby.Compiler;
 using System.Collections.ObjectModel;
-using IronRuby.Compiler.Generation;
+using System.Diagnostics;
 using System.Runtime.Serialization;
 using System.Security.Permissions;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
+using IronRuby.Compiler;
 using IronRuby.Compiler.Ast;
+using IronRuby.Compiler.Generation;
+using IronRuby.Runtime;
+using IronRuby.Runtime.Calls;
+using Microsoft.Scripting.Utils;
+using Ast = System.Linq.Expressions.Expression;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Builtins {
 
     // TODO: freezing
+    [ReflectionCached]
     public sealed class RubyStruct : RubyObject {
         /// <summary>
         /// This class represents the type information of a Struct. There is one
@@ -110,14 +106,16 @@ namespace IronRuby.Builtins {
         private RubyStruct(RubyClass/*!*/ rubyClass, object[]/*!*/ data) 
             : base(rubyClass) {
             Debug.Assert(rubyClass.StructInfo != null);
+            Debug.Assert(!rubyClass.IsSingletonClass);
             _data = ArrayUtils.Copy(data);
         }
 
         protected override RubyObject/*!*/ CreateInstance() {
-            return new RubyStruct(Class, _data);
+            return new RubyStruct(ImmediateClass.NominalClass, _data);
         }
 
         public static RubyStruct/*!*/ Create(RubyClass/*!*/ rubyClass) {
+            Debug.Assert(!rubyClass.IsSingletonClass);
             return new RubyStruct(rubyClass, true);
         }
 
@@ -159,8 +157,8 @@ namespace IronRuby.Builtins {
         }
 
         public static RubyArray/*!*/ GetMembers(RubyStruct/*!*/ self) {
-            Debug.Assert(self.Class.StructInfo != null);
-            return self.Class.StructInfo.GetMembers();
+            Debug.Assert(self.StructInfo != null);
+            return self.StructInfo.GetMembers();
         }
 
         private static RuleGenerator/*!*/ CreateGetter(int index) {
@@ -194,41 +192,36 @@ namespace IronRuby.Builtins {
 
         #endregion
 
+        // TODO: copy struct info reference to singletons?
+        private Info/*!*/ StructInfo {
+            get { return ImmediateClass.GetNonSingletonClass().StructInfo; }
+        }
+        
         public int GetIndex(string/*!*/ name) {
             int result;
-            if (Class.StructInfo.TryGetIndex(name, out result)) {
+            if (StructInfo.TryGetIndex(name, out result)) {
                 return result;
             }
             throw RubyExceptions.CreateNameError(String.Format("no member `{0}' in struct", name));
         }
 
-        public override int GetHashCode() {
+        public int GetHashCode(UnaryOpStorage/*!*/ hashStorage, ConversionStorage<int>/*!*/ fixnumCast) {
             // hash is: struct's hash, plus data hashes
-            int hash = Class.StructInfo.GetHashCode();
-            foreach (object obj in _data) {
-                hash ^= RubyUtils.GetHashCode(obj);
-            }
-            return hash;
+            return StructInfo.GetHashCode() ^ RubyArray.GetHashCode(hashStorage, fixnumCast, _data);
         }
 
-        public override bool Equals(object obj) {
+        public bool Equals(BinaryOpStorage/*!*/ eqlStorage, object obj) {
             var other = obj as RubyStruct;
             if (!StructReferenceEquals(other)) {
                 return false;
             }
             
-            Debug.Assert(_data.Length == other._data.Length);
-            for (int i = 0; i < _data.Length; i++) {
-                if (!RubyUtils.ValueEquals(_data[i], other._data[i])) {
-                    return false;
-                }
-            }
-
-            return true;
+            return RubyArray.Equals(eqlStorage, _data, other._data);
         }
 
         public bool StructReferenceEquals(RubyStruct other) {
-            return ReferenceEquals(this, other) || (other != null && Class == other.Class);
+            // TODO: compare non-singleton classes?
+            return ReferenceEquals(this, other) || (other != null && ImmediateClass.GetNonSingletonClass() == other.ImmediateClass.GetNonSingletonClass());
         }
 
         #region Emitted Helpers
@@ -248,7 +241,7 @@ namespace IronRuby.Builtins {
 
         public IEnumerable<KeyValuePair<string, object>>/*!*/ GetItems() {
             for (int i = 0; i < _data.Length; i++) {
-                yield return new KeyValuePair<string, object>(Class.StructInfo.GetName(i), _data[i]);
+                yield return new KeyValuePair<string, object>(StructInfo.GetName(i), _data[i]);
             }
         }
 
@@ -257,7 +250,7 @@ namespace IronRuby.Builtins {
         }
 
         public ReadOnlyCollection<string>/*!*/ GetNames() {
-            return Class.StructInfo.GetNames();
+            return StructInfo.GetNames();
         }
 
         public void SetValues(object[]/*!*/ items) {

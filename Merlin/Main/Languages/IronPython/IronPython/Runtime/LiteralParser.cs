@@ -64,7 +64,7 @@ namespace IronPython.Runtime {
                                 buf.Append((char)val);
                                 i += len;
                             } else {
-                                throw PythonOps.UnicodeDecodeError(@"'unicodeescape' codec can't decode bytes in position {0}: truncated \uXXXX escape", i);
+                                throw PythonOps.UnicodeEncodeError(@"'unicodeescape' codec can't decode bytes in position {0}: truncated \uXXXX escape", i);
                             }
                         } else {
                             buf.Append('\\');
@@ -128,10 +128,6 @@ namespace IronPython.Runtime {
                     buf.Append(ch);
                 }
             }
-
-            // skip BOM (TODO: this is ugly workaround that is in fact not strictly correct, we need binary strings to handle it correctly):
-            if (buf.Length >= 3 && buf[0] == '\u00ef' && buf[1] == '\u00bb' && buf[2] == '\u00bf')
-                return buf.ToString(3, buf.Length - 3);
 
             return buf.ToString();
         }

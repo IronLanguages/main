@@ -7,10 +7,15 @@ describe "Bignum#[]" do
   
   it "returns the nth bit in the binary representation of self" do
     @bignum[2].should == 1
+    @bignum[-2].should == 0
     @bignum[9.2].should == 1
     @bignum[21].should == 0
+    @bignum[100].should == 0
+    (-@bignum)[100].should == 1
     @bignum[0xffffffff].should == 0
     @bignum[-0xffffffff].should == 0
+    (-@bignum)[0xffffffff].should == 1
+    (-@bignum)[-0xffffffff].should == 0
   end
 
   it "tries to convert the given argument to an Integer using #to_int" do

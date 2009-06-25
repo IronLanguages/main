@@ -16,39 +16,21 @@
 using IronRuby.Runtime;
 using Microsoft.Scripting.Utils;
 using IronRuby.Compiler.Generation;
+using System.Diagnostics;
 
 namespace IronRuby.Builtins {
     public partial class MatchData {
-        public sealed class Subclass : MatchData, IRubyObject {
-            private readonly RubyClass/*!*/ _class;
-            private RubyInstanceData _instanceData;
-
+        public sealed partial class Subclass : MatchData, IRubyObject {
             // called by Class#new rule when creating a Ruby subclass of MatchData:
             public Subclass(RubyClass/*!*/ rubyClass) {
                 Assert.NotNull(rubyClass);
-                _class = rubyClass;
+                Debug.Assert(!rubyClass.IsSingletonClass);
+                ImmediateClass = rubyClass;
             }
 
             protected override MatchData/*!*/ CreateInstance() {
-                return new Subclass(_class);
+                return new Subclass(ImmediateClass.NominalClass);
             }
-
-            #region IRubyObject Members
-
-            [Emitted]
-            public RubyClass/*!*/ Class {
-                get { return _class; }
-            }
-
-            public RubyInstanceData/*!*/ GetInstanceData() {
-                return RubyOps.GetInstanceData(ref _instanceData);
-            }
-
-            public RubyInstanceData TryGetInstanceData() {
-                return _instanceData;
-            }
-
-            #endregion
         }
     }
 }

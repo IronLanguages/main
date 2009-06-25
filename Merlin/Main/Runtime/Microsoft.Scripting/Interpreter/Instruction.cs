@@ -721,17 +721,13 @@ namespace Microsoft.Scripting.Interpreter {
     }
 
     public sealed class ThrowInstruction : Instruction {
-        public static readonly ThrowInstruction Throw = new ThrowInstruction(true, false);
-        public static readonly ThrowInstruction Rethrow = new ThrowInstruction(true, true);
-        public static readonly ThrowInstruction VoidThrow = new ThrowInstruction(false, false);
-        public static readonly ThrowInstruction VoidRethrow = new ThrowInstruction(false, true);
+        public static readonly ThrowInstruction Throw = new ThrowInstruction(true);
+        public static readonly ThrowInstruction VoidThrow = new ThrowInstruction(false);
 
-        private readonly bool _rethrow;
         private readonly bool _hasResult;
 
-        private ThrowInstruction(bool hasResult, bool rethrow) {
+        private ThrowInstruction(bool hasResult) {
             _hasResult = hasResult;
-            _rethrow = rethrow;
         }
 
         public override int ProducedStack {
@@ -743,15 +739,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public override int Run(InterpretedFrame frame) {
-            var exception = (Exception)frame.Pop();
-            if (_rethrow) {
-                ExceptionHelpers.UpdateForRethrow(exception);
-            }
-            throw exception;
-        }
-
-        public override string ToString() {
-            return _rethrow ? "Rethrow()" : "Throw()";
+            throw (Exception)frame.Pop();
         }
     }
 
@@ -882,24 +870,31 @@ namespace Microsoft.Scripting.Interpreter {
         }
     }
 
-    public class NewInstruction : Instruction {
-        private ConstructorInfo _constructor;
-        private int _argCount;
+    public sealed class NewInstruction : Instruction {
+        private readonly ConstructorInfo _constructor;
+        private readonly int _argCount;
 
         public NewInstruction(ConstructorInfo constructor) {
-            this._constructor = constructor;
-            this._argCount = constructor.GetParameters().Length;
+            _constructor = constructor;
+            _argCount = constructor.GetParameters().Length;
 
         }
         public override int ConsumedStack { get { return _argCount; } }
         public override int ProducedStack { get { return 1; } }
+
         public override int Run(InterpretedFrame frame) {
             object[] args = new object[_argCount];
             for (int i = _argCount - 1; i >= 0; i--) {
                 args[i] = frame.Pop();
             }
 
-            object ret = _constructor.Invoke(args);
+            object ret;
+            try {
+                ret = _constructor.Invoke(args);
+            } catch (TargetInvocationException e) {
+                ExceptionHelpers.UpdateForRethrow(e.InnerException);
+                throw e.InnerException;
+            }
             frame.Push(ret);
             return +1;
         }
@@ -928,12 +923,13 @@ namespace Microsoft.Scripting.Interpreter {
         private readonly FieldInfo _field;
 
         public FieldAccessInstruction(FieldInfo field) {
-            Debug.Assert(!field.IsStatic);
+            Assert.NotNull(field);
             _field = field;
         }
 
         public override int ConsumedStack { get { return 1; } }
         public override int ProducedStack { get { return 1; } }
+
         public override int Run(InterpretedFrame frame) {
             frame.Push(_field.GetValue(frame.Pop()));
             return +1;
@@ -944,12 +940,13 @@ namespace Microsoft.Scripting.Interpreter {
         private readonly FieldInfo _field;
 
         public FieldAssignInstruction(FieldInfo field) {
-            Debug.Assert(!field.IsStatic);
+            Assert.NotNull(field);
             _field = field;
         }
 
         public override int ConsumedStack { get { return 2; } }
         public override int ProducedStack { get { return 0; } }
+
         public override int Run(InterpretedFrame frame) {
             object value = frame.Pop();
             object self = frame.Pop();
@@ -998,6 +995,234 @@ namespace Microsoft.Scripting.Interpreter {
         }
     }
 
+    public abstract class NumericConvertInstruction : Instruction {
+        internal readonly TypeCode _from, _to;
+
+        public NumericConvertInstruction(TypeCode from, TypeCode to) {
+            _from = from;
+            _to = to;
+        }
+
+        public override int ConsumedStack { get { return 1; } }
+        public override int ProducedStack { get { return 1; } }
+
+        public override string ToString() {
+            return InstructionName + "(" + _from + "->" + _to + ")";
+        }
+        
+        public sealed class Unchecked : NumericConvertInstruction {
+            public override string InstructionName { get { return "UncheckedConvert"; } }
+
+            public Unchecked(TypeCode from, TypeCode to) 
+                : base(from, to) { 
+            }
+
+            public override int Run(InterpretedFrame frame) {
+                frame.Push(Convert(frame.Pop()));
+                return +1;
+            }
+
+            private object Convert(object obj) {
+                switch (_from) {
+                    case TypeCode.Byte: return ConvertInt32((Byte)obj);
+                    case TypeCode.SByte: return ConvertInt32((SByte)obj);
+                    case TypeCode.Int16: return ConvertInt32((Int16)obj);
+                    case TypeCode.Char: return ConvertInt32((Char)obj);
+                    case TypeCode.Int32: return ConvertInt32((Int32)obj);
+                    case TypeCode.Int64: return ConvertInt64((Int64)obj);
+                    case TypeCode.UInt16: return ConvertInt32((UInt16)obj);
+                    case TypeCode.UInt32: return ConvertInt64((UInt32)obj);
+                    case TypeCode.UInt64: return ConvertUInt64((UInt64)obj);
+                    case TypeCode.Single: return ConvertDouble((Single)obj);
+                    case TypeCode.Double: return ConvertDouble((Double)obj);
+                    default: throw Assert.Unreachable;
+                }
+            }
+
+            private object ConvertInt32(int obj) {
+                unchecked {
+                    switch (_to) {
+                        case TypeCode.Byte: return (Byte)obj;
+                        case TypeCode.SByte: return (SByte)obj;
+                        case TypeCode.Int16: return (Int16)obj;
+                        case TypeCode.Char: return (Char)obj;
+                        case TypeCode.Int32: return (Int32)obj;
+                        case TypeCode.Int64: return (Int64)obj;
+                        case TypeCode.UInt16: return (UInt16)obj;
+                        case TypeCode.UInt32: return (UInt32)obj;
+                        case TypeCode.UInt64: return (UInt64)obj;
+                        case TypeCode.Single: return (Single)obj;
+                        case TypeCode.Double: return (Double)obj;
+                        default: throw Assert.Unreachable;
+                    }
+                }
+            }
+
+            private object ConvertInt64(Int64 obj) {
+                unchecked {
+                    switch (_to) {
+                        case TypeCode.Byte: return (Byte)obj;
+                        case TypeCode.SByte: return (SByte)obj;
+                        case TypeCode.Int16: return (Int16)obj;
+                        case TypeCode.Char: return (Char)obj;
+                        case TypeCode.Int32: return (Int32)obj;
+                        case TypeCode.Int64: return (Int64)obj;
+                        case TypeCode.UInt16: return (UInt16)obj;
+                        case TypeCode.UInt32: return (UInt32)obj;
+                        case TypeCode.UInt64: return (UInt64)obj;
+                        case TypeCode.Single: return (Single)obj;
+                        case TypeCode.Double: return (Double)obj;
+                        default: throw Assert.Unreachable;
+                    }
+                }
+            }
+                                
+            private object ConvertUInt64(UInt64 obj) {
+                unchecked {
+                    switch (_to) {
+                        case TypeCode.Byte: return (Byte)obj;
+                        case TypeCode.SByte: return (SByte)obj;
+                        case TypeCode.Int16: return (Int16)obj;
+                        case TypeCode.Char: return (Char)obj;
+                        case TypeCode.Int32: return (Int32)obj;
+                        case TypeCode.Int64: return (Int64)obj;
+                        case TypeCode.UInt16: return (UInt16)obj;
+                        case TypeCode.UInt32: return (UInt32)obj;
+                        case TypeCode.UInt64: return (UInt64)obj;
+                        case TypeCode.Single: return (Single)obj;
+                        case TypeCode.Double: return (Double)obj;
+                        default: throw Assert.Unreachable;
+                    }
+                }
+            }
+
+            private object ConvertDouble(Double obj) {
+                unchecked {
+                    switch (_to) {
+                        case TypeCode.Byte: return (Byte)obj;
+                        case TypeCode.SByte: return (SByte)obj;
+                        case TypeCode.Int16: return (Int16)obj;
+                        case TypeCode.Char: return (Char)obj;
+                        case TypeCode.Int32: return (Int32)obj;
+                        case TypeCode.Int64: return (Int64)obj;
+                        case TypeCode.UInt16: return (UInt16)obj;
+                        case TypeCode.UInt32: return (UInt32)obj;
+                        case TypeCode.UInt64: return (UInt64)obj;
+                        case TypeCode.Single: return (Single)obj;
+                        case TypeCode.Double: return (Double)obj;
+                        default: throw Assert.Unreachable;
+                    }
+                }
+            }
+        }
+
+        public sealed class Checked : NumericConvertInstruction {
+            public override string InstructionName { get { return "CheckedConvert"; } }
+
+            public Checked(TypeCode from, TypeCode to) 
+                : base(from, to) { 
+            }
+
+            public override int Run(InterpretedFrame frame) {
+                frame.Push(Convert(frame.Pop()));
+                return +1;
+            }
+
+            private object Convert(object obj) {
+                switch (_from) {
+                    case TypeCode.Byte: return ConvertInt32((Byte)obj);
+                    case TypeCode.SByte: return ConvertInt32((SByte)obj);
+                    case TypeCode.Int16: return ConvertInt32((Int16)obj);
+                    case TypeCode.Char: return ConvertInt32((Char)obj);
+                    case TypeCode.Int32: return ConvertInt32((Int32)obj);
+                    case TypeCode.Int64: return ConvertInt64((Int64)obj);
+                    case TypeCode.UInt16: return ConvertInt32((UInt16)obj);
+                    case TypeCode.UInt32: return ConvertInt64((UInt32)obj);
+                    case TypeCode.UInt64: return ConvertUInt64((UInt64)obj);
+                    case TypeCode.Single: return ConvertDouble((Single)obj);
+                    case TypeCode.Double: return ConvertDouble((Double)obj);
+                    default: throw Assert.Unreachable;
+                }
+            }
+
+            private object ConvertInt32(int obj) {
+                checked {
+                    switch (_to) {
+                        case TypeCode.Byte: return (Byte)obj;
+                        case TypeCode.SByte: return (SByte)obj;
+                        case TypeCode.Int16: return (Int16)obj;
+                        case TypeCode.Char: return (Char)obj;
+                        case TypeCode.Int32: return (Int32)obj;
+                        case TypeCode.Int64: return (Int64)obj;
+                        case TypeCode.UInt16: return (UInt16)obj;
+                        case TypeCode.UInt32: return (UInt32)obj;
+                        case TypeCode.UInt64: return (UInt64)obj;
+                        case TypeCode.Single: return (Single)obj;
+                        case TypeCode.Double: return (Double)obj;
+                        default: throw Assert.Unreachable;
+                    }
+                }
+            }
+
+            private object ConvertInt64(Int64 obj) {
+                checked {
+                    switch (_to) {
+                        case TypeCode.Byte: return (Byte)obj;
+                        case TypeCode.SByte: return (SByte)obj;
+                        case TypeCode.Int16: return (Int16)obj;
+                        case TypeCode.Char: return (Char)obj;
+                        case TypeCode.Int32: return (Int32)obj;
+                        case TypeCode.Int64: return (Int64)obj;
+                        case TypeCode.UInt16: return (UInt16)obj;
+                        case TypeCode.UInt32: return (UInt32)obj;
+                        case TypeCode.UInt64: return (UInt64)obj;
+                        case TypeCode.Single: return (Single)obj;
+                        case TypeCode.Double: return (Double)obj;
+                        default: throw Assert.Unreachable;
+                    }
+                }
+            }
+                                
+            private object ConvertUInt64(UInt64 obj) {
+                checked {
+                    switch (_to) {
+                        case TypeCode.Byte: return (Byte)obj;
+                        case TypeCode.SByte: return (SByte)obj;
+                        case TypeCode.Int16: return (Int16)obj;
+                        case TypeCode.Char: return (Char)obj;
+                        case TypeCode.Int32: return (Int32)obj;
+                        case TypeCode.Int64: return (Int64)obj;
+                        case TypeCode.UInt16: return (UInt16)obj;
+                        case TypeCode.UInt32: return (UInt32)obj;
+                        case TypeCode.UInt64: return (UInt64)obj;
+                        case TypeCode.Single: return (Single)obj;
+                        case TypeCode.Double: return (Double)obj;
+                        default: throw Assert.Unreachable;
+                    }
+                }
+            }
+
+            private object ConvertDouble(Double obj) {
+                checked {
+                    switch (_to) {
+                        case TypeCode.Byte: return (Byte)obj;
+                        case TypeCode.SByte: return (SByte)obj;
+                        case TypeCode.Int16: return (Int16)obj;
+                        case TypeCode.Char: return (Char)obj;
+                        case TypeCode.Int32: return (Int32)obj;
+                        case TypeCode.Int64: return (Int64)obj;
+                        case TypeCode.UInt16: return (UInt16)obj;
+                        case TypeCode.UInt32: return (UInt32)obj;
+                        case TypeCode.UInt64: return (UInt64)obj;
+                        case TypeCode.Single: return (Single)obj;
+                        case TypeCode.Double: return (Double)obj;
+                        default: throw Assert.Unreachable;
+                    }
+                }
+            }
+        }
+    }
+
     public class NotInstruction : Instruction {
         public static readonly Instruction Instance = new NotInstruction();
 
@@ -1026,20 +1251,7 @@ namespace Microsoft.Scripting.Interpreter {
 
     public abstract class EqualInstruction : Instruction {
         // Perf: EqualityComparer<T> but is 3/2 to 2 times slower.
-
-        public static readonly Instruction Reference = new EqualReference();
-        public static readonly Instruction Boolean = new EqualBoolean();
-        public static readonly Instruction SByte = new EqualSByte();
-        public static readonly Instruction Int16 = new EqualInt16();
-        public static readonly Instruction Char = new EqualChar();
-        public static readonly Instruction Int32 = new EqualInt32();
-        public static readonly Instruction Int64 = new EqualInt64();
-        public static readonly Instruction Byte = new EqualByte();
-        public static readonly Instruction UInt16 = new EqualUInt16();
-        public static readonly Instruction UInt32 = new EqualUInt32();
-        public static readonly Instruction UInt64 = new EqualUInt64();
-        public static readonly Instruction Single = new EqualSingle();
-        public static readonly Instruction Double = new EqualDouble();
+        private static Instruction _Reference, _Boolean, _SByte, _Int16, _Char, _Int32, _Int64, _Byte, _UInt16, _UInt32, _UInt64, _Single, _Double;
 
         public override int ConsumedStack { get { return 2; } }
         public override int ProducedStack { get { return 1; } }
@@ -1141,24 +1353,24 @@ namespace Microsoft.Scripting.Interpreter {
         public static Instruction Create(Type type) {
             // Boxed enums can be unboxed as their underlying types:
             switch (Type.GetTypeCode(type.IsEnum ? Enum.GetUnderlyingType(type) : type)) {
-                case TypeCode.Boolean: return Boolean;
-                case TypeCode.SByte: return SByte;
-                case TypeCode.Byte: return Byte;
-                case TypeCode.Char: return Char;
-                case TypeCode.Int16: return Int16;
-                case TypeCode.Int32: return Int32;
-                case TypeCode.Int64: return Int64;
+                case TypeCode.Boolean: return _Boolean ?? (_Boolean = new EqualBoolean());
+                case TypeCode.SByte: return _SByte ?? (_SByte = new EqualSByte());
+                case TypeCode.Byte: return _Byte ?? (_Byte = new EqualByte());
+                case TypeCode.Char: return _Char ?? (_Char = new EqualChar());
+                case TypeCode.Int16: return _Int16 ?? (_Int16 = new EqualInt16());
+                case TypeCode.Int32: return _Int32 ?? (_Int32 = new EqualInt32());
+                case TypeCode.Int64: return _Int64 ?? (_Int64 = new EqualInt64());
 
-                case TypeCode.UInt16: return UInt16;
-                case TypeCode.UInt32: return UInt32;
-                case TypeCode.UInt64: return UInt64;
+                case TypeCode.UInt16: return _UInt16 ?? (_UInt16 = new EqualInt16());
+                case TypeCode.UInt32: return _UInt32 ?? (_UInt32 = new EqualInt32());
+                case TypeCode.UInt64: return _UInt64 ?? (_UInt64 = new EqualInt64());
 
-                case TypeCode.Single: return Single;
-                case TypeCode.Double: return Double;
+                case TypeCode.Single: return _Single ?? (_Single = new EqualSingle());
+                case TypeCode.Double: return _Double ?? (_Double = new EqualDouble());
 
                 case TypeCode.Object:
                     if (!type.IsValueType) {
-                        return Reference;
+                        return _Reference ?? (_Reference = new EqualReference());
                     }
                     // TODO: Nullable<T>
                     throw new NotImplementedException();
@@ -1175,21 +1387,8 @@ namespace Microsoft.Scripting.Interpreter {
 
     public abstract class NotEqualInstruction : Instruction {
         // Perf: EqualityComparer<T> but is 3/2 to 2 times slower.
-
-        public static readonly Instruction Reference = new NotEqualReference();
-        public static readonly Instruction Boolean = new NotEqualBoolean();
-        public static readonly Instruction SByte = new NotEqualSByte();
-        public static readonly Instruction Int16 = new NotEqualInt16();
-        public static readonly Instruction Char = new NotEqualChar();
-        public static readonly Instruction Int32 = new NotEqualInt32();
-        public static readonly Instruction Int64 = new NotEqualInt64();
-        public static readonly Instruction Byte = new NotEqualByte();
-        public static readonly Instruction UInt16 = new NotEqualUInt16();
-        public static readonly Instruction UInt32 = new NotEqualUInt32();
-        public static readonly Instruction UInt64= new NotEqualUInt64();
-        public static readonly Instruction Single = new NotEqualSingle();
-        public static readonly Instruction Double = new NotEqualDouble();
-
+        private static Instruction _Reference, _Boolean, _SByte, _Int16, _Char, _Int32, _Int64, _Byte, _UInt16, _UInt32, _UInt64, _Single, _Double;
+            
         public override int ConsumedStack { get { return 2; } }
         public override int ProducedStack { get { return 1; } }
 
@@ -1290,24 +1489,24 @@ namespace Microsoft.Scripting.Interpreter {
         public static Instruction Instance(Type type) {
             // Boxed enums can be unboxed as their underlying types:
             switch (Type.GetTypeCode(type.IsEnum ? Enum.GetUnderlyingType(type) : type)) {
-                case TypeCode.Boolean: return Boolean;
-                case TypeCode.SByte: return SByte;
-                case TypeCode.Byte: return Byte;
-                case TypeCode.Char: return Char;
-                case TypeCode.Int16: return Int16;
-                case TypeCode.Int32: return Int32;
-                case TypeCode.Int64: return Int64;
+                case TypeCode.Boolean: return _Boolean ?? (_Boolean = new NotEqualBoolean());
+                case TypeCode.SByte: return _SByte ?? (_SByte = new NotEqualSByte());
+                case TypeCode.Byte: return _Byte ?? (_Byte = new NotEqualByte());
+                case TypeCode.Char: return _Char ?? (_Char = new NotEqualChar());
+                case TypeCode.Int16: return _Int16 ?? (_Int16 = new NotEqualInt16());
+                case TypeCode.Int32: return _Int32 ?? (_Int32 = new NotEqualInt32());
+                case TypeCode.Int64: return _Int64 ?? (_Int64 = new NotEqualInt64());
 
-                case TypeCode.UInt16: return UInt16;
-                case TypeCode.UInt32: return UInt32;
-                case TypeCode.UInt64: return UInt64;
+                case TypeCode.UInt16: return _UInt16 ?? (_UInt16 = new NotEqualInt16());
+                case TypeCode.UInt32: return _UInt32 ?? (_UInt32 = new NotEqualInt32());
+                case TypeCode.UInt64: return _UInt64 ?? (_UInt64 = new NotEqualInt64());
 
-                case TypeCode.Single: return Single;
-                case TypeCode.Double: return Double;
+                case TypeCode.Single: return _Single ?? (_Single = new NotEqualSingle());
+                case TypeCode.Double: return _Double ?? (_Double = new NotEqualDouble());
 
                 case TypeCode.Object:
                     if (!type.IsValueType) {
-                        return Reference;
+                        return _Reference ?? (_Reference = new NotEqualReference());
                     }
                     // TODO: Nullable<T>
                     throw new NotImplementedException();
@@ -1319,6 +1518,138 @@ namespace Microsoft.Scripting.Interpreter {
 
         public override string ToString() {
             return "NotEqual()";
+        }
+    }
+
+    public abstract class LessThanInstruction : Instruction {
+        private static Instruction _SByte, _Int16, _Char, _Int32, _Int64, _Byte, _UInt16, _UInt32, _UInt64, _Single, _Double;
+
+        public override int ConsumedStack { get { return 2; } }
+        public override int ProducedStack { get { return 1; } }
+
+        private LessThanInstruction() {
+        }
+
+        internal sealed class LessThanSByte : LessThanInstruction {
+            public override int Run(InterpretedFrame frame) {
+                frame.Push(((SByte)frame.Pop()) < ((SByte)frame.Pop()));
+                return +1;
+            }
+        }
+
+        internal sealed class LessThanInt16 : LessThanInstruction {
+            public override int Run(InterpretedFrame frame) {
+                frame.Push(((Int16)frame.Pop()) < ((Int16)frame.Pop()));
+                return +1;
+            }
+        }
+
+        internal sealed class LessThanChar : LessThanInstruction {
+            public override int Run(InterpretedFrame frame) {
+                frame.Push(((Char)frame.Pop()) < ((Char)frame.Pop()));
+                return +1;
+            }
+        }
+
+        internal sealed class LessThanInt32 : LessThanInstruction {
+            public override int Run(InterpretedFrame frame) {
+                frame.Push(((Int32)frame.Pop()) < ((Int32)frame.Pop()));
+                return +1;
+            }
+        }
+
+        internal sealed class LessThanInt64 : LessThanInstruction {
+            public override int Run(InterpretedFrame frame) {
+                frame.Push(((Int64)frame.Pop()) < ((Int64)frame.Pop()));
+                return +1;
+            }
+        }
+
+        internal sealed class LessThanByte : LessThanInstruction {
+            public override int Run(InterpretedFrame frame) {
+                frame.Push(((Byte)frame.Pop()) < ((Byte)frame.Pop()));
+                return +1;
+            }
+        }
+
+        internal sealed class LessThanUInt16 : LessThanInstruction {
+            public override int Run(InterpretedFrame frame) {
+                frame.Push(((UInt16)frame.Pop()) < ((UInt16)frame.Pop()));
+                return +1;
+            }
+        }
+
+        internal sealed class LessThanUInt32 : LessThanInstruction {
+            public override int Run(InterpretedFrame frame) {
+                frame.Push(((UInt32)frame.Pop()) < ((UInt32)frame.Pop()));
+                return +1;
+            }
+        }
+
+        internal sealed class LessThanUInt64 : LessThanInstruction {
+            public override int Run(InterpretedFrame frame) {
+                frame.Push(((UInt64)frame.Pop()) < ((UInt64)frame.Pop()));
+                return +1;
+            }
+        }
+
+        internal sealed class LessThanSingle : LessThanInstruction {
+            public override int Run(InterpretedFrame frame) {
+                frame.Push(((Single)frame.Pop()) < ((Single)frame.Pop()));
+                return +1;
+            }
+        }
+
+        internal sealed class LessThanDouble : LessThanInstruction {
+            public override int Run(InterpretedFrame frame) {
+                frame.Push(((Double)frame.Pop()) < ((Double)frame.Pop()));
+                return +1;
+            }
+        }
+
+        public static Instruction Instance(Type type) {
+            Debug.Assert(!type.IsEnum);
+            switch (Type.GetTypeCode(type)) {
+                case TypeCode.SByte: return _SByte ?? (_SByte = new LessThanSByte());
+                case TypeCode.Byte: return _Byte ?? (_Byte = new LessThanSByte());
+                case TypeCode.Char: return _Char ?? (_Char = new LessThanSByte());
+                case TypeCode.Int16: return _Int16 ?? (_Int16 = new LessThanSByte());
+                case TypeCode.Int32: return _Int32 ?? (_Int32 = new LessThanSByte());
+                case TypeCode.Int64: return _Int64 ?? (_Int64 = new LessThanSByte());
+                case TypeCode.UInt16: return _UInt16 ?? (_UInt16 = new LessThanSByte());
+                case TypeCode.UInt32: return _UInt32 ?? (_UInt32 = new LessThanSByte());
+                case TypeCode.UInt64: return _UInt64 ?? (_UInt64 = new LessThanSByte());
+                case TypeCode.Single: return _Single ?? (_Single = new LessThanSByte());
+                case TypeCode.Double: return _Double ?? (_Double = new LessThanSByte());
+
+                default:
+                    throw Assert.Unreachable;
+            }
+        }
+
+        public override string ToString() {
+            return "LessThan()";
+        }
+    }
+
+    public sealed class TypeEqualsInstruction : Instruction {
+        public static readonly TypeEqualsInstruction Instance = new TypeEqualsInstruction();
+
+        public override int ConsumedStack { get { return 2; } }
+        public override int ProducedStack { get { return 1; } }
+
+        private TypeEqualsInstruction() {
+        }
+
+        public override int Run(InterpretedFrame frame) {
+            Type type = (Type)frame.Pop();
+            object obj = frame.Pop();
+            frame.Push(ScriptingRuntimeHelpers.BooleanToObject(obj != null && obj.GetType() == type));
+            return +1;
+        }
+
+        public override string InstructionName {
+            get { return "TypeEquals()"; }
         }
     }
 

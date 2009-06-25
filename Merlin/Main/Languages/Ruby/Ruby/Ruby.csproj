@@ -21,6 +21,7 @@
     <SignedSym Condition="'$(SignAssembly)' == 'true'">SIGNED</SignedSym>
     <DelaySign>true</DelaySign>
     <BaseAddress>887095296</BaseAddress>
+    <SilverlightPath Condition="$(SilverlightPath) == ''">..\..\..\Utilities\Silverlight\x86ret\</SilverlightPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FxCop|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -61,7 +62,6 @@
     <ErrorReport>prompt</ErrorReport>
     <NoStdLib>true</NoStdLib>
     <SilverlightBuild>true</SilverlightBuild>
-    <SilverlightSdkPath>..\..\..\Utilities\Silverlight\x86ret\</SilverlightSdkPath>
     <NoWarn>414,219</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight Release|AnyCPU' ">
@@ -72,7 +72,6 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
     <SilverlightBuild>true</SilverlightBuild>
-    <SilverlightSdkPath>..\..\..\Utilities\Silverlight\x86ret\</SilverlightSdkPath>
     <NoWarn>414,219</NoWarn>
   </PropertyGroup>
   <ItemGroup>
@@ -82,15 +81,15 @@
     <Reference Include="System.Configuration" />
     <Reference Include="mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" Condition=" '$(SilverlightBuild)' == 'true' ">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(SilverlightSdkPath)\mscorlib.dll</HintPath>
+      <HintPath>$(SilverlightPath)\mscorlib.dll</HintPath>
     </Reference>
     <Reference Include="System.Net, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" Condition=" '$(SilverlightBuild)' == 'true' ">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(SilverlightSdkPath)\System.Net.dll</HintPath>
+      <HintPath>$(SilverlightPath)\System.Net.dll</HintPath>
     </Reference>
     <Reference Include="System, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" Condition=" '$(SilverlightBuild)' == 'true' ">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(SilverlightSdkPath)\System.dll</HintPath>
+      <HintPath>$(SilverlightPath)\System.dll</HintPath>
     </Reference>
     <ProjectReference Include="..\..\..\..\..\ndp\fx\src\Dynamic\System\Dynamic\Microsoft.Dynamic.csproj" Condition=" '$(SilverlightBuild)' != 'true' ">
       <Project>{D4AE44AD-07B9-41DC-BB3B-1FDCDE3C987D}</Project>
@@ -116,6 +115,7 @@
     </Compile>
     <Compile Include="Builtins\Binding.cs" />
     <Compile Include="Builtins\ConsoleStream.cs" />
+    <None Include="Builtins\Subclasses.Generator.rb" />
     <Compile Include="Builtins\RubyErrno.cs" />
     <Compile Include="Builtins\MutableStringBuilder.cs" />
     <Compile Include="Builtins\RubyEvent.Meta.cs" />
@@ -148,6 +148,7 @@
     <Compile Include="Builtins\RubyRegexOptions.cs" />
     <Compile Include="Builtins\RubyStruct.cs" />
     <Compile Include="Builtins\Stubs.cs" />
+    <Compile Include="Builtins\Subclasses.Generated.cs" />
     <Compile Include="Builtins\TypeDescriptor.Generated.cs" />
     <Compile Include="Compiler\Ast\Expressions\ConditionalJumpExpression.cs" />
     <Compile Include="Compiler\Ast\Expressions\EncodingExpression.cs" />
@@ -181,9 +182,13 @@
     <Compile Include="Runtime\Calls\RubyMetaBinderFactory.cs" />
     <Compile Include="Runtime\Calls\RubyMetaObject.cs" />
     <Compile Include="Runtime\Calls\RubyMethodGroupBase.cs" />
+    <Compile Include="Runtime\Calls\RubyMethodBody.cs" />
+    <Compile Include="Runtime\Calls\RubyOverloadGroupInfo.cs" />
     <Compile Include="Runtime\Calls\RubyOverloadResolver.cs" />
+    <Compile Include="Runtime\Calls\SuperForwarderInfo.cs" />
     <Compile Include="Runtime\Calls\VersionHandle.cs" />
     <Compile Include="Runtime\CheckedMonitor.cs" />
+    <Compile Include="Runtime\ClrName.cs" />
     <Compile Include="Runtime\CustomTypeDescHelpers.cs" />
     <Compile Include="Compiler\Generation\OverriddenMembers.cs" />
     <Compile Include="Compiler\Generation\RubyTypeDispenser.cs" />
@@ -229,7 +234,7 @@
     <Compile Include="Runtime\Globals\SpecialGlobalVariableInfo.cs" />
     <Compile Include="Runtime\IDuplicable.cs" />
     <Compile Include="Runtime\IRubyObject.cs" />
-    <Compile Include="Runtime\InstanceData.cs" />
+    <Compile Include="Runtime\RubyInstanceData.cs" />
     <Compile Include="Runtime\InstanceDataWeakTable.cs" />
     <Compile Include="Builtins\Exceptions.cs" />
     <Compile Include="Builtins\MutableString.cs" />
@@ -364,7 +369,6 @@
     <Compile Include="Compiler\ReflectionCache.cs" />
     <Compile Include="Compiler\ReflectionCache.Generated.cs" />
     <Compile Include="RubyCompatibility.cs" />
-    <Compile Include="Builtins\RubyModule.Subclass.cs" />
     <Compile Include="Runtime\IOWrapper.cs" />
     <None Include="Compiler\Parser\Parser.y" />
     <None Include="Runtime\Calls\MethodDispatcher.Generator.rb" />

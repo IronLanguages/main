@@ -18,6 +18,11 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
+using Microsoft.Scripting.Runtime;
+
+using IronPython.Runtime;
+using IronPython.Runtime.Types;
+
 namespace IronPythonTest {
     [Flags]
     public enum BindResult {
@@ -771,5 +776,422 @@ namespace IronPythonTest {
         public int M8(int arg1, int arg2) { return 1; }
         public int M8(DispatchHelpers.B arg1, DispatchHelpers.B args) { return 2; }
         public int M8(object arg1, object arg2) { return 3; }
+    }
+
+    public class GenericTypeInference {
+        public static PythonType M0<T>(T x) {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+
+        public static PythonType M0CC<T>(CodeContext context, T x) {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+
+        public static PythonType M1<T>(T x, T y) {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+
+        public static PythonType M2<T>(T x, T y, T z) {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+
+        public static PythonType M3<T>(params T[] x) {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+
+        public static PythonType M4<T>(T x, params T[] args) {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+
+        public static PythonType M5<T>(T x) where T : class {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+
+        public static PythonType M6<T>(T x) where T : struct {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+
+        public static PythonType M7<T>(T x) where T : IList {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+
+        public static PythonTuple M8<T0, T1>(T0 x, T1 y) where T0 : T1 {
+            return PythonTuple.MakeTuple(DynamicHelpers.GetPythonTypeFromType(typeof(T0)), DynamicHelpers.GetPythonTypeFromType(typeof(T1)));
+        }
+
+        public static PythonTuple M9<T0, T1>(object x, T1 y) where T0 : T1 {
+            return PythonTuple.MakeTuple(DynamicHelpers.GetPythonTypeFromType(typeof(T0)), DynamicHelpers.GetPythonTypeFromType(typeof(T1)));
+        }
+
+        public static PythonTuple M9b<T0, T1>(T0 x, object y) where T0 : T1 {
+            return PythonTuple.MakeTuple(DynamicHelpers.GetPythonTypeFromType(typeof(T0)), DynamicHelpers.GetPythonTypeFromType(typeof(T1)));
+        }
+
+        public static PythonTuple M10<T0, T1, T2>(T0 x, T1 y, T2 z)
+            where T0 : T1
+            where T1 : T2 {
+            return PythonTuple.MakeTuple(
+                DynamicHelpers.GetPythonTypeFromType(typeof(T0)),
+                DynamicHelpers.GetPythonTypeFromType(typeof(T1)),
+                DynamicHelpers.GetPythonTypeFromType(typeof(T2))
+            );
+        }
+
+        public static PythonTuple M10c<T0, T1, T2>(T0 x, T1 y, T2 z)
+            where T0 : T1
+            where T1 : class {
+            return PythonTuple.MakeTuple(
+                DynamicHelpers.GetPythonTypeFromType(typeof(T0)),
+                DynamicHelpers.GetPythonTypeFromType(typeof(T1)),
+                DynamicHelpers.GetPythonTypeFromType(typeof(T2))
+            );
+        }
+
+        public static PythonTuple M10IList<T0, T1, T2>(T0 x, T1 y, T2 z)
+            where T0 : T1
+            where T1 : IList {
+            return PythonTuple.MakeTuple(
+                DynamicHelpers.GetPythonTypeFromType(typeof(T0)),
+                DynamicHelpers.GetPythonTypeFromType(typeof(T1)),
+                DynamicHelpers.GetPythonTypeFromType(typeof(T2))
+            );
+        }
+
+        public static PythonTuple M10PythonTuple<T0, T1, T2>(T0 x, T1 y, T2 z)
+            where T0 : T1
+            where T1 : PythonTuple {
+            return PythonTuple.MakeTuple(
+                DynamicHelpers.GetPythonTypeFromType(typeof(T0)),
+                DynamicHelpers.GetPythonTypeFromType(typeof(T1)),
+                DynamicHelpers.GetPythonTypeFromType(typeof(T2))
+            );
+        }
+
+        public static PythonType M11<T>(object x) {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+
+        public static PythonType M12<T0, T1>(T0 x, object y) {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T0));
+        }
+
+        public static PythonTuple M13<T>(T x, Func<T> y) {
+            return PythonTuple.MakeTuple(DynamicHelpers.GetPythonTypeFromType(typeof(T)), y());
+        }
+
+        public static PythonType M14<T>(T x, Action<T> y) {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+
+        public static PythonTuple M15<T>(T x, IList<T> y) {
+            PythonTuple res = PythonTuple.MakeTuple(DynamicHelpers.GetPythonTypeFromType(typeof(T)));
+            res += PythonTuple.Make(y);
+            return res;
+        }
+
+        public static PythonTuple M16<T>(T x, Dictionary<T, IList<T>> y) {
+            PythonTuple res = PythonTuple.MakeTuple(DynamicHelpers.GetPythonTypeFromType(typeof(T)));
+            res += PythonTuple.Make(y);
+            return res;
+        }
+
+        public static PythonType M17<T>(T x, IEnumerable<T> y) {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+
+        
+        public static PythonType M18<T>(T x) where T : IEnumerable<T> {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+
+        public static PythonTuple M19<T0, T1>(T0 x, T1 y) where T0 : IList<T1> {
+            return PythonTuple.MakeTuple(DynamicHelpers.GetPythonTypeFromType(typeof(T0)), DynamicHelpers.GetPythonTypeFromType(typeof(T1)));
+        }
+
+        public static PythonTuple M20<T0, T1>(T0 x, T1 y) {
+            return PythonTuple.MakeTuple(DynamicHelpers.GetPythonTypeFromType(typeof(T0)), DynamicHelpers.GetPythonTypeFromType(typeof(T1)));
+        }
+
+        public static PythonType M21<T>(IEnumerable<T> x) {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+
+        // overloads like Enumerable.Where<T>(...)
+        public static PythonTuple M22<T>(IEnumerable<T> x, Func<T, bool> y) {
+            return PythonTuple.MakeTuple(DynamicHelpers.GetPythonTypeFromType(typeof(T)), ScriptingRuntimeHelpers.True);
+        }
+
+        public static PythonTuple M22<T>(IEnumerable<T> x, Func<T, int, bool> y) {
+            M23(new List<int>());
+            return PythonTuple.MakeTuple(DynamicHelpers.GetPythonTypeFromType(typeof(T)), ScriptingRuntimeHelpers.False);
+        }
+
+        public static PythonType M23<T>(List<T> x) {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+
+        public static PythonType M24<T>(List<List<T>> x) {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+
+        public static PythonType M25<T>(Dictionary<T, T> x) {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+
+        public static PythonType M26<T>(List<T> x) where T : class {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+
+        public static PythonType M27<T>(List<T> x) where T : struct {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+
+        public static PythonType M28<T>(List<T> x) where T : new() {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+
+        public static PythonType M29<T>(Dictionary<Dictionary<T, T>, Dictionary<T, T>> x) {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+
+        public static PythonType M30<T>(Func<T, bool> x) where T : struct {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+
+        public static PythonType M31<T>(Func<T, bool> x) where T : IList {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+
+        public static PythonType M32<T>(List<T> x) where T : new() {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+
+        public static PythonType M33<T>(List<T> x) where T : class {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+
+        public static PythonType M34<T>(IList<T> x, IList<T> y) {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+    }
+
+    public class SelfEnumerable : IEnumerable<SelfEnumerable> {
+        #region IEnumerable<Test> Members
+
+        IEnumerator<SelfEnumerable> IEnumerable<SelfEnumerable>.GetEnumerator() {
+            throw new NotImplementedException();
+        }
+
+        #endregion
+
+        #region IEnumerable Members
+
+        IEnumerator IEnumerable.GetEnumerator() {
+            throw new NotImplementedException();
+        }
+
+        #endregion
+    }
+
+
+    public class GenericTypeInferenceInstance {
+        public PythonType MInst<T>(T x) {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+
+        public PythonType M0<T>(T x) {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+
+        public PythonType M0CC<T>(CodeContext context, T x) {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+
+        public PythonType M1<T>(T x, T y) {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+
+        public PythonType M2<T>(T x, T y, T z) {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+
+        public PythonType M3<T>(params T[] x) {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+
+        public PythonType M4<T>(T x, params T[] args) {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+
+        public PythonType M5<T>(T x) where T : class {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+
+        public PythonType M6<T>(T x) where T : struct {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+
+        public PythonType M7<T>(T x) where T : IList {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+
+        public PythonTuple M8<T0, T1>(T0 x, T1 y) where T0 : T1 {
+            return PythonTuple.MakeTuple(DynamicHelpers.GetPythonTypeFromType(typeof(T0)), DynamicHelpers.GetPythonTypeFromType(typeof(T1)));
+        }
+
+        public PythonTuple M9<T0, T1>(object x, T1 y) where T0 : T1 {
+            return PythonTuple.MakeTuple(DynamicHelpers.GetPythonTypeFromType(typeof(T0)), DynamicHelpers.GetPythonTypeFromType(typeof(T1)));
+        }
+
+        public PythonTuple M9b<T0, T1>(T0 x, object y) where T0 : T1 {
+            return PythonTuple.MakeTuple(DynamicHelpers.GetPythonTypeFromType(typeof(T0)), DynamicHelpers.GetPythonTypeFromType(typeof(T1)));
+        }
+
+        public PythonTuple M10<T0, T1, T2>(T0 x, T1 y, T2 z)
+            where T0 : T1
+            where T1 : T2 {
+            return PythonTuple.MakeTuple(
+                DynamicHelpers.GetPythonTypeFromType(typeof(T0)),
+                DynamicHelpers.GetPythonTypeFromType(typeof(T1)),
+                DynamicHelpers.GetPythonTypeFromType(typeof(T2))
+            );
+        }
+
+        public PythonTuple M10c<T0, T1, T2>(T0 x, T1 y, T2 z)
+            where T0 : T1
+            where T1 : class {
+            return PythonTuple.MakeTuple(
+                DynamicHelpers.GetPythonTypeFromType(typeof(T0)),
+                DynamicHelpers.GetPythonTypeFromType(typeof(T1)),
+                DynamicHelpers.GetPythonTypeFromType(typeof(T2))
+            );
+        }
+
+        public PythonTuple M10IList<T0, T1, T2>(T0 x, T1 y, T2 z)
+            where T0 : T1
+            where T1 : IList {
+            return PythonTuple.MakeTuple(
+                DynamicHelpers.GetPythonTypeFromType(typeof(T0)),
+                DynamicHelpers.GetPythonTypeFromType(typeof(T1)),
+                DynamicHelpers.GetPythonTypeFromType(typeof(T2))
+            );
+        }
+
+        public PythonTuple M10PythonTuple<T0, T1, T2>(T0 x, T1 y, T2 z)
+            where T0 : T1
+            where T1 : PythonTuple {
+            return PythonTuple.MakeTuple(
+                DynamicHelpers.GetPythonTypeFromType(typeof(T0)),
+                DynamicHelpers.GetPythonTypeFromType(typeof(T1)),
+                DynamicHelpers.GetPythonTypeFromType(typeof(T2))
+            );
+        }
+
+        public PythonType M11<T>(object x) {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+
+        public PythonType M12<T0, T1>(T0 x, object y) {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T0));
+        }
+
+        public PythonTuple M13<T>(T x, Func<T> y) {
+            return PythonTuple.MakeTuple(DynamicHelpers.GetPythonTypeFromType(typeof(T)), y());
+        }
+
+        public PythonType M14<T>(T x, Action<T> y) {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+
+        public PythonTuple M15<T>(T x, IList<T> y) {
+            PythonTuple res = PythonTuple.MakeTuple(DynamicHelpers.GetPythonTypeFromType(typeof(T)));
+            res += PythonTuple.Make(y);
+            return res;
+        }
+
+        public PythonTuple M16<T>(T x, Dictionary<T, IList<T>> y) {
+            PythonTuple res = PythonTuple.MakeTuple(DynamicHelpers.GetPythonTypeFromType(typeof(T)));
+            res += PythonTuple.Make(y);
+            return res;
+        }
+
+        public PythonType M17<T>(T x, IEnumerable<T> y) {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+
+
+        public PythonType M18<T>(T x) where T : IEnumerable<T> {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+
+        public PythonTuple M19<T0, T1>(T0 x, T1 y) where T0 : IList<T1> {
+            return PythonTuple.MakeTuple(DynamicHelpers.GetPythonTypeFromType(typeof(T0)), DynamicHelpers.GetPythonTypeFromType(typeof(T1)));
+        }
+
+        public PythonTuple M20<T0, T1>(T0 x, T1 y) {
+            return PythonTuple.MakeTuple(DynamicHelpers.GetPythonTypeFromType(typeof(T0)), DynamicHelpers.GetPythonTypeFromType(typeof(T1)));
+        }
+
+        public PythonType M21<T>(IEnumerable<T> x) {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+
+        // overloads like Enumerable.Where<T>(...)
+        public PythonTuple M22<T>(IEnumerable<T> x, Func<T, bool> y) {
+            return PythonTuple.MakeTuple(DynamicHelpers.GetPythonTypeFromType(typeof(T)), ScriptingRuntimeHelpers.True);
+        }
+
+        public PythonTuple M22<T>(IEnumerable<T> x, Func<T, int, bool> y) {
+            M23(new List<int>());
+            return PythonTuple.MakeTuple(DynamicHelpers.GetPythonTypeFromType(typeof(T)), ScriptingRuntimeHelpers.False);
+        }
+
+        public PythonType M23<T>(List<T> x) {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+
+        public PythonType M24<T>(List<List<T>> x) {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+
+        public PythonType M25<T>(Dictionary<T, T> x) {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+
+        public PythonType M26<T>(List<T> x) where T : class {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+
+        public PythonType M27<T>(List<T> x) where T : struct {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+
+        public PythonType M28<T>(List<T> x) where T : new() {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+
+        public PythonType M29<T>(Dictionary<Dictionary<T, T>, Dictionary<T, T>> x) {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+
+        public PythonType M30<T>(Func<T, bool> x) where T : struct {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+
+        public PythonType M31<T>(Func<T, bool> x) where T : IList {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+
+        public PythonType M32<T>(List<T> x) where T : new() {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+
+        public PythonType M33<T>(List<T> x) where T : class {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+
+        public PythonType M34<T>(IList<T> x, IList<T> y) {
+            return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
     }
 }

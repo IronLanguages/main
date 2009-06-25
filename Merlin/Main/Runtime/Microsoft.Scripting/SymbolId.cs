@@ -20,6 +20,14 @@ using Microsoft.Contracts;
 using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting {
+    /// <summary>
+    /// Provides an interned representation of a string which supports both case sensitive and case insensitive
+    /// lookups.
+    /// 
+    /// By default all lookups are case sensitive.  Case insensitive lookups can be performed by first creating
+    /// a normal SymbolId for a given string and then accessing the CaseInsensitiveIdentifier property.  Using
+    /// the case insensitive identifier during a lookup will cause the lookup to be case insensitive.
+    /// </summary>
     [Serializable]
     public struct SymbolId : ISerializable, IComparable, IComparable<SymbolId>, IEquatable<SymbolId> {
         private readonly int _id;
@@ -37,39 +45,39 @@ namespace Microsoft.Scripting {
         }
 
         public SymbolId CaseInsensitiveIdentifier {
-            get { return new SymbolId(_id & 0x00FFFFFF); }
+            get { return new SymbolId(_id & ~SymbolTable.CaseVersionMask); }
         }
 
         public int CaseInsensitiveId {
-            get { return _id & 0x00FFFFFF; }
+            get { return _id & ~SymbolTable.CaseVersionMask; }
+        }
+
+        public bool IsCaseInsensitive {
+            get {
+                return (_id & SymbolTable.CaseVersionMask) == 0;
+            }
         }
 
         [Confined]
         public override bool Equals(object obj) {
             if (!(obj is SymbolId)) return false;
-            SymbolId other = (SymbolId)obj;
-            return _id == other._id;
+            return Equals((SymbolId)obj);
         }
 
         [StateIndependent]
         public bool Equals(SymbolId other) {
-            return _id == other._id;
-        }
 
-        [Confined]
-        public bool CaseInsensitiveEquals(SymbolId other) {
-            return (_id & 0x00FFFFFF) == (other._id & 0x00FFFFFF);
+            if (_id == other._id) {
+                return true;
+            } else if (IsCaseInsensitive || other.IsCaseInsensitive) {
+                return (_id & ~SymbolTable.CaseVersionMask) == (other._id & ~SymbolTable.CaseVersionMask);
+            }
+            return false;
         }
 
         [Confined]
         public override int GetHashCode() {
-            return _id;
-        }
-
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
-        [Confined]
-        public int GetCaseInsensitiveHashCode() {
-            return (_id & 0x00FFFFFF);
+            return _id & ~SymbolTable.CaseVersionMask;
         }
 
         /// <summary>
@@ -87,19 +95,11 @@ namespace Microsoft.Scripting {
         }
 
         public static bool operator ==(SymbolId a, SymbolId b) {
-            return a._id == b._id;
+            return a.Equals(b);
         }
 
         public static bool operator !=(SymbolId a, SymbolId b) {
-            return a._id != b._id;
-        }
-
-        public static bool operator <(SymbolId a, SymbolId b) {
-            return a._id < b._id;
-        }
-
-        public static bool operator >(SymbolId a, SymbolId b) {
-            return a._id > b._id;
+            return !a.Equals(b);
         }
 
         #region IComparable Members

@@ -31,12 +31,12 @@ namespace Microsoft.Scripting.Interpreter {
             _lineNumberExpression = lineNumberExpression;
         }
 
-        protected override ExpressionType NodeTypeImpl() {
-            return ExpressionType.Extension;
+        public sealed override ExpressionType NodeType {
+            get { return ExpressionType.Extension; }
         }
 
-        protected override Type/*!*/ TypeImpl() {
-            return typeof(int);
+        public sealed override Type Type {
+            get { return typeof(int); }
         }
 
         public override bool CanReduce {

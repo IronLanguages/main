@@ -111,8 +111,7 @@ namespace IronPython.Runtime.Operations {
                     result is Extensible<int> || result is Extensible<BigInteger>) {
                     return result;
                 } else {
-                    throw PythonOps.TypeError("__int__ returned non-Integral (type {0})",
-                        result is OldInstance ? ((OldInstance)result)._class.__name__ : DynamicHelpers.GetPythonType(result).Name);
+                    throw PythonOps.TypeError("__int__ returned non-Integral (type {0})", PythonTypeOps.GetOldName(result));
                 }
             } else if (PythonOps.TryGetBoundAttr(context, o, Symbols.Truncate, out result)) {
                 result = PythonOps.CallWithContext(context, result);
@@ -124,17 +123,14 @@ namespace IronPython.Runtime.Operations {
                 } else if (Converter.TryConvertToBigInteger(result, out bigintRes)) {
                     return bigintRes;
                 } else {
-                    throw PythonOps.TypeError("__trunc__ returned non-Integral (type {0})",
-                        result is OldInstance ? ((OldInstance)result)._class.__name__ : DynamicHelpers.GetPythonType(result).Name);
+                    throw PythonOps.TypeError("__trunc__ returned non-Integral (type {0})", PythonTypeOps.GetOldName(result));
                 }
             }
 
             if (o is OldInstance) {
-                throw PythonOps.AttributeError("{0} instance has no attribute '__trunc__'",
-                    ((OldInstance)o)._class.__name__);
+                throw PythonOps.AttributeError("{0} instance has no attribute '__trunc__'", PythonTypeOps.GetOldName((OldInstance)o));
             } else {
-                throw PythonOps.TypeError("int() argument must be a string or a number, not '{0}'",
-                    DynamicHelpers.GetPythonType(o).Name);
+                throw PythonOps.TypeError("int() argument must be a string or a number, not '{0}'", PythonTypeOps.GetName(o));
             }
         }
 
@@ -453,8 +449,8 @@ namespace IronPython.Runtime.Operations {
                 case '%': digits = self.ToString("0.000000%", CultureInfo.InvariantCulture); break;
                 case 'e': digits = self.ToString("0.000000e+00", CultureInfo.InvariantCulture); break;
                 case 'E': digits = self.ToString("0.000000E+00", CultureInfo.InvariantCulture); break;
-                case 'f': digits = self.ToString("##########.000000", CultureInfo.InvariantCulture); break;
-                case 'F': digits = self.ToString("##########.000000", CultureInfo.InvariantCulture); break;
+                case 'f': digits = self.ToString("#########0.000000", CultureInfo.InvariantCulture); break;
+                case 'F': digits = self.ToString("#########0.000000", CultureInfo.InvariantCulture); break;
                 case 'g':
                     if (self >= 1000000 || self <= -1000000) {
                         digits = self.ToString("0.#####e+00", CultureInfo.InvariantCulture);
@@ -470,16 +466,16 @@ namespace IronPython.Runtime.Operations {
                     }
                     break;
                 case 'X':
-                    digits = ToHex(self, spec.IncludeType, false);
+                    digits = ToHex(self, false);
                     break;
                 case 'x':
-                    digits = ToHex(self, spec.IncludeType, true);
+                    digits = ToHex(self, true);
                     break;
                 case 'o': // octal
-                    digits = ToOctal(self, spec.IncludeType, true);
+                    digits = ToOctal(self, true);
                     break;
                 case 'b': // binary
-                    digits = ToBinary(self, spec.IncludeType, true);
+                    digits = ToBinary(self, false);
                     break;
                 case 'c': // single char
                     if (spec.Sign != null) {
@@ -507,11 +503,7 @@ namespace IronPython.Runtime.Operations {
             return self.ToString(CultureInfo.InvariantCulture);
         }
 
-        internal static string ToHex(int self, bool includeType) {
-            return ToHex(self, includeType, true);
-        }
-
-        internal static string ToHex(int self, bool includeType, bool lowercase) {
+        internal static string ToHex(int self, bool lowercase) {
             string digits;
             if (self != Int32.MinValue) {
                 int val = self;
@@ -523,17 +515,10 @@ namespace IronPython.Runtime.Operations {
                 digits = "80000000";
             }
 
-            if (includeType) {
-                digits = (lowercase ? "0x" : "0X") + digits;
-            }
             return digits;
         }
 
-        internal static string ToOctal(int self, bool includeType) {
-            return ToOctal(self, includeType, true);
-        }
-
-        internal static string ToOctal(int self, bool includeType, bool lowercase) {
+        internal static string ToOctal(int self, bool lowercase) {
             string digits;
             if (self == 0) {
                 digits = "0";
@@ -555,17 +540,10 @@ namespace IronPython.Runtime.Operations {
                 digits = "20000000000";
             }
 
-            if (includeType) {
-                digits = (lowercase ? "0o" : "0O") + digits;
-            }
             return digits;
         }
 
         internal static string ToBinary(int self, bool includeType) {
-            return ToBinary(self, includeType, true);
-        }
-
-        internal static string ToBinary(int self, bool includeType, bool lowercase) {
             string digits;
             if (self == 0) {
                 digits = "0";
@@ -588,9 +566,9 @@ namespace IronPython.Runtime.Operations {
             } else {
                 digits = "10000000000000000000000000000000";
             }
-
+            
             if (includeType) {
-                digits = (lowercase ? "0b" : "0B") + digits;
+                digits = "0b" + digits;
             }
             return digits;
         }

@@ -31,6 +31,10 @@ namespace Microsoft.Scripting.Actions.Calls {
         /// One or more keyword arguments were duplicated or would have taken the spot of a 
         /// provided positional argument.
         /// </summary>
-        DuplicateKeyword
+        DuplicateKeyword,
+        /// <summary>
+        /// Type arguments could not be inferred
+        /// </summary>
+        TypeInference
     }
 }

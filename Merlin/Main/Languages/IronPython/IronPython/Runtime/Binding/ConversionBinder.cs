@@ -140,6 +140,17 @@ namespace IronPython.Runtime.Binding {
                 case TypeCode.Char:
                     res = TryToCharConversion(self);
                     break;
+                case TypeCode.String:
+                    if (self.GetLimitType() == typeof(Bytes) && !_context.PythonOptions.Python30) {
+                        res = new DynamicMetaObject(
+                            Ast.Call(
+                                typeof(PythonOps).GetMethod("MakeString"),
+                                AstUtils.Convert(self.Expression, typeof(IList<byte>))
+                            ),
+                            BindingRestrictionsHelpers.GetRuntimeTypeRestriction(self.Expression, typeof(Bytes))
+                        );
+                    }
+                    break;
                 case TypeCode.Object:
                     // !!! Deferral?
                     if (type.IsArray && self.Value is PythonTuple && type.GetArrayRank() == 1) {
@@ -149,30 +160,34 @@ namespace IronPython.Runtime.Binding {
 
                         // Interface conversion helpers...
                         if (genTo == typeof(IList<>)) {
-                            res = TryToGenericInterfaceConversion(self, type, typeof(IList<object>), typeof(ListGenericWrapper<>));
+                            if (self.LimitType == typeof(string)) {
+                                res = new DynamicMetaObject(
+                                    Ast.Call(
+                                        typeof(PythonOps).GetMethod("MakeByteArray"),
+                                        AstUtils.Convert(self.Expression, typeof(string))
+                                    ),
+                                    BindingRestrictions.GetTypeRestriction(
+                                        self.Expression,
+                                        typeof(string)
+                                    )
+                                );
+                            } else {
+                                res = TryToGenericInterfaceConversion(self, type, typeof(IList<object>), typeof(ListGenericWrapper<>));
+                            }
                         } else if (genTo == typeof(IDictionary<,>)) {
                             res = TryToGenericInterfaceConversion(self, type, typeof(IDictionary<object, object>), typeof(DictionaryGenericWrapper<,>));
                         } else if (genTo == typeof(IEnumerable<>)) {
                             res = TryToGenericInterfaceConversion(self, type, typeof(IEnumerable), typeof(IEnumerableOfTWrapper<>));
                         }
                     } else if (type == typeof(IEnumerable)) {
-                        if (self.GetLimitType() == typeof(string)) {
-                            // replace strings normal enumeration with our own which returns strings instead of chars.
-                            res = new DynamicMetaObject(
-                                Ast.Call(
-                                    typeof(StringOps).GetMethod("ConvertToIEnumerable"),
-                                    AstUtils.Convert(self.Expression, typeof(string))
-                                ),
-                                BindingRestrictionsHelpers.GetRuntimeTypeRestriction(self.Expression, typeof(string))
-                            );
-                        } else if (!typeof(IEnumerable).IsAssignableFrom(self.GetLimitType()) && IsIndexless(self)) {
-                            res = PythonProtocol.ConvertToIEnumerable(this, self.Restrict(self.GetLimitType()));
+                        if (!typeof(IEnumerable).IsAssignableFrom(self.GetLimitType()) && IsIndexless(self)) {
+                            res = ConvertToIEnumerable(this, self.Restrict(self.GetLimitType()));
                         }
                     } else if (type == typeof(IEnumerator)) {
                         if (!typeof(IEnumerator).IsAssignableFrom(self.GetLimitType()) &&
                             !typeof(IEnumerable).IsAssignableFrom(self.GetLimitType()) &&
                             IsIndexless(self)) {
-                            res = PythonProtocol.ConvertToIEnumerator(this, self.Restrict(self.GetLimitType()));
+                            res = ConvertToIEnumerator(this, self.Restrict(self.GetLimitType()));
                         }
                     }
                     break;
@@ -244,7 +259,30 @@ namespace IronPython.Runtime.Binding {
                     res = (T)(object)new Func<CallSite, object, bool>(ObjectToBoolConversion);
                 }
             } else if (target != null) {
-                if (target.GetType() == Type || Type.IsAssignableFrom(target.GetType())) {
+                // Special cases - string or bytes to IEnumerable or IEnumerator
+                if (target is string) {
+                    if (typeof(T) == typeof(Func<CallSite, string, IEnumerable>)) {
+                        res = (T)(object)new Func<CallSite, string, IEnumerable>(StringToIEnumerableConversion);
+                    } else if (typeof(T) == typeof(Func<CallSite, string, IEnumerator>)) {
+                        res = (T)(object)new Func<CallSite, string, IEnumerator>(StringToIEnumeratorConversion);
+                    } else if (typeof(T) == typeof(Func<CallSite, object, IEnumerable>)) {
+                        res = (T)(object)new Func<CallSite, object, IEnumerable>(ObjectToIEnumerableConversion);
+                    } else if (typeof(T) == typeof(Func<CallSite, object, IEnumerator>)) {
+                        res = (T)(object)new Func<CallSite, object, IEnumerator>(ObjectToIEnumeratorConversion);
+                    }
+                } else if (target.GetType() == typeof(Bytes)) {
+                    if (typeof(T) == typeof(Func<CallSite, Bytes, IEnumerable>)) {
+                        res = (T)(object)new Func<CallSite, Bytes, IEnumerable>(BytesToIEnumerableConversion);
+                    } else if (typeof(T) == typeof(Func<CallSite, Bytes, IEnumerator>)) {
+                        res = (T)(object)new Func<CallSite, Bytes, IEnumerator>(BytesToIEnumeratorConversion);
+                    } else if (typeof(T) == typeof(Func<CallSite, object, IEnumerable>)) {
+                        res = (T)(object)new Func<CallSite, object, IEnumerable>(ObjectToIEnumerableConversion);
+                    } else if (typeof(T) == typeof(Func<CallSite, object, IEnumerator>)) {
+                        res = (T)(object)new Func<CallSite, object, IEnumerator>(ObjectToIEnumeratorConversion);
+                    }
+                }
+                
+                if (res == null && (target.GetType() == Type || Type.IsAssignableFrom(target.GetType()))) {
                     if (typeof(T) == typeof(Func<CallSite, object, object>)) {
                         // called via a helper call site in the runtime (e.g. Converter.Convert)
                         res = (T)(object)new Func<CallSite, object, object>(new IdentityConversion(target.GetType()).Convert);
@@ -335,6 +373,70 @@ namespace IronPython.Runtime.Binding {
             }
 
             return ((CallSite<Func<CallSite, object, bool>>)site).Update(site, value);
+        }
+
+        public IEnumerable StringToIEnumerableConversion(CallSite site, string value) {
+            if (value == null) {
+                return ((CallSite<Func<CallSite, string, IEnumerable>>)site).Update(site, value);
+            }
+
+            return PythonOps.StringEnumerable(value);
+        }
+
+        public IEnumerator StringToIEnumeratorConversion(CallSite site, string value) {
+            if (value == null) {
+                return ((CallSite<Func<CallSite, string, IEnumerator>>)site).Update(site, value);
+            }
+
+            return PythonOps.StringEnumerator(value);
+        }
+
+        public IEnumerable BytesToIEnumerableConversion(CallSite site, Bytes value) {
+            if (value == null) {
+                return ((CallSite<Func<CallSite, Bytes, IEnumerable>>)site).Update(site, value);
+            }
+
+            return _context.PythonOptions.Python30 ?
+                PythonOps.BytesIntEnumerable(value) :
+                PythonOps.BytesEnumerable(value);
+        }
+
+        public IEnumerator BytesToIEnumeratorConversion(CallSite site, Bytes value) {
+            if (value == null) {
+                return ((CallSite<Func<CallSite, Bytes, IEnumerator>>)site).Update(site, value);
+            }
+
+            return _context.PythonOptions.Python30 ?
+                (IEnumerator)PythonOps.BytesIntEnumerator(value) :
+                (IEnumerator)PythonOps.BytesEnumerator(value);
+        }
+
+        public IEnumerable ObjectToIEnumerableConversion(CallSite site, object value) {
+            if (value != null) {
+                if (value is string) {
+                    return PythonOps.StringEnumerable((string)value);
+                } else if (value.GetType() == typeof(Bytes)) {
+                    return _context.PythonOptions.Python30 ?
+                        PythonOps.BytesIntEnumerable((Bytes)value) :
+                        PythonOps.BytesEnumerable((Bytes)value);
+                }
+            }
+
+            return ((CallSite<Func<CallSite, object, IEnumerable>>)site).Update(site, value);
+        }
+
+        public IEnumerator ObjectToIEnumeratorConversion(CallSite site, object value) {
+            if (value != null) {
+                if (value is string) {
+                    return PythonOps.StringEnumerator((string)value);
+                } else if (value.GetType() == typeof(Bytes)) {
+                    return _context.PythonOptions.Python30 ?
+                        (IEnumerator)PythonOps.BytesIntEnumerator((Bytes)value) :
+                        (IEnumerator)PythonOps.BytesEnumerator((Bytes)value);
+                }
+            }
+
+            return ((CallSite<Func<CallSite, object, IEnumerator>>)site).Update(site, value);
         }
 
         class IdentityConversion {
@@ -567,6 +669,108 @@ namespace IronPython.Runtime.Binding {
             );
         }
 
+        internal static DynamicMetaObject ConvertToIEnumerable(DynamicMetaObjectBinder/*!*/ conversion, DynamicMetaObject/*!*/ metaUserObject) {
+            PythonType pt = MetaPythonObject.GetPythonType(metaUserObject);
+            PythonContext pyContext = PythonContext.GetPythonContext(conversion);
+            CodeContext context = pyContext.SharedContext;
+            PythonTypeSlot pts;
+
+            if (pt.TryResolveSlot(context, Symbols.Iterator, out pts)) {
+                return MakeIterRule(metaUserObject, "CreatePythonEnumerable");
+            } else if (pt.TryResolveSlot(context, Symbols.GetItem, out pts)) {
+                return MakeGetItemIterable(metaUserObject, pyContext, pts, "CreateItemEnumerable");
+            }
+
+            return null;
+        }
+
+        internal static DynamicMetaObject ConvertToIEnumerator(DynamicMetaObjectBinder/*!*/ conversion, DynamicMetaObject/*!*/ metaUserObject) {
+            PythonType pt = MetaPythonObject.GetPythonType(metaUserObject);
+            PythonContext state = PythonContext.GetPythonContext(conversion);
+            CodeContext context = state.SharedContext;
+            PythonTypeSlot pts;
+
+
+            if (pt.TryResolveSlot(context, Symbols.Iterator, out pts)) {
+                ParameterExpression tmp = Ast.Parameter(typeof(object), "iterVal");
+
+                return new DynamicMetaObject(
+                    Expression.Block(
+                        new[] { tmp },
+                        Expression.Call(
+                            typeof(PythonOps).GetMethod("CreatePythonEnumerator"),
+                            Ast.Block(
+                                MetaPythonObject.MakeTryGetTypeMember(
+                                    state,
+                                    pts,
+                                    metaUserObject.Expression,
+                                    tmp
+                                ),
+                                Ast.Dynamic(
+                                    new PythonInvokeBinder(
+                                        state,
+                                        new CallSignature(0)
+                                    ),
+                                    typeof(object),
+                                    AstUtils.Constant(context),
+                                    tmp
+                                )
+                            )
+                        )
+                    ),
+                    metaUserObject.Restrictions
+                );
+            } else if (pt.TryResolveSlot(context, Symbols.GetItem, out pts)) {
+                return MakeGetItemIterable(metaUserObject, state, pts, "CreateItemEnumerator");
+            }
+
+            return null;
+        }
+
+        private static DynamicMetaObject MakeGetItemIterable(DynamicMetaObject metaUserObject, PythonContext state, PythonTypeSlot pts, string method) {
+            ParameterExpression tmp = Ast.Parameter(typeof(object), "getitemVal");
+            return new DynamicMetaObject(
+                Expression.Block(
+                    new[] { tmp },
+                    Expression.Call(
+                        typeof(PythonOps).GetMethod(method),
+                        Ast.Block(
+                            MetaPythonObject.MakeTryGetTypeMember(
+                                state,
+                                pts,
+                                tmp,
+                                metaUserObject.Expression,
+                                Ast.Call(
+                                    typeof(DynamicHelpers).GetMethod("GetPythonType"),
+                                    AstUtils.Convert(
+                                        metaUserObject.Expression,
+                                        typeof(object)
+                                    )
+                                )
+                            ),
+                            tmp
+                        ),
+                        AstUtils.Constant(
+                            CallSite<Func<CallSite, CodeContext, object, int, object>>.Create(
+                                new PythonInvokeBinder(state, new CallSignature(1))
+                            )
+                        )
+                    )
+                ),
+                metaUserObject.Restrictions
+            );
+        }
+
+        private static DynamicMetaObject/*!*/ MakeIterRule(DynamicMetaObject/*!*/ self, string methodName) {
+            return new DynamicMetaObject(
+                Ast.Call(
+                    typeof(PythonOps).GetMethod(methodName),
+                    AstUtils.Convert(self.Expression, typeof(object))
+                ),
+                self.Restrictions
+            );
+        }
+
         #endregion
 
         public override string ToString() {
@@ -588,15 +792,15 @@ namespace IronPython.Runtime.Binding {
     }
 
     class CompatConversionBinder : ConvertBinder {
-        private readonly PythonContext _bs;
+        private readonly PythonContext _context;
 
-        public CompatConversionBinder(PythonContext/*!*/ bs, Type toType, bool isExplicit)
+        public CompatConversionBinder(PythonContext/*!*/ context, Type toType, bool isExplicit)
             : base(toType, isExplicit) {
-            _bs = bs;
+            _context = context;
         }
 
         public override DynamicMetaObject FallbackConvert(DynamicMetaObject target, DynamicMetaObject errorSuggestion) {
-            return new PythonConversionBinder(_bs, Type, Explicit ? ConversionResultKind.ExplicitCast : ConversionResultKind.ImplicitCast).FallbackConvert(target);
+            return new PythonConversionBinder(_context, Type, Explicit ? ConversionResultKind.ExplicitCast : ConversionResultKind.ImplicitCast).FallbackConvert(target);
         }
     }
 }

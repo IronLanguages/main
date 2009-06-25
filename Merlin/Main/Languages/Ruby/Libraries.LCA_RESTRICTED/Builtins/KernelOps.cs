@@ -209,7 +209,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("exec", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
         public static void Execute(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]MutableString/*!*/ command) {
             Process p = ExecuteCommandInShell(context, command);
-            context.ChildProcessExitStatus = p.ExitCode;
+            context.ChildProcessExitStatus = new RubyProcess.Status(p);
             Exit(self, p.ExitCode);
         }
 
@@ -218,7 +218,7 @@ namespace IronRuby.Builtins {
         public static void Execute(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]MutableString/*!*/ command,
             [DefaultProtocol, NotNull, NotNullItems]params MutableString[]/*!*/ args) {
             Process p = ExecuteCommand(command, args);
-            context.ChildProcessExitStatus = p.ExitCode;
+            context.ChildProcessExitStatus = new RubyProcess.Status(p);
             Exit(self, p.ExitCode);
         }
 
@@ -226,7 +226,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("system", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
         public static bool System(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]MutableString/*!*/ command) {
             Process p = ExecuteCommandInShell(context, command);
-            context.ChildProcessExitStatus = p.ExitCode;
+            context.ChildProcessExitStatus = new RubyProcess.Status(p);
             return p.ExitCode == 0;
         }
 
@@ -235,7 +235,7 @@ namespace IronRuby.Builtins {
         public static bool System(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]MutableString/*!*/ command,
             [DefaultProtocol, NotNull, NotNullItems]params MutableString/*!*/[]/*!*/ args) {
             Process p = ExecuteCommand(command, args);
-            context.ChildProcessExitStatus = p.ExitCode;
+            context.ChildProcessExitStatus = new RubyProcess.Status(p);
             return p.ExitCode == 0;
         }
 #endif
@@ -413,7 +413,7 @@ namespace IronRuby.Builtins {
             [DefaultProtocol, NotNull]MutableString/*!*/ assemblyName, [DefaultProtocol, Optional, NotNull]MutableString libraryNamespace) {
 
             string initializer = libraryNamespace != null ? LibraryInitializer.GetFullTypeName(libraryNamespace.ConvertToString()) : null;
-            return context.Loader.LoadAssembly(assemblyName.ConvertToString(), initializer, true);
+            return context.Loader.LoadAssembly(assemblyName.ConvertToString(), initializer, true, true);
         }
 
         [RubyMethod("require", RubyMethodAttributes.PrivateInstance)]
@@ -994,19 +994,6 @@ namespace IronRuby.Builtins {
 
         #region ==, ===, =~, eql?, equal?, hash
 
-        [RubyMethod("==")]
-        [RubyMethod("eql?")]
-        public static bool ValueEquals(IRubyObject self, object other) {
-            return object.ReferenceEquals(self, other);
-        }
-
-        [RubyMethod("==")]
-        [RubyMethod("eql?")]
-        public static bool ValueEquals(object self, object other) {
-            Debug.Assert(self == null || !(self is IRubyObject));
-            return RubyUtils.ValueEquals(self, other);
-        }
-
         [RubyMethod("=~")]
         public static bool Match(object self, object other) {
             // Default implementation of match that is overridden in descendents (notably String and Regexp)
@@ -1015,23 +1002,34 @@ namespace IronRuby.Builtins {
 
         // calls == by default
         [RubyMethod("===")]
-        public static bool HashEquals(BinaryOpStorage/*!*/ equals, object self, object other) {
+        public static bool CaseEquals(BinaryOpStorage/*!*/ equals, object self, object other) {
             return Protocols.IsEqual(equals, self, other);
         }
 
+        [RubyMethod("==")]
+        [RubyMethod("eql?")]
+        public static bool ValueEquals([NotNull]IRubyObject/*!*/ self, object other) {
+            return self.BaseEquals(other);
+        }
+
+        [RubyMethod("==")]
+        [RubyMethod("eql?")]
+        public static bool ValueEquals(object self, object other) {
+            return Object.Equals(self, other);
+        }
+
         [RubyMethod("hash")]
-        public static int Hash(IRubyObject self) {
-            return self == null ? RubyUtils.NilObjectId : RuntimeHelpers.GetHashCode(self);
+        public static int Hash([NotNull]IRubyObject/*!*/ self) {
+            return self.BaseGetHashCode();
         }
 
         [RubyMethod("hash")]
         public static int Hash(object self) {
-            Debug.Assert(self == null || !(self is IRubyObject));
-            return RubyUtils.GetHashCode(self);
+            return self == null ? RubyUtils.NilObjectId : self.GetHashCode();
         }
 
         [RubyMethod("equal?")]
-        public static bool Equal(object self, object other) {
+        public static bool IsEqual(object self, object other) {
             // Comparing object IDs is (potentially) expensive because it forces us
             // to generate InstanceData and a new object ID
             //return GetObjectId(self) == GetObjectId(other);
@@ -1051,15 +1049,15 @@ namespace IronRuby.Builtins {
         #region __id__, id, object_id, class
 
         [RubyMethod("id")]
-        public static int GetId(RubyContext/*!*/ context, object self) {
+        public static object GetId(RubyContext/*!*/ context, object self) {
             context.ReportWarning("Object#id will be deprecated; use Object#object_id");
             return GetObjectId(context, self);
         }
 
         [RubyMethod("__id__")]
         [RubyMethod("object_id")]
-        public static int GetObjectId(RubyContext/*!*/ context, object self) {
-            return RubyUtils.GetObjectId(context, self);
+        public static object GetObjectId(RubyContext/*!*/ context, object self) {
+            return ClrInteger.Narrow(RubyUtils.GetObjectId(context, self));
         }
 
         [RubyMethod("type")]
@@ -1427,7 +1425,33 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region method, methods, (private|protected|public|singleton)_methods (thread-safe)
+        #region clr_member, method, methods, (private|protected|public|singleton)_methods (thread-safe)
+
+        // thread-safe:
+        /// <summary>
+        /// Returns a RubyMethod instance that represents one or more CLR members of given name.
+        /// An exception is thrown if the member is not found.
+        /// Name could be of Ruby form (foo_bar) or CLR form (FooBar). Operator names are translated 
+        /// (e.g. "+" to op_Addition, "[]"/"[]=" to a default index getter/setter).
+        /// The resulting RubyMethod might represent multiple CLR members (overloads).
+        /// Inherited members are included.
+        /// Includes all CLR members that match the name even if they are not callable from Ruby - 
+        /// they are hidden by a Ruby member or their declaring type is not included in the ancestors list of the class.
+        /// Includes members of any Ruby visibility.
+        /// Includes CLR protected members.
+        /// Includes CLR private members if PrivateBinding is on.
+        /// </summary>
+        [RubyMethod("clr_member")]
+        public static RubyMethod/*!*/ GetClrMember(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]string/*!*/ name) {
+            RubyMemberInfo info;
+
+            RubyClass cls = context.GetClassOf(self);
+            if (!cls.TryGetClrMember(name, out info)) {
+                throw RubyExceptions.CreateNameError(String.Format("undefined CLR method `{0}' for class `{1}'", name, cls.Name));
+            }
+
+            return new RubyMethod(self, info, name);
+        }
 
         // thread-safe:
         [RubyMethod("method")]
@@ -1450,7 +1474,7 @@ namespace IronRuby.Builtins {
                 if (foreignMembers.Count > 0) {
                     var symbolicNames = context.RubyOptions.Compatibility > RubyCompatibility.Ruby18;
                     foreach (var name in foreignMembers) {
-                        result.Add(ModuleOps.CreateMethodName(name, symbolicNames));
+                        result.Add(new ClrName(name));
                     }
                 }
                 return result;

@@ -25,6 +25,7 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting;
+using System.Diagnostics;
 
 namespace IronRuby.Builtins {
 
@@ -260,7 +261,12 @@ namespace IronRuby.Builtins {
 
                 // we need to define new methods one by one since the method_added events can define a new method that might be used here:
                 using (context.ClassHierarchyLocker()) {
-                    method = module.ResolveMethodFallbackToObjectNoLock(methodName, RubyClass.IgnoreVisibility).Info;
+                    MethodLookup options = MethodLookup.FallbackToObject;
+                    if (!isModuleFunction) {
+                        options |= MethodLookup.ReturnForwarder;
+                    }
+
+                    method = module.ResolveMethodNoLock(methodName, RubyClass.IgnoreVisibility, options).Info;
                     if (method == null) {
                         throw RubyExceptions.CreateNameError(RubyExceptions.FormatMethodMissingMessage(context, module, methodName));
                     }
@@ -299,6 +305,16 @@ namespace IronRuby.Builtins {
         }
 
         // thread-safe:
+        // Defines method using mangled CLR name and aliases that method with the actual CLR name.
+        [RubyMethod("define_method", RubyMethodAttributes.PrivateInstance)]
+        public static RubyMethod/*!*/ DefineMethod(RubyScope/*!*/ scope, RubyModule/*!*/ self,
+            [NotNull]ClrName/*!*/ methodName, [NotNull]RubyMethod/*!*/ method) {
+            var result = DefineMethod(scope, self, methodName.MangledName, method);
+            self.AddMethodAlias(methodName.ActualName, methodName.MangledName);
+            return result;
+        }
+
+        // thread-safe:
         [RubyMethod("define_method", RubyMethodAttributes.PrivateInstance)]
         public static UnboundMethod/*!*/ DefineMethod(RubyScope/*!*/ scope, RubyModule/*!*/ self, 
             [DefaultProtocol, NotNull]string/*!*/ methodName, [NotNull]UnboundMethod/*!*/ method) {
@@ -307,14 +323,20 @@ namespace IronRuby.Builtins {
             return method;
         }
 
+        // thread-safe:
+        // Defines method using mangled CLR name and aliases that method with the actual CLR name.
+        [RubyMethod("define_method", RubyMethodAttributes.PrivateInstance)]
+        public static UnboundMethod/*!*/ DefineMethod(RubyScope/*!*/ scope, RubyModule/*!*/ self,
+            [NotNull]ClrName/*!*/ methodName, [NotNull]UnboundMethod/*!*/ method) {
+            var result = DefineMethod(scope, self, methodName.MangledName, method);
+            self.AddMethodAlias(methodName.ActualName, methodName.MangledName);
+            return result;
+        }
+
         private static void DefineMethod(RubyScope/*!*/ scope, RubyModule/*!*/ self, string/*!*/ methodName, RubyMemberInfo/*!*/ info,
             RubyModule/*!*/ targetConstraint) {
 
-            // MRI: doesn't create a singleton method if module_function is used in the scope, however the the private visibility is applied
-            var attributesScope = scope.GetMethodAttributesDefinitionScope();
-            bool isModuleFunction = (attributesScope.MethodAttributes & RubyMethodAttributes.ModuleFunction) == RubyMethodAttributes.ModuleFunction;
-            var visibility = isModuleFunction ? RubyMethodVisibility.Private : attributesScope.Visibility;
-
+            var visibility = GetDefinedMethodVisibility(scope, self, methodName);
             using (self.Context.ClassHierarchyLocker()) {
                 // MRI 1.8 does the check when the method is called, 1.9 checks it upfront as we do:
                 if (!self.HasAncestorNoLock(targetConstraint)) {
@@ -338,17 +360,55 @@ namespace IronRuby.Builtins {
         }
 
         // thread-safe:
+        // Defines method using mangled CLR name and aliases that method with the actual CLR name.
+        [RubyMethod("define_method", RubyMethodAttributes.PrivateInstance)]
+        public static Proc/*!*/ DefineMethod(RubyScope/*!*/ scope, [NotNull]BlockParam/*!*/ block,
+            RubyModule/*!*/ self, [NotNull]ClrName/*!*/ methodName) {
+
+            var result = DefineMethod(scope, block, self, methodName.MangledName);
+            self.AddMethodAlias(methodName.ActualName, methodName.MangledName);
+            return result;
+        }
+
+        // thread-safe:
         [RubyMethod("define_method", RubyMethodAttributes.PrivateInstance)]
         public static Proc/*!*/ DefineMethod(RubyScope/*!*/ scope, RubyModule/*!*/ self, 
             [DefaultProtocol, NotNull]string/*!*/ methodName, [NotNull]Proc/*!*/ method) {
 
-            // MRI: ignores ModuleFunction scope flag (doesn't create singleton method).
-            // MRI 1.8: uses private visibility if module_function is applied (bug).
-            // MFI 1.9: uses public visibility as we do, unless the name is special.
-            var visibility = RubyUtils.GetSpecialMethodVisibility(scope.Visibility, methodName);
-
+            var visibility = GetDefinedMethodVisibility(scope, self, methodName);
             self.AddMethod(scope.RubyContext, methodName, Proc.ToLambdaMethodInfo(method.ToLambda(), methodName, visibility, self));
             return method;
+        }
+
+        // thread-safe:
+        [RubyMethod("define_method", RubyMethodAttributes.PrivateInstance)]
+        public static Proc/*!*/ DefineMethod(RubyScope/*!*/ scope, RubyModule/*!*/ self,
+            [NotNull]ClrName/*!*/ methodName, [NotNull]Proc/*!*/ method) {
+
+            var result = DefineMethod(scope, self, methodName.MangledName, method);
+            self.AddMethodAlias(methodName.ActualName, methodName.MangledName);
+            return result;
+        }
+
+        private static RubyMethodVisibility GetDefinedMethodVisibility(RubyScope/*!*/ scope, RubyModule/*!*/ module, string/*!*/ methodName) {
+            // MRI: Special names are private.
+            // MRI: Doesn't create a singleton method if module_function is used in the scope, however the private visibility is applied (bug?)
+            // MRI 1.8: uses the current scope's visibility only if the target module is the same as the scope's module (bug?)
+            // MFI 1.9: always uses public visibility (bug?)
+            RubyMethodVisibility visibility;
+            if (scope.RubyContext.RubyOptions.Compatibility == RubyCompatibility.Ruby18) {
+                var attributesScope = scope.GetMethodAttributesDefinitionScope();
+                if (attributesScope.GetInnerMostModuleForMethodLookup() == module) {
+                    bool isModuleFunction = (attributesScope.MethodAttributes & RubyMethodAttributes.ModuleFunction) == RubyMethodAttributes.ModuleFunction;
+                    visibility = (isModuleFunction) ? RubyMethodVisibility.Private : attributesScope.Visibility;
+                } else {
+                    visibility = RubyMethodVisibility.Public;
+                }
+            } else {
+                visibility = RubyMethodVisibility.Public;
+            }
+
+            return RubyUtils.GetSpecialMethodVisibility(visibility, methodName);
         }
 
         #endregion
@@ -378,14 +438,15 @@ namespace IronRuby.Builtins {
             // MRI: ignores ModuleFunction scope flag (doesn't create singleton methods):
 
             var varName = "@" + name;
+            var attributesScope = scope.GetMethodAttributesDefinitionScope();
 
             if (readable) {
-                var flags = (RubyMemberFlags)RubyUtils.GetSpecialMethodVisibility(scope.Visibility, name);
+                var flags = (RubyMemberFlags)RubyUtils.GetSpecialMethodVisibility(attributesScope.Visibility, name);
                 self.SetLibraryMethod(name, new RubyAttributeReaderInfo(flags, self, varName), false);
             }
             
             if (writable) {
-                self.SetLibraryMethod(name + "=", new RubyAttributeWriterInfo((RubyMemberFlags)scope.Visibility, self, varName), false);
+                self.SetLibraryMethod(name + "=", new RubyAttributeWriterInfo((RubyMemberFlags)attributesScope.Visibility, self, varName), false);
             }
         }
 
@@ -795,9 +856,13 @@ namespace IronRuby.Builtins {
             var symbolicNames = self.Context.RubyOptions.Compatibility > RubyCompatibility.Ruby18;
 
             using (self.Context.ClassHierarchyLocker()) {
-                self.ForEachMember(inherited, attributes, foreignMembers, delegate(string/*!*/ name, RubyMemberInfo member) {
-                    result.Add(CreateMethodName(name, symbolicNames));
-                });
+                self.ForEachMember(inherited, attributes, foreignMembers, (name, module, member) =>
+                    result.Add(
+                        member.IsInteropMember && (module.Restrictions & ModuleRestrictions.NoNameMangling) == 0 ?
+                            new ClrName(name) :
+                            CreateMethodName(name, symbolicNames)
+                    )
+                );
             }
             return result;
         }

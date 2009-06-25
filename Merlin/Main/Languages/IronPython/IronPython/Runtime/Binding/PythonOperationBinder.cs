@@ -205,12 +205,12 @@ namespace IronPython.Runtime.Binding {
         }
         
         private IEnumerator GetListEnumerator(CallSite site, List value) {
-            return new listiterator(value);
+            return new ListIterator(value);
         }
 
         private IEnumerator GetListEnumerator(CallSite site, object value) {
             if (value != null && value.GetType() == typeof(List)) {
-                return new listiterator((List)value);
+                return new ListIterator((List)value);
             }
 
             return ((CallSite<Func<CallSite, object, IEnumerator>>)site).Update(site, value);
@@ -331,7 +331,6 @@ namespace IronPython.Runtime.Binding {
             get {
                 switch (Operation & (~PythonOperationKind.DisableCoerce)) {
                     case PythonOperationKind.Compare: return typeof(int);
-                    case PythonOperationKind.MemberNames: return typeof(IList<string>);
                     case PythonOperationKind.IsCallable: return typeof(bool);
                     case PythonOperationKind.Hash: return typeof(int);
                     case PythonOperationKind.Contains: return typeof(bool);

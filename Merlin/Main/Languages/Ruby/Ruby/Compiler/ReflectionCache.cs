@@ -35,9 +35,9 @@ using System.Runtime.CompilerServices;
 
 namespace IronRuby.Compiler {
     internal static class Fields {
-        private static FieldInfo _RubyOps_DefaultArgumentField, _RubyOps_MethodNotFound, _VersionHandle_Value, _RubyClass_Version;
+        private static FieldInfo _RubyOps_DefaultArgumentField, _RubyOps_ForwardToBase, _VersionHandle_Value, _RubyClass_Version;
         public static FieldInfo RubyOps_DefaultArgumentField { get { return _RubyOps_DefaultArgumentField ?? (_RubyOps_DefaultArgumentField = GetField(typeof(RubyOps), "DefaultArgument")); } }
-        public static FieldInfo RubyOps_MethodNotFound { get { return _RubyOps_MethodNotFound ?? (_RubyOps_MethodNotFound = GetField(typeof(RubyOps), "MethodNotFound")); } }
+        public static FieldInfo RubyOps_ForwardToBase { get { return _RubyOps_ForwardToBase ?? (_RubyOps_ForwardToBase = GetField(typeof(RubyOps), "ForwardToBase")); } }
         public static FieldInfo VersionHandle_Value { get { return _VersionHandle_Value ?? (_VersionHandle_Value = GetField(typeof(VersionHandle), "Value")); } }
         public static FieldInfo RubyClass_Version { get { return _RubyClass_Version ?? (_RubyClass_Version = GetField(typeof(RubyClass), "Version")); } }
 
@@ -48,16 +48,13 @@ namespace IronRuby.Compiler {
         }
     }
     
-    internal static partial class Methods {
+    public static partial class Methods {
         private static ConstructorInfo _RubyCallSignatureCtor;
-        private static MethodInfo _Stopwatch_GetTimestamp, _IEnumerable_Of_Object_GetEnumerator, _IEnumerator_MoveNext,
-            _IEnumerator_get_Current, _RubyStruct_GetValue, _RubyStruct_SetValue;
+        private static MethodInfo _Stopwatch_GetTimestamp, _IEnumerable_Of_Object_GetEnumerator, _IEnumerator_MoveNext, _IEnumerator_get_Current;
 
         public static ConstructorInfo RubyCallSignatureCtor { get { return _RubyCallSignatureCtor ?? (_RubyCallSignatureCtor = GetConstructor(typeof(RubyCallSignature), typeof(uint))); } }
 
         public static MethodInfo Stopwatch_GetTimestamp { get { return _Stopwatch_GetTimestamp ?? (_Stopwatch_GetTimestamp = GetMethod(typeof(Stopwatch), "GetTimestamp")); } }
-        public static MethodInfo RubyStruct_GetValue { get { return _RubyStruct_GetValue ?? (_RubyStruct_GetValue = GetMethod(typeof(RubyStruct), "GetValue", BindingFlags.Instance, typeof(int))); } }
-        public static MethodInfo RubyStruct_SetValue { get { return _RubyStruct_SetValue ?? (_RubyStruct_SetValue = GetMethod(typeof(RubyStruct), "SetValue", BindingFlags.Instance, typeof(int), typeof(object))); } }
         public static MethodInfo IEnumerable_Of_Object_GetEnumerator { get { return _IEnumerable_Of_Object_GetEnumerator ?? (_IEnumerable_Of_Object_GetEnumerator = GetMethod(typeof(IEnumerable<object>), "GetEnumerator", BindingFlags.Instance, Type.EmptyTypes)); } }
         public static MethodInfo IEnumerator_get_Current { get { return _IEnumerator_get_Current ?? (_IEnumerator_get_Current = GetMethod(typeof(IEnumerator), "get_Current", BindingFlags.Instance, Type.EmptyTypes)); } }
         public static MethodInfo IEnumerator_MoveNext { get { return _IEnumerator_MoveNext ?? (_IEnumerator_MoveNext = GetMethod(typeof(IEnumerator), "MoveNext", BindingFlags.Instance, Type.EmptyTypes)); } }
@@ -69,13 +66,13 @@ namespace IronRuby.Compiler {
         }
 
         internal static MethodInfo/*!*/ GetMethod(Type/*!*/ type, string/*!*/ name) {
-            var method = type.GetMethod(name, BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly);
+            var method = type.GetMethod(name, BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly);
             Debug.Assert(method != null, type.Name + "::" + name);
             return method;
         }
 
         internal static MethodInfo/*!*/ GetMethod(Type/*!*/ type, string/*!*/ name, params Type/*!*/[]/*!*/ signature) {
-            return GetMethod(type, name, BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly, signature);
+            return GetMethod(type, name, BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly, signature);
         }
 
         internal static MethodInfo/*!*/ GetMethod(Type/*!*/ type, string/*!*/ name, BindingFlags flags, params Type/*!*/[]/*!*/ signature) {
@@ -117,7 +114,7 @@ namespace IronRuby.Compiler {
         }
     }
 
-    internal static class MethodInfoExtensions {
+    public static class MethodInfoExtensions {
         public static MSA.Expression/*!*/ OpCall(this MethodInfo/*!*/ method) {
             Assert.NotNull(method);
             return MSA.Expression.Call(null, method);

@@ -55,7 +55,7 @@ namespace IronRuby.StandardLibrary.StringScanner {
 #endif
 
         protected override RubyObject/*!*/ CreateInstance() {
-            return new StringScanner(Class);
+            return new StringScanner(ImmediateClass.NominalClass);
         }
 
         private void InitializeFrom(StringScanner/*!*/ other) {

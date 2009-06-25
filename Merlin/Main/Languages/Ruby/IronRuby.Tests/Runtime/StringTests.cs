@@ -20,6 +20,7 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using IronRuby.Runtime;
 using Microsoft.Scripting;
+using System.Runtime.CompilerServices;
 
 namespace IronRuby.Tests {
     public partial class Tests {
@@ -241,33 +242,7 @@ NULL2
 SUB
 ");
         }
-
-        public void ToSConversionClr() {
-            var objs = Engine.Execute<RubyArray>(@"
-class C
-  def to_s
-    '123'
-  end
-end
-
-class D
-end
-
-[C.new, D.new]
-");
- 
-            Assert(objs[0].ToString() == "123");
-            
-            string s = objs[1].ToString();
-            Assert(s.StartsWith("#<D:0x") && s.EndsWith(">"));
-
-            var range = new Range(1, 2, true);
-            Assert(range.ToString() == "1...2");
-
-            var regex = new RubyRegex("hello", RubyRegexOptions.IgnoreCase | RubyRegexOptions.Multiline);
-            Assert(regex.ToString() == "(?mi-x:hello)");
-        }
-
+        
         [Options(Compatibility = RubyCompatibility.Ruby18)]
         private void Inspect1() {
             const char sq = '\'';

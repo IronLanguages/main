@@ -51,7 +51,7 @@ namespace Microsoft.Scripting.Actions {
         internal readonly List<Assembly> _packageAssemblies = new List<Assembly>();
         internal readonly Dictionary<Assembly, TypeNames> _typeNames = new Dictionary<Assembly, TypeNames>();
 
-        private string _fullName; // null for the TopReflectedPackage
+        private readonly string _fullName; // null for the TopReflectedPackage
         private TopNamespaceTracker _topPackage;
         private int _id;
 
@@ -59,18 +59,14 @@ namespace Microsoft.Scripting.Actions {
 
         #region Protected API Surface
 
-        private NamespaceTracker() {
+        protected NamespaceTracker(string name) {
             UpdateId();
+            _fullName = name;
         }
 
         [Confined]
         public override string ToString() {
             return base.ToString() + ":" + _fullName;
-        }
-
-        protected NamespaceTracker(string name)
-            : this() {
-            _fullName = name;
         }
 
         #endregion
@@ -92,7 +88,7 @@ namespace Microsoft.Scripting.Actions {
                 if (package != null) {
                     if (!package._packageAssemblies.Contains(assem)) {
                         package._packageAssemblies.Add(assem);
-                        package.UpdateId();
+                        package.UpdateSubtreeIds();
                     }
                     return package;
                 }
@@ -104,11 +100,10 @@ namespace Microsoft.Scripting.Actions {
         private NamespaceTracker MakeChildPackage(string childName, Assembly assem) {
             // lock is held when this is called
             Assert.NotNull(childName, assem);
-            NamespaceTracker rp = new NamespaceTracker();
+            NamespaceTracker rp = new NamespaceTracker(GetFullChildName(childName));
             rp.SetTopPackage(_topPackage);
             rp._packageAssemblies.Add(assem);
 
-            rp._fullName = GetFullChildName(childName);
             _dict[childName] = rp;
             return rp;
         }
@@ -274,7 +269,7 @@ namespace Microsoft.Scripting.Actions {
         }
 
         public bool TryGetValue(SymbolId name, out MemberTracker value) {
-            lock (this) {
+            lock (_topPackage.HierarchyLock) {
                 LoadNamespaces();
 
                 if (_dict.TryGetValue(SymbolTable.IdToString(name), out value)) {
@@ -378,7 +373,7 @@ namespace Microsoft.Scripting.Actions {
         public IDictionary<object, object> AsObjectKeyedDictionary() {
             LoadNamespaces();
 
-            lock (this) {
+            lock (_topPackage.HierarchyLock) {
                 Dictionary<object, object> res = new Dictionary<object, object>();
                 foreach (KeyValuePair<string, MemberTracker> kvp in _dict) {
                     res[kvp.Key] = kvp.Value;
@@ -395,9 +390,11 @@ namespace Microsoft.Scripting.Actions {
             get {
                 LoadNamespaces();
 
-                lock (this) {
+                lock (_topPackage.HierarchyLock) {
                     List<object> res = new List<object>();
-                    foreach (string s in _dict.Keys) res.Add(s);
+                    foreach (string s in _dict.Keys) {
+                        res.Add(s);
+                    }
 
                     foreach (KeyValuePair<Assembly, TypeNames> kvp in _typeNames) {
                         foreach (string typeName in kvp.Value.GetNormalizedTypeNames()) {
@@ -562,16 +559,18 @@ namespace Microsoft.Scripting.Actions {
             get { return null; }
         }
 
-        protected void UpdateId() {
+        private void UpdateId() {
             _id = Interlocked.Increment(ref _masterId);
+        }
+
+        protected void UpdateSubtreeIds() {
+            // lock is held when this is called
+            UpdateId();
+
             foreach (KeyValuePair<string, MemberTracker> kvp in _dict) {
                 NamespaceTracker ns = kvp.Value as NamespaceTracker;
-                if (ns == null) continue;
-
-                lock (ns) {
-                    // namespace trackers are trees so we always take this
-                    // in order
-                    ns.UpdateId();
+                if (ns != null) {
+                    ns.UpdateSubtreeIds();
                 }
             }
         }

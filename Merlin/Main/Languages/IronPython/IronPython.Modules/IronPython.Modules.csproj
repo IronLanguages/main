@@ -2,7 +2,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>9.0.30729</ProductVersion>
+    <ProductVersion>9.0.21022</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{155CE436-1669-4A48-8095-410F2430237F}</ProjectGuid>
     <OutputType>Library</OutputType>
@@ -19,6 +19,7 @@
     <SignAssembly Condition="'$(SignAssembly)' == '' And Exists('$(AssemblyOriginatorKeyFile)')">true</SignAssembly>
     <SignedSym Condition="'$(SignAssembly)' == 'true'">SIGNED</SignedSym>
     <DelaySign>true</DelaySign>
+    <SilverlightPath Condition="$(SilverlightPath) == ''">..\..\..\Utilities\Silverlight\x86ret\</SilverlightPath>
     <BaseAddress>885063680</BaseAddress>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
@@ -53,7 +54,6 @@
     <NoStdLib>true</NoStdLib>
     <NoWarn>618</NoWarn>
     <SilverlightBuild>true</SilverlightBuild>
-    <SilverlightSdkPath>..\..\..\Utilities\Silverlight\x86ret\</SilverlightSdkPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Silverlight Release' ">
     <OutputPath>..\..\..\Bin\Silverlight Release</OutputPath>
@@ -64,21 +64,20 @@
     <ErrorReport>prompt</ErrorReport>
     <NoWarn>618</NoWarn>
     <SilverlightBuild>true</SilverlightBuild>
-    <SilverlightSdkPath>..\..\..\Utilities\Silverlight\x86ret\</SilverlightSdkPath>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" Condition=" '$(SilverlightBuild)' != 'true' " />
     <Reference Include="mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" Condition=" '$(SilverlightBuild)' == 'true' ">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(SilverlightSdkPath)\mscorlib.dll</HintPath>
+      <HintPath>$(SilverlightPath)\mscorlib.dll</HintPath>
     </Reference>
     <Reference Include="System, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" Condition=" '$(SilverlightBuild)' == 'true' ">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(SilverlightSdkPath)\System.dll</HintPath>
+      <HintPath>$(SilverlightPath)\System.dll</HintPath>
     </Reference>
     <Reference Include="System.Core, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" Condition=" '$(SilverlightBuild)' == 'true' ">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(SilverlightSdkPath)\System.Core.dll</HintPath>
+      <HintPath>$(SilverlightPath)\System.Core.dll</HintPath>
       <Aliases>systemcore</Aliases>
     </Reference>
     <Reference Include="System.Data" Condition=" $(SilverlightBuild) != 'true' " />
@@ -91,8 +90,10 @@
     <Compile Include="array.cs" />
     <Compile Include="binascii.cs" />
     <Compile Include="cmath.cs" />
-    <Compile Include="codecs.cs" />
+    <Compile Include="_codecs.cs" />
     <Compile Include="ModuleOps.cs" />
+    <Compile Include="_bytesio.cs" />
+    <Compile Include="_codecs_cn.cs" />
     <Compile Include="_collections.cs" />
     <Compile Include="copy_reg.cs" />
     <Compile Include="cPickle.cs" />
@@ -106,12 +107,14 @@
     <Compile Include="marshal.cs" />
     <Compile Include="math.cs" />
     <Compile Include="math.Generated.cs" />
+    <Compile Include="_fileio.cs" />
     <Compile Include="_md5.cs" />
     <Compile Include="nt.cs" />
     <Compile Include="operator.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="re.cs" />
     <Compile Include="select.cs" />
+    <Compile Include="_multibytecodec.cs" />
     <Compile Include="_sha.cs" />
     <Compile Include="_sha256.cs" />
     <Compile Include="_sha512.cs" />

@@ -1,7 +1,6 @@
 require File.dirname(__FILE__) + '/../../spec_helper'
 
 describe "ENV.each_value" do
-
   it "returns each value" do
     e = []
     orig = ENV.to_hash
@@ -15,6 +14,12 @@ describe "ENV.each_value" do
     ensure
       ENV.replace orig
     end
+  end
+
+  it "returns the value of break and stops execution of the loop if break is in the block" do
+    e = []
+    ENV.each_value {|k| break 1; e << k}.should == 1
+    e.empty?.should == true
   end
 
   ruby_version_is "" ... "1.8.7" do

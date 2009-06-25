@@ -132,8 +132,8 @@ namespace IronRuby.Compiler.Ast {
                 int firstStatementLine = _body.Count > 0 ? _body.First.Location.Start.Line : Location.End.Line;
                 int lastStatementLine = _body.Count > 0 ? _body.Last.Location.End.Line : Location.End.Line;
 
-                traceCall = Methods.TraceBlockCall.OpCall(scopeVariable, blockParameter, Ast.Convert(AstUtils.Constant(gen.SourceUnit.Path), typeof(string)), AstUtils.Constant(firstStatementLine));
-                traceReturn = Methods.TraceBlockReturn.OpCall(scopeVariable, blockParameter, Ast.Convert(AstUtils.Constant(gen.SourceUnit.Path), typeof(string)), AstUtils.Constant(lastStatementLine));
+                traceCall = Methods.TraceBlockCall.OpCall(scopeVariable, blockParameter, gen.SourcePathConstant, AstUtils.Constant(firstStatementLine));
+                traceReturn = Methods.TraceBlockReturn.OpCall(scopeVariable, blockParameter, gen.SourcePathConstant, AstUtils.Constant(lastStatementLine));
             } else {
                 traceCall = traceReturn = Ast.Empty();
             }
@@ -178,13 +178,15 @@ namespace IronRuby.Compiler.Ast {
                 gen.CurrentSelfVariable,
                 BlockDispatcher.CreateLambda(
                     body,
-                    RubyExceptionData.EncodeMethodName(gen.SourceUnit, gen.CurrentMethod.MethodName, Location), 
+                    RubyExceptionData.EncodeMethodName(gen.CurrentMethod.MethodName, gen.SourcePath, Location), 
                     new ReadOnlyCollection<MSA.ParameterExpression>(parameters),
                     parameterCount,
                     attributes
                 ),
                 AstUtils.Constant(parameterCount),
-                AstUtils.Constant(attributes)
+                AstUtils.Constant(attributes),
+                gen.SourcePathConstant,
+                AstUtils.Constant(Location.Start.Line)
             );
         }
 

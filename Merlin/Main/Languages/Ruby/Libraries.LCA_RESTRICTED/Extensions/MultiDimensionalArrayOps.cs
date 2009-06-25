@@ -24,7 +24,7 @@ namespace IronRuby.Builtins {
     /// Implements operations on multi-dimensional CLR array.
     /// TODO: implement all IList methods that don't work on multi-dim arrays.
     /// </summary>
-    [RubyModule("MultiDimensionalArray", DefineIn = typeof(IronRubyOps.ClrOps), Extends = typeof(MultiDimensionalArray))]
+    [RubyModule("MultiDimensionalArray", DefineIn = typeof(IronRubyOps.ClrOps), Extends = typeof(MultiDimensionalArray), Restrictions = ModuleRestrictions.None)]
     public static class MultiDimensionalArrayOps {
         [RubyMethod("[]=")]
         public static object SetElement(Array/*!*/ self, int index1, int index2, object value) {

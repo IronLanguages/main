@@ -1,47 +1,58 @@
-require "tutorial"
-require "stringio"
+# ****************************************************************************
+#
+# Copyright (c) Microsoft Corporation. 
+#
+# This source code is subject to terms and conditions of the Microsoft Public License. A 
+# copy of the license can be found in the License.html file at the root of this distribution. If 
+# you cannot locate the  Microsoft Public License, please send an email to 
+# ironruby@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
+# by the terms of the Microsoft Public License.
+#
+# You must not remove this notice, or any other, from this software.
+#
+#
+# ****************************************************************************
 
-class ConsoleApp
+require "stringio"
+require File.dirname(__FILE__) + "/tutorial"
+
+class ConsoleTutorial
+    attr :tutorial
+    
     def initialize(tutorial = nil, inp = $stdin, out = $stdout)
         @in = inp
         @out = out
-        if tutorial
-            @tutorial = tutorial
-        else
-            require File.expand_path("Tutorials/ironruby_tutorial", File.dirname(__FILE__))
-            @tutorial = IronRubyTutorial.new
-        end
+        @tutorial = tutorial || Tutorial.get_tutorial
+        @context = Tutorial::ReplContext.new
     end
     
     def run_chapter chapter
         @out.puts "---------------------"
         @out.puts "Starting #{chapter.name}"
-        @out.print chapter.description
-        scope = Object.new
-        bind = scope.instance_eval { binding }
+        @out.print chapter.introduction
+        prompt = "> "
         chapter.tasks.each do |task|
             @out.puts task.description
+            task.setup.call(@context.bind) if task.setup
             @out.puts "Enter the following code:"
-            @out.puts task.hint
+            @out.puts task.code_string
             begin
-                @out.print "> "
-                if @in.eof? then raise "No more input..." end
+                @out.print prompt
+                if @in.eof? then raise "No more input... (Task description: #{task.description}\nTask code: #{task.code_string})" end
                 input = @in.gets
-                begin
-                    output = StringIO.new
-                    old_stdout, $stdout = $stdout, output
-                    result = eval(input, bind)
-                rescue => e
-                    @out.puts output.string if not output.string.empty?
-                    @out.puts e.to_s
-                    next
+                
+                result = @context.interact input
+                @out.puts result.output if not result.output.empty?
+                if result.partial_input?
+                  prompt = "* "
+                  next
+                elsif result.error
+                  @out.puts result.error.to_s
                 else
-                    @out.puts output.string if not output.string.empty?
-                    @out.puts "=> #{result.inspect}"
-                ensure
-                    $stdout = old_stdout
+                  @out.puts "=> #{result.result.inspect}"
                 end
-            end until task.success?(bind, output.string, result)
+                prompt = "> "
+            end until task.success?(result)
         end
         @out.puts "Chapter completed successfully!"
         @out.puts
@@ -50,6 +61,7 @@ class ConsoleApp
     def run_section section
         @out.puts "======================"
         @out.puts "Starting #{section.name}"
+        @out.puts section.introduction
         loop do
             section.chapters.each_index { |i| @out.puts "#{i + 1}: #{section.chapters[i].name}" }
             @out.print "Select a chapter number and press enter (0 to return to main menu):"
@@ -62,6 +74,7 @@ class ConsoleApp
     
     def run    
         @out.puts "Welcome to #{@tutorial.name}"
+        @out.puts @tutorial.introduction
         loop do
             @tutorial.sections.each_index { |i| @out.puts "#{i + 1}: #{@tutorial.sections[i].name}" }
             @out.print "Select a section number and press enter (0 to exit):"
@@ -75,5 +88,5 @@ class ConsoleApp
 end
 
 if $0 == __FILE__
-    ConsoleApp.new.run
+    ConsoleTutorial.new.run
 end

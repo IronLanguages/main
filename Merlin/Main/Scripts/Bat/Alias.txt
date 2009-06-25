@@ -8,10 +8,13 @@ rb      =cd /d %MERLIN_ROOT%\Languages\Ruby
 rt      =cd /d %MERLIN_ROOT%\Runtime
 r       =cd /d %MERLIN_ROOT%
 mspc    =cd /d %MERLIN_ROOT%\..\External.LCA_RESTRICTED\Languages\IronRuby\mspec
-msl     =cd /d "%PROGRAM_FILES_32%\Microsoft Silverlight"
-ch      =cd /d "%MERLIN_ROOT%\Hosts\Silverlight\Chiron\"
-mss     =cd /d "%MERLIN_ROOT%\Hosts\Silverlight\"
+
 irk     =cd /d "%MERLIN_ROOT%\Hosts\IronRuby.Rack\"
+rbs     =cd /d "%MERLIN_ROOT%\Languages\Ruby\Samples\"
+msl     =cd /d "%PROGRAM_FILES_32%\Microsoft Silverlight\"
+mss     =cd /d "%MERLIN_ROOT%\Hosts\Silverlight\"
+ch      =cd /d "%MERLIN_ROOT%\Hosts\Silverlight\Chiron\"
+sls     =cd /d "%MERLIN_ROOT%\Hosts\Silverlight\Samples\"
 
 ;==============================================================================
 ;= Build commands

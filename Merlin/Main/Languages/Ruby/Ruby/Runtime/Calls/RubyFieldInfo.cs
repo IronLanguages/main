@@ -30,19 +30,23 @@ namespace IronRuby.Runtime.Calls {
         private readonly FieldInfo/*!*/ _fieldInfo;
         private readonly bool _isSetter;
 
-        public RubyFieldInfo(FieldInfo/*!*/ fieldInfo, RubyMemberFlags flags, RubyModule/*!*/ declaringModule, bool isSetter)
+        // True if the member is defined in Ruby (e.g. via alias) - such definition "detaches" it from the underlying type.
+        private readonly bool _isDetached;
+
+        public RubyFieldInfo(FieldInfo/*!*/ fieldInfo, RubyMemberFlags flags, RubyModule/*!*/ declaringModule, bool isSetter, bool isDetached)
             : base(flags, declaringModule) {
             Assert.NotNull(fieldInfo, declaringModule);
             _fieldInfo = fieldInfo;
             _isSetter = isSetter;
+            _isDetached = isDetached;
         }
 
         protected internal override RubyMemberInfo/*!*/ Copy(RubyMemberFlags flags, RubyModule/*!*/ module) {
-            return new RubyFieldInfo(_fieldInfo, flags, module, _isSetter);
+            return new RubyFieldInfo(_fieldInfo, flags, module, _isSetter, true);
         }
 
         internal override bool IsRubyMember {
-            get { return false; }
+            get { return _isDetached; }
         }
 
         internal override bool IsDataMember {

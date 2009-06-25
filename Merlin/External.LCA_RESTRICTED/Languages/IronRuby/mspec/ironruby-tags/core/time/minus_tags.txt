@@ -1,2 +1,2 @@
-fails:Time#- accepts arguments that can be coerced into Float
+fails:Time#- raises TypeError on argument that can't be coerced into Float
 fails:Time#- tracks microseconds

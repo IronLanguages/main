@@ -18,6 +18,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Dynamic.Utils;
 using System.Linq.Expressions.Compiler;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 
 namespace System.Linq.Expressions {
@@ -81,8 +82,8 @@ namespace System.Linq.Expressions {
         /// Gets the static type of the expression that this <see cref="Expression" /> represents.
         /// </summary>
         /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
-        protected override Type TypeImpl() {
-            return typeof(object);
+        public override Type Type {
+            get { return typeof(object); }
         }
 
         /// <summary>
@@ -90,8 +91,8 @@ namespace System.Linq.Expressions {
         /// ExpressionType.Extension when overriding this method.
         /// </summary>
         /// <returns>The <see cref="ExpressionType"/> of the expression.</returns>
-        protected override ExpressionType NodeTypeImpl() {
-            return ExpressionType.Dynamic;
+        public sealed override ExpressionType NodeType {
+            get { return ExpressionType.Dynamic; }
         }
 
         /// <summary>
@@ -188,8 +189,8 @@ namespace System.Linq.Expressions {
             _returnType = returnType;
         }
 
-        protected override Type TypeImpl() {
-            return _returnType;
+        public sealed override Type Type {
+            get { return _returnType; }
         }
     }
 
@@ -233,8 +234,8 @@ namespace System.Linq.Expressions {
             _retType = retType;
         }
 
-        protected override Type TypeImpl() {
-            return _retType;
+        public sealed override Type Type {
+            get { return _retType; }
         }
     }
 
@@ -281,8 +282,8 @@ namespace System.Linq.Expressions {
             _retType = retType;
         }
 
-        protected override Type TypeImpl() {
-            return _retType;
+        public sealed override Type Type {
+            get { return _retType; }
         }
     }
 
@@ -331,8 +332,8 @@ namespace System.Linq.Expressions {
             _retType = retType;
         }
 
-        protected override Type TypeImpl() {
-            return _retType;
+        public sealed override Type Type {
+            get { return _retType; }
         }
     }
 
@@ -383,8 +384,8 @@ namespace System.Linq.Expressions {
             _retType = retType;
         }
 
-        protected override Type TypeImpl() {
-            return _retType;
+        public sealed override Type Type {
+            get { return _retType; }
         }
     }
 
@@ -559,13 +560,13 @@ namespace System.Linq.Expressions {
             ValidateOneArgument(method, ExpressionType.Dynamic, arg1, parameters[2]);
             ValidateDynamicArgument(arg2);
             ValidateOneArgument(method, ExpressionType.Dynamic, arg2, parameters[3]);
-            ValidateDynamicArgument(arg2);
+            ValidateDynamicArgument(arg3);
             ValidateOneArgument(method, ExpressionType.Dynamic, arg3, parameters[4]);
 
             return DynamicExpression.Make(method.GetReturnType(), delegateType, binder, arg0, arg1, arg2, arg3);
         }
 
-        private static System.Reflection.MethodInfo GetValidMethodForDynamic(Type delegateType) {
+        private static MethodInfo GetValidMethodForDynamic(Type delegateType) {
             var method = delegateType.GetMethod("Invoke");
             var pi = method.GetParametersCached();
             ContractUtils.Requires(pi.Length > 0 && pi[0].ParameterType == typeof(CallSite), "delegateType", Strings.FirstArgumentMustBeCallSite);

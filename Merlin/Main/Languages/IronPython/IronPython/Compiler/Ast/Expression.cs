@@ -14,6 +14,7 @@
  * ***************************************************************************/
 
 using System;
+using System.Diagnostics;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
@@ -27,13 +28,28 @@ namespace IronPython.Compiler.Ast {
         internal abstract MSAst.Expression Transform(AstGenerator ag, Type type);
 
         internal virtual MSAst.Expression TransformSet(AstGenerator ag, SourceSpan span, MSAst.Expression right, PythonOperationKind op) {
-            ag.AddError("can't assign to " + NodeName, Span);
-            return null;
+            // unreachable, CheckAssign prevents us from calling this at parse time.
+            throw new InvalidOperationException();
         }
 
         internal virtual MSAst.Expression TransformDelete(AstGenerator ag) {
-            ag.AddError("can't delete " + NodeName, Span);
+            throw new InvalidOperationException();
+        }
+
+        internal virtual string CheckAssign() {
+            return "can't assign to " + NodeName;
+        }
+
+        internal virtual string CheckAugmentedAssign() {
+            if (CheckAssign() != null) {
+                return "illegal expression for augmented assignment";
+            }
+
             return null;
+        }
+
+        internal virtual string CheckDelete() {
+            return "can't delete " + NodeName;
         }
     }
 }

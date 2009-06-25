@@ -53,8 +53,9 @@ namespace IronPython.Runtime.Operations {
 
         [return: MaybeNotImplemented]
         public object __eq__(object other) {
-            if (other is string || other is ExtensibleString)
+            if (other is string || other is ExtensibleString || other is Bytes) {
                 return ScriptingRuntimeHelpers.BooleanToObject(((IValueEquality)this).ValueEquals(other));
+            }
 
             return NotImplementedType.Value;
         }
@@ -82,6 +83,8 @@ namespace IronPython.Runtime.Operations {
             if (es != null) return Value == es.Value;
             string os = other as string;
             if (os != null) return Value == os;
+            Bytes bs = other as Bytes;
+            if (bs != null) return Value == bs.ToString();
 
             return false;
         }
@@ -726,6 +729,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static string ljust(this string self, int width, char fillchar) {
+            if (width < 0) return self;
             int spaces = width - self.Length;
             if (spaces <= 0) return self;
 
@@ -1061,7 +1065,7 @@ namespace IronPython.Runtime.Operations {
         //translate on a unicode string differs from that on an ascii
         //for unicode, the table argument is actually a dictionary with
         //character ordinals as keys and the replacement strings as values
-        public static string translate(this string self, PythonDictionary table) {
+        public static string translate(this string self, [NotNull]PythonDictionary table) {
             if (table == null || self.Length == 0) {
                 return self;
             }
@@ -1082,9 +1086,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static string translate(this string self, string table, string deletechars) {
-            if (table == null) {
-                throw PythonOps.TypeError("expected string, got NoneType");
-            } else if (table.Length != 256) {
+            if (table != null && table.Length != 256) {
                 throw PythonOps.ValueError("translation table must be 256 characters long");
             } else if (self.Length == 0) {
                 return self;
@@ -1095,9 +1097,13 @@ namespace IronPython.Runtime.Operations {
             List<char> res = new List<char>();
             for (int i = 0; i < self.Length; i++) {
                 if (deletechars == null || !deletechars.Contains(Char.ToString(self[i]))) {
-                    int idx = (int)self[i];
-                    if (idx >= 0 && idx < 256) {
-                        res.Add(table[idx]);
+                    if (table != null) {
+                        int idx = (int)self[i];
+                        if (idx >= 0 && idx < 256) {
+                            res.Add(table[idx]);
+                        }
+                    } else {
+                        res.Add(self[i]);
                     }
                 }
             }
@@ -1154,17 +1160,17 @@ namespace IronPython.Runtime.Operations {
 
         #region operators
         [SpecialName]
-        public static string Add(string self, string other) {
+        public static string Add([NotNull]string self, [NotNull]string other) {
             return self + other;
         }
 
         [SpecialName]
-        public static string Add(string self, char other) {
+        public static string Add([NotNull]string self, char other) {
             return self + other;
         }
 
         [SpecialName]
-        public static string Add(char self, string other) {
+        public static string Add(char self, [NotNull]string other) {
             return self + other;
         }
 
@@ -1273,7 +1279,7 @@ namespace IronPython.Runtime.Operations {
         public static string ConvertFromChar(char c) {
             return ScriptingRuntimeHelpers.CharToString(c);
         }
-
+        
         [SpecialName, ExplicitConversionMethod]
         public static char ConvertToChar(string s) {
             if (s.Length == 1) return s[0];
@@ -1282,7 +1288,8 @@ namespace IronPython.Runtime.Operations {
 
         [SpecialName, ImplicitConversionMethod]
         public static IEnumerable ConvertToIEnumerable(string s) {
-            return StringOps.GetEnumerable(s);
+            // make an enumerator that produces strings instead of chars
+            return new PythonStringEnumerable(s);
         }
 
         internal static int Compare(string self, string obj) {
@@ -1307,11 +1314,6 @@ namespace IronPython.Runtime.Operations {
         }
 
         #region Internal implementation details
-
-        internal static IEnumerable GetEnumerable(string s) {
-            // make an enumerator that produces strings instead of chars
-            return new PythonStringEnumerable(s);
-        }
 
         internal static string Quote(string s) {
 
@@ -1541,33 +1543,7 @@ namespace IronPython.Runtime.Operations {
 
             Encoding e;
             if (TryGetEncoding(encoding, out e)) {
-#if !SILVERLIGHT // DecoderFallback
-                // CLR's encoder exceptions have a 1-1 mapping w/ Python's encoder exceptions
-                // so we just clone the encoding & set the fallback to throw in strict mode.
-                e = (Encoding)e.Clone();
-                
-                switch (errors) {
-                    case "backslashreplace":
-                    case "xmlcharrefreplace":
-                    case "strict": e.DecoderFallback = DecoderFallback.ExceptionFallback; break;
-                    case "replace": e.DecoderFallback = DecoderFallback.ReplacementFallback; break;
-                    case "ignore":
-                        e.DecoderFallback = new PythonDecoderFallback(encoding,
-                            s,
-                            null);
-                        break;
-                    default:
-                        e.DecoderFallback = new PythonDecoderFallback(encoding,
-                            s,
-                            PythonOps.LookupEncodingError(context, errors));
-                        break;
-                }
-#endif
-
-                byte[] bytes = s.MakeByteArray();
-                int start = GetStartingOffset(e, bytes);
-
-                return e.GetString(bytes, start, bytes.Length - start);
+                return DoDecode(context, s, errors, encoding, e);
             }
 
             // look for user-registered codecs
@@ -1577,6 +1553,36 @@ namespace IronPython.Runtime.Operations {
             }
 
             throw PythonOps.LookupError("unknown encoding: {0}", encoding);
+        }
+
+        internal static string DoDecode(CodeContext context, string s, string errors, string encoding, Encoding e) {
+#if !SILVERLIGHT // DecoderFallback
+            // CLR's encoder exceptions have a 1-1 mapping w/ Python's encoder exceptions
+            // so we just clone the encoding & set the fallback to throw in strict mode.
+            e = (Encoding)e.Clone();
+
+            switch (errors) {
+                case "backslashreplace":
+                case "xmlcharrefreplace":
+                case "strict": e.DecoderFallback = DecoderFallback.ExceptionFallback; break;
+                case "replace": e.DecoderFallback = DecoderFallback.ReplacementFallback; break;
+                case "ignore":
+                    e.DecoderFallback = new PythonDecoderFallback(encoding,
+                        s,
+                        null);
+                    break;
+                default:
+                    e.DecoderFallback = new PythonDecoderFallback(encoding,
+                        s,
+                        PythonOps.LookupEncodingError(context, errors));
+                    break;
+            }
+#endif
+
+            byte[] bytes = s.MakeByteArray();
+            int start = GetStartingOffset(e, bytes);
+
+            return e.GetString(bytes, start, bytes.Length - start);
         }
 
         /// <summary>
@@ -1620,30 +1626,7 @@ namespace IronPython.Runtime.Operations {
 
             Encoding e;
             if (TryGetEncoding(encoding, out e)) {
-#if !SILVERLIGHT
-                // CLR's encoder exceptions have a 1-1 mapping w/ Python's encoder exceptions
-                // so we just clone the encoding & set the fallback to throw in strict mode
-                e = (Encoding)e.Clone();
-
-                switch (errors) {
-                    case "strict": e.EncoderFallback = EncoderFallback.ExceptionFallback; break;
-                    case "replace": e.EncoderFallback = EncoderFallback.ReplacementFallback; break;
-                    case "backslashreplace": e.EncoderFallback = new BackslashEncoderReplaceFallback(); break;
-                    case "xmlcharrefreplace": e.EncoderFallback = new XmlCharRefEncoderReplaceFallback(); break;
-                    case "ignore":
-                        e.EncoderFallback = new PythonEncoderFallback(encoding,
-                            s,
-                            null);
-                        break;
-                    default:
-                        e.EncoderFallback = new PythonEncoderFallback(encoding,
-                            s,
-                            PythonOps.LookupEncodingError(context, errors));
-                        break;
-                }
-
-#endif                
-                return PythonOps.MakeString(e.GetPreamble(), e.GetBytes(s));
+                return DoEncode(context, s, errors, encoding, e);
             }
 
                 // look for user-registered codecs
@@ -1653,6 +1636,33 @@ namespace IronPython.Runtime.Operations {
             }
 
             throw PythonOps.LookupError("unknown encoding: {0}", encoding);
+        }
+
+        internal static string DoEncode(CodeContext context, string s, string errors, string encoding, Encoding e) {
+#if !SILVERLIGHT
+            // CLR's encoder exceptions have a 1-1 mapping w/ Python's encoder exceptions
+            // so we just clone the encoding & set the fallback to throw in strict mode
+            e = (Encoding)e.Clone();
+
+            switch (errors) {
+                case "strict": e.EncoderFallback = EncoderFallback.ExceptionFallback; break;
+                case "replace": e.EncoderFallback = EncoderFallback.ReplacementFallback; break;
+                case "backslashreplace": e.EncoderFallback = new BackslashEncoderReplaceFallback(); break;
+                case "xmlcharrefreplace": e.EncoderFallback = new XmlCharRefEncoderReplaceFallback(); break;
+                case "ignore":
+                    e.EncoderFallback = new PythonEncoderFallback(encoding,
+                        s,
+                        null);
+                    break;
+                default:
+                    e.EncoderFallback = new PythonEncoderFallback(encoding,
+                        s,
+                        PythonOps.LookupEncodingError(context, errors));
+                    break;
+            }
+
+#endif
+            return PythonOps.MakeString(e.GetPreamble(), e.GetBytes(s));
         }
 
 
@@ -1824,6 +1834,16 @@ namespace IronPython.Runtime.Operations {
 
             public override byte[] GetPreamble() {
                 return _preamble;
+            }
+            
+            public override Encoder GetEncoder() {
+                SetEncoderFallback();
+                return _encoding.GetEncoder();
+            }
+
+            public override Decoder GetDecoder() {
+                SetDecoderFallback();
+                return _encoding.GetDecoder();
             }
 
             public override object Clone() {
@@ -2017,30 +2037,80 @@ namespace IronPython.Runtime.Operations {
             return false;
         }
 
-        private class PythonStringEnumerable : IEnumerable {
+        // note: any changes in how this iterator works should also be applied in the
+        //       optimized overloads of Builtins.map()
+        [PythonType("str_iterator")]
+        private class PythonStringEnumerable : IEnumerable, IEnumerator<string> {
             private readonly string/*!*/ _s;
+            private int _index;
 
             public PythonStringEnumerable(string s) {
                 Assert.NotNull(s);
 
+                _index = -1;
                 _s = s;
             }
 
             #region IEnumerable Members
 
             public IEnumerator GetEnumerator() {
-                return StringEnumerator(_s);
+                return this;
+            }
+
+            #endregion
+
+            #region IEnumerator<string> Members
+
+            public string Current {
+                get {
+                    if (_index < 0) {
+                        throw PythonOps.SystemError("Enumeration has not started. Call MoveNext.");
+                    } else if (_index >= _s.Length) {
+                        throw PythonOps.SystemError("Enumeration already finished.");
+                    }
+                    return ScriptingRuntimeHelpers.CharToString(_s[_index]);
+                }
+            }
+
+            #endregion
+
+            #region IDisposable Members
+
+            public void Dispose() { }
+
+            #endregion
+
+            #region IEnumerator Members
+
+            object IEnumerator.Current {
+                get {
+                    return ((IEnumerator<string>)this).Current;
+                }
+            }
+
+            public bool MoveNext() {
+                if (_index >= _s.Length) {
+                    return false;
+                }
+                _index++;
+                return _index != _s.Length;
+            }
+
+            public void Reset() {
+                _index = -1;
             }
 
             #endregion
         }
 
-        internal static IEnumerator<string> StringEnumerator(string str) {
-            for (int i = 0; i < str.Length; i++) {
-                yield return ScriptingRuntimeHelpers.CharToString(str[i]);
-            }
+        internal static IEnumerable StringEnumerable(string str) {
+            return new PythonStringEnumerable(str);
         }
-        
+
+        internal static IEnumerator<string> StringEnumerator(string str) {
+            return new PythonStringEnumerable(str);
+        }
+
         #endregion
 
         #region  Unicode Encode/Decode Fallback Support

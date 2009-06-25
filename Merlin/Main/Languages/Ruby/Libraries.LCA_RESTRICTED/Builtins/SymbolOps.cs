@@ -126,6 +126,31 @@ namespace IronRuby.Builtins {
 
         #endregion
 
+        #region 1.9 Methods
+
+        // => 
+        // <=>
+        // ==
+        // =~
+        // []
+        // capitalize
+        // casecmp
+        // downcase
+        // empty?
+        // encoding
+        // intern
+        // length
+        // match
+        // next
+        // size
+        // slice
+        // succ
+        // swapcase
+        // to_proc
+        // upcase
+
+        #endregion
+
         #region Public Singleton Methods
 
         [RubyMethod("all_symbols", RubyMethodAttributes.PublicSingleton)]

@@ -25,10 +25,7 @@ namespace IronRuby.Builtins {
     // Represents any Ruby subclass of String. The actual class object is remembered.
     // We don't allow non-Ruby code to extend Ruby String.
     public partial class MutableString {
-        public sealed class Subclass : MutableString, IRubyObject {
-            private readonly RubyClass/*!*/ _class;
-            private RubyInstanceData _instanceData;
-
+        public sealed partial class Subclass : MutableString, IRubyObject {
             // Called by Class#new rule when creating a Ruby subclass of String.
             // The encoding is set to BINARY.
             public Subclass(RubyClass/*!*/ rubyClass)
@@ -38,40 +35,23 @@ namespace IronRuby.Builtins {
             public Subclass(RubyClass/*!*/ rubyClass, RubyEncoding/*!*/ encoding) 
                 : base(encoding) {
                 Assert.NotNull(rubyClass);
-                _class = rubyClass;
+                ImmediateClass = rubyClass;
             }
 
             private Subclass(Subclass/*!*/ str)
                 : base(str) {
-                _class = str._class;
+                ImmediateClass = str.ImmediateClass;
             }
 
             // creates a blank instance of self type:
             public override MutableString/*!*/ CreateInstance() {
-                return new Subclass(_class, _encoding);
+                return new Subclass(ImmediateClass, _encoding);
             }
 
             // creates a copy including the version and flags:
             public override MutableString/*!*/ Clone() {
                 return new Subclass(this);
             }
-
-            #region IRubyObject Members
-
-            [Emitted]
-            public RubyClass/*!*/ Class {
-                get { return _class; }
-            }
-
-            public RubyInstanceData/*!*/ GetInstanceData() {
-                return RubyOps.GetInstanceData(ref _instanceData);
-            }
-
-            public RubyInstanceData TryGetInstanceData() {
-                return _instanceData;
-            }
-
-            #endregion
         }
     }
 }

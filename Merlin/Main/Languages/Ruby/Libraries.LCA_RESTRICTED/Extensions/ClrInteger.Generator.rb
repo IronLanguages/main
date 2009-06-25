@@ -48,7 +48,7 @@ public static partial class $SelfOps {
     
     [RubyConstructor]
     [RubyMethod("induced_from", RubyMethodAttributes.PublicSingleton)]
-    public static $Self InducedFrom(RubyClass/*!*/ self, [DefaultProtocol, NotNull]BigInteger/*!*/ value) {
+    public static $Self InducedFrom(RubyClass/*!*/ self, [NotNull]BigInteger/*!*/ value) {
         if (value >= $Self.MinValue && value <= $Self.MaxValue) {
             return ($Self)value;
         }

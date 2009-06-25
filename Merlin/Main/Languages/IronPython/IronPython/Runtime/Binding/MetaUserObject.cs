@@ -142,7 +142,7 @@ namespace IronPython.Runtime.Binding {
                     return _baseMetaObject.BindInvoke(ib, args);
                 }
 
-                return ib.FallbackInvoke(this, args);
+                return ib.FallbackInvoke(this.Restrict(this.GetLimitType()), args);
             }
 
             PythonInvokeBinder pib = action as PythonInvokeBinder;
@@ -180,9 +180,9 @@ namespace IronPython.Runtime.Binding {
                         } else if (type == typeof(BigInteger)) {
                             return MakeConvertRuleForCall(conversion, type, this, Symbols.ConvertToLong, "ConvertToLong");
                         } else if (type == typeof(IEnumerable)) {
-                            return PythonProtocol.ConvertToIEnumerable(conversion, Restrict(Value.GetType()));
+                            return PythonConversionBinder.ConvertToIEnumerable(conversion, Restrict(Value.GetType()));
                         } else if (type == typeof(IEnumerator)){
-                            return PythonProtocol.ConvertToIEnumerator(conversion, Restrict(Value.GetType()));
+                            return PythonConversionBinder.ConvertToIEnumerator(conversion, Restrict(Value.GetType()));
                         } else if (type.IsSubclassOf(typeof(Delegate))) {
                             return MakeDelegateTarget(conversion, type, Restrict(Value.GetType()));
                         }

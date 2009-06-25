@@ -1,8 +1,8 @@
 #
 #   irb.rb - irb main module
 #   	$Release Version: 0.9.5 $
-#   	$Revision: 11708 $
-#   	$Date: 2007-02-13 08:01:19 +0900 (Tue, 13 Feb 2007) $
+#   	$Revision: 17127 $
+#   	$Date: 2008-06-13 12:02:17 +0900 (Fri, 13 Jun 2008) $
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
@@ -23,7 +23,7 @@ require "irb/locale"
 STDOUT.sync = true
 
 module IRB
-  @RCS_ID='-$Id: irb.rb 11708 2007-02-12 23:01:19Z shyouhei $-'
+  @RCS_ID='-$Id: irb.rb 17127 2008-06-13 03:02:17Z shyouhei $-'
 
   class Abort < Exception;end
 
@@ -149,10 +149,15 @@ module IRB
             line.untaint
 	    @context.evaluate(line, line_no)
 	    output_value if @context.echo?
-	  rescue StandardError, ScriptError, Abort
-	    $! = RuntimeError.new("unknown exception raised") unless $!
-	    print $!.class, ": ", $!, "\n"
-	    if  $@[0] =~ /irb(2)?(\/.*|-.*|\.rb)?:/ && $!.class.to_s !~ /^IRB/
+	    exc = nil
+	  rescue Interrupt => exc
+	  rescue SystemExit, SignalException
+	    raise
+	  rescue Exception => exc
+	  end
+	  if exc
+	    print exc.class, ": ", exc, "\n"
+	    if exc.backtrace[0] =~ /irb(2)?(\/.*|-.*|\.rb)?:/ && exc.class.to_s !~ /^IRB/
 	      irb_bug = true 
 	    else
 	      irb_bug = false
@@ -161,7 +166,7 @@ module IRB
 	    messages = []
 	    lasts = []
 	    levels = 0
-	    for m in $@
+	    for m in exc.backtrace
 	      m = @context.workspace.filter_backtrace(m) unless irb_bug
 	      if m
 		if messages.size < @context.back_trace_limit
@@ -183,8 +188,7 @@ module IRB
 	    print "Maybe IRB bug!!\n" if irb_bug
 	  end
           if $SAFE > 2
-            warn "Error: irb does not work for $SAFE level higher than 2"
-            exit 1
+            abort "Error: irb does not work for $SAFE level higher than 2"
           end
 	end
       end

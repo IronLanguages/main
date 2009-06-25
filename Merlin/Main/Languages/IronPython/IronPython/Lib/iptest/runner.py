@@ -19,6 +19,8 @@ import sys
 import nt
 from exceptions import SystemExit
 
+from iptest import *
+
 if sys.platform!="win32":
     from System.IO.Path import GetFullPath as get_path
     from System.IO.File import Exists as file_exists
@@ -44,6 +46,8 @@ LOGGING_LVL = 1
 #inadvertantly change it
 __CWD = nt.getcwd()
 
+
+    
 
 #------------------------------------------------------------------------------
 #--HELPER FUNCTIONS
@@ -93,19 +97,30 @@ def run_test_pkg(pkg_name, do_not_run=[]):
         log_warn("No test modules found in the %s test package!" % pkg_name)
         print ""
     
+    if options.GEN_TEST_PLAN:
+        l.info("Generating test documentation for '%s' package..." % pkg_name)
+        pydoc.writedoc(pkg_name)
+    
     #Import all tests
     for test_module in module_list:
         test_module = pkg_name + "." + test_module.split(".py", 1)[0]
-        if test_module in do_not_run:
-            log_info("--Testing of %s has been disabled!" % test_module)
-            continue
-        log_info("--Testing %s..." % test_module)
-        try:
-            __import__(test_module)
-        except SystemExit, e:
-            if e.code!=0: 
-                raise Exception("Importing '%s' caused an unexpected exit code: %s" % (test_module, str(e.code)))
-        print ""
+        
+        if options.RUN_TESTS:
+            if test_module in do_not_run:
+                log_info("--Testing of %s has been disabled!" % test_module)
+                continue
+            log_info("--Testing %s..." % test_module)
+            try:
+                __import__(test_module)
+            except SystemExit, e:
+                if e.code!=0: 
+                    raise Exception("Importing '%s' caused an unexpected exit code: %s" % (test_module, str(e.code)))
+            print ""
+        
+        if options.GEN_TEST_PLAN:
+            l.info("Generating test documentation for '%s' module..." % test_module)
+            pydoc.writedoc(test_module)
+
     
     #Recursively import subpackages
     for subpkg in subpkg_list:

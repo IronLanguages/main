@@ -21,6 +21,7 @@
     <SignedSym Condition="'$(SignAssembly)' == 'true'">SIGNED</SignedSym>
     <DelaySign>true</DelaySign>
     <BaseAddress>891289600</BaseAddress>
+    <SilverlightPath Condition="$(SilverlightPath) == ''">..\..\..\Utilities\Silverlight\x86ret\</SilverlightPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -47,7 +48,6 @@
     <ErrorReport>prompt</ErrorReport>
     <NoStdLib>true</NoStdLib>
     <SilverlightBuild>true</SilverlightBuild>
-    <SilverlightSdkPath>..\..\..\Utilities\Silverlight\x86ret\</SilverlightSdkPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight Release|AnyCPU' ">
     <OutputPath>..\..\..\Bin\Silverlight Release</OutputPath>
@@ -57,7 +57,6 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
     <SilverlightBuild>true</SilverlightBuild>
-    <SilverlightSdkPath>..\..\..\Utilities\Silverlight\x86ret\</SilverlightSdkPath>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\..\Hosts\Silverlight\SilverlightVersion.cs" Condition=" '$(SilverlightBuild)' == 'true' ">
@@ -82,7 +81,7 @@
     <Compile Include="Builtins\Exceptions.cs" />
     <Compile Include="Builtins\FalseClass.cs" />
     <Compile Include="Builtins\FileOps.cs" />
-    <Compile Include="Builtins\FileTestOps.cs" />
+    <Compile Include="Builtins\FileTest.cs" />
     <Compile Include="Builtins\FixnumOps.cs" />
     <Compile Include="Builtins\FloatOps.cs" />
     <Compile Include="Builtins\RubyGC.cs" />
@@ -124,6 +123,7 @@
     <Compile Include="Extensions\ClrInteger.cs" />
     <None Include="Extensions\ClrInteger.Generator.rb" />
     <Compile Include="Extensions\ClrInteger.Generated.cs" />
+    <Compile Include="Extensions\ClrNameOps.cs" />
     <Compile Include="Extensions\ClrStringOps.cs" />
     <Compile Include="Extensions\FlagEnumOps.cs" />
     <Compile Include="Extensions\IComparableOps.cs" />
@@ -162,15 +162,15 @@
     <Reference Include="System" Condition=" '$(SilverlightBuild)' != 'true' " />
     <Reference Include="mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" Condition=" '$(SilverlightBuild)' == 'true' ">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(SilverlightSdkPath)\mscorlib.dll</HintPath>
+      <HintPath>$(SilverlightPath)\mscorlib.dll</HintPath>
     </Reference>
     <Reference Include="System, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" Condition=" '$(SilverlightBuild)' == 'true' ">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(SilverlightSdkPath)\System.dll</HintPath>
+      <HintPath>$(SilverlightPath)\System.dll</HintPath>
     </Reference>
     <Reference Include="System.Net, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" Condition=" '$(SilverlightBuild)' == 'true' ">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(SilverlightSdkPath)\System.Net.dll</HintPath>
+      <HintPath>$(SilverlightPath)\System.Net.dll</HintPath>
     </Reference>
     <Reference Include="System.Data" Condition=" $(SilverlightBuild) != 'true' " />
     <Reference Include="System.Xml" Condition=" $(SilverlightBuild) != 'true' " />

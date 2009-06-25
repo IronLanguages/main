@@ -164,7 +164,8 @@ internal class LibraryDef {
 
         public string BuildConfig;
         public RubyCompatibility Compatibility;
-
+        public ModuleRestrictions Restrictions;
+        
         private int _dependencyOrder;
 
         /// <summary>
@@ -248,6 +249,15 @@ internal class LibraryDef {
                 (HasInstanceInitializer ? "Load" + Id + "_Instance" : "null") + ", " +
                 (HasClassInitializer ? "Load" + Id + "_Class" : "null") + ", " +
                 (HasConstantsInitializer ? "Load" + Id + "_Constants" : "null");
+        }
+
+        internal string/*!*/ GetModuleAttributes() {
+            RubyModuleAttributes attributes = (RubyModuleAttributes)Restrictions;
+            if (Extends == Trait) {
+                attributes |= RubyModuleAttributes.IsSelfContained;
+            }
+
+            return "0x" + attributes.ToString("X");
         }
     }
 
@@ -357,6 +367,7 @@ internal class LibraryDef {
                 def.DefineIn = module.DefineIn;
                 def.BuildConfig = module.BuildConfig;
                 def.Compatibility = module.Compatibility;
+                def.Restrictions = module.Restrictions;
 
                 def.Super = null;
                 if (cls != null && def.Extends != typeof(object) && !def.Extends.IsInterface) {
@@ -497,7 +508,7 @@ internal class LibraryDef {
     private void SetQualifiedName(ModuleDef/*!*/ def) {
         if (def.QualifiedName == null) {
             if (def.IsExtension) {
-                def.QualifiedName = RubyUtils.GetQualifiedName(def.Extends, false);
+                def.QualifiedName = RubyContext.GetQualifiedNameNoLock(def.Extends, null, true);
             } else if (def.DeclaringModule == null) {
                 def.QualifiedName = def.SimpleName;
             } else {
@@ -897,7 +908,7 @@ internal class LibraryDef {
                     GenerateAliases(def, ModuleDef.ObjectClassRef);
                 } else if (def.DeclaringTypeRef != null) {
                     GenerateAliases(def, def.DeclaringTypeRef);
-                    _output.WriteLine("{0}.SetConstant(\"{1}\", {2});", def.DeclaringTypeRef, def.SimpleName, def.Reference);
+                    GenerateSetConstant(def.DeclaringTypeRef, def.SimpleName, def.Reference);
                 }
 
                 WriteRubyCompatibilityCheckEnd(def.Compatibility);
@@ -908,9 +919,13 @@ internal class LibraryDef {
         }
     }
 
+    private void GenerateSetConstant(string/*!*/ owner, string/*!*/ name, string/*!*/ expression) {
+        _output.WriteLine("{0}.Set{3}Constant(\"{1}\", {2});", owner, name, expression, Builtins ? "Builtin" : null);
+    }
+
     private void GenerateAliases(ModuleDef/*!*/ def, string/*!*/ ownerRef) {
         foreach (string alias in def.Aliases) {
-            _output.WriteLine("{0}.SetConstant(\"{1}\", {2});", ownerRef, alias, def.Reference);
+            GenerateSetConstant(ownerRef, alias, def.Reference);
         }
     }
 
@@ -965,7 +980,7 @@ internal class LibraryDef {
                         def.IsGlobal ? "Global" : "",
                         def.QualifiedName,
                         TypeName(def.Extends),
-                        def.Extends == def.Trait ? "true" : "false",
+                        def.GetModuleAttributes(),
                         def.Super.RefName,
                         def.GetInitializerDelegates()
                     );
@@ -996,7 +1011,7 @@ internal class LibraryDef {
                         def.IsGlobal ? "Global" : "",
                         def.QualifiedName,
                         TypeName(def.Extends),
-                        def.Extends == def.Trait ? "true" : "false",
+                        def.GetModuleAttributes(),
                         def.GetInitializerDelegates()
                     );
                 }
@@ -1131,14 +1146,11 @@ internal class LibraryDef {
                 _output.WriteLine("#if " + constantDef.BuildConfig);
             }
 
-            _output.Write("module.SetConstant(\"{0}\", {1}.{2}", constantDef.Name,
-                TypeName(constantDef.Member.DeclaringType), constantDef.Member.Name);
-
-            if (constantDef.Member is MethodInfo) {
-                _output.Write("(module)");
-            }
-
-            _output.WriteLine(");");
+            GenerateSetConstant("module",  constantDef.Name, String.Format("{0}.{1}{2}",
+                TypeName(constantDef.Member.DeclaringType), 
+                constantDef.Member.Name,
+                constantDef.Member is MethodInfo ? "(module)" : null
+            ));
 
             if (constantDef.BuildConfig != null) {
                 _output.WriteLine("#endif");

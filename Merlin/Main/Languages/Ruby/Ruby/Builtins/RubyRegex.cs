@@ -59,9 +59,9 @@ namespace IronRuby.Builtins {
         }
 
         /// <summary>
-        /// Creates a copy of the proc that has the same target, context, self object  as this instance.
+        /// Creates a copy of the proc that has the same target, context, self object as this instance.
         /// Doesn't copy instance data.
-        /// Preserves the class of the Proc.
+        /// Preserves the class of the Regexp.
         /// </summary>
         protected virtual RubyRegex/*!*/ Copy() {
             return new RubyRegex(this);

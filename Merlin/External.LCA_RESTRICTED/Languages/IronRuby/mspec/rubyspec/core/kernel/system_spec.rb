@@ -44,7 +44,8 @@ describe "Kernel#system" do
 
   before :each do
     ENV['TEST_SH_EXPANSION'] = 'foo'
-    @shell_var = platform_is(:windows) ? '%TEST_SH_EXPANSION%' : '$TEST_SH_EXPANSION'
+    @shell_var = '$TEST_SH_EXPANSION'
+    platform_is(:windows) do @shell_var = '%TEST_SH_EXPANSION%' end
     @helper_script = KernelSpecs.helper_script
   end
 
@@ -57,4 +58,13 @@ describe "Kernel#system" do
     result = system("ruby", @helper_script, @shell_var, "foo")
     result.should be_false
   end
+
+  it "sets $?" do
+    system("cd > #{tmp('system_spec.txt')}")
+    $?.exitstatus.should == 0
+
+    system("cd non-existent")
+    $?.exitstatus.should_not == 0
+  end
+
 end

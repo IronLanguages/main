@@ -57,10 +57,22 @@ namespace Chiron {
 
             GenerateLanguagesConfig(zip, langs);
 
+            AddPathDirectories(zip);
+
             // add files on disk last so they always overwrite generated files
             zip.CopyFromDirectory(dir, "");
             
             zip.Close();
+        }
+
+        // add directories that are on Chiron's path
+        internal static void AddPathDirectories(ZipArchive zip) {
+            if (Chiron.LocalPath != null) {
+                foreach (var path in Chiron.LocalPath) {
+                    string[] splitPath = path.Split(Path.DirectorySeparatorChar);
+                    zip.CopyFromDirectory(path, splitPath[splitPath.Length - 1]);
+                }
+            }
         }
 
         // Get the URIs of the assemblies from the AppManifest.xaml file

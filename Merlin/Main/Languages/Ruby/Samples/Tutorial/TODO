@@ -1,0 +1,10 @@
+active task border color
+standalone REPL
+Ruby syntax colorization
+Integration with RubyGems to download tutorial gems
+Multi-step tasks with hinting for next step
+UI surface for WPF tutorials, embedding external content, etc
+Use Task.legal_notice (needs some UI to show the copyright notices)
+Use Task.source_files (need to show a button which can open the source file)
+Silverlight support
+Voting feedback

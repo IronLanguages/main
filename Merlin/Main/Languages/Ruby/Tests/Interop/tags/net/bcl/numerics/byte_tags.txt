@@ -1,0 +1,2 @@
+fails:System::Byte can be induced from a Bignum
+fails:System::Byte raises a RangeError if out of range for Bignum

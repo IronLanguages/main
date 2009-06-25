@@ -161,7 +161,6 @@ namespace IronRuby.Runtime {
             }
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods", MessageId = "System.Reflection.Assembly.LoadFrom")] // TODO
         private Dictionary<string, CompiledFile>/*!*/ LoadCompiledCode() {
             Debug.Assert(_context.RubyOptions.LoadFromDisk);
 
@@ -247,7 +246,7 @@ namespace IronRuby.Runtime {
                     return false;
                 }
 
-                if (LoadAssembly(assemblyName, typeName, false)) {
+                if (LoadAssembly(assemblyName, typeName, false, false)) {
                     FileLoaded(path, flags);
                     return true;
                 }
@@ -258,12 +257,27 @@ namespace IronRuby.Runtime {
 
         #region Assemblies
 
-        public bool LoadAssembly(string/*!*/ assemblyName, string typeName, bool throwOnError) {
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods", MessageId = "System.Reflection.Assembly.LoadWithPartialName")]
+        public bool LoadAssembly(string/*!*/ assemblyName, string typeName, bool throwOnError, bool tryPartialName) {
             Utils.Log(String.Format("Loading assembly '{0}' and type '{1}'", assemblyName, typeName), "LOADER");
             
             Assembly assembly;
             try {
-                assembly = Platform.LoadAssembly(assemblyName);
+                try {
+                    assembly = Platform.LoadAssembly(assemblyName);
+                } catch (FileNotFoundException) {
+#if SILVERLIGHT
+                    throw;
+#else
+                    if (tryPartialName) {
+#pragma warning disable 618,612 // csc, gmcs
+                        assembly = Assembly.LoadWithPartialName(assemblyName);
+#pragma warning restore 618,612
+                    } else {
+                        throw;
+                    }
+#endif
+                }
             } catch (Exception e) {
                 if (throwOnError) throw new LoadError(e.Message, e);
                 return false;
@@ -757,11 +771,9 @@ namespace IronRuby.Runtime {
                 );
             }
 
-            try {
-                initializer.LoadModules(_context, builtin);
-            } catch (Exception e) {
-                throw new LoadError(e.Message, e);
-            }
+            // Propagate exceptions from initializers (do not wrap them to LoadError).
+            // E.g. TypeError (can't modify frozen module) can be thrown.
+            initializer.LoadModules(_context, builtin);
         }
 
         #endregion

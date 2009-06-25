@@ -396,11 +396,6 @@ namespace IronPython.Runtime.Types {
         internal DynamicMetaObject/*!*/ MakeBuiltinFunctionCall(DynamicMetaObjectBinder/*!*/ call, Expression/*!*/ codeContext, DynamicMetaObject/*!*/ function, DynamicMetaObject/*!*/[] args, bool hasSelf, BindingRestrictions/*!*/ functionRestriction, Func<DynamicMetaObject/*!*/[]/*!*/, BindingResult/*!*/> bind) {
             DynamicMetaObject res = null;
 
-            // produce an error if all overloads are generic
-            if (IsOnlyGeneric) {
-                return BindingHelpers.TypeErrorGenericMethod(DeclaringType, Name, functionRestriction);
-            }
-
             // if we have a user defined operator for **args then transform it into a PythonDictionary
             DynamicMetaObject translated = TranslateArguments(call, codeContext, new DynamicMetaObject(function.Expression, functionRestriction, function.Value), args, hasSelf, Name);
             if (translated != null) {
@@ -419,7 +414,7 @@ namespace IronPython.Runtime.Types {
             BindingTarget target = result.Target;
             res = result.MetaObject;
             
-            if (target.Method != null && (target.Method.IsFamily || target.Method.IsFamilyOrAssembly)) {
+            if (target.Method != null && target.Method.IsProtected()) {
                 // report an error when calling a protected member
                 res = new DynamicMetaObject(
                     BindingHelpers.TypeErrorForProtectedMember(
@@ -593,16 +588,6 @@ namespace IronPython.Runtime.Types {
         internal KeyValuePair<OptimizingCallDelegate, Type[]> MakeBuiltinFunctionDelegate(DynamicMetaObjectBinder/*!*/ call, Expression/*!*/ codeContext, DynamicMetaObject/*!*/[] args, bool hasSelf, Func<DynamicMetaObject/*!*/[]/*!*/, BindingResult/*!*/> bind) {
             OptimizingCallDelegate res = null;
 
-            // produce an error if all overloads are generic
-            if (IsOnlyGeneric) {
-                return new KeyValuePair<OptimizingCallDelegate, Type[]>(
-                    delegate(object[] callArgs, out bool shouldOptimize) {
-                        shouldOptimize = false;
-                        throw PythonOps.TypeErrorForGenericMethod(DeclaringType, Name);
-                    }, 
-                    null);
-            }
-
             // swap the arguments if we have a reversed operator
             if (IsReversedOperator) {
                 ArrayUtils.SwapLastTwo(args);
@@ -618,7 +603,7 @@ namespace IronPython.Runtime.Types {
             BindingTarget target = result.Target;
             res = result.Function;
 
-            if (target.Method != null && (target.Method.IsFamily || target.Method.IsFamilyOrAssembly)) {
+            if (target.Method != null && target.Method.IsProtected()) {
                 MethodBase method = target.Method;
                 // report an error when calling a protected member
                 res = delegate(object[] callArgs, out bool shouldOptimize) { 
@@ -632,7 +617,8 @@ namespace IronPython.Runtime.Types {
                         shouldOptimize = false;
                         return PythonOps.NotImplemented;
                     };
-                }
+                } 
+
                 // error, we don't optimize this yet.
                 return new KeyValuePair<OptimizingCallDelegate, Type[]>(null, null);
             }
@@ -1031,12 +1017,11 @@ namespace IronPython.Runtime.Types {
                 }
 
                 if (optInfo != null) {
-                    var optimizedDelegate = optInfo.GetOptimizedDelegate(state);
-                    if (optimizedDelegate != null) {
+                    if (optInfo.ShouldOptimize) {
                         // if we've already produced an optimal rule don't go and produce an
                         // unoptimal rule (which will not hit any targets anyway - it's hit count
                         // has been exceeded and now it always fails).
-                        return new FastBindResult<T>((T)(object)optimizedDelegate, true);
+                        return new FastBindResult<T>();
                     }
 
                     ParameterInfo[] prms = typeof(T).GetMethod("Invoke").GetParameters();
@@ -1164,10 +1149,9 @@ namespace IronPython.Runtime.Types {
             DynamicMetaObject[] res = new DynamicMetaObject[args.Length];   // remove CodeContext, func
 
             for (int i = 0; i < res.Length; i++) {
-                res[i] = new DynamicMetaObject(
-                    Expression.Parameter(pis[i + 3].ParameterType, "arg" + i),  // +3 == skipping callsite, codecontext, func
-                    BindingRestrictions.Empty,
-                    args[i]
+                res[i] = DynamicMetaObject.Create(
+                    args[i],
+                    Expression.Parameter(pis[i + 3].ParameterType, "arg" + i)  // +3 == skipping callsite, codecontext, func
                 );
             }
 

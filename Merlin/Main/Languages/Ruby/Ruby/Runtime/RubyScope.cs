@@ -300,8 +300,8 @@ namespace IronRuby.Runtime {
                     case ScopeKind.Method:
                         RubyMethodScope methodScope = (RubyMethodScope)scope;
                         // See RubyOps.DefineMethod for why we can use Method here.
-                        declaringModule = methodScope.Method.DeclaringModule;
-                        methodName = methodScope.Method.DefinitionName;
+                        declaringModule = methodScope.DeclaringModule;
+                        methodName = methodScope.DefinitionName;
                         self = scope.SelfObject;
                         return;
 
@@ -593,25 +593,31 @@ var closureScope = scope as RubyClosureScope;
     }
 
     public sealed class RubyMethodScope : RubyClosureScope {
-        private readonly RubyMethodInfo/*!*/ _method;
+        private readonly RubyModule/*!*/ _declaringModule;
+        private readonly string/*!*/ _definitionName;
         private readonly Proc _blockParameter;
         
         public override ScopeKind Kind { get { return ScopeKind.Method; } }
         public override bool InheritsLocalVariables { get { return false; } }
 
         // Singleton module-function method shares this pointer with instance method. See RubyOps.DefineMethod for details.
-        internal RubyMethodInfo Method {
-            get { return _method; }
+        internal RubyModule/*!*/ DeclaringModule {
+            get { return _declaringModule; }
         }
 
+        internal string/*!*/ DefinitionName {
+            get { return _definitionName; }
+        }
+        
         public Proc BlockParameter {
             get { return _blockParameter; }
         }
 
-        internal RubyMethodScope(RubyScope/*!*/ parent, RubyMethodInfo/*!*/ method, Proc blockParameter, RuntimeFlowControl/*!*/ runtimeFlowControl, 
-            object selfObject)
+        internal RubyMethodScope(RubyScope/*!*/ parent, RubyModule/*!*/ declaringModule, string/*!*/ definitionName, Proc blockParameter, 
+            RuntimeFlowControl/*!*/ runtimeFlowControl, object selfObject)
             : base(parent, runtimeFlowControl, selfObject) {
-            _method = method;
+            _declaringModule = declaringModule;
+            _definitionName = definitionName;
             _blockParameter = blockParameter;
             MethodAttributes = RubyMethodAttributes.PublicInstance;
         }
@@ -703,9 +709,9 @@ var closureScope = scope as RubyClosureScope;
         }
 
         internal RubyTopLevelScope(RubyGlobalScope/*!*/ globalScope, RubyModule scopeModule, RubyModule methodLookupModule,
-            RuntimeFlowControl/*!*/ runtimeFlowControl, object selfObject)
+            RuntimeFlowControl/*!*/ runtimeFlowControl, RubyObject/*!*/ selfObject)
             : base(runtimeFlowControl, selfObject) {
-            Assert.NotNull(globalScope);
+            Assert.NotNull(globalScope, selfObject);
             _globalScope = globalScope;
             _context = globalScope.Context;
             _wrappingModule = scopeModule;
@@ -751,8 +757,8 @@ var closureScope = scope as RubyClosureScope;
         internal static RubyTopLevelScope/*!*/ CreateWrappedTopLevelScope(Scope/*!*/ globalScope, RubyContext/*!*/ context) {
             RubyGlobalScope rubyGlobalScope = context.InitializeGlobalScope(globalScope, false, false);
             
-            RubyModule module = context.CreateModule(null, null, null, null, null, null, null);
-            object mainObject = new Object();
+            RubyModule module = context.CreateModule(null, null, null, null, null, null, null, ModuleRestrictions.None);
+            RubyObject mainObject = new RubyObject(context.ObjectClass);
             context.CreateMainSingleton(mainObject, new[] { module });
 
             RubyTopLevelScope scope = new RubyTopLevelScope(rubyGlobalScope, module, null, new RuntimeFlowControl(), mainObject);

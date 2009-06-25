@@ -530,7 +530,7 @@ namespace Microsoft.Scripting.Actions {
             // if we received methods from both declaring type & base types we need to filter them
             Dictionary<MethodSignatureInfo, MethodInfo> dict = new Dictionary<MethodSignatureInfo, MethodInfo>();
             foreach (MethodInfo mb in methods) {
-                MethodSignatureInfo args = new MethodSignatureInfo(mb.IsStatic, mb.GetParameters());
+                MethodSignatureInfo args = new MethodSignatureInfo(mb);
                 MethodInfo other;
 
                 if (dict.TryGetValue(args, out other)) {

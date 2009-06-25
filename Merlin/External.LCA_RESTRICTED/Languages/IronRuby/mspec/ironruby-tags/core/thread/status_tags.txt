@@ -1,3 +1,3 @@
 fails:Thread#status reports aborting on a killed thread
-thread:Thread#status describes a dying sleeping thread
-thread:Thread#status reports aborting on a killed thread
+unstable:Thread#status describes a dying sleeping thread
+unstable:Thread#status reports aborting on a killed thread

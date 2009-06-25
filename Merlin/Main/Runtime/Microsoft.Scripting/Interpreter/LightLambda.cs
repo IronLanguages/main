@@ -21,13 +21,27 @@ using Microsoft.Scripting.Generation;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Interpreter {
-    internal partial class LightLambda {
+
+    public sealed class LightLambdaCompileEventArgs : EventArgs {
+        public Delegate Compiled { get; private set; }
+
+        internal LightLambdaCompileEventArgs(Delegate compiled) {
+            Compiled = compiled;
+        }
+    }
+
+    public partial class LightLambda {
         private readonly StrongBox<object>[] _closure;
         private readonly Interpreter _interpreter;
 
         // Adaptive compilation support
         private readonly LightDelegateCreator _delegateCreator;
         private Delegate _compiled;
+
+        /// <summary>
+        /// Provides notification that the LightLambda has been compiled.
+        /// </summary>
+        public event EventHandler<LightLambdaCompileEventArgs> Compile;
 
         internal LightLambda(LightDelegateCreator delegateCreator, StrongBox<object>[] closure) {
             _delegateCreator = delegateCreator;
@@ -104,6 +118,13 @@ namespace Microsoft.Scripting.Interpreter {
             // Use the compiled delegate if available.
             if (_delegateCreator.HasCompiled) {
                 _compiled = _delegateCreator.CreateCompiledDelegate(_closure);
+
+                // Send it to anyone who's interested.
+                var compileEvent = Compile;
+                if (compileEvent != null && _delegateCreator.SameDelegateType) {
+                    compileEvent(this, new LightLambdaCompileEventArgs(_compiled));
+                }
+
                 return true;
             }
             _delegateCreator.UpdateExecutionCount();

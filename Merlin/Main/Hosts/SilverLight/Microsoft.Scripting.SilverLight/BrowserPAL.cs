@@ -18,6 +18,7 @@ using System.IO;
 using System.Reflection;
 using System.Dynamic;
 using System.Windows;
+using System.Windows.Resources;
 
 namespace Microsoft.Scripting.Silverlight {
 
@@ -33,15 +34,19 @@ namespace Microsoft.Scripting.Silverlight {
     internal sealed class BrowserPAL : PlatformAdaptationLayer {
         internal static readonly BrowserPAL/*!*/ PAL = new BrowserPAL();
         
+        private static StreamResourceInfo _xapFile;
+
+        public StreamResourceInfo XapFile {
+            get { return _xapFile; }
+            set { _xapFile = value; }
+        }
+
         public override bool FileExists(string path) {
-            if (!DynamicApplication.InUIThread) {
-                return false; // Application.GetResourceStream will throw if called from a non-UI thread
-            }
-            return Package.GetFile(path) != null;
+            return Package.GetFile(_xapFile, path) != null;
         }
 
         public override Assembly LoadAssemblyFromPath(string path) {
-            Stream stream = Package.GetFile(path);
+            Stream stream = Package.GetFile(_xapFile, path);
             if (stream == null) {
                 throw new FileNotFoundException("could not find assembly in XAP: " + path);
             }
@@ -67,7 +72,7 @@ namespace Microsoft.Scripting.Silverlight {
         }
 
         public override Stream OpenInputFileStream(string path) {
-            Stream result = Package.GetFile(GetFullPath(path));
+            Stream result = Package.GetFile(_xapFile, GetFullPath(path));
             if (result == null)
                 throw new IOException(String.Format("file {0} not found in XAP", path));
             return result;

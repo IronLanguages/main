@@ -67,8 +67,17 @@ namespace System.Dynamic {
         /// to produce a new <see cref="Expression"/> for the new argument types.
         /// </returns>
         public sealed override Expression Bind(object[] args, ReadOnlyCollection<ParameterExpression> parameters, LabelTarget returnLabel) {
+            ContractUtils.RequiresNotNull(args, "args");
+            ContractUtils.RequiresNotNull(parameters, "parameters");
+            ContractUtils.RequiresNotNull(returnLabel, "returnLabel");
             if (args.Length == 0) {
-                throw new InvalidOperationException();
+                throw Error.OutOfRange("args.Length", 1);
+            }
+            if (parameters.Count == 0) {
+                throw Error.OutOfRange("parameters.Count", 1);
+            }
+            if (args.Length != parameters.Count) {
+                throw new ArgumentOutOfRangeException("args");
             }
 
             // Ensure that the binder's ReturnType matches CallSite's return
@@ -121,7 +130,9 @@ namespace System.Dynamic {
             // it makes sense to restrict on the target's type in such cases.
             // ideally IDO metaobjects should do this, but they often miss that type of "this" is significant.
             if (IsStandardBinder && args[0] as IDynamicMetaObjectProvider != null) {
-                VerifyRestrictions(restrictions);
+                if (restrictions == BindingRestrictions.Empty) {
+                    throw Error.DynamicBindingNeedsRestrictions(target.Value.GetType(), this);
+                }
             }
 
             restrictions = AddRemoteObjectRestrictions(restrictions, args, parameters);
@@ -137,12 +148,6 @@ namespace System.Dynamic {
             }
 
             return body;
-        }
-
-        private static void VerifyRestrictions(BindingRestrictions restrictions) {
-            if (restrictions == BindingRestrictions.Empty) {
-                throw new InvalidOperationException();
-            }
         }
 
         private static DynamicMetaObject[] CreateArgumentMetaObjects(object[] args, ReadOnlyCollection<ParameterExpression> parameters) {

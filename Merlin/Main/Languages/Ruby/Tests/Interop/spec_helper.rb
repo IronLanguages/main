@@ -47,9 +47,7 @@ unless MSpec::VERSION >= minimum_version
 end
 
 $VERBOSE = nil unless ENV['OUTPUT_WARNINGS']
-require File.dirname(__FILE__) + '/matchers'
-require File.dirname(__FILE__) + '/helpers'
-require File.dirname(__FILE__) + '/fixtures.generated'
+require File.dirname(__FILE__) + '/net/helpers'
 
 class Object
   def csc(*args)
@@ -60,4 +58,4 @@ class Object
     yield
   end
 end
-$: << (ENV["MERLIN_ROOT"] + "\\Bin\\Debug")
+

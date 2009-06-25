@@ -23,23 +23,34 @@ using IronRuby.Runtime;
 using IronRuby.Builtins;
 using Microsoft.Scripting.Math;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 
 namespace InteropTests.Generics1 {
     public class C {
-        public int Arity { get { return 0; } }
+        public virtual int Arity { get { return 0; } }
     }
 
     public class C<T> {
-        public int Arity { get { return 1; } }
+        public virtual int Arity { get { return 1; } }
     }
 
     public class C<T,S> {
-        public int Arity { get { return 2; } }
+        public virtual int Arity { get { return 2; } }
+    }
+
+    public class D : C {
+        public override int Arity { get { return 10; } }
+    }
+
+    public class D<T> : C<T> {
+        public override int Arity { get { return 11; } }
     }
 }
 
 namespace IronRuby.Tests {
-    public partial class Tests {        
+    public partial class Tests {
+        #region Members: Fields, Methods, Properties, Indexers
+
 #pragma warning disable 169 // private field not used
         public class ClassWithFields {
             public int Field = 1;
@@ -47,10 +58,6 @@ namespace IronRuby.Tests {
 
             public static int StaticField = 3;
             public const int ConstField = 4;
-
-            // TODO:
-            protected string ProtectedField;
-            private string PrivateField;
         }
 #pragma warning restore 169
 
@@ -145,99 +152,379 @@ end
 ");
         }
 
-        public class ClassWithMethods2 {
-            public string Data;
-            
-            protected string ProtectedMethod() { return "ProtectedMethod"; }
-            private string PrivateMethod() { return "PrivateMethod"; }
-
-            protected string ProtectedProperty { 
-                get { return "ProtectedProperty"; } 
-                set { Data = value; } 
-            }
-
-            private string PrivateProperty { get { return "PrivateProperty"; } set { Data = value; } }
-
-            public string ProtectedGetter { protected get { return "ProtectedGetter"; } set { Data = value; } }
-            public string PrivateGetter { private get { return "PrivateGetter"; } set { Data = value; } }
-            public string ProtectedSetter { get { return "ProtectedSetter"; } protected set { Data = value; } }
-            public string PrivateSetter { get { return "PrivateSetter"; } private set { Data = value; } }
-
-            protected string ProtectedWithPrivateGetter { private get { return "ProtectedWithPrivateGetter"; } set { Data = value; } }
-            protected string ProtectedWithPrivateSetter { get { return "ProtectedWithPrivateSetter"; } private set { Data = value; } }
+        public class ClassWithEquals1 {
+            // define overload of Equals so that we get a method group with mixed instance and static methods inherited from Object's method group
+            public static bool Equals(object o1, object o2, object o3) { return o1.Equals(o2); }
         }
 
-        public void ClrMethodsVisibility1() {
-            // TODO: 
-            if (_driver.PartialTrust) return;
+        /// <summary>
+        /// Mixing instance and static methods - instance Object::Equals(Object), static Object::Equals(Object, Object).
+        /// </summary>
+        public void ClrMethods3() {
+            Context.ObjectClass.SetConstant("C", Context.GetClass(typeof(ClassWithEquals1)));
+            TestOutput(@"
+puts 1.Equals(2)                # instance
+puts 1.Equals(2,3) rescue p $!  # static invoked with instance
 
-            Context.ObjectClass.SetConstant("C", Context.GetClass(typeof(ClassWithMethods2)));
-            AssertOutput(delegate() {
-                CompilerTest(@"
-class D < C
-  def test name
-    self.data = 'none'
-    sname = name.to_s    
+puts C.Equals(C)                # instance invoked on a class (statically)
+puts C.Equals(3,3)              # static
+puts C.Equals(3,3,4)            # overload
+", @"
+false
+#<ArgumentError: wrong number of arguments (2 for 1)>
+true
+true
+true
+");
+        }
 
-    begin
-      puts 'ok read: ' + send(sname) 
-    rescue 
-      puts 'error read: ' + sname 
-    end
+        /// <summary>
+        /// Builtin types only expose CLR methods under unmangled names (mangling is no applied).
+        /// </summary>
+        public void ClrMethods4() {
+            TestOutput(@"
+a = Exception.new
+p a.method(:data) rescue p $!
+p a.method(:Data)
+", @"
+#<NameError: undefined method `data' for class `Exception'>
+#<Method: Exception#Data>
+");
+        }
 
-    begin
-      send(sname + '=', sname) 
-      print 'ok write: ' + sname + ' = '
-    rescue
-      puts 'error write: ' + sname
-    end
+        public void ClrMembers1() {
+            TestOutput(@"
+a = [1,2,3]
+p m = a.clr_member(:count)
+p m[]
 
-    puts self.data
-  end
- 
-  def foo
-    puts protected_method
-    private_method rescue puts 'error call: private_method'
+p m = a.clr_member(:binary_search)
+p m.clr_members.size
+p m.overload(Object).clr_members
+", @"
+#<Method: Array#count>
+3
+#<Method: Array#binary_search>
+3
+[Int32 BinarySearch(System.Object)]
+");
 
-    test :protected_property
-    test :private_property
-
-    test :protected_getter
-    test :protected_setter
-    test :private_getter
-    test :private_setter
-
-    test :protected_with_private_getter    
-    test :protected_with_private_setter
-  end
+            TestOutput(@"
+class C < Array
 end
 
-D.new.foo
-");
-            }, @"
-ProtectedMethod
-error call: private_method
-ok read: ProtectedProperty
-ok write: protected_property = protected_property
-error read: private_property
-error write: private_property
-none
-ok read: ProtectedGetter
-ok write: protected_getter = protected_getter
-ok read: ProtectedSetter
-ok write: protected_setter = protected_setter
-error read: private_getter
-ok write: private_getter = private_getter
-ok read: PrivateSetter
-error write: private_setter
-none
-error read: protected_with_private_getter
-ok write: protected_with_private_getter = protected_with_private_getter
-ok read: ProtectedWithPrivateSetter
-error write: protected_with_private_setter
-none
+p C.new.clr_member(:get_enumerator).call.move_next
+", @"
+false
 ");
         }
+
+        public class ClassWithIndexer1 {
+            public int[,] Values = new int[,] { { 0, 10 }, { 20, 30 } };
+
+            public int this[int i, int j] { get { return Values[i, j]; } set { Values[i, j] = value; } }
+        }
+
+        public void ClrIndexers1() {
+            Context.ObjectClass.SetConstant("CI", Context.GetClass(typeof(ClassWithIndexer1)));
+
+            // default indexers:
+            AssertOutput(() => CompilerTest(@"
+c = CI.new
+c[0,1] += 1
+p c[0, 1]
+"), @"
+11
+");
+            // non-default indexers:
+            // TODO: We need to use VB or generate IL to test this.
+            // TODO: improve access
+            //   If a property accessor with parameters is called without arguments the result is a PropertyAccessor object with [], []= defined.
+            //   Then the calls could look like c.foo[1,2] = 3. 
+
+            //            AssertOutput(() => CompilerTest(@"
+            //c = CI.new
+            //c.method(:foo=).call(1, 0, c.method(:foo).call(1, 0) + 5)
+            //p c.method(:foo).call(1, 0)
+            //"), @"
+            //25
+            //");
+        }
+
+        #endregion
+
+        #region Visibility
+
+        public class ProtectedA {
+            protected string Foo(int a) { return "Foo(I): " + a; }
+            public string Bar(int a) { return "Bar(I): " + a; }
+
+            protected string PG<T>(T a) { return "PG<T>(T)"; }
+        }
+
+        public class ProtectedB : ProtectedA {
+            public string Foo(object a) { return "Foo(O): " + a.ToString(); }
+            internal protected string Bar(object a) { return "Bar(O): " + a; }
+
+            protected int Prop1 { get; set; }
+            public int Prop2 { get; internal protected set; }
+
+            private string Baz(int a) { return "Baz(I): " + a; }
+            public string Baz(object a) { return "Baz(O): " + a; }
+
+            protected static string StaticM() { return "StaticM"; }
+            protected static string StaticGenericM<T>(T f) { return "StaticGenericM: " + f.ToString(); }
+
+            internal protected string PG<T>(T a, int b) { return "PG<T>(T,int)"; }
+
+            // TODO:
+            // protected int Fld;
+            // protected static int Fld;
+            // protected event System.Func<object> Evnt;
+        }
+
+        public void ClrVisibility1() {
+            Debug.Assert(!Engine.Runtime.Setup.PrivateBinding);
+            Context.ObjectClass.SetConstant("A", Context.GetClass(typeof(ProtectedA)));
+            Context.ObjectClass.SetConstant("B", Context.GetClass(typeof(ProtectedB)));
+
+            // methods:
+            AssertOutput(delegate() {
+                CompilerTest(@"
+class C < B; end
+a, b, c = A.new, B.new, C.new
+
+puts c.foo(1)
+puts b.foo(2)
+puts b.bar(22)
+a.foo(3) rescue p $!
+
+class A
+  def foo; 4; end
+  def bar; 5; end
+end
+puts c.foo(6)
+b.bar(7) rescue p $!
+
+B.StaticM rescue p $!
+puts C.StaticM
+puts C.method(:StaticGenericM).of(Fixnum)[123]
+");
+            }, @"
+Foo(I): 1
+Foo(O): 2
+Bar(I): 22
+#<NoMethodError: CLR protected method `foo' called for *ProtectedA*>
+Foo(O): 6
+#<NoMethodError: CLR protected method `bar' called for *ProtectedB*>
+#<NoMethodError: CLR protected method `StaticM' called for *ProtectedB*>
+StaticM
+StaticGenericM: 123
+", OutputFlags.Match);
+
+            // generic methods:
+            TestOutput(@"
+class C < B; end
+c = C.new
+
+puts c.method(:PG).of(Fixnum).call(1)
+puts c.method(:PG).of(Fixnum).call(1,2)
+", @"
+PG<T>(T)
+PG<T>(T,int)
+");
+
+            // properties:
+            AssertOutput(delegate() {
+                CompilerTest(@"
+class C < B; end
+a, b, c = A.new, B.new, C.new
+
+c.prop1 = 1
+c.prop2 = 2
+puts c.prop1
+puts c.prop2
+(b.prop2 = 10) rescue p $!
+puts b.prop2
+");
+            }, @"
+1
+2
+#<NoMethodError: CLR protected method `prop2=' called for *ProtectedB*>
+0
+", OutputFlags.Match);
+        }
+
+        [Options(PrivateBinding = true)]
+        public void ClrVisibility2() {
+            Debug.Assert(Engine.Runtime.Setup.PrivateBinding);
+            if (_driver.PartialTrust) return;
+            Context.ObjectClass.SetConstant("A", Context.GetClass(typeof(ProtectedA)));
+            Context.ObjectClass.SetConstant("B", Context.GetClass(typeof(ProtectedB)));
+
+            // methods, properties:
+            TestOutput(@"
+class C < B; end
+a, b, c = A.new, B.new, C.new
+
+puts a.foo(3)
+
+class A
+  def bar; 5; end
+end
+puts b.bar(7)
+puts b.baz(1)
+
+b.prop2 = 10
+puts b.prop2
+",
+@"
+Foo(I): 3
+Bar(O): 7
+Baz(I): 1
+10
+");
+        }
+
+        #endregion
+
+        #region Member Enumeration
+
+        /// <summary>
+        /// No CLR names should be returned for builtin types and singletons.
+        /// </summary>
+        public void ClrMethodEnumeration1() {
+            // built-ins:
+            var irModules = new[] { "IronRuby" };
+
+            using (Context.ClassHierarchyLocker()) {
+                Context.ObjectClass.EnumerateConstants((module, name, value) => {
+                    RubyModule m = value as RubyModule;
+                    if (m != null && Array.IndexOf(irModules, m.Name) == -1) {
+                        AssertNoClrNames(ModuleOps.GetInstanceMethods(m, true), m.Name);
+                        AssertNoClrNames(ModuleOps.GetPrivateInstanceMethods(m, true), m.Name);
+                        AssertNoClrNames(ModuleOps.GetInstanceMethods(m.SingletonClass, true), m.Name);
+                        AssertNoClrNames(ModuleOps.GetPrivateInstanceMethods(m.SingletonClass, true), m.Name);
+                    }
+                    return false;
+                });
+            }
+
+            // singletons:
+            AssertNoClrNames(Engine.Execute(@"class << self; instance_methods + private_instance_methods; end"), null);
+            AssertNoClrNames(Engine.Execute(@"class << self; class << self; instance_methods + private_instance_methods; end; end"), null);
+            AssertNoClrNames(Engine.Execute(@"class << Class; instance_methods + private_instance_methods; end"), null);
+        }
+
+        public void ClrMethodEnumeration2() {
+            TestOutput(@"
+class System::Decimal
+  instance_methods(false).each do |name|
+    mangled = '__' + name
+    
+    alias_method(mangled, name)
+    private mangled
+    
+    define_method(name) do |*args|
+      puts ""method called: #{name}""
+      send mangled, *args
+    end
+  end
+end
+x, y = System::Decimal.new(1), System::Decimal.new(2)
+x + y       
+x.CompareTo(y)
+", @"
+method called: +
+method called: compare_to
+");
+        }
+
+        private void AssertNoClrNames(object/*!*/ methods, string moduleName) {
+            var array = (RubyArray)methods;
+            int idx = array.FindIndex((name) => name is ClrName);
+            Assert(idx == -1, moduleName + "::" + (idx == -1 ? null : ((ClrName)array[idx]).ActualName));
+        }
+
+        #endregion
+
+        #region Generic Methods
+
+#pragma warning disable 67 // event not used
+        public class GenericMethods {
+            public static string M0<T>() {
+                return "M0<" + typeof(T).Name + ">()";
+            }
+
+            public static string M1() {
+                return "M1()";
+            }
+            
+            public static string M1<T>() {
+                return "M1<" + typeof(T).Name + ">()";
+            }
+
+            public static string M1<S, T>() {
+                return "M1<" + typeof(S).Name + ", " + typeof(T).Name + ">()";
+            }
+
+            public static string M1<T>(int foo) {
+                return "M1<" + typeof(T).Name + ">(Fixnum)";
+            }
+
+            public static string M2(int foo) {
+                return "M2(Fixnum)";
+            }
+
+            public static string M2<T>(int foo) {
+                return "M2<" + typeof(T).Name + ">(Fixnum)";
+            }
+
+            public static int Field;
+            public static object Property { get; set; }
+            public static event Action<Object> Event;
+        }
+#pragma warning restore
+
+        public void ClrGenericMethods1() {
+            Context.ObjectClass.SetConstant("GM", Context.GetClass(typeof(GenericMethods)));
+            AssertOutput(() => CompilerTest(@"
+m = GM.method(:M1)
+puts m.call
+puts m.of().call
+puts m.of(String).call
+puts m.of(String, Fixnum).call
+puts m.call(1) rescue p $!
+puts m.of(String, String, String) rescue p $!
+"), @"
+M1()
+M1()
+M1<MutableString>()
+M1<MutableString, Int32>()
+#<ArgumentError: generic arguments could not be infered for method 'M1'>
+#<ArgumentError: wrong number of generic arguments for `M1'>
+"
+            );
+
+            AssertOutput(() => CompilerTest(@"
+m = GM.method(:M2)
+puts m.call(1)
+
+puts GM.method(:field).of(Fixnum) rescue p $!
+puts GM.method(:property).of(Fixnum) rescue p $!
+puts GM.method(:event).of(Fixnum) rescue p $!
+"), @"
+M2(Fixnum)
+#<ArgumentError: wrong number of generic arguments for `field'>
+#<ArgumentError: wrong number of generic arguments for `property'>
+#<ArgumentError: wrong number of generic arguments for `event'>
+"
+            );
+        }
+
+        #endregion
+
+        #region Overloads: Inheritance, Selection
 
         public static class OverloadInheritance1 {
             public class A {
@@ -294,7 +581,7 @@ none
                 }
             }
         }
-        
+
         public void ClrOverloadInheritance1() {
             Context.ObjectClass.SetConstant("Obj", new OverloadInheritance1.C());
 
@@ -307,7 +594,7 @@ puts Obj.bar(1, 2)
 puts Obj.middle(1)
 puts Obj.skip
 puts Obj.skip(1)
-Obj.get_hash_code
+Obj.GetHashCode
 "), @"
 NewFoo: 1
 OverriddenFoo: 1, 2
@@ -318,7 +605,7 @@ Middle: 1
 Skip
 Skip: 1
 ");
-            
+
             AssertOutput(() => CompilerTest(@"
 p Obj.method(:foo)
 p Obj.method(:bar)
@@ -347,18 +634,6 @@ Hidden: 1, 2
 ");
         }
 
-        public void ClrMethodEnumeration1() {
-            // TODO:
-//            Context.ObjectClass.SetConstant("Obj", Context.GetClass(typeof(OverloadInheritance1.B)));
-
-//            Context.GetClass(typeof(OverloadInheritance1.B)).HideMethod("hidden");
-
-//            XAssertOutput(() => CompilerTest(@"
-//p Obj.instance_methods(false)
-//"), @"
-//");
-        }
-
         public static class OverloadInheritance2 {
             public class A { public virtual string f(int a) { return "f1"; } }
             public class B : A { }
@@ -370,7 +645,7 @@ Hidden: 1, 2
 
             public class X : B { public virtual string f(int a, int b, int c) { return "f3"; } }
             public class Y : X { }
-            
+
             public static void Load(RubyContext/*!*/ context) {
                 context.ObjectClass.SetConstant("A", context.GetClass(typeof(A)));
                 context.ObjectClass.SetConstant("B", context.GetClass(typeof(B)));
@@ -435,7 +710,7 @@ p D.instance_method(:f).clr_members.collect { |x| x.to_string }  # only one over
 ['System.String f(Int32, Int32)']
 ");
         }
-        
+
         public void ClrOverloadInheritance4() {
             OverloadInheritance2.Load(Context);
 
@@ -491,112 +766,77 @@ f1
 ");
         }
 
+        public class OverloadInheritance6 {
+            public class A {
+                public int foo(int a) { return 1; }
+                public int Foo(int a) { return 2; }
+            }
+
+            public class B : A {
+                public int Foo(short a) { return 3; }
+            }
+
+            public class C : B {
+                public int foo(bool a) { return 4; }
+            }
+
+            public class D : C {
+                public int Foo(double a) { return 5; }
+            }
+
+            public static void Load(RubyContext/*!*/ context) {
+                context.ObjectClass.SetConstant("A", context.GetClass(typeof(A)));
+                context.ObjectClass.SetConstant("B", context.GetClass(typeof(B)));
+                context.ObjectClass.SetConstant("C", context.GetClass(typeof(C)));
+                context.ObjectClass.SetConstant("D", context.GetClass(typeof(D)));
+            }
+        }
+
+        /// <summary>
+        /// Method group should include methods of both casings.
+        /// It might depend on the order of method calls what overloads are available otherwise.
+        /// D.new.foo finds Foo and 
+        ///   - includes [foo(double), foo(int)] into the group if C.new.foo was invoked previously
+        ///   - includes [Foo(bool)] into the group otherwise.
+        /// </summary>
+        public void ClrOverloadInheritance6() {
+            OverloadInheritance6.Load(Context);
+
+            TestOutput(@"
+p C.new.method(:foo).clr_members.size
+p D.new.method(:foo).clr_members.size
+p A.new.method(:foo).clr_members.size
+p B.new.method(:foo).clr_members.size
+", @"
+4
+5
+2
+3
+");
+
+            TestOutput(@"
+p C.new.method(:Foo).clr_members.size
+p D.new.method(:Foo).clr_members.size
+p A.new.method(:Foo).clr_members.size
+p B.new.method(:Foo).clr_members.size
+", @"
+2
+3
+1
+2
+");
+
+            // prefer overload whose name matches the call site exactly:
+            TestOutput(@"
+p A.new.foo(1)
+", @"
+1
+");
+
+        }
+
         // TODO: CLR overloads
         // - alias/pri/pub/pro/mf/dm/generics/explicit-overload
-
-        public class ClassWithIndexer1 {
-            public int[,] Values = new int[,] { {0, 10}, {20, 30} };
-
-            public int this[int i, int j] { get { return Values[i,j]; } set { Values[i,j] = value; } }
-        }
-
-        public void ClrIndexers1() {
-            Context.ObjectClass.SetConstant("CI", Context.GetClass(typeof(ClassWithIndexer1)));
-            
-            // default indexers:
-            AssertOutput(() => CompilerTest(@"
-c = CI.new
-c[0,1] += 1
-p c[0, 1]
-"), @"
-11
-");
-            // non-default indexers:
-            // TODO: We need to use VB or generate IL to test this.
-            // TODO: improve access
-            //   If a property accessor with parameters is called without arguments the result is a PropertyAccessor object with [], []= defined.
-            //   Then the calls could look like c.foo[1,2] = 3. 
-
-//            AssertOutput(() => CompilerTest(@"
-//c = CI.new
-//c.method(:foo=).call(1, 0, c.method(:foo).call(1, 0) + 5)
-//p c.method(:foo).call(1, 0)
-//"), @"
-//25
-//");
-        }
-
-#pragma warning disable 67 // event not used
-        public class GenericMethods {
-            public static string M0<T>() {
-                return "M0<" + typeof(T).Name + ">()";
-            }
-
-            public static string M1() {
-                return "M1()";
-            }
-            
-            public static string M1<T>() {
-                return "M1<" + typeof(T).Name + ">()";
-            }
-
-            public static string M1<S, T>() {
-                return "M1<" + typeof(S).Name + ", " + typeof(T).Name + ">()";
-            }
-
-            public static string M1<T>(int foo) {
-                return "M1<" + typeof(T).Name + ">(Fixnum)";
-            }
-
-            public static string M2(int foo) {
-                return "M2(Fixnum)";
-            }
-
-            public static string M2<T>(int foo) {
-                return "M2<" + typeof(T).Name + ">(Fixnum)";
-            }
-
-            public static int Field;
-            public static object Property { get; set; }
-            public static event Action<Object> Event;
-        }
-#pragma warning restore
-
-        public void ClrGenericMethods1() {
-            Context.ObjectClass.SetConstant("GM", Context.GetClass(typeof(GenericMethods)));
-            AssertOutput(() => CompilerTest(@"
-m = GM.method(:M1)
-puts m.call
-puts m.of().call
-puts m.of(String).call
-puts m.of(String, Fixnum).call
-puts m.call(1) rescue p $!
-puts m.of(String, String, String) rescue p $!
-"), @"
-M1()
-M1()
-M1<MutableString>()
-M1<MutableString, Int32>()
-#<ArgumentError: wrong number of arguments (1 for 0)>
-#<ArgumentError: wrong number of generic arguments for `M1'>
-"
-            );
-
-            AssertOutput(() => CompilerTest(@"
-m = GM.method(:M2)
-puts m.call(1)
-
-puts GM.method(:field).of(Fixnum) rescue p $!
-puts GM.method(:property).of(Fixnum) rescue p $!
-puts GM.method(:event).of(Fixnum) rescue p $!
-"), @"
-M2(Fixnum)
-#<ArgumentError: wrong number of generic arguments for `field'>
-#<ArgumentError: wrong number of generic arguments for `property'>
-#<ArgumentError: wrong number of generic arguments for `event'>
-"
-            );
-        }
 
         public class OverloadedMethods {
             public static string M1(RubyScope scope) {
@@ -654,14 +894,14 @@ M2(Fixnum)
 
             AssertOutput(() => CompilerTest(@"
 m = OM.method(:M1)
-puts m.overloads.call
-puts m.overloads(String).call('')
-puts m.overloads(Float).call(1.0)
-puts m.overloads(Fixnum, String).call(1, '')
-puts m.overloads(String, String).call('', '')
-puts m.overloads(Fixnum, System::Array.of(Object)).call(1, 2, 3)
-puts m.overloads(Fixnum, Object).call(1, 2)
-puts m.overloads(Fixnum).call(1)
+puts m.overload.call
+puts m.overload(String).call('')
+puts m.overload(Float).call(1.0)
+puts m.overload(Fixnum, String).call(1, '')
+puts m.overload(String, String).call('', '')
+puts m.overload(Fixnum, System::Array.of(Object)).call(1, 2, 3)
+puts m.overload(Fixnum, Object).call(1, 2)
+puts m.overload(Fixnum).call(1)
 "), @"
 M1()
 M1(String)
@@ -679,9 +919,9 @@ m = OM.method(:M2)
 puts m.clr_members.size
 puts m.of.clr_members.size
 puts m.of(Object).clr_members.size
-puts m.overloads(Object).clr_members.size
-puts m.of(Object).overloads(Object).clr_members.size
-puts m.overloads(Object).of(Object).clr_members.size
+puts m.overload(Object).clr_members.size
+puts m.of(Object).overload(Object).clr_members.size
+puts m.overload(Object).of(Object).clr_members.size
 "), @"
 4
 2
@@ -696,8 +936,8 @@ puts m.overloads(Object).of(Object).clr_members.size
 m = OM.method(:M2)
 puts m.call(1)
 puts m.of(Float).call('')
-puts m.of(Float).overloads(Fixnum).call(1)
-puts m.overloads(Object).of(String).call(1)
+puts m.of(Float).overload(Fixnum).call(1)
+puts m.overload(Object).of(String).call(1)
 "), @"
 M2(Fixnum)
 M2<Double>(Object)
@@ -708,8 +948,8 @@ M2<MutableString>(Object)
 
             AssertOutput(() => CompilerTest(@"
 m = OM.method(:M2)
-m.overloads(Object, String) rescue p $!
-m.overloads() rescue p $!
+m.overload(Object, String) rescue p $!
+m.overload() rescue p $!
 "), @"
 #<ArgumentError: no overload of `M2' matches given parameter types>
 #<ArgumentError: no overload of `M2' matches given parameter types>
@@ -726,12 +966,12 @@ def bar a,*b
   [a,*b]
 end
 
-p method(:foo).overloads(Object, Object).call(1,2)
-method(:foo).overloads(Object) rescue p $!
+p method(:foo).overload(Object, Object).call(1,2)
+method(:foo).overload(Object) rescue p $!
 
-p method(:bar).overloads(Object).call(1)
-p method(:bar).overloads(Object, Object).call(1,2)
-p method(:bar).overloads(Object, Object, Object).call(1,2,3)
+p method(:bar).overload(Object).call(1)
+p method(:bar).overload(Object, Object).call(1,2)
+p method(:bar).overload(Object, Object, Object).call(1,2,3)
 "), @"
 [1, 2]
 #<ArgumentError: no overload of `foo' matches given parameter types>
@@ -749,8 +989,8 @@ class C
   
   c = new
   c.foo = 1
-  p instance_method(:foo).overloads.bind(c).call
-  instance_method(:foo=).overloads(Object).bind(c).call(2)
+  p instance_method(:foo).overload.bind(c).call
+  instance_method(:foo=).overload(Object).bind(c).call(2)
   p c.foo
 end
 "), @"
@@ -789,14 +1029,11 @@ end
         public void ClrOverloadSelection2() {
             OverloadSelection2.Load(Context);
 
-            // TODO: constructor overload selection
-            // B.overloads(Fixnum).new(1) ???
-
             // static methods:
             TestOutput(@"
 m = B.method(:foo)
-puts m.overloads(Fixnum).clr_members.size          # RubyScope and BlockParam are hidden
-puts m.overloads(System::String) rescue p $!       # RubyClass is not hidden here
+puts m.overload(Fixnum).clr_members.size          # RubyScope and BlockParam are hidden
+puts m.overload(System::String) rescue p $!       # RubyClass is not hidden here
 ", @"
 1
 #<ArgumentError: no overload of `foo' matches given parameter types>
@@ -806,9 +1043,9 @@ puts m.overloads(System::String) rescue p $!       # RubyClass is not hidden her
             TestOutput(@"
 m = method(:print)
 puts m.arity
-puts m.overloads().arity
-puts m.overloads(Object).arity
-puts m.overloads(System::Array[Object]).arity
+puts m.overload().arity
+puts m.overload(Object).arity
+puts m.overload(System::Array[Object]).arity
 ", @"
 -1
 0
@@ -816,6 +1053,10 @@ puts m.overloads(System::Array[Object]).arity
 -1
 ");
         }
+
+        #endregion
+
+        #region Interfaces
 
         public class ClassWithInterfaces1 : IEnumerable {
             public IEnumerator GetEnumerator() {
@@ -918,6 +1159,10 @@ false
 ");
         }
 
+        #endregion
+
+        #region Types, Trackers, TypeGroups, TypeHandles, Namespaces
+
         /// <summary>
         /// Type represents a class object - it is equivalent to RubyClass.
         /// </summary>
@@ -944,7 +1189,7 @@ puts $type.static_method rescue puts $!.class
 {1}
 2
 NoMethodError
-", type, RubyUtils.GetQualifiedName(typeof(ClassWithMethods1), true)), OutputFlags.Match);
+", type, Context.GetTypeName(typeof(ClassWithMethods1), false)), OutputFlags.Match);
         }
 
         public void ClrNamespaces1() {
@@ -966,23 +1211,46 @@ nil
 System::Collections
 ");
         }
-        
+
         public void ClrGenerics1() {
             Runtime.LoadAssembly(typeof(Tests).Assembly);
 
-            AssertOutput(delegate() {
-                CompilerTest(@"
+            TestOutput(@"
 include InteropTests::Generics1
 p C
+p D
+p C.new
+p D.new                               # test if we don't use cached dispatch to C.new again
+p C.clr_new
+p D.clr_new
+p C.superclass
+p D.superclass
+", @"
+#<TypeGroup: InteropTests::Generics1::C, InteropTests::Generics1::C[T], InteropTests::Generics1::C[T, S]>
+#<TypeGroup: InteropTests::Generics1::D, InteropTests::Generics1::D[T]>
+InteropTests.Generics1.C
+InteropTests.Generics1.D
+InteropTests.Generics1.C
+InteropTests.Generics1.D
+Object
+InteropTests::Generics1::C
+");
+
+            TestOutput(@"
+include InteropTests::Generics1
 p C.new.arity
 p C[String].new.arity
+p D[String].new.arity
 p C[Fixnum, Fixnum].new.arity
-");
-            }, @"
-#<TypeGroup: InteropTests::Generics1::C, InteropTests::Generics1::C[T], InteropTests::Generics1::C[T, S]>
+p D[String]
+p C[Fixnum, Fixnum]
+", @"
 0
 1
+11
 2
+InteropTests::Generics1::D[String]
+InteropTests::Generics1::C[Fixnum, Fixnum]
 ");
         }
 
@@ -1024,142 +1292,9 @@ p C2::C
 ", OutputFlags.Match);
         }
 
-        /// <summary>
-        /// Require, namespaces.
-        /// </summary>
-        public void ClrRequireAssembly1() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
-require 'mscorlib'
-puts System::AppDomain.current_domain.friendly_name
-");
-            }, AppDomain.CurrentDomain.FriendlyName);
-        }
+        #endregion
 
-        /// <summary>
-        /// CLR class re-def and inclusions.
-        /// </summary>
-        public void ClrInclude1() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
-require 'mscorlib'
-include System::Collections
-class ArrayList
-  puts self.object_id == System::Collections::ArrayList.object_id
-end
-");
-            }, "true");
-        }
-
-        /// <summary>
-        /// Instantiation.
-        /// </summary>
-        public void ClrNew1() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
-require 'mscorlib'
-b = System::Text::StringBuilder.new
-b.Append 1
-b.Append '-'
-b.Append true
-puts b.to_string
-puts b.length
-");
-            }, @"
-1-True
-6
-");
-        }
-
-        /// <summary>
-        /// Alias.
-        /// </summary>
-        public void ClrAlias1() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
-require 'mscorlib'
-include System::Collections
-
-class ArrayList
-  alias :old_add :Add
-  def foo x
-    old_add x
-  end 
-end
-
-a = ArrayList.new
-a.Add 1
-a.add 2
-a.foo 3
-puts a.count");
-            }, "3");
-        }
-
-        public class ClassWithEnum {
-            public enum MyEnum {
-                Foo = 1, Bar = 2, Baz = 3
-            }
-
-            public MyEnum MyProperty { get; set; }
-        }
-
-        public void ClrEnums1() {
-            Context.DefineGlobalVariable("obj", new ClassWithEnum());
-            Context.DefineGlobalVariable("enum", typeof(ClassWithEnum.MyEnum));
-
-            AssertOutput(delegate() {
-                CompilerTest(@"
-E = $enum.to_class
-
-$obj.my_property = E.foo
-puts $obj.my_property
-
-$obj.my_property = E.bar
-puts $obj.my_property
-");
-            }, @"
-Foo
-Bar        
-");
-        }
-
-        [Flags]
-        public enum FlagsInt { A = 1, B = 2 }
-
-        [Flags]
-        public enum FlagsULong : ulong { C = Int64.MaxValue, D = 2 }
-
-        [Flags]
-        public enum FlagsByte : byte { N = 0, E = 4, F = 8 }
-        
-        public void ClrEnums2() {
-            Context.ObjectClass.SetConstant("A", FlagsInt.A);
-            Context.ObjectClass.SetConstant("B", FlagsInt.B);
-            Context.ObjectClass.SetConstant("C", FlagsULong.C);
-            Context.ObjectClass.SetConstant("D", FlagsULong.D);
-            Context.ObjectClass.SetConstant("E", FlagsByte.E);
-            Context.ObjectClass.SetConstant("F", FlagsByte.F);
-
-            AssertOutput(delegate() {
-                CompilerTest(@"
-p(x = A | B, x.class)
-p(x = A | E, x.class) rescue puts $!
-p(x = C ^ D, x.class) 
-p(x = E & F, x.class) 
-p(x = ~C, x.class)
-");
-            }, @"
-A, B
-*::FlagsInt
-wrong argument type *::FlagsByte (expected *::FlagsInt)
-9223372036854775805
-*::FlagsULong
-N
-*::FlagsByte
-9223372036854775808
-*::FlagsULong
-", OutputFlags.Match);
-        }
+        #region Delegates, Events
 
         public delegate int Delegate1(string foo, int bar);
 
@@ -1178,12 +1313,16 @@ $d = D.new { |foo, bar| $foo = foo; $bar = bar; 777 }
         
         public void ClrDelegates2() {
             Runtime.LoadAssembly(typeof(Func<>).Assembly);
+            Runtime.LoadAssembly(typeof(Action).Assembly);
 
-            var f = Engine.Execute<Func<int, int>>(@"
-System::Func.of(Fixnum, Fixnum).new { |a| a + 1 }
-");
-
+            var f = Engine.Execute<Func<int, int>>(@"System::Func.of(Fixnum, Fixnum).new { |a| a + 1 }");
             Assert(f(1) == 2);
+
+            Engine.Execute<Action>(@"System::Action.new { $x = 1 }")();
+            Assert((int)Context.GetGlobalVariable("x") == 1);
+
+            Engine.Execute<Action<int>>(@"System::Action[Fixnum].new { |x| $x = x + 1 }")(10);
+            Assert((int)Context.GetGlobalVariable("x") == 11);
         }
 
         public void ClrEvents1() {
@@ -1288,24 +1427,34 @@ false
 ");
         }
 
+        #endregion
+
+        #region Virtual method overrides
+
         public class ClassWithVirtuals {
             public virtual string M1() {
-                return "CM1";
+                return "CM1 ";
             }
+
             public virtual string M2() {
-                return "CM2";
+                return "CM2 ";
             }
+
             public virtual string P1 {
-                get { return "CP1"; }
+                get { return "CP1 "; }
             }
-            private string _p2 = "CP2";
+
+            private string _p2 = "CP2 ";
+
             public virtual string P2 {
                 get { return _p2; }
                 set { _p2 = value; }
             }
+
             public virtual string P3 {
-                get { return "CP3"; }
+                get { return "CP3 "; }
             }
+
             public string Summary {
                 get { return M1() + M2() + P1 + P2 + P3; }
             }
@@ -1313,30 +1462,325 @@ false
 
         public void ClrOverride1() {
             Context.ObjectClass.SetConstant("C", Context.GetClass(typeof(ClassWithVirtuals)));
-            AssertOutput(delegate() {
-                CompilerTest(@"
+            TestOutput(@"
 class D < C
-  def m1
-    'RM1'
+  def m1                  # mangled name works
+    'RM1 '
   end
+
   def p2= value
   end
-  def p3
-    'RP3'
+
+  def P3                  # unmangled name works as well
+    'RP3 '
   end
 end
 
-$c = C.new
-$c.p2 = 'RP2'
-puts $c.summary
+c = C.new
+c.p2 = 'RP2 '
+puts c.summary
 
-$d = D.new
-$d.p2 = 'RP2'
-puts $d.summary
+d = D.new
+d.p2 = 'RP2 '
+puts d.summary
+", @"
+CM1 CM2 CP1 RP2 CP3 
+RM1 CM2 CP1 CP2 RP3 
+");
+        }
+
+        /// <summary>
+        /// Virtual methods of built-in types cannot be overridden.
+        /// </summary>
+        public void ClrOverride2() {
+            var e = Engine.Execute<Exception>(@"
+class E < Exception
+  def data; 123; end
+  new
+end
+");
+            Assert(e.Data is IDictionary);
+
+            var obj = Engine.Execute(@"
+class C < Object
+  def equals(other); raise; end
+  new
+end
+");
+            Assert(obj.Equals(obj));
+        }
+
+        public class ClassCallingVirtualInCtor1 {
+            public ClassCallingVirtualInCtor1() {
+                VirtualMethod();
+            }
+
+            public virtual int VirtualMethod() {
+                return 1;
+            }
+        }
+
+        /// <summary>
+        /// We need to fully initialize the derived type before calling base ctor.
+        /// The ebase ctor can call virtual methods that require _class to be set.
+        /// </summary>
+        public void ClrOverride3() {
+            Context.ObjectClass.SetConstant("C", Context.GetClass(typeof(ClassCallingVirtualInCtor1)));
+            TestOutput(@"
+class D < C
+end
+
+p D.new.virtual_method
+", @"
+1
+");
+        }
+
+        /// <summary>
+        /// Super call in an override.
+        /// </summary>
+        public void ClrOverride4() {
+            Context.ObjectClass.SetConstant("C", Context.GetClass(typeof(ClassCallingVirtualInCtor1)));
+            TestOutput(@"
+class D < C
+  def virtual_method 
+    10 + super
+  end
+end
+
+class E < C
+  def VirtualMethod 
+    20 + super
+  end
+end
+
+p D.new.VirtualMethod
+p E.new.virtual_method
+", @"
+11
+21
+");
+        }
+
+
+
+        public class ClassWithToStringHashEquals1 {
+            public override string ToString() {
+                return "hello";
+            }
+
+            public override int GetHashCode() {
+                return 1234;
+            }
+
+            public int Foo() {
+                return 10;
+            }
+
+            public int Field = 11;
+
+            public override bool Equals(object obj) {
+                return obj is int && (int)obj == 0;
+            }
+        }
+
+        public void ClrToString1() {
+            Engine.Runtime.Globals.SetVariable("B", Context.GetClass(typeof(ClassWithToStringHashEquals1)));
+
+            var objs = Engine.Execute<RubyArray>(@"
+class C
+  def to_s
+    '123'
+  end
+end
+
+class D
+end
+
+class E < B
+end
+
+class F < B
+  def to_s
+    'abc'
+  end
+end
+
+[C.new, D.new, E.new, E.new.to_s, F.new]
+");
+
+            Assert(objs[0].ToString() == "123");
+
+            string s = objs[1].ToString();
+            Assert(s.StartsWith("#<D:0x") && s.EndsWith(">"));
+
+            s = objs[2].ToString();
+            Assert(s == "hello");
+
+            s = objs[3].ToString();
+            Assert(s == "hello");
+
+            //TODO:
+            //s = objs[4].ToString();
+            //Assert(s == "abc");
+
+            var range = new Range(1, 2, true);
+            Assert(range.ToString() == "1...2");
+
+            var regex = new RubyRegex("hello", RubyRegexOptions.IgnoreCase | RubyRegexOptions.Multiline);
+            Assert(regex.ToString() == "(?mi-x:hello)");
+        }
+
+        public void ClrHashEquals1() {
+            Test_HashClr("get_hash_code", "equals");
+        }
+
+        public void ClrHashEquals2() {
+            Test_HashClr("GetHashCode", "Equals");
+        }
+
+        public void ClrHashEquals3() {
+            Test_HashClr("hash", "eql?");
+        }
+
+        private void Test_HashClr(string/*!*/ hashMethodName, string/*!*/ equalsMethodName) {
+            Engine.Runtime.Globals.SetVariable("B", Context.GetClass(typeof(ClassWithToStringHashEquals1)));
+
+            var objs = Engine.Execute<RubyArray>(String.Format(@"
+class C
+  def {0}
+    789
+  end
+
+  def {1}(other)
+    other == 1
+  end
+end
+
+class D
+end
+
+class E < B
+end
+
+class F < B
+  def {0}
+    1000
+  end
+
+  def {1}(other)
+    other == 2
+  end
+end
+
+[C.new, D.new, E.new, F.new, E.new.{0}, E.new.{1}(0)]
+", hashMethodName, equalsMethodName));
+
+            object c = objs[0], d = objs[1], e = objs[2], f = objs[3], eHash = objs[4], eEquals = objs[5];
+
+            int h = c.GetHashCode();
+            Assert(h == 789);
+            Assert(objs[0].Equals(1));
+
+            h = d.GetHashCode();
+            Assert(h == RuntimeHelpers.GetHashCode(objs[1]));
+            Assert(d.Equals(d) && !d.Equals(1));
+
+            h = e.GetHashCode();
+            Assert(h == 1234);
+            Assert(e.Equals(0));
+
+            h = f.GetHashCode();
+            Assert(h == 1000);
+            Assert(f.Equals(2));
+
+            Assert((int)eHash == 1234);
+            Assert((bool)eEquals);
+        }
+
+        public void ClrHashEquals4() {
+            var e = new RubyObject(Context.ObjectClass);
+            int h;
+
+            Engine.Runtime.Globals.SetVariable("B", Context.GetClass(typeof(ClassWithToStringHashEquals1)));
+            Engine.Runtime.Globals.SetVariable("Empty", e);
+
+            // removing GetHashCode doesn't cause infinite recursion (Kernel#hash call doesn't dynamically dispatch to GHC):
+            h = Engine.Execute<int>(@"
+class Object
+  remove_method :GetHashCode
+end
+
+Empty.hash
+");
+            Assert(h == RuntimeHelpers.GetHashCode(e));
+
+            // Z#eql? calls Kernel#== which should not do virtual dynamic dispatch to Equals since that would call eql? again.
+            bool b = Engine.Execute<bool>(@"
+class Z
+  def eql?(other)
+    self == other
+  end
+end
+
+Z.eql?(1)
+");
+            Assert(!b);
+
+            // detached method groups should be considered user-defined methods:
+            var objs = Engine.Execute<RubyArray>(@"
+class C < B
+  alias hash foo
+end
+
+class D < B
+  define_method(:hash, instance_method(:field))
+end
+
+[C.new, D.new]
+");
+            object c = objs[0], d = objs[1];
+
+            h = c.GetHashCode();
+            Assert(h == 10);
+            
+            h = d.GetHashCode();
+            Assert(h == 11);
+        }
+
+        #endregion
+
+        #region Constructors
+
+        /// <summary>
+        /// Instantiation.
+        /// </summary>
+        public void ClrNew1() {
+            AssertOutput(delegate() {
+                CompilerTest(@"
+require 'mscorlib'
+b = System::Text::StringBuilder.new
+b.Append 1
+b.Append '-'
+b.Append true
+puts b.to_string
+puts b.length
 ");
             }, @"
-CM1CM2CP1RP2CP3
-RM1CM2CP1CP2RP3
+1-True
+6
+");
+        }
+
+        public void ClrNew2() {
+            TestOutput(@"
+puts c = Thread.clr_ctor
+puts c.overload(System::Threading::ThreadStart).call(lambda { puts 'hello' }).status
+puts Thread.clr_new(System::Threading::ThreadStart.new(lambda { puts 'hello' })).status
+", @"
+#<Method: Class(Thread)#.ctor>
+unstarted
+unstarted
 ");
         }
 
@@ -1496,6 +1940,10 @@ hello world
 ", OutputFlags.Match);
         }
 
+        #endregion
+
+        #region CLR Primitive Types: Numeric, Arrays, Char, Enums
+
         /// <summary>
         /// TODO: Currently we don't narrow results of arithmetic operations to the self-type even if the value fits.
         /// That might by just fine, but in some scenarios (overload resolution) it might be better to narrow the result type.
@@ -1609,6 +2057,76 @@ true
 9
 ");
         }
+
+        public class ClassWithEnum {
+            public enum MyEnum {
+                Foo = 1, Bar = 2, Baz = 3
+            }
+
+            public MyEnum MyProperty { get; set; }
+        }
+
+        public void ClrEnums1() {
+            Context.DefineGlobalVariable("obj", new ClassWithEnum());
+            Context.DefineGlobalVariable("enum", typeof(ClassWithEnum.MyEnum));
+
+            AssertOutput(delegate() {
+                CompilerTest(@"
+E = $enum.to_class
+
+$obj.my_property = E.foo
+puts $obj.my_property
+
+$obj.my_property = E.bar
+puts $obj.my_property
+");
+            }, @"
+Foo
+Bar        
+");
+        }
+
+        [Flags]
+        public enum FlagsInt { A = 1, B = 2 }
+
+        [Flags]
+        public enum FlagsULong : ulong { C = Int64.MaxValue, D = 2 }
+
+        [Flags]
+        public enum FlagsByte : byte { N = 0, E = 4, F = 8 }
+        
+        public void ClrEnums2() {
+            Context.ObjectClass.SetConstant("A", FlagsInt.A);
+            Context.ObjectClass.SetConstant("B", FlagsInt.B);
+            Context.ObjectClass.SetConstant("C", FlagsULong.C);
+            Context.ObjectClass.SetConstant("D", FlagsULong.D);
+            Context.ObjectClass.SetConstant("E", FlagsByte.E);
+            Context.ObjectClass.SetConstant("F", FlagsByte.F);
+
+            AssertOutput(delegate() {
+                CompilerTest(@"
+p(x = A | B, x.class)
+p(x = A | E, x.class) rescue puts $!
+p(x = C ^ D, x.class) 
+p(x = E & F, x.class) 
+p(x = ~C, x.class)
+");
+            }, @"
+A, B
+*::FlagsInt
+wrong argument type *::FlagsByte (expected *::FlagsInt)
+9223372036854775805
+*::FlagsULong
+N
+*::FlagsByte
+9223372036854775808
+*::FlagsULong
+", OutputFlags.Match);
+        }
+
+        #endregion
+
+        #region Operations, Conversions
 
         public void ClrOperators1() {
             AssertOutput(delegate() {
@@ -1826,5 +2344,49 @@ p Inst.delegate(Proc.new { |x| x + 1 }).invoke(123)
 124
 ");
         }
+
+        #endregion
+
+        #region Misc: Inclusions, Aliases
+
+        /// <summary>
+        /// CLR class re-def and inclusions.
+        /// </summary>
+        public void ClrInclude1() {
+            AssertOutput(delegate() {
+                CompilerTest(@"
+include System::Collections
+class ArrayList
+  puts self.object_id == System::Collections::ArrayList.object_id
+end
+");
+            }, "true");
+        }
+
+        /// <summary>
+        /// Alias.
+        /// </summary>
+        public void ClrAlias1() {
+            AssertOutput(delegate() {
+                CompilerTest(@"
+require 'mscorlib'
+include System::Collections
+
+class ArrayList
+  alias :old_add :Add
+  def foo x
+    old_add x
+  end 
+end
+
+a = ArrayList.new
+a.Add 1
+a.add 2
+a.foo 3
+puts a.count");
+            }, "3");
+        }
+
+        #endregion
     }
 }

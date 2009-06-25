@@ -363,18 +363,22 @@ namespace IronPython.Runtime.Binding {
                     return;
                 }
 
-                IValueSlot slot = dts as IValueSlot;
-                if (slot != null && !(slot.Value is PythonTypeSlot)) {
-                    PythonType slottype = DynamicHelpers.GetPythonType(slot.Value);
-                    if (slottype.IsSystemType) {
-                        // this is a user slot that's known not to be a descriptor
-                        // so we can just burn the value in.  For it to change the
-                        // slot will need to be replaced reving the type version.
-                        _bindingInfo.Body.FinishCondition(
-                            Invoke(AstUtils.Convert(AstUtils.WeakConstant(slot.Value), typeof(object)))
-                        );
-                        return;
-                    }
+                PythonTypeUserDescriptorSlot slot = dts as PythonTypeUserDescriptorSlot;
+                if (slot != null) {
+                    _bindingInfo.Body.FinishCondition(
+                        Ast.Call(
+                            typeof(PythonOps).GetMethod("GetUserSlotValue"),
+                            Ast.Constant(PythonContext.GetPythonContext(_bindingInfo.Action).SharedContext),
+                            Ast.Convert(AstUtils.WeakConstant(slot), typeof(PythonTypeUserDescriptorSlot)),
+                            _target.Expression,
+                            Ast.Property(
+                                Ast.Convert(
+                                    _bindingInfo.Self,
+                                    typeof(IPythonObject)),
+                                TypeInfo._IPythonObject.PythonType
+                            )
+                        )
+                    );
                 }
 
                 // users can subclass PythonProperty so check the type explicitly 
@@ -594,11 +598,19 @@ namespace IronPython.Runtime.Binding {
                 ReflectedSlotProperty rsp = _slot as ReflectedSlotProperty;
                 if (rsp != null) {
                     Debug.Assert(!_dictAccess); // properties for __slots__ are get/set descriptors so we should never access the dictionary.
-                    func = new GetMemberDelegates(OptimizedGetKind.UserSlot, _binder, SymbolTable.StringToId(_binder.Name), _version, _slot, _getattrSlot, rsp.Getter, FallbackError());
+                    func = new GetMemberDelegates(OptimizedGetKind.PropertySlot, _binder, SymbolTable.StringToId(_binder.Name), _version, _slot, _getattrSlot, rsp.Getter, FallbackError());
                 } else if (_dictAccess) {
-                    func = new GetMemberDelegates(OptimizedGetKind.SlotDict, _binder, SymbolTable.StringToId(_binder.Name), _version, _slot, _getattrSlot, null, FallbackError());
+                    if (_slot is PythonTypeUserDescriptorSlot) {
+                        func = new GetMemberDelegates(OptimizedGetKind.UserSlotDict, _binder, SymbolTable.StringToId(_binder.Name), _version, _slot, _getattrSlot, null, FallbackError());
+                    } else {
+                        func = new GetMemberDelegates(OptimizedGetKind.SlotDict, _binder, SymbolTable.StringToId(_binder.Name), _version, _slot, _getattrSlot, null, FallbackError());
+                    }
                 } else {
-                    func = new GetMemberDelegates(OptimizedGetKind.SlotOnly, _binder, SymbolTable.StringToId(_binder.Name), _version, _slot, _getattrSlot, null, FallbackError());
+                    if (_slot is PythonTypeUserDescriptorSlot) {
+                        func = new GetMemberDelegates(OptimizedGetKind.UserSlotOnly, _binder, SymbolTable.StringToId(_binder.Name), _version, _slot, _getattrSlot, null, FallbackError());
+                    } else {
+                        func = new GetMemberDelegates(OptimizedGetKind.SlotOnly, _binder, SymbolTable.StringToId(_binder.Name), _version, _slot, _getattrSlot, null, FallbackError());
+                    }
                 }
                 return func;
             }
@@ -1057,7 +1069,7 @@ namespace IronPython.Runtime.Binding {
                     );
                 }
 
-                return _info.Action.FallbackSetMember(_target, value);
+                return _info.Action.FallbackSetMember(_target.Restrict(_target.GetLimitType()), value);
             }
 
         }
@@ -1447,7 +1459,7 @@ namespace IronPython.Runtime.Binding {
                 );
             }
 
-            return action.FallbackDeleteMember(this);
+            return action.FallbackDeleteMember(this.Restrict(this.GetLimitType()));
         }
 
         #endregion

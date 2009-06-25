@@ -16,44 +16,26 @@
 using IronRuby.Runtime;
 using Microsoft.Scripting.Utils;
 using IronRuby.Compiler.Generation;
+using System.Diagnostics;
 
 namespace IronRuby.Builtins {
     public partial class RubyRegex {
-        public sealed class Subclass : RubyRegex, IRubyObject {
-            private readonly RubyClass/*!*/ _class;
-            private RubyInstanceData _instanceData;
-
+        public sealed partial class Subclass : RubyRegex, IRubyObject {
             // called by Class#new rule when creating a Ruby subclass of String:
             public Subclass(RubyClass/*!*/ rubyClass) {
                 Assert.NotNull(rubyClass);
-                _class = rubyClass;
+                Debug.Assert(!rubyClass.IsSingletonClass);
+                ImmediateClass = rubyClass;
             }
 
             private Subclass(RubyRegex.Subclass/*!*/ regex)
                 : base(regex) {
-                _class = regex._class;
+                ImmediateClass = regex.ImmediateClass.NominalClass;
             }
 
             protected override RubyRegex/*!*/ Copy() {
                 return new Subclass(this);
             }
-
-            #region IRubyObject Members
-
-            [Emitted]
-            public RubyClass/*!*/ Class {
-                get { return _class; }
-            }
-
-            public RubyInstanceData/*!*/ GetInstanceData() {
-                return RubyOps.GetInstanceData(ref _instanceData);
-            }
-
-            public RubyInstanceData TryGetInstanceData() {
-                return _instanceData;
-            }
-
-            #endregion
         }
     }
 }

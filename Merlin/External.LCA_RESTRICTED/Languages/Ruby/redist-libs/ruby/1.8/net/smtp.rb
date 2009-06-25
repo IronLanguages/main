@@ -15,7 +15,7 @@
 # NOTE: You can find Japanese version of this document in
 # the doc/net directory of the standard ruby interpreter package.
 # 
-# $Id: smtp.rb 11708 2007-02-12 23:01:19Z shyouhei $
+# $Id: smtp.rb 18116 2008-07-17 12:40:40Z shyouhei $
 #
 # See Net::SMTP for documentation. 
 # 
@@ -163,7 +163,7 @@ module Net
   #
   class SMTP
 
-    Revision = %q$Revision: 11708 $.split[1]
+    Revision = %q$Revision: 18116 $.split[1]
 
     # The default SMTP port, port 25.
     def SMTP.default_port
@@ -309,10 +309,9 @@ module Net
     # * IOError
     # * TimeoutError
     #
-    def SMTP.start( address, port = nil,
-                    helo = 'localhost.localdomain',
-                    user = nil, secret = nil, authtype = nil,
-                    &block) # :yield: smtp
+    def SMTP.start(address, port = nil, helo = 'localhost.localdomain',
+                   user = nil, secret = nil, authtype = nil,
+                   &block)   # :yield: smtp
       new(address, port).start(helo, user, secret, authtype, &block)
     end
 
@@ -371,8 +370,8 @@ module Net
     # * IOError
     # * TimeoutError
     #
-    def start( helo = 'localhost.localdomain',
-               user = nil, secret = nil, authtype = nil ) # :yield: smtp
+    def start(helo = 'localhost.localdomain',
+              user = nil, secret = nil, authtype = nil)   # :yield: smtp
       if block_given?
         begin
           do_start(helo, user, secret, authtype)

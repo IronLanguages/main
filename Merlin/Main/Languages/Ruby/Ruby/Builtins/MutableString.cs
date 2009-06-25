@@ -153,13 +153,13 @@ namespace IronRuby.Builtins {
 
         public static MutableString/*!*/ CreateMutable(string/*!*/ str, RubyEncoding/*!*/ encoding) {
             ContractUtils.RequiresNotNull(encoding, "encoding");
-            return new MutableString(str.ToCharArray(), encoding);
+            return new MutableString(str, encoding);
         }
 
         public static MutableString/*!*/ Create(string/*!*/ str, RubyEncoding/*!*/ encoding) {
             ContractUtils.RequiresNotNull(str, "str");
             ContractUtils.RequiresNotNull(encoding, "encoding");
-            return new MutableString(str.ToCharArray(), encoding);
+            return new MutableString(str, encoding);
         }
 
         public static MutableString/*!*/ CreateBinary() {
@@ -236,7 +236,7 @@ namespace IronRuby.Builtins {
         /// Creates an empty copy of this instance, taint and instance variables. 
         /// </summary>
         public MutableString/*!*/ Duplicate(RubyContext/*!*/ context, bool copySingletonMembers, MutableString/*!*/ result) {
-            context.CopyInstanceData(this, result, false, false, copySingletonMembers);
+            context.CopyInstanceData(this, result, copySingletonMembers);
             return result;
         }
 

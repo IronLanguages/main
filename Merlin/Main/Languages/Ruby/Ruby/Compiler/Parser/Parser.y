@@ -50,7 +50,7 @@ using IronRuby.Compiler.Ast;
 %token<Integer1> MATCH_REFERENCE
 %token<RegExOptions>  REGEXP_END 
 %token<StringTokenizer> STRING_EMBEDDED_VARIABLE_BEGIN STRING_EMBEDDED_CODE_BEGIN
-%token<StringTokenizer> STRING_BEG REGEXP_BEG SHELL_STRING_BEGIN WORDS_BEG VERBATIM_WORDS_BEGIN SYMBEG
+%token<StringTokenizer> STRING_BEGIN REGEXP_BEGIN SHELL_STRING_BEGIN WORDS_BEGIN VERBATIM_WORDS_BEGIN SYMBOL_BEGIN
 
 %type<AbstractSyntaxTree> program
 
@@ -751,7 +751,7 @@ op:
 
 reswords: LINE | FILE | ENCODING | UPPERCASE_BEGIN | UPPERCASE_END
         | ALIAS | AND | BEGIN | BREAK | CASE | CLASS | DEF
-        | DEFINED | DO | ELSE | ELSIF | END | ENSURE | FALSE
+        | DEFINED | DO | BLOCK_DO | ELSE | ELSIF | END | ENSURE | FALSE
         | FOR | IN | MODULE | NEXT | NIL | NOT
         | OR | REDO | RESCUE | RETRY | RETURN | SELF | SUPER
         | THEN | TRUE | UNDEF | WHEN | YIELD
@@ -1669,7 +1669,7 @@ string_concatenation:
 ;
 
 string:
-      STRING_BEG string_contents STRING_END
+      STRING_BEGIN string_contents STRING_END
         {
             $$ = $2;
         }
@@ -1683,25 +1683,25 @@ shell_string:
 ;
 
 immutable_string:
-      SYMBEG string_contents STRING_END
+      SYMBOL_BEGIN string_contents STRING_END
         {
             $$ = MakeSymbolConstructor($2, @$);
         }
 ;
 
 regexp:
-      REGEXP_BEG string_contents REGEXP_END
+      REGEXP_BEGIN string_contents REGEXP_END
         {
             $$ = new RegularExpression($2, $3, @$);
         }
 ;
 
 words: 
-      WORDS_BEG WORD_SEPARATOR STRING_END
+      WORDS_BEGIN WORD_SEPARATOR STRING_END
         {
             $$ = new ArrayConstructor(null, @$);
         }
-    | WORDS_BEG word_list STRING_END
+    | WORDS_BEGIN word_list STRING_END
         {
             $$ = new ArrayConstructor(new Arguments($2.ToArray(), null, null, @2), @$);
         }
@@ -1800,7 +1800,7 @@ string_embedded_variable:
 ;
 
 symbol:
-    SYMBEG sym
+    SYMBOL_BEGIN sym
       {
           _tokenizer.SetState(LexicalState.EXPR_END);
           $$ = $2;

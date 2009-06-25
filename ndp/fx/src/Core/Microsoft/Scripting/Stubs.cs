@@ -203,27 +203,3 @@ namespace System {
 }
 
 #endif
-
-#if !SPECSHARP
-
-namespace Microsoft.Contracts {
-    [Conditional("SPECSHARP"), AttributeUsage(AttributeTargets.Delegate | AttributeTargets.Event | AttributeTargets.Property | AttributeTargets.Method | AttributeTargets.Constructor, AllowMultiple = false, Inherited = true)]
-    internal sealed class StateIndependentAttribute : Attribute {
-    }
-
-#if MICROSOFT_SCRIPTING_CORE
-    [Conditional("SPECSHARP"), AttributeUsage(AttributeTargets.Delegate | AttributeTargets.Event | AttributeTargets.Property | AttributeTargets.Method | AttributeTargets.Constructor, AllowMultiple = false, Inherited = true)]
-    internal sealed class PureAttribute : Attribute {
-    }
-#endif
-
-    [Conditional("SPECSHARP"), AttributeUsage(AttributeTargets.Delegate | AttributeTargets.Event | AttributeTargets.Property | AttributeTargets.Method | AttributeTargets.Constructor, AllowMultiple = false, Inherited = true)]
-    internal sealed class ConfinedAttribute : Attribute {
-    }
-
-    [Conditional("SPECSHARP"), AttributeUsage(AttributeTargets.Field)]
-    internal sealed class StrictReadonlyAttribute : Attribute {
-    }
-}
-
-#endif

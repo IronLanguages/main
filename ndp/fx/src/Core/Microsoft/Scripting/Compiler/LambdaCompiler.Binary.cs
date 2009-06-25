@@ -127,18 +127,11 @@ namespace System.Linq.Expressions.Compiler {
         private void EmitBinaryOperator(ExpressionType op, Type leftType, Type rightType, Type resultType, bool liftedToNull) {
             bool leftIsNullable = TypeUtils.IsNullableType(leftType);
             bool rightIsNullable = TypeUtils.IsNullableType(rightType);
+
             switch (op) {
                 case ExpressionType.ArrayIndex:
-                    if (rightIsNullable) {
-                        LocalBuilder loc = GetLocal(rightType);
-                        _ilg.Emit(OpCodes.Stloc, loc);
-                        _ilg.Emit(OpCodes.Ldloca, loc);
-                        FreeLocal(loc);
-                        _ilg.EmitGetValue(rightType);
-                    }
-                    Type indexType = TypeUtils.GetNonNullableType(rightType);
-                    if (indexType != typeof(int)) {
-                        _ilg.EmitConvertToType(indexType, typeof(int), true);
+                    if (rightType != typeof(int)) {
+                        throw ContractUtils.Unreachable;
                     }
                     _ilg.EmitLoadElement(leftType.GetElementType());
                     return;
@@ -273,23 +266,20 @@ namespace System.Linq.Expressions.Compiler {
                 case ExpressionType.ExclusiveOr:
                     _ilg.Emit(OpCodes.Xor);
                     break;
-                case ExpressionType.LeftShift: {
-                        if (rightType != typeof(int)) {
-                            _ilg.EmitConvertToType(rightType, typeof(int), true);
-                        }
-                        _ilg.Emit(OpCodes.Shl);
+                case ExpressionType.LeftShift:
+                    if (rightType != typeof(int)) {
+                        throw ContractUtils.Unreachable;
                     }
+                    _ilg.Emit(OpCodes.Shl);
                     break;
-                case ExpressionType.RightShift: {
-                        Type shiftType = TypeUtils.GetNonNullableType(rightType);
-                        if (shiftType != typeof(int)) {
-                            _ilg.EmitConvertToType(shiftType, typeof(int), true);
-                        }
-                        if (TypeUtils.IsUnsigned(leftType)) {
-                            _ilg.Emit(OpCodes.Shr_Un);
-                        } else {
-                            _ilg.Emit(OpCodes.Shr);
-                        }
+                case ExpressionType.RightShift:
+                    if (rightType != typeof(int)) {
+                        throw ContractUtils.Unreachable;
+                    }
+                    if (TypeUtils.IsUnsigned(leftType)) {
+                        _ilg.Emit(OpCodes.Shr_Un);
+                    } else {
+                        _ilg.Emit(OpCodes.Shr);
                     }
                     break;
                 default:

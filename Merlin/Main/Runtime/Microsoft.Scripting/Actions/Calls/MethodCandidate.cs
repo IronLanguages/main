@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Dynamic;
 using System.Linq.Expressions;
 using System.Reflection;
 using Microsoft.Contracts;
@@ -48,9 +49,10 @@ namespace Microsoft.Scripting.Actions.Calls {
         private readonly IList<ArgBuilder> _argBuilders;
         private readonly InstanceBuilder _instanceBuilder;
         private readonly ReturnBuilder _returnBuilder;
+        private readonly Dictionary<DynamicMetaObject, BindingRestrictions> _restrictions;
 
         internal MethodCandidate(OverloadResolver resolver, MethodBase method, List<ParameterWrapper> parameters, ParameterWrapper paramsDict,
-            ReturnBuilder returnBuilder, InstanceBuilder instanceBuilder, IList<ArgBuilder> argBuilders) {
+            ReturnBuilder returnBuilder, InstanceBuilder instanceBuilder, IList<ArgBuilder> argBuilders, Dictionary<DynamicMetaObject, BindingRestrictions> restrictions) {
 
             Assert.NotNull(resolver, method, instanceBuilder, returnBuilder);
             Assert.NotNullItems(parameters);
@@ -63,10 +65,15 @@ namespace Microsoft.Scripting.Actions.Calls {
             _returnBuilder = returnBuilder;
             _parameters = parameters;
             _paramsDict = paramsDict;
+            _restrictions = restrictions;
 
             _paramsArrayIndex = ParameterWrapper.IndexOfParamsArray(parameters);
 
             parameters.TrimExcess();
+        }
+
+        internal MethodCandidate ReplaceMethod(MethodBase newMethod, List<ParameterWrapper> parameters, IList<ArgBuilder> argBuilders, Dictionary<DynamicMetaObject, BindingRestrictions> restrictions) {
+            return new MethodCandidate(_resolver, newMethod, parameters, _paramsDict, _returnBuilder, _instanceBuilder, argBuilders, restrictions);
         }
 
         internal ReturnBuilder ReturnBuilder {
@@ -83,6 +90,12 @@ namespace Microsoft.Scripting.Actions.Calls {
 
         public MethodBase Method {
             get { return _method; }
+        }
+
+        internal Dictionary<DynamicMetaObject, BindingRestrictions> Restrictions {
+            get {
+                return _restrictions;
+            }
         }
 
         public Type ReturnType {
@@ -259,7 +272,7 @@ namespace Microsoft.Scripting.Actions.Calls {
                 newArgBuilders.Insert(kwIndex, new ParamsDictArgBuilder(paramsDictBuilder.ParameterInfo, curArg, names, nameIndices));
             }
 
-            return new MethodCandidate(_resolver, _method, parameters, null, _returnBuilder, _instanceBuilder, newArgBuilders);
+            return new MethodCandidate(_resolver, _method, parameters, null, _returnBuilder, _instanceBuilder, newArgBuilders, null);
         }
 
         private int GetConsumedArguments() {
@@ -288,6 +301,10 @@ namespace Microsoft.Scripting.Actions.Calls {
         #region MakeDelegate
 
         internal OptimizingCallDelegate MakeDelegate(RestrictedArguments restrictedArgs) {
+            if (restrictedArgs.HasUntypedRestrictions) {
+                return null;
+            }
+
             MethodInfo mi = Method as MethodInfo;
             if (mi == null) {
                 return null;

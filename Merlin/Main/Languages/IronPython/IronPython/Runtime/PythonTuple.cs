@@ -145,7 +145,7 @@ namespace IronPython.Runtime {
             } else if ((arr = o as object[])!=null) {
                 return ArrayOps.CopyArray(arr, arr.Length);
             } else {
-                PerfTrack.NoteEvent(PerfTrack.Categories.OverAllocate, "TupleOA: " + DynamicHelpers.GetPythonType(o).Name);
+                PerfTrack.NoteEvent(PerfTrack.Categories.OverAllocate, "TupleOA: " + PythonTypeOps.GetName(o));
 
                 List<object> l = new List<object>();
                 IEnumerator i = PythonOps.GetEnumerator(o);
@@ -276,11 +276,15 @@ namespace IronPython.Runtime {
 
         #endregion
 
+        public virtual IEnumerator __iter__() {
+            return new TupleEnumerator(this);
+        }
+
         #region IEnumerable Members
-        
+
         [PythonHidden]
         public IEnumerator GetEnumerator() {
-            return new TupleEnumerator(this);
+            return __iter__();
         }
 
         #endregion
@@ -597,7 +601,8 @@ namespace IronPython.Runtime {
     /// <summary>
     /// public class to get optimized
     /// </summary>
-    public class TupleEnumerator : IEnumerator, IEnumerator<object> {
+    [PythonType("tupleiterator")]
+    public sealed class TupleEnumerator : IEnumerable, IEnumerator, IEnumerator<object> {
         private int _curIndex;
         private PythonTuple _tuple;
 
@@ -637,12 +642,15 @@ namespace IronPython.Runtime {
         #region IDisposable Members
 
         public void Dispose() {
-            Dispose(true);
             GC.SuppressFinalize(this);
         }
 
-        protected virtual void Dispose(bool disposing) {
+        #endregion
 
+        #region IEnumerable Members
+
+        public IEnumerator GetEnumerator() {
+            return this;
         }
 
         #endregion

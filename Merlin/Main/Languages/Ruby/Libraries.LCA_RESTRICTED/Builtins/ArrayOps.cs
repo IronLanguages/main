@@ -59,9 +59,11 @@ namespace IronRuby.Builtins {
             var site = toAryToInt.GetSite(CompositeConversionAction.Make(toAryToInt.Context, CompositeConversion.ToAryToInt));
             var union = site.Target(site, arrayOrSize);
 
+
             if (union.First != null) {
                 // block ignored
-                return CreateArray(union.First);
+                // TODO: implement copy-on-write
+                return new RubyArray(union.First);
             } else if (block != null) {
                 return CreateArray(block, union.Second);
             } else {
@@ -87,10 +89,6 @@ namespace IronRuby.Builtins {
             } else {
                 return ReinitializeByRepeatedValue(context, self, union.Second, null);
             }
-        }
-
-        private static RubyArray/*!*/ CreateArray(IList/*!*/ other) {
-            return Reinitialize(new RubyArray(other.Count), other);
         }
 
         private static RubyArray/*!*/ Reinitialize(RubyArray/*!*/ self, IList/*!*/ other) {
@@ -416,21 +414,6 @@ namespace IronRuby.Builtins {
                 return stream.String;
             }
         }
-
-        private static void WriteUInt64(ConversionStorage<IntegerValue>/*!*/ integerConversion, 
-            BinaryWriter/*!*/ writer, RubyArray/*!*/ self, int i, int count, bool swap) {
-            for (int j = 0; j < count; j++) {
-                uint n = Protocols.CastToUInt32Unchecked(integerConversion, self[i + j]);
-                if (swap) {
-                    writer.Write((byte)(n >> 24));
-                    writer.Write((byte)((n >> 16) & 0xff));
-                    writer.Write((byte)((n >> 8) & 0xff));
-                    writer.Write((byte)(n & 0xff));
-                } else {
-                    writer.Write(n);
-                }
-            }
-        }
         
         private static void WriteUInt32(ConversionStorage<IntegerValue>/*!*/ integerConversion, 
             BinaryWriter/*!*/ writer, RubyArray/*!*/ self, int i, int count, bool swap) {
@@ -496,7 +479,7 @@ namespace IronRuby.Builtins {
             BlockParam block, RubyArray/*!*/ self) {
 
             RubyArray result = self.CreateInstance();
-            IListOps.Replace(comparisonStorage.Context, result, self);
+            IListOps.Replace(result, self);
             return SortInPlace(comparisonStorage, lessThanStorage, greaterThanStorage, block, result);
         }
 

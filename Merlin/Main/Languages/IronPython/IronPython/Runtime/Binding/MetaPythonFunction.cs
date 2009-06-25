@@ -23,6 +23,7 @@ using System.Dynamic;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
+using Microsoft.Scripting.Actions.Calls;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
@@ -33,7 +34,7 @@ namespace IronPython.Runtime.Binding {
     using Ast = System.Linq.Expressions.Expression;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
 
-    class MetaPythonFunction : MetaPythonObject, IPythonInvokable, IPythonOperable, IPythonConvertible {
+    class MetaPythonFunction : MetaPythonObject, IPythonInvokable, IPythonOperable, IPythonConvertible, IInferableInvokable {
         public MetaPythonFunction(Expression/*!*/ expression, BindingRestrictions/*!*/ restrictions, PythonFunction/*!*/ value)
             : base(expression, BindingRestrictions.Empty, value) {
             Assert.NotNull(value);
@@ -893,6 +894,44 @@ namespace IronPython.Runtime.Binding {
                     return MakeCallSignatureRule(this);
                 case PythonOperationKind.IsCallable:
                     return MakeIsCallableRule(this);
+            }
+
+            return null;
+        }
+
+        #endregion
+
+        #region IInvokableInferable Members
+
+        InferenceResult IInferableInvokable.GetInferredType(Type delegateType, Type parameterType) {
+            if (!delegateType.IsSubclassOf(typeof(Delegate))) {
+                throw new InvalidOperationException();
+            }
+
+            MethodInfo invoke = delegateType.GetMethod("Invoke");
+            ParameterInfo[] pis = invoke.GetParameters();
+            if (pis.Length == Value.NormalArgumentCount) {
+                // our signatures are compatible
+                return new InferenceResult(
+                    typeof(object),
+                    Restrictions.Merge(
+                        BindingRestrictions.GetTypeRestriction(
+                            Expression,
+                            typeof(PythonFunction)
+                        ).Merge(
+                            BindingRestrictions.GetExpressionRestriction(
+                                Expression.Equal(
+                                    Expression.Call(
+                                        typeof(PythonOps).GetMethod("FunctionGetCompatibility"),
+                                        Expression.Convert(Expression, typeof(PythonFunction))
+                                    ),
+                                    Expression.Constant(Value.FunctionCompatibility)
+                                )
+                            )
+                        )
+                    )
+                );
+
             }
 
             return null;

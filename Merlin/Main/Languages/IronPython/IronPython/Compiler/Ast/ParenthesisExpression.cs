@@ -43,6 +43,14 @@ namespace IronPython.Compiler.Ast {
             return _expression.TransformSet(ag, span, right, op);
         }
 
+        internal override string CheckAssign() {
+            return _expression.CheckAssign();
+        }
+
+        internal override string CheckDelete() {
+            return _expression.CheckDelete();
+        }
+
         internal override MSAst.Expression TransformDelete(AstGenerator ag) {
             return _expression.TransformDelete(ag);
         }

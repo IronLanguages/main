@@ -14,15 +14,16 @@
  * ***************************************************************************/
 
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Text;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
-using System.Collections;
-using System.Collections.Generic;
 
 namespace IronRuby.Builtins {
 
@@ -30,7 +31,8 @@ namespace IronRuby.Builtins {
     /// File builtin class. Derives from IO
     /// </summary>
     [RubyClass("File", Extends = typeof(RubyFile))]
-    public class RubyFileOps {
+    [Includes(typeof(FileTest), Copy = true)]
+    public static class RubyFileOps {
 
         #region Construction
 
@@ -230,16 +232,6 @@ namespace IronRuby.Builtins {
             return RubyUtils.CanonicalizePath(MutableString.Create(strResult)).TaintBy(path);
         }
 
-        [RubyMethod("blockdev?", RubyMethodAttributes.PublicSingleton)]
-        public static bool IsBlockDevice(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return RubyStatOps.IsBlockDevice(RubyStatOps.Create(self.Context, path));
-        }
-
-        [RubyMethod("chardev?", RubyMethodAttributes.PublicSingleton)]
-        public static bool IsCharDevice(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return RubyStatOps.IsCharDevice(RubyStatOps.Create(self.Context, path));
-        }
-
         internal static void Chmod(string path, int permission) {
 #if !SILVERLIGHT
             FileAttributes oldAttributes = File.GetAttributes(path);
@@ -298,7 +290,7 @@ namespace IronRuby.Builtins {
             return context.DomainManager.Platform.FileExists(path);
         }
 
-        private static bool DirectoryExists(RubyContext/*!*/ context, string/*!*/ path) {
+        internal static bool DirectoryExists(RubyContext/*!*/ context, string/*!*/ path) {
             return context.DomainManager.Platform.DirectoryExists(path);
         }
 
@@ -334,11 +326,6 @@ namespace IronRuby.Builtins {
             }
 
             return paths.Length;
-        }
-
-        [RubyMethod("directory?", RubyMethodAttributes.PublicSingleton)]
-        public static bool IsDirectory(RubyContext/*!*/ context, object/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return DirectoryExists(context, path.ConvertToString());
         }
 
         [RubyMethod("dirname", RubyMethodAttributes.PublicSingleton)]
@@ -395,19 +382,6 @@ namespace IronRuby.Builtins {
             return path;
         }
 
-        [RubyMethod("executable?", RubyMethodAttributes.PublicSingleton)]
-        [RubyMethod("executable_real?", RubyMethodAttributes.PublicSingleton)]
-        public static bool IsExecutable(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return RubyStatOps.IsExecutable(RubyStatOps.Create(self.Context, path));
-        }
-
-        [RubyMethod("exist?", RubyMethodAttributes.PublicSingleton)]
-        [RubyMethod("exists?", RubyMethodAttributes.PublicSingleton)]
-        public static bool Exists(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            string strPath = path.ConvertToString();
-            return FileExists(self.Context, strPath) || DirectoryExists(self.Context, strPath);
-        }
-
         [RubyMethod("extname", RubyMethodAttributes.PublicSingleton)]
         public static MutableString/*!*/ GetExtension(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
             string pathStr = path.ConvertToString();
@@ -418,11 +392,6 @@ namespace IronRuby.Builtins {
                 extension = String.Empty;
             }
             return MutableString.Create(extension).TaintBy(path);
-        }
-
-        [RubyMethod("file?", RubyMethodAttributes.PublicSingleton)]
-        public static bool IsAFile(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return FileExists(self.Context, path.ConvertToString());
         }
 
         #region fnmatch
@@ -439,13 +408,6 @@ namespace IronRuby.Builtins {
         public static MutableString FileType(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
             return RubyStatOps.FileType(RubyStatOps.Create(self.Context, path));
         }
-
-        [RubyMethod("grpowned?", RubyMethodAttributes.PublicSingleton)]
-        public static bool IsGroupOwned(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return RubyStatOps.IsGroupOwned(RubyStatOps.Create(self.Context, path));
-        }
-
-        //identical?
 
         #region join
 
@@ -561,6 +523,68 @@ namespace IronRuby.Builtins {
             return result;
         }
 
+        class PathExpander {
+            List<string> _pathComponents = new List<string>(); // does not include the root
+            string _root; // Typically "c:/" on Windows, and "/" on Unix
+
+            internal PathExpander(RubyContext/*!*/ context, string absoluteBasePath) {
+                Debug.Assert(RubyUtils.IsAbsolutePath(absoluteBasePath));
+                
+                string basePathAfterRoot = null;
+                _root = RubyUtils.GetPathRoot(context, absoluteBasePath, out basePathAfterRoot);
+                
+                // Normally, basePathAfterRoot[0] will not be '/', but here we deal with cases like "c:////foo"
+                basePathAfterRoot = basePathAfterRoot.TrimStart('/'); 
+                
+                AddRelativePath(basePathAfterRoot);
+            }
+
+            internal void AddRelativePath(string relPath) {
+                Debug.Assert(!RubyUtils.IsAbsolutePath(relPath));
+                
+                string[] relPathComponents = relPath.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+
+                foreach (string pathComponent in relPathComponents) {
+                    if (pathComponent == "..") {
+                        if (_pathComponents.Count == 0) {
+                            // MRI allows more pops than the base path components
+                            continue;
+                        }
+                        _pathComponents.RemoveAt(_pathComponents.Count - 1);
+                    } else if (pathComponent == ".") {
+                        continue;
+                    } else {
+                        _pathComponents.Add(pathComponent);
+                    }
+                }
+            }
+
+            internal MutableString/*!*/ GetResult() {
+                StringBuilder result = new StringBuilder(_root);
+                
+                if (_pathComponents.Count >= 1) {
+                    // Here we make this work:
+                    //   File.expand_path("c:/..a..") -> "c:/..a"
+                    string lastComponent = _pathComponents[_pathComponents.Count - 1];
+                    if (RubyUtils.FileSystemUsesDriveLetters && !String.IsNullOrEmpty(lastComponent.TrimEnd('.'))) {
+                        _pathComponents[_pathComponents.Count - 1] = lastComponent.TrimEnd('.');
+                    }
+                }
+
+                for(int i = 0; i < _pathComponents.Count; i++) {
+                    result.Append(_pathComponents[i]);
+                    if (i < (_pathComponents.Count - 1)) {
+                        result.Append('/');
+                    }
+                }
+#if DEBUG
+                _pathComponents = null;
+                _root = null;
+#endif
+                return MutableString.CreateMutable(result.ToString());
+            }
+        }
+
         // Expand directory path - these cases exist:
         //
         // 1. Empty string or nil means return current directory
@@ -572,66 +596,84 @@ namespace IronRuby.Builtins {
         // No attempt is made to determine whether the path is valid or not
         // Returned path is always canonicalized to forward slashes
 
-        private static MutableString/*!*/ ExpandPath(RubyContext/*!*/ context, MutableString/*!*/ path) {
-            PlatformAdaptationLayer pal = context.DomainManager.Platform;
+        private static MutableString/*!*/ ExpandPath(RubyContext/*!*/ context, RubyClass/*!*/ self, MutableString/*!*/ path) {
+            if (MutableString.IsNullOrEmpty(path)) {
+                return MutableString.Create(RubyUtils.CanonicalizePath(context.DomainManager.Platform.CurrentDirectory));
+            }
+
             int length = path.Length;
-            bool raisingRubyException = false;
-            try {
-                if (path == null || length == 0)
-                    return RubyUtils.CanonicalizePath(MutableString.Create(Directory.GetCurrentDirectory()));
 
-                if (path.GetChar(0) == '~') {
-                    if (length == 1 || (path.GetChar(1) == Path.DirectorySeparatorChar ||
-                                        path.GetChar(1) == Path.AltDirectorySeparatorChar)) {
+            if (path.GetChar(0) == '~') {
+                if (length == 1 || (path.GetChar(1) == '/')) {
 
-                        string homeDirectory = pal.GetEnvironmentVariable("HOME");
-                        if (homeDirectory == null) {
-                            raisingRubyException = true;
-                            throw RubyExceptions.CreateArgumentError("couldn't find HOME environment -- expanding `~'");
-                        }
-                        if (length <= 2) {
-                            path = MutableString.Create(homeDirectory);
-                        } else {
-                            path = MutableString.Create(Path.Combine(homeDirectory, path.GetSlice(2).ConvertToString()));
-                        }
-                        return RubyUtils.CanonicalizePath(path);
+                    string homeDirectory = context.DomainManager.Platform.GetEnvironmentVariable("HOME");
+                    if (homeDirectory == null) {
+                        throw RubyExceptions.CreateArgumentError("couldn't find HOME environment -- expanding `~'");
+                    }
+
+                    if (length <= 2) {
+                        path = MutableString.Create(homeDirectory);
                     } else {
-                        return path;
+                        path = MutableString.Create(Path.Combine(homeDirectory, path.GetSlice(2).ConvertToString()));
                     }
+                    return RubyUtils.CanonicalizePath(path);
                 } else {
-                    string pathStr = path.ConvertToString();
-                    MutableString result = RubyUtils.CanonicalizePath(MutableString.Create(Path.GetFullPath(pathStr)));
-
-                    // Path.GetFullPath("c:/winDOWS/foo") returns "c:/winDOWS/foo", but Path.GetFullPath("c:/winDOWS/~") returns "c:/Windows/~".
-                    // So we special-case it as this is not the Ruby behavior. Also, the Ruby behavior is very complicated about when it
-                    // matches the case of the input argument, and when it matches the case of the file system. It can match the file system case
-                    // for part of the result and not the rest. So we restrict the special-case to a very limited scenarios that unblock real-world code.
-                    if (pathStr[pathStr.Length - 1] == '~' && String.Compare(pathStr, result.ConvertToString(), true) == 0) {
-                        result = path.Clone();
-                    }
-
-                    return result;
+                    return path;
                 }
-            } catch (Exception e) {
-                if (raisingRubyException) {
-                    throw;
-                }
-                // Re-throw exception as a reasonable Ruby exception
-                throw RubyErrno.CreateEINVAL(path.ConvertToString(), e);
+            } else {
+                MutableString currentDirectory = ExpandPath(context, self, null);
+                return ExpandPath(context, self, path, currentDirectory);
             }
         }
 
         [RubyMethod("expand_path", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
-        public static MutableString/*!*/ ExpandPath(RubyContext/*!*/ context, RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path, 
+        public static MutableString/*!*/ ExpandPath(
+            RubyContext/*!*/ context, 
+            RubyClass/*!*/ self, 
+            [DefaultProtocol, NotNull]MutableString/*!*/ path,
             [DefaultProtocol, Optional]MutableString basePath) {
 
             // We ignore basePath parameter if first string starts with a ~
             if (basePath == null || path.GetFirstChar() == '~') {
-                return ExpandPath(context, path);
+                return ExpandPath(context, self, path);
+            } 
+
+            string pathStr = RubyUtils.CanonicalizePath(path).ConvertToString();
+            string basePathStr = RubyUtils.CanonicalizePath(basePath).ConvertToString();
+            char partialDriveLetter;
+            string relativePath;
+
+            if (RubyUtils.IsAbsolutePath(pathStr)) {
+                // "basePath" can be ignored is "path" is an absolute path
+                PathExpander pathExpander = new PathExpander(context, pathStr);
+                return pathExpander.GetResult();
+            } else if (RubyUtils.HasPartialDriveLetter(pathStr, out partialDriveLetter, out relativePath)) {
+                string currentDirectory = partialDriveLetter.ToString() + ":/";
+                if (DirectoryExists(context, currentDirectory)) {
+                    // File.expand_path("c:foo") returns "c:/current_folder_for_c_drive/foo"
+                    currentDirectory = Path.GetFullPath(partialDriveLetter.ToString() + ":");
+                }
+
+                return ExpandPath(
+                    context, 
+                    self, 
+                    MutableString.CreateMutable(relativePath), 
+                    MutableString.CreateMutable(currentDirectory));
+            } else if (RubyUtils.IsAbsolutePath(basePathStr)) {
+                PathExpander pathExpander = new PathExpander(context, basePathStr);
+                pathExpander.AddRelativePath(pathStr);
+                return pathExpander.GetResult();
+            } else if (RubyUtils.HasPartialDriveLetter(basePathStr, out partialDriveLetter, out relativePath)) {
+                // First expand basePath
+                MutableString expandedBasePath = ExpandPath(context, self, basePath);
+
+                return ExpandPath(context, self, path, expandedBasePath);
             } else {
-                return RubyUtils.CanonicalizePath(MutableString.Create(
-                    Path.GetFullPath(Path.Combine(ExpandPath(context, basePath).ConvertToString(), path.ConvertToString()))
-                ));
+                // First expand basePath
+                MutableString expandedBasePath = ExpandPath(context, self, basePath);
+                Debug.Assert(RubyUtils.IsAbsolutePath(expandedBasePath.ConvertToString()));
+
+                return ExpandPath(context, self, path, expandedBasePath);
             }
         }
 #endif
@@ -653,31 +695,6 @@ namespace IronRuby.Builtins {
             return RubyStatOps.ModifiedTime(RubyStatOps.Create(self.Context, path));
         }
 
-        [RubyMethod("owned?", RubyMethodAttributes.PublicSingleton)]
-        public static bool IsUserOwned(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return RubyStatOps.IsUserOwned(RubyStatOps.Create(self.Context, path));
-        }
-
-        [RubyMethod("pipe?", RubyMethodAttributes.PublicSingleton)]
-        public static bool IsPipe(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return RubyStatOps.IsPipe(RubyStatOps.Create(self.Context, path));
-        }
-
-        private static bool IsReadableImpl(RubyContext/*!*/ context, string/*!*/ path) {
-            FileSystemInfo fsi;
-            if (RubyStatOps.TryCreate(context, path, out fsi)) {
-                return RubyStatOps.IsReadable(fsi);
-            } else {
-                return false;
-            }
-        }
-
-        [RubyMethod("readable?", RubyMethodAttributes.PublicSingleton)]
-        [RubyMethod("readable_real?", RubyMethodAttributes.PublicSingleton)]
-        public static bool IsReadable(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return IsReadableImpl(self.Context, path.ConvertToString());
-        }
-
         [RubyMethod("readlink", RubyMethodAttributes.PublicSingleton)]
         public static bool Readlink(RubyClass/*!*/ self, [NotNull]MutableString/*!*/ path) {
             throw new IronRuby.Builtins.NotImplementedError("readlink() function is unimplemented on this machine");
@@ -696,7 +713,7 @@ namespace IronRuby.Builtins {
                 throw RubyErrno.CreateENOENT(String.Format("No such file or directory - {0}", oldPath));
             }
 #if !SILVERLIGHT
-            if (ExpandPath(context, oldPath) == ExpandPath(context, newPath)) {
+            if (ExpandPath(context, self, oldPath) == ExpandPath(context, self, newPath)) {
                 return 0;
             }
 #endif
@@ -714,42 +731,12 @@ namespace IronRuby.Builtins {
             return 0;
         }
 
-        [RubyMethod("setgid?", RubyMethodAttributes.PublicSingleton)]
-        public static bool IsSetGid(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return RubyStatOps.IsSetGid(RubyStatOps.Create(self.Context, path));
-        }
-
-        [RubyMethod("setuid?", RubyMethodAttributes.PublicSingleton)]
-        public static bool IsSetUid(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return RubyStatOps.IsSetUid(RubyStatOps.Create(self.Context, path));
-        }
-
-        [RubyMethod("size", RubyMethodAttributes.PublicSingleton)]
-        public static int Size(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return RubyStatOps.Size(RubyStatOps.Create(self.Context, path));
-        }
-
-        [RubyMethod("size?", RubyMethodAttributes.PublicSingleton)]
-        public static object NullableSize(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return RubyStatOps.NullableSize(RubyStatOps.Create(self.Context, path));
-        }
-
-        [RubyMethod("socket?", RubyMethodAttributes.PublicSingleton)]
-        public static bool IsSocket(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return RubyStatOps.IsSocket(RubyStatOps.Create(self.Context, path));
-        }
-
         [RubyMethod("split", RubyMethodAttributes.PublicSingleton)]
         public static RubyArray Split(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
             RubyArray result = new RubyArray(2);
             result.Add(DirName(self, path));
             result.Add(Basename(self, path, null));
             return result;
-        }
-
-        [RubyMethod("sticky?", RubyMethodAttributes.PublicSingleton)]
-        public static bool IsSticky(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return RubyStatOps.IsSticky(RubyStatOps.Create(self.Context, path));
         }
 
         //truncate
@@ -776,11 +763,6 @@ namespace IronRuby.Builtins {
         [RubyMethod("symlink", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
         public static object SymLink(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
             throw new NotImplementedError("symlnk() function is unimplemented on this machine");
-        }
-
-        [RubyMethod("symlink?", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
-        public static bool IsSymLink(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return RubyStatOps.IsSymLink(RubyStatOps.Create(self.Context, path));
         }
 
         [RubyMethod("utime", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
@@ -822,37 +804,6 @@ namespace IronRuby.Builtins {
                 string name = context.GetClassOf(obj).Name;
                 throw RubyExceptions.CreateTypeConversionError(name, "time");
             }
-        }
-
-        private static bool IsWritableImpl(RubyContext/*!*/ context, string/*!*/ path) {
-            FileSystemInfo fsi;
-            if (RubyStatOps.TryCreate(context, path, out fsi)) {
-                return RubyStatOps.IsWritable(fsi);
-            } else {
-                return false;
-            }
-        }
-
-        [RubyMethod("writable?", RubyMethodAttributes.PublicSingleton)]
-        [RubyMethod("writable_real?", RubyMethodAttributes.PublicSingleton)]
-        public static bool IsWritable(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return IsWritableImpl(self.Context, path.ConvertToString());            
-        }
-
-        [RubyMethod("zero?", RubyMethodAttributes.PublicSingleton)]
-        public static bool IsZeroLength(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            string strPath = path.ConvertToString();
-
-            // NUL/nul is a special-cased filename on Windows
-            if (strPath.ToLower() == "nul") {
-                return RubyStatOps.IsZeroLength(RubyStatOps.Create(self.Context, strPath));
-            }
-
-            if (DirectoryExists(self.Context, strPath) || !FileExists(self.Context, strPath)) {
-                return false;
-            }
-
-            return RubyStatOps.IsZeroLength(RubyStatOps.Create(self.Context, strPath));
         }
 
         #endregion

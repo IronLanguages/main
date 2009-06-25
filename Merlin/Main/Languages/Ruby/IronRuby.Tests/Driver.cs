@@ -31,7 +31,7 @@ using System.Text;
 namespace IronRuby.Tests {
     public class TestCase {
         public Action TestMethod { get; set; }
-        public RubyCompatibility Compatibility { get; set; }
+        public OptionsAttribute Options { get; set; }
         public string Name { get; set; }
     }
 
@@ -42,6 +42,7 @@ namespace IronRuby.Tests {
     [AttributeUsage(AttributeTargets.Method)]
     public sealed class OptionsAttribute : Attribute {
         public RubyCompatibility Compatibility { get; set; }
+        public bool PrivateBinding { get; set; }
     }
 
     public class TestRuntime {
@@ -74,9 +75,10 @@ namespace IronRuby.Tests {
             }
 
             runtimeSetup.DebugMode = _driver.IsDebug;
-            languageSetup.Options["InterpretedMode"] = _driver.Interpret;
+            runtimeSetup.PrivateBinding = testCase.Options.PrivateBinding;
+            languageSetup.Options["NoAdaptiveCompilation"] = _driver.NoAdaptiveCompilation;
             languageSetup.Options["Verbosity"] = 2;
-            languageSetup.Options["Compatibility"] = testCase.Compatibility;
+            languageSetup.Options["Compatibility"] = testCase.Options.Compatibility;
 
             _env = Ruby.CreateRuntime(runtimeSetup);
             _engine = Ruby.GetEngine(_env);
@@ -99,7 +101,7 @@ namespace IronRuby.Tests {
         private static bool _runTokenizerDriver;
         private static bool _displayList;
         private static bool _partialTrust;
-        private static bool _interpret;
+        private static bool _noAdaptiveCompilation;
         private static bool _runPython = true;
 
         public TestRuntime TestRuntime {
@@ -130,8 +132,8 @@ namespace IronRuby.Tests {
             get { return _partialTrust; }
         }
 
-        public bool Interpret {
-            get { return _interpret; }
+        public bool NoAdaptiveCompilation {
+            get { return _noAdaptiveCompilation; }
         }
 
         public bool RunPython {
@@ -142,7 +144,7 @@ namespace IronRuby.Tests {
             if (args.Contains("/help") || args.Contains("-?") || args.Contains("/?") || args.Contains("-help")) {
                 Console.WriteLine("Verbose                      : /verbose");
                 Console.WriteLine("Partial trust                : /partial");
-                Console.WriteLine("Interpret                    : /interpret");
+                Console.WriteLine("No adaptive compilation      : /noadaptive");
                 Console.WriteLine("Save to assemblies           : /save");
                 Console.WriteLine("Debug Mode                   : /debug");
                 Console.WriteLine("Disable Python interop tests : /py-");
@@ -183,14 +185,14 @@ namespace IronRuby.Tests {
                 _partialTrust = true;
             }
 
-            if (args.Contains("-X:Interpret")) {
-                args.Remove("-X:Interpret");
-                _interpret = true;
+            if (args.Contains("-X:NoAdaptiveCompilation")) {
+                args.Remove("-X:NoAdaptiveCompilation");
+                _noAdaptiveCompilation = true;
             }
 
-            if (args.Contains("/interpret")) {
-                args.Remove("/interpret");
-                _interpret = true;
+            if (args.Contains("/noadaptive")) {
+                args.Remove("/noadaptive");
+                _noAdaptiveCompilation = true;
             }
 
             if (args.Contains("/py-")) {
@@ -448,13 +450,14 @@ namespace IronRuby.Tests {
                     cases.Add(new TestCase {
                         Name = testMethod.Method.Name,
                         TestMethod = testMethod,
-                        Compatibility = options.Compatibility,
+                        Options = options,
                     });
                 }
             } else {
                 cases.Add(new TestCase {
                     Name = testMethod.Method.Name,
                     TestMethod = testMethod,
+                    Options = new OptionsAttribute(),
                 });
             }
         }

@@ -1,5 +1,5 @@
 # -*- mode: ruby; ruby-indent-level: 4; tab-width: 4 -*- vim: sw=4 ts=4
-# $Id: yaml.rb 11708 2007-02-12 23:01:19Z shyouhei $
+# $Id: yaml.rb 17246 2008-06-15 13:12:40Z shyouhei $
 #
 # = yaml.rb: top-level module with methods for loading and parsing YAML documents
 #
@@ -383,6 +383,10 @@ module YAML
                 opts
             else
                 emitter.reset( opts )
+            end
+        oid =
+            case oid when Fixnum, NilClass; oid
+            else oid = "#{oid.object_id}-#{oid.hash}"
             end
         out.emit( oid, &e )
 	end

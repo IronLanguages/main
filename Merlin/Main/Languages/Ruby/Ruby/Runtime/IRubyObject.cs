@@ -17,17 +17,28 @@ using IronRuby.Builtins;
 using IronRuby.Compiler.Generation;
 
 namespace IronRuby.Runtime {
-    public interface IRubyObject {
-        // Gets the ruby class associated with this object
-        [Emitted] // RubyTypeBuilder
-        RubyClass/*!*/ Class { get; }
+    [ReflectionCached]
+    public interface IRubyObject : IRubyObjectState {
+        /// <summary>
+        /// Gets or sets the immediate class of this object.
+        /// </summary>
+        [Emitted]
+        RubyClass/*!*/ ImmediateClass { get; set; }
 
         // Returns the instance object data. May return null.
-        [Emitted] // RubyTypeBuilder
+        [Emitted]
         RubyInstanceData TryGetInstanceData();
 
         // Returns the instance object data.
-        [Emitted] // RubyTypeBuilder
+        [Emitted]
         RubyInstanceData/*!*/ GetInstanceData();
+
+        // Calls GetHashCode via static virtual dispatch, not virtual dynamic dispatch.
+        [Emitted]
+        int BaseGetHashCode();
+
+        // Calls Equals via static virtual dispatch, not virtual dynamic dispatch.
+        [Emitted]
+        bool BaseEquals(object other);
     }
 }

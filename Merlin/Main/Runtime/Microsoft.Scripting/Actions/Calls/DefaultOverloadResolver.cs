@@ -175,18 +175,17 @@ namespace Microsoft.Scripting.Actions {
 
                         for (int j = 0; j < list.Count; j++) {
                             res.Add(
-                                new DynamicMetaObject(
-                                        Ast.Call(
-                                            Ast.Convert(
-                                                arg.Expression,
-                                                typeof(IList<object>)
-                                            ),
-                                            typeof(IList<object>).GetMethod("get_Item"),
-                                            AstUtils.Constant(j)
+                                DynamicMetaObject.Create(
+                                    list[j],
+                                    Ast.Call(
+                                        Ast.Convert(
+                                            arg.Expression,
+                                            typeof(IList<object>)
                                         ),
-                                        arg.Restrictions,
-                                        list[j]
+                                        typeof(IList<object>).GetMethod("get_Item"),
+                                        AstUtils.Constant(j)
                                     )
+                                )
                             );
                         }
                         break;
@@ -213,18 +212,17 @@ namespace Microsoft.Scripting.Actions {
             IDictionaryEnumerator dictEnum = dict.GetEnumerator();
             while (dictEnum.MoveNext()) {
                 DictionaryEntry de = dictEnum.Entry;
-
+                
                 if (de.Key is string) {
                     splattedNames.Add((string)de.Key);
                     splattedArgs.Add(
-                        new DynamicMetaObject(
+                        DynamicMetaObject.Create(
+                            de.Value,
                             Ast.Call(
                                 AstUtils.Convert(dictMo.Expression, typeof(IDictionary)),
                                 typeof(IDictionary).GetMethod("get_Item"),
                                 AstUtils.Constant(de.Key as string)
-                            ),
-                            dictMo.Restrictions,
-                            de.Value
+                            )
                         )
                     );
                 }

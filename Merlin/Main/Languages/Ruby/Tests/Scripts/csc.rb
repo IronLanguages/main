@@ -1,3 +1,6 @@
+class ScratchPad
+  def self.<<; end
+end
 module Kernel
   alias _require require
 

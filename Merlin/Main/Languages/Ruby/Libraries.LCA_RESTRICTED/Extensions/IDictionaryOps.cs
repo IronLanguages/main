@@ -29,7 +29,8 @@ namespace IronRuby.Builtins {
     // TODO: IDictionary<TKey, TValue> instead of IDictionary<object, object>?
     //       (need support for extension methods on generic interfaces first)
     //       (IDictionary isn't a good solution because it doesn't have TryGetValue)
-    [RubyModule(Extends = typeof(IDictionary<object, object>)), Includes(typeof(Enumerable))]
+    [RubyModule(Extends = typeof(IDictionary<object, object>), Restrictions = ModuleRestrictions.None)]
+    [Includes(typeof(Enumerable))]
     public static class IDictionaryOps {
 
         #region Helper methods

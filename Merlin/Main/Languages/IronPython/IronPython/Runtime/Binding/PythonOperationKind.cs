@@ -11,12 +11,6 @@ namespace IronPython.Runtime.Binding {
         /// <summary>
         /// Unary operator.
         /// 
-        /// Gets the list of members that belong to the current object returned as an IList of string
-        /// </summary>
-        MemberNames,
-        /// <summary>
-        /// Unary operator.
-        /// 
         /// Gets various documentation about the object returned as a string
         /// </summary>
         Documentation,

@@ -26,7 +26,7 @@ namespace IronPython.Runtime {
 
         public override void Add(SourceUnit sourceUnit, string message, SourceSpan span, int errorCode, Severity severity) {
             if (severity == Severity.Warning) {
-                throw PythonOps.SyntaxWarning(message, sourceUnit, span, errorCode);
+                PythonOps.SyntaxWarning(message, sourceUnit, span, errorCode);
             } else {
                 throw PythonOps.SyntaxError(message, sourceUnit, span, errorCode);
             }

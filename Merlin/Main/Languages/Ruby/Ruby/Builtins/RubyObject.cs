@@ -30,76 +30,96 @@ namespace IronRuby.Builtins {
     /// Note that for classes that inherit from some other class, RubyTypeDispenser gets used
     /// </summary>
     [DebuggerDisplay("{Inspect().ConvertToString()}")]
-    public partial class RubyObject : IRubyObject, IRubyObjectState, IDuplicable, ISerializable {
-        internal const string ClassPropertyName = "Class";
-
+    public partial class RubyObject : IRubyObject, IDuplicable, ISerializable {
         private RubyInstanceData _instanceData;
-        private readonly RubyClass/*!*/ _class;
+        private RubyClass/*!*/ _immediateClass;
 
         public RubyObject(RubyClass/*!*/ cls) {
             Assert.NotNull(cls);
-            _class = cls;
+            Debug.Assert(!cls.IsSingletonClass);
+            _immediateClass = cls;
         }
 
         public override string/*!*/ ToString() {
 #if DEBUG && !SILVERLIGHT && !SYSTEM_CORE
-            if (MetaObjectBuilder._DumpingExpression) {
+            if (RubyBinder._DumpingExpression) {
                 return ToMutableString().ToString();
             }
 #endif
             // Translate ToString to to_s conversion for .NET callers.
-            var site = _class.StringConversionSite;
+            var site = _immediateClass.StringConversionSite;
             return site.Target(site, this).ToString();
         }
 
-        public override bool Equals(object obj) {
-            if (object.ReferenceEquals(this, obj)) {
+        public override bool Equals(object other) {
+            if (ReferenceEquals(this, other)) {
                 // Handle this directly here. Otherwise it can cause infinite recurion when running
                 // script code below as the DLR code needs to call Equals for templating of rules
                 return true;
             }
+            
+            var site = _immediateClass.EqualsSite;
+            object equalsResult = site.Target(site, this, other);
+            if (equalsResult == RubyOps.ForwardToBase) {
+                return base.Equals(other);
+            }
 
-            var site = _class.EqlSite;
-            return Protocols.IsTrue(site.Target(site, this, obj));
+            return RubyOps.IsTrue(equalsResult);
+        }
+
+        public bool BaseEquals(object other) {
+            return base.Equals(other);
         }
 
         public override int GetHashCode() {
-            var site = _class.HashSite;
-            object hash = site.Target(site, this);
-            if (!((hash is int)  || (hash is Microsoft.Scripting.Math.BigInteger))) {
-                throw RubyExceptions.CreateUnexpectedTypeError(_class.Context, "hash", "Integer");
+            var site = _immediateClass.GetHashCodeSite;
+            object hashResult = site.Target(site, this);
+            if (ReferenceEquals(hashResult, RubyOps.ForwardToBase)) {
+                return base.GetHashCode();
             }
-            return hash.GetHashCode();
+
+            return Protocols.ToHashCode(hashResult);
+        }
+
+        public int BaseGetHashCode() {
+            return base.GetHashCode();
         }
 
         public MutableString/*!*/ ToMutableString() {
-            return RubyUtils.FormatObject(_class.Name, GetInstanceData().ObjectId, ((IRubyObjectState)this).IsTainted);
+            return RubyUtils.FormatObject(_immediateClass.GetNonSingletonClass().Name, GetInstanceData().ObjectId, IsTainted);
         }
 
         public MutableString/*!*/ Inspect() {
-            return _class.Context.Inspect(this);
+            return _immediateClass.Context.Inspect(this);
         }
 
 #if !SILVERLIGHT
         protected RubyObject(SerializationInfo/*!*/ info, StreamingContext context) {
-            RubyOps.DeserializeObject(out _instanceData, out _class, info);
+            RubyOps.DeserializeObject(out _instanceData, out _immediateClass, info);
         }
 
         [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.SerializationFormatter)]
         public virtual void GetObjectData(SerializationInfo/*!*/ info, StreamingContext context) {
-            RubyOps.SerializeObject(_instanceData, _class, info);
+            RubyOps.SerializeObject(_instanceData, _immediateClass, info);
         }
 #endif
 
-        [Emitted]
-        public RubyClass/*!*/ Class {
-            get { return _class; }
+        protected virtual RubyObject/*!*/ CreateInstance() {
+            return new RubyObject(_immediateClass.NominalClass);
         }
 
+        object IDuplicable.Duplicate(RubyContext/*!*/ context, bool copySingletonMembers) {
+            var result = CreateInstance();
+            context.CopyInstanceData(this, result, copySingletonMembers);
+            return result;
+        }
+
+        #region IRubyObject
+
+        [Emitted]
         public RubyClass/*!*/ ImmediateClass {
-            get {
-                return (_instanceData == null) ? _class : (_instanceData.ImmediateClass ?? _class);
-            }
+            get { return _immediateClass; }
+            set { _immediateClass = value; }
         }
 
         public RubyInstanceData/*!*/ GetInstanceData() {
@@ -110,62 +130,17 @@ namespace IronRuby.Builtins {
             return _instanceData;
         }
 
-        private void CopyInstanceDataFrom(IRubyObject/*!*/ source, bool copyFrozenState) {
-            // copy instance data, but not the state:
-            var sourceData = source.TryGetInstanceData();
-            if (sourceData != null) {
-                _instanceData = new RubyInstanceData();
-                sourceData.CopyInstanceVariablesTo(_instanceData);
-            }
-
-            // copy flags:
-            SetTaint(this, IsTainted(source));
-            if (copyFrozenState && IsFrozen(source)) {
-                Freeze(this);
-            }
-        }
-
-        protected virtual RubyObject/*!*/ CreateInstance() {
-            return new RubyObject(_class);
-        }
-
-        object IDuplicable.Duplicate(RubyContext/*!*/ context, bool copySingletonMembers) {
-            var result = CreateInstance();
-            result.CopyInstanceDataFrom(this, copySingletonMembers);
-            return result;
-        }
-
-        #region IRubyObjectState Members
-
-        bool IRubyObjectState.IsFrozen {
+        public bool IsFrozen {
             get { return _instanceData != null && _instanceData.Frozen; }
         }
 
-        bool IRubyObjectState.IsTainted {
+        public bool IsTainted {
             get { return _instanceData != null && _instanceData.Tainted; }
             set { GetInstanceData().Tainted = value; }
         }
 
-        void IRubyObjectState.Freeze() {
+        public void Freeze() {
             GetInstanceData().Freeze();
-        }
-
-        public static bool IsFrozen(IRubyObject/*!*/ obj) {
-            var instanceData = obj.TryGetInstanceData();
-            return instanceData != null && instanceData.Frozen;
-        }
-
-        public static bool IsTainted(IRubyObject/*!*/ obj) {
-            var instanceData = obj.TryGetInstanceData();
-            return instanceData != null && instanceData.Tainted;
-        }
-
-        public static void Freeze(IRubyObject/*!*/ obj) {
-            obj.GetInstanceData().Freeze();
-        }
-
-        public static void SetTaint(IRubyObject/*!*/ obj, bool value) {
-            obj.GetInstanceData().Tainted = value;
         }
 
         #endregion

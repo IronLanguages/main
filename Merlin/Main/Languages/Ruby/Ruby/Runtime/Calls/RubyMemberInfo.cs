@@ -25,13 +25,14 @@ namespace IronRuby.Runtime.Calls {
 
     public class RubyMemberInfo {
         // Singleton used to undefine methods: stops method resolution
-        internal static readonly RubyMemberInfo/*!*/ UndefinedMethod = new RubyMemberInfo();
+        internal static readonly RubyMemberInfo/*!*/ UndefinedMethod = new RubyMemberInfo(RubyMemberFlags.Empty);
 
         // Singleton used to hide CLR methods: method resolution skips all CLR methods since encountering a hidden method.
-        internal static readonly RubyMemberInfo/*!*/ HiddenMethod = new RubyMemberInfo();
+        internal static readonly RubyMemberInfo/*!*/ HiddenMethod = new RubyMemberInfo(RubyMemberFlags.Empty);
 
-        // Singleton used to represent foreign members (these are not in method tables):
-        internal static readonly RubyMemberInfo/*!*/ ForeignMember = new RubyMemberInfo();
+        // Singleton used to represent interop members (these are not in method tables). This includes foreign meta-object members and CLR members.
+        // Interop member represents a Ruby-public method.
+        internal static readonly RubyMemberInfo/*!*/ InteropMember = new RubyMemberInfo(RubyMemberFlags.Public);
 
         private readonly RubyMemberFlags _flags;
 
@@ -49,28 +50,49 @@ namespace IronRuby.Runtime.Calls {
             get { return (RubyMethodVisibility)(_flags & RubyMemberFlags.VisibilityMask); }
         }
 
+        //
+        // Notes on visibility
+        // 
+        // Ruby visibility is orthogonal to CLR visibility.
+        // Ruby visibility is mutable, CLR visibility is not.
+        // A method group can comprise of methods of various CLR visibility. Ruby visibility applies on the group as a whole.
+        //
+
+        /// <summary>
+        /// True if the member is Ruby-protected. 
+        /// </summary>
+        /// <remarks>
+        /// Ruby-protected members can only be called from a scope whose self immediate class is a descendant of the method owner.
+        /// CLR-protected members can only be called if the receiver is a descendant of the method owner. 
+        /// </remarks>
         public bool IsProtected {
             get { return (_flags & RubyMemberFlags.Protected) != 0; }
         }
 
+        /// <summary>
+        /// True if the member is Ruby-private. 
+        /// </summary>
+        /// <remarks>
+        /// Ruby-private members can only be called with an implicit receiver (self).
+        /// CLR-private members can only be called if in PrivateBinding mode, the receiver might be explicit or implicit.
+        /// </remarks>
         public bool IsPrivate {
             get { return (_flags & RubyMemberFlags.Private) != 0; }
         }
 
+        /// <summary>
+        /// True if the member is Ruby-public. 
+        /// </summary>
         public bool IsPublic {
             get { return (_flags & RubyMemberFlags.Public) != 0; }
-        }
-
-        internal bool IsModuleFunction {
-            get { return (_flags & RubyMemberFlags.ModuleFunction) != 0; }
         }
 
         internal bool IsEmpty {
             get { return (_flags & RubyMemberFlags.Empty) != 0; }
         }
 
-        internal bool IsSuperForwarder {
-            get { return (_flags & RubyMemberFlags.SuperForwarder) != 0; }
+        internal virtual bool IsSuperForwarder {
+            get { return false; }
         }
 
         /// <summary>
@@ -90,11 +112,11 @@ namespace IronRuby.Runtime.Calls {
         }
 
         /// <summary>
-        /// Whether the member can be permanently removed (CLR members can't).
+        /// True if the member can be permanently removed (attached CLR members can't).
         /// If the member cannot be removed we hide it.
         /// </summary>
-        internal virtual bool IsRemovable {
-            get { return IsSuperForwarder; }
+        internal bool IsRemovable {
+            get { return IsRubyMember && !IsHidden && !IsUndefined && !IsInteropMember; }
         }
 
         internal RubyMemberFlags Flags {
@@ -165,8 +187,13 @@ namespace IronRuby.Runtime.Calls {
             get { return ReferenceEquals(this, HiddenMethod); }
         }
 
-        // undefined, hidden method:
-        private RubyMemberInfo() {
+        public bool IsInteropMember {
+            get { return ReferenceEquals(this, InteropMember); }
+        }
+
+        // undefined, hidden, interop method:
+        private RubyMemberInfo(RubyMemberFlags flags) {
+            _flags = flags;
         }
 
         internal RubyMemberInfo(RubyMemberFlags flags, RubyModule/*!*/ declaringModule) {
@@ -209,6 +236,10 @@ namespace IronRuby.Runtime.Calls {
         }
 
         #region Dynamic Operations
+
+        internal virtual MethodDispatcher GetDispatcher<T>(RubyCallSignature signature, object target, int version) {
+            return null;
+        }
 
         internal virtual void BuildCallNoFlow(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name) {
             throw Assert.Unreachable;

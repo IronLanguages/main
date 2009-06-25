@@ -15,9 +15,12 @@
 
 using System;
 using System.Collections;
-using IronPython.Runtime.Operations;
+
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
+
+using IronPython.Runtime.Operations;
+using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime {
     [PythonType("slice")]
@@ -69,6 +72,17 @@ namespace IronPython.Runtime {
 
         public static bool operator <(Slice self, Slice other) {
             return self.__cmp__(other) < 0;
+        }
+
+        public PythonTuple __reduce__() {
+            return PythonTuple.MakeTuple(
+                DynamicHelpers.GetPythonTypeFromType(typeof(Slice)),
+                PythonTuple.MakeTuple(
+                    _start,
+                    _stop,
+                    _step
+                )
+            );
         }
 
         #endregion
@@ -201,6 +215,7 @@ namespace IronPython.Runtime {
         }
 
         private static void DoSliceAssign(SliceAssign assign, int start, int stop, int step, object value) {
+            stop = step > 0 ? Math.Max(stop, start) : Math.Min(stop, start);
             int n = Math.Max(0, (step > 0 ? (stop - start + step - 1) : (stop - start + step + 1)) / step);
             // fast paths, if we know the size then we can
             // do this quickly.

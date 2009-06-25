@@ -305,10 +305,10 @@ namespace IronRuby.Tests {
                     output.Write("String(\"{0}\")", Parser.EscapeString(value.String));
                     break;
 
-                case Tokens.StringBeg:
-                case Tokens.RegexpBeg:
+                case Tokens.StringBegin:
+                case Tokens.RegexpBegin:
                 case Tokens.ShellStringBegin:
-                case Tokens.Symbeg:
+                case Tokens.SymbolBegin:
                     output.Write(value.StringTokenizer);
                     break;
             }

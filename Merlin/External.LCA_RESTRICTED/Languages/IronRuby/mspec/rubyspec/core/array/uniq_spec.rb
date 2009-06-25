@@ -80,6 +80,10 @@ describe "Array#uniq" do
     a[1].tainted?.should == true
   end
 
+  it "handles array with nil" do
+    [nil, 1, nil].uniq.should == [nil, 1]
+  end
+  
   it "returns subclass instance on Array subclasses" do
     ArraySpecs::MyArray[1, 2, 3].uniq.class.should == ArraySpecs::MyArray
   end
@@ -115,6 +119,12 @@ describe "Array#uniq!" do
     [ "a", "b", "c" ].uniq!.should == nil
   end
 
+  it "handles array with nil" do
+    a = [nil, 1, nil]
+    a.uniq!
+    a.should == [nil, 1]
+  end
+  
   ruby_version_is "" ... "1.9" do
     it "raises a TypeError on a frozen array if modification would take place" do
       dup_ary = [1, 1, 2]

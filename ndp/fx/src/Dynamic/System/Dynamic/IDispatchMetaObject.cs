@@ -15,6 +15,7 @@
 
 #if !SILVERLIGHT // ComObject
 
+using System.Diagnostics;
 using System.Linq.Expressions;
 
 namespace System.Dynamic {
@@ -158,7 +159,13 @@ namespace System.Dynamic {
                 bool[] isByRef = ComBinderHelpers.ProcessArgumentsForCom(ref indexes);
                 isByRef = isByRef.AddLast(false);
 
-                return BindComInvoke(indexes.AddLast(value), setItem, binder.CallInfo, isByRef);
+                var result = BindComInvoke(indexes.AddLast(value), setItem, binder.CallInfo, isByRef);
+
+                // Make sure to return the value; some languages need it.
+                return new DynamicMetaObject(
+                    Expression.Block(result.Expression, Expression.Convert(value.Expression, typeof(object))),
+                    result.Restrictions
+                );
             }
 
             return base.BindSetIndex(binder, indexes, value);
@@ -190,7 +197,7 @@ namespace System.Dynamic {
                         typeof(IDispatchComObject).GetProperty("DispatchObject")
                     );
 
-                return new ComInvokeBinder(
+                var result = new ComInvokeBinder(
                     new CallInfo(1),
                     new[] { value },
                     new bool[] { false },
@@ -199,6 +206,12 @@ namespace System.Dynamic {
                     dispatch,
                     method
                 ).Invoke();
+
+                // Make sure to return the value; some languages need it.
+                return new DynamicMetaObject(
+                    Expression.Block(result.Expression, Expression.Convert(value.Expression, typeof(object))),
+                    result.Restrictions
+                );
             }
 
             return null;

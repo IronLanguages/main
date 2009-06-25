@@ -74,7 +74,10 @@ namespace IronRuby.Runtime.Calls {
 
             RubyClass targetClass = args.RubyContext.GetImmediateClassOf(args.Target);
             using (targetClass.Context.ClassHierarchyLocker()) {
-                metaBuilder.AddTargetTypeTest(args.Target, targetClass, args.TargetExpression, args.MetaContext);
+                metaBuilder.AddTargetTypeTest(args.Target, targetClass, args.TargetExpression, args.MetaContext, 
+                    new[] { ToS, Symbols.MethodMissing }
+                );
+
                 conversionMethod = targetClass.ResolveMethodForSiteNoLock(ToS, RubyClass.IgnoreVisibility).Info;
 
                 // find method_missing - we need to add "to_xxx" methods to the missing methods table:

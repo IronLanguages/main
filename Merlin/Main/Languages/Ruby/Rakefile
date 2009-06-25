@@ -15,7 +15,7 @@
 #
 
 $rakefile_path = File.dirname(__FILE__)
-require 'context'
+require $rakefile_path + '/context'
 
 require 'tmpdir'
 include REXML
@@ -28,8 +28,8 @@ CS_COMPILER           = ENV['mono'].nil? ? 'csc' : 'gmcs'
 EXCLUDED_DIRECTORIES  = ['obj', '.', '..']
 
 
-import 'rake/test.rake'
-import 'rake/compile.rake'
-import 'rake/package.rake'
-import 'rake/misc.rake'
-import 'rake/git.rake'
+import File.dirname(__FILE__) + '/rake/test.rake'
+import File.dirname(__FILE__) + '/rake/compile.rake'
+import File.dirname(__FILE__) + '/rake/package.rake'
+import File.dirname(__FILE__) + '/rake/misc.rake'
+import File.dirname(__FILE__) + '/rake/git.rake'

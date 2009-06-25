@@ -41,16 +41,6 @@ namespace IronRuby.Runtime {
         public static readonly int TrueObjectId = 2;
         public static readonly int NilObjectId = 4;
 
-        // TODO: this is not correct, because it won't call singleton "eql?" methods
-        public static bool ValueEquals(object self, object other) {
-            return object.Equals(self, other);
-        }
-
-        // TODO: this is not correct, because it won't call singleton "hash" methods
-        public static int GetHashCode(object self) {
-            return self != null ? self.GetHashCode() : RubyUtils.NilObjectId;
-        }
-
         /// <summary>
         /// Determines whether the given object is a value type in Ruby (i.e. they have value equality)
         /// 
@@ -121,7 +111,7 @@ namespace IronRuby.Runtime {
             }
         }
 
-        internal static MutableString/*!*/ FormatObject(string/*!*/ className, int objectId, bool isTainted) {
+        public static MutableString/*!*/ FormatObjectPrefix(string/*!*/ className, long objectId, bool isTainted) {
             MutableString str = MutableString.CreateMutable();
             str.Append("#<");
             str.Append(className);
@@ -130,17 +120,23 @@ namespace IronRuby.Runtime {
             str.Append(':');
             AppendFormatHexObjectId(str, objectId);
 
-            str.Append(">");
-
             str.IsTainted |= isTainted;
             return str;
+        }
+
+        public static MutableString/*!*/ FormatObject(string/*!*/ className, long objectId, bool isTainted) {
+            return FormatObjectPrefix(className, objectId, isTainted).Append(">");
         }
 
         public static MutableString/*!*/ ObjectToMutableString(RubyContext/*!*/ context, object obj) {
             return FormatObject(context.GetClassDisplayName(obj), GetObjectId(context, obj), context.IsObjectTainted(obj));
         }
 
-        public static MutableString/*!*/ AppendFormatHexObjectId(MutableString/*!*/ str, int objectId) {
+        public static MutableString/*!*/ ObjectToMutableStringPrefix(RubyContext/*!*/ context, object obj) {
+            return FormatObjectPrefix(context.GetClassDisplayName(obj), GetObjectId(context, obj), context.IsObjectTainted(obj));
+        }
+
+        public static MutableString/*!*/ AppendFormatHexObjectId(MutableString/*!*/ str, long objectId) {
             return str.AppendFormat("0x{0:x7}", 2 * objectId);
         }
 
@@ -161,7 +157,7 @@ namespace IronRuby.Runtime {
             if (clonable != null) {
                 copy = clonable.Duplicate(context, cloneSemantics);
             } else {
-                // .NET classes and library clases that doesn't implement IDuplicable:
+                // .NET and library classes that don't implement IDuplicable:
                 var allocateSite = allocateStorage.GetCallSite("allocate", 0);
                 copy = allocateSite.Target(allocateSite, context.GetClassOf(obj));
 
@@ -177,11 +173,11 @@ namespace IronRuby.Runtime {
             return true;
         }        
 
-        public static int GetFixnumId(int number) {
-            return number * 2 + 1;
+        public static long GetFixnumId(int number) {
+            return ((long)number << 1) + 1;
         }
 
-        public static int GetObjectId(RubyContext/*!*/ context, object obj) {
+        public static long GetObjectId(RubyContext/*!*/ context, object obj) {
             if (obj == null) return NilObjectId;
             if (obj is bool) return (bool)obj ? TrueObjectId : FalseObjectId;
             if (obj is int) return GetFixnumId((int)obj);
@@ -232,7 +228,7 @@ namespace IronRuby.Runtime {
             return sb.ToString();
         }
 
-        internal static string/*!*/ MangleName(string/*!*/ name) {
+        public static string/*!*/ MangleName(string/*!*/ name) {
             Assert.NotNull(name);
 
             if (name.ToUpper().Equals("INITIALIZE")) {
@@ -256,56 +252,9 @@ namespace IronRuby.Runtime {
             return result.ToString();
         }
 
-        public static string/*!*/ GetQualifiedName(Type/*!*/ type, bool display) {
-            ContractUtils.RequiresNotNull(type, "type");
-            return AppendQualifiedName(new StringBuilder(), type, display).ToString();
-        }
-
-        private static StringBuilder/*!*/ AppendQualifiedName(StringBuilder/*!*/ result, Type/*!*/ type, bool display) {
-            if (type.IsGenericParameter) {
-                return result.Append(type.Name);
-            } 
-                
-            // qualifiers:
-            if (type.DeclaringType != null) {
-                AppendQualifiedName(result, type.DeclaringType, display);
-                result.Append("::");
-            } else if (type.Namespace != null) {
-                result.Append(type.Namespace.Replace(Type.Delimiter.ToString(), "::"));
-                result.Append("::");
-            }
-
-            // simple name:
-            result.Append(ReflectionUtils.GetNormalizedTypeName(type));
-
-            // generic args:
-            if (display && type.IsGenericType) {
-                result.Append("[");
-
-                var genericArgs = type.GetGenericArguments();
-                for (int i = 0; i < genericArgs.Length; i++) {
-                    if (i > 0) {
-                        result.Append(", ");
-                    }
-                    AppendQualifiedName(result, genericArgs[i], display);
-                }
-
-                result.Append("]");
-            }
-
-            return result;
-        }
-
-        public static string/*!*/ GetQualifiedName(NamespaceTracker/*!*/ namespaceTracker) {
-            ContractUtils.RequiresNotNull(namespaceTracker, "namespaceTracker");
-            if (namespaceTracker.Name == null) return String.Empty;
-
-            return namespaceTracker.Name.Replace(Type.Delimiter.ToString(), "::");
-        }
-
         #endregion
 
-        #region Constants, Methods
+        #region Constants
 
         // thread-safe:
         public static object GetConstant(RubyGlobalScope/*!*/ globalScope, RubyModule/*!*/ owner, string/*!*/ name, bool lookupObject) {
@@ -341,8 +290,109 @@ namespace IronRuby.Runtime {
             }
         }
 
+        #endregion
+
+        #region Methods
+
         public static RubyMethodVisibility GetSpecialMethodVisibility(RubyMethodVisibility/*!*/ visibility, string/*!*/ methodName) {
             return (methodName == Symbols.Initialize || methodName == Symbols.InitializeCopy) ? RubyMethodVisibility.Private : visibility;
+        }
+
+        internal static string MapOperator(string/*!*/ name) {
+            switch (name) {
+                case "+": return "op_Addition";
+                case "-": return "op_Subtraction";
+                case "/": return "op_Division";
+                case "*": return "op_Multiply";
+                case "%": return "op_Modulus";
+                case "==": return "op_Equality";
+                case "!=": return "op_Inequality";
+                case ">": return "op_GreaterThan";
+                case ">=": return "op_GreaterThanOrEqual";
+                case "<": return "op_LessThan";
+                case "<=": return "op_LessThanOrEqual";
+                case "-@": return "op_UnaryNegation";
+                case "+@": return "op_UnaryPlus";
+
+                case "**": return "Power";
+                case "<<": return "LeftShift";
+                case ">>": return "RightShift";
+                case "&": return "BitwiseAnd";
+                case "|": return "BitwiseOr";
+                case "^": return "ExclusiveOr";
+                case "<=>": return "Compare";
+                case "~": return "OnesComplement";
+
+                default:
+                    return null;
+            }
+        }
+
+        internal static string MapOperator(MethodBase/*!*/ method) {
+            if (!method.IsStatic || !method.IsSpecialName) {
+                return null;
+            }
+
+            switch (method.Name) {
+                case "op_Addition": return "+";
+                case "op_Subtraction": return "-";
+                case "op_Division": return "/";
+                case "op_Multiply": return "*";
+                case "op_Modulus": return "%";
+                case "op_Equality": return "==";
+                case "op_Inequality": return "!=";
+                case "op_GreaterThan": return ">";
+                case "op_GreaterThanOrEqual": return ">=";
+                case "op_LessThan": return "<";
+                case "op_LessThanOrEqual": return "<=";
+                case "op_UnaryNegation": return "-@";
+                case "op_UnaryPlus": return "+@";
+
+                case "Power": return "**";
+                case "LeftShift": return "<<";
+                case "RightShift": return ">>";
+                case "BitwiseAnd": return "&";
+                case "BitwiseOr": return "|";
+                case "ExclusiveOr": return "^";
+                case "Compare": return "<=>";
+                case "OnesComplement": return "~";
+
+                default:
+                    return null;
+            }
+        }
+
+        internal static bool IsOperator(MethodBase/*!*/ method) {
+            return MapOperator(method) != null;
+        }
+
+        internal static string MapOperator(ExpressionType/*!*/ op) {
+            switch (op) {
+                case ExpressionType.Add: return "+";
+                case ExpressionType.Subtract: return "-";
+                case ExpressionType.Divide: return "/";
+                case ExpressionType.Multiply: return "*";
+                case ExpressionType.Modulo: return "%";
+                case ExpressionType.Equal: return "==";
+                case ExpressionType.NotEqual: return "!=";
+                case ExpressionType.GreaterThan: return ">";
+                case ExpressionType.GreaterThanOrEqual: return ">=";
+                case ExpressionType.LessThan: return "<";
+                case ExpressionType.LessThanOrEqual: return "<=";
+                case ExpressionType.Negate: return "-@";
+                case ExpressionType.UnaryPlus: return "+@";
+
+                case ExpressionType.Power: return "**";
+                case ExpressionType.LeftShift: return "<<";
+                case ExpressionType.RightShift: return ">>";
+                case ExpressionType.And: return "&";
+                case ExpressionType.Or: return "|";
+                case ExpressionType.ExclusiveOr: return "^";
+                case ExpressionType.OnesComplement: return "~";
+
+                default:
+                    return null;
+            }
         }
 
         #endregion
@@ -551,7 +601,7 @@ namespace IronRuby.Runtime {
                 IsEval = true,
                 FactoryKind = isModuleEval ? TopScopeFactoryKind.Module : TopScopeFactoryKind.None,
                 LocalNames = targetScope.GetVisibleLocalNames(),
-                TopLevelMethodName = (methodScope != null) ? methodScope.Method.DefinitionName : null,
+                TopLevelMethodName = (methodScope != null) ? methodScope.DefinitionName : null,
                 InitialLocation = new SourceLocation(0, line <= 0 ? 1 : line, 1),
             };
         }
@@ -585,27 +635,16 @@ namespace IronRuby.Runtime {
             }
             Debug.Assert(lambda != null);
 
-            Proc blockParameter;
-            RubyMethodInfo methodDefinition;
-            if (methodScope != null) {
-                blockParameter = methodScope.BlockParameter;
-                methodDefinition = methodScope.Method;
-            } else {
-                blockParameter = null;
-                methodDefinition = null;
-            }
-
             // module-eval:
             if (module != null) {
                 targetScope = CreateModuleEvalScope(targetScope, self, module);
             }
 
-            return RubyScriptCode.CompileLambda(lambda, context)(
+            return ((EvalEntryPointDelegate)RubyScriptCode.CompileLambda(lambda, context))(
                 targetScope,
                 self,
                 module,
-                blockParameter,
-                methodDefinition,
+                (methodScope != null) ? methodScope.BlockParameter : null,
                 targetScope.RuntimeFlowControl
             );
         }
@@ -667,6 +706,8 @@ namespace IronRuby.Runtime {
         private static readonly Type[] _serializableTypeSignature = new Type[] { typeof(SerializationInfo), typeof(StreamingContext) };
 #endif
 
+        public static readonly string SerializationInfoClassKey = "#immediateClass";
+
         public static object/*!*/ CreateObject(RubyClass/*!*/ theclass, Hash/*!*/ attributes, bool decorate) {
             Assert.NotNull(theclass, attributes);
 
@@ -683,7 +724,7 @@ namespace IronRuby.Runtime {
 #if !SILVERLIGHT
                 }
                 SerializationInfo info = new SerializationInfo(baseType, new FormatterConverter());
-                info.AddValue("#class", theclass);
+                info.AddValue(SerializationInfoClassKey, theclass);
                 foreach (KeyValuePair<object, object> pair in attributes) {
                     string key = pair.Key.ToString();
                     key = decorate ? "@" + key : key;
@@ -703,7 +744,7 @@ namespace IronRuby.Runtime {
         }
 
         private static bool IsAvailable(MethodBase method) {
-            return method != null && !method.IsPrivate && !method.IsFamilyAndAssembly;
+            return method != null && !method.IsPrivate && !method.IsAssembly && !method.IsFamilyAndAssembly;
         }
 
         public static object/*!*/ CreateObject(RubyClass/*!*/ theClass) {
@@ -761,10 +802,6 @@ namespace IronRuby.Runtime {
                 Interlocked.CompareExchange(ref site, CallSite<Func<CallSite, object, TResult>>.Create(conversion), null);
             }
             return site;
-        }
-
-        public static bool MethodNotFound(object siteResult) {
-            return siteResult == RubyOps.MethodNotFound;
         }
 
         #endregion
@@ -860,6 +897,83 @@ namespace IronRuby.Runtime {
             return (basePath.EndsWith("\\") || basePath.EndsWith("/") || basePath == string.Empty) ? 
                 basePath + path :
                 basePath + "/" + path;
+        }
+
+        public static bool FileSystemUsesDriveLetters { get { return System.IO.Path.DirectorySeparatorChar == '\\'; } }
+
+        // Is path something like "/foo/bar" (or "c:/foo/bar" on Windows)
+        // We need this instead of Path.IsPathRooted since we need to be able to deal with Unix-style path names even on Windows
+        public static bool IsAbsolutePath(string path) {
+            if (IsAbsoluteDriveLetterPath(path)) {
+                return true;
+            }
+
+            if (String.IsNullOrEmpty(path)) {
+                return false;
+            }
+
+            return path[0] == '/';
+        }
+
+        // Is path something like "c:/foo/bar" (on Windows)
+        public static bool IsAbsoluteDriveLetterPath(string path) {
+            if (String.IsNullOrEmpty(path)) {
+                return false;
+            }
+
+            if (!FileSystemUsesDriveLetters) {
+                return false;
+            }
+
+            return (Char.IsLetter(path[0]) && path.Length >= 2 && path[1] == ':' && path[2] == '/');
+        }
+
+        // returns "/" or something like "c:/"
+        public static string GetPathRoot(RubyContext/*!*/ context, string path, out string pathAfterRoot) {
+            Debug.Assert(IsAbsolutePath(path));
+            if (IsAbsoluteDriveLetterPath(path)) {
+                pathAfterRoot = path.Substring(3);
+                return path.Substring(0, 3);
+            } else {
+                Debug.Assert(path[0] == '/');
+
+                // The root for "////foo" is "/////"
+                string withoutInitialSlashes = path.TrimStart('/');
+                int initialSlashesCount = path.Length - withoutInitialSlashes.Length;
+                string initialSlashes = path.Substring(0, initialSlashesCount);
+                pathAfterRoot = path.Substring(initialSlashesCount);
+
+                if (!FileSystemUsesDriveLetters || initialSlashesCount > 1) {
+                    return initialSlashes;
+                } else {
+                    string currentDirectory = RubyUtils.CanonicalizePath(context.DomainManager.Platform.CurrentDirectory);
+                    Debug.Assert(IsAbsoluteDriveLetterPath(currentDirectory));
+                    string temp;
+                    return GetPathRoot(context, currentDirectory, out temp);
+                }
+            }
+        }
+
+        // Is path something like "c:foo" (note that this is not "c:/foo")
+        public static bool HasPartialDriveLetter(string path, out char partialDriveLetter, out string relativePath) {
+            partialDriveLetter = '\0';
+            relativePath = null;
+
+            if (String.IsNullOrEmpty(path)) {
+                return false;
+            }
+
+            if (!FileSystemUsesDriveLetters) {
+                return false;
+            }
+
+            if (Char.IsLetter(path[0]) && path.Length >= 2 && path[1] == ':' && (path.Length == 2 || path[2] != '/')) {
+                partialDriveLetter = path[0];
+                relativePath = path.Substring(2);
+                return true;
+            } else {
+                return false;
+            }
         }
 
         #endregion

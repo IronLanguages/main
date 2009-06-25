@@ -78,7 +78,9 @@ namespace IronRuby.Builtins {
                 );
             }
 
-            return new Proc(ProcKind.Block, scope.SelfObject, scope, _procDispatcher);
+            // TODO: 
+            // MRI: source file/line are that of the to_proc method call:
+            return new Proc(ProcKind.Block, scope.SelfObject, scope, null, 0, _procDispatcher);
         }
 
         #region Dynamic Operations

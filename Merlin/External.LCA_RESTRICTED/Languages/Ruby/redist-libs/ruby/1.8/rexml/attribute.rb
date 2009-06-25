@@ -50,7 +50,7 @@ module REXML
 					@element = first.element
 				end
 			elsif first.kind_of? String
-				@element = parent if parent.kind_of? Element
+				@element = parent
 				self.name = first
 				@normalized = second.to_s
 			else
@@ -93,7 +93,7 @@ module REXML
 
 		# Creates (and returns) a hash from both the name and value
 		def hash
-			name.hash + value.hash
+			name.hash ^ value.hash
 		end
 
 		# Returns this attribute out as XML source, expanding the name

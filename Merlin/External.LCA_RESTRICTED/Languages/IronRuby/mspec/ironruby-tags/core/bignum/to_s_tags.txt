@@ -1,0 +1,1 @@
+fails:Bignum#to_s when given a base raises an ArgumentError if the base is less than 2 or higher than 36

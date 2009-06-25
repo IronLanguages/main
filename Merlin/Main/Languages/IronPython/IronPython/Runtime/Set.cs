@@ -197,14 +197,6 @@ namespace IronPython.Runtime {
             }
             return PythonTuple.MakeTuple(type, PythonTuple.MakeTuple(List.FromArrayNoCopy(keys)), null);
         }
-
-        public static IEnumerator<object> GetListEnumerator(CommonDictionaryStorage storage) {
-            List res = new List(storage.Count);
-            foreach (KeyValuePair<object, object> kvp in storage.GetItems()) {
-                res.Add(kvp.Key);
-            }
-            return ((IEnumerable<object>)res).GetEnumerator();
-        }
     }
 
     /// <summary>
@@ -596,16 +588,9 @@ namespace IronPython.Runtime {
 
         #region IEnumerable Members
 
-        IEnumerator IEnumerable.GetEnumerator() {
-            int count = this._items.Count;
-
-            foreach (object o in _items.GetKeys()) {
-                if (count != this._items.Count) {
-                    throw PythonOps.RuntimeError("set changed during iteration");
-                }
-
-                yield return o;
-            }
+        [PythonHidden]
+        public IEnumerator GetEnumerator() {
+            return new SetIterator(_items, true);
         }
 
         #endregion
@@ -683,20 +668,11 @@ namespace IronPython.Runtime {
 
         #region IEnumerable<object> Members
 
-        [PythonHidden]
-        public IEnumerator<object> GetEnumerator() {
-            int count = _items.Count;
-
-            foreach (KeyValuePair<object,object> o in _items.GetItems()) {
-                if (count != _items.Count) {
-                    throw PythonOps.RuntimeError("set changed during iteration");
-                }
-
-                yield return o.Key;
-            }
+        IEnumerator<object> IEnumerable<object>.GetEnumerator() {
+            return new SetIterator(_items, true);
         }
 
-        #endregion        
+        #endregion
 
         #region ICodeFormattable Members
 
@@ -1052,8 +1028,9 @@ namespace IronPython.Runtime {
 
         #region IEnumerable Members
 
-        IEnumerator IEnumerable.GetEnumerator() {
-            return SetHelpers.GetListEnumerator(_items);
+        [PythonHidden]
+        public IEnumerator GetEnumerator() {
+            return new SetIterator(_items, false);
         }
 
         #endregion
@@ -1167,9 +1144,8 @@ namespace IronPython.Runtime {
 
         #region IEnumerable<object> Members
 
-        [PythonHidden]
-        public IEnumerator<object> GetEnumerator() {
-            return SetHelpers.GetListEnumerator(_items);
+        IEnumerator<object> IEnumerable<object>.GetEnumerator() {
+            return new SetIterator(_items, false);
         }
 
         #endregion
@@ -1204,4 +1180,79 @@ namespace IronPython.Runtime {
         #endregion
     }
 
+    /// <summary>
+    /// Iterator over sets
+    /// </summary>
+    [PythonType("setiterator")]
+    public sealed class SetIterator : IEnumerable, IEnumerable<object>, IEnumerator, IEnumerator<object> {
+        private bool _mutable;
+        private int _count;
+        private CommonDictionaryStorage _items;
+        private IEnumerator<object> _enumerator;
+
+        internal SetIterator(CommonDictionaryStorage items, bool mutable) {
+            _mutable = mutable;
+            _items = items;
+            if (mutable) {
+                lock (items) {
+                    _count = items.Count;
+                    _enumerator = items.GetKeys().GetEnumerator();
+                }
+            } else {
+                _count = items.Count;
+                _enumerator = items.GetKeys().GetEnumerator();
+            }
+        }
+
+        #region IEnumerator<object> Members
+
+        public object Current {
+            get {
+                if (_mutable && (_count != _items.Count || !_items.Contains(_enumerator.Current))) {
+                    throw PythonOps.RuntimeError("set changed during iteration");
+                }
+
+                return _enumerator.Current;
+            }
+        }
+
+        #endregion
+
+        #region IDisposable Members
+
+        public void Dispose() {
+            _enumerator.Dispose();
+        }
+
+        #endregion
+
+        #region IEnumerator Members
+
+
+        public bool MoveNext() {
+            return _enumerator.MoveNext();
+        }
+
+        public void Reset() {
+            _enumerator.Reset();
+        }
+
+        #endregion
+
+        #region IEnumerable Members
+
+        public IEnumerator GetEnumerator() {
+            return this;
+        }
+
+        #endregion
+
+        #region IEnumerable<object> Members
+
+        IEnumerator<object> IEnumerable<object>.GetEnumerator() {
+            return this;
+        }
+
+        #endregion
+    }
 }

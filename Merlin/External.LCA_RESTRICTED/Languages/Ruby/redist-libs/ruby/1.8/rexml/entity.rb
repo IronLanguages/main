@@ -3,7 +3,7 @@ require 'rexml/source'
 require 'rexml/xmltokens'
 
 module REXML
-	# God, I hate DTDs.  I really do.  Why this ##### standard still
+	# God, I hate DTDs.  I really do.  Why this idiot standard still
 	# plagues us is beyond me.
 	class Entity < Child
 		include XMLTokens

@@ -13,11 +13,12 @@ describe "ENV.reject!" do
     ENV["foo"].should == nil
   end
 
-  it "returns itself or nil" do
+  it "returns itself ,nil or the value of break" do
     ENV.reject! { false }.should == nil
     ENV["foo"] = "bar"
     ENV.reject! { |k, v| k == "foo" }.should == ENV
     ENV["foo"].should == nil
+    ENV.reject! {break 1}.should == 1
   end
 
   ruby_version_is "" ... "1.8.7" do

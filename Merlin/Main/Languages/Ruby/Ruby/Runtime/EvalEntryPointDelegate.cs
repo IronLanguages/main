@@ -30,7 +30,6 @@ namespace IronRuby.Runtime {
         object self,
         RubyModule module,
         Proc blockParameter, 
-        RubyMethodInfo method,
         RuntimeFlowControl rfc
     );
 }
