@@ -81,7 +81,7 @@
     <Compile Include="Builtins\Exceptions.cs" />
     <Compile Include="Builtins\FalseClass.cs" />
     <Compile Include="Builtins\FileOps.cs" />
-    <Compile Include="Builtins\FileTestOps.cs" />
+    <Compile Include="Builtins\FileTest.cs" />
     <Compile Include="Builtins\FixnumOps.cs" />
     <Compile Include="Builtins\FloatOps.cs" />
     <Compile Include="Builtins\RubyGC.cs" />
