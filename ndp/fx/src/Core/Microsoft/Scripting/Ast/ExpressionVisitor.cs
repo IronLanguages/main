@@ -384,7 +384,7 @@ namespace System.Linq.Expressions {
             if (b == node.Body && p == node.Parameters) {
                 return node;
             }
-            return Expression.Lambda<T>(b, node.Name, p);
+            return Expression.Lambda<T>(b, node.Name, node.TailCall, p);
         }
 
         /// <summary>

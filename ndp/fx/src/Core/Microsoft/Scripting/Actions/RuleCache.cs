@@ -16,9 +16,8 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Dynamic.Utils;
-using System.Runtime.CompilerServices;
 
-namespace System.Dynamic {
+namespace System.Runtime.CompilerServices {
     /// <summary>
     /// This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.
     /// Represents a cache of runtime binding rules.
@@ -26,14 +25,14 @@ namespace System.Dynamic {
     /// <typeparam name="T">The delegate type.</typeparam>
     [EditorBrowsable(EditorBrowsableState.Never), DebuggerStepThrough]
     public class RuleCache<T> where T : class {
-        private CallSiteRule<T>[] _rules = new CallSiteRule<T>[0];
+        private T[] _rules = new T[0];
         private readonly Object cacheLock = new Object();
 
         private const int MaxRules = 128;
 
         internal RuleCache() { }
 
-        internal CallSiteRule<T>[] GetRules() {
+        internal T[] GetRules() {
             return _rules;
         }
 
@@ -53,7 +52,7 @@ namespace System.Dynamic {
                 int oldIndex = -1;
                 int max = Math.Min(_rules.Length, i + count);
                 for (int index = i; index < max; index++) {
-                    if (_rules[index].Target == rule) {
+                    if (_rules[index] == rule) {
                         oldIndex = index;
                         break;
                     }
@@ -61,21 +60,21 @@ namespace System.Dynamic {
                 if (oldIndex < 0) {
                     return;
                 }
-                CallSiteRule<T> oldRule = _rules[oldIndex];
+                T oldRule = _rules[oldIndex];
                 _rules[oldIndex] = _rules[oldIndex - 1];
                 _rules[oldIndex - 1] = _rules[oldIndex - 2];
                 _rules[oldIndex - 2] = oldRule;
             }
         }
 
-        internal void AddRule(CallSiteRule<T> newRule) {
+        internal void AddRule(T newRule) {
             // need a lock to make sure we are not loosing rules.
             lock (cacheLock) {
                 _rules = AddOrInsert(_rules, newRule);
             }
         }
 
-        internal void ReplaceRule(CallSiteRule<T> oldRule, CallSiteRule<T> newRule) {
+        internal void ReplaceRule(T oldRule, T newRule) {
             // need a lock to make sure we are replacing the right rule
             lock (cacheLock) {
                 int i = Array.IndexOf(_rules, oldRule);
@@ -93,19 +92,19 @@ namespace System.Dynamic {
         // Adds to end or or inserts items at InsertPosition
         private const int InsertPosition = MaxRules / 2;
 
-        private static CallSiteRule<T>[] AddOrInsert(CallSiteRule<T>[] rules, CallSiteRule<T> item) {
+        private static T[] AddOrInsert(T[] rules, T item) {
             if (rules.Length < InsertPosition) {
                 return rules.AddLast(item);
             }
 
-            CallSiteRule<T>[] newRules;
+            T[] newRules;
 
             int newLength = rules.Length + 1;
             if (newLength > MaxRules) {
                 newLength = MaxRules;
                 newRules = rules;
             } else {
-                newRules = new CallSiteRule<T>[newLength];
+                newRules = new T[newLength];
             }
 
             Array.Copy(rules, 0, newRules, 0, InsertPosition);

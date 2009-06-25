@@ -1,0 +1,100 @@
+= Eggs
+by Jimmy Schementi
+
+A Silverlight behavior testing library (using IronRuby and Bacon)
+
+== Dependencies
+
+Make sure to run "git submodule init" and "git submodule update" to get
+any dependencies.
+
+bacon: a small RSpec clone
+http://github.com/jschementi/bacon
+
+== Sample
+
+The sample depends on AgDLR:
+git clone git://github.com/jschementi/agdlr.git
+
+Clone it so agdlr and eggs are siblings. After doing a build of AgDLR, 
+from their parent director, run:
+
+agdlr\script\server /b:eggs/sample/index.html
+
+You're default browser will open, and you should see the following:
+
+rb> Eggs.current.run_tests
+Sample bacon test
+- should be true
+
+1 specifications (1 requirements), 0 failures, 0 errors
+=> nil
+
+== Usage
+
+From a IronRuby silverlight application:
+
+  require 'eggs'
+
+  # Tell eggs your test sets, and each test name in those sets
+  Eggs.config(
+    :test_set => %W(
+      console
+      dynamic_application
+      extension_types
+      package
+      window
+    ),
+    :another_test_set => %W(
+      args
+      auto_addref
+      error_handle
+      execfile
+      issubclass
+    )
+  )
+
+  # Do you like bacon with your eggs? I hope so ...
+  # Runs the tests with bacon
+  Eggs.run
+
+From a C# silverlight application
+
+  // 1. Place eggs.xap in the same location as the XAP file of the app you are
+  //    testing, for convenience. It could be different, but then the code below 
+  //    would need to change
+
+  // 2. Create a "tests" directory in your Silverlight application, and add your
+  //    tests in that directory. The files should be added to the project, and marked
+  //    as "Content" so they are included in the application's XAP.
+
+  // 3. In your Application_Startup handler, start the download of eggs.xap  
+
+    if (HtmlPage.Document.QueryString.ContainsKey("test")) {
+        var xap = new Uri("eggs.xap", UriKind.Relative);
+        WebClient wcXap = new WebClient();
+        wcXap.OpenReadCompleted += new OpenReadCompletedEventHandler(wcXap_OnOpenReadCompleted);
+        wcXap.OpenReadAsync(xap);
+    }
+    
+  // 4. Define the callback to be fired when the download is complete.
+  //    This will define the test list, load Eggs.dll, and run the tests
+
+    private void wcXap_OnOpenReadCompleted(object sender, OpenReadCompletedEventArgs e) {
+        if ((e.Error == null) && (e.Cancelled == false)) {
+            var testList = new Dictionary<string, List<string>>() {
+                {"tests", new List<string>() { "sample" }}
+            };
+
+            var xap = new StreamResourceInfo(e.Result, null);
+            System.Reflection.Assembly asm = new AssemblyPart().Load(
+                Application.GetResourceStream(
+                    xap, new Uri("Eggs.dll", UriKind.Relative)
+                ).Stream
+            );
+            asm.GetType("Eggs").GetMethod("Start").Invoke(null, new object[] {
+                (object) testList, (object) xap
+            });
+        }
+    }
+

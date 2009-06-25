@@ -52,8 +52,8 @@ namespace :test do
     IRTest.test(:Legacy)
   end
 
-  desc "Run app specific tests (Rubygems and Rake)"
-  task :apps => [:gems, :rake]
+  desc "Run app specific tests (Rubygems, Rake and YAML)"
+  task :apps => [:gems, :rake, :yaml]
 
   desc "Run rake tests"
   task :rake => :happy do
@@ -63,6 +63,11 @@ namespace :test do
   desc "Run gems tests"
   task :gems => :happy do
     IRTest.test(:RubyGems)
+  end
+
+  desc "Run Yaml tests"
+  task :yaml => :happy do
+    IRTest.test(:Yaml)
   end
 
   desc "(NOT IMPLEMENTED) Run tests corresponding to samples"

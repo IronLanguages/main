@@ -14,17 +14,16 @@
  * ***************************************************************************/
 
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Text;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
-using System.Collections;
-using System.Collections.Generic;
-using System.Text;
 
 namespace IronRuby.Builtins {
 
@@ -32,7 +31,8 @@ namespace IronRuby.Builtins {
     /// File builtin class. Derives from IO
     /// </summary>
     [RubyClass("File", Extends = typeof(RubyFile))]
-    public class RubyFileOps {
+    [Includes(typeof(FileTest), Copy = true)]
+    public static class RubyFileOps {
 
         #region Construction
 
@@ -232,16 +232,6 @@ namespace IronRuby.Builtins {
             return RubyUtils.CanonicalizePath(MutableString.Create(strResult)).TaintBy(path);
         }
 
-        [RubyMethod("blockdev?", RubyMethodAttributes.PublicSingleton)]
-        public static bool IsBlockDevice(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return RubyStatOps.IsBlockDevice(RubyStatOps.Create(self.Context, path));
-        }
-
-        [RubyMethod("chardev?", RubyMethodAttributes.PublicSingleton)]
-        public static bool IsCharDevice(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return RubyStatOps.IsCharDevice(RubyStatOps.Create(self.Context, path));
-        }
-
         internal static void Chmod(string path, int permission) {
 #if !SILVERLIGHT
             FileAttributes oldAttributes = File.GetAttributes(path);
@@ -300,7 +290,7 @@ namespace IronRuby.Builtins {
             return context.DomainManager.Platform.FileExists(path);
         }
 
-        private static bool DirectoryExists(RubyContext/*!*/ context, string/*!*/ path) {
+        internal static bool DirectoryExists(RubyContext/*!*/ context, string/*!*/ path) {
             return context.DomainManager.Platform.DirectoryExists(path);
         }
 
@@ -336,11 +326,6 @@ namespace IronRuby.Builtins {
             }
 
             return paths.Length;
-        }
-
-        [RubyMethod("directory?", RubyMethodAttributes.PublicSingleton)]
-        public static bool IsDirectory(RubyContext/*!*/ context, object/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return DirectoryExists(context, path.ConvertToString());
         }
 
         [RubyMethod("dirname", RubyMethodAttributes.PublicSingleton)]
@@ -397,19 +382,6 @@ namespace IronRuby.Builtins {
             return path;
         }
 
-        [RubyMethod("executable?", RubyMethodAttributes.PublicSingleton)]
-        [RubyMethod("executable_real?", RubyMethodAttributes.PublicSingleton)]
-        public static bool IsExecutable(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return RubyStatOps.IsExecutable(RubyStatOps.Create(self.Context, path));
-        }
-
-        [RubyMethod("exist?", RubyMethodAttributes.PublicSingleton)]
-        [RubyMethod("exists?", RubyMethodAttributes.PublicSingleton)]
-        public static bool Exists(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            string strPath = path.ConvertToString();
-            return FileExists(self.Context, strPath) || DirectoryExists(self.Context, strPath);
-        }
-
         [RubyMethod("extname", RubyMethodAttributes.PublicSingleton)]
         public static MutableString/*!*/ GetExtension(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
             string pathStr = path.ConvertToString();
@@ -420,11 +392,6 @@ namespace IronRuby.Builtins {
                 extension = String.Empty;
             }
             return MutableString.Create(extension).TaintBy(path);
-        }
-
-        [RubyMethod("file?", RubyMethodAttributes.PublicSingleton)]
-        public static bool IsAFile(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return FileExists(self.Context, path.ConvertToString());
         }
 
         #region fnmatch
@@ -441,13 +408,6 @@ namespace IronRuby.Builtins {
         public static MutableString FileType(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
             return RubyStatOps.FileType(RubyStatOps.Create(self.Context, path));
         }
-
-        [RubyMethod("grpowned?", RubyMethodAttributes.PublicSingleton)]
-        public static bool IsGroupOwned(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return RubyStatOps.IsGroupOwned(RubyStatOps.Create(self.Context, path));
-        }
-
-        //identical?
 
         #region join
 
@@ -735,31 +695,6 @@ namespace IronRuby.Builtins {
             return RubyStatOps.ModifiedTime(RubyStatOps.Create(self.Context, path));
         }
 
-        [RubyMethod("owned?", RubyMethodAttributes.PublicSingleton)]
-        public static bool IsUserOwned(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return RubyStatOps.IsUserOwned(RubyStatOps.Create(self.Context, path));
-        }
-
-        [RubyMethod("pipe?", RubyMethodAttributes.PublicSingleton)]
-        public static bool IsPipe(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return RubyStatOps.IsPipe(RubyStatOps.Create(self.Context, path));
-        }
-
-        private static bool IsReadableImpl(RubyContext/*!*/ context, string/*!*/ path) {
-            FileSystemInfo fsi;
-            if (RubyStatOps.TryCreate(context, path, out fsi)) {
-                return RubyStatOps.IsReadable(fsi);
-            } else {
-                return false;
-            }
-        }
-
-        [RubyMethod("readable?", RubyMethodAttributes.PublicSingleton)]
-        [RubyMethod("readable_real?", RubyMethodAttributes.PublicSingleton)]
-        public static bool IsReadable(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return IsReadableImpl(self.Context, path.ConvertToString());
-        }
-
         [RubyMethod("readlink", RubyMethodAttributes.PublicSingleton)]
         public static bool Readlink(RubyClass/*!*/ self, [NotNull]MutableString/*!*/ path) {
             throw new IronRuby.Builtins.NotImplementedError("readlink() function is unimplemented on this machine");
@@ -796,42 +731,12 @@ namespace IronRuby.Builtins {
             return 0;
         }
 
-        [RubyMethod("setgid?", RubyMethodAttributes.PublicSingleton)]
-        public static bool IsSetGid(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return RubyStatOps.IsSetGid(RubyStatOps.Create(self.Context, path));
-        }
-
-        [RubyMethod("setuid?", RubyMethodAttributes.PublicSingleton)]
-        public static bool IsSetUid(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return RubyStatOps.IsSetUid(RubyStatOps.Create(self.Context, path));
-        }
-
-        [RubyMethod("size", RubyMethodAttributes.PublicSingleton)]
-        public static int Size(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return RubyStatOps.Size(RubyStatOps.Create(self.Context, path));
-        }
-
-        [RubyMethod("size?", RubyMethodAttributes.PublicSingleton)]
-        public static object NullableSize(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return RubyStatOps.NullableSize(RubyStatOps.Create(self.Context, path));
-        }
-
-        [RubyMethod("socket?", RubyMethodAttributes.PublicSingleton)]
-        public static bool IsSocket(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return RubyStatOps.IsSocket(RubyStatOps.Create(self.Context, path));
-        }
-
         [RubyMethod("split", RubyMethodAttributes.PublicSingleton)]
         public static RubyArray Split(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
             RubyArray result = new RubyArray(2);
             result.Add(DirName(self, path));
             result.Add(Basename(self, path, null));
             return result;
-        }
-
-        [RubyMethod("sticky?", RubyMethodAttributes.PublicSingleton)]
-        public static bool IsSticky(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return RubyStatOps.IsSticky(RubyStatOps.Create(self.Context, path));
         }
 
         //truncate
@@ -858,11 +763,6 @@ namespace IronRuby.Builtins {
         [RubyMethod("symlink", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
         public static object SymLink(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
             throw new NotImplementedError("symlnk() function is unimplemented on this machine");
-        }
-
-        [RubyMethod("symlink?", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
-        public static bool IsSymLink(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return RubyStatOps.IsSymLink(RubyStatOps.Create(self.Context, path));
         }
 
         [RubyMethod("utime", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
@@ -904,37 +804,6 @@ namespace IronRuby.Builtins {
                 string name = context.GetClassOf(obj).Name;
                 throw RubyExceptions.CreateTypeConversionError(name, "time");
             }
-        }
-
-        private static bool IsWritableImpl(RubyContext/*!*/ context, string/*!*/ path) {
-            FileSystemInfo fsi;
-            if (RubyStatOps.TryCreate(context, path, out fsi)) {
-                return RubyStatOps.IsWritable(fsi);
-            } else {
-                return false;
-            }
-        }
-
-        [RubyMethod("writable?", RubyMethodAttributes.PublicSingleton)]
-        [RubyMethod("writable_real?", RubyMethodAttributes.PublicSingleton)]
-        public static bool IsWritable(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return IsWritableImpl(self.Context, path.ConvertToString());            
-        }
-
-        [RubyMethod("zero?", RubyMethodAttributes.PublicSingleton)]
-        public static bool IsZeroLength(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            string strPath = path.ConvertToString();
-
-            // NUL/nul is a special-cased filename on Windows
-            if (strPath.ToLower() == "nul") {
-                return RubyStatOps.IsZeroLength(RubyStatOps.Create(self.Context, strPath));
-            }
-
-            if (DirectoryExists(self.Context, strPath) || !FileExists(self.Context, strPath)) {
-                return false;
-            }
-
-            return RubyStatOps.IsZeroLength(RubyStatOps.Create(self.Context, strPath));
         }
 
         #endregion

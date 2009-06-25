@@ -200,13 +200,13 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("hash")]
-        public static int Hash(RubyStruct/*!*/ self) {
-            return self.GetHashCode();
+        public static int Hash(UnaryOpStorage/*!*/ hashStorage, ConversionStorage<int>/*!*/ fixnumCast, RubyStruct/*!*/ self) {
+            return self.GetHashCode(hashStorage, fixnumCast);
         }
 
         [RubyMethod("eql?")]
-        public static bool Equal(RubyStruct/*!*/ self, object other) {
-            return self.Equals(other);
+        public static bool Equal(BinaryOpStorage/*!*/ eqlStorage, RubyStruct/*!*/ self, object other) {
+            return self.Equals(eqlStorage, other);
         }
 
         // same pattern as RubyStruct.Equals, but we need to call == instead of eql?

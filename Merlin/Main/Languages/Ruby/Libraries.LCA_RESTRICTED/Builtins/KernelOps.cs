@@ -1049,15 +1049,15 @@ namespace IronRuby.Builtins {
         #region __id__, id, object_id, class
 
         [RubyMethod("id")]
-        public static int GetId(RubyContext/*!*/ context, object self) {
+        public static object GetId(RubyContext/*!*/ context, object self) {
             context.ReportWarning("Object#id will be deprecated; use Object#object_id");
             return GetObjectId(context, self);
         }
 
         [RubyMethod("__id__")]
         [RubyMethod("object_id")]
-        public static int GetObjectId(RubyContext/*!*/ context, object self) {
-            return RubyUtils.GetObjectId(context, self);
+        public static object GetObjectId(RubyContext/*!*/ context, object self) {
+            return ClrInteger.Narrow(RubyUtils.GetObjectId(context, self));
         }
 
         [RubyMethod("type")]
