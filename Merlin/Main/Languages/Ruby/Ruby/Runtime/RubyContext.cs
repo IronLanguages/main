@@ -109,7 +109,8 @@ namespace IronRuby.Runtime {
         private readonly Thread _mainThread;
 
         // Thread#critical=
-        private bool _isInCriticalRegion;
+        // We just need a bool. But we store the Thread object for easier debugging if there is a hang
+        private Thread _criticalThread;
         private readonly object _criticalMonitor = new object();
 
         #endregion
@@ -274,9 +275,9 @@ namespace IronRuby.Runtime {
             get { return _criticalMonitor; }
         }
 
-        public bool IsInCriticalRegion {
-            get { return _isInCriticalRegion; }
-            set { _isInCriticalRegion = value; }
+        public Thread CriticalThread {
+            get { return _criticalThread; }
+            set { _criticalThread = value; }
         }
 
         public Proc TraceListener {

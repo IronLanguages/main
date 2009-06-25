@@ -2921,6 +2921,11 @@ namespace IronRuby.Builtins {
                 new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Boolean>(IronRuby.Builtins.KernelOps.Tainted)
             );
             
+            module.DefineLibraryMethod("test", 0x52, 
+                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Int32, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.KernelOps.Test), 
+                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Int32, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.KernelOps.Test)
+            );
+            
             module.DefineLibraryMethod("throw", 0x52, 
                 new System.Action<System.Object, System.String, System.Object>(IronRuby.Builtins.KernelOps.Throw)
             );
@@ -3158,6 +3163,11 @@ namespace IronRuby.Builtins {
             );
             
             #endif
+            module.DefineLibraryMethod("test", 0x61, 
+                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Int32, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.KernelOps.Test), 
+                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Int32, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.KernelOps.Test)
+            );
+            
             module.DefineLibraryMethod("throw", 0x61, 
                 new System.Action<System.Object, System.String, System.Object>(IronRuby.Builtins.KernelOps.Throw)
             );

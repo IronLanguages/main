@@ -564,22 +564,28 @@ namespace IronRuby.Builtins {
             return value;
         }
 
-        [RubyMethod("critical", RubyMethodAttributes.PublicSingleton)]
+        private static void SetCritical(RubyContext/*!*/ context, bool value) {
+            System.Diagnostics.Debug.Assert(context.RubyOptions.Compatibility == RubyCompatibility.Ruby18);
+            if (value) {
+                Monitor.Enter(context.CriticalMonitor);
+                context.CriticalThread = Thread.CurrentThread;
+            } else {
+                Monitor.Exit(context.CriticalMonitor);
+                context.CriticalThread = null;
+            }
+
+        }
+
+        [RubyMethod("critical", RubyMethodAttributes.PublicSingleton)] // Compatibility <= RubyCompatibility.Ruby18
         public static bool Critical(RubyContext/*!*/ context, object self) {
             RubyThreadInfo.RegisterThread(Thread.CurrentThread);
-            return context.IsInCriticalRegion;
+            return context.CriticalThread != null;
         }
 
         [RubyMethod("critical=", RubyMethodAttributes.PublicSingleton)]
         public static void Critical(RubyContext/*!*/ context, object self, bool value) {
             RubyThreadInfo.RegisterThread(Thread.CurrentThread);
-            if (value) {
-                Monitor.Enter(context.CriticalMonitor);
-                context.IsInCriticalRegion = true;
-            } else {
-                context.IsInCriticalRegion = false;
-                Monitor.Exit(context.CriticalMonitor);
-            }
+            SetCritical(context, value);
         }
 
         [RubyMethod("current", RubyMethodAttributes.PublicSingleton)]
@@ -618,7 +624,7 @@ namespace IronRuby.Builtins {
                 throw new ThreadError("must be called with a block");
             }
             ThreadGroup group = Group(Thread.CurrentThread);
-            Thread result = new Thread(new ThreadStart(delegate() { RubyThreadStart(startRoutine, args, group); }));
+            Thread result = new Thread(new ThreadStart(delegate() { RubyThreadStart(context, startRoutine, args, group); }));
 
             // Ruby exits when the main thread exits. So all other threads need to be marked as background threads
             result.IsBackground = true;
@@ -627,7 +633,7 @@ namespace IronRuby.Builtins {
             return result;
         }
 
-        private static void RubyThreadStart(BlockParam startRoutine, object[]/*!*/ args, ThreadGroup group) {
+        private static void RubyThreadStart(RubyContext/*!*/ context, BlockParam startRoutine, object[]/*!*/ args, ThreadGroup group) {
             RubyThreadInfo info = RubyThreadInfo.FromThread(Thread.CurrentThread);
             info.CreatedFromRuby = true;
 
@@ -672,6 +678,15 @@ namespace IronRuby.Builtins {
                         throw;
                     }
                 }
+            } finally {
+                // Its not a good idea to terminate a thread which has set Thread.critical=true, but its hard to predict
+                // which thread will be scheduled next, even with green threads. However, ConditionVariable.create_timer 
+                // in monitor.rb explicitly does "Thread.critical=true; other_thread.raise" before exiting, and expects
+                // other_thread to be scheduled immediately.
+                // To deal with such code, we release the critical monitor here if the current thread is holding it
+                if (context.RubyOptions.Compatibility == RubyCompatibility.Ruby18 && context.CriticalThread == Thread.CurrentThread) {
+                    SetCritical(context, false);
+                }
             }
         }
 
@@ -683,8 +698,8 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("stop", RubyMethodAttributes.PublicSingleton)]
         public static void Stop(RubyContext/*!*/ context, object self) {
-            if (context.IsInCriticalRegion) {
-                Critical(context, self, false);
+            if (context.CriticalThread == Thread.CurrentThread) {
+                SetCritical(context, false);
             }
             DoSleep();
         }
