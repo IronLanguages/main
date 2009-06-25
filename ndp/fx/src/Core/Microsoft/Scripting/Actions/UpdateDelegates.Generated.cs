@@ -1,4 +1,4 @@
-/* ****************************************************************************
+﻿/* ****************************************************************************
  *
  * Copyright (c) Microsoft Corporation. 
  *
@@ -86,9 +86,9 @@ namespace System.Dynamic {
 
             var cache = CallSiteOps.GetRuleCache(@this);
 
-            var cachedRules = cache.GetRules();
-            for (int i = 0; i < cachedRules.Length; i++) {
-                rule = cachedRules[i].Target;
+            applicable = cache.GetRules();
+            for (int i = 0; i < applicable.Length; i++) {
+                rule = applicable[i];
 
                 //
                 // Execute the rule
@@ -211,9 +211,9 @@ namespace System.Dynamic {
 
             var cache = CallSiteOps.GetRuleCache(@this);
 
-            var cachedRules = cache.GetRules();
-            for (int i = 0; i < cachedRules.Length; i++) {
-                rule = cachedRules[i].Target;
+            applicable = cache.GetRules();
+            for (int i = 0; i < applicable.Length; i++) {
+                rule = applicable[i];
 
                 //
                 // Execute the rule
@@ -336,9 +336,9 @@ namespace System.Dynamic {
 
             var cache = CallSiteOps.GetRuleCache(@this);
 
-            var cachedRules = cache.GetRules();
-            for (int i = 0; i < cachedRules.Length; i++) {
-                rule = cachedRules[i].Target;
+            applicable = cache.GetRules();
+            for (int i = 0; i < applicable.Length; i++) {
+                rule = applicable[i];
 
                 //
                 // Execute the rule
@@ -461,9 +461,9 @@ namespace System.Dynamic {
 
             var cache = CallSiteOps.GetRuleCache(@this);
 
-            var cachedRules = cache.GetRules();
-            for (int i = 0; i < cachedRules.Length; i++) {
-                rule = cachedRules[i].Target;
+            applicable = cache.GetRules();
+            for (int i = 0; i < applicable.Length; i++) {
+                rule = applicable[i];
 
                 //
                 // Execute the rule
@@ -586,9 +586,9 @@ namespace System.Dynamic {
 
             var cache = CallSiteOps.GetRuleCache(@this);
 
-            var cachedRules = cache.GetRules();
-            for (int i = 0; i < cachedRules.Length; i++) {
-                rule = cachedRules[i].Target;
+            applicable = cache.GetRules();
+            for (int i = 0; i < applicable.Length; i++) {
+                rule = applicable[i];
 
                 //
                 // Execute the rule
@@ -711,9 +711,9 @@ namespace System.Dynamic {
 
             var cache = CallSiteOps.GetRuleCache(@this);
 
-            var cachedRules = cache.GetRules();
-            for (int i = 0; i < cachedRules.Length; i++) {
-                rule = cachedRules[i].Target;
+            applicable = cache.GetRules();
+            for (int i = 0; i < applicable.Length; i++) {
+                rule = applicable[i];
 
                 //
                 // Execute the rule
@@ -836,9 +836,9 @@ namespace System.Dynamic {
 
             var cache = CallSiteOps.GetRuleCache(@this);
 
-            var cachedRules = cache.GetRules();
-            for (int i = 0; i < cachedRules.Length; i++) {
-                rule = cachedRules[i].Target;
+            applicable = cache.GetRules();
+            for (int i = 0; i < applicable.Length; i++) {
+                rule = applicable[i];
 
                 //
                 // Execute the rule
@@ -961,9 +961,9 @@ namespace System.Dynamic {
 
             var cache = CallSiteOps.GetRuleCache(@this);
 
-            var cachedRules = cache.GetRules();
-            for (int i = 0; i < cachedRules.Length; i++) {
-                rule = cachedRules[i].Target;
+            applicable = cache.GetRules();
+            for (int i = 0; i < applicable.Length; i++) {
+                rule = applicable[i];
 
                 //
                 // Execute the rule
@@ -1086,9 +1086,9 @@ namespace System.Dynamic {
 
             var cache = CallSiteOps.GetRuleCache(@this);
 
-            var cachedRules = cache.GetRules();
-            for (int i = 0; i < cachedRules.Length; i++) {
-                rule = cachedRules[i].Target;
+            applicable = cache.GetRules();
+            for (int i = 0; i < applicable.Length; i++) {
+                rule = applicable[i];
 
                 //
                 // Execute the rule
@@ -1211,9 +1211,9 @@ namespace System.Dynamic {
 
             var cache = CallSiteOps.GetRuleCache(@this);
 
-            var cachedRules = cache.GetRules();
-            for (int i = 0; i < cachedRules.Length; i++) {
-                rule = cachedRules[i].Target;
+            applicable = cache.GetRules();
+            for (int i = 0; i < applicable.Length; i++) {
+                rule = applicable[i];
 
                 //
                 // Execute the rule
@@ -1336,9 +1336,9 @@ namespace System.Dynamic {
 
             var cache = CallSiteOps.GetRuleCache(@this);
 
-            var cachedRules = cache.GetRules();
-            for (int i = 0; i < cachedRules.Length; i++) {
-                rule = cachedRules[i].Target;
+            applicable = cache.GetRules();
+            for (int i = 0; i < applicable.Length; i++) {
+                rule = applicable[i];
 
                 //
                 // Execute the rule
@@ -1460,9 +1460,9 @@ namespace System.Dynamic {
 
             var cache = CallSiteOps.GetRuleCache(@this);
 
-            var cachedRules = cache.GetRules();
-            for (int i = 0; i < cachedRules.Length; i++) {
-                rule = cachedRules[i].Target;
+            applicable = cache.GetRules();
+            for (int i = 0; i < applicable.Length; i++) {
+                rule = applicable[i];
 
                 //
                 // Execute the rule
@@ -1584,9 +1584,9 @@ namespace System.Dynamic {
 
             var cache = CallSiteOps.GetRuleCache(@this);
 
-            var cachedRules = cache.GetRules();
-            for (int i = 0; i < cachedRules.Length; i++) {
-                rule = cachedRules[i].Target;
+            applicable = cache.GetRules();
+            for (int i = 0; i < applicable.Length; i++) {
+                rule = applicable[i];
 
                 //
                 // Execute the rule
@@ -1708,9 +1708,9 @@ namespace System.Dynamic {
 
             var cache = CallSiteOps.GetRuleCache(@this);
 
-            var cachedRules = cache.GetRules();
-            for (int i = 0; i < cachedRules.Length; i++) {
-                rule = cachedRules[i].Target;
+            applicable = cache.GetRules();
+            for (int i = 0; i < applicable.Length; i++) {
+                rule = applicable[i];
 
                 //
                 // Execute the rule
@@ -1832,9 +1832,9 @@ namespace System.Dynamic {
 
             var cache = CallSiteOps.GetRuleCache(@this);
 
-            var cachedRules = cache.GetRules();
-            for (int i = 0; i < cachedRules.Length; i++) {
-                rule = cachedRules[i].Target;
+            applicable = cache.GetRules();
+            for (int i = 0; i < applicable.Length; i++) {
+                rule = applicable[i];
 
                 //
                 // Execute the rule
@@ -1956,9 +1956,9 @@ namespace System.Dynamic {
 
             var cache = CallSiteOps.GetRuleCache(@this);
 
-            var cachedRules = cache.GetRules();
-            for (int i = 0; i < cachedRules.Length; i++) {
-                rule = cachedRules[i].Target;
+            applicable = cache.GetRules();
+            for (int i = 0; i < applicable.Length; i++) {
+                rule = applicable[i];
 
                 //
                 // Execute the rule
@@ -2080,9 +2080,9 @@ namespace System.Dynamic {
 
             var cache = CallSiteOps.GetRuleCache(@this);
 
-            var cachedRules = cache.GetRules();
-            for (int i = 0; i < cachedRules.Length; i++) {
-                rule = cachedRules[i].Target;
+            applicable = cache.GetRules();
+            for (int i = 0; i < applicable.Length; i++) {
+                rule = applicable[i];
 
                 //
                 // Execute the rule
@@ -2204,9 +2204,9 @@ namespace System.Dynamic {
 
             var cache = CallSiteOps.GetRuleCache(@this);
 
-            var cachedRules = cache.GetRules();
-            for (int i = 0; i < cachedRules.Length; i++) {
-                rule = cachedRules[i].Target;
+            applicable = cache.GetRules();
+            for (int i = 0; i < applicable.Length; i++) {
+                rule = applicable[i];
 
                 //
                 // Execute the rule
@@ -2328,9 +2328,9 @@ namespace System.Dynamic {
 
             var cache = CallSiteOps.GetRuleCache(@this);
 
-            var cachedRules = cache.GetRules();
-            for (int i = 0; i < cachedRules.Length; i++) {
-                rule = cachedRules[i].Target;
+            applicable = cache.GetRules();
+            for (int i = 0; i < applicable.Length; i++) {
+                rule = applicable[i];
 
                 //
                 // Execute the rule
@@ -2452,9 +2452,9 @@ namespace System.Dynamic {
 
             var cache = CallSiteOps.GetRuleCache(@this);
 
-            var cachedRules = cache.GetRules();
-            for (int i = 0; i < cachedRules.Length; i++) {
-                rule = cachedRules[i].Target;
+            applicable = cache.GetRules();
+            for (int i = 0; i < applicable.Length; i++) {
+                rule = applicable[i];
 
                 //
                 // Execute the rule
@@ -2576,9 +2576,9 @@ namespace System.Dynamic {
 
             var cache = CallSiteOps.GetRuleCache(@this);
 
-            var cachedRules = cache.GetRules();
-            for (int i = 0; i < cachedRules.Length; i++) {
-                rule = cachedRules[i].Target;
+            applicable = cache.GetRules();
+            for (int i = 0; i < applicable.Length; i++) {
+                rule = applicable[i];
 
                 //
                 // Execute the rule

@@ -84,6 +84,16 @@
       <HintPath>$(SilverlightPath)\System.Xml.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="System.Data, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(SilverlightPath)\System.Data.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System.Net, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(SilverlightPath)\System.Net.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\SilverlightVersion.cs">
@@ -92,11 +102,18 @@
     <Compile Include="BrowserPAL.cs" />
     <Compile Include="BrowserScriptHost.cs" />
     <Compile Include="Configuration.cs" />
+    <Compile Include="Extension.cs" />
+    <Compile Include="Repl.cs" />
     <Compile Include="DynamicApplication.cs" />
     <Compile Include="ErrorFormatter.cs" />
     <Compile Include="ExtensionTypes.cs" />
     <Compile Include="Package.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Window.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="agdlr.css" />
+    <EmbeddedResource Include="agdlr.js" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" Condition=" '$(SilverlightTreeBuild)' != 'true' " />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

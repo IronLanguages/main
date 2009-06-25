@@ -75,7 +75,7 @@ namespace System.Runtime.CompilerServices {
                 if (b == node.Body) {
                     return node;
                 }
-                return Expression.Lambda<T>(b, node.Name, node.Parameters);
+                return Expression.Lambda<T>(b, node.Name, node.TailCall, node.Parameters);
             }
 
             protected internal override Expression VisitBlock(BlockExpression node) {

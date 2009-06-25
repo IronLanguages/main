@@ -21,8 +21,6 @@ using System.Dynamic.Utils;
 using System.Linq.Expressions;
 using System.Linq.Expressions.Compiler;
 using System.Reflection;
-using System.Threading;
-using System.Collections;
 
 namespace System.Runtime.CompilerServices {
 
@@ -433,10 +431,7 @@ namespace System.Runtime.CompilerServices {
                 );
             }
 
-            Expression getRule = Expression.Assign(
-                rule,
-                Expression.ArrayAccess(applicable, index)
-            );
+            Expression getRule = Expression.Assign(rule, Expression.ArrayAccess(applicable, index));
 
             var @break = Expression.Label();
 
@@ -486,8 +481,12 @@ namespace System.Runtime.CompilerServices {
             ////
             //// Level 2 cache lookup
             ////
-            // i = 0;
-            // var cache = @this.Binder.GetRuleCache<%(funcType)s>();
+            //
+            ////
+            //// Any applicable rules in level 2 cache?
+            ////
+            // 
+            // var cache = CallSiteOps.GetRuleCache(@this);
 
             var cache = Expression.Variable(typeof(RuleCache<T>), "cache");
             vars.Add(cache);
@@ -499,38 +498,17 @@ namespace System.Runtime.CompilerServices {
                 )
             );
 
-            body.Add(
-                Expression.Assign(
-                    index,
-                    Expression.Constant(0)
-                )
-            );
-
-            ////
-            //// Any applicable rules in level 2 cache?
-            ////
-            //    foreach (var cachedRule in CallSiteOps.GetCachedRules<%(funcType)s>(cache)) {
-
-            ParameterExpression enumerator = Expression.Parameter(typeof(IEnumerator<>).MakeGenericType(typeArgs), "enum");
-            vars.Add(enumerator);
+            // applicable = cache.GetRules();
 
             body.Add(
                 Expression.Assign(
-                    enumerator,
-                    Expression.Call(
-                        Expression.Call(
-                            typeof(CallSiteOps),
-                            "GetCachedRules",
-                            typeArgs,
-                            cache
-                        ),
-                        typeof(IEnumerable<>).MakeGenericType(typeArgs).GetMethod("GetEnumerator")
-                    )
+                    applicable,
+                    Expression.Call(typeof(CallSiteOps), "GetCachedRules", typeArgs, cache)
                 )
             );
 
-
-            //        @this.Target = rule;
+            //   for (int i = 0, count = applicable.Length; i < count; i++) {
+            //        @this.Target = rule = applicable[i];
             //
             //        //
             //        // Execute the rule
@@ -589,28 +567,13 @@ namespace System.Runtime.CompilerServices {
                 )
             );
 
-            body.Add(
-                Expression.Assign(index, Expression.Constant(0))
-            );
-
-            breakIfDone = Expression.IfThen(
-                Expression.Not(
-                    Expression.Call(
-                        enumerator,
-                        typeof(IEnumerator).GetMethod("MoveNext")
-                    )
-                ),
-                Expression.Break(@break)
-            );
-
             getRule = Expression.Assign(
-                rule,
-                Expression.Assign(
-                    Expression.Field(@this, "Target"),
-                    Expression.Property(enumerator, "Current")
-                )
+                Expression.Field(@this, "Target"),
+                Expression.Assign(rule, Expression.ArrayAccess(applicable, index))
             );
 
+            body.Add(Expression.Assign(index, Expression.Constant(0)));
+            body.Add(Expression.Assign(count, Expression.ArrayLength(applicable)));
             body.Add(
                 Expression.Loop(
                     Expression.Block(
@@ -728,11 +691,6 @@ namespace System.Runtime.CompilerServices {
                 return arg;
             }
             return Expression.Convert(arg, type);
-        }
-
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
-        internal CallSiteRule<T> MakeRule(T target) {
-            return new CallSiteRule<T>(null, target);
         }
     }
 }

@@ -26,6 +26,7 @@ using IronRuby.Runtime.Calls;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Ast = System.Linq.Expressions.Expression;
+using System.Collections;
 
 namespace IronRuby.Builtins {
 
@@ -617,10 +618,10 @@ namespace IronRuby.Builtins {
 
         public static MutableString/*!*/ ToPrintedString(ConversionStorage<MutableString>/*!*/ tosConversion, object obj) {
             IDictionary<object, object> hash;
-            List<object> list;
+            IList list;
             MutableString str;
 
-            if ((list = obj as List<object>) != null) {
+            if ((list = obj as IList) != null) {
                 return IListOps.Join(tosConversion, list, NewLine);
             } else if ((hash = obj as IDictionary<object, object>) != null) {
                 return IDictionaryOps.ToMutableString(tosConversion, hash);

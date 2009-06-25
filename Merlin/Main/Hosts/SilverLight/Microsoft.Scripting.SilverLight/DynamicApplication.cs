@@ -24,6 +24,7 @@ using System.Xml;
 using Microsoft.Scripting.Hosting;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+using System.Net;
 
 namespace Microsoft.Scripting.Silverlight {
 
@@ -112,11 +113,19 @@ namespace Microsoft.Scripting.Silverlight {
             get { return _runtime; }
         }
 
+        internal ScriptEngine Engine {
+            get { return _engine; }
+        }
+
+        internal ScriptScope EntryPointScope {
+            get { return _entryPointScope; }
+        }
         #endregion
 
         #region instance variables
 
         private string _entryPoint;
+        private bool   _consoleEnabled;
         private bool   _debug;
         private bool   _exceptionDetail;
         private bool   _reportErrors;
@@ -132,12 +141,14 @@ namespace Microsoft.Scripting.Silverlight {
 
         private ScriptRuntime _runtime;
         private ScriptRuntimeSetup _runtimeSetup;
+        private ScriptEngine _engine;
+        private ScriptScope _entryPointScope;
 
         internal static bool InUIThread {
             get { return _UIThreadId == Thread.CurrentThread.ManagedThreadId; }
         }
-
         #endregion
+
         #region public API
 
         // these are instance methods so you can do Application.Current.TheMethod(...)
@@ -187,7 +198,50 @@ namespace Microsoft.Scripting.Silverlight {
             return new Uri(baseUri + relativeUri, UriKind.Relative);
         }
 
+        public static ScriptRuntimeSetup CreateRuntimeSetup(IEnumerable<Assembly> assemblies) {
+            ScriptRuntimeSetup setup = Configuration.TryParseFile();
+            if (setup == null) {
+                if (assemblies == null) {
+                    if (!Package.ContainsDLRAssemblies(Deployment.Current.Parts)) {
+                        assemblies = Package.GetExtensionAssemblies();
+                    } else {
+                        assemblies = Package.GetManifestAssemblies();
+                    }
+                }
+                setup = Configuration.LoadFromAssemblies(assemblies);
+            }
+            setup.HostType = typeof(BrowserScriptHost);
+            return setup;
+        }
+
+        public static ScriptRuntimeSetup CreateRuntimeSetup() {
+            return CreateRuntimeSetup(null);
+        }
+
+        public static StreamResourceInfo XapFile {
+            get {
+                return BrowserPAL.PAL.XapFile;
+            }
+            set {
+                BrowserPAL.PAL.XapFile = value;
+            }
+        }
         #endregion
+
+        public static void LoadAssemblies(Action onComplete) {
+            if (!Package.ContainsDLRAssemblies(Deployment.Current.Parts)) {
+                // FIXME: for now, we manually redownload extensions.
+                // A SL bug is stopping us from using Deployment.Current.ExternalParts
+                // to figure out what extensions have been requested by the application.
+                // FIXME: The extensions are downloaded one after the other ... should
+                // be done in parallel.
+                Extension.FetchDLR(delegate() {
+                    onComplete.Invoke();
+                });
+            } else {
+                onComplete.Invoke();
+            }
+        }
 
         #region implementation
 
@@ -211,46 +265,51 @@ namespace Microsoft.Scripting.Silverlight {
             ReportUnhandledErrors = true;
 
             ParseArguments(e.InitParams);
-            
-            ScriptRuntimeSetup setup = Configuration.TryParseFile();
-            if (setup == null) {
-                setup = Configuration.LoadFromAssemblies(Package.GetManifestAssemblies());
-            }
 
-            InitializeDLR(setup);
+            DynamicApplication.LoadAssemblies(delegate() {
+                Start();
+            });
+        }
 
+        void Start() {
+            InitializeDLR();
             StartMainProgram();
         }
 
-        private void InitializeDLR(ScriptRuntimeSetup setup) {
-            setup.HostType = typeof(BrowserScriptHost);
+        private void InitializeDLR() {
+            var setup = CreateRuntimeSetup();
             setup.DebugMode = _debug;
-
             setup.Options["SearchPaths"] = new string[] { String.Empty };
             
             _runtimeSetup = setup;
             _runtime = new ScriptRuntime(setup);
 
             _runtime.LoadAssembly(GetType().Assembly); // to expose our helper APIs
+            LoadDefaultAssemblies(_runtime);
+        }
 
+        public static void LoadDefaultAssemblies(ScriptRuntime runtime) {
             // Add default references to Silverlight platform DLLs
             // (Currently we auto reference CoreCLR, UI controls, browser interop, and networking stack.)
             foreach (string name in new string[] { "mscorlib", "System", "System.Windows", "System.Windows.Browser", "System.Net" }) {
-                _runtime.LoadAssembly(BrowserPAL.PAL.LoadAssembly(name));
+                runtime.LoadAssembly(GetAssemblyByName(name));
             }
+        }
+
+        public static Assembly GetAssemblyByName(string name) {
+            return BrowserPAL.PAL.LoadAssembly(name);
         }
 
         private void StartMainProgram() {
             string code = Package.GetEntryPointContents();
+            _engine = _runtime.GetEngineByFileExtension(Path.GetExtension(_entryPoint));
+            _entryPointScope = _engine.CreateScope();
 
-            ScriptEngine engine = _runtime.GetEngineByFileExtension(Path.GetExtension(_entryPoint));
+            if (_consoleEnabled)
+                Repl.Show();
 
-            ScriptSource sourceCode = engine.CreateScriptSourceFromString(code, _entryPoint, SourceCodeKind.File);
-
-            // Create a new script module & execute the code.
-            // It's important to use optimized scopes,
-            // which are ~4x faster on benchmarks that make heavy use of top-level functions/variables.
-            sourceCode.Compile(new ErrorFormatter.Sink()).Execute();
+            ScriptSource sourceCode = _engine.CreateScriptSourceFromString(code, _entryPoint, SourceCodeKind.File);
+            sourceCode.Compile(new ErrorFormatter.Sink()).Execute(_entryPointScope);
         }
 
 
@@ -264,6 +323,13 @@ namespace Microsoft.Scripting.Silverlight {
 
             _initParams.TryGetValue("start", out _entryPoint);
 
+            string consoleEnabled;
+            if (_initParams.TryGetValue("console", out consoleEnabled)) {
+                if (!bool.TryParse(consoleEnabled, out _consoleEnabled)) {
+                    throw new ArgumentException("You must set 'console' to 'true' or 'false', for example: initParams: \"..., console=true\"");
+                }
+            }
+            
             string debug;
             if (_initParams.TryGetValue("debug", out debug)) {
                 if (!bool.TryParse(debug, out _debug)) {

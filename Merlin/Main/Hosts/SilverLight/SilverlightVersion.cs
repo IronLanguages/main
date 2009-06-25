@@ -19,6 +19,9 @@ using System.Reflection;
 using System.Resources;
 
 [assembly: AssemblyVersion("2.0.5.0")]
+
+// Keep the version number set to the initial Silverlight 2 RTW version (2.0.31005),
+// does not need to track the latest Silverlight 2 GDR (2.0.40115).
 [assembly: AssemblyFileVersion("2.0.31005.0")]
 [assembly: AssemblyInformationalVersion("2.0.31005.0")]
 

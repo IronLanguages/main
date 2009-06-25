@@ -93,16 +93,25 @@ namespace Microsoft.Scripting.Utils {
         /// <summary>
         /// Requires the range [offset, offset + count] to be a subset of [0, array.Count].
         /// </summary>
-        /// <exception cref="ArgumentNullException">Array is <c>null</c>.</exception>
         /// <exception cref="ArgumentOutOfRangeException">Offset or count are out of range.</exception>
         public static void RequiresArrayRange<T>(IList<T> array, int offset, int count, string offsetName, string countName) {
+            Assert.NotNull(array);
+            RequiresArrayRange(array.Count, offset, count, offsetName, countName);
+        }
+
+        /// <summary>
+        /// Requires the range [offset, offset + count] to be a subset of [0, array.Count].
+        /// </summary>
+        /// <exception cref="ArgumentOutOfRangeException">Offset or count are out of range.</exception>
+        public static void RequiresArrayRange(int arraySize, int offset, int count, string offsetName, string countName) {
             Assert.NotEmpty(offsetName);
             Assert.NotEmpty(countName);
-            Assert.NotNull(array);
+            Debug.Assert(arraySize >= 0);
 
             if (count < 0) throw new ArgumentOutOfRangeException(countName);
-            if (offset < 0 || array.Count - offset < count) throw new ArgumentOutOfRangeException(offsetName);
+            if (offset < 0 || arraySize - offset < count) throw new ArgumentOutOfRangeException(offsetName);
         }
+
 
         /// <summary>
         /// Requires the range [offset, offset + count] to be a subset of [0, array.Count].

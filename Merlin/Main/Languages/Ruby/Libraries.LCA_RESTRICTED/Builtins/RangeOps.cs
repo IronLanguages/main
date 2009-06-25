@@ -76,7 +76,8 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region begin, first
+        #region begin, first, end, last, exclude_end?
+
         /// <summary>
         /// Returns the first object in self
         /// </summary>
@@ -84,9 +85,7 @@ namespace IronRuby.Builtins {
         public static object Begin([NotNull]Range/*!*/ self) {
             return self.Begin;
         }
-        #endregion
 
-        #region end, last
         /// <summary>
         /// Returns the object that defines the end of self
         /// </summary>
@@ -94,9 +93,7 @@ namespace IronRuby.Builtins {
         public static object End([NotNull]Range/*!*/ self) {
             return self.End;
         }
-        #endregion
 
-        #region exclude_end?
         /// <summary>
         /// Returns true if self excludes its end value. 
         /// </summary>
@@ -104,6 +101,7 @@ namespace IronRuby.Builtins {
         public static bool ExcludeEnd([NotNull]Range/*!*/ self) {
             return self.ExcludeEnd;
         }
+
         #endregion
 
         #region inspect, to_s
@@ -168,7 +166,6 @@ namespace IronRuby.Builtins {
         /// </example>
         [RubyMethod("eql?")]
         public static bool Eql(BinaryOpStorage/*!*/ equalsStorage, Range/*!*/ self, [NotNull]Range/*!*/ other) {
-
             if (self == other) {
                 return true;
             }
@@ -221,17 +218,23 @@ namespace IronRuby.Builtins {
         #endregion
 
         #region hash
+
         /// <summary>
         /// Generate a hash value such that two ranges with the same start and end points,
         /// and the same value for the "exclude end" flag, generate the same hash value. 
         /// </summary>
         [RubyMethod("hash")]
-        public static int GetHashCode(Range/*!*/ self) {
-            int hash = RubyUtils.GetHashCode(self.Begin);
-            hash ^= RubyUtils.GetHashCode(self.End);
-            hash ^= RubyUtils.GetHashCode(self.ExcludeEnd);
-            return hash;
+        public static int GetHashCode(UnaryOpStorage/*!*/ hashStorage, Range/*!*/ self) {
+            // MRI: Ruby treatment of hash return value is inconsistent. 
+            // No conversions happen here (unlike e.g. Array.hash).
+            var hashSite = hashStorage.GetCallSite("hash");
+            return unchecked(
+                Protocols.ToHashCode(hashSite.Target(hashSite, self.Begin)) ^
+                Protocols.ToHashCode(hashSite.Target(hashSite, self.End)) ^ 
+                (self.ExcludeEnd ? 179425693 : 1794210891)
+            );
         }
+
         #endregion
 
         #region each
@@ -252,7 +255,7 @@ namespace IronRuby.Builtins {
             UnaryOpStorage/*!*/ succStorage,
             BlockParam block, Range/*!*/ self) {
 
-            // We check that self.begin responds to "succ" even though some of the implementations don't use it.
+            // MRI: Checks that self.begin responds to "succ" even though it might not be used.
             CheckBegin(respondToStorage, self.Begin);
 
             if (self.Begin is int && self.End is int) {
@@ -301,7 +304,7 @@ namespace IronRuby.Builtins {
                 // self.begin is Fixnum; directly call item = item + 1 instead of succ
                 int intStep = Protocols.CastToFixnum(fixnumCast, step);
                 return StepFixnum(block, self, (int)self.Begin, (int)self.End, intStep);
-            } else if (self.Begin is MutableString ) {
+            } else if (self.Begin is MutableString) {
                 // self.begin is String; use item.succ and item <=> self.end but make sure you check the length of the strings
                 int intStep = Protocols.CastToFixnum(fixnumCast, step);
                 return StepString(stringCast, comparisonStorage, lessThanStorage, greaterThanStorage, succStorage, 

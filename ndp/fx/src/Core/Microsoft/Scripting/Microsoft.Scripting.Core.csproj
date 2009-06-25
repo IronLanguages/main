@@ -114,7 +114,6 @@
     <Compile Include="Actions\BinaryOperationBinder.cs" />
     <Compile Include="Actions\CallSite.cs" />
     <Compile Include="Actions\CallSiteBinder.cs" />
-    <Compile Include="Actions\CallSiteRule.cs" />
     <Compile Include="Actions\CallSiteHelpers.cs" />
     <Compile Include="Actions\ConvertBinder.cs" />
     <Compile Include="Actions\DeleteIndexBinder.cs" />
@@ -150,7 +149,6 @@
     <Compile Include="Compiler\RuntimeVariableList.cs" />
     <Compile Include="Actions\UpdateDelegates.Generated.cs" />
     <Compile Include="Ast\DynamicExpression.cs" />
-    <Compile Include="Actions\AutoRuleTemplate.cs" />
     <Compile Include="Ast\BinaryExpression.cs" />
     <Compile Include="Ast\BlockExpression.cs" />
     <Compile Include="Ast\CatchBlock.cs" />
@@ -180,7 +178,6 @@
     <Compile Include="Ast\ParameterExpression.cs" />
     <Compile Include="Ast\SwitchCase.cs" />
     <Compile Include="Ast\SwitchExpression.cs" />
-    <Compile Include="Ast\TreeComparer.cs" />
     <Compile Include="Ast\TryExpression.cs" />
     <Compile Include="Ast\TypeBinaryExpression.cs" />
     <Compile Include="Ast\TypeUtils.cs" />

@@ -661,9 +661,8 @@ module Gem
     private :same_attributes?
 
     def hash # :nodoc:
-      @@attributes.inject(0) { |hash_code, (name, default_value)|
-        n = self.send(name).hash
-        hash_code + n
+      @@attributes.inject(612553) { |hash_code, (name, default_value)|
+        hash_code ^ self.send(name).hash
       }
     end
 

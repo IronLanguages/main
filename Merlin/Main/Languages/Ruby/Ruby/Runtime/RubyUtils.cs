@@ -41,16 +41,6 @@ namespace IronRuby.Runtime {
         public static readonly int TrueObjectId = 2;
         public static readonly int NilObjectId = 4;
 
-        // TODO: this is not correct, because it won't call singleton "eql?" methods
-        public static bool ValueEquals(object self, object other) {
-            return object.Equals(self, other);
-        }
-
-        // TODO: this is not correct, because it won't call singleton "hash" methods
-        public static int GetHashCode(object self) {
-            return self != null ? self.GetHashCode() : RubyUtils.NilObjectId;
-        }
-
         /// <summary>
         /// Determines whether the given object is a value type in Ruby (i.e. they have value equality)
         /// 
@@ -121,7 +111,7 @@ namespace IronRuby.Runtime {
             }
         }
 
-        public static MutableString/*!*/ FormatObjectPrefix(string/*!*/ className, int objectId, bool isTainted) {
+        public static MutableString/*!*/ FormatObjectPrefix(string/*!*/ className, long objectId, bool isTainted) {
             MutableString str = MutableString.CreateMutable();
             str.Append("#<");
             str.Append(className);
@@ -134,7 +124,7 @@ namespace IronRuby.Runtime {
             return str;
         }
 
-        public static MutableString/*!*/ FormatObject(string/*!*/ className, int objectId, bool isTainted) {
+        public static MutableString/*!*/ FormatObject(string/*!*/ className, long objectId, bool isTainted) {
             return FormatObjectPrefix(className, objectId, isTainted).Append(">");
         }
 
@@ -146,7 +136,7 @@ namespace IronRuby.Runtime {
             return FormatObjectPrefix(context.GetClassDisplayName(obj), GetObjectId(context, obj), context.IsObjectTainted(obj));
         }
 
-        public static MutableString/*!*/ AppendFormatHexObjectId(MutableString/*!*/ str, int objectId) {
+        public static MutableString/*!*/ AppendFormatHexObjectId(MutableString/*!*/ str, long objectId) {
             return str.AppendFormat("0x{0:x7}", 2 * objectId);
         }
 
@@ -183,11 +173,11 @@ namespace IronRuby.Runtime {
             return true;
         }        
 
-        public static int GetFixnumId(int number) {
-            return number * 2 + 1;
+        public static long GetFixnumId(int number) {
+            return ((long)number << 1) + 1;
         }
 
-        public static int GetObjectId(RubyContext/*!*/ context, object obj) {
+        public static long GetObjectId(RubyContext/*!*/ context, object obj) {
             if (obj == null) return NilObjectId;
             if (obj is bool) return (bool)obj ? TrueObjectId : FalseObjectId;
             if (obj is int) return GetFixnumId((int)obj);

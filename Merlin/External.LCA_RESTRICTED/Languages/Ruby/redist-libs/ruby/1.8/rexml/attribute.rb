@@ -93,7 +93,7 @@ module REXML
 
 		# Creates (and returns) a hash from both the name and value
 		def hash
-			name.hash + value.hash
+			name.hash ^ value.hash
 		end
 
 		# Returns this attribute out as XML source, expanding the name

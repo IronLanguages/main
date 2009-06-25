@@ -1,0 +1,3 @@
+describe "smoke" do
+
+end
