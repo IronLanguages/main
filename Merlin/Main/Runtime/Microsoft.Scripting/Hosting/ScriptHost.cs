@@ -18,6 +18,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Dynamic;
+using System.Security.Permissions;
 using System.Text;
 using Microsoft.Scripting.Utils;
 
@@ -91,6 +92,14 @@ namespace Microsoft.Scripting.Hosting {
         }
 
         #endregion
+
+#if !SILVERLIGHT
+        // TODO: Figure out what is the right lifetime
+        [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.Infrastructure)]
+        public override object InitializeLifetimeService() {
+            return null;
+        }
+#endif
     }
 
 }
