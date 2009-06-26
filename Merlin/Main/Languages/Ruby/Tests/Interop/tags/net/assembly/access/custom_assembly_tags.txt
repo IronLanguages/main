@@ -1,1 +1,0 @@
-fails:Static dependency loading does propagate load exceptions
