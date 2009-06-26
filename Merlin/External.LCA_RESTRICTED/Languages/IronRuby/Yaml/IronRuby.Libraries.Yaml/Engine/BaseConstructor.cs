@@ -440,7 +440,7 @@ namespace IronRuby.StandardLibrary.Yaml {
                 ([0-9][0-9])                # Seconds
 
                 (?:
-                    \\.
+                    .
                     ([0-9]*)                # Fractional seconds
                 )?
 

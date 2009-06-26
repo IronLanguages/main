@@ -5732,6 +5732,11 @@ namespace IronRuby.Builtins {
                 new System.Func<System.DateTime, System.DateTime, System.Int32>(IronRuby.Builtins.TimeOps.CompareTo)
             );
             
+            module.DefineLibraryMethod("==", 0x51, 
+                new System.Func<System.DateTime, System.DateTime, System.Boolean>(IronRuby.Builtins.TimeOps.Eql), 
+                new System.Func<IronRuby.Runtime.RubyContext, System.DateTime, System.Object, System.Object>(IronRuby.Builtins.TimeOps.Equals)
+            );
+            
             module.DefineLibraryMethod("asctime", 0x51, 
                 new System.Func<System.DateTime, IronRuby.Builtins.MutableString>(IronRuby.Builtins.TimeOps.ToString)
             );

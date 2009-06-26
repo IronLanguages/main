@@ -920,7 +920,8 @@ namespace IronRuby.Builtins {
             object self,
             int cmd, 
             [DefaultProtocol, NotNull]MutableString/*!*/ file1) {
-            switch ((char)cmd) {
+            cmd &= 0xFF;
+            switch (cmd) {
                 case 'A': throw new NotImplementedException();
                 case 'b': throw new NotImplementedException();
                 case 'C': throw new NotImplementedException();
@@ -964,7 +965,8 @@ namespace IronRuby.Builtins {
             int cmd,
             [DefaultProtocol, NotNull]MutableString/*!*/ file1,
             [DefaultProtocol, NotNull]MutableString/*!*/ file2) {
-            switch ((char)cmd) {
+            cmd &= 0xFF;
+            switch (cmd) {
                 case '-': throw new NotImplementedException();
                 case '=': throw new NotImplementedException();
                 case '<': throw new NotImplementedException();

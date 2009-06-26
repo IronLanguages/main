@@ -896,7 +896,10 @@ namespace IronRuby.Builtins {
         
         // thread-safe:
         public void SetAutoloadedConstant(string/*!*/ name, MutableString/*!*/ path) {
-            SetConstant(name, new AutoloadedConstant(MutableString.Create(path).Freeze()));
+            object dummy;
+            if (!TryGetConstantNoAutoload(name, out dummy)) {
+                SetConstant(name, new AutoloadedConstant(MutableString.Create(path).Freeze()));
+            }
         }
 
         // thread-safe:
