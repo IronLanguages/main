@@ -20,6 +20,8 @@ using Microsoft.Scripting.Utils;
 using System.Diagnostics;
 
 namespace IronRuby.Runtime.Calls {
+    using BlockCallTargetN = Func<BlockParam, object, object[], object>;
+
     // L(n > 4, -)
     internal sealed class BlockDispatcherN : BlockDispatcher {
         private readonly BlockCallTargetN/*!*/ _block;

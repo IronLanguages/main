@@ -674,12 +674,13 @@ tutorial "IronRuby tutorial" do
                 Foundation application
             }
 
-            task :body => %{
+            task(:body => %{
                     It is useful to have common initialization code while using Windows Presentation Foundation
                     in interactive development. This is available in the +Wpf+ module in the <tt>wpf.rb</tt> file.
                 },
                 :source_files => IronRubyTutorial.wpf_path,
                 :code => "require 'wpf.rb'"
+                ) { |i| [false, true].include? i.result }
 
             task(:body => %{
                     To make all the WPF class names directly available, you could do:

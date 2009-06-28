@@ -16,6 +16,7 @@
 using System;
 using System.Collections.Generic;
 using System.Dynamic;
+using System.Security.Permissions;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
@@ -102,5 +103,13 @@ namespace Microsoft.Scripting.Hosting {
         public bool SkipTokens(int characterCount) {
             return _tokenizer.SkipTokens(characterCount);
         }
+
+#if !SILVERLIGHT
+        // TODO: Figure out what is the right lifetime
+        [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.Infrastructure)]
+        public override object InitializeLifetimeService() {
+            return null;
+        }
+#endif
     }
 }

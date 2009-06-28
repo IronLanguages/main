@@ -1,0 +1,14 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Directory\shell\ChironServer]
+@="Start Chiron Here"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Directory\shell\ChironServer\command]
+@="C:\\path\\to\\agdlr\\bin\\Chiron.exe /directory:\"%1\" /webserver"
+
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Directory\shell\ChironXAP]
+@="Generate XAP Here"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Directory\shell\ChironXAP\command]
+@="C:\\path\\to\\agdlr\\bin\\Chiron.exe /directory:\"%1\" /zipdlr:\"%1.xap\""

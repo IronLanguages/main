@@ -29,6 +29,12 @@ using AstFactory = IronRuby.Compiler.Ast.AstFactory;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Builtins {
+    using BlockCallTarget0 = Func<BlockParam, object, object>;
+    using BlockCallTarget1 = Func<BlockParam, object, object, object>;
+    using BlockCallTarget2 = Func<BlockParam, object, object, object, object>;
+    using BlockCallTarget3 = Func<BlockParam, object, object, object, object, object>;
+    using BlockCallTarget4 = Func<BlockParam, object, object, object, object, object, object>;
+    using BlockCallTargetN = Func<BlockParam, object, object[], object>;
 
     public enum ProcKind {
         Block,
@@ -269,38 +275,23 @@ namespace IronRuby.Builtins {
 
         #region Block helper methods
 
-        public static Proc/*!*/ Create(RubyContext/*!*/ context, Func<BlockParam, object, object>/*!*/ clrMethod) {
-            return Create(context, (BlockCallTarget1)BlockCallback1, clrMethod, 1);
+        public static Proc/*!*/ Create(RubyContext/*!*/ context, BlockCallTarget1/*!*/ clrMethod) {
+            return Create(context, clrMethod, 1);
         }
 
-        public static Proc/*!*/ Create(RubyContext/*!*/ context, Func<BlockParam, object, object, object>/*!*/ clrMethod) {
-            return Create(context, (BlockCallTarget2)BlockCallback2, clrMethod, 2);
+        public static Proc/*!*/ Create(RubyContext/*!*/ context, BlockCallTarget2/*!*/ clrMethod) {
+            return Create(context, clrMethod, 2);
         }
 
-        public static Proc/*!*/ Create(RubyContext/*!*/ context, Func<BlockParam, object, object, object, object>/*!*/ clrMethod) {
-            return Create(context, (BlockCallTarget3)BlockCallback3, clrMethod, 3);
+        public static Proc/*!*/ Create(RubyContext/*!*/ context, BlockCallTarget3/*!*/ clrMethod) {
+            return Create(context, clrMethod, 3);
         }
 
-        public static Proc/*!*/ Create(RubyContext/*!*/ context, Delegate/*!*/ clrMethod, object self, int parameterCount) {
+        public static Proc/*!*/ Create(RubyContext/*!*/ context, Delegate/*!*/ clrMethod, int parameterCount) {
             // scope is used to get to the execution context:
-            return new Proc(ProcKind.Block, self, context.EmptyScope, null, 0, BlockDispatcher.Create(clrMethod, parameterCount, BlockSignatureAttributes.None));
-        }
-
-        // The following methods are block implementations, therefore they need to have signature like a block.
-        // We need to get to the real delegate to call. We capture it into the self object.
-        public static object BlockCallback1(BlockParam/*!*/ block, object self, object arg0) {
-            var clrMethod = (Func<BlockParam, object, object>)self;
-            return clrMethod(block, arg0);
-        }
-
-        public static object BlockCallback2(BlockParam/*!*/ block, object self, object arg0, object arg1) {
-            var clrMethod = (Func<BlockParam, object, object, object>)self;
-            return clrMethod(block, arg0, arg1);
-        }
-
-        public static object BlockCallback3(BlockParam/*!*/ block, object self, object arg0, object arg1, object arg2) {
-            var clrMethod = (Func<BlockParam, object, object, object, object>)self;
-            return clrMethod(block, arg0, arg1, arg2);
+            return new Proc(ProcKind.Block, null, context.EmptyScope, null, 0, 
+                BlockDispatcher.Create(clrMethod, parameterCount, BlockSignatureAttributes.None)
+            );
         }
 
         #endregion

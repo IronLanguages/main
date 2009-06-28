@@ -22,6 +22,8 @@ using IronRuby.Builtins;
 using System.Collections;
 
 namespace IronRuby.Runtime.Calls {
+    using BlockCallTargetUnsplatN = Func<BlockParam, object, object[], RubyArray, object>;
+
     // L(n, *)
     internal sealed class BlockDispatcherUnsplatN : BlockDispatcher {
         private readonly BlockCallTargetUnsplatN/*!*/ _block;

@@ -733,13 +733,10 @@ namespace IronRuby.Runtime {
 
         [Emitted]
         public static IList/*!*/ SplatAppend(IList/*!*/ array, object splattee) {
-            IEnumerable<object> objList;
-            IEnumerable iList;
+            IList list;
 
-            if ((objList = splattee as IEnumerable<object>) != null) {
-                array.AddRange(objList);
-            } else if ((iList = splattee as IEnumerable) != null) {
-                array.AddRange(iList);
+            if ((list = splattee as IList) != null) {
+                Utils.AddRange(array, list);
             } else {
                 array.Add(splattee);
             }

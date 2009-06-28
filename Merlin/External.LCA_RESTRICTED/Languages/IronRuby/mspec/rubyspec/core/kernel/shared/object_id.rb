@@ -4,6 +4,9 @@ describe :kernel_object_id, :shared => true do
   it "returns an integer" do
     mock('fixnum').send(@method).class.should == Fixnum
     nil.send(@method).class.should == Fixnum
+    
+    # this can return Finxum or Bignum depending on the platform
+    900_000_000.send(@method).kind_of?(Integer).should be_true
   end
 
   it "returns the same value on all calls to id for a given object" do

@@ -90,7 +90,7 @@ namespace Microsoft.Scripting.Interpreter {
             if (b == node.Body) {
                 return node;
             }
-            return Expression.Lambda<T>(b, node.Name, node.Parameters);
+            return Expression.Lambda<T>(b, node.Name, node.TailCall, node.Parameters);
         }
 
         protected override Expression VisitBlock(BlockExpression node) {

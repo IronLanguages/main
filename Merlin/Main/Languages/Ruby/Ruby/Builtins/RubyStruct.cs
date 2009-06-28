@@ -205,29 +205,18 @@ namespace IronRuby.Builtins {
             throw RubyExceptions.CreateNameError(String.Format("no member `{0}' in struct", name));
         }
 
-        public override int GetHashCode() {
+        public int GetHashCode(UnaryOpStorage/*!*/ hashStorage, ConversionStorage<int>/*!*/ fixnumCast) {
             // hash is: struct's hash, plus data hashes
-            int hash = StructInfo.GetHashCode();
-            foreach (object obj in _data) {
-                hash ^= RubyUtils.GetHashCode(obj);
-            }
-            return hash;
+            return StructInfo.GetHashCode() ^ RubyArray.GetHashCode(hashStorage, fixnumCast, _data);
         }
 
-        public override bool Equals(object obj) {
+        public bool Equals(BinaryOpStorage/*!*/ eqlStorage, object obj) {
             var other = obj as RubyStruct;
             if (!StructReferenceEquals(other)) {
                 return false;
             }
             
-            Debug.Assert(_data.Length == other._data.Length);
-            for (int i = 0; i < _data.Length; i++) {
-                if (!RubyUtils.ValueEquals(_data[i], other._data[i])) {
-                    return false;
-                }
-            }
-
-            return true;
+            return RubyArray.Equals(eqlStorage, _data, other._data);
         }
 
         public bool StructReferenceEquals(RubyStruct other) {

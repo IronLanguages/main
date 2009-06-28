@@ -142,10 +142,8 @@ namespace System.Runtime.CompilerServices {
         /// <param name="cache">The cache.</param>
         /// <returns>The collection of applicable rules.</returns>
         [Obsolete("do not use this method", true), EditorBrowsable(EditorBrowsableState.Never)]
-        public static IEnumerable<T> GetCachedRules<T>(RuleCache<T> cache) where T : class {
-            foreach (CallSiteRule<T> rule in cache.GetRules()) {
-                yield return rule.Target;
-            }
+        public static T[] GetCachedRules<T>(RuleCache<T> cache) where T : class {
+            return cache.GetRules();
         }
 
         /// <summary>

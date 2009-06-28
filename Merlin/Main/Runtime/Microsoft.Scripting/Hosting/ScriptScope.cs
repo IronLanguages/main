@@ -20,6 +20,7 @@ using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Runtime.Remoting;
 using System.Runtime.Serialization;
+using System.Security.Permissions;
 using System.Dynamic;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
@@ -340,5 +341,13 @@ namespace Microsoft.Scripting.Hosting {
         }
 
         #endregion
+
+#if !SILVERLIGHT
+        // TODO: Figure out what is the right lifetime
+        [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.Infrastructure)]
+        public override object InitializeLifetimeService() {
+            return null;
+        }
+#endif
     }
 }

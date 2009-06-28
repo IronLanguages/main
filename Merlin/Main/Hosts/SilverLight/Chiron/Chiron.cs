@@ -36,6 +36,7 @@ namespace Chiron {
         static bool _saveManifest;
         static string _error;
         static string _startPage;
+        static string[] _localPath;
 
         // these properties are lazy loaded so we don't parse the configuration file unless necessary
         static AppManifestTemplate _ManifestTemplate;
@@ -57,13 +58,45 @@ Copyright (c) Microsoft Corporation.  All rights reserved.
                 Console.WriteLine(
 @"Usage: Chiron [<options>]
 
-General Options:
+Options:
 
-  /d[irectory]:<path>
+  /w[ebserver][:<port number>]
+    Launches a development web server that automatically creates
+    XAP files for dynamic language applications (runs /z for every
+    request of a XAP file, but generates it in memory).
+    Optionally specifies server port number (default: 2060)
+
+  /b[rowser][:<start url>]
+    Launches the default browser and starts the web server
+    Implies /w, cannot be combined with /x or /z
+
+  /z[ipdlr]:<file>
+    Generates a XAP file, including dynamic language DLLs, and
+    auto-generates AppManifest.xaml (equivalent of /m in memory), 
+    if it does not exist.
+    Does not start the web server, cannot be combined with /w or /b
+
+  /m[anifest]
+    Saves the generated AppManifest.xaml file to disk
+    Use /d to set the directory containing the sources
+    Can only be combined with /d, /n and /s
+
+  /d[ir[ectory]]:<path>
     Specifies directory on disk (default: the current directory)
 
-  /x[ap]:<file>
-    Specifies XAP file to generate
+  /r[efpath]:<path>
+    Path where assemblies are located. Default is same directory
+    as Chiron.exe. Overrides appSettings.localAssemblyPath in 
+    Chiron.exe.config
+
+  /path:<path1;path2;..;pathn>
+    semi-color-separated directories to be included in the XAP file,
+    in addition to what is specified by /d
+
+  /x[ap[file]]:<file>
+    Specifies XAP file to generate. Only XAPs a directory; does not
+    generate a manifest or add dynamic language DLLs; see /z for that
+    functionality.
     Does not start the web server, cannot be combined with /w or /b
 
   /n[ologo]
@@ -71,26 +104,6 @@ General Options:
 
   /s[ilent]
     Suppresses display of all output
-
-Dynamic Language Options:
-
-  /z[ipdlr]:<file>
-    Like /x, but includes files needed for dynamic language apps
-    Does not start the web server, cannot be combined with /w or /b
-
-  /w[ebserver][:<port number>]
-    Launches a development web server that automatically creates
-    XAP files for dynamic language applications
-    Optionally specifies server port number (default: 2060)
-
-  /b[rowser][:<start url>]
-    Launches the default browser and starts the web server
-    Implies /w, cannot be combined with /x or /z
-
-  /m[anifest]
-    Saves the generated AppManifest.xaml file to disk
-    Use /d to set the directory containing the sources
-    Can only be combined with /d, /n and /s
 ");
             }
             else if (_error != null) {
@@ -105,6 +118,7 @@ Dynamic Language Options:
                         XapBuilder.XapToDisk(_dir, _xapfile);
                     } else {
                         ZipArchive xap = new ZipArchive(_xapfile, FileAccess.Write);
+                        XapBuilder.AddPathDirectories(xap);
                         xap.CopyFromDirectory(_dir, "");
                         xap.Close();
                     }
@@ -181,6 +195,7 @@ Dynamic Language Options:
             _silent = false;
             _nologo = false;
             _help = false;
+            _localPath = new string[]{ };
 
             foreach (string option in args) {
                 if (option[0] != '-' && option[0] != '/') {
@@ -250,6 +265,9 @@ Dynamic Language Options:
                     _browser = true;
                     _webserver = true;
                     break;
+                case "path":
+                    ParseAndSetLocalPath(val);
+                    break;
                 case "m": case "manifest":
                     _saveManifest = true;
                     break;
@@ -279,6 +297,20 @@ Dynamic Language Options:
                 _help = true;
         }
 
+        internal static void ParseAndSetLocalPath(string pathString) {
+            var __path = new List<string>();
+            string[] paths = pathString.Split(';');
+            foreach (string path in paths) {
+                var fullPath = path;
+                if (!Path.IsPathRooted(path)) 
+                    fullPath = Path.Combine(ChironPath(), path);
+                if (Directory.Exists(fullPath)) {
+                    __path.Add(fullPath);
+                }
+            }
+            _localPath = __path.ToArray();
+        }
+
         public static void Log(int statusCode, string uri, int byteCount, string message) {
             if (!_silent) {
                 if (string.IsNullOrEmpty(message)) {
@@ -292,6 +324,9 @@ Dynamic Language Options:
             }
         }
 
+        internal static string[] LocalPath {
+            get { return _localPath; }
+        }
 
         internal static AppManifestTemplate ManifestTemplate {
             get {
@@ -352,19 +387,22 @@ Dynamic Language Options:
             }
         }
 
+        private static string ChironPath() {
+            return Path.GetDirectoryName(new Uri(Assembly.GetExecutingAssembly().CodeBase).LocalPath);
+        }
+
         // Looks for a DLR/language assembly relative to Chiron.exe
         // The path is set in localAssemblyPath in Chiron.exe.config's appSettings section
         internal static string TryGetAssemblyPath(string name) {
             if (_LocalAssemblyPath == null) {
-                string chironPath = Path.GetDirectoryName(new Uri(Assembly.GetExecutingAssembly().CodeBase).LocalPath);
 
                 _LocalAssemblyPath = ConfigurationManager.AppSettings["localAssemblyPath"] ?? "";
                 if (!Path.IsPathRooted(_LocalAssemblyPath)) {
-                    _LocalAssemblyPath = Path.Combine(chironPath, _LocalAssemblyPath);
+                    _LocalAssemblyPath = Path.Combine(ChironPath(), _LocalAssemblyPath);
                 }
                 if (!Directory.Exists(_LocalAssemblyPath)) {
                     // fallback to Chiron install location
-                    _LocalAssemblyPath = chironPath;
+                    _LocalAssemblyPath = ChironPath();
                 }
             }
 

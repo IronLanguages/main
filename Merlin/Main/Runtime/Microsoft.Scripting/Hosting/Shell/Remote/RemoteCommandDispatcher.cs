@@ -18,6 +18,7 @@
 using System;
 using System.Diagnostics;
 using System.Threading;
+using System.Security.Permissions;
 
 namespace Microsoft.Scripting.Hosting.Shell.Remote {
     /// <summary>
@@ -82,6 +83,14 @@ namespace Microsoft.Scripting.Hosting.Shell.Remote {
             executingThread.Abort(new KeyboardInterruptException(""));
             return true;
         }
+
+#if !SILVERLIGHT
+        // TODO: Figure out what is the right lifetime
+        [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.Infrastructure)]
+        public override object InitializeLifetimeService() {
+            return null;
+        }
+#endif
     }
 }
 
