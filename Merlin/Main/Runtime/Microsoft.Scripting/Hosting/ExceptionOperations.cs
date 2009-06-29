@@ -14,6 +14,7 @@
  * ***************************************************************************/
 
 using System;
+using System.Security.Permissions;
 using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Runtime;
 
@@ -41,5 +42,13 @@ namespace Microsoft.Scripting.Hosting {
             ContractUtils.RequiresNotNull(exception, "exception");
             return false;
         }
+
+#if !SILVERLIGHT
+        // TODO: Figure out what is the right lifetime
+        [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.Infrastructure)]
+        public override object InitializeLifetimeService() {
+            return null;
+        }
+#endif
     }
 }
