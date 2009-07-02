@@ -236,11 +236,13 @@ namespace Microsoft.Scripting.Silverlight {
                 var multiLine = _code.Split('\n').Length > 1;
                 
                 object result = null;
+                _outputBuffer.UserOutput = true;
                 if (_code != string.Empty && !multiLine) {
                     result = DoSingleLine(forceExecute);
                 } else {
                     result = DoMultiLine(forceExecute);
                 }
+                _outputBuffer.UserOutput = false;
 
                 ShowLineAndResult(line, result);
             }
@@ -361,7 +363,7 @@ namespace Microsoft.Scripting.Silverlight {
         }
 
         internal string SubPromptHtml() {
-            return "  | ";
+            return "... ";
         }
         #endregion
 
@@ -376,7 +378,6 @@ namespace Microsoft.Scripting.Silverlight {
 
         internal void ShowPromptInResultDiv() {
             _outputBuffer.ElementClass = _sdlrPrompt;
-            _outputBuffer.ElementName = "span";
             _outputBuffer.Write(_multiLinePrompt ? SubPromptHtml() : PromptHtml());
             _outputBuffer.Reset();
             if (_multiLine) {
@@ -422,6 +423,7 @@ namespace Microsoft.Scripting.Silverlight {
     public class ReplOutputBuffer : ConsoleWriter {
         public string ElementClass;
         public string ElementName;
+        public bool UserOutput;
         private HtmlElement _results;
         private string _outputClass;
         private string _queue;
@@ -429,16 +431,17 @@ namespace Microsoft.Scripting.Silverlight {
         public ReplOutputBuffer(HtmlElement results, string outputClass) {
             _results = results;
             _outputClass = outputClass;
+            _queue = "";
+            Reset();
         }
 
         public string Queue { get { return _queue; } }
 
         public override void Write(string str) {
-            if (ElementName == null) {
+            if (UserOutput) {
                 _queue += str;
             } else {
-                str = str == String.Empty ? " " : str;
-                _results.AppendChild(PutTextInNewElement(str, ElementName, ElementClass));
+                AppendToResults(str);
             }
         }
 
@@ -446,19 +449,33 @@ namespace Microsoft.Scripting.Silverlight {
             Write(str);
         }
 
+        public void flush() {
+            Flush();
+        }
+
         public void Reset() {
             ElementClass = null;
-            ElementName = null;
+            ElementName = "span";
+            UserOutput = false;
         }
 
         public override void Flush() {
-            if (_queue != null) {
-                _results.AppendChild(PutTextInNewElement(_queue, "div", _outputClass));
-                _queue = null;
+            if (_queue != string.Empty) {
+                AppendToResults(_queue, _outputClass);
+                _queue = string.Empty;
             }
         }
 
         #region HTML Helpers
+        private void AppendToResults(string str) {
+            AppendToResults(str, null);
+        }
+
+        private void AppendToResults(string str, string outputClass) {
+            str = str == String.Empty ? " " : str;
+            _results.AppendChild(PutTextInNewElement(str, ElementName, outputClass ?? ElementClass));
+        }
+
         // TODO any library I can use to do this?
         private static string EscapeHtml(string text) {
             return text.Replace("\t", "  ").
@@ -471,7 +488,7 @@ namespace Microsoft.Scripting.Silverlight {
         }
 
         private HtmlElement PutTextInNewElement(string str, string tagName, string className) {
-            var element = HtmlPage.Document.CreateElement(tagName == null ? "div" : tagName);
+            var element = HtmlPage.Document.CreateElement(tagName == null ? "span" : tagName);
             if (className != null) {
                 element.CssClass = className;
             }

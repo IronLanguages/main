@@ -1,4 +1,5 @@
 require File.dirname(__FILE__) + '/../spec_helper'
+require File.dirname(__FILE__) + '/shared/access'
 
 describe "Reading .NET Fields" do
   csc <<-EOL
@@ -22,77 +23,63 @@ describe "Reading .NET Fields" do
     protected static string protectedStaticField = "protected static";
     protected static readonly string protectedStaticReadOnlyField = "protected static readonly";
   }
-  #pragma warning restore 414
+
+  #pragma warning disable 649
+  public class InternalFieldTester {
+    internal string MyField;
+
+    public InternalFieldTester() {
+      var runtime = ScriptRuntime.CreateFromConfiguration();
+      var engine = runtime.GetEngine("IronRuby");
+      var scope = engine.CreateScope();
+      scope.SetVariable("foo", this);
+      engine.Execute("foo.MyField = 'Hello'", scope);
+    }
+  }
+  #pragma warning restore 414, 649
   EOL
   before :each do
     @klass = ClassWithFields.new
   end
 
   describe "works with public" do
-    it "fields" do
-      @klass.field.should equal_clr_string("field")
+    before(:each) do
+      @result = {
+        :field => [:field, "field"],
+        :const_field => [:constField, "const"],
+        :readonly => [:readOnlyField, "readonly"],
+        :static => [:staticField, "static"],
+        :static_ro => [:staticReadOnlyField, "static readonly"]
+      }
     end
-
-    it "const fields" do
-      ClassWithFields.constField.should equal_clr_string("const")
-    end
-
-    it "readonly fields" do
-      @klass.readOnlyField.should equal_clr_string("readonly")
-    end
-
-    it "static fields" do
-      ClassWithFields.staticField.should equal_clr_string("static")
-    end
-
-    it "static readonly fields" do
-      ClassWithFields.staticReadOnlyField.should equal_clr_string("static readonly")
-    end
+    it_behaves_like :accessing_fields, nil
   end
 
   describe "works with protected" do
-    it "fields" do
-      @klass.protectedField.should equal_clr_string("protected field")
+    before(:each) do
+      @result = {
+        :field => [:protectedField, "protected field"],
+        :const_field => [:protectedConstField, "protected const"],
+        :readonly => [:protectedReadOnlyField, "protected readonly"],
+        :static => [:protectedStaticField, "protected static"],
+        :static_ro => [:protectedStaticReadOnlyField, "protected static readonly"]
+      }
     end
-
-    it "const fields" do
-      ClassWithFields.protectedConstField.should equal_clr_string("protected const")
-    end
-
-    it "readonly fields" do
-      @klass.protectedReadOnlyField.should equal_clr_string("protected readonly")
-    end
-
-    it "static fields" do
-      ClassWithFields.protectedStaticField.should equal_clr_string("protected static")
-    end
-
-    it "static readonly fields" do
-      ClassWithFields.protectedStaticReadOnlyField.should equal_clr_string("protected static readonly")
-    end
+    it_behaves_like :accessing_fields, nil
   end
   
   if IronRuby.dlr_config.private_binding
     describe "works with private" do
-      it "fields" do
-        @klass.privateField.should equal_clr_string("private field")
-      end
-
-      it "const fields" do
-        @klass.privateConstField.should equal_clr_string("private const")
-      end
-
-      it "readonly fields" do
-        @klass.privateReadOnlyField.should equal_clr_string("private readonly")
-      end
-
-      it "static fields" do
-        ClassWithFields.privateStaticField.should equal_clr_string("private static")
-      end
-
-      it "static readonly fields" do
-        ClassWithFields.privateStaticReadOnlyField.should equal_clr_string("private static readonly")
-      end
+      before(:each) do
+        @result = {
+          :field => [:privateField, "private field"],
+          :const_field => [:privateConstField, "private const"],
+          :readonly => [:privateReadOnlyField, "private readonly"],
+          :static => [:privateStaticField, "private static"],
+          :static_ro => [:privateStaticReadOnlyField, "private static readonly"]
+        }
+        end
+      it_behaves_like :accessing_fields, nil
     end
   end
 end
@@ -173,6 +160,13 @@ describe "Setting .NET Fields" do
       it "static readonly fields" do
         lambda {ClassWithFields.privateStaticReadOnlyField = "foo"}.should raise_error(NoMethodError)
       end
+    end
+  end
+
+  describe "Internal fields" do
+    #TODO: shared behavior when 1651 is fixed
+    it "can't be assigned from within a IronRuby engine in the constructor" do
+      lambda {InternalFieldTester.new}.should raise_error NoMethodError
     end
   end
 end

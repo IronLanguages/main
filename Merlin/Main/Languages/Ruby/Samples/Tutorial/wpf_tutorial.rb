@@ -159,6 +159,7 @@ module WpfTutorial
         if @task.description
           fd = FlowDocument.from_simple_markup @task.description
           fd << "Full path: #{@task.source_files.tr('/', '\\')}" if @task.source_files
+          return select_next_task if not @task.should_run? Window.repl.context.bind
           @task.setup.call(Window.repl.context.bind) if @task.setup
           if @task.code
             p = Paragraph.new Run.new(@task.code_string)

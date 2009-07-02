@@ -679,7 +679,7 @@ namespace System.Dynamic {
                 : base(expression, BindingRestrictions.Empty, value) {
             }
 
-            private DynamicMetaObject GetDynamicMetaObjectForMember(string name, bool ignoreCase, DynamicMetaObject fallback) {
+            private DynamicMetaObject BindGetOrInvokeMember(DynamicMetaObjectBinder binder, string name, bool ignoreCase, DynamicMetaObject fallback, Func<DynamicMetaObject, DynamicMetaObject> fallbackInvoke) {
                 ExpandoClass klass = Value.Class;
 
                 //try to find the member, including the deleted members
@@ -697,43 +697,46 @@ namespace System.Dynamic {
                     value
                 );
 
-                Expression memberValue = Expression.Block(
-                    new[] { value },
-                    Expression.Condition(
-                        tryGetValue,
-                        value,
-                        fallback.Expression,
-                        typeof(object)
-                    )
+                var result = new DynamicMetaObject(value, BindingRestrictions.Empty);
+                if (fallbackInvoke != null) {
+                    result = fallbackInvoke(result);
+                }
+
+                result = new DynamicMetaObject(
+                    Expression.Block(
+                        new[] { value },
+                        Expression.Condition(
+                            tryGetValue,
+                            result.Expression,
+                            fallback.Expression,
+                            typeof(object)
+                        )
+                    ),
+                    result.Restrictions.Merge(fallback.Restrictions)
                 );
 
-                return new DynamicMetaObject(memberValue, fallback.Restrictions);
+                return AddDynamicTestAndDefer(binder, Value.Class, null, result);
             }
 
             public override DynamicMetaObject BindGetMember(GetMemberBinder binder) {
                 ContractUtils.RequiresNotNull(binder, "binder");
-                DynamicMetaObject memberValue = GetDynamicMetaObjectForMember(
+                return BindGetOrInvokeMember(
+                    binder,
                     binder.Name, 
                     binder.IgnoreCase,
-                    binder.FallbackGetMember(this)
+                    binder.FallbackGetMember(this),
+                    null
                 );
-
-                return AddDynamicTestAndDefer(binder, Value.Class, null, memberValue);
             }
 
             public override DynamicMetaObject BindInvokeMember(InvokeMemberBinder binder, DynamicMetaObject[] args) {
                 ContractUtils.RequiresNotNull(binder, "binder");
-                DynamicMetaObject memberValue = GetDynamicMetaObjectForMember(
+                return BindGetOrInvokeMember(
+                    binder,
                     binder.Name, 
                     binder.IgnoreCase,
-                    binder.FallbackInvokeMember(this, args)
-                );
-                //invoke the member value using the language's binder
-                return AddDynamicTestAndDefer(
-                    binder,
-                    Value.Class,
-                    null,
-                    binder.FallbackInvoke(memberValue, args, null)
+                    binder.FallbackInvokeMember(this, args),
+                    value => binder.FallbackInvoke(value, args, null)
                 );
             }
 

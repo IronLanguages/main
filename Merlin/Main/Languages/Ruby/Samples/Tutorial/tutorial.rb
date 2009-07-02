@@ -17,284 +17,305 @@ require "stringio"
 
 module Tutorial
 
-    class Summary
-      attr :title
-      attr :description
+  class Summary
+    attr :title
+    attr :description
 
-      def initialize(title, desc)
-        @title = title
-        @description = desc
+    def initialize(title, desc)
+      @title = title
+      @description = desc
+    end
+
+    def body
+      @description
+    end
+
+    def to_s
+      @title
+    end
+  end
+
+  class Task
+    attr :description
+    attr :run_unless
+    attr :setup
+    attr :code
+    attr :title
+    attr :source_files # Files used by the task. The user might want to browse these files
+
+    def initialize title, description, run_unless, setup, code, source_files, &success_evaluator	                
+      @title = title
+      @description = description
+      @run_unless = run_unless
+      @setup = setup
+      @code = code
+      @source_files = source_files
+      @success_evaluator = success_evaluator            
+    end
+
+    def should_run?(bind)
+      if not @run_unless
+        return true
+      end
+      
+      begin
+        return (not @run_unless.call(bind))
+      rescue
+        return true
+      end
+    end
+    
+    def success?(interaction, show_errors=false)
+      begin
+        if @success_evaluator
+          return (@success_evaluator.call(interaction) ? true : false)
+        else
+          old_verbose, $VERBOSE = $VERBOSE, nil                
+          begin
+            return eval(code_string, interaction.bind) == interaction.result
+          ensure
+            $VERBOSE = old_verbose
+          end
+        end
+      rescue => e
+        warn %{success_evaluator raised error: #{e}} if show_errors
+        return false
+      end
+    end
+    
+    def code_string
+      c = code
+      c = c.to_ary.join("\n") if c.respond_to? :to_ary
+      c
+    end
+  end
+  
+  class Chapter
+    attr :name, true # TODO - true is needed only to workaround data-binding bug
+    attr :introduction, true
+    attr :summary, true
+    attr :tasks, true
+    attr :next_item, true
+
+    def initialize name, introduction = nil, summary = nil, tasks = [], next_item = nil
+      @name = name
+      @introduction = introduction
+      @summary = summary
+      @tasks = tasks
+      @next_item = next_item
+    end
+
+    def to_s
+        @name
+    end
+  end
+
+  class Section
+    attr :name, true # TODO - true is needed only to workaround data-binding bug
+    attr :introduction, true
+    attr :chapters, true
+
+    def initialize name, introduction = nil, chapters = []
+      @name = name
+      @introduction = introduction
+      @chapters = chapters
+    end
+
+    def to_s
+      @name
+    end
+
+    def first_chapter
+      @chapters.first rescue nil
+    end
+  end
+
+  class Tutorial
+    attr :name
+    attr :file
+    attr :introduction, true
+    attr :legal_notice, true
+    attr :summary, true
+    attr :sections, true
+
+    def initialize name, file, introduction = nil, notice = nil, summary = nil, sections = []
+      @name = name
+      @file = file
+      @introduction = introduction
+      @legal_notice = notice
+      @summary = summary
+      @sections = sections
+    end
+    
+    def to_s
+      @name
+    end
+
+    def first_chapter
+      first_section.first_chapter rescue nil
+    end
+
+    def first_section
+      @sections.first rescue nil
+    end
+  end
+  
+  @@tutorials = {} unless class_variable_defined? :@@tutorials
+  
+  def self.add_tutorial(tutorial)
+    @@tutorials[tutorial.file] = tutorial
+  end
+
+  def self.all
+    Dir[File.expand_path("Tutorials/*_tutorial.rb", File.dirname(__FILE__))].each do |t|
+      self.get_tutorial t unless File.directory?(t)
+    end
+    @@tutorials
+  end
+
+  def self.get_tutorial path = nil
+    if not path
+      all
+      return @@tutorials.values.first
+    end
+
+    path = File.expand_path path
+    if not @@tutorials.has_key? path
+      require path
+      raise "#{path} does not contains a tutorial definition" if not @@tutorials.has_key? path
+    end
+    
+    return @@tutorials[path]
+  end
+  
+  class ReplContext
+    attr :scope
+    attr :bind
+    
+    def initialize
+      @partial_input = ""
+      @scope = Object.new
+
+      class << @scope            
+        def include(*a)
+          self.class.instance_eval { include(*a) }
+        end
+        
+        def to_s
+          "main (tutorial)"
+        end
       end
 
-      def body
-        @description
+      @bind = @scope.instance_eval { binding }
+      
+      # Allow the tutorial DSL to use i.bind.foo in the success-evaluator blocks
+      def @bind.method_missing name, *args
+        if args.empty?
+          eval name.to_s, self
+        else
+          m = eval "method #{name.inspect}", self
+          m.call *args
+        end
+      end
+    end
+    
+    def interact input
+      # Redirect stdout. Note that this affects the entire process. If the program calls "puts"
+      # for some reason on another thread, the user may not expect to see the output. But it is 
+      # hard to distinguish between printing that the user initiated, and printing that the program 
+      # itself is doing.
+      output = StringIO.new
+      old_stdout, $stdout = $stdout, output
+      old_verbose, $VERBOSE = $VERBOSE, nil
+      
+      result = nil
+      error = nil
+      full_input = @partial_input + input.to_s
+      Thread.current[:evaluating_tutorial_input] = true
+      
+      begin
+        result = eval(full_input, @bind) # TODO - to_s should not be needed here
+      rescue Exception => error
+        raise error if error.kind_of? SystemExit
+      ensure
+        $stdout = old_stdout
+        Thread.current[:evaluating_tutorial_input] = nil
+        $VERBOSE = old_verbose
       end
 
+      if error.kind_of? SyntaxError and error.message =~ /unexpected (\$end|END_OF_FILE)/
+        @partial_input += input
+        @partial_input += "\n" unless input[input.size-1] == "\n" # TODO - input[-1] seems to cause IndexError
+        InteractionResult.new(@bind, "", "", nil, nil, true)
+      else
+        @partial_input = ""
+        InteractionResult.new(@bind, full_input, output.string, result, error)
+      end
+    end
+    
+    def reset_input
+      @partial_input = ""
+    end
+  end
+  
+  class InteractionResult
+      attr :bind
+      
+      # This should be used very sparingly. Since it checks directly what the user typed, it can have too many
+      # false positives and negatives.
+      # TODO - Remove this when there is good mocking/stubbing support
+      attr :input
+      
+      attr :output
+      attr :result
+      attr :error
+      
+      def initialize(bind, input, output, result, error = nil, partial_input = false)
+          @bind = bind
+          @input = input
+          @output = output
+          @result = result
+          @error = error
+          @partial_input = partial_input
+          
+          raise "result should be nil if an exception was raised" if result and error
+      end
+      
       def to_s
-        @title
+          %{InteractionResult output=#{@output}, result=#{@error ? "(error)" : @result.inspect}, error=#{@error ? @error : "(none)"}}
       end
-    end
-
-    class Task
-        attr :description
-        attr :setup
-        attr :code
-        attr :title
-        attr :source_files # Files used by the task. The user might want to browse these files
-
-        def initialize title, description, setup, code, source_files, &success_evaluator	                
-            @title = title
-            @description = description
-            @setup = setup
-            @code = code
-            @source_files = source_files
-            @success_evaluator = success_evaluator
-            
-        end
-
-        def success?(interaction, show_errors=false)
-            begin
-                if @success_evaluator
-                  return (@success_evaluator.call(interaction) ? true : false)
-                else
-                  old_verbose, $VERBOSE = $VERBOSE, nil                
-                  begin
-                    return eval(code_string, interaction.bind) == interaction.result
-                  ensure
-                    $VERBOSE = old_verbose
-                  end
-                end
-            rescue => e
-                warn %{success_evaluator raised error: #{e}} if show_errors
-                return false
-            end
-        end
-        
-        def code_string
-            c = code
-            c = c.to_ary.join("\n") if c.respond_to? :to_ary
-            c
-        end
-    end
-    
-    class Chapter
-        attr :name, true # TODO - true is needed only to workaround data-binding bug
-        attr :introduction, true
-        attr :summary, true
-        attr :tasks, true
-        attr :next_item, true
-
-        def initialize name, introduction = nil, summary = nil, tasks = [], next_item = nil
-            @name = name
-            @introduction = introduction
-            @summary = summary
-            @tasks = tasks
-            @next_item = next_item
-        end
-
-        def to_s
-            @name
-        end
-    end
-
-    class Section
-        attr :name, true # TODO - true is needed only to workaround data-binding bug
-        attr :introduction, true
-        attr :chapters, true
-
-        def initialize name, introduction = nil, chapters = []
-            @name = name
-            @introduction = introduction
-            @chapters = chapters
-        end
-
-        def to_s
-            @name
-        end
-
-        def first_chapter
-          @chapters.first rescue nil
-        end
-    end
-
-    class Tutorial
-        attr :name
-        attr :file
-        attr :introduction, true
-        attr :legal_notice, true
-        attr :summary, true
-        attr :sections, true
-
-        def initialize name, file, introduction = nil, notice = nil, summary = nil, sections = []
-            @name = name
-            @file = file
-            @introduction = introduction
-            @legal_notice = notice
-            @summary = summary
-            @sections = sections
-        end
-        
-        def to_s
-            @name
-        end
-
-        def first_chapter
-          first_section.first_chapter rescue nil
-        end
-
-        def first_section
-          @sections.first rescue nil
-        end
-    end
-    
-    @@tutorials = {} unless class_variable_defined? :@@tutorials
-    
-    def self.add_tutorial(tutorial)
-        @@tutorials[tutorial.file] = tutorial
-    end
-
-    def self.all
-      Dir[File.expand_path("Tutorials/*_tutorial.rb", File.dirname(__FILE__))].each do |t|
-        self.get_tutorial t unless File.directory?(t)
+      
+      def result
+          raise "Interaction resulted in an exception" if error or @partial_input
+          @result
       end
-      @@tutorials
-    end
-
-    def self.get_tutorial path = nil
-        if not path
-          all
-          return @@tutorials.values.first
-        end
-
-        path = File.expand_path path
-        if not @@tutorials.has_key? path
-            require path
-            raise "#{path} does not contains a tutorial definition" if not @@tutorials.has_key? path
-        end
-        
-        return @@tutorials[path]
-    end
-    
-    class ReplContext
-        attr :scope
-        attr :bind
-        
-        def initialize
-            @partial_input = ""
-            @scope = Object.new
-
-            class << @scope            
-                def include(*a)
-                    self.class.instance_eval { include(*a) }
-                end
-                
-                def to_s
-                    "main (tutorial)"
-                end
-            end
-
-            @bind = @scope.instance_eval { binding }
-            
-            # Allow the tutorial DSL to use i.bind.foo in the success-evaluator blocks
-            def @bind.method_missing name, *args
-                if args.empty?
-                    eval name.to_s, self
-                else
-                    m = eval "method #{name.inspect}", self
-                    m.call *args
-                end
-            end
-        end
-        
-        def interact input
-            # Redirect stdout. Note that this affects the entire process. If the program calls "puts"
-            # for some reason on another thread, the user may not expect to see the output. But it is 
-            # hard to distinguish between printing that the user initiated, and printing that the program 
-            # itself is doing.
-            output = StringIO.new
-            old_stdout, $stdout = $stdout, output
-            old_verbose, $VERBOSE = $VERBOSE, nil
-            
-            result = nil
-            error = nil
-            Thread.current[:evaluating_tutorial_input] = true
-            
-            begin
-                result = eval(@partial_input + input.to_s, @bind) # TODO - to_s should not be needed here
-            rescue Exception => error
-                raise error if error.kind_of? SystemExit
-            ensure
-                $stdout = old_stdout
-                Thread.current[:evaluating_tutorial_input] = nil
-                $VERBOSE = old_verbose
-            end
-
-            if error.kind_of? SyntaxError and error.message =~ /unexpected (\$end|END_OF_FILE)/
-                @partial_input += input
-                @partial_input += "\n" unless input[input.size-1] == "\n" # TODO - input[-1] seems to cause IndexError
-                InteractionResult.new(@bind, "", nil, nil, true)
-            else
-                @partial_input = ""
-                InteractionResult.new(@bind, output.string, result, error)
-            end
-        end
-        
-        def reset_input
-          @partial_input = ""
-        end
-    end
-    
-    class InteractionResult
-        attr :bind
-        attr :output
-        attr :result
-        attr :error
-        
-        def initialize(bind, output, result, error = nil, partial_input = false)
-            @bind = bind
-            @output = output
-            @result = result
-            @error = error
-            @partial_input = partial_input
-            
-            raise "result should be nil if an exception was raised" if result and error
-        end
-        
-        def to_s
-            %{InteractionResult output=#{@output}, result=#{@error ? "(error)" : @result.inspect}, error=#{@error ? @error : "(none)"}}
-        end
-        
-        def result
-            raise "Interaction resulted in an exception" if error or @partial_input
-            @result
-        end
-        
-        def error
-            raise "Partial input received" if @partial_input
-            @error
-        end
-        
-        def partial_input?
-          @partial_input
-        end
-    end
-    
-    # Simple stub class for mocking.
-    # TODO - move to a real mocking framework
-    class Stub
-        def initialize() @calls = [] end
-        
-        def respond_to?(name) true end
-        
-        def method_missing name, *args
-            @calls << name
-            Stub.new
-        end
-        
-        def called?(name) @calls.include? name end
-    end
-    
-    def self.stub() Stub.new end
+      
+      def error
+          raise "Partial input received" if @partial_input
+          @error
+      end
+      
+      def partial_input?
+        @partial_input
+      end
+  end
+  
+  # Simple stub class for mocking.
+  # TODO - move to a real mocking framework
+  class Stub
+      def initialize() @calls = [] end
+      
+      def respond_to?(name) true end
+      
+      def method_missing name, *args
+          @calls << name
+          Stub.new
+      end
+      
+      def called?(name) @calls.include? name end
+  end
+  
+  def self.stub() Stub.new end
 
   # Utility method to verify that a handler was added to an event
   # Since there is no easily visible side-effect to adding a handler, we monkey-patch the event
@@ -410,14 +431,7 @@ class Object
     def task(options, &success_evaluator)
         options = {}.merge(options)
         Thread.current[:chapter].tasks << Tutorial::Task.new(
-          options[:title], options[:body], options[:setup], options[:code], options[:source_files], &success_evaluator)
-    end
-
-    # This represents an operation that consists of several closely realated task. It is useful to have
-    # direct support for this so that the UI can better support it (by showing all the descriptions on the same
-    # page)
-    def multi_step_task(name, *tasks, &success_evaluator)
-        raise NotImplementedError
+          options[:title], options[:body], options[:run_unless], options[:setup], options[:code], options[:source_files], &success_evaluator)
     end
 end
 

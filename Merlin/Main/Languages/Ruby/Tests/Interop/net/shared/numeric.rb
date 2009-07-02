@@ -1,7 +1,7 @@
 describe "A .NET numeric", :shared => true do
   before(:each) do
     @class = @method
-    @bignum = Bignum.Create(1)
+    @bignum = Bignum.Create(0)
   end
 
   it "can be induced via an int" do
@@ -39,7 +39,7 @@ end
 describe "A .NET numeric, induceable from Fixnum", :shared => true do
   before(:each) do
     @class = @method
-    @bignum = Bignum.Create(1)
+    @bignum = Bignum.Create(0)
   end
 
   it "can be induced via an int" do
