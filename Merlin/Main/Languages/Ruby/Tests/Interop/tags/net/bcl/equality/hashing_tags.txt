@@ -1,4 +1,0 @@
-fails:Hashing maps Object#hash to System.Object.GetHashCode for Ruby classes that derive from CLR types
-fails:Hashing maps System.Object.GetHashCode to Object#hash for Ruby sub-classes
-fails:Hashing maps System.Object.GetHashCode to Object#hash for Ruby sub-classes with #hash
-fails:Hashing allows both Object#hash and System.Object.GetHashCode to be overriden separately

@@ -22,9 +22,6 @@ describe "Equality" do
         def Equals(other) other == :clr_marker end
       end
       
-      # Uncommenting the base type declartion causes an assert since Equatable has a static method as well as instance method
-      # called "Equals", and IronRuby does not deal with this. Since the example will not work anyway until NewTypeMaker is fixed,
-      # we just comment out the base type to prevent a blocking assert from popping up
       class EqualityCheckerSubtype  < Equatable
       end
 

@@ -16,7 +16,7 @@ describe "Type Groups" do
   EOL
   it "maps to a Microsoft::Scripting::Actions::TypeGroup" do
     #MS::Scripting isn't autoloaded when it gets returned from TypeGroup.class
-    require 'microsoft.scripting'
+    load_assembly 'microsoft.scripting'
     [EmptyTypeGroup, EmptyTypeGroup1,
       TypeGroup, TypeGroup1].each do |klass|
         klass.should be_kind_of Microsoft::Scripting::Actions::TypeGroup

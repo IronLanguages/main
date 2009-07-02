@@ -57,4 +57,22 @@ describe "The private keyword" do
     lambda {Private::H.new.foo}.should raise_error(NoMethodError) 
     Private::H.new.send(:foo).should == 'foo'
   end
+
+  it "is overwritten by subclasses" do
+    module Private
+      module ModD
+        include D
+        def foo
+          "foo"
+        end
+      end
+
+      class ClassD
+        include ModD
+      end
+    end
+
+    Private::ClassD.should have_instance_method("foo")
+    Private::ClassD.should_not have_private_instance_method("foo")
+  end
 end
