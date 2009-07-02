@@ -7344,6 +7344,10 @@ namespace IronRuby.StandardLibrary.StringIO {
                 new System.Func<IronRuby.StandardLibrary.StringIO.StringIO, System.Int32, System.Int32>(IronRuby.StandardLibrary.StringIO.StringIO.SetLength)
             );
             
+            module.DefineLibraryMethod("ungetc", 0x11, 
+                new System.Action<IronRuby.StandardLibrary.StringIO.StringIO, System.Int32>(IronRuby.StandardLibrary.StringIO.StringIO.UnGetCharacter)
+            );
+            
         }
         
         private static void LoadStringIO_Class(IronRuby.Builtins.RubyModule/*!*/ module) {

@@ -1,6 +1,6 @@
 require "rubygems"
 
-rake_tests_dir = File.expand_path("../External.LCA_RESTRICTED/Languages/Ruby/RakeTests", ENV["MERLIN_ROOT"])
+rake_tests_dir = File.expand_path("../External.LCA_RESTRICTED/Languages/IronRuby/RakeTests", ENV["MERLIN_ROOT"])
 all_test_files = Dir.glob("#{rake_tests_dir}/test/test*.rb") + Dir.glob("#{rake_tests_dir}/test/contrib/test*.rb") + Dir.glob("#{rake_tests_dir}/test/fun*.rb")
 # Do some sanity checks
 abort("Did not find enough Rake tests files...") unless all_test_files.size > 25
