@@ -23,11 +23,20 @@ using System.Linq.Expressions;
 using System.Reflection;
 using IronRuby.Builtins;
 using System.Collections.ObjectModel;
+using System.Collections;
+using System.Diagnostics;
 
 namespace IronRuby.Runtime.Calls {
     using Ast = System.Linq.Expressions.Expression;
     using AstFactory = IronRuby.Compiler.Ast.AstFactory;
-    using System.Collections;
+
+    using BlockCallTarget0 = Func<BlockParam, object, object>;
+    using BlockCallTarget1 = Func<BlockParam, object, object, object>;
+    using BlockCallTarget2 = Func<BlockParam, object, object, object, object>;
+    using BlockCallTarget3 = Func<BlockParam, object, object, object, object, object>;
+    using BlockCallTarget4 = Func<BlockParam, object, object, object, object, object, object>;
+    using BlockCallTargetN = Func<BlockParam, object, object[], object>;
+    using BlockCallTargetUnsplatN = Func<BlockParam, object, object[], RubyArray, object>;
 
     [Flags]
     public enum BlockSignatureAttributes {
@@ -43,14 +52,6 @@ namespace IronRuby.Runtime.Calls {
         // bits 31..3 store arity (might be different from formal parameter count)
     }
 
-    public delegate object BlockCallTarget0(BlockParam param, object self);
-    public delegate object BlockCallTarget1(BlockParam param, object self, object arg1);
-    public delegate object BlockCallTarget2(BlockParam param, object self, object arg1, object arg2);
-    public delegate object BlockCallTarget3(BlockParam param, object self, object arg1, object arg2, object arg3);
-    public delegate object BlockCallTarget4(BlockParam param, object self, object arg1, object arg2, object arg3, object arg4);
-    public delegate object BlockCallTargetN(BlockParam param, object self, object[] args);
-    public delegate object BlockCallTargetUnsplatN(BlockParam param, object self, object[] args, RubyArray/*!*/ array);
-    
     public abstract class BlockDispatcher {
         private readonly BlockSignatureAttributes _attributesAndArity;
 

@@ -29,6 +29,11 @@ require dirname + '/../tutorial.rb'
 require dirname + '/../console_tutorial'
 require dirname + '/../html_tutorial'
 
+if $LOAD_PATH.include? "."
+  $LOAD_PATH.delete "."
+  $LOAD_PATH << Dir.pwd
+end
+
 FileUtils.cd(File.expand_path('/')) # This ensures that the tutorial can be launched from any folder
 
 describe "ReplContext" do
@@ -110,6 +115,10 @@ module TutorialTests
 
   def self.run_test context, chapter
     chapter.tasks.each do |task| 
+      if not task.should_run? context.bind
+        1.should == 1 # we do a dummy expectation here. TODO - There should be another way to indicate the test passed without having any expectations
+        return
+      end
       task.setup.call(context.bind) if task.setup
       result = context.interact "" # Ensure that the user can try unrelated code snippets without moving to the next task
       if task.code.respond_to? :to_ary
@@ -128,7 +137,11 @@ module TutorialTests
 end
 
 describe "IronRubyTutorial" do
-  TutorialTests.create_tests self, dirname + '/../Tutorials/ironruby_tutorial.rb'
+  TutorialTests.create_tests self, dirname + '/../Tutorials/ironruby_tutorial.rb' if defined? RUBY_ENGINE
+end
+
+describe "HostingTutorial" do
+  TutorialTests.create_tests self, dirname + '/../Tutorials/hosting_tutorial.rb' if defined? RUBY_ENGINE
 end
 
 describe "TryRubyTutorial" do

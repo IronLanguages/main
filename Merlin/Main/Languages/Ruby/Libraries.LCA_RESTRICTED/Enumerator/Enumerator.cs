@@ -120,7 +120,7 @@ namespace IronRuby.StandardLibrary.Enumerator {
 
             RubyArray slice = null;
 
-            EnumerableModule.Each(each, self, Proc.Create(each.Context, delegate(BlockParam/*!*/ selfBlock, object item) {
+            EnumerableModule.Each(each, self, Proc.Create(each.Context, delegate(BlockParam/*!*/ selfBlock, object _, object item) {
                 if (slice == null) {
                     slice = new RubyArray(sliceSize);
                 }
