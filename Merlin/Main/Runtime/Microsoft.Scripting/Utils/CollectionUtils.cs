@@ -19,6 +19,22 @@ using System.Collections.Generic;
 using Microsoft.Contracts;
 
 namespace Microsoft.Scripting.Utils {
+    /// <summary>
+    /// Allows wrapping of proxy types (like COM RCWs) to expose their IEnumerable functionality
+    /// which is supported after casting to IEnumerable, even though Reflection will not indicate 
+    /// IEnumerable as a supported interface
+    /// </summary>
+    public class EnumerableWrapper : IEnumerable {
+        private IEnumerable _wrappedObject;
+        public EnumerableWrapper(IEnumerable o) {
+            _wrappedObject = o;
+        }
+
+        public IEnumerator GetEnumerator() {
+            return _wrappedObject.GetEnumerator();
+        }
+    }
+
     public static class CollectionUtils {
 
         public static void AddRange<T>(ICollection<T> collection, IEnumerable<T> items) {
