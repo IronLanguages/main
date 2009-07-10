@@ -25,7 +25,11 @@ class WIN32OLE
   
   def initialize(arg)
     if arg.respond_to? :to_str
-      type = System::Type.get_type_from_prog_i_d arg
+      if guid? arg
+        type = System::Type.GetTypeFromCLSID arg
+      else
+        type = System::Type.get_type_from_prog_i_d arg
+      end
       @com_object = System::Activator.create_instance type
     else
       @com_object = arg
@@ -34,6 +38,10 @@ class WIN32OLE
   
   attr :com_object # The wrapped RCW
   
+  def guid?(str)
+    /[{]?[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}[}]?|[0-9A-F]{32}/ =~ str
+  end
+
   # The DLR COM binder only supports core types like System.String as arguments.
   # Passing in a Ruby String will not work. So we convert the Ruby types to
   # CLR COM interop types as expected by the DLR COM binder
@@ -56,8 +64,18 @@ class WIN32OLE
     args.map { |arg| ruby_to_com_interop_type arg }
   end
   
-  def []=(name, value)
-    method_missing "#{name}=", value
+  def []=(*args)
+    indices = args[0...-1]
+    value = args[-1]
+    if indices.size == 1 and indices[0].respond_to? to_str
+      name = indices[0]
+      method_missing "#{name}=", value
+    else
+      # TODO - MRI requires using parenthesis to access indexed properties.
+      # IronRuby allows square brackets because the tests currently use this syntax.
+      # This should be removed after modifying the tests to use parenthesis.
+      method_missing "[]=", *args
+    end
   end
   
   def each(&b)

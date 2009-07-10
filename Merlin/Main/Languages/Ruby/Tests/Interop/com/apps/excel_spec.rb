@@ -1,11 +1,15 @@
 require File.dirname(__FILE__) + "/../spec_helper"
 module ExcelEventTracker
   def add_event(ws)
-    ws.SelectionChange.add(method(:handler))
+    e = WIN32OLE_EVENT.new(ws, "DocEvents")
+    e.on_event("SelectionChange") { |obj, event| handler(obj, event) }
   end
 
   def remove_event(ws)
-    ws.SelectionChange.remove(method(:handler))
+    e = WIN32OLE_EVENT.new(ws, "DocEvents")
+    # WIN32OLE_EVENT does not document any way to unsubscribe from an event
+    # So we use this syntax
+    e.on_event("SelectionChange")
   end
 end
 

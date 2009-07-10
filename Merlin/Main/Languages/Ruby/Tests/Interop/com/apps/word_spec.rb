@@ -1,11 +1,15 @@
 require File.dirname(__FILE__) + "/../spec_helper"
 module WordEventTracker
   def add_event(doc)
-    doc.WindowSelectionChange.add(method(:handler))
+    e = WIN32OLE_EVENT.new(doc, "DocEvents")
+    e.on_event("WindowSelectionChange") { |obj, event| handler(obj, event) }
   end
 
   def remove_event(doc)
-    doc.WindowSelectionChange.remove(method(:handler))
+    e = WIN32OLE_EVENT.new(doc, "DocEvents")
+    # WIN32OLE_EVENT does not document any way to unsubscribe from an event
+    # So we use this syntax
+    e.on_event("WindowSelectionChange")
   end
 end
 
