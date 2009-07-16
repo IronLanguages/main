@@ -66,11 +66,23 @@ class System::Windows::Controls::RichTextBox
 end
 
 class System::Windows::Controls::TextBox
-  alias document= Text=
+  def document=(value)
+    if SILVERLIGHT
+      self.Text = value.strip.split("\n").map{|i| i.strip}.join("\n")
+    else
+      self.Text = value
+    end
+  end
 end
 
 class System::Windows::Controls::TextBlock
-  alias document= Text=
+  def document=(value)
+    if SILVERLIGHT
+      self.Text = value.strip.split("\n").map{|i| i.strip}.join("\n")
+    else
+      self.Text = value
+    end
+  end
 end
 
 if SILVERLIGHT
@@ -149,7 +161,9 @@ class System::Windows::Documents::FlowDocument
   # Converts text in RDoc simple markup format to a WPF FlowDocument object
   def self.from_simple_markup text
 
-    return text if SILVERLIGHT
+    if SILVERLIGHT
+      return text.split("\n").map{|i| i.strip}.join("\n")
+    end
 
     require 'rdoc/markup/simple_markup'
     require 'rdoc/markup/simple_markup/inline'

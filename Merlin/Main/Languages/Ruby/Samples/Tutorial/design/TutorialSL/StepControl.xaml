@@ -12,12 +12,11 @@
 			xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" 
 			x:Name="step_id" Background="{x:Null}">
 
-		<TextBlock x:Name="step_title_id" Text="Step Title" TextWrapping="Wrap" FontSize="16" Margin="5,0,5,8" FontWeight="Bold"/>
+		<TextBlock x:Name="step_title_id" Text="Step Title" TextWrapping="Wrap" FontSize="16" Margin="5,0,5,8" FontWeight="Bold" FontFamily="Segoe UI"/>
 
 		<Border x:Name="step_wrapper_id" BorderBrush="#FFC8C8C8" BorderThickness="5" CornerRadius="10" Background="White" VerticalAlignment="Top" Margin="0,0,0,8">
 			<StackPanel Margin="0" VerticalAlignment="Top">
-				<TextBlock x:Name="step_description_id" VerticalAlignment="Top" FontSize="16" Padding="4,6"   Margin="0" HorizontalAlignment="Left" Text="This is a step description">
-				</TextBlock>
+				<TextBlock x:Name="step_description_id" VerticalAlignment="Top" FontSize="16" Padding="7,6" Text="This is a step description" HorizontalAlignment="Left" FontFamily="Segoe UI"/>
 				<Border BorderThickness="4" CornerRadius="0,0,10,10" Background="#FFC8C8C8" BorderBrush="{x:Null}" Padding="8,8,8,4" OpacityMask="#FF2E2E2E" Margin="-6">
 					<StackPanel x:Name="step_repl_id" Orientation="Vertical" VerticalAlignment="Top">
 						<TextBox x:Name="step_repl_history_id" 

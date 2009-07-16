@@ -22,10 +22,8 @@
 	<StackPanel Margin="0,0,0,15">
 		<Border x:Name="tutorial_id" BorderBrush="#FFC8C8C8" BorderThickness="5" CornerRadius="10" Padding="0" Margin="0" Background="White" OpacityMask="{x:Null}" d:LayoutOverrides="Width" Cursor="Hand">
 			<StackPanel Margin="0">
-				<TextBlock x:Name="tutorial_title_id" Margin="8" VerticalAlignment="Bottom" FontSize="21.333" Padding="0" TextWrapping="Wrap" Cursor="Hand"><Run Text="Example tu"/><Run Text="torial"/></TextBlock>
-				<TextBlock x:Name="tutorial_desc_id" HorizontalAlignment="Left" FontSize="13.333" Padding="0" Margin="32,0,8,8" RenderTransformOrigin="0.5,0.5" Cursor="Hand">
-					<Run>Text="This tutorial blah blah blah ...</Run>
-				</TextBlock>
+				<TextBlock x:Name="tutorial_title_id" Margin="8" VerticalAlignment="Bottom" FontSize="21.333" Padding="0" TextWrapping="Wrap" Cursor="Hand" FontFamily="Segoe UI"><Run Text="Example tu"/><Run Text="torial"/></TextBlock>
+				<TextBlock x:Name="tutorial_desc_id" HorizontalAlignment="Left" FontSize="13.333" Padding="0" Margin="32,0,8,8" RenderTransformOrigin="0.5,0.5" Cursor="Hand" FontFamily="Segoe UI" Text="This tutorial blah blah blah ..."/>
 			</StackPanel>
 		</Border>
 	</StackPanel>
