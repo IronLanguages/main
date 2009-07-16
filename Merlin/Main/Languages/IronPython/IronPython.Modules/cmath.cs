@@ -23,6 +23,7 @@ namespace IronPython.Modules {
     public class ComplexMath {
         public const double pi = Math.PI;
         public const double e = Math.E;
+        public const string __doc__ = "Provides access to functions for operating on complex numbers";
 
         //cos(a+ ib) = cosa*coshb - i*sina*sinhb
         public static Complex64 cos(object x) {

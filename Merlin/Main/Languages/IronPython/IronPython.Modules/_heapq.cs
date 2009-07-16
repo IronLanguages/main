@@ -25,29 +25,10 @@ using IronPython.Runtime.Types;
 
 [assembly: PythonModule("_heapq", typeof(IronPython.Modules.PythonHeapq))]
 namespace IronPython.Modules {
-    [Documentation("Heap queue algorithm (a.k.a. priority queue).\n\n"
-        + "Heaps are arrays for which a[k] <= a[2*k+1] and a[k] <= a[2*k+2] for\n"
-        + "all k, counting elements from 0.  For the sake of comparison,\n"
-        + "non-existing elements are considered to be infinite.  The interesting\n"
-        + "property of a heap is that a[0] is always its smallest element.\n\n"
-        + "Usage:\n\n"
-        + "heap = []            # creates an empty heap\n"
-        + "heappush(heap, item) # pushes a new item on the heap\n"
-        + "item = heappop(heap) # pops the smallest item from the heap\n"
-        + "item = heap[0]       # smallest item on the heap without popping it\n"
-        + "heapify(x)           # transforms list into a heap, in-place, in linear time\n"
-        + "item = heapreplace(heap, item) # pops and returns smallest item, and adds\n"
-        + "                               # new item; the heap size is unchanged\n\n"
-        + "Our API differs from textbook heap algorithms as follows:\n\n"
-        + "- We use 0-based indexing.  This makes the relationship between the\n"
-        + "  index for a node and the indexes for its children slightly less\n"
-        + "  obvious, but is more suitable since Python uses 0-based indexing.\n\n"
-        + "- Our heappop() method returns the smallest item, not the largest.\n\n"
-        + "These two makeit possible to view the heap as a regular Python list\n"
-        + "without surprises: heap[0] is the smallest item, and heap.sort()\n"
-        + "maintains the heap invariant!\n"
-        )]
     public static class PythonHeapq {
+        public const string __doc__ = "implements a heapq or priority queue.";
+        public const string __about__ = "Heaps are arrays for which a[k] <= a[2*k+1] and a[k] <= a[2*k+2] for all k.";
+
         #region public API
 
         [Documentation("Transform list into a heap, in-place, in O(len(heap)) time.")]

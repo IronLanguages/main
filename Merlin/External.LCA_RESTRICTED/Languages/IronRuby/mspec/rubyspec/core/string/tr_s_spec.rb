@@ -65,11 +65,15 @@ describe "String#tr_s!" do
     s = "hello"
     s.tr_s!("l", "r").should == "hero"
     s.should == "hero"
+    
+    s = "hello"
+    s.tr_s!("l", "l").should == "helo"
   end
 
-  it "returns nil if no modification was made" do
+  it "returns nil iff no chracter maps" do
     s = "hello"
     s.tr_s!("za", "yb").should == nil
+    s.tr_s!("h", "h").should == "hello"
     s.tr_s!("", "").should == nil
     s.should == "hello"
   end

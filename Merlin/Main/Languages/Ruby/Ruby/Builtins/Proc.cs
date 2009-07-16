@@ -47,18 +47,13 @@ namespace IronRuby.Builtins {
         // Although we could load self from scope in Ruby defined blocks, we cannot do so when we don't have a scope.
         private readonly object _self;
 
-        // Local scope inside the proc captured by the block definition:
+        // The scope that defines this block.
         private readonly RubyScope/*!*/ _scope;
-
-        // position of the block definition (opening brace):
-        private readonly string _sourcePath;
-        private readonly int _sourceLine;
 
         private readonly BlockDispatcher/*!*/ _dispatcher;
         private ProcKind _kind;
 
-        // we need to remember the block's owner and proc-converter frames:
-        internal RuntimeFlowControl Owner { get; set; }
+        // The frame that converted this block to a proc:
         internal RuntimeFlowControl Converter { get; set; }
 
         public ProcKind Kind {
@@ -80,30 +75,26 @@ namespace IronRuby.Builtins {
         }
 
         public string SourcePath {
-            get { return _sourcePath; }
+            get { return _dispatcher.SourcePath; }
         }
 
         public int SourceLine {
-            get { return _sourceLine; }
+            get { return _dispatcher.SourceLine; }
         }
-
-        internal static PropertyInfo/*!*/ SelfProperty { get { return typeof(Proc).GetProperty("Self"); } }
 
         #region Construction, Conversion
 
-        internal Proc(ProcKind kind, object self, RubyScope/*!*/ scope, string sourcePath, int sourceLine, BlockDispatcher/*!*/ dispatcher) {
+        internal Proc(ProcKind kind, object self, RubyScope/*!*/ scope, BlockDispatcher/*!*/ dispatcher) {
             Assert.NotNull(scope, dispatcher);
+            Debug.Assert(dispatcher.Method != null);
             _kind = kind;
             _self = self;
             _scope = scope;
             _dispatcher = dispatcher;
-            _sourcePath = sourcePath;
-            _sourceLine = sourceLine;
         }
 
         protected Proc(Proc/*!*/ proc)
-            : this(proc.Kind, proc.Self, proc.LocalScope, proc.SourcePath, proc.SourceLine, proc.Dispatcher) {
-            Owner = proc.Owner;
+            : this(proc.Kind, proc.Self, proc.LocalScope, proc.Dispatcher) {
             Converter = proc.Converter;
         }
 
@@ -159,8 +150,8 @@ namespace IronRuby.Builtins {
 
             BuildCall(
                 metaBuilder,
-                convertedTarget,                              // proc object  
-                Ast.Property(convertedTarget, SelfProperty),  // self captured by the block closure
+                convertedTarget,                       // proc object  
+                Methods.GetProcSelf.OpCall(convertedTarget),  // self captured by the block closure
                 null,
                 args
             );
@@ -289,8 +280,8 @@ namespace IronRuby.Builtins {
 
         public static Proc/*!*/ Create(RubyContext/*!*/ context, Delegate/*!*/ clrMethod, int parameterCount) {
             // scope is used to get to the execution context:
-            return new Proc(ProcKind.Block, null, context.EmptyScope, null, 0, 
-                BlockDispatcher.Create(clrMethod, parameterCount, BlockSignatureAttributes.None)
+            return new Proc(ProcKind.Block, null, context.EmptyScope,
+                BlockDispatcher.Create(parameterCount, BlockSignatureAttributes.None, null, 0).SetMethod(clrMethod)
             );
         }
 

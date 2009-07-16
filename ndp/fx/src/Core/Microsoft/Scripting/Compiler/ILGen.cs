@@ -13,7 +13,9 @@
  *
  * ***************************************************************************/
 
+#if MICROSOFT_SCRIPTING_CORE
 using ILGenerator = System.Linq.Expressions.Compiler.OffsetTrackingILGenerator;
+#endif
 
 using System.Collections.Generic;
 using System.Diagnostics;

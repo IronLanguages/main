@@ -136,7 +136,7 @@ namespace IronRuby.Compiler.Ast {
                 }
 
             } else {
-                condition = Methods.CompareDefaultException.OpCall(gen.CurrentScopeVariable, gen.CurrentSelfVariable);
+                condition = Methods.CompareDefaultException.OpCall(gen.CurrentScopeVariable);
             }
 
             return AstUtils.IfCondition(condition,

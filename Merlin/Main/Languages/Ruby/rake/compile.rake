@@ -29,6 +29,7 @@ namespace :compile do
     IronRubyCompiler.compile :dlr_core
     IronRubyCompiler.compile :dlr_libs
     IronRubyCompiler.compile :dlr_com
+    IronRubyCompiler.compile :dlr_debug
   end
 
   desc "compile ClassInitGenerator.exe"
@@ -74,6 +75,10 @@ namespace :compile do
       IronRubyCompiler.compile target
     end
   end
+  desc "compile IronRuby and IronPython"
+  task :all => [:compile, :ironpython]
 end
 desc "compile everything"
 task :compile => %w{happy clean_build compile:dlr compile:ruby compile:libraries compile:console compile:testhost compile:generator compile:yaml}
+
+

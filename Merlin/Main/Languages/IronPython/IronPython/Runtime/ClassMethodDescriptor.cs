@@ -19,7 +19,7 @@ using IronPython.Runtime.Types;
 using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime {
-    [PythonType("method_descriptor")]
+    [PythonType("method_descriptor"), DontMapGetMemberNamesToDir]
     public class ClassMethodDescriptor : PythonTypeSlot, ICodeFormattable {
         internal readonly BuiltinFunction _func;
 

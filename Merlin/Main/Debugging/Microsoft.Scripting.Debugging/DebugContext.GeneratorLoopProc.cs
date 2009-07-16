@@ -91,7 +91,7 @@ namespace Microsoft.Scripting.Debugging.CompilerServices {
                     if (frame.DebugContext.DebugMode != DebugMode.Disabled) {
                         try {
                             frame.InGeneratorLoop = true;
-                            DispatchDebugEvent(frame.Thread, frame.CurrentLocationCookie, TraceEventKind.Exception, ex);
+                            DispatchDebugEvent(frame.Thread, frame.CurrentLocationCookie, TraceEventKind.ExceptionUnwind, ex);
                         } finally {
                             frame.InGeneratorLoop = false;
                         }

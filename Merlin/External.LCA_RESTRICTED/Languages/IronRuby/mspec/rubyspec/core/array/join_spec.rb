@@ -35,4 +35,11 @@ describe "Array#join" do
     obj = mock("not a string")
     lambda { [1, 2].send(@method, obj) }.should raise_error(TypeError)
   end
+  
+  it "handles nils correctly" do
+    [nil].join('s').should == ''    
+    [nil, nil, nil].join.should == ''
+    [nil, nil, nil].join('s').should == 'ss'
+    [nil, 'x', nil].join('s').should == 'sxs'
+  end
 end

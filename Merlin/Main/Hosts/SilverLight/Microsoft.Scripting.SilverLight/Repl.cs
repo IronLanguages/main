@@ -88,7 +88,8 @@ namespace Microsoft.Scripting.Silverlight {
             if (DynamicApplication.Current == null) {
                 throw new Exception("Need to give Show() an engine, since this is not a dynamic application");
             }
-            Show(DynamicApplication.Current.Engine, DynamicApplication.Current.EntryPointScope);
+            var dynEngine = DynamicApplication.Current.Engine;
+            Show(dynEngine.Engine, dynEngine.EntryPointScope);
         }
 
         public static void Show(ScriptEngine engine, ScriptScope scope) {
@@ -96,7 +97,7 @@ namespace Microsoft.Scripting.Silverlight {
                 if (DynamicApplication.Current == null) {
                     Window.Show();
                 } else {
-                    Window.Show(DynamicApplication.Current.ErrorTargetID);
+                    Window.Show(Settings.ErrorTargetID);
                 }
                 if (engine != null) {
                     Window.Current.AddPanel(engine.Setup.Names[0] + " Console", Create(engine, scope));
@@ -107,7 +108,8 @@ namespace Microsoft.Scripting.Silverlight {
         }
 
         public static HtmlElement Create() {
-            return Create(DynamicApplication.Current.Engine, DynamicApplication.Current.EntryPointScope);
+            var dynEngine = DynamicApplication.Current.Engine;
+            return Create(dynEngine.Engine, dynEngine.EntryPointScope);
         }
 
         public static HtmlElement Create(ScriptEngine engine, ScriptScope scope) {

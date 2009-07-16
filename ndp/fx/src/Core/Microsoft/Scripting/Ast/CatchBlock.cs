@@ -75,6 +75,22 @@ namespace System.Linq.Expressions {
         public override string ToString() {
             return ExpressionStringBuilder.CatchBlockToString(this);
         }
+
+        /// <summary>
+        /// Creates a new expression that is like this one, but using the
+        /// supplied children. If all of the children are the same, it will
+        /// return this expression.
+        /// </summary>
+        /// <param name="variable">The <see cref="Variable" /> property of the result.</param>
+        /// <param name="filter">The <see cref="Filter" /> property of the result.</param>
+        /// <param name="body">The <see cref="Body" /> property of the result.</param>
+        /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
+        public CatchBlock Update(ParameterExpression variable, Expression filter, Expression body) {
+            if (variable == Variable && filter == Filter && body == Body) {
+                return this;
+            }
+            return Expression.MakeCatchBlock(Test, variable, body, filter);
+        }
     }
 
     public partial class Expression {

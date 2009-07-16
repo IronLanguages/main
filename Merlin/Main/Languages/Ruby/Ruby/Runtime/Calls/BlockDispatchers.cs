@@ -29,18 +29,12 @@ namespace IronRuby.Runtime.Calls {
     using BlockCallTargetN = Func<BlockParam, object, object[], object>;
 
     // L(0, -)
-    internal sealed class BlockDispatcher0 : BlockDispatcher {
-        private readonly BlockCallTarget0/*!*/ _block;
-
-        public override Delegate/*!*/ Method { get { return _block; } }
+    internal sealed class BlockDispatcher0 : BlockDispatcher<BlockCallTarget0> {
         public override int ParameterCount { get { return 0; } }
 
-        public BlockDispatcher0(BlockCallTarget0/*!*/ block, BlockSignatureAttributes attributesAndArity)
-            : base(attributesAndArity) {
-            Assert.NotNull(block);
+        public BlockDispatcher0(BlockSignatureAttributes attributesAndArity, string sourcePath, int sourceLine)
+            : base(attributesAndArity, sourcePath, sourceLine) {
             Debug.Assert(!HasUnsplatParameter);
-
-            _block = block;
         }
 
         // R(0, -)
@@ -116,17 +110,12 @@ namespace IronRuby.Runtime.Calls {
     }
 
     // L(1, -)
-    internal sealed class BlockDispatcher1 : BlockDispatcher {
-        private readonly BlockCallTarget1/*!*/ _block;
-
-        public override Delegate/*!*/ Method { get { return _block; } }
+    internal sealed class BlockDispatcher1 : BlockDispatcher<BlockCallTarget1> {
         public override int ParameterCount { get { return 1; } }
 
-        public BlockDispatcher1(BlockCallTarget1/*!*/ block, BlockSignatureAttributes attributesAndArity)
-            : base(attributesAndArity) {
-            Assert.NotNull(block);
+        public BlockDispatcher1(BlockSignatureAttributes attributesAndArity, string sourcePath, int sourceLine)
+            : base(attributesAndArity, sourcePath, sourceLine) {
             Debug.Assert(!HasUnsplatParameter);
-            _block = block;
         }
 
         // R(0, -)
@@ -290,17 +279,12 @@ namespace IronRuby.Runtime.Calls {
     }
 
     // L(2, -)
-    internal sealed class BlockDispatcher2 : BlockDispatcher {
-        private readonly BlockCallTarget2/*!*/ _block;
-
-        public override Delegate/*!*/ Method { get { return _block; } }
+    internal sealed class BlockDispatcher2 : BlockDispatcher<BlockCallTarget2> {
         public override int ParameterCount { get { return 2; } }
 
-        public BlockDispatcher2(BlockCallTarget2/*!*/ block, BlockSignatureAttributes attributesAndArity)
-            : base(attributesAndArity) {
-            Assert.NotNull(block);
+        public BlockDispatcher2(BlockSignatureAttributes attributesAndArity, string sourcePath, int sourceLine)
+            : base(attributesAndArity, sourcePath, sourceLine) {
             Debug.Assert(!HasUnsplatParameter);
-            _block = block;
         }
 
         // R(0, -)
@@ -399,17 +383,12 @@ namespace IronRuby.Runtime.Calls {
     }
 
     // L(3, -)
-    internal sealed class BlockDispatcher3 : BlockDispatcher {
-        private readonly BlockCallTarget3/*!*/ _block;
-
-        public override Delegate/*!*/ Method { get { return _block; } }
+    internal sealed class BlockDispatcher3 : BlockDispatcher<BlockCallTarget3> {
         public override int ParameterCount { get { return 3; } }
 
-        public BlockDispatcher3(BlockCallTarget3/*!*/ block, BlockSignatureAttributes attributesAndArity)
-            : base(attributesAndArity) {
-            Assert.NotNull(block);
+        public BlockDispatcher3(BlockSignatureAttributes attributesAndArity, string sourcePath, int sourceLine)
+            : base(attributesAndArity, sourcePath, sourceLine) {
             Debug.Assert(!HasUnsplatParameter);
-            _block = block;
         }
 
         // R(0, -)
@@ -518,17 +497,12 @@ namespace IronRuby.Runtime.Calls {
     }
 
     // L(4, -)
-    internal sealed class BlockDispatcher4 : BlockDispatcher {
-        private readonly BlockCallTarget4/*!*/ _block;
-
-        public override Delegate/*!*/ Method { get { return _block; } }
+    internal sealed class BlockDispatcher4 : BlockDispatcher<BlockCallTarget4> {
         public override int ParameterCount { get { return 4; } }
 
-        public BlockDispatcher4(BlockCallTarget4/*!*/ block, BlockSignatureAttributes attributesAndArity)
-            : base(attributesAndArity) {
-            Assert.NotNull(block);
+        public BlockDispatcher4(BlockSignatureAttributes attributesAndArity, string sourcePath, int sourceLine)
+            : base(attributesAndArity, sourcePath, sourceLine) {
             Debug.Assert(!HasUnsplatParameter);
-            _block = block;
         }
 
         // R(0, -)

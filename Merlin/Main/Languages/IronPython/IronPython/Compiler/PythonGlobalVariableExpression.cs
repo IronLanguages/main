@@ -103,8 +103,8 @@ namespace IronPython.Compiler {
             );
         }
 
-        protected override Expression VisitChildren(Func<Expression, Expression> visitor) {
-            Expression v = visitor(_variable);
+        protected override Expression VisitChildren(ExpressionVisitor visitor) {
+            Expression v = visitor.Visit(_variable);
             if (v == _variable) {
                 return this;
             }
@@ -171,9 +171,9 @@ namespace IronPython.Compiler {
         }
 
 
-        protected override Expression VisitChildren(Func<Expression, Expression> visitor) {
-            var g = (PythonGlobalVariableExpression)visitor(_global);
-            var v = visitor(_value);
+        protected override Expression VisitChildren(ExpressionVisitor visitor) {
+            var g = (PythonGlobalVariableExpression)visitor.Visit(_global);
+            var v = visitor.Visit(_value);
             if (g == _global && v == _value) {
                 return this;
             }

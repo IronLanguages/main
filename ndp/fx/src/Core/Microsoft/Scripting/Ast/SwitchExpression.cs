@@ -86,7 +86,10 @@ namespace System.Linq.Expressions {
             get { return _comparison; }
         }
 
-        internal override Expression Accept(ExpressionVisitor visitor) {
+        /// <summary>
+        /// Dispatches to the specific visit method for this node type.
+        /// </summary>
+        protected internal override Expression Accept(ExpressionVisitor visitor) {
             return visitor.VisitSwitch(this);
         }
 
@@ -98,6 +101,22 @@ namespace System.Linq.Expressions {
                 }
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Creates a new expression that is like this one, but using the
+        /// supplied children. If all of the children are the same, it will
+        /// return this expression.
+        /// </summary>
+        /// <param name="switchValue">The <see cref="SwitchValue" /> property of the result.</param>
+        /// <param name="cases">The <see cref="Cases" /> property of the result.</param>
+        /// <param name="defaultBody">The <see cref="DefaultBody" /> property of the result.</param>
+        /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
+        public SwitchExpression Update(Expression switchValue, IEnumerable<SwitchCase> cases, Expression defaultBody) {
+            if (switchValue == SwitchValue && cases == Cases && defaultBody == DefaultBody) {
+                return this;
+            }
+            return Expression.Switch(Type, switchValue, defaultBody, Comparison, cases);
         }
     }
 

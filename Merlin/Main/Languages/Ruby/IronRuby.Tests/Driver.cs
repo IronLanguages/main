@@ -43,36 +43,35 @@ namespace IronRuby.Tests {
     public sealed class OptionsAttribute : Attribute {
         public RubyCompatibility Compatibility { get; set; }
         public bool PrivateBinding { get; set; }
+        public bool NoRuntime { get; set; }
     }
 
     public class TestRuntime {
         private readonly Driver/*!*/ _driver;
         private readonly string/*!*/ _testName;
-        private readonly ScriptRuntime/*!*/ _env;
-        private readonly ScriptEngine/*!*/ _engine;
-        private readonly RubyContext/*!*/ _context;
+        private readonly ScriptRuntime _runtime;
+        private readonly ScriptEngine _engine;
+        private readonly RubyContext _context;
 
         public string/*!*/ TestName { get { return _testName; } }
-        public ScriptEngine/*!*/ Engine { get { return _engine; } }
-        public ScriptRuntime/*!*/ ScriptRuntime { get { return _engine.Runtime; } }
-        public RubyContext/*!*/ Context { get { return _context; } }
+        public ScriptEngine Engine { get { return _engine; } }
+        public ScriptRuntime ScriptRuntime { get {  return _runtime; } }
+        public RubyContext Context { get { return _context; } }
 
         public TestRuntime(Driver/*!*/ driver, TestCase/*!*/ testCase) {
             _driver = driver;
             _testName = testCase.Name;
+
+            if (testCase.Options.NoRuntime) {
+                return;
+            }
 
             if (_driver.SaveToAssemblies) {
                 Environment.SetEnvironmentVariable("DLR_AssembliesFileName", _testName);
             }
 
             var runtimeSetup = ScriptRuntimeSetup.ReadConfiguration();
-            LanguageSetup languageSetup = null;
-            foreach (var language in runtimeSetup.LanguageSetups) {
-                if (language.TypeName == typeof(RubyContext).AssemblyQualifiedName) {
-                    languageSetup = language;
-                    break;
-                }
-            }
+            var languageSetup = runtimeSetup.AddRubySetup();
 
             runtimeSetup.DebugMode = _driver.IsDebug;
             runtimeSetup.PrivateBinding = testCase.Options.PrivateBinding;
@@ -80,8 +79,8 @@ namespace IronRuby.Tests {
             languageSetup.Options["Verbosity"] = 2;
             languageSetup.Options["Compatibility"] = testCase.Options.Compatibility;
 
-            _env = Ruby.CreateRuntime(runtimeSetup);
-            _engine = Ruby.GetEngine(_env);
+            _runtime = Ruby.CreateRuntime(runtimeSetup);
+            _engine = Ruby.GetEngine(_runtime);
             _context = Ruby.GetExecutionContext(_engine);
         }
     }

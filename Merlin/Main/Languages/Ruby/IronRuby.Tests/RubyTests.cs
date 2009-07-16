@@ -14,14 +14,24 @@
  * ***************************************************************************/
 
 using System;
-namespace IronRuby.Tests {
 
+namespace IronRuby.Tests {    
     public partial class Tests {
         public Tests(Driver/*!*/ driver) {
             _driver = driver;
 
             _methods = new Action[] {
                 Scenario_Startup, // must be the first test
+                
+                MutableString1,
+                MutableString2,
+                RubyArray_Ctors,
+                RubyArray_Basic,
+                RubyArray_Add,
+                RubyArray_Remove,
+                RubyArray_Insert,
+                RubyArray_Misc,
+
                 Scenario_ParserLogging,
                 Scenario_RubyTokenizer1,
                 Identifiers1,
@@ -88,7 +98,6 @@ namespace IronRuby.Tests {
                 Scenario_RubySingletonConstants1,
                 Scenario_RubyMath1,
 
-                MutableString1,
                 File1,
                 StringsPlus,
                 Strings0,
@@ -181,27 +190,28 @@ namespace IronRuby.Tests {
                 Scenario_ParallelAssignment10,
 
                 BlockEmpty,
-                Scenario_RubyBlocks0,
-                Scenario_RubyBlocks_Params1,
-                Scenario_RubyBlocks_Params2,
+                RubyBlocks0,
+                RubyBlocks_Params1,
+                RubyBlocks_Params2,
                 ProcYieldCaching1,
                 ProcCallCaching1,
                 ProcSelf1,
-                Scenario_RubyBlocks2,
-                Scenario_RubyBlocks3,
-                Scenario_RubyBlocks5,
-                Scenario_RubyBlocks6,
-                Scenario_RubyBlocks7,
-                Scenario_RubyBlocks8,
-                Scenario_RubyBlocks9,
-                Scenario_RubyBlocks10,
-                Scenario_RubyBlocks11,
-                Scenario_RubyBlocks12,
-                Scenario_RubyBlocks13,
-                Scenario_RubyBlocks14,
-                Scenario_RubyBlocks15,
-                Scenario_RubyBlocks16,
-                Scenario_RubyBlocks17,
+                RubyBlocks2,
+                RubyBlocks3,
+                RubyBlocks5,
+                RubyBlocks6,
+                RubyBlocks7,
+                RubyBlocks8,
+                RubyBlocks9,
+                RubyBlocks10,
+                RubyBlocks11,
+                RubyBlocks12,
+                RubyBlocks13,
+                RubyBlocks14,
+                RubyBlocks15,
+                RubyBlocks16,
+                RubyBlocks17,
+                RubyBlocks18,
                 BlockArity1,
                 
                 Scenario_RubyBlockArgs1,
@@ -224,7 +234,8 @@ namespace IronRuby.Tests {
                 Scenario_RubyBlockArgs10,
                 Proc_RhsAndBlockArguments1,
 
-                Scenario_RubyProcs1,
+                RubyProcs1,
+                RubyProcs2,
                 RubyProcArgConversion1,
                 RubyProcArgConversion2,
                 RubyProcArgConversion3,
@@ -269,7 +280,9 @@ namespace IronRuby.Tests {
 
                 RangeConditionInclusive1,
                 RangeConditionExclusive1,
-                RangeCondition1,
+                RangeCondition1A,
+                RangeCondition1B,
+                RangeCondition1C,
                 RangeCondition2,
                 
                 Scenario_RubyClosures1,
@@ -386,6 +399,7 @@ namespace IronRuby.Tests {
                 ClrOverride2,
                 ClrOverride3,
                 //TODO: Fix ClrOverride4,
+                ClrDetachedVirtual1,
                 ClrConstructor1,
                 ClrConstructor2,
                 ClrConstructor3,

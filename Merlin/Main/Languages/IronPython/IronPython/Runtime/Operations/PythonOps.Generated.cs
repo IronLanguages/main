@@ -15,6 +15,9 @@
 
 using System;
 using IronPython.Runtime.Exceptions;
+#if !SILVERLIGHT
+using System.ComponentModel;
+#endif
 
 namespace IronPython.Runtime.Operations {
     public static partial class PythonOps {
@@ -98,10 +101,6 @@ namespace IronPython.Runtime.Operations {
 
         public static Exception StopIteration(string format, params object[] args) {
             return new StopIterationException(string.Format(format, args));
-        }
-
-        public static Exception Warning(string format, params object[] args) {
-            return new WarningException(string.Format(format, args));
         }
 
         public static Exception BytesWarning(string format, params object[] args) {

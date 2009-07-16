@@ -59,7 +59,7 @@ namespace System.Dynamic {
 
         #region IDisposable Members
 
-#if MICROSOFT_DYNAMIC
+#if CLR2
         [SecurityCritical, SecurityTreatAsSafe]
 #else
         [SecuritySafeCritical]
@@ -78,7 +78,7 @@ namespace System.Dynamic {
             }
         }
 
-#if MICROSOFT_DYNAMIC
+#if CLR2
         [SecurityCritical, SecurityTreatAsSafe]
 #else
         [SecuritySafeCritical]

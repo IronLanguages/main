@@ -190,7 +190,25 @@ namespace System.Linq.Expressions {
             return (TDelegate)(object)LambdaCompiler.Compile(this, debugInfoGenerator);
         }
 
-        internal override Expression Accept(ExpressionVisitor visitor) {
+        /// <summary>
+        /// Creates a new expression that is like this one, but using the
+        /// supplied children. If all of the children are the same, it will
+        /// return this expression.
+        /// </summary>
+        /// <param name="body">The <see cref="LambdaExpression.Body">Body</see> property of the result.</param>
+        /// <param name="parameters">The <see cref="LambdaExpression.Parameters">Parameters</see> property of the result.</param>
+        /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
+        public Expression<TDelegate> Update(Expression body, IEnumerable<ParameterExpression> parameters) {
+            if (body == Body && parameters == Parameters) {
+                return this;
+            }
+            return Expression.Lambda<TDelegate>(body, Name, TailCall, parameters);
+        }
+
+        /// <summary>
+        /// Dispatches to the specific visit method for this node type.
+        /// </summary>
+        protected internal override Expression Accept(ExpressionVisitor visitor) {
             return visitor.VisitLambda(this);
         }
 

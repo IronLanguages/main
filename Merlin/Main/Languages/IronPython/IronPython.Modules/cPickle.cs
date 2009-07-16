@@ -31,17 +31,19 @@ using Microsoft.Scripting.Utils;
 
 [assembly: PythonModule("cPickle", typeof(IronPython.Modules.PythonPickle))]
 namespace IronPython.Modules {
-    [Documentation("Fast object serialization/unserialization.\n\n"
-        + "Differences from CPython:\n"
-        + " - does not implement the undocumented fast mode\n"
-        )]
     public static class PythonPickle {
+        public const string __doc__ = "Fast object serialization/deserialization.\n\n"
+            + "Differences from CPython:\n"
+            + " - does not implement the undocumented fast mode\n";
         [System.Runtime.CompilerServices.SpecialName]
         public static void PerformModuleReload(PythonContext/*!*/ context, IAttributesCollection/*!*/ dict) {
             context.EnsureModuleException("PickleError", dict, "PickleError", "cPickle");
             context.EnsureModuleException("PicklingError", dict, "PicklingError", "cPickle");
             context.EnsureModuleException("UnpicklingError", dict, "UnpicklingError", "cPickle");
+            context.EnsureModuleException("UnpickleableError", dict, "UnpickleableError", "cPickle");
             context.EnsureModuleException("BadPickleGet", dict, "BadPickleGet", "cPickle");
+            dict[Symbols.Builtins] = context.BuiltinModuleInstance;
+            dict[SymbolTable.StringToId("compatible_formats")] = PythonOps.MakeList("1.0", "1.1", "1.2", "1.3", "2.0");
         }
 
         private static readonly PythonStruct.Struct _float64 = PythonStruct.Struct.Create(">d");
@@ -50,10 +52,14 @@ namespace IronPython.Modules {
         private static readonly PythonStruct.Struct _uint32 = PythonStruct.Struct.Create("<i");
         
         private const int highestProtocol = 2;
+        
+        public const string __version__ = "1.71";
+        public const string format_version = "2.0";
+        
         public static int HIGHEST_PROTOCOL {
             get { return highestProtocol; }
         }
-
+        
         private const string Newline = "\n";
 
         #region Public module-level functions
@@ -65,7 +71,7 @@ namespace IronPython.Modules {
             + "(deprecated) bin parameters."
             )]
         public static void dump(CodeContext/*!*/ context, object obj, object file, [DefaultParameterValue(null)] object protocol, [DefaultParameterValue(null)] object bin) {
-            Pickler pickler = new Pickler(context, file, protocol, bin);
+            PicklerObject pickler = new PicklerObject(context, file, protocol, bin);
             pickler.dump(context, obj);
         }
 
@@ -79,7 +85,7 @@ namespace IronPython.Modules {
             //??? possible perf enhancement: use a C# TextWriter-backed IFileOutput and
             // thus avoid Python call overhead. Also do similar thing for LoadFromString.
             object stringIO = PythonOps.Invoke(context, DynamicHelpers.GetPythonTypeFromType(typeof(PythonStringIO)), SymbolTable.StringToId("StringIO"));
-            Pickler pickler = new Pickler(context, stringIO, protocol, bin);
+            PicklerObject pickler = new PicklerObject(context, stringIO, protocol, bin);
             pickler.dump(context, obj);
             return Converter.ConvertToString(PythonOps.Invoke(context, stringIO, SymbolTable.StringToId("getvalue")));
         }
@@ -97,7 +103,7 @@ namespace IronPython.Modules {
             + "text mode."
             )]
         public static object load(CodeContext/*!*/ context, object file) {
-            return new Unpickler(context, file).load(context);
+            return new UnpicklerObject(context, file).load(context);
         }
 
         [Documentation("loads(string) -> unpickled object\n\n"
@@ -113,7 +119,7 @@ namespace IronPython.Modules {
                 "b"
             );
 
-            return new Unpickler(context, pf).load(context);
+            return new UnpicklerObject(context, pf).load(context);
         }
 
         #endregion
@@ -124,7 +130,7 @@ namespace IronPython.Modules {
         /// Interface for "file-like objects" that implement the protocol needed by load() and friends.
         /// This enables the creation of thin wrappers that make fast .NET types and slow Python types look the same.
         /// </summary>
-        public interface IFileInput {
+        internal interface IFileInput {
             string Read(CodeContext/*!*/ context, int size);
             string ReadLine(CodeContext/*!*/ context);
         }
@@ -133,7 +139,7 @@ namespace IronPython.Modules {
         /// Interface for "file-like objects" that implement the protocol needed by dump() and friends.
         /// This enables the creation of thin wrappers that make fast .NET types and slow Python types look the same.
         /// </summary>
-        public interface IFileOutput {
+        internal interface IFileOutput {
             void Write(CodeContext/*!*/ context, string data);
         }
 
@@ -197,7 +203,7 @@ namespace IronPython.Modules {
 
         #region Opcode constants
 
-        public static class Opcode {
+        internal static class Opcode {
             public const string Append = "a";
             public const string Appends = "e";
             public const string BinFloat = "G";
@@ -257,6 +263,10 @@ namespace IronPython.Modules {
 
         #region Pickler object
 
+        public static PicklerObject Pickler(CodeContext/*!*/ context, [DefaultParameterValue(null)]object file, [DefaultParameterValue(null)]object protocol, [DefaultParameterValue(null)]object bin) {
+            return new PicklerObject(context, file, protocol, bin);
+        }
+
         [Documentation("Pickler(file, protocol=0) -> Pickler object\n\n"
             + "A Pickler object serializes Python objects to a pickle bytecode stream, which\n"
             + "can then be converted back into equivalent objects using an Unpickler.\n"
@@ -269,8 +279,8 @@ namespace IronPython.Modules {
             + "    If protocol is not specified, then protocol 0 is used if bin is false, and\n"
             + "    protocol 1 is used if bin is true."
             )]
-        [PythonType]
-        public class Pickler {
+        [PythonType("Pickler"), PythonHidden]
+        public class PicklerObject {
 
             private const char LowestPrintableChar = (char)32;
             private const char HighestPrintableChar = (char)126;
@@ -323,36 +333,7 @@ namespace IronPython.Modules {
                 set { /* ignore */ }
             }
 
-            public static Pickler __new__(CodeContext/*!*/ context, 
-                PythonType cls,
-                [DefaultParameterValue(null)] object file,
-                [DefaultParameterValue(null)] object protocol,
-                [DefaultParameterValue(null)] object bin
-            ) {
-                if (cls == DynamicHelpers.GetPythonTypeFromType(typeof(Pickler))) {
-                    // For undocumented (yet tested in official CPython tests) list-based pickler, the
-                    // user could do something like Pickler(1), which would create a protocol-1 pickler
-                    // with an internal string output buffer (retrievable using GetValue()). For a little
-                    // more info, see
-                    // https://sourceforge.net/tracker/?func=detail&atid=105470&aid=939395&group_id=5470
-                    int intProtocol;
-                    if (file == null) {
-                        file = new PythonReadableFileOutput(context, new PythonStringIO.StringO());
-                    } else if (Converter.TryConvertToInt32(file, out intProtocol)) {
-                        return new Pickler(context, (IFileOutput) new PythonReadableFileOutput(context, new PythonStringIO.StringO()), intProtocol, bin);
-                    }
-                    return new Pickler(context, file, protocol, bin);
-                } else {
-                    Pickler pickler = cls.CreateInstance(context, file, protocol, bin) as Pickler;
-                    if (pickler == null) throw PythonOps.TypeError("{0} is not a subclass of Pickler", cls);
-                    return pickler;
-                }
-            }
-
-            public Pickler(CodeContext/*!*/ context, object file, object protocol, object bin)
-                : this(context, new PythonFileOutput(context, file), protocol, bin) { }
-
-            public Pickler(CodeContext/*!*/ context, IFileOutput file, object protocol, object bin) {
+            public PicklerObject(CodeContext/*!*/ context, object file, object protocol, object bin) {
                 dispatchTable = new Dictionary<PythonType, PickleFunction>();
                 dispatchTable[TypeCache.Boolean] = SaveBoolean;
                 dispatchTable[TypeCache.Int32] = SaveInteger;
@@ -369,12 +350,28 @@ namespace IronPython.Modules {
                 dispatchTable[TypeCache.PythonType] = SaveGlobal;
                 dispatchTable[TypeCache.OldInstance] = SaveInstance;
 
-                this._file = file;
+                int intProtocol;
+                if (file == null) {
+                    _file = new PythonReadableFileOutput(context, new PythonStringIO.StringO());
+                } else if (Converter.TryConvertToInt32(file, out intProtocol)) {
+                    // For undocumented (yet tested in official CPython tests) list-based pickler, the
+                    // user could do something like Pickler(1), which would create a protocol-1 pickler
+                    // with an internal string output buffer (retrievable using GetValue()). For a little
+                    // more info, see
+                    // https://sourceforge.net/tracker/?func=detail&atid=105470&aid=939395&group_id=5470
+                    _file = new PythonReadableFileOutput(context, new PythonStringIO.StringO());
+                    protocol = file;
+                } else if (file is IFileOutput) {
+                    _file = (IFileOutput)file;
+                } else {
+                    _file = new PythonFileOutput(context, file);
+                }
+
                 this._memo = new PythonDictionary();
 
                 if (protocol == null) protocol = PythonOps.IsTrue(bin) ? 1 : 0;
 
-                int intProtocol = PythonContext.GetContext(context).ConvertToInt32(protocol);
+                intProtocol = PythonContext.GetContext(context).ConvertToInt32(protocol);
                 if (intProtocol > highestProtocol) {
                     throw PythonOps.ValueError("pickle protocol {0} asked for; the highest available protocol is {1}", intProtocol, highestProtocol);
                 } else if (intProtocol < 0) {
@@ -1244,6 +1241,10 @@ namespace IronPython.Modules {
 
         #region Unpickler object
 
+        public static UnpicklerObject Unpickler(CodeContext/*!*/ context, object file) {
+            return new UnpicklerObject(context, file);
+        }
+
         [Documentation("Unpickler(file) -> Unpickler object\n\n"
             + "An Unpickler object reads a pickle bytecode stream and creates corresponding\n"
             + "objects."
@@ -1251,8 +1252,8 @@ namespace IronPython.Modules {
             + "file: an object (such as an open file or a StringIO) with read(num_chars) and\n"
             + "    readline() methods that return strings"
             )]
-        [PythonType]
-        public class Unpickler {
+        [PythonType("Unpickler"), PythonHidden]
+        public class UnpicklerObject {
 
             private readonly object _mark = new object();
 
@@ -1264,11 +1265,8 @@ namespace IronPython.Modules {
             private IDictionary<object, object> _memo;
             private object _pers_loader;
 
-            public Unpickler(CodeContext/*!*/ context, object file)
-                : this(new PythonFileInput(context, file)) { }
-
-            public Unpickler(IFileInput file) {
-                this._file = file;
+            public UnpicklerObject(CodeContext context, object file) {
+                this._file = file as IFileInput ?? new PythonFileInput(context, file);
                 _memo = new PythonDictionary();
 
                 _dispatch = new Dictionary<string, LoadFunction>();

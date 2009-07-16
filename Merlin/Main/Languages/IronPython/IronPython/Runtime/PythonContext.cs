@@ -34,18 +34,20 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 using IronPython.Compiler;
+using IronPython.Modules;
 using IronPython.Runtime.Binding;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
+using Debugging = Microsoft.Scripting.Debugging;
 using PyAst = IronPython.Compiler.Ast;
 
 namespace IronPython.Runtime {
     public delegate void CommandDispatcher(Delegate command);
 
     public sealed class PythonContext : LanguageContext {
-        internal const string/*!*/ IronPythonDisplayName = "IronPython 2.6 Beta 1";
+        internal const string/*!*/ IronPythonDisplayName = "IronPython 2.6 Beta 2";
         internal const string/*!*/ IronPythonNames = "IronPython;Python;py";
         internal const string/*!*/ IronPythonFileExtensions = ".py";
 
@@ -167,6 +169,16 @@ namespace IronPython.Runtime {
         private DynamicMetaObjectBinder _invokeTwoConvertToInt;
         private static CultureInfo _CCulture;
 
+        // tracing / in-proc debugging support
+        private Debugging.CompilerServices.DebugContext _debugContext;
+        private Debugging.ITracePipeline _tracePipeline;
+        private Stack<PythonTracebackListener> _tracebackListeners;
+        internal FunctionCode.CodeList _allCodes;
+        internal readonly object _codeCleanupLock = new object(), _codeUpdateLock = new object();
+        internal int _codeCount, _nextCodeCleanup = 200;
+        private int _recursionLimit;
+        internal bool _enableTracing;
+
         /// <summary>
         /// Creates a new PythonContext not bound to Engine.
         /// </summary>
@@ -223,11 +235,8 @@ namespace IronPython.Runtime {
                     string lib = Path.Combine(entry, "Lib");
                     path.append(lib);
 
-                    // add DLLs directory if it exists
-                    string dlls = Path.Combine(entry, "DLLs");
-                    if (Directory.Exists(dlls)) {
-                        path.append(dlls);
-                    }
+                    // add DLLs directory for user-defined extention modules
+                    path.append(Path.Combine(entry, "DLLs"));
                 }
             } catch (SecurityException) {
             }
@@ -235,7 +244,7 @@ namespace IronPython.Runtime {
 
             _systemState.Dict[SymbolTable.StringToId("path")] = path;
 
-            PythonFunction.SetRecursionLimit(_options.RecursionLimit);
+            RecursionLimit = _options.RecursionLimit;
 
 #if !SILVERLIGHT
             object asmResolve;
@@ -249,6 +258,50 @@ namespace IronPython.Runtime {
             _equalityComparer = new PythonEqualityComparer(this);
 
             EnsureModule(_defaultContext);
+        }
+
+        /// <summary>
+        /// Gets or sets the maximum depth of function calls.  Equivalent to sys.getrecursionlimit
+        /// and sys.setrecursionlimit.
+        /// </summary>
+        public int RecursionLimit {
+            get {
+                return _recursionLimit;
+            }
+            set {
+                if (value < 0) {
+                    throw PythonOps.ValueError("recursion limit must be positive");
+                }
+
+                lock (_codeUpdateLock) {
+                    int oldRecLimit = _recursionLimit;
+                    _recursionLimit = value;
+
+                    if ((_recursionLimit == Int32.MaxValue) != (value == Int32.MaxValue)) {
+                        // recursion setting has changed, we need to update all of our
+                        // function codes to enforce or un-enforce recursion.
+                        FunctionCode.UpdateAllCode(this);
+                    }
+                }
+            }
+        }
+
+        internal bool EnableTracing {
+            get {
+                return _enableTracing;
+            }
+            set {
+                lock (_codeUpdateLock) {
+                    bool oldEnableTracing = _enableTracing;
+                    _enableTracing = value;
+
+                    if (oldEnableTracing != _enableTracing) {
+                        // recursion setting has changed, we need to update all of our
+                        // function codes to enforce or un-enforce recursion.
+                        FunctionCode.UpdateAllCode(this);
+                    }
+                }
+            }
         }
 
         public IEqualityComparer<object>/*!*/ EqualityComparer {
@@ -517,8 +570,6 @@ namespace IronPython.Runtime {
             _modulesDict["sys"] = _systemState;
 
             SetSystemStateValue("path", new List(3));
-            SetSystemStateValue("ps1", ">>> ");
-            SetSystemStateValue("ps2", "... ");
 
             SetStandardIO();
 
@@ -1560,7 +1611,6 @@ namespace IronPython.Runtime {
 
             //IronPython.Runtime.Types.PythonModuleOps.PopulateModuleDictionary(this, dict, type);
             Scope builtinModule = CreateModule(null, new Scope(dict), null, ModuleOptions.NoBuiltins).Scope;
-            builtinModule.SetName(Symbols.Name, "__builtin__");
 
             _modulesDict["__builtin__"] = builtinModule;
         }
@@ -1731,6 +1781,10 @@ namespace IronPython.Runtime {
 
         internal void SetSystemStateValue(string name, object value) {
             SystemState.Dict[SymbolTable.StringToId(name)] = value;
+        }
+
+        internal void DelSystemStateValue(string name) {
+            SystemState.Dict.Remove(SymbolTable.StringToId(name));
         }
 
         private void SetStandardIO() {
@@ -3046,6 +3100,36 @@ namespace IronPython.Runtime {
             return _getSignaturesSite.Target(_getSignaturesSite, obj);
         }
 
+        /// <summary>
+        /// Performs a GC collection including the possibility of freeing weak data structures held onto by the Python runtime.
+        /// </summary>
+        /// <param name="generation"></param>
+        internal int Collect(int generation) {
+            if (generation > GC.MaxGeneration || generation < 0) {
+                throw PythonOps.ValueError("invalid generation {0}", generation);
+            }
+
+            // now let the CLR do it's normal collection
+            long start = GC.GetTotalMemory(false);
+            
+            for (int i = 0; i < 2; i++) {
+#if !SILVERLIGHT // GC.Collect
+                GC.Collect(generation);
+#else
+                GC.Collect();
+#endif
+
+                GC.WaitForPendingFinalizers();
+
+                if (generation == GC.MaxGeneration) {
+                    // cleanup any weak data structures which we maintain when
+                    // we force a collection
+                    FunctionCode.CleanFunctionCodes(this, true);
+                }
+            }
+
+            return (int)Math.Max(start - GC.GetTotalMemory(false), 0);
+        }
 
         #region Binder Factories
 
@@ -3587,6 +3671,71 @@ namespace IronPython.Runtime {
 
         #endregion
 
+        #region Tracing
+
+        internal PythonTracebackListener TracebackListener {
+            get { return _tracebackListeners.Peek(); }
+        }
+
+        internal Debugging.CompilerServices.DebugContext DebugContext {
+            get {
+                EnsureDebugContext();
+
+                return _debugContext;
+            }
+        }
+
+        internal void EnsureDebugContext() {
+            if (_debugContext == null || _tracePipeline == null || _tracebackListeners == null) {
+                lock(this) {
+                    if (_debugContext == null) {
+                        _debugContext = Debugging.CompilerServices.DebugContext.CreateInstance();
+                        _tracePipeline = Debugging.TracePipeline.CreateInstance(_debugContext);
+                        _tracebackListeners = new Stack<PythonTracebackListener>();
+                        // push the default listener
+                        _tracebackListeners.Push(new PythonTracebackListener(this));
+                    }                    
+                }
+            }
+        }
+
+        internal Debugging.ITracePipeline TracePipeline {
+            get {
+                return _tracePipeline;
+            }
+        }
+
+        internal void RegisterTracebackHandler() {
+            Debug.Assert(_tracePipeline != null);   // ensure debug context should have been called
+
+            if (_tracePipeline.TraceCallback == null) {
+                _tracePipeline.TraceCallback = _tracebackListeners.Peek();
+                EnableTracing = true;
+            }
+        }
+
+        internal void UnregisterTracebackHandler() {
+            Debug.Assert(_tracePipeline != null);  // ensure debug context should have been called
+
+            if (_tracePipeline.TraceCallback != null) {
+                _tracePipeline.TraceCallback = null;
+                EnableTracing = false;
+            }
+        }
+
+        internal void PushTracebackHandler(PythonTracebackListener listener) {
+            if (_debugContext != null) {
+                _tracebackListeners.Push(listener);
+            }
+        }
+
+        internal void PopTracebackHandler() {
+            if (_debugContext != null && _tracebackListeners.Count > 1) {
+                _tracebackListeners.Pop();
+            }
+        }
+
+        #endregion
     }
 
     /// <summary>

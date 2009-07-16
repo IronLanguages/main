@@ -878,7 +878,7 @@ namespace Microsoft.Scripting.Actions.Calls {
 
         // TODO: revisit
         public virtual Expression GetDynamicConversion(Expression value, Type type) {
-            return Expression.Dynamic(OldConvertToAction.Make(_binder, type), type, value);
+            return Expression.Convert(value, type);
         }
 
         #endregion

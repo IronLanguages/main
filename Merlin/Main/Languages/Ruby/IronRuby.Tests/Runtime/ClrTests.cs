@@ -17,13 +17,12 @@ using System;
 using System.Collections;
 using System.Diagnostics;
 using System.Reflection;
-using System.Runtime.Serialization;
-using Microsoft.Scripting.Runtime;
-using IronRuby.Runtime;
-using IronRuby.Builtins;
-using Microsoft.Scripting.Math;
-using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using IronRuby.Builtins;
+using IronRuby.Runtime;
+using Microsoft.Scripting.Math;
+using Microsoft.Scripting.Runtime;
 
 namespace InteropTests.Generics1 {
     public class C {
@@ -198,24 +197,24 @@ a = [1,2,3]
 p m = a.clr_member(:count)
 p m[]
 
-p m = a.clr_member(:binary_search)
+p m = a.clr_member(:index_of)
 p m.clr_members.size
 p m.overload(Object).clr_members
 ", @"
 #<Method: Array#count>
 3
-#<Method: Array#binary_search>
+#<Method: Array#index_of>
 3
-[Int32 BinarySearch(System.Object)]
+[Int32 IndexOf(System.Object)]
 ");
 
             TestOutput(@"
 class C < Array
 end
 
-p C.new.clr_member(:get_enumerator).call.move_next
+p C.new.clr_member(:index_of).call(1)
 ", @"
-false
+-1
 ");
         }
 
@@ -1562,7 +1561,20 @@ p E.new.virtual_method
 ");
         }
 
+        /// <summary>
+        /// See RubyMethodGroupBase.BuildCallNoFlow.
+        /// </summary>
+        public void ClrDetachedVirtual1() {
+            TestOutput(@"
+class C < System::Collections::ArrayList           
+  define_method(:Count, instance_method(:Count))
+end
 
+p C.new.Count
+", @"
+0
+");
+        }
 
         public class ClassWithToStringHashEquals1 {
             public override string ToString() {

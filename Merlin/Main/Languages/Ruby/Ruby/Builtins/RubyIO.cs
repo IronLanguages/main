@@ -458,7 +458,7 @@ namespace IronRuby.Builtins {
                 return 0;
             }
 
-            buffer.SwitchToBinary();
+            buffer.SwitchToBytes();
             int initialBufferSize = buffer.GetByteCount();
             if (_preserveEndOfLines) {
                 AppendRawBytes(buffer, count);

@@ -193,9 +193,11 @@ namespace Microsoft.Scripting.Actions {
         private DynamicMetaObject TryNumericComparison(OperatorInfo info, OverloadResolverFactory resolverFactory, DynamicMetaObject[] args) {
             MethodInfo[] targets = FilterNonMethods(
                 args[0].GetLimitType(),
-                GetMember(OldDoOperationAction.Make(this, OperatorInfo.ExpressionTypeToOperator(info.Operator)),
-                args[0].GetLimitType(),
-                "Compare")
+                GetMember(
+                    MemberRequestKind.Operation,
+                    args[0].GetLimitType(),
+                    "Compare"
+                )
             );
 
             if (targets.Length > 0) {
@@ -600,11 +602,9 @@ namespace Microsoft.Scripting.Actions {
         private MethodInfo[] GetApplicableMembers(Type t, OperatorInfo info) {
             Assert.NotNull(t, info);
 
-            OldDoOperationAction act = OldDoOperationAction.Make(this, OperatorInfo.ExpressionTypeToOperator(info.Operator));
-
-            MemberGroup members = GetMember(act, t, info.Name);
+            MemberGroup members = GetMember(MemberRequestKind.Operation, t, info.Name);
             if (members.Count == 0 && info.AlternateName != null) {
-                members = GetMember(act, t, info.AlternateName);
+                members = GetMember(MemberRequestKind.Operation, t, info.AlternateName);
             }
 
             // filter down to just methods

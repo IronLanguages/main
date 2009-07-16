@@ -186,7 +186,7 @@ namespace Microsoft.Scripting.Utils {
             return -1;
         }
 
-        public static IList<T> Sort<T>(this ICollection<T> collection, Comparison<T> comparison) {
+        public static IList<T> ToSortedList<T>(this ICollection<T> collection, Comparison<T> comparison) {
             ContractUtils.RequiresNotNull(collection, "collection");
             ContractUtils.RequiresNotNull(comparison, "comparison");
 

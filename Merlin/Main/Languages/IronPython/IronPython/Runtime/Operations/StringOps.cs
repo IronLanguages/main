@@ -35,7 +35,7 @@ namespace IronPython.Runtime.Operations {
     /// that derive from string.  It carries along with it the string's value and
     /// our converter recognizes it as a string.
     /// </summary>
-    public class ExtensibleString : Extensible<string>, ICodeFormattable, IValueEquality, ISequence {
+    public class ExtensibleString : Extensible<string>, ICodeFormattable, IValueEquality {
         public ExtensibleString() : base(String.Empty) { }
         public ExtensibleString(string self) : base(self) { }
 
@@ -83,8 +83,8 @@ namespace IronPython.Runtime.Operations {
             if (es != null) return Value == es.Value;
             string os = other as string;
             if (os != null) return Value == os;
-            Bytes bs = other as Bytes;
-            if (bs != null) return Value == bs.ToString();
+            Bytes tempBytes = other as Bytes;
+            if (tempBytes != null) return Value == tempBytes.ToString();
 
             return false;
         }
@@ -1523,26 +1523,31 @@ namespace IronPython.Runtime.Operations {
         private static string RawDecode(CodeContext/*!*/ context, string s, object encodingType, string errors) {
             PythonContext pc = PythonContext.GetContext(context);
 
+            Encoding e = null;
             string encoding = encodingType as string;
             if (encoding == null) {
-                if (encodingType == Missing.Value) {
-                    encoding = pc.GetDefaultEncodingName();
-                } else {
-                    throw PythonOps.TypeError("decode() expected string, got '{0}'", DynamicHelpers.GetPythonType(encodingType).Name);
+                e = encodingType as Encoding;
+                if (e == null) {
+                    if (encodingType == Missing.Value) {
+                        encoding = pc.GetDefaultEncodingName();
+                    } else {
+                        throw PythonOps.TypeError("decode() expected string, got '{0}'", DynamicHelpers.GetPythonType(encodingType).Name);
+                    }
                 }
             }
 
-            string normalizedName = NormalizeEncodingName(encoding);
-            if ("raw_unicode_escape" == normalizedName) {
-                return LiteralParser.ParseString(s, true, true);
-            } else if ("unicode_escape" == normalizedName) {
-                return LiteralParser.ParseString(s, false, true);
-            } else if ("string_escape" == normalizedName) {
-                return LiteralParser.ParseString(s, false, false);
+            if (e == null) {
+                string normalizedName = NormalizeEncodingName(encoding);
+                if ("raw_unicode_escape" == normalizedName) {
+                    return LiteralParser.ParseString(s, true, true);
+                } else if ("unicode_escape" == normalizedName) {
+                    return LiteralParser.ParseString(s, false, true);
+                } else if ("string_escape" == normalizedName) {
+                    return LiteralParser.ParseString(s, false, false);
+                }
             }
-
-            Encoding e;
-            if (TryGetEncoding(encoding, out e)) {
+            
+            if (e != null || TryGetEncoding(encoding, out e)) {
                 return DoDecode(context, s, errors, encoding, e);
             }
 
@@ -1608,24 +1613,30 @@ namespace IronPython.Runtime.Operations {
 
         private static string RawEncode(CodeContext/*!*/ context, string s, object encodingType, string errors) {
             string encoding = encodingType as string;
+            Encoding e = null;
             if (encoding == null) {
-                if (encodingType == Missing.Value) {
-                    encoding = PythonContext.GetContext(context).GetDefaultEncodingName();
-                } else {
-                    throw PythonOps.TypeError("encode() expected string, got '{0}'", DynamicHelpers.GetPythonType(encodingType).Name);
+                e = encodingType as Encoding;
+                if (e == null) {
+                    if (encodingType == Missing.Value) {
+                        encoding = PythonContext.GetContext(context).GetDefaultEncodingName();
+                    } else {
+                        throw PythonOps.TypeError("encode() expected string, got '{0}'", DynamicHelpers.GetPythonType(encodingType).Name);
+                    }
                 }
             }
-            string normalizedName = NormalizeEncodingName(encoding);
-            
-            if ("raw_unicode_escape" == normalizedName) {
-                return RawUnicodeEscapeEncode(s);
-            } else if ("unicode_escape" == normalizedName || "string_escape" == normalizedName) {
-                bool dummy = false;
-                return ReprEncode(s, '\'', ref dummy);
+
+            if (e == null) {
+                string normalizedName = NormalizeEncodingName(encoding);
+
+                if ("raw_unicode_escape" == normalizedName) {
+                    return RawUnicodeEscapeEncode(s);
+                } else if ("unicode_escape" == normalizedName || "string_escape" == normalizedName) {
+                    bool dummy = false;
+                    return ReprEncode(s, '\'', ref dummy);
+                }
             }
 
-            Encoding e;
-            if (TryGetEncoding(encoding, out e)) {
+            if (e != null || TryGetEncoding(encoding, out e)) {
                 return DoEncode(context, s, errors, encoding, e);
             }
 

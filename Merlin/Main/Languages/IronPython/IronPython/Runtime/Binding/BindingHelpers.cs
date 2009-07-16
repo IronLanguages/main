@@ -320,22 +320,20 @@ namespace IronPython.Runtime.Binding {
         /// <summary>
         /// Adds a try/finally which enforces recursion limits around the target method.
         /// </summary>
-        internal static Expression AddRecursionCheck(Expression expr) {
-            if (PythonFunction.EnforceRecursion) {
-                ParameterExpression tmp = Ast.Variable(expr.Type, "callres");
+        internal static Expression AddRecursionCheck(PythonContext pyContext, Expression expr) {
+            ParameterExpression tmp = Ast.Variable(expr.Type, "callres");
 
-                expr = 
-                    Ast.Block(
-                        new [] { tmp },
-                        AstUtils.Try(
-                            Ast.Call(typeof(PythonOps).GetMethod("FunctionPushFrame")),
-                            Ast.Assign(tmp, expr)
-                        ).Finally(
-                            Ast.Call(typeof(PythonOps).GetMethod("FunctionPopFrame"))
-                        ),
-                        tmp
-                    );
-            }
+            expr = 
+                Ast.Block(
+                    new [] { tmp },
+                    AstUtils.Try(
+                        Ast.Call(typeof(PythonOps).GetMethod("FunctionPushFrame"), Ast.Constant(pyContext)),
+                        Ast.Assign(tmp, expr)
+                    ).Finally(
+                        Ast.Call(typeof(PythonOps).GetMethod("FunctionPopFrame"))
+                    ),
+                    tmp
+                );
             return expr;
         }
 

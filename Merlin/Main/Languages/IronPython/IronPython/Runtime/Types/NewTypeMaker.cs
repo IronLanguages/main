@@ -871,6 +871,24 @@ namespace IronPython.Runtime.Types {
                     added[key] = mi;
                 }
             }
+            
+            if (type.IsAbstract && !type.IsInterface) {
+                // abstract types can define interfaces w/o implementations
+                Type[] interfaces = type.GetInterfaces();
+                foreach (Type iface in interfaces) {
+                    InterfaceMapping mapping = type.GetInterfaceMap(iface);
+                    for (int i = 0; i < mapping.TargetMethods.Length; i++) {
+                        
+                        if (mapping.TargetMethods[i] == null) {
+                            MethodInfo mi = mapping.InterfaceMethods[i];
+
+                            KeyValuePair<string, MethodSignatureInfo> key = new KeyValuePair<string, MethodSignatureInfo>(mi.Name, new MethodSignatureInfo(mi));
+
+                            added[key] = mi;
+                        }
+                    }
+                }
+            }
 
             Dictionary<PropertyInfo, PropertyBuilder> overriddenProperties = new Dictionary<PropertyInfo, PropertyBuilder>();
             foreach (MethodInfo mi in added.Values) {

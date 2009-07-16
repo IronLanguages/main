@@ -156,7 +156,14 @@ namespace Microsoft.Scripting.Generation {
 
             var exprSerializable = node.Value as IExpressionSerializable;
             if (exprSerializable != null) {
-                return Visit(exprSerializable.CreateExpression());
+                EnsureConstantPool();
+                Expression serialized = exprSerializable.CreateExpression();
+                _constants.Add(serialized);
+
+                return AstUtils.Convert(
+                    Expression.ArrayAccess(_constantPool, AstUtils.Constant(_constants.Count - 1)),
+                    serialized.Type
+                );
             }
 
             var symbols = node.Value as SymbolId[];
@@ -242,12 +249,7 @@ namespace Microsoft.Scripting.Generation {
                 throw Error.GenNonSerializableBinder();
             }
 
-            // add the initialization code that we'll generate later into the outermost
-            // lambda and then return an index into the array we'll be creating.
-            if (_constantPool == null) {
-                _constantPool = Expression.Variable(typeof(object[]), "$constantPool");
-                _constants = new List<Expression>();
-            }
+            EnsureConstantPool();
 
             Type siteType = site.GetType();
 
@@ -260,6 +262,15 @@ namespace Microsoft.Scripting.Generation {
                     siteType
                 )
             );
+        }
+
+        private void EnsureConstantPool() {
+            // add the initialization code that we'll generate later into the outermost
+            // lambda and then return an index into the array we'll be creating.
+            if (_constantPool == null) {
+                _constantPool = Expression.Variable(typeof(object[]), "$constantPool");
+                _constants = new List<Expression>();
+            }
         }
     }
 }

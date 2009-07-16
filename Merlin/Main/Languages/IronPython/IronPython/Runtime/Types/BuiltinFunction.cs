@@ -48,7 +48,7 @@ namespace IronPython.Runtime.Types {
     /// 
     /// TODO: Back BuiltinFunction's by MethodGroup's.
     /// </summary>    
-    [PythonType("builtin_function_or_method")]
+    [PythonType("builtin_function_or_method"), DontMapGetMemberNamesToDir]
     public partial class BuiltinFunction : PythonTypeSlot, ICodeFormattable, IDynamicMetaObjectProvider, IDelegateConvertible, IFastInvokable  {
         internal readonly BuiltinFunctionData/*!*/ _data;            // information describing the BuiltinFunction
         internal readonly object _instance;                          // the bound instance or null if unbound

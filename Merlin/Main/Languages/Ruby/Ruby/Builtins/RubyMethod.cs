@@ -75,14 +75,17 @@ namespace IronRuby.Builtins {
                     return site.Target(site, this, unsplat);
                 });
 
-                _procDispatcher = new BlockDispatcherUnsplatN(block, 0, 
-                    BlockDispatcher.MakeAttributes(BlockSignatureAttributes.HasUnsplatParameter, _info.GetArity())
+                _procDispatcher = new BlockDispatcherUnsplatN(0, 
+                    BlockDispatcher.MakeAttributes(BlockSignatureAttributes.HasUnsplatParameter, _info.GetArity()),
+                    null, 0
                 );
+
+                _procDispatcher.SetMethod(block);
             }
 
             // TODO: 
             // MRI: source file/line are that of the to_proc method call:
-            return new Proc(ProcKind.Block, scope.SelfObject, scope, null, 0, _procDispatcher);
+            return new Proc(ProcKind.Block, scope.SelfObject, scope, _procDispatcher);
         }
 
         #region Dynamic Operations

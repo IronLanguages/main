@@ -17,7 +17,7 @@ using Microsoft.Scripting.Runtime;
 using IronPython.Runtime.Operations;
 
 namespace IronPython.Runtime.Types {
-    public class PythonTypeTypeSlot : PythonTypeSlot {
+    public class PythonTypeTypeSlot : PythonTypeDataSlot {
         public static string __doc__ = "the object's class";
 
         internal override bool TryGetValue(CodeContext context, object instance, PythonType owner, out object value) {
@@ -55,10 +55,6 @@ namespace IronPython.Runtime.Types {
                 throw PythonOps.TypeErrorForIncompatibleObjectLayout("__class__ assignment", DynamicHelpers.GetPythonType(instance), dt.UnderlyingSystemType);
 
             sdo.SetPythonType(dt);
-            return true;
-        }
-
-        internal override bool IsSetDescriptor(CodeContext context, PythonType owner) {
             return true;
         }
 

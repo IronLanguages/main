@@ -13,13 +13,6 @@
  *
  * ***************************************************************************/
 
-using ScriptCodeFunc = System.Func<
-    IronRuby.Runtime.RubyScope, 
-    IronRuby.Runtime.RuntimeFlowControl,
-    object, 
-    object
->;
-
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -34,8 +27,11 @@ using Microsoft.Scripting.Utils;
 using System.Runtime.CompilerServices;
 using System.Security;
 using IronRuby.Compiler;
+using System.Diagnostics;
 
 namespace IronRuby.Runtime {
+    using ScriptCodeFunc = Func<RubyScope, object, object>;
+
     internal class RubyScriptCode : ScriptCode {
         private sealed class CustomGenerator : DebugInfoGenerator {
             public override void MarkSequencePoint(LambdaExpression method, int ilOffset, DebugInfoExpression node) {
@@ -108,7 +104,7 @@ namespace IronRuby.Runtime {
                     throw Assert.Unreachable;                
             }
 
-            return Target(localScope, localScope.RuntimeFlowControl, localScope.SelfObject);
+            return Target(localScope, localScope.SelfObject);
         }
 
         private static bool _HasPdbPermissions = true;
@@ -132,7 +128,10 @@ namespace IronRuby.Runtime {
 #endif
                 return CompilerHelpers.CompileToMethod(lambda, new CustomGenerator(), false);
             } else if (noAdaptiveCompilation) {
-                return lambda.Compile();
+                Delegate result = lambda.Compile();
+                // DLR closures should not be used:
+                Debug.Assert(!(result.Target is Closure) || ((Closure)result.Target).Locals == null);
+                return result;
             } else {
                 return lambda.LightCompile();
             }

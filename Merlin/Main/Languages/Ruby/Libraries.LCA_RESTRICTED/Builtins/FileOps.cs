@@ -411,8 +411,6 @@ namespace IronRuby.Builtins {
 
         #region join
 
-        private static readonly MutableString InfiniteRecursionMarker = MutableString.Create("[...]").Freeze();
-
         [RubyMethod("join", RubyMethodAttributes.PublicSingleton)]
         public static MutableString Join(ConversionStorage<MutableString>/*!*/ stringCast, RubyClass/*!*/ self, [NotNull]params object[] parts) {
             MutableString result = MutableString.CreateMutable();
@@ -429,10 +427,10 @@ namespace IronRuby.Builtins {
                     if (list.Count == 0) {
                         str = MutableString.FrozenEmpty;
                     } else if (visitedLists != null && visitedLists.ContainsKey(list)) {
-                        str = InfiniteRecursionMarker;
+                        str = RubyUtils.InfiniteRecursionMarker;
                     } else {
                         if (visitedLists == null) {
-                            visitedLists = new Dictionary<object, bool>(ReferenceEqualityComparer<object>.Instance);
+                            visitedLists = new Dictionary<object, bool>(ReferenceEqualityComparer.Instance);
                         }
                         visitedLists.Add(list, true);
                         Push(worklist, list);

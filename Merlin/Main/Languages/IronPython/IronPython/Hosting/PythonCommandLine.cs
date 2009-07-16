@@ -286,6 +286,11 @@ namespace IronPython.Hosting {
             } catch (Exception) {
             }
 
+            var sys = Engine.GetSysModule();
+            
+            sys.SetVariable("ps1", ">>> ");
+            sys.SetVariable("ps2", "... ");
+
             result = RunInteractiveLoop();
 
             return (int)result;

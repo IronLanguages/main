@@ -151,7 +151,7 @@ namespace IronRuby.Runtime {
         /// </summary>
         public bool BlockJumped(object returnValue) {
             // if this method is a proc converter then the current frame is Proc.Converter, otherwise it is not available:
-            return RubyOps.MethodYield(_isLibProcConverter ? _proc.Converter : null, this, returnValue);
+            return RubyOps.MethodYieldRfc(_isLibProcConverter ? _proc.Converter : null, this, returnValue);
         }
 
         public object Break(object returnValue) {
@@ -261,8 +261,9 @@ namespace IronRuby.Runtime {
             bool isProcConverter;
 
             if (proc.Kind == ProcKind.Block) {
-                proc.Converter = new RuntimeFlowControl();
-                proc.Converter.IsActiveMethod = true;
+                var rfc = new RuntimeFlowControl();
+                rfc._activeFlowControlScope = rfc;
+                proc.Converter = rfc;
                 proc.Kind = ProcKind.Proc;
                 isProcConverter = true;
             } else {
@@ -277,7 +278,7 @@ namespace IronRuby.Runtime {
             Debug.Assert(bfc.Proc != null);
             if (bfc._isLibProcConverter) {
                 Debug.Assert(bfc.Proc.Converter != null);
-                bfc.Proc.Converter.IsActiveMethod = false;
+                bfc.Proc.Converter.LeaveMethod();
             }
         }
     }

@@ -135,7 +135,7 @@ namespace Microsoft.Scripting.Debugging {
                 _currentLocals.Push(node);
             }
             try {
-                MSAst.BlockExpression modifiedBlock = Ast.Block(node.Expressions);
+                MSAst.BlockExpression modifiedBlock = Ast.Block(node.Type, node.Expressions);
                 return base.VisitBlock(modifiedBlock);
             } finally {
                 if (_transformToGenerator) {
@@ -362,10 +362,7 @@ namespace Microsoft.Scripting.Debugging {
                 if (!_transformToGenerator) {
                     MSAst.Expression tracebackCall = null;
                     if (locationCookie == 0) {
-                        tracebackCall = Ast.Call(
-                            typeof(RuntimeOps).GetMethod("OnFrameEnterTraceEvent"),
-                            _thread
-                        );
+                        tracebackCall = Ast.Empty();
                     } else {
                         tracebackCall = Ast.Call(
                             typeof(RuntimeOps).GetMethod("OnTraceEvent"),

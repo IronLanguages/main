@@ -21,7 +21,9 @@ using Microsoft.Scripting.Hosting;
 using Microsoft.Scripting.Hosting.Providers;
 using Microsoft.Scripting.Runtime;
 
+using IronPython.Modules;
 using IronPython.Runtime;
+using IronPython.Runtime.Exceptions;
 
 #if SILVERLIGHT
 [assembly: DynamicLanguageProvider(typeof(PythonContext), PythonContext.IronPythonDisplayName, PythonContext.IronPythonNames, PythonContext.IronPythonFileExtensions)]
@@ -230,10 +232,47 @@ namespace IronPython.Hosting {
             GetPythonContext(engine).SetHostVariables(prefix, executable, version);
         }
 
-        #endregion
+        /// <summary>
+        /// Enables call tracing for the current thread in this ScriptEngine.  
+        /// 
+        /// TracebackDelegate will be called back for each function entry, exit, exception, and line change.
+        /// </summary>
+        public static void SetTrace(this ScriptEngine/*!*/ engine, TracebackDelegate traceFunc) {
+            SysModule.settrace(GetPythonContext(engine).SharedContext, traceFunc);
+        }
 
-        #region Private helpers
+        /// <summary>
+        /// Enables call tracing for the current thread for the Python engine in this ScriptRuntime.  
+        /// 
+        /// TracebackDelegate will be called back for each function entry, exit, exception, and line change.
+        /// </summary>
+        public static void SetTrace(this ScriptRuntime/*!*/ runtime, TracebackDelegate traceFunc) {
+            SetTrace(GetEngine(runtime), traceFunc);
+        }
 
+        /// <summary>
+        /// Provides nested level debugging support when SetTrace or SetProfile are used.
+        /// 
+        /// This saves the current tracing information and then calls the provided object.
+        /// </summary>
+        public static void CallTracing(this ScriptRuntime/*!*/ runtime, object traceFunc, params object[] args) {
+            CallTracing(GetEngine(runtime), traceFunc, args);
+        }
+
+        /// <summary>
+        /// Provides nested level debugging support when SetTrace or SetProfile are used.
+        /// 
+        /// This saves the current tracing information and then calls the provided object.
+        /// </summary>
+        public static void CallTracing(this ScriptEngine/*!*/ engine, object traceFunc, params object[] args) {
+            SysModule.call_tracing(GetPythonContext(engine).SharedContext, traceFunc, PythonTuple.MakeTuple(args));
+        }
+
+        /// <summary>
+        /// Creates a ScriptRuntimeSetup object which includes the Python script engine with the specified options.
+        /// 
+        /// The ScriptRuntimeSetup object can then be additional configured and used to create a ScriptRuntime.
+        /// </summary>
         public static ScriptRuntimeSetup/*!*/ CreateRuntimeSetup(IDictionary<string, object> options) {
             ScriptRuntimeSetup setup = new ScriptRuntimeSetup();
             setup.LanguageSetups.Add(CreateLanguageSetup(options));
@@ -256,6 +295,12 @@ namespace IronPython.Hosting {
             return setup;
         }
 
+        /// <summary>
+        /// Creates a LanguageSetup object which includes the Python script engine with the specified options.
+        /// 
+        /// The LanguageSetup object can be used with other LanguageSetup objects from other languages to
+        /// configure a ScriptRuntimeSetup object.
+        /// </summary>
         public static LanguageSetup/*!*/ CreateLanguageSetup(IDictionary<string, object> options) {
             var setup = new LanguageSetup(
                 typeof(PythonContext).AssemblyQualifiedName,
@@ -272,6 +317,10 @@ namespace IronPython.Hosting {
 
             return setup;
         }
+
+        #endregion
+
+        #region Private helpers
 
         private static PythonService/*!*/ GetPythonService(ScriptEngine/*!*/ engine) {
             return (PythonService)HostingHelpers.CallEngine<ScriptEngine, object>(

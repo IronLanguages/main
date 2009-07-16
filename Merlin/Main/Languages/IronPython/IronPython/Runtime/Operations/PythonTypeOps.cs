@@ -217,7 +217,7 @@ namespace IronPython.Runtime.Operations {
 
         // a version of GetName that also works on old-style classes
         internal static string GetOldName(OldInstance instance) {
-            return instance._class.__name__;
+            return instance._class.Name;
         }
 
         internal static PythonType[] ObjectTypes(object[] args) {

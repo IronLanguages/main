@@ -103,6 +103,38 @@ namespace IronRuby.Runtime {
         
         #endregion
 
+        #region Random Number Generator
+
+        private object _randomNumberGeneratorLock = new object();
+        private Random _randomNumberGenerator; // lazy
+        private object _randomNumberGeneratorSeed = ScriptingRuntimeHelpers.Int32ToObject(0);
+
+        public object RandomNumberGeneratorSeed {
+            get { return _randomNumberGeneratorSeed; }
+        }
+
+        public void SeedRandomNumberGenerator(IntegerValue value) {
+            lock (_randomNumberGeneratorLock) {
+                _randomNumberGenerator = new Random(value.IsFixnum ? value.Fixnum : value.Bignum.GetHashCode());
+                _randomNumberGeneratorSeed = value.ToObject();
+            }
+        }
+
+        public Random/*!*/ RandomNumberGenerator {
+            get {
+                if (_randomNumberGenerator == null) {
+                    lock (_randomNumberGeneratorLock) {
+                        if (_randomNumberGenerator == null) {
+                            _randomNumberGenerator = new Random();
+                        }
+                    }
+                }
+                return _randomNumberGenerator;
+            }
+        }
+
+        #endregion
+
         #region Threading
 
         // Thread#main
@@ -1331,7 +1363,7 @@ namespace IronRuby.Runtime {
         private RubyInstanceData MutateInstanceVariables(object obj) {
             RubyInstanceData data;
             if (IsObjectFrozen(obj, out data)) {
-                throw RubyExceptions.CreateTypeError("can't modify frozen object");
+                throw RubyExceptions.CreateObjectFrozenError();
             }
             return data;
         }
@@ -1766,7 +1798,7 @@ namespace IronRuby.Runtime {
 #endif
             var rubyOptions = (RubyCompilerOptions)options;
 
-            var lambda = ParseSourceCode<Func<RubyScope, RuntimeFlowControl, object, object>>(sourceUnit, rubyOptions, errorSink);
+            var lambda = ParseSourceCode<Func<RubyScope, object, object>>(sourceUnit, rubyOptions, errorSink);
             if (lambda == null) {
                 return null;
             }
@@ -1857,7 +1889,7 @@ namespace IronRuby.Runtime {
         protected override ScriptCode/*!*/ LoadCompiledCode(Delegate/*!*/ method, string path, string customData) {
             // TODO: we need to save the kind of the scope factory:
             SourceUnit su = new SourceUnit(this, NullTextContentProvider.Null, path, SourceCodeKind.File);
-            return new RubyScriptCode((Func<RubyScope, RuntimeFlowControl, object, object>)method, su, TopScopeFactoryKind.Hosted);
+            return new RubyScriptCode((Func<RubyScope, object, object>)method, su, TopScopeFactoryKind.Hosted);
         }
 
         public void CheckConstantName(string name) {
