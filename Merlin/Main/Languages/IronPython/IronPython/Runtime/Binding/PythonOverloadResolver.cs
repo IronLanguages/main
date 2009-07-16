@@ -141,7 +141,11 @@ namespace IronPython.Runtime.Binding {
         }
 
         public override Expression GetDynamicConversion(Expression value, Type type) {
-            return Expression.Dynamic(OldConvertToAction.Make(Binder, type), type, _context, value);
+            return Expression.Dynamic(
+                Binder.Context.Convert(type, ConversionResultKind.ExplicitCast), 
+                type, 
+                _context, 
+                value);
         }
 
         public override Type GetGenericInferenceType(DynamicMetaObject dynamicObject) {            

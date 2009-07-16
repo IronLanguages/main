@@ -39,7 +39,7 @@ namespace IronRuby.Compiler.Ast {
 
         private readonly CompoundLeftValue/*!*/ _parameters;
         private readonly Statements/*!*/ _body;
-        private readonly LexicalScope _definedScope;
+        private readonly LexicalScope/*!*/ _definedScope;
 
         public CompoundLeftValue/*!*/ Parameters {
             get { return _parameters; }
@@ -63,9 +63,9 @@ namespace IronRuby.Compiler.Ast {
             get { return _parameters != CompoundLeftValue.UnspecifiedBlockSignature; }
         }
 
-        public BlockDefinition(LexicalScope definedScope, CompoundLeftValue/*!*/ parameters, Statements/*!*/ body, SourceSpan location)
+        public BlockDefinition(LexicalScope/*!*/ definedScope, CompoundLeftValue/*!*/ parameters, Statements/*!*/ body, SourceSpan location)
             : base(location) {
-            Assert.NotNull(parameters, body);
+            Assert.NotNull(definedScope, parameters, body);
 
             _definedScope = definedScope;
             _body = body;
@@ -100,9 +100,12 @@ namespace IronRuby.Compiler.Ast {
             return parameters;
         }
 
+        private ScopeBuilder/*!*/ DefineLocals(ScopeBuilder/*!*/ parentBuilder) {
+            return new ScopeBuilder(_definedScope.AllocateClosureSlotsForLocals(0), parentBuilder, _definedScope);
+        }
+
         internal override MSA.Expression/*!*/ Transform(AstGenerator/*!*/ gen) {
-            MSA.Expression parentScope = gen.CurrentScopeVariable;
-            ScopeBuilder scope = new ScopeBuilder();
+            ScopeBuilder scope = DefineLocals(gen.CurrentScope);
 
             // define hidden parameters and RHS-placeholders (#1..#n will be used as RHS of a parallel assignment):
             MSA.Expression blockParameter, selfParameter;
@@ -118,10 +121,6 @@ namespace IronRuby.Compiler.Ast {
                 scopeVariable,
                 redoLabel
             );
-
-            if (_definedScope != null) {
-                _definedScope.TransformLocals(scope);
-            }
 
             MSA.Expression paramInit = MakeParametersInitialization(gen, parameters);
             MSA.ParameterExpression blockUnwinder = scope.DefineHiddenVariable("#unwinder", typeof(BlockUnwinder));
@@ -139,12 +138,6 @@ namespace IronRuby.Compiler.Ast {
             }
 
             MSA.Expression body = AstUtils.Try(
-                Ast.Assign(scopeVariable,
-                    Methods.CreateBlockScope.OpCall(
-                        scope.VisibleVariables(), parentScope, blockParameter, selfParameter, EnterInterpretedFrameExpression.Instance
-                    )
-                ),
-
                 paramInit,
                 traceCall,
                 Ast.Label(redoLabel),
@@ -165,28 +158,40 @@ namespace IronRuby.Compiler.Ast {
                 LeaveInterpretedFrameExpression.Instance
             );
 
-            body = gen.AddReturnTarget(scope.CreateScope(body));
+            body = gen.AddReturnTarget(
+                scope.CreateScope(
+                    scopeVariable,
+                    Methods.CreateBlockScope.OpCall(
+                        scope.MakeLocalsStorage(),
+                        scope.GetVariableNamesExpression(),
+                        blockParameter, 
+                        selfParameter,
+                        EnterInterpretedFrameExpression.Instance
+                    ),
+                    body
+                )
+            );
+
             gen.LeaveBlockDefinition();
 
             int parameterCount = _parameters.LeftValues.Count;
-
             var attributes = _parameters.GetBlockSignatureAttributes();
 
-            return Methods.DefineBlock.OpCall(
-                gen.CurrentScopeVariable,
-                gen.CurrentRfcVariable,
-                gen.CurrentSelfVariable,
-                BlockDispatcher.CreateLambda(
-                    body,
-                    RubyExceptionData.EncodeMethodName(gen.CurrentMethod.MethodName, gen.SourcePath, Location), 
-                    new ReadOnlyCollection<MSA.ParameterExpression>(parameters),
-                    parameterCount,
-                    attributes
-                ),
-                AstUtils.Constant(parameterCount),
-                AstUtils.Constant(attributes),
-                gen.SourcePathConstant,
-                AstUtils.Constant(Location.Start.Line)
+            var dispatcher = Ast.Constant(
+                BlockDispatcher.Create(parameterCount, attributes, gen.SourcePath, Location.Start.Line), typeof(BlockDispatcher)
+            );
+
+            return Ast.Coalesce(
+                Methods.InstantiateBlock.OpCall(gen.CurrentScopeVariable, gen.CurrentSelfVariable, dispatcher),
+                Methods.DefineBlock.OpCall(gen.CurrentScopeVariable, gen.CurrentSelfVariable, dispatcher,
+                    BlockDispatcher.CreateLambda(
+                        body,
+                        RubyExceptionData.EncodeMethodName(gen.CurrentMethod.MethodName, gen.SourcePath, Location),
+                        new ReadOnlyCollection<MSA.ParameterExpression>(parameters),
+                        parameterCount,
+                        attributes
+                    )
+                )
             );
         }
 

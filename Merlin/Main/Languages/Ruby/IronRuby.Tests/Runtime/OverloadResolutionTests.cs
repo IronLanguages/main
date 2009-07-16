@@ -24,6 +24,8 @@ using Microsoft.Scripting.Runtime;
 using Ast = System.Linq.Expressions.Expression;
 
 namespace IronRuby.Tests {
+    using BlockCallTarget0 = Func<BlockParam, object, object>;
+
     public partial class Tests {
 
         private static DynamicMetaObject/*!*/ MO(object value) {
@@ -56,7 +58,8 @@ namespace IronRuby.Tests {
 
         public void OverloadResolution_Block1() {
             var scope = Context.EmptyScope;
-            var proc = new Proc(ProcKind.Proc, null, scope, null, 0, new BlockDispatcher0((x, y) => null, BlockSignatureAttributes.None));
+            var proc = new Proc(ProcKind.Proc, null, scope, new BlockDispatcher0(BlockSignatureAttributes.None, null, 0).
+                SetMethod(new BlockCallTarget0((x, y) => null)));
 
             var arguments = new[] {
                 // 1.times

@@ -21,7 +21,7 @@ describe 'Console regressions' do
     buffer.flush
 
     element.get_property('innerHTML').to_s.should.match(
-      /<(DIV|div) class="?output"?>#&lt;Foo:0x[0-9a-f]+&gt;<\/(DIV|div)>/
+      /<(SPAN|span)>#&lt;Foo:0x[0-9a-f]+&gt;<\/(SPAN|span)>/
     )
   end
 end

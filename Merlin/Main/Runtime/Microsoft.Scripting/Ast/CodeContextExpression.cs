@@ -40,7 +40,7 @@ namespace Microsoft.Scripting.Ast {
             get { return ExpressionType.Extension; }
         }
 
-        protected override Expression VisitChildren(Func<Expression, Expression> visitor) {
+        protected override Expression VisitChildren(ExpressionVisitor visitor) {
             return this;
         }
     }
@@ -82,9 +82,9 @@ namespace Microsoft.Scripting.Ast {
             get { return _newContext; }
         }
 
-        protected override Expression VisitChildren(Func<Expression, Expression> visitor) {
-            Expression newContext = visitor(_newContext);
-            Expression body = visitor(_body);
+        protected override Expression VisitChildren(ExpressionVisitor visitor) {
+            Expression newContext = visitor.Visit(_newContext);
+            Expression body = visitor.Visit(_body);
 
             if (newContext == _newContext && body == _body) {
                 return this;

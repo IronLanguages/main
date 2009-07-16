@@ -1488,6 +1488,15 @@ namespace System.Linq.Expressions {
             return FormatString("An IDynamicMetaObjectProvider {0} created an invalid DynamicMetaObject instance.", p0);
         }
 
+        /// <summary>
+        /// A string like  "DebugInfoGenerator created by CreatePdbGenerator can only be used with LambdaExpression.CompileToMethod."
+        /// </summary>
+        internal static string PdbGeneratorNeedsExpressionCompiler {
+            get {
+                return "DebugInfoGenerator created by CreatePdbGenerator can only be used with LambdaExpression.CompileToMethod.";
+            }
+        }
+
     }
     /// <summary>
     ///    Strongly-typed and parameterized exception factory.
@@ -2507,6 +2516,13 @@ namespace System.Linq.Expressions {
         /// </summary>
         internal static Exception InvalidMetaObjectCreated(object p0) {
             return new InvalidOperationException(Strings.InvalidMetaObjectCreated(p0));
+        }
+
+        /// <summary>
+        /// NotSupportedException with message like "DebugInfoGenerator created by CreatePdbGenerator can only be used with LambdaExpression.CompileToMethod."
+        /// </summary>
+        internal static Exception PdbGeneratorNeedsExpressionCompiler() {
+            return new NotSupportedException(Strings.PdbGeneratorNeedsExpressionCompiler);
         }
 
     }

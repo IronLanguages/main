@@ -20,6 +20,8 @@ using Microsoft.Scripting;
 [assembly: PythonModule("errno", typeof(IronPython.Modules.PythonErrorNumber))]
 namespace IronPython.Modules {
     public static class PythonErrorNumber {
+        public const string __doc__ = "Provides a list of common error numbers.  These numbers are frequently reported in various exceptions.";
+
         [SpecialName]
         public static void PerformModuleReload(PythonContext/*!*/ context, IAttributesCollection/*!*/ dict) {
             PythonDictionary errorcode = new PythonDictionary();

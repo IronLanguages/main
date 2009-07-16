@@ -50,6 +50,7 @@ namespace IronPython.Runtime.Exceptions {
     public static partial class PythonExceptions {
         private const string _pythonExceptionKey = "PythonExceptionInfo";
         internal const string DefaultExceptionModule = "exceptions";
+        public const string __doc__ = "Provides the most commonly used exceptions for Python programs";
         
         /// <summary>
         /// Base class for all Python exception objects.
@@ -90,12 +91,13 @@ namespace IronPython.Runtime.Exceptions {
         /// from this and have their own .NET class.
         /// </summary>
         [PythonType("BaseException"), DynamicBaseTypeAttribute, Serializable]
-        public class BaseException : ICodeFormattable, IPythonObject, IDynamicMetaObjectProvider {
+        public class BaseException : ICodeFormattable, IPythonObject, IDynamicMetaObjectProvider, IWeakReferenceable {
             private PythonType/*!*/ _type;          // the actual Python type of the Exception object
             private object _message = String.Empty; // the message object, cached at __init__ time, not updated on args assignment
             private PythonTuple _args;              // the tuple of args provided at creation time
             private IAttributesCollection _dict;    // the dictionary for extra values, created on demand
             private System.Exception _clrException; // the cached CLR exception that is thrown
+            private object[] _slots;                // slots, only used for storage of our weak reference.
 
             #region Public API Surface
 
@@ -236,6 +238,10 @@ namespace IronPython.Runtime.Exceptions {
                 return _args.ToString();
             }
 
+            public string __unicode__() {
+                return ToString();
+            }
+
             #endregion
 
             #region Member access operators
@@ -328,8 +334,13 @@ namespace IronPython.Runtime.Exceptions {
                 _type = newType;
             }
 
-            object[] IPythonObject.GetSlots() { return null; }
-            object[] IPythonObject.GetSlotsCreate() { return null; }
+            object[] IPythonObject.GetSlots() { return _slots; }
+            object[] IPythonObject.GetSlotsCreate() {
+                if (_slots == null) {
+                    Interlocked.CompareExchange(ref _slots, new object[1], null);
+                }
+                return _slots;
+            }
 
             #endregion
 
@@ -384,6 +395,22 @@ namespace IronPython.Runtime.Exceptions {
 
             DynamicMetaObject/*!*/ IDynamicMetaObjectProvider.GetMetaObject(Expression/*!*/ parameter) {
                 return new Binding.MetaUserObject(parameter, BindingRestrictions.Empty, null, this);
+            }
+
+            #endregion
+
+            #region IWeakReferenceable Members
+
+            WeakRefTracker IWeakReferenceable.GetWeakRef() {
+                return UserTypeOps.GetWeakRefHelper(this);
+            }
+
+            bool IWeakReferenceable.SetWeakRef(WeakRefTracker value) {
+                return UserTypeOps.SetWeakRefHelper(this, value);
+            }
+
+            void IWeakReferenceable.SetFinalizer(WeakRefTracker value) {
+                UserTypeOps.SetFinalizerHelper(this, value);
             }
 
             #endregion
@@ -559,20 +586,246 @@ namespace IronPython.Runtime.Exceptions {
             }
         }
 
-#if !SILVERLIGHT
         public partial class _WindowsError : _EnvironmentError {
             public override void __init__(params object[] args) {
+                if (args.Length == 2 || args.Length == 3) {
+                    if (!(args[0] is int)) {
+                        throw PythonOps.TypeError("an integer is required for the 1st argument of WindowsError");
+                    }
+                }
                 base.__init__(args);
 
-                if (args != null && args.Length >= 2) {
+                if (args != null && (args.Length == 2 || args.Length == 3)) {
                     winerror = args[0];
                 }
 
-                errno = 22;
+                /*
+                 * errors were generated using this script run against CPython: 
+f = file(r'C:\Program Files\Microsoft SDKs\Windows\v6.0A\Include\WinError.h', 'r')
+allErrors = []
+toError = {}
+for x in f:
+    if x.startswith('#define ERROR_'):
+        name = x[8:]
+        endName = name.find(' ')
+        justName = name[:endName]
+        error = name[endName + 1:].strip()
+        for i in xrange(len(error)):
+            if error[i] < '0' or error[i] > '9':
+                error = error[:i]
+                break
+            
+        if not error:
+            continue
+            
+        errNo = WindowsError(int(error), justName).errno
+        if errNo == 22:
+            continue
+        allErrors.append( (justName, error) )
+        
+        l = toError.get(errNo) 
+        if l is None:
+            toError[errNo] = l = []
+        l.append(justName)
+        
+        
+for name, err in allErrors:
+    print 'internal const int %s = %s;' % (name, err)
+
+
+for k, v in toError.iteritems():
+    for name in v:
+        print 'case %s:' % (name, )
+    print '    errno = %d;' % (k, )
+    print '    break;'
+                 */
+
+                // map from win32 error code to errno
+                object errCode = errno;
+                if (errCode is int) {
+                    switch ((int)errCode) {
+                        case ERROR_BROKEN_PIPE:
+                            errno = 32;
+                            break;
+                        case ERROR_FILE_NOT_FOUND:
+                        case ERROR_PATH_NOT_FOUND:
+                        case ERROR_INVALID_DRIVE:
+                        case ERROR_NO_MORE_FILES:
+                        case ERROR_BAD_NETPATH:
+                        case ERROR_BAD_NET_NAME:
+                        case ERROR_BAD_PATHNAME:
+                        case ERROR_FILENAME_EXCED_RANGE:
+                            errno = 2;
+                            break;
+                        case ERROR_BAD_ENVIRONMENT:
+                            errno = 7;
+                            break;
+                        case ERROR_BAD_FORMAT:
+                        case ERROR_INVALID_STARTING_CODESEG:
+                        case ERROR_INVALID_STACKSEG:
+                        case ERROR_INVALID_MODULETYPE:
+                        case ERROR_INVALID_EXE_SIGNATURE:
+                        case ERROR_EXE_MARKED_INVALID:
+                        case ERROR_BAD_EXE_FORMAT:
+                        case ERROR_ITERATED_DATA_EXCEEDS_64k:
+                        case ERROR_INVALID_MINALLOCSIZE:
+                        case ERROR_DYNLINK_FROM_INVALID_RING:
+                        case ERROR_IOPL_NOT_ENABLED:
+                        case ERROR_INVALID_SEGDPL:
+                        case ERROR_AUTODATASEG_EXCEEDS_64k:
+                        case ERROR_RING2SEG_MUST_BE_MOVABLE:
+                        case ERROR_RELOC_CHAIN_XEEDS_SEGLIM:
+                        case ERROR_INFLOOP_IN_RELOC_CHAIN:
+                            errno = 8;
+                            break;
+                        case ERROR_INVALID_HANDLE:
+                        case ERROR_INVALID_TARGET_HANDLE:
+                        case ERROR_DIRECT_ACCESS_HANDLE:
+                            errno = 9;
+                            break;
+                        case ERROR_WAIT_NO_CHILDREN:
+                        case ERROR_CHILD_NOT_COMPLETE:
+                            errno = 10;
+                            break;
+                        case ERROR_NO_PROC_SLOTS:
+                        case ERROR_MAX_THRDS_REACHED:
+                        case ERROR_NESTING_NOT_ALLOWED:
+                            errno = 11;
+                            break;
+                        case ERROR_ARENA_TRASHED:
+                        case ERROR_NOT_ENOUGH_MEMORY:
+                        case ERROR_INVALID_BLOCK:
+                        case ERROR_NOT_ENOUGH_QUOTA:
+                            errno = 12;
+                            break;
+                        case ERROR_ACCESS_DENIED:
+                        case ERROR_CURRENT_DIRECTORY:
+                        case ERROR_WRITE_PROTECT:
+                        case ERROR_BAD_UNIT:
+                        case ERROR_NOT_READY:
+                        case ERROR_BAD_COMMAND:
+                        case ERROR_CRC:
+                        case ERROR_BAD_LENGTH:
+                        case ERROR_SEEK:
+                        case ERROR_NOT_DOS_DISK:
+                        case ERROR_SECTOR_NOT_FOUND:
+                        case ERROR_OUT_OF_PAPER:
+                        case ERROR_WRITE_FAULT:
+                        case ERROR_READ_FAULT:
+                        case ERROR_GEN_FAILURE:
+                        case ERROR_SHARING_VIOLATION:
+                        case ERROR_LOCK_VIOLATION:
+                        case ERROR_WRONG_DISK:
+                        case ERROR_SHARING_BUFFER_EXCEEDED:
+                        case ERROR_NETWORK_ACCESS_DENIED:
+                        case ERROR_CANNOT_MAKE:
+                        case ERROR_FAIL_I24:
+                        case ERROR_DRIVE_LOCKED:
+                        case ERROR_SEEK_ON_DEVICE:
+                        case ERROR_NOT_LOCKED:
+                        case ERROR_LOCK_FAILED:
+                            errno = 13;
+                            break;
+                        case ERROR_FILE_EXISTS:
+                        case ERROR_ALREADY_EXISTS:
+                            errno = 17;
+                            break;
+                        case ERROR_NOT_SAME_DEVICE:
+                            errno = 18;
+                            break;
+                        case ERROR_DIR_NOT_EMPTY:
+                            errno = 41;
+                            break;
+                        case ERROR_TOO_MANY_OPEN_FILES:
+                            errno = 24;
+                            break;
+                        case ERROR_DISK_FULL:
+                            errno = 28;
+                            break;
+                        default:
+                            errno = 22;
+                            break;
+                    }
+                }                
             }
+
+            internal const int ERROR_FILE_NOT_FOUND = 2;
+            internal const int ERROR_PATH_NOT_FOUND = 3;
+            internal const int ERROR_TOO_MANY_OPEN_FILES = 4;
+            internal const int ERROR_ACCESS_DENIED = 5;
+            internal const int ERROR_INVALID_HANDLE = 6;
+            internal const int ERROR_ARENA_TRASHED = 7;
+            internal const int ERROR_NOT_ENOUGH_MEMORY = 8;
+            internal const int ERROR_INVALID_BLOCK = 9;
+            internal const int ERROR_BAD_ENVIRONMENT = 10;
+            internal const int ERROR_BAD_FORMAT = 11;
+            internal const int ERROR_INVALID_DRIVE = 15;
+            internal const int ERROR_CURRENT_DIRECTORY = 16;
+            internal const int ERROR_NOT_SAME_DEVICE = 17;
+            internal const int ERROR_NO_MORE_FILES = 18;
+            internal const int ERROR_WRITE_PROTECT = 19;
+            internal const int ERROR_BAD_UNIT = 20;
+            internal const int ERROR_NOT_READY = 21;
+            internal const int ERROR_BAD_COMMAND = 22;
+            internal const int ERROR_CRC = 23;
+            internal const int ERROR_BAD_LENGTH = 24;
+            internal const int ERROR_SEEK = 25;
+            internal const int ERROR_NOT_DOS_DISK = 26;
+            internal const int ERROR_SECTOR_NOT_FOUND = 27;
+            internal const int ERROR_OUT_OF_PAPER = 28;
+            internal const int ERROR_WRITE_FAULT = 29;
+            internal const int ERROR_READ_FAULT = 30;
+            internal const int ERROR_GEN_FAILURE = 31;
+            internal const int ERROR_SHARING_VIOLATION = 32;
+            internal const int ERROR_LOCK_VIOLATION = 33;
+            internal const int ERROR_WRONG_DISK = 34;
+            internal const int ERROR_SHARING_BUFFER_EXCEEDED = 36;
+            internal const int ERROR_BAD_NETPATH = 53;
+            internal const int ERROR_NETWORK_ACCESS_DENIED = 65;
+            internal const int ERROR_BAD_NET_NAME = 67;
+            internal const int ERROR_FILE_EXISTS = 80;
+            internal const int ERROR_CANNOT_MAKE = 82;
+            internal const int ERROR_FAIL_I24 = 83;
+            internal const int ERROR_NO_PROC_SLOTS = 89;
+            internal const int ERROR_DRIVE_LOCKED = 108;
+            internal const int ERROR_BROKEN_PIPE = 109;
+            internal const int ERROR_DISK_FULL = 112;
+            internal const int ERROR_INVALID_TARGET_HANDLE = 114;
+            internal const int ERROR_WAIT_NO_CHILDREN = 128;
+            internal const int ERROR_CHILD_NOT_COMPLETE = 129;
+            internal const int ERROR_DIRECT_ACCESS_HANDLE = 130;
+            internal const int ERROR_SEEK_ON_DEVICE = 132;
+            internal const int ERROR_DIR_NOT_EMPTY = 145;
+            internal const int ERROR_NOT_LOCKED = 158;
+            internal const int ERROR_BAD_PATHNAME = 161;
+            internal const int ERROR_MAX_THRDS_REACHED = 164;
+            internal const int ERROR_LOCK_FAILED = 167;
+            internal const int ERROR_ALREADY_EXISTS = 183;
+            internal const int ERROR_INVALID_STARTING_CODESEG = 188;
+            internal const int ERROR_INVALID_STACKSEG = 189;
+            internal const int ERROR_INVALID_MODULETYPE = 190;
+            internal const int ERROR_INVALID_EXE_SIGNATURE = 191;
+            internal const int ERROR_EXE_MARKED_INVALID = 192;
+            internal const int ERROR_BAD_EXE_FORMAT = 193;
+            internal const int ERROR_ITERATED_DATA_EXCEEDS_64k = 194;
+            internal const int ERROR_INVALID_MINALLOCSIZE = 195;
+            internal const int ERROR_DYNLINK_FROM_INVALID_RING = 196;
+            internal const int ERROR_IOPL_NOT_ENABLED = 197;
+            internal const int ERROR_INVALID_SEGDPL = 198;
+            internal const int ERROR_AUTODATASEG_EXCEEDS_64k = 199;
+            internal const int ERROR_RING2SEG_MUST_BE_MOVABLE = 200;
+            internal const int ERROR_RELOC_CHAIN_XEEDS_SEGLIM = 201;
+            internal const int ERROR_INFLOOP_IN_RELOC_CHAIN = 202;
+            internal const int ERROR_FILENAME_EXCED_RANGE = 206;
+            internal const int ERROR_NESTING_NOT_ALLOWED = 215;
+            internal const int ERROR_NOT_ENOUGH_QUOTA = 1816;
+
+            internal const int ERROR_INVALID_NAME = 123;
         }
+#if !SILVERLIGHT
 
         public partial class _UnicodeDecodeError : BaseException {
+            [PythonHidden]
             protected internal override void InitializeFromClr(System.Exception/*!*/ exception) {
                 DecoderFallbackException ex = exception as DecoderFallbackException;
                 if (ex != null) {
@@ -590,6 +843,7 @@ namespace IronPython.Runtime.Exceptions {
         }
 
         public partial class _UnicodeEncodeError : BaseException {
+            [PythonHidden]
             protected internal override void InitializeFromClr(System.Exception/*!*/ exception) {
                 EncoderFallbackException ex = exception as EncoderFallbackException;
                 if (ex != null) {
@@ -671,7 +925,7 @@ namespace IronPython.Runtime.Exceptions {
         internal static System.Exception CreateThrowableForRaise(CodeContext/*!*/ context, OldClass type, object value) {
             object pyEx;
 
-            if (PythonOps.IsInstance(value, type)) {
+            if (PythonOps.IsInstance(context, value, type)) {
                 pyEx = value;
             } else if (value is PythonTuple) {
                 pyEx = PythonOps.CallWithArgsTuple(type, ArrayUtils.EmptyObjects, value);
@@ -850,7 +1104,10 @@ namespace IronPython.Runtime.Exceptions {
         /// </summary>
         [PythonHidden]
         public static PythonType CreateSubType(PythonContext/*!*/ context, PythonType baseType, string name, string module, string documentation) {
-            return new PythonType(null, baseType, name, module, documentation);            
+            PythonType res = new PythonType(null, baseType, name, module, documentation);
+            res.SetCustomMember(context.SharedContext, Symbols.WeakRef, new PythonTypeWeakRefSlot(res));
+            res.IsWeakReferencable = true;
+            return res;
         }
 
 

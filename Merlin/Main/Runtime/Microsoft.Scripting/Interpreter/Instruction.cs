@@ -510,6 +510,24 @@ namespace Microsoft.Scripting.Interpreter {
         }
     }
 
+    public sealed class CoalescingBranchInstruction : OffsetInstruction {
+        public CoalescingBranchInstruction() {
+        }
+
+        public override int ConsumedStack { get { return 1; } }
+        public override int ProducedStack { get { return 1; } }
+
+        public override int Run(InterpretedFrame frame) {
+            Debug.Assert(_offset != Unknown);
+
+            if (frame.Peek() != null) {
+                return _offset;
+            }
+
+            return +1;
+        }
+    }
+
     public class BranchInstruction : OffsetInstruction {
         internal readonly bool _hasResult;
         internal readonly bool _hasValue;
@@ -1532,77 +1550,88 @@ namespace Microsoft.Scripting.Interpreter {
 
         internal sealed class LessThanSByte : LessThanInstruction {
             public override int Run(InterpretedFrame frame) {
-                frame.Push(((SByte)frame.Pop()) < ((SByte)frame.Pop()));
+                SByte right = (SByte)frame.Pop();
+                frame.Push(((SByte)frame.Pop()) < right);
                 return +1;
             }
         }
 
         internal sealed class LessThanInt16 : LessThanInstruction {
             public override int Run(InterpretedFrame frame) {
-                frame.Push(((Int16)frame.Pop()) < ((Int16)frame.Pop()));
+                Int16 right = (Int16)frame.Pop();
+                frame.Push(((Int16)frame.Pop()) < right);
                 return +1;
             }
         }
 
         internal sealed class LessThanChar : LessThanInstruction {
             public override int Run(InterpretedFrame frame) {
-                frame.Push(((Char)frame.Pop()) < ((Char)frame.Pop()));
+                Char right = (Char)frame.Pop();
+                frame.Push(((Char)frame.Pop()) < right);
                 return +1;
             }
         }
 
         internal sealed class LessThanInt32 : LessThanInstruction {
             public override int Run(InterpretedFrame frame) {
-                frame.Push(((Int32)frame.Pop()) < ((Int32)frame.Pop()));
+                Int32 right = (Int32)frame.Pop();
+                frame.Push(((Int32)frame.Pop()) < right);
                 return +1;
             }
         }
 
         internal sealed class LessThanInt64 : LessThanInstruction {
             public override int Run(InterpretedFrame frame) {
-                frame.Push(((Int64)frame.Pop()) < ((Int64)frame.Pop()));
+                Int64 right = (Int64)frame.Pop();
+                frame.Push(((Int64)frame.Pop()) < right);
                 return +1;
             }
         }
 
         internal sealed class LessThanByte : LessThanInstruction {
             public override int Run(InterpretedFrame frame) {
-                frame.Push(((Byte)frame.Pop()) < ((Byte)frame.Pop()));
+                Byte right = (Byte)frame.Pop();
+                frame.Push(((Byte)frame.Pop()) < right);
                 return +1;
             }
         }
 
         internal sealed class LessThanUInt16 : LessThanInstruction {
             public override int Run(InterpretedFrame frame) {
-                frame.Push(((UInt16)frame.Pop()) < ((UInt16)frame.Pop()));
+                UInt16 right = (UInt16)frame.Pop();
+                frame.Push(((UInt16)frame.Pop()) < right);
                 return +1;
             }
         }
 
         internal sealed class LessThanUInt32 : LessThanInstruction {
             public override int Run(InterpretedFrame frame) {
-                frame.Push(((UInt32)frame.Pop()) < ((UInt32)frame.Pop()));
+                UInt32 right = (UInt32)frame.Pop();
+                frame.Push(((UInt32)frame.Pop()) < right);
                 return +1;
             }
         }
 
         internal sealed class LessThanUInt64 : LessThanInstruction {
             public override int Run(InterpretedFrame frame) {
-                frame.Push(((UInt64)frame.Pop()) < ((UInt64)frame.Pop()));
+                UInt64 right = (UInt64)frame.Pop();
+                frame.Push(((UInt64)frame.Pop()) < right);
                 return +1;
             }
         }
 
         internal sealed class LessThanSingle : LessThanInstruction {
             public override int Run(InterpretedFrame frame) {
-                frame.Push(((Single)frame.Pop()) < ((Single)frame.Pop()));
+                Single right = (Single)frame.Pop();
+                frame.Push(((Single)frame.Pop()) < right);
                 return +1;
             }
         }
 
         internal sealed class LessThanDouble : LessThanInstruction {
             public override int Run(InterpretedFrame frame) {
-                frame.Push(((Double)frame.Pop()) < ((Double)frame.Pop()));
+                Double right = (Double)frame.Pop();
+                frame.Push(((Double)frame.Pop()) < right);
                 return +1;
             }
         }
@@ -1611,16 +1640,16 @@ namespace Microsoft.Scripting.Interpreter {
             Debug.Assert(!type.IsEnum);
             switch (Type.GetTypeCode(type)) {
                 case TypeCode.SByte: return _SByte ?? (_SByte = new LessThanSByte());
-                case TypeCode.Byte: return _Byte ?? (_Byte = new LessThanSByte());
-                case TypeCode.Char: return _Char ?? (_Char = new LessThanSByte());
-                case TypeCode.Int16: return _Int16 ?? (_Int16 = new LessThanSByte());
-                case TypeCode.Int32: return _Int32 ?? (_Int32 = new LessThanSByte());
-                case TypeCode.Int64: return _Int64 ?? (_Int64 = new LessThanSByte());
-                case TypeCode.UInt16: return _UInt16 ?? (_UInt16 = new LessThanSByte());
-                case TypeCode.UInt32: return _UInt32 ?? (_UInt32 = new LessThanSByte());
-                case TypeCode.UInt64: return _UInt64 ?? (_UInt64 = new LessThanSByte());
-                case TypeCode.Single: return _Single ?? (_Single = new LessThanSByte());
-                case TypeCode.Double: return _Double ?? (_Double = new LessThanSByte());
+                case TypeCode.Byte: return _Byte ?? (_Byte = new LessThanByte());
+                case TypeCode.Char: return _Char ?? (_Char = new LessThanChar());
+                case TypeCode.Int16: return _Int16 ?? (_Int16 = new LessThanInt16());
+                case TypeCode.Int32: return _Int32 ?? (_Int32 = new LessThanInt32());
+                case TypeCode.Int64: return _Int64 ?? (_Int64 = new LessThanInt64());
+                case TypeCode.UInt16: return _UInt16 ?? (_UInt16 = new LessThanUInt16());
+                case TypeCode.UInt32: return _UInt32 ?? (_UInt32 = new LessThanUInt32());
+                case TypeCode.UInt64: return _UInt64 ?? (_UInt64 = new LessThanUInt64());
+                case TypeCode.Single: return _Single ?? (_Single = new LessThanSingle());
+                case TypeCode.Double: return _Double ?? (_Double = new LessThanDouble());
 
                 default:
                     throw Assert.Unreachable;
@@ -1629,6 +1658,128 @@ namespace Microsoft.Scripting.Interpreter {
 
         public override string ToString() {
             return "LessThan()";
+        }
+    }
+
+    public abstract class GreaterThanInstruction : Instruction {
+        private static Instruction _SByte, _Int16, _Char, _Int32, _Int64, _Byte, _UInt16, _UInt32, _UInt64, _Single, _Double;
+
+        public override int ConsumedStack { get { return 2; } }
+        public override int ProducedStack { get { return 1; } }
+
+        private GreaterThanInstruction() {
+        }
+
+        internal sealed class GreaterThanSByte : GreaterThanInstruction {
+            public override int Run(InterpretedFrame frame) {
+                SByte right = (SByte)frame.Pop();
+                frame.Push(((SByte)frame.Pop()) > right);
+                return +1;
+            }
+        }
+
+        internal sealed class GreaterThanInt16 : GreaterThanInstruction {
+            public override int Run(InterpretedFrame frame) {
+                Int16 right = (Int16)frame.Pop();
+                frame.Push(((Int16)frame.Pop()) > right);
+                return +1;
+            }
+        }
+
+        internal sealed class GreaterThanChar : GreaterThanInstruction {
+            public override int Run(InterpretedFrame frame) {
+                Char right = (Char)frame.Pop();
+                frame.Push(((Char)frame.Pop()) > right);
+                return +1;
+            }
+        }
+
+        internal sealed class GreaterThanInt32 : GreaterThanInstruction {
+            public override int Run(InterpretedFrame frame) {
+                Int32 right = (Int32)frame.Pop();
+                frame.Push(((Int32)frame.Pop()) > right);
+                return +1;
+            }
+        }
+
+        internal sealed class GreaterThanInt64 : GreaterThanInstruction {
+            public override int Run(InterpretedFrame frame) {
+                Int64 right = (Int64)frame.Pop();
+                frame.Push(((Int64)frame.Pop()) > right);
+                return +1;
+            }
+        }
+
+        internal sealed class GreaterThanByte : GreaterThanInstruction {
+            public override int Run(InterpretedFrame frame) {
+                Byte right = (Byte)frame.Pop();
+                frame.Push(((Byte)frame.Pop()) > right);
+                return +1;
+            }
+        }
+
+        internal sealed class GreaterThanUInt16 : GreaterThanInstruction {
+            public override int Run(InterpretedFrame frame) {
+                UInt16 right = (UInt16)frame.Pop();
+                frame.Push(((UInt16)frame.Pop()) > right);
+                return +1;
+            }
+        }
+
+        internal sealed class GreaterThanUInt32 : GreaterThanInstruction {
+            public override int Run(InterpretedFrame frame) {
+                UInt32 right = (UInt32)frame.Pop();
+                frame.Push(((UInt32)frame.Pop()) > right);
+                return +1;
+            }
+        }
+
+        internal sealed class GreaterThanUInt64 : GreaterThanInstruction {
+            public override int Run(InterpretedFrame frame) {
+                UInt64 right = (UInt64)frame.Pop();
+                frame.Push(((UInt64)frame.Pop()) > right);
+                return +1;
+            }
+        }
+
+        internal sealed class GreaterThanSingle : GreaterThanInstruction {
+            public override int Run(InterpretedFrame frame) {
+                Single right = (Single)frame.Pop();
+                frame.Push(((Single)frame.Pop()) > right);
+                return +1;
+            }
+        }
+
+        internal sealed class GreaterThanDouble : GreaterThanInstruction {
+            public override int Run(InterpretedFrame frame) {
+                Double right = (Double)frame.Pop();
+                frame.Push(((Double)frame.Pop()) > right);
+                return +1;
+            }
+        }
+
+        public static Instruction Instance(Type type) {
+            Debug.Assert(!type.IsEnum);
+            switch (Type.GetTypeCode(type)) {
+                case TypeCode.SByte: return _SByte ?? (_SByte = new GreaterThanSByte());
+                case TypeCode.Byte: return _Byte ?? (_Byte = new GreaterThanByte());
+                case TypeCode.Char: return _Char ?? (_Char = new GreaterThanChar());
+                case TypeCode.Int16: return _Int16 ?? (_Int16 = new GreaterThanInt16());
+                case TypeCode.Int32: return _Int32 ?? (_Int32 = new GreaterThanInt32());
+                case TypeCode.Int64: return _Int64 ?? (_Int64 = new GreaterThanInt64());
+                case TypeCode.UInt16: return _UInt16 ?? (_UInt16 = new GreaterThanUInt16());
+                case TypeCode.UInt32: return _UInt32 ?? (_UInt32 = new GreaterThanUInt32());
+                case TypeCode.UInt64: return _UInt64 ?? (_UInt64 = new GreaterThanUInt64());
+                case TypeCode.Single: return _Single ?? (_Single = new GreaterThanSingle());
+                case TypeCode.Double: return _Double ?? (_Double = new GreaterThanDouble());
+
+                default:
+                    throw Assert.Unreachable;
+            }
+        }
+
+        public override string ToString() {
+            return "GreaterThan()";
         }
     }
 

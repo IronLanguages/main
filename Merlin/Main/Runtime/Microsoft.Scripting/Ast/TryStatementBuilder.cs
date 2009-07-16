@@ -235,7 +235,7 @@ namespace Microsoft.Scripting.Ast {
             );
         }
 
-        protected override Expression VisitChildren(Func<Expression, Expression> visitor) {
+        protected override Expression VisitChildren(ExpressionVisitor visitor) {
             Expression body = visitor(_body);
             Expression fault = visitor(_fault);
             if (body != _body || fault != _fault) {

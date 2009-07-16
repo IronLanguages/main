@@ -24,6 +24,7 @@ using System.Text;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 
+using IronPython.Modules;
 using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime.Operations {
@@ -103,8 +104,7 @@ namespace IronPython.Runtime.Operations {
                     result is Extensible<int> || result is Extensible<BigInteger>) {
                     return ReturnObject(context, cls, result);
                 } else {
-                    throw PythonOps.TypeError("__long__ returned non-long (type {0})",
-                        result is OldInstance ? ((OldInstance)result)._class.__name__ : DynamicHelpers.GetPythonType(result).Name);
+                    throw PythonOps.TypeError("__long__ returned non-long (type {0})", PythonTypeOps.GetOldName(result));
                 }
             } else if (PythonOps.TryGetBoundAttr(context, x, Symbols.Truncate, out result)) {
                 result = PythonOps.CallWithContext(context, result);
@@ -113,14 +113,13 @@ namespace IronPython.Runtime.Operations {
                 } else if (Converter.TryConvertToBigInteger(result, out bigintRes)) {
                     return ReturnObject(context, cls, bigintRes);
                 } else {
-                    throw PythonOps.TypeError("__trunc__ returned non-Integral (type {0})",
-                        result is OldInstance ? ((OldInstance)result)._class.__name__ : DynamicHelpers.GetPythonType(result).Name);
+                    throw PythonOps.TypeError("__trunc__ returned non-Integral (type {0})", PythonTypeOps.GetOldName(result));
                 }
             }
 
             if (x is OldInstance) {
                 throw PythonOps.AttributeError("{0} instance has no attribute '__trunc__'",
-                    ((OldInstance)x)._class.__name__);
+                    ((OldInstance)x)._class.Name);
             } else {
                 throw PythonOps.TypeError("long() argument must be a string or a number, not '{0}'",
                     DynamicHelpers.GetPythonType(x).Name);
@@ -671,10 +670,10 @@ namespace IronPython.Runtime.Operations {
                     }
                     break;
                 case 'X':
-                    digits = ToHex(val, false);
+                    digits = AbsToHex(val, false);
                     break;
                 case 'x':
-                    digits = ToHex(val, true);
+                    digits = AbsToHex(val, true);
                     break;
                 case 'o': // octal
                     digits = ToOctal(val, true);
@@ -703,23 +702,25 @@ namespace IronPython.Runtime.Operations {
             return spec.AlignNumericText(digits, self.IsZero(), self.IsPositive());
         }
 
-        internal static string ToHex(BigInteger val) {
-            return ToHex(val, true);
-        }
-
-        internal static string ToHex(BigInteger val, bool lowercase) {
+        internal static string AbsToHex(BigInteger val, bool lowercase) {
             return ToDigits(val, 16, lowercase);
         }
 
-        internal static string ToOctal(BigInteger val, bool lowercase) {
+        private static string ToOctal(BigInteger val, bool lowercase) {
             return ToDigits(val, 8, lowercase);
         }
 
-        internal static string ToBinary(BigInteger val, bool includeType) {
-            return ToBinary(val, includeType, true);
+        internal static string ToBinary(BigInteger val) {            
+            string res = ToBinary(val.Abs(), true, true);
+            if (val.IsNegative()) {
+                res = "-" + res;
+            }
+            return res;
         }
 
-        internal static string ToBinary(BigInteger val, bool includeType, bool lowercase) {
+        private static string ToBinary(BigInteger val, bool includeType, bool lowercase) {
+            Debug.Assert(!val.IsNegative());
+
             string digits;
             digits = ToDigits(val, 2, lowercase);
             

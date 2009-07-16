@@ -41,7 +41,7 @@ namespace Chiron {
         // these properties are lazy loaded so we don't parse the configuration file unless necessary
         static AppManifestTemplate _ManifestTemplate;
         static Dictionary<string, LanguageInfo> _Languages;
-        static string _UrlPrefix, _LocalAssemblyPath;
+        static string _UrlPrefix, _LocalAssemblyPath, _ExternalUrlPrefix;
         static Dictionary<string, string> _MimeMap;
 
         static int Main(string[] args) {
@@ -49,9 +49,9 @@ namespace Chiron {
 
             if (!_nologo) {
                 Console.WriteLine(
-@"Microsoft(R) Silverlight(TM) Development Utility. Version {0}
-Copyright (c) Microsoft Corporation.  All rights reserved.
-", typeof(Chiron).Assembly.GetName().Version);
+                  "Chiron - Silverlight Development Utility. Version {0}", 
+                  typeof(Chiron).Assembly.GetName().Version
+                );
             }
 
             if (_help) {
@@ -372,6 +372,26 @@ Options:
                     }
                 }
                 return _UrlPrefix;
+            }
+        }
+
+        /// <summary>
+        /// Optional Extension URL prefix for language extensions (Silverlight 3 only)
+        /// </summary>
+        internal static string ExternalUrlPrefix {
+            get {
+                if (_ExternalUrlPrefix == null) {
+                    _ExternalUrlPrefix = ConfigurationManager.AppSettings["externalUrlPrefix"];
+                    if (_ExternalUrlPrefix != null) {
+                        if (!_ExternalUrlPrefix.EndsWith("/"))
+                            _ExternalUrlPrefix += '/';
+                        // validate
+                        Uri uri = new Uri(_ExternalUrlPrefix, UriKind.RelativeOrAbsolute);
+                        if (!uri.IsAbsoluteUri)
+                            throw new ConfigurationErrorsException("externalUrlPrefix must be an absolute URI");
+                    }
+                }
+                return _ExternalUrlPrefix;
             }
         }
 

@@ -45,28 +45,11 @@ namespace Microsoft.Scripting.Actions {
             _manager = manager;
         }
 
-        internal Expression Bind(OldDynamicAction action, object[] args, ReadOnlyCollection<ParameterExpression> parameters, LabelTarget returnLabel) {
-            var builder = new RuleBuilder(parameters, returnLabel);
-            MakeRule(action, args, builder);
-            if (builder.Target != null) {
-                return builder.CreateRule();
-            }
-            return null;
-        }
-
         public ScriptDomainManager Manager {
             get {
                 return _manager;
             }
         }
-
-        /// <summary>
-        /// Produces a rule for the specified Action for the given arguments.
-        /// </summary>
-        /// <param name="action">The Action that is being performed.</param>
-        /// <param name="args">The arguments to the action as provided from the call site at runtime.</param>
-        /// <param name="rule">The rule builder that will hold the result</param>
-        protected abstract void MakeRule(OldDynamicAction action, object[] args, RuleBuilder rule);
 
         /// <summary>
         /// Converts an object at runtime into the specified type.
@@ -131,11 +114,7 @@ namespace Microsoft.Scripting.Actions {
                 args = new Expression[] { expr };
             }
 
-            return Expression.Dynamic(
-                OldConvertToAction.Make(this, visType, kind),
-                visType,
-                args
-            );
+            return Expression.Convert(expr, toType);
         }
 
         public virtual Func<object[], object> ConvertObject(int index, DynamicMetaObject knownType, Type toType, ConversionResultKind conversionResultKind) {
@@ -148,7 +127,7 @@ namespace Microsoft.Scripting.Actions {
         /// The default implemetnation first searches the type, then the flattened heirachy of the type, and then
         /// registered extension methods.
         /// </summary>
-        public virtual MemberGroup GetMember(OldDynamicAction action, Type type, string name) {
+        public virtual MemberGroup GetMember(MemberRequestKind action, Type type, string name) {
             MemberInfo[] foundMembers = type.GetMember(name);
             if (!PrivateBinding) {
                 foundMembers = CompilerHelpers.FilterNonVisibleMembers(type, foundMembers);
@@ -223,7 +202,7 @@ namespace Microsoft.Scripting.Actions {
         /// 
         /// The default behavior is to allow the assignment.
         /// </summary>
-        public virtual ErrorInfo MakeStaticAssignFromDerivedTypeError(Type accessingType, MemberTracker assigning, Expression assignedValue, Expression context) {
+        public virtual ErrorInfo MakeStaticAssignFromDerivedTypeError(Type accessingType, DynamicMetaObject self, MemberTracker assigning, Expression assignedValue, Expression context) {
             switch (assigning.MemberType) {
                 case TrackerTypes.Property:
                     PropertyTracker pt = (PropertyTracker)assigning;
@@ -295,7 +274,7 @@ namespace Microsoft.Scripting.Actions {
         /// 
         /// Deprecated, use the non-generic version instead
         /// </summary>
-        public virtual ErrorInfo MakeMissingMemberError(Type type, string name) {
+        public virtual ErrorInfo MakeMissingMemberError(Type type, DynamicMetaObject self, string name) {
             return ErrorInfo.FromException(
                 Expression.New(
                     typeof(MissingMemberException).GetConstructor(new Type[] { typeof(string) }),
@@ -304,6 +283,17 @@ namespace Microsoft.Scripting.Actions {
             );
         }
 
+        public virtual ErrorInfo MakeMissingMemberErrorForAssign(Type type, DynamicMetaObject self, string name) {
+            return MakeMissingMemberError(type, self, name);
+        }
+
+        public virtual ErrorInfo MakeMissingMemberErrorForAssignReadOnlyProperty(Type type, DynamicMetaObject self, string name) {
+            return MakeMissingMemberError(type, self, name);
+        }
+
+        public virtual ErrorInfo MakeMissingMemberErrorForDelete(Type type, DynamicMetaObject self, string name) {
+            return MakeMissingMemberError(type, self, name);
+        }
 
         #endregion
 

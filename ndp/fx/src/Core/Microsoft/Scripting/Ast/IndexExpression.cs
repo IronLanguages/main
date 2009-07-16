@@ -90,6 +90,21 @@ namespace System.Linq.Expressions {
             get { return ReturnReadOnly(ref _arguments); }
         }
 
+        /// <summary>
+        /// Creates a new expression that is like this one, but using the
+        /// supplied children. If all of the children are the same, it will
+        /// return this expression.
+        /// </summary>
+        /// <param name="object">The <see cref="Object" /> property of the result.</param>
+        /// <param name="arguments">The <see cref="Arguments" /> property of the result.</param>
+        /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
+        public IndexExpression Update(Expression @object, IEnumerable<Expression> arguments) {
+            if (@object == Object && arguments == Arguments) {
+                return this;
+            }
+            return Expression.MakeIndex(@object, Indexer, arguments);
+        }
+
         Expression IArgumentProvider.GetArgument(int index) {
             return _arguments[index];
         }
@@ -100,7 +115,10 @@ namespace System.Linq.Expressions {
             }
         }
 
-        internal override Expression Accept(ExpressionVisitor visitor) {
+        /// <summary>
+        /// Dispatches to the specific visit method for this node type.
+        /// </summary>
+        protected internal override Expression Accept(ExpressionVisitor visitor) {
             return visitor.VisitIndex(this);
         }
 

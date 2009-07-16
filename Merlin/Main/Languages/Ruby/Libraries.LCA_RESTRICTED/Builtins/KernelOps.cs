@@ -793,47 +793,67 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        [RubyMethod("rand", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("rand", RubyMethodAttributes.PublicSingleton)]
-        public static double Rand(RubyContext/*!*/ context, object self) {
-            return new Random().NextDouble();
+        #region rand, srand
+
+        [RubyMethod("srand", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("srand", RubyMethodAttributes.PublicSingleton)]
+        public static object SeedRandomNumberGenerator(RubyContext/*!*/ context, object self, [DefaultProtocol]IntegerValue seed) {
+            object result = context.RandomNumberGeneratorSeed;
+            context.SeedRandomNumberGenerator(seed);
+            return result;
         }
 
         [RubyMethod("rand", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("rand", RubyMethodAttributes.PublicSingleton)]
-        public static object Rand(RubyContext/*!*/ context, object self, int limit) {
-            if (limit == 0) {
-                return Rand(context, self);
+        public static double Random(RubyContext/*!*/ context, object self) {
+            return context.RandomNumberGenerator.NextDouble();
+        }
+
+        [RubyMethod("rand", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("rand", RubyMethodAttributes.PublicSingleton)]
+        public static object Random(RubyContext/*!*/ context, object self, int limit) {
+            Random generator = context.RandomNumberGenerator;
+            if (limit == Int32.MinValue) {
+                return generator.Random(-(BigInteger)limit);
+            } else {
+                return ScriptingRuntimeHelpers.Int32ToObject(generator.Next(limit));
+            }
+        }
+
+        [RubyMethod("rand", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("rand", RubyMethodAttributes.PublicSingleton)]
+        public static object Random(ConversionStorage<IntegerValue>/*!*/ conversion, RubyContext/*!*/ context, object self, object limit) {
+            IntegerValue intLimit = Protocols.ConvertToInteger(conversion, limit);
+            Random generator = context.RandomNumberGenerator;
+
+            bool isFixnum;
+            int fixnum = 0;
+            BigInteger bignum = null;
+            if (intLimit.IsFixnum) {
+                if (intLimit.Fixnum == Int32.MinValue) {
+                    bignum = -(BigInteger)intLimit.Fixnum;
+                    isFixnum = false;
+                } else {
+                    fixnum = Math.Abs(intLimit.Fixnum);
+                    isFixnum = true;
+                }
+            } else {
+                bignum = intLimit.Bignum.Abs();
+                isFixnum = intLimit.Bignum.AsInt32(out fixnum);
             }
 
-            return ScriptingRuntimeHelpers.Int32ToObject((int)(new Random().NextDouble() * (limit - 1)));
-        }
-
-        [RubyMethod("rand", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("rand", RubyMethodAttributes.PublicSingleton)]
-        public static object Rand(RubyContext/*!*/ context, object self, double limit) {
-            if (limit < 1) {
-                return Rand(context, self);
+            if (isFixnum) {
+                if (fixnum == 0) {
+                    return generator.NextDouble();
+                } else {
+                    return ScriptingRuntimeHelpers.Int32ToObject(generator.Next(fixnum));
+                }
+            } else {
+                return generator.Random(bignum);
             }
-
-            return ScriptingRuntimeHelpers.Int32ToObject((int)(new Random().NextDouble() * (limit - 1)));
         }
 
-        [RubyMethod("rand", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("rand", RubyMethodAttributes.PublicSingleton)]
-        public static object Rand(RubyContext/*!*/ context, object self, [NotNull]BigInteger/*!*/ limit) {
-            throw new NotImplementedError("rand(BigInteger) not implemented");
-        }
-
-        [RubyMethod("rand", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("rand", RubyMethodAttributes.PublicSingleton)]
-        public static object Rand(ConversionStorage<int>/*!*/ conversionStorage, object self, object limit) {
-            if (limit == null) {
-                return Rand(conversionStorage.Context, self);
-            }
-            // TODO: to_int can return bignum here
-            return Rand(conversionStorage.Context, self, Protocols.CastToFixnum(conversionStorage, limit));
-        }
+        #endregion
 
         //readline
         //readlines
@@ -908,7 +928,6 @@ namespace IronRuby.Builtins {
             return new StringFormatter(storage, format.ConvertToString(), args).Format();
         }
 
-        //srand
         //sub
         //sub!
         //syscall

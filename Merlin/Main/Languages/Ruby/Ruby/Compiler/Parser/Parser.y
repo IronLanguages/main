@@ -359,30 +359,30 @@ expression_statement:
         }
     | arg '?' jump_statement_parameterless ':' arg
         {
-            $$ = new ConditionalJumpExpression($1.ToCondition(), $3, false, $5, @$);
+            $$ = new ConditionalJumpExpression(ToCondition($1), $3, false, $5, @$);
         }
     | arg '?' arg ':' jump_statement_parameterless
         {
-            $$ = new ConditionalJumpExpression($1.ToCondition(), $5, true, $3, @$);
+            $$ = new ConditionalJumpExpression(ToCondition($1), $5, true, $3, @$);
         }
 ;
 
 conditional_statement:
       stmt IF_MOD expr
         {
-            $$ = new ConditionalStatement($3.ToCondition(), false, $1, null, @$);
+            $$ = new ConditionalStatement(ToCondition($3), false, $1, null, @$);
         }
     | stmt UNLESS_MOD expr
         {
-            $$ = new ConditionalStatement($3.ToCondition(), true, $1, null, @$);
+            $$ = new ConditionalStatement(ToCondition($3), true, $1, null, @$);
         }
     | stmt WHILE_MOD expr
         {
-            $$ = MakeLoopStatement($1, $3.ToCondition(), true, @$);
+            $$ = MakeLoopStatement($1, ToCondition($3), true, @$);
         }
     | stmt UNTIL_MOD expr
         {
-            $$ = MakeLoopStatement($1, $3.ToCondition(), false, @$);
+            $$ = MakeLoopStatement($1, ToCondition($3), false, @$);
         }
     | stmt RESCUE_MOD stmt
         {
@@ -390,7 +390,7 @@ conditional_statement:
         }
     | arg '?' jump_statement_parameterless ':' jump_statement_parameterless
         {
-            $$ = new ConditionalStatement($1.ToCondition(), false, $3, $5, @$);
+            $$ = new ConditionalStatement(ToCondition($1), false, $3, $5, @$);
         }
 ;
 
@@ -950,7 +950,7 @@ arg:
         }
     | arg '?' arg ':' arg
         {
-            $$ = new ConditionalExpression($1.ToCondition(), $3, $5, @$);
+            $$ = new ConditionalExpression(ToCondition($1), $3, $5, @$);
         }
     | primary
         {
@@ -1257,11 +1257,11 @@ primary:
         }
     | IF expr then compstmt if_tail END
         {
-            $$ = MakeIfExpression($2.ToCondition(), $4, $5, @$);
+            $$ = MakeIfExpression(ToCondition($2), $4, $5, @$);
         }
     | UNLESS expr then compstmt else_opt END
         {
-            $$ = new UnlessExpression($2.ToCondition(), $4, $5, @$);
+            $$ = new UnlessExpression(ToCondition($2), $4, $5, @$);
         }
     | WHILE
         {
@@ -1273,7 +1273,7 @@ primary:
         }
       compstmt END
         {
-            $$ = new WhileLoopExpression($3.ToCondition(), true, false, $6, @$);
+            $$ = new WhileLoopExpression(ToCondition($3), true, false, $6, @$);
         }
     | UNTIL
         {
@@ -1285,7 +1285,7 @@ primary:
         }
       compstmt END
         {
-            $$ = new WhileLoopExpression($3.ToCondition(), false, false, $6, @$);
+            $$ = new WhileLoopExpression(ToCondition($3), false, false, $6, @$);
         }
     | case_expression
     | FOR block_parameters IN
@@ -1295,10 +1295,12 @@ primary:
       expr do
         {
             _tokenizer.COND_POP();
+            EnterPaddingScope();
         }
       compstmt END
         {
-            $$ = new ForLoopExpression($2, $5, $8, @$);
+            $$ = new ForLoopExpression(CurrentScope, $2, $5, $8, @$);
+            LeaveScope();
         }
     | block_expression
         {

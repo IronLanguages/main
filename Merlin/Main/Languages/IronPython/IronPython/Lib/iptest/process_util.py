@@ -105,6 +105,11 @@ def has_vbc():
     except WindowsError: return False
     else:  return True
 
+def has_ilasm():
+    try:   run_ilasm("/?")
+    except WindowsError: return False
+    else:  return True
+
 def run_tlbimp(pathToTypeLib, outputName=None):
     if outputName:
         return run_tool("tlbimp.exe", pathToTypeLib+" /out:"+outputName)
@@ -124,6 +129,10 @@ def run_csc(args):
 def run_vbc(args):
     import file_util
     return run_tool(file_util.path_combine(get_clr_dir(),"vbc.exe"), args)
+
+def run_ilasm(args):
+    import file_util
+    return run_tool(file_util.path_combine(get_clr_dir(),"ilasm.exe"), args)
 
 def number_of_process(arg):
     return len([x for x in nt.popen('tasklist.exe').readlines() if x.lower().startswith(arg.lower()) ])

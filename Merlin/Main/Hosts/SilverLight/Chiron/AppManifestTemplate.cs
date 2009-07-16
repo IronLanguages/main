@@ -31,17 +31,29 @@ namespace Chiron {
             _template = template;
         }
 
-        internal XmlDocument Generate(IEnumerable<Uri> assemblySources) {
+        internal XmlDocument Generate(IEnumerable<Uri> assemblySources, IEnumerable<Uri> externalSources) {
             XmlDocument doc = new XmlDocument();
             doc.LoadXml(_template);
-            XmlElement target = (XmlElement)doc.GetElementsByTagName("Deployment.Parts")[0];
 
+            XmlElement partsTarget = (XmlElement)doc.GetElementsByTagName("Deployment.Parts")[0];
             foreach (Uri source in assemblySources) {
-                XmlElement ap = doc.CreateElement("AssemblyPart", target.NamespaceURI);
+                XmlElement ap = doc.CreateElement("AssemblyPart", partsTarget.NamespaceURI);
                 string src = source.ToString();
                 ap.SetAttribute("Source", src);
-                target.AppendChild(ap);
+                partsTarget.AppendChild(ap);
             }
+
+            XmlNodeList externalParts = doc.GetElementsByTagName("Deployment.ExternalParts");
+            if(externalParts.Count > 0) {
+                XmlElement externalsTarget = (XmlElement)externalParts[0];
+                foreach (Uri source in externalSources) {
+                    XmlElement ap = doc.CreateElement("ExtensionPart", externalsTarget.NamespaceURI);
+                    string src = source.ToString();
+                    ap.SetAttribute("Source", src);
+                    externalsTarget.AppendChild(ap);
+                }
+            }
+
             return doc;
         }
     }

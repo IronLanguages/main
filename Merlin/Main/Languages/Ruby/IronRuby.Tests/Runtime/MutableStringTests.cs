@@ -37,6 +37,11 @@ namespace IronRuby.Tests {
             Test_Remove_Char();
             Test_SwitchRepr();
             Test_Concatenate();
+            Test_Reverse();
+        }
+
+        public void MutableString2() {
+            Test_Translate();
         }
 
         private MutableString/*!*/ MS(string/*!*/ data, RubyEncoding/*!*/ e) {
@@ -144,7 +149,9 @@ namespace IronRuby.Tests {
         }
 
         private void Test_IsAscii() {
-            var a = MutableString.CreateBinary(new byte[] { 0x12, 0x34 }, RubyEncoding.Binary);
+            var a = MutableString.CreateBinary(new byte[] { 0x12, 0x34, 0x56 }, RubyEncoding.Binary);
+            Assert(a.IsAscii());
+            a.Remove(2);
             Assert(a.IsAscii());
             a.Append(0x56);
             Assert(a.IsAscii());
@@ -395,25 +402,166 @@ namespace IronRuby.Tests {
         }
 
         private void Test_Concatenate() {
-            var bytes = new[] {
-                new byte[] { 0xe2, 0x85, 0x9c },
-                new byte[] { 0x82, 0xA0 },
-                new byte[] { 0xe2, 0x85, 0x9c },
-            };
+            var utf8 = new byte[] { 0xe2, 0x85, 0x9c };
+            var sjis = new byte[] { 0x82, 0xA0 };
+            var ascii = new byte[] { 0x20 };
 
-            var strs = new[] {
-                MutableString.CreateBinary(bytes[0], RubyEncoding.Binary).SwitchToString(),
-                MutableString.CreateBinary(bytes[1], RubyEncoding.KCodeSJIS).SwitchToString(),
-                MutableString.CreateBinary(bytes[2], RubyEncoding.KCodeUTF8).SwitchToString(),
-            };
+            Test_Concatenate(utf8, RubyEncoding.Binary, utf8, RubyEncoding.Binary, RubyEncoding.Binary);
+            Test_Concatenate(utf8, RubyEncoding.Binary, sjis, RubyEncoding.KCodeSJIS, RubyEncoding.Binary);
+            Test_Concatenate(utf8, RubyEncoding.Binary, utf8, RubyEncoding.KCodeUTF8, RubyEncoding.Binary);
 
-            for (int i = 0; i < bytes.Length; i++) {
-                for (int j = 0; j < bytes.Length; j++) {
-                    var s = MutableStringOps.Concatenate(strs[i], strs[j]);
-                    var b = s.ToByteArray();
-                    Assert(b.ValueCompareTo(b.Length, ArrayUtils.AppendRange(bytes[i], bytes[j])) == 0);
-                }
-            }
+            Test_Concatenate(sjis, RubyEncoding.KCodeSJIS, utf8, RubyEncoding.Binary, RubyEncoding.Binary);
+            Test_Concatenate(sjis, RubyEncoding.KCodeSJIS, sjis, RubyEncoding.KCodeSJIS, RubyEncoding.KCodeSJIS);
+            Test_Concatenate(sjis, RubyEncoding.KCodeSJIS, utf8, RubyEncoding.KCodeUTF8, RubyEncoding.Binary);
+            Test_Concatenate(sjis, RubyEncoding.KCodeSJIS, utf8, RubyEncoding.UTF8, RubyEncoding.Binary);
+
+            Test_Concatenate(utf8, RubyEncoding.KCodeUTF8, utf8, RubyEncoding.Binary, RubyEncoding.Binary);
+            Test_Concatenate(utf8, RubyEncoding.KCodeUTF8, sjis, RubyEncoding.KCodeSJIS, RubyEncoding.Binary);
+            Test_Concatenate(utf8, RubyEncoding.KCodeUTF8, utf8, RubyEncoding.KCodeUTF8, RubyEncoding.KCodeUTF8);
+            Test_Concatenate(utf8, RubyEncoding.KCodeUTF8, utf8, RubyEncoding.UTF8, RubyEncoding.KCodeUTF8);
+
+            Test_Concatenate(utf8, RubyEncoding.UTF8, sjis, RubyEncoding.KCodeSJIS, RubyEncoding.Binary);
+            Test_Concatenate(utf8, RubyEncoding.UTF8, utf8, RubyEncoding.KCodeUTF8, RubyEncoding.KCodeUTF8);
+            Test_Concatenate(utf8, RubyEncoding.UTF8, utf8, RubyEncoding.UTF8, RubyEncoding.UTF8);
+
+            Test_Concatenate(utf8, RubyEncoding.UTF8, ascii, RubyEncoding.Binary, RubyEncoding.UTF8);
+            Test_Concatenate(ascii, RubyEncoding.Binary, ascii, RubyEncoding.UTF8, RubyEncoding.UTF8);
+
+            AssertExceptionThrown<EncodingCompatibilityError>(
+                () => Test_Concatenate(utf8, RubyEncoding.Binary, utf8, RubyEncoding.UTF8, RubyEncoding.Binary)
+            );
+        }
+
+        private void Test_Concatenate(byte[]/*!*/ b1, RubyEncoding/*!*/ e1, byte[]/*!*/ b2, RubyEncoding/*!*/ e2, RubyEncoding/*!*/ resultEncoding) {
+            var s1 = MutableString.CreateBinary(b1, e1).SwitchToCharacters();
+            var s2 = MutableString.CreateBinary(b2, e2).SwitchToCharacters();
+
+            var s = MutableStringOps.Concatenate(s1, s2);
+            Assert(s.Encoding == resultEncoding);
+            var b = s.ToByteArray();
+            Assert(b.ValueCompareTo(b.Length, ArrayUtils.AppendRange(b1, b2)) == 0);
+        }
+
+        private void Test_Reverse() {
+            var SJIS = RubyEncoding.GetRubyEncoding(RubyEncoding.CodePageSJIS);
+            var utf8 = new byte[] { 0xe2, 0x85, 0x9c };
+            var rev_bin_utf8 = new byte[] { 0x9c, 0x85, 0xe2};
+            var invalid_utf8 = new byte[] { 0xe2, 0x85, 0x9c, 0xef };
+            var rev_invalid_utf8 = new byte[] { 0xef, 0xe2, 0x85, 0x9c };
+            var sjis = new byte[] { 0x82, 0xA0 };
+            var ascii = new byte[] { 0x20, 0x55 };
+            var rev_ascii = new byte[] { 0x55, 0x20 };
+            var u12345 = new byte[] { 0xF0, 0x92, 0x8D, 0x85 }; // \u{12345} in UTF-8
+
+            Test_Reverse(new byte[0], RubyEncoding.UTF8, new byte[0]);
+            Test_Reverse(utf8, RubyEncoding.UTF8, utf8);
+            Test_Reverse(utf8, RubyEncoding.Binary, rev_bin_utf8);
+            Test_Reverse(sjis, SJIS, sjis);
+            Test_Reverse(ascii, RubyEncoding.UTF8, rev_ascii);
+            
+            // TODO: surrogates
+            AssertExceptionThrown<EncoderFallbackException>(
+                () => Test_Reverse(u12345, RubyEncoding.UTF8, u12345)
+            );
+
+            // TODO: MRI allows incorrect byte sequences
+            AssertExceptionThrown<ArgumentException>(
+                () => Test_Reverse(invalid_utf8, RubyEncoding.UTF8, rev_invalid_utf8)
+            );
+
+            Assert(MutableStringOps.Reverse(MutableString.Create("αΣ")).ToString() == "Σα");
+
+            // TODO: KCODE
+        }
+
+        private void Test_Reverse(byte[]/*!*/ b, RubyEncoding/*!*/ e, byte[]/*!*/ expected) {
+            var s = MutableString.CreateBinary(b, e);
+            MutableStringOps.Reverse(s);
+            var actual = s.ToByteArray();
+            Assert(actual.ValueEquals(expected));
+        }
+
+        private byte[] Utf8(string str) {
+            return Encoding.UTF8.GetBytes(str);
+        }
+
+        private byte[] Sjis(string str) {
+            return Encoding.GetEncoding("SJIS").GetBytes(str);
+        }
+
+        private void Test_Translate() {
+            var SJIS = RubyEncoding.GetRubyEncoding(RubyEncoding.CodePageSJIS);
+            var sjis = new byte[] { 0x82, 0xA0 };
+            var u12345 = new byte[] { 0xF0, 0x92, 0x8D, 0x85 }; // \u{12345} in UTF-8
+
+            Test_Translate(
+                Utf8("αβγδ"), RubyEncoding.UTF8,
+                Utf8("α-γ"), RubyEncoding.UTF8, 
+                Utf8("AB"), SJIS,
+                Utf8("ABBδ"), RubyEncoding.UTF8
+            );
+
+            Test_Translate(
+                Utf8("αaβzγcδ"), RubyEncoding.UTF8,
+                Utf8("a-z"), RubyEncoding.Binary,
+                Utf8("*"), SJIS,
+                Utf8("α*β*γ*δ"), RubyEncoding.UTF8
+            );
+
+            Test_Translate(
+                Utf8("αaβzγcδ"), RubyEncoding.UTF8,
+                Utf8("^α-δ"), RubyEncoding.UTF8,
+                Utf8("-"), SJIS,
+                Utf8("α-β-γ-δ"), RubyEncoding.UTF8
+            );
+            
+            Test_Translate(
+                Utf8("-α-"), RubyEncoding.Binary,
+                Utf8("α"), RubyEncoding.Binary,
+                Utf8("AB"), RubyEncoding.Binary,
+                Utf8("-AB-"), RubyEncoding.Binary
+            );
+
+            Test_Translate(
+                Utf8("-a-"), SJIS,
+                Utf8("a"), RubyEncoding.Binary,
+                Utf8("A"), RubyEncoding.UTF8,
+                Utf8("-A-"), SJIS
+            );
+
+            Test_Translate(
+               Utf8("a"), RubyEncoding.UTF8,
+               Utf8("a"), RubyEncoding.UTF8,
+               Utf8("\0"), RubyEncoding.UTF8,
+               Utf8("\0"), RubyEncoding.UTF8
+           );
+
+            AssertExceptionThrown<EncodingCompatibilityError>(
+                () => Test_Translate(Utf8("α"), RubyEncoding.Binary, Utf8("α"), RubyEncoding.UTF8, Utf8("-"), SJIS, null, null)
+            );
+
+            AssertExceptionThrown<EncodingCompatibilityError>(
+                () => Test_Translate(Utf8("α"), RubyEncoding.UTF8, Sjis("ﾎ"), SJIS, Utf8("-"), SJIS, null, null)
+            );
+
+            // TODO: KCODE
+
+        }
+
+        private void Test_Translate(
+            byte[]/*!*/ bself, RubyEncoding/*!*/ eself,
+            byte[]/*!*/ bfrom, RubyEncoding/*!*/ efrom,
+            byte[]/*!*/ bto, RubyEncoding/*!*/ eto, 
+            byte[]/*!*/ expected, RubyEncoding/*!*/ expectedEncoding) {
+
+            var self = MutableString.CreateBinary(bself, eself);
+            var from = MutableString.CreateBinary(bfrom, efrom);
+            var to = MutableString.CreateBinary(bto, eto);
+
+            var result = MutableStringOps.GetTranslated(self, from, to);
+            Assert(result.Encoding == expectedEncoding);
+            var b = result.ToByteArray();
+            Assert(b.ValueEquals(expected));
         }
     }
 }

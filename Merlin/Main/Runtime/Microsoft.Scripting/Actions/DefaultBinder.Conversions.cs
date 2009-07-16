@@ -123,16 +123,14 @@ namespace Microsoft.Scripting.Actions {
         /// method.
         /// </summary>
         private DynamicMetaObject TryOneConversion(ConversionResultKind kind, Type toType, Type type, Type fromType, string methodName, bool isImplicit, BindingRestrictions restrictions, DynamicMetaObject arg) {
-            OldConvertToAction action = OldConvertToAction.Make(this, toType, kind);
-
-            MemberGroup conversions = GetMember(action, fromType, methodName);
+            MemberGroup conversions = GetMember(MemberRequestKind.Convert, fromType, methodName);
             DynamicMetaObject res = TryUserDefinedConversion(kind, toType, type, conversions, isImplicit, restrictions, arg);
             if (res != null) {
                 return res;
             }
 
             // then on the type we're trying to convert to
-            conversions = GetMember(action, toType, methodName);
+            conversions = GetMember(MemberRequestKind.Convert, toType, methodName);
             return TryUserDefinedConversion(kind, toType, type, conversions, isImplicit, restrictions, arg);
         }
 

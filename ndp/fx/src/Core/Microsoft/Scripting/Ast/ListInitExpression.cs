@@ -79,7 +79,10 @@ namespace System.Linq.Expressions {
             get { return _initializers; }
         }
 
-        internal override Expression Accept(ExpressionVisitor visitor) {
+        /// <summary>
+        /// Dispatches to the specific visit method for this node type.
+        /// </summary>
+        protected internal override Expression Accept(ExpressionVisitor visitor) {
             return visitor.VisitListInit(this);
         }
 
@@ -92,6 +95,21 @@ namespace System.Linq.Expressions {
         /// <returns>The reduced expression.</returns>
         public override Expression Reduce() {
             return MemberInitExpression.ReduceListInit(_newExpression, _initializers, true);
+        }
+
+        /// <summary>
+        /// Creates a new expression that is like this one, but using the
+        /// supplied children. If all of the children are the same, it will
+        /// return this expression.
+        /// </summary>
+        /// <param name="newExpression">The <see cref="NewExpression" /> property of the result.</param>
+        /// <param name="initializers">The <see cref="Initializers" /> property of the result.</param>
+        /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
+        public ListInitExpression Update(NewExpression newExpression, IEnumerable<ElementInit> initializers) {
+            if (newExpression == NewExpression && initializers == Initializers) {
+                return this;
+            }
+            return Expression.ListInit(newExpression, initializers);
         }
     }
 

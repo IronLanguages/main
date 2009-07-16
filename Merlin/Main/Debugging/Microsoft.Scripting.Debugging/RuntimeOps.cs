@@ -39,6 +39,11 @@ namespace Microsoft.Scripting.Debugging {
         }
 
         [Obsolete("do not call this method", true)]
+        public static void OnTraceEventUnwind(DebugThread thread, int debugMarker, Exception exception) {
+            thread.DebugContext.DispatchDebugEvent(thread, debugMarker, TraceEventKind.ExceptionUnwind, exception);
+        }
+
+        [Obsolete("do not call this method", true)]
         public static void OnFrameEnterTraceEvent(DebugThread thread) {
             thread.DebugContext.DispatchDebugEvent(thread, 0, TraceEventKind.FrameEnter, null);
         }

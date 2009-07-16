@@ -40,6 +40,10 @@ namespace IronRuby.Runtime {
             return new InvalidOperationException(message, innerException);
         }
 
+        public static Exception/*!*/ CreateObjectFrozenError() {
+            return CreateTypeError("can't modify frozen object");
+        }
+
         public static Exception/*!*/ CreateTypeConversionError(string/*!*/ fromType, string/*!*/ toType) {
             Assert.NotNull(fromType, toType);
             return CreateTypeError(String.Format("can't convert {0} into {1}", fromType, toType));

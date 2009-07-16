@@ -64,32 +64,62 @@ namespace IronRuby.Compiler.Ast {
             _parameters = parameters ?? Parameters.Empty;
         }
 
-        private MSA.ParameterExpression[]/*!*/ DefineParameters(AstGenerator/*!*/ gen, ScopeBuilder/*!*/ scope) {
-            
-            // user defined locals/args:
-            MSA.ParameterExpression[] parameters = DefinedScope.TransformParameters(_parameters, HiddenParameterCount);
-            scope.AddVisibleParameters(parameters, HiddenParameterCount);
+        private ScopeBuilder/*!*/ DefineLocals(out MSA.ParameterExpression/*!*/[]/*!*/ parameters) {
+            parameters = new MSA.ParameterExpression[
+                HiddenParameterCount +
+                (_parameters.Mandatory != null ? _parameters.Mandatory.Count : 0) +
+                (_parameters.Optional != null ? _parameters.Optional.Count : 0) +
+                (_parameters.Array != null ? 1 : 0)
+            ];
 
-            parameters[0] = Ast.Parameter(typeof(object), "#self");
+            int paramIndex = 0;
+            int closureIndex = 0;
+            int firstClosureParam = 1;
+            parameters[paramIndex++] = Ast.Parameter(typeof(object), "#self");
 
             if (_parameters.Block != null) {
-                // map user defined proc parameter to the special param #1:
-                parameters[1] = _parameters.Block.TransformBlockParameterDefinition();
+                parameters[paramIndex++] = Ast.Parameter(typeof(Proc), _parameters.Block.Name);
+                _parameters.Block.SetClosureIndex(closureIndex++);
             } else {
-                parameters[1] = Ast.Parameter(typeof(Proc), "#block");
+                parameters[paramIndex++] = Ast.Parameter(typeof(Proc), "#block");
+                firstClosureParam++;
             }
 
-            return parameters;
+            if (_parameters.Mandatory != null) {
+                foreach (var param in _parameters.Mandatory) {
+                    parameters[paramIndex++] = Ast.Parameter(typeof(object), param.Name);
+                    param.SetClosureIndex(closureIndex++);
+                }
+            }
+
+            if (_parameters.Optional != null) {
+                foreach (var lvalue in _parameters.Optional) {
+                    var param = (LocalVariable)lvalue.Left;
+                    parameters[paramIndex++] = Ast.Parameter(typeof(object), param.Name);
+                    param.SetClosureIndex(closureIndex++);
+                }
+            }
+
+            if (_parameters.Array != null) {
+                parameters[paramIndex++] = Ast.Parameter(typeof(object), _parameters.Array.Name);
+                _parameters.Array.SetClosureIndex(closureIndex++);
+            }
+
+            Debug.Assert(paramIndex == parameters.Length);
+
+            // allocate closure slots for locals:
+            int localCount = DefinedScope.AllocateClosureSlotsForLocals(closureIndex);
+
+            return new ScopeBuilder(parameters, firstClosureParam, localCount, null, DefinedScope);
         }
 
         internal MSA.LambdaExpression/*!*/ TransformBody(AstGenerator/*!*/ gen, RubyScope/*!*/ declaringScope, RubyModule/*!*/ declaringModule) {
             string encodedName = RubyExceptionData.EncodeMethodName(_name, gen.SourcePath, Location);
-            
-            ScopeBuilder scope = new ScopeBuilder();
-            
-            MSA.ParameterExpression[] parameters = DefineParameters(gen, scope);
+
+            MSA.ParameterExpression[] parameters;
+            ScopeBuilder scope = DefineLocals(out parameters);
+
             var currentMethodVariable = scope.DefineHiddenVariable("#method", typeof(RubyMethodInfo));
-            var rfcVariable = scope.DefineHiddenVariable("#rfc", typeof(RuntimeFlowControl));
             var scopeVariable = scope.DefineHiddenVariable("#scope", typeof(RubyMethodScope));
             var selfParameter = parameters[0];
             var blockParameter = parameters[1];
@@ -99,12 +129,9 @@ namespace IronRuby.Compiler.Ast {
                 selfParameter,
                 scopeVariable,
                 blockParameter,
-                rfcVariable,
                 _name,
                 _parameters
             );
-
-            DefinedScope.TransformLocals(scope);
 
             // profiling:
             MSA.Expression profileStart, profileEnd;
@@ -139,18 +166,6 @@ namespace IronRuby.Compiler.Ast {
             
             MSA.Expression body = AstUtils.Try(
                 profileStart,
-
-                // scope initialization:
-                Ast.Assign(rfcVariable, Methods.CreateRfcForMethod.OpCall(AstUtils.Convert(blockParameter, typeof(Proc)))),
-                Ast.Assign(scopeVariable, Methods.CreateMethodScope.OpCall(
-                    scope.VisibleVariables(), 
-                    Ast.Constant(declaringScope, typeof(RubyScope)),
-                    Ast.Constant(declaringModule, typeof(RubyModule)), 
-                    Ast.Constant(_name),
-                    rfcVariable, selfParameter, blockParameter,
-                    EnterInterpretedFrameExpression.Instance
-                )),
-            
                 _parameters.TransformOptionalsInitialization(gen),
                 traceCall,
                 Body.TransformResult(gen, ResultOperation.Return)
@@ -158,13 +173,28 @@ namespace IronRuby.Compiler.Ast {
                 Ast.Return(gen.ReturnLabel, Methods.GetMethodUnwinderReturnValue.OpCall(unwinder))
             ).Finally(  
                 // leave frame:
-                Methods.LeaveMethodFrame.OpCall(rfcVariable),
+                Methods.LeaveMethodFrame.OpCall(scopeVariable),
                 LeaveInterpretedFrameExpression.Instance,
                 profileEnd,
                 traceReturn
             );
 
-            body = gen.AddReturnTarget(scope.CreateScope(body));
+            body = gen.AddReturnTarget(
+                scope.CreateScope(
+                    scopeVariable,
+                    Methods.CreateMethodScope.OpCall(
+                        scope.MakeLocalsStorage(),
+                        scope.GetVariableNamesExpression(),
+                        Ast.Constant(declaringScope, typeof(RubyScope)),
+                        Ast.Constant(declaringModule, typeof(RubyModule)), 
+                        Ast.Constant(_name),
+                        selfParameter, blockParameter,
+                        EnterInterpretedFrameExpression.Instance
+                    ),
+                    body
+                )
+            );
+
             gen.LeaveMethodDefinition();
 
             return CreateLambda(encodedName, parameters, body);
@@ -204,7 +234,7 @@ namespace IronRuby.Compiler.Ast {
 
         internal override MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen) {
             return Methods.DefineMethod.OpCall(
-                (_target != null) ? _target.TransformRead(gen) : gen.CurrentSelfVariable,  // target
+                (_target != null) ? _target.TransformRead(gen) : AstUtils.Constant(null),
                 gen.CurrentScopeVariable,
                 Ast.Constant(new RubyMethodBody(gen.Context, this, gen.Document, gen.Encoding))
             );

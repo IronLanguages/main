@@ -39,6 +39,9 @@ namespace IronPython.Modules {
                 _memHolder = new MemoryHolder(IntPtr.Size);
                 _memHolder.WriteIntPtr(0, value._memHolder);
                 _memHolder.AddObject("1", value);
+                if (value._objects != null) {
+                    _memHolder.AddObject("0", value._objects);
+                }
             }
 
             public object contents {
@@ -61,7 +64,7 @@ namespace IronPython.Modules {
                     INativeType type = ((PointerType)NativeType)._type;
                     MemoryHolder address = _memHolder.ReadMemoryHolder(0);
 
-                    return type.GetValue(address, checked(type.Size * index), false);
+                    return type.GetValue(address, this, checked(type.Size * index), false);
                 }
                 set {
                     MemoryHolder address = _memHolder.ReadMemoryHolder(0);
@@ -121,7 +124,7 @@ namespace IronPython.Modules {
                         List res = new List((stop - start) / step);
                         for (int i = start; stop > start ? i < stop : i > stop; i += step) {
                             res.AddNoLock(
-                                type.GetValue(address, checked(type.Size * i), false)
+                                type.GetValue(address, this, checked(type.Size * i), false)
                             );
                         }
                         return res;

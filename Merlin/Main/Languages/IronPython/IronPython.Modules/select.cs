@@ -31,8 +31,8 @@ using System.Runtime.CompilerServices;
 
 [assembly: PythonModule("select", typeof(IronPython.Modules.PythonSelect))]
 namespace IronPython.Modules {
-    [Documentation("Provides support for asynchronous socket operations.")]
     public static class PythonSelect {
+        public const string __doc__ = "Provides support for asynchronous socket operations.";
         [SpecialName]
         public static void PerformModuleReload(PythonContext/*!*/ context, IAttributesCollection/*!*/ dict) {
             context.EnsureModuleException("selecterror", dict, "error", "select");

@@ -27,7 +27,7 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Runtime.Types {
 
-    [PythonType("method_descriptor")]
+    [PythonType("method_descriptor"), DontMapGetMemberNamesToDir]
     public sealed class BuiltinMethodDescriptor : PythonTypeSlot, IDynamicMetaObjectProvider, ICodeFormattable {
         internal readonly BuiltinFunction/*!*/ _template;
 

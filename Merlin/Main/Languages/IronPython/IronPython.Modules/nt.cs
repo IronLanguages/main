@@ -37,6 +37,7 @@ using IronPython.Runtime.Types;
 [assembly: PythonModule("nt", typeof(IronPython.Modules.PythonNT))]
 namespace IronPython.Modules {
     public static class PythonNT {
+        public const string __doc__ = "Provides low-level operationg system access for files, the environment, etc...";
 #if !SILVERLIGHT
         private static Dictionary<int, Process> _processToIdMapping = new Dictionary<int, Process>();
         private static List<int> _freeProcessIds = new List<int>();
@@ -85,13 +86,13 @@ namespace IronPython.Modules {
 #if !SILVERLIGHT // SetCurrentDirectory, FileInfo
         public static void chdir([NotNull]string path) {
             if (String.IsNullOrEmpty(path)) {
-                throw PythonExceptions.CreateThrowable(WindowsError, PythonErrorNumber.EINVAL, "Path cannot be an empty string");
+                throw PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._WindowsError.ERROR_INVALID_NAME, "Path cannot be an empty string");
             }
 
             try {
                 Directory.SetCurrentDirectory(path);
             } catch (Exception e) {
-                throw ToPythonException(e);
+                throw ToPythonException(e, path);
             }
         }
 
@@ -211,7 +212,7 @@ namespace IronPython.Modules {
                 addBase(context.LanguageContext.DomainManager.Platform.GetDirectories(path, "*"), ret);
                 return ret;
             } catch (Exception e) {
-                throw ToPythonException(e);
+                throw ToPythonException(e, path);
             }
         }
 
@@ -231,7 +232,7 @@ namespace IronPython.Modules {
             try {
                 Directory.CreateDirectory(path);
             } catch (Exception e) {
-                throw ToPythonException(e);
+                throw ToPythonException(e, path);
             }
         }
 
@@ -242,7 +243,7 @@ namespace IronPython.Modules {
             try {
                 Directory.CreateDirectory(path);
             } catch (Exception e) {
-                throw ToPythonException(e);
+                throw ToPythonException(e, path);
             }
         }
 #endif
@@ -253,7 +254,21 @@ namespace IronPython.Modules {
 
         public static object open(CodeContext/*!*/ context, string filename, int flag, int mode) {
             try {
-                FileStream fs = File.Open(filename, FileModeFromFlags(flag), FileAccessFromFlags(flag), FileShare.ReadWrite);
+                FileMode fileMode = FileModeFromFlags(flag);
+                FileAccess access = FileAccessFromFlags(flag);
+                FileStream fs;
+                if (access == FileAccess.Read && (fileMode == FileMode.CreateNew || fileMode == FileMode.Create || fileMode == FileMode.Append)) {
+                    // .NET doesn't allow Create/CreateNew w/ access == Read, so create the file, then close it, then
+                    // open it again w/ just read access.
+                    fs = File.Open(filename, fileMode, FileAccess.Write, FileShare.None);
+                    fs.Close();
+                    fs = File.Open(filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                } else if(access == FileAccess.ReadWrite && fileMode == FileMode.Append) {
+                    fs = File.Open(filename, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
+                } else {
+                    fs = File.Open(filename, fileMode, access, FileShare.ReadWrite);
+                }
+                
 
                 string mode2;
                 if (fs.CanRead && fs.CanWrite) mode2 = "w+";
@@ -266,7 +281,7 @@ namespace IronPython.Modules {
 
                 return PythonContext.GetContext(context).FileManager.AddToStrongMapping(PythonFile.Create(context, fs, filename, mode2));
             } catch (Exception e) {
-                throw ToPythonException(e);
+                throw ToPythonException(e, filename);
             }
         }
 
@@ -389,9 +404,11 @@ namespace IronPython.Modules {
             }
         }
 
+#if !SILVERLIGHT
         public static void remove(string path) {
             UnlinkWorker(path);
         }
+#endif
 
         public static void rename(string src, string dst) {
             try {
@@ -405,7 +422,7 @@ namespace IronPython.Modules {
             try {
                 Directory.Delete(path);
             } catch (Exception e) {
-                throw ToPythonException(e);
+                throw ToPythonException(e, path);
             }
         }
 
@@ -493,7 +510,7 @@ namespace IronPython.Modules {
                 process.StartInfo.FileName = path;
                 process.StartInfo.UseShellExecute = false;
             } catch (Exception e) {
-                throw ToPythonException(e);
+                throw ToPythonException(e, path);
             }
 
             if (!process.Start()) {
@@ -599,13 +616,13 @@ namespace IronPython.Modules {
 
                 process.Start();
             } catch (Exception e) {
-                throw ToPythonException(e);
+                throw ToPythonException(e, filename);
             }
         }
 #endif
 
-        [PythonType]
-        public class stat_result : ISequence {
+        [PythonType, DontMapIEnumerableToIter]
+        public class stat_result : IList, IList<object> {
             private readonly object _mode, _size, _atime, _mtime, _ctime, _st_atime, _st_mtime, _st_ctime, _ino, _dev, _nlink, _uid, _gid;
 
             public const int n_fields = 13;
@@ -626,11 +643,11 @@ namespace IronPython.Modules {
                 _ino = _dev = _nlink = _uid = _gid = ScriptingRuntimeHelpers.Int32ToObject(0);                
             }
 
-            public stat_result(CodeContext/*!*/ context, ISequence statResult, [DefaultParameterValue(null)]PythonDictionary dict) {
+            public stat_result(CodeContext/*!*/ context, IList statResult, [DefaultParameterValue(null)]PythonDictionary dict) {
                 // dict is allowed by CPython's stat_result, but doesn't seem to do anything, so we ignore it here.
 
-                if (statResult.__len__() < 10) {
-                    throw PythonOps.TypeError("stat_result() takes an at least 10-sequence ({0}-sequence given)", statResult.__len__());
+                if (statResult.Count < 10) {
+                    throw PythonOps.TypeError("stat_result() takes an at least 10-sequence ({0}-sequence given)", statResult.Count);
                 }
 
                 _mode = statResult[0];
@@ -645,7 +662,7 @@ namespace IronPython.Modules {
                 _ctime = statResult[9];
 
                 object dictTime;
-                if (statResult.__len__() >= 11) {
+                if (statResult.Count >= 11) {
                     _st_atime = TryShrinkToInt(statResult[10]);
                 } else if (TryGetDictValue(dict, "st_atime", out dictTime)) {
                     _st_atime = dictTime;
@@ -653,7 +670,7 @@ namespace IronPython.Modules {
                     _st_atime = TryShrinkToInt(_atime);
                 }
 
-                if (statResult.__len__() >= 12) {
+                if (statResult.Count >= 12) {
                     _st_mtime = TryShrinkToInt(statResult[11]);
                 } else if (TryGetDictValue(dict, "st_mtime", out dictTime)) {
                     _st_mtime = dictTime;
@@ -661,7 +678,7 @@ namespace IronPython.Modules {
                     _st_mtime = TryShrinkToInt(_mtime);
                 }
 
-                if (statResult.__len__() >= 13) {
+                if (statResult.Count >= 13) {
                     _st_ctime = TryShrinkToInt(statResult[12]);
                 } else if (TryGetDictValue(dict, "st_ctime", out dictTime)) {
                     _st_ctime = dictTime;
@@ -751,6 +768,50 @@ namespace IronPython.Modules {
                 }
             }
 
+            public static PythonTuple operator +(stat_result stat, PythonTuple tuple) {
+                return stat.MakeTuple() + tuple;
+            }
+
+            public static bool operator >(stat_result stat, IList o) {
+                return stat.MakeTuple() > PythonTuple.Make(o);
+            }
+
+            public static bool operator <(stat_result stat, IList o) {
+                return stat.MakeTuple() > PythonTuple.Make(o);
+            }
+
+            public static bool operator >=(stat_result stat, IList o) {
+                return stat.MakeTuple() >= PythonTuple.Make(o);
+            }
+
+            public static bool operator <=(stat_result stat, IList o) {
+                return stat.MakeTuple() >= PythonTuple.Make(o);
+            }
+
+            public static bool operator >(stat_result stat, object o) {
+                return true;
+            }
+
+            public static bool operator <(stat_result stat, object o) {
+                return false;
+            }
+
+            public static bool operator >=(stat_result stat, object o) {
+                return true;
+            }
+
+            public static bool operator <=(stat_result stat, object o) {
+                return false;
+            }
+
+            public static PythonTuple operator *(stat_result stat, int size) {
+                return stat.MakeTuple() * size;
+            }
+
+            public static PythonTuple operator *(int size, stat_result stat) {
+                return stat.MakeTuple() * size;
+            }
+
             public override string ToString() {
                 return MakeTuple().ToString();
             }
@@ -838,6 +899,152 @@ namespace IronPython.Modules {
             }
 
             #endregion
+
+            #region IList<object> Members
+
+            int IList<object>.IndexOf(object item) {
+                return MakeTuple().IndexOf(item);
+            }
+
+            void IList<object>.Insert(int index, object item) {
+                throw new InvalidOperationException();
+            }
+
+            void IList<object>.RemoveAt(int index) {
+                throw new InvalidOperationException();
+            }
+
+            object IList<object>.this[int index] {
+                get {
+                    return MakeTuple()[index];
+                }
+                set {
+                    throw new InvalidOperationException();
+                }
+            }
+
+            #endregion
+
+            #region ICollection<object> Members
+
+            void ICollection<object>.Add(object item) {
+                throw new InvalidOperationException();
+            }
+
+            void ICollection<object>.Clear() {
+                throw new InvalidOperationException();
+            }
+
+            bool ICollection<object>.Contains(object item) {
+                return __contains__(item);
+            }
+
+            void ICollection<object>.CopyTo(object[] array, int arrayIndex) {
+                throw new NotImplementedException();
+            }
+
+            int ICollection<object>.Count {
+                get { return __len__(); }
+            }
+
+            bool ICollection<object>.IsReadOnly {
+                get { return true; }
+            }
+
+            bool ICollection<object>.Remove(object item) {
+                throw new InvalidOperationException();
+            }
+
+            #endregion
+
+            #region IEnumerable<object> Members
+
+            IEnumerator<object> IEnumerable<object>.GetEnumerator() {
+                foreach (object o in MakeTuple()) {
+                    yield return o;
+                }
+            }
+
+            #endregion
+
+            #region IEnumerable Members
+
+            IEnumerator IEnumerable.GetEnumerator() {
+                foreach (object o in MakeTuple()) {
+                    yield return o;
+                }
+            }
+
+            #endregion
+
+            #region IList Members
+
+            int IList.Add(object value) {
+                throw new InvalidOperationException();
+            }
+
+            void IList.Clear() {
+                throw new InvalidOperationException();
+            }
+
+            bool IList.Contains(object value) {
+                return __contains__(value);
+            }
+
+            int IList.IndexOf(object value) {
+                return MakeTuple().IndexOf(value);
+            }
+
+            void IList.Insert(int index, object value) {
+                throw new InvalidOperationException();
+            }
+
+            bool IList.IsFixedSize {
+                get { return true; }
+            }
+
+            bool IList.IsReadOnly {
+                get { return true; }
+            }
+
+            void IList.Remove(object value) {
+                throw new InvalidOperationException();
+            }
+
+            void IList.RemoveAt(int index) {
+                throw new InvalidOperationException();
+            }
+
+            object IList.this[int index] {
+                get {
+                    return MakeTuple()[index];
+                }
+                set {
+                    throw new InvalidOperationException();
+                }
+            }
+
+            #endregion
+
+            #region ICollection Members
+
+            void ICollection.CopyTo(Array array, int index) {
+                throw new NotImplementedException();
+            }
+
+            int ICollection.Count {
+                get { return __len__(); }
+            }
+
+            bool ICollection.IsSynchronized {
+                get { return false; }
+            }
+
+            object ICollection.SyncRoot {
+                get { return this; }
+            }
+
+            #endregion
         }
 
         private static bool HasExecutableExtension(string path) {
@@ -866,7 +1073,7 @@ namespace IronPython.Modules {
                         mode |= S_IEXEC;
                     }
                 } else {
-                    throw PythonExceptions.CreateThrowable(WindowsError, PythonErrorNumber.ENOENT, "file does not exist: " + path);
+                    throw PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._WindowsError.ERROR_PATH_NOT_FOUND, "file does not exist: " + path);
                 }
 
                 long st_atime = (long)PythonTime.TicksToTimestamp(fi.LastAccessTime.ToUniversalTime().Ticks);
@@ -879,9 +1086,9 @@ namespace IronPython.Modules {
 
                 sr = new stat_result(mode, size, st_atime, st_mtime, st_ctime);
             } catch (ArgumentException) {
-                throw PythonExceptions.CreateThrowable(WindowsError, PythonErrorNumber.EINVAL, "The path is invalid: " + path);
+                throw PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._WindowsError.ERROR_INVALID_NAME, "The path is invalid: " + path);
             } catch (Exception e) {
-                throw ToPythonException(e);
+                throw ToPythonException(e, path);
             }
 
             return sr;
@@ -975,7 +1182,7 @@ namespace IronPython.Modules {
 
                 return Path.GetFullPath(Path.Combine(dir, prefix ?? String.Empty) + Path.GetRandomFileName());
             } catch (Exception e) {
-                throw ToPythonException(e);
+                throw ToPythonException(e, dir);
             }
         }
 
@@ -1006,27 +1213,27 @@ namespace IronPython.Modules {
             PythonOps.Warn(context, PythonExceptions.RuntimeWarning, "tmpnam is a potential security risk to your program");
             return Path.GetFullPath(Path.GetTempPath() + Path.GetRandomFileName());
         }
-#endif
 
         public static void unlink(string path) {
             UnlinkWorker(path);
         }
 
         private static void UnlinkWorker(string path) {
-            if (path == null) throw new ArgumentNullException("path");
-
-            if (!File.Exists(path)) {
-                throw PythonExceptions.CreateThrowable(WindowsError, PythonErrorNumber.ENOENT, "The file could not be found for deletion: " + path);
+            if (path == null) {
+                throw new ArgumentNullException("path");
+            } else if (path.IndexOfAny(Path.GetInvalidPathChars()) != -1 || Path.GetFileName(path).IndexOfAny(Path.GetInvalidFileNameChars()) != -1) {
+                throw PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._WindowsError.ERROR_INVALID_NAME, "The file could not be found for deletion: " + path);
+            } else if (!File.Exists(path)) {
+                throw PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._WindowsError.ERROR_FILE_NOT_FOUND, "The file could not be found for deletion: " + path);
             }
 
             try {
                 File.Delete(path);
             } catch (Exception e) {
-                throw ToPythonException(e);
+                throw ToPythonException(e, path);
             }
         }
 
-#if !SILVERLIGHT
         public static void unsetenv(string varname) {
             System.Environment.SetEnvironmentVariable(varname, null);
         }
@@ -1069,7 +1276,7 @@ namespace IronPython.Modules {
                     throw PythonOps.TypeError("times value must be a 2-value tuple (atime, mtime)");
                 }
             } catch (Exception e) {
-                throw ToPythonException(e);
+                throw ToPythonException(e, path);
             }
         }
 
@@ -1128,15 +1335,21 @@ namespace IronPython.Modules {
         public const int P_NOWAIT = 1;
         public const int P_NOWAITO = 3;
 
-        // Not implemented:
-        // public static object P_OVERLAY = 2;
-        // public static object P_DETACH = 4;
+        // Not used by IronPython
+        public const int P_OVERLAY = 2;
+        public const int P_DETACH = 4;
+
+        public const int TMP_MAX = 32767;
 
         #endregion
 
         #region Private implementation details
 
         private static Exception ToPythonException(Exception e) {
+            return ToPythonException(e, null);
+        }
+
+        private static Exception ToPythonException(Exception e, string filename) {
             if (e is ArgumentException || e is ArgumentNullException || e is ArgumentTypeException) {
                 // rethrow reasonable exceptions
                 return ExceptionHelpers.UpdateForRethrow(e);
@@ -1145,32 +1358,37 @@ namespace IronPython.Modules {
             string message = e.Message;
             int errorCode;
 
-#if !SILVERLIGHT
             bool isWindowsError = false;
             Win32Exception winExcep = e as Win32Exception;
             if (winExcep != null) {
-                errorCode = ToPythonErrorCode(winExcep.NativeErrorCode);
+                errorCode = winExcep.NativeErrorCode;
                 message = GetFormattedException(e, errorCode);
                 isWindowsError = true;
             } else {
-#endif
+                UnauthorizedAccessException unauth = e as UnauthorizedAccessException;
+                if (unauth != null) {
+                    isWindowsError = true;
+                    errorCode = PythonExceptions._WindowsError.ERROR_ACCESS_DENIED;
+                    if (filename != null) {
+                        message = string.Format("Access is denied: '{0}'", filename);
+                    } else {
+                        message = "Access is denied";
+                    }
+                }
+
                 errorCode = System.Runtime.InteropServices.Marshal.GetHRForException(e);
                 if ((errorCode & ~0xfff) == (unchecked((int)0x80070000))) {
                     // Win32 HR, translate HR to Python error code if possible, otherwise
                     // report the HR.
-                    errorCode = ToPythonErrorCode(errorCode & 0xfff);
+                    errorCode = errorCode & 0xfff;
                     message = GetFormattedException(e, errorCode);
-#if !SILVERLIGHT
                     isWindowsError = true;
-#endif
                 }
-#if !SILVERLIGHT
             }
 
             if (isWindowsError) {
                 return PythonExceptions.CreateThrowable(WindowsError, errorCode, message);
             }
-#endif
 
             return PythonExceptions.CreateThrowable(PythonExceptions.OSError, errorCode, message);
         }
@@ -1178,33 +1396,8 @@ namespace IronPython.Modules {
         private static string GetFormattedException(Exception e, int hr) {
             return "[Errno " + hr.ToString() + "] " + e.Message;
         }
-
-        private static int ToPythonErrorCode(int win32ErrorCode) {
-            switch (win32ErrorCode) {
-                case ERROR_FILE_EXISTS:       return PythonErrorNumber.EEXIST; 
-                case ERROR_ACCESS_DENIED:     return PythonErrorNumber.EACCES; 
-                case ERROR_DLL_NOT_FOUND:
-                case ERROR_FILE_NOT_FOUND:
-                case ERROR_PATH_NOT_FOUND:    return PythonErrorNumber.ENOENT; 
-                case ERROR_CANCELLED:         return PythonErrorNumber.EINTR; 
-                case ERROR_NOT_ENOUGH_MEMORY: return PythonErrorNumber.ENOMEM; 
-                case ERROR_SHARING_VIOLATION: return PythonErrorNumber.EBUSY;  
-                case ERROR_NO_ASSOCIATION:    return PythonErrorNumber.EINVAL; 
-            }
-            return win32ErrorCode;
-        }
-
+        
         // Win32 error codes
-        private const int ERROR_FILE_EXISTS = 80;
-        private const int ERROR_ACCESS_DENIED = 5; // Access to the specified file is denied. 
-        private const int ERROR_FILE_NOT_FOUND = 2; //The specified file was not found. 
-        private const int ERROR_PATH_NOT_FOUND = 3; // The specified path was not found. 
-        private const int ERROR_NO_ASSOCIATION = 1155; //There is no application associated with the given file name extension. 
-        private const int ERROR_DLL_NOT_FOUND = 1157; // One of the library files necessary to run the application can't be found. 
-        private const int ERROR_CANCELLED = 1223; // The function prompted the user for additional information, but the user canceled the request. 
-        private const int ERROR_NOT_ENOUGH_MEMORY = 8; // There is not enough memory to perform the specified action. 
-        private const int ERROR_SHARING_VIOLATION = 32; //A sharing violation occurred. 
-        private const int ERROR_ALREADY_EXISTS = 183;
 
         private const int S_IWRITE = 0x80 + 0x10 + 0x02; // owner / group / world
         private const int S_IREAD = 0x100 + 0x20 + 0x04; // owner / group / world
@@ -1223,8 +1416,16 @@ namespace IronPython.Modules {
 
         private static FileMode FileModeFromFlags(int flags) {
             if ((flags & O_APPEND) != 0) return FileMode.Append;
-            if ((flags & O_CREAT) != 0) return FileMode.CreateNew;
+            if ((flags & O_EXCL) != 0) {
+                if ((flags & O_CREAT) != 0) {
+                    return FileMode.CreateNew;
+                }
+
+                return FileMode.Open;
+            }
+            if ((flags & O_CREAT) != 0) return FileMode.Create;            
             if ((flags & O_TRUNC) != 0) return FileMode.Truncate;
+            
             return FileMode.Open;
         }
 
@@ -1291,8 +1492,11 @@ namespace IronPython.Modules {
                         break;
                     }
                 }
-                if (pos == command.Length)
-                    throw PythonOps.ValueError("mismatch quote in command");
+
+                if (pos == command.Length) {
+                    baseCommand = command.Substring(1).Trim();
+                    command = command + "\"";
+                }
             } else {
                 pos = command.IndexOf(' ');
                 if (pos != -1) {
@@ -1336,11 +1540,7 @@ namespace IronPython.Modules {
         }
 
         private static Exception DirectoryExists() {
-            PythonExceptions._WindowsError err = new PythonExceptions._WindowsError();
-            err.__init__(ERROR_ALREADY_EXISTS, "directory already exists");
-            err.errno = PythonErrorNumber.EEXIST;
-
-            return PythonExceptions.ToClr(err);
+            return PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._WindowsError.ERROR_ALREADY_EXISTS, "directory already exists");
         }
 #endif
 

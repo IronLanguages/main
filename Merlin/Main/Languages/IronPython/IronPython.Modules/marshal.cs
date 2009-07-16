@@ -26,6 +26,7 @@ using Microsoft.Scripting.Runtime;
 [assembly: PythonModule("marshal", typeof(IronPython.Modules.PythonMarshal))]
 namespace IronPython.Modules {
     public static class PythonMarshal {
+        public const string __doc__ = "Provides functions for serializing and deserializing primitive data types.";
 
         #region Public marshal APIs
         public static void dump(object value, PythonFile/*!*/ file) {

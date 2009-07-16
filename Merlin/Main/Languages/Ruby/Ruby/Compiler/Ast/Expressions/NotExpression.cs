@@ -38,8 +38,12 @@ namespace IronRuby.Compiler.Ast {
             return Methods.IsFalse.OpCall(AstFactory.Box(_expression.TransformRead(gen))); 
         }
 
-        internal override Expression/*!*/ ToCondition() {
-            _expression.ToCondition();
+        internal override Expression/*!*/ ToCondition(LexicalScope/*!*/ currentScope) {
+            var newExpression = _expression.ToCondition(currentScope);
+            if (newExpression != _expression) {
+                return new NotExpression(newExpression, Location);
+            }
+
             return this;
         }
     }

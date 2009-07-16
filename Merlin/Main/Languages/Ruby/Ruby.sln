@@ -26,13 +26,17 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{A6B6A5B5-335A-4515-8535-954DE8A953EF}"
 	ProjectSection(SolutionItems) = preProject
 		Scripts\CodeGenerator.rb = Scripts\CodeGenerator.rb
+		RubyCodeCoverage.testrunconfig = RubyCodeCoverage.testrunconfig
+		RubyCodeCoverage.vsmdi = RubyCodeCoverage.vsmdi
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RubySpec", "Tests\RubySpec\RubySpec.csproj", "{534A82C6-3EB0-4888-ABD2-A15284683E8D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronRuby.Tests.VS", "IronRuby.Tests.VS\IronRuby.Tests.VS.csproj", "{7FE874FB-A5C8-4EE6-A725-472CFA16BE7E}"
+EndProject
 Global
 	GlobalSection(TeamFoundationVersionControl) = preSolution
-		SccNumberOfProjects = 13
+		SccNumberOfProjects = 14
 		SccEnterpriseProvider = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
 		SccTeamFoundationServer = http://vstfdevdiv:8080/
 		SccLocalPath0 = .
@@ -72,6 +76,12 @@ Global
 		SccProjectUniqueName12 = ..\\..\\..\\..\\ndp\\fx\\src\\Dynamic\\System\\Dynamic\\Microsoft.Dynamic.csproj
 		SccProjectName12 = ../../../../ndp/fx/src/Dynamic/System/Dynamic
 		SccLocalPath12 = ..\\..\\..\\..\\ndp\\fx\\src\\Dynamic\\System\\Dynamic
+		SccProjectUniqueName13 = IronRuby.Tests.VS\\IronRuby.Tests.VS.csproj
+		SccProjectName13 = IronRuby.Tests.VS
+		SccLocalPath13 = IronRuby.Tests.VS
+	EndGlobalSection
+	GlobalSection(TestCaseManagementSettings) = postSolution
+		CategoryFile = RubyCodeCoverage.vsmdi
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -184,6 +194,14 @@ Global
 		{534A82C6-3EB0-4888-ABD2-A15284683E8D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{534A82C6-3EB0-4888-ABD2-A15284683E8D}.Silverlight Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{534A82C6-3EB0-4888-ABD2-A15284683E8D}.Silverlight Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7FE874FB-A5C8-4EE6-A725-472CFA16BE7E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7FE874FB-A5C8-4EE6-A725-472CFA16BE7E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7FE874FB-A5C8-4EE6-A725-472CFA16BE7E}.FxCop|Any CPU.ActiveCfg = Release|Any CPU
+		{7FE874FB-A5C8-4EE6-A725-472CFA16BE7E}.FxCop|Any CPU.Build.0 = Release|Any CPU
+		{7FE874FB-A5C8-4EE6-A725-472CFA16BE7E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7FE874FB-A5C8-4EE6-A725-472CFA16BE7E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7FE874FB-A5C8-4EE6-A725-472CFA16BE7E}.Silverlight Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7FE874FB-A5C8-4EE6-A725-472CFA16BE7E}.Silverlight Release|Any CPU.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

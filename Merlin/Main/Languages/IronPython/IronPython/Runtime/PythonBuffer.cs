@@ -76,7 +76,7 @@ namespace IronPython.Runtime {
                     length = arr.Length;
                 } else {
                     IPythonArray pa = (IPythonArray)o;
-                    length = pa.__len__();
+                    length = pa.Count;
                 }
             } else if (o is IPythonBufferable) {
                 length = ((IPythonBufferable)o).Size;
@@ -111,6 +111,13 @@ namespace IronPython.Runtime {
             return res.ToString();
         }
 
+        public int __cmp__([NotNull]PythonBuffer other) {
+            if (Object.ReferenceEquals(this, other)) return 0;
+
+            return PythonOps.Compare(ToString(), other.ToString());
+        }
+
+        [PythonHidden]
         public override bool Equals(object obj) {
             PythonBuffer b = obj as PythonBuffer;
             if (b == null) return false;
@@ -214,19 +221,6 @@ namespace IronPython.Runtime {
             );                
         }
 
-        public static bool operator ==(PythonBuffer a, PythonBuffer b) {
-            if (Object.ReferenceEquals(a, b)) return true;
-            if (Object.ReferenceEquals(a, null) || Object.ReferenceEquals(b, null)) return false;
-
-            return a._object.Equals(b._object) &&
-                a._offset == b._offset &&
-                a._size == b._size;
-        }
-
-        public static bool operator !=(PythonBuffer a, PythonBuffer b) {
-            return !(a == b);
-        }
-
         public int __len__() {
             return Math.Max(_size, 0);
         }
@@ -250,7 +244,7 @@ namespace IronPython.Runtime {
     /// <summary>
     /// A marker interface so we can recognize and access sequence members on our array objects.
     /// </summary>
-    internal interface IPythonArray : ISequence {
+    internal interface IPythonArray : IList<object> {
         string tostring();
     }
 

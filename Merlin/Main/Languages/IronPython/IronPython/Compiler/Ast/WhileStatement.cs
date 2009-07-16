@@ -58,13 +58,42 @@ namespace IronPython.Compiler.Ast {
             // Only the body is "in the loop" for the purposes of break/continue
             // The "else" clause is outside
             MSAst.LabelTarget breakLabel, continueLabel;
-            MSAst.Expression body = ag.TransformLoopBody(_body, out breakLabel, out continueLabel);
+
+            ConstantExpression constTest = _test as ConstantExpression;
+            if (constTest != null && constTest.Value is int) {
+                // while 0: / while 1:
+                int val = (int)constTest.Value;
+                if (val == 0) {
+                    // completely optimize the loop away
+                    if (_else == null) {
+                        return MSAst.Expression.Empty();
+                    } else {
+                        return ag.Transform(_else);
+                    }
+                }
+
+                MSAst.Expression test = MSAst.Expression.Constant(true);
+                MSAst.Expression res = AstUtils.While(
+                    test,
+                    ag.TransformLoopBody(_body, SourceLocation.Invalid, out breakLabel, out continueLabel),
+                    ag.Transform(_else),
+                    breakLabel,
+                    continueLabel
+                );
+
+                if (_test.Start.Line != _body.Start.Line) {
+                    res = ag.AddDebugInfo(res, _test.Span);
+                }
+
+                return res;
+            }
+
             return AstUtils.While(
                 ag.AddDebugInfo(
                     ag.TransformAndDynamicConvert(_test, typeof(bool)),
                     Header
                 ),
-                body, 
+                ag.TransformLoopBody(_body, _test.Start, out breakLabel, out continueLabel), 
                 ag.Transform(_else),
                 breakLabel,
                 continueLabel

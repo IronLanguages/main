@@ -30,6 +30,8 @@ using IronPython.Runtime.Exceptions;
 [assembly: PythonModule("_bytesio", typeof(IronPython.Modules.PythonBytesIOModule))]
 namespace IronPython.Modules {
     public static class PythonBytesIOModule {
+        public const string __doc__ = null;
+
         /// <summary>
         /// BytesIO([initializer]) -> object
         /// 
@@ -37,6 +39,7 @@ namespace IronPython.Modules {
         /// buffer, ready for reading and writing.
         /// </summary>
         [PythonType("_BytesIO")]
+        [DontMapIDisposableToContextManager]
         public class _BytesIO : IEnumerable, IEnumerator, IDisposable {
             #region Fields and constructors
 
@@ -175,7 +178,7 @@ namespace IronPython.Modules {
                 return len;
             }
 
-            public int readinto([NotNull]ArrayModule.PythonArray buffer) {
+            public int readinto([NotNull]ArrayModule.array buffer) {
                 EnsureOpen();
 
                 int len = Math.Min(_length - _pos, buffer.__len__() * buffer.itemsize);
@@ -405,7 +408,7 @@ namespace IronPython.Modules {
 
             #region IDisposable methods
 
-            public void Dispose() {
+            void IDisposable.Dispose() {
                 close();
             }
 
@@ -413,7 +416,7 @@ namespace IronPython.Modules {
             
             #region IEnumerable methods
 
-            public IEnumerator GetEnumerator() {
+            IEnumerator IEnumerable.GetEnumerator() {
                 return this;
             }
 
@@ -423,14 +426,14 @@ namespace IronPython.Modules {
 
             private object _current = null;
 
-            public object Current {
+            object IEnumerator.Current {
                 get {
                     EnsureOpen();
                     return _current;
                 }
             }
 
-            public bool MoveNext() {
+            bool IEnumerator.MoveNext() {
                 Bytes line = readline(-1);
                 if (line.Count == 0) {
                     return false;
@@ -439,7 +442,7 @@ namespace IronPython.Modules {
                 return true;
             }
 
-            public void Reset() {
+            void IEnumerator.Reset() {
                 seek(0, 0);
                 _current = null;
             }
@@ -500,8 +503,8 @@ namespace IronPython.Modules {
                     return DoWrite((byte[])bytes);
                 } else if (bytes is Bytes) {
                     return DoWrite(((Bytes)bytes)._bytes);
-                } else if (bytes is ArrayModule.PythonArray) {
-                    return DoWrite(((ArrayModule.PythonArray)bytes).ToByteArray());
+                } else if (bytes is ArrayModule.array) {
+                    return DoWrite(((ArrayModule.array)bytes).ToByteArray());
                 } else if (bytes is PythonBuffer) {
                     return DoWrite(((PythonBuffer)bytes).ToString());
                 } else if (bytes is ICollection<byte>) {

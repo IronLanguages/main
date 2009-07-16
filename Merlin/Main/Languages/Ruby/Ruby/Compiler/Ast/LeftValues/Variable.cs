@@ -17,11 +17,11 @@ using System.Diagnostics;
 using System.Dynamic;
 using Microsoft.Scripting;
 using MSA = System.Linq.Expressions;
+using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Compiler.Ast {
     using Ast = System.Linq.Expressions.Expression;
-    using Microsoft.Scripting.Utils;
 
     public abstract class Variable : LeftValue {
         private readonly string/*!*/ _name;

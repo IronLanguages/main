@@ -52,7 +52,7 @@ namespace IronPython.Modules {
             /// raw determines if the cdata is returned or if the primitive value is
             /// returned.  This is only applicable for subtypes of simple cdata types.
             /// </summary>
-            object GetValue(MemoryHolder/*!*/ owner, int offset, bool raw);
+            object GetValue(MemoryHolder/*!*/ owner, object readingFrom, int offset, bool raw);
 
             /// <summary>
             /// Serializes the provided value into the specified address at the given

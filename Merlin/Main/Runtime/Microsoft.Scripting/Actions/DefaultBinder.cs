@@ -39,40 +39,6 @@ namespace Microsoft.Scripting.Actions {
             : base(manager) {
         }
 
-        /// <summary>
-        /// Produces a rule for the specified Action for the given arguments.
-        /// 
-        /// The default implementation can produce rules for standard .NET types.  Languages should
-        /// override this and provide any custom behavior they need and fallback to the default
-        /// implementation if no custom behavior is required.
-        /// </summary>
-        protected override void MakeRule(OldDynamicAction action, object[] args, RuleBuilder rule) {
-            ContractUtils.RequiresNotNull(action, "action");
-            ContractUtils.RequiresNotNull(args, "args");
-
-            object[] extracted;
-            CodeContext callerContext = ExtractCodeContext(args, out extracted);
-
-            ContractUtils.RequiresNotNull(callerContext, "callerContext");
-
-            switch (action.Kind) {
-                case DynamicActionKind.GetMember:
-                    new GetMemberBinderHelper(callerContext, (OldGetMemberAction)action, extracted, rule).MakeNewRule();
-                    return;
-                case DynamicActionKind.SetMember:
-                    new SetMemberBinderHelper(callerContext, (OldSetMemberAction)action, extracted, rule).MakeNewRule();
-                    return;
-                case DynamicActionKind.DeleteMember:
-                    new DeleteMemberBinderHelper(callerContext, (OldDeleteMemberAction)action, extracted, rule).MakeRule();
-                    return;
-                case DynamicActionKind.ConvertTo:
-                    new ConvertToBinderHelper(callerContext, (OldConvertToAction)action, extracted, rule).MakeRule();
-                    return;
-                default:
-                    throw new NotImplementedException(action.ToString());
-            }
-        }
-
         protected static CodeContext ExtractCodeContext(object[] args, out object[] extracted) {
             CodeContext cc;
             if (args.Length > 0 && (cc = args[0] as CodeContext) != null) {

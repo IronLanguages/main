@@ -37,7 +37,7 @@ namespace IronRuby.Compiler.Ast {
             return Ast.Empty();
         }
 
-        protected override MSA.Expression VisitChildren(Func<MSA.Expression, MSA.Expression> visitor) {
+        protected override MSA.Expression VisitChildren(MSA.ExpressionVisitor visitor) {
             return this;
         }
     }

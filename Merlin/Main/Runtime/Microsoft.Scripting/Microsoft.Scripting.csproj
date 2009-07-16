@@ -134,11 +134,13 @@
     <Compile Include="Actions\Calls\ReturnReferenceArgBuilder.cs" />
     <Compile Include="Actions\Calls\SimpleArgBuilder.cs" />
     <Compile Include="Actions\Calls\TypeInferer.cs" />
+    <Compile Include="Actions\ConversionResultKind.cs" />
     <Compile Include="Actions\DefaultBinder.Operations.cs" />
     <Compile Include="Actions\Interceptor.cs" />
     <Compile Include="Actions\DynamicSiteHelper.cs" />
     <Compile Include="Actions\ExtensionBinaryOperationBinder.cs" />
     <Compile Include="Actions\ExtensionUnaryOperationBinder.cs" />
+    <Compile Include="Actions\MemberRequestKind.cs" />
     <Compile Include="Actions\OperationBinder.cs" />
     <Compile Include="Actions\OperationMetaObject.cs" />
     <Compile Include="ArgumentTypeException.cs" />
@@ -213,12 +215,10 @@
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
     </Compile>
-    <Compile Include="Actions\BinderHelper.cs" />
     <Compile Include="Actions\BinderHelpers.cs" />
     <Compile Include="Actions\ComboActionRewriter.cs" />
     <Compile Include="Actions\ComboBinder.cs" />
     <Compile Include="Actions\ConditionalBuilder.cs" />
-    <Compile Include="Actions\ConvertToBinderHelper.cs" />
     <Compile Include="Actions\DefaultBinder.Conversions.cs" />
     <Compile Include="Actions\DefaultBinder.DeleteMember.cs" />
     <Compile Include="Actions\DefaultBinder.GetMember.cs" />
@@ -226,12 +226,8 @@
     <Compile Include="Actions\DefaultBinder.MethodCalls.cs" />
     <Compile Include="Actions\DefaultBinder.SetMember.cs" />
     <Compile Include="Actions\DefaultBinder.cs" />
-    <Compile Include="Actions\DeleteMemberBinderHelper.cs" />
-    <Compile Include="Actions\GetMemberBinderHelper.cs" />
-    <Compile Include="Actions\MemberBinderHelper.cs" />
     <Compile Include="Actions\NoSideEffectsAttribute.cs" />
     <Compile Include="Actions\OperatorInfo.cs" />
-    <Compile Include="Actions\SetMemberBinderHelper.cs" />
     <Compile Include="Hosting\ExceptionOperations.cs" />
     <Compile Include="Ast\BinaryExpression.cs" />
     <Compile Include="Ast\Block.cs" />
@@ -337,15 +333,6 @@
     <Compile Include="DebugOptions.cs" />
     <Compile Include="SpecSharp.cs" />
     <Compile Include="MutableTuple.cs" />
-    <Compile Include="Actions\Old\OldCallAction.cs" />
-    <Compile Include="Actions\Old\OldConvertToAction.cs" />
-    <Compile Include="Actions\Old\OldCreateInstanceAction.cs" />
-    <Compile Include="Actions\Old\OldDeleteMemberAction.cs" />
-    <Compile Include="Actions\Old\OldDoOperationAction.cs" />
-    <Compile Include="Actions\Old\OldDynamicAction.cs" />
-    <Compile Include="Actions\Old\OldGetMemberAction.cs" />
-    <Compile Include="Actions\Old\OldMemberAction.cs" />
-    <Compile Include="Actions\Old\OldSetMemberAction.cs" />
     <Compile Include="Actions\ActionBinder.cs" />
     <Compile Include="Actions\Argument.cs" />
     <Compile Include="Actions\ArgumentType.cs" />

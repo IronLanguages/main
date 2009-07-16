@@ -37,7 +37,7 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 
 using BaseException = IronPython.Runtime.Exceptions.PythonExceptions.BaseException;
-using PythonArray = IronPython.Modules.ArrayModule.PythonArray;
+using PythonArray = IronPython.Modules.ArrayModule.array;
 using SpecialNameAttribute = System.Runtime.CompilerServices.SpecialNameAttribute;
 
 [assembly: PythonModule("socket", typeof(IronPython.Modules.PythonSocket))]
@@ -916,7 +916,7 @@ namespace IronPython.Modules {
                     socket.connect(sockaddress);
                     return socket;
                 } catch (Exception ex) {
-                    if (PythonOps.CheckException(ex, error(context)) == null) {
+                    if (PythonOps.CheckException(context, ex, error(context)) == null) {
                         continue;
                     }
                     if (socket != null) {

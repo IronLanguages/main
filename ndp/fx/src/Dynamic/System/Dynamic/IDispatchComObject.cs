@@ -342,7 +342,7 @@ namespace System.Dynamic {
             funcDescHandle = pFuncDesc;
         }
 
-#if MICROSOFT_DYNAMIC
+#if CLR2
         [SecurityCritical, SecurityTreatAsSafe]
 #else
         [SecuritySafeCritical]
@@ -505,7 +505,7 @@ namespace System.Dynamic {
             return typeInfoCoClass;
         }
 
-#if MICROSOFT_DYNAMIC
+#if CLR2
         [SecurityCritical, SecurityTreatAsSafe]
 #else
         [SecuritySafeCritical]

@@ -18,22 +18,21 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Threading;
-using Microsoft.Scripting;
-using Microsoft.Scripting.Actions;
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
 using IronRuby.Builtins;
 using IronRuby.Compiler;
 using IronRuby.Runtime.Calls;
-using System.Dynamic;
+using Microsoft.Scripting;
 using Microsoft.Scripting.Math;
-using System.Runtime.CompilerServices;
-using Microsoft.Scripting.Generation;
+using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 namespace IronRuby.Runtime {
+    using EvalEntryPointDelegate = Func<RubyScope, object, RubyModule, Proc, object>;
+
     public static class RubyUtils {
         #region Objects
 
@@ -60,7 +59,7 @@ namespace IronRuby.Runtime {
 
         public static void RequiresNotFrozen(RubyContext/*!*/ context, object/*!*/ obj) {
             if (context.IsObjectFrozen(obj)) {
-                throw RubyExceptions.CreateTypeError("can't modify frozen object");
+                throw RubyExceptions.CreateObjectFrozenError();
             }
         }
 
@@ -491,13 +490,15 @@ namespace IronRuby.Runtime {
 
         #region Tracking operations that have the potential for infinite recursion
 
+        public static readonly MutableString InfiniteRecursionMarker = MutableString.Create("[...]").Freeze();
+
         public class RecursionTracker {
             [ThreadStatic]
             private Dictionary<object, bool> _infiniteTracker;
 
             private Dictionary<object, bool> TryPushInfinite(object obj) {
                 if (_infiniteTracker == null) {
-                    _infiniteTracker = new Dictionary<object, bool>(ReferenceEqualityComparer<object>.Instance);
+                    _infiniteTracker = new Dictionary<object, bool>(ReferenceEqualityComparer.Instance);
                 }
                 Dictionary<object, bool> infinite = _infiniteTracker;
                 if (infinite.ContainsKey(obj)) {
@@ -644,13 +645,12 @@ namespace IronRuby.Runtime {
                 targetScope,
                 self,
                 module,
-                (methodScope != null) ? methodScope.BlockParameter : null,
-                targetScope.RuntimeFlowControl
+                (methodScope != null) ? methodScope.BlockParameter : null
             );
         }
 
         private static RubyModuleScope/*!*/ CreateModuleEvalScope(RubyScope/*!*/ parent, object self, RubyModule module) {
-            RubyModuleScope scope = new RubyModuleScope(parent, module, true, parent.RuntimeFlowControl, self);
+            RubyModuleScope scope = new RubyModuleScope(parent, module, true, self);
             scope.SetDebugName("top-module/instance-eval");
             return scope;
         }

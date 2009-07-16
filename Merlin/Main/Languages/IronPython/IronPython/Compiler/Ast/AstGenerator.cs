@@ -34,6 +34,7 @@ using IronPython.Runtime.Binding;
 using IronPython.Runtime.Operations;
 
 using AstUtils = Microsoft.Scripting.Ast.Utils;
+using Debugging = Microsoft.Scripting.Debugging;
 using MSAst = System.Linq.Expressions;
 
 namespace IronPython.Compiler.Ast {
@@ -42,7 +43,6 @@ namespace IronPython.Compiler.Ast {
     internal class AstGenerator {
         private readonly CompilerContext/*!*/ _context;                 // compiler context (source unit, etc...) that we are compiling against
         private readonly bool _print;                                   // true if we should print expression statements
-        private readonly LabelTarget _generatorLabel;                   // the label, if we're transforming for a generator function
         private readonly string _name;                                  // the name of the method, module, etc...
         private int? _curLine;                                          // tracks what the current line we've emitted at code-gen time
         private MSAst.ParameterExpression _lineNoVar, _lineNoUpdated;   // the variable used for storing current line # and if we need to store to it
@@ -62,18 +62,25 @@ namespace IronPython.Compiler.Ast {
         private readonly AstGenerator/*!*/ _parent;                     // the parent generator
         private readonly string/*!*/ _profilerName;                     // a human-friendly name to be used as the output form the profiler
         private Dictionary<PythonVariable, MSAst.Expression> _localLifted; // expressions for how we refer to lifted variables locally
-        internal bool _isEmittingFinally;                                // true if we're emitting a finally (used for proper handling of exception tracking during rethrow)
+        internal bool _isEmittingFinally;                               // true if we're emitting a finally (used for proper handling of exception tracking during rethrow)
+        private readonly bool _isGenerator;                             // true if we're a generator
+        
+        internal int _loopOrFinallyId;                                  // unique id used to identify a loop
+        private Dictionary<int, bool> _loopIds;                         // hashset of current loopids        
+        private Dictionary<int, Dictionary<int, bool>> _loopLocations;  // list of all loop locations - used for debugging/tracing support to disallow jumping into loops
+        private Dictionary<int, bool> _handlerLocations;                // list of all exception handlers and finallys.  - used for debugging/tracing support to disallow jumping into handlers.  Value is true if handler is finally
 
         private static readonly Dictionary<string, MethodInfo> _HelperMethods = new Dictionary<string, MethodInfo>(); // cache of helper methods
         private static readonly MethodInfo _UpdateStackTrace = typeof(ExceptionHelpers).GetMethod("UpdateStackTrace");
         private static readonly MSAst.Expression _GetCurrentMethod = Ast.Call(typeof(MethodBase).GetMethod("GetCurrentMethod"));
         internal static readonly MSAst.Expression[] EmptyExpression = new MSAst.Expression[0];
         internal static readonly MSAst.BlockExpression EmptyBlock = Ast.Block(AstUtils.Empty());
+        internal static readonly LabelTarget GeneratorLabel = Ast.Label(typeof(object), "generatorLabel");
         private const string NameForExec = "module: <exec>";
 
         private AstGenerator(string name, bool generator, string profilerName, bool print) {
             _print = print;
-            _generatorLabel = generator ? Ast.Label(typeof(object), "generatorLabel") : null;
+            _isGenerator = generator;
 
             _name = name;
             _locals = new List<ParameterExpression>();
@@ -182,11 +189,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal bool IsGenerator {
-            get { return _generatorLabel != null; }
-        }
-
-        internal LabelTarget GeneratorLabel {
-            get { return _generatorLabel; }
+            get { return _isGenerator; }
         }
 
         public bool InLoop {
@@ -213,7 +216,7 @@ namespace IronPython.Compiler.Ast {
         public MSAst.LabelTarget ReturnLabel {
             get {
                 if (_returnLabel == null) {
-                    _returnLabel = MSAst.Expression.Label(typeof(object));
+                    _returnLabel = MSAst.Expression.Label(typeof(object), "return");
                 }
                 return _returnLabel;
             }
@@ -225,6 +228,43 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
+        public Dictionary<int, bool> LoopOrFinallyIds {
+            get {
+                if (_loopIds == null) {
+                    _loopIds = new Dictionary<int, bool>();
+                }
+                return _loopIds; 
+            }
+        }
+
+        public Dictionary<int, Dictionary<int, bool>> LoopOrFinallyLocations {
+            get {
+                if (_loopLocations == null) {
+                    _loopLocations = new Dictionary<int, Dictionary<int, bool>>();
+                }
+                return _loopLocations; 
+            }
+        }
+
+        public Dictionary<int, Dictionary<int, bool>> LoopLocationsNoCreate {
+            get { return _loopLocations; }
+        }
+
+        public Dictionary<int, bool> HandlerLocations {
+            get {
+                if (_handlerLocations == null) {
+                    _handlerLocations = new Dictionary<int, bool>();
+                }
+                return _handlerLocations; 
+            }
+        }
+
+        public Dictionary<int, bool> HandlerLocationsNoCreate {
+            get {
+                return _handlerLocations;
+            }
+        }
+        
         public MSAst.ParameterExpression/*!*/ GetTemporary(string name) {
             return GetTemporary(name, typeof(object));
         }
@@ -467,11 +507,20 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal MSAst.Expression/*!*/ AddDebugInfo(MSAst.Expression/*!*/ expression, SourceLocation start, SourceLocation end) {
+            if (PyContext.PythonOptions.GCStress != null) {
+                expression = Ast.Block(
+                    Ast.Call(
+                        typeof(GC).GetMethod("Collect", new[] { typeof(int) }), 
+                        Ast.Constant(PyContext.PythonOptions.GCStress.Value)
+                    ),
+                    expression
+                );
+            }
             return Utils.AddDebugInfo(expression, _document, start, end);
         }
 
         internal MSAst.Expression/*!*/ AddDebugInfo(MSAst.Expression/*!*/ expression, SourceSpan location) {
-            return Utils.AddDebugInfo(expression, _document, location.Start, location.End);
+            return AddDebugInfo(expression, location.Start, location.End);
         }
 
         internal MSAst.Expression/*!*/ AddDebugInfoAndVoid(MSAst.Expression/*!*/ expression, SourceSpan location) {
@@ -667,6 +716,42 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
+        public MSAst.Expression TransformMaybeSingleLineSuite(Statement body, SourceLocation prevStart) {
+            MSAst.Expression res;
+            if (body.Start.Line == prevStart.Line) {
+                // avoid creating and throwing away as much line number goo as we can...
+                res = body.Transform(this);
+            } else {
+                res = Transform(body);
+            }
+
+            MSAst.BlockExpression block = res as MSAst.BlockExpression;
+            if (block != null && block.Expressions.Count > 0) {
+                MSAst.DebugInfoExpression dbgInfo = block.Expressions[0] as MSAst.DebugInfoExpression;
+                // body on the same line as an if, don't generate a 2nd sequence point
+                if (dbgInfo != null && dbgInfo.StartLine == prevStart.Line) {
+                    // we remove the debug info based upon how it's generated in DebugStatement.AddDebugInfo which is
+                    // the helper method which adds the debug info.
+                    if (block.Type == typeof(void)) {
+                        Debug.Assert(block.Expressions.Count == 3);
+                        Debug.Assert(block.Expressions[2] is MSAst.DebugInfoExpression && ((MSAst.DebugInfoExpression)block.Expressions[2]).IsClear);
+                        res = block.Expressions[1];
+                    } else {
+                        Debug.Assert(block.Expressions.Count == 4);
+                        Debug.Assert(block.Expressions[3] is MSAst.DebugInfoExpression && ((MSAst.DebugInfoExpression)block.Expressions[2]).IsClear);
+                        Debug.Assert(block.Expressions[1] is MSAst.BinaryExpression && ((MSAst.BinaryExpression)block.Expressions[2]).NodeType == MSAst.ExpressionType.Assign);
+                        res = ((MSAst.BinaryExpression)block.Expressions[1]).Right;
+                    }
+                }
+            }
+
+            if (res.Type != typeof(void)) {
+                res = AstUtils.Void(res);
+            }
+
+            return res;
+        }
+
         internal MSAst.Expression[] Transform(Expression[] expressions) {
             return Transform(expressions, typeof(object));
         }
@@ -695,10 +780,13 @@ namespace IronPython.Compiler.Ast {
             Debug.Assert(from != null);
             MSAst.Expression[] to = new MSAst.Expression[from.Length];
 
+            SourceLocation start = SourceLocation.Invalid;
+
             for (int i = 0; i < from.Length; i++) {
                 Debug.Assert(from[i] != null);
 
-                to[i] = TransformWithLineNumberUpdate(from[i]);
+                to[i] = TransformMaybeSingleLineSuite(from[i], start);
+                start = from[i].Start;
             }
             return to;
         }
@@ -726,6 +814,12 @@ namespace IronPython.Compiler.Ast {
                 );
             }
 
+            if (InFinally || InLoop) {
+                if (!LoopOrFinallyLocations.ContainsKey(fromStmt.Span.Start.Line)) {
+                    LoopOrFinallyLocations.Add(fromStmt.Span.Start.Line, new Dictionary<int, bool>(LoopOrFinallyIds));
+                }
+            }
+
             return toExpr;
         }
 
@@ -750,22 +844,26 @@ namespace IronPython.Compiler.Ast {
             );
         }
 
-        internal MSAst.Expression TransformLoopBody(Statement body, out LabelTarget breakLabel, out LabelTarget continueLabel) {
+        internal MSAst.Expression TransformLoopBody(Statement body, SourceLocation headerStart, out LabelTarget breakLabel, out LabelTarget continueLabel) {
             // Save state
             bool savedInFinally = _inFinally;
             LabelTarget savedBreakLabel = _breakLabel;
             LabelTarget savedContinueLabel = _continueLabel;
 
+            int loopId = ++_loopOrFinallyId;
+            LoopOrFinallyIds.Add(loopId, false);
+
             _inFinally = false;
-            breakLabel = _breakLabel = Ast.Label();
-            continueLabel = _continueLabel = Ast.Label();
+            breakLabel = _breakLabel = Ast.Label("break");
+            continueLabel = _continueLabel = Ast.Label("continue");
             MSAst.Expression result;
             try {
-                result = Transform(body);
+                result = TransformMaybeSingleLineSuite(body, headerStart);
             } finally {
                 _inFinally = savedInFinally;
                 _breakLabel = savedBreakLabel;
                 _continueLabel = savedContinueLabel;
+                LoopOrFinallyIds.Remove(loopId);
             }
             return result;
         }
@@ -1020,6 +1118,5 @@ namespace IronPython.Compiler.Ast {
         }
 
         #endregion
-
     }    
 }

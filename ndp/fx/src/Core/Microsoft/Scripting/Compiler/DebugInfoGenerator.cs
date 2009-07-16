@@ -13,7 +13,9 @@
  *
  * ***************************************************************************/
 
+#if MICROSOFT_SCRIPTING_CORE
 using ILGenerator = System.Linq.Expressions.Compiler.OffsetTrackingILGenerator;
+#endif
 
 using System;
 using System.Collections.Generic;
@@ -46,7 +48,7 @@ namespace System.Runtime.CompilerServices {
         public abstract void MarkSequencePoint(LambdaExpression method, int ilOffset, DebugInfoExpression sequencePoint);
 
         internal virtual void MarkSequencePoint(LambdaExpression method, MethodBase methodBase, ILGenerator ilg, DebugInfoExpression sequencePoint) {
-            MarkSequencePoint(method, ilg.CurrentOffset, sequencePoint);
+            MarkSequencePoint(method, ilg.ILOffset, sequencePoint);
         }
 
         internal virtual void SetLocalName(LocalBuilder localBuilder, string name) {

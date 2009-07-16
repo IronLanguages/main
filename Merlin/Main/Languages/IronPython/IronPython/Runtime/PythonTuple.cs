@@ -29,7 +29,7 @@ using Microsoft.Scripting.Generation;
 namespace IronPython.Runtime {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
     [PythonType("tuple"), Serializable]
-    public class PythonTuple : ISequence, ICollection, IEnumerable, IEnumerable<object>, IValueEquality, IList<object>, ICodeFormattable, IParameterSequence {
+    public class PythonTuple : ICollection, IEnumerable, IEnumerable<object>, IValueEquality, IList<object>, ICodeFormattable, IList {
         internal readonly object[] _data;
         
         internal static readonly PythonTuple EMPTY = new PythonTuple();
@@ -46,7 +46,7 @@ namespace IronPython.Runtime {
             this._data = ArrayUtils.EmptyObjects;
         }
 
-        internal PythonTuple(IParameterSequence other, object o) {
+        internal PythonTuple(PythonTuple other, object o) {
             this._data = other.Expand(o);
         }
 
@@ -289,7 +289,7 @@ namespace IronPython.Runtime {
 
         #endregion
 
-        object[] IParameterSequence.Expand(object value) {
+        private object[] Expand(object value) {
             object[] args;
             int length = _data.Length;
             if (value == null)
@@ -593,6 +593,47 @@ namespace IronPython.Runtime {
             if (_data.Length == 1) buf.Append(",");
             buf.Append(")");
             return buf.ToString();
+        }
+
+        #endregion
+
+        #region IList Members
+
+        int IList.Add(object value) {
+            throw new InvalidOperationException("Tuple is readonly");
+        }
+
+        void IList.Clear() {
+            throw new InvalidOperationException("Tuple is readonly");
+        }
+
+        void IList.Insert(int index, object value) {
+            throw new InvalidOperationException("Tuple is readonly");
+        }
+
+        bool IList.IsFixedSize {
+            get { return true; }
+        }
+
+        bool IList.IsReadOnly {
+            get { return true; }
+        }
+
+        void IList.Remove(object value) {
+            throw new InvalidOperationException("Tuple is readonly");
+        }
+
+        void IList.RemoveAt(int index) {
+            throw new InvalidOperationException("Tuple is readonly");
+        }
+
+        object IList.this[int index] {
+            get {
+                return this[index];
+            }
+            set {
+                throw new InvalidOperationException("Tuple is readonly");
+            }
         }
 
         #endregion

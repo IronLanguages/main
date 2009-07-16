@@ -41,6 +41,11 @@ namespace IronRuby.Builtins {
         public static string/*!*/ Create(RubyClass/*!*/ self, [NotNull]char[]/*!*/ chars) {
             return new String(chars);
         }
+
+        [RubyConstructor]
+        public static string/*!*/ Create(RubyClass/*!*/ self, [NotNull]char[]/*!*/ chars, int startIndex, int length) {
+            return new String(chars, startIndex, length);
+        }
     }
 
     /// <summary>

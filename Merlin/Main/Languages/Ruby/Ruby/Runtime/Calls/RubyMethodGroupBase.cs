@@ -233,6 +233,23 @@ namespace IronRuby.Runtime.Calls {
                 if (ReferenceEquals(bindingTarget.Method, Methods.CreateDefaultInstance)) {
                     Debug.Assert(args.TargetClass.TypeTracker.Type.IsValueType);
                     metaBuilder.Result = Ast.New(args.TargetClass.TypeTracker.Type);
+                } else if (args.Signature.IsVirtualCall && bindingTarget.Method.IsVirtual) {
+                    // Virtual methods that have been detached from the CLR type and 
+                    // defined on the corresponding Ruby class or its subclass are not
+                    // directly invoked from a dynamic virtual call to prevent recursion.
+                    // Instead the base call is performed. 
+                    //
+                    // Example:
+                    // class C < ArrayList           
+                    //   define_method(:Add, instance_method(:Add))          
+                    // end
+                    // 
+                    // C.new.Add(1)
+                    // 
+                    // C.new.Add dispatches to the virtual ArrayList::Add, which in turn dispatches to the auto-generated override C$1::Add.
+                    // That gets here since the defined method is a Ruby method (a detached CLR method group). If we called it directly
+                    // it would invoke the C$1::Add override again leading to a stack overflow. So we need to use a base call instead.
+                    metaBuilder.Result = Ast.Field(null, Fields.RubyOps_ForwardToBase);
                 } else {
                     metaBuilder.Result = bindingTarget.MakeExpression();
                 }

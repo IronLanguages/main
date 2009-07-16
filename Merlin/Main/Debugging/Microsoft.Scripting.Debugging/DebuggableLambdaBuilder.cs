@@ -480,6 +480,12 @@ namespace Microsoft.Scripting.Debugging {
             if (_noPushFrameOptimization) {
                 tryExpressions.Add(_pushFrame);
             }
+            
+            tryExpressions.Add(Ast.Call(
+                typeof(RuntimeOps).GetMethod("OnFrameEnterTraceEvent"),
+                _thread
+            ));
+
 
             tryExpressions.Add(
                 _retVal != null ? Ast.Assign(_retVal, debuggableBody) : debuggableBody
@@ -490,29 +496,32 @@ namespace Microsoft.Scripting.Debugging {
             );
 
             MSAst.Expression[] popFrame = new MSAst.Expression[] {
-                AstUtils.If(
-                    Ast.Equal(
-                        _debugMarkerLocationMap.Length > 0 ? 
-                            Ast.Property(_sourceFilesMap[_debugMarkerLocationMap[0].SourceFile], "Mode") :
-                            _globalDebugMode,
-                        AstUtils.Constant((int)DebugMode.FullyEnabled)
-                    ),
-                    Ast.Call(
-                        typeof(RuntimeOps).GetMethod("OnFrameExitTraceEvent"),
-                        _thread,
-                        _debugMarker,
-                        _retVal != null ? (MSAst.Expression)Ast.Convert(_retVal, typeof(object)) : Ast.Constant(null)
+                AstUtils.Try(
+                    AstUtils.If(
+                        Ast.Equal(
+                            _debugMarkerLocationMap.Length > 0 ? 
+                                Ast.Property(_sourceFilesMap[_debugMarkerLocationMap[0].SourceFile], "Mode") :
+                                _globalDebugMode,
+                            AstUtils.Constant((int)DebugMode.FullyEnabled)
+                        ),
+                        Ast.Call(
+                            typeof(RuntimeOps).GetMethod("OnFrameExitTraceEvent"),
+                            _thread,
+                            _debugMarker,
+                            _retVal != null ? (MSAst.Expression)Ast.Convert(_retVal, typeof(object)) : Ast.Constant(null)
+                        )
                     )
-                ),
-                AstUtils.If(
-                    // Fire thead-exit event if PopFrame returns true
-                    Ast.And(
-                        Ast.Equal(Ast.Call(typeof(RuntimeOps).GetMethod("PopFrame"), _thread), Ast.Constant(true)),
-                        Ast.Equal(_globalDebugMode, AstUtils.Constant((int)DebugMode.FullyEnabled))
-                    ),
-                    Ast.Call(
-                        typeof(RuntimeOps).GetMethod("OnThreadExitEvent"),
-                        _thread
+                ).Finally(
+                    AstUtils.If(
+                        // Fire thead-exit event if PopFrame returns true
+                        Ast.AndAlso(
+                            Ast.Equal(Ast.Call(typeof(RuntimeOps).GetMethod("PopFrame"), _thread), Ast.Constant(true)),
+                            Ast.Equal(_globalDebugMode, AstUtils.Constant((int)DebugMode.FullyEnabled))
+                        ),
+                        Ast.Call(
+                            typeof(RuntimeOps).GetMethod("OnThreadExitEvent"),
+                            _thread
+                        )
                     )
                 )
             };
@@ -553,7 +562,7 @@ namespace Microsoft.Scripting.Debugging {
                                 Ast.NotEqual(_globalDebugMode, AstUtils.Constant((int)DebugMode.Disabled)),
                                 _noPushFrameOptimization ? Ast.Empty() : _conditionalPushFrame,
                                 Ast.Call(
-                                    typeof(RuntimeOps).GetMethod("OnTraceEvent"),
+                                    typeof(RuntimeOps).GetMethod("OnTraceEventUnwind"),
                                     _thread,
                                     _debugMarker,
                                     _caughtException

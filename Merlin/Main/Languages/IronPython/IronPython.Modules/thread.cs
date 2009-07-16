@@ -29,6 +29,8 @@ using SpecialName = System.Runtime.CompilerServices.SpecialNameAttribute;
 [assembly: PythonModule("thread", typeof(IronPython.Modules.PythonThread))]
 namespace IronPython.Modules {
     public static class PythonThread {
+        public const string __doc__ = "Provides low level primitives for threading.";
+
         private static readonly object _stackSizeKey = new object();
 
         [SpecialName]

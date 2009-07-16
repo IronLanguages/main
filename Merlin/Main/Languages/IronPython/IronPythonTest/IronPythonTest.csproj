@@ -75,6 +75,7 @@
     <Compile Include="AttrInjectorTest.cs" />
     <Compile Include="BinderTest.cs" />
     <Compile Include="BindTest.cs" />
+    <Compile Include="ClrType.cs" />
     <Compile Include="Cmplx.cs" />
     <Compile Include="Conversions.cs" />
     <Compile Include="DefaultParams.cs" />

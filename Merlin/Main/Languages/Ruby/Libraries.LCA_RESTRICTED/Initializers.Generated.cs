@@ -91,7 +91,8 @@ namespace IronRuby.Builtins {
             ExtendClass(typeof(System.String), null, null, null, null, new IronRuby.Builtins.RubyModule[] {def6, def33, def42}, 
                 new System.Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, System.String>(IronRuby.Builtins.ClrStringOps.Create), 
                 new System.Func<IronRuby.Builtins.RubyClass, System.Char, System.Int32, System.String>(IronRuby.Builtins.ClrStringOps.Create), 
-                new System.Func<IronRuby.Builtins.RubyClass, System.Char[], System.String>(IronRuby.Builtins.ClrStringOps.Create)
+                new System.Func<IronRuby.Builtins.RubyClass, System.Char[], System.String>(IronRuby.Builtins.ClrStringOps.Create), 
+                new System.Func<IronRuby.Builtins.RubyClass, System.Char[], System.Int32, System.Int32, System.String>(IronRuby.Builtins.ClrStringOps.Create)
             );
             DefineGlobalClass("Array", typeof(IronRuby.Builtins.RubyArray), 0x00000003, Context.ObjectClass, LoadArray_Instance, LoadArray_Class, null, new IronRuby.Builtins.RubyModule[] {def33}, 
                 new System.Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.ArrayOps.CreateArray), 
@@ -2833,11 +2834,9 @@ namespace IronRuby.Builtins {
             );
             
             module.DefineLibraryMethod("rand", 0x52, 
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Double>(IronRuby.Builtins.KernelOps.Rand), 
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Int32, System.Object>(IronRuby.Builtins.KernelOps.Rand), 
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Double, System.Object>(IronRuby.Builtins.KernelOps.Rand), 
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, Microsoft.Scripting.Math.BigInteger, System.Object>(IronRuby.Builtins.KernelOps.Rand), 
-                new System.Func<IronRuby.Runtime.ConversionStorage<System.Int32>, System.Object, System.Object, System.Object>(IronRuby.Builtins.KernelOps.Rand)
+                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Double>(IronRuby.Builtins.KernelOps.Random), 
+                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Int32, System.Object>(IronRuby.Builtins.KernelOps.Random), 
+                new System.Func<IronRuby.Runtime.ConversionStorage<IronRuby.Runtime.IntegerValue>, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>(IronRuby.Builtins.KernelOps.Random)
             );
             
             module.DefineLibraryMethod("remove_instance_variable", 0x52, 
@@ -2900,6 +2899,10 @@ namespace IronRuby.Builtins {
             
             module.DefineLibraryMethod("sprintf", 0x52, 
                 new System.Func<IronRuby.Builtins.StringFormatterSiteStorage, System.Object, IronRuby.Builtins.MutableString, System.Object[], IronRuby.Builtins.MutableString>(IronRuby.Builtins.KernelOps.Sprintf)
+            );
+            
+            module.DefineLibraryMethod("srand", 0x52, 
+                new System.Func<IronRuby.Runtime.RubyContext, System.Object, IronRuby.Runtime.IntegerValue, System.Object>(IronRuby.Builtins.KernelOps.SeedRandomNumberGenerator)
             );
             
             module.DefineLibraryMethod("String", 0x52, 
@@ -3116,11 +3119,9 @@ namespace IronRuby.Builtins {
             );
             
             module.DefineLibraryMethod("rand", 0x61, 
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Double>(IronRuby.Builtins.KernelOps.Rand), 
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Int32, System.Object>(IronRuby.Builtins.KernelOps.Rand), 
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Double, System.Object>(IronRuby.Builtins.KernelOps.Rand), 
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, Microsoft.Scripting.Math.BigInteger, System.Object>(IronRuby.Builtins.KernelOps.Rand), 
-                new System.Func<IronRuby.Runtime.ConversionStorage<System.Int32>, System.Object, System.Object, System.Object>(IronRuby.Builtins.KernelOps.Rand)
+                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Double>(IronRuby.Builtins.KernelOps.Random), 
+                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Int32, System.Object>(IronRuby.Builtins.KernelOps.Random), 
+                new System.Func<IronRuby.Runtime.ConversionStorage<IronRuby.Runtime.IntegerValue>, IronRuby.Runtime.RubyContext, System.Object, System.Object, System.Object>(IronRuby.Builtins.KernelOps.Random)
             );
             
             module.DefineLibraryMethod("require", 0x61, 
@@ -3145,6 +3146,10 @@ namespace IronRuby.Builtins {
             
             module.DefineLibraryMethod("sprintf", 0x61, 
                 new System.Func<IronRuby.Builtins.StringFormatterSiteStorage, System.Object, IronRuby.Builtins.MutableString, System.Object[], IronRuby.Builtins.MutableString>(IronRuby.Builtins.KernelOps.Sprintf)
+            );
+            
+            module.DefineLibraryMethod("srand", 0x61, 
+                new System.Func<IronRuby.Runtime.RubyContext, System.Object, IronRuby.Runtime.IntegerValue, System.Object>(IronRuby.Builtins.KernelOps.SeedRandomNumberGenerator)
             );
             
             module.DefineLibraryMethod("String", 0x61, 
@@ -4386,8 +4391,6 @@ namespace IronRuby.Builtins {
         #endif
         
         private static void LoadString_Instance(IronRuby.Builtins.RubyModule/*!*/ module) {
-            module.HideMethod("clone");
-            module.HideMethod("version");
             module.DefineLibraryMethod("%", 0x51, 
                 new System.Func<IronRuby.Builtins.StringFormatterSiteStorage, IronRuby.Builtins.MutableString, System.Object, IronRuby.Builtins.MutableString>(IronRuby.Builtins.MutableStringOps.Format)
             );
@@ -4753,11 +4756,11 @@ namespace IronRuby.Builtins {
             );
             
             module.DefineLibraryMethod("tr", 0x51, 
-                new System.Func<IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>(IronRuby.Builtins.MutableStringOps.Tr)
+                new System.Func<IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>(IronRuby.Builtins.MutableStringOps.GetTranslated)
             );
             
             module.DefineLibraryMethod("tr!", 0x51, 
-                new System.Func<IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>(IronRuby.Builtins.MutableStringOps.TrInPlace)
+                new System.Func<IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>(IronRuby.Builtins.MutableStringOps.Translate)
             );
             
             module.DefineLibraryMethod("tr_s", 0x51, 
