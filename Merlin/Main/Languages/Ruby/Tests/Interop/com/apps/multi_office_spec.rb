@@ -24,7 +24,7 @@ describe "Multiple Office application COM interop support" do
   end
 
   it "allows multiple applications at once" do
-    lambda { @excel.Workbooks[1] }.should_not raise_error
-    lambda { @word.Documents[1] }.should_not raise_error
+    lambda { @excel.Workbooks(1) }.should_not raise_error
+    lambda { @word.Documents(1) }.should_not raise_error
   end
 end

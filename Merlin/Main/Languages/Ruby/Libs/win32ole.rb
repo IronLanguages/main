@@ -28,7 +28,7 @@ class WIN32OLE
       if guid? arg
         type = System::Type.GetTypeFromCLSID arg
       else
-        type = System::Type.get_type_from_prog_i_d arg
+        type = System::Type.GetTypeFromProgID arg
       end
       @com_object = System::Activator.create_instance type
     else
@@ -38,44 +38,20 @@ class WIN32OLE
   
   attr :com_object # The wrapped RCW
   
-  def guid?(str)
-    /[{]?[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}[}]?|[0-9A-F]{32}/ =~ str
-  end
-
-  # The DLR COM binder only supports core types like System.String as arguments.
-  # Passing in a Ruby String will not work. So we convert the Ruby types to
-  # CLR COM interop types as expected by the DLR COM binder
-  def self.ruby_to_com_interop_type(arg)
-    case arg
-    when String
-      arg.to_clr_string
-    when Array
-      element_type = ruby_to_com_interop_type(arg[0]).class
-      converted_elements = ruby_to_com_interop_types arg
-      System::Array[element_type].new converted_elements
-    when WIN32OLE
-      @com_object
-    else
-      arg
-    end
+  def [](name)
+    method_missing name
   end
   
-  def self.ruby_to_com_interop_types(args)
-    args.map { |arg| ruby_to_com_interop_type arg }
+  def []=(name, value)
+    method_missing "#{name}=", value
   end
   
-  def []=(*args)
+  # Used to set indexed property
+  def setproperty(name, *args)
     indices = args[0...-1]
     value = args[-1]
-    if indices.size == 1 and indices[0].respond_to? to_str
-      name = indices[0]
-      method_missing "#{name}=", value
-    else
-      # TODO - MRI requires using parenthesis to access indexed properties.
-      # IronRuby allows square brackets because the tests currently use this syntax.
-      # This should be removed after modifying the tests to use parenthesis.
-      method_missing "[]=", *args
-    end
+    property = @com_object.send name # DLR allows getting to a bound property holder
+    property[*indices] = value
   end
   
   def each(&b)
@@ -93,22 +69,17 @@ class WIN32OLE
       raise NotImplementedError, "Named arguments not supported"
     end
     
-    converted_args = WIN32OLE.ruby_to_com_interop_types(args)
-    if converted_args.size == 1 and converted_args[0] and converted_args[0].kind_of? System::Array
-      # Calling "send" binds to the overload of "send" with "params object[]"
-      # (this behavior only seems to happen in the presence of COM objects).
-      # Hence, we use eval as a work-around
-      a = converted_args[0]
-      result = eval("@com_object.#{name}(a)")
-    else
-      result = @com_object.send name, *converted_args
+    converted_args = ruby_to_com_interop_types(args)
+    
+    begin
+      result = call_method name, converted_args
+    rescue => e
+      # Make sure the method name is in the exception message (useful for COMException)
+      raise e if e.message =~ /#{name}/
+      raise e.class, e.message + " while calling #{name}"
     end
     
-    if result and System::Runtime::InteropServices::Marshal.is_com_object result
-      WIN32OLE.new result
-    else
-      result
-    end
+    convert_return_value result
   end
   
   def self.const_load(ole_object, mod = WIN32OLE)
@@ -139,6 +110,81 @@ class WIN32OLE
   def ole_obj_help
     raise NotImplementedError
   end
+
+  #
+  # Private methods
+  #
+  
+  private
+  
+  def guid?(str)
+    /[{]?[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}[}]?|[0-9A-F]{32}/ =~ str
+  end
+
+  # The DLR COM binder only supports core types like System.String as arguments.
+  # Passing in a Ruby String will not work. So we convert the Ruby types to
+  # CLR COM interop types as expected by the DLR COM binder
+  def ruby_to_com_interop_type(arg)
+    case arg
+    when String
+      arg.to_clr_string
+    when Array
+      element_type = ruby_to_com_interop_type(arg[0]).class
+      converted_elements = ruby_to_com_interop_types arg
+      System::Array[element_type].new converted_elements
+    when WIN32OLE
+      @com_object
+    else
+      arg
+    end
+  end
+  
+  def ruby_to_com_interop_types(args)
+    args.map { |arg| ruby_to_com_interop_type arg }
+  end
+  
+  def call_method(name, converted_args)
+    if converted_args.size == 1 and converted_args[0] and converted_args[0].kind_of? System::Array
+      # Calling "send" binds to the overload of "send" with "params object[]"
+      # (this behavior only seems to happen in the presence of COM objects).
+      # Hence, we use eval as a work-around
+      a = converted_args[0]
+      result = eval("@com_object.#{name}(a)")
+    else
+      begin
+        result = @com_object.send name, *converted_args
+      rescue ArgumentError => e
+        # TODO - In most cases, the send above binds to Kernel#send, and it works as expected
+        # In some cases (seems to be just with the ADODB.Connection COM object), IronRuby tries to call 
+        # :send on the COM object which causes an ArgumentError. So we handle that case directly here.
+        if name.to_s[-1..-1] == "="
+          result = eval("@com_object.#{name.to_s[0...-1]} = converted_args[0]")
+        else
+          result = eval("@com_object.#{name}(*converted_args)")
+        end
+      end
+    end
+  end
+  
+  def convert_return_value(result)
+    case result
+    when nil
+      result
+    when System::String
+      result.to_str
+    when System::Decimal
+      result.to_s
+    when System::DBNull
+      nil
+    else
+      if System::Runtime::InteropServices::Marshal.is_com_object result
+        WIN32OLE.new result
+      else
+        result
+      end
+    end
+  end
+  
 end
 
 class WIN32OLE_EVENT
