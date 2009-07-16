@@ -402,9 +402,23 @@ namespace IronRuby.Compiler.Ast {
             Exit(node);
         }
 
+        internal protected virtual void Walk(RangeCondition/*!*/ node) {
+            if (Enter(node)) {
+                node.Range.Walk(this);
+            }
+            Exit(node);
+        }
+
         internal protected virtual void Walk(RegularExpression/*!*/ node) {
             if (Enter(node)) {
                 VisitList(node.Pattern);
+            }
+            Exit(node);
+        }
+
+        internal protected virtual void Walk(RegularExpressionCondition/*!*/ node) {
+            if (Enter(node)) {
+                node.RegularExpression.Walk(this);
             }
             Exit(node);
         }

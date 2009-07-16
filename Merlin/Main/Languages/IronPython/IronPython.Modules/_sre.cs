@@ -23,6 +23,8 @@ using IronPython.Runtime;
 [assembly: PythonModule("_sre", typeof(IronPython.Modules.PythonSRegEx))]
 namespace IronPython.Modules {
     public static class PythonSRegEx {
+        public const string __doc__ = "non-functional _sre module.  Included only for completeness.";
+
         public const int MAGIC = 20031017;
         public const int CODESIZE = 2;
 

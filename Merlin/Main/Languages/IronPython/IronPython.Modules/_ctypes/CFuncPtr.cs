@@ -502,7 +502,7 @@ namespace IronPython.Modules {
                     Type calliRetType = retVoid ? typeof(void) :
                                    nativeRetType != null ? nativeRetType.GetNativeType() : typeof(int);
 
-#if CTYPES_USE_SNIPPETS
+#if !CTYPES_USE_SNIPPETS
                     DynamicMethod dm = new DynamicMethod("InteropInvoker", retType, sigTypes, DynamicModule);
 #else
                     TypeGen tg = Snippets.Shared.DefineType("InteropInvoker", typeof(object), false, false);
@@ -586,7 +586,7 @@ namespace IronPython.Modules {
 
                     method.Emit(OpCodes.Ret);
 
-#if !CTYPES_USE_SNIPPETS
+#if CTYPES_USE_SNIPPETS
                     return tg.TypeBuilder.CreateType().GetMethod("InteropInvoker");
 #else
                     return dm;

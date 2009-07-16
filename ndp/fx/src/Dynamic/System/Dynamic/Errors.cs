@@ -16,7 +16,7 @@
 
 namespace System.Dynamic {
 
-#if MICROSOFT_DYNAMIC
+#if CLR2
     internal static partial class Strings {
         private static string FormatString(string format, params object[] args) {
             return string.Format(System.Globalization.CultureInfo.CurrentCulture, format, args);

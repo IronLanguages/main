@@ -180,7 +180,7 @@ namespace Microsoft.Scripting.Debugging.CompilerServices {
                 functionInfo = null;
             }
 
-            if (eventKind == TraceEventKind.Exception) {
+            if (eventKind == TraceEventKind.Exception || eventKind == TraceEventKind.ExceptionUnwind) {
                 thread.ThrownException = (Exception)payload;
             }
             thread.IsInTraceback = true;

@@ -13,6 +13,12 @@ describe "String#tr" do
     "123456789".tr("2-5","abcdefg").should == "1abcd6789"
     "hello ^-^".tr("e-", "__").should == "h_llo ^_^"
     "hello ^-^".tr("---", "_").should == "hello ^_^"
+    "abcd".tr("b-a", "AB").should == "abcd"
+  end
+  
+  it "deletes characters if to_string is empty" do
+    "abcdefg".tr("c-e", "").should == "abfg"
+    "^a^b^c^".tr("^", "").should == "abc"
   end
 
   it "pads to_str with its last char if it is shorter than from_string" do
@@ -32,6 +38,7 @@ describe "String#tr" do
     "hello ^-^".tr("^^-^", "x").should == "xxxxxx^x^"
     "hello ^-^".tr("^---", "x").should == "xxxxxxx-x"
     "hello ^-^".tr("^---l-o", "x").should == "xxlloxx-x"
+    "abc".tr("^b", "").should == "b"
   end
 
   it "tries to convert from_str and to_str to strings using to_str" do

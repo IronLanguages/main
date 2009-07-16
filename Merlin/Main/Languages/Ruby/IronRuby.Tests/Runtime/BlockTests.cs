@@ -22,7 +22,7 @@ namespace IronRuby.Tests {
             CompilerTest("1.times { }");
         }
 
-        public void Scenario_RubyBlocks0() {
+        public void RubyBlocks0() {
             AssertOutput(delegate() {
                 CompilerTest(@"
 3.times { |x| print x }
@@ -30,7 +30,7 @@ namespace IronRuby.Tests {
             }, "012");
         }
 
-        public void Scenario_RubyBlocks_Params1() {
+        public void RubyBlocks_Params1() {
             AssertOutput(delegate() {
                 CompilerTest(@"
 def y; yield 0,1,2,3,4,5,6,7,8,9; end
@@ -40,7 +40,7 @@ y { |x0,x1,x2,x3,x4,x5,x6,x7,x8,x9| print x0,x1,x2,x3,x4,x5,x6,x7,x8,x9 }
             }, "0123456789");
         }
 
-        public void Scenario_RubyBlocks_Params2() {
+        public void RubyBlocks_Params2() {
             AssertOutput(delegate() {
                 CompilerTest(@"
 def y; yield 0,1,2,3,4,5,6,7,8,9; end
@@ -89,7 +89,7 @@ end
             }, @"M");
         }
 
-        public void Scenario_RubyBlocks2() {
+        public void RubyBlocks2() {
             AssertExceptionThrown<MissingMethodException>(delegate() {
                 CompilerTest(@"
 3.times { |x| z = 1 }
@@ -98,7 +98,7 @@ puts z # undef z
             });
         }
 
-        public void Scenario_RubyBlocks3() {
+        public void RubyBlocks3() {
             AssertOutput(delegate() {
                 CompilerTest(@"
 class C
@@ -118,7 +118,7 @@ foo
 ");
         }
 
-        public void Scenario_RubyBlocks5() {
+        public void RubyBlocks5() {
             AssertOutput(delegate() {
                 CompilerTest(@"
 class C
@@ -139,7 +139,7 @@ false
         /// <summary>
         /// Return, yield and retry in a method.
         /// </summary>
-        public void Scenario_RubyBlocks6() {
+        public void RubyBlocks6() {
             TestOutputWithEval(@"
 def do_until(cond)
   if cond then #<return#> end
@@ -165,7 +165,7 @@ end
         /// <summary>
         /// Break in a block.
         /// </summary>
-        public void Scenario_RubyBlocks7() {
+        public void RubyBlocks7() {
             AssertOutput(delegate() {
                 CompilerTest(@"
 x = 4.times { |x|
@@ -183,7 +183,7 @@ foo
         /// <summary>
         /// Redo in a block.
         /// </summary>
-        public void Scenario_RubyBlocks8() {
+        public void RubyBlocks8() {
             AssertOutput(delegate() {
                 CompilerTest(@"
 i = 0
@@ -206,7 +206,7 @@ puts x
         /// <summary>
         /// Next in a block.
         /// </summary>
-        public void Scenario_RubyBlocks9() {
+        public void RubyBlocks9() {
             AssertOutput(delegate() {
                 CompilerTest(@"
 i = 0
@@ -232,7 +232,7 @@ bar
         /// <summary>
         /// Retry in a block.
         /// </summary>
-        public void Scenario_RubyBlocks10() {
+        public void RubyBlocks10() {
             AssertOutput(delegate() {
                 CompilerTest(@"
 i = 0
@@ -254,7 +254,7 @@ i = 0
         /// <summary>
         /// Return with stack unwinding.
         /// </summary>
-        public void Scenario_RubyBlocks11() {
+        public void RubyBlocks11() {
             TestOutputWithEval(@"
 def foo
     puts 'begin'
@@ -278,7 +278,7 @@ result
 ");
         }
 
-        public void Scenario_RubyBlocks12() {
+        public void RubyBlocks12() {
             AssertOutput(delegate() {
                 CompilerTest(@"
 def foo
@@ -295,7 +295,7 @@ foo { |a,*b| puts a,'-',b }
 ");
         }
 
-        public void Scenario_RubyBlocks13() {
+        public void RubyBlocks13() {
             AssertOutput(delegate() {
                 CompilerTest(@"
 def foo
@@ -312,7 +312,7 @@ foo { |a,b| puts a,b }
         /// <summary>
         /// Nested yielding.
         /// </summary>
-        public void Scenario_RubyBlocks14() {
+        public void RubyBlocks14() {
             AssertOutput(delegate() {
                 CompilerTest(@"
 def bar
@@ -336,7 +336,7 @@ foo {
         /// <summary>
         /// Retry for-loop: for-loop should behave like x.each { } method call with a block, that is x is reevaluted on retry.
         /// </summary>
-        public void Scenario_RubyBlocks15() {
+        public void RubyBlocks15() {
             TestOutput(@"
 def foo x
   puts ""foo(#{x})""
@@ -380,7 +380,7 @@ i = 6
         /// ReturnReason should be propagated by yields as long as the owner of the block that contains the yield 
         /// is the target frame for the break. That's the case for for-loop blocks in this test.
         /// </summary>
-        public void Scenario_RubyBlocks16() {
+        public void RubyBlocks16() {
             AssertOutput(delegate() {
                 CompilerTest(@"
 def foo
@@ -404,7 +404,7 @@ puts x
         /// <summary>
         /// Retry is propagated to the 'each' call.
         /// </summary>
-        public void Scenario_RubyBlocks17() {
+        public void RubyBlocks17() {
             AssertOutput(delegate() {
                 CompilerTest(@"
 def foo
@@ -438,6 +438,24 @@ i = 2
 i = 3
 4
 done");
+        }
+
+        public void RubyBlocks18() {
+            TestOutput(@"
+class C
+  def y
+    yield
+  end 
+
+  def foo
+    y { p self.class }
+  end
+end
+
+C.new.foo
+", @"
+C
+");
         }
 
         public void Scenario_RubyBlockArgs1() {
@@ -917,7 +935,7 @@ c[1,2,*[3,4]] = 5
             }, @"1,2,3,4,5");
         }
         
-        public void Scenario_RubyProcs1() {
+        public void RubyProcs1() {
             AssertOutput(delegate() {
                 CompilerTest(@"
 def foo x,y,&f
@@ -934,6 +952,22 @@ end
 2
 3
 4
+");
+        }
+
+        /// <summary>
+        /// Assigning to a block parameter should not affect yield.
+        /// </summary>
+        public void RubyProcs2() {
+            TestOutput(@"
+def foo(&b)
+  b = nil
+  yield
+end
+
+foo { puts 'foo' }
+", @"
+foo
 ");
         }
 

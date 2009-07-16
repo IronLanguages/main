@@ -29,6 +29,12 @@ using AstFactory = IronRuby.Compiler.Ast.AstFactory;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Builtins {
+    using BlockCallTarget0 = Func<BlockParam, object, object>;
+    using BlockCallTarget1 = Func<BlockParam, object, object, object>;
+    using BlockCallTarget2 = Func<BlockParam, object, object, object, object>;
+    using BlockCallTarget3 = Func<BlockParam, object, object, object, object, object>;
+    using BlockCallTarget4 = Func<BlockParam, object, object, object, object, object, object>;
+    using BlockCallTargetN = Func<BlockParam, object, object[], object>;
 
     public enum ProcKind {
         Block,
@@ -41,18 +47,13 @@ namespace IronRuby.Builtins {
         // Although we could load self from scope in Ruby defined blocks, we cannot do so when we don't have a scope.
         private readonly object _self;
 
-        // Local scope inside the proc captured by the block definition:
+        // The scope that defines this block.
         private readonly RubyScope/*!*/ _scope;
-
-        // position of the block definition (opening brace):
-        private readonly string _sourcePath;
-        private readonly int _sourceLine;
 
         private readonly BlockDispatcher/*!*/ _dispatcher;
         private ProcKind _kind;
 
-        // we need to remember the block's owner and proc-converter frames:
-        internal RuntimeFlowControl Owner { get; set; }
+        // The frame that converted this block to a proc:
         internal RuntimeFlowControl Converter { get; set; }
 
         public ProcKind Kind {
@@ -74,30 +75,26 @@ namespace IronRuby.Builtins {
         }
 
         public string SourcePath {
-            get { return _sourcePath; }
+            get { return _dispatcher.SourcePath; }
         }
 
         public int SourceLine {
-            get { return _sourceLine; }
+            get { return _dispatcher.SourceLine; }
         }
-
-        internal static PropertyInfo/*!*/ SelfProperty { get { return typeof(Proc).GetProperty("Self"); } }
 
         #region Construction, Conversion
 
-        internal Proc(ProcKind kind, object self, RubyScope/*!*/ scope, string sourcePath, int sourceLine, BlockDispatcher/*!*/ dispatcher) {
+        internal Proc(ProcKind kind, object self, RubyScope/*!*/ scope, BlockDispatcher/*!*/ dispatcher) {
             Assert.NotNull(scope, dispatcher);
+            Debug.Assert(dispatcher.Method != null);
             _kind = kind;
             _self = self;
             _scope = scope;
             _dispatcher = dispatcher;
-            _sourcePath = sourcePath;
-            _sourceLine = sourceLine;
         }
 
         protected Proc(Proc/*!*/ proc)
-            : this(proc.Kind, proc.Self, proc.LocalScope, proc.SourcePath, proc.SourceLine, proc.Dispatcher) {
-            Owner = proc.Owner;
+            : this(proc.Kind, proc.Self, proc.LocalScope, proc.Dispatcher) {
             Converter = proc.Converter;
         }
 
@@ -153,8 +150,8 @@ namespace IronRuby.Builtins {
 
             BuildCall(
                 metaBuilder,
-                convertedTarget,                              // proc object  
-                Ast.Property(convertedTarget, SelfProperty),  // self captured by the block closure
+                convertedTarget,                       // proc object  
+                Methods.GetProcSelf.OpCall(convertedTarget),  // self captured by the block closure
                 null,
                 args
             );
@@ -269,38 +266,23 @@ namespace IronRuby.Builtins {
 
         #region Block helper methods
 
-        public static Proc/*!*/ Create(RubyContext/*!*/ context, Func<BlockParam, object, object>/*!*/ clrMethod) {
-            return Create(context, (BlockCallTarget1)BlockCallback1, clrMethod, 1);
+        public static Proc/*!*/ Create(RubyContext/*!*/ context, BlockCallTarget1/*!*/ clrMethod) {
+            return Create(context, clrMethod, 1);
         }
 
-        public static Proc/*!*/ Create(RubyContext/*!*/ context, Func<BlockParam, object, object, object>/*!*/ clrMethod) {
-            return Create(context, (BlockCallTarget2)BlockCallback2, clrMethod, 2);
+        public static Proc/*!*/ Create(RubyContext/*!*/ context, BlockCallTarget2/*!*/ clrMethod) {
+            return Create(context, clrMethod, 2);
         }
 
-        public static Proc/*!*/ Create(RubyContext/*!*/ context, Func<BlockParam, object, object, object, object>/*!*/ clrMethod) {
-            return Create(context, (BlockCallTarget3)BlockCallback3, clrMethod, 3);
+        public static Proc/*!*/ Create(RubyContext/*!*/ context, BlockCallTarget3/*!*/ clrMethod) {
+            return Create(context, clrMethod, 3);
         }
 
-        public static Proc/*!*/ Create(RubyContext/*!*/ context, Delegate/*!*/ clrMethod, object self, int parameterCount) {
+        public static Proc/*!*/ Create(RubyContext/*!*/ context, Delegate/*!*/ clrMethod, int parameterCount) {
             // scope is used to get to the execution context:
-            return new Proc(ProcKind.Block, self, context.EmptyScope, null, 0, BlockDispatcher.Create(clrMethod, parameterCount, BlockSignatureAttributes.None));
-        }
-
-        // The following methods are block implementations, therefore they need to have signature like a block.
-        // We need to get to the real delegate to call. We capture it into the self object.
-        public static object BlockCallback1(BlockParam/*!*/ block, object self, object arg0) {
-            var clrMethod = (Func<BlockParam, object, object>)self;
-            return clrMethod(block, arg0);
-        }
-
-        public static object BlockCallback2(BlockParam/*!*/ block, object self, object arg0, object arg1) {
-            var clrMethod = (Func<BlockParam, object, object, object>)self;
-            return clrMethod(block, arg0, arg1);
-        }
-
-        public static object BlockCallback3(BlockParam/*!*/ block, object self, object arg0, object arg1, object arg2) {
-            var clrMethod = (Func<BlockParam, object, object, object, object>)self;
-            return clrMethod(block, arg0, arg1, arg2);
+            return new Proc(ProcKind.Block, null, context.EmptyScope,
+                BlockDispatcher.Create(parameterCount, BlockSignatureAttributes.None, null, 0).SetMethod(clrMethod)
+            );
         }
 
         #endregion

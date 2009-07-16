@@ -19,16 +19,16 @@ using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace IronRuby.Runtime {
-    public class ReferenceEqualityComparer<T> : IEqualityComparer<T> where T : class {
+    public class ReferenceEqualityComparer : IEqualityComparer<object> {
         private ReferenceEqualityComparer() {}
 
-        public static readonly ReferenceEqualityComparer<T> Instance = new ReferenceEqualityComparer<T>();
+        public static readonly ReferenceEqualityComparer Instance = new ReferenceEqualityComparer();
 
-        public bool Equals(T x, T y) {
-            return object.ReferenceEquals(x, y);
+        public new bool Equals(object x, object y) {
+            return Object.ReferenceEquals(x, y);
         }
 
-        public int GetHashCode(T obj) {
+        public int GetHashCode(object obj) {
             return RuntimeHelpers.GetHashCode(obj);
         }
     }

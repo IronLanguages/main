@@ -235,7 +235,7 @@ module Wpf
   # WPF needs to do message pumping on a thread, iirb also requires a thread to read user input,
   # and all commands that interact with UI need to be executed on the message pump thread.
   def self.interact
-    raise NotImplementedError
+    raise NotImplementedError, "Wpf.interact is not implemented yet"
     def CallBack(function, priority = DispatcherPriority.Normal)
       Application.Current.Dispatcher.BeginInvoke(priority, System::Action[].new(function))
     end
@@ -367,7 +367,7 @@ module Wpf
     end
 
     def accept_rule(am, fragment)
-      raise NotImplementedError
+      raise NotImplementedError, "accept_rule: #{fragment.to_s}"
     end
     
     def convert_special(special, paragraph)

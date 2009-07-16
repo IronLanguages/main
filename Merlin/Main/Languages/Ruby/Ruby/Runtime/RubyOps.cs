@@ -40,22 +40,57 @@ namespace IronRuby.Runtime {
     public static partial class RubyOps {
 
         [Emitted]
-        public static readonly object/*!*/ DefaultArgument = new object();
+        public static readonly object DefaultArgument = new object();
         
         // Returned by a virtual site if a base call should be performed.
         [Emitted]
-        public static readonly object/*!*/ ForwardToBase = new object();
+        public static readonly object ForwardToBase = new object();
 
         #region Scopes
 
         [Emitted]
-        public static void InitializeScope(RubyScope/*!*/ scope, LocalsDictionary/*!*/ locals, InterpretedFrame interpretedFrame) {
-            if (scope.Frame == null) {
-                scope.Frame = locals;
+        public static MutableTuple GetLocals(RubyScope/*!*/ scope) {
+            return scope.Locals;
+        }
+
+        [Emitted]
+        public static MutableTuple GetParentLocals(RubyScope/*!*/ scope) {
+            return scope.Parent.Locals;
+        }
+
+        [Emitted]
+        public static RubyScope/*!*/ GetParentScope(RubyScope/*!*/ scope) {
+            return scope.Parent;
+        }
+
+        [Emitted]
+        public static Proc GetMethodBlockParameter(RubyScope/*!*/ scope) {
+            var methodScope = scope.GetInnerMostMethodScope();
+            return methodScope != null ? methodScope.BlockParameter : null;
+        }
+
+        [Emitted]
+        public static object GetMethodBlockParameterSelf(RubyScope/*!*/ scope) {
+            Proc proc = scope.GetInnerMostMethodScope().BlockParameter;
+            Debug.Assert(proc != null, "CreateBfcForYield is called before this method and it checks non-nullity");
+            return proc.Self;
+        }
+
+        [Emitted]
+        public static object GetProcSelf(Proc/*!*/ proc) {
+            return proc.Self;
+        }
+
+        [Emitted]
+        public static void InitializeScope(RubyScope/*!*/ scope, MutableTuple locals, SymbolId[]/*!*/ variableNames, 
+            InterpretedFrame interpretedFrame) {
+
+            if (!scope.LocalsInitialized) {
+                scope.SetLocals(locals, variableNames);
             }
             scope.InterpretedFrame = interpretedFrame;
         }
-
+        
         [Emitted]
         public static void InitializeScopeNoLocals(RubyScope/*!*/ scope, InterpretedFrame interpretedFrame) {
             scope.InterpretedFrame = interpretedFrame;
@@ -76,43 +111,33 @@ namespace IronRuby.Runtime {
             context.ObjectClass.SetConstant("DATA", dataFile);
         }
 
-
         [Emitted]
-        public static RubyModuleScope/*!*/ CreateModuleScope(LocalsDictionary/*!*/ locals, RubyScope/*!*/ parent,
-            RuntimeFlowControl/*!*/ rfc, RubyModule/*!*/ module) {
-            Assert.NotNull(locals, parent, rfc, module);
+        public static RubyModuleScope/*!*/ CreateModuleScope(MutableTuple locals, SymbolId[]/*!*/ variableNames, 
+            RubyScope/*!*/ parent, RubyModule/*!*/ module) {
 
-            RubyModuleScope scope = new RubyModuleScope(parent, module, false, rfc, module);
+            RubyModuleScope scope = new RubyModuleScope(parent, module, false, module);
             scope.SetDebugName((module.IsClass ? "class" : "module") + " " + module.Name);
-
-            scope.Frame = locals;
+            scope.SetLocals(locals, variableNames);
             return scope;
         }
 
         [Emitted]
-        public static RubyMethodScope/*!*/ CreateMethodScope(LocalsDictionary/*!*/ locals,
+        public static RubyMethodScope/*!*/ CreateMethodScope(MutableTuple locals, SymbolId[]/*!*/ variableNames, 
             RubyScope/*!*/ parentScope, RubyModule/*!*/ declaringModule, string/*!*/ definitionName,
-            RuntimeFlowControl/*!*/ rfc, object selfObject, Proc blockParameter,
-            InterpretedFrame interpretedFrame) {
+            object selfObject, Proc blockParameter, InterpretedFrame interpretedFrame) {
 
-            RubyMethodScope scope = new RubyMethodScope(parentScope, declaringModule, definitionName, blockParameter, rfc, selfObject);
-            scope.SetDebugName("method " + definitionName + ((blockParameter != null) ? "&" : null));
-
-            scope.Frame = locals;
-            scope.InterpretedFrame = interpretedFrame;
-            return scope;
+            return new RubyMethodScope(
+                locals, variableNames,
+                parentScope, declaringModule, definitionName, selfObject, blockParameter,
+                interpretedFrame
+            );            
         }
 
         [Emitted]
-        public static RubyBlockScope/*!*/ CreateBlockScope(LocalsDictionary/*!*/ locals, RubyScope/*!*/ parent,
+        public static RubyBlockScope/*!*/ CreateBlockScope(MutableTuple locals, SymbolId[]/*!*/ variableNames, 
             BlockParam/*!*/ blockParam, object selfObject, InterpretedFrame interpretedFrame) {
-            Assert.NotNull(locals, parent, blockParam);
 
-            RubyBlockScope scope = new RubyBlockScope(parent, parent.RuntimeFlowControl, blockParam, selfObject);
-            scope.MethodAttributes = RubyMethodAttributes.PublicInstance;
-            scope.Frame = locals;
-            scope.InterpretedFrame = interpretedFrame;
-            return scope;
+            return new RubyBlockScope(locals, variableNames, blockParam, selfObject, interpretedFrame);
         }
 
         [Emitted]
@@ -216,16 +241,15 @@ namespace IronRuby.Runtime {
         #region Blocks
 
         [Emitted]
-        public static Proc/*!*/ DefineBlock(RubyScope/*!*/ scope, RuntimeFlowControl/*!*/ runtimeFlowControl, object self, Delegate/*!*/ clrMethod,
-            int parameterCount, BlockSignatureAttributes attributesAndArity, string sourcePath, int startLine) {
-            Assert.NotNull(scope, clrMethod);
+        public static Proc InstantiateBlock(RubyScope/*!*/ scope, object self, BlockDispatcher/*!*/ dispatcher) {
+            return (dispatcher.Method != null) ? new Proc(ProcKind.Block, self, scope, dispatcher) : null;
+        }
 
-            // closes block over self and context
-            BlockDispatcher dispatcher = BlockDispatcher.Create(clrMethod, parameterCount, attributesAndArity);
-            Proc result = new Proc(ProcKind.Block, self, scope, sourcePath, startLine, dispatcher);
-
-            result.Owner = runtimeFlowControl;
-            return result;
+        [Emitted]
+        public static Proc/*!*/ DefineBlock(RubyScope/*!*/ scope, object self, BlockDispatcher/*!*/ dispatcher, object/*!*/ clrMethod) {
+            // DLR closures should not be used:
+            Debug.Assert(!(((Delegate)clrMethod).Target is Closure) || ((Closure)((Delegate)clrMethod).Target).Locals == null);
+            return new Proc(ProcKind.Block, self, scope, dispatcher.SetMethod(clrMethod));
         }
 
         /// <summary>
@@ -429,7 +453,7 @@ namespace IronRuby.Runtime {
         #region Methods
 
         [Emitted] // MethodDeclaration:
-        public static object DefineMethod(object targetOrSelf, RubyScope/*!*/ scope, RubyMethodBody/*!*/ body) {
+        public static object DefineMethod(object target, RubyScope/*!*/ scope, RubyMethodBody/*!*/ body) {
             Assert.NotNull(body, scope);
 
             RubyModule instanceOwner, singletonOwner;
@@ -437,13 +461,13 @@ namespace IronRuby.Runtime {
             bool moduleFunction = false;
 
             if (body.HasTarget) {
-                if (!RubyUtils.CanCreateSingleton(targetOrSelf)) {
+                if (!RubyUtils.CanCreateSingleton(target)) {
                     throw RubyExceptions.CreateTypeError("can't define singleton method for literals");
                 }
 
                 instanceOwner = null;
                 instanceFlags = RubyMemberFlags.Invalid;
-                singletonOwner = scope.RubyContext.CreateSingletonClass(targetOrSelf);
+                singletonOwner = scope.RubyContext.CreateSingletonClass(target);
                 singletonFlags = RubyMemberFlags.Public;
             } else {
                 var attributesScope = scope.GetMethodAttributesDefinitionScope();
@@ -1159,6 +1183,16 @@ namespace IronRuby.Runtime {
             return (obj is bool) ? (bool)obj == false : obj == null;
         }
 
+        [Emitted]
+        public static object NullIfFalse(object obj) {
+            return (obj is bool && !(bool)obj) ? null : obj;
+        }
+
+        [Emitted]
+        public static object NullIfTrue(object obj) {
+            return (obj is bool && !(bool)obj || obj == null) ? DefaultArgument : null;
+        }
+
         #region Exceptions
 
         //
@@ -1179,7 +1213,7 @@ namespace IronRuby.Runtime {
             }
 
             LocalJumpError lje = exception as LocalJumpError;
-            if (lje != null && lje.SkipFrame == scope.RuntimeFlowControl) {
+            if (lje != null && lje.SkipFrame == scope.FlowControlScope) {
                 return false;
             }
 
@@ -1236,7 +1270,7 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted] //RescueClause:
-        public static bool CompareDefaultException(RubyScope/*!*/ scope, object/*!*/ self) {
+        public static bool CompareDefaultException(RubyScope/*!*/ scope) {
             RubyContext ec = scope.RubyContext;
 
             // MRI doesn't call === here;

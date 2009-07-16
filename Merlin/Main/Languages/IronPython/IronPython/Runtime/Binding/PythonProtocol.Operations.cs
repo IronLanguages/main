@@ -254,14 +254,7 @@ namespace IronPython.Runtime.Binding {
                         Ast.Call(
                             typeof(PythonOps).GetMethod("ContainsFromEnumerable"),
                             AstUtils.Constant(state.SharedContext),
-                            Ast.Dynamic(
-                                state.Convert(
-                                    typeof(IEnumerator),
-                                    ConversionResultKind.ExplicitCast
-                                ),
-                                typeof(IEnumerator),
-                                sf.Target.Expression
-                            ),
+                            sf.Target.Expression,
                             AstUtils.Convert(types[1].Expression, typeof(object))
                         ),
                         BindingRestrictions.Combine(types)
@@ -1080,29 +1073,14 @@ namespace IronPython.Runtime.Binding {
         /// <summary>
         /// calls __coerce__ for old-style classes and performs the operation if the coercion is successful.
         /// </summary>
-        private static void DoCoerce(PythonContext/*!*/ state, ConditionalBuilder/*!*/ bodyBuilder, PythonOperationKind op, DynamicMetaObject/*!*/[]/*!*/ types, bool reverse, Func<Expression, Expression> returnTransform) {
+        private static void DoCoerce(PythonContext/*!*/ pyContext, ConditionalBuilder/*!*/ bodyBuilder, PythonOperationKind op, DynamicMetaObject/*!*/[]/*!*/ types, bool reverse, Func<Expression, Expression> returnTransform) {
             ParameterExpression coerceResult = Ast.Variable(typeof(object), "coerceResult");
             ParameterExpression coerceTuple = Ast.Variable(typeof(PythonTuple), "coerceTuple");
-
-            if (!bodyBuilder.TestCoercionRecursionCheck) {
-                // during coercion we need to enforce recursion limits if
-                // they're enabled and the rule's test needs to reflect this.                
-                bodyBuilder.Restrictions = bodyBuilder.Restrictions.Merge(
-                    BindingRestrictions.GetExpressionRestriction(
-                        Ast.Equal(
-                            Ast.Call(typeof(PythonOps).GetMethod("ShouldEnforceRecursion")),
-                            AstUtils.Constant(PythonFunction.EnforceRecursion)
-                        )
-                    )
-                );
-
-                bodyBuilder.TestCoercionRecursionCheck = true;
-            }
 
             // tmp = self.__coerce__(other)
             // if tmp != null && tmp != NotImplemented && (tuple = PythonOps.ValidateCoerceResult(tmp)) != null:
             //      return operation(tuple[0], tuple[1])                        
-            SlotOrFunction slot = SlotOrFunction.GetSlotOrFunction(state, Symbols.Coerce, types);
+            SlotOrFunction slot = SlotOrFunction.GetSlotOrFunction(pyContext, Symbols.Coerce, types);
 
             if (slot.Success) {
                 bodyBuilder.AddCondition(
@@ -1128,9 +1106,10 @@ namespace IronPython.Runtime.Binding {
                         )
                     ),
                     BindingHelpers.AddRecursionCheck(
+                        pyContext,
                         returnTransform(
                             Ast.Dynamic(
-                                state.Operation(op | PythonOperationKind.DisableCoerce),
+                                pyContext.Operation(op | PythonOperationKind.DisableCoerce),
                                 op == PythonOperationKind.Compare ? typeof(int) : typeof(object),
                                 reverse ? CoerceTwo(coerceTuple) : CoerceOne(coerceTuple),
                                 reverse ? CoerceOne(coerceTuple) : CoerceTwo(coerceTuple)

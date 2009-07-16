@@ -13,6 +13,7 @@
  *
  * ***************************************************************************/
 
+using System.Diagnostics;
 using System.Dynamic;
 using Microsoft.Scripting;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
@@ -54,8 +55,8 @@ namespace IronPython.Compiler.Ast {
 
                 result = ag.AddDebugInfo(
                     Ast.Condition(
-                        ag.TransformAndDynamicConvert(ist.Test, typeof(bool)), 
-                        ag.Transform(ist.Body), 
+                        ag.TransformAndDynamicConvert(ist.Test, typeof(bool)),
+                        ag.TransformMaybeSingleLineSuite(ist.Body, ist.Test.Start), 
                         result
                     ),
                     new SourceSpan(ist.Start, ist.Header)

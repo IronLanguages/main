@@ -211,7 +211,7 @@ namespace Microsoft.Scripting.Actions {
 
             Type targetType = CompilerHelpers.GetType(target);
 
-            MemberGroup callMembers = GetMember(OldCallAction.Make(this, signature), targetType, "Call");
+            MemberGroup callMembers = GetMember(MemberRequestKind.Invoke, targetType, "Call");
             List<MethodBase> callTargets = new List<MethodBase>();
             foreach (MemberTracker mi in callMembers) {
                 if (mi.MemberType == TrackerTypes.Method) {

@@ -289,7 +289,7 @@ namespace IronRuby.Builtins {
                     Debug.Assert(end - begin <= data.Length); // because we normalized the indicies
 
                     if (end - begin > 0) {
-                        result.Capacity += (end - begin);
+                        result.AddCapacity(end - begin);
                         for (int j = begin; j <= end; j++) {
                             result.Add(data[j]);
                         }

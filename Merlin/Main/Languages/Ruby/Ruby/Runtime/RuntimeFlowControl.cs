@@ -30,14 +30,9 @@ namespace IronRuby.Runtime {
 
         [Emitted]
         public static RuntimeFlowControl/*!*/ CreateRfcForMethod(Proc proc) {
-            RuntimeFlowControl result = new RuntimeFlowControl();
-            result.IsActiveMethod = true;
-
-            if (proc != null && proc.Kind == ProcKind.Block) {
-                proc.Kind = ProcKind.Proc;
-                proc.Converter = result;
-            }
-
+            var result = new RuntimeFlowControl();
+            result._activeFlowControlScope = result;
+            result.InitializeRfc(proc);
             return result;
         }
 
@@ -49,7 +44,7 @@ namespace IronRuby.Runtime {
                 RubyExceptionData.GetInstance(exception).CaptureExceptionTrace(scope);
                 return false;
             } else {
-                return unwinder.TargetFrame == scope.RuntimeFlowControl;
+                return unwinder.TargetFrame == scope.FlowControlScope;
             }
         }
 
@@ -60,9 +55,9 @@ namespace IronRuby.Runtime {
 
         [Emitted]
         public static void LeaveMethodFrame(RuntimeFlowControl/*!*/ rfc) {
-            rfc.IsActiveMethod = false;            
+            rfc.LeaveMethod();
         }
-
+        
         [Emitted]
         public static void LeaveBlockFrame(RubyBlockScope/*!*/ scope) {
             
@@ -107,7 +102,7 @@ namespace IronRuby.Runtime {
             if (proc != null) {
                 return RetrySingleton;
             } else {
-                throw new LocalJumpError("retry used out of rescue", scope.RuntimeFlowControl);
+                throw new LocalJumpError("retry used out of rescue", scope.FlowControlScope);
             }
         }
 
@@ -133,7 +128,7 @@ namespace IronRuby.Runtime {
                 throw new LocalJumpError("retry from proc-closure");// TODO: RFC
             }
 
-            throw new LocalJumpError("retry used out of rescue", scope.RuntimeFlowControl);
+            throw new LocalJumpError("retry used out of rescue", scope.FlowControlScope);
         }
 
         #endregion
@@ -173,12 +168,12 @@ namespace IronRuby.Runtime {
 
         [Emitted]
         public static void MethodNext(RubyScope/*!*/ scope, object returnValue) {
-            throw new LocalJumpError("unexpected next", scope.RuntimeFlowControl);
+            throw new LocalJumpError("unexpected next", scope.FlowControlScope);
         }
 
         [Emitted]
         public static void MethodRedo(RubyScope/*!*/ scope) {
-            throw new LocalJumpError("unexpected redo", scope.RuntimeFlowControl);
+            throw new LocalJumpError("unexpected redo", scope.FlowControlScope);
         }
 
         [Emitted]
@@ -220,8 +215,9 @@ namespace IronRuby.Runtime {
                 return returnValue;
             }
 
-            if (proc.Owner.IsActiveMethod) {
-                throw new MethodUnwinder(proc.Owner, returnValue);
+            RuntimeFlowControl owner = proc.LocalScope.FlowControlScope;
+            if (owner.IsActiveMethod) {
+                throw new MethodUnwinder(owner, returnValue);
             } 
             
             throw new LocalJumpError("unexpected return");
@@ -240,14 +236,15 @@ namespace IronRuby.Runtime {
                     throw new BlockUnwinder(returnValue, false);
                 }
 
-                if (proc.Owner.IsActiveMethod) {
-                    throw new MethodUnwinder(proc.Owner, returnValue);
+                RuntimeFlowControl owner = proc.LocalScope.FlowControlScope;
+                if (owner.IsActiveMethod) {
+                    throw new MethodUnwinder(owner, returnValue);
                 }
 
                 throw new LocalJumpError("unexpected return");
             } else {
                 // return from the current method:
-                throw new MethodUnwinder(scope.RuntimeFlowControl, returnValue);
+                throw new MethodUnwinder(scope.FlowControlScope, returnValue);
             }
         }
 
@@ -266,14 +263,18 @@ namespace IronRuby.Runtime {
                     return true;
 
                 case BlockReturnReason.Break:
-                    YieldBlockBreak(scope.RuntimeFlowControl, ownerBlockFlowControl, yieldedBlockFlowControl, returnValue);
+                    YieldBlockBreak(scope, ownerBlockFlowControl, yieldedBlockFlowControl, returnValue);
                     return true;
             }
             return false;
         }
 
         [Emitted]
-        public static bool MethodYield(RuntimeFlowControl rfc, BlockParam/*!*/ yieldedBlockFlowControl, object returnValue) {
+        public static bool MethodYield(RubyScope/*!*/ scope, BlockParam/*!*/ yieldedBlockFlowControl, object returnValue) {
+            return MethodYieldRfc(scope.FlowControlScope, yieldedBlockFlowControl, returnValue);
+        }
+
+        public static bool MethodYieldRfc(RuntimeFlowControl rfc, BlockParam/*!*/ yieldedBlockFlowControl, object returnValue) {
             Assert.NotNull(yieldedBlockFlowControl);
 
             switch (yieldedBlockFlowControl.ReturnReason) {
@@ -326,7 +327,7 @@ namespace IronRuby.Runtime {
             }
         }
 
-        private static void YieldBlockBreak(RuntimeFlowControl rfc, BlockParam/*!*/ ownerBlockFlowControl, BlockParam/*!*/ yieldedBlockFlowControl, object returnValue) {
+        private static void YieldBlockBreak(RubyScope/*!*/ scope, BlockParam/*!*/ ownerBlockFlowControl, BlockParam/*!*/ yieldedBlockFlowControl, object returnValue) {
             Assert.NotNull(ownerBlockFlowControl, yieldedBlockFlowControl);
 
             // target proc-converter:
@@ -334,7 +335,7 @@ namespace IronRuby.Runtime {
             Debug.Assert(targetFrame != null);
 
             if (targetFrame.IsActiveMethod) {
-                if (targetFrame == rfc) {
+                if (targetFrame == scope.FlowControlScope) {
                     // The current primary super-frame is the proc-converter, however we are still in the block frame that needs to be unwound.
                     // Sets the owner's BFC to exit the current block (recursively up to the primary frame).
                     ownerBlockFlowControl.SetFlowControl(BlockReturnReason.Break, targetFrame, yieldedBlockFlowControl.SourceProcKind);

@@ -95,15 +95,16 @@ namespace IronRuby.Runtime {
             return -1;
         }
 
+        internal const int MinListSize = 4;
         internal const int MinBufferSize = 16;
 
-        private static int GetExpandedSize(int currentLength, int minLength) {
-            return Math.Max(minLength, 1 + (currentLength << 1));
+        internal static int GetExpandedSize<T>(T[]/*!*/ array, int minLength) {
+            return Math.Max(minLength, Math.Max(1 + (array.Length << 1), typeof(T) == typeof(object) ? MinListSize : MinBufferSize));
         }
 
         internal static void Resize<T>(ref T[]/*!*/ array, int minLength) {
             if (array.Length < minLength) {
-                Array.Resize(ref array, GetExpandedSize(array.Length, minLength));
+                Array.Resize(ref array, GetExpandedSize(array, minLength));
             }
         }
 
@@ -117,7 +118,7 @@ namespace IronRuby.Runtime {
             int minLength = itemCount + count;
             T[] a;
             if (array.Length < minLength) {
-                a = new T[GetExpandedSize(array.Length, minLength)];
+                a = new T[GetExpandedSize(array, minLength)];
                 Array.Copy(array, 0, a, 0, index);
             } else {
                 a = array;
@@ -127,7 +128,7 @@ namespace IronRuby.Runtime {
             array = a;
         }
 
-        private static void Fill<T>(T[]/*!*/ array, int index, T item, int repeatCount) {
+        internal static void Fill<T>(T[]/*!*/ array, int index, T item, int repeatCount) {
             for (int i = index; i < index + repeatCount; i++) {
                 array[i] = item;
             }
@@ -230,9 +231,6 @@ namespace IronRuby.Runtime {
             return -1;
         }
 
-        internal const int ReservedHashCode = Int32.MaxValue;
-
-        // never returns ReservedHashCode
         internal static int GetValueHashCode(this string/*!*/ str, out int binarySum) {
             int result = 5381;
             int sum = 0;
@@ -242,10 +240,9 @@ namespace IronRuby.Runtime {
                 sum |= c;
             }
             binarySum = sum;
-            return result == ReservedHashCode ? 1 : result;
+            return result;
         }
 
-        // never returns ReservedHashCode
         internal static int GetValueHashCode(this char[]/*!*/ array, int itemCount, out int binarySum) {
             int result = 5381;
             int sum = 0;
@@ -255,10 +252,9 @@ namespace IronRuby.Runtime {
                 sum |= c;
             }
             binarySum = sum;
-            return result == ReservedHashCode ? 1 : result;
+            return result;
         }
 
-        // never returns ReservedHashCode
         internal static int GetValueHashCode(this byte[]/*!*/ array, int itemCount, out int binarySum) {
             int result = 5381;
             int sum = 0;
@@ -268,7 +264,7 @@ namespace IronRuby.Runtime {
                 sum |= c;
             }
             binarySum = sum;
-            return result == ReservedHashCode ? 1 : result;
+            return result;
         }
 
         internal static int ValueCompareTo(this byte[]/*!*/ array, int itemCount, byte[]/*!*/ other) {

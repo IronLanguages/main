@@ -20,12 +20,28 @@ using System.Text;
 
 namespace Microsoft.Scripting.Utils {
     public static class ArrayUtils {
+        internal sealed class FunctorComparer<T> : IComparer<T> {
+            private readonly Comparison<T> _comparison;
+
+            public FunctorComparer(Comparison<T> comparison) {
+                Assert.NotNull(comparison);
+                _comparison = comparison;
+            }
+
+            public int Compare(T x, T y) {
+                return _comparison(x, y);
+            }
+        }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly")]
         public static readonly string[] EmptyStrings = new string[0];
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly")]
         public static readonly object[] EmptyObjects = new object[0];
+
+        public static IComparer<T> ToComparer<T>(Comparison<T> comparison) {
+            return new FunctorComparer<T>(comparison);
+        }
 
         public static TOutput[] ConvertAll<TInput, TOutput>(TInput[] input, Converter<TInput, TOutput> conv) {
 #if SILVERLIGHT
@@ -316,7 +332,7 @@ namespace Microsoft.Scripting.Utils {
             }
 
             for (int i = 0; i < array.Length; i++) {
-                if (!array[i].Equals(other[i])) {
+                if (!Object.Equals(array[i], other[i])) {
                     return false;
                 }
             }

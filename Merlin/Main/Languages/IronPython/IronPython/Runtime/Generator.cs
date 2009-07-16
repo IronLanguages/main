@@ -27,11 +27,12 @@ using IronPython.Runtime.Operations;
 
 namespace IronPython.Runtime {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix"), PythonType("generator")]
+    [DontMapIDisposableToContextManager, DontMapIEnumerableToContains]
     public sealed class PythonGenerator : IEnumerator, IEnumerator<object>, IEnumerable, IEnumerable<object>, ICodeFormattable {
-        private readonly PythonGeneratorNext/*!*/ _next;    // The delegate which contains the user code to perform the iteration.
-        private readonly PythonFunction _function;          // the function which created the generator
-        private readonly MutableTuple _data;                // the closure data we need to pass into each iteration.  Item000 is the index, Item001 is the current value
-        private GeneratorFlags _flags;                      // Flags capturing various state for the generator
+        private readonly Func<MutableTuple, object>/*!*/ _next;     // The delegate which contains the user code to perform the iteration.
+        private readonly PythonFunction _function;                  // the function which created the generator
+        private readonly MutableTuple _data;                        // the closure data we need to pass into each iteration.  Item000 is the index, Item001 is the current value
+        private GeneratorFlags _flags;                              // Flags capturing various state for the generator
 
         /// <summary>
         /// Fields set by Throw() to communicate an exception to the yield point.
@@ -45,7 +46,7 @@ namespace IronPython.Runtime {
         /// </summary>
         private object _sendValue;
 
-        internal PythonGenerator(PythonFunction function, PythonGeneratorNext next, MutableTuple data) {
+        internal PythonGenerator(PythonFunction function, Func<MutableTuple, object>/*!*/ next, MutableTuple data) {
             _function = function;
             _next = next;
             _data = data;

@@ -22,21 +22,19 @@ using IronRuby.Builtins;
 using System.Collections;
 
 namespace IronRuby.Runtime.Calls {
+    using BlockCallTargetUnsplatN = Func<BlockParam, object, object[], RubyArray, object>;
+
     // L(n, *)
-    internal sealed class BlockDispatcherUnsplatN : BlockDispatcher {
-        private readonly BlockCallTargetUnsplatN/*!*/ _block;
+    internal sealed class BlockDispatcherUnsplatN : BlockDispatcher<BlockCallTargetUnsplatN> {
         private readonly int _parameterCount; // doesn't include the * parameter
 
-        public override Delegate/*!*/ Method { get { return _block; } }
         public override int ParameterCount { get { return _parameterCount; } }
 
-        internal BlockDispatcherUnsplatN(BlockCallTargetUnsplatN/*!*/ block, int parameterCount, BlockSignatureAttributes attributesAndArity) 
-            : base(attributesAndArity) {
-            Assert.NotNull(block);
+        internal BlockDispatcherUnsplatN(int parameterCount, BlockSignatureAttributes attributesAndArity, string sourcePath, int sourceLine) 
+            : base(attributesAndArity, sourcePath, sourceLine) {
             Debug.Assert(HasUnsplatParameter);
 
             _parameterCount = parameterCount;
-            _block = block;
         }
 
         // R(0, -)

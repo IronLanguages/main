@@ -14,11 +14,12 @@
  * ***************************************************************************/
 
 using System;
-using System.Runtime.CompilerServices;
-using System.Dynamic;
-using IronPython.Runtime.Exceptions;
+
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
+
+using IronPython.Modules;
+using IronPython.Runtime.Exceptions;
 
 namespace IronPython.Runtime.Types {
     public static class TypeCache {

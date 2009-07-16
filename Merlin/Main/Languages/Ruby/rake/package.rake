@@ -41,6 +41,7 @@ task :package do
   system %Q{xcopy /E /I "#{ENV['MERLIN_ROOT']}\\..\\External.LCA_RESTRICTED\\Languages\\Ruby\\redist-libs\\ruby" #{PACKAGE_DIR}\\lib\\ruby}
   system %Q{xcopy /E /I "#{ENV['MERLIN_ROOT']}\\Languages\\Ruby\\Libs" #{PACKAGE_DIR}\\lib\\IronRuby}
 
+  system %Q{xcopy /E /I "#{ENV['MERLIN_ROOT']}\\Languages\\Ruby\\Samples" #{PACKAGE_DIR}\\samples\\}
   # Generate compressed package
   if ENV['ZIP']
     system %Q{del "#{ENV['TEMP']}\\ironruby.7z"}

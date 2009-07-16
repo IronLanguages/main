@@ -410,9 +410,16 @@ IronRubyCompiler = CSProjCompiler.new do
             :dir        => '../../Runtime/Microsoft.Scripting'
             
   dlr_com :references   => ['Microsoft.Scripting.Core.dll', '!System.Xml.dll', '!System.dll', 'Microsoft.Scripting.ExtensionAttribute.dll'],
-          :switches     => ['target:library', 'unsafe', 'define:MICROSOFT_DYNAMIC'],
+          :switches     => ['target:library', 'unsafe', 'define:MICROSOFT_DYNAMIC;CLR2'],
           :output       => 'Microsoft.Dynamic.dll',
+          :csproj       => 'Microsoft.Dynamic.csproj',
           :dir          => '../../../../ndp/fx/src/Dynamic/System/Dynamic'
+
+  dlr_debug :references => ['Microsoft.Scripting.Core.dll', 'Microsoft.Scripting.dll','Microsoft.Scripting.ExtensionAttribute.dll'],
+            :switches   => ['target:library'],
+            :output     => 'Microsoft.Scripting.Debugging.dll',
+            :csproj     => 'Microsoft.Scripting.Debugging.csproj',
+            :dir        => '../../Debugging/Microsoft.Scripting.Debugging'
          
 #====================================================================
 # IRONRUBY
@@ -456,7 +463,7 @@ IronRubyCompiler = CSProjCompiler.new do
 #====================================================================
 # IRONPYTHON
 #====================================================================
-  ironpython :references => ['Microsoft.Dynamic.dll', 'Microsoft.Scripting.Core.dll', 'Microsoft.Scripting.dll', 'Microsoft.Scripting.ExtensionAttribute.dll', '!System.Data.dll', '!System.dll', '!System.Xml.dll'],
+  ironpython :references => ['Microsoft.Dynamic.dll', 'Microsoft.Scripting.Core.dll', 'Microsoft.Scripting.dll', 'Microsoft.Scripting.ExtensionAttribute.dll', '!System.Data.dll', '!System.dll', '!System.Xml.dll', 'Microsoft.Scripting.Debugging.dll'],
              :switches   => ['target:library'],
              :output     => 'IronPython.dll',
              :resources  => {Pathname.new('Resources.resx') => Pathname.new('IronPython.Resources.resources')},
@@ -487,3 +494,4 @@ IronRubyCompiler = CSProjCompiler.new do
                      :dir        => '../IronPython/IronPython.Modules',
                      :csproj     => 'IronPython.Modules.csproj'
 end
+

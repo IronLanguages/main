@@ -49,8 +49,8 @@ namespace Microsoft.Scripting.Interpreter {
             return _lineNumberExpression;
         }
 
-        protected override Expression VisitChildren(Func<Expression, Expression> visitor) {
-            Expression lineNo = visitor(_lineNumberExpression);
+        protected override Expression VisitChildren(ExpressionVisitor visitor) {
+            Expression lineNo = visitor.Visit(_lineNumberExpression);
             if (lineNo != _lineNumberExpression) {
                 return new LastFaultingLineExpression(lineNo);
             }

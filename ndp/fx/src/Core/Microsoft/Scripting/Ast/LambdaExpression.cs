@@ -190,7 +190,25 @@ namespace System.Linq.Expressions {
             return (TDelegate)(object)LambdaCompiler.Compile(this, debugInfoGenerator);
         }
 
-        internal override Expression Accept(ExpressionVisitor visitor) {
+        /// <summary>
+        /// Creates a new expression that is like this one, but using the
+        /// supplied children. If all of the children are the same, it will
+        /// return this expression.
+        /// </summary>
+        /// <param name="body">The <see cref="LambdaExpression.Body">Body</see> property of the result.</param>
+        /// <param name="parameters">The <see cref="LambdaExpression.Parameters">Parameters</see> property of the result.</param>
+        /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
+        public Expression<TDelegate> Update(Expression body, IEnumerable<ParameterExpression> parameters) {
+            if (body == Body && parameters == Parameters) {
+                return this;
+            }
+            return Expression.Lambda<TDelegate>(body, Name, TailCall, parameters);
+        }
+
+        /// <summary>
+        /// Dispatches to the specific visit method for this node type.
+        /// </summary>
+        protected internal override Expression Accept(ExpressionVisitor visitor) {
             return visitor.VisitLambda(this);
         }
 
@@ -210,27 +228,32 @@ namespace System.Linq.Expressions {
         /// Creates an Expression{T} given the delegate type. Caches the
         /// factory method to speed up repeated creations for the same T.
         /// </summary>
-        internal static LambdaExpression CreateLambda(Type delegateType, string name, Expression body, bool tailCall, ReadOnlyCollection<ParameterExpression> parameters) {
+        internal static LambdaExpression CreateLambda(Type delegateType, Expression body, string name, bool tailCall, ReadOnlyCollection<ParameterExpression> parameters) {
             // Get or create a delegate to the public Expression.Lambda<T>
             // method and call that will be used for creating instances of this
             // delegate type
-            LambdaFactory factory;
-
+            LambdaFactory fastPath;
             if (_LambdaFactories == null) {
                 // NOTE: this must be Interlocked assigment since we use _LambdaFactories for locking.
                 Interlocked.CompareExchange(ref _LambdaFactories, new CacheDict<Type, LambdaFactory>(50), null);
             }
 
+            MethodInfo create = null;
             lock (_LambdaFactories) {
-                if (!_LambdaFactories.TryGetValue(delegateType, out factory)) {
-                    _LambdaFactories[delegateType] = factory = (LambdaFactory)Delegate.CreateDelegate(
-                        typeof(LambdaFactory),
-                        typeof(Expression<>).MakeGenericType(delegateType).GetMethod("Create", BindingFlags.Static | BindingFlags.NonPublic)
-                    );
+                if (!_LambdaFactories.TryGetValue(delegateType, out fastPath)) {
+                    create = typeof(Expression<>).MakeGenericType(delegateType).GetMethod("Create", BindingFlags.Static | BindingFlags.NonPublic);
+                    if (TypeUtils.CanCache(delegateType)) {
+                        _LambdaFactories[delegateType] = fastPath = (LambdaFactory)Delegate.CreateDelegate(typeof(LambdaFactory), create);
+                    }
                 }
             }
 
-            return factory(body, name, tailCall, parameters);
+            if (fastPath != null) {
+                return fastPath(body, name, tailCall, parameters);
+            }
+            
+            Debug.Assert(create != null);
+            return (LambdaExpression)create.Invoke(null, new object[] { body, name, tailCall, parameters });
         }
 
         /// <summary>
@@ -437,7 +460,7 @@ namespace System.Linq.Expressions {
 
             Type delegateType = DelegateHelpers.MakeDelegateType(typeArgs);
 
-            return CreateLambda(delegateType, name, body, tailCall, parameterList);
+            return CreateLambda(delegateType, body, name, tailCall, parameterList);
         }
 
         /// <summary>
@@ -452,7 +475,7 @@ namespace System.Linq.Expressions {
             var paramList = parameters.ToReadOnly();
             ValidateLambdaArgs(delegateType, ref body, paramList);
 
-            return CreateLambda(delegateType, name, body, false, paramList);
+            return CreateLambda(delegateType, body, name, false, paramList);
         }
 
         /// <summary>
@@ -468,7 +491,7 @@ namespace System.Linq.Expressions {
             var paramList = parameters.ToReadOnly();
             ValidateLambdaArgs(delegateType, ref body, paramList);
 
-            return CreateLambda(delegateType, name, body, tailCall, paramList);
+            return CreateLambda(delegateType, body, name, tailCall, paramList);
         }
 
         private static void ValidateLambdaArgs(Type delegateType, ref Expression body, ReadOnlyCollection<ParameterExpression> parameters) {
@@ -482,7 +505,10 @@ namespace System.Linq.Expressions {
             MethodInfo mi;
             lock (_LambdaDelegateCache) {
                 if (!_LambdaDelegateCache.TryGetValue(delegateType, out mi)) {
-                    _LambdaDelegateCache[delegateType] = mi = delegateType.GetMethod("Invoke");
+                    mi = delegateType.GetMethod("Invoke");
+                    if (TypeUtils.CanCache(delegateType)) {
+                        _LambdaDelegateCache[delegateType] = mi;
+                    }
                 }
             }
 

@@ -72,10 +72,18 @@ namespace Microsoft.Scripting.Utils {
         /// <exception cref="ArgumentNullException">Array is <c>null</c>.</exception>
         /// <exception cref="ArgumentOutOfRangeException">Index is outside the array.</exception>
         public static void RequiresArrayIndex<T>(IList<T> array, int index, string indexName) {
-            Assert.NotEmpty(indexName);
-            Assert.NotNull(array);
+            RequiresArrayIndex(array.Count, index, indexName);
+        }
 
-            if (index < 0 || index >= array.Count) throw new ArgumentOutOfRangeException(indexName);
+        /// <summary>
+        /// Requires the specified index to point inside the array.
+        /// </summary>
+        /// <exception cref="ArgumentOutOfRangeException">Index is outside the array.</exception>
+        public static void RequiresArrayIndex(int arraySize, int index, string indexName) {
+            Assert.NotEmpty(indexName);
+            Debug.Assert(arraySize >= 0);
+
+            if (index < 0 || index >= arraySize) throw new ArgumentOutOfRangeException(indexName);
         }
 
         /// <summary>
@@ -84,10 +92,19 @@ namespace Microsoft.Scripting.Utils {
         /// <exception cref="ArgumentNullException">Array is <c>null</c>.</exception>
         /// <exception cref="ArgumentOutOfRangeException">Index is outside the array.</exception>
         public static void RequiresArrayInsertIndex<T>(IList<T> array, int index, string indexName) {
-            Assert.NotEmpty(indexName);
-            Assert.NotNull(array);
+            RequiresArrayInsertIndex(array.Count, index, indexName);
+        }
 
-            if (index < 0 || index > array.Count) throw new ArgumentOutOfRangeException(indexName);
+        /// <summary>
+        /// Requires the specified index to point inside the array or at the end
+        /// </summary>
+        /// <exception cref="ArgumentNullException">Array is <c>null</c>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Index is outside the array.</exception>
+        public static void RequiresArrayInsertIndex(int arraySize, int index, string indexName) {
+            Assert.NotEmpty(indexName);
+            Debug.Assert(arraySize >= 0);
+
+            if (index < 0 || index > arraySize) throw new ArgumentOutOfRangeException(indexName);
         }
 
         /// <summary>

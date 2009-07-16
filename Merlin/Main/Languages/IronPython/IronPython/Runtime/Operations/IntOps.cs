@@ -24,6 +24,7 @@ using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
+using IronPython.Modules;
 using IronPython.Runtime.Types;
 
 using SpecialNameAttribute = System.Runtime.CompilerServices.SpecialNameAttribute;
@@ -503,7 +504,7 @@ namespace IronPython.Runtime.Operations {
             return self.ToString(CultureInfo.InvariantCulture);
         }
 
-        internal static string ToHex(int self, bool lowercase) {
+        private static string ToHex(int self, bool lowercase) {
             string digits;
             if (self != Int32.MinValue) {
                 int val = self;
@@ -518,7 +519,7 @@ namespace IronPython.Runtime.Operations {
             return digits;
         }
 
-        internal static string ToOctal(int self, bool lowercase) {
+        private static string ToOctal(int self, bool lowercase) {
             string digits;
             if (self == 0) {
                 digits = "0";
@@ -543,7 +544,19 @@ namespace IronPython.Runtime.Operations {
             return digits;
         }
 
-        internal static string ToBinary(int self, bool includeType) {
+        internal static string ToBinary(int self) {
+            if (self == Int32.MinValue) {
+                return "-0b10000000000000000000000000000000";
+            }
+            
+            string res = ToBinary(self, true);
+            if (self < 0) {
+                res = "-" + res;
+            }
+            return res;
+        }
+
+        private static string ToBinary(int self, bool includeType) {
             string digits;
             if (self == 0) {
                 digits = "0";

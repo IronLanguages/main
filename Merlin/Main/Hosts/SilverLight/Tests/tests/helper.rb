@@ -1,5 +1,7 @@
 include System::Windows::Browser
 
+Package = XapVirtualFilesystem.new
+
 module Helpers
   def tag(tag_name, options = {}, style_options = {})
     div = HtmlPage.document.create_element tag_name

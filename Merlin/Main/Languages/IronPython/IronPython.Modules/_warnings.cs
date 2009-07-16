@@ -30,6 +30,8 @@ using Microsoft.Scripting.Runtime;
 [assembly: PythonModule("_warnings", typeof(IronPython.Modules.PythonWarnings))]
 namespace IronPython.Modules {
     public static class PythonWarnings {
+        public const string __doc__ = "Provides low-level functionality for reporting warnings";
+
         private static readonly object _keyFields = new object();
         private static readonly string _keyDefaultAction = "default_action";
         private static readonly string _keyFilters = "filters";

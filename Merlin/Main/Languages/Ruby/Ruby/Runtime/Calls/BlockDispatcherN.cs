@@ -20,22 +20,20 @@ using Microsoft.Scripting.Utils;
 using System.Diagnostics;
 
 namespace IronRuby.Runtime.Calls {
+    using BlockCallTargetN = Func<BlockParam, object, object[], object>;
+
     // L(n > 4, -)
-    internal sealed class BlockDispatcherN : BlockDispatcher {
-        private readonly BlockCallTargetN/*!*/ _block;
+    internal sealed class BlockDispatcherN : BlockDispatcher<BlockCallTargetN> {
         private readonly int _parameterCount;
 
-        public override Delegate/*!*/ Method { get { return _block; } }
         public override int ParameterCount { get { return _parameterCount; } }
 
-        internal BlockDispatcherN(BlockCallTargetN/*!*/ block, int parameterCount, BlockSignatureAttributes attributesAndArity)
-            : base(attributesAndArity) {
-            Assert.NotNull(block);
+        internal BlockDispatcherN(int parameterCount, BlockSignatureAttributes attributesAndArity, string sourcePath, int sourceLine)
+            : base(attributesAndArity, sourcePath, sourceLine) {
             Debug.Assert(parameterCount > BlockDispatcher.MaxBlockArity);
             Debug.Assert(!HasUnsplatParameter);
 
             _parameterCount = parameterCount;
-            _block = block;
         }
 
         private object[]/*!*/ MakeArray(object arg1) {

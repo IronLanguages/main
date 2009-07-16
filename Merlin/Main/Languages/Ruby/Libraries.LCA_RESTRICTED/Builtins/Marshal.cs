@@ -96,7 +96,7 @@ namespace IronRuby.Builtins {
                 _context = context;
                 _recursionLimit = (limit.HasValue ? limit.Value : -1);
                 _symbols = new Dictionary<string, int>();
-                _objects = new Dictionary<object, int>(ReferenceEqualityComparer<object>.Instance);
+                _objects = new Dictionary<object, int>(ReferenceEqualityComparer.Instance);
 #if !SILVERLIGHT
                 _streamingContext = new StreamingContext(StreamingContextStates.Other, _context);
 #endif

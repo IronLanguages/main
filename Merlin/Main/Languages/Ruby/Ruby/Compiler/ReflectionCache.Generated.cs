@@ -85,6 +85,8 @@ namespace IronRuby.Compiler {
         private static MethodInfo _CreateDelegateFromMethod;
         public static MethodInfo/*!*/ CreateDelegateFromProc { get { return _CreateDelegateFromProc ?? (_CreateDelegateFromProc = GetMethod(typeof(RubyOps), "CreateDelegateFromProc")); } }
         private static MethodInfo _CreateDelegateFromProc;
+        public static MethodInfo/*!*/ CreateEmptyStrongBox { get { return _CreateEmptyStrongBox ?? (_CreateEmptyStrongBox = GetMethod(typeof(RubyOps), "CreateEmptyStrongBox")); } }
+        private static MethodInfo _CreateEmptyStrongBox;
         public static MethodInfo/*!*/ CreateEncoding { get { return _CreateEncoding ?? (_CreateEncoding = GetMethod(typeof(RubyOps), "CreateEncoding")); } }
         private static MethodInfo _CreateEncoding;
         public static MethodInfo/*!*/ CreateEvent { get { return _CreateEvent ?? (_CreateEvent = GetMethod(typeof(RubyOps), "CreateEvent")); } }
@@ -97,6 +99,8 @@ namespace IronRuby.Compiler {
         private static MethodInfo _CreateInclusiveIntegerRange;
         public static MethodInfo/*!*/ CreateInclusiveRange { get { return _CreateInclusiveRange ?? (_CreateInclusiveRange = GetMethod(typeof(RubyOps), "CreateInclusiveRange")); } }
         private static MethodInfo _CreateInclusiveRange;
+        public static MethodInfo/*!*/ CreateInitializedStrongBox { get { return _CreateInitializedStrongBox ?? (_CreateInitializedStrongBox = GetMethod(typeof(RubyOps), "CreateInitializedStrongBox")); } }
+        private static MethodInfo _CreateInitializedStrongBox;
         public static MethodInfo/*!*/ CreateMethodScope { get { return _CreateMethodScope ?? (_CreateMethodScope = GetMethod(typeof(RubyOps), "CreateMethodScope")); } }
         private static MethodInfo _CreateMethodScope;
         public static MethodInfo/*!*/ CreateModuleScope { get { return _CreateModuleScope ?? (_CreateModuleScope = GetMethod(typeof(RubyOps), "CreateModuleScope")); } }
@@ -231,12 +235,24 @@ namespace IronRuby.Compiler {
         private static MethodInfo _GetInstanceData;
         public static MethodInfo/*!*/ GetInstanceVariable { get { return _GetInstanceVariable ?? (_GetInstanceVariable = GetMethod(typeof(RubyOps), "GetInstanceVariable")); } }
         private static MethodInfo _GetInstanceVariable;
+        public static MethodInfo/*!*/ GetLocals { get { return _GetLocals ?? (_GetLocals = GetMethod(typeof(RubyOps), "GetLocals")); } }
+        private static MethodInfo _GetLocals;
         public static MethodInfo/*!*/ GetLocalVariable { get { return _GetLocalVariable ?? (_GetLocalVariable = GetMethod(typeof(RubyOps), "GetLocalVariable")); } }
         private static MethodInfo _GetLocalVariable;
         public static MethodInfo/*!*/ GetMetaObject { get { return _GetMetaObject ?? (_GetMetaObject = GetMethod(typeof(RubyOps), "GetMetaObject")); } }
         private static MethodInfo _GetMetaObject;
+        public static MethodInfo/*!*/ GetMethodBlockParameter { get { return _GetMethodBlockParameter ?? (_GetMethodBlockParameter = GetMethod(typeof(RubyOps), "GetMethodBlockParameter")); } }
+        private static MethodInfo _GetMethodBlockParameter;
+        public static MethodInfo/*!*/ GetMethodBlockParameterSelf { get { return _GetMethodBlockParameterSelf ?? (_GetMethodBlockParameterSelf = GetMethod(typeof(RubyOps), "GetMethodBlockParameterSelf")); } }
+        private static MethodInfo _GetMethodBlockParameterSelf;
         public static MethodInfo/*!*/ GetMethodUnwinderReturnValue { get { return _GetMethodUnwinderReturnValue ?? (_GetMethodUnwinderReturnValue = GetMethod(typeof(RubyOps), "GetMethodUnwinderReturnValue")); } }
         private static MethodInfo _GetMethodUnwinderReturnValue;
+        public static MethodInfo/*!*/ GetParentLocals { get { return _GetParentLocals ?? (_GetParentLocals = GetMethod(typeof(RubyOps), "GetParentLocals")); } }
+        private static MethodInfo _GetParentLocals;
+        public static MethodInfo/*!*/ GetParentScope { get { return _GetParentScope ?? (_GetParentScope = GetMethod(typeof(RubyOps), "GetParentScope")); } }
+        private static MethodInfo _GetParentScope;
+        public static MethodInfo/*!*/ GetProcSelf { get { return _GetProcSelf ?? (_GetProcSelf = GetMethod(typeof(RubyOps), "GetProcSelf")); } }
+        private static MethodInfo _GetProcSelf;
         public static MethodInfo/*!*/ GetQualifiedConstant { get { return _GetQualifiedConstant ?? (_GetQualifiedConstant = GetMethod(typeof(RubyOps), "GetQualifiedConstant")); } }
         private static MethodInfo _GetQualifiedConstant;
         public static MethodInfo/*!*/ GetRetrySingleton { get { return _GetRetrySingleton ?? (_GetRetrySingleton = GetMethod(typeof(RubyOps), "GetRetrySingleton")); } }
@@ -253,6 +269,8 @@ namespace IronRuby.Compiler {
         private static MethodInfo _InitializeScope;
         public static MethodInfo/*!*/ InitializeScopeNoLocals { get { return _InitializeScopeNoLocals ?? (_InitializeScopeNoLocals = GetMethod(typeof(RubyOps), "InitializeScopeNoLocals")); } }
         private static MethodInfo _InitializeScopeNoLocals;
+        public static MethodInfo/*!*/ InstantiateBlock { get { return _InstantiateBlock ?? (_InstantiateBlock = GetMethod(typeof(RubyOps), "InstantiateBlock")); } }
+        private static MethodInfo _InstantiateBlock;
         public static MethodInfo/*!*/ IRubyObject_BaseEquals { get { return _IRubyObject_BaseEquals ?? (_IRubyObject_BaseEquals = GetMethod(typeof(IRubyObject), "BaseEquals")); } }
         private static MethodInfo _IRubyObject_BaseEquals;
         public static MethodInfo/*!*/ IRubyObject_BaseGetHashCode { get { return _IRubyObject_BaseGetHashCode ?? (_IRubyObject_BaseGetHashCode = GetMethod(typeof(IRubyObject), "BaseGetHashCode")); } }
@@ -379,6 +397,10 @@ namespace IronRuby.Compiler {
         private static MethodInfo _MethodRetry;
         public static MethodInfo/*!*/ MethodYield { get { return _MethodYield ?? (_MethodYield = GetMethod(typeof(RubyOps), "MethodYield")); } }
         private static MethodInfo _MethodYield;
+        public static MethodInfo/*!*/ NullIfFalse { get { return _NullIfFalse ?? (_NullIfFalse = GetMethod(typeof(RubyOps), "NullIfFalse")); } }
+        private static MethodInfo _NullIfFalse;
+        public static MethodInfo/*!*/ NullIfTrue { get { return _NullIfTrue ?? (_NullIfTrue = GetMethod(typeof(RubyOps), "NullIfTrue")); } }
+        private static MethodInfo _NullIfTrue;
         public static MethodInfo/*!*/ ObjectToMutableString { get { return _ObjectToMutableString ?? (_ObjectToMutableString = GetMethod(typeof(RubyOps), "ObjectToMutableString")); } }
         private static MethodInfo _ObjectToMutableString;
         public static MethodInfo/*!*/ PrintInteractiveResult { get { return _PrintInteractiveResult ?? (_PrintInteractiveResult = GetMethod(typeof(RubyOps), "PrintInteractiveResult")); } }

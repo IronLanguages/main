@@ -39,7 +39,7 @@ namespace IronRuby.Builtins {
         private static void RequireNotFrozen(IList/*!*/ self) {
             RubyArray array = self as RubyArray;
             if (array != null && array.IsFrozen) {
-                throw RubyExceptions.CreateTypeError("can't modify frozen object");
+                throw RubyExceptions.CreateObjectFrozenError();
             }
         }
 
@@ -88,13 +88,6 @@ namespace IronRuby.Builtins {
             return index >= 0 && index < list.Count;
         }
 
-        private static IEnumerable<object>/*!*/ EnumerateRange(IList/*!*/ list, int index, int count) {
-            int stop = index + count;
-            for (int i = index; i < stop; i++) {
-                yield return list[i];
-            }
-        }
-
         private static IList/*!*/ GetResultRange(CallSiteStorage<Func<CallSite, RubyClass, object>>/*!*/ allocateStorage, 
             IList/*!*/ list, int index, int count) {
 
@@ -106,17 +99,17 @@ namespace IronRuby.Builtins {
             return result;
         }
 
-        private static void InsertRange(IList/*!*/ collection, int index, IEnumerable<object>/*!*/ items) {
-            List<object> list;
+        private static void InsertRange(IList/*!*/ list, int index, IList/*!*/ items, int start, int count) {
             RubyArray array;
-            if ((array = collection as RubyArray) != null) {
-                array.InsertRange(index, items);
-            } else if ((list = collection as List<object>) != null) {
-                list.InsertRange(index, items);
+            List<object> listOfObject;
+            ICollection<object> collection;
+            if ((array = list as RubyArray) != null) {
+                array.InsertRange(index, items, start, count);
+            } else if ((listOfObject = list as List<object>) != null && ((collection = items as ICollection<object>) != null)) {
+                listOfObject.InsertRange(index, collection);
             } else {
-                int i = index;
-                foreach (object obj in items) {
-                    collection.Insert(i++, obj);
+                for (int i = 0; i < count; i++) {
+                    list.Insert(index + i, items[start + i]);
                 }
             }
         }
@@ -229,8 +222,9 @@ namespace IronRuby.Builtins {
 
             IList result = CreateResultArray(allocateStorage, self);
             if (result is RubyArray) {
-                (result as RubyArray).Capacity = self.Count * repeat;
+                ((RubyArray)result).AddCapacity(self.Count * repeat);
             }
+            
             for (int i = 0; i < repeat; ++i) {
                 AddRange(result, self);
             }
@@ -505,8 +499,9 @@ namespace IronRuby.Builtins {
                     }
                 } else {
                     if (value == self) {
-                        valueAsList = new object[self.Count];
-                        self.CopyTo(valueAsList as object[], 0);
+                        var newList = new object[self.Count];
+                        self.CopyTo(newList, 0);
+                        valueAsList = newList;
                     }
 
                     ExpandList(self, index);
@@ -518,9 +513,8 @@ namespace IronRuby.Builtins {
                     }
 
                     if (length < valueAsList.Count) {
-                        InsertRange(self, index + limit, EnumerateRange(valueAsList, limit, valueAsList.Count - limit));
-                    }
-                    else {
+                        InsertRange(self, index + limit, valueAsList, limit, valueAsList.Count - limit);
+                    } else {
                         RemoveRange(self, index + limit, Math.Min(length - valueAsList.Count, self.Count - (index + limit)));
                     }
                 }
@@ -968,7 +962,9 @@ namespace IronRuby.Builtins {
                 throw RubyExceptions.CreateArgumentError("negative array size (or size too big)");
             }
 
-            count = count > self.Count ? self.Count : count;
+            if (count > self.Count) {
+                count = self.Count;
+            }
             return new RubyArray(self, 0, count);
         }
 
@@ -983,7 +979,9 @@ namespace IronRuby.Builtins {
                 throw RubyExceptions.CreateArgumentError("negative array size (or size too big)");
             }
 
-            count = count > self.Count ? self.Count : count;
+            if (count > self.Count) {
+                count = self.Count;
+            }
             return new RubyArray(self, self.Count - count, count);
         }
 
@@ -1142,51 +1140,89 @@ namespace IronRuby.Builtins {
         #endregion
 
         #region join, to_s, inspect
+        
+        private static void JoinRecursive(ConversionStorage<MutableString>/*!*/ tosConversion, 
+            IList/*!*/ list, List<MutableString/*!*/>/*!*/ parts, 
+            ref bool? isBinary, ref bool taint, ref Dictionary<object, bool> seen) {
 
-        public static void RecursiveJoin(ConversionStorage<MutableString>/*!*/ tosConversion, 
-            IList/*!*/ list, MutableString/*!*/ separator, MutableString/*!*/ result, Dictionary<object, bool>/*!*/ seen) {
+            foreach (object item in list) {
+                IList listItem;
+                if ((listItem = item as IList) != null) {
+                    bool _;
+                    if (ReferenceEquals(listItem, list) || seen != null && seen.TryGetValue(listItem, out _)) {
+                        parts.Add(RubyUtils.InfiniteRecursionMarker);
+                    } else {
+                        if (seen == null) {
+                            seen = new Dictionary<object, bool>(ReferenceEqualityComparer.Instance);
+                        }
 
-            Assert.NotNull(list, separator, result, seen);
-            RubyContext context = tosConversion.Context;
+                        seen.Add(listItem, true);
+                        JoinRecursive(tosConversion, listItem, parts, ref isBinary, ref taint, ref seen);
+                        seen.Remove(listItem);
 
-            // TODO: can we get by only tracking List<> ?
-            // (inspect needs to track everything)
-            bool found;
-            if (seen.TryGetValue(list, out found)) {
-                result.Append("[...]");
-                return;
+                        taint |= tosConversion.Context.IsObjectTainted(listItem);
+                    }
+                } else if (item != null) {
+                    var tosSite = tosConversion.Site;
+                    if (tosSite == null) {
+                        tosSite = tosConversion.GetSite(ConvertToSAction.Make(tosConversion.Context));
+                    }
+                    var strItem = tosSite.Target(tosSite, item);
+                    parts.Add(strItem);
+                    taint |= strItem.IsTainted;
+                    isBinary = isBinary.HasValue ? (isBinary | strItem.IsBinary) : strItem.IsBinary;
+                } else {
+                    parts.Add(null);
+               }
+            }
+        }
+
+        public static MutableString/*!*/ Join(ConversionStorage<MutableString>/*!*/ tosConversion, IList/*!*/ self, MutableString/*!*/ separator) {
+            var parts = new List<MutableString>(self.Count);
+            bool partTainted = false;
+            bool? isBinary = (separator != null) ? separator.IsBinary : (bool?)null;
+            Dictionary<object, bool> seen = null;
+            
+            JoinRecursive(tosConversion, self, parts, ref isBinary, ref partTainted, ref seen);
+            if (parts.Count == 0) {
+                return MutableString.CreateEmpty();
             }
 
-            seen.Add(list, true); // push
+            if (separator != null && separator.IsBinary != isBinary && !separator.IsAscii()) {
+                isBinary = true;
+            }
 
-            for (int i = 0; i < list.Count; ++i) {
-                object item = list[i];
-
-                if (item is ValueType) {
-                    result.Append(Protocols.ConvertToString(tosConversion, item));
-                } else if (item == null) {
-                    // append nothing
-                } else {
-                    IList listItem = item as IList;
-                    if (listItem != null) {
-                        RecursiveJoin(tosConversion, listItem, separator, result, seen);
-                    } else {
-                        result.Append(Protocols.ConvertToString(tosConversion, item));
+            MutableString any = separator;
+            int length = (separator != null) ? (isBinary.Value ? separator.GetByteCount() : separator.GetCharCount()) * (parts.Count - 1) : 0;
+            foreach (MutableString part in parts) {
+                if (part != null) {
+                    length += (isBinary.Value) ? part.GetByteCount() : part.GetCharCount();
+                    if (any == null) {
+                        any = part;
                     }
                 }
+            }
 
-                if (!result.IsTainted){
-                    if (context.IsObjectTainted(list) || context.IsObjectTainted(item) || separator.IsTainted) {
-                        result.IsTainted = true;
-                    }
-                }
+            if (any == null) {
+                return MutableString.CreateEmpty();
+            }
 
-                if (i < list.Count - 1) {
+            var result = isBinary.Value ? 
+                MutableString.CreateBinary(length, any.Encoding) :
+                MutableString.CreateMutable(length, any.Encoding);
+
+            for (int i = 0; i < parts.Count; i++) {
+                if (separator != null && i > 0) {
                     result.Append(separator);
                 }
+                result.Append(parts[i]);
             }
 
-            seen.Remove(list);
+            result.IsTainted |= partTainted;
+            if (!result.IsTainted && (separator != null && separator.IsTainted || tosConversion.Context.IsObjectTainted(self))) {
+                result.IsTainted = true;
+            }
+            return result;
         }
 
         [RubyMethod("join")]
@@ -1196,19 +1232,12 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("join")]
-        public static MutableString/*!*/ Join(ConversionStorage<MutableString>/*!*/ tosConversion, ConversionStorage<MutableString>/*!*/ tostrConversion, IList/*!*/ self, Object separator) {
+        public static MutableString/*!*/ Join(ConversionStorage<MutableString>/*!*/ tosConversion, ConversionStorage<MutableString>/*!*/ tostrConversion, 
+            IList/*!*/ self, object separator) {
             if (self.Count == 0) {
                 return MutableString.CreateEmpty();
             }
             return Join(tosConversion, self, separator != null ? Protocols.CastToString(tostrConversion, separator) : MutableString.FrozenEmpty);
-        }
-
-        public static MutableString/*!*/ Join(ConversionStorage<MutableString>/*!*/ tosConversion, IList/*!*/ self, MutableString/*!*/ separator) {
-            MutableString result = MutableString.CreateMutable();
-            RecursiveJoin(tosConversion, self, separator ?? MutableString.FrozenEmpty, result,
-                new Dictionary<object, bool>(ReferenceEqualityComparer<object>.Instance)
-            );
-            return result;
         }
 
         [RubyMethod("inspect")]
@@ -1286,7 +1315,7 @@ namespace IronRuby.Builtins {
                 return self;
             }
 
-            InsertRange(self, index, args);
+            InsertRange(self, index, args, 0, args.Length);
             return self;
         }
 
@@ -1327,7 +1356,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("unshift")]
         public static IList/*!*/ Unshift(IList/*!*/ self, [NotNull]params object[]/*!*/ args) {
             if (args.Length > 0) {
-                InsertRange(self, 0, args);
+                InsertRange(self, 0, args, 0, args.Length);
             }
             return self;
         }
@@ -1420,7 +1449,7 @@ namespace IronRuby.Builtins {
         public static IList/*!*/ Reverse(CallSiteStorage<Func<CallSite, RubyClass, object>>/*!*/ allocateStorage, IList/*!*/ self) {
             IList reversedList = CreateResultArray(allocateStorage, self);
             if (reversedList is RubyArray) {
-                (reversedList as RubyArray).Capacity = self.Count;
+                (reversedList as RubyArray).AddCapacity(self.Count);
             }
             for (int i = 0; i < self.Count; i++) {
                 reversedList.Add(self[self.Count - i - 1]);
@@ -1451,7 +1480,7 @@ namespace IronRuby.Builtins {
 
                 if (i == 0) {
                     // initialize the result
-                    result.Capacity = list.Count;
+                    result.AddCapacity(list.Count);
                     for (int j = 0; j < list.Count; j++) {
                         result.Add(new RubyArray());
                     }

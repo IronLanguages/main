@@ -1,1 +1,0 @@
-fails:C# decimal numbers should be able to check as equal to Float

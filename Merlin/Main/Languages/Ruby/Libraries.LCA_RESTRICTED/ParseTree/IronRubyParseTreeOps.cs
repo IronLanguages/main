@@ -268,14 +268,14 @@ namespace IronRuby.StandardLibrary.ParseTree {
                     return false;
                 }
 
-                public override bool Enter(RangeExpression/*!*/ node) {
+                private bool Enter(RangeExpression/*!*/ node, bool isCondition) {
                     Literal litBegin = node.Begin as Literal;
                     Literal litEnd = node.End as Literal;
 
-                    if (!node.IsCondition && litBegin != null && litEnd != null && litBegin.Value is int && litBegin.Value is int) {
+                    if (!isCondition && litBegin != null && litEnd != null && litBegin.Value is int && litBegin.Value is int) {
                         _result = MakeNode(NodeKind.lit, new Range((int)litBegin.Value, (int)litEnd.Value, node.IsExclusive));
                     } else {
-                        var range = MakeNode(node.IsCondition ? 
+                        var range = MakeNode(isCondition ? 
                             (node.IsExclusive ? NodeKind.flip3 : NodeKind.flip2) :
                             (node.IsExclusive ? NodeKind.dot3 : NodeKind.dot2), 2
                         );
@@ -288,6 +288,14 @@ namespace IronRuby.StandardLibrary.ParseTree {
                         _result = range;
                     }
                     return false;
+                }
+
+                public override bool Enter(RangeExpression/*!*/ node) {
+                    return Enter(node, false);
+                }
+
+                public override bool Enter(RangeCondition/*!*/ node) {
+                    return Enter(node.Range, true);
                 }
 
                 public override bool Enter(StringLiteral/*!*/ node) {
@@ -368,10 +376,12 @@ namespace IronRuby.StandardLibrary.ParseTree {
                         _result = regex;
                     }
 
-                    if (node.IsCondition) {
-                        _result = MakeNode(NodeKind.match, _result);
-                    }
+                    return false;
+                }
 
+                public override bool Enter(RegularExpressionCondition/*!*/ node) {
+                    Walk(node.RegularExpression);
+                    _result = MakeNode(NodeKind.match, _result);
                     return false;
                 }
                 

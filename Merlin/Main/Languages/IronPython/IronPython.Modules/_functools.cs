@@ -28,6 +28,8 @@ using Microsoft.Scripting.Utils;
 [assembly: PythonModule("_functools", typeof(IronPython.Modules.FunctionTools))]
 namespace IronPython.Modules {
     public static class FunctionTools {
+        public const string __doc__ = "provides functionality for manipulating callable objects";
+
         public static object reduce(CodeContext/*!*/ context, SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object, object, object, object>>> siteData, object func, object seq) {
             return Builtin.reduce(context, siteData, func, seq);
         }

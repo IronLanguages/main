@@ -117,7 +117,7 @@ namespace IronPython.Runtime.Types {
             return false;
         }
 
-        public object __get__(CodeContext/*!*/ context, object instance, [Optional]object typeContext) {
+        public virtual object __get__(CodeContext/*!*/ context, object instance, [DefaultParameterValue(null)]object typeContext) {
             PythonType dt = typeContext as PythonType;
 
             object res;
@@ -125,20 +125,6 @@ namespace IronPython.Runtime.Types {
                 return res;
 
             throw PythonOps.AttributeErrorForMissingAttribute(dt == null ? "?" : dt.Name, Symbols.GetDescriptor);
-        }
-
-#if FALSE
-        public void __set__(CodeContext/*!*/ context, object instance, object value) {
-            if (!TrySetValue(context, instance, DynamicHelpers.GetPythonType(instance), value)) {
-                throw PythonOps.AttributeErrorForMissingAttribute(DynamicHelpers.GetPythonType(instance).Name, Symbols.SetDescriptor);
-            }
-        }
-#endif
-
-        public void __delete__(CodeContext/*!*/ context, object instance) {
-            if (!TryDeleteValue(context, instance, DynamicHelpers.GetPythonType(instance))) {
-                throw PythonOps.AttributeErrorForMissingAttribute(DynamicHelpers.GetPythonType(instance).Name, Symbols.DeleteDescriptor);
-            }
         }
     }
 }

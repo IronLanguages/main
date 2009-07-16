@@ -28,6 +28,8 @@ using IronPython.Runtime.Types;
 [assembly: PythonModule("operator", typeof(IronPython.Modules.PythonOperator))]
 namespace IronPython.Modules {
     public static class PythonOperator {
+        public const string __doc__ = "Provides programmatic access to various operators (addition, accessing members, etc...)";
+
         public class attrgetter {
             private readonly object[] _names;
             public attrgetter(params object[] attrs) {
@@ -88,6 +90,7 @@ namespace IronPython.Modules {
             }
         }
 
+        [PythonType]
         public class methodcaller {
             private readonly SymbolId _name;
             private readonly object[] _args;

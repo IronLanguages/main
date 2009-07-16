@@ -160,13 +160,10 @@ namespace IronRuby.Compiler.Ast {
                 Ast.IfThen(Methods.IsRetrySingleton.OpCall(AstFactory.Box(resultVariable)),
 
                     // if blockParam == #block then retry end
-                    (gen.CurrentMethod.BlockVariable != null) ?
-                        AstUtils.IfThenElse(Ast.Equal(gen.CurrentMethod.BlockVariable, blockArgVariable),
-                            RetryStatement.TransformRetry(gen),
-                            Ast.Goto(retryLabel)
-                        )
-                        :
+                    AstUtils.IfThenElse(Ast.Equal(gen.MakeMethodBlockParameterRead(), blockArgVariable),
+                        RetryStatement.TransformRetry(gen),
                         Ast.Goto(retryLabel)
+                    )
                 ),
 
                 resultVariable

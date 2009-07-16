@@ -28,6 +28,8 @@ using Microsoft.Scripting.Runtime;
 [assembly: PythonModule("binascii", typeof(IronPython.Modules.PythonBinaryAscii))]
 namespace IronPython.Modules {
     public static class PythonBinaryAscii {
+        public const string __doc__ = "Provides functions for converting between binary data encoded in various formats and ASCII.";
+
         private static readonly object _ErrorKey = new object();
         private static readonly object _IncompleteKey = new object();
 

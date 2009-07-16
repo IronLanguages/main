@@ -24,7 +24,7 @@ using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime {
     [PythonType("slice")]
-    public sealed class Slice : ICodeFormattable, IComparable, IValueEquality, ISlice {
+    public sealed class Slice : ICodeFormattable, IComparable, ISlice {
         private readonly object _start, _stop, _step;
 
         public Slice(object stop) : this(null, stop, null) { }
@@ -66,14 +66,6 @@ namespace IronPython.Runtime {
             PythonOps.FixSlice(Converter.ConvertToIndex(len), _start, _stop, _step, out ostart, out ostop, out ostep, out count);
         }
 
-        public static bool operator >(Slice self, Slice other) {
-            return self.__cmp__(other) > 0;
-        }
-
-        public static bool operator <(Slice self, Slice other) {
-            return self.__cmp__(other) < 0;
-        }
-
         public PythonTuple __reduce__() {
             return PythonTuple.MakeTuple(
                 DynamicHelpers.GetPythonTypeFromType(typeof(Slice)),
@@ -83,27 +75,6 @@ namespace IronPython.Runtime {
                     _step
                 )
             );
-        }
-
-        #endregion
-
-        #region Object overrides
-
-        public override bool Equals(object obj) {
-            Slice s = obj as Slice;
-            if (s == null) return false;
-
-            return (PythonOps.Compare(_start, s._start) == 0) &&
-                (PythonOps.Compare(_stop, s._stop) == 0) &&
-                (PythonOps.Compare(_step, s._step) == 0);
-        }
-
-        public override int GetHashCode() {
-            int hash = 0;
-            if (_start != null) hash ^= _start.GetHashCode();
-            if (_stop != null) hash ^= _stop.GetHashCode();
-            if (_step != null) hash ^= _step.GetHashCode();
-            return hash;
         }
 
         #endregion
@@ -118,21 +89,9 @@ namespace IronPython.Runtime {
 
         #endregion
 
-        #region IValueEquality Members
-
-        int IValueEquality.GetValueHashCode() {
+        public int __hash__() {
             throw PythonOps.TypeErrorForUnhashableType("slice");
         }
-
-        /// <summary>
-        /// slice is sealed so equality doesn't need to be virtual and can be the IValueEquality
-        /// interface implementation
-        /// </summary>
-        bool IValueEquality.ValueEquals(object other) {
-            return Equals(other);
-        }
-
-        #endregion
 
         #region ISlice Members
 
@@ -221,8 +180,6 @@ namespace IronPython.Runtime {
             // do this quickly.
             if (value is IList) {
                 ListSliceAssign(assign, start, n, step, value as IList);
-            } else if (value is ISequence) {
-                SequenceSliceAssign(assign, start, n, step, value as ISequence);
             } else {
                 OtherSliceAssign(assign, start, stop, step, value);
             }
@@ -235,16 +192,6 @@ namespace IronPython.Runtime {
             for (int i = 0, index = start; i < n; i++, index += step) {
                 assign(index, lst[i]);
             }
-        }
-
-        private static void SequenceSliceAssign(SliceAssign assign, int start, int n, int step, ISequence lst) {
-            if (lst.__len__() < n) throw PythonOps.ValueError("too few items in the enumerator. need {0}", n);
-            else if (lst.__len__() != n) throw PythonOps.ValueError("too many items in the enumerator need {0}", n);
-
-            for (int i = 0, index = start; i < n; i++, index += step) {
-                assign(index, lst[i]);
-            }
-
         }
 
         private static void OtherSliceAssign(SliceAssign assign, int start, int stop, int step, object value) {

@@ -23,11 +23,12 @@ using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
 [assembly: PythonModule("xxsubtype", typeof(IronPython.Modules.xxsubtype))]
-namespace IronPython.Modules {
+namespace IronPython.Modules {    
     /// <summary>
     /// Samples on how to subtype built-in types from C#
     /// </summary>
     public static class xxsubtype {
+        public const string __doc__ = "Provides samples on how to subtype built-in types from .NET.";
         [PythonType]
         public class spamlist : List {
             public spamlist()
@@ -38,10 +39,19 @@ namespace IronPython.Modules {
                 : base(sequence) {
             }
 
+            private int _state;
+
             /// <summary>
             /// an int variable for demonstration purposes
             /// </summary>
-            public int state;
+            public int state {
+                get {
+                    return _state;
+                }
+                set {
+                    _state = value;
+                }
+            }
 
             public int getstate() {
                 return state;
@@ -63,10 +73,19 @@ namespace IronPython.Modules {
 
         [PythonType]
         public class spamdict : PythonDictionary {
+            private int _state;
+
             /// <summary>
             /// an int variable for demonstration purposes
             /// </summary>
-            public int state;
+            public int state {
+                get {
+                    return _state;
+                }
+                set {
+                    _state = value;
+                }
+            }
 
             public int getstate() {
                 return state;

@@ -37,8 +37,9 @@ using IronPython.Runtime.Types;
 
 [assembly: PythonModule("future_builtins", typeof(FutureBuiltins))]
 namespace IronPython.Runtime {
-    [Documentation("")]
     public static partial class FutureBuiltins {
+        public const string __doc__ = "Provides access to built-ins which will be defined differently in Python 3.0.";
+
         [SpecialName]
         public static void PerformModuleReload(PythonContext context, IAttributesCollection dict) {
             Scope scope = Importer.ImportModule(context.SharedContext, context.SharedContext.GlobalScope.Dict, "itertools", false, -1) as Scope;

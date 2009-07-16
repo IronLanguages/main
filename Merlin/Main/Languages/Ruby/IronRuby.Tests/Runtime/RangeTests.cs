@@ -128,11 +128,10 @@ end
         }
 
         /// <summary>
-        /// The state variable of a range condition is lifted to closure when used in a block.
+        /// The state variable of a range condition is allocated in the inner-most non-block lexical scope.
         /// </summary>
-        public void RangeCondition1() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
+        public void RangeCondition1A() {
+            TestOutput(@"
 $i = 0
 
 def foo
@@ -152,12 +151,65 @@ def test
 end
 
 test
+", @"
+true
+true
+true
+true
 ");
-            }, @"
+        }
+
+        /// <summary>
+        /// The state variable of a range condition allocated the inner-most non-block lexical scope.
+        /// </summary>
+        public void RangeCondition1B() {
+            TestOutput(@"
+$i = 0
+
+2.times {
+  module M  
+    def self.foo
+      $i += 1
+      $i == 1
+    end     
+
+    2.times {
+      puts(foo..false ? 'true' : 'false')
+    }
+  end
+}  
+", @"
 true
 true
+false
+false
+");
+        }
+
+        /// <summary>
+        /// The state variable of a range condition is statically allocated. 
+        /// </summary>
+        public void RangeCondition1C() {
+            TestOutput(@"
+$i = 0
+
+2.times {
+  module M  
+    def self.foo
+      $i += 1
+      $i == 1
+    end  
+
+    2.times {
+      eval(""puts(foo..false ? 'true' : 'false')"")
+    }
+  end
+}  
+", @"
 true
-true
+false
+false
+false
 ");
         }
 

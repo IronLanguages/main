@@ -29,6 +29,7 @@ using MSA = System.Linq.Expressions;
 
 namespace IronRuby.Compiler.Ast {
     using Ast = System.Linq.Expressions.Expression;
+    using System.Runtime.CompilerServices;
     
     internal sealed class AstGenerator {
         private static int _UniqueId;
@@ -119,6 +120,7 @@ namespace IronRuby.Compiler.Ast {
 
         public abstract class LexicalScope {
             public LexicalScope Parent;
+            public virtual bool IsLambda { get { return false; } }
         }
 
         public sealed class LoopScope : LexicalScope {
@@ -262,6 +264,10 @@ namespace IronRuby.Compiler.Ast {
             private readonly MSA.Expression/*!*/ _bfcVariable;
             private readonly MSA.LabelTarget/*!*/ _redoLabel;
 
+            public override bool IsLambda {
+                get { return true; }
+            }
+
             public MSA.Expression/*!*/ BfcVariable {
                 get { return _bfcVariable; }
             }
@@ -281,17 +287,17 @@ namespace IronRuby.Compiler.Ast {
 
         public sealed class MethodScope : FrameScope {
             private readonly MSA.Expression _blockVariable;
-            private readonly MSA.Expression/*!*/ _rfcVariable;
             private readonly string _methodName;
             private readonly Parameters _parameters;
             private MethodScope _parentMethod;
 
-            public MSA.Expression BlockVariable {
-                get { return _blockVariable; }
+            public override bool IsLambda {
+                get { return true; }
             }
 
-            public MSA.Expression/*!*/ RfcVariable {
-                get { return _rfcVariable; }
+            // use MakeMethodBlockParameterRead to access method's block parameter:
+            public MSA.Expression BlockVariable {
+                get { return _blockVariable; }
             }
 
             public MethodScope ParentMethod {
@@ -316,14 +322,11 @@ namespace IronRuby.Compiler.Ast {
                 MSA.Expression/*!*/ selfVariable,
                 MSA.ParameterExpression/*!*/ runtimeScopeVariable,
                 MSA.Expression blockVariable, 
-                MSA.Expression/*!*/ rfcVariable,
                 string methodName, 
                 Parameters parameters)
                 : base(builder, selfVariable, runtimeScopeVariable) {
 
-                Assert.NotNull(rfcVariable);
                 _blockVariable = blockVariable;
-                _rfcVariable = rfcVariable;
                 _methodName = methodName;
                 _parameters = parameters;
             }
@@ -358,7 +361,7 @@ namespace IronRuby.Compiler.Ast {
         // inner-most module (available only if we enter a module declaration in the current AST, not available in eval'd code or in a method):
         private ModuleScope _currentModule;
 
-        // inner-most method frame:
+        // inner-most method or top-level frame:
         public MethodScope/*!*/ CurrentMethod {
             get {
                 Debug.Assert(_currentMethod != null);
@@ -384,11 +387,6 @@ namespace IronRuby.Compiler.Ast {
         // inner-most rescue within the current frame (block or method):
         public RescueScope CurrentRescue {
             get { return _currentRescue; }
-        }
-
-        // RFC variable of the current method frame:
-        public MSA.Expression/*!*/ CurrentRfcVariable {
-            get { return CurrentMethod.RfcVariable; }
         }
 
         // "self" variable of the current variable scope:
@@ -483,17 +481,15 @@ namespace IronRuby.Compiler.Ast {
             MSA.Expression/*!*/ selfParameter,
             MSA.ParameterExpression/*!*/ runtimeScopeVariable,
             MSA.Expression blockParameter,
-            MSA.Expression/*!*/ rfcVariable,
             string/*!*/ methodName,
             Parameters parameters) {
-            Assert.NotNull(locals, selfParameter, runtimeScopeVariable, rfcVariable);
+            Assert.NotNull(locals, selfParameter, runtimeScopeVariable);
 
             MethodScope method = new MethodScope(
                 locals,
                 selfParameter, 
                 runtimeScopeVariable, 
                 blockParameter, 
-                rfcVariable,
                 methodName, 
                 parameters
             );
@@ -557,10 +553,9 @@ namespace IronRuby.Compiler.Ast {
             MSA.Expression/*!*/ selfParameter,
             MSA.ParameterExpression/*!*/ runtimeScopeVariable,
             MSA.Expression blockParameter,
-            MSA.Expression/*!*/ rfcVariable,
             string methodName,
             Parameters parameters) {
-            Assert.NotNull(locals, selfParameter, runtimeScopeVariable, rfcVariable);
+            Assert.NotNull(locals, selfParameter, runtimeScopeVariable);
 
             Debug.Assert(_currentElement == null && _currentLoop == null && _currentRescue == null &&
                 _currentVariableScope == null && _currentModule == null && _currentBlock == null && _currentMethod == null);
@@ -570,7 +565,6 @@ namespace IronRuby.Compiler.Ast {
                 selfParameter,
                 runtimeScopeVariable,
                 blockParameter,
-                rfcVariable,
                 methodName,
                 parameters);
         }
@@ -588,16 +582,26 @@ namespace IronRuby.Compiler.Ast {
         #endregion
 
         /// <summary>
+        /// Gets the inner most scope that compiles to a lambda expression.
+        /// </summary>
+        private VariableScope/*!*/ GetCurrentLambdaScope() {
+            LexicalScope scope = _currentVariableScope;
+            while (!scope.IsLambda) {
+                scope = scope.Parent;
+            }
+            return (VariableScope)scope;
+        }
+
+        /// <summary>
         /// Makes a read of the current method's block parameter. 
-        /// Returns Null constant in top-level code.
         /// </summary>
         internal MSA.Expression/*!*/ MakeMethodBlockParameterRead() {
-            Debug.Assert(CurrentMethod != null);
-
-            if (CurrentMethod.BlockVariable != null) {
+            VariableScope lambdaScope = GetCurrentLambdaScope();
+            if (lambdaScope == CurrentMethod && CurrentMethod.BlockVariable != null) {
                 return CurrentMethod.BlockVariable;
             } else {
-                return AstUtils.Constant(null, typeof(Proc));
+                // TODO: we can optimize and inline for 1..n levels of nesting:
+                return Methods.GetMethodBlockParameter.OpCall(CurrentScopeVariable);
             }
         }
 
@@ -606,13 +610,12 @@ namespace IronRuby.Compiler.Ast {
         /// Returns Null constant in top-level code.
         /// </summary>
         internal MSA.Expression/*!*/ MakeMethodBlockParameterSelfRead() {
-            Debug.Assert(CurrentMethod != null);
-
-            if (CurrentMethod.BlockVariable != null) {
-                return Ast.Property(AstUtils.Convert(CurrentMethod.BlockVariable, typeof(Proc)), Proc.SelfProperty);
+            VariableScope lambdaScope = GetCurrentLambdaScope();
+            if (lambdaScope == CurrentMethod && CurrentMethod.BlockVariable != null) {
+                return Methods.GetProcSelf.OpCall(CurrentMethod.BlockVariable);
             } else {
-                // no block -> error is reported before this value is used:
-                return AstUtils.Constant(null, typeof(object));
+                // TODO: we can optimize and inline for 1..n levels of nesting:
+                return Methods.GetMethodBlockParameterSelf.OpCall(CurrentScopeVariable);
             }
         }
 

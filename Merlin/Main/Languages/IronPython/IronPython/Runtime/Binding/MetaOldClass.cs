@@ -279,9 +279,9 @@ namespace IronPython.Runtime.Binding {
                             typeof(PythonOps).GetMethod("OldClassDictionaryIsPublic"),
                             self.Expression
                         ),
-                        Ast.Field(
-                            self.Expression,
-                            typeof(OldClass).GetField("__dict__")
+                        Ast.Call(
+                            typeof(PythonOps).GetMethod("OldClassGetDictionary"),
+                            self.Expression
                         )
                     );
                     break;
@@ -292,9 +292,9 @@ namespace IronPython.Runtime.Binding {
                     );
                     break;
                 case "__name__":
-                    target = Ast.Property(
-                        self.Expression,
-                        typeof(OldClass).GetProperty("__name__")
+                    target = Ast.Call(
+                        typeof(PythonOps).GetMethod("OldClassGetName"),
+                        self.Expression
                     );
                     break;
                 default:

@@ -23,11 +23,20 @@ using System.Linq.Expressions;
 using System.Reflection;
 using IronRuby.Builtins;
 using System.Collections.ObjectModel;
+using System.Collections;
+using System.Diagnostics;
 
 namespace IronRuby.Runtime.Calls {
     using Ast = System.Linq.Expressions.Expression;
     using AstFactory = IronRuby.Compiler.Ast.AstFactory;
-    using System.Collections;
+
+    using BlockCallTarget0 = Func<BlockParam, object, object>;
+    using BlockCallTarget1 = Func<BlockParam, object, object, object>;
+    using BlockCallTarget2 = Func<BlockParam, object, object, object, object>;
+    using BlockCallTarget3 = Func<BlockParam, object, object, object, object, object>;
+    using BlockCallTarget4 = Func<BlockParam, object, object, object, object, object, object>;
+    using BlockCallTargetN = Func<BlockParam, object, object[], object>;
+    using BlockCallTargetUnsplatN = Func<BlockParam, object, object[], RubyArray, object>;
 
     [Flags]
     public enum BlockSignatureAttributes {
@@ -43,15 +52,30 @@ namespace IronRuby.Runtime.Calls {
         // bits 31..3 store arity (might be different from formal parameter count)
     }
 
-    public delegate object BlockCallTarget0(BlockParam param, object self);
-    public delegate object BlockCallTarget1(BlockParam param, object self, object arg1);
-    public delegate object BlockCallTarget2(BlockParam param, object self, object arg1, object arg2);
-    public delegate object BlockCallTarget3(BlockParam param, object self, object arg1, object arg2, object arg3);
-    public delegate object BlockCallTarget4(BlockParam param, object self, object arg1, object arg2, object arg3, object arg4);
-    public delegate object BlockCallTargetN(BlockParam param, object self, object[] args);
-    public delegate object BlockCallTargetUnsplatN(BlockParam param, object self, object[] args, RubyArray/*!*/ array);
-    
+    internal abstract class BlockDispatcher<T> : BlockDispatcher where T : class {
+        protected T _block;
+
+        public BlockDispatcher(BlockSignatureAttributes attributesAndArity, string sourcePath, int sourceLine)
+            : base(attributesAndArity, sourcePath, sourceLine) {
+        }
+
+        public override Delegate/*!*/ Method {
+            get { return (Delegate)(object)_block; }
+        }
+
+        internal override BlockDispatcher/*!*/ SetMethod(object/*!*/ method) {
+            // Note: this might potentially be executed by multiple threads. So we can assert that _block == null here.
+            // It's ok if the delegate is overwritten multiple times since all the target methods are equivalent.
+            _block = (T)method;
+            return this;
+        }
+    }
+
     public abstract class BlockDispatcher {
+        // position of the block definition (opening brace):
+        private readonly string _sourcePath;
+        private readonly int _sourceLine;
+
         private readonly BlockSignatureAttributes _attributesAndArity;
 
         public bool HasSingleCompoundParameter {
@@ -74,6 +98,10 @@ namespace IronRuby.Runtime.Calls {
         // Includes anonymous parameter.
         public abstract int ParameterCount { get; }
         public abstract Delegate/*!*/ Method { get; }
+        internal abstract BlockDispatcher/*!*/ SetMethod(object/*!*/ method);
+
+        public string SourcePath { get { return _sourcePath; } }
+        public int SourceLine { get { return _sourceLine; } }
 
         public abstract object Invoke(BlockParam/*!*/ param, object self);
         public abstract object InvokeNoAutoSplat(BlockParam/*!*/ param, object self, object arg1);
@@ -95,23 +123,25 @@ namespace IronRuby.Runtime.Calls {
         internal const int MaxBlockArity = 4;
         internal const int HiddenParameterCount = 2;
 
-        internal BlockDispatcher(BlockSignatureAttributes attributesAndArity) {
+        internal BlockDispatcher(BlockSignatureAttributes attributesAndArity, string sourcePath, int sourceLine) {
             _attributesAndArity = attributesAndArity;
+            _sourcePath = sourcePath;
+            _sourceLine = sourceLine;
         }
 
-        internal static BlockDispatcher/*!*/ Create(Delegate/*!*/ method, int parameterCount, BlockSignatureAttributes attributesAndArity) {
+        internal static BlockDispatcher/*!*/ Create(int parameterCount, BlockSignatureAttributes attributesAndArity, string sourcePath, int sourceLine) {
             if ((attributesAndArity & BlockSignatureAttributes.HasUnsplatParameter) == 0) {
                 switch (parameterCount) {
-                    case 0: return new BlockDispatcher0((BlockCallTarget0)method, attributesAndArity);
-                    case 1: return new BlockDispatcher1((BlockCallTarget1)method, attributesAndArity);
-                    case 2: return new BlockDispatcher2((BlockCallTarget2)method, attributesAndArity);
-                    case 3: return new BlockDispatcher3((BlockCallTarget3)method, attributesAndArity);
-                    case 4: return new BlockDispatcher4((BlockCallTarget4)method, attributesAndArity);
-                    default: return new BlockDispatcherN((BlockCallTargetN)method, parameterCount, attributesAndArity);
+                    case 0: return new BlockDispatcher0(attributesAndArity, sourcePath, sourceLine);
+                    case 1: return new BlockDispatcher1(attributesAndArity, sourcePath, sourceLine);
+                    case 2: return new BlockDispatcher2(attributesAndArity, sourcePath, sourceLine);
+                    case 3: return new BlockDispatcher3(attributesAndArity, sourcePath, sourceLine);
+                    case 4: return new BlockDispatcher4(attributesAndArity, sourcePath, sourceLine);
+                    default: return new BlockDispatcherN(parameterCount, attributesAndArity, sourcePath, sourceLine);
                 }
             }
 
-            return new BlockDispatcherUnsplatN((BlockCallTargetUnsplatN)method, parameterCount, attributesAndArity);
+            return new BlockDispatcherUnsplatN(parameterCount, attributesAndArity, sourcePath, sourceLine);
         }
 
         internal static LambdaExpression/*!*/ CreateLambda(Expression body, string name, ReadOnlyCollection<ParameterExpression> parameters,

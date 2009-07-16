@@ -1,6 +1,6 @@
-require 'binary2'
-require 'utf8'
-require 'sjis'
+require 'src_binary'
+require 'src_utf8'
+require 'src_sjis'
 
 s = {
   ' b' => get_binary_str,

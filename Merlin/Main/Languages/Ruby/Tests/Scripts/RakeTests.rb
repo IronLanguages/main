@@ -26,12 +26,8 @@ class TestFileList
 end
 
 class TestFileUtils
-  # Most of these failures are because of http://ironruby.codeplex.com/WorkItem/View.aspx?WorkItemId=1184  resulting in this error:
-  #   NoMethodError: private method `safe_ln' called for #<TestFileUtils::BadLink:0x0002f72 @failure_class=NotImplementedError>
+  #we're not exiting correctly from the ruby method. 
   def test_ruby() end
-  def test_safe_ln_failover_to_cp_on_not_implemented_error() end
-  def test_safe_ln_failover_to_cp_on_standard_error() end
-  def test_safe_ln_fails_on_script_error() end
 end
 
 class TestPathMapExplode

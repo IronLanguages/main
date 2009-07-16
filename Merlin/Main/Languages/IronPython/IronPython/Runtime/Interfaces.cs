@@ -19,39 +19,7 @@ namespace IronPython.Runtime {
 
     public interface ICodeFormattable {
         string/*!*/ __repr__(CodeContext/*!*/ context);
-    }
-
-    public interface ISequence {
-        int __len__();
-
-        object this[int index] {
-            get;
-        }
-        object this[Slice slice] {
-            get;
-        }
-
-        // deprecated __getslice__ method
-        object __getslice__(int start, int stop);
-    }
-
-    public interface IMutableSequence : ISequence {
-        new object this[int index] {
-            get;
-            set;
-        }
-        new object this[Slice slice] {
-            get;
-            set;
-        }
-
-        void __delitem__(int index);
-        void __delitem__(Slice slice);
-
-        // deprecated __setslice__ and __delslice__ methods
-        void __setslice__(int start, int stop, object value);
-        void __delslice__(int start, int stop);
-    }
+    }    
 
     /// <summary>
     /// Defines the internal interface used for accessing weak references and adding finalizers

@@ -33,6 +33,7 @@ class ConsoleTutorial
         prompt = "> "
         chapter.tasks.each do |task|
             @out.puts task.description
+            next if not @task.should_run? @context.bind
             task.setup.call(@context.bind) if task.setup
             @out.puts "Enter the following code:"
             @out.puts task.code_string

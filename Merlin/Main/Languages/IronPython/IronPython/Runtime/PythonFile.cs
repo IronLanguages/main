@@ -877,6 +877,7 @@ namespace IronPython.Runtime {
     #endregion
 
     [PythonType("file")]
+    [DontMapIEnumerableToContains]
     public class PythonFile : IDisposable, ICodeFormattable, IEnumerable<string>, IEnumerable, IWeakReferenceable {
         private ConsoleStreamType _consoleStreamType;
         private SharedIO _io;   // null for non-console
@@ -892,7 +893,7 @@ namespace IronPython.Runtime {
         private WeakRefTracker _weakref;
         internal readonly PythonContext/*!*/ _context;
 
-        public bool softspace;
+        private bool _softspace;
 
         internal bool IsConsole {
             get {
@@ -941,7 +942,7 @@ namespace IronPython.Runtime {
         // 
         // Seems C-Python allows "b|t" at the beginning too.
         // 
-        public void __init__(CodeContext/*!*/ context, string name, [DefaultParameterValue("r")]string mode, [DefaultParameterValue(-1)]int bufsize) {
+        public void __init__(CodeContext/*!*/ context, string name, [DefaultParameterValue("r")]string mode, [DefaultParameterValue(-1)]int buffering) {
             FileShare fshare = FileShare.ReadWrite;
             FileMode fmode;
             FileAccess faccess;
@@ -965,10 +966,10 @@ namespace IronPython.Runtime {
                 Stream stream;
                 if (Environment.OSVersion.Platform == PlatformID.Win32NT && name == "nul") {
                     stream = Stream.Null;
-                } else if (bufsize <= 0) {
+                } else if (buffering <= 0) {
                     stream = PythonContext.GetContext(context).DomainManager.Platform.OpenInputFileStream(name, fmode, faccess, fshare);
                 } else {
-                    stream = PythonContext.GetContext(context).DomainManager.Platform.OpenInputFileStream(name, fmode, faccess, fshare, bufsize);
+                    stream = PythonContext.GetContext(context).DomainManager.Platform.OpenInputFileStream(name, fmode, faccess, fshare, buffering);
                 }
 
                 // we want to own the lifetime of the stream so we can flush & dispose in our finalizer...
@@ -1391,6 +1392,15 @@ namespace IronPython.Runtime {
                     _reader.DiscardBufferedData();
                     _reader.Position = newPos;
                 }
+            }
+        }
+
+        public bool softspace {
+            get {
+                return _softspace;
+            }
+            set {
+                _softspace = value;
             }
         }
 

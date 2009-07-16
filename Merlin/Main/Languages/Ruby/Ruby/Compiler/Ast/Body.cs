@@ -226,11 +226,12 @@ namespace IronRuby.Compiler.Ast {
             return result;
         }
 
-        internal override Expression/*!*/ ToCondition() {
+        internal override Expression/*!*/ ToCondition(LexicalScope/*!*/ currentScope) {
             // propagates 'in condition' property if we have a single element:
             if (_statements != null && _statements.Count == 1 && !HasExceptionHandling) {
-                _statements.First.ToCondition();
+                return _statements.First.ToCondition(currentScope);
             }
+
             return this;
         }
     }

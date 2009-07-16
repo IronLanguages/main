@@ -56,13 +56,7 @@ namespace Microsoft.Scripting.Actions {
         private DynamicMetaObject MakeDeleteMemberTarget(SetOrDeleteMemberInfo delInfo, DynamicMetaObject target) {
             Type type = target.GetLimitType();
             BindingRestrictions restrictions = target.Restrictions;
-            Expression self = target.Expression;
-
-            // needed for DeleteMember call until DynamicAction goes away
-            OldDynamicAction act = OldDeleteMemberAction.Make(
-                this,
-                delInfo.Name
-            );
+            DynamicMetaObject self = target;
 
             if (typeof(TypeTracker).IsAssignableFrom(type)) {
                 restrictions = restrictions.Merge(
@@ -75,8 +69,8 @@ namespace Microsoft.Scripting.Actions {
 
             delInfo.Body.Restrictions = restrictions;
 
-            if (self == null || !MakeOperatorDeleteMemberBody(delInfo, self, type, "DeleteMember")) {
-                MemberGroup group = GetMember(act, type, delInfo.Name);
+            if (self == null || !MakeOperatorDeleteMemberBody(delInfo, self.Expression, type, "DeleteMember")) {
+                MemberGroup group = GetMember(MemberRequestKind.Delete, type, delInfo.Name);
                 if (group.Count != 0) {
                     if (group[0].MemberType == TrackerTypes.Property) {
                         MethodInfo del = ((PropertyTracker)group[0]).GetDeleteMethod(PrivateBinding);
@@ -88,7 +82,7 @@ namespace Microsoft.Scripting.Actions {
 
                     delInfo.Body.FinishCondition(MakeError(MakeUndeletableMemberError(GetDeclaringMemberType(group), delInfo.Name), typeof(object)));
                 } else {
-                    delInfo.Body.FinishCondition(MakeError(MakeMissingMemberError(type, delInfo.Name), typeof(object)));
+                    delInfo.Body.FinishCondition(MakeError(MakeMissingMemberErrorForDelete(type, self, delInfo.Name), typeof(object)));
                 }
             }
 
@@ -105,9 +99,11 @@ namespace Microsoft.Scripting.Actions {
             return t;
         }
 
-        private void MakePropertyDeleteStatement(SetOrDeleteMemberInfo delInfo, Expression instance, MethodInfo delete) {
+        private void MakePropertyDeleteStatement(SetOrDeleteMemberInfo delInfo, DynamicMetaObject instance, MethodInfo delete) {
             delInfo.Body.FinishCondition(
-                MakeCallExpression(delInfo.CodeContext, delete, instance)
+                instance == null ? 
+                    MakeCallExpression(delInfo.CodeContext, delete) :
+                    MakeCallExpression(delInfo.CodeContext, delete, instance.Expression)
             );
         }
 

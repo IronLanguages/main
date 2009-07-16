@@ -143,6 +143,7 @@ class HtmlTutorial
             <h3><%= chapter.name %></h3>
             <p class="Body"><%= ToStyledHtml.convert(chapter.introduction) %></p>
             <% chapter.tasks.each do |task| %>
+              <% next if not task.should_run? @context.bind %>
               <% task.setup.call(@context.bind) if task.setup %>
               <p class="Body"><%= ToStyledHtml.convert(task.description) %></p>
               <p class="Code-Highlighted">
