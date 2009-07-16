@@ -66,7 +66,7 @@ namespace IronRuby.Builtins {
             }
             return index >= 0 && index <= str.Length;
         }
-
+        
         // Parses interval strings that are of this form:
         //
         // abc         # abc
@@ -850,6 +850,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("capitalize!")]
         public static MutableString CapitalizeInPlace(MutableString/*!*/ self) {
+            self.RequireNotFrozen();
             return CapitalizeMutableString(self) ? self : null;
         }
 
@@ -862,6 +863,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("downcase!")]
         public static MutableString DownCaseInPlace(MutableString/*!*/ self) {
+            self.RequireNotFrozen();
             return DownCaseMutableString(self) ? self : null;
         }
 
@@ -874,6 +876,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("swapcase!")]
         public static MutableString SwapCaseInPlace(MutableString/*!*/ self) {
+            self.RequireNotFrozen();
             return SwapCaseMutableString(self) ? self : null;
         }
 
@@ -886,6 +889,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("upcase!")]
         public static MutableString UpCaseInPlace(MutableString/*!*/ self) {
+            self.RequireNotFrozen();
             return UpCaseMutableString(self) ? self : null;
         }
 
@@ -1748,6 +1752,8 @@ namespace IronRuby.Builtins {
         [RubyMethod("delete!")]
         public static MutableString/*!*/ DeleteInPlace(RubyContext/*!*/ context, MutableString/*!*/ self,
             [DefaultProtocol, NotNull, NotNullItems]params MutableString/*!*/[]/*!*/ strs) {
+            self.RequireNotFrozen();
+
             if (strs.Length == 0) {
                 throw RubyExceptions.CreateArgumentError("wrong number of arguments");
             }
@@ -1968,6 +1974,8 @@ namespace IronRuby.Builtins {
         [RubyMethod("succ!")]
         [RubyMethod("next!")]
         public static MutableString/*!*/ SuccInPlace(MutableString/*!*/ self) {
+            self.RequireNotFrozen();
+
             if (self.IsEmpty) {
                 return self;
             }
@@ -2403,6 +2411,11 @@ namespace IronRuby.Builtins {
                 throw new NotImplementedException("TODO: KCODE");
             }
 
+            if (self.Length == 0) {
+                return self;
+            }
+            self.RequireNotFrozen();
+
             // TODO: MRI 1.9: allows invalid characters
             return self.Reverse();
         }
@@ -2624,6 +2637,41 @@ namespace IronRuby.Builtins {
                             result.Add(str);
                             break;
 
+                        case 'B':
+                        case 'b':
+                            if (stream.Length - stream.Position != 0) {
+                                count = directive.Count.HasValue ? directive.Count.Value : (int)(stream.Length - stream.Position) * 8;
+                                buffer = reader.ReadBytes((int)Math.Ceiling((double)count / 8));
+                                if (count > buffer.Length * 8) {
+                                    count = buffer.Length * 8;
+                                }
+                                str = MutableString.CreateBinary(count);
+
+                                if ((directive.Directive == 'B' && BitConverter.IsLittleEndian) || (directive.Directive == 'b' && !BitConverter.IsLittleEndian)) {
+                                    for (int i = 0; i < buffer.Length; i++) {
+                                        byte b = buffer[i];
+                                        int r = (b >> 4) | ((b & 0x0F) << 4);
+                                        r = ((r & 0xCC) >> 2) | ((r & 0x33) << 2);
+                                        r = ((r & 0xAA) >> 1) | ((r & 0x55) << 1);
+                                        buffer[i] = (byte)r;
+                                    }
+                                }
+
+                                for (int b = 0, i = 0; b < count; b++) {
+                                    if (b == 8) {
+                                        i++;
+                                        b = 0;
+                                        count -= 8;
+                                    }
+                                    str.Append(((buffer[i] & (1 << b)) != 0 ? '1' : '0'));
+                                }
+                            }
+                            else {
+                                str = MutableString.CreateEmpty();
+                            }
+                            result.Add(str);
+                            break;
+
                         case 'Z':
                             maxCount = (int)(stream.Length - stream.Position);
                             count = directive.Count.HasValue ? directive.Count.Value : maxCount;
@@ -2671,6 +2719,37 @@ namespace IronRuby.Builtins {
                                 if (value <= Int32.MaxValue) {
                                     result.Add((int)value);
                                 } else {
+                                    result.Add((BigInteger)value);
+                                }
+                            }
+                            break;
+
+                        case 'v':
+                            count = CalculateCounts(stream, directive.Count, sizeof(ushort), out nilCount);
+                            for (int j = 0; j < count; j++) {
+                                ushort value = reader.ReadUInt16();
+                                if (!BitConverter.IsLittleEndian) {
+                                    value = (ushort)(0x00FF & (value >> 8) |
+                                                     0xFF00 & (value << 8));
+                                }
+                                result.Add((int)value);
+                            }
+                            break;
+
+                        case 'V':
+                            count = CalculateCounts(stream, directive.Count, sizeof(uint), out nilCount);
+                            for (int j = 0; j < count; j++) {
+                                uint value = reader.ReadUInt32();
+                                if (!BitConverter.IsLittleEndian) {
+                                    value = (0x000000FF & (value >> 24) |
+                                             0x0000FF00 & (value >> 8) |
+                                             0x00FF0000 & (value << 8) |
+                                             0xFF000000 & (value << 24));
+                                }
+                                if (value <= Int32.MaxValue) {
+                                    result.Add((int)value);
+                                }
+                                else {
                                     result.Add((BigInteger)value);
                                 }
                             }
