@@ -98,8 +98,9 @@ namespace IronRuby.Compiler.Ast {
         }
 
         // Called on an expression that is used as a condition. 
+        // Returns an expression that represents a tree with some nodes converted to conditions.
         // Range expression with a non-literal-integer bound is converted to flip expression.
-        internal virtual Expression/*!*/ ToCondition() {
+        internal virtual Expression/*!*/ ToCondition(LexicalScope/*!*/ currentScope) {
             return this;
         }
     }

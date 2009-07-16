@@ -648,8 +648,12 @@ namespace Microsoft.Scripting.Interpreter {
                         CompileLessThan(node.Left, node.Right);
                         return;
 
+                    case ExpressionType.GreaterThan:
+                        CompileGreaterThan(node.Left, node.Right);
+                        return;
+
                     default:
-                        throw new NotImplementedException();
+                        throw new NotImplementedException(node.NodeType.ToString());
                 }
             }
         }
@@ -679,6 +683,17 @@ namespace Microsoft.Scripting.Interpreter {
             AddInstruction(LessThanInstruction.Instance(left.Type));
         }
 
+        private void CompileGreaterThan(Expression left, Expression right) {
+            Debug.Assert(left.Type == right.Type && TypeUtils.IsNumeric(left.Type));
+
+            // TODO:
+            // if (TypeUtils.IsNullableType(left.Type) && liftToNull) ...
+
+            Compile(left);
+            Compile(right);
+            AddInstruction(GreaterThanInstruction.Instance(left.Type));
+        }
+        
         private void CompileAdd(Expression left, Expression right) {
             if (left.Type == typeof(int) && right.Type == typeof(int)) {
                 Compile(left);
@@ -690,13 +705,21 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         private void CompileArrayIndex(Expression array, Expression index) {
-            Type elemType = array.Type.GetElementType();
-            if ((elemType.IsClass || elemType.IsInterface) && index.Type == typeof(int)) {
-                Compile(array);
-                Compile(index);
-                AddInstruction(GetArrayItemInstruction<object>.Instance);
+            if (index.Type == typeof(int)) {
+                Type elemType = array.Type.GetElementType();
+                if (elemType.IsClass || elemType.IsInterface) {
+                    Compile(array);
+                    Compile(index);
+                    AddInstruction(GetArrayItemInstruction<object>.Instance);
+                } else if (elemType == typeof(bool)) {
+                    Compile(array);
+                    Compile(index);
+                    AddInstruction(GetArrayItemInstruction<bool>.Instance);
+                } else {
+                    throw new NotImplementedException("ArrayIndex index type " + elemType);
+                }
             } else {
-                throw new NotImplementedException();
+                throw new NotImplementedException("ArrayIndex element type " + index.Type);
             }
         }
 
@@ -1366,7 +1389,20 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         private void CompileCoalesceBinaryExpression(Expression expr) {
-            throw new System.NotImplementedException();
+            var node = (BinaryExpression)expr;
+
+            if (TypeUtils.IsNullableType(node.Left.Type)) {
+                throw new NotImplementedException();
+            } else if (node.Conversion != null) {
+                throw new NotImplementedException();
+            } else {
+                var leftNotNull = MakeLabel();
+                Compile(node.Left);
+                AddBranch(new CoalescingBranchInstruction(), leftNotNull);
+                AddInstruction(PopInstruction.Instance);
+                Compile(node.Right);
+                leftNotNull.Mark();
+            }
         }
 
         private void CompileInvocationExpression(Expression expr) {

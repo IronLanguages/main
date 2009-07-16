@@ -470,7 +470,10 @@ namespace IronPython.Modules {
                         string[] names = _re.GetGroupNames();
                         int[] nums = _re.GetGroupNumbers();
                         for (int i = 1; i < names.Length; i++) {
-                            if (Char.IsDigit(names[i][0])) continue;    // skip numeric names
+                            if (Char.IsDigit(names[i][0]) || names[i].StartsWith(_mangledNamedGroup)) {
+                                // skip numeric names and our mangling for unnamed groups mixed w/ named groups.
+                                continue;    
+                            }
 
                             d[names[i]] = nums[i];
                         }
@@ -854,6 +857,7 @@ namespace IronPython.Modules {
         }
 
         private static char[] _preParsedChars = new[] { '(', '{', '[', ']' };
+        private const string _mangledNamedGroup = "___PyRegexNameMangled";
         /// <summary>
         /// Preparses a regular expression text returning a ParsedRegex class
         /// that can be used for further regular expressions.
@@ -964,7 +968,7 @@ namespace IronPython.Modules {
                                     curGroup++;
                                     if (containsNamedGroup) {
                                         // need to name this unnamed group
-                                        pattern = pattern.Insert(nameIndex, "?<Named" + GetRandomString() + ">");
+                                        pattern = pattern.Insert(nameIndex, "?<" + _mangledNamedGroup + GetRandomString() + ">");
                                     }
                                     break;
                             }

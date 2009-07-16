@@ -27,6 +27,7 @@ using System.Text;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 
+using IronPython.Modules;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
@@ -206,7 +207,7 @@ namespace IronPython.Runtime {
                     finalName = name;
                     // import relative
                     if (!TryGetExistingOrMetaPathModule(context, name, path, out newmod)) {
-                        newmod = ImportTopRelative(context, parts[0], name, path);
+                        newmod = ImportFromPath(context, parts[0], name, path);
                         if (newmod != null && parentScope != null) {
                             parentScope.SetName(SymbolTable.StringToId(modName), newmod);
                         }
@@ -274,11 +275,7 @@ namespace IronPython.Runtime {
         }
 
         private static object ImportTopRelative(CodeContext/*!*/ context, string/*!*/ name, string/*!*/ full, List/*!*/ path) {
-            object importedScope = ImportFromPath(context, name, full, path);
-            if (importedScope != null) {
-                context.Scope.SetName(SymbolTable.StringToId(name), importedScope);
-            }
-            return importedScope;
+            return ImportFromPath(context, name, full, path);
         }
         
         /// <summary>
@@ -865,7 +862,7 @@ namespace IronPython.Runtime {
 
 #if !SILVERLIGHT    // DirectoryExists isn't implemented on Silverlight
             if (!context.LanguageContext.DomainManager.Platform.DirectoryExists(dirname)) {
-                return new NullImporter(dirname);
+                return new PythonImport.NullImporter(dirname);
             }
 #endif
 

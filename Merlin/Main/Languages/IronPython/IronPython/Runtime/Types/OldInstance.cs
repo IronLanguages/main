@@ -201,7 +201,7 @@ namespace IronPython.Runtime.Types {
                 return PythonOps.CallWithContext(context, value);
             }
 
-            throw PythonOps.AttributeErrorForMissingAttribute(_class.__name__, Symbols.Length);
+            throw PythonOps.AttributeErrorForMissingAttribute(_class.Name, Symbols.Length);
         }
 
         public object __pos__(CodeContext context) {
@@ -211,7 +211,7 @@ namespace IronPython.Runtime.Types {
                 return PythonOps.CallWithContext(context, value);
             }
 
-            throw PythonOps.AttributeErrorForMissingAttribute(_class.__name__, Symbols.Positive);
+            throw PythonOps.AttributeErrorForMissingAttribute(_class.Name, Symbols.Positive);
         }
 
         [SpecialName]
@@ -232,7 +232,7 @@ namespace IronPython.Runtime.Types {
                 return PythonCalls.Call(context, value, item);
             }
 
-            throw PythonOps.AttributeErrorForMissingAttribute(_class.__name__, Symbols.DelItem);
+            throw PythonOps.AttributeErrorForMissingAttribute(_class.Name, Symbols.DelItem);
         }
 
         public object __getslice__(CodeContext context, int i, int j) {
@@ -243,7 +243,7 @@ namespace IronPython.Runtime.Types {
                 return PythonCalls.Call(context, callable, new Slice(i, j));
             }
 
-            throw PythonOps.TypeError("instance {0} does not have __getslice__ or __getitem__", _class.__name__);
+            throw PythonOps.TypeError("instance {0} does not have __getslice__ or __getitem__", _class.Name);
         }
         
         public void __setslice__(CodeContext context, int i, int j, object value) {
@@ -256,7 +256,7 @@ namespace IronPython.Runtime.Types {
                 return;
             }
 
-            throw PythonOps.TypeError("instance {0} does not have __setslice__ or __setitem__", _class.__name__);
+            throw PythonOps.TypeError("instance {0} does not have __setslice__ or __setitem__", _class.Name);
         }
 
         public object __delslice__(CodeContext context, int i, int j) {
@@ -267,7 +267,7 @@ namespace IronPython.Runtime.Types {
                 return PythonCalls.Call(context, callable, new Slice(i, j));
             }
 
-            throw PythonOps.TypeError("instance {0} does not have __delslice__ or __delitem__", _class.__name__);
+            throw PythonOps.TypeError("instance {0} does not have __delslice__ or __delitem__", _class.Name);
         }
 
         public object __index__(CodeContext context) {
@@ -287,7 +287,7 @@ namespace IronPython.Runtime.Types {
                 return PythonOps.CallWithContext(context, value);
             }
 
-            throw PythonOps.AttributeErrorForMissingAttribute(_class.__name__, Symbols.OperatorNegate);
+            throw PythonOps.AttributeErrorForMissingAttribute(_class.Name, Symbols.OperatorNegate);
         }
 
         public object __abs__(CodeContext context) {
@@ -297,7 +297,7 @@ namespace IronPython.Runtime.Types {
                 return PythonOps.CallWithContext(context, value);
             }
 
-            throw PythonOps.AttributeErrorForMissingAttribute(_class.__name__, Symbols.AbsoluteValue);
+            throw PythonOps.AttributeErrorForMissingAttribute(_class.Name, Symbols.AbsoluteValue);
         }
 
         public object __invert__(CodeContext context) {
@@ -307,7 +307,7 @@ namespace IronPython.Runtime.Types {
                 return PythonOps.CallWithContext(context, value);
             }
 
-            throw PythonOps.AttributeErrorForMissingAttribute(_class.__name__, Symbols.OperatorOnesComplement);
+            throw PythonOps.AttributeErrorForMissingAttribute(_class.Name, Symbols.OperatorOnesComplement);
         }
 
         public object __contains__(CodeContext context, object index) {
@@ -333,7 +333,7 @@ namespace IronPython.Runtime.Types {
         [SpecialName]
         public object Call(CodeContext context, object args) {
             try {
-                PythonOps.FunctionPushFrame();
+                PythonOps.FunctionPushFrame(PythonContext.GetContext(context));
 
                 object value;
                 if (TryGetBoundCustomMember(context, Symbols.Call, out value)) {
@@ -350,13 +350,13 @@ namespace IronPython.Runtime.Types {
                 PythonOps.FunctionPopFrame();
             }
 
-            throw PythonOps.AttributeError("{0} instance has no __call__ method", _class.__name__);
+            throw PythonOps.AttributeError("{0} instance has no __call__ method", _class.Name);
         }
 
         [SpecialName]
         public object Call(CodeContext context, params object[] args) {
             try {
-                PythonOps.FunctionPushFrame();
+                PythonOps.FunctionPushFrame(PythonContext.GetContext(context));
 
                 object value;
                 if (TryGetBoundCustomMember(context, Symbols.Call, out value)) {
@@ -366,13 +366,13 @@ namespace IronPython.Runtime.Types {
                 PythonOps.FunctionPopFrame();
             }
 
-            throw PythonOps.AttributeError("{0} instance has no __call__ method", _class.__name__);
+            throw PythonOps.AttributeError("{0} instance has no __call__ method", _class.Name);
         }
 
         [SpecialName]
         public object Call(CodeContext context, [ParamDictionary]IAttributesCollection dict, params object[] args) {
             try {
-                PythonOps.FunctionPushFrame();
+                PythonOps.FunctionPushFrame(PythonContext.GetContext(context));
 
                 object value;
                 if (TryGetBoundCustomMember(context, Symbols.Call, out value)) {
@@ -382,7 +382,7 @@ namespace IronPython.Runtime.Types {
                 PythonOps.FunctionPopFrame();
             }
 
-            throw PythonOps.AttributeError("{0} instance has no __call__ method", _class.__name__);
+            throw PythonOps.AttributeError("{0} instance has no __call__ method", _class.Name);
         }
 
         public object __nonzero__(CodeContext context) {
@@ -410,7 +410,7 @@ namespace IronPython.Runtime.Types {
                 return PythonOps.CallWithContext(context, value);
             }
 
-            throw PythonOps.AttributeErrorForMissingAttribute(_class.__name__, Symbols.ConvertToHex);
+            throw PythonOps.AttributeErrorForMissingAttribute(_class.Name, Symbols.ConvertToHex);
         }
 
         public object __oct__(CodeContext context) {
@@ -419,7 +419,7 @@ namespace IronPython.Runtime.Types {
                 return PythonOps.CallWithContext(context, value);
             }
 
-            throw PythonOps.AttributeErrorForMissingAttribute(_class.__name__, Symbols.ConvertToOctal);
+            throw PythonOps.AttributeErrorForMissingAttribute(_class.Name, Symbols.ConvertToOctal);
         }
 
         public object __int__(CodeContext context) {
@@ -844,7 +844,7 @@ namespace IronPython.Runtime.Types {
         #region Private Implementation Details
 
         private void RecurseAttrHierarchyInt(OldClass oc, IDictionary<SymbolId, object> attrs) {
-            foreach (KeyValuePair<object, object> kvp in oc.__dict__._storage.GetItems()) {
+            foreach (KeyValuePair<object, object> kvp in oc._dict._storage.GetItems()) {
                 string strKey = kvp.Key as string;
                 if (strKey != null) {
                     SymbolId si = SymbolTable.StringToId(strKey);

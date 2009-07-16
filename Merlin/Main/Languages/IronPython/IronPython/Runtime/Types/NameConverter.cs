@@ -82,11 +82,6 @@ namespace IronPython.Runtime.Types {
         internal static NameType GetNameFromMethod(PythonType dt, MethodInfo mi, NameType res, ref string name) {
             string namePrefix = null;
 
-            if (mi.IsDefined(typeof(PythonHiddenAttribute), false)) {
-                name = null;
-                return NameType.None;
-            }
-
             if (mi.IsPrivate || (mi.IsAssembly && !mi.IsFamilyOrAssembly)) {
                 // allow explicitly implemented interface
                 if (!(mi.IsPrivate && mi.IsFinal && mi.IsHideBySig && mi.IsVirtual)) {

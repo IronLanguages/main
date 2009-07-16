@@ -19,17 +19,20 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Diagnostics.SymbolStore;
 
+// Not needed in CLR 4 builds because we have the
+// ILGenerator.ILOffset property.
+
+#if MICROSOFT_SCRIPTING_CORE
+
 namespace System.Linq.Expressions.Compiler {
     /// <summary>
     /// Wraps ILGenerator with code that tracks the current IL offset as instructions are emitted into the IL stream.
-    /// We can conditionally compile this for non-Dev10 release only (using #ifdef MICROSOFT_SCRIPTING) 
-    /// as soon as Dev10 feature request (http://vstfdevdiv:8080/WorkItemTracking/WorkItem.aspx?artifactMoniker=599427) gets implemented.
     /// </summary>
     internal sealed class OffsetTrackingILGenerator {
         private readonly ILGenerator _ilg;
         internal int _offset;
 
-        internal int CurrentOffset { get { return _offset; } }
+        internal int ILOffset { get { return _offset; } }
 
         internal OffsetTrackingILGenerator(ILGenerator ilg) {
             Debug.Assert(ilg != null);
@@ -353,5 +356,6 @@ namespace System.Linq.Expressions.Compiler {
 
         #endregion
     }
-
 }
+
+#endif

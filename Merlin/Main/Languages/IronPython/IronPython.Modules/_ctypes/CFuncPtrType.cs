@@ -112,7 +112,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            object INativeType.GetValue(MemoryHolder owner, int offset, bool raw) {
+            object INativeType.GetValue(MemoryHolder owner, object readingFrom, int offset, bool raw) {
                 IntPtr funcAddr = owner.ReadIntPtr(offset);
                 if (raw) {
                     return funcAddr.ToPython();
@@ -128,6 +128,7 @@ namespace IronPython.Modules {
                     address.WriteIntPtr(offset, new IntPtr(((BigInteger)value).ToInt64()));
                 } else if (value is _CFuncPtr) {
                     address.WriteIntPtr(offset, ((_CFuncPtr)value).addr);
+                    return value;
                 } else {
                     throw PythonOps.TypeErrorForTypeMismatch("func pointer", value);
                 }
@@ -201,6 +202,7 @@ namespace IronPython.Modules {
                 return _reverseDelegate.CreateDelegate(_reverseDelegateType, constantPool);
             }
 
+           
             private void MakeReverseDelegateWorker(CodeContext context) {
                 Type[] sigTypes;
                 Type[] callSiteType;

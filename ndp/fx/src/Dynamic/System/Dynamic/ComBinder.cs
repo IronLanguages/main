@@ -28,7 +28,12 @@ namespace System.Dynamic {
     /// <summary>
     /// Provides helper methods to bind COM objects dynamically.
     /// </summary>
-    public static class ComBinder {
+#if MICROSOFT_DYNAMIC
+    public
+#else
+    internal
+#endif
+    static class ComBinder {
 
         /// <summary>
         /// Determines if an object is a COM object.
@@ -47,7 +52,7 @@ namespace System.Dynamic {
         /// <param name="result">The new <see cref="DynamicMetaObject"/> representing the result of the binding.</param>
         /// <param name="delayInvocation">true if member evaluation may be delayed.</param>
         /// <returns>true if operation was bound successfully; otherwise, false.</returns>
-#if MICROSOFT_DYNAMIC
+#if CLR2
         [SecurityCritical, SecurityTreatAsSafe]
 #else
         [SecuritySafeCritical]
@@ -97,7 +102,7 @@ namespace System.Dynamic {
         /// <param name="value">The <see cref="DynamicMetaObject"/> representing the value for the set member operation.</param>
         /// <param name="result">The new <see cref="DynamicMetaObject"/> representing the result of the binding.</param>
         /// <returns>true if operation was bound successfully; otherwise, false.</returns>
-#if MICROSOFT_DYNAMIC
+#if CLR2
         [SecurityCritical, SecurityTreatAsSafe]
 #else
         [SecuritySafeCritical]
@@ -130,7 +135,7 @@ namespace System.Dynamic {
         /// <param name="args">An array of <see cref="DynamicMetaObject"/> instances - arguments to the invoke member operation.</param>
         /// <param name="result">The new <see cref="DynamicMetaObject"/> representing the result of the binding.</param>
         /// <returns>true if operation was bound successfully; otherwise, false.</returns>
-#if MICROSOFT_DYNAMIC
+#if CLR2
         [SecurityCritical, SecurityTreatAsSafe]
 #else
         [SecuritySafeCritical]
@@ -163,7 +168,7 @@ namespace System.Dynamic {
         /// <param name="args">An array of <see cref="DynamicMetaObject"/> instances - arguments to the invoke member operation.</param>
         /// <param name="result">The new <see cref="DynamicMetaObject"/> representing the result of the binding.</param>
         /// <returns>true if operation was bound successfully; otherwise, false.</returns>
-#if MICROSOFT_DYNAMIC
+#if CLR2
         [SecurityCritical, SecurityTreatAsSafe]
 #else
         [SecuritySafeCritical]
@@ -196,7 +201,7 @@ namespace System.Dynamic {
         /// <param name="args">An array of <see cref="DynamicMetaObject"/> instances - arguments to the invoke member operation.</param>
         /// <param name="result">The new <see cref="DynamicMetaObject"/> representing the result of the binding.</param>
         /// <returns>true if operation was bound successfully; otherwise, false.</returns>
-#if MICROSOFT_DYNAMIC
+#if CLR2
         [SecurityCritical, SecurityTreatAsSafe]
 #else
         [SecuritySafeCritical]
@@ -230,7 +235,7 @@ namespace System.Dynamic {
         /// <param name="value">The <see cref="DynamicMetaObject"/> representing the value for the set index operation.</param>
         /// <param name="result">The new <see cref="DynamicMetaObject"/> representing the result of the binding.</param>
         /// <returns>true if operation was bound successfully; otherwise, false.</returns>
-#if MICROSOFT_DYNAMIC
+#if CLR2
         [SecurityCritical, SecurityTreatAsSafe]
 #else
         [SecuritySafeCritical]
@@ -263,7 +268,7 @@ namespace System.Dynamic {
         /// <param name="instance">The target of the dynamic operation.</param>
         /// <param name="result">The new <see cref="DynamicMetaObject"/> representing the result of the binding.</param>
         /// <returns>true if operation was bound successfully; otherwise, false.</returns>
-#if MICROSOFT_DYNAMIC
+#if CLR2
         [SecurityCritical, SecurityTreatAsSafe]
 #else
         [SecuritySafeCritical]
@@ -308,7 +313,7 @@ namespace System.Dynamic {
         /// </summary>
         /// <param name="value">The object for which member names are requested.</param>
         /// <returns>The collection of member names.</returns>
-#if MICROSOFT_DYNAMIC
+#if CLR2
         [SecurityCritical, SecurityTreatAsSafe]
 #else
         [SecuritySafeCritical]
@@ -332,7 +337,7 @@ namespace System.Dynamic {
         /// </summary>
         /// <param name="value">The object for which member names are requested.</param>
         /// <returns>The collection of member names.</returns>
-#if MICROSOFT_DYNAMIC
+#if CLR2
         [SecurityCritical, SecurityTreatAsSafe]
 #else
         [SecuritySafeCritical]
@@ -360,7 +365,7 @@ namespace System.Dynamic {
         /// <returns>The collection of pairs that represent data member's names and their data.</returns>
         [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         [SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
-#if MICROSOFT_DYNAMIC
+#if CLR2
         [SecurityCritical, SecurityTreatAsSafe]
 #else
         [SecuritySafeCritical]

@@ -363,14 +363,15 @@ namespace Microsoft.Scripting.Runtime {
             ContractUtils.RequiresNotNull(program, "program");
 
             object returnValue = program.Execute();
+            
+            if (returnValue == null) {
+                return 0;
+            }
 
-            CodeContext context = new CodeContext(new Scope(), this);
+            CallSite<Func<CallSite, object, int>> site =
+                CallSite<Func<CallSite, object, int>>.Create(CreateConvertBinder(typeof(int), true));
 
-            CallSite<Func<CallSite, CodeContext, object, object>> site =
-                CallSite<Func<CallSite, CodeContext, object, object>>.Create(OldConvertToAction.Make(Binder, typeof(int), ConversionResultKind.ExplicitTry));
-
-            object exitCode = site.Target(site, context, returnValue);
-            return (exitCode != null) ? (int)exitCode : 0;
+            return site.Target(site, returnValue);
         }
 
         #region Object Operations Support

@@ -75,6 +75,7 @@ namespace Microsoft.Scripting.Silverlight {
         #endregion
 
         static volatile bool _displayedError = false;
+        static ScriptRuntime _runtime;
 
         internal static void DisplayError(string targetElementId, Exception e) {
             // we only support displaying one error
@@ -82,6 +83,8 @@ namespace Microsoft.Scripting.Silverlight {
                 return;
             }
             _displayedError = true;
+
+            _runtime = DynamicApplication.Current.Engine.Runtime;
 
             Window.Show(targetElementId);
             Repl.Show();
@@ -133,8 +136,8 @@ namespace Microsoft.Scripting.Silverlight {
             if (sourceFile == null || line <= 0) {
                 return "";
             }
-
-            var stream = Package.GetFile(sourceFile);
+            
+            var stream = _runtime.Host.PlatformAdaptationLayer.OpenInputFileStream(sourceFile);
             if (stream == null) {
                 return "";
             }
@@ -193,7 +196,7 @@ namespace Microsoft.Scripting.Silverlight {
                     );
                 }
 
-                if (DynamicApplication.Current.ExceptionDetail) {
+                if (Settings.ExceptionDetail) {
                     html.Append("<br/>CLR Stack Trace:<br/>");
                     html.Append(EscapeHtml(ex.StackTrace != null ? ex.StackTrace : ex.ToString()));
                 }
@@ -265,15 +268,14 @@ namespace Microsoft.Scripting.Silverlight {
                 }
 
                 ScriptEngine engine = null;
-                if(_sourceFileName.IndexOfAny(Path.GetInvalidPathChars()) == 0) {
+                if (_sourceFileName != null && _sourceFileName.IndexOfAny(Path.GetInvalidPathChars()) == 0) {
                     var extension = System.IO.Path.GetExtension(_sourceFileName);
-                    DynamicApplication.Current.Runtime.TryGetEngineByFileExtension(extension, out engine);
-                } else {
+                    _runtime.TryGetEngineByFileExtension(extension, out engine);
+                } else if (Repl.Current != null && Repl.Current.Engine != null) {
                     // running at an interactive prompt, so get the prompt's engine
-                    if (Repl.Current != null && Repl.Current.Engine != null) {
-                        engine = Repl.Current.Engine;
-                    }
+                    engine = Repl.Current.Engine;
                 }
+
                 if (_sourceFileName != null && engine != null) {
                     ExceptionOperations es = engine.GetService<ExceptionOperations>();
                     es.GetExceptionMessage(_exception, out _message, out _errorTypeName);

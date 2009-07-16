@@ -68,7 +68,7 @@ namespace IronPython.Compiler.Ast {
             // Only the body is "in the loop" for the purposes of break/continue
             // The "else" clause is outside
             MSAst.LabelTarget breakLabel, continueLabel;
-            MSAst.Expression body = ag.TransformLoopBody(_body, out breakLabel, out continueLabel);
+            MSAst.Expression body = ag.TransformLoopBody(_body, _left.Start, out breakLabel, out continueLabel);
             if (body == null) {
                 // error recovery
                 return null;
@@ -99,17 +99,14 @@ namespace IronPython.Compiler.Ast {
                                                     Statement else_, SourceSpan span, SourceLocation header,
                                                     MSAst.LabelTarget breakLabel, MSAst.LabelTarget continueLabel) {
             // enumerator = PythonOps.GetEnumeratorForIteration(list)
-            MSAst.Expression init = ag.AddDebugInfo(
-                Ast.Assign(
+            MSAst.Expression init = Ast.Assign(
                     enumerator, 
                     ag.Operation(
                         typeof(IEnumerator),
                         PythonOperationKind.GetEnumeratorForIteration,
                         ag.TransformAsObject(list)
                     )
-                ),
-                list.Span
-            );
+                );
 
             // while enumerator.MoveNext():
             //    left = enumerator.Current

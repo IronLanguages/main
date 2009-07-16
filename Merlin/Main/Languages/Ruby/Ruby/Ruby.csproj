@@ -114,6 +114,7 @@
       <Link>Properties\SilverlightVersion.cs</Link>
     </Compile>
     <Compile Include="Builtins\Binding.cs" />
+    <Compile Include="Builtins\CharacterMap.cs" />
     <Compile Include="Builtins\ConsoleStream.cs" />
     <None Include="Builtins\Subclasses.Generator.rb" />
     <Compile Include="Builtins\RubyErrno.cs" />
@@ -135,7 +136,7 @@
     <Compile Include="Builtins\RubyClass.Meta.cs" />
     <Compile Include="Builtins\RubyEncoding.cs" />
     <Compile Include="Builtins\MutableString.BinaryContent.cs" />
-    <Compile Include="Builtins\MutableString.StringBuilderContent.cs" />
+    <Compile Include="Builtins\MutableString.CharArrayContent.cs" />
     <Compile Include="Builtins\MutableString.StringContent.cs" />
     <Compile Include="Builtins\RubyMethod.Meta.cs" />
     <Compile Include="Builtins\File.cs" />
@@ -333,7 +334,6 @@
     <Compile Include="Builtins\RubyArray.cs" />
     <Compile Include="Builtins\RubyClass.cs" />
     <Compile Include="Runtime\RubyCallTargets.cs" />
-    <Compile Include="Runtime\EvalEntryPointDelegate.cs" />
     <Compile Include="Runtime\Loader.cs" />
     <Compile Include="Runtime\Calls\RubyEventInfo.cs" />
     <Compile Include="Runtime\RubyExceptionData.cs" />

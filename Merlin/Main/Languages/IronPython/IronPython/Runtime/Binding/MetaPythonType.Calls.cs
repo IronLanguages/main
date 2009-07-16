@@ -252,7 +252,7 @@ namespace IronPython.Runtime.Binding {
 
         private InitAdapter/*!*/ GetInitAdapter(ArgumentValues/*!*/ ai, PythonTypeSlot/*!*/ init, DynamicMetaObjectBinder/*!*/ call, Expression/*!*/ codeContext) {
             PythonContext state = PythonContext.GetPythonContext(call);
-            if (IsMixedNewStyleOldStyle()) {
+            if (Value.IsMixedNewStyleOldStyle()) {
                 return new MixedInitAdapter(ai, state, codeContext);
             } else if ((init == InstanceOps.Init && !HasFinalizer(call)) || (Value == TypeCache.PythonType && ai.Arguments.Length == 2)) {
                 return new DefaultInitAdapter(ai, state, codeContext);
@@ -268,7 +268,7 @@ namespace IronPython.Runtime.Binding {
         private NewAdapter/*!*/ GetNewAdapter(ArgumentValues/*!*/ ai, PythonTypeSlot/*!*/ newInst, DynamicMetaObjectBinder/*!*/ call, Expression/*!*/ codeContext) {
             PythonContext state = PythonContext.GetPythonContext(call);
 
-            if (IsMixedNewStyleOldStyle()) {
+            if (Value.IsMixedNewStyleOldStyle()) {
                 return new MixedNewAdapter(ai, state, codeContext);
             } else if (newInst == InstanceOps.New) {
                 return new DefaultNewAdapter(ai, Value, state, codeContext);
@@ -685,20 +685,6 @@ namespace IronPython.Runtime.Binding {
             PythonTypeSlot del;
             bool hasDel = Value.TryResolveSlot(PythonContext.GetPythonContext(action).SharedContext, Symbols.Unassign, out del);
             return hasDel;
-        }
-
-        private bool IsMixedNewStyleOldStyle() {
-            if (!Value.IsOldClass) {
-                foreach (PythonType baseType in Value.ResolutionOrder) {
-                    if (baseType.IsOldClass) {
-                        // mixed new-style/old-style class, we can't handle
-                        // __init__ in an old-style class yet (it doesn't show
-                        // up in a slot).
-                        return true;
-                    }
-                }
-            }
-            return false;
         }
 
         private bool HasDefaultNew(DynamicMetaObjectBinder/*!*/ action) {

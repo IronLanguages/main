@@ -42,7 +42,7 @@ namespace IronPython.Compiler {
         private TokenizerBuffer _buffer;
         private ErrorSink _errors;
         private Severity _indentationInconsistencySeverity;
-        private bool _endContinues, _printFunction;
+        private bool _endContinues, _printFunction, _unicodeLiterals;
 
         private const int EOF = -1;
         private const int MaxIndent = 80;
@@ -86,6 +86,7 @@ namespace IronPython.Compiler {
             _state = new State(null);
             _dontImplyDedent = options.DontImplyDedent;
             _printFunction = options.PrintFunction;
+            _unicodeLiterals = options.UnicodeLiterals;
         }
 
         /// <summary>
@@ -299,6 +300,15 @@ namespace IronPython.Compiler {
             }
             set {
                 _printFunction = value;
+            }
+        }
+
+        internal bool UnicodeLiterals {
+            get {
+                return _unicodeLiterals;
+            }
+            set {
+                _unicodeLiterals = value;
             }
         }
 
@@ -688,7 +698,7 @@ namespace IronPython.Compiler {
 
 
             if (!isBytes) {
-                contents = LiteralParser.ParseString(contents, isRaw, isUnicode, complete);
+                contents = LiteralParser.ParseString(contents, isRaw, isUnicode || UnicodeLiterals, complete);
                 if (complete) {
                     return new ConstantValueToken(contents);
                 } else {

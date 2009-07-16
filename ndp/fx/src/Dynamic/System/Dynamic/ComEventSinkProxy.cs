@@ -69,7 +69,7 @@ namespace System.Dynamic {
 
         #region Base Class Overrides
 
-#if MICROSOFT_DYNAMIC
+#if CLR2
         // to match the base method
         [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.Infrastructure)]
 #else
@@ -87,7 +87,7 @@ namespace System.Dynamic {
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-#if MICROSOFT_DYNAMIC
+#if CLR2
         // to match the base method
         [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.Infrastructure)]
 #else

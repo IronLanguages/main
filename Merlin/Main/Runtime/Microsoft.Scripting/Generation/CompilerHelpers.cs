@@ -365,7 +365,8 @@ namespace Microsoft.Scripting.Generation {
             foreach (Type iface in interfaces) {
                 InterfaceMapping mapping = targetType.GetInterfaceMap(iface);
                 for (int i = 0; i < mapping.TargetMethods.Length; i++) {
-                    if (mapping.TargetMethods[i].MethodHandle == method.MethodHandle) {
+                    MethodInfo targetMethod = mapping.TargetMethods[i];
+                    if (targetMethod != null && targetMethod.MethodHandle == method.MethodHandle) {
                         return mapping.InterfaceMethods[i];
                     }
                 }

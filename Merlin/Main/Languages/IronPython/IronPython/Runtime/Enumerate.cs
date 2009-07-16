@@ -33,6 +33,7 @@ namespace IronPython.Runtime {
 
     [PythonType("enumerate")]
     [Documentation("enumerate(iterable) -> iterator for index, value of iterable")]
+    [DontMapIDisposableToContextManagerAttribute, DontMapIEnumerableToContains]
     public class Enumerate : IEnumerator, IEnumerator<object> {
         private readonly IEnumerator _iter;
         private int _index = -1;

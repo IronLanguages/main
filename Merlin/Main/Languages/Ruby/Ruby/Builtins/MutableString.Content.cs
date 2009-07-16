@@ -51,16 +51,13 @@ namespace IronRuby.Builtins {
                 return result;
             }
 
-            public bool IsBinaryEncoded {
-                get { return _owner._encoding == RubyEncoding.Binary; }
-            }
-
             #endregion
 
             public abstract string/*!*/ ConvertToString();
             public abstract byte[]/*!*/ ConvertToBytes();
             public abstract void SwitchToBinaryContent();
             public abstract void SwitchToStringContent();
+            public abstract void SwitchToMutableContent();
 
             public abstract byte[]/*!*/ ToByteArray();
             internal abstract byte[]/*!*/ GetByteArray();
@@ -72,7 +69,7 @@ namespace IronRuby.Builtins {
             // read:
             public abstract bool IsBinary { get; }
             public abstract bool IsEmpty { get; }
-            public abstract int Count { get; }
+            public abstract int Count { get; set; }
             public abstract int GetBinaryHashCode(out int binarySum);
             public abstract int GetHashCode(out int binarySum);
             public abstract int GetCharCount();
@@ -124,8 +121,8 @@ namespace IronRuby.Builtins {
             public abstract void Insert(int index, byte[]/*!*/ bytes, int start, int count);
             public abstract void InsertTo(Content/*!*/ str, int index, int start, int count);
 
-            public abstract void SetItem(int index, byte b);
-            public abstract void SetItem(int index, char c);
+            public abstract void SetByte(int index, byte b);
+            public abstract void SetChar(int index, char c);
 
             public abstract void Remove(int start, int count);
         }

@@ -15,7 +15,8 @@
 
 using IronPython.Runtime;
 using IronPython.Runtime.Types;
-using Microsoft.Scripting.Runtime; 
+using Microsoft.Scripting;
+using Microsoft.Scripting.Runtime;
 
 #if !SILVERLIGHT
 namespace IronPython.Modules {
@@ -70,6 +71,19 @@ namespace IronPython.Modules {
             // *** END GENERATED CODE ***
 
             #endregion
+
+            //[SlotField] public static PythonTypeSlot __cmp__ = new SlotWrapper(Symbols.Cmp, ProxyType);
+            [SlotField] public static PythonTypeSlot __delslice__ = new SlotWrapper(Symbols.DeleteSlice, ProxyType);
+            [SlotField] public static PythonTypeSlot __divmod__ = new SlotWrapper(Symbols.DivMod, ProxyType);
+            [SlotField] public static PythonTypeSlot __float__ = new SlotWrapper(Symbols.ConvertToFloat, ProxyType);
+            [SlotField] public static PythonTypeSlot __getslice__ = new SlotWrapper(Symbols.GetSlice, ProxyType);
+            [SlotField] public static PythonTypeSlot __index__ = new SlotWrapper(Symbols.Index, ProxyType);
+            [SlotField] public static PythonTypeSlot __int__ = new SlotWrapper(Symbols.ConvertToInt, ProxyType);
+            [SlotField] public static PythonTypeSlot __iter__ = new SlotWrapper(Symbols.Iter, ProxyType);
+            [SlotField] public static PythonTypeSlot __long__ = new SlotWrapper(Symbols.ConvertToLong, ProxyType);
+            [SlotField] public static PythonTypeSlot __rdivmod__ = new SlotWrapper(Symbols.ReverseDivMod, ProxyType);
+            [SlotField] public static PythonTypeSlot __setslice__ = new SlotWrapper(Symbols.SetSlice, ProxyType);
+            [SlotField] public static PythonTypeSlot next = new SlotWrapper(SymbolTable.StringToId("next"), ProxyType);
 
             [SlotField] public static PythonTypeSlot __getitem__ = new SlotWrapper(Symbols.GetItem, ProxyType);
             [SlotField] public static PythonTypeSlot __setitem__ = new SlotWrapper(Symbols.SetItem, ProxyType);
@@ -132,6 +146,19 @@ namespace IronPython.Modules {
             // *** END GENERATED CODE ***
 
             #endregion
+
+            //[SlotField] public static PythonTypeSlot __cmp__ = new SlotWrapper(Symbols.Cmp, CallableProxyType);
+            [SlotField] public static PythonTypeSlot __delslice__ = new SlotWrapper(Symbols.DeleteSlice, CallableProxyType);
+            [SlotField] public static PythonTypeSlot __divmod__ = new SlotWrapper(Symbols.DivMod, CallableProxyType);
+            [SlotField] public static PythonTypeSlot __float__ = new SlotWrapper(Symbols.ConvertToFloat, CallableProxyType);
+            [SlotField] public static PythonTypeSlot __getslice__ = new SlotWrapper(Symbols.GetSlice, CallableProxyType);
+            [SlotField] public static PythonTypeSlot __index__ = new SlotWrapper(Symbols.Index, CallableProxyType);
+            [SlotField] public static PythonTypeSlot __int__ = new SlotWrapper(Symbols.ConvertToInt, CallableProxyType);
+            [SlotField] public static PythonTypeSlot __iter__ = new SlotWrapper(Symbols.Iter, CallableProxyType);
+            [SlotField] public static PythonTypeSlot __long__ = new SlotWrapper(Symbols.ConvertToLong, CallableProxyType);
+            [SlotField] public static PythonTypeSlot __rdivmod__ = new SlotWrapper(Symbols.ReverseDivMod, CallableProxyType);
+            [SlotField] public static PythonTypeSlot __setslice__ = new SlotWrapper(Symbols.SetSlice, CallableProxyType);
+            [SlotField] public static PythonTypeSlot next = new SlotWrapper(SymbolTable.StringToId("next"), CallableProxyType);
 
             [SlotField] public static PythonTypeSlot __getitem__ = new SlotWrapper(Symbols.GetItem, CallableProxyType);
             [SlotField] public static PythonTypeSlot __setitem__ = new SlotWrapper(Symbols.SetItem, CallableProxyType);

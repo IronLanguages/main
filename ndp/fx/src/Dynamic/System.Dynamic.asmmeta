@@ -72,6 +72,7 @@
 	.field static assembly literal string SystemEnterpriseServices = "System.EnterpriseServices, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"
 	.field static assembly literal string SystemManagement = "System.Management, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"
 	.field static assembly literal string SystemMessaging = "System.Messaging, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"
+	.field static assembly literal string SystemNumerics = "System.Numerics, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
 	.field static assembly literal string SystemRuntimeRemoting = "System.Runtime.Remoting, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
 	.field static assembly literal string SystemRuntimeSerializationFormattersSoap = "System.Runtime.Serialization.Formatters.Soap, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"
 	.field static assembly literal string SystemSecurity = "System.Security, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"
@@ -90,6 +91,7 @@
 	.field static assembly literal string SystemWindowsForms = "System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
 	.field static assembly literal string SystemXml = "System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
 	.field static assembly literal string VJSharpCodeProvider = "VJSharpCodeProvider, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"
+	.field static assembly literal string WindowsBase = "WindowsBase, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35"
 }
 .class private abstract sealed FXAssembly
 	extends [mscorlib]System.Object
@@ -100,10 +102,10 @@
 	extends [mscorlib]System.Object
 {
 	.field static assembly literal string Copyright = bytearray(A9 00 20 00 4D 00 69 00 63 00 72 00 6F 00 73 00 6F 00 66 00 74 00 20 00 43 00 6F 00 72 00 70 00 6F 00 72 00 61 00 74 00 69 00 6F 00 6E 00 2E 00 20 00 20 00 41 00 6C 00 6C 00 20 00 72 00 69 00 67 00 68 00 74 00 73 00 20 00 72 00 65 00 73 00 65 00 72 00 76 00 65 00 64 00 2E 00)
-	.field static assembly literal int32 DailyBuildNumber = int32(0x00004F64)
+	.field static assembly literal int32 DailyBuildNumber = int32(0x000050E2)
 	.field static assembly literal string DefaultAlias = "System.Dynamic.dll"
 	.field static assembly literal string Description = "System.Dynamic.dll"
-	.field static assembly literal string InformationalVersion = "4.0.20324.2"
+	.field static assembly literal string InformationalVersion = "4.0.20706.0"
 	.field static assembly literal string Title = "System.Dynamic.dll"
 	.field static assembly literal string Version = "4.0.0.0"
 }
@@ -250,7 +252,7 @@
 			ret
 		}
 	}
-	.class public abstract sealed ComBinder
+	.class private abstract sealed ComBinder
 		extends [mscorlib]System.Object
 	{
 		.class nested assembly ComGetMemberBinder

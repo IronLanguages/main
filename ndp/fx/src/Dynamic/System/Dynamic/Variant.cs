@@ -167,7 +167,7 @@ namespace System.Dynamic {
         /// </summary>
         /// <returns></returns>
         [SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
-#if MICROSOFT_DYNAMIC
+#if CLR2
         [PermissionSet(SecurityAction.LinkDemand, Unrestricted = true)]
 #endif
         [SecurityCritical]
@@ -220,7 +220,7 @@ namespace System.Dynamic {
         /// Release any unmanaged memory associated with the Variant
         /// </summary>
         /// <returns></returns>
-#if MICROSOFT_DYNAMIC
+#if CLR2
         [PermissionSet(SecurityAction.LinkDemand, Unrestricted = true)]
 #endif
         [SecurityCritical]
@@ -269,7 +269,7 @@ namespace System.Dynamic {
             VariantType = VarEnum.VT_NULL;
         }
 
-#if MICROSOFT_DYNAMIC
+#if CLR2
         [PermissionSet(SecurityAction.LinkDemand, Unrestricted = true)]
 #endif
         [SecurityCritical]
@@ -322,7 +322,7 @@ namespace System.Dynamic {
             }
         }
 
-#if MICROSOFT_DYNAMIC
+#if CLR2
         [PermissionSet(SecurityAction.LinkDemand, Unrestricted = true)]
 #endif
         [SecurityCritical]
@@ -345,7 +345,7 @@ namespace System.Dynamic {
             }
         }
 
-#if MICROSOFT_DYNAMIC
+#if CLR2
         [PermissionSet(SecurityAction.LinkDemand, Unrestricted = true)]
 #endif
         [SecurityCritical]
@@ -368,7 +368,7 @@ namespace System.Dynamic {
             }
         }
 
-#if MICROSOFT_DYNAMIC
+#if CLR2
         [PermissionSet(SecurityAction.LinkDemand, Unrestricted = true)]
 #endif
         [SecurityCritical]
@@ -391,7 +391,7 @@ namespace System.Dynamic {
             }
         }
 
-#if MICROSOFT_DYNAMIC
+#if CLR2
         [PermissionSet(SecurityAction.LinkDemand, Unrestricted = true)]
 #endif
         [SecurityCritical]
@@ -414,7 +414,7 @@ namespace System.Dynamic {
             }
         }
 
-#if MICROSOFT_DYNAMIC
+#if CLR2
         [PermissionSet(SecurityAction.LinkDemand, Unrestricted = true)]
 #endif
         [SecurityCritical]
@@ -437,7 +437,7 @@ namespace System.Dynamic {
             }
         }
 
-#if MICROSOFT_DYNAMIC
+#if CLR2
         [PermissionSet(SecurityAction.LinkDemand, Unrestricted = true)]
 #endif
         [SecurityCritical]
@@ -460,7 +460,7 @@ namespace System.Dynamic {
             }
         }
 
-#if MICROSOFT_DYNAMIC
+#if CLR2
         [PermissionSet(SecurityAction.LinkDemand, Unrestricted = true)]
 #endif
         [SecurityCritical]
@@ -483,7 +483,7 @@ namespace System.Dynamic {
             }
         }
 
-#if MICROSOFT_DYNAMIC
+#if CLR2
         [PermissionSet(SecurityAction.LinkDemand, Unrestricted = true)]
 #endif
         [SecurityCritical]
@@ -506,7 +506,7 @@ namespace System.Dynamic {
             }
         }
 
-#if MICROSOFT_DYNAMIC
+#if CLR2
         [PermissionSet(SecurityAction.LinkDemand, Unrestricted = true)]
 #endif
         [SecurityCritical]
@@ -529,7 +529,7 @@ namespace System.Dynamic {
             }
         }
 
-#if MICROSOFT_DYNAMIC
+#if CLR2
         [PermissionSet(SecurityAction.LinkDemand, Unrestricted = true)]
 #endif
         [SecurityCritical]
@@ -552,7 +552,7 @@ namespace System.Dynamic {
             }
         }
 
-#if MICROSOFT_DYNAMIC
+#if CLR2
         [PermissionSet(SecurityAction.LinkDemand, Unrestricted = true)]
 #endif
         [SecurityCritical]
@@ -575,7 +575,7 @@ namespace System.Dynamic {
             }
         }
 
-#if MICROSOFT_DYNAMIC
+#if CLR2
         [PermissionSet(SecurityAction.LinkDemand, Unrestricted = true)]
 #endif
         [SecurityCritical]
@@ -598,7 +598,7 @@ namespace System.Dynamic {
             }
         }
 
-#if MICROSOFT_DYNAMIC
+#if CLR2
         [PermissionSet(SecurityAction.LinkDemand, Unrestricted = true)]
 #endif
         [SecurityCritical]
@@ -621,7 +621,7 @@ namespace System.Dynamic {
             }
         }
 
-#if MICROSOFT_DYNAMIC
+#if CLR2
         [PermissionSet(SecurityAction.LinkDemand, Unrestricted = true)]
 #endif
         [SecurityCritical]
@@ -649,7 +649,7 @@ namespace System.Dynamic {
             }
         }
 
-#if MICROSOFT_DYNAMIC
+#if CLR2
         [PermissionSet(SecurityAction.LinkDemand, Unrestricted = true)]
 #endif
         [SecurityCritical]
@@ -672,7 +672,7 @@ namespace System.Dynamic {
             }
         }
 
-#if MICROSOFT_DYNAMIC
+#if CLR2
         [PermissionSet(SecurityAction.LinkDemand, Unrestricted = true)]
 #endif
         [SecurityCritical]
@@ -695,7 +695,7 @@ namespace System.Dynamic {
             }
         }
 
-#if MICROSOFT_DYNAMIC
+#if CLR2
         [PermissionSet(SecurityAction.LinkDemand, Unrestricted = true)]
 #endif
         [SecurityCritical]
@@ -707,7 +707,7 @@ namespace System.Dynamic {
 
         // VT_BSTR
         public String AsBstr {
-            #if MICROSOFT_DYNAMIC
+            #if CLR2
             [PermissionSet(SecurityAction.LinkDemand, Unrestricted = true)]
             #endif
             [SecurityCritical]
@@ -719,7 +719,7 @@ namespace System.Dynamic {
                     return null;
                 }
             }
-            #if MICROSOFT_DYNAMIC
+            #if CLR2
             [PermissionSet(SecurityAction.LinkDemand, Unrestricted = true)]
             #endif
             [SecurityCritical]
@@ -732,7 +732,7 @@ namespace System.Dynamic {
             }
         }
 
-#if MICROSOFT_DYNAMIC
+#if CLR2
         [PermissionSet(SecurityAction.LinkDemand, Unrestricted = true)]
 #endif
         [SecurityCritical]
@@ -744,7 +744,7 @@ namespace System.Dynamic {
 
         // VT_UNKNOWN
         public Object AsUnknown {
-            #if MICROSOFT_DYNAMIC
+            #if CLR2
             [PermissionSet(SecurityAction.LinkDemand, Unrestricted = true)]
             #endif
             [SecurityCritical]
@@ -756,7 +756,7 @@ namespace System.Dynamic {
                     return null;
                 }
             }
-            #if MICROSOFT_DYNAMIC
+            #if CLR2
             [PermissionSet(SecurityAction.LinkDemand, Unrestricted = true)]
             #endif
             [SecurityCritical]
@@ -769,7 +769,7 @@ namespace System.Dynamic {
             }
         }
 
-#if MICROSOFT_DYNAMIC
+#if CLR2
         [PermissionSet(SecurityAction.LinkDemand, Unrestricted = true)]
 #endif
         [SecurityCritical]
@@ -781,7 +781,7 @@ namespace System.Dynamic {
 
         // VT_DISPATCH
         public Object AsDispatch {
-            #if MICROSOFT_DYNAMIC
+            #if CLR2
             [PermissionSet(SecurityAction.LinkDemand, Unrestricted = true)]
             #endif
             [SecurityCritical]
@@ -793,7 +793,7 @@ namespace System.Dynamic {
                     return null;
                 }
             }
-            #if MICROSOFT_DYNAMIC
+            #if CLR2
             [PermissionSet(SecurityAction.LinkDemand, Unrestricted = true)]
             #endif
             [SecurityCritical]
@@ -806,7 +806,7 @@ namespace System.Dynamic {
             }
         }
 
-#if MICROSOFT_DYNAMIC
+#if CLR2
         [PermissionSet(SecurityAction.LinkDemand, Unrestricted = true)]
 #endif
         [SecurityCritical]
@@ -825,7 +825,7 @@ namespace System.Dynamic {
         // VT_VARIANT
 
         public Object AsVariant {
-#if MICROSOFT_DYNAMIC
+#if CLR2
             [PermissionSet(SecurityAction.LinkDemand, Unrestricted = true)]
 #endif
             [SecurityCritical]
@@ -833,7 +833,7 @@ namespace System.Dynamic {
                 return Marshal.GetObjectForNativeVariant(UnsafeMethods.ConvertVariantByrefToPtr(ref this));
             }
 
-#if MICROSOFT_DYNAMIC
+#if CLR2
             [PermissionSet(SecurityAction.LinkDemand, Unrestricted = true)]
 #endif
             [SecurityCritical]
@@ -845,7 +845,7 @@ namespace System.Dynamic {
             }
         }
 
-#if MICROSOFT_DYNAMIC
+#if CLR2
         [PermissionSet(SecurityAction.LinkDemand, Unrestricted = true)]
 #endif
         [SecurityCritical]
@@ -856,7 +856,7 @@ namespace System.Dynamic {
         }
 
         // constructs a ByRef variant to pass contents of another variant ByRef.
-#if MICROSOFT_DYNAMIC
+#if CLR2
         [PermissionSet(SecurityAction.LinkDemand, Unrestricted = true)]
 #endif
         [SecurityCritical]

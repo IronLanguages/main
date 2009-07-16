@@ -62,7 +62,7 @@ namespace IronPython.Modules {
 
             [PropertyMethod, SpecialName]
             public object Getvalue() {
-                return NativeType.GetValue(_memHolder, 0, true);
+                return NativeType.GetValue(_memHolder, this, 0, true);
             }
 
             [PropertyMethod, SpecialName]
@@ -102,7 +102,7 @@ namespace IronPython.Modules {
             }
 
             private string GetDataRepr(CodeContext/*!*/ context) {
-                return PythonOps.Repr(context, NativeType.GetValue(_memHolder, 0, false));
+                return PythonOps.Repr(context, NativeType.GetValue(_memHolder, this, 0, false));
             }
 
             #endregion

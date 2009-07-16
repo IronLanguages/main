@@ -1,10 +1,6 @@
 Integration:
 - Update eggs from http://github.com/jschementi/eggs
 
-Microsoft.Scripting.Silverlight.Repl:
-- Make stdout flush for code running in the background, or before the console
-  starts. Right now only console-executed code can flush stdout.
-
 Tests:
 - Finish porting all tests from TestSuites (if needed)
 - Get IronRuby and IronPython tests running in SL

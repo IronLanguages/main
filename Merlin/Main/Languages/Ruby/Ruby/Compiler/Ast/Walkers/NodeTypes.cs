@@ -58,7 +58,9 @@ namespace IronRuby.Compiler.Ast {
         NotExpression,
         OrExpression,
         RangeExpression,
+        RangeCondition,
         RegularExpression,
+        RegularExpressionCondition,
         RegexMatchReference,
         RescueExpression,
         SelfReference,
@@ -139,7 +141,9 @@ namespace IronRuby.Compiler.Ast {
     public partial class NotExpression { public override NodeTypes NodeType { get { return NodeTypes.NotExpression; } } internal protected override void Walk(Walker/*!*/ walker) { walker.Walk(this); } }
     public partial class OrExpression { public override NodeTypes NodeType { get { return NodeTypes.OrExpression; } } internal protected override void Walk(Walker/*!*/ walker) { walker.Walk(this); } }
     public partial class RangeExpression { public override NodeTypes NodeType { get { return NodeTypes.RangeExpression; } } internal protected override void Walk(Walker/*!*/ walker) { walker.Walk(this); } }
+    public partial class RangeCondition { public override NodeTypes NodeType { get { return NodeTypes.RangeCondition; } } internal protected override void Walk(Walker/*!*/ walker) { walker.Walk(this); } }
     public partial class RegularExpression { public override NodeTypes NodeType { get { return NodeTypes.RegularExpression; } } internal protected override void Walk(Walker/*!*/ walker) { walker.Walk(this); } }
+    public partial class RegularExpressionCondition { public override NodeTypes NodeType { get { return NodeTypes.RegularExpressionCondition; } } internal protected override void Walk(Walker/*!*/ walker) { walker.Walk(this); } }
     public partial class RegexMatchReference { public override NodeTypes NodeType { get { return NodeTypes.RegexMatchReference; } } internal protected override void Walk(Walker/*!*/ walker) { walker.Walk(this); } }
     public partial class RescueExpression { public override NodeTypes NodeType { get { return NodeTypes.RescueExpression; } } internal protected override void Walk(Walker/*!*/ walker) { walker.Walk(this); } }
     public partial class SelfReference { public override NodeTypes NodeType { get { return NodeTypes.SelfReference; } } internal protected override void Walk(Walker/*!*/ walker) { walker.Walk(this); } }

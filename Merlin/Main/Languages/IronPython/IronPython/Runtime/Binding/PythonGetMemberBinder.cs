@@ -312,20 +312,18 @@ namespace IronPython.Runtime.Binding {
             Type type = CompilerHelpers.GetType(target);
 
             // needed for GetMember call until DynamicAction goes away
-            OldDynamicAction act = OldGetMemberAction.Make(Context.Binder, name);
-
             if (typeof(TypeTracker).IsAssignableFrom(type)) {
                 // no fast path for TypeTrackers
                 PerfTrack.NoteEvent(PerfTrack.Categories.BindingSlow, "GetNoFast TypeTracker");
                 return null;
             }
 
-            MemberGroup members = Context.Binder.GetMember(act, type, name);
+            MemberGroup members = Context.Binder.GetMember(MemberRequestKind.Get, type, name);
 
             if (members.Count == 0 && type.IsInterface) {
                 // all interfaces have object members
                 type = typeof(object);
-                members = Context.Binder.GetMember(act, type, name);
+                members = Context.Binder.GetMember(MemberRequestKind.Get, type, name);
             }
 
             if (members.Count == 0 && typeof(IStrongBox).IsAssignableFrom(type)) {
@@ -550,7 +548,7 @@ namespace IronPython.Runtime.Binding {
                         isNoThrow,
                         errorSuggestion
                     );
-                    Expression failure = GetFailureExpression(limitType, name, isNoThrow, action);
+                    Expression failure = GetFailureExpression(limitType, self, name, isNoThrow, action);
 
                     return BindingHelpers.FilterShowCls(codeContext, action, baseRes, failure);
                 }
@@ -597,12 +595,13 @@ namespace IronPython.Runtime.Binding {
             return res;
         }
 
-        private static Expression/*!*/ GetFailureExpression(Type/*!*/ limitType, string name, bool isNoThrow, DynamicMetaObjectBinder action) {
+        private static Expression/*!*/ GetFailureExpression(Type/*!*/ limitType, DynamicMetaObject self, string name, bool isNoThrow, DynamicMetaObjectBinder action) {
             return isNoThrow ?
                 Ast.Field(null, typeof(OperationFailed).GetField("Value")) :
                 DefaultBinder.MakeError(
                     PythonContext.GetPythonContext(action).Binder.MakeMissingMemberError(
                         limitType,
+                        self,
                         name
                     ),
                     typeof(object)

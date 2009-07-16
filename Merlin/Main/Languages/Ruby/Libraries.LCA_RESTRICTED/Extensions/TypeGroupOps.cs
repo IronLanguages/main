@@ -79,7 +79,7 @@ namespace IronRuby.Builtins {
             result.Append("#<TypeGroup: ");
 
             bool isFirst = true;
-            foreach (var entry in self.TypesByArity.Sort((x, y) => x.Key - y.Key)) {
+            foreach (var entry in self.TypesByArity.ToSortedList((x, y) => x.Key - y.Key)) {
                 Type type = entry.Value;
 
                 if (!isFirst) {

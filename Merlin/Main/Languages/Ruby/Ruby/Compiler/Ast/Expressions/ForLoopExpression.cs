@@ -42,11 +42,10 @@ namespace IronRuby.Compiler.Ast {
             get { return _list; }
         }
 
-        public ForLoopExpression(CompoundLeftValue/*!*/ variables, Expression/*!*/ list, Statements body, SourceSpan location)
+        public ForLoopExpression(LexicalScope/*!*/ definedScope, CompoundLeftValue/*!*/ variables, Expression/*!*/ list, Statements body, SourceSpan location)
             : base(location) {
-            Assert.NotNull(variables, list);
-            
-            _block = new BlockDefinition(null, variables, body, location);
+            Assert.NotNull(definedScope, variables, list);
+            _block = new BlockDefinition(definedScope, variables, body, location);
             _list = list;
         }
 

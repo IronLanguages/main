@@ -125,6 +125,7 @@ namespace Microsoft.Scripting.Debugging {
                     } else  {
                         DebugFrame leafFrame = thread.GetLeafFrame();
                         _traceFrame.Value = leafFrame;
+                        Debug.Assert(sequencePointIndex >= 0 && sequencePointIndex < functionInfo.SequencePoints.Length);
                         DebugSourceSpan sourceSpan = functionInfo.SequencePoints[sequencePointIndex];
                         traceCallback.OnTraceEvent(
                             kind,

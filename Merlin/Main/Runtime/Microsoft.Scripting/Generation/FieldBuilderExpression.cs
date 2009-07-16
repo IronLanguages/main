@@ -77,7 +77,7 @@ namespace Microsoft.Scripting.Generation {
 #endif
         }
 
-        protected override Expression VisitChildren(Func<Expression, Expression> visitor) {
+        protected override Expression VisitChildren(ExpressionVisitor visitor) {
             return this;
         }
     }

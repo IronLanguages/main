@@ -26,6 +26,7 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
+using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime.Operations {
@@ -103,7 +104,7 @@ namespace IronPython.Runtime.Operations {
         public static object DefaultNew(CodeContext context, PythonType type\u00F8, params object[] args\u00F8) {
             if (type\u00F8 == null) throw PythonOps.TypeError("__new__ expected type object, got {0}", PythonOps.Repr(context, DynamicHelpers.GetPythonType(type\u00F8)));
 
-            CheckInitArgs(context, null, args\u00F8, type\u00F8);
+            CheckNewArgs(context, null, args\u00F8, type\u00F8);
 
             return type\u00F8.CreateInstance(context);
         }
@@ -518,14 +519,31 @@ namespace IronPython.Runtime.Operations {
             return formattable.ToString(format, null);
         }
 
-        internal static void CheckInitArgs(CodeContext context, IAttributesCollection dict, object[] args, PythonType pt) {
-            PythonTypeSlot dts;
-            object initObj;
-            if (((args != null && args.Length > 0) || (dict != null && dict.Count > 0)) &&
-                (pt.TryResolveSlot(context, Symbols.Init, out dts)) && dts.TryGetValue(context, null, pt, out initObj) &&
-                initObj == Init) {
+        internal static void CheckNewArgs(CodeContext context, IAttributesCollection dict, object[] args, PythonType pt) {
+            if (((args != null && args.Length > 0) || (dict != null && dict.Count > 0))) {
+                bool hasObjectInit = pt.HasObjectInit(context);
+                bool hasObjectNew = pt.HasObjectNew(context);
 
-                throw PythonOps.TypeError("default __new__ does not take parameters");
+                if (hasObjectInit && hasObjectNew) {
+                    throw PythonOps.TypeError("default __new__ does not take parameters");
+                } else if (!hasObjectNew && !hasObjectInit) {
+                    PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "object.__new__() takes no parameters");
+                }
+            }
+        }
+
+        internal static void CheckInitArgs(CodeContext context, IAttributesCollection dict, object[] args, object self) {
+            if (((args != null && args.Length > 0) || (dict != null && dict.Count > 0))) {
+                PythonType pt = DynamicHelpers.GetPythonType(self);
+                bool hasObjectInit = pt.HasObjectInit(context);
+                bool hasObjectNew = pt.HasObjectNew(context);
+
+                // NoneType seems to get some special treatment (None.__init__('abc') works)
+                if (hasObjectInit && hasObjectNew && self != null) {
+                    throw PythonOps.TypeError("default __init__ does not take parameters");
+                } else if ((!hasObjectNew && !hasObjectInit) || self == null) {
+                    PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "object.__init__() takes no parameters for type {0}", PythonTypeOps.GetName(self));
+                }
             }
         }
 

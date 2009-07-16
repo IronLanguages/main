@@ -63,7 +63,7 @@ namespace IronPython.Runtime.Binding {
 
             if (Value.IsSystemType) {
                 MemberTracker tt = MemberTracker.FromMemberInfo(Value.UnderlyingSystemType);
-                MemberGroup mg = state.Binder.GetMember(OldSetMemberAction.Make(state.Binder, member.Name), Value.UnderlyingSystemType, member.Name);
+                MemberGroup mg = state.Binder.GetMember(MemberRequestKind.Set, Value.UnderlyingSystemType, member.Name);
 
                 // filter protected member access against .NET types, these can only be accessed from derived types...
                 foreach (MemberTracker mt in mg) {

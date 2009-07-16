@@ -28,7 +28,6 @@ namespace IronRuby.Compiler.Ast {
     public partial class RegularExpression : Expression {
         private readonly RubyRegexOptions _options;
         private readonly List<Expression>/*!*/ _pattern;
-        private bool _isCondition;
 
         public RubyRegexOptions Options {
             get { return _options; }
@@ -36,10 +35,6 @@ namespace IronRuby.Compiler.Ast {
 
         public List<Expression>/*!*/ Pattern {
             get { return _pattern; }
-        }
-
-        public bool IsCondition {
-            get { return _isCondition; }
         }
 
         public RegularExpression(List<Expression>/*!*/ pattern, RubyRegexOptions options, SourceSpan location) 
@@ -55,23 +50,35 @@ namespace IronRuby.Compiler.Ast {
         }
 
         internal override MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen) {
-            var result = StringConstructor.TransformConcatentation(
+            return StringConstructor.TransformConcatentation(
                 gen, 
                 _pattern, 
                 Methods.CreateRegex, 
                 AstUtils.Constant(_options), 
-                AstUtils.Constant(new StrongBox<RubyRegex>()));
-
-            if (_isCondition) {
-                result = Methods.MatchLastInputLine.OpCall(result, gen.CurrentScopeVariable);
-            }
-
-            return result;
+                AstUtils.Constant(new StrongBox<RubyRegex>())
+            );
         }
 
-        internal override Expression/*!*/ ToCondition() {
-            _isCondition = true;
-            return this;
+        internal override Expression/*!*/ ToCondition(LexicalScope/*!*/ currentScope) {
+            return new RegularExpressionCondition(this);
+        }
+    }
+
+    public partial class RegularExpressionCondition : Expression {
+        private readonly RegularExpression/*!*/ _regex;
+
+        public RegularExpression/*!*/ RegularExpression {
+            get { return _regex; }
+        }
+
+        public RegularExpressionCondition(RegularExpression/*!*/ regex)
+            : base(regex.Location) {
+            Assert.NotNull(regex);
+            _regex = regex;
+        }
+
+        internal override MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen) {
+            return Methods.MatchLastInputLine.OpCall(_regex.TransformRead(gen), gen.CurrentScopeVariable);
         }
     }
 }

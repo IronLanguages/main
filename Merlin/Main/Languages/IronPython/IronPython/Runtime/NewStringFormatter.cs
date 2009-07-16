@@ -22,6 +22,7 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
+using IronPython.Modules;
 using IronPython.Runtime.Operations;
 
 namespace IronPython.Runtime {

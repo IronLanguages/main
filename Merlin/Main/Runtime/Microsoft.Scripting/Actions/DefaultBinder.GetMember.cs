@@ -110,14 +110,8 @@ namespace Microsoft.Scripting.Actions {
         private DynamicMetaObject MakeGetMemberTarget(GetMemberInfo getMemInfo, DynamicMetaObject target) {
             Type type = target.GetLimitType();
             BindingRestrictions restrictions = target.Restrictions;
-            Expression self = target.Expression;
+            DynamicMetaObject self = target;
             target = target.Restrict(target.GetLimitType());
-
-            // needed for GetMember call until DynamicAction goes away
-            OldDynamicAction act = OldGetMemberAction.Make(
-                this,
-                getMemInfo.Name
-            );
 
             // Specially recognized types: TypeTracker, NamespaceTracker, and StrongBox.  
             // TODO: TypeTracker and NamespaceTracker should technically be IDO's.
@@ -130,7 +124,7 @@ namespace Microsoft.Scripting.Actions {
                 TypeGroup tg = target.Value as TypeGroup;
                 Type nonGen;
                 if (tg == null || tg.TryGetNonGenericType(out nonGen)) {
-                    members = GetMember(act, ((TypeTracker)target.Value).Type, getMemInfo.Name);
+                    members = GetMember(MemberRequestKind.Get, ((TypeTracker)target.Value).Type, getMemInfo.Name);
                     if (members.Count > 0) {
                         // we have a member that's on the type associated w/ the tracker, return that...
                         type = ((TypeTracker)target.Value).Type;
@@ -141,7 +135,7 @@ namespace Microsoft.Scripting.Actions {
 
             if (members.Count == 0) {
                 // Get the members
-                members = GetMember(act, type, getMemInfo.Name);
+                members = GetMember(MemberRequestKind.Get, type, getMemInfo.Name);
             }
 
             if (members.Count == 0) {
@@ -152,20 +146,20 @@ namespace Microsoft.Scripting.Actions {
                 } else if (type.IsInterface) {
                     // all interfaces have object members
                     type = typeof(object);
-                    members = GetMember(act, type, getMemInfo.Name);
+                    members = GetMember(MemberRequestKind.Get, type, getMemInfo.Name);
                 }
             }
 
-            Expression propSelf = self;
+            Expression propSelf = self == null ? null : self.Expression;
             // if lookup failed try the strong-box type if available.
-            if (members.Count == 0 && typeof(IStrongBox).IsAssignableFrom(type)) {
+            if (members.Count == 0 && typeof(IStrongBox).IsAssignableFrom(type) && propSelf != null) {
                 // properties/fields need the direct value, methods hold onto the strong box.
-                propSelf = Ast.Field(AstUtils.Convert(self, type), type.GetField("Value"));
+                propSelf = Ast.Field(AstUtils.Convert(propSelf, type), type.GetField("Value"));
 
                 type = type.GetGenericArguments()[0];
 
                 members = GetMember(
-                    act,
+                    MemberRequestKind.Get,
                     type,
                     getMemInfo.Name
                 );
@@ -177,7 +171,7 @@ namespace Microsoft.Scripting.Actions {
             return getMemInfo.Body.GetMetaObject(target);
         }
 
-        private void MakeBodyHelper(GetMemberInfo getMemInfo, Expression self, Expression propSelf, Type type, MemberGroup members) {
+        private void MakeBodyHelper(GetMemberInfo getMemInfo, DynamicMetaObject self, Expression propSelf, Type type, MemberGroup members) {
             if (self != null) {
                 MakeOperatorGetMemberBody(getMemInfo, propSelf, type, "GetCustomMember");
             }
@@ -192,7 +186,7 @@ namespace Microsoft.Scripting.Actions {
             }
         }
 
-        private void MakeSuccessfulMemberAccess(GetMemberInfo getMemInfo, Expression self, Expression propSelf, Type type, MemberGroup members, TrackerTypes memberType) {
+        private void MakeSuccessfulMemberAccess(GetMemberInfo getMemInfo, DynamicMetaObject self, Expression propSelf, Type type, MemberGroup members, TrackerTypes memberType) {
             switch (memberType) {
                 case TrackerTypes.TypeGroup:
                 case TrackerTypes.Type:
@@ -200,7 +194,7 @@ namespace Microsoft.Scripting.Actions {
                     break;
                 case TrackerTypes.Method:
                     // turn into a MethodGroup                    
-                    MakeGenericBodyWorker(getMemInfo, type, ReflectionCache.GetMethodGroup(getMemInfo.Name, members), self);
+                    MakeGenericBodyWorker(getMemInfo, type, ReflectionCache.GetMethodGroup(getMemInfo.Name, members), self == null ? null : self.Expression);
                     break;
                 case TrackerTypes.Event:
                 case TrackerTypes.Field:
@@ -215,7 +209,7 @@ namespace Microsoft.Scripting.Actions {
                         MakeOperatorGetMemberBody(getMemInfo, propSelf, type, "GetBoundMember");
                     }
 
-                    MakeMissingMemberRuleForGet(getMemInfo, type);
+                    MakeMissingMemberRuleForGet(getMemInfo, self, type);
                     break;
                 default:
                     throw new InvalidOperationException(memberType.ToString());
@@ -302,14 +296,14 @@ namespace Microsoft.Scripting.Actions {
             }
         }
 
-        private void MakeMissingMemberRuleForGet(GetMemberInfo getMemInfo, Type type) {
+        private void MakeMissingMemberRuleForGet(GetMemberInfo getMemInfo, DynamicMetaObject self, Type type) {
             if (getMemInfo.ErrorSuggestion != null) {
                 getMemInfo.Body.FinishCondition(getMemInfo.ErrorSuggestion.Expression);
             } else if (getMemInfo.IsNoThrow) {
                 getMemInfo.Body.FinishCondition(MakeOperationFailed());
             } else {
                 getMemInfo.Body.FinishCondition(
-                    MakeError(MakeMissingMemberError(type, getMemInfo.Name), typeof(object))
+                    MakeError(MakeMissingMemberError(type, self, getMemInfo.Name), typeof(object))
                 );
             }
         }

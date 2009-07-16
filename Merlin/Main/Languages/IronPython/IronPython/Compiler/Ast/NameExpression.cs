@@ -122,13 +122,13 @@ namespace IronPython.Compiler.Ast {
                 // keep the variable alive until we hit the del statement to
                 // better match CPython's lifetimes
                 MSAst.Expression del = Ast.Block(
-                    Ast.Call(                                   
+                    Ast.Call(
                         typeof(GC).GetMethod("KeepAlive"),
                         variable
                     ),
-                    ag.AddDebugInfo(ag.Globals.Delete(variable), Span)
+                    ag.Globals.Delete(variable)
                 );
-                    
+
                 if (!_assigned) {
                     del = Ast.Block(
                         Transform(ag, variable.Type),
@@ -138,15 +138,12 @@ namespace IronPython.Compiler.Ast {
                 }
                 return del;
             } else {
-                return ag.AddDebugInfo( 
-                    Ast.Call(
-                        typeof(PythonOps).GetMethod("RemoveName"),
-                        new [] {
-                            ag.LocalContext,
-                            ag.Globals.GetSymbol(_name)
-                        }
-                    ), 
-                    Span
+                return Ast.Call(
+                    typeof(PythonOps).GetMethod("RemoveName"),
+                    new[] {
+                        ag.LocalContext,
+                        ag.Globals.GetSymbol(_name)
+                    }
                 );
             }
         }

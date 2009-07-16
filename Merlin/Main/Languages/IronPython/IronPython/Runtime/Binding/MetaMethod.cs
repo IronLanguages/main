@@ -101,6 +101,7 @@ namespace IronPython.Runtime.Binding {
                     call = new DynamicMetaObject(
                         Ast.Call(
                             typeof(PythonOps).GetMethod("MethodCheckSelf"),
+                            PythonContext.GetCodeContext(callAction),
                             self.Expression,
                             AstUtils.Constant(null)
                         ),
@@ -110,7 +111,7 @@ namespace IronPython.Runtime.Binding {
                     // this may or may not be an error
                     call = new DynamicMetaObject(
                         Ast.Block(
-                            MakeCheckSelf(signature, args),
+                            MakeCheckSelf(callAction, signature, args),
                             Ast.Dynamic(
                                 PythonContext.GetPythonContext(callAction).Invoke(
                                     BindingHelpers.GetCallSignature(callAction)
@@ -244,18 +245,19 @@ namespace IronPython.Runtime.Binding {
             }
         }
 
-        private Expression/*!*/ MakeCheckSelf(CallSignature signature, DynamicMetaObject/*!*/[]/*!*/ args) {
+        private Expression/*!*/ MakeCheckSelf(DynamicMetaObjectBinder/*!*/ binder, CallSignature signature, DynamicMetaObject/*!*/[]/*!*/ args) {
             ArgumentType firstArgKind = signature.GetArgumentKind(0);
 
             Expression res;
             if (firstArgKind == ArgumentType.Simple || firstArgKind == ArgumentType.Instance) {
-                res = CheckSelf(AstUtils.Convert(Expression, typeof(Method)), args[0].Expression);
+                res = CheckSelf(binder, AstUtils.Convert(Expression, typeof(Method)), args[0].Expression);
             } else if (firstArgKind != ArgumentType.List) {
-                res = CheckSelf(AstUtils.Convert(Expression, typeof(Method)), AstUtils.Constant(null));
+                res = CheckSelf(binder, AstUtils.Convert(Expression, typeof(Method)), AstUtils.Constant(null));
             } else {
                 // list, check arg[0] and then return original list.  If not a list,
                 // or we have no items, then check against null & throw.
                 res = CheckSelf(
+                    binder,
                     AstUtils.Convert(Expression, typeof(Method)),
                     Ast.Condition(
                         Ast.AndAlso(
@@ -281,9 +283,10 @@ namespace IronPython.Runtime.Binding {
             return res;
         }
 
-        private Expression/*!*/ CheckSelf(Expression/*!*/ method, Expression/*!*/ inst) {
+        private Expression/*!*/ CheckSelf(DynamicMetaObjectBinder/*!*/ binder, Expression/*!*/ method, Expression/*!*/ inst) {
             return Ast.Call(
                 typeof(PythonOps).GetMethod("MethodCheckSelf"),
+                PythonContext.GetCodeContext(binder),
                 method,
                 AstUtils.Convert(inst, typeof(object))
             );

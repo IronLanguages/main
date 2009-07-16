@@ -24,32 +24,33 @@ namespace IronRuby.Compiler.Ast {
     using Ast = System.Linq.Expressions.Expression;
 
     public partial class LocalVariable : Variable {
-        private MSA.ParameterExpression _transformed;
+        // -1: the variable is defined in the outer runtime scope
+        private readonly int _definitionLexicalDepth;
 
-        public LocalVariable(string/*!*/ name, SourceSpan location)
+        // TODO: readonly + some mapping on AstGenerator?
+        private int _closureIndex;
+
+        internal LocalVariable(string/*!*/ name, SourceSpan location, int definitionLexicalDepth)
             : base(name, location) {
+            Debug.Assert(definitionLexicalDepth >= -1);
+
+            _definitionLexicalDepth = definitionLexicalDepth;
+            _closureIndex = -1;
         }
 
-        internal void TransformDefinition(ScopeBuilder/*!*/ locals) {
-            if (_transformed == null) {
-                _transformed = locals.DefineVariable(Name);
-            }
+        internal int ClosureIndex {
+            get { return _closureIndex; }
         }
 
-        internal MSA.ParameterExpression/*!*/ TransformParameterDefinition() {
-            Debug.Assert(_transformed == null);
-            return _transformed = Ast.Parameter(typeof(object), Name);
-        }
-
-        internal MSA.ParameterExpression/*!*/ TransformBlockParameterDefinition() {
-            Debug.Assert(_transformed == null);
-            return _transformed = Ast.Parameter(typeof(Proc), Name);
+        internal void SetClosureIndex(int index) {
+            Debug.Assert(_closureIndex == -1);
+            _closureIndex = index;
         }
 
         internal override MSA.Expression/*!*/ TransformReadVariable(AstGenerator/*!*/ gen, bool tryRead) {
-            if (_transformed != null) {
+            if (_definitionLexicalDepth >= 0) {
                 // static lookup:
-                return _transformed;
+                return gen.CurrentScope.GetVariableAccessor(_definitionLexicalDepth, _closureIndex);
             } else {
                 // dynamic lookup:
                 return Methods.GetLocalVariable.OpCall(gen.CurrentScopeVariable, AstUtils.Constant(Name));
@@ -57,9 +58,9 @@ namespace IronRuby.Compiler.Ast {
         }
 
         internal override MSA.Expression/*!*/ TransformWriteVariable(AstGenerator/*!*/ gen, MSA.Expression/*!*/ rightValue) {
-            if (_transformed != null) {
+            if (_definitionLexicalDepth >= 0) {
                 // static lookup:
-                return Ast.Assign(_transformed, AstUtils.Convert(rightValue, _transformed.Type));
+                return Ast.Assign(gen.CurrentScope.GetVariableAccessor(_definitionLexicalDepth, _closureIndex), AstFactory.Box(rightValue));
             } else {
                 // dynamic lookup:
                 return Methods.SetLocalVariable.OpCall(AstFactory.Box(rightValue), gen.CurrentScopeVariable, AstUtils.Constant(Name));

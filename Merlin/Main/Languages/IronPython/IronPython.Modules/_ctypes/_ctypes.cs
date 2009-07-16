@@ -662,7 +662,7 @@ namespace IronPython.Modules {
             return intPtrHandle;
         }
 
-        private static void ValidateArraySizes(ArrayModule.PythonArray array, int offset, int size) {
+        private static void ValidateArraySizes(ArrayModule.array array, int offset, int size) {
             ValidateArraySizes(array.__len__() * array.itemsize, offset, size);
         }
 
@@ -683,7 +683,7 @@ namespace IronPython.Modules {
 
         // TODO: Move these to an Ops class
         public static object GetCharArrayValue(_Array arr) {
-            return arr.NativeType.GetValue(arr._memHolder, 0, false);
+            return arr.NativeType.GetValue(arr._memHolder, arr, 0, false);
         }
 
         public static void SetCharArrayValue(_Array arr, object value) {
@@ -695,7 +695,7 @@ namespace IronPython.Modules {
         }
 
         public static object GetWCharArrayValue(_Array arr) {
-            return arr.NativeType.GetValue(arr._memHolder, 0, false);
+            return arr.NativeType.GetValue(arr._memHolder, arr, 0, false);
         }
 
         public static void SetWCharArrayValue(_Array arr, object value) {

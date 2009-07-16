@@ -280,15 +280,19 @@ namespace IronRuby.Tests {
         [DebuggerHiddenAttribute]
         private void RedirectOutput(TextWriter/*!*/ output, Action f) {
             // TODO:
-            MemoryStream stream = new MemoryStream();
-            Runtime.IO.SetOutput(stream, StringUtils.DefaultEncoding);
-            Runtime.IO.SetErrorOutput(Console.OpenStandardError(), Console.Error);
-
-            try {
+            if (Runtime == null) {
                 f();
-            } finally {
-                output.Write(StringUtils.DefaultEncoding.GetString(stream.ToArray()));
-                Runtime.IO.RedirectToConsole();
+            } else {
+                MemoryStream stream = new MemoryStream();
+                Runtime.IO.SetOutput(stream, StringUtils.DefaultEncoding);
+                Runtime.IO.SetErrorOutput(Console.OpenStandardError(), Console.Error);
+
+                try {
+                    f();
+                } finally {
+                    output.Write(StringUtils.DefaultEncoding.GetString(stream.ToArray()));
+                    Runtime.IO.RedirectToConsole();
+                }
             }
         }
 

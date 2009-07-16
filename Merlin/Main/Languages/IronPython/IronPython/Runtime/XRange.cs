@@ -22,7 +22,8 @@ using Microsoft.Scripting.Runtime;
 namespace IronPython.Runtime {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
     [PythonType("xrange")]
-    public sealed class XRange : ISequence, ICollection, IEnumerable, IEnumerable<int>, ICodeFormattable {
+    [DontMapIEnumerableToContains]
+    public sealed class XRange : ICollection, IEnumerable, IEnumerable<int>, ICodeFormattable, IList {
         private int _start, _stop, _step, _length;
 
         public XRange(int stop) : this(0, stop, 1) { }
@@ -107,10 +108,6 @@ namespace IronPython.Runtime {
             }
         }
 
-        public object __getslice__(int start, int stop) {
-            throw PythonOps.TypeError("sequence index must be integer");
-        }
-
         public object this[Slice slice] {
             get {
                 throw PythonOps.TypeError("sequence index must be integer");
@@ -169,6 +166,72 @@ namespace IronPython.Runtime {
 
         object ICollection.SyncRoot {
             get { return null; }
+        }
+
+        #endregion
+
+        #region IList Members
+
+        int IList.Add(object value) {
+            throw new InvalidOperationException();
+        }
+
+        void IList.Clear() {
+            throw new InvalidOperationException();
+        }
+
+        bool IList.Contains(object value) {
+            return ((IList)this).IndexOf(value) != -1;
+        }
+
+        int IList.IndexOf(object value) {
+            int index = 0;
+            foreach (object o in this) {
+                if (o == value) {
+                    return index;
+                }
+
+                index++;
+            }
+            return -1;
+        }
+
+        void IList.Insert(int index, object value) {
+            throw new InvalidOperationException();
+        }
+
+        bool IList.IsFixedSize {
+            get { return true; }
+        }
+
+        bool IList.IsReadOnly {
+            get { return true; }
+        }
+
+        void IList.Remove(object value) {
+            throw new InvalidOperationException();
+        }
+
+        void IList.RemoveAt(int index) {
+            throw new InvalidOperationException();
+        }
+
+        object IList.this[int index] {
+            get {
+                int curIndex = 0;
+                foreach (object o in this) {
+                    if (curIndex == index) {
+                        return o;
+                    }
+
+                    curIndex++;
+                }
+
+                throw new IndexOutOfRangeException();
+            }
+            set {
+                throw new InvalidOperationException();
+            }
         }
 
         #endregion

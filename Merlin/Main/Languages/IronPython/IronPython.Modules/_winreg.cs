@@ -32,6 +32,8 @@ using IronPython.Runtime.Types;
 [assembly: PythonModule("_winreg", typeof(IronPython.Modules.PythonWinReg))]
 namespace IronPython.Modules {
     public static class PythonWinReg {
+        public const string __doc__ = "Provides access to the Windows registry.";
+
         public static PythonType error = PythonExceptions.WindowsError;
 
         #region Constants
@@ -94,24 +96,24 @@ namespace IronPython.Modules {
 
         #region Module Methods
 
-        public static void CloseKey(PyHKEY key) {
+        public static void CloseKey(HKEYType key) {
             key.Close();
         }
 
-        public static PyHKEY CreateKey(object key, string subKeyName) {
-            PyHKEY rootKey = GetRootKey(key);
+        public static HKEYType CreateKey(object key, string subKeyName) {
+            HKEYType rootKey = GetRootKey(key);
 
             //if key is a system key and no subkey is specified return that.
             BigInteger bi = key as BigInteger;
             if (!Object.ReferenceEquals(bi, null) && string.IsNullOrEmpty(subKeyName))
                 return rootKey;
 
-            PyHKEY subKey = new PyHKEY(rootKey.key.CreateSubKey(subKeyName));
+            HKEYType subKey = new HKEYType(rootKey.key.CreateSubKey(subKeyName));
             return subKey;
         }
 
         public static void DeleteKey(object key, string subKeyName) {
-            PyHKEY rootKey = GetRootKey(key);
+            HKEYType rootKey = GetRootKey(key);
             BigInteger bi = key as BigInteger;
             if (!Object.ReferenceEquals(bi, null) && string.IsNullOrEmpty(subKeyName))
                 throw new InvalidCastException("DeleteKey() argument 2 must be string, not None");
@@ -124,20 +126,20 @@ namespace IronPython.Modules {
         }
 
         public static void DeleteValue(object key, string value) {
-            PyHKEY rootKey = GetRootKey(key);
+            HKEYType rootKey = GetRootKey(key);
 
             rootKey.key.DeleteValue(value, true);
         }
 
         public static string EnumKey(object key, int index) {
-            PyHKEY rootKey = GetRootKey(key);
+            HKEYType rootKey = GetRootKey(key);
             if (index >= rootKey.key.SubKeyCount)
                 throw new Win32Exception("[Error 22] No more data is available");
             return rootKey.key.GetSubKeyNames()[index];
         }
 
         public static PythonTuple EnumValue(object key, int index) {
-            PyHKEY rootKey = GetRootKey(key);
+            HKEYType rootKey = GetRootKey(key);
             if (index >= rootKey.key.ValueCount)
                 throw new Win32Exception("[Error 22] No more data is available");
 
@@ -161,16 +163,16 @@ namespace IronPython.Modules {
         }
 
         public static void FlushKey(object key) {
-            PyHKEY rootKey = GetRootKey(key);
+            HKEYType rootKey = GetRootKey(key);
             rootKey.key.Flush();
         }
 
-        public static PyHKEY OpenKey(object key, string subKeyName) {
+        public static HKEYType OpenKey(object key, string subKeyName) {
             return OpenKey(key, subKeyName, 0, KEY_READ);
         }
 
-        public static PyHKEY OpenKey(object key, string subKeyName, int reserved, int mask) {
-            PyHKEY rootKey = GetRootKey(key);
+        public static HKEYType OpenKey(object key, string subKeyName, int reserved, int mask) {
+            HKEYType rootKey = GetRootKey(key);
             RegistryKey newKey = null;
 
             // I'm assuming that the masks that CPy uses are the same as the Win32 API one mentioned here-
@@ -202,20 +204,20 @@ namespace IronPython.Modules {
                 throw new Win32Exception("The key does not exist");
             }
 
-            return new PyHKEY(newKey);
+            return new HKEYType(newKey);
         }
 
-        public static PyHKEY OpenKeyEx(object key, string subKeyName) {
+        public static HKEYType OpenKeyEx(object key, string subKeyName) {
             return OpenKey(key, subKeyName);
         }
 
         public static PythonTuple QueryInfoKey(object key) {
-            PyHKEY rootKey = null;
+            HKEYType rootKey = null;
             //The key can also be a handle. If it is, then retrieve it from the cache.
             if (key is int) {
                 if (HKeyHandleCache.cache.ContainsKey((int)key)) {
                     if (HKeyHandleCache.cache[(int)key].IsAlive) {
-                        rootKey = HKeyHandleCache.cache[(int)key].Target as PyHKEY;
+                        rootKey = HKeyHandleCache.cache[(int)key].Target as HKEYType;
                     }
                 }
             } else {
@@ -230,12 +232,12 @@ namespace IronPython.Modules {
         }
 
         public static object QueryValue(object key, string subKeyName) {
-            PyHKEY pyKey = OpenKey(key, subKeyName);
+            HKEYType pyKey = OpenKey(key, subKeyName);
             return pyKey.key.GetValue(null);
         }
 
         public static PythonTuple QueryValueEx(object key, string valueName) {
-            PyHKEY rootKey = GetRootKey(key);
+            HKEYType rootKey = GetRootKey(key);
             object value = rootKey.key.GetValue(valueName);
             int valueKind = MapRegistryValueKind(rootKey.key.GetValueKind(valueName));
             if (valueKind == REG_MULTI_SZ)
@@ -249,12 +251,12 @@ namespace IronPython.Modules {
         }
 
         public static void SetValue(object key, string subKeyName, int type, string value) {
-            PyHKEY pyKey = CreateKey(key, subKeyName);
+            HKEYType pyKey = CreateKey(key, subKeyName);
             pyKey.key.SetValue(null, value);
         }
 
         public static void SetValueEx(object key, string valueName, int reserved, int type, object value) {
-            PyHKEY rootKey = GetRootKey(key);
+            HKEYType rootKey = GetRootKey(key);
             RegistryValueKind regKind = (RegistryValueKind)type;
 
             if (regKind == RegistryValueKind.MultiString) {
@@ -276,7 +278,7 @@ namespace IronPython.Modules {
 
         }
 
-        public static PyHKEY ConnectRegistry(string computerName, BigInteger key) {
+        public static HKEYType ConnectRegistry(string computerName, BigInteger key) {
             if (string.IsNullOrEmpty(computerName))
                 computerName = string.Empty;
 
@@ -286,18 +288,18 @@ namespace IronPython.Modules {
             } catch (Exception e) {
                 throw new ExternalException(e.Message);
             }
-            return new PyHKEY(newKey);
+            return new HKEYType(newKey);
         }
         #endregion
 
         #region Helpers
-        private static PyHKEY GetRootKey(object key) {
-            PyHKEY rootKey;
-            rootKey = key as PyHKEY;
+        private static HKEYType GetRootKey(object key) {
+            HKEYType rootKey;
+            rootKey = key as HKEYType;
             if (rootKey == null) {
                 BigInteger bi = key as BigInteger;
                 if (!Object.ReferenceEquals(bi, null)) {
-                    rootKey = new PyHKEY(RegistryKey.OpenRemoteBaseKey(MapSystemKey(bi), string.Empty));
+                    rootKey = new HKEYType(RegistryKey.OpenRemoteBaseKey(MapSystemKey(bi), string.Empty));
                 } else {
                     throw new InvalidCastException("The object is not a PyHKEY object");
                 }
@@ -345,6 +347,41 @@ namespace IronPython.Modules {
             }
         }
         #endregion
+
+
+        [PythonType]
+        public class HKEYType : IDisposable {
+            internal RegistryKey key;
+            internal HKEYType(RegistryKey key) {
+                this.key = key;
+                HKeyHandleCache.cache[key.GetHashCode()] = new WeakReference(this);
+            }
+
+            public void Close() {
+                key.Close();
+            }
+
+            public int Detach() {
+                return 0; //Can't keep handle after the object is destroyed.
+            }
+
+            public int handle {
+                get {
+                    return key.GetHashCode();
+                }
+            }
+
+            public static implicit operator int(HKEYType hKey) {
+                return hKey.handle;
+            }
+
+            #region IDisposable Members
+            void IDisposable.Dispose() {
+                Close();
+            }
+
+            #endregion
+        }
     }
 
     //CPython exposes the native handle for the registry keys as well. Since there is no .NET API to
@@ -355,39 +392,6 @@ namespace IronPython.Modules {
 
     }
 
-    [PythonType]
-    public class PyHKEY : IDisposable {
-        internal RegistryKey key;
-        internal PyHKEY(RegistryKey key) {
-            this.key = key;
-            HKeyHandleCache.cache[key.GetHashCode()] = new WeakReference(this);
-        }
-
-        public void Close() {
-            key.Close();
-        }
-
-        public int Detach() {
-            return 0; //Can't keep handle after the object is destroyed.
-        }
-
-        public int handle {
-            get {
-                return key.GetHashCode();
-            }
-        }
-
-        public static implicit operator int(PyHKEY hKey) {
-            return hKey.handle;
-        }
-
-        #region IDisposable Members
-        void IDisposable.Dispose() {
-            Close();
-        }
-
-        #endregion
-    }
 }
 
 #endif
