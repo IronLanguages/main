@@ -82,7 +82,7 @@ namespace Microsoft.Scripting.Silverlight {
             return result;
         }
 
-        public string NormalizePath(string path) {
+        public virtual string NormalizePath(string path) {
             return path.Replace(Path.DirectorySeparatorChar, '/');
         }
 
@@ -98,7 +98,7 @@ namespace Microsoft.Scripting.Silverlight {
 
         public override string Name() { return "XAP file"; }
 
-        public new string NormalizePath(string path) {
+        public override string NormalizePath(string path) {
             var normPath = base.NormalizePath(path);
 
             // Application.GetResource doesn't like paths that start with ./ 

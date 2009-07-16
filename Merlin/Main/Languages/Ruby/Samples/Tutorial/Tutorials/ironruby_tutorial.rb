@@ -13,7 +13,11 @@
 #
 # ****************************************************************************
 
-require File.dirname(__FILE__) + "/../tutorial"
+unless SILVERLIGHT
+  require File.dirname(__FILE__) + "/../tutorial"
+else
+  require 'tutorial'
+end
 
 module IronRubyTutorial
   def self.files_path
@@ -29,8 +33,12 @@ module IronRubyTutorial
   end
   
   def self.load_xml_relative_path
-    require 'pathname'
-    Pathname.new(load_xml_path).relative_path_from(Pathname.new(Dir.pwd))
+    unless SILVERLIGHT
+      require 'pathname'
+      Pathname.new(load_xml_path).relative_path_from(Pathname.new(Dir.pwd))
+    else
+      load_xml_path
+    end
   end
   
   def self.calc_xaml_path
@@ -38,12 +46,20 @@ module IronRubyTutorial
   end
   
   def self.calc_xaml_relative_path
-    require 'pathname'
-    Pathname.new(calc_xaml_path).relative_path_from(Pathname.new(Dir.pwd))
+    unless SILVERLIGHT
+      require 'pathname'
+      Pathname.new(calc_xaml_path).relative_path_from(Pathname.new(Dir.pwd))
+    else
+      calc_xaml_path
+    end
   end
   
   def self.wpf_path
-    File.expand_path '../../wpf.rb', files_path
+    unless SILVERLIGHT
+      File.expand_path '../../wpf.rb', files_path
+    else
+      'wpf.rb'
+    end
   end
     
   def self.snoop_add_handler name, obj
