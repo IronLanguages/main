@@ -2613,7 +2613,15 @@ namespace IronRuby.Builtins {
                     int nilCount = 0;
                     switch (directive.Directive) {
                         case '@':
-                            stream.Position = directive.Count.HasValue ? directive.Count.Value : stream.Position;
+                            if (directive.Count.HasValue) {
+                                if (directive.Count.Value > stream.Length) {
+                                    throw RubyExceptions.CreateArgumentError("@ outside of string");
+                                }
+                                stream.Position = directive.Count.Value > 0 ? directive.Count.Value : 0;
+                            }
+                            else {
+                                stream.Position = stream.Length;
+                            }
                             break;
 
                         case 'A':
@@ -2683,6 +2691,9 @@ namespace IronRuby.Builtins {
                             for (int pos = 0; pos < count; pos++) {
                                 if (buffer[pos] == 0) {
                                     str.Remove(pos, count - pos);
+                                    if (!directive.Count.HasValue) {
+                                        stream.Seek(pos - count + 1, SeekOrigin.End);
+                                    }
                                     break;
                                 }
                             }
@@ -2745,6 +2756,55 @@ namespace IronRuby.Builtins {
                                              0x0000FF00 & (value >> 8) |
                                              0x00FF0000 & (value << 8) |
                                              0xFF000000 & (value << 24));
+                                }
+                                if (value <= Int32.MaxValue) {
+                                    result.Add((int)value);
+                                }
+                                else {
+                                    result.Add((BigInteger)value);
+                                }
+                            }
+                            break;
+
+                        case 'q':
+                            count = CalculateCounts(stream, directive.Count, sizeof(long), out nilCount);
+                            for (int j = 0; j < count; j++) {
+                                long value = reader.ReadInt64();
+                                if (!BitConverter.IsLittleEndian) {
+                                    ulong uvalue = (ulong)value;
+                                    uvalue = (0x00000000000000FF & (uvalue >> 56)) |
+                                             (0x000000000000FF00 & (uvalue >> 40)) |
+                                             (0x0000000000FF0000 & (uvalue >> 24)) |
+                                             (0x00000000FF000000 & (uvalue >> 8))  |
+                                             (0x000000FF00000000 & (uvalue << 8))  |
+                                             (0x0000FF0000000000 & (uvalue << 24)) |
+                                             (0x00FF000000000000 & (uvalue << 40)) |
+                                             (0xFF00000000000000 & (uvalue << 56));
+                                    value = (long)uvalue;
+                                }
+                                if (value <= Int32.MaxValue && value >= Int32.MinValue) {
+                                    result.Add((int)value);
+                                }
+                                else {
+                                    result.Add((BigInteger)value);
+                                }
+                            }
+                            break;
+
+                        case 'Q':
+                            count = CalculateCounts(stream, directive.Count, sizeof(ulong), out nilCount);
+                            nilCount = 0;
+                            for (int j = 0; j < count; j++) {
+                                ulong value = reader.ReadUInt64();
+                                if (!BitConverter.IsLittleEndian) {
+                                    value = (0x00000000000000FF & (value >> 56)) |
+                                            (0x000000000000FF00 & (value >> 40)) |
+                                            (0x0000000000FF0000 & (value >> 24)) |
+                                            (0x00000000FF000000 & (value >> 8))  |
+                                            (0x000000FF00000000 & (value << 8))  |
+                                            (0x0000FF0000000000 & (value << 24)) |
+                                            (0x00FF000000000000 & (value << 40)) |
+                                            (0xFF00000000000000 & (value << 56));
                                 }
                                 if (value <= Int32.MaxValue) {
                                     result.Add((int)value);
