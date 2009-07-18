@@ -133,4 +133,64 @@ namespace Microsoft.Scripting.Silverlight {
         }
         #endregion
     }
+
+    /// <summary>
+    /// Download files synchronously 
+    /// </summary>
+    public class HttpVirtualFilesystem : BrowserVirtualFilesystem {
+        public override string Name() { return "Web server"; }
+
+        private Dictionary<Uri, string> _cache = new Dictionary<Uri, string>();
+
+        protected override Stream GetFileInternal(object baseUri, Uri relativeUri) {
+            baseUri = baseUri ?? DefaultBaseUri();
+            var fullUri = new Uri(NormalizePath(((Uri)baseUri).AbsoluteUri) + relativeUri.ToString(), UriKind.Absolute);
+            string content;
+
+            if (_cache.ContainsKey(fullUri)) {
+                content = _cache[fullUri];
+                if (content == null) return null;
+                return new MemoryStream(System.Text.Encoding.UTF8.GetBytes(content));
+            }
+
+            var request = HtmlPage.Window.CreateInstance("XMLHttpRequest");
+            request.Invoke("open", "GET", fullUri.AbsoluteUri, false);
+            request.Invoke("send", "");
+
+            if (request.GetProperty("status").ToString() != "200") {
+                _cache[fullUri] = null;
+                return null;
+            }
+
+            content = request.GetProperty("responseText").ToString();
+            _cache[fullUri] = content;
+            return new MemoryStream(System.Text.Encoding.UTF8.GetBytes(content));
+        }
+
+        private Uri DefaultBaseUri() {
+            var uri = Application.Current.Host.Source;
+            var server = uri.GetComponents(UriComponents.SchemeAndServer, UriFormat.Unescaped);
+            var path = NormalizePath(Path.GetDirectoryName(uri.LocalPath));
+            var defaultBaseUri = new Uri(new Uri(server), path);
+            if (Settings.DownloadScripts)
+                defaultBaseUri = new Uri(NormalizePath(Path.Combine(defaultBaseUri.AbsoluteUri, Settings.DownloadScriptsFrom)));
+            return defaultBaseUri;
+        }
+
+        internal void ClearCache() {
+            _cache = null;
+            _cache = new Dictionary<Uri, string>();
+        }
+    }
+
+    /// <summary>
+    /// Read and write files from Isolated Storage
+    /// </summary>
+    public class IsolatedStorageVirtualFilesystem : BrowserVirtualFilesystem {
+        public override string Name() { return "Isolated Storage"; }
+
+        protected override Stream GetFileInternal(object baseUri, Uri relativeUri) {
+            throw new NotImplementedException();
+        }
+    }
 }

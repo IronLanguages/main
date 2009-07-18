@@ -41,7 +41,7 @@ namespace Chiron {
         // these properties are lazy loaded so we don't parse the configuration file unless necessary
         static AppManifestTemplate _ManifestTemplate;
         static Dictionary<string, LanguageInfo> _Languages;
-        static string _UrlPrefix, _LocalAssemblyPath, _ExternalUrlPrefix;
+        static string _UrlPrefix, _LocalAssemblyPath, _ExternalUrlPrefix, _LocalApplicationRoot;
         static Dictionary<string, string> _MimeMap;
 
         static int Main(string[] args) {
@@ -85,13 +85,30 @@ Options:
     Specifies directory on disk (default: the current directory)
 
   /r[efpath]:<path>
-    Path where assemblies are located. Default is same directory
-    as Chiron.exe. Overrides appSettings.localAssemblyPath in 
-    Chiron.exe.config
+    Path where assemblies are located.
+    Overrides appSettings.localAssemblyPath in Chiron.exe.config
 
-  /path:<path1;path2;..;pathn>
+  /p[ath]:<path1;path2;..;pathn>
     semi-color-separated directories to be included in the XAP file,
     in addition to what is specified by /d
+
+  /l[ocalAppRoot]:<relative path>
+    Path to look for script files on the web-server, rather than in
+    the XAP file (which is default). Path is relative to the XAP file.
+    If Chiron is generating the AppManifest.xaml, it will use this to 
+    find which languages the application depends on.
+
+  /e[xtUrlPrefix]:<absolute uri> (>= Silverlight 3 only)
+    Does not put the assemblies inside the XAP file, and references the
+    appropriate slvx files from the Uri provided.
+    Overrides appSettings.externalUrlPrefix in Chiron.exe.config
+
+  /u[rlprefix]:<relative or absolute uri>
+    appends a relative or absolute Uri to each language assembly added
+    to the AppManifest.xaml. Also does not put the assemblies inside the 
+    xap. If it's a relative Uri and /w is also given, Chiron will serve
+    the assemblies from the Uri, relative to the server root.
+    Overrides appSettings.urlPrefix in Chiron.exe.config
 
   /x[ap[file]]:<file>
     Specifies XAP file to generate. Only XAPs a directory; does not
@@ -265,7 +282,31 @@ Options:
                     _browser = true;
                     _webserver = true;
                     break;
-                case "path":
+                case "l": case "localAppRoot":
+                    try {
+                        LocalApplicationRoot = val;
+                    } catch {
+                        _error = string.Format("Invalid localAppRoot '{0}'", val);
+                        return;
+                    }
+                    break;
+                case "e": case "extUrlPrefix":
+                    try {
+                        ExternalUrlPrefix = val;
+                    } catch {
+                        _error = string.Format("Invalid externalUrlPrefix '{0}'", val);
+                        return;
+                    }
+                    break;
+                case "u": case "urlPrefix":
+                    try {
+                        UrlPrefix = val;
+                    } catch {
+                        _error = string.Format("Invalid urlPrefix '{0}'", val);
+                        return;
+                    }
+                    break;
+                case "p": case "path":
                     ParseAndSetLocalPath(val);
                     break;
                 case "m": case "manifest":
@@ -358,20 +399,22 @@ Options:
         internal static string UrlPrefix {
             get {
                 if (_UrlPrefix == null) {
-                    _UrlPrefix = ConfigurationManager.AppSettings["urlPrefix"];
-                    if (_UrlPrefix == null) {
-                        _UrlPrefix = "";
-                    } else {
-                        if (!_UrlPrefix.EndsWith("/"))
-                            _UrlPrefix += '/';
-
-                        // validate
-                        Uri uri = new Uri(_UrlPrefix, UriKind.RelativeOrAbsolute);
-                        if (!uri.IsAbsoluteUri && !_UrlPrefix.StartsWith("/"))
-                            throw new ConfigurationErrorsException("urlPrefix must be an absolute URI or start with a /");
-                    }
+                    UrlPrefix = ConfigurationManager.AppSettings["urlPrefix"];
                 }
                 return _UrlPrefix;
+            }
+            set {
+                _UrlPrefix = value;
+                if (_UrlPrefix == null) _UrlPrefix = "";
+                else {
+                    if (!_UrlPrefix.EndsWith("/")) _UrlPrefix += '/';
+                    // validate
+                    Uri uri = new Uri(_UrlPrefix, UriKind.RelativeOrAbsolute);
+                    if (!uri.IsAbsoluteUri && !_UrlPrefix.StartsWith("/")) {
+                        _UrlPrefix = null;
+                        throw new ConfigurationErrorsException("urlPrefix must be an absolute URI or start with a /");
+                    }
+                }
             }
         }
 
@@ -380,18 +423,42 @@ Options:
         /// </summary>
         internal static string ExternalUrlPrefix {
             get {
-                if (_ExternalUrlPrefix == null) {
-                    _ExternalUrlPrefix = ConfigurationManager.AppSettings["externalUrlPrefix"];
-                    if (_ExternalUrlPrefix != null) {
-                        if (!_ExternalUrlPrefix.EndsWith("/"))
-                            _ExternalUrlPrefix += '/';
-                        // validate
-                        Uri uri = new Uri(_ExternalUrlPrefix, UriKind.RelativeOrAbsolute);
-                        if (!uri.IsAbsoluteUri)
-                            throw new ConfigurationErrorsException("externalUrlPrefix must be an absolute URI");
+                if (_ExternalUrlPrefix == null)
+                    ExternalUrlPrefix = ConfigurationManager.AppSettings["externalUrlPrefix"];
+                return _ExternalUrlPrefix;
+            }
+            set {
+                _ExternalUrlPrefix = value;
+                if (_ExternalUrlPrefix != null) {
+                    if (!_ExternalUrlPrefix.EndsWith("/")) _ExternalUrlPrefix += '/';
+                    // validate
+                    Uri uri = new Uri(_ExternalUrlPrefix, UriKind.RelativeOrAbsolute);                    if (!uri.IsAbsoluteUri) {
+                        _ExternalUrlPrefix = null;
+                        throw new ConfigurationErrorsException("externalUrlPrefix must be an absolute URI");
                     }
                 }
-                return _ExternalUrlPrefix;
+            }
+        }
+
+        /// <summary>
+        /// Optional path to look for script files outside the XAP
+        /// </summary>
+        internal static string LocalApplicationRoot {
+            get {
+                if (_LocalApplicationRoot == null)
+                    LocalApplicationRoot = ConfigurationManager.AppSettings["localApplicationRoot"];
+                return _LocalApplicationRoot;
+            }
+            set {
+                _LocalApplicationRoot = value;
+                if (_LocalApplicationRoot != null) {
+                    // validate
+                    Uri uri = new Uri(_LocalApplicationRoot, UriKind.RelativeOrAbsolute);
+                    if (uri.IsAbsoluteUri) {
+                        _LocalApplicationRoot = null;
+                        throw new ConfigurationErrorsException("localApplicationRoot must be a relative URI");
+                    }
+                }
             }
         }
 

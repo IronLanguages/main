@@ -147,5 +147,16 @@ namespace Microsoft.Scripting.Silverlight {
             VirtualFilesystem = new XapVirtualFilesystem();
         }
     }
+
+    /// <summary>
+    /// PlatformAdaptationLayer to download files over HTTP.
+    /// </summary>
+    internal sealed class HttpPAL : BrowserPAL {
+        internal static new readonly BrowserPAL PAL = new HttpPAL();
+
+        private HttpPAL() {
+            VirtualFilesystem = new HttpVirtualFilesystem();
+        }
+    }
 }
 

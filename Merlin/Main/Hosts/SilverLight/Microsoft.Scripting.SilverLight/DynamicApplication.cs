@@ -25,6 +25,8 @@ using Microsoft.Scripting.Hosting;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using System.Net;
+using System.Text.RegularExpressions;
+using System.Windows.Markup;
 
 namespace Microsoft.Scripting.Silverlight {
 
@@ -136,8 +138,22 @@ namespace Microsoft.Scripting.Silverlight {
         /// <param name="component">The object to load the XAML into</param>
         /// <param name="uri">relative Uri of the XAML file</param>
         public new object LoadComponent(object component, Uri relativeUri) {
-            Application.LoadComponent(component, relativeUri);
-            return component;
+            if (Application.GetResourceStream(relativeUri) == null && Settings.DownloadScripts) {
+                var xamlStream = HttpPAL.PAL.VirtualFilesystem.GetFile(relativeUri);
+                if (xamlStream != null) {
+                    string xaml;
+                    using (StreamReader sr = new StreamReader(xamlStream)) {
+                        xaml = sr.ReadToEnd();
+                    }
+                    component = XamlReader.Load(Regex.Replace(xaml, "x:Class=\".*?\"", ""));
+                    return component;
+                }
+            } else {
+                Application.LoadComponent(component, relativeUri);
+                return component;
+            }
+            return null;
+
         }
 
         /// <summary>

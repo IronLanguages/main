@@ -224,6 +224,9 @@ namespace Chiron {
         // Scans the application's directory to find all files whose extension 
         // matches one of Chiron's known languages
         internal static ICollection<LanguageInfo> FindSourceLanguages(string dir) {
+            if (Chiron.LocalApplicationRoot != null)
+                dir = Path.Combine(Path.Combine(dir, ".."), Chiron.LocalApplicationRoot);
+
             Dictionary<LanguageInfo, bool> result = new Dictionary<LanguageInfo, bool>();
 
             foreach (string file in Directory.GetFiles(dir, "*", SearchOption.AllDirectories)) {

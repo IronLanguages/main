@@ -56,7 +56,14 @@ namespace Microsoft.Scripting.Silverlight {
         private static string _entryPoint;
 
         internal static string GetEntryPoint() {
-            return Settings.EntryPoint;
+            try {
+                return Settings.EntryPoint;
+            } catch (ApplicationException e) {
+                if (!Settings.DownloadScripts)
+                    throw e;
+                BrowserPAL.PAL = HttpPAL.PAL;
+                return Settings.EntryPoint;
+            }
         }
 
         /// <summary>
@@ -111,7 +118,7 @@ namespace Microsoft.Scripting.Silverlight {
             set {
                 if(value) {
                     if (DownloadScriptsFrom == null)
-                        DownloadScriptsFrom = "app";
+                        DownloadScriptsFrom = ".";
                 } else {
                     DownloadScriptsFrom = null;
                 }
