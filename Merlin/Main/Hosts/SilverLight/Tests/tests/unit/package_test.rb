@@ -16,18 +16,18 @@ module ArbitraryModuleSoConsoleDoesNotConflict
     before do
       @path ||= "unit/assets/tmp.txt"
       @uri ||= Uri.new(@path, UriKind.relative)
-      @contents ||= "Hello!\r\n".to_clr_string
+      @contents ||= /Hello!/
       @doesnotexist ||= "unit/assets/doesnotexist.txt"
       @other_xap_uri = Uri.new("unit/assets/pkg.xap", UriKind.relative)
       @other_xap = Application.get_resource_stream(@other_xap_uri)
     end
   
     it 'should get file contents from a string' do
-      Package.get_file_contents(@path).should.equal @contents
+      Package.get_file_contents(@path).to_s.should.match @contents
     end
   
     it 'should get file contents from a Uri' do
-      Package.get_file_contents(@uri).should.equal @contents
+      Package.get_file_contents(@uri).to_s.should.match @contents
     end
  
     it 'should get file contents in another xap' do

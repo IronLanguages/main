@@ -27,13 +27,16 @@ Setup
 
 3. Give permissions to IIS
    - IIS needs to have permission to open files in this project, as well as in 
-     the Ruby standard library. Grant IIS_IUSER permission to this directory, 
+     the Ruby standard library. Grant the IIS_IUSRS group permission to this directory, 
      as well as the Ruby standard library (usually C:\ruby\lib\ruby)
 
 4. Open IronRack.sln in Visual Studio
    - Click "OK" to prompts about creating virtual directories, otherwise not 
      all the project files will load.
    - Right-click on IronRuby.Rack.App and select "Set as StartUp Project".
+
+5. Make sure GEM_PATH is set correctly
+   - GEM_PATH is set in [Application.cs#42](http://github.com/jschementi/ironruby/tree/master/Merlin/Main/Hosts/IronRuby.Rack/Application.cs#L42). Make sure this reflects your environment. 
 
 Building
 --------

@@ -13,11 +13,17 @@
 #
 # ****************************************************************************
 
-# Reference the WPF assemblies
-require 'system.xml, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089' 
-require 'PresentationFramework, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35'
-require 'PresentationCore, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35'
-require 'windowsbase, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35'
+SILVERLIGHT = begin; System::Windows::Browser; true; rescue; false; end
+
+if not SILVERLIGHT
+  # Reference the WPF assemblies
+  require 'system.xml, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089' 
+  require 'PresentationFramework, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35'
+  require 'PresentationCore, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35'
+  require 'windowsbase, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35'
+else
+  require 'System.Xml, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e'
+end
 
 class System::Windows::FrameworkElement
   # Monkey-patch FrameworkElement to allow window.ChildName instead of window.FindName("ChildName")
@@ -47,19 +53,65 @@ class System::Windows::FrameworkElement
       obj.collapse!
     end
   end
+  
+  def content=(value)
+    send "#{respond_to?(:Content) ? :Content : :Text}=", value
+  end
+end
+
+class System::Windows::Controls::RichTextBox
+  def document=(value)
+    self.Document = value.kind_of?(String) ? FlowDocument.from_simple_markup(value || '') : value
+  end
+end
+
+class System::Windows::Controls::TextBox
+  def document=(value)
+    if SILVERLIGHT
+      self.Text = value.strip.split("\n").map{|i| i.strip}.join("\n")
+    else
+      self.Text = value
+    end
+  end
+end
+
+class System::Windows::Controls::TextBlock
+  def document=(value)
+    if SILVERLIGHT
+      self.Text = value.strip.split("\n").map{|i| i.strip}.join("\n")
+    else
+      self.Text = value
+    end
+  end
+end
+
+if SILVERLIGHT
+  class System::Windows::Controls::ScrollViewer
+    def scroll_to_top
+      scroll_to_vertical_offset(0)
+    end
+
+    def scroll_to_bottom
+      scroll_to_vertical_offset(actual_height)
+    end
+  end
 end
 
 class System::Windows::Markup::XamlReader
   class << self
     alias raw_load load unless method_defined? :raw_load
   end
-  
+
   def self.load(xaml)
-    return raw_load(xaml) unless xaml.respond_to? :to_clr_string
+    obj = if SILVERLIGHT
+      self.Load(xaml)
+    else
+      return raw_load(xaml) unless xaml.respond_to? :to_clr_string
     
-    obj = self.Load(
-      System::Xml::XmlReader.create(
-        System::IO::StringReader.new(xaml.to_clr_string)))
+      self.Load(
+        System::Xml::XmlReader.create(
+          System::IO::StringReader.new(xaml.to_clr_string)))
+    end
     yield obj if block_given?
     obj
   end
@@ -108,6 +160,11 @@ class System::Windows::Documents::FlowDocument
   
   # Converts text in RDoc simple markup format to a WPF FlowDocument object
   def self.from_simple_markup text
+
+    if SILVERLIGHT
+      return text.split("\n").map{|i| i.strip}.join("\n")
+    end
+
     require 'rdoc/markup/simple_markup'
     require 'rdoc/markup/simple_markup/inline'
 

@@ -32,8 +32,8 @@ namespace Microsoft.Scripting.Silverlight {
         public ScriptScope EntryPointScope { get; private set; }
 
         public void Start() {
-            InitializeRuntime(Settings.Debug, Settings.ConsoleEnabled);
-            Run(Settings.GetEntryPoint());
+            InitializeRuntime(Settings.Debug);
+            Run(Settings.GetEntryPoint(), Settings.ConsoleEnabled);
         }
 
         public ScriptRuntimeSetup CreateRuntimeSetup() {
@@ -55,22 +55,22 @@ namespace Microsoft.Scripting.Silverlight {
             }
         }
 
-        private void InitializeRuntime(bool debugMode, bool consoleEnabled) {
+        private void InitializeRuntime(bool debugMode) {
             RuntimeSetup = CreateRuntimeSetup();
             RuntimeSetup.DebugMode = debugMode;
             RuntimeSetup.Options["SearchPaths"] = new string[] { String.Empty };
 
             Runtime = new ScriptRuntime(RuntimeSetup);
             LoadDefaultAssemblies();
-
-            if (consoleEnabled) Repl.Show();
         }
 
 
-        private void Run(string entryPoint) {
+        private void Run(string entryPoint, bool consoleEnabled) {
             string code = GetEntryPointContents();
             Engine = Runtime.GetEngineByFileExtension(Path.GetExtension(entryPoint));
             EntryPointScope = Engine.CreateScope();
+
+            if (consoleEnabled) Repl.Show();
 
             ScriptSource sourceCode = Engine.CreateScriptSourceFromString(code, entryPoint, SourceCodeKind.File);
             sourceCode.Compile(new ErrorFormatter.Sink()).Execute(EntryPointScope);

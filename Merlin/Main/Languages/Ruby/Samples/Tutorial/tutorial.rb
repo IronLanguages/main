@@ -167,9 +167,15 @@ module Tutorial
   end
 
   def self.all
-    Dir[File.expand_path("Tutorials/*_tutorial.rb", File.dirname(__FILE__))].each do |t|
-      self.get_tutorial t unless File.directory?(t)
+    unless SILVERLIGHT
+      Dir[File.expand_path("Tutorials/*_tutorial.rb", File.dirname(__FILE__))].each do |t|
+        self.get_tutorial t unless File.directory?(t)
+      end
+    else
+      get_tutorial 'Tutorials/ironruby_tutorial.rb'
+      get_tutorial 'Tutorials/tryruby_tutorial.rb'
     end
+
     @@tutorials
   end
 
@@ -178,11 +184,10 @@ module Tutorial
       all
       return @@tutorials.values.first
     end
-
-    path = File.expand_path path
+    path = File.expand_path path unless SILVERLIGHT
     if not @@tutorials.has_key? path
       require path
-      raise "#{path} does not contains a tutorial definition" if not @@tutorials.has_key? path
+      raise "#{path} does not contains a tutorial definition" if not @@tutorials.has_key?(SILVERLIGHT ? path.split('/').last : path)
     end
     
     return @@tutorials[path]

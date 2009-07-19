@@ -1,6 +1,6 @@
 begin
   require 'Microsoft.Scripting, Version=2.0.5.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35'
-rescue
+rescue LoadError
   require 'Microsoft.Scripting, Version=2.0.5.0, Culture=neutral, PublicKeyToken=null'
 end
 include Microsoft::Scripting
