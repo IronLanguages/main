@@ -15,8 +15,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Dynamic", "..\..\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronRuby.Libraries", "Libraries.LCA_RESTRICTED\IronRuby.Libraries.csproj", "{77323B06-15A2-4CF4-8A7A-86EAA2B66498}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronRuby.Libraries.Scanner", "Utils\IronRuby.Libraries.Scanner\IronRuby.Libraries.Scanner.csproj", "{5F692D9C-968B-48BF-AC2F-6B4F54D9C1BB}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Scripting", "..\..\Runtime\Microsoft.Scripting\Microsoft.Scripting.csproj", "{EB66B766-6354-4208-A3D4-AACBDCB5C3B3}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronRuby.Libraries.Yaml", "..\..\..\External.LCA_RESTRICTED\Languages\IronRuby\Yaml\IronRuby.Libraries.Yaml\IronRuby.Libraries.Yaml.csproj", "{AA18A245-E342-4368-A474-83178311A742}"
@@ -34,9 +32,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RubySpec", "Tests\RubySpec\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronRuby.Tests.VS", "IronRuby.Tests.VS\IronRuby.Tests.VS.csproj", "{7FE874FB-A5C8-4EE6-A725-472CFA16BE7E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ruby.ConsoleAny", "Console\Ruby.ConsoleAny.csproj", "{6EE7A428-D803-41BC-8248-1297C3ACE369}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Scripting.Debugging", "..\..\Debugging\Microsoft.Scripting.Debugging\Microsoft.Scripting.Debugging.csproj", "{ED82A346-1CD9-4CB0-9C00-4CDD4CF577CF}"
+EndProject
 Global
 	GlobalSection(TeamFoundationVersionControl) = preSolution
-		SccNumberOfProjects = 14
+		SccNumberOfProjects = 15
 		SccEnterpriseProvider = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
 		SccTeamFoundationServer = http://vstfdevdiv:8080/
 		SccLocalPath0 = .
@@ -52,33 +54,36 @@ Global
 		SccProjectUniqueName4 = ClassInitGenerator\\ClassInitGenerator.csproj
 		SccProjectName4 = ClassInitGenerator
 		SccLocalPath4 = ClassInitGenerator
-		SccProjectUniqueName5 = Utils\\IronRuby.Libraries.Scanner\\IronRuby.Libraries.Scanner.csproj
-		SccProjectName5 = Utils/IronRuby.Libraries.Scanner
-		SccLocalPath5 = Utils\\IronRuby.Libraries.Scanner
-		SccProjectUniqueName6 = Libraries.LCA_RESTRICTED\\IronRuby.Libraries.csproj
-		SccProjectName6 = Libraries.LCA_RESTRICTED
-		SccLocalPath6 = Libraries.LCA_RESTRICTED
-		SccProjectUniqueName7 = ..\\..\\Runtime\\Microsoft.Scripting\\Microsoft.Scripting.csproj
-		SccProjectName7 = ../../Runtime/Microsoft.Scripting
-		SccLocalPath7 = ..\\..\\Runtime\\Microsoft.Scripting
-		SccProjectUniqueName8 = ..\\..\\..\\..\\ndp\\fx\\src\\Core\\Microsoft\\Scripting\\Microsoft.Scripting.Core.csproj
-		SccProjectName8 = ../../../../ndp/fx/src/Core/Microsoft/Scripting
-		SccLocalPath8 = ..\\..\\..\\..\\ndp\\fx\\src\\Core\\Microsoft\\Scripting
-		SccProjectUniqueName9 = ..\\..\\..\\External.LCA_RESTRICTED\\Languages\\IronRuby\\Yaml\\IronRuby.Libraries.Yaml\\IronRuby.Libraries.Yaml.csproj
-		SccProjectName9 = ../../../External.LCA_RESTRICTED/Languages/IronRuby/yaml/IronRuby.Libraries.Yaml
-		SccLocalPath9 = ..\\..\\..\\External.LCA_RESTRICTED\\Languages\\IronRuby\\yaml\\IronRuby.Libraries.Yaml
-		SccProjectUniqueName10 = ..\\..\\..\\..\\ndp\\fx\\src\\Core\\Microsoft\\Scripting\\Microsoft.Scripting.ExtensionAttribute.csproj
-		SccProjectName10 = ../../../../ndp/fx/src/Core/Microsoft/Scripting
-		SccLocalPath10 = ..\\..\\..\\..\\ndp\\fx\\src\\Core\\Microsoft\\Scripting
-		SccProjectUniqueName11 = Tests\\RubySpec\\RubySpec.csproj
-		SccProjectName11 = Tests/RubySpec
-		SccLocalPath11 = Tests\\RubySpec
-		SccProjectUniqueName12 = ..\\..\\..\\..\\ndp\\fx\\src\\Dynamic\\System\\Dynamic\\Microsoft.Dynamic.csproj
-		SccProjectName12 = ../../../../ndp/fx/src/Dynamic/System/Dynamic
-		SccLocalPath12 = ..\\..\\..\\..\\ndp\\fx\\src\\Dynamic\\System\\Dynamic
-		SccProjectUniqueName13 = IronRuby.Tests.VS\\IronRuby.Tests.VS.csproj
-		SccProjectName13 = IronRuby.Tests.VS
-		SccLocalPath13 = IronRuby.Tests.VS
+		SccProjectUniqueName5 = Libraries.LCA_RESTRICTED\\IronRuby.Libraries.csproj
+		SccProjectName5 = Libraries.LCA_RESTRICTED
+		SccLocalPath5 = Libraries.LCA_RESTRICTED
+		SccProjectUniqueName6 = ..\\..\\Runtime\\Microsoft.Scripting\\Microsoft.Scripting.csproj
+		SccProjectName6 = ../../Runtime/Microsoft.Scripting
+		SccLocalPath6 = ..\\..\\Runtime\\Microsoft.Scripting
+		SccProjectUniqueName7 = ..\\..\\..\\..\\ndp\\fx\\src\\Core\\Microsoft\\Scripting\\Microsoft.Scripting.Core.csproj
+		SccProjectName7 = ../../../../ndp/fx/src/Core/Microsoft/Scripting
+		SccLocalPath7 = ..\\..\\..\\..\\ndp\\fx\\src\\Core\\Microsoft\\Scripting
+		SccProjectUniqueName8 = ..\\..\\..\\External.LCA_RESTRICTED\\Languages\\IronRuby\\yaml\\IronRuby.Libraries.Yaml\\IronRuby.Libraries.Yaml.csproj
+		SccProjectName8 = ../../../External.LCA_RESTRICTED/Languages/IronRuby/yaml/IronRuby.Libraries.Yaml
+		SccLocalPath8 = ..\\..\\..\\External.LCA_RESTRICTED\\Languages\\IronRuby\\yaml\\IronRuby.Libraries.Yaml
+		SccProjectUniqueName9 = ..\\..\\..\\..\\ndp\\fx\\src\\Core\\Microsoft\\Scripting\\Microsoft.Scripting.ExtensionAttribute.csproj
+		SccProjectName9 = ../../../../ndp/fx/src/Core/Microsoft/Scripting
+		SccLocalPath9 = ..\\..\\..\\..\\ndp\\fx\\src\\Core\\Microsoft\\Scripting
+		SccProjectUniqueName10 = Tests\\RubySpec\\RubySpec.csproj
+		SccProjectName10 = Tests/RubySpec
+		SccLocalPath10 = Tests\\RubySpec
+		SccProjectUniqueName11 = ..\\..\\..\\..\\ndp\\fx\\src\\Dynamic\\System\\Dynamic\\Microsoft.Dynamic.csproj
+		SccProjectName11 = ../../../../ndp/fx/src/Dynamic/System/Dynamic
+		SccLocalPath11 = ..\\..\\..\\..\\ndp\\fx\\src\\Dynamic\\System\\Dynamic
+		SccProjectUniqueName12 = IronRuby.Tests.VS\\IronRuby.Tests.VS.csproj
+		SccProjectName12 = IronRuby.Tests.VS
+		SccLocalPath12 = IronRuby.Tests.VS
+		SccProjectUniqueName13 = Console\\Ruby.ConsoleAny.csproj
+		SccProjectName13 = Console
+		SccLocalPath13 = Console
+		SccProjectUniqueName14 = ..\\..\\Debugging\\Microsoft.Scripting.Debugging\\Microsoft.Scripting.Debugging.csproj
+		SccProjectName14 = ../../Debugging/Microsoft.Scripting.Debugging
+		SccLocalPath14 = ..\\..\\Debugging\\Microsoft.Scripting.Debugging
 	EndGlobalSection
 	GlobalSection(TestCaseManagementSettings) = postSolution
 		CategoryFile = RubyCodeCoverage.vsmdi
@@ -153,14 +158,6 @@ Global
 		{77323B06-15A2-4CF4-8A7A-86EAA2B66498}.Silverlight Debug|Any CPU.Build.0 = Silverlight Debug|Any CPU
 		{77323B06-15A2-4CF4-8A7A-86EAA2B66498}.Silverlight Release|Any CPU.ActiveCfg = Silverlight Release|Any CPU
 		{77323B06-15A2-4CF4-8A7A-86EAA2B66498}.Silverlight Release|Any CPU.Build.0 = Silverlight Release|Any CPU
-		{5F692D9C-968B-48BF-AC2F-6B4F54D9C1BB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5F692D9C-968B-48BF-AC2F-6B4F54D9C1BB}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5F692D9C-968B-48BF-AC2F-6B4F54D9C1BB}.FxCop|Any CPU.ActiveCfg = Release|Any CPU
-		{5F692D9C-968B-48BF-AC2F-6B4F54D9C1BB}.FxCop|Any CPU.Build.0 = Release|Any CPU
-		{5F692D9C-968B-48BF-AC2F-6B4F54D9C1BB}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5F692D9C-968B-48BF-AC2F-6B4F54D9C1BB}.Release|Any CPU.Build.0 = Release|Any CPU
-		{5F692D9C-968B-48BF-AC2F-6B4F54D9C1BB}.Silverlight Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5F692D9C-968B-48BF-AC2F-6B4F54D9C1BB}.Silverlight Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EB66B766-6354-4208-A3D4-AACBDCB5C3B3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{EB66B766-6354-4208-A3D4-AACBDCB5C3B3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EB66B766-6354-4208-A3D4-AACBDCB5C3B3}.FxCop|Any CPU.ActiveCfg = FxCop|Any CPU
@@ -202,6 +199,26 @@ Global
 		{7FE874FB-A5C8-4EE6-A725-472CFA16BE7E}.Release|Any CPU.Build.0 = Release|Any CPU
 		{7FE874FB-A5C8-4EE6-A725-472CFA16BE7E}.Silverlight Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{7FE874FB-A5C8-4EE6-A725-472CFA16BE7E}.Silverlight Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6EE7A428-D803-41BC-8248-1297C3ACE369}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6EE7A428-D803-41BC-8248-1297C3ACE369}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6EE7A428-D803-41BC-8248-1297C3ACE369}.FxCop|Any CPU.ActiveCfg = Release|Any CPU
+		{6EE7A428-D803-41BC-8248-1297C3ACE369}.FxCop|Any CPU.Build.0 = Release|Any CPU
+		{6EE7A428-D803-41BC-8248-1297C3ACE369}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6EE7A428-D803-41BC-8248-1297C3ACE369}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6EE7A428-D803-41BC-8248-1297C3ACE369}.Silverlight Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6EE7A428-D803-41BC-8248-1297C3ACE369}.Silverlight Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6EE7A428-D803-41BC-8248-1297C3ACE369}.Silverlight Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6EE7A428-D803-41BC-8248-1297C3ACE369}.Silverlight Release|Any CPU.Build.0 = Release|Any CPU
+		{ED82A346-1CD9-4CB0-9C00-4CDD4CF577CF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ED82A346-1CD9-4CB0-9C00-4CDD4CF577CF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ED82A346-1CD9-4CB0-9C00-4CDD4CF577CF}.FxCop|Any CPU.ActiveCfg = Silverlight Release|Any CPU
+		{ED82A346-1CD9-4CB0-9C00-4CDD4CF577CF}.FxCop|Any CPU.Build.0 = Silverlight Release|Any CPU
+		{ED82A346-1CD9-4CB0-9C00-4CDD4CF577CF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ED82A346-1CD9-4CB0-9C00-4CDD4CF577CF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ED82A346-1CD9-4CB0-9C00-4CDD4CF577CF}.Silverlight Debug|Any CPU.ActiveCfg = Silverlight Debug|Any CPU
+		{ED82A346-1CD9-4CB0-9C00-4CDD4CF577CF}.Silverlight Debug|Any CPU.Build.0 = Silverlight Debug|Any CPU
+		{ED82A346-1CD9-4CB0-9C00-4CDD4CF577CF}.Silverlight Release|Any CPU.ActiveCfg = Silverlight Release|Any CPU
+		{ED82A346-1CD9-4CB0-9C00-4CDD4CF577CF}.Silverlight Release|Any CPU.Build.0 = Silverlight Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
