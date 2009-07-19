@@ -539,9 +539,9 @@ namespace IronRuby.Builtins {
                 throw RubyExceptions.NoBlockGiven();
             }
 
-            for (int i = self.Count - 1; i >= 0; --i) {
+            foreach (int index in IListOps.ReverseEnumerateIndexes(self)) {
                 object result;
-                if (block.Yield(self[i], out result)) {
+                if (block.Yield(self[index], out result)) {
                     return result;
                 }
             }

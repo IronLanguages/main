@@ -29,7 +29,7 @@ describe "Array#rindex" do
 
   it "does not fail when removing elements from block" do
     sentinel = mock('sentinel')
-    ary = [0, 0, 1, 1, 3, 2, 1, sentinel]
+    ary = [0, 0, 1, 1, 3, 2, 1, sentinel, 4]
 
     sentinel.instance_variable_set(:@ary, ary)
     def sentinel.==(o) @ary.slice!(1..-1); false; end

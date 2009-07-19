@@ -172,6 +172,16 @@ namespace IronRuby.Builtins {
             throw RubyExceptions.CreateTypeError(String.Format("{0}#allocate should return IList", cls.Name));
         }
 
+        internal static IEnumerable<Int32>/*!*/ ReverseEnumerateIndexes(IList/*!*/ collection) {
+            for (int originalSize = collection.Count, i = originalSize - 1; i >= 0; i--) {
+                yield return i;
+                if (collection.Count < originalSize) {
+                    i = originalSize - (originalSize - collection.Count);
+                    originalSize = collection.Count;
+                }
+            }
+        }
+
         #endregion
 
         #region initialize_copy, replace, clear, to_a, to_ary
@@ -1062,12 +1072,9 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("rindex")]
         public static object ReverseIndex(BinaryOpStorage/*!*/ equals, IList/*!*/ self, object item) {
-            for (int originalSize = self.Count, i = originalSize - 1; i >= 0; i--) {
-                if (Protocols.IsEqual(equals, self[i], item)) {
-                    return i;
-                }
-                if (self.Count < originalSize) {
-                    i = originalSize - i - 1 + self.Count;
+            foreach (int index in IListOps.ReverseEnumerateIndexes(self)) {
+                if (Protocols.IsEqual(equals, self[index], item)) {
+                    return index;
                 }
             }
             return null;
