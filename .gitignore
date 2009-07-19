@@ -10,6 +10,7 @@ Merlin/Main/bin
 Merlin/Main/Bin
 Merlin/Main/External
 Merlin/Main/Languages/Ruby/IronRuby.Tests.VS/bin/*
+Merlin/Main/Languages/Ruby/IronRuby.Tests.VS/bin/Debug/*
 Merlin/External.LCA_RESTRICTED/Languages/Ruby/redist-libs/ironruby
 *.csproj.vspscc
 *.csproj.user
