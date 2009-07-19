@@ -523,6 +523,7 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("eql?")]
+        [RubyMethod("==")]
         public static bool Eql(DateTime/*!*/ self, DateTime other) {
             return self == other;
         }
@@ -530,6 +531,11 @@ namespace IronRuby.Builtins {
         [RubyMethod("eql?")]
         public static bool Eql(DateTime/*!*/ self, object other) {
             return false;
+        }
+
+        [RubyMethod("==")]
+        public static object Equals(RubyContext/*!*/ context, DateTime/*!*/ self, object other) {
+            return (context.RubyOptions.Compatibility == RubyCompatibility.Ruby18) ? (object)null : false;
         }
 
         [RubyMethod("getgm")]

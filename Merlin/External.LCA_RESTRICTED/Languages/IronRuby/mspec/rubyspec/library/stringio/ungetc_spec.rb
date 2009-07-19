@@ -23,6 +23,21 @@ describe "StringIO#ungetc when passed [char]" do
     @io.pos.should eql(1)
   end
 
+  it "works with read-write" do
+    io = StringIO.new("1234", "r+")
+    io.pos = 1
+    io.ungetc(?A)
+    io.string.should == 'A234'
+  end
+  
+  it "modifies the original string" do
+    s = '1234'
+    io = StringIO.new(s)
+    io.pos = 1
+    io.ungetc(?A)
+    s.should == 'A234'
+  end
+  
   it "pads with \\000 when the current position is after the end" do
     @io.pos = 15
     @io.ungetc(?A)
@@ -54,7 +69,9 @@ describe "StringIO#ungetc when self is not readable" do
     io = StringIO.new("test", "w")
     io.pos = 1
     lambda { io.ungetc(?A) }.should raise_error(IOError)
+  end
 
+  it "raises an IOError after close_read" do
     io = StringIO.new("test")
     io.pos = 1
     io.close_read

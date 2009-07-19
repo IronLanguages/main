@@ -931,7 +931,69 @@ namespace IronRuby.Builtins {
         //sub
         //sub!
         //syscall
-        //test
+
+        [RubyMethod("test", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("test", RubyMethodAttributes.PublicSingleton)]
+        public static object Test(
+            RubyContext/*!*/ context, 
+            object self,
+            int cmd, 
+            [DefaultProtocol, NotNull]MutableString/*!*/ file1) {
+            cmd &= 0xFF;
+            switch (cmd) {
+                case 'A': throw new NotImplementedException();
+                case 'b': throw new NotImplementedException();
+                case 'C': throw new NotImplementedException();
+                case 'c': throw new NotImplementedException();
+
+                case 'd': 
+                    return RubyFileOps.DirectoryExists(context, file1.ConvertToString());
+
+                case 'e':
+                case 'f':
+                    return RubyFileOps.FileExists(context, file1.ConvertToString());
+
+                case 'g': throw new NotImplementedException();
+                case 'G': throw new NotImplementedException();
+                case 'k': throw new NotImplementedException();
+                case 'l': throw new NotImplementedException();
+                case 'M': throw new NotImplementedException();
+                case 'O': throw new NotImplementedException();
+                case 'o': throw new NotImplementedException();
+                case 'p': throw new NotImplementedException();
+                case 'r': throw new NotImplementedException();
+                case 'R': throw new NotImplementedException();
+                case 's': throw new NotImplementedException();
+                case 'S': throw new NotImplementedException();
+                case 'u': throw new NotImplementedException();
+                case 'w': throw new NotImplementedException();
+                case 'W': throw new NotImplementedException();
+                case 'x': throw new NotImplementedException();
+                case 'X': throw new NotImplementedException();
+                case 'z': throw new NotImplementedException();
+                default:
+                    throw new ArgumentException(String.Format("unknown command ?{0}", (char)cmd));
+            }
+        }
+
+        [RubyMethod("test", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("test", RubyMethodAttributes.PublicSingleton)]
+        public static object Test(
+            RubyContext/*!*/ context,
+            object self,
+            int cmd,
+            [DefaultProtocol, NotNull]MutableString/*!*/ file1,
+            [DefaultProtocol, NotNull]MutableString/*!*/ file2) {
+            cmd &= 0xFF;
+            switch (cmd) {
+                case '-': throw new NotImplementedException();
+                case '=': throw new NotImplementedException();
+                case '<': throw new NotImplementedException();
+                case '>': throw new NotImplementedException();
+                default:
+                    throw new ArgumentException(String.Format("unknown command ?{0}", (char)cmd));
+            }
+        }
 
         //trace_var
 

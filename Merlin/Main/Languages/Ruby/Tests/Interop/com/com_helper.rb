@@ -1,3 +1,5 @@
+require "win32ole"
+
 # This is really just a rubified copy of IronPython's cominterop_util.py
 module ComHelper
   include Microsoft::Win32
@@ -27,25 +29,12 @@ module ComHelper
   module_function :word_installed?
 
   def create_app(prog_id_or_cls_id)
-    if prog_id_or_cls_id.is_a? System::Guid
-      type = System::Type.GetTypeFromCLSID(prog_id_or_cls_id)
-    elsif guid? prog_id_or_cls_id
-      type = System::Type.GetTypeFromCLSID(System::Guid.new(prog_id_or_cls_id))
-    else
-      type = System::Type.GetTypeFromProgID(prog_id_or_cls_id)
-    end
-    raise "Unknown PROGID '#{prog_id_or_cls_id}'" if type.nil?
-    System::Activator.CreateInstance(type)
+    prog_id_or_cls_id = prog_id_or_cls_id.to_s if prog_id_or_cls_id.is_a? System::Guid
+    WIN32OLE.new prog_id_or_cls_id
   end
   private :create_app
   module_function :create_app
   
-  def guid?(str)
-    /[{]?[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}[}]?|[0-9A-F]{32}/ =~ str
-  end
-  private :guid?
-  module_function :guid?
-
   def create_excel_app
     create_app("Excel.Application")
   end

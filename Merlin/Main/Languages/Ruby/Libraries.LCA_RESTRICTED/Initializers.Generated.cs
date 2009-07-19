@@ -2924,6 +2924,11 @@ namespace IronRuby.Builtins {
                 new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Boolean>(IronRuby.Builtins.KernelOps.Tainted)
             );
             
+            module.DefineLibraryMethod("test", 0x52, 
+                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Int32, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.KernelOps.Test), 
+                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Int32, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.KernelOps.Test)
+            );
+            
             module.DefineLibraryMethod("throw", 0x52, 
                 new System.Action<System.Object, System.String, System.Object>(IronRuby.Builtins.KernelOps.Throw)
             );
@@ -3163,6 +3168,11 @@ namespace IronRuby.Builtins {
             );
             
             #endif
+            module.DefineLibraryMethod("test", 0x61, 
+                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Int32, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.KernelOps.Test), 
+                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Int32, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.KernelOps.Test)
+            );
+            
             module.DefineLibraryMethod("throw", 0x61, 
                 new System.Action<System.Object, System.String, System.Object>(IronRuby.Builtins.KernelOps.Throw)
             );
@@ -5725,6 +5735,11 @@ namespace IronRuby.Builtins {
                 new System.Func<System.DateTime, System.DateTime, System.Int32>(IronRuby.Builtins.TimeOps.CompareTo)
             );
             
+            module.DefineLibraryMethod("==", 0x51, 
+                new System.Func<System.DateTime, System.DateTime, System.Boolean>(IronRuby.Builtins.TimeOps.Eql), 
+                new System.Func<IronRuby.Runtime.RubyContext, System.DateTime, System.Object, System.Object>(IronRuby.Builtins.TimeOps.Equals)
+            );
+            
             module.DefineLibraryMethod("asctime", 0x51, 
                 new System.Func<System.DateTime, IronRuby.Builtins.MutableString>(IronRuby.Builtins.TimeOps.ToString)
             );
@@ -7330,6 +7345,10 @@ namespace IronRuby.StandardLibrary.StringIO {
             
             module.DefineLibraryMethod("truncate", 0x11, 
                 new System.Func<IronRuby.StandardLibrary.StringIO.StringIO, System.Int32, System.Int32>(IronRuby.StandardLibrary.StringIO.StringIO.SetLength)
+            );
+            
+            module.DefineLibraryMethod("ungetc", 0x11, 
+                new System.Action<IronRuby.StandardLibrary.StringIO.StringIO, System.Int32>(IronRuby.StandardLibrary.StringIO.StringIO.UnGetCharacter)
             );
             
         }

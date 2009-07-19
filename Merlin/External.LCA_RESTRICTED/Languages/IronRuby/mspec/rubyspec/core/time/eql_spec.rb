@@ -7,4 +7,8 @@ describe "Time#eql?" do
     Time.at(100, 100).should_not eql(Time.at(100, 99))
     Time.at(100, 100).should_not eql(Time.at(99, 100))
   end  
+
+  it "returns false when comparing with another type" do
+    Time.now.eql?("a string").should == false
+  end
 end

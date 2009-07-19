@@ -24,8 +24,7 @@ module HostingTutorial
          },
          :code => [
             '$engine = IronRuby.create_engine',
-            '$scope = $engine.create_scope',
-            'def script(script_code) $engine.execute(script_code, $scope) end']
+            'def script(script_code) $engine.execute(script_code) end']
          ) { |iar| iar.bind.script('2+2') == 4 }
   end
   
@@ -141,37 +140,29 @@ tutorial "IronRuby Hosting tutorial" do
                     option for C# and VB.Net, or using the <tt>clr.AddReference</tt> method from IronPython.
                 },
                 :setup => lambda do |bind|
-                    load_assembly "Microsoft.Scripting"
                     eval "engine = '(undefined)'", bind
-                    eval "scope = '(undefined)'", bind
                     eval "def script() 'undefined' end", bind
                 end,
                 :code => 'engine = IronRuby.create_engine'
-              ) { |iar| iar .bind.engine.redirect_output; true }
-                
-            task(:body => %{
-                    Next we have to create a scope.
-                },
-                :code => 'scope = engine.create_scope'
-                ) { |iar| iar.bind.scope.kind_of? Microsoft::Scripting::Hosting::ScriptScope }
+              ) { |iar| iar.bind.engine.redirect_output; true }
                 
             task :body => %{
                     Now let's execute some code.
                 },
-                :code => "engine.execute('$x = 100', scope)"
+                :code => "engine.execute '$x = 100'"
 
             task :body => %{
                     What did that do? Let's read back the value of <tt>$x</tt> to make sure it is set
                     as expected.
                 },
-                :code => "engine.execute('$x', scope)"
+                :code => "engine.execute '$x'"
                 
             task(:body => %{
                     We can verify that the code ran in a separate context by checking if <tt>$x</tt> exists 
                     in the current context.
                 },
                 :code => 'puts $x'
-                ) { |iar| iar.output.chomp == 'nil' }
+                ) { |iar| iar.output.chomp == eval('$x', iar.bind).inspect }
                 
             task(:body => %{
                     Since typing <tt>engine.execute...</tt> gets verbose, let's define a method called
@@ -179,12 +170,11 @@ tutorial "IronRuby Hosting tutorial" do
                     it expects is conceptually arbitrary script code that the user can type. 
                     
                     Since Ruby methods cannot access outer local variables, we will need to store +engine+ 
-                    and +scope+ as global variables first.
+                    as a global variable first.
                 },
                 :code => [
                     '$engine = engine',
-                    '$scope = scope',
-                    'def script(script_code) $engine.execute(script_code, $scope) end']
+                    'def script(script_code) $engine.execute(script_code) end']
                 ) { |iar| iar.bind.script('$x') == 100 }
                 
             task(:body => %{
@@ -193,9 +183,15 @@ tutorial "IronRuby Hosting tutorial" do
                 },
                 :code => "script 'puts $x'"
                 ) { |iar| iar.output.chomp == '100' }
+                
+            task :body => %{
+                    We can also get the value of a global constant like +Object+. This will be displayed
+                    as <tt>Object#2</tt> to indicate that it belongs to a different ScriptEngine.
+                },
+                :code => "script 'Object'"
         end
 
-        chapter "Exchanging variables with global variables" do
+        chapter "Global variables" do
             introduction %{
                 Running user script code gets more interesting if the host application can set variables
                 that the user code can use. The variables will typically be set to the object model of the
@@ -223,15 +219,65 @@ tutorial "IronRuby Hosting tutorial" do
                     the host application can read back out.
                 },
                 :code => [
-                    "script 'ThisIsScriptCode = 200', 'Place-holder string'",
+                    "script 'ThisIsScriptCode = 200'",
                     "engine.runtime.globals.get_variable('ThisIsScriptCode')"]
-                ) { |iar| iar.result == 200 }
+                ) { |iar| iar.result == 200 and iar.input =~ /get_variable/ }
         end
 
-        chapter "Per-scope variables" do
+        chapter "Scopes" do
             introduction %{
-                Setting global variables is fine when all user script code needs access to the same shared
-                values. However, often, you will want to scope a value to a narrower context. For example,
+                Creating a ScriptEngine provides isolation of the host application and user script
+                code. However, it is often useful to have isolation within the ScriptEngine. For
+                example, multiple scripts might happen to use the same variable name. Normally,
+                local variables defined in different .rb files are isolated from each other.
+                The same effect can be achieved by creating multiple instances of +ScriptScope+,
+                which more or less corresponds to a .rb file.
+            }
+            
+            HostingTutorial.ensure_script_method
+                    
+            task(:body => %{
+                    A scope is created using the +create_scope+ method.
+                },
+                :code => 'scope1 = engine.create_scope'
+                ) { |iar| iar.bind.scope1 }
+                
+            task :body => %{
+                    We can execute code in the scope by using an overload of the +execute+ method
+                    that accepts a scope.
+                },
+                :code => "engine.execute '2+2', scope1"
+                
+            task(:body => %{
+                    Now that we know how to create a scope, let's create a second one. We will also
+                    set local variables with the same name in each of the scope, but initialize them
+                    to different values.
+                },
+                :code => [
+                    'scope2 = engine.create_scope',
+                    "engine.execute 'x = 101', scope1",
+                    "engine.execute 'x = 102', scope2"]
+                ) { |iar| iar.bind.engine.execute('x', iar.bind.scope2) == 102 }
+                
+            task :body => %{
+                    We can now verify that the two scopes are independent by inspecting the local
+                    variable in each of them.
+                },
+                :code => [
+                    "engine.execute 'x', scope1",
+                    "engine.execute 'x', scope2"]
+                
+            task :body => %{
+                    As a final step, we will make sure that the two scopes do share the same set of
+                    global constants.
+                },
+                :code => "engine.execute('Object', scope1) == engine.execute('Object', scope2)"                
+        end
+
+        chapter "Per-scopes variables" do
+            introduction %{
+                Now that we know how to create multiple scopes, we can use per-scope local variables,
+                instead of global variables, for values that are specific to each scope. For example,
                 for a tutorial defined in <tt>name_tutorial.rb</tt>, you might want to load files in a folder
                 called +name_scripts+, and set +tutorial+ to point to the tutorial created by 
                 <tt>name_tutorial.rb</tt>.
@@ -240,16 +286,18 @@ tutorial "IronRuby Hosting tutorial" do
             HostingTutorial.ensure_script_method
                     
             task(:body => %{
-                    Let's create a second scope
+                    Let's create two scopes
                 },
-                :code => 'scope2 = $engine.create_scope'
-                ) { |iar| iar.bind.scope2 }
+                :code => [
+                    'scope1 = $engine.create_scope',
+                    'scope2 = $engine.create_scope']
+                ) { |iar| iar.bind.scope1 and iar.bind.scope2 }
                 
             task(:body => %{
                     Now we will set a variable named +tutorial+ in each of the scopes.
                 },
                 :code => [
-                    "$scope.set_variable 'tutorial', ::Tutorial.all.values[0]",
+                    "scope1.set_variable 'tutorial', ::Tutorial.all.values[0]",
                     "scope2.set_variable 'tutorial', ::Tutorial.all.values[1]"]
                 ) { |iar| iar.bind.scope2.get_variable 'tutorial' }
                 
@@ -257,7 +305,7 @@ tutorial "IronRuby Hosting tutorial" do
                     Now we can execute the same script code in the two scopes.
                 },
                 :code => [
-                    "script 'tutorial.name'",
+                    "$engine.execute 'tutorial.name', scope1",
                     "$engine.execute 'tutorial.name', scope2"]
         end
     end
@@ -272,10 +320,57 @@ tutorial "IronRuby Hosting tutorial" do
         
         chapter "Hello IronPython!" do
         
-            task :body => %{
-                    Coming soon
+            task(:body => %{
+                    You will first need to make sure that you have IronPython installed.
+                    Note that you have to use the specific release of IronPython that matches
+                    the version of IronRuby you are using. If you use unmatched versions, then
+                    you will not be able to host IronPython. The hosting APIs are defined
+                    in Microsoft.Scripting.dll, and all language you try to host have to use
+                    the exact same version of the assembly. 
+                    
+                    Let's first confirm that you can atleast load IronPython.                    
                  },
-                 :code => '2+2'
+                 :code => "load_assembly 'IronPython'"
+                ) { |iar| eval('IronPython::Hosting::Python', iar.bind).kind_of? Class }
+
+            task(:body => %{
+                    To be able to host a language, you need to have a config file. This tutorial
+                    runs using ir.exe, which normally includes a config file ir.exe.config with
+                    a section like this (taken from the IronRuby 0.6 release).
+                    
+                      <microsoft.scripting>
+                        <languages>
+                          <language names="IronPython;Python;py" extensions=".py" displayName="IronPython 2.6 Alpha" type="IronPython.Runtime.PythonContext, IronPython, Version=2.6.0.10, Culture=neutral, PublicKeyToken=null" />
+                          <language names="IronRuby;Ruby;rb" extensions=".rb" displayName="IronRuby" type="IronRuby.Runtime.RubyContext, IronRuby, Version=0.6.0.0, Culture=neutral, PublicKeyToken=null" />
+                        </languages>
+                    
+                        <options>
+                          <set language="Ruby" option="LibraryPaths" value="..\..\Languages\Ruby\libs\;..\..\..\External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\site_ruby\1.8\;..\..\..\External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.8\" />
+                        </options>
+                      </microsoft.scripting>
+                    
+                    If you do hosting from another application, you will need to use a similar
+                    config file.
+                 },
+                 :code => [
+                    "load_assembly 'Microsoft.Scripting'",
+                    "include Microsoft::Scripting::Hosting",
+                    "setup = ScriptRuntimeSetup.read_configuration",
+                    "runtime = ScriptRuntime.new setup"]
+                ) { |iar| iar.bind.runtime }
+
+            task(:body => %{
+                    Now create the Python engine. This step will fail if you are using a mismatched
+                    version of IronPython.
+                 },
+                 :code => "python = runtime.get_engine 'Python'"
+                ) { |iar| iar.bind.python.redirect_output; true }
+
+            task :body => %{
+                    Now you can run Python code! We will call the builtin function +dir+ to get the
+                    list of all methods of the +str+ type.
+                 },
+                 :code => "python.execute 'dir(str)'"
         end
     end
    

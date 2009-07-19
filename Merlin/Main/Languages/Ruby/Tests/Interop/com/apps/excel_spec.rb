@@ -1,11 +1,15 @@
 require File.dirname(__FILE__) + "/../spec_helper"
 module ExcelEventTracker
   def add_event(ws)
-    ws.SelectionChange.add(method(:handler))
+    e = WIN32OLE_EVENT.new(ws, "DocEvents")
+    e.on_event("SelectionChange") { |obj, event| handler(obj, event) }
   end
 
   def remove_event(ws)
-    ws.SelectionChange.remove(method(:handler))
+    e = WIN32OLE_EVENT.new(ws, "DocEvents")
+    # WIN32OLE_EVENT does not document any way to unsubscribe from an event
+    # So we use this syntax
+    e.on_event("SelectionChange")
   end
 end
 
@@ -16,7 +20,7 @@ describe "Excel" do
     @app = ComHelper.create_excel_app
     @app.DisplayAlerts = false
     @workbook = @app.Workbooks.Add
-    @worksheet = @workbook.Worksheets[1]
+    @worksheet = @workbook.Worksheets(1)
   end
 
   after :each do
@@ -44,7 +48,7 @@ describe "Excel" do
       lambda { 
         (1..10).each do |i| 
           (1..10).each do |j| 
-            @worksheet.Cells[i,j] = i * j 
+            @worksheet.setproperty("Cells", i, j, i * j)
           end 
         end 
       }.should_not raise_error 
@@ -77,45 +81,45 @@ describe "Excel" do
 
     it "fires for single event" do
       @tracker.add_event(@worksheet)
-      @app.ActiveCell.Offset[1,0].Activate
+      @app.ActiveCell.Offset(1,0).Activate
       @tracker.counter.should == 1
     end
 
     it "fires for multiple events" do
       @tracker.add_event(@worksheet)
       @tracker.add_event(@worksheet)
-      @app.ActiveCell.Offset[1,0].Activate
+      @app.ActiveCell.Offset(1,0).Activate
       @tracker.counter.should == 2
     end
 
     it "fires after removing an event" do
       @tracker.add_event(@worksheet)
       @tracker.add_event(@worksheet)
-      @app.ActiveCell.Offset[1,0].Activate
+      @app.ActiveCell.Offset(1,0).Activate
       @tracker.remove_event(@worksheet)
-      @app.ActiveCell.Offset[1,0].Activate
+      @app.ActiveCell.Offset(1,0).Activate
       @tracker.counter.should == 3
     end
 
     it "fires after removing all events" do
       @tracker.add_event(@worksheet)
       @tracker.add_event(@worksheet)
-      @app.ActiveCell.Offset[1,0].Activate
+      @app.ActiveCell.Offset(1,0).Activate
       @tracker.remove_event(@worksheet)
       @tracker.remove_event(@worksheet)
-      @app.ActiveCell.Offset[1,0].Activate
+      @app.ActiveCell.Offset(1,0).Activate
       @tracker.counter.should == 2
     end
 
     it "fires after removing all events, then adding one back" do
       @tracker.add_event(@worksheet)
       @tracker.add_event(@worksheet)
-      @app.ActiveCell.Offset[1,0].Activate
+      @app.ActiveCell.Offset(1,0).Activate
       @tracker.remove_event(@worksheet)
       @tracker.remove_event(@worksheet)
-      @app.ActiveCell.Offset[1,0].Activate
+      @app.ActiveCell.Offset(1,0).Activate
       @tracker.add_event(@worksheet)
-      @app.ActiveCell.Offset[1,0].Activate
+      @app.ActiveCell.Offset(1,0).Activate
       @tracker.counter.should == 3
     end
   end

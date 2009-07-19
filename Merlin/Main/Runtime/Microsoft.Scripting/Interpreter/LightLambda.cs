@@ -93,11 +93,14 @@ namespace Microsoft.Scripting.Interpreter {
             var method = delegateType.GetMethod("Invoke");
             var paramInfos = method.GetParameters();
             var parameters = new ParameterExpression[paramInfos.Length];
+            var parametersAsObject = new Expression[paramInfos.Length];
             for (int i = 0; i < paramInfos.Length; i++) {
-                parameters[i] = Expression.Parameter(paramInfos[i].ParameterType, paramInfos[i].Name);
+                ParameterExpression parameter = Expression.Parameter(paramInfos[i].ParameterType, paramInfos[i].Name);
+                parameters[i] = parameter;
+                parametersAsObject[i] = Expression.Convert(parameter, typeof(object));
             }
 
-            var data = Expression.NewArrayInit(typeof(object), parameters);
+            var data = Expression.NewArrayInit(typeof(object), parametersAsObject);
             var self = AstUtils.Constant(this);
             var runMethod = typeof(LightLambda).GetMethod("Run");
             var body = Expression.Convert(Expression.Call(self, runMethod, data), method.ReturnType);
