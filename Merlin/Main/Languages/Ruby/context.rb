@@ -374,9 +374,9 @@ class CSProjCompiler
     transform_config source_path, target_build_path, layout[configuration][:LibraryPaths]
   end
 
-  def move_config(name = "ir.exe.config")
+  def move_config(name = "ir")
     source = project_root + "Config/Unsigned/app.config"
-    config_file = build_path + name
+    config_file = build_path + (name + ".exe.config")
     transform_config_file('Merlin', source, config_file)
   end
 
@@ -409,7 +409,7 @@ IronRubyCompiler = CSProjCompiler.new do
             :csproj     => 'Microsoft.Scripting.csproj',
             :dir        => '../../Runtime/Microsoft.Scripting'
             
-  dlr_com :references   => ['Microsoft.Scripting.Core.dll', '!System.Xml.dll', '!System.dll', 'Microsoft.Scripting.ExtensionAttribute.dll'],
+  dlr_dynamic :references   => ['Microsoft.Scripting.Core.dll', '!System.Xml.dll', '!System.dll', 'Microsoft.Scripting.ExtensionAttribute.dll'],
           :switches     => ['target:library', 'unsafe', 'define:MICROSOFT_DYNAMIC;CLR2'],
           :output       => 'Microsoft.Dynamic.dll',
           :csproj       => 'Microsoft.Dynamic.csproj',
@@ -440,20 +440,22 @@ IronRubyCompiler = CSProjCompiler.new do
             :dir        => 'Libraries.LCA_RESTRICTED',
             :csproj     => 'IronRuby.Libraries.csproj'
             
-  console :references => ['Microsoft.Scripting.Core.dll','Microsoft.Scripting.dll','IronRuby.dll'],
+  ir :references => ['Microsoft.Scripting.Core.dll','Microsoft.Scripting.dll','IronRuby.dll'],
           :output     => 'ir.exe',
           :dir        => './Console',
           :csproj     => 'Ruby.Console.csproj'
+
+  ir64 :references => ['Microsoft.Scripting.Core.dll','Microsoft.Scripting.dll','IronRuby.dll'],
+              :output     => 'ir64.exe',
+              :dir        => './Console',
+              :csproj     => 'Ruby.ConsoleAny.csproj'
+
           
   test_runner :references => ['Microsoft.Scripting.Core.dll', 'Microsoft.Scripting.dll', 'IronRuby.dll', 'IronRuby.Libraries.dll', '!System.dll', '!System.Windows.Forms.dll'],
               :output     => 'IronRuby.Tests.exe',
               :dir        => './IronRuby.Tests',
               :csproj     => 'IronRuby.Tests.csproj'
               
-  scanner :references => ['Microsoft.Scripting.Core.dll', 'Microsoft.Scripting.dll', 'IronRuby.dll', 'IronRuby.Libraries.dll', '!System.Core.dll'],
-          :output     => 'IronRuby.Libraries.Scanner.exe',
-          :dir        => './IronRuby.Libraries.Scanner'
-          
   yaml :references => ['Microsoft.Scripting.Core.dll', 'Microsoft.Scripting.dll', 'IronRuby.dll', 'IronRuby.Libraries.dll', '!System.dll'],
        :switches   => ['target:library'],
        :output     => 'IronRuby.Libraries.Yaml.dll',
@@ -487,6 +489,18 @@ IronRubyCompiler = CSProjCompiler.new do
       :output     => 'ipy.exe',
       :dir        => '../IronPython/IronPythonConsole',
       :csproj     => 'IronPythonConsole.csproj'
+
+  ipyw64 :references => ['IronPython.dll', 'Microsoft.Scripting.Core.dll', 'Microsoft.Scripting.dll', '!System.dll', '!System.Windows.Forms.dll'],
+       :switches   => ['target:winexe', "define:IRONPYTHON_WINDOW", "win32icon:..\\IronPythonWindow\\ipy.ico"],
+       :output     => 'ipyw64.exe',
+       :dir        => '../IronPython/IronPythonWindowAny',
+       :csproj     => 'IronPythonWindowAny.csproj'
+    
+  ipy64 :references => ['IronPython.dll', 'Microsoft.Scripting.Core.dll','Microsoft.Scripting.dll', '!System.dll'],
+      :switches   => ['target:exe', 'win32icon:..\\IronPythonConsole\\ipy.ico'],
+      :output     => 'ipy64.exe',
+      :dir        => '../IronPython/IronPythonConsoleAny',
+      :csproj     => 'IronPythonConsoleAny.csproj'
 
   ironpython_modules :references => ['IronPython.dll', 'Microsoft.Scripting.Core.dll', 'Microsoft.Scripting.dll', 'Microsoft.Scripting.ExtensionAttribute.dll', '!System.Data.dll', '!System.dll', '!System.Xml.dll'],
                      :switches   => ['target:library'],
