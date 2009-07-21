@@ -850,6 +850,8 @@ internal class LibraryDef {
 
         // primitives:
         if (Builtins) {
+            _output.WriteLine("EnvironmentSingletonOps.Initialize(Context);");
+            
             _output.WriteLine("Context.RegisterPrimitives(");
             _output.Indent++;
 

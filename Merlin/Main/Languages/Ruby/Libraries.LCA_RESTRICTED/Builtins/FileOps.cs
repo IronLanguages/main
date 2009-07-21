@@ -497,27 +497,34 @@ namespace IronRuby.Builtins {
             PlatformAdaptationLayer pal = context.DomainManager.Platform;
             string result = pal.GetEnvironmentVariable("HOME");
 
-            if (result == null) {
-                string homeDrive = pal.GetEnvironmentVariable("HOMEDRIVE");
-                string homePath = pal.GetEnvironmentVariable("HOMEPATH");
-                if (homeDrive == null && homePath == null) {
-                    string userEnvironment = pal.GetEnvironmentVariable("USERPROFILE");
-                    if (userEnvironment == null) {
-                        // This will always succeed with a non-null string, but it can fail
-                        // if the Personal folder was renamed or deleted. In this case it returns
-                        // an empty string.
-                        result = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
-                    } else {
-                        result = userEnvironment;
-                    }
-                } else if (homeDrive == null) {
-                    result = homePath;
-                } else if (homePath == null) {
-                    result = homeDrive;
-                } else {
-                    result = Path.Combine(homeDrive, homePath);
-                }
+            if (result != null) {
+                return result;
             }
+
+            string homeDrive = pal.GetEnvironmentVariable("HOMEDRIVE");
+            string homePath = pal.GetEnvironmentVariable("HOMEPATH");
+            if (homeDrive == null && homePath == null) {
+                string userEnvironment = pal.GetEnvironmentVariable("USERPROFILE");
+                if (userEnvironment == null) {
+                    // This will always succeed with a non-null string, but it can fail
+                    // if the Personal folder was renamed or deleted. In this case it returns
+                    // an empty string.
+                    result = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
+                } else {
+                    result = userEnvironment;
+                }
+            } else if (homeDrive == null) {
+                result = homePath;
+            } else if (homePath == null) {
+                result = homeDrive + Path.DirectorySeparatorChar;
+            } else {
+                result = homeDrive + homePath;
+            }
+
+            if (result != null) {
+                result = ExpandPath(context, null, MutableString.Create(result)).ConvertToString();
+            }
+
             return result;
         }
 

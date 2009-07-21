@@ -134,14 +134,19 @@ namespace IronRuby.Builtins {
 
 #if !SILVERLIGHT
         // Looks for RUBYSHELL and then COMSPEC under Windows
-        // It appears that COMSPEC is a special environment variable that cannot be undefined
         internal static ProcessStartInfo/*!*/ GetShell(RubyContext/*!*/ context, MutableString/*!*/ command) {
             PlatformAdaptationLayer pal = context.DomainManager.Platform;
             string shell = pal.GetEnvironmentVariable("RUBYSHELL");
             if (shell == null) {
                 shell = pal.GetEnvironmentVariable("COMSPEC");
             }
-            return new ProcessStartInfo(shell, String.Format("/C \"{0}\"", command.ConvertToString()));
+
+            if (shell == null) {
+                string [] commandParts = command.ConvertToString().Split(new char[] { ' ' }, 2);
+                return new ProcessStartInfo(commandParts[0], commandParts.Length == 2 ? commandParts[1] : null);
+            } else {
+                return new ProcessStartInfo(shell, String.Format("/C \"{0}\"", command.ConvertToString()));
+            }
         }
 
         private static MutableString/*!*/ JoinArguments(MutableString/*!*/[]/*!*/ args) {
