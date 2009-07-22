@@ -29,20 +29,6 @@ namespace IronRuby.Builtins {
     [RubySingleton, Includes(typeof(Enumerable))]
     public static class EnvironmentSingletonOps {
 
-        internal static void Initialize(RubyContext/*!*/ context) {
-#if !SILVERLIGHT // SetEnvironmentVariable
-            try {
-                string homeDir = RubyFileOps.GetHomeDirectory(context);
-                context.DomainManager.Platform.SetEnvironmentVariable("HOME", homeDir); 
-            } catch (System.Security.SecurityException e) {
-                // Ignore EnvironmentPermission exception
-                if (e.PermissionType != typeof(System.Security.Permissions.EnvironmentPermission)) {
-                    throw;
-                }
-            }
-#endif
-        }
-
         #region Public Instance Methods
 
         [RubyMethod("[]", RubyMethodAttributes.PublicInstance)]

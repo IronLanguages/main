@@ -31,7 +31,6 @@
 namespace IronRuby.Builtins {
     public sealed class BuiltinsLibraryInitializer : IronRuby.Builtins.LibraryInitializer {
         protected override void LoadModules() {
-            EnvironmentSingletonOps.Initialize(Context);
             Context.RegisterPrimitives(
                 Load__ClassSingleton_Instance,
                 Load__ClassSingletonSingleton_Instance,
