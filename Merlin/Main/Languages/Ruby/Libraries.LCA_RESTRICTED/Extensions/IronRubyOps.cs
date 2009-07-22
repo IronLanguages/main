@@ -19,14 +19,62 @@ using IronRuby.Runtime;
 using Microsoft.Scripting.Runtime;
 using System.Diagnostics;
 using System;
+using System.Collections.Generic;
+using Microsoft.Scripting.Utils;
+using System.Reflection;
+using System.Runtime.InteropServices;
 
 namespace IronRuby.Builtins {
     [RubyModule("IronRuby", Extends = typeof(Ruby), Restrictions = ModuleRestrictions.None)]
     public static class IronRubyOps {
 
-        [RubyMethod("dlr_config", RubyMethodAttributes.PublicSingleton)]
-        public static DlrConfiguration/*!*/ GetCurrentRuntimeConfiguration(RubyContext/*!*/ context, object self) {
+        [RubyMethod("configuration", RubyMethodAttributes.PublicSingleton)]
+        public static DlrConfiguration/*!*/ GetConfiguration(RubyContext/*!*/ context, RubyModule/*!*/ self) {
             return context.DomainManager.Configuration;
+        }
+
+        [RubyMethod("globals", RubyMethodAttributes.PublicSingleton)]
+        public static Scope/*!*/ GetGlobalScope(RubyContext/*!*/ context, RubyModule/*!*/ self) {
+            return context.DomainManager.Globals;
+        }
+
+        [RubyMethod("loaded_assemblies", RubyMethodAttributes.PublicSingleton)]
+        public static RubyArray/*!*/ GetLoadedAssemblies(RubyContext/*!*/ context, RubyModule/*!*/ self) {
+            return new RubyArray(context.DomainManager.GetLoadedAssemblyList());
+        }
+
+        /// <summary>
+        /// Gets a live read-only and thread-safe dictionary that maps full paths of the loaded scripts to their scopes.
+        /// </summary>
+        [RubyMethod("loaded_scripts", RubyMethodAttributes.PublicSingleton)]
+        public static IDictionary<string, Scope>/*!*/ GetLoadedScripts(RubyContext/*!*/ context, RubyModule/*!*/ self) {
+            return new ReadOnlyDictionary<string, Scope>(context.Loader.LoadedScripts);
+        }
+
+        /// <summary>
+        /// The same as Kernel#require except for that it returns the loaded Assembly or Scope (even if already loaded).
+        /// </summary>
+        [RubyMethod("require", RubyMethodAttributes.PublicSingleton)]
+        public static object/*!*/ Require(RubyScope/*!*/ scope, RubyModule/*!*/ self, MutableString/*!*/ libraryName) {
+            object loaded;
+            
+            scope.RubyContext.Loader.LoadFile(
+                null, self, libraryName, LoadFlags.LoadOnce | LoadFlags.AppendExtensions | LoadFlags.ResolveLoaded, out loaded
+            );
+
+            Debug.Assert(loaded != null);
+            return loaded;
+        }
+
+        /// <summary>
+        /// The same as Kernel#require except for that it returns the loaded Assembly or Scope.
+        /// </summary>
+        [RubyMethod("load", RubyMethodAttributes.PublicSingleton)]
+        public static object/*!*/ Load(RubyScope/*!*/ scope, RubyModule/*!*/ self, MutableString/*!*/ libraryName) {
+            object loaded;
+            scope.RubyContext.Loader.LoadFile(null, self, libraryName, LoadFlags.ResolveLoaded, out loaded);
+            Debug.Assert(loaded != null);
+            return loaded;
         }
 
         [RubyModule("Clr", Restrictions = ModuleRestrictions.None)]

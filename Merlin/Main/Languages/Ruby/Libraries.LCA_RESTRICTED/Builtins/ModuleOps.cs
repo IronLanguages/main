@@ -266,7 +266,7 @@ namespace IronRuby.Builtins {
                         options |= MethodLookup.ReturnForwarder;
                     }
 
-                    method = module.ResolveMethodNoLock(methodName, RubyClass.IgnoreVisibility, options).Info;
+                    method = module.ResolveMethodNoLock(methodName, VisibilityContext.AllVisible, options).Info;
                     if (method == null) {
                         throw RubyExceptions.CreateNameError(RubyExceptions.FormatMethodMissingMessage(context, module, methodName));
                     }
@@ -310,7 +310,9 @@ namespace IronRuby.Builtins {
         public static RubyMethod/*!*/ DefineMethod(RubyScope/*!*/ scope, RubyModule/*!*/ self,
             [NotNull]ClrName/*!*/ methodName, [NotNull]RubyMethod/*!*/ method) {
             var result = DefineMethod(scope, self, methodName.MangledName, method);
-            self.AddMethodAlias(methodName.ActualName, methodName.MangledName);
+            if (methodName.HasMangledName) {
+                self.AddMethodAlias(methodName.ActualName, methodName.MangledName);
+            }
             return result;
         }
 
@@ -329,7 +331,9 @@ namespace IronRuby.Builtins {
         public static UnboundMethod/*!*/ DefineMethod(RubyScope/*!*/ scope, RubyModule/*!*/ self,
             [NotNull]ClrName/*!*/ methodName, [NotNull]UnboundMethod/*!*/ method) {
             var result = DefineMethod(scope, self, methodName.MangledName, method);
-            self.AddMethodAlias(methodName.ActualName, methodName.MangledName);
+            if (methodName.HasMangledName) {
+                self.AddMethodAlias(methodName.ActualName, methodName.MangledName);
+            }
             return result;
         }
 
@@ -366,7 +370,9 @@ namespace IronRuby.Builtins {
             RubyModule/*!*/ self, [NotNull]ClrName/*!*/ methodName) {
 
             var result = DefineMethod(scope, block, self, methodName.MangledName);
-            self.AddMethodAlias(methodName.ActualName, methodName.MangledName);
+            if (methodName.HasMangledName) {
+                self.AddMethodAlias(methodName.ActualName, methodName.MangledName);
+            }
             return result;
         }
 
@@ -386,7 +392,9 @@ namespace IronRuby.Builtins {
             [NotNull]ClrName/*!*/ methodName, [NotNull]Proc/*!*/ method) {
 
             var result = DefineMethod(scope, self, methodName.MangledName, method);
-            self.AddMethodAlias(methodName.ActualName, methodName.MangledName);
+            if (methodName.HasMangledName) {
+                self.AddMethodAlias(methodName.ActualName, methodName.MangledName);
+            }
             return result;
         }
 
@@ -528,7 +536,7 @@ namespace IronRuby.Builtins {
         // thread-safe:
         [RubyMethod("undef_method", RubyMethodAttributes.PrivateInstance)]
         public static RubyModule/*!*/ UndefineMethod(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ methodName) {
-            if (!self.ResolveMethod(methodName, RubyClass.IgnoreVisibility).Found) {
+            if (!self.ResolveMethod(methodName, VisibilityContext.AllVisible).Found) {
                 throw RubyExceptions.CreateUndefinedMethodError(self, methodName);
             }
             self.UndefineMethod(methodName);
@@ -882,28 +890,28 @@ namespace IronRuby.Builtins {
         // thread-safe:
         [RubyMethod("method_defined?")]
         public static bool MethodDefined(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ methodName) {
-            RubyMemberInfo method = self.ResolveMethod(methodName, RubyClass.IgnoreVisibility).Info;
+            RubyMemberInfo method = self.ResolveMethod(methodName, VisibilityContext.AllVisible).Info;
             return method != null && method.Visibility != RubyMethodVisibility.Private;
         }
 
         // thread-safe:
         [RubyMethod("private_method_defined?")]
         public static bool PrivateMethodDefined(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ methodName) {
-            RubyMemberInfo method = self.ResolveMethod(methodName, RubyClass.IgnoreVisibility).Info;
+            RubyMemberInfo method = self.ResolveMethod(methodName, VisibilityContext.AllVisible).Info;
             return method != null && method.Visibility == RubyMethodVisibility.Private;
         }
 
         // thread-safe:
         [RubyMethod("protected_method_defined?")]
         public static bool ProtectedMethodDefined(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ methodName) {
-            RubyMemberInfo method = self.ResolveMethod(methodName, RubyClass.IgnoreVisibility).Info;
+            RubyMemberInfo method = self.ResolveMethod(methodName, VisibilityContext.AllVisible).Info;
             return method != null && method.Visibility == RubyMethodVisibility.Protected;
         }
 
         // thread-safe:
         [RubyMethod("public_method_defined?")]
         public static bool PublicMethodDefined(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ methodName) {
-            RubyMemberInfo method = self.ResolveMethod(methodName, RubyClass.IgnoreVisibility).Info;
+            RubyMemberInfo method = self.ResolveMethod(methodName, VisibilityContext.AllVisible).Info;
             return method != null && method.Visibility == RubyMethodVisibility.Public;
         }
 
@@ -914,7 +922,7 @@ namespace IronRuby.Builtins {
         // thread-safe:
         [RubyMethod("instance_method")]
         public static UnboundMethod/*!*/ GetInstanceMethod(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ methodName) {
-            RubyMemberInfo method = self.ResolveMethod(methodName, RubyClass.IgnoreVisibility).Info;
+            RubyMemberInfo method = self.ResolveMethod(methodName, VisibilityContext.AllVisible).Info;
             if (method == null) {
                 throw RubyExceptions.CreateUndefinedMethodError(self, methodName);
             }

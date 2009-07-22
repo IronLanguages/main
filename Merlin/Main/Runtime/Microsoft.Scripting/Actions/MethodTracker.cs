@@ -14,15 +14,18 @@
  * ***************************************************************************/
 
 using System;
-using System.Linq.Expressions;
+using System.Dynamic;
 using System.Reflection;
-using Microsoft.Scripting.Utils;
+
 using Microsoft.Contracts;
+using Microsoft.Scripting.Actions.Calls;
+using Microsoft.Scripting.Utils;
+
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Actions {
     using Ast = System.Linq.Expressions.Expression;
-
+    
     public class MethodTracker : MemberTracker {
         private readonly MethodInfo _method;
         private readonly bool _isStatic;
@@ -74,7 +77,7 @@ namespace Microsoft.Scripting.Actions {
             return _method.ToString();
         }
 
-        public override MemberTracker BindToInstance(Expression instance) {
+        public override MemberTracker BindToInstance(DynamicMetaObject instance) {
             if (IsStatic) {
                 return this;
             }
@@ -82,38 +85,46 @@ namespace Microsoft.Scripting.Actions {
             return new BoundMemberTracker(this, instance);
         }
 
-        protected internal override Expression GetBoundValue(Expression context, ActionBinder binder, Type type, Expression instance) {
+        protected internal override DynamicMetaObject GetBoundValue(OverloadResolverFactory resolverFactory, ActionBinder binder, Type type, DynamicMetaObject instance) {
             return binder.ReturnMemberTracker(type, BindToInstance(instance));
         }
 
-        internal override System.Linq.Expressions.Expression Call(Expression context, ActionBinder binder, params Expression[] arguments) {
+        internal override DynamicMetaObject Call(OverloadResolverFactory resolverFactory, ActionBinder binder, params DynamicMetaObject[] arguments) {
             if (Method.IsPublic && Method.DeclaringType.IsVisible) {
-                // TODO: Need to use MethodBinder in here to make this right.
-                return binder.MakeCallExpression(context, Method, arguments);
+                return binder.MakeCallExpression(resolverFactory, Method, arguments);
             }
 
             //methodInfo.Invoke(obj, object[] params)
             if (Method.IsStatic) {
-                return Ast.Convert(
-                    Ast.Call(
-                        AstUtils.Constant(Method),
-                        typeof(MethodInfo).GetMethod("Invoke", new Type[] { typeof(object), typeof(object[]) }),
-                        AstUtils.Constant(null),
-                        AstUtils.NewArrayHelper(typeof(object), arguments)
-                    ),
-                    Method.ReturnType);
+                return new DynamicMetaObject(
+                        Ast.Convert(
+                            Ast.Call(
+                                AstUtils.Constant(Method),
+                                typeof(MethodInfo).GetMethod("Invoke", new Type[] { typeof(object), typeof(object[]) }),
+                                AstUtils.Constant(null),
+                                AstUtils.NewArrayHelper(typeof(object), ArrayUtils.ConvertAll(arguments, x => x.Expression))
+                            ),
+                            Method.ReturnType
+                        ),
+                        BindingRestrictions.Empty
+                    )
+                ;
             }
 
             if (arguments.Length == 0) throw Error.NoInstanceForCall();
 
-            return Ast.Convert(
-                Ast.Call(
-                    AstUtils.Constant(Method),
-                    typeof(MethodInfo).GetMethod("Invoke", new Type[] { typeof(object), typeof(object[]) }),
-                    arguments[0],
-                    AstUtils.NewArrayHelper(typeof(object), ArrayUtils.RemoveFirst(arguments))
+            return new DynamicMetaObject(
+                Ast.Convert(
+                    Ast.Call(
+                        AstUtils.Constant(Method),
+                        typeof(MethodInfo).GetMethod("Invoke", new Type[] { typeof(object), typeof(object[]) }),
+                        arguments[0].Expression,
+                        AstUtils.NewArrayHelper(typeof(object), ArrayUtils.ConvertAll(ArrayUtils.RemoveFirst(arguments), x => x.Expression))
+                    ),
+                    Method.ReturnType
                 ),
-                Method.ReturnType);
+                BindingRestrictions.Empty
+            );
         }
     }
 }

@@ -43,7 +43,7 @@ namespace IronRuby.StandardLibrary.Yaml {
         public RubyRepresenter(RubyContext/*!*/ context, Serializer/*!*/ serializer, YamlOptions/*!*/ opts)
             : base(serializer, opts) {
             _context = context;
-            _objectToYamlMethod = context.GetClass(typeof(object)).ResolveMethod("to_yaml", RubyClass.IgnoreVisibility).Info;
+            _objectToYamlMethod = context.GetClass(typeof(object)).ResolveMethod("to_yaml", VisibilityContext.AllVisible).Info;
 
              _TagUri =
                 CallSite<Func<CallSite, object, object>>.Create(
@@ -88,7 +88,7 @@ namespace IronRuby.StandardLibrary.Yaml {
         #endregion
 
         protected override Node CreateNode(object data) {
-            RubyMemberInfo method = _context.GetImmediateClassOf(data).ResolveMethodForSite("to_yaml", RubyClass.IgnoreVisibility).Info;
+            RubyMemberInfo method = _context.GetImmediateClassOf(data).ResolveMethodForSite("to_yaml", VisibilityContext.AllVisible).Info;
 
             if (method == _objectToYamlMethod) {
                 return (Node)_ToYamlNode.Target(_ToYamlNode, data, this);

@@ -23,22 +23,28 @@ namespace Microsoft.Scripting.Utils {
     /// provides a thread-safe implementation. It holds onto a Dictionary[TKey, TValue] instead of inheriting from
     /// it so that users who need to do manual synchronization can access the underlying Dictionary[TKey, TValue].
     /// </summary>
-    internal class SynchronizedDictionary<TKey, TValue> :
+    public class SynchronizedDictionary<TKey, TValue> :
         IDictionary<TKey, TValue>,
         ICollection<KeyValuePair<TKey, TValue>>,
         IEnumerable<KeyValuePair<TKey, TValue>> {
 
-        Dictionary<TKey, TValue> _dictionary = new Dictionary<TKey, TValue>();
+        Dictionary<TKey, TValue> _dictionary;
 
         /// <summary>
         /// This returns the raw unsynchronized Dictionary[TKey, TValue]. Users are responsible for locking
         /// on it before accessing it. Also, it should not be arbitrarily handed out to other code since deadlocks
         /// can be caused if other code incorrectly locks on it.
         /// </summary>
-        internal Dictionary<TKey, TValue> UnderlyingDictionary {
-            get {
-                return _dictionary;
-            }
+        public Dictionary<TKey, TValue> UnderlyingDictionary {
+            get { return _dictionary; }
+        }
+
+        public SynchronizedDictionary() 
+            : this(new Dictionary<TKey, TValue>()) {
+        }
+
+        public SynchronizedDictionary(Dictionary<TKey, TValue> dictionary) {
+            _dictionary = dictionary;
         }
 
         #region IDictionary<TKey,TValue> Members

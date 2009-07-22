@@ -15,56 +15,50 @@
 
 using System.Diagnostics;
 using Microsoft.Scripting.Utils;
+using Microsoft.Scripting.Runtime;
 
-namespace Microsoft.Scripting.Runtime {
+namespace IronPython.Runtime {
     /// <summary>
-    /// TODO: Rename to LocalScope
+    /// Captures the state of a piece of code.
     /// </summary>    
-    public class CodeContext {
-        public const string ContextFieldName = "__global_context";
-
-        // TODO: move to subclasses
+    public sealed class CodeContext {
         private readonly Scope _scope;
-
-        // TODO: move to subclasses
-        private readonly LanguageContext _languageContext;
-
+        private readonly PythonContext _languageContext;
         private readonly CodeContext _parent;
+
+        public CodeContext(Scope scope, PythonContext languageContext)
+            : this(scope, languageContext, null) {
+        }
+
+        public CodeContext(Scope scope, PythonContext languageContext, CodeContext parent) {
+            Assert.NotNull(languageContext);
+
+            _languageContext = languageContext;
+            _scope = scope;
+            _parent = parent;
+        }
 
         public CodeContext Parent {
             get { return _parent; }
         }
 
-        // TODO: remove
         public Scope Scope {
             get {
                 return _scope;
             }
         }
 
-        public virtual Scope GlobalScope {
+        public Scope GlobalScope {
             get {
                 Debug.Assert(_scope != null, "Global scope not available");
                 return _scope.ModuleScope;
             }
         }
 
-        public LanguageContext LanguageContext {
+        public PythonContext LanguageContext {
             get {
                 return _languageContext;
             }
-        }
-
-        public CodeContext(Scope scope, LanguageContext languageContext)
-            : this(scope, languageContext, null) {
-        }
-
-        public CodeContext(Scope scope, LanguageContext languageContext, CodeContext parent) {
-            Assert.NotNull(languageContext);
-
-            _languageContext = languageContext;
-            _scope = scope;
-            _parent = parent;
         }
     }
 }

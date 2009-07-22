@@ -553,7 +553,7 @@ namespace IronRuby.Runtime {
         public static void UndefineMethod(RubyScope/*!*/ scope, string/*!*/ name) {
             RubyModule owner = scope.GetInnerMostModuleForMethodLookup();
 
-            if (!owner.ResolveMethod(name, RubyClass.IgnoreVisibility).Found) {
+            if (!owner.ResolveMethod(name, VisibilityContext.AllVisible).Found) {
                 throw RubyExceptions.CreateUndefinedMethodError(owner, name);
             }
             owner.UndefineMethod(name);
@@ -563,7 +563,7 @@ namespace IronRuby.Runtime {
         public static bool IsDefinedMethod(object self, RubyScope/*!*/ scope, string/*!*/ name) {
             // MRI: this is different from UndefineMethod, it behaves like Kernel#method (i.e. doesn't use lexical scope):
             // TODO: visibility
-            return scope.RubyContext.ResolveMethod(self, name, RubyClass.IgnoreVisibility).Found;
+            return scope.RubyContext.ResolveMethod(self, name, VisibilityContext.AllVisible).Found;
         }
 
         #endregion

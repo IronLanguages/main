@@ -21,6 +21,7 @@ using System.Reflection;
 using System.Collections;
 using System.Collections.Generic;
 using IronRuby.Builtins;
+using System.Globalization;
 
 namespace IronRuby.Runtime {
     public static class Utils {
@@ -327,6 +328,19 @@ namespace IronRuby.Runtime {
             return defaultResult;
         }
 
+        internal static bool SubstringEquals(string/*!*/ name, int start, int count, string/*!*/ other) {
+            if (count != other.Length) {
+                return false;
+            }
+
+            for (int i = 0; i < count; i++) {
+                if (name[start + i] != other[i]) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
         public static TOutput[]/*!*/ ConvertAll<TInput, TOutput>(this TInput[]/*!*/ array, Converter<TInput, TOutput>/*!*/ converter) {
             var result = new TOutput[array.Length];
             for (int i = 0; i < array.Length; i++) {
@@ -375,6 +389,24 @@ namespace IronRuby.Runtime {
         public static char ToUpperHexDigit(this int digit) {
             return (char)((digit < 10) ? '0' + digit : 'A' + digit - 10);
         }
+
+        public static char ToUpperInvariant(this char c) {
+            return Char.ToUpper(c, CultureInfo.InvariantCulture);
+        }
+
+        public static char ToLowerInvariant(this char c) {
+            return Char.ToLower(c, CultureInfo.InvariantCulture);
+        }
+
+#if SILVERLIGHT
+        public static string/*!*/ ToUpperInvariant(this string/*!*/ str) {
+            return str.ToUpper(CultureInfo.InvariantCulture);
+        }
+
+        public static string/*!*/ ToLowerInvariant(this string/*!*/ str) {
+            return str.ToLower(CultureInfo.InvariantCulture);
+        }
+#endif
     }
 }
 

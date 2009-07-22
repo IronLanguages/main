@@ -17,34 +17,124 @@ using IronRuby.Runtime;
 
 namespace IronRuby.Tests {
     public partial class Tests {
-        public void Scenario_RubyNameMangling1() {
-            Assert(RubyUtils.TryUnmangleName("ip_stack") == "IpStack");  // TODO
+        public void NameMangling1() {
             Assert(RubyUtils.TryUnmangleName("stack") == "Stack");
             Assert(RubyUtils.TryUnmangleName("this_is_my_long_name") == "ThisIsMyLongName");
-            Assert(RubyUtils.TryUnmangleName("") == null);
             Assert(RubyUtils.TryUnmangleName("f") == "F");
-            Assert(RubyUtils.TryUnmangleName("fo") == "Fo");
-            Assert(RubyUtils.TryUnmangleName("foo") == "Foo");
-            Assert(RubyUtils.TryUnmangleName("foo_bar") == "FooBar");
-            Assert(RubyUtils.TryUnmangleName("ma_m") == "MaM");
-            Assert(RubyUtils.TryUnmangleName("initialize") == "initialize");
-            Assert(RubyUtils.TryUnmangleName("Initialize") == "Initialize");
+            Assert(RubyUtils.TryUnmangleName("initialize") == "Initialize");
+
+            // non-alpha characters are treated as lower-case letters: 
+            Assert(RubyUtils.TryUnmangleName("foo_bar=") == "FooBar=");
+            Assert(RubyUtils.TryUnmangleName("foo?") == "Foo?");
+            Assert(RubyUtils.TryUnmangleName("???") == "???");
+            Assert(RubyUtils.TryUnmangleName("1_2_3") == "123");
+            
+            // special cases:
+            Assert(RubyUtils.TryUnmangleName("on") == "On");
+            Assert(RubyUtils.TryUnmangleName("up") == "Up");
+            Assert(RubyUtils.TryUnmangleName("in") == "In");
+            Assert(RubyUtils.TryUnmangleName("to") == "To");
+            Assert(RubyUtils.TryUnmangleName("of") == "Of");
+            Assert(RubyUtils.TryUnmangleName("it") == "It");
+            Assert(RubyUtils.TryUnmangleName("is") == "Is");
+            Assert(RubyUtils.TryUnmangleName("if") == "If");
+            Assert(RubyUtils.TryUnmangleName("go") == "Go");
+            Assert(RubyUtils.TryUnmangleName("do") == "Do");
+            Assert(RubyUtils.TryUnmangleName("by") == "By");
+            Assert(RubyUtils.TryUnmangleName("at") == "At");
+            Assert(RubyUtils.TryUnmangleName("as") == "As");
+            Assert(RubyUtils.TryUnmangleName("my") == "My");
+            
+            Assert(RubyUtils.TryUnmangleName("ip") == "IP");
+            Assert(RubyUtils.TryUnmangleName("rx") == "RX");
+            Assert(RubyUtils.TryUnmangleName("pi") == "PI");
+
+            Assert(RubyUtils.TryUnmangleName("na_n") == null);
+            Assert(RubyUtils.TryUnmangleName("nan") == "Nan");
+            Assert(RubyUtils.TryUnmangleName("ip_address") == "IPAddress");
+            Assert(RubyUtils.TryUnmangleName("i_id_id") == "IIdId");
+            Assert(RubyUtils.TryUnmangleName("i_ip_ip") == null);
+            Assert(RubyUtils.TryUnmangleName("ip_foo_ip") == "IPFooIP");
+            Assert(RubyUtils.TryUnmangleName("active_x") == "ActiveX");
+
+            Assert(RubyUtils.TryUnmangleName("get_u_int16") == "GetUInt16");
+            Assert(RubyUtils.TryUnmangleName("get_ui_parent_core") == "GetUIParentCore");
+            
+            // TODO: ???
+            Assert(RubyUtils.TryUnmangleName("i_pv6") == "IPv6");
+            
+            // names that cannot be mangled:
+            Assert(RubyUtils.TryUnmangleName("") == null);
+            Assert(RubyUtils.TryUnmangleName("IPX") == null);
+            Assert(RubyUtils.TryUnmangleName("FO") == null);
+            Assert(RubyUtils.TryUnmangleName("FOOBar") == null);
+            Assert(RubyUtils.TryUnmangleName("FooBAR") == null);
+            Assert(RubyUtils.TryUnmangleName("foo__bar") == null);
+            Assert(RubyUtils.TryUnmangleName("_foo") == null);
+            Assert(RubyUtils.TryUnmangleName("foo_") == null);
         }
 
-        public void Scenario_RubyNameMangling2() {
-            Assert(RubyUtils.MangleName("IPStack") == "ip_stack"); // TODO
-            Assert(RubyUtils.MangleName("Stack") == "stack");
-            Assert(RubyUtils.MangleName("ThisIsMyLongName") == "this_is_my_long_name");
-            Assert(RubyUtils.MangleName("") == "");
-            Assert(RubyUtils.MangleName("F") == "f");
-            Assert(RubyUtils.MangleName("FO") == "fo");
-            Assert(RubyUtils.MangleName("FOO") == "foo");
-            Assert(RubyUtils.MangleName("FOOBar") == "foo_bar");
-            Assert(RubyUtils.MangleName("MaM") == "ma_m");
-            Assert(RubyUtils.MangleName("foo") == "foo");
-            Assert(RubyUtils.MangleName("foo_bar=") == "foo_bar=");
-            Assert(RubyUtils.MangleName("initialize") == "initialize");
-            Assert(RubyUtils.MangleName("Initialize") == "Initialize");
+        public void NameMangling2() {
+            Assert(RubyUtils.TryMangleName("Stack") == "stack");
+            Assert(RubyUtils.TryMangleName("ThisIsMyLongName") == "this_is_my_long_name");
+            Assert(RubyUtils.TryMangleName("F") == "f");
+            Assert(RubyUtils.TryMangleName("Initialize") == "initialize");
+            Assert(RubyUtils.TryMangleName("fooBar") == "foo_bar");
+
+            // characters that are not upper case letters are treated as lower-case:
+            Assert(RubyUtils.TryMangleName("Foo123bar") == "foo123bar");
+            Assert(RubyUtils.TryMangleName("123Bar") == "123_bar");
+            Assert(RubyUtils.TryMangleName("?Bar") == "?_bar");
+            Assert(RubyUtils.TryMangleName("B__") == "b__");
+
+            // special cases:
+            Assert(RubyUtils.TryUnmangleName("ON") == null);
+            Assert(RubyUtils.TryUnmangleName("UP") == null);
+            Assert(RubyUtils.TryUnmangleName("IN") == null);
+            Assert(RubyUtils.TryUnmangleName("TO") == null);
+            Assert(RubyUtils.TryUnmangleName("OF") == null);
+            Assert(RubyUtils.TryUnmangleName("IT") == null);
+            Assert(RubyUtils.TryUnmangleName("IF") == null);
+            Assert(RubyUtils.TryUnmangleName("IS") == null);
+            Assert(RubyUtils.TryUnmangleName("GO") == null);
+            Assert(RubyUtils.TryUnmangleName("DO") == null);
+            Assert(RubyUtils.TryUnmangleName("BY") == null);
+            Assert(RubyUtils.TryUnmangleName("AT") == null);
+            Assert(RubyUtils.TryUnmangleName("AS") == null);
+            Assert(RubyUtils.TryUnmangleName("MY") == null);
+            Assert(RubyUtils.TryUnmangleName("ID") == null);
+            Assert(RubyUtils.TryUnmangleName("OK") == null);
+
+            Assert(RubyUtils.TryMangleName("NaN") == null);
+            Assert(RubyUtils.TryMangleName("NaNValue") == null);
+            Assert(RubyUtils.TryMangleName("At") == "at");
+            Assert(RubyUtils.TryMangleName("IP") == "ip");
+            Assert(RubyUtils.TryMangleName("FO") == "fo");
+            Assert(RubyUtils.TryMangleName("PI") == "pi");
+            Assert(RubyUtils.TryMangleName("IPAddress") == "ip_address");
+            Assert(RubyUtils.TryMangleName("MyDB") == "my_db");
+            Assert(RubyUtils.TryMangleName("PyPy") == "py_py");
+            Assert(RubyUtils.TryMangleName("IPFooIP") == "ip_foo_ip");
+            Assert(RubyUtils.TryMangleName("ActiveX") == "active_x");
+
+            Assert(RubyUtils.TryMangleName("GetUInt16") == "get_u_int16");
+            Assert(RubyUtils.TryMangleName("GetUIParentCore") == "get_ui_parent_core");
+
+            // TODO: ???
+            Assert(RubyUtils.TryMangleName("IPv6") == "i_pv6");
+
+            // names that cannot be mangled:
+            Assert(RubyUtils.TryMangleName("") == null);
+            Assert(RubyUtils.TryMangleName("IPX") == null);
+            Assert(RubyUtils.TryMangleName("FOO") == null);
+            Assert(RubyUtils.TryMangleName("FOOBar") == null);
+            Assert(RubyUtils.TryMangleName("FooBAR") == null);
+            Assert(RubyUtils.TryMangleName("foo") == null);
+            Assert(RubyUtils.TryMangleName("initialize") == null);
+            Assert(RubyUtils.TryMangleName("foo_bar=") == null);
+            Assert(RubyUtils.TryMangleName("foo__bar") == null);
+            Assert(RubyUtils.TryMangleName("_foo") == null);
+            Assert(RubyUtils.TryMangleName("foo_") == null);
         }
     }
 }

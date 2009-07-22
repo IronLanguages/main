@@ -35,16 +35,19 @@ namespace IronRuby.Runtime.Calls {
         // Used for private visibility check. By default method call sites have explicit self, so private methods are not visible.
         HasImplicitSelf = 16,
 
+        // Interop calls can only see Ruby-public members.
+        IsInteropCall = 32,
+
         // If the resolved method is a Ruby method call it otherwise invoke #base# method on target's type.
         // Used in method overrides defined in types emitted for Ruby classes that derive from CLR type.
-        IsVirtualCall = 32,
+        IsVirtualCall = 64,
     }
         
     /// <summary>
     /// RubyScope/RubyContext, (self), (argument){ArgumentCount}, (splatted-argument)?, (block)?
     /// </summary>
     public struct RubyCallSignature : IEquatable<RubyCallSignature> {
-        private const int FlagsCount = 6;
+        private const int FlagsCount = 7;
         private const int MaxArgumentCount = (int)(UInt32.MaxValue >> FlagsCount);
         private const RubyCallFlags FlagsMask = (RubyCallFlags)(1 << FlagsCount) - 1;
 
@@ -55,6 +58,7 @@ namespace IronRuby.Runtime.Calls {
         public bool HasBlock { get { return ((RubyCallFlags)_countAndFlags & RubyCallFlags.HasBlock) != 0; } }
         public bool HasSplattedArgument { get { return ((RubyCallFlags)_countAndFlags & RubyCallFlags.HasSplattedArgument) != 0; } }
         public bool HasRhsArgument { get { return ((RubyCallFlags)_countAndFlags & RubyCallFlags.HasRhsArgument) != 0; } }
+        public bool IsInteropCall { get { return ((RubyCallFlags)_countAndFlags & RubyCallFlags.IsInteropCall) != 0; } }
         public bool IsVirtualCall { get { return ((RubyCallFlags)_countAndFlags & RubyCallFlags.IsVirtualCall) != 0; } }
 
         public int ArgumentCount { get { return (int)_countAndFlags >> FlagsCount; } }
@@ -97,7 +101,7 @@ namespace IronRuby.Runtime.Calls {
         }
 
         internal static bool TryCreate(CallInfo callInfo, out RubyCallSignature callSignature) {
-            callSignature = Simple(callInfo.ArgumentCount);
+            callSignature = RubyCallSignature.Interop(callInfo.ArgumentCount);
             return callInfo.ArgumentNames.Count != 0;
         }
 
@@ -107,6 +111,10 @@ namespace IronRuby.Runtime.Calls {
         
         public static RubyCallSignature Simple(int argumentCount) {
             return new RubyCallSignature(argumentCount, RubyCallFlags.None);
+        }
+
+        public static RubyCallSignature Interop(int argumentCount) {
+            return new RubyCallSignature(argumentCount, RubyCallFlags.IsInteropCall);
         }
 
         public static RubyCallSignature WithBlock(int argumentCount) {

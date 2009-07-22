@@ -313,7 +313,7 @@ namespace IronPython.Runtime.Binding {
         private Expression ConversionFallback(DynamicMetaObjectBinder/*!*/ convertToAction) {
             PythonConversionBinder cb = convertToAction as PythonConversionBinder;
             if (cb != null) {
-                return GetConversionFailedReturnValue(cb, this);
+                return GetConversionFailedReturnValue(cb, this).Expression;
             }
 
             return convertToAction.GetUpdateExpression(typeof(object));
@@ -342,11 +342,11 @@ namespace IronPython.Runtime.Binding {
         /// <summary>
         ///  Various helpers related to calling Python __*__ conversion methods 
         /// </summary>
-        private Expression/*!*/ GetConversionFailedReturnValue(PythonConversionBinder/*!*/ convertToAction, DynamicMetaObject/*!*/ self) {
+        private DynamicMetaObject/*!*/ GetConversionFailedReturnValue(PythonConversionBinder/*!*/ convertToAction, DynamicMetaObject/*!*/ self) {
             switch (convertToAction.ResultKind) {
                 case ConversionResultKind.ImplicitTry:
                 case ConversionResultKind.ExplicitTry:
-                    return DefaultBinder.GetTryConvertReturnValue(convertToAction.Type);
+                    return new DynamicMetaObject(DefaultBinder.GetTryConvertReturnValue(convertToAction.Type), BindingRestrictions.Empty);
                 case ConversionResultKind.ExplicitCast:
                 case ConversionResultKind.ImplicitCast:
                     DefaultBinder db = PythonContext.GetPythonContext(convertToAction).Binder;

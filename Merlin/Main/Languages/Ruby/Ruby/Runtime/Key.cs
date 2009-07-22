@@ -26,6 +26,7 @@ namespace IronRuby.Runtime {
         }
     }
 
+    [Serializable]
     public class Key<T0, T1> : IEquatable<Key<T0, T1>> {
         public readonly T0/*!*/ First;
         public readonly T1/*!*/ Second;
@@ -57,6 +58,7 @@ namespace IronRuby.Runtime {
         }
     }
 
+    [Serializable]
     public sealed class Key<T0, T1, T2> : Key<T0, T1>, IEquatable<Key<T0, T1, T2>> {
         public readonly T2/*!*/ Third;
 

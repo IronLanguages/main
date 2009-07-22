@@ -637,50 +637,6 @@ namespace IronPython.Runtime.Binding {
             );
         }
 
-        private static DynamicMetaObject/*!*/ MakeMemberNamesOperation(PythonOperationBinder/*!*/ operation, DynamicMetaObject[] args) {
-            DynamicMetaObject self = args[0];
-            CodeContext context;
-            if (args.Length > 1 && args[0].GetLimitType() == typeof(CodeContext)) {
-                self = args[1];
-                context = (CodeContext)args[0].Value;
-            } else {
-                context = PythonContext.GetPythonContext(operation).SharedContext;
-            }
-
-            if (typeof(IMembersList).IsAssignableFrom(self.GetLimitType())) {
-                return MakeIMembersListRule(PythonContext.GetCodeContext(operation), self);
-            }
-
-            PythonType pt = DynamicHelpers.GetPythonType(self.Value);
-            List<string> strNames = GetMemberNames(context, pt, self.Value);
-
-            if (pt.IsSystemType) {
-                return new DynamicMetaObject(
-                    AstUtils.Constant(strNames),
-                    BindingRestrictions.GetInstanceRestriction(self.Expression, self.Value).Merge(self.Restrictions)
-                );
-            }
-
-            return new DynamicMetaObject(
-                AstUtils.Constant(strNames),
-                BindingRestrictions.GetInstanceRestriction(self.Expression, self.Value).Merge(self.Restrictions)
-            );
-        }
-
-        private static DynamicMetaObject MakeIMembersListRule(Expression codeContext, DynamicMetaObject target) {
-            return new DynamicMetaObject(
-                Ast.Call(
-                    typeof(BinderOps).GetMethod("GetStringMembers"),
-                    Ast.Call(
-                        AstUtils.Convert(target.Expression, typeof(IMembersList)),
-                        typeof(IMembersList).GetMethod("GetMemberNames"),
-                        codeContext
-                    )
-                ),
-                BindingRestrictionsHelpers.GetRuntimeTypeRestriction(target.Expression, target.GetLimitType()).Merge(target.Restrictions)
-            );
-        }
-
         internal static DynamicMetaObject/*!*/ MakeCallSignatureOperation(DynamicMetaObject/*!*/ self, IList<MethodBase/*!*/>/*!*/ targets) {
             List<string> arrres = new List<string>();
             foreach (MethodBase mb in targets) {
@@ -1783,10 +1739,14 @@ namespace IronPython.Runtime.Binding {
                 _slot.MakeGetExpression(
                     Binder,
                     AstUtils.Constant(PythonContext.SharedContext),
-                    args[0].Expression,
-                    Ast.Call(
-                        typeof(DynamicHelpers).GetMethod("GetPythonType"),
-                        AstUtils.Convert(args[0].Expression, typeof(object))
+                    args[0],
+                    new DynamicMetaObject(
+                        Ast.Call(
+                            typeof(DynamicHelpers).GetMethod("GetPythonType"),
+                            AstUtils.Convert(args[0].Expression, typeof(object))
+                        ),
+                        BindingRestrictions.Empty,
+                        DynamicHelpers.GetPythonType(args[0].Value)
                     ),
                     cb
                 );

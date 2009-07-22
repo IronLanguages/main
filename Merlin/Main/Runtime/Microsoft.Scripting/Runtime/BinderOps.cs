@@ -92,45 +92,7 @@ namespace Microsoft.Scripting.Runtime {
             }
             return res;
         }
-
-        #region Event support
-
-        public static EventTracker EventTrackerInPlaceAdd<T>(CodeContext context, EventTracker self, T target) {
-            MethodInfo add = self.Event.GetAddMethod(context.LanguageContext.DomainManager.Configuration.PrivateBinding);
-            add.Invoke(null, new object[] { target });
-            return self;
-        }
-
-        public static EventTracker EventTrackerInPlaceRemove<T>(CodeContext context, EventTracker self, T target) {
-            MethodInfo remove = self.Event.GetRemoveMethod(context.LanguageContext.DomainManager.Configuration.PrivateBinding);
-            remove.Invoke(null, new object[] { target });
-            return self;
-        }
-
-        public static BoundMemberTracker BoundEventTrackerInPlaceAdd<T>(CodeContext context, BoundMemberTracker self, T target) {
-            if (self.BoundTo.MemberType == TrackerTypes.Event) {
-                EventTracker et = (EventTracker)self.BoundTo;
-
-                MethodInfo add = et.Event.GetAddMethod(context.LanguageContext.DomainManager.Configuration.PrivateBinding);
-                add.Invoke(self.ObjectInstance, new object[] { target });
-                return self;
-            }
-            throw new InvalidOperationException();
-        }
-
-        public static BoundMemberTracker BoundEventTrackerInPlaceRemove<T>(CodeContext context, BoundMemberTracker self, T target) {
-            if (self.BoundTo.MemberType == TrackerTypes.Event) {
-                EventTracker et = (EventTracker)self.BoundTo;
-
-                MethodInfo remove = et.Event.GetRemoveMethod(context.LanguageContext.DomainManager.Configuration.PrivateBinding);
-                remove.Invoke(self.ObjectInstance, new object[] { target });
-                return self;
-            }
-            throw new InvalidOperationException();
-        }
         
-        #endregion
-
         public static ArgumentTypeException BadArgumentsForOperation(Operators op, params object[] args) {
             StringBuilder message = new StringBuilder("unsupported operand type(s) for operation ");
             message.Append(op.ToString());

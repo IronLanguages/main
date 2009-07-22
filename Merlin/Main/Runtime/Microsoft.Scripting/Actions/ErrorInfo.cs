@@ -80,23 +80,6 @@ namespace Microsoft.Scripting.Actions {
             return new ErrorInfo(resultValue, ErrorInfoKind.Success);
         }
 
-        /// <summary>
-        /// Internal helper to produce the actual expression used for the error when emitting
-        /// the error into a rule.
-        /// </summary>
-        public Expression MakeErrorForRule(RuleBuilder rule, ActionBinder binder) {
-            switch (_kind) {
-                case ErrorInfoKind.Error:
-                    rule.IsError = true;
-                    return rule.MakeReturn(binder, _value);
-                case ErrorInfoKind.Success:
-                    return rule.MakeReturn(binder, _value);
-                case ErrorInfoKind.Exception:
-                    return rule.MakeError(_value);
-                default: throw new InvalidOperationException();
-            }
-        }
-
         public ErrorInfoKind Kind {
             get {
                 return _kind;

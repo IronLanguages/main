@@ -2,7 +2,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>9.0.21022</ProductVersion>
+    <ProductVersion>9.0.30729</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{7F6984B4-EE6D-4E6F-ABB1-E210D7DC4FDD}</ProjectGuid>
     <OutputType>Library</OutputType>
@@ -192,6 +192,7 @@
     <Compile Include="Runtime\Calls\RubyOverloadResolver.cs" />
     <Compile Include="Runtime\Calls\SuperForwarderInfo.cs" />
     <Compile Include="Runtime\Calls\VersionHandle.cs" />
+    <Compile Include="Runtime\Calls\VisibilityContext.cs" />
     <Compile Include="Runtime\CheckedMonitor.cs" />
     <Compile Include="Runtime\ClrName.cs" />
     <Compile Include="Runtime\CustomTypeDescHelpers.cs" />

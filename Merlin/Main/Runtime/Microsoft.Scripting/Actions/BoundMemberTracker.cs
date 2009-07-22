@@ -14,15 +14,16 @@
  * ***************************************************************************/
 
 using System;
-using System.Linq.Expressions;
+using System.Dynamic;
+using Microsoft.Scripting.Actions.Calls;
 
 namespace Microsoft.Scripting.Actions {
     public class BoundMemberTracker : MemberTracker {
-        private Expression _instance;
+        private DynamicMetaObject _instance;
         private MemberTracker _tracker;
         private object _objInst;
 
-        public BoundMemberTracker(MemberTracker tracker, Expression instance) {
+        public BoundMemberTracker(MemberTracker tracker, DynamicMetaObject instance) {
             _tracker = tracker;
             _instance = instance;
         }
@@ -44,7 +45,7 @@ namespace Microsoft.Scripting.Actions {
             get { return _tracker.Name; }
         }
 
-        public Expression Instance {
+        public DynamicMetaObject Instance {
             get {
                 return _instance;
             }
@@ -62,16 +63,16 @@ namespace Microsoft.Scripting.Actions {
             }
         }
 
-        public override Expression GetValue(Expression context, ActionBinder binder, Type type) {
-            return _tracker.GetBoundValue(context, binder, type, _instance);
+        public override DynamicMetaObject GetValue(OverloadResolverFactory resolverFactory, ActionBinder binder, Type type) {
+            return _tracker.GetBoundValue(resolverFactory, binder, type, _instance);
         }
 
         public override ErrorInfo GetError(ActionBinder binder) {
             return _tracker.GetBoundError(binder, _instance);
         }
 
-        public override Expression SetValue(Expression context, ActionBinder binder, Type type, Expression value) {
-            return _tracker.SetBoundValue(context, binder, type, value, _instance);
+        public override DynamicMetaObject SetValue(OverloadResolverFactory resolverFactory, ActionBinder binder, Type type, DynamicMetaObject value) {
+            return _tracker.SetBoundValue(resolverFactory, binder, type, value, _instance);
         }
     }
 }

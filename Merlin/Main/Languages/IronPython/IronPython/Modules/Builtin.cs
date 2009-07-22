@@ -853,7 +853,7 @@ namespace IronPython.Modules {
                     doc.AppendLine();
                 }
 
-                IList<object> names = ((IMembersList)oldClass).GetMemberNames(context);
+                IList<object> names = ((IPythonMembersList)oldClass).GetMemberNames(context);
                 List sortNames = new List(names);
                 sortNames.sort(context);
                 names = sortNames;

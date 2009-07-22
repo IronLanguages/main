@@ -29,7 +29,7 @@ using System.Collections;
 namespace IronPython.Runtime.Binding {
     internal sealed class PythonOverloadResolverFactory : OverloadResolverFactory {
         private readonly PythonBinder/*!*/ _binder;
-        private readonly Expression/*!*/ _codeContext;
+        internal readonly Expression/*!*/ _codeContext;
 
         public PythonOverloadResolverFactory(PythonBinder/*!*/ binder, Expression/*!*/ codeContext) {
             Assert.NotNull(binder, codeContext);
@@ -137,7 +137,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         public override Expression Convert(DynamicMetaObject metaObject, Type restrictedType, ParameterInfo info, Type toType) {
-            return Binder.ConvertExpression(metaObject.Expression, toType, ConversionResultKind.ExplicitCast, _context);
+            return Binder.ConvertExpression(metaObject.Expression, toType, ConversionResultKind.ExplicitCast, new PythonOverloadResolverFactory(Binder, _context));
         }
 
         public override Expression GetDynamicConversion(Expression value, Type type) {
