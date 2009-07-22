@@ -14,11 +14,11 @@
  * ***************************************************************************/
 
 using System;
-using System.Linq.Expressions;
+using System.Dynamic;
 using System.Reflection;
+
+using Microsoft.Scripting.Actions.Calls;
 using Microsoft.Scripting.Generation;
-using Microsoft.Scripting.Runtime;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Actions {
 
@@ -57,7 +57,7 @@ namespace Microsoft.Scripting.Actions {
 
         #region Public expression builders
 
-        public override Expression GetValue(Expression context, ActionBinder binder, Type type) {
+        public override DynamicMetaObject GetValue(OverloadResolverFactory resolverFactory, ActionBinder binder, Type type) {
             if (!IsStatic || GetIndexParameters().Length > 0) {
                 // need to bind to a value or parameters to get the value.
                 return binder.ReturnMemberTracker(type, this);
@@ -70,11 +70,11 @@ namespace Microsoft.Scripting.Actions {
             }
 
             if (getter.IsPublic && getter.DeclaringType.IsPublic) {
-                return AstUtils.Convert(binder.MakeCallExpression(context, getter), typeof(object));
+                return binder.MakeCallExpression(resolverFactory, getter);
             }
 
             // private binding is just a call to the getter method...
-            return MemberTracker.FromMemberInfo(getter).Call(context, binder);
+            return MemberTracker.FromMemberInfo(getter).Call(resolverFactory, binder);
         }
 
         public override ErrorInfo GetError(ActionBinder binder) {
@@ -95,7 +95,7 @@ namespace Microsoft.Scripting.Actions {
 
         #region Internal expression builders
 
-        protected internal override Expression GetBoundValue(Expression context, ActionBinder binder, Type type, Expression instance) {
+        protected internal override DynamicMetaObject GetBoundValue(OverloadResolverFactory resolverFactory, ActionBinder binder, Type type, DynamicMetaObject instance) {
             if (instance != null && IsStatic) {
                 return null;
             }
@@ -114,14 +114,14 @@ namespace Microsoft.Scripting.Actions {
             getter = CompilerHelpers.TryGetCallableMethod(getter);
 
             if (binder.PrivateBinding || CompilerHelpers.IsVisible(getter)) {
-                return AstUtils.Convert(binder.MakeCallExpression(context, getter, instance), typeof(object));
+                return ((DefaultBinder)binder).MakeCallExpression(resolverFactory, getter, instance);
             }
 
             // private binding is just a call to the getter method...
-            return DefaultBinder.MakeError(((DefaultBinder)binder).MakeNonPublicMemberGetError(context, this, type, instance), typeof(object));
+            return DefaultBinder.MakeError(((DefaultBinder)binder).MakeNonPublicMemberGetError(resolverFactory, this, type, instance), BindingRestrictions.Empty, typeof(object));
         }
 
-        public override ErrorInfo GetBoundError(ActionBinder binder, Expression instance) {
+        public override ErrorInfo GetBoundError(ActionBinder binder, DynamicMetaObject instance) {
             MethodInfo getter = ResolveGetter(binder.PrivateBinding);
 
             if (getter == null) {
@@ -139,7 +139,7 @@ namespace Microsoft.Scripting.Actions {
             throw new InvalidOperationException();
         }
 
-        public override MemberTracker BindToInstance(Expression instance) {
+        public override MemberTracker BindToInstance(DynamicMetaObject instance) {
             return new BoundMemberTracker(this, instance);
         }
 

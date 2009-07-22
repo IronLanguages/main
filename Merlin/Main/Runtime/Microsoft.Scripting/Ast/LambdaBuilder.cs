@@ -47,7 +47,6 @@ namespace Microsoft.Scripting.Ast {
         private Expression _body;
         private bool _dictionary;
         private bool _visible = true;
-        private bool _addCodeContext;
         private bool _completed;
 
         private static int _lambdaId; //for generating unique lambda name
@@ -148,20 +147,7 @@ namespace Microsoft.Scripting.Ast {
                 _visible = value;
             }
         }
-
-        /// <summary>
-        /// Prevents builder from inserting context scope.
-        /// Default is false (will insert if needed).
-        /// </summary>
-        public bool AddCodeContext {
-            get {
-                return _addCodeContext;
-            }
-            set {
-                _addCodeContext = value;
-            }
-        }
-
+        
         public List<ParameterExpression> GetVisibleVariables() {
             var vars = new List<ParameterExpression>(_visibleVars.Count);
             foreach (var v in _visibleVars) {
@@ -538,25 +524,7 @@ namespace Microsoft.Scripting.Ast {
 
         private Expression MakeBody() {
             Expression body = _body;
-
-            // wrap a CodeContext scope if needed
-            if (AddCodeContext) {
-
-                var vars = GetVisibleVariables();
-
-                if (vars.Count > 0) {
-                    body = Utils.CodeContextScope(
-                        body,
-                        Expression.Call(
-                            typeof(RuntimeHelpers).GetMethod("CreateNestedCodeContext"),
-                            Utils.VariableDictionary(vars),
-                            Utils.CodeContext(),
-                            AstUtils.Constant(_visible)
-                        )
-                    );
-                }
-            }
-
+            
             // wrap a scope if needed
             if (_locals != null && _locals.Count > 0) {
                 body = Expression.Block(new ReadOnlyCollection<ParameterExpression>(_locals.ToArray()), body);
@@ -611,11 +579,6 @@ namespace Microsoft.Scripting.Ast {
 
 namespace Microsoft.Scripting.Runtime {
     public static partial class ScriptingRuntimeHelpers {
-        public static CodeContext CreateNestedCodeContext(CustomSymbolDictionary variables, CodeContext context, bool visible) {
-            Debug.Assert(variables.Count > 0);
-            return new CodeContext(new Scope(context.Scope, variables, visible), context.LanguageContext, context);
-        }
-
         /// <summary>
         /// Used by prologue code that is injected in lambdas to ensure that delegate signature matches what 
         /// lambda body expects. Such code typically unwraps subset of the params array manually, 

@@ -14,20 +14,23 @@
  * ***************************************************************************/
 
 using System;
+using System.Diagnostics;
+using System.Dynamic;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Dynamic;
+
+using Microsoft.Scripting.Actions.Calls;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Actions {
     using Ast = System.Linq.Expressions.Expression;
-    using System.Diagnostics;
-
-    public partial class DefaultBinder : ActionBinder {
+    
+    public partial class DefaultBinder : ActionBinder {        
         /// <summary>
         /// Builds a MetaObject for performing a member get.  Supports all built-in .NET members, the OperatorMethod 
         /// GetBoundMember, and StrongBox instances.
@@ -42,37 +45,17 @@ namespace Microsoft.Scripting.Actions {
         /// <param name="value">
         /// The value being assigned to the target member.
         /// </param>
-        public DynamicMetaObject SetMember(string name, DynamicMetaObject target, DynamicMetaObject value) {
-            return SetMember(name, target, value, AstUtils.Constant(null, typeof(CodeContext)));
-        }
-
-        /// <summary>
-        /// Builds a MetaObject for performing a member get.  Supports all built-in .NET members, the OperatorMethod 
-        /// GetBoundMember, and StrongBox instances.
-        /// </summary>
-        /// <param name="name">
-        /// The name of the member to retrieve.  This name is not processed by the DefaultBinder and
-        /// is instead handed off to the GetMember API which can do name mangling, case insensitive lookups, etc...
+        /// <param name="resolverFactory">
+        /// rovides overload resolution and method binding for any calls which need to be performed for the SetMember.
         /// </param>
-        /// <param name="target">
-        /// The MetaObject from which the member is retrieved.
-        /// </param>
-        /// <param name="value">
-        /// The value being assigned to the target member.
-        /// </param>
-        /// <param name="codeContext">
-        /// An expression which provides access to the CodeContext if its required for 
-        /// accessing the member (e.g. for an extension property which takes CodeContext).  By default this
-        /// a null CodeContext object is passed.
-        /// </param>
-        public DynamicMetaObject SetMember(string name, DynamicMetaObject target, DynamicMetaObject value, Expression codeContext) {
+        public DynamicMetaObject SetMember(string name, DynamicMetaObject target, DynamicMetaObject value, OverloadResolverFactory resolverFactory) {
             ContractUtils.RequiresNotNull(name, "name");
             ContractUtils.RequiresNotNull(target, "target");
             ContractUtils.RequiresNotNull(value, "value");
-            ContractUtils.RequiresNotNull(codeContext, "codeContext");
+            ContractUtils.RequiresNotNull(resolverFactory, "resolverFactory");
 
             return MakeSetMemberTarget(
-                new SetOrDeleteMemberInfo(name, codeContext),
+                new SetOrDeleteMemberInfo(name, resolverFactory),
                 target,
                 value
             );
@@ -125,12 +108,12 @@ namespace Microsoft.Scripting.Actions {
                     case TrackerTypes.Type:
                     case TrackerTypes.Constructor:
                         memInfo.Body.FinishCondition(
-                            MakeError(MakeReadOnlyMemberError(type, memInfo.Name), typeof(object))
+                            MakeError(MakeReadOnlyMemberError(type, memInfo.Name), BindingRestrictions.Empty, typeof(object))
                         );
                         break;
                     case TrackerTypes.Event:
                         memInfo.Body.FinishCondition(
-                            MakeError(MakeEventValidation(members, self == null ? null : self.Expression, value.Expression, memInfo.CodeContext), typeof(object))
+                            MakeError(MakeEventValidation(members, self, value, memInfo.ResolutionFactory), BindingRestrictions.Empty, typeof(object))
                         );
                         break;
                     case TrackerTypes.Field:
@@ -149,7 +132,7 @@ namespace Microsoft.Scripting.Actions {
                         }
 
                         memInfo.Body.FinishCondition(
-                            MakeError(MakeMissingMemberErrorForAssign(type, self, memInfo.Name), typeof(object))
+                            MakeError(MakeMissingMemberErrorForAssign(type, self, memInfo.Name), BindingRestrictions.Empty, typeof(object))
                         );
                         break;
                     default:
@@ -162,10 +145,10 @@ namespace Microsoft.Scripting.Actions {
 
         private void MakeGenericBody(SetOrDeleteMemberInfo memInfo, DynamicMetaObject instance, DynamicMetaObject target, Type type, MemberTracker tracker) {
             if (instance != null) {
-                tracker = tracker.BindToInstance(instance.Expression);
+                tracker = tracker.BindToInstance(instance);
             }
 
-            Expression val = tracker.SetValue(memInfo.CodeContext, this, type, target.Expression);
+            DynamicMetaObject val = tracker.SetValue(memInfo.ResolutionFactory, this, type, target);
 
             if (val != null) {
                 memInfo.Body.FinishCondition(val);
@@ -197,8 +180,8 @@ namespace Microsoft.Scripting.Actions {
                             MakeStaticPropertyInstanceAccessError(
                                 info,
                                 true,
-                                instance == null ? null : instance.Expression,
-                                target.Expression
+                                instance,
+                                target
                             ), 
                             typeof(object)
                         )
@@ -206,7 +189,7 @@ namespace Microsoft.Scripting.Actions {
                 } else if (info.IsStatic && info.DeclaringType != targetType) {
                     memInfo.Body.FinishCondition(
                         MakeError(
-                            MakeStaticAssignFromDerivedTypeError(targetType, instance, info, target.Expression, memInfo.CodeContext), 
+                            MakeStaticAssignFromDerivedTypeError(targetType, instance, info, target, memInfo.ResolutionFactory), 
                             typeof(object)
                         )
                     );
@@ -224,7 +207,7 @@ namespace Microsoft.Scripting.Actions {
                                         target.Expression,
                                         setter.GetParameters()[0].ParameterType,
                                         ConversionResultKind.ExplicitCast,
-                                        memInfo.CodeContext
+                                        memInfo.ResolutionFactory
                                     )
                                 ),
                                 Ast.Constant(null)
@@ -233,7 +216,7 @@ namespace Microsoft.Scripting.Actions {
                     } else {
                         memInfo.Body.FinishCondition(
                             MakeReturnValue(
-                                MakeCallExpression(memInfo.CodeContext, setter, instance.Expression, target.Expression),
+                                MakeCallExpression(memInfo.ResolutionFactory, setter, instance, target),
                                 target
                             )
                         );
@@ -251,7 +234,7 @@ namespace Microsoft.Scripting.Actions {
                                         target.Expression,
                                         setter.GetParameters()[0].ParameterType,
                                         ConversionResultKind.ExplicitCast,
-                                        memInfo.CodeContext
+                                        memInfo.ResolutionFactory
                                     ),
                                     typeof(object)
                                 ),
@@ -299,7 +282,7 @@ namespace Microsoft.Scripting.Actions {
             } else if (field.IsStatic && targetType != field.DeclaringType) {
                 memInfo.Body.FinishCondition(
                     MakeError(
-                        MakeStaticAssignFromDerivedTypeError(targetType, instance, field, target.Expression, memInfo.CodeContext), 
+                        MakeStaticAssignFromDerivedTypeError(targetType, instance, field, target, memInfo.ResolutionFactory), 
                         typeof(object)
                     )
                 );
@@ -325,7 +308,7 @@ namespace Microsoft.Scripting.Actions {
                                     AstUtils.Convert(instance.Expression, field.DeclaringType),
                                 field.Field
                             ),
-                            ConvertExpression(target.Expression, field.FieldType, ConversionResultKind.ExplicitCast, memInfo.CodeContext)
+                            ConvertExpression(target.Expression, field.FieldType, ConversionResultKind.ExplicitCast, memInfo.ResolutionFactory)
                         ),
                         target
                     )
@@ -349,6 +332,16 @@ namespace Microsoft.Scripting.Actions {
             }
         }
 
+        private DynamicMetaObject MakeReturnValue(DynamicMetaObject expression, DynamicMetaObject target) {
+            return new DynamicMetaObject(
+                Ast.Block(
+                    expression.Expression,
+                    Expression.Convert(target.Expression, typeof(object))
+                ),
+                target.Restrictions.Merge(expression.Restrictions)
+            );
+        }
+
         private Expression MakeReturnValue(Expression expression, DynamicMetaObject target) {
             return Ast.Block(
                 expression,
@@ -364,9 +357,15 @@ namespace Microsoft.Scripting.Actions {
                     ParameterExpression tmp = Ast.Variable(target.Expression.Type, "setValue");
                     memInfo.Body.AddVariable(tmp);
 
-                    Expression call = MakeCallExpression(memInfo.CodeContext, setMem, AstUtils.Convert(self.Expression, type), AstUtils.Constant(memInfo.Name), tmp);
+                    var callMo = MakeCallExpression(
+                        memInfo.ResolutionFactory, 
+                        setMem, 
+                        self.Clone(AstUtils.Convert(self.Expression, type)),
+                        new DynamicMetaObject(AstUtils.Constant(memInfo.Name), BindingRestrictions.Empty, memInfo.Name),
+                        target.Clone(tmp)
+                    );
 
-                    call = Ast.Block(Ast.Assign(tmp, target.Expression), call);
+                    var call = Ast.Block(Ast.Assign(tmp, target.Expression), callMo.Expression);
 
                     if (setMem.ReturnType == typeof(bool)) {
                         memInfo.Body.AddCondition(

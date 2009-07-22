@@ -187,23 +187,25 @@ namespace IronRuby.Runtime.Calls {
             }
         }
 
-        private static RubyClass GetVisibilityContext(RubyCallSignature callSignature, RubyScope scope) {
-            // TODO: All sites should have either implicit-self or has-scope flag set?
-            return callSignature.HasImplicitSelf || !callSignature.HasScope ? RubyClass.IgnoreVisibility : scope.SelfImmediateClass;
+        private static VisibilityContext GetVisibilityContext(RubyCallSignature callSignature, RubyScope scope) {
+            return callSignature.HasImplicitSelf || !callSignature.HasScope ? 
+                new VisibilityContext(callSignature.IsInteropCall ? RubyMethodAttributes.Public : RubyMethodAttributes.VisibilityMask) :
+                new VisibilityContext(scope.SelfImmediateClass);
         }
 
         internal static MethodResolutionResult Resolve(MetaObjectBuilder/*!*/ metaBuilder, string/*!*/ methodName, CallArguments/*!*/ args,
             out RubyMemberInfo methodMissing) {
 
             MethodResolutionResult method;
-            RubyClass targetClass = args.TargetClass;
+            var targetClass = args.TargetClass;
+            var visibilityContext = GetVisibilityContext(args.Signature, args.Scope);
             using (targetClass.Context.ClassHierarchyLocker()) {
                 metaBuilder.AddTargetTypeTest(args.Target, targetClass, args.TargetExpression, args.MetaContext, 
                     new[] { methodName, Symbols.MethodMissing }
                 );
 
                 var options = args.Signature.IsVirtualCall ? MethodLookup.Virtual : MethodLookup.Default;
-                method = targetClass.ResolveMethodForSiteNoLock(methodName, GetVisibilityContext(args.Signature, args.Scope), options);
+                method = targetClass.ResolveMethodForSiteNoLock(methodName, visibilityContext, options);
                 if (!method.Found) {
                     methodMissing = targetClass.ResolveMethodMissingForSite(methodName, method.IncompatibleVisibility);
                 } else {
@@ -212,12 +214,12 @@ namespace IronRuby.Runtime.Calls {
             }
 
             // Whenever the current self's class changes we need to invalidate the rule, if a protected method is being called.
-            if (method.Info != null && method.Info.IsProtected && !args.Signature.HasImplicitSelf) {
+            if (method.Info != null && method.Info.IsProtected && visibilityContext.Class != null) {
                 // We don't need to compare versions, just the class objects (super-class relationship cannot be changed).
                 // Since we don't want to hold on a class object (to make it collectible) we compare references to the version handlers.
                 metaBuilder.AddCondition(Ast.Equal(
                     Methods.GetSelfClassVersionHandle.OpCall(AstUtils.Convert(args.MetaScope.Expression, typeof(RubyScope))),
-                    Ast.Constant(args.Scope.SelfImmediateClass.Version)
+                    Ast.Constant(visibilityContext.Class.Version)
                 ));
             }
 

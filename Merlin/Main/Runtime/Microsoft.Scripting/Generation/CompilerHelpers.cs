@@ -662,15 +662,6 @@ namespace Microsoft.Scripting.Generation {
             return res;
         }
 
-        /// <summary>
-        /// Returns a value which indicates failure when a ConvertToAction of ImplicitTry or
-        /// ExplicitTry.
-        /// </summary>
-        public static Expression GetTryConvertReturnValue(CodeContext context, RuleBuilder rule) {
-            rule.IsError = true;
-            return rule.MakeReturn(context.LanguageContext.Binder, GetTryConvertReturnValue(rule.ReturnType));
-        }
-
         public static bool HasTypeConverter(Type fromType, Type toType) {
 #if SILVERLIGHT
             return false;

@@ -36,6 +36,7 @@ namespace IronRuby.Runtime {
         LoadOnce = 1,
         LoadIsolated = 2,
         AppendExtensions = 4,
+        ResolveLoaded = 8
     }
 
     // TODO: thread safety
@@ -58,7 +59,10 @@ namespace IronRuby.Runtime {
         private readonly RubyArray/*!*/ _loadedFiles;
 
         // files that were required but their execution haven't completed yet:
-        private readonly Stack<string>/*!*/ _unfinishedFiles; 
+        private readonly Stack<string>/*!*/ _unfinishedFiles;
+
+        // lazy init
+        private SynchronizedDictionary<string, Scope> _loadedScripts;
 
         // TODO: static
         // maps full normalized path to compiled code:
@@ -97,6 +101,21 @@ namespace IronRuby.Runtime {
             get { return _loadedFiles; }
         }
 
+        /// <summary>
+        /// Contains all loaded foreign language scripts. Maps path to scope created for each loaded script.
+        /// A script is published here as soon as its scopr is created just before it is executed.
+        /// </summary>
+        public IDictionary<string, Scope>/*!*/ LoadedScripts {
+            get {
+                if (_loadedScripts == null) {
+                    Interlocked.CompareExchange(ref _loadedScripts, 
+                        new SynchronizedDictionary<string, Scope>(new Dictionary<string, Scope>(DomainManager.Platform.PathComparer)), null
+                    );
+                }
+                return _loadedScripts;
+            }
+        }
+
         private PlatformAdaptationLayer/*!*/ Platform {
             get { return DomainManager.Platform; }
         }
@@ -104,7 +123,7 @@ namespace IronRuby.Runtime {
         private ScriptDomainManager/*!*/ DomainManager {
             get { return _context.DomainManager; }
         }
-        
+
         internal Loader(RubyContext/*!*/ context) {
             Assert.NotNull(context);
             _context = context;
@@ -231,10 +250,19 @@ namespace IronRuby.Runtime {
             }
         }
 
+        public bool LoadFile(Scope globalScope, object self, MutableString/*!*/ path, LoadFlags flags) {
+            object loaded;
+            return LoadFile(globalScope, self, path, flags, out loaded);
+        }
+
         /// <summary>
         /// Returns <b>true</b> if a Ruby file is successfully loaded, <b>false</b> if it is already loaded.
         /// </summary>
-        public bool LoadFile(Scope globalScope, object self, MutableString/*!*/ path, LoadFlags flags) {
+        /// <param name="globalScope">
+        /// A scope against which the file should be executed or null to create a new scope.
+        /// </param>
+        /// <returns>True if the file was loaded/executed by this call.</returns>
+        public bool LoadFile(Scope globalScope, object self, MutableString/*!*/ path, LoadFlags flags, out object loaded) {
             Assert.NotNull(path);
 
             string assemblyName, typeName;
@@ -243,46 +271,69 @@ namespace IronRuby.Runtime {
             if (TryParseAssemblyName(strPath, out typeName, out assemblyName)) {
 
                 if (AlreadyLoaded(path, flags)) {
+                    loaded = ((flags & LoadFlags.ResolveLoaded) != 0) ? GetAssembly(assemblyName, true, false) : null;
                     return false;
                 }
 
-                if (LoadAssembly(assemblyName, typeName, false, false)) {
+                Assembly assembly = LoadAssembly(assemblyName, typeName, false, false);
+                if (assembly != null) {
                     FileLoaded(path, flags);
+                    loaded = assembly;
                     return true;
                 }
             }
 
-            return LoadFromPath(globalScope, self, strPath, flags);
+            return LoadFromPath(globalScope, self, strPath, flags, out loaded);
         }
 
         #region Assemblies
 
+        public Assembly LoadAssembly(string/*!*/ assemblyName, string typeName, bool throwOnError, bool tryPartialName) {
+            Assembly assembly = GetAssembly(assemblyName, throwOnError, tryPartialName);
+            return (assembly != null && LoadAssembly(assembly, typeName, throwOnError)) ? assembly : null;
+        }
+        
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods", MessageId = "System.Reflection.Assembly.LoadWithPartialName")]
-        public bool LoadAssembly(string/*!*/ assemblyName, string typeName, bool throwOnError, bool tryPartialName) {
-            Utils.Log(String.Format("Loading assembly '{0}' and type '{1}'", assemblyName, typeName), "LOADER");
-            
-            Assembly assembly;
-            try {
-                try {
-                    assembly = Platform.LoadAssembly(assemblyName);
-                } catch (FileNotFoundException) {
+        private Assembly GetAssembly(string/*!*/ assemblyName, bool throwOnError, bool tryPartialName) {
 #if SILVERLIGHT
-                    throw;
-#else
-                    if (tryPartialName) {
-#pragma warning disable 618,612 // csc, gmcs
-                        assembly = Assembly.LoadWithPartialName(assemblyName);
-#pragma warning restore 618,612
-                    } else {
-                        throw;
-                    }
+            tryPartialName = false;
 #endif
-                }
+            try {
+                return Platform.LoadAssembly(assemblyName);
             } catch (Exception e) {
-                if (throwOnError) throw new LoadError(e.Message, e);
-                return false;
+                if (!tryPartialName || !(e is FileNotFoundException)) {
+                    if (throwOnError) {
+                        throw new LoadError(e.Message, e);
+                    } else {
+                        return null;
+                    }
+                }
             }
 
+#if SILVERLIGHT
+            throw Assert.Unreachable;
+#else
+#pragma warning disable 618,612 // csc, gmcs
+            Assembly assembly;
+            try { 
+                assembly = Assembly.LoadWithPartialName(assemblyName);
+            } catch (Exception e) {
+                if (throwOnError) {
+                    throw new LoadError(e.Message, e);
+                } else {
+                    return null;
+                }
+            }
+            if (assembly == null && throwOnError) {
+                throw new LoadError(String.Format("Assembly '{0}' not found", assemblyName));
+            }
+#pragma warning restore 618,612
+            return assembly;
+#endif
+        }
+        
+        private bool LoadAssembly(Assembly/*!*/ assembly, string typeName, bool throwOnError) {
+            Utils.Log(String.Format("Loading assembly '{0}' and type '{1}'", assembly, typeName), "LOADER");
             Type initializerType;
             if (typeName != null) {
                 // load Ruby library:
@@ -411,7 +462,7 @@ namespace IronRuby.Runtime {
             }
         }
 
-        private bool LoadFromPath(Scope globalScope, object self, string/*!*/ path, LoadFlags flags) {
+        private bool LoadFromPath(Scope globalScope, object self, string/*!*/ path, LoadFlags flags, out object loaded) {
             Assert.NotNull(path);
 
             string[] sourceFileExtensions = DomainManager.Configuration.GetFileExtensions();
@@ -426,6 +477,20 @@ namespace IronRuby.Runtime {
             }
 
             if (AlreadyLoaded(pathWithExtension, flags) || _unfinishedFiles.Contains(pathWithExtension.ToString())) {
+                if ((flags & LoadFlags.ResolveLoaded) != 0) {
+                    var fullPath = Platform.GetFullPath(file.Path);
+                    if (file.SourceUnit != null) {
+                        Scope loadedScope;
+                        if (!LoadedScripts.TryGetValue(fullPath, out loadedScope)) {
+                            throw new LoadError(String.Format("no such file to load -- {0}", file.Path));
+                        }
+                        loaded = loadedScope;
+                    } else {
+                        loaded = Platform.LoadAssemblyFromPath(fullPath);
+                    }
+                } else {
+                    loaded = null;
+                }
                 return false;
             }
 
@@ -434,18 +499,19 @@ namespace IronRuby.Runtime {
                 _unfinishedFiles.Push(pathWithExtension.ToString());
 
                 if (file.SourceUnit != null) {
-
-                    RubyContext rubySource = file.SourceUnit.LanguageContext as RubyContext;
-                    if (rubySource != null) {
-                        ExecuteRubySourceUnit(file.SourceUnit, globalScope, flags);
+                    ScriptCode compiledCode;
+                    if (file.SourceUnit.LanguageContext == _context) {
+                        compiledCode = CompileRubySource(file.SourceUnit, flags);
                     } else {
-                        file.SourceUnit.Execute();
+                        compiledCode = file.SourceUnit.Compile();
                     }
+                    loaded = Execute(globalScope, compiledCode);
                 } else {
                     Debug.Assert(file.Path != null);
                     try {
-                        Assembly asm = Platform.LoadAssemblyFromPath(Platform.GetFullPath(file.Path));
-                        DomainManager.LoadAssembly(asm);
+                        Assembly assembly = Platform.LoadAssemblyFromPath(Platform.GetFullPath(file.Path));
+                        DomainManager.LoadAssembly(assembly);
+                        loaded = assembly;
                     } catch (Exception e) {
                         throw new LoadError(e.Message, e);
                     }
@@ -459,7 +525,7 @@ namespace IronRuby.Runtime {
             return true;
         }
 
-        private void ExecuteRubySourceUnit(SourceUnit/*!*/ sourceUnit, Scope globalScope, LoadFlags flags) {
+        private ScriptCode/*!*/ CompileRubySource(SourceUnit/*!*/ sourceUnit, LoadFlags flags) {
             Assert.NotNull(sourceUnit);
             
             // TODO: check file timestamp
@@ -467,11 +533,8 @@ namespace IronRuby.Runtime {
             CompiledFile compiledFile;
             if (TryGetCompiledFile(fullPath, out compiledFile)) {
                 Utils.Log(String.Format("{0}: {1}", ++_cacheHitCount, sourceUnit.Path), "LOAD_CACHED");
-                if (globalScope != null) {
-                    compiledFile.CompiledCode.Run(globalScope);
-                } else {
-                    compiledFile.CompiledCode.Run();
-                }
+
+                return compiledFile.CompiledCode;
             } else {
                 Utils.Log(String.Format("{0}: {1}", ++_compiledFileCount, sourceUnit.Path), "LOAD_COMPILED");
 
@@ -486,12 +549,22 @@ namespace IronRuby.Runtime {
 
                 AddCompiledFile(fullPath, compiledCode);
 
-                CompileAndRun(globalScope, compiledCode);
+                return compiledCode;
             }
         }
 
-        internal object CompileAndRun(Scope globalScope, ScriptCode/*!*/ code) {
-            return globalScope != null ? code.Run(globalScope) : code.Run();
+        internal Scope Execute(Scope globalScope, ScriptCode/*!*/ code) {
+            if (globalScope == null || code.LanguageContext != _context) {
+                globalScope = code.CreateScope();
+                if (code.SourceUnit.Path != null) {
+                    LoadedScripts[Platform.GetFullPath(code.SourceUnit.Path)] = globalScope;
+                }
+                code.Run(globalScope);
+                return globalScope;
+            } else {
+                code.Run(globalScope);
+                return null;
+            }
         }
 
         private ResolvedFile FindFile(string/*!*/ path, bool appendExtensions, string[] sourceFileExtensions) {

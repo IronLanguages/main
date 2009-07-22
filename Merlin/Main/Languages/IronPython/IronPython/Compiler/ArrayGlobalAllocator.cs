@@ -42,7 +42,7 @@ namespace IronPython.Compiler.Ast {
         private readonly GlobalArrayConstant _array;
         internal static readonly MSAst.ParameterExpression/*!*/ _globalContext = Ast.Parameter(typeof(CodeContext), "$globalContext");
 
-        public ArrayGlobalAllocator(LanguageContext/*!*/ context) {
+        public ArrayGlobalAllocator(PythonContext/*!*/ context) {
             _globalArray = Ast.Parameter(typeof(PythonGlobal[]), "$globalArray");
             _scope = new Scope(new PythonDictionary(new GlobalDictionaryStorage(_globalVals)));
             _context = new CodeContext(_scope, context);

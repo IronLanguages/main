@@ -48,6 +48,11 @@ namespace Microsoft.Scripting.Actions {
             _bodies.Add(body);
         }
 
+        public void FinishCondition(DynamicMetaObject body) {
+            _restrictions = _restrictions.Merge(body.Restrictions);
+            FinishCondition(body.Expression);
+        }
+
         /// <summary>
         /// Adds the non-conditional terminating node.
         /// </summary>

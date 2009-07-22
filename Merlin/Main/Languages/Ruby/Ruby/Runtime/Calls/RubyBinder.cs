@@ -41,7 +41,7 @@ namespace IronRuby.Runtime.Calls {
 
         #region Conversions
 
-        public override Expression ConvertExpression(Expression expr, Type toType, ConversionResultKind kind, Expression context) {
+        public override Expression ConvertExpression(Expression expr, Type toType, ConversionResultKind kind, OverloadResolverFactory context) {
             throw new InvalidOperationException("OBSOLETE");
         }
 

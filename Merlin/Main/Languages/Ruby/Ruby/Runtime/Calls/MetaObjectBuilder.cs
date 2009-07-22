@@ -27,6 +27,7 @@ using Microsoft.Scripting.Utils;
 using Ast = System.Linq.Expressions.Expression;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 using System.Collections;
+using Microsoft.Scripting.Generation;
 
 namespace IronRuby.Runtime.Calls {
     public sealed class MetaObjectBuilder {
@@ -210,9 +211,36 @@ namespace IronRuby.Runtime.Calls {
             if (value == null) {
                 return Ast.Equal(expression, AstUtils.Constant(null));
             } else {
-                return RuleBuilder.MakeTypeTestExpression(value.GetType(), expression);
+                return MakeTypeTestExpression(value.GetType(), expression);
             }
         }
+
+        public static Expression MakeTypeTestExpression(Type t, Expression expr) {
+            // we must always check for non-sealed types explicitly - otherwise we end up
+            // doing fast-path behavior on a subtype which overrides behavior that wasn't
+            // present for the base type.
+            //TODO there's a question about nulls here
+            if (CompilerHelpers.IsSealed(t) && t == expr.Type) {
+                if (t.IsValueType) {
+                    return AstUtils.Constant(true);
+                }
+                return Ast.NotEqual(expr, AstUtils.Constant(null));
+            }
+
+            return Ast.AndAlso(
+                Ast.NotEqual(
+                    expr,
+                    AstUtils.Constant(null)),
+                Ast.Equal(
+                    Ast.Call(
+                        AstUtils.Convert(expr, typeof(object)),
+                        typeof(object).GetMethod("GetType")
+                    ),
+                    AstUtils.Constant(t)
+                )
+            );
+        }
+
 
         public void AddObjectTypeCondition(object value, Expression/*!*/ expression) {
             AddCondition(GetObjectTypeTestExpression(value, expression));

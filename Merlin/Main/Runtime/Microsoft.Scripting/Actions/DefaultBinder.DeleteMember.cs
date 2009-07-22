@@ -14,40 +14,26 @@
  * ***************************************************************************/
 
 using System;
-using System.Linq.Expressions;
-using System.Reflection;
 using System.Dynamic;
+using System.Reflection;
+
+using Microsoft.Scripting.Actions.Calls;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Actions {
-    using Ast = System.Linq.Expressions.Expression;
 
     public partial class DefaultBinder : ActionBinder {
-        /// <summary>
-        /// Builds a MetaObject for performing a member delete.  Supports all built-in .NET members, the OperatorMethod 
-        /// DeleteMember, and StrongBox instances.
-        /// </summary>
-        public DynamicMetaObject DeleteMember(string name, DynamicMetaObject target) {
-            ContractUtils.RequiresNotNull(name, "name");
-            ContractUtils.RequiresNotNull(target, "target");
-
-            return DeleteMember(
-                name,
-                target,
-                AstUtils.Constant(null, typeof(CodeContext))
-            );
-        }
-
-        public DynamicMetaObject DeleteMember(string name, DynamicMetaObject target, Expression codeContext) {
+        public DynamicMetaObject DeleteMember(string name, DynamicMetaObject target, OverloadResolverFactory resolutionFactory) {
             ContractUtils.RequiresNotNull(name, "name");
             ContractUtils.RequiresNotNull(target, "target");
 
             return MakeDeleteMemberTarget(
                 new SetOrDeleteMemberInfo(
                     name,
-                    codeContext
+                    resolutionFactory
                 ),
                 target.Restrict(target.GetLimitType())
             );
@@ -69,7 +55,7 @@ namespace Microsoft.Scripting.Actions {
 
             delInfo.Body.Restrictions = restrictions;
 
-            if (self == null || !MakeOperatorDeleteMemberBody(delInfo, self.Expression, type, "DeleteMember")) {
+            if (self == null || !MakeOperatorDeleteMemberBody(delInfo, self, type, "DeleteMember")) {
                 MemberGroup group = GetMember(MemberRequestKind.Delete, type, delInfo.Name);
                 if (group.Count != 0) {
                     if (group[0].MemberType == TrackerTypes.Property) {
@@ -102,21 +88,21 @@ namespace Microsoft.Scripting.Actions {
         private void MakePropertyDeleteStatement(SetOrDeleteMemberInfo delInfo, DynamicMetaObject instance, MethodInfo delete) {
             delInfo.Body.FinishCondition(
                 instance == null ? 
-                    MakeCallExpression(delInfo.CodeContext, delete) :
-                    MakeCallExpression(delInfo.CodeContext, delete, instance.Expression)
+                    MakeCallExpression(delInfo.ResolutionFactory, delete) :
+                    MakeCallExpression(delInfo.ResolutionFactory, delete, instance)
             );
         }
 
         /// <summary> if a member-injector is defined-on or registered-for this type call it </summary>
-        private bool MakeOperatorDeleteMemberBody(SetOrDeleteMemberInfo delInfo, Expression instance, Type type, string name) {
+        private bool MakeOperatorDeleteMemberBody(SetOrDeleteMemberInfo delInfo, DynamicMetaObject instance, Type type, string name) {
             MethodInfo delMem = GetMethod(type, name);
 
             if (delMem != null && delMem.IsSpecialName) {
-                Expression call = MakeCallExpression(delInfo.CodeContext, delMem, instance, AstUtils.Constant(delInfo.Name));
+                DynamicMetaObject call = MakeCallExpression(delInfo.ResolutionFactory, delMem, instance, new DynamicMetaObject(AstUtils.Constant(delInfo.Name), BindingRestrictions.Empty, delInfo.Name));
 
                 if (delMem.ReturnType == typeof(bool)) {
                     delInfo.Body.AddCondition(
-                        call,
+                        call.Expression,
                         AstUtils.Constant(null)
                     );
                 } else {
@@ -133,12 +119,12 @@ namespace Microsoft.Scripting.Actions {
         /// </summary>
         private sealed class SetOrDeleteMemberInfo {
             public readonly string Name;
-            public readonly Expression CodeContext;
+            public readonly OverloadResolverFactory ResolutionFactory;
             public readonly ConditionalBuilder Body = new ConditionalBuilder();
 
-            public SetOrDeleteMemberInfo(string name, Expression codeContext) {
+            public SetOrDeleteMemberInfo(string name, OverloadResolverFactory resolutionFactory) {
                 Name = name;
-                CodeContext = codeContext;
+                ResolutionFactory = resolutionFactory;
             }
         }
     }
