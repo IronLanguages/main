@@ -80,3 +80,9 @@ class TestTarWriter
   def test_close() end
   def test_mkdir() end
 end
+
+class TestGemSourceInfoCache
+  # Fails non-deterministically with this message
+  #   Expected /Bulk updating/ to match "".
+  def test_self_cache_refreshes() end
+end
