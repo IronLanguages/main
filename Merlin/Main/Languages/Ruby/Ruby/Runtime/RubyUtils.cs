@@ -189,67 +189,165 @@ namespace IronRuby.Runtime {
 
         #region Names
 
-        // Unmangles a method name. Not all names can be unmangled.
-        // For a name to be unmangle-able, it must be lower_case_with_underscores.
-        // If a name can't be unmangled, this function returns null
+        /// <summary>
+        /// Converts a Ruby name to PascalCase name (foo_bar -> FooBar).
+        /// Returns null if the name is not a well-formed Ruby name (it contains upper-case latter or subsequent underscores).
+        /// Characters that are not upper case letters are treated as lower-case letters.
+        /// </summary>
         public static string TryUnmangleName(string/*!*/ name) {
-            if (name.ToUpper().Equals("INITIALIZE")) {
-                // Special case for compatibility with CLR
-                return name;
+            ContractUtils.RequiresNotNull(name, "name");
+            if (name.Length == 0) {
+                return null;
             }
 
-            StringBuilder sb = new StringBuilder(name.Length);
-            bool upcase = true;
-            foreach (char c in name) {
-                if (char.IsUpper(c)) {
-                    // can't unmangle a name with uppercase letters
+            StringBuilder mangled = new StringBuilder();
+
+            bool lastWasSpecial = false;
+            int i = 0, j = 0;
+            while (i < name.Length) {
+                char c;
+                while (j < name.Length && (c = name[j]) != '_') {
+                    if (Char.IsUpper(c)) {
+                        return null;
+                    }
+                    j++;
+                }
+
+                if (j == i || j == name.Length - 1) {
                     return null;
                 }
 
-                if (c == '_') {
-                    if (upcase) {
-                        // can't unmangle a name with consecutive or leading underscores
+                if (j - i == 1) {
+                    // "ip_f_xxx" -/-> "IPFXxx"
+                    if (lastWasSpecial) {
                         return null;
                     }
-                    upcase = true;
+                    mangled.Append(name[i].ToUpperInvariant());
+                    lastWasSpecial = false;
                 } else {
-                    if (upcase) {
-                        sb.Append(char.ToUpper(c));
-                        upcase = false;
+                    string special = MapSpecialWord(name, i, j - i);
+                    if (special != null) {
+                        // "ip_ip" -/-> "IPIP"
+                        if (lastWasSpecial) {
+                            return null;
+                        }
+                        mangled.Append(special.ToUpperInvariant());
+                        lastWasSpecial = true;
                     } else {
-                        sb.Append(c);
+                        mangled.Append(name[i].ToUpperInvariant());
+                        mangled.Append(name, i + 1, j - i - 1);
+                        lastWasSpecial = false;
                     }
                 }
+
+                i = ++j;
             }
-            if (upcase) {
-                // string was empty or ended with an underscore, can't unmangle
-                return null;
-            }
-            return sb.ToString();
+
+            return mangled.ToString();
         }
 
-        public static string/*!*/ MangleName(string/*!*/ name) {
-            Assert.NotNull(name);
-
-            if (name.ToUpper().Equals("INITIALIZE")) {
-                // Special case for compatibility with CLR
-                return name;
-            }
-
-            StringBuilder result = new StringBuilder(name.Length);
-
-            for (int i = 0; i < name.Length; i++) {
-                if (Char.IsUpper(name[i])) {
-                    if (!(i == 0 || i + 1 < name.Length && Char.IsUpper(name[i + 1]) || i + 1 == name.Length && Char.IsUpper(name[i - 1]))) {
-                        result.Append('_');
+        /// <summary>
+        /// Converts a camelCase or PascalCase name to a Ruby name (FooBar -> foo_bar).
+        /// Returns null if the name is not in camelCase or PascalCase (FooBAR, foo, etc.).
+        /// Characters that are not upper case letters are treated as lower-case letters.
+        /// </summary>
+        public static string TryMangleName(string/*!*/ name) {
+            ContractUtils.RequiresNotNull(name, "name");
+            StringBuilder mangled = null;
+            int i = 0;
+            while (i < name.Length) {
+                char c = name[i];
+                if (Char.IsUpper(c)) {
+                    int j = i + 1;
+                    while (j < name.Length && Char.IsUpper(name, j)) {
+                        j++;
                     }
-                    result.Append(Char.ToLower(name[i]));
+
+                    if (j < name.Length) {
+                        j--;
+                    }
+
+                    if (mangled == null) {
+                        mangled = new StringBuilder();
+                        mangled.Append(name, 0, i);
+                    } 
+
+                    if (i > 0) {
+                        mangled.Append('_');
+                    }
+
+                    int count = j - i;
+                    if (count == 0) {
+                        // NaN{end}, NaNXxx
+                        if (i + 2 < name.Length && 
+                            Char.IsUpper(name[i + 2]) && 
+                            (i + 3 == name.Length || Char.IsUpper(name[i + 3]) && 
+                            (i + 4 < name.Length && !Char.IsUpper(name[i + 4])))) {
+                            return null;
+                        } else {
+                            // X{end}, In, NaN, Xml, Html, ...
+                            mangled.Append(c.ToLowerInvariant());
+                            i++;
+                        }
+                    } else if (count == 1) {
+                        // FXx
+                        mangled.Append(c.ToLowerInvariant());
+                        i++;
+                    } else {
+                        // FOXxx, FOOXxx, FOOOXxx, ...
+                        string special = MapSpecialWord(name, i, count);
+                        if (special != null) {
+                            mangled.Append(special.ToLowerInvariant());
+                            i = j;
+                        } else {
+                            return null;
+                        }
+                    }
                 } else {
-                    result.Append(name[i]);
+                    if (mangled != null) {
+                        mangled.Append(c);
+                    }
+                    i++;
                 }
             }
 
-            return result.ToString();
+            return mangled != null ? mangled.ToString() : null;
+        }
+
+        private static string MapSpecialWord(string/*!*/ name, int start, int count) {
+            if (count == 2) {
+                return IsTwoLetterWord(name, start) ? null : name.Substring(start, count);
+            }
+
+            return null;
+        }
+
+        private static bool IsTwoLetterWord(string/*!*/ str, int index) {
+            int c = LetterPair(str, index);
+            switch (c) {
+                case ('a' << 8) | 't':
+                case ('a' << 8) | 's':
+                case ('b' << 8) | 'y':
+                case ('d' << 8) | 'o':
+                case ('i' << 8) | 'd':
+                case ('i' << 8) | 't':
+                case ('i' << 8) | 'f':
+                case ('i' << 8) | 'n':
+                case ('i' << 8) | 's':
+                case ('g' << 8) | 'o':
+                case ('m' << 8) | 'y':
+                case ('o' << 8) | 'f':
+                case ('o' << 8) | 'k':
+                case ('o' << 8) | 'n':
+                case ('t' << 8) | 'o':
+                case ('u' << 8) | 'p':
+                    return true;
+            }
+            return false;
+        }
+
+        private static int LetterPair(string/*!*/ str, int index) {
+            return (str[index + 1] & 0xff00) == 0 ? (str[index].ToLowerInvariant() << 8) | str[index + 1].ToLowerInvariant() : -1;
         }
 
         #endregion

@@ -15,8 +15,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq.Expressions;
+using System.Dynamic;
 using System.Reflection;
+
+using Microsoft.Scripting.Actions.Calls;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
@@ -137,7 +139,7 @@ namespace Microsoft.Scripting.Actions {
         /// Returns null if it's an error to get the value.  The caller can then call GetErrorForGet to get 
         /// the correct error Expression (or null if they should provide a default).
         /// </summary>
-        public virtual Expression GetValue(Expression context, ActionBinder binder, Type type) {
+        public virtual DynamicMetaObject GetValue(OverloadResolverFactory resolverFactory, ActionBinder binder, Type type) {
             return binder.ReturnMemberTracker(type, this);
         }
 
@@ -147,7 +149,7 @@ namespace Microsoft.Scripting.Actions {
         /// Returns null if it's an error to assign to.  The caller can then call GetErrorForSet to
         /// get the correct error Expression (or null if a default error should be provided).
         /// </summary>
-        public virtual Expression SetValue(Expression context, ActionBinder binder, Type type, Expression value) {
+        public virtual DynamicMetaObject SetValue(OverloadResolverFactory resolverFactory, ActionBinder binder, Type type, DynamicMetaObject value) {
             return null;
         }
 
@@ -158,7 +160,7 @@ namespace Microsoft.Scripting.Actions {
         /// GetErrorsForDoCall to get the correct error Expression (or null if a default error should be provided).
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1716:IdentifiersShouldNotMatchKeywords", MessageId = "Call")] // TODO: fix
-        internal virtual Expression Call(Expression context, ActionBinder binder, params Expression[] arguments) {
+        internal virtual DynamicMetaObject Call(OverloadResolverFactory resolverFactory, ActionBinder binder, params DynamicMetaObject[] arguments) {
             return null;
         }
 
@@ -180,7 +182,7 @@ namespace Microsoft.Scripting.Actions {
         /// 
         /// A null return value indicates that the default error message should be provided by the caller.
         /// </summary>
-        public virtual ErrorInfo GetBoundError(ActionBinder binder, Expression instance) {
+        public virtual ErrorInfo GetBoundError(ActionBinder binder, DynamicMetaObject instance) {
             return null;
         }
 
@@ -188,16 +190,16 @@ namespace Microsoft.Scripting.Actions {
         /// Helper for getting values that have been bound.  Called from BoundMemberTracker.  Custom member
         /// trackers can override this to provide their own behaviors when bound to an instance.
         /// </summary>
-        protected internal virtual Expression GetBoundValue(Expression context, ActionBinder binder, Type type, Expression instance) {
-            return GetValue(context, binder, type);
+        protected internal virtual DynamicMetaObject GetBoundValue(OverloadResolverFactory resolverFactory, ActionBinder binder, Type type, DynamicMetaObject instance) {
+            return GetValue(resolverFactory, binder, type);
         }
 
         /// <summary>
         /// Helper for setting values that have been bound.  Called from BoundMemberTracker.  Custom member
         /// trackers can override this to provide their own behaviors when bound to an instance.
         /// </summary>
-        protected internal virtual Expression SetBoundValue(Expression context, ActionBinder binder, Type type, Expression value, Expression instance) {
-            return SetValue(context, binder, type, instance);
+        protected internal virtual DynamicMetaObject SetBoundValue(OverloadResolverFactory resolverFactory, ActionBinder binder, Type type, DynamicMetaObject value, DynamicMetaObject instance) {
+            return SetValue(resolverFactory, binder, type, instance);
         }
 
         /// <summary>
@@ -207,7 +209,7 @@ namespace Microsoft.Scripting.Actions {
         /// field results in a new BoundMemberTracker which will get GetBoundValue/SetBoundValue to pass the
         /// instance through.
         /// </summary>
-        public virtual MemberTracker BindToInstance(Expression instance) {
+        public virtual MemberTracker BindToInstance(DynamicMetaObject instance) {
             return this;
         }
 

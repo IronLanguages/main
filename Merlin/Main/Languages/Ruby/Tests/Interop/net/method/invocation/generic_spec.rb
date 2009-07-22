@@ -155,7 +155,7 @@ describe :generic_methods, :shared => true do
     @klass.method(:type_constraint_method).of(SubKlass, Klass).call(SubKlass.new).foo.should == 10
   end
 
-  if IronRuby.dlr_config.private_binding
+  if IronRuby.configuration.private_binding
     it "are callable via call and [] when private" do
       @private_method_list.each do |m|
         generic_count, arity = m.match(/_(\d)_generic_(\d)_/)[1..2].map {|e| e.to_i}

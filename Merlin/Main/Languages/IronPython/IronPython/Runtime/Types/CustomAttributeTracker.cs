@@ -16,11 +16,16 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq.Expressions;
+using System.Dynamic;
 using System.Reflection;
-using IronPython.Runtime.Operations;
+
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
+using Microsoft.Scripting.Actions.Calls;
+
+using IronPython.Runtime.Binding;
+using IronPython.Runtime.Operations;
+
 using Ast = System.Linq.Expressions.Expression;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
@@ -28,52 +33,48 @@ namespace IronPython.Runtime.Types {
     public abstract class PythonCustomTracker : CustomTracker {
         public abstract PythonTypeSlot/*!*/ GetSlot();
 
-        public override Expression GetValue(Expression context, ActionBinder binder, Type type) {
-            return AstUtils.Constant(GetSlot(), typeof(PythonTypeSlot));
+        public override DynamicMetaObject GetValue(OverloadResolverFactory resolverFactory, ActionBinder binder, Type type) {
+            return new DynamicMetaObject(AstUtils.Constant(GetSlot(), typeof(PythonTypeSlot)), BindingRestrictions.Empty);
         }
 
-        public override MemberTracker BindToInstance(Expression instance) {
+        public override MemberTracker BindToInstance(DynamicMetaObject instance) {
             return new BoundMemberTracker(this, instance);
         }
 
-        public override Expression SetValue(Expression context, ActionBinder binder, Type type, Expression value) {
-            return SetBoundValue(context, binder, type, value, AstUtils.Constant(null));
+        public override DynamicMetaObject SetValue(OverloadResolverFactory resolverFactory, ActionBinder binder, Type type, DynamicMetaObject value) {
+            return SetBoundValue(resolverFactory, binder, type, value, new DynamicMetaObject(AstUtils.Constant(null), BindingRestrictions.Empty));
         }
 
-        protected override Expression GetBoundValue(Expression context, ActionBinder binder, Type type, Expression instance) {
-            return Ast.Call(
-                typeof(PythonOps).GetMethod("SlotGetValue"),
-                context,
-                AstUtils.Constant(GetSlot(), typeof(PythonTypeSlot)),
-                AstUtils.Convert(
-                    instance,
-                    typeof(object)
+        protected override DynamicMetaObject GetBoundValue(OverloadResolverFactory factory, ActionBinder binder, Type type, DynamicMetaObject instance) {
+            return new DynamicMetaObject(
+                Ast.Call(
+                    typeof(PythonOps).GetMethod("SlotGetValue"),
+                    ((PythonOverloadResolverFactory)factory)._codeContext,
+                    AstUtils.Constant(GetSlot(), typeof(PythonTypeSlot)),
+                    AstUtils.Convert(
+                        instance.Expression,
+                        typeof(object)
+                    ),
+                    AstUtils.Constant(DynamicHelpers.GetPythonTypeFromType(type))
                 ),
-                AstUtils.Constant(DynamicHelpers.GetPythonTypeFromType(type))
+                BindingRestrictions.Empty
             );
         }
         
-        protected override Expression SetBoundValue(Expression context, ActionBinder binder, Type type, Expression value, Expression instance) {
-            return Ast.Call(
-                typeof(PythonOps).GetMethod("SlotSetValue"),
-                context,
-                AstUtils.Constant(GetSlot(), typeof(PythonTypeSlot)),
-                AstUtils.Convert(
-                    instance,
-                    typeof(object)
+        protected override DynamicMetaObject SetBoundValue(OverloadResolverFactory factory, ActionBinder binder, Type type, DynamicMetaObject value, DynamicMetaObject instance) {
+            return new DynamicMetaObject(
+                Ast.Call(
+                    typeof(PythonOps).GetMethod("SlotSetValue"),
+                    ((PythonOverloadResolverFactory)factory)._codeContext,
+                    AstUtils.Constant(GetSlot(), typeof(PythonTypeSlot)),
+                    AstUtils.Convert(
+                        instance.Expression,
+                        typeof(object)
+                    ),
+                    AstUtils.Constant(DynamicHelpers.GetPythonTypeFromType(type)),
+                    value.Expression
                 ),
-                AstUtils.Constant(DynamicHelpers.GetPythonTypeFromType(type)),
-                value
-            );
-        }
-
-        public Expression GetBoundPythonValue(RuleBuilder builder, ActionBinder binder, PythonType accessing) {
-            return Ast.Call(
-                typeof(PythonOps).GetMethod("SlotGetValue"),
-                builder.Context,
-                AstUtils.Constant(GetSlot(), typeof(PythonTypeSlot)),
-                AstUtils.Constant(null),
-                AstUtils.Constant(accessing)
+                BindingRestrictions.Empty
             );
         }
     }
@@ -97,8 +98,8 @@ namespace IronPython.Runtime.Types {
             _slot = slot;
         }
 
-        public override Expression GetValue(Expression context, ActionBinder binder, Type type) {
-            return GetBoundValue(context, binder, type, AstUtils.Constant(null));
+        public override DynamicMetaObject GetValue(OverloadResolverFactory factory, ActionBinder binder, Type type) {
+            return GetBoundValue(factory, binder, type, new DynamicMetaObject(AstUtils.Constant(null), BindingRestrictions.Empty));
         }
 
         public override string Name {
@@ -143,8 +144,8 @@ namespace IronPython.Runtime.Types {
             );
         }
 
-        public override Expression GetValue(Expression context, ActionBinder binder, Type type) {
-            return GetBoundValue(context, binder, type, AstUtils.Constant(null));
+        public override DynamicMetaObject GetValue(OverloadResolverFactory factory, ActionBinder binder, Type type) {
+            return GetBoundValue(factory, binder, type, new DynamicMetaObject(AstUtils.Constant(null), BindingRestrictions.Empty));
         }
 
         public override Type DeclaringType {

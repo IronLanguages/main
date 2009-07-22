@@ -45,7 +45,7 @@ namespace IronPython.Runtime.Types {
     [PythonType("type")]
     [Documentation(@"type(object) -> gets the type of the object
 type(name, bases, dict) -> creates a new type instance with the given name, base classes, and members from the dictionary")]
-    public partial class PythonType : IMembersList, IDynamicMetaObjectProvider, IWeakReferenceable, ICodeFormattable, IFastGettable, IFastSettable, IFastInvokable {
+    public partial class PythonType : IPythonMembersList, IDynamicMetaObjectProvider, IWeakReferenceable, ICodeFormattable, IFastGettable, IFastSettable, IFastInvokable {
         private Type/*!*/ _underlyingSystemType;            // the underlying CLI system type for this type
         private string _name;                               // the name of the type
         private Dictionary<SymbolId, PythonTypeSlot> _dict; // type-level slots & attributes
@@ -2260,7 +2260,11 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
         #region IMembersList Members
 
-        IList<object> IMembersList.GetMemberNames(CodeContext context) {
+        IList<string> IMembersList.GetMemberNames() {
+            return PythonOps.GetStringMemberList(this);
+        }
+
+        IList<object> IPythonMembersList.GetMemberNames(CodeContext/*!*/ context) {
             IList<object> res = GetMemberNames(context);
 
             object[] arr = new object[res.Count];

@@ -22,7 +22,7 @@
     <SignedSym Condition="'$(SignAssembly)' == 'true'">SIGNED</SignedSym>
     <DelaySign>true</DelaySign>
     <BaseAddress>857735168</BaseAddress>
-    <SilverlightPath Condition="$(SilverlightPath) == ''">..\..\Utilities\Silverlight\x86ret\</SilverlightPath>
+    <SilverlightPath Condition="'$(SilverlightPath)' == ''">..\..\Utilities\Silverlight\x86ret\</SilverlightPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FxCop|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -85,8 +85,8 @@
     <SilverlightBuild>true</SilverlightBuild>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="System" Condition=" $(SilverlightBuild) != 'true' " />
-    <Reference Include="System.Configuration" Condition=" $(SilverlightBuild) != 'true' " />
+    <Reference Include="System" Condition=" '$(SilverlightBuild)' != 'true' " />
+    <Reference Include="System.Configuration" Condition=" '$(SilverlightBuild)' != 'true' " />
     <Reference Include="mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" Condition=" '$(SilverlightBuild)' == 'true' ">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(SilverlightPath)\mscorlib.dll</HintPath>
@@ -96,8 +96,8 @@
       <HintPath>$(SilverlightPath)\System.dll</HintPath>
     </Reference>
     <Reference Include="System.Data" />
-    <Reference Include="System.Runtime.Remoting" Condition=" $(SilverlightBuild) != 'true' " />
-    <Reference Include="System.Xml" Condition=" $(SilverlightBuild) != 'true' " />
+    <Reference Include="System.Runtime.Remoting" Condition=" '$(SilverlightBuild)' != 'true' " />
+    <Reference Include="System.Xml" Condition=" '$(SilverlightBuild)' != 'true' " />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\Hosts\Silverlight\SilverlightVersion.cs" Condition=" '$(SilverlightBuild)' == 'true' ">
@@ -144,7 +144,6 @@
     <Compile Include="Actions\OperationBinder.cs" />
     <Compile Include="Actions\OperationMetaObject.cs" />
     <Compile Include="ArgumentTypeException.cs" />
-    <Compile Include="Ast\CodeContextExpression.cs" />
     <Compile Include="Ast\FinallyFlowControlExpression.cs" />
     <Compile Include="Ast\FlowControlRewriter.cs" />
     <Compile Include="Ast\SourceFileInformation.cs" />
@@ -353,7 +352,6 @@
     <Compile Include="Actions\NestedTypeTracker.cs" />
     <Compile Include="Actions\PropertyTracker.cs" />
     <Compile Include="Actions\ReflectedPropertyTracker.cs" />
-    <Compile Include="Actions\RuleBuilder.cs" />
     <Compile Include="Actions\TopNamespaceTracker.cs" />
     <Compile Include="Actions\TrackerTypes.cs" />
     <Compile Include="Actions\TypeGroup.cs" />
@@ -369,7 +367,6 @@
     <Compile Include="Runtime\BaseSymbolDictionary.cs" />
     <Compile Include="Runtime\BinderType.cs" />
     <Compile Include="Runtime\CallTargets.cs" />
-    <Compile Include="Runtime\CodeContext.cs" />
     <Compile Include="Runtime\ContextId.cs" />
     <Compile Include="Runtime\CustomSymbolDictionary.cs" />
     <Compile Include="Runtime\DlrCachedCodeAttribute.cs" />

@@ -86,7 +86,7 @@ namespace IronPython.Runtime.Binding {
                             tt
                         ),
                         value,
-                        AstUtils.Constant(state.SharedContext)
+                        new PythonOverloadResolverFactory(state.Binder, AstUtils.Constant(state.SharedContext))
                     ).Expression,
                     Restrictions.Merge(value.Restrictions).Merge(BindingRestrictions.GetInstanceRestriction(Expression, Value))
                 );
@@ -112,7 +112,8 @@ namespace IronPython.Runtime.Binding {
                             AstUtils.Constant(tt),
                             BindingRestrictions.Empty,
                             tt
-                        )
+                        ),
+                        state.SharedOverloadResolverFactory
                     ).Expression,
                     BindingRestrictions.GetInstanceRestriction(Expression, Value).Merge(Restrictions)
                 );
@@ -331,8 +332,12 @@ namespace IronPython.Runtime.Binding {
                 pts.MakeGetExpression(
                         _state.Binder,
                         _codeContext,
-                        null,
-                        AstUtils.Convert(AstUtils.WeakConstant(Value), typeof(PythonType)),
+                        null,                        
+                        new DynamicMetaObject(
+                            AstUtils.Convert(AstUtils.WeakConstant(Value), typeof(PythonType)),
+                            BindingRestrictions.Empty,
+                            Value
+                        ),
                         _cb
                     );
 
@@ -386,10 +391,15 @@ namespace IronPython.Runtime.Binding {
 
             protected override void AddMetaSlotAccess(PythonType metaType, PythonTypeSlot pts) {
                 ParameterExpression tmp = Ast.Variable(typeof(object), "slotRes");
-                pts.MakeGetExpression(_state.Binder,
+                pts.MakeGetExpression(
+                    _state.Binder,
                     _codeContext,
-                    Expression,
-                    AstUtils.Constant(metaType),
+                    _type,
+                    new DynamicMetaObject(
+                        AstUtils.Constant(metaType),
+                        BindingRestrictions.Empty,
+                        metaType
+                    ),
                     _cb
                 );
 

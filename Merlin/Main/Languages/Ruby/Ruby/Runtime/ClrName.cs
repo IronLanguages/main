@@ -35,10 +35,14 @@ namespace IronRuby.Runtime {
         public string/*!*/ MangledName {
             get {
                 if (_mangled == null) {
-                    _mangled = RubyUtils.MangleName(_actual);
+                    _mangled = RubyUtils.TryMangleName(_actual) ?? _actual;
                 }
                 return _mangled;
             }
+        }
+
+        public bool HasMangledName {
+            get { return !ReferenceEquals(_actual, MangledName); }
         }
 
         public ClrName(string/*!*/ actualName) {

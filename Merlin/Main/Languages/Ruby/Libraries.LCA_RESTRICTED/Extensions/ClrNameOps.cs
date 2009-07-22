@@ -88,5 +88,29 @@ namespace IronRuby.Builtins {
         public static object Compare(BinaryOpStorage/*!*/ comparisonStorage, RespondToStorage/*!*/ respondToStorage, ClrName/*!*/ self, object other) {
             return MutableStringOps.Compare(comparisonStorage, respondToStorage, self.MangledName, other);
         }
+
+        /// <summary>
+        /// Converts a Ruby name to PascalCase name (e.g. "foo_bar" to "FooBar").
+        /// Returns null if the name is not a well-formed Ruby name (it contains upper-case latter or subsequent underscores).
+        /// Characters that are not upper case letters are treated as lower-case letters.
+        /// </summary>
+        [RubyMethod("ruby_to_clr", RubyMethodAttributes.PublicSingleton)]
+        [RubyMethod("unmangle", RubyMethodAttributes.PublicSingleton)]
+        public static MutableString Unmangle(RubyClass/*!*/ self, [DefaultProtocol]string/*!*/ rubyName) {
+            var clr = RubyUtils.TryUnmangleName(rubyName);
+            return clr != null ? MutableString.Create(clr) : null;
+        }
+
+        /// <summary>
+        /// Converts a camelCase or PascalCase name to a Ruby name (e.g. "FooBar" to "foo_bar").
+        /// Returns null if the name is not in camelCase or PascalCase (FooBAR, foo, etc.).
+        /// Characters that are not upper case letters are treated as lower-case letters.
+        /// </summary>
+        [RubyMethod("clr_to_ruby", RubyMethodAttributes.PublicSingleton)]
+        [RubyMethod("mangle", RubyMethodAttributes.PublicSingleton)]
+        public static MutableString Mangle(RubyClass/*!*/ self, [DefaultProtocol]string/*!*/ clrName) {
+            var ruby = RubyUtils.TryMangleName(clrName);
+            return ruby != null ? MutableString.Create(ruby) : null;
+        }
     }
 }

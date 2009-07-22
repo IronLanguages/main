@@ -423,7 +423,6 @@ module GuiTutorial
     end
     
     def on_repl_input
-      puts "in on_repl_input"
       print '' if @prev_newline
       history.show!
 

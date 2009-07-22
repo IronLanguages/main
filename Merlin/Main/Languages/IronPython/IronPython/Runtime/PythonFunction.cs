@@ -39,7 +39,7 @@ namespace IronPython.Runtime {
     /// Created for a user-defined function.  
     /// </summary>
     [PythonType("function"), DontMapGetMemberNamesToDir]
-    public sealed partial class PythonFunction : PythonTypeSlot, IWeakReferenceable, IMembersList, IDynamicMetaObjectProvider, ICodeFormattable, Binding.IFastInvokable {
+    public sealed partial class PythonFunction : PythonTypeSlot, IWeakReferenceable, IPythonMembersList, IDynamicMetaObjectProvider, ICodeFormattable, Binding.IFastInvokable {
         private readonly CodeContext/*!*/ _context;     // the creating code context of the function
         [PythonHidden]
         public readonly MutableTuple Closure;
@@ -440,7 +440,11 @@ namespace IronPython.Runtime {
             return _dict.Remove(SymbolTable.StringToId(name));
         }
 
-        IList<object> IMembersList.GetMemberNames(CodeContext context) {
+        IList<string> IMembersList.GetMemberNames() {
+            return PythonOps.GetStringMemberList(this);
+        }
+
+        IList<object> IPythonMembersList.GetMemberNames(CodeContext/*!*/ context) {
             List list;
             if (_dict == null) {
                 list = PythonOps.MakeList();

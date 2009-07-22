@@ -68,7 +68,7 @@ namespace IronPython.Compiler {
                 PythonGlobal[] globalArray = new PythonGlobal[optimizedCode.Names.Length];
                 Scope scope = new Scope(new PythonDictionary(new GlobalDictionaryStorage(globals, globalArray)));
 
-                CodeContext res = new CodeContext(scope, SourceUnit.LanguageContext);
+                CodeContext res = new CodeContext(scope, (PythonContext)SourceUnit.LanguageContext);
 
                 for (int i = 0; i < optimizedCode.Names.Length; i++) {
                     SymbolId name = SymbolTable.StringToId(optimizedCode.Names[i]);

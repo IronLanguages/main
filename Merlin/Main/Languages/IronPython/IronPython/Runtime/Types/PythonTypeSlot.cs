@@ -13,11 +13,9 @@
  *
  * ***************************************************************************/
 
-using System;
+using System.Dynamic;
 using System.Linq.Expressions;
 using System.Runtime.InteropServices;
-
-using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime.Binding;
 using IronPython.Runtime.Operations;
@@ -80,14 +78,14 @@ namespace IronPython.Runtime.Types {
         /// The default implementation just calls the TryGetValue method.  Subtypes of PythonTypeSlot can override
         /// this and provide a more optimal implementation.
         /// </summary>
-        internal virtual void MakeGetExpression(PythonBinder/*!*/ binder, Expression/*!*/ codeContext, Expression instance, Expression/*!*/ owner, ConditionalBuilder/*!*/ builder) {
+        internal virtual void MakeGetExpression(PythonBinder/*!*/ binder, Expression/*!*/ codeContext, DynamicMetaObject instance, DynamicMetaObject/*!*/ owner, ConditionalBuilder/*!*/ builder) {
             ParameterExpression tmp = Ast.Variable(typeof(object), "slotTmp");
             Expression call = Ast.Call(
                  typeof(PythonOps).GetMethod("SlotTryGetValue"),
                  codeContext,
                  AstUtils.Convert(AstUtils.WeakConstant(this), typeof(PythonTypeSlot)),
-                 instance ?? AstUtils.Constant(null),
-                 owner,
+                 instance != null ? instance.Expression : AstUtils.Constant(null),
+                 owner.Expression,
                  tmp
             );
 

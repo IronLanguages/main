@@ -787,6 +787,42 @@ end
             //assert_equal Methods.with_block {|x| x + 1000}, 1100
         }
 
+        public void Dlr_Visibility() {
+            Engine.Execute(@"
+class C
+  def public_m
+    0
+  end
+
+  private
+  def private_m
+    1
+  end
+
+  protected
+  def protected_m
+    2
+  end
+end
+");
+            var classC = Runtime.Globals.GetVariable("C");
+            var c = Engine.Operations.CreateInstance(classC);
+
+            AssertExceptionThrown<MissingMethodException>(() => MyInvokeMemberBinder.Invoke(c, "private_m"));
+            AssertExceptionThrown<MissingMethodException>(() => MyInvokeMemberBinder.Invoke(c, "protected_m"));
+            var r1 = MyInvokeMemberBinder.Invoke(c, "public_m");
+            Assert(r1 is int && (int)r1 == 0);
+
+            Engine.Execute(@"
+class C
+  def method_missing name
+    3
+  end
+end");
+            var r2 = MyInvokeMemberBinder.Invoke(c, "private_m");
+            Assert(r2 is int && (int)r2 == 3);
+        }
+
         public void Dlr_Languages() {
             //# Pass in ref/out params
             //# Named arguments

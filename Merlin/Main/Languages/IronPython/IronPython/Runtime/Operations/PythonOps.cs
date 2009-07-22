@@ -1006,10 +1006,25 @@ namespace IronPython.Runtime.Operations {
             throw PythonOps.AttributeErrorForMissingAttribute(PythonTypeOps.GetName(o), name);
         }
 
+        internal static IList<string> GetStringMemberList(IPythonMembersList pyMemList) {
+            List<string> res = new List<string>();
+            foreach (object o in pyMemList.GetMemberNames(DefaultContext.Default)) {
+                if (o is string) {
+                    res.Add((string)o);
+                }
+            }
+            return res;
+        }
+
         public static IList<object> GetAttrNames(CodeContext/*!*/ context, object o) {
+            IPythonMembersList pyMemList = o as IPythonMembersList;
+            if (pyMemList != null) {
+                return pyMemList.GetMemberNames(context);
+            }
+
             IMembersList memList = o as IMembersList;
             if (memList != null) {
-                return memList.GetMemberNames(context);
+                return new List(memList.GetMemberNames());
             }
 
             IPythonObject po = o as IPythonObject;
@@ -2004,8 +2019,12 @@ namespace IronPython.Runtime.Operations {
                     // dynamic method, strip the trailing id...
                     name = name.Substring(0, name.IndexOf('#'));
                 }
-                CodeContext context = frame.CodeContext;
-                if (context == null) {
+
+                PythonDynamicStackFrame pyFrame = frame as PythonDynamicStackFrame;
+                CodeContext context;
+                if (pyFrame != null) {
+                    context = pyFrame.CodeContext;
+                } else {
                     context = DefaultContext.Default;
                 }
 
@@ -3657,7 +3676,7 @@ namespace IronPython.Runtime.Operations {
         }
         public static CodeContext/*!*/ CreateTopLevelCodeContext(Scope/*!*/ scope, LanguageContext/*!*/ context) {
             context.EnsureScopeExtension(scope.ModuleScope);
-            return new CodeContext(scope, context);
+            return new CodeContext(scope, (PythonContext)context);
         }
 
         public static PythonGlobal/*!*/[]/*!*/ GetGlobalArray(Scope/*!*/ scope) {
@@ -4062,6 +4081,20 @@ namespace IronPython.Runtime.Operations {
                 code.Parameters
             );
         }
+
+        public static void UpdateStackTrace(CodeContext context, MethodBase method, string funcName, string filename, int line) {
+            if (line != -1) {
+                Debug.Assert(filename != null);
+                if (ExceptionHelpers.DynamicStackFrames == null) {
+                    ExceptionHelpers.DynamicStackFrames = new List<DynamicStackFrame>();
+                }
+
+                Debug.Assert(line != SourceLocation.None.Line);
+
+                ExceptionHelpers.DynamicStackFrames.Add(new PythonDynamicStackFrame(context, method, funcName, filename, line));
+            }
+        }
+
     }
 
     public struct FunctionStack {

@@ -61,6 +61,7 @@ namespace IronPython.Runtime {
         private readonly PythonOptions/*!*/ _options;
         private readonly Scope/*!*/ _systemState;
         private readonly Dictionary<string, Type>/*!*/ _builtinsDict;
+        private readonly PythonOverloadResolverFactory _sharedOverloadResolverFactory;
 #if !SILVERLIGHT
         private readonly AssemblyResolveHolder _resolveHolder;
 #endif
@@ -190,6 +191,7 @@ namespace IronPython.Runtime {
             Scope defaultScope = new Scope();
             _defaultContext = new CodeContext(defaultScope, this);
             PythonBinder binder = new PythonBinder(manager, this, _defaultContext);
+            _sharedOverloadResolverFactory = new PythonOverloadResolverFactory(binder, Expression.Constant(_defaultContext));
             Binder = binder;
 
             CodeContext defaultClsContext = DefaultContext.CreateDefaultCLSContext(this);
@@ -256,7 +258,7 @@ namespace IronPython.Runtime {
 #endif
 
             _equalityComparer = new PythonEqualityComparer(this);
-
+            
             EnsureModule(_defaultContext);
         }
 
@@ -2771,6 +2773,16 @@ namespace IronPython.Runtime {
         internal CodeContext SharedContext {
             get {
                 return _defaultContext;
+            }
+        }
+
+        /// <summary>
+        /// Returns an overload resolver for the current PythonContext.  The overload
+        /// resolver will flow the shared context through as it's CodeContext.
+        /// </summary>
+        internal PythonOverloadResolverFactory SharedOverloadResolverFactory {
+            get {
+                return _sharedOverloadResolverFactory;
             }
         }
 

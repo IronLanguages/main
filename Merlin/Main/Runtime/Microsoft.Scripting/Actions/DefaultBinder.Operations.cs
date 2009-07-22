@@ -57,7 +57,7 @@ namespace Microsoft.Scripting.Actions {
         /// </summary>
         public DynamicMetaObject GetIndex(OverloadResolverFactory resolverFactory, DynamicMetaObject[] args) {
             if (args[0].GetLimitType().IsArray) {
-                return MakeArrayIndexRule(IndexType.Get, args);
+                return MakeArrayIndexRule(resolverFactory, IndexType.Get, args);
             }
 
             return MakeMethodIndexRule(IndexType.Get, resolverFactory, args);
@@ -73,7 +73,7 @@ namespace Microsoft.Scripting.Actions {
         /// </summary>
         public DynamicMetaObject SetIndex(OverloadResolverFactory resolverFactory, DynamicMetaObject[] args) {
             if (args[0].LimitType.IsArray) {
-                return MakeArrayIndexRule(IndexType.Set, args);
+                return MakeArrayIndexRule(resolverFactory, IndexType.Set, args);
             }
 
             return MakeMethodIndexRule(IndexType.Set, resolverFactory, args);
@@ -408,8 +408,6 @@ namespace Microsoft.Scripting.Actions {
                     StringBuilder res = new StringBuilder();
                     string comma = "";
                     foreach (ParameterInfo param in mb.GetParameters()) {
-                        if (param.ParameterType == typeof(CodeContext)) continue;
-
                         res.Append(comma);
                         res.Append(param.ParameterType.Name);
                         res.Append(" ");
@@ -484,7 +482,7 @@ namespace Microsoft.Scripting.Actions {
             return null;
         }
 
-        private DynamicMetaObject MakeArrayIndexRule(IndexType oper, DynamicMetaObject[] args) {
+        private DynamicMetaObject MakeArrayIndexRule(OverloadResolverFactory factory, IndexType oper, DynamicMetaObject[] args) {
             if (CanConvertFrom(GetArgType(args, 1), typeof(int), false, NarrowingLevel.All)) {
                 BindingRestrictions restrictions = BindingRestrictionsHelpers.GetRuntimeTypeRestriction(args[0].Expression, args[0].GetLimitType()).Merge(BindingRestrictions.Combine(args));
 
@@ -492,7 +490,7 @@ namespace Microsoft.Scripting.Actions {
                     return new DynamicMetaObject(
                         Ast.ArrayAccess(
                             args[0].Expression,
-                            ConvertIfNeeded(args[1].Expression, typeof(int))
+                            ConvertIfNeeded(factory, args[1].Expression, typeof(int))
                         ),
                         restrictions
                     );
@@ -501,9 +499,9 @@ namespace Microsoft.Scripting.Actions {
                         Ast.Assign(
                             Ast.ArrayAccess(
                                 args[0].Expression,
-                                ConvertIfNeeded(args[1].Expression, typeof(int))
+                                ConvertIfNeeded(factory, args[1].Expression, typeof(int))
                             ),
-                            ConvertIfNeeded(args[2].Expression, args[0].GetLimitType().GetElementType())
+                            ConvertIfNeeded(factory, args[2].Expression, args[0].GetLimitType().GetElementType())
                         ),
                         restrictions.Merge(args[1].Restrictions)
                     );
@@ -590,11 +588,11 @@ namespace Microsoft.Scripting.Actions {
             }
         }
 
-        private Expression ConvertIfNeeded(Expression expression, Type type) {
+        private Expression ConvertIfNeeded(OverloadResolverFactory factory, Expression expression, Type type) {
             Assert.NotNull(expression, type);
 
             if (expression.Type != type) {
-                return ConvertExpression(expression, type, ConversionResultKind.ExplicitCast, AstUtils.Constant(null, typeof(CodeContext)));
+                return ConvertExpression(expression, type, ConversionResultKind.ExplicitCast, factory);
             }
             return expression;
         }

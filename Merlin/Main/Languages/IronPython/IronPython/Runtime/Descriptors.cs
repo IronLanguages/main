@@ -149,7 +149,7 @@ namespace IronPython.Runtime {
         }
 
         [SpecialName, PropertyMethod, WrapperDescriptor]
-        public static void Set__doc__(PythonProperty self) {
+        public static void Set__doc__(PythonProperty self, object value) {
             throw PythonOps.TypeError("'property' object is immutable");
         }
 

@@ -1,4 +1,4 @@
-/* ****************************************************************************
+﻿/* ****************************************************************************
  *
  * Copyright (c) Microsoft Corporation. 
  *
@@ -13,14 +13,26 @@
  *
  * ***************************************************************************/
 
+using System;
 using System.Collections.Generic;
+using System.Text;
+using Microsoft.Scripting.Runtime;
+using System.Reflection;
 
-namespace Microsoft.Scripting.Runtime {
+namespace IronPython.Runtime {
+    class PythonDynamicStackFrame : DynamicStackFrame {
+        private CodeContext _context;
 
-    /// <summary>
-    /// Provides a list of all the members of an instance.  
-    /// </summary>
-    public interface IMembersList {
-        IList<string> GetMemberNames();
+        public PythonDynamicStackFrame(CodeContext context, MethodBase method, string funcName, string filename, int line)
+            : base(method, funcName, filename, line) {
+            _context = context;
+        }
+
+        public CodeContext CodeContext {
+            get {
+                return _context;
+            }
+        }
+
     }
 }

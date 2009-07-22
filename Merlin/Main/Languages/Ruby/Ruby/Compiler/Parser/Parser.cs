@@ -508,7 +508,7 @@ namespace IronRuby.Compiler {
         public static string/*!*/ TerminalToString(int terminal) {
             Debug.Assert(terminal >= 0);
             if (((Tokens)terminal).ToString() != terminal.ToString()) {
-                return IronRuby.Runtime.RubyUtils.MangleName(((Tokens)terminal).ToString()).ToUpper();
+                return IronRuby.Runtime.RubyUtils.TryMangleName(((Tokens)terminal).ToString()).ToUpper();
             } else {
                 return CharToString((char)terminal);
             }

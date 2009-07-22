@@ -15,10 +15,13 @@
 
 using System;
 using System.Diagnostics;
-using System.Linq.Expressions;
+using System.Dynamic;
 using System.Reflection;
+
 using Microsoft.Contracts;
+using Microsoft.Scripting.Actions.Calls;
 using Microsoft.Scripting.Utils;
+
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Actions {
@@ -87,9 +90,12 @@ namespace Microsoft.Scripting.Actions {
 
         #region Public expression builders
 
-        public override Expression GetValue(Expression context, ActionBinder binder, Type type) {
+        public override DynamicMetaObject GetValue(OverloadResolverFactory resolverFactory, ActionBinder binder, Type type) {
             if (Field.IsLiteral) {
-                return AstUtils.Constant(Field.GetValue(null), typeof(object));
+                return new DynamicMetaObject(
+                    AstUtils.Constant(Field.GetValue(null), typeof(object)),
+                    BindingRestrictions.Empty
+                );
             }
 
             if (!IsStatic) {
@@ -102,13 +108,19 @@ namespace Microsoft.Scripting.Actions {
             }
 
             if (IsPublic && DeclaringType.IsPublic) {
-                return Ast.Convert(Ast.Field(null, Field), typeof(object));
+                return new DynamicMetaObject(
+                    Ast.Convert(Ast.Field(null, Field), typeof(object)),
+                    BindingRestrictions.Empty
+                );
             }
 
-            return Ast.Call(
-                AstUtils.Convert(AstUtils.Constant(Field), typeof(FieldInfo)),
-                typeof(FieldInfo).GetMethod("GetValue"),
-                AstUtils.Constant(null)
+            return new DynamicMetaObject(
+                Ast.Call(
+                    AstUtils.Convert(AstUtils.Constant(Field), typeof(FieldInfo)),
+                    typeof(FieldInfo).GetMethod("GetValue"),
+                    AstUtils.Constant(null)
+                ),
+                BindingRestrictions.Empty
             );
         }
 
@@ -124,21 +136,24 @@ namespace Microsoft.Scripting.Actions {
 
         #region Internal expression builders
 
-        protected internal override Expression GetBoundValue(Expression context, ActionBinder binder, Type type, Expression instance) {
+        protected internal override DynamicMetaObject GetBoundValue(OverloadResolverFactory resolverFactory, ActionBinder binder, Type type, DynamicMetaObject instance) {
             if (IsPublic && DeclaringType.IsVisible) {
-                return AstUtils.Convert(
-                    Ast.Field(
-                        AstUtils.Convert(instance, Field.DeclaringType),
-                        Field
+                return new DynamicMetaObject(
+                    AstUtils.Convert(
+                        Ast.Field(
+                            AstUtils.Convert(instance.Expression, Field.DeclaringType),
+                            Field
+                        ),
+                        typeof(object)                    
                     ),
-                    typeof(object)                    
+                    BindingRestrictions.Empty
                 );
             }
 
-            return DefaultBinder.MakeError(((DefaultBinder)binder).MakeNonPublicMemberGetError(context, this, type, instance), typeof(object));
+            return DefaultBinder.MakeError(((DefaultBinder)binder).MakeNonPublicMemberGetError(resolverFactory, this, type, instance), BindingRestrictions.Empty, typeof(object));
         }
 
-        public override MemberTracker BindToInstance(Expression instance) {
+        public override MemberTracker BindToInstance(DynamicMetaObject instance) {
             if (IsStatic) return this;
 
             return new BoundMemberTracker(this, instance);

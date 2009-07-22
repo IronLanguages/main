@@ -916,39 +916,58 @@ var closureScope = scope as RubyClosureScope;
         // "method_missing" on main singleton in DLR Scope bound code.
         // Might be called via a site -> needs to be public in partial trust.
         public static object TopMethodMissing(RubyScope/*!*/ localScope, BlockParam block, object/*!*/ self, SymbolId name, [NotNull]params object[]/*!*/ args) {
-            Assert.NotNull(localScope, self);
-            Debug.Assert(!localScope.IsEmpty);
-            Scope globalScope = localScope.GlobalScope.Scope;
-            Debug.Assert(globalScope != null);
+            return ScopeMethodMissing(localScope.RubyContext, localScope.GlobalScope.Scope, block, self, name, args);
+        }
 
-            // TODO: error when arguments non-empty, block != null, ...
+        public static object ScopeMethodMissing(RubyContext/*!*/ context, Scope/*!*/ globalScope, BlockParam block, object self, SymbolId name, object[]/*!*/ args) {
+            Assert.NotNull(context, globalScope);
 
-            if (args.Length == 0) {
+            string str = SymbolTable.IdToString(name);
+            if (str.LastCharacter() == '=') {
+                if (args.Length != 1) {
+                    throw RubyOps.MakeWrongNumberOfArgumentsError(args.Length, 1);
+                }
+
+                // Consider this case:
+                // There is {"Foo" -> 1} in the scope.
+                // x.foo += 1
+                // Without name mangling this would result to {"Foo" -> 1, "foo" -> 2} while the expected result is {"Foo" -> 2}.
+
+                str = str.Substring(0, str.Length - 1);
+                name = SymbolTable.StringToId(str);
+
+                if (!globalScope.ContainsName(name)) {
+                    var unmangled = SymbolTable.StringToId(RubyUtils.TryUnmangleName(str));
+                    if (!unmangled.IsEmpty && globalScope.ContainsName(unmangled)) {
+                        name = unmangled;
+                    }
+                }
+
+                var value = args[0];
+                globalScope.SetName(name, value);
+                return value;
+            } else {
+                if (args.Length != 0) {
+                    throw RubyOps.MakeWrongNumberOfArgumentsError(args.Length, 0);
+                }
+
                 object value;
                 if (globalScope.TryGetName(name, out value)) {
                     return value;
                 }
 
-                string str = SymbolTable.IdToString(name);
                 string unmangled = RubyUtils.TryUnmangleName(str);
                 if (unmangled != null && globalScope.TryGetName(SymbolTable.StringToId(unmangled), out value)) {
                     return value;
                 }
 
-                if (str == "scope") {
+                if (self != null && str == "scope") {
                     return self;
-                }
-            } else if (args.Length == 1) {
-                string str = SymbolTable.IdToString(name);
-                if (str.LastCharacter() == '=') {
-                    SymbolId plainName = SymbolTable.StringToId(str.Substring(0, str.Length - 1));
-                    globalScope.SetName(plainName, args[0]);
-                    return args[0];
                 }
             }
 
             // TODO: call super
-            throw RubyExceptions.CreateMethodMissing(localScope.RubyContext, self, SymbolTable.IdToString(name));
+            throw RubyExceptions.CreateMethodMissing(context, self, SymbolTable.IdToString(name));
         }
 
         #endregion
