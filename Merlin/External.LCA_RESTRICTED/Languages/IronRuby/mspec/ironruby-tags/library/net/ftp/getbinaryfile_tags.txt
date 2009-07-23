@@ -1,1 +1,1 @@
-critical:Net::FTP#getbinaryfile
+fails:Net::FTP#getbinaryfile
