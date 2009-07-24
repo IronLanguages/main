@@ -190,7 +190,7 @@ namespace IronRuby.Compiler {
                 outer = null;
             }
 
-            return new LexicalScope(outer);
+            return new TopLexicalScope(outer);
         }
 
         private LocalVariable/*!*/ DefineParameter(string/*!*/ name, SourceSpan location) {
@@ -228,14 +228,29 @@ namespace IronRuby.Compiler {
             return scope;
         }
 
+        /// <summary>
+        /// Block scope.
+        /// </summary>
         private LexicalScope EnterNestedScope() {
-            LexicalScope result = new LexicalScope(CurrentScope);
+            LexicalScope result = new BlockLexicalScope(CurrentScope);
             _lexicalScopes.Push(result);
             return result;
         }
 
+        /// <summary>
+        /// for-loop scope.
+        /// </summary>
+        private LexicalScope EnterPaddingScope() {
+            LexicalScope result = new PaddingLexicalScope(CurrentScope);
+            _lexicalScopes.Push(result);
+            return result;
+        }
+
+        /// <summary>
+        /// Method, module and source unit scopes.
+        /// </summary>
         private LexicalScope EnterTopScope() {
-            LexicalScope result = new LexicalScope(null);
+            LexicalScope result = new TopLexicalScope(null);
             _lexicalScopes.Push(result);
             return result;
         }
@@ -253,6 +268,10 @@ namespace IronRuby.Compiler {
 
         public bool IsLocalVariable(string/*!*/ identifier) {
             return CurrentScope.ResolveVariable(identifier) != null;
+        }
+
+        private Expression/*!*/ ToCondition(Expression/*!*/ expression) {            
+            return expression.ToCondition(CurrentScope);
         }
 
         private Body/*!*/ MakeBody(Statements/*!*/ statements, List<RescueClause> rescueClauses, ElseIfClause elseIf,
@@ -489,7 +508,7 @@ namespace IronRuby.Compiler {
         public static string/*!*/ TerminalToString(int terminal) {
             Debug.Assert(terminal >= 0);
             if (((Tokens)terminal).ToString() != terminal.ToString()) {
-                return IronRuby.Runtime.RubyUtils.MangleName(((Tokens)terminal).ToString()).ToUpper();
+                return IronRuby.Runtime.RubyUtils.TryMangleName(((Tokens)terminal).ToString()).ToUpper();
             } else {
                 return CharToString((char)terminal);
             }

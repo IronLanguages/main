@@ -312,20 +312,18 @@ namespace IronPython.Runtime.Binding {
             Type type = CompilerHelpers.GetType(target);
 
             // needed for GetMember call until DynamicAction goes away
-            OldDynamicAction act = OldGetMemberAction.Make(Context.Binder, name);
-
             if (typeof(TypeTracker).IsAssignableFrom(type)) {
                 // no fast path for TypeTrackers
                 PerfTrack.NoteEvent(PerfTrack.Categories.BindingSlow, "GetNoFast TypeTracker");
                 return null;
             }
 
-            MemberGroup members = Context.Binder.GetMember(act, type, name);
+            MemberGroup members = Context.Binder.GetMember(MemberRequestKind.Get, type, name);
 
             if (members.Count == 0 && type.IsInterface) {
                 // all interfaces have object members
                 type = typeof(object);
-                members = Context.Binder.GetMember(act, type, name);
+                members = Context.Binder.GetMember(MemberRequestKind.Get, type, name);
             }
 
             if (members.Count == 0 && typeof(IStrongBox).IsAssignableFrom(type)) {
@@ -522,13 +520,14 @@ namespace IronPython.Runtime.Binding {
 
         public DynamicMetaObject/*!*/ Fallback(DynamicMetaObject/*!*/ self, DynamicMetaObject/*!*/ codeContext) {
             // Python always provides an extra arg to GetMember to flow the context.
-            return FallbackWorker(self, codeContext, Name, _options, this, null);
+            return FallbackWorker(_context, self, codeContext, Name, _options, this, null);
         }
 
-        internal static DynamicMetaObject FallbackWorker(DynamicMetaObject/*!*/ self, DynamicMetaObject/*!*/ codeContext, string name, GetMemberOptions options, DynamicMetaObjectBinder action, DynamicMetaObject errorSuggestion) {
+        internal static DynamicMetaObject FallbackWorker(PythonContext context, DynamicMetaObject/*!*/ self, DynamicMetaObject/*!*/ codeContext, string name, GetMemberOptions options, DynamicMetaObjectBinder action, DynamicMetaObject errorSuggestion) {
             if (self.NeedsDeferral()) {
                 return action.Defer(self);
             }
+            PythonOverloadResolverFactory resolverFactory = new PythonOverloadResolverFactory(context.Binder, codeContext.Expression);
 
             PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "FallbackGet");
 
@@ -546,11 +545,11 @@ namespace IronPython.Runtime.Binding {
                     DynamicMetaObject baseRes = PythonContext.GetPythonContext(action).Binder.GetMember(
                         name,
                         self,
-                        codeContext.Expression,
+                        resolverFactory,
                         isNoThrow,
                         errorSuggestion
                     );
-                    Expression failure = GetFailureExpression(limitType, name, isNoThrow, action);
+                    Expression failure = GetFailureExpression(limitType, self, name, isNoThrow, action);
 
                     return BindingHelpers.FilterShowCls(codeContext, action, baseRes, failure);
                 }
@@ -583,11 +582,11 @@ namespace IronPython.Runtime.Binding {
                 }
             }
 
-            var res = PythonContext.GetPythonContext(action).Binder.GetMember(name, self, codeContext.Expression, isNoThrow, errorSuggestion);
+            var res = PythonContext.GetPythonContext(action).Binder.GetMember(name, self, resolverFactory, isNoThrow, errorSuggestion);
 
             // Default binder can return something typed to boolean or int.
             // If that happens, we need to apply Python's boxing rules.
-            if (res.Expression.Type == typeof(bool) || res.Expression.Type == typeof(int)) {
+            if (res.Expression.Type.IsValueType) {
                 res = new DynamicMetaObject(
                     AstUtils.Convert(res.Expression, typeof(object)),
                     res.Restrictions
@@ -597,16 +596,17 @@ namespace IronPython.Runtime.Binding {
             return res;
         }
 
-        private static Expression/*!*/ GetFailureExpression(Type/*!*/ limitType, string name, bool isNoThrow, DynamicMetaObjectBinder action) {
+        private static Expression/*!*/ GetFailureExpression(Type/*!*/ limitType, DynamicMetaObject self, string name, bool isNoThrow, DynamicMetaObjectBinder action) {
             return isNoThrow ?
                 Ast.Field(null, typeof(OperationFailed).GetField("Value")) :
                 DefaultBinder.MakeError(
                     PythonContext.GetPythonContext(action).Binder.MakeMissingMemberError(
                         limitType,
+                        self,
                         name
                     ),
                     typeof(object)
-                );
+                ).Expression;
         }
 
         public string Name {
@@ -661,16 +661,16 @@ namespace IronPython.Runtime.Binding {
     }
 
     class CompatibilityGetMember : GetMemberBinder, IPythonSite {
-        private readonly PythonContext/*!*/ _state;
+        private readonly PythonContext/*!*/ _context;
 
-        public CompatibilityGetMember(PythonContext/*!*/ binder, string/*!*/ name)
+        public CompatibilityGetMember(PythonContext/*!*/ context, string/*!*/ name)
             : base(name, false) {
-            _state = binder;
+            _context = context;
         }
 
-        public CompatibilityGetMember(PythonContext/*!*/ binder, string/*!*/ name, bool ignoreCase)
+        public CompatibilityGetMember(PythonContext/*!*/ context, string/*!*/ name, bool ignoreCase)
             : base(name, ignoreCase) {
-            _state = binder;
+            _context = context;
         }
 
         public override DynamicMetaObject FallbackGetMember(DynamicMetaObject self, DynamicMetaObject errorSuggestion) {
@@ -680,19 +680,19 @@ namespace IronPython.Runtime.Binding {
                 return com;
             }
 #endif
-            return PythonGetMemberBinder.FallbackWorker(self, PythonContext.GetCodeContextMOCls(this), Name, GetMemberOptions.None, this, errorSuggestion);
+            return PythonGetMemberBinder.FallbackWorker(_context, self, PythonContext.GetCodeContextMOCls(this), Name, GetMemberOptions.None, this, errorSuggestion);
         }
 
         #region IPythonSite Members
 
         public PythonContext Context {
-            get { return _state; }
+            get { return _context; }
         }
 
         #endregion
 
         public override int GetHashCode() {
-            return base.GetHashCode() ^ _state.Binder.GetHashCode();
+            return base.GetHashCode() ^ _context.Binder.GetHashCode();
         }
 
         public override bool Equals(object obj) {
@@ -701,7 +701,7 @@ namespace IronPython.Runtime.Binding {
                 return false;
             }
 
-            return ob._state.Binder == _state.Binder &&
+            return ob._context.Binder == _context.Binder &&
                 base.Equals(obj);
         }
     }

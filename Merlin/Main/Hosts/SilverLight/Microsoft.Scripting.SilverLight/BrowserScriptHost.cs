@@ -14,16 +14,18 @@
  * ***************************************************************************/
 
 using System;
-using System.Collections.Generic;
-using System.Text;
+using System.IO;
+using System.Reflection;
+using System.Dynamic;
+using System.Windows;
+using System.Windows.Resources;
 using Microsoft.Scripting.Hosting;
-using Microsoft.Scripting.Utils;
+using System.Collections.Generic;
 
 namespace Microsoft.Scripting.Silverlight {
 
     /// <summary>
-    /// ScriptHost for use inside the browser
-    /// Overrides certain operations to redirect to XAP or throw NotImplemented
+    /// ScriptHost for use inside the browser.
     /// </summary>
     public sealed class BrowserScriptHost : ScriptHost {
 
@@ -36,4 +38,113 @@ namespace Microsoft.Scripting.Silverlight {
             }
         }
     }
+
+    /// <summary>
+    /// Base class for all browser-based PlatformAdaptationLayers. 
+    /// Delegates compatible operations to a BrowserVirtualFileSystem.
+    /// </summary>
+    internal abstract class BrowserPAL : PlatformAdaptationLayer {
+        internal BrowserVirtualFilesystem VirtualFilesystem { get; set; }
+
+        protected static BrowserPAL _PAL;
+        internal static BrowserPAL PAL {
+            get {
+                if (_PAL == null) PAL = XapPAL.PAL;
+                return _PAL;
+            }
+            set { _PAL = value; }
+        }
+
+        /// <summary>
+        /// Get the virtual filesystem's current storage unit. It is "object"
+        /// based since the CurrentStorageUnit can be different types.
+        /// </summary>
+        public object CurrentStorageUnit {
+            get { return VirtualFilesystem.CurrentStorageUnit; }
+            set { VirtualFilesystem.CurrentStorageUnit = value; }
+        }
+
+        /// <summary>
+        /// Executes "action" in the context of the "storageUnit". 
+        /// </summary>
+        /// <param name="xapFile"></param>
+        /// <param name="action"></param>
+        public void UsingStorageUnit(object storageUnit, Action action) {
+            VirtualFilesystem.UsingStorageUnit(storageUnit, action);
+        }
+
+        public override bool FileExists(string path) {
+            return VirtualFilesystem.GetFile(path) != null;
+        }
+
+        public override Assembly LoadAssemblyFromPath(string path) {
+            Stream stream = VirtualFilesystem.GetFile(path);
+            if (stream == null) {
+                throw new FileNotFoundException(
+                    string.Format("could not find assembly: {0} (check the {1})", 
+                        path, VirtualFilesystem.Name()
+                    )
+                );
+            }
+            return new AssemblyPart().Load(stream);
+        }
+
+        /// <exception cref="ArgumentException">Invalid path.</exception>
+        public override string/*!*/ GetFullPath(string/*!*/ path) {
+            return VirtualFilesystem.NormalizePath(path);
+        }
+
+        /// <exception cref="ArgumentException">Invalid path.</exception>
+        public override bool IsAbsolutePath(string/*!*/ path) {
+            return PathToUri(path).IsAbsoluteUri;
+        }
+
+        public override Stream OpenInputFileStream(string path) {
+            Stream result = VirtualFilesystem.GetFile(GetFullPath(path));
+            if (result == null)
+                throw new IOException(
+                    String.Format("file {0} not found (check the {1})", 
+                        path, VirtualFilesystem.Name()
+                    )
+                );
+            return result;
+        }
+
+        public override Stream OpenInputFileStream
+        (string path, FileMode mode, FileAccess access, FileShare share) {
+            if (mode != FileMode.Open || access != FileAccess.Read) {
+                throw new IOException(
+                    string.Format("can only read files from the {0}",
+                        VirtualFilesystem.Name()
+                    )
+                );
+            }
+            return OpenInputFileStream(path);
+        }
+
+        public override Stream OpenInputFileStream
+        (string path, FileMode mode, FileAccess access, FileShare share, int bufferSize) {
+            return OpenInputFileStream(path, mode, access, share);
+        }
+
+        private Uri/*!*/ PathToUri(string/*!*/ path) {
+            try {
+                return new Uri(VirtualFilesystem.NormalizePath(path), UriKind.RelativeOrAbsolute);
+            } catch (UriFormatException e) {
+                throw new ArgumentException("The specified path is invalid", e);
+            }
+        }
+    }
+
+    /// <summary>
+    /// PlatformAdaptationLayer for use with a read-only XAP file.
+    /// </summary>
+    internal sealed class XapPAL : BrowserPAL {
+        internal static new readonly BrowserPAL PAL = new XapPAL();
+
+        private XapPAL() {
+            VirtualFilesystem = new XapVirtualFilesystem();
+        }
+    }
 }
+

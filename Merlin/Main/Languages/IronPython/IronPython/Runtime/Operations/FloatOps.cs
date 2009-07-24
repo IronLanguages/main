@@ -346,7 +346,7 @@ namespace IronPython.Runtime.Operations {
             } else {
                 res.Append("0x1.");
             }
-            res.Append(StringFormatSpec.FromString("013").AlignNumericText(BigIntegerOps.ToHex(mantissa, true), mantissa == 0, true));
+            res.Append(StringFormatSpec.FromString("013").AlignNumericText(BigIntegerOps.AbsToHex(mantissa, true), mantissa == 0, true));
             res.Append("p");
             if (exponent >= 0) {
                 res.Append('+');

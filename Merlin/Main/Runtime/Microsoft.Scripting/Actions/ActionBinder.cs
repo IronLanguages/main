@@ -45,28 +45,11 @@ namespace Microsoft.Scripting.Actions {
             _manager = manager;
         }
 
-        internal Expression Bind(OldDynamicAction action, object[] args, ReadOnlyCollection<ParameterExpression> parameters, LabelTarget returnLabel) {
-            var builder = new RuleBuilder(parameters, returnLabel);
-            MakeRule(action, args, builder);
-            if (builder.Target != null) {
-                return builder.CreateRule();
-            }
-            return null;
-        }
-
         public ScriptDomainManager Manager {
             get {
                 return _manager;
             }
         }
-
-        /// <summary>
-        /// Produces a rule for the specified Action for the given arguments.
-        /// </summary>
-        /// <param name="action">The Action that is being performed.</param>
-        /// <param name="args">The arguments to the action as provided from the call site at runtime.</param>
-        /// <param name="rule">The rule builder that will hold the result</param>
-        protected abstract void MakeRule(OldDynamicAction action, object[] args, RuleBuilder rule);
 
         /// <summary>
         /// Converts an object at runtime into the specified type.
@@ -105,7 +88,7 @@ namespace Microsoft.Scripting.Actions {
         /// <summary>
         /// Converts the provided expression to the given type.  The expression is safe to evaluate multiple times.
         /// </summary>
-        public virtual Expression ConvertExpression(Expression expr, Type toType, ConversionResultKind kind, Expression context) {
+        public virtual Expression ConvertExpression(Expression expr, Type toType, ConversionResultKind kind, OverloadResolverFactory resolverFactory) {
             ContractUtils.RequiresNotNull(expr, "expr");
             ContractUtils.RequiresNotNull(toType, "toType");
 
@@ -124,18 +107,8 @@ namespace Microsoft.Scripting.Actions {
             }
 
             Type visType = CompilerHelpers.GetVisibleType(toType);
-            Expression[] args;
-            if (context != null) {
-                args = new Expression[] { context, expr };
-            } else {
-                args = new Expression[] { expr };
-            }
 
-            return Expression.Dynamic(
-                OldConvertToAction.Make(this, visType, kind),
-                visType,
-                args
-            );
+            return Expression.Convert(expr, toType);
         }
 
         public virtual Func<object[], object> ConvertObject(int index, DynamicMetaObject knownType, Type toType, ConversionResultKind conversionResultKind) {
@@ -148,7 +121,7 @@ namespace Microsoft.Scripting.Actions {
         /// The default implemetnation first searches the type, then the flattened heirachy of the type, and then
         /// registered extension methods.
         /// </summary>
-        public virtual MemberGroup GetMember(OldDynamicAction action, Type type, string name) {
+        public virtual MemberGroup GetMember(MemberRequestKind action, Type type, string name) {
             MemberInfo[] foundMembers = type.GetMember(name);
             if (!PrivateBinding) {
                 foundMembers = CompilerHelpers.FilterNonVisibleMembers(type, foundMembers);
@@ -214,8 +187,8 @@ namespace Microsoft.Scripting.Actions {
             );
         }
 
-        public ErrorInfo MakeStaticPropertyInstanceAccessError(PropertyTracker tracker, bool isAssignment, params Expression[] parameters) {
-            return MakeStaticPropertyInstanceAccessError(tracker, isAssignment, (IList<Expression>)parameters);
+        public ErrorInfo MakeStaticPropertyInstanceAccessError(PropertyTracker tracker, bool isAssignment, params DynamicMetaObject[] parameters) {
+            return MakeStaticPropertyInstanceAccessError(tracker, isAssignment, (IList<DynamicMetaObject>)parameters);
         }
 
         /// <summary>
@@ -223,7 +196,7 @@ namespace Microsoft.Scripting.Actions {
         /// 
         /// The default behavior is to allow the assignment.
         /// </summary>
-        public virtual ErrorInfo MakeStaticAssignFromDerivedTypeError(Type accessingType, MemberTracker assigning, Expression assignedValue, Expression context) {
+        public virtual ErrorInfo MakeStaticAssignFromDerivedTypeError(Type accessingType, DynamicMetaObject self, MemberTracker assigning, DynamicMetaObject assignedValue, OverloadResolverFactory context) {
             switch (assigning.MemberType) {
                 case TrackerTypes.Property:
                     PropertyTracker pt = (PropertyTracker)assigning;
@@ -232,7 +205,7 @@ namespace Microsoft.Scripting.Actions {
                         AstUtils.SimpleCallHelper(
                             setter,
                             ConvertExpression(
-                                assignedValue,
+                                assignedValue.Expression,
                                 setter.GetParameters()[0].ParameterType,
                                 ConversionResultKind.ExplicitCast,
                                 context
@@ -244,7 +217,7 @@ namespace Microsoft.Scripting.Actions {
                     return ErrorInfo.FromValueNoError(
                         Expression.Assign(
                             Expression.Field(null, ft.Field),
-                            ConvertExpression(assignedValue, ft.FieldType, ConversionResultKind.ExplicitCast, context)
+                            ConvertExpression(assignedValue.Expression, ft.FieldType, ConversionResultKind.ExplicitCast, context)
                         )
                     );
                 default:
@@ -262,7 +235,7 @@ namespace Microsoft.Scripting.Actions {
         /// <param name="parameters">The parameters being used to access the property.  This includes the instance as the first entry, any index parameters, and the
         /// value being assigned as the last entry if isAssignment is true.</param>
         /// <returns></returns>
-        public virtual ErrorInfo MakeStaticPropertyInstanceAccessError(PropertyTracker tracker, bool isAssignment, IList<Expression> parameters) {
+        public virtual ErrorInfo MakeStaticPropertyInstanceAccessError(PropertyTracker tracker, bool isAssignment, IList<DynamicMetaObject> parameters) {
             ContractUtils.RequiresNotNull(tracker, "tracker");
             ContractUtils.Requires(tracker.IsStatic, "tracker", Strings.ExpectedStaticProperty);
             ContractUtils.RequiresNotNull(parameters, "parameters");
@@ -295,7 +268,7 @@ namespace Microsoft.Scripting.Actions {
         /// 
         /// Deprecated, use the non-generic version instead
         /// </summary>
-        public virtual ErrorInfo MakeMissingMemberError(Type type, string name) {
+        public virtual ErrorInfo MakeMissingMemberError(Type type, DynamicMetaObject self, string name) {
             return ErrorInfo.FromException(
                 Expression.New(
                     typeof(MissingMemberException).GetConstructor(new Type[] { typeof(string) }),
@@ -304,48 +277,20 @@ namespace Microsoft.Scripting.Actions {
             );
         }
 
-
-        #endregion
-
-        #region Deprecated Error production
-
-
-        /// <summary>
-        /// Provides a way for the binder to provide a custom error message when lookup fails.  Just
-        /// doing this for the time being until we get a more robust error return mechanism.
-        /// </summary>
-        public virtual Expression MakeReadOnlyMemberError(RuleBuilder rule, Type type, string name) {
-            return rule.MakeError(
-                Expression.New(
-                    typeof(MissingMemberException).GetConstructor(new Type[] { typeof(string) }),
-                    AstUtils.Constant(name)
-                )
-            );
+        public virtual ErrorInfo MakeMissingMemberErrorForAssign(Type type, DynamicMetaObject self, string name) {
+            return MakeMissingMemberError(type, self, name);
         }
 
-        /// <summary>
-        /// Provides a way for the binder to provide a custom error message when lookup fails.  Just
-        /// doing this for the time being until we get a more robust error return mechanism.
-        /// </summary>
-        public virtual Expression MakeUndeletableMemberError(RuleBuilder rule, Type type, string name) {
-            return MakeReadOnlyMemberError(rule, type, name);
+        public virtual ErrorInfo MakeMissingMemberErrorForAssignReadOnlyProperty(Type type, DynamicMetaObject self, string name) {
+            return MakeMissingMemberError(type, self, name);
+        }
+
+        public virtual ErrorInfo MakeMissingMemberErrorForDelete(Type type, DynamicMetaObject self, string name) {
+            return MakeMissingMemberError(type, self, name);
         }
 
         #endregion
-
-        public virtual ErrorInfo MakeEventValidation(RuleBuilder rule, MemberGroup members) {
-            EventTracker ev = (EventTracker)members[0];
-
-            // handles in place addition of events - this validates the user did the right thing.
-            return ErrorInfo.FromValueNoError(
-                Expression.Call(
-                    typeof(ScriptingRuntimeHelpers).GetMethod("SetEvent"),
-                    AstUtils.Constant(ev),
-                    rule.Parameters[1]
-                )
-            );
-        }
-
+       
         public virtual string GetTypeName(Type t) {
             return t.Name;
         }
@@ -439,65 +384,44 @@ namespace Microsoft.Scripting.Actions {
         /// <param name="memberTracker">The member which is being returned to the user.</param>
         /// <param name="type">Tthe type which the memberTrack was accessed from</param>
         /// <returns></returns>
-        public virtual Expression ReturnMemberTracker(Type type, MemberTracker memberTracker) {
+        public virtual DynamicMetaObject ReturnMemberTracker(Type type, MemberTracker memberTracker) {
             if (memberTracker.MemberType == TrackerTypes.Bound) {
                 BoundMemberTracker bmt = (BoundMemberTracker)memberTracker;
-                return Expression.New(
-                    typeof(BoundMemberTracker).GetConstructor(new Type[] { typeof(MemberTracker), typeof(object) }),
-                    AstUtils.Constant(bmt.BoundTo),
-                    bmt.Instance);
+                return new DynamicMetaObject(
+                    Expression.New(
+                        typeof(BoundMemberTracker).GetConstructor(new Type[] { typeof(MemberTracker), typeof(object) }),
+                        AstUtils.Constant(bmt.BoundTo),
+                        bmt.Instance.Expression
+                    ),
+                    BindingRestrictions.Empty
+                );
             }
 
-            return AstUtils.Constant(memberTracker);
+            return new DynamicMetaObject(AstUtils.Constant(memberTracker), BindingRestrictions.Empty, memberTracker);
         }
 
-        /// <summary>
-        /// Builds an expression for a call to the provided method using the given expressions.  If the
-        /// method is not static the first parameter is used for the instance.
-        /// 
-        /// Parameters are converted using the binder's conversion rules.
-        /// 
-        /// If an incorrect number of parameters is provided MakeCallExpression returns null.
-        /// </summary>
-        public Expression MakeCallExpression(Expression context, MethodInfo method, IList<Expression> parameters) {
-            ParameterInfo[] infos = method.GetParameters();
-            Expression callInst = null;
-            int parameter = 0, startArg = 0;
-            Expression[] callArgs = new Expression[infos.Length];
-
-            if (!method.IsStatic) {
-                callInst = AstUtils.Convert(parameters[0], method.DeclaringType);
-                parameter = 1;
+        public DynamicMetaObject MakeCallExpression(OverloadResolverFactory resolverFactory, MethodInfo method, params DynamicMetaObject[] parameters) {
+            OverloadResolver resolver;
+            if (method.IsStatic) {
+                resolver = resolverFactory.CreateOverloadResolver(parameters, new CallSignature(parameters.Length), CallTypes.None);
+            } else {
+                resolver = resolverFactory.CreateOverloadResolver(parameters, new CallSignature(parameters.Length - 1), CallTypes.ImplicitInstance);
             }
-            if (infos.Length > 0 && typeof(CodeContext).IsAssignableFrom(infos[0].ParameterType)) {
-                startArg = 1;
-                callArgs[0] = context;
-            }
+            BindingTarget target = resolver.ResolveOverload(method.Name, new MethodBase[] { method }, NarrowingLevel.None, NarrowingLevel.Three);
 
-            for (int arg = startArg; arg < infos.Length; arg++) {
-                if (parameter < parameters.Count) {
-                    callArgs[arg] = ConvertExpression(
-                        parameters[parameter++],
-                        infos[arg].ParameterType,
-                        ConversionResultKind.ExplicitCast,
-                        context
-                    );
-                } else {
-                    return null;
+            if (!target.Success) {
+                BindingRestrictions restrictions = BindingRestrictions.Combine(parameters);
+                foreach (DynamicMetaObject mo in parameters) {
+                    restrictions = restrictions.Merge(BindingRestrictions.GetTypeRestriction(mo.Expression, mo.GetLimitType()));
                 }
+                return DefaultBinder.MakeError(
+                    resolver.MakeInvalidParametersError(target),
+                    restrictions,
+                    typeof(object)
+                );
             }
 
-            // check that we used all parameters
-            if (parameter != parameters.Count) {
-                return null;
-            }
-
-            return AstUtils.SimpleCallHelper(callInst, method, callArgs);
-        }
-
-
-        public Expression MakeCallExpression(Expression context, MethodInfo method, params Expression[] parameters) {
-            return MakeCallExpression(context, method, (IList<Expression>)parameters);
+            return new DynamicMetaObject(target.MakeExpression(), target.RestrictedArguments.GetAllRestrictions());
         }
     }
 }

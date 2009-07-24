@@ -16,13 +16,11 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using Microsoft.Scripting;
-using Microsoft.Scripting.Utils;
-using System.Text;
-using IronRuby.Runtime;
-using Microsoft.Scripting.Runtime;
-using IronRuby.Compiler;
 using System.IO;
+using System.Text;
+using IronRuby.Compiler;
+using IronRuby.Runtime;
+using Microsoft.Scripting.Utils;
 
 namespace IronRuby.Builtins {
 
@@ -39,21 +37,29 @@ namespace IronRuby.Builtins {
         private Content/*!*/ _content;
         private RubyEncoding/*!*/ _encoding;
         
-        // The lowest bit is tainted flag.
-        // The second lowest bit is "is-ascii" flag - valid iff _hashCode is valid.
-        // The version is set to FrozenVersion when the string is frozen. FrozenVersion is the maximum version, so any update to the version 
-        // triggers an OverflowException, which we convert to InvalidOperationException.
-        private uint _versionAndFlags;
+        private uint _flags = AsciiUnknownFlag | HashUnknownFlag;
+        private int _hashCode;
 
-        // Cached hashcode or Utils.ReservedHashCode if it needs to be recalculated:
-        private int _hashCode = Utils.ReservedHashCode;
+        // true if frozen:
+        private const uint IsFrozenFlag = 1;
 
-        private const uint IsTaintedFlag = 1;
-        private const uint IsAsciiFlag = 2;
-        private const int FlagCount = 2;
-        private const uint FlagsMask = (1U << FlagCount) - 1;
-        private const uint VersionMask = ~FlagsMask;
-        private const uint FrozenVersion = VersionMask;
+        // set every time a change occurs:
+        private const uint HasChangedFlag = 2;
+
+        // true if all bytes/characters are < x80
+        private const uint IsAsciiFlag = 4;
+        
+        // true if IsAsciiFlag is not up-to-date:
+        private const uint AsciiUnknownFlag = 8;
+
+        // true if _hashCode is not up-to-date:
+        private const uint HashUnknownFlag = 16;
+
+        // true if the string encoding is BinaryEncoding:
+        private const uint IsBinaryEncodedFlag = 32;
+
+        // true if tainted:
+        private const uint IsTaintedFlag = 64;
 
         // The instance is frozen so that it can be shared, but it should not be used in places where
         // it will be accessible from user code as the user code could try to mutate it.
@@ -67,9 +73,18 @@ namespace IronRuby.Builtins {
             _content = content;
         }
 
+        private void SetEncoding(RubyEncoding/*!*/ encoding) {
+            _encoding = encoding;
+            if (encoding == RubyEncoding.Binary) {
+                _flags |= IsBinaryEncodedFlag;
+            } else {
+                _flags &= ~IsBinaryEncodedFlag;
+            }
+        }
+
         private MutableString(Content/*!*/ content, RubyEncoding/*!*/ encoding) {
             Assert.NotNull(content, encoding);
-            _encoding = encoding;
+            SetEncoding(encoding);
             SetContent(content);
         }
 
@@ -106,7 +121,7 @@ namespace IronRuby.Builtins {
 
         // mutable (visible for subclasses):
         protected MutableString(RubyEncoding/*!*/ encoding)
-            : this(new CharArrayContent(new char[Utils.MinBufferSize], 0, null), encoding) {
+            : this(new CharArrayContent(Utils.EmptyChars, 0, null), encoding) {
         }
 
         // Ruby allocator
@@ -163,7 +178,7 @@ namespace IronRuby.Builtins {
         }
 
         public static MutableString/*!*/ CreateBinary() {
-            return new MutableString(new byte[Utils.MinBufferSize], 0, RubyEncoding.Binary);
+            return new MutableString(Utils.EmptyBytes, 0, RubyEncoding.Binary);
         }
 
         public static MutableString/*!*/ CreateBinary(int capacity) {
@@ -258,76 +273,123 @@ namespace IronRuby.Builtins {
 
         #region Versioning, Encoding, HashCode, and Flags
 
-        [CLSCompliant(false)]
-        public uint Version {
-            get { return _versionAndFlags >> FlagCount; }
-        }
-
-        private void MutateNonContent() {
-            try {
-                checked { _versionAndFlags += (1 << FlagCount); }
-            } catch (OverflowException) {
-                throw RubyExceptions.CreateTypeError("can't modify frozen object");
+        /// <summary>
+        /// Returns true if its character and byte representation is guaranteed to be the same per character or byte, i.e.
+        /// if the string is known to contain ASCII characters only or if the string is binary-encoded.
+        /// 
+        /// Doesn't inspect the content of the string if the ASCII flag is not valid.
+        /// </summary>
+        public bool HasByteCharacters {
+            get {
+                var flags = _flags;
+                return (flags & IsBinaryEncodedFlag) != 0
+                    || (flags & (AsciiUnknownFlag | IsAsciiFlag)) == IsAsciiFlag; 
             }
         }
 
+        private void MutateContent(uint setFlags) {
+            uint flags = _flags;
+            if ((flags & IsFrozenFlag) != 0) {
+                throw RubyExceptions.CreateObjectFrozenError();
+            }
+            _flags = flags | setFlags;
+        }
+
         private void Mutate() {
-            MutateNonContent();
-            _hashCode = Utils.ReservedHashCode;
+            MutateContent(HasChangedFlag | AsciiUnknownFlag | HashUnknownFlag);
+        }
+
+        /// <summary>
+        /// Set or Insert a single character or byte.
+        /// </summary>
+        [Conditional("INLINED")]
+        private void MutateOne(int charOrByte) {
+            uint flags = _flags;
+            if ((flags & IsFrozenFlag) != 0) {
+                throw RubyExceptions.CreateObjectFrozenError();
+            }
+            _flags = flags | (charOrByte >= 0x80 ? HasChangedFlag | HashUnknownFlag | AsciiUnknownFlag : HasChangedFlag | HashUnknownFlag);
+        }
+
+        /// <summary>
+        /// Operation preserves ascii-ness of the string.
+        /// </summary>
+        private void MutatePreserveAsciiness() {
+            MutateContent(HasChangedFlag | HashUnknownFlag);
+        }
+
+        /// <summary>
+        /// Operation removes characters or bytes.
+        /// If the string was ascii before the operation it is ascii afterwards.
+        /// </summary>
+        private void MutateRemove() {
+            MutateContent(
+                (_flags & IsAsciiFlag) != 0 ? HasChangedFlag | HashUnknownFlag : HasChangedFlag | HashUnknownFlag | AsciiUnknownFlag
+            );
         }
 
         /// <summary>
         /// Prepares the string for mutation that combines its content with content of another mutable string.
         /// </summary>
         private void Mutate(MutableString/*!*/ other) {
+            RubyEncoding newEncoding = RequireCompatibleEncoding(other);
+            Mutate();
+            if (newEncoding != null) {
+                SetEncoding(newEncoding);
+            }
+        }
+
+        /// <summary>
+        /// Checks if the other string's encoding is compatible with this string's encoding.
+        /// If it is not an exception is thrown.
+        /// Otherwise returns the encoding that should be used for the result of the operation if it is different from this string's encoding.
+        /// (returns null if so).
+        /// </summary>
+        public RubyEncoding RequireCompatibleEncoding(MutableString/*!*/ other) {
             if (_encoding == other.Encoding) {
-                Mutate();
-                return;
+                return null;
             }
 
+            // K-coded strings are in fact raw binary data which are just presented to .NET as strings (using their RealEncoding).
             if (_encoding.IsKCoding || other.Encoding.IsKCoding) {
-                Mutate();
+                if (_encoding.RealEncoding == other.Encoding.RealEncoding) {
+                    // it makes sense to present the resulting string using the same K-coding:
+                    if (!_encoding.IsKCoding) {
+                        return other.Encoding;
+                    }
+                    return null;
+                } else {
+                    // Present the result as raw binary data.
+                    // Note: we could also preserve the K-coding also for ascii strings but we don't do that to avoid additional cost.
+                    SwitchToBytes();
 
-                SwitchToBinary();
-                other.SwitchToBinary();
+                    // Must switch the other to bytes as well so that the operation is performed on bytes.
+                    other.SwitchToBytes();
 
-                if (IsBinaryEncoded) {
-                    // binary + kcoding -> change encoding to the other:
-                    _encoding = other.Encoding;
-                } else if (!_encoding.IsKCoding || !other.IsBinaryEncoded && !other.Encoding.IsKCoding) {
-                    // kcoding + non-binary encoding and vice versa:
-                    throw RubyExceptions.CreateEncodingCompatibilityError(_encoding, other.Encoding);
+                    return RubyEncoding.Binary;
                 }
-
-                return;
             }
 
             // MRI implicitly changes encoding of a string that contains ascii bytes/characters only.
             if (other.IsAscii()) {
                 if (IsBinaryEncoded && IsAscii()) {
-                    Mutate();
-
                     // we can safely change encoding since the string contains ascii bytes/characters only:
-                    _encoding = other.Encoding;
+                    return other.Encoding;
                 } else {
-                    Mutate();
+                    return null;
                 }
-                return;
             }
 
             if (IsAscii()) {
-                Mutate();
-
                 // we can safely change encoding since the string contains ascii bytes/characters only:
-                _encoding = other.Encoding;
-                return;
+                return other.Encoding;
             }
 
             throw RubyExceptions.CreateEncodingCompatibilityError(_encoding, other.Encoding);
         }
 
         public override int GetHashCode() {
-            if (_hashCode == Utils.ReservedHashCode) {
+            if ((_flags & HashUnknownFlag) != 0) {
                 UpdateHashCode();
             }
 
@@ -335,11 +397,22 @@ namespace IronRuby.Builtins {
         }
 
         public bool IsAscii() {
-            if (_hashCode == Utils.ReservedHashCode) {
+            var flags = _flags;
+
+            if ((flags & AsciiUnknownFlag) != 0) {
                 UpdateHashCode();
+                flags = _flags;
             }
 
-            return (_versionAndFlags & IsAsciiFlag) != 0;
+            return (flags & IsAsciiFlag) != 0;
+        }
+
+        public bool KnowsAscii {
+            get { return (_flags & AsciiUnknownFlag) == 0; }
+        }
+
+        public bool KnowsHashCode {
+            get { return (_flags & HashUnknownFlag) == 0; }
         }
 
         private void UpdateHashCode() {
@@ -359,9 +432,9 @@ namespace IronRuby.Builtins {
             }
 
             if (binarySum >= 0x0080) {
-                _versionAndFlags &= ~IsAsciiFlag;
+                _flags = _flags & ~(AsciiUnknownFlag | HashUnknownFlag | IsAsciiFlag);
             } else {
-                _versionAndFlags |= IsAsciiFlag;
+                _flags = (_flags & ~(AsciiUnknownFlag | HashUnknownFlag)) | IsAsciiFlag;
             }
 
             _hashCode = hash;
@@ -372,7 +445,10 @@ namespace IronRuby.Builtins {
         }
 
         public bool IsBinaryEncoded {
-            get { return _encoding == RubyEncoding.Binary; }
+            get {
+                Debug.Assert((_encoding == RubyEncoding.Binary) == ((_flags & IsBinaryEncodedFlag) != 0));
+                return (_flags & IsBinaryEncodedFlag) != 0; 
+            }
         }
 
         /// <summary>
@@ -384,24 +460,36 @@ namespace IronRuby.Builtins {
             //    // TODO: encoding change - needs transcode if not binary ...
             //    ContractUtils.RequiresNotNull(value, "value");
             //    Mutate();
-            //    _encoding = value;
+            //    SetEncoding(value);
             //}
         }
 
         public bool IsTainted {
             get {
-                return (_versionAndFlags & IsTaintedFlag) != 0; 
+                return (_flags & IsTaintedFlag) != 0; 
             }
             set {
-                MutateNonContent();
-                _versionAndFlags = (_versionAndFlags & ~IsTaintedFlag) | (value ? IsTaintedFlag : 0);
+                var flags = _flags;
+                if ((flags & IsFrozenFlag) != 0) {
+                    throw RubyExceptions.CreateObjectFrozenError();
+                }
+
+                _flags = (flags & ~IsTaintedFlag) | (value ? IsTaintedFlag : 0);
             }
         }
 
         public bool IsFrozen {
             get {
-                return (_versionAndFlags & VersionMask) == FrozenVersion;
+                return (_flags & IsFrozenFlag) != 0;
             }
+        }
+
+        public bool HasChanged {
+            get { return (_flags & HasChangedFlag) != 0; }
+        }
+
+        public void TrackChanges() {
+            _flags &= ~HasChangedFlag;
         }
 
         void IRubyObjectState.Freeze() {
@@ -409,8 +497,14 @@ namespace IronRuby.Builtins {
         }
 
         public MutableString/*!*/ Freeze() {
-            _versionAndFlags |= FrozenVersion;
+            _flags |= IsFrozenFlag;
             return this;
+        }
+
+        public void RequireNotFrozen() {
+            if (IsFrozen) {
+                throw RubyExceptions.CreateObjectFrozenError();
+            }
         }
 
         /// <summary>
@@ -492,13 +586,31 @@ namespace IronRuby.Builtins {
             return _content.ConvertToBytes();
         }
 
-        public MutableString/*!*/ SwitchToBinary() {
+        public MutableString/*!*/ SwitchToBytes() {
             _content.SwitchToBinaryContent();
             return this;
         }
 
-        public MutableString/*!*/ SwitchToString() {
-            _content.SwitchToStringContent();
+        /// <summary>
+        /// Prepares the string for character operations.
+        /// Changes the content internal representation to one that is optimized for character read operations.
+        /// </summary>
+        /// <exception cref="ArgumentException">
+        /// String content is binary and contains byte sequence that doesn't represent a valid character.
+        /// </exception>
+        public MutableString/*!*/ SwitchToCharacters() {
+            if (IsBinary && !IsBinaryEncoded && !IsAscii()) {
+                try {
+                    _content.SwitchToStringContent();
+                } catch (DecoderFallbackException) {
+                    throw RubyExceptions.CreateArgumentError(String.Format("invalid byte sequence in {0}", _encoding));
+                }
+            }
+            return this;
+        }
+
+        public MutableString/*!*/ SwitchToMutable() {
+            _content.SwitchToMutableContent();
             return this;
         }
 
@@ -567,6 +679,11 @@ namespace IronRuby.Builtins {
         
         public int GetLength() {
             return _content.Count;
+        }
+
+        public int SetLength(int value) {
+            ContractUtils.Requires(value >= _content.Count);
+            return _content.Count = value;
         }
 
         public int GetCharCount() {
@@ -833,25 +950,53 @@ namespace IronRuby.Builtins {
         #region Append
 
         public MutableString/*!*/ Append(char value) {
-            Mutate();
+            #region Optimization: MutateOne inlined
+            uint flags = _flags;
+            if ((flags & IsFrozenFlag) != 0) {
+                throw RubyExceptions.CreateObjectFrozenError();
+            }
+            _flags = flags | (value >= 0x80 ? HasChangedFlag | HashUnknownFlag | AsciiUnknownFlag : HasChangedFlag | HashUnknownFlag);
+            #endregion
+
             _content.Append(value, 1);
             return this;
         }
 
         public MutableString/*!*/ Append(char value, int repeatCount) {
-            Mutate();
+            #region Optimization: MutateOne inlined
+            uint flags = _flags;
+            if ((flags & IsFrozenFlag) != 0) {
+                throw RubyExceptions.CreateObjectFrozenError();
+            }
+            _flags = flags | (value >= 0x80 ? HasChangedFlag | HashUnknownFlag | AsciiUnknownFlag : HasChangedFlag | HashUnknownFlag);
+            #endregion
+
             _content.Append(value, repeatCount);
             return this;
         }
 
         public MutableString/*!*/ Append(byte value) {
-            Mutate();
+            #region Optimization: MutateOne inlined
+            uint flags = _flags;
+            if ((flags & IsFrozenFlag) != 0) {
+                throw RubyExceptions.CreateObjectFrozenError();
+            }
+            _flags = flags | (value >= 0x80 ? HasChangedFlag | HashUnknownFlag | AsciiUnknownFlag : HasChangedFlag | HashUnknownFlag);
+            #endregion
+
             _content.Append(value, 1);
             return this;
         }
 
         public MutableString/*!*/ Append(byte value, int repeatCount) {
-            Mutate();
+            #region Optimization: MutateOne inlined
+            uint flags = _flags;
+            if ((flags & IsFrozenFlag) != 0) {
+                throw RubyExceptions.CreateObjectFrozenError();
+            }
+            _flags = flags | (value >= 0x80 ? HasChangedFlag | HashUnknownFlag | AsciiUnknownFlag : HasChangedFlag | HashUnknownFlag);
+            #endregion
+
             _content.Append(value, repeatCount);
             return this;
         }
@@ -957,29 +1102,52 @@ namespace IronRuby.Builtins {
 
         #region Insert
 
-        public MutableString/*!*/ SetChar(int index, char c) {
-            Mutate();
-            _content.SetItem(index, c);
+        public void SetChar(int index, char value) {
+            #region Optimization: MutateOne inlined
+            if ((_flags & IsFrozenFlag) != 0) {
+                throw RubyExceptions.CreateObjectFrozenError();
+            }
+            _flags |= (value >= 0x80 ? HasChangedFlag | HashUnknownFlag | AsciiUnknownFlag : HasChangedFlag | HashUnknownFlag);
+            #endregion
+
+            _content.SetChar(index, value);
+        }
+
+        public void SetByte(int index, byte value) {
+            #region Optimization: MutateOne inlined
+            uint flags = _flags;
+            if ((flags & IsFrozenFlag) != 0) {
+                throw RubyExceptions.CreateObjectFrozenError();
+            }
+            _flags = flags | (value >= 0x80 ? HasChangedFlag | HashUnknownFlag | AsciiUnknownFlag : HasChangedFlag | HashUnknownFlag);
+            #endregion
+
+            _content.SetByte(index, value);
+        }
+
+        public MutableString/*!*/ Insert(int index, char value) {
+            #region Optimization: MutateOne inlined
+            uint flags = _flags;
+            if ((flags & IsFrozenFlag) != 0) {
+                throw RubyExceptions.CreateObjectFrozenError();
+            }
+            _flags = flags | (value >= 0x80 ? HasChangedFlag | HashUnknownFlag | AsciiUnknownFlag : HasChangedFlag | HashUnknownFlag);
+            #endregion
+
+            _content.Insert(index, value);
             return this;
         }
 
-        public MutableString/*!*/ SetByte(int index, byte b) {
-            Mutate();
-            _content.SetItem(index, b);
-            return this;
-        }
+        public MutableString/*!*/ Insert(int index, byte value) {
+            #region Optimization: MutateOne inlined
+            uint flags = _flags;
+            if ((flags & IsFrozenFlag) != 0) {
+                throw RubyExceptions.CreateObjectFrozenError();
+            }
+            _flags = flags | (value >= 0x80 ? HasChangedFlag | HashUnknownFlag | AsciiUnknownFlag : HasChangedFlag | HashUnknownFlag);
+            #endregion
 
-        public MutableString/*!*/ Insert(int index, char c) {
-            //RequiresArrayInsertIndex(index);
-            Mutate();
-            _content.Insert(index, c);
-            return this;
-        }
-
-        public MutableString/*!*/ Insert(int index, byte b) {
-            //RequiresArrayInsertIndex(index);
-            Mutate();
-            _content.Insert(index, b);
+            _content.Insert(index, value);
             return this;
         }
 
@@ -1045,33 +1213,32 @@ namespace IronRuby.Builtins {
         #region Reverse
 
         public MutableString/*!*/ Reverse() {
-            Mutate();
+            SwitchToCharacters();
+            SwitchToMutable();
+            MutatePreserveAsciiness();
 
-            // TODO:
-            if (IsBinary) {
-                int length = _content.Count;
-                for (int i = 0; i < length / 2; i++) {
-                    byte a = GetByte(i);
-                    byte b = GetByte(length - i - 1);
-                    SetByte(i, b);
-                    SetByte(length - i - 1, a);
-                }
-            } else {
-                int length = _content.Count;
-                for (int i = 0; i < length / 2; i++) {
-                    char a = GetChar(i);
-                    char b = GetChar(length - i - 1);
-                    SetChar(i, b);
-                    SetChar(length - i - 1, a);
-                }
+            // TODO: surrogates
+            var content = _content;
+
+            int length = content.Count;
+            if (length <= 1) {
+                return this;
             }
 
+            for (int i = 0; i < length / 2; i++) {
+                char a = content.GetChar(i);
+                char b = content.GetChar(length - i - 1);
+                content.SetChar(i, b);
+                content.SetChar(length - i - 1, a);
+            }
+
+            Debug.Assert(content == _content);
             return this;
         }
 
         #endregion
 
-        #region Replace, Remove, Trim, Clear
+        #region Replace, Remove, Trim, Clear, Translate, TranslateSqueeze, TranslateRemove
 
         public MutableString/*!*/ Replace(int start, int count, MutableString value) {
             //RequiresArrayRange(start, count);
@@ -1083,20 +1250,20 @@ namespace IronRuby.Builtins {
 
         public MutableString/*!*/ Remove(int start) {
             //RequiresArrayRange(start, count);
-            Mutate();
+            MutateRemove();
             _content.Remove(start, _content.Count - start);
             return this;
         }
 
         public MutableString/*!*/ Remove(int start, int count) {
             //RequiresArrayRange(start, count);
-            Mutate();
+            MutateRemove();
             _content.Remove(start, count);
             return this;
         }
 
         public MutableString/*!*/ Trim(int start, int count) {
-            Mutate();
+            MutateRemove();
             _content = _content.GetSlice(start, count);
             return this;
         }
@@ -1105,6 +1272,104 @@ namespace IronRuby.Builtins {
             Mutate();
             _content = _content.GetSlice(0, 0);
             return this;
+        }
+
+        private static void PrepareTranslation(MutableString/*!*/ src, MutableString/*!*/ dst, CharacterMap/*!*/ map) {
+            ContractUtils.RequiresNotNull(src, "src");
+            ContractUtils.RequiresNotNull(dst, "dst");
+            ContractUtils.RequiresNotNull(map, "map");
+            dst.Mutate();
+            dst.SwitchToCharacters().SwitchToMutable();
+            src.SwitchToCharacters();
+            ContractUtils.Requires(ReferenceEquals(src, dst) || dst.IsEmpty);
+            dst.SetLength(src.GetLength());
+        }
+
+        public static bool Translate(MutableString/*!*/ src, MutableString/*!*/ dst, CharacterMap/*!*/ map) {
+            PrepareTranslation(src, dst, map);
+            ContractUtils.Requires(map.HasFullMap, "map");
+
+            int srcLength = src.GetCharCount();
+            var dstContent = dst._content;
+            var srcContent = src._content;
+
+            bool anyMaps = false;
+            bool inplace = ReferenceEquals(src, dst);
+            
+            for (int i = 0; i < srcLength; i++) {
+                char s = srcContent.GetChar(i);
+                int m = map.TryMap(s);
+                if (m >= 0) {
+                    anyMaps = true;
+                    dstContent.SetChar(i, (char)m);
+                } else if (!inplace) {
+                    dstContent.SetChar(i, s);
+                }
+            }
+
+            Debug.Assert(dstContent == dst._content && srcContent == src._content);
+            return anyMaps;
+        }
+
+        public static bool TranslateSqueeze(MutableString/*!*/ src, MutableString/*!*/ dst, CharacterMap/*!*/ map) {
+            PrepareTranslation(src, dst, map);
+            ContractUtils.Requires(map.HasFullMap, "map");
+
+            int srcLength = src.GetCharCount();
+            var dstContent = dst._content;
+            var srcContent = src._content;
+
+            bool anyMaps = false;
+            int j = 0;
+            int last = -1;
+            for (int i = 0; i < srcLength; i++) {
+                char s = srcContent.GetChar(i);
+                int m = map.TryMap(s);
+                if (m >= 0) {
+                    anyMaps = true;
+                    if (m != last) {
+                        dstContent.SetChar(j++, (char)m);
+                    }
+                } else {
+                    dstContent.SetChar(j++, s);
+                }
+                last = m;
+            }
+
+            if (j < srcLength) {
+                dst.Remove(j);
+            }
+
+            Debug.Assert(dstContent == dst._content && srcContent == src._content);
+            return anyMaps;
+        }
+
+        public static bool TranslateRemove(MutableString/*!*/ src, MutableString/*!*/ dst, CharacterMap/*!*/ map) {
+            PrepareTranslation(src, dst, map);
+            ContractUtils.Requires(map.HasBitmap, "map");
+
+            var dstContent = dst._content;
+            var srcContent = src._content;
+            int srcLength = src.GetCharCount();
+
+            bool remove = !map.IsComplemental;
+            bool anyMaps = false;
+            int j = 0;
+            for (int i = 0; i < srcLength; i++) {
+                char s = srcContent.GetChar(i);
+                if (map.IsMapped(s) == remove) {
+                    anyMaps = true;
+                } else {
+                    dstContent.SetChar(j++, s);
+                }
+            }
+
+            if (j < srcLength) {
+                dst.Remove(j);
+            }
+
+            Debug.Assert(dstContent == dst._content && srcContent == src._content);
+            return anyMaps;
         }
 
         #endregion

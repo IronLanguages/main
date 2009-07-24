@@ -162,7 +162,7 @@ namespace IronPython.Runtime.Types {
             }
         }
 
-        internal override void MakeGetExpression(PythonBinder/*!*/ binder, Expression/*!*/ codeContext, Expression instance, Expression/*!*/ owner, ConditionalBuilder/*!*/ builder) {
+        internal override void MakeGetExpression(PythonBinder/*!*/ binder, Expression/*!*/ codeContext, DynamicMetaObject instance, DynamicMetaObject/*!*/ owner, ConditionalBuilder/*!*/ builder) {
             if (!_info.IsPublic || _info.DeclaringType.ContainsGenericParameters) {
                 // fallback to reflection
                 base.MakeGetExpression(binder, codeContext, instance, owner, builder);
@@ -177,10 +177,10 @@ namespace IronPython.Runtime.Types {
                     AstUtils.Convert(
                         Ast.Field(
                             binder.ConvertExpression(
-                                instance,
+                                instance.Expression,
                                 _info.DeclaringType,
                                 ConversionResultKind.ExplicitCast,
-                                codeContext
+                                new PythonOverloadResolverFactory(binder, codeContext)
                             ),
                             _info
                         ),

@@ -76,6 +76,7 @@
     <Compile Include="Runtime\ProtocolTests.cs" />
     <Compile Include="Runtime\RangeTests.cs" />
     <Compile Include="Runtime\RegexTests.cs" />
+    <Compile Include="Runtime\RubyArrayTests.cs" />
     <Compile Include="Runtime\SplattingTests.cs" />
     <Compile Include="Runtime\StringTests.cs" />
     <Compile Include="Runtime\SuperTests.cs" />

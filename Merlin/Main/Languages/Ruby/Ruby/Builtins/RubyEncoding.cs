@@ -40,8 +40,8 @@ namespace IronRuby.Builtins {
         internal const int CodePageUTF8 = 65001;
         internal const int CodePageSJIS = 932;
 
-        public static readonly RubyEncoding/*!*/ Binary = new RubyEncoding(BinaryEncoding.Instance, BinaryEncoding.Instance);
-        public static readonly RubyEncoding/*!*/ UTF8 = new RubyEncoding(new UTF8Encoding(false, false), new UTF8Encoding(false, true));
+        public static readonly RubyEncoding/*!*/ Binary = new RubyEncoding(BinaryEncoding.Instance, BinaryEncoding.Instance, null);
+        public static readonly RubyEncoding/*!*/ UTF8 = new RubyEncoding(new UTF8Encoding(false, false), new UTF8Encoding(false, true), null);
         public static readonly RubyEncoding/*!*/ Obsolete = Binary;
         
         private static RubyEncoding _default;
@@ -50,7 +50,7 @@ namespace IronRuby.Builtins {
         public static RubyEncoding/*!*/ KCodeUTF8 {
             get {
                 if (_kUTF8 == null) {
-                    _kUTF8 = CreateKCoding(CodePageUTF8);
+                    _kUTF8 = CreateKCoding(CodePageUTF8, UTF8);
                 }
                 return _kUTF8;
             }
@@ -59,7 +59,7 @@ namespace IronRuby.Builtins {
         public static RubyEncoding/*!*/ KCodeSJIS {
             get {
                 if (_kSJIS == null) {
-                    _kSJIS = CreateKCoding(CodePageSJIS);
+                    _kSJIS = CreateKCoding(CodePageSJIS, GetRubyEncoding(CodePageSJIS));
                 }
                 return _kSJIS;
             }
@@ -68,7 +68,7 @@ namespace IronRuby.Builtins {
         public static RubyEncoding/*!*/ KCodeEUC {
             get {
                 if (_kEUC == null) {
-                    _kEUC = CreateKCoding(CodePageEUC);
+                    _kEUC = CreateKCoding(CodePageEUC, GetRubyEncoding(CodePageEUC));
                 }
                 return _kEUC;
             }
@@ -83,11 +83,11 @@ namespace IronRuby.Builtins {
             }
         }
 
-        private static RubyEncoding/*!*/ CreateKCoding(int codepage) {
+        private static RubyEncoding/*!*/ CreateKCoding(int codepage, RubyEncoding/*!*/ realEncoding) {
 #if SILVERLIGHT
-            return new RubyEncoding(new UTF8Encoding(false, false), new UTF8Encoding(false, true));
+            return new RubyEncoding(new UTF8Encoding(false, false), new UTF8Encoding(false, true), realEncoding);
 #else
-            return new RubyEncoding(KCoding.Create(codepage, false), KCoding.Create(codepage, true));
+            return new RubyEncoding(KCoding.Create(codepage, false), KCoding.Create(codepage, true), realEncoding);
 #endif
         }
 
@@ -97,21 +97,35 @@ namespace IronRuby.Builtins {
         private readonly Encoding/*!*/ _encoding;
         private readonly Encoding/*!*/ _strictEncoding;
         private readonly bool _isKCoding;
+        private readonly int _maxBytesPerChar;
+
+        // UTF8 for KUTF8, SJIS for KSJIS, EUC for KEUC, self for others.
+        private readonly RubyEncoding/*!*/ _realEncoding; 
 
         // TODO:
         //private readonly Encoder/*!*/ _encoder, _strictEncoder;
         //private readonly Decoder/*!*/ _decoder, _strictDecoder;
 
-        private RubyEncoding(Encoding/*!*/ encoding, Encoding/*!*/ strictEncoding) {
+        private RubyEncoding(Encoding/*!*/ encoding, Encoding/*!*/ strictEncoding, RubyEncoding realEncoding) {
             Assert.NotNull(encoding, strictEncoding);
             Debug.Assert(encoding is KCoding == strictEncoding is KCoding);
             _isKCoding = encoding is KCoding;
             _encoding = encoding;
             _strictEncoding = strictEncoding;
+            _realEncoding = realEncoding ?? this;
+            _maxBytesPerChar = strictEncoding.GetMaxByteCount(1);
+        }
+
+        public int MaxBytesPerChar {
+            get { return _maxBytesPerChar; }
         }
 
         public bool IsKCoding {
             get { return _isKCoding; }
+        }
+
+        public RubyEncoding/*!*/ RealEncoding {
+            get { return _realEncoding; }
         }
 
         public Encoding/*!*/ Encoding {
@@ -206,12 +220,15 @@ namespace IronRuby.Builtins {
                 if (!_Encodings.TryGetValue(codepage, out result)) {
                     result = new RubyEncoding(
                         Encoding.GetEncoding(codepage, EncoderFallback.ReplacementFallback, DecoderFallback.ReplacementFallback),
-                        Encoding.GetEncoding(codepage, EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback)
+                        Encoding.GetEncoding(codepage, EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback),
+                        null
                     );
 
-                    // TODO: check 
-                    // Some MutableString operations (GetHashCode) assume that all encodings map each characters \u0000..\u007f to an integer 0..0x7f and back
-                    // (this is not the same as IsAsciiIdentity, since the width of the resultign bytes could be > 1
+                    // Some MutableString operations (GetHashCode, SetChar, etc.) assume that the encoding maps each and every 
+                    // character \u0000..\u007f to a corresponding byte 0..0x7f and back.
+                    if (!IsAsciiIdentity(result.Encoding)) {
+                        throw new NotSupportedException(String.Format("Encoding code page {0} is not supported", codepage));
+                    }
 
                     _Encodings.Add(codepage, result);
                 }
@@ -365,7 +382,7 @@ namespace IronRuby.Builtins {
             ContractUtils.RequiresNotNull(encoding, "encoding");
             if (encoding == BinaryEncoding.Instance) {
                 return Binary;
-            } else if (encoding == Encoding.UTF8) {
+            } else if (encoding.ToString() == Encoding.UTF8.ToString()) {
                 return UTF8;
             } else {
                 throw new ArgumentException(String.Format("Unknown encoding: '{0}'", encoding));
@@ -399,7 +416,6 @@ namespace IronRuby.Builtins {
             return Expression.Constant(UTF8);
         }
 #endif
-
     }
 
 }

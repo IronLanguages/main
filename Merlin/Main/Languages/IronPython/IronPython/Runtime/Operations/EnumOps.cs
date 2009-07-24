@@ -77,5 +77,14 @@ namespace IronPython.Runtime.Operations {
 
             throw PythonOps.ValueError("__nonzero__ cannot be applied to {0}", self.GetType());
         }
+
+        public static string __repr__(object self) {
+            if (Enum.IsDefined(self.GetType(), self)) {
+                string name = Enum.GetName(self.GetType(), self);
+                return self.GetType().FullName + "." + name;
+            }
+
+            return String.Format("<enum {0}: {1}>", self.GetType().FullName, self.ToString());
+        }
     }
 }

@@ -498,12 +498,10 @@ namespace IronRuby.Builtins {
             // exceptions from the comparer & rethrows. We need to rewrite a version of quicksort
             // that behaves like Ruby's sort.
             if (block == null) {
-                self.Sort(delegate(object x, object y) {
-                    return Protocols.Compare(comparisonStorage, lessThanStorage, greaterThanStorage, x, y);
-                });
+                self.Sort((x, y) => Protocols.Compare(comparisonStorage, lessThanStorage, greaterThanStorage, x, y));
             } else {
                 try {
-                    self.Sort(delegate(object x, object y) {
+                    self.Sort((x, y) => {
                         object result;
                         if (block.Yield(x, y, out result)) {
                             // TODO: this doesn't work
@@ -541,9 +539,9 @@ namespace IronRuby.Builtins {
                 throw RubyExceptions.NoBlockGiven();
             }
 
-            for (int i = self.Count - 1; i >= 0; --i) {
+            foreach (int index in IListOps.ReverseEnumerateIndexes(self)) {
                 object result;
-                if (block.Yield(self[i], out result)) {
+                if (block.Yield(self[index], out result)) {
                     return result;
                 }
             }

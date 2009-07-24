@@ -13,7 +13,9 @@
  *
  * ***************************************************************************/
 
+#if MICROSOFT_SCRIPTING_CORE
 using ILGenerator = System.Linq.Expressions.Compiler.OffsetTrackingILGenerator;
+#endif
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -91,7 +93,11 @@ namespace System.Linq.Expressions.Compiler {
             _lambda = lambda;
             _method = method;
 
+#if MICROSOFT_SCRIPTING_CORE
             _ilg = new OffsetTrackingILGenerator(method.GetILGenerator());
+#else
+            _ilg = method.GetILGenerator();
+#endif
 
             _hasClosureArgument = true;
 
@@ -126,7 +132,11 @@ namespace System.Linq.Expressions.Compiler {
             _typeBuilder = (TypeBuilder)method.DeclaringType;
             _method = method;
 
+#if MICROSOFT_SCRIPTING_CORE
             _ilg = new OffsetTrackingILGenerator(method.GetILGenerator());
+#else
+            _ilg = method.GetILGenerator();
+#endif
 
             // These are populated by AnalyzeTree/VariableBinder
             _scope = tree.Scopes[lambda];

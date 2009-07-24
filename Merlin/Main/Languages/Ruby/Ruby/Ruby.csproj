@@ -2,7 +2,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>9.0.21022</ProductVersion>
+    <ProductVersion>9.0.30729</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{7F6984B4-EE6D-4E6F-ABB1-E210D7DC4FDD}</ProjectGuid>
     <OutputType>Library</OutputType>
@@ -104,6 +104,10 @@
       <Project>{8B0F1074-750E-4D64-BF23-A1E0F54261E5}</Project>
       <Name>Microsoft.Scripting.ExtensionAttribute</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\..\Debugging\Microsoft.Scripting.Debugging\Microsoft.Scripting.Debugging.csproj">
+      <Project>{ED82A346-1CD9-4CB0-9C00-4CDD4CF577CF}</Project>
+      <Name>Microsoft.Scripting.Debugging</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\..\Runtime\Microsoft.Scripting\Microsoft.Scripting.csproj">
       <Project>{EB66B766-6354-4208-A3D4-AACBDCB5C3B3}</Project>
       <Name>Microsoft.Scripting</Name>
@@ -114,6 +118,7 @@
       <Link>Properties\SilverlightVersion.cs</Link>
     </Compile>
     <Compile Include="Builtins\Binding.cs" />
+    <Compile Include="Builtins\CharacterMap.cs" />
     <Compile Include="Builtins\ConsoleStream.cs" />
     <None Include="Builtins\Subclasses.Generator.rb" />
     <Compile Include="Builtins\RubyErrno.cs" />
@@ -135,7 +140,7 @@
     <Compile Include="Builtins\RubyClass.Meta.cs" />
     <Compile Include="Builtins\RubyEncoding.cs" />
     <Compile Include="Builtins\MutableString.BinaryContent.cs" />
-    <Compile Include="Builtins\MutableString.StringBuilderContent.cs" />
+    <Compile Include="Builtins\MutableString.CharArrayContent.cs" />
     <Compile Include="Builtins\MutableString.StringContent.cs" />
     <Compile Include="Builtins\RubyMethod.Meta.cs" />
     <Compile Include="Builtins\File.cs" />
@@ -187,6 +192,7 @@
     <Compile Include="Runtime\Calls\RubyOverloadResolver.cs" />
     <Compile Include="Runtime\Calls\SuperForwarderInfo.cs" />
     <Compile Include="Runtime\Calls\VersionHandle.cs" />
+    <Compile Include="Runtime\Calls\VisibilityContext.cs" />
     <Compile Include="Runtime\CheckedMonitor.cs" />
     <Compile Include="Runtime\ClrName.cs" />
     <Compile Include="Runtime\CustomTypeDescHelpers.cs" />
@@ -333,7 +339,6 @@
     <Compile Include="Builtins\RubyArray.cs" />
     <Compile Include="Builtins\RubyClass.cs" />
     <Compile Include="Runtime\RubyCallTargets.cs" />
-    <Compile Include="Runtime\EvalEntryPointDelegate.cs" />
     <Compile Include="Runtime\Loader.cs" />
     <Compile Include="Runtime\Calls\RubyEventInfo.cs" />
     <Compile Include="Runtime\RubyExceptionData.cs" />

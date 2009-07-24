@@ -13,45 +13,14 @@
  *
  * ***************************************************************************/
 
+using System.Collections.Generic;
 using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime {
 
     public interface ICodeFormattable {
         string/*!*/ __repr__(CodeContext/*!*/ context);
-    }
-
-    public interface ISequence {
-        int __len__();
-
-        object this[int index] {
-            get;
-        }
-        object this[Slice slice] {
-            get;
-        }
-
-        // deprecated __getslice__ method
-        object __getslice__(int start, int stop);
-    }
-
-    public interface IMutableSequence : ISequence {
-        new object this[int index] {
-            get;
-            set;
-        }
-        new object this[Slice slice] {
-            get;
-            set;
-        }
-
-        void __delitem__(int index);
-        void __delitem__(Slice slice);
-
-        // deprecated __setslice__ and __delslice__ methods
-        void __setslice__(int start, int stop, object value);
-        void __delslice__(int start, int stop);
-    }
+    }    
 
     /// <summary>
     /// Defines the internal interface used for accessing weak references and adding finalizers
@@ -84,5 +53,19 @@ namespace IronPython.Runtime {
 
     public interface IProxyObject {
         object Target { get; }
+    }
+
+    /// <summary>
+    /// Provides a list of all the members of an instance.  ie. all the keys in the 
+    /// dictionary of the object. Note that it can contain objects that are not strings. 
+    /// 
+    /// Such keys can be added in IronPython using syntax like:
+    ///     obj.__dict__[100] = someOtherObject
+    ///     
+    /// This Python specific version also supports filtering based upon the show cls 
+    /// flag by flowing in the code context.
+    /// </summary>
+    public interface IPythonMembersList : IMembersList {
+        IList<object> GetMemberNames(CodeContext context);
     }
 }

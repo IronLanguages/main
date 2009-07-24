@@ -80,7 +80,7 @@
     <NoWarn>1591</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="System" Condition=" $(SilverlightBuild) != 'true' " />
+    <Reference Include="System" Condition=" '$(SilverlightBuild)' != 'true' " />
     <Reference Include="mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" Condition=" '$(SilverlightBuild)' == 'true' ">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(SilverlightPath)\mscorlib.dll</HintPath>
@@ -90,7 +90,7 @@
       <HintPath>$(SilverlightPath)\System.dll</HintPath>
     </Reference>
     <Reference Include="System.Data" />
-    <Reference Include="System.Xml" Condition=" $(SilverlightBuild) != 'true' " />
+    <Reference Include="System.Xml" Condition=" '$(SilverlightBuild)' != 'true' " />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\..\Hosts\SilverLight\SilverlightVersion.cs" Condition=" '$(SilverlightBuild)' == 'true' ">
@@ -102,6 +102,9 @@
     <Compile Include="Compiler\Ast\AssertStatement.cs" />
     <Compile Include="Compiler\Ast\AssignmentStatement.cs" />
     <Compile Include="Compiler\Ast\AstGenerator.cs" />
+    <Compile Include="Modules\imp.cs" />
+    <Compile Include="Runtime\CodeContext.cs" />
+    <Compile Include="Runtime\DontMapIEnumerableToIterAttribute.cs" />
     <Compile Include="Runtime\Binding\ContextArgBuilder.cs" />
     <Compile Include="Runtime\Binding\IFastSettable.cs" />
     <Compile Include="Runtime\Binding\PythonBinder.Create.cs" />
@@ -112,7 +115,12 @@
     <Compile Include="Compiler\CompilationMode.cs" />
     <Compile Include="Compiler\GeneratorRewriter.cs" />
     <Compile Include="Compiler\LazyCode.cs" />
+    <Compile Include="Runtime\DontMapGetMemberNamesToDirAttribute.cs" />
+    <Compile Include="Runtime\DontMapICollectionToLenAttribute.cs" />
+    <Compile Include="Runtime\DontMapIDisposableToContextManagerAttribute.cs" />
+    <Compile Include="Runtime\DontMapIEnumerableToContainsAttribute.cs" />
     <Compile Include="Runtime\Exceptions\BufferException.Generated.cs" />
+    <Compile Include="Runtime\Exceptions\Win32Exception.cs" />
     <Compile Include="Runtime\FutureBuiltins.cs" />
     <Compile Include="Runtime\Binding\IPythonConvertible.cs" />
     <Compile Include="Runtime\ModuleGlobalCache.cs" />
@@ -240,12 +248,13 @@
     <Compile Include="Runtime\Operations\IListOfByteOps.cs" />
     <Compile Include="Runtime\BytesConversionAttribute.cs" />
     <Compile Include="Runtime\Python3Warning.cs" />
+    <Compile Include="Runtime\PythonDynamicStackFrame.cs" />
     <Compile Include="Runtime\PythonFunction.Generated.cs" />
     <Compile Include="Runtime\PythonOptions.cs" />
     <Compile Include="Runtime\CompiledLoader.cs" />
     <Compile Include="Runtime\NoLineFeedSourceContentProvider.cs" />
     <Compile Include="Runtime\ModuleLoader.cs" />
-    <Compile Include="Runtime\NullImporter.cs" />
+    <Compile Include="Runtime\PythonTracebackListener.cs" />
     <Compile Include="Runtime\Reversed.cs" />
     <Compile Include="Runtime\PythonHiddenAttribute.cs" />
     <Compile Include="Runtime\PythonModuleAttribute.cs" />
@@ -339,8 +348,8 @@
     <Compile Include="Runtime\Operations\ComOps.cs" />
     <Compile Include="Runtime\Operations\PythonTypeOps.cs" />
     <Compile Include="Runtime\PythonAsciiEncoding.cs" />
-    <Compile Include="Runtime\Builtin.cs" />
-    <Compile Include="Runtime\Builtin.Generated.cs" />
+    <Compile Include="Modules\Builtin.cs" />
+    <Compile Include="Modules\Builtin.Generated.cs" />
     <Compile Include="Runtime\ClassMethodDescriptor.cs" />
     <Compile Include="Runtime\CompileFlags.cs" />
     <Compile Include="Runtime\DefaultContext.cs" />
@@ -401,7 +410,7 @@
     <Compile Include="Runtime\Symbols.cs" />
     <Compile Include="Runtime\Symbols.Generated.cs" />
     <Compile Include="Runtime\PythonTuple.cs" />
-    <Compile Include="Runtime\sys.cs" />
+    <Compile Include="Modules\sys.cs" />
     <Compile Include="Runtime\ThrowingErrorSink.cs" />
     <Compile Include="Runtime\Types\CustomAttributeTracker.cs" />
     <Compile Include="Runtime\Types\CustomOldClassDictionary.cs" />
@@ -410,6 +419,8 @@
     <Compile Include="Runtime\Types\FunctionType.cs" />
     <Compile Include="Runtime\Types\OperatorMapping.cs" />
     <Compile Include="Runtime\Types\PythonSiteCache.cs" />
+    <Compile Include="Runtime\Types\PythonType.Generated.cs" />
+    <Compile Include="Runtime\Types\PythonTypeDataSlot.cs" />
     <Compile Include="Runtime\Types\ResolvedMember.cs" />
     <Compile Include="Runtime\Types\SlotFieldAttribute.cs" />
     <Compile Include="Runtime\Types\PythonTypeDictSlot.cs" />
@@ -462,6 +473,10 @@
     <ProjectReference Include="..\..\..\..\..\ndp\fx\src\Dynamic\System\Dynamic\Microsoft.Dynamic.csproj" Condition=" '$(SilverlightBuild)' != 'true' ">
       <Project>{D4AE44AD-07B9-41DC-BB3B-1FDCDE3C987D}</Project>
       <Name>Microsoft.Dynamic</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Debugging\Microsoft.Scripting.Debugging\Microsoft.Scripting.Debugging.csproj">
+      <Project>{ED82A346-1CD9-4CB0-9C00-4CDD4CF577CF}</Project>
+      <Name>Microsoft.Scripting.Debugging</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\..\Runtime\Microsoft.Scripting\Microsoft.Scripting.csproj">
       <Project>{EB66B766-6354-4208-A3D4-AACBDCB5C3B3}</Project>

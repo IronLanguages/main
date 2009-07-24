@@ -365,7 +365,8 @@ namespace Microsoft.Scripting.Generation {
             foreach (Type iface in interfaces) {
                 InterfaceMapping mapping = targetType.GetInterfaceMap(iface);
                 for (int i = 0; i < mapping.TargetMethods.Length; i++) {
-                    if (mapping.TargetMethods[i].MethodHandle == method.MethodHandle) {
+                    MethodInfo targetMethod = mapping.TargetMethods[i];
+                    if (targetMethod != null && targetMethod.MethodHandle == method.MethodHandle) {
                         return mapping.InterfaceMethods[i];
                     }
                 }
@@ -659,15 +660,6 @@ namespace Microsoft.Scripting.Generation {
             }
 
             return res;
-        }
-
-        /// <summary>
-        /// Returns a value which indicates failure when a ConvertToAction of ImplicitTry or
-        /// ExplicitTry.
-        /// </summary>
-        public static Expression GetTryConvertReturnValue(CodeContext context, RuleBuilder rule) {
-            rule.IsError = true;
-            return rule.MakeReturn(context.LanguageContext.Binder, GetTryConvertReturnValue(rule.ReturnType));
         }
 
         public static bool HasTypeConverter(Type fromType, Type toType) {

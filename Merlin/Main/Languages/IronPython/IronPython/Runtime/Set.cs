@@ -217,6 +217,26 @@ namespace IronPython.Runtime {
             update(setData);
         }
 
+        public static object __new__(CodeContext/*!*/ context, PythonType cls) {
+            if (cls == TypeCache.Set) {
+                return new SetCollection();
+            }
+
+            return cls.CreateInstance(context);
+        }
+
+        public static object __new__(CodeContext/*!*/ context, PythonType cls, object arg) {
+            return __new__(context, cls);
+        }
+
+        public static object __new__(CodeContext/*!*/ context, PythonType cls, params object[] args\u00F8) {
+            return __new__(context, cls);
+        }
+
+        public static object __new__(CodeContext/*!*/ context, PythonType cls, [ParamDictionary]IAttributesCollection kwArgs, params object[] args\u00F8) {
+            return __new__(context, cls);
+        }
+
         public SetCollection() {
             _items = new CommonDictionaryStorage();
         }

@@ -262,6 +262,12 @@ def AssertErrorWithPartialMessage(exc, expectedMessage, func, *args, **kwargs):
                "Exception %r message (%r) does not contain %r" % (type(inst), inst.__str__(), expectedMessage))
     else:  Assert(False, "Expected %r but got no exception" % exc)
 
+def AssertErrorWithNumber(exc, expectedErrorNo, func, *args, **kwargs):
+    try:        func(*args, **kwargs)
+    except exc, e: 
+        AreEqual(e.errno, expectedErrorNo)
+    else :      Fail("Expected %r but got no exception" % exc)
+    
 # Check that the exception is raised with the provided message, where the message
 # differs on IronPython and CPython
 
@@ -317,7 +323,15 @@ else:
 
     def load_iron_python_dll():
         import clr
-        clr.AddReferenceToFileAndPath(path_combine(sys.prefix, "IronPython.dll"))
+        from System.IO import File
+        #When assemblies are installed into the GAC, we should not expect
+        #IronPython.dll to exist alongside IronPython.dll
+        if File.Exists(path_combine(sys.prefix, "IronPython.dll")):
+            clr.AddReferenceToFileAndPath(path_combine(sys.prefix, "IronPython.dll"))
+        else:
+            clr.AddReference("IronPython")
+        
+        
     def GetTotalMemory():
         import System
         # 3 collect calls to ensure collection
@@ -550,12 +564,10 @@ def AddReferenceToDlrCore():
     import System
     if System.Environment.Version.Major >=4:
         clr.AddReference("System.Core")
-        if not is_silverlight:
-            clr.AddReference("System.Dynamic")
     else:
         clr.AddReference("Microsoft.Scripting.Core")
-        if not is_silverlight:
-            clr.AddReference("Microsoft.Dynamic")
+    if not is_silverlight:
+        clr.AddReference("Microsoft.Dynamic")
 
     
 class stderr_trapper(object):

@@ -29,13 +29,12 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using IronRuby.Runtime.Calls;
 using Microsoft.Scripting.Generation;
+using System.Collections.Generic;
 
 namespace IronRuby.Builtins {
 
     [RubyClass("String", Extends = typeof(MutableString), Inherits = typeof(Object))]
     [Includes(typeof(Enumerable), typeof(Comparable))]
-    [HideMethod("clone")] // MutableString.Clone() would override Kernel#clone
-    [HideMethod("version")] // TODO: MutableString.Version would override some spec's method
     public class MutableStringOps {
 
         [RubyConstructor]
@@ -67,7 +66,7 @@ namespace IronRuby.Builtins {
             }
             return index >= 0 && index <= str.Length;
         }
-
+        
         // Parses interval strings that are of this form:
         //
         // abc         # abc
@@ -851,6 +850,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("capitalize!")]
         public static MutableString CapitalizeInPlace(MutableString/*!*/ self) {
+            self.RequireNotFrozen();
             return CapitalizeMutableString(self) ? self : null;
         }
 
@@ -863,6 +863,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("downcase!")]
         public static MutableString DownCaseInPlace(MutableString/*!*/ self) {
+            self.RequireNotFrozen();
             return DownCaseMutableString(self) ? self : null;
         }
 
@@ -875,6 +876,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("swapcase!")]
         public static MutableString SwapCaseInPlace(MutableString/*!*/ self) {
+            self.RequireNotFrozen();
             return SwapCaseMutableString(self) ? self : null;
         }
 
@@ -887,6 +889,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("upcase!")]
         public static MutableString UpCaseInPlace(MutableString/*!*/ self) {
+            self.RequireNotFrozen();
             return UpCaseMutableString(self) ? self : null;
         }
 
@@ -1124,7 +1127,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("each")]
         [RubyMethod("each_line")]
         public static object EachLine(BlockParam block, MutableString/*!*/ self, [DefaultProtocol]MutableString separator) {
-            uint version = self.Version;
+            self.TrackChanges();
 
             MutableString paragraphSeparator;
             if (separator == null || separator.IsEmpty) {
@@ -1176,8 +1179,10 @@ namespace IronRuby.Builtins {
                 start = end;
             }
 
+            // MRI 1.8: this is checked after each line
+            // MRI 1.9: not checked at all
             // Ensure that the underlying string has not been mutated during the iteration
-            RequireNoVersionChange(version, self);
+            RequireNoVersionChange(self);
             return self;
         }
 
@@ -1269,11 +1274,11 @@ namespace IronRuby.Builtins {
                 MatchData currentMatch = new MatchData(match, input);
                 matchScope.CurrentMatch = currentMatch;
 
-                uint version = input.Version;
+                input.TrackChanges();
                 if (block.Yield(MutableString.Create(match.Value), out blockResult)) {
                     return true;
                 }
-                if (input.Version != version) {
+                if (input.HasChanged) {
                     return false;
                 }
 
@@ -1437,10 +1442,10 @@ namespace IronRuby.Builtins {
 
             object blockResult;
             MutableString result;
-            uint version = self.Version;
+            self.TrackChanges();
             object r = BlockReplaceAll(tosConversion, scope, self, block, pattern, out blockResult, out result) ? blockResult : (result ?? self.Clone());
 
-            RequireNoVersionChange(version, self);
+            RequireNoVersionChange(self);
             return r;
         }
 
@@ -1465,9 +1470,9 @@ namespace IronRuby.Builtins {
             MutableString result;
             var regex = new RubyRegex(Regex.Escape(matchString.ToString()), RubyRegexOptions.NONE);
 
-            uint version = self.Version;
+            self.TrackChanges();
             object r = BlockReplaceAll(tosConversion, scope, self, block, regex, out blockResult, out result) ? blockResult : (result ?? self.Clone());
-            RequireNoVersionChange(version, self);
+            RequireNoVersionChange(self);
             return r;
         }
 
@@ -1496,7 +1501,7 @@ namespace IronRuby.Builtins {
 
             object blockResult;
 
-            uint version = self.Version;
+            self.TrackChanges();
 
             // prepare replacement in a builder:
             MutableString builder;
@@ -1513,7 +1518,7 @@ namespace IronRuby.Builtins {
                 return null;
             }
 
-            RequireNoVersionChange(version, self);
+            RequireNoVersionChange(self);
 
             if (self.IsFrozen) {
                 throw new RuntimeError("string frozen");
@@ -1747,6 +1752,8 @@ namespace IronRuby.Builtins {
         [RubyMethod("delete!")]
         public static MutableString/*!*/ DeleteInPlace(RubyContext/*!*/ context, MutableString/*!*/ self,
             [DefaultProtocol, NotNull, NotNullItems]params MutableString/*!*/[]/*!*/ strs) {
+            self.RequireNotFrozen();
+
             if (strs.Length == 0) {
                 throw RubyExceptions.CreateArgumentError("wrong number of arguments");
             }
@@ -1967,6 +1974,8 @@ namespace IronRuby.Builtins {
         [RubyMethod("succ!")]
         [RubyMethod("next!")]
         public static MutableString/*!*/ SuccInPlace(MutableString/*!*/ self) {
+            self.RequireNotFrozen();
+
             if (self.IsEmpty) {
                 return self;
             }
@@ -2398,6 +2407,16 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("reverse!")]
         public static MutableString/*!*/ Reverse(MutableString/*!*/ self) {
+            if (self.Encoding.IsKCoding) {
+                throw new NotImplementedException("TODO: KCODE");
+            }
+
+            if (self.Length == 0) {
+                return self;
+            }
+            self.RequireNotFrozen();
+
+            // TODO: MRI 1.9: allows invalid characters
             return self.Reverse();
         }
 
@@ -2406,85 +2425,77 @@ namespace IronRuby.Builtins {
 
         #region tr, tr_s
 
-        private static MutableString/*!*/ TrInternal(MutableString/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ from,
-            [DefaultProtocol, NotNull]MutableString/*!*/ to, bool squeeze) {
+        internal static MutableString/*!*/ Translate(MutableString/*!*/ src, MutableString/*!*/ from, MutableString/*!*/ to, 
+            bool inplace, bool squeeze, out bool anyCharacterMaps) {
+            Assert.NotNull(src, from, to);
 
-            MutableString result = self.CreateInstance().TaintBy(self);
-            IntervalParser parser = new IntervalParser(from);
-
-            // TODO: a single pass to generate both?
-            MutableString source = parser.ParseSequence();
-            BitArray bitmap = parser.Parse();
-
-            MutableString dest = new IntervalParser(to).ParseSequence();
-
-            int lastChar = dest.GetLastChar();
-            char? lastTranslated = null;
-            for (int i = 0; i < self.Length; i++) {
-                char c = self.GetChar(i);
-                if (bitmap.Get(c)) {
-                    char? thisTranslated = null;
-                    int index = source.IndexOf(c);
-                    if (index >= dest.Length) {
-                        if (lastChar != -1) {
-                            thisTranslated = (char)lastChar;
-                        }
-                    } else {
-                        thisTranslated = dest.GetChar(index);
-                    }
-                    if (thisTranslated != null && (!squeeze || lastTranslated == null || lastTranslated.Value != thisTranslated)) {
-                        result.Append(thisTranslated.Value);
-                    }
-                    lastTranslated = thisTranslated;
-                } else {
-                    result.Append(c);
-                    lastTranslated = null;
-                }
+            if (from.IsEmpty) {
+                anyCharacterMaps = false;
+                return inplace ? src : src.Clone();
             }
 
-            return result;
+            MutableString dst;
+            if (inplace) {
+                dst = src;
+            } else {
+                dst = src.CreateInstance().TaintBy(src);
+            }
+
+            // TODO: KCODE
+            src.RequireCompatibleEncoding(from);
+            dst.RequireCompatibleEncoding(to);
+            from.SwitchToCharacters();
+            to.SwitchToCharacters();
+
+            CharacterMap map = CharacterMap.Create(from, to);
+
+            if (to.IsEmpty) {
+                anyCharacterMaps = MutableString.TranslateRemove(src, dst, map);
+            } else if (squeeze) {
+                anyCharacterMaps = MutableString.TranslateSqueeze(src, dst, map);
+            } else {
+                anyCharacterMaps = MutableString.Translate(src, dst, map);
+            }
+
+            return dst;
         }
 
+        // encoding aware, TODO: KCODE
         [RubyMethod("tr")]
-        public static MutableString/*!*/ Tr(MutableString/*!*/ self,
+        public static MutableString/*!*/ GetTranslated(MutableString/*!*/ self,
             [DefaultProtocol, NotNull]MutableString/*!*/ from, [DefaultProtocol, NotNull]MutableString/*!*/ to) {
-
-            return TrInternal(self, from, to, false);
+            bool _;
+            return Translate(self, from, to, false, false, out _);
         }
 
+        // encoding aware, TODO: KCODE
         [RubyMethod("tr!")]
-        public static MutableString/*!*/ TrInPlace(MutableString/*!*/ self,
+        public static MutableString Translate(MutableString/*!*/ self,
             [DefaultProtocol, NotNull]MutableString/*!*/ from, [DefaultProtocol, NotNull]MutableString/*!*/ to) {
 
-            MutableString result = TrInternal(self, from, to, false);
-            if (self.Equals(result)) {
-                return null;
-            }
-
-            self.Clear();
-            self.Append(result);
-            return self;
+            bool anyCharacterMaps;
+            self.RequireNotFrozen();
+            Translate(self, from, to, true, false, out anyCharacterMaps);
+            return anyCharacterMaps ? self : null;
         }
 
+        // encoding aware, TODO: KCODE
         [RubyMethod("tr_s")]
         public static MutableString/*!*/ TrSqueeze(MutableString/*!*/ self,
             [DefaultProtocol, NotNull]MutableString/*!*/ from, [DefaultProtocol, NotNull]MutableString/*!*/ to) {
-
-            return TrInternal(self, from, to, true);
+            bool _;
+            return Translate(self, from, to, false, true, out _);
         }
 
+        // encoding aware, TODO: KCODE
         [RubyMethod("tr_s!")]
-        public static MutableString/*!*/ TrSqueezeInPlace(MutableString/*!*/ self,
+        public static MutableString TrSqueezeInPlace(MutableString/*!*/ self,
             [DefaultProtocol, NotNull]MutableString/*!*/ from, [DefaultProtocol, NotNull]MutableString/*!*/ to) {
 
-            MutableString result = TrInternal(self, from, to, true);
-            if (self.Equals(result)) {
-                return null;
-            }
-
-            self.Clear();
-            self.Append(result);
-            return self;
+            bool anyCharacterMaps;
+            self.RequireNotFrozen();
+            Translate(self, from, to, true, true, out anyCharacterMaps);
+            return anyCharacterMaps ? self : null;
         }
 
         #endregion
@@ -2626,6 +2637,41 @@ namespace IronRuby.Builtins {
                             result.Add(str);
                             break;
 
+                        case 'B':
+                        case 'b':
+                            if (stream.Length - stream.Position != 0) {
+                                count = directive.Count.HasValue ? directive.Count.Value : (int)(stream.Length - stream.Position) * 8;
+                                buffer = reader.ReadBytes((int)Math.Ceiling((double)count / 8));
+                                if (count > buffer.Length * 8) {
+                                    count = buffer.Length * 8;
+                                }
+                                str = MutableString.CreateBinary(count);
+
+                                if ((directive.Directive == 'B' && BitConverter.IsLittleEndian) || (directive.Directive == 'b' && !BitConverter.IsLittleEndian)) {
+                                    for (int i = 0; i < buffer.Length; i++) {
+                                        byte b = buffer[i];
+                                        int r = (b >> 4) | ((b & 0x0F) << 4);
+                                        r = ((r & 0xCC) >> 2) | ((r & 0x33) << 2);
+                                        r = ((r & 0xAA) >> 1) | ((r & 0x55) << 1);
+                                        buffer[i] = (byte)r;
+                                    }
+                                }
+
+                                for (int b = 0, i = 0; b < count; b++) {
+                                    if (b == 8) {
+                                        i++;
+                                        b = 0;
+                                        count -= 8;
+                                    }
+                                    str.Append(((buffer[i] & (1 << b)) != 0 ? '1' : '0'));
+                                }
+                            }
+                            else {
+                                str = MutableString.CreateEmpty();
+                            }
+                            result.Add(str);
+                            break;
+
                         case 'Z':
                             maxCount = (int)(stream.Length - stream.Position);
                             count = directive.Count.HasValue ? directive.Count.Value : maxCount;
@@ -2673,6 +2719,37 @@ namespace IronRuby.Builtins {
                                 if (value <= Int32.MaxValue) {
                                     result.Add((int)value);
                                 } else {
+                                    result.Add((BigInteger)value);
+                                }
+                            }
+                            break;
+
+                        case 'v':
+                            count = CalculateCounts(stream, directive.Count, sizeof(ushort), out nilCount);
+                            for (int j = 0; j < count; j++) {
+                                ushort value = reader.ReadUInt16();
+                                if (!BitConverter.IsLittleEndian) {
+                                    value = (ushort)(0x00FF & (value >> 8) |
+                                                     0xFF00 & (value << 8));
+                                }
+                                result.Add((int)value);
+                            }
+                            break;
+
+                        case 'V':
+                            count = CalculateCounts(stream, directive.Count, sizeof(uint), out nilCount);
+                            for (int j = 0; j < count; j++) {
+                                uint value = reader.ReadUInt32();
+                                if (!BitConverter.IsLittleEndian) {
+                                    value = (0x000000FF & (value >> 24) |
+                                             0x0000FF00 & (value >> 8) |
+                                             0x00FF0000 & (value << 8) |
+                                             0xFF000000 & (value << 24));
+                                }
+                                if (value <= Int32.MaxValue) {
+                                    result.Add((int)value);
+                                }
+                                else {
                                     result.Add((BigInteger)value);
                                 }
                             }
@@ -2835,8 +2912,8 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        private static void RequireNoVersionChange(uint previousVersion, MutableString self) {
-            if (previousVersion != self.Version) {
+        private static void RequireNoVersionChange(MutableString/*!*/ self) {
+            if (self.HasChanged) {
                 throw new RuntimeError("string modified");
             }
         }

@@ -19,7 +19,7 @@
     <SignedSym Condition="'$(SignAssembly)' == 'true'">SIGNED</SignedSym>
     <DelaySign>true</DelaySign>
     <BaseAddress>866123776</BaseAddress>
-    <SilverlightPath Condition="$(SilverlightPath) == ''">..\..\..\..\..\..\Merlin\Main\Utilities\Silverlight\x86ret\</SilverlightPath>
+    <SilverlightPath Condition="'$(SilverlightPath)' == ''">..\..\..\..\..\..\Merlin\Main\Utilities\Silverlight\x86ret\</SilverlightPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FxCop|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -79,7 +79,7 @@
     <SilverlightBuild>true</SilverlightBuild>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="System" Condition=" $(SilverlightBuild) != 'true' " />
+    <Reference Include="System" Condition=" '$(SilverlightBuild)' != 'true' " />
     <Reference Include="mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" Condition=" '$(SilverlightBuild)' == 'true' ">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(SilverlightPath)\mscorlib.dll</HintPath>

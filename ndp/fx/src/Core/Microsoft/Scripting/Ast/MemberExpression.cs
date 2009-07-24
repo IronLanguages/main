@@ -70,8 +70,25 @@ namespace System.Linq.Expressions {
             throw ContractUtils.Unreachable;
         }
 
-        internal override Expression Accept(ExpressionVisitor visitor) {
+        /// <summary>
+        /// Dispatches to the specific visit method for this node type.
+        /// </summary>
+        protected internal override Expression Accept(ExpressionVisitor visitor) {
             return visitor.VisitMember(this);
+        }
+
+        /// <summary>
+        /// Creates a new expression that is like this one, but using the
+        /// supplied children. If all of the children are the same, it will
+        /// return this expression.
+        /// </summary>
+        /// <param name="expression">The <see cref="Expression" /> property of the result.</param>
+        /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
+        public MemberExpression Update(Expression expression) {
+            if (expression == Expression) {
+                return this;
+            }
+            return Expression.MakeMemberAccess(expression, Member);
         }
     }
 

@@ -143,6 +143,15 @@ namespace IronPython.Hosting {
                 case "-X:FullFrames":
                     LanguageSetup.Options["Frames"] = LanguageSetup.Options["FullFrames"] = ScriptingRuntimeHelpers.True;
                     break;
+                case "-X:GCStress":
+                    int gcStress;
+                    if (!StringUtils.TryParseInt32(PopNextArg(), out gcStress) || (gcStress < 0 || gcStress > GC.MaxGeneration)) {
+                        throw new InvalidOptionException(String.Format("The argument for the {0} option must be between 0 and {1}.", arg, GC.MaxGeneration));
+                    }
+
+                    LanguageSetup.Options["GCStress"] = gcStress;
+                    break;
+
                 case "-X:MaxRecursion":
                     // we need about 6 frames for starting up, so 10 is a nice round number.
                     int limit;
@@ -230,6 +239,7 @@ namespace IronPython.Hosting {
 
                 { "-X:Frames",              "Enable basic sys._getframe support" },
                 { "-X:FullFrames",          "Enable sys._getframe with access to locals" },
+                { "-X:GCStress",            "Specifies the GC stress level (the generation to collect each statement)" },
                 { "-X:MaxRecursion",        "Set the maximum recursion level" },
                 { "-X:Debug",               "Enable application debugging (preferred over -D)" },
                 { "-X:MTA",                 "Run in multithreaded apartment" },

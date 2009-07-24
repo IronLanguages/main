@@ -655,10 +655,6 @@ internal class LibraryDef {
 
                     var type = parameterInfos[i].ParameterType;
 
-                    if (type == typeof(CodeContext)) {
-                        LogMethodError("CodeContext is obsolete use RubyContext instead.", methodDef, overload);
-                    }
-
                     if (type.IsSubclassOf(typeof(RubyCallSiteStorage))) {
                         if (hasSelf || hasContext || hasBlock) {
                             LogMethodError("RubyCallSiteStorage must precede all other parameters", methodDef, overload);

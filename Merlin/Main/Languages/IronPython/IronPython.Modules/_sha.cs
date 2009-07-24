@@ -30,8 +30,9 @@ using IronPython.Runtime.Operations;
 
 [assembly: PythonModule("_sha", typeof(IronPython.Modules.PythonSha))]
 namespace IronPython.Modules {
-    [Documentation("SHA1 hash algorithm")]
     public static class PythonSha {
+        public const string __doc__ = "implements the SHA1 hash algorithm";
+
         [ThreadStatic]
         private static SHA1Managed _hasher;
         private const int blockSize = 64;
@@ -74,6 +75,7 @@ namespace IronPython.Modules {
         }
 
         [Documentation("new([data]) -> object (object used to calculate hash)")]
+        [PythonType, PythonHidden]
         public class sha 
 #if !SILVERLIGHT
             : ICloneable 

@@ -38,15 +38,15 @@ namespace Microsoft.Scripting.Actions {
 
         #region IMembersList Members
 
-        public virtual IList<object> GetMemberNames(CodeContext context) {
+        public virtual IList<string> GetMemberNames() {
             Dictionary<string, string> members = new Dictionary<string, string>();
             CollectMembers(members, Type);
 
             return MembersToList(members);
         }
 
-        internal static IList<object> MembersToList(Dictionary<string, string> members) {
-            List<object> res = new List<object>();
+        internal static IList<string> MembersToList(Dictionary<string, string> members) {
+            List<string> res = new List<string>();
             foreach (string key in members.Keys) {
                 res.Add(key);
             }

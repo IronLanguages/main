@@ -76,10 +76,12 @@ class Eggs
               DynamicApplication.current.entry_point.to_s :
               '')
           pth = "#{prepend}/#{pth}" if prepend != '.'
-          if !loaded && Package.get_file(pth)
-            load pth 
+          begin
+            load pth
             loaded = true
-          end
+          rescue LoadError
+            puts "Warning: #{pth} failed to load"
+          end if !loaded
         end
         raise "#{file} is not a known test (check your Eggs.config call)" unless loaded
       end

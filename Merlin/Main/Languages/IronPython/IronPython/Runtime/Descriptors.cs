@@ -26,7 +26,7 @@ using IronPython.Runtime.Types;
 namespace IronPython.Runtime {
     [PythonType]
     public class staticmethod : PythonTypeSlot {
-        private object _func;
+        internal object _func;
 
         public staticmethod(object func) {
             this._func = func;
@@ -91,7 +91,7 @@ namespace IronPython.Runtime {
     }
 
     [PythonType("property")]
-    public class PythonProperty : PythonTypeSlot {
+    public class PythonProperty : PythonTypeDataSlot {
         private object _fget, _fset, _fdel, _doc;
 
         public PythonProperty() {
@@ -123,17 +123,21 @@ namespace IronPython.Runtime {
         }
 
         internal override bool TrySetValue(CodeContext context, object instance, PythonType owner, object value) {
-            return __set__(context, instance, value);
+            if (instance == null) {
+                return false;
+            }
+            __set__(context, instance, value);
+            return true;
         }
 
         internal override bool TryDeleteValue(CodeContext context, object instance, PythonType owner) {
-            return __delete__(context, instance);
-        }
-
-        internal override bool IsSetDescriptor(CodeContext context, PythonType owner) {
+            if (instance == null) {
+                return false;
+            } 
+            __delete__(context, instance);
             return true;
         }
-        
+
         [SpecialName, PropertyMethod, WrapperDescriptor]
         public static object Get__doc__(CodeContext context, PythonProperty self) {
             if (self._doc == null && PythonOps.HasAttr(context, self._fget, (SymbolId)"__doc__")) {
@@ -145,7 +149,7 @@ namespace IronPython.Runtime {
         }
 
         [SpecialName, PropertyMethod, WrapperDescriptor]
-        public static void Set__doc__(PythonProperty self) {
+        public static void Set__doc__(PythonProperty self, object value) {
             throw PythonOps.TypeError("'property' object is immutable");
         }
 
@@ -173,9 +177,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public object __get__(CodeContext/*!*/ context, object instance) { return __get__(context, instance, null); }
-
-        public new virtual object __get__(CodeContext/*!*/ context, object instance, object owner) {
+        public override object __get__(CodeContext/*!*/ context, object instance, [DefaultParameterValue(null)]object owner) {
             if (instance == null) {
                 return this;
             } else if (fget != null) {
@@ -186,27 +188,21 @@ namespace IronPython.Runtime {
             throw PythonOps.UnreadableProperty();
         }
 
-        public virtual bool __set__(CodeContext/*!*/ context, object instance, object value) {
-            if (instance == null) {
-                return false;
-            } else if (fset != null) {
+        public override void __set__(CodeContext/*!*/ context, object instance, object value) {
+            if (fset != null) {
                 var site = PythonContext.GetContext(context).PropertySetSite;
 
                 site.Target(site, context, fset, instance, value);
-                return true;
             } else {
                 throw PythonOps.UnsetableProperty();
             }
         }
 
-        public new virtual bool __delete__(CodeContext/*!*/ context, object instance) {
+        public override void __delete__(CodeContext/*!*/ context, object instance) {
             if (fdel != null) {
                 var site = PythonContext.GetContext(context).PropertyDeleteSite;
 
                 site.Target(site, context, fdel, instance);
-                return true;
-            } else if (instance == null) {
-                return false;
             } else {
                 throw PythonOps.UndeletableProperty();
             }

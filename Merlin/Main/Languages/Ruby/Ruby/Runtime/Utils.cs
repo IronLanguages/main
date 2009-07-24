@@ -21,6 +21,7 @@ using System.Reflection;
 using System.Collections;
 using System.Collections.Generic;
 using IronRuby.Builtins;
+using System.Globalization;
 
 namespace IronRuby.Runtime {
     public static class Utils {
@@ -95,15 +96,16 @@ namespace IronRuby.Runtime {
             return -1;
         }
 
+        internal const int MinListSize = 4;
         internal const int MinBufferSize = 16;
 
-        private static int GetExpandedSize(int currentLength, int minLength) {
-            return Math.Max(minLength, 1 + (currentLength << 1));
+        internal static int GetExpandedSize<T>(T[]/*!*/ array, int minLength) {
+            return Math.Max(minLength, Math.Max(1 + (array.Length << 1), typeof(T) == typeof(object) ? MinListSize : MinBufferSize));
         }
 
         internal static void Resize<T>(ref T[]/*!*/ array, int minLength) {
             if (array.Length < minLength) {
-                Array.Resize(ref array, GetExpandedSize(array.Length, minLength));
+                Array.Resize(ref array, GetExpandedSize(array, minLength));
             }
         }
 
@@ -117,7 +119,7 @@ namespace IronRuby.Runtime {
             int minLength = itemCount + count;
             T[] a;
             if (array.Length < minLength) {
-                a = new T[GetExpandedSize(array.Length, minLength)];
+                a = new T[GetExpandedSize(array, minLength)];
                 Array.Copy(array, 0, a, 0, index);
             } else {
                 a = array;
@@ -127,7 +129,7 @@ namespace IronRuby.Runtime {
             array = a;
         }
 
-        private static void Fill<T>(T[]/*!*/ array, int index, T item, int repeatCount) {
+        internal static void Fill<T>(T[]/*!*/ array, int index, T item, int repeatCount) {
             for (int i = index; i < index + repeatCount; i++) {
                 array[i] = item;
             }
@@ -230,9 +232,6 @@ namespace IronRuby.Runtime {
             return -1;
         }
 
-        internal const int ReservedHashCode = Int32.MaxValue;
-
-        // never returns ReservedHashCode
         internal static int GetValueHashCode(this string/*!*/ str, out int binarySum) {
             int result = 5381;
             int sum = 0;
@@ -242,10 +241,9 @@ namespace IronRuby.Runtime {
                 sum |= c;
             }
             binarySum = sum;
-            return result == ReservedHashCode ? 1 : result;
+            return result;
         }
 
-        // never returns ReservedHashCode
         internal static int GetValueHashCode(this char[]/*!*/ array, int itemCount, out int binarySum) {
             int result = 5381;
             int sum = 0;
@@ -255,10 +253,9 @@ namespace IronRuby.Runtime {
                 sum |= c;
             }
             binarySum = sum;
-            return result == ReservedHashCode ? 1 : result;
+            return result;
         }
 
-        // never returns ReservedHashCode
         internal static int GetValueHashCode(this byte[]/*!*/ array, int itemCount, out int binarySum) {
             int result = 5381;
             int sum = 0;
@@ -268,7 +265,7 @@ namespace IronRuby.Runtime {
                 sum |= c;
             }
             binarySum = sum;
-            return result == ReservedHashCode ? 1 : result;
+            return result;
         }
 
         internal static int ValueCompareTo(this byte[]/*!*/ array, int itemCount, byte[]/*!*/ other) {
@@ -331,6 +328,19 @@ namespace IronRuby.Runtime {
             return defaultResult;
         }
 
+        internal static bool SubstringEquals(string/*!*/ name, int start, int count, string/*!*/ other) {
+            if (count != other.Length) {
+                return false;
+            }
+
+            for (int i = 0; i < count; i++) {
+                if (name[start + i] != other[i]) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
         public static TOutput[]/*!*/ ConvertAll<TInput, TOutput>(this TInput[]/*!*/ array, Converter<TInput, TOutput>/*!*/ converter) {
             var result = new TOutput[array.Length];
             for (int i = 0; i < array.Length; i++) {
@@ -379,6 +389,24 @@ namespace IronRuby.Runtime {
         public static char ToUpperHexDigit(this int digit) {
             return (char)((digit < 10) ? '0' + digit : 'A' + digit - 10);
         }
+
+        public static char ToUpperInvariant(this char c) {
+            return Char.ToUpper(c, CultureInfo.InvariantCulture);
+        }
+
+        public static char ToLowerInvariant(this char c) {
+            return Char.ToLower(c, CultureInfo.InvariantCulture);
+        }
+
+#if SILVERLIGHT
+        public static string/*!*/ ToUpperInvariant(this string/*!*/ str) {
+            return str.ToUpper(CultureInfo.InvariantCulture);
+        }
+
+        public static string/*!*/ ToLowerInvariant(this string/*!*/ str) {
+            return str.ToLower(CultureInfo.InvariantCulture);
+        }
+#endif
     }
 }
 

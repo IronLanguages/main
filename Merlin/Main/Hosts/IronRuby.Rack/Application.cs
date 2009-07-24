@@ -13,6 +13,7 @@ namespace IronRuby.Rack {
         private readonly object _app;
         private readonly string _appRoot;
         private readonly string _rackVersion;
+        private readonly string _gemPath;
 
         public object App {
             get { return _app; }
@@ -20,10 +21,12 @@ namespace IronRuby.Rack {
 
         private const string AppRootOptionName = "AppRoot";
         private const string RackVersionOptionName = "RackVersion";
+        private const string GemPathOptionName = "GemPath";
 
         public Application(HttpContext context) {
             _appRoot = GetRoot(context);
             _rackVersion = GetRackVersion();
+            _gemPath = GetGemPath();
 
             InitRack();
             _app = Rackup();
@@ -39,8 +42,7 @@ namespace IronRuby.Rack {
         }
 
         private void InitRack() {
-            // HACK Load gems from default MRI installation. This shouldn't be needed.
-            Environment.SetEnvironmentVariable("GEM_PATH", @"C:\ruby\lib\ruby\gems\1.8");
+            Environment.SetEnvironmentVariable("GEM_PATH", _gemPath);
 
             Utils.Log("=> Loading RubyGems");
             RubyEngine.Require("rubygems");
@@ -81,6 +83,10 @@ namespace IronRuby.Rack {
                 }
             }
             return root;
+        }
+
+        private static string GetGemPath() {
+            return ConfigurationManager.AppSettings[GemPathOptionName] ?? "";
         }
     }
 }

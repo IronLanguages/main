@@ -65,32 +65,33 @@ namespace IronRuby.Compiler.Ast {
             _dataOffset = dataOffset;
         }
 
+        private ScopeBuilder/*!*/ DefineLocals() {
+            return new ScopeBuilder(_definedScope.AllocateClosureSlotsForLocals(0), null, _definedScope);
+        }
+
         internal MSA.Expression<T>/*!*/ Transform<T>(AstGenerator/*!*/ gen) {
             Debug.Assert(gen != null);
 
-            ScopeBuilder scope = new ScopeBuilder();
+            ScopeBuilder scope = DefineLocals();
 
             MSA.ParameterExpression[] parameters;
             MSA.ParameterExpression selfVariable;
-            MSA.ParameterExpression rfcVariable;
             MSA.ParameterExpression runtimeScopeVariable;
             MSA.ParameterExpression blockParameter;
 
             if (gen.CompilerOptions.FactoryKind == TopScopeFactoryKind.None ||
                 gen.CompilerOptions.FactoryKind == TopScopeFactoryKind.Module) {
-                parameters = new MSA.ParameterExpression[5];
+                parameters = new MSA.ParameterExpression[4];
 
                 runtimeScopeVariable = parameters[0] = Ast.Parameter(typeof(RubyScope), "#scope");
                 selfVariable = parameters[1] = Ast.Parameter(typeof(object), "#self");
                 parameters[2] = Ast.Parameter(typeof(RubyModule), "#module");
                 blockParameter = parameters[3] = Ast.Parameter(typeof(Proc), "#block");
-                rfcVariable = parameters[4] = Ast.Parameter(typeof(RuntimeFlowControl), "#rfc");
             } else {
-                parameters = new MSA.ParameterExpression[3];
+                parameters = new MSA.ParameterExpression[2];
 
                 runtimeScopeVariable = parameters[0] = Ast.Parameter(typeof(RubyScope), "#scope");
-                rfcVariable = parameters[1] = Ast.Parameter(typeof(RuntimeFlowControl), "#rfc");
-                selfVariable = parameters[2] = Ast.Parameter(typeof(object), "#self");
+                selfVariable = parameters[1] = Ast.Parameter(typeof(object), "#self");
 
                 blockParameter = null;
             }
@@ -104,15 +105,40 @@ namespace IronRuby.Compiler.Ast {
                 selfVariable,
                 runtimeScopeVariable,
                 blockParameter,
-                rfcVariable,
                 gen.CompilerOptions.TopLevelMethodName, // method name
                 null                                    // parameters
             );
 
-            _definedScope.TransformLocals(scope);
+            MSA.Expression body;
 
-            MSA.Expression prologue, body;
+            if (gen.PrintInteractiveResult) {
+                var resultVariable = scope.DefineHiddenVariable("#result", typeof(object));
 
+                var epilogue = Methods.PrintInteractiveResult.OpCall(runtimeScopeVariable,
+                    Ast.Dynamic(ConvertToSAction.Make(gen.Context), typeof(MutableString),
+                        CallBuilder.InvokeMethod(gen.Context, "inspect", RubyCallSignature.WithScope(0),
+                            gen.CurrentScopeVariable, resultVariable
+                        )
+                    )
+                );
+
+                body = gen.TransformStatements(null, _statements, epilogue, ResultOperation.Store(resultVariable));
+            } else {
+                body = gen.TransformStatements(_statements, ResultOperation.Return);
+            }
+
+            // TODO:
+            var exceptionVariable = Ast.Parameter(typeof(Exception), "#exception");
+            body = AstUtils.Try(
+                body
+            ).Filter(exceptionVariable, Methods.TraceTopLevelCodeFrame.OpCall(runtimeScopeVariable, exceptionVariable),
+                Ast.Empty()
+            ).Finally(
+                LeaveInterpretedFrameExpression.Instance
+            );
+
+            // scope initialization:
+            MSA.Expression prologue;
             switch (gen.CompilerOptions.FactoryKind) {
                 case TopScopeFactoryKind.None:
                     prologue = Methods.InitializeScopeNoLocals.OpCall(runtimeScopeVariable, EnterInterpretedFrameExpression.Instance);
@@ -122,14 +148,20 @@ namespace IronRuby.Compiler.Ast {
                 case TopScopeFactoryKind.Module:
                 case TopScopeFactoryKind.File:
                 case TopScopeFactoryKind.WrappedFile:
-                    prologue = Methods.InitializeScope.OpCall(runtimeScopeVariable, scope.VisibleVariables(), EnterInterpretedFrameExpression.Instance);
+                    prologue = Methods.InitializeScope.OpCall(
+                        runtimeScopeVariable, scope.MakeLocalsStorage(), scope.GetVariableNamesExpression(),
+                        EnterInterpretedFrameExpression.Instance
+                    );
                     break;
 
                 case TopScopeFactoryKind.Main:
-                    prologue = Methods.InitializeScope.OpCall(runtimeScopeVariable, scope.VisibleVariables(), EnterInterpretedFrameExpression.Instance);
+                    prologue = Methods.InitializeScope.OpCall(
+                        runtimeScopeVariable, scope.MakeLocalsStorage(), scope.GetVariableNamesExpression(),
+                        EnterInterpretedFrameExpression.Instance
+                    );
                     if (_dataOffset >= 0) {
                         prologue = Ast.Block(
-                            prologue, 
+                            prologue,
                             Methods.SetDataConstant.OpCall(
                                 runtimeScopeVariable,
                                 gen.SourcePathConstant,
@@ -143,33 +175,8 @@ namespace IronRuby.Compiler.Ast {
                     throw Assert.Unreachable;
             }
 
-            if (gen.PrintInteractiveResult) {
-                var resultVariable = scope.DefineHiddenVariable("#result", typeof(object));
+            body = gen.AddReturnTarget(scope.CreateScope(Ast.Block(prologue, body)));
 
-                var epilogue = Methods.PrintInteractiveResult.OpCall(runtimeScopeVariable,
-                    Ast.Dynamic(ConvertToSAction.Make(gen.Context), typeof(MutableString),
-                        CallBuilder.InvokeMethod(gen.Context, "inspect", RubyCallSignature.WithScope(0),
-                            gen.CurrentScopeVariable, resultVariable
-                        )
-                    )
-                );
-
-                body = gen.TransformStatements(prologue, _statements, epilogue, ResultOperation.Store(resultVariable));
-            } else {
-                body = gen.TransformStatements(prologue, _statements, ResultOperation.Return);
-            }
-
-            // TODO:
-            var exceptionVariable = Ast.Parameter(typeof(Exception), "#exception");
-            body = AstUtils.Try(
-                body
-            ).Filter(exceptionVariable, Methods.TraceTopLevelCodeFrame.OpCall(runtimeScopeVariable, exceptionVariable),
-                Ast.Empty()
-            ).Finally(
-                LeaveInterpretedFrameExpression.Instance
-            );
-
-            body = gen.AddReturnTarget(scope.CreateScope(body));
             gen.LeaveSourceUnit();
 
             return Ast.Lambda<T>(body, GetEncodedName(gen), parameters);

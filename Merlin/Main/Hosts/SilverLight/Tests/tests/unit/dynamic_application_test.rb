@@ -41,8 +41,6 @@ describe 'Parsing init parameters' do
 end
 
 describe 'Hosting API' do
-  require 'Microsoft.Scripting'
-  
   it 'should create a ScriptRuntimeSetup' do
     setup = DynamicApplication.CreateRuntimeSetup
     setup.host_type.class.to_s.should.equal 'System::RuntimeType'

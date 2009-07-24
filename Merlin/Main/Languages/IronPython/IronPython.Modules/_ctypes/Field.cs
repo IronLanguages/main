@@ -35,7 +35,7 @@ namespace IronPython.Modules {
         /// introspection of the structure.
         /// </summary>
         [PythonType, PythonHidden]
-        public sealed class Field : PythonTypeSlot, ICodeFormattable {
+        public sealed class Field : PythonTypeDataSlot, ICodeFormattable {
             private readonly INativeType _fieldType;
             private readonly int _offset, _index, _bits = -1, _bitsOffset;
             private readonly string _fieldName;
@@ -76,7 +76,7 @@ namespace IronPython.Modules {
             internal override bool TryGetValue(CodeContext context, object instance, PythonType owner, out object value) {
                 if (instance != null) {
                     CData inst = (CData)instance;
-                    value = _fieldType.GetValue(inst._memHolder, _offset, false);
+                    value = _fieldType.GetValue(inst._memHolder, inst, _offset, false);
                     if (_bits == -1) {
                         return true;
                     }
@@ -114,10 +114,6 @@ namespace IronPython.Modules {
                 } else {
                     SetBitsValue(address, baseOffset, value);
                 }
-            }
-
-            internal override bool IsSetDescriptor(CodeContext context, PythonType owner) {
-                return true;
             }
 
             internal override bool TryDeleteValue(CodeContext context, object instance, PythonType owner) {
@@ -222,7 +218,7 @@ namespace IronPython.Modules {
 
                 // do the same for the existing value
                 int offset = checked(_offset + baseOffset);
-                object curValue = _fieldType.GetValue(address, offset, false);
+                object curValue = _fieldType.GetValue(address, null, offset, false);
                 ulong valueBits;
                 if (curValue is int) {
                     valueBits = (ulong)(int)curValue;

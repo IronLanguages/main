@@ -286,6 +286,11 @@ namespace IronPython.Hosting {
             } catch (Exception) {
             }
 
+            var sys = Engine.GetSysModule();
+            
+            sys.SetVariable("ps1", ">>> ");
+            sys.SetVariable("ps2", "... ");
+
             result = RunInteractiveLoop();
 
             return (int)result;
@@ -505,6 +510,13 @@ namespace IronPython.Hosting {
         protected override void UnhandledException(Exception e) {
             PythonOps.PrintException(new CodeContext(Scope, Language), e, Console);
         }
+
+        private new PythonContext Language {
+            get {
+                return (PythonContext)base.Language;
+            }
+        }
+
     }
 #endif
 }

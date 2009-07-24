@@ -43,6 +43,10 @@ namespace IronPython.Compiler {
         /// Include comments in the parse tree
         /// </summary>
         Verbatim           = 0x020,
+        /// <summary>
+        /// String Literals should be parsed as Unicode strings
+        /// </summary>
+        UnicodeLiterals    = 0x040,
     }
 
     [Serializable]
@@ -156,6 +160,16 @@ namespace IronPython.Compiler {
             set {
                 if (value) _languageFeatures |= PythonLanguageFeatures.PrintFunction;
                 else _languageFeatures &= ~PythonLanguageFeatures.PrintFunction;
+            }
+        }
+
+        public bool UnicodeLiterals {
+            get {
+                return (_languageFeatures & PythonLanguageFeatures.UnicodeLiterals) != 0;
+            }
+            set {
+                if (value) _languageFeatures |= PythonLanguageFeatures.UnicodeLiterals;
+                else _languageFeatures &= ~PythonLanguageFeatures.UnicodeLiterals;
             }
         }
 

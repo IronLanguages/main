@@ -15,6 +15,7 @@
 
 using System;
 using System.Runtime.Serialization;
+using System.ComponentModel;
 
 namespace IronPython.Runtime.Exceptions {
     #region Generated DeprecationWarningException

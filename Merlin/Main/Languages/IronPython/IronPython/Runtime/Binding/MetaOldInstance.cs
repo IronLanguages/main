@@ -153,7 +153,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         public override System.Collections.Generic.IEnumerable<string> GetDynamicMemberNames() {
-            foreach (object o in ((IMembersList)Value).GetMemberNames(DefaultContext.Default)) {
+            foreach (object o in ((IPythonMembersList)Value).GetMemberNames(DefaultContext.Default)) {
                 if (o is string) {
                     yield return (string)o;
                 }
@@ -193,7 +193,7 @@ namespace IronPython.Runtime.Binding {
                         ),
                         Ast.Block(
                             Utils.Try(
-                                Ast.Call(typeof(PythonOps).GetMethod("FunctionPushFrame")),
+                                Ast.Call(typeof(PythonOps).GetMethod("FunctionPushFrameCodeContext"), codeContext),
                                 Ast.Assign(
                                     tmp,
                                     Ast.Dynamic(

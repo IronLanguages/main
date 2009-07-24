@@ -31,16 +31,16 @@ using SpecialName = System.Runtime.CompilerServices.SpecialNameAttribute;
 [assembly: PythonModule("array", typeof(IronPython.Modules.ArrayModule))]
 namespace IronPython.Modules {
     public static class ArrayModule {
-        public static readonly PythonType/*!*/ ArrayType = DynamicHelpers.GetPythonTypeFromType(typeof(PythonArray));
-        public static readonly PythonType/*!*/ array = ArrayType;
+        public const string __doc__ = "Provides arrays for native data types.  These can be used for compact storage or native interop via ctypes";
+        public static readonly PythonType/*!*/ ArrayType = DynamicHelpers.GetPythonTypeFromType(typeof(array));
 
-        [PythonType("array")]
-        public class PythonArray : IPythonArray, IValueEquality, IEnumerable, IWeakReferenceable, ICollection, ICodeFormattable {
+        [PythonType]
+        public class array : IPythonArray, IValueEquality, IEnumerable, IWeakReferenceable, ICollection, ICodeFormattable, IList<object> {
             private ArrayData _data;
             private char _typeCode;
             private WeakRefTracker _tracker;
 
-            public PythonArray([BytesConversion]string type, [Optional]object initializer) {
+            public array([BytesConversion]string type, [Optional]object initializer) {
                 if (type == null || type.Length != 1) {
                     throw PythonOps.TypeError("expected character, got {0}", PythonTypeOps.GetName(type));
                 }
@@ -73,7 +73,7 @@ namespace IronPython.Modules {
             }
 
             [SpecialName]
-            public PythonArray InPlaceAdd(PythonArray other) {
+            public array InPlaceAdd(array other) {
                 if (typecode != other.typecode) throw PythonOps.TypeError("cannot add different typecodes");
 
                 if (other._data.Length != 0) {
@@ -83,11 +83,10 @@ namespace IronPython.Modules {
                 return this;
             }
 
-            [SpecialName]
-            public static PythonArray operator +(PythonArray self, PythonArray other) {
+            public static array operator +(array self, array other) {
                 if (self.typecode != other.typecode) throw PythonOps.TypeError("cannot add different typecodes");
 
-                PythonArray res = new PythonArray(self.typecode, Type.Missing);
+                array res = new array(self.typecode, Type.Missing);
                 foreach (object o in self) {
                     res.append(o);
                 }
@@ -100,7 +99,7 @@ namespace IronPython.Modules {
             }
 
             [SpecialName]
-            public PythonArray InPlaceMultiply(int value) {
+            public array InPlaceMultiply(int value) {
                 if (value <= 0) {
                     _data.Clear();
                 } else {
@@ -113,18 +112,18 @@ namespace IronPython.Modules {
                 return this;
             }
 
-            public static PythonArray operator *(PythonArray array, int value) {
+            public static array operator *(array array, int value) {
                 if ((BigInteger)value * array.__len__() * array.itemsize > SysModule.maxsize) {
                     throw PythonOps.MemoryError("");
                 }
-                PythonArray data = new PythonArray(array.typecode, Type.Missing);
+                array data = new array(array.typecode, Type.Missing);
                 for (int i = 0; i < value; i++) {
                     data.extend(array);
                 }
                 return data;
             }
 
-            public static PythonArray operator *(PythonArray array, BigInteger value) {
+            public static array operator *(array array, BigInteger value) {
                 if (value * array.__len__() * array.itemsize > SysModule.maxsize) {
                     throw PythonOps.MemoryError("");
                 }
@@ -135,18 +134,18 @@ namespace IronPython.Modules {
                 return array * intValue;
             }
 
-            public static PythonArray operator *(int value, PythonArray array) {
+            public static array operator *(int value, array array) {
                 if ((BigInteger)value * array.__len__() * array.itemsize > SysModule.maxsize) {
                     throw PythonOps.MemoryError("");
                 }
-                PythonArray data = new PythonArray(array.typecode, Type.Missing);
+                array data = new array(array.typecode, Type.Missing);
                 for (int i = 0; i < value; i++) {
                     data.extend(array);
                 }
                 return data;
             }
 
-            public static PythonArray operator *(BigInteger value, PythonArray array) {
+            public static array operator *(BigInteger value, array array) {
                 if (value * array.__len__() * array.itemsize > SysModule.maxsize) {
                     throw PythonOps.MemoryError("");
                 }
@@ -198,7 +197,7 @@ namespace IronPython.Modules {
             }
 
             public void extend(object iterable) {
-                PythonArray pa = iterable as PythonArray;
+                array pa = iterable as array;
                 if (pa != null && typecode != pa.typecode) {
                     throw PythonOps.TypeError("cannot extend with different typecode");
                 }
@@ -340,6 +339,10 @@ namespace IronPython.Modules {
                 return res;
             }
 
+            public void read(PythonFile f, int n) {
+                fromfile(f, n);
+            }
+
             public void remove(object value) {
                 if (value == null) throw PythonOps.ValueError("got None, expected value");
 
@@ -478,7 +481,7 @@ namespace IronPython.Modules {
                     int start, stop, step;
                     index.indices(_data.Length, out start, out stop, out step);
 
-                    PythonArray pa = new PythonArray(new string(_typeCode, 1), Type.Missing);
+                    array pa = new array(new string(_typeCode, 1), Type.Missing);
                     if (step < 0) {
                         for (int i = start; i > stop; i += step) {
                             pa._data.Append(_data.GetData(i));
@@ -512,7 +515,7 @@ namespace IronPython.Modules {
             }
 
             private void CheckSliceAssignType(object value) {
-                PythonArray pa = value as PythonArray;
+                array pa = value as array;
                 if (pa == null) {
                     throw PythonOps.TypeError("can only assign array (not \"{0}\") to array slice", PythonTypeOps.GetName(value));
                 } else if (pa != null && pa._typeCode != _typeCode) {
@@ -553,6 +556,10 @@ namespace IronPython.Modules {
                 SliceNoStep(value, start, stop);
             }
 
+            public void __delslice__(object start, object stop) {
+                __delitem__(new Slice(start, stop));
+            }
+
             public PythonTuple __reduce__() {
                 return PythonOps.MakeTuple(
                     DynamicHelpers.GetPythonType(this),
@@ -564,11 +571,11 @@ namespace IronPython.Modules {
                 );
             }
 
-            public PythonArray __copy__() {
-                return new PythonArray(typecode, this);
+            public array __copy__() {
+                return new array(typecode, this);
             }
 
-            public PythonArray __deepcopy__() {
+            public array __deepcopy__() {
                 // we only have simple data so this is the same as a copy
                 return __copy__();
             }
@@ -943,7 +950,7 @@ namespace IronPython.Modules {
             }
 
             bool IValueEquality.ValueEquals(object other) {
-                PythonArray pa = other as PythonArray;
+                array pa = other as array;
                 if (pa == null) return false;
 
                 if (_data.Length != pa._data.Length) return false;
@@ -1035,7 +1042,7 @@ namespace IronPython.Modules {
             #region IRichComparable Members
 
             private bool TryCompare(object other, out int res) {
-                PythonArray pa = other as PythonArray;
+                array pa = other as array;
                 if (pa == null || pa.typecode != typecode) {
                     res = 0;
                     return false;
@@ -1054,17 +1061,7 @@ namespace IronPython.Modules {
             }
 
             [return: MaybeNotImplemented]
-            public object __cmp__(object other) {
-                int res;
-                if (!TryCompare(other, out res)) {
-                    return NotImplementedType.Value;
-                }
-
-                return ScriptingRuntimeHelpers.Int32ToObject(res);
-            }
-
-            [return: MaybeNotImplemented]
-            public static object operator >(PythonArray self, object other) {
+            public static object operator >(array self, object other) {
                 int res;
                 if (!self.TryCompare(other, out res)) {
                     return NotImplementedType.Value;
@@ -1074,7 +1071,7 @@ namespace IronPython.Modules {
             }
 
             [return: MaybeNotImplemented]
-            public static object operator <(PythonArray self, object other) {
+            public static object operator <(array self, object other) {
                 int res;
                 if (!self.TryCompare(other, out res)) {
                     return NotImplementedType.Value;
@@ -1084,7 +1081,7 @@ namespace IronPython.Modules {
             }
 
             [return: MaybeNotImplemented]
-            public static object operator >=(PythonArray self, object other) {
+            public static object operator >=(array self, object other) {
                 int res;
                 if (!self.TryCompare(other, out res)) {
                     return NotImplementedType.Value;
@@ -1094,21 +1091,13 @@ namespace IronPython.Modules {
             }
 
             [return: MaybeNotImplemented]
-            public static object operator <=(PythonArray self, object other) {
+            public static object operator <=(array self, object other) {
                 int res;
                 if (!self.TryCompare(other, out res)) {
                     return NotImplementedType.Value;
                 }
 
                 return ScriptingRuntimeHelpers.BooleanToObject(res <= 0);
-            }
-
-            #endregion
-
-            #region ISequence Members
-
-            object ISequence.__getslice__(int start, int stop) {
-                return this[new Slice(start, stop)];
             }
 
             #endregion
@@ -1129,6 +1118,69 @@ namespace IronPython.Modules {
 
             object ICollection.SyncRoot {
                 get { return this; }
+            }
+
+            #endregion
+
+            #region IList<object> Members
+
+            int IList<object>.IndexOf(object item) {
+                return _data.Index(item);
+            }
+
+            void IList<object>.Insert(int index, object item) {
+                insert(index, item);
+            }
+
+            void IList<object>.RemoveAt(int index) {
+                __delitem__(index);
+            }
+
+            #endregion
+
+            #region ICollection<object> Members
+
+            void ICollection<object>.Add(object item) {
+                append(item);
+            }
+
+            void ICollection<object>.Clear() {
+                __delitem__(new Slice(null, null));
+            }
+
+            bool ICollection<object>.Contains(object item) {
+                return __contains__(item);
+            }
+
+            void ICollection<object>.CopyTo(object[] array, int arrayIndex) {
+                throw new NotImplementedException();
+            }
+
+            int ICollection<object>.Count {
+                get { return __len__(); }
+            }
+
+            bool ICollection<object>.IsReadOnly {
+                get { return false; }
+            }
+
+            bool ICollection<object>.Remove(object item) {
+                try {
+                    remove(item);
+                    return true;
+                } catch (ArgumentException) {
+                    return false;
+                }
+            }
+
+            #endregion
+
+            #region IEnumerable<object> Members
+
+            IEnumerator<object> IEnumerable<object>.GetEnumerator() {
+                for (int i = 0; i < _data.Length; i++) {
+                    yield return _data.GetData(i);
+                }
             }
 
             #endregion

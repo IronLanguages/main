@@ -42,7 +42,6 @@ namespace IronPython.Runtime.Binding {
         private SlotCache/*!*/ _typeMembers = new SlotCache();
         private SlotCache/*!*/ _resolvedMembers = new SlotCache();
         private Dictionary<Type/*!*/, IList<Type/*!*/>/*!*/>/*!*/ _dlrExtensionTypes = MakeExtensionTypes();
-        private readonly OldGetMemberAction EmptyGetMemberAction;        
 
         [MultiRuntimeAware]
         private static readonly Dictionary<Type/*!*/, ExtensionTypeInfo/*!*/>/*!*/ _sysTypes = MakeSystemTypes();
@@ -59,11 +58,9 @@ namespace IronPython.Runtime.Binding {
                     DomainManager_AssemblyLoaded(this, new AssemblyLoadedEventArgs(asm));
                 }
             }
-
-            EmptyGetMemberAction = OldGetMemberAction.Make(this, String.Empty);
         }
 
-        public override Expression/*!*/ ConvertExpression(Expression/*!*/ expr, Type/*!*/ toType, ConversionResultKind kind, Expression context) {
+        public override Expression/*!*/ ConvertExpression(Expression/*!*/ expr, Type/*!*/ toType, ConversionResultKind kind, OverloadResolverFactory factory) {
             ContractUtils.RequiresNotNull(expr, "expr");
             ContractUtils.RequiresNotNull(toType, "toType");
 
@@ -88,7 +85,7 @@ namespace IronPython.Runtime.Binding {
             }
 
             return Binders.Convert(
-                context,
+                ((PythonOverloadResolverFactory)factory)._codeContext,
                 _context,
                 visType,
                 visType == typeof(char) ? ConversionResultKind.ImplicitCast : kind,
@@ -185,9 +182,9 @@ namespace IronPython.Runtime.Binding {
             );
         }
 
-        public override ErrorInfo/*!*/ MakeNonPublicMemberGetError(Expression codeContext, MemberTracker member, Type type, Expression instance) {
+        public override ErrorInfo/*!*/ MakeNonPublicMemberGetError(OverloadResolverFactory resolverFactory, MemberTracker member, Type type, DynamicMetaObject instance) {
             if (PrivateBinding) {
-                return base.MakeNonPublicMemberGetError(codeContext, member, type, instance);
+                return base.MakeNonPublicMemberGetError(resolverFactory, member, type, instance);
             }
 
             return ErrorInfo.FromValue(
@@ -195,14 +192,13 @@ namespace IronPython.Runtime.Binding {
             );
         }
 
-        public override ErrorInfo/*!*/ MakeStaticAssignFromDerivedTypeError(Type accessingType, MemberTracker info, Expression assignedValue, Expression context) {
-            return MakeMissingMemberError(accessingType, info.Name);
+        public override ErrorInfo/*!*/ MakeStaticAssignFromDerivedTypeError(Type accessingType, DynamicMetaObject instance, MemberTracker info, DynamicMetaObject assignedValue, OverloadResolverFactory factory) {
+            return MakeMissingMemberError(accessingType, instance, info.Name);
         }
 
-        public override ErrorInfo/*!*/ MakeStaticPropertyInstanceAccessError(PropertyTracker/*!*/ tracker, bool isAssignment, IList<Expression/*!*/>/*!*/ parameters) {
+        public override ErrorInfo/*!*/ MakeStaticPropertyInstanceAccessError(PropertyTracker/*!*/ tracker, bool isAssignment, IList<DynamicMetaObject>/*!*/ parameters) {            
             ContractUtils.RequiresNotNull(tracker, "tracker");
             ContractUtils.RequiresNotNull(parameters, "parameters");
-            ContractUtils.RequiresNotNullItems(parameters, "parameters");
 
             if (isAssignment) {
                 return ErrorInfo.FromException(
@@ -228,59 +224,41 @@ namespace IronPython.Runtime.Binding {
             return DynamicHelpers.GetPythonTypeFromType(t).Name;
         }
 
-        public override MemberGroup/*!*/ GetMember(OldDynamicAction action, Type type, string name) {
+        public override MemberGroup/*!*/ GetMember(MemberRequestKind actionKind, Type type, string name) {
             MemberGroup mg;
-            if (!_resolvedMembers.TryGetCachedMember(type, name, action.Kind == DynamicActionKind.GetMember, out mg)) {
+            if (!_resolvedMembers.TryGetCachedMember(type, name, actionKind == MemberRequestKind.Get, out mg)) {
                 mg = TypeInfo.GetMemberAll(
                     this,
-                    action,
+                    actionKind,
                     type,
                     name);
 
-                _resolvedMembers.CacheSlot(type, action.Kind == DynamicActionKind.GetMember, name, PythonTypeOps.GetSlot(mg, name, PrivateBinding), mg);
+                _resolvedMembers.CacheSlot(type, actionKind == MemberRequestKind.Get, name, PythonTypeOps.GetSlot(mg, name, PrivateBinding), mg);
             }
 
             return mg ?? MemberGroup.EmptyGroup;
         }
 
 
-        public override ErrorInfo/*!*/ MakeEventValidation(MemberGroup/*!*/ members, Expression eventObject, Expression/*!*/ value, Expression/*!*/ codeContext) {
+        public override ErrorInfo/*!*/ MakeEventValidation(MemberGroup/*!*/ members, DynamicMetaObject eventObject, DynamicMetaObject/*!*/ value, OverloadResolverFactory/*!*/ factory) {            
             EventTracker ev = (EventTracker)members[0];
 
             return ErrorInfo.FromValueNoError(
                Ast.Block(
                    Ast.Call(
                        typeof(PythonOps).GetMethod("SlotTrySetValue"),
-                       codeContext,
+                       ((PythonOverloadResolverFactory)factory)._codeContext,
                        AstUtils.Constant(PythonTypeOps.GetReflectedEvent(ev)),
-                       eventObject != null ? AstUtils.Convert(eventObject, typeof(object)) : AstUtils.Constant(null),
+                       eventObject != null ? AstUtils.Convert(eventObject.Expression, typeof(object)) : AstUtils.Constant(null),
                        AstUtils.Constant(null, typeof(PythonType)),
-                       AstUtils.Convert(value, typeof(object))
+                       AstUtils.Convert(value.Expression, typeof(object))
                    ),
                    Ast.Constant(null)
                )
             );
         }
 
-        public override ErrorInfo MakeEventValidation(RuleBuilder rule, MemberGroup members) {
-            EventTracker ev = (EventTracker)members[0];
-
-            return ErrorInfo.FromValueNoError(
-               Ast.Block(
-                   Ast.Call(
-                       typeof(PythonOps).GetMethod("SlotTrySetValue"),
-                       rule.Context,
-                       AstUtils.Constant(PythonTypeOps.GetReflectedEvent(ev)),
-                       AstUtils.Convert(rule.Parameters[0], typeof(object)),
-                       AstUtils.Constant(null, typeof(PythonType)),
-                       AstUtils.Convert(rule.Parameters[1], typeof(object))
-                   ),
-                   Ast.Constant(null)
-               )
-            );
-        }
-
-        public override ErrorInfo MakeMissingMemberError(Type type, string name) {
+        public override ErrorInfo MakeMissingMemberError(Type type, DynamicMetaObject self, string name) {
             string typeName;
             if (typeof(TypeTracker).IsAssignableFrom(type)) {
                 typeName = "type";
@@ -294,6 +272,32 @@ namespace IronPython.Runtime.Binding {
                     AstUtils.Constant(String.Format("'{0}' object has no attribute '{1}'", typeName, name))
                 )
             );
+        }
+
+        public override ErrorInfo MakeMissingMemberErrorForAssign(Type type, DynamicMetaObject self, string name) {
+            if (self != null) {
+                return MakeMissingMemberError(type, self, name);
+            }
+
+            return ErrorInfo.FromException(
+                Ast.New(
+                    typeof(ArgumentTypeException).GetConstructor(new Type[] { typeof(string) }),
+                    AstUtils.Constant(String.Format("can't set attributes of built-in/extension type '{0}'", NameConverter.GetTypeName(type)))
+                )
+            );
+        }
+
+        public override ErrorInfo MakeMissingMemberErrorForAssignReadOnlyProperty(Type type, DynamicMetaObject self, string name) {
+            return ErrorInfo.FromException(
+                Ast.New(
+                    typeof(MissingMemberException).GetConstructor(new Type[] { typeof(string) }),
+                    AstUtils.Constant(String.Format("can't assign to read-only property {0} of type '{1}'", name, NameConverter.GetTypeName(type)))
+                )
+            );
+        }
+
+        public override ErrorInfo MakeMissingMemberErrorForDelete(Type type, DynamicMetaObject self, string name) {
+            return MakeMissingMemberErrorForAssign(type, self, name);
         }
 
         /// <summary>
@@ -386,33 +390,33 @@ namespace IronPython.Runtime.Binding {
             return _dlrExtensionTypes.ContainsKey(t);
         }
 
-        public override Expression ReturnMemberTracker(Type type, MemberTracker memberTracker) {
-            Expression res = ReturnMemberTracker(type, memberTracker, PrivateBinding);
+        public override DynamicMetaObject ReturnMemberTracker(Type type, MemberTracker memberTracker) {
+            var res = ReturnMemberTracker(type, memberTracker, PrivateBinding);
 
             return res ?? base.ReturnMemberTracker(type, memberTracker);
         }
 
-        private static Expression ReturnMemberTracker(Type type, MemberTracker memberTracker, bool privateBinding) {
+        private static DynamicMetaObject ReturnMemberTracker(Type type, MemberTracker memberTracker, bool privateBinding) {
             switch (memberTracker.MemberType) {
                 case TrackerTypes.TypeGroup:
-                    return AstUtils.Constant(memberTracker);
+                    return new DynamicMetaObject(AstUtils.Constant(memberTracker), BindingRestrictions.Empty, memberTracker);
                 case TrackerTypes.Type:
                     return ReturnTypeTracker((TypeTracker)memberTracker);
                 case TrackerTypes.Bound:
-                    return ReturnBoundTracker((BoundMemberTracker)memberTracker, privateBinding);
+                    return new DynamicMetaObject(ReturnBoundTracker((BoundMemberTracker)memberTracker, privateBinding), BindingRestrictions.Empty);
                 case TrackerTypes.Property:
-                    return ReturnPropertyTracker((PropertyTracker)memberTracker, privateBinding);
+                    return new DynamicMetaObject(ReturnPropertyTracker((PropertyTracker)memberTracker, privateBinding), BindingRestrictions.Empty);;
                 case TrackerTypes.Event:
-                    return Ast.Call(
+                    return new DynamicMetaObject(Ast.Call(
                         typeof(PythonOps).GetMethod("MakeBoundEvent"),
                         AstUtils.Constant(PythonTypeOps.GetReflectedEvent((EventTracker)memberTracker)),
                         AstUtils.Constant(null),
                         AstUtils.Constant(type)
-                    );
+                    ), BindingRestrictions.Empty);;
                 case TrackerTypes.Field:
-                    return ReturnFieldTracker((FieldTracker)memberTracker);
+                    return new DynamicMetaObject(ReturnFieldTracker((FieldTracker)memberTracker), BindingRestrictions.Empty);;
                 case TrackerTypes.MethodGroup:
-                    return ReturnMethodGroup((MethodGroup)memberTracker);
+                    return new DynamicMetaObject(ReturnMethodGroup((MethodGroup)memberTracker), BindingRestrictions.Empty); ;
                 case TrackerTypes.Constructor:
                     MethodBase[] ctors = CompilerHelpers.GetConstructors(type, privateBinding, true);
                     object val;
@@ -426,9 +430,13 @@ namespace IronPython.Runtime.Binding {
                         val = PythonTypeOps.GetConstructor(type, InstanceOps.NonDefaultNewInst, ctors);
                     }
 
-                    return AstUtils.Constant(val);
+                    return new DynamicMetaObject(AstUtils.Constant(val), BindingRestrictions.Empty, val);
                 case TrackerTypes.Custom:
-                    return AstUtils.Constant(((PythonCustomTracker)memberTracker).GetSlot(), typeof(PythonTypeSlot));
+                    return new DynamicMetaObject(
+                        AstUtils.Constant(((PythonCustomTracker)memberTracker).GetSlot(), typeof(PythonTypeSlot)),
+                        BindingRestrictions.Empty,
+                        ((PythonCustomTracker)memberTracker).GetSlot()
+                    );
             }
             return null;
         }
@@ -466,7 +474,7 @@ namespace IronPython.Runtime.Binding {
             if (!_typeMembers.TryGetCachedSlot(curType, true, strName, out slot)) {
                 MemberGroup mg = TypeInfo.GetMember(
                     this,
-                    OldGetMemberAction.Make(this, name),
+                    MemberRequestKind.Get,
                     curType,
                     strName);
 
@@ -494,7 +502,7 @@ namespace IronPython.Runtime.Binding {
             if (!_resolvedMembers.TryGetCachedSlot(curType, true, strName, out slot)) {
                 MemberGroup mg = TypeInfo.GetMemberAll(
                     this,
-                    OldGetMemberAction.Make(this, strName),
+                    MemberRequestKind.Get,
                     curType,
                     strName);
 
@@ -522,7 +530,7 @@ namespace IronPython.Runtime.Binding {
 
                 foreach (ResolvedMember rm in TypeInfo.GetMembers(
                     this,
-                    EmptyGetMemberAction,
+                    MemberRequestKind.Get,
                     type.UnderlyingSystemType)) {
 
                     if (!members.ContainsKey(rm.Name)) {
@@ -558,7 +566,7 @@ namespace IronPython.Runtime.Binding {
 
                 foreach (ResolvedMember rm in TypeInfo.GetMembersAll(
                     this,
-                    EmptyGetMemberAction,
+                    MemberRequestKind.Get,
                     type.UnderlyingSystemType)) {
 
                     if (!members.ContainsKey(rm.Name)) {
@@ -599,13 +607,13 @@ namespace IronPython.Runtime.Binding {
                     return Ast.New(
                         typeof(ReflectedIndexer).GetConstructor(new Type[] { typeof(ReflectedIndexer), typeof(object) }),
                         AstUtils.Constant(new ReflectedIndexer(((ReflectedPropertyTracker)pt).Property, NameType.Property, privateBinding)),
-                        boundMemberTracker.Instance
+                        boundMemberTracker.Instance.Expression
                     );
                 case TrackerTypes.Event:
                     return Ast.Call(
                         typeof(PythonOps).GetMethod("MakeBoundEvent"),
                         AstUtils.Constant(PythonTypeOps.GetReflectedEvent((EventTracker)boundMemberTracker.BoundTo)),
-                        boundMemberTracker.Instance,
+                        boundMemberTracker.Instance.Expression,
                         AstUtils.Constant(boundMemberTracker.DeclaringType)
                     );
                 case TrackerTypes.MethodGroup:
@@ -613,7 +621,7 @@ namespace IronPython.Runtime.Binding {
                         typeof(PythonOps).GetMethod("MakeBoundBuiltinFunction"),
                         AstUtils.Constant(GetBuiltinFunction((MethodGroup)boundTo)),
                         AstUtils.Convert(
-                            boundMemberTracker.Instance,
+                            boundMemberTracker.Instance.Expression,
                             typeof(object)
                         )
                     );
@@ -640,9 +648,10 @@ namespace IronPython.Runtime.Binding {
             return AstUtils.Constant(PythonTypeOps.GetReflectedProperty(propertyTracker, null, privateBinding));
         }
 
-        private static Expression ReturnTypeTracker(TypeTracker memberTracker) {
+        private static DynamicMetaObject ReturnTypeTracker(TypeTracker memberTracker) {
             // all non-group types get exposed as PythonType's
-            return AstUtils.Constant(DynamicHelpers.GetPythonTypeFromType(memberTracker.Type));
+            object value = DynamicHelpers.GetPythonTypeFromType(memberTracker.Type);
+            return new DynamicMetaObject(Ast.Constant(value), BindingRestrictions.Empty, value);
         }
 
         internal ScriptDomainManager/*!*/ DomainManager {

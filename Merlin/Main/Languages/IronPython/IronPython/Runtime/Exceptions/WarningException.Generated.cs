@@ -17,6 +17,7 @@ using System;
 using System.Runtime.Serialization;
 
 namespace IronPython.Runtime.Exceptions {
+#if SILVERLIGHT
     #region Generated WarningException
 
     // *** BEGIN GENERATED CODE ***
@@ -39,4 +40,5 @@ namespace IronPython.Runtime.Exceptions {
     // *** END GENERATED CODE ***
 
     #endregion
+#endif
 }

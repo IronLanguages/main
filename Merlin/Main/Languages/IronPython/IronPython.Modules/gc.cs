@@ -28,7 +28,8 @@ using SpecialName = System.Runtime.CompilerServices.SpecialNameAttribute;
 [assembly: PythonModule("gc", typeof(IronPython.Modules.PythonGC))]
 namespace IronPython.Modules {
     public static class PythonGC {
-        public static PythonType gc = DynamicHelpers.GetPythonTypeFromType(typeof(PythonGC));
+        public const string __doc__ = "Provides functions for inspecting, configuring, and forcing garbage collection.";
+
         public const int DEBUG_STATS = 1;
         public const int DEBUG_COLLECTABLE = 2;
         public const int DEBUG_UNCOLLECTABLE = 4;
@@ -55,25 +56,12 @@ namespace IronPython.Modules {
             return ScriptingRuntimeHelpers.True;
         }
 
-        public static int collect(int generation) {
-            if (generation > GC.MaxGeneration || generation < 0) throw PythonOps.ValueError("invalid generation {0}", generation);
-
-            long start = GC.GetTotalMemory(false);
-#if !SILVERLIGHT // GC.Collect
-            GC.Collect(generation);
-#else
-            GC.Collect();
-#endif
-            GC.WaitForPendingFinalizers();
-            
-            return (int)Math.Max(start - GC.GetTotalMemory(false), 0);
+        public static int collect(CodeContext context, int generation) {
+            return PythonContext.GetContext(context).Collect(generation);
         }
 
-        public static int collect() {
-            long start = GC.GetTotalMemory(false);
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            return (int)Math.Max(start - GC.GetTotalMemory(false), 0);
+        public static int collect(CodeContext context) {
+            return collect(context, GC.MaxGeneration);
         }
 
         public static void set_debug(object o) {

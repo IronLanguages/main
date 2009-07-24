@@ -30,8 +30,9 @@ using IronPython.Runtime.Operations;
 
 [assembly: PythonModule("_md5", typeof(IronPython.Modules.PythonMD5))]
 namespace IronPython.Modules {
-    [Documentation("MD5 hash algorithm")]
     public static class PythonMD5 {
+        public const string __doc__ = "MD5 hash algorithm";
+
         [ThreadStatic]
         private static MD5CryptoServiceProvider _hasher;
 
@@ -48,35 +49,47 @@ namespace IronPython.Modules {
         }
 
         [Documentation("new([data]) -> object (new md5 object)")]
-        public static md5 @new(object data) {
-            return new md5(data);
+        public static MD5Type @new(object data) {
+            return new MD5Type(data);
         }
 
         [Documentation("new([data]) -> object (new md5 object)")]
-        public static md5 @new(Bytes data) {
-            return new md5(data);
+        public static MD5Type @new(Bytes data) {
+            return new MD5Type(data);
         }
 
         [Documentation("new([data]) -> object (new md5 object)")]
-        public static md5 @new() {
-            return new md5();
+        public static MD5Type @new() {
+            return new MD5Type();
         }
 
         [Documentation("new([data]) -> object (object used to calculate MD5 hash)")]
         [PythonType]
-        public class md5 : ICloneable {
-            byte[] _bytes;
-            byte[] _hash;
-            public const int digest_size = 16;
+        public class MD5Type : ICloneable {
+            private byte[] _bytes;
+            private byte[] _hash;
+            public const int digest_size = 16, digestsize = 16;
 
-            public md5() : this(new byte[0]) { }
+            public MD5Type() : this(new byte[0]) { }
 
-            public md5(object initialData) {
+            public MD5Type(object initialData) {                
                 _bytes = new byte[0];
                 update(initialData);
             }
 
-            internal md5(IList<byte> initialBytes) {
+            public string name {
+                get {
+                    return "MD5";
+                }
+            }
+
+            public int block_size {
+                get {
+                    return GetHasher().InputBlockSize;
+                }
+            }
+
+            internal MD5Type(IList<byte> initialBytes) {
                 _bytes = new byte[0];
                 update(initialBytes);
             }
@@ -114,8 +127,8 @@ namespace IronPython.Modules {
             }
 
             [Documentation("copy() -> object (copy of this md5 object)")]
-            public md5 copy() {
-                return new md5(_bytes);
+            public MD5Type copy() {
+                return new MD5Type(_bytes);
             }
 
             object ICloneable.Clone() {

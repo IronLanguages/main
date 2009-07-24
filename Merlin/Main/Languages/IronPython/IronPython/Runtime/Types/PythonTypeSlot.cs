@@ -13,11 +13,9 @@
  *
  * ***************************************************************************/
 
-using System;
+using System.Dynamic;
 using System.Linq.Expressions;
 using System.Runtime.InteropServices;
-
-using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime.Binding;
 using IronPython.Runtime.Operations;
@@ -80,14 +78,14 @@ namespace IronPython.Runtime.Types {
         /// The default implementation just calls the TryGetValue method.  Subtypes of PythonTypeSlot can override
         /// this and provide a more optimal implementation.
         /// </summary>
-        internal virtual void MakeGetExpression(PythonBinder/*!*/ binder, Expression/*!*/ codeContext, Expression instance, Expression/*!*/ owner, ConditionalBuilder/*!*/ builder) {
+        internal virtual void MakeGetExpression(PythonBinder/*!*/ binder, Expression/*!*/ codeContext, DynamicMetaObject instance, DynamicMetaObject/*!*/ owner, ConditionalBuilder/*!*/ builder) {
             ParameterExpression tmp = Ast.Variable(typeof(object), "slotTmp");
             Expression call = Ast.Call(
                  typeof(PythonOps).GetMethod("SlotTryGetValue"),
                  codeContext,
                  AstUtils.Convert(AstUtils.WeakConstant(this), typeof(PythonTypeSlot)),
-                 instance ?? AstUtils.Constant(null),
-                 owner,
+                 instance != null ? instance.Expression : AstUtils.Constant(null),
+                 owner.Expression,
                  tmp
             );
 
@@ -117,7 +115,7 @@ namespace IronPython.Runtime.Types {
             return false;
         }
 
-        public object __get__(CodeContext/*!*/ context, object instance, [Optional]object typeContext) {
+        public virtual object __get__(CodeContext/*!*/ context, object instance, [DefaultParameterValue(null)]object typeContext) {
             PythonType dt = typeContext as PythonType;
 
             object res;
@@ -125,20 +123,6 @@ namespace IronPython.Runtime.Types {
                 return res;
 
             throw PythonOps.AttributeErrorForMissingAttribute(dt == null ? "?" : dt.Name, Symbols.GetDescriptor);
-        }
-
-#if FALSE
-        public void __set__(CodeContext/*!*/ context, object instance, object value) {
-            if (!TrySetValue(context, instance, DynamicHelpers.GetPythonType(instance), value)) {
-                throw PythonOps.AttributeErrorForMissingAttribute(DynamicHelpers.GetPythonType(instance).Name, Symbols.SetDescriptor);
-            }
-        }
-#endif
-
-        public void __delete__(CodeContext/*!*/ context, object instance) {
-            if (!TryDeleteValue(context, instance, DynamicHelpers.GetPythonType(instance))) {
-                throw PythonOps.AttributeErrorForMissingAttribute(DynamicHelpers.GetPythonType(instance).Name, Symbols.DeleteDescriptor);
-            }
         }
     }
 }

@@ -29,6 +29,8 @@ using Microsoft.Scripting.Utils;
 [assembly: PythonModule("_weakref", typeof(IronPython.Modules.PythonWeakRef))]
 namespace IronPython.Modules {
     public static partial class PythonWeakRef {
+        public const string __doc__ = "Provides support for creating weak references and proxies to objects";
+
         internal static IWeakReferenceable ConvertToWeakReferenceable(object obj) {
             IWeakReferenceable iwr = obj as IWeakReferenceable;
             if (iwr != null) return iwr;
@@ -173,6 +175,26 @@ namespace IronPython.Modules {
                 }
             }
 
+            [return: MaybeNotImplemented]
+            public static NotImplementedType operator >(@ref self, object other) {
+                return PythonOps.NotImplemented;
+            }
+
+            [return: MaybeNotImplemented]
+            public static NotImplementedType operator <(@ref self, object other) {
+                return PythonOps.NotImplemented;
+            }
+
+            [return: MaybeNotImplemented]
+            public static NotImplementedType operator <=(@ref self, object other) {
+                return PythonOps.NotImplemented;
+            }
+
+            [return: MaybeNotImplemented]
+            public static NotImplementedType operator >=(@ref self, object other) {
+                return PythonOps.NotImplemented;
+            }
+
             #region IValueEquality Members
 
             int IValueEquality.GetValueHashCode() {
@@ -228,8 +250,8 @@ namespace IronPython.Modules {
             #endregion            
         }
 
-        [PythonType, DynamicBaseTypeAttribute]
-        public sealed partial class weakproxy : IPythonObject, ICodeFormattable, IProxyObject, IValueEquality, IMembersList {
+        [PythonType, DynamicBaseTypeAttribute, PythonHidden]
+        public sealed partial class weakproxy : IPythonObject, ICodeFormattable, IProxyObject, IValueEquality, IPythonMembersList {
             private readonly WeakHandle _target;
             private readonly CodeContext/*!*/ _context;
 
@@ -384,7 +406,11 @@ namespace IronPython.Modules {
                 PythonOps.DeleteAttr(context, o, SymbolTable.StringToId(name));
             }
 
-            IList<object> IMembersList.GetMemberNames(CodeContext/*!*/ context) {
+            IList<string> IMembersList.GetMemberNames() {
+                return PythonOps.GetStringMemberList(this);
+            }
+
+            IList<object> IPythonMembersList.GetMemberNames(CodeContext/*!*/ context) {
                 object o;
                 if (!TryGetObject(out o)) {
                     // if we've been disconnected return an empty list
@@ -428,13 +454,13 @@ namespace IronPython.Modules {
             }
         }
 
-        [PythonType, DynamicBaseTypeAttribute]
+        [PythonType, DynamicBaseTypeAttribute, PythonHidden]
         public sealed partial class weakcallableproxy :
             IPythonObject,
             ICodeFormattable,            
             IProxyObject,
             IValueEquality,
-            IMembersList {
+            IPythonMembersList {
 
             private WeakHandle _target;
             private readonly CodeContext/*!*/ _context;
@@ -603,7 +629,11 @@ namespace IronPython.Modules {
                 PythonOps.DeleteAttr(context, o, SymbolTable.StringToId(name));
             }
 
-            IList<object> IMembersList.GetMemberNames(CodeContext/*!*/ context) {
+            IList<string> IMembersList.GetMemberNames() {
+                return PythonOps.GetStringMemberList(this);
+            }
+
+            IList<object> IPythonMembersList.GetMemberNames(CodeContext/*!*/ context) {
                 object o;
                 if (!TryGetObject(out o)) {
                     // if we've been disconnected return an empty list
@@ -649,7 +679,9 @@ namespace IronPython.Modules {
 
                 WeakRefTracker wrt = iwr.GetWeakRef();
                 if (wrt == null) {
-                    iwr.SetWeakRef(new WeakRefTracker(callback, self));
+                    if (!iwr.SetWeakRef(new WeakRefTracker(callback, self))) {
+                        throw PythonOps.TypeError("cannot create weak reference to '{0}' object", PythonOps.GetPythonTypeName(target));
+                    }
                 } else {
                     wrt.ChainCallback(callback, self);
                 }
@@ -657,22 +689,22 @@ namespace IronPython.Modules {
         }
     }
 
-    [PythonType]
+    [PythonType("wrapper_descriptor")]
     class SlotWrapper : PythonTypeSlot, ICodeFormattable {
-        SymbolId name;
-        PythonType type;
+        private readonly SymbolId _name;
+        private readonly PythonType _type;
 
         public SlotWrapper(SymbolId slotName, PythonType targetType) {
-            name = slotName;
-            this.type = targetType;
+            _name = slotName;
+            _type = targetType;
         }
 
         #region ICodeFormattable Members
 
         public virtual string/*!*/ __repr__(CodeContext/*!*/ context) {
             return String.Format("<slot wrapper {0} of {1} objects>",
-                PythonOps.Repr(context, SymbolTable.IdToString(name)),
-                PythonOps.Repr(context, type.Name));
+                PythonOps.Repr(context, SymbolTable.IdToString(_name)),
+                PythonOps.Repr(context, _type.Name));
         }
 
         #endregion
@@ -689,13 +721,13 @@ namespace IronPython.Modules {
 
             if (proxy == null)
                 throw PythonOps.TypeError("descriptor for {0} object doesn't apply to {1} object",
-                    PythonOps.Repr(context, type.Name),
+                    PythonOps.Repr(context, _type.Name),
                     PythonOps.Repr(context, PythonTypeOps.GetName(instance)));
 
-            if (!DynamicHelpers.GetPythonType(proxy.Target).TryGetBoundMember(context, proxy.Target, name, out value))
+            if (!DynamicHelpers.GetPythonType(proxy.Target).TryGetBoundMember(context, proxy.Target, _name, out value))
                 return false;
 
-            value = new GenericMethodWrapper(name, proxy);
+            value = new GenericMethodWrapper(_name, proxy);
             return true;
         }
 

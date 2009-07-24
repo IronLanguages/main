@@ -16,25 +16,16 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using IronRuby.Builtins;
-using IronRuby.Compiler;
-using IronRuby.Runtime.Calls;
-using System.Reflection;
-using IronRuby.Compiler.Generation;
-using System.Runtime.CompilerServices;
-using System.Collections.ObjectModel;
-using System.IO;
+using Microsoft.Scripting;
 using Microsoft.Scripting.Interpreter;
+using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
+using System.Threading;
 
 namespace IronRuby.Runtime {
-
-    public sealed class RuntimeFlowControl {
-        internal bool IsActiveMethod;
-    }
 
     public enum ScopeKind {
         TopLevel,
@@ -42,43 +33,70 @@ namespace IronRuby.Runtime {
         Module,
         Block
     }
+
+    public class RuntimeFlowControl {
+        // null -> this is an inactive flow-control scope (method or top)
+        // self -> this is an active RubyMethodScope or light RuntimeFlowControl scope (top scope cannot be active)
+        // other -> the inner-most flow-control scope
+        internal RuntimeFlowControl _activeFlowControlScope;
+
+        internal void InitializeRfc(Proc proc) {
+            if (proc != null && proc.Kind == ProcKind.Block) {
+                proc.Kind = ProcKind.Proc;
+                proc.Converter = this;
+            }
+        }
+
+        internal RuntimeFlowControl() {
+            // Perf note: Initialization is performed completely in the most derived scope classes to improve perf.
+        }
+
+        internal bool IsActiveMethod {
+            get { return _activeFlowControlScope == this; }
+        }
+
+        internal void LeaveMethod() {
+            Debug.Assert(!(this is RubyBlockScope) && !(this is RubyModuleScope));
+            _activeFlowControlScope = null;
+        }
+
+        internal RuntimeFlowControl/*!*/ FlowControlScope {
+            get { return _activeFlowControlScope ?? this; }
+        }
+    }
         
 #if !SILVERLIGHT
     [DebuggerTypeProxy(typeof(RubyScope.DebugView))]
 #endif
-    public abstract class RubyScope {
-        private sealed class EmptyRuntimeVariables : IRuntimeVariables {
-            int IRuntimeVariables.Count {
-                get { return 0; }
-            }
-
-            object IRuntimeVariables.this[int index] {
-                get { throw new IndexOutOfRangeException(); }
-                set { throw new IndexOutOfRangeException(); }
-            }
-        }
-
-        internal static readonly LocalsDictionary _EmptyLocals = new LocalsDictionary(new EmptyRuntimeVariables(), new SymbolId[0]);
-
+    public abstract class RubyScope : RuntimeFlowControl {
         internal bool InLoop;
         internal bool InRescue;
 
-        private IAttributesCollection/*!*/ _frame;
-        private readonly RubyTopLevelScope/*!*/ _top;
-        private readonly RubyScope _parent;
+        // closure:
+        private Dictionary<SymbolId, int> _staticLocalMapping;
+        private Dictionary<SymbolId, object> _dynamicLocals;
+        internal /*and protected*/ MutableTuple _locals; // null if there are no variables
+        internal /*and protected*/ SymbolId[] _variableNames; // empty if there are no variables
 
-        private readonly object _selfObject;
+        internal /*and protected readonly*/ RubyTopLevelScope/*!*/ _top;
+        internal /*and protected readonly*/ RubyScope _parent;
+
+        internal /*and protected readonly*/ object _selfObject;
 
         // cached ImmediateClassOf(_selfObject):
         private RubyClass _selfImmediateClass;
 
-        private readonly RuntimeFlowControl/*!*/ _runtimeFlowControl; // TODO: merge?
-
         // set by private/public/protected/module_function
-        private RubyMethodAttributes _methodAttributes;
+        internal /*and protected*/ RubyMethodAttributes _methodAttributes;
+
+        internal InterpretedFrame InterpretedFrame { get; set; }
 
         public abstract ScopeKind Kind { get; }
         public abstract bool InheritsLocalVariables { get; }
+
+        internal RubyScope() {
+            // Perf note: Initialization is performed completely in the most derived scope classes to improve perf.
+        }
 
         public virtual RubyModule Module {
             get { return null; }
@@ -107,10 +125,6 @@ namespace IronRuby.Runtime {
             set { _methodAttributes = value; }
         }
 
-        public RuntimeFlowControl/*!*/ RuntimeFlowControl {
-            get { return _runtimeFlowControl; }
-        }
-
         public RubyGlobalScope/*!*/ GlobalScope {
             get { return _top.RubyGlobalScope; }
         }
@@ -123,40 +137,16 @@ namespace IronRuby.Runtime {
             get { return _top.RubyContext; }
         }
 
-        public IAttributesCollection/*!*/ Frame {
-            get {
-                // TODO: Debug.Assert(_frame != null);
-                return _frame; 
-            }
-            internal set {
-                Debug.Assert(_frame == null && value != null);
-                _frame = value;
-            }
+        internal MutableTuple Locals {
+            get { return _locals; }
         }
 
-        internal InterpretedFrame InterpretedFrame { get; set; }
+        internal bool LocalsInitialized {
+            get { return _variableNames != null; }
+        }
 
         public RubyScope Parent {
             get { return _parent; }
-        }
-
-        // top scope:
-        protected RubyScope(RuntimeFlowControl/*!*/ runtimeFlowControl, object selfObject) {
-            _top = (RubyTopLevelScope)this;
-            _parent = null;
-            _selfObject = selfObject;
-            _runtimeFlowControl = runtimeFlowControl;
-            _methodAttributes = RubyMethodAttributes.PrivateInstance;
-        }
-
-        // other scopes:
-        protected RubyScope(RubyScope/*!*/ parent, RuntimeFlowControl/*!*/ runtimeFlowControl, object selfObject) {
-            Assert.NotNull(parent);
-            _parent = parent;
-            _top = parent.Top;
-            _selfObject = selfObject;
-            _runtimeFlowControl = runtimeFlowControl;
-            _methodAttributes = RubyMethodAttributes.PrivateInstance;
         }
 
         public bool IsEmpty {
@@ -167,30 +157,114 @@ namespace IronRuby.Runtime {
             get { return false; }
         }
 
-#if DEBUG
-        private string _debugName;
-
-        public override string ToString() {
-            return _debugName;
-        }
-#endif
-        [Conditional("DEBUG")]
-        public void SetDebugName(string name) {
-#if DEBUG
-            _debugName = name;
-#endif
+        protected virtual bool IsFlowControlScope {
+            get { return false; }
         }
 
-        // TODO:
+        #region Local Variables
+
+        internal void SetLocals(MutableTuple locals, SymbolId[]/*!*/ variableNames) {
+            Debug.Assert(_variableNames == null);
+            _locals = locals;
+            _variableNames = variableNames;
+        }
+
+        internal void SetEmptyLocals() {
+            Debug.Assert(_variableNames == null);
+            _variableNames = SymbolId.EmptySymbols;
+            _locals = null;
+        }
+
+        private void EnsureBoxes() {
+            if (_staticLocalMapping == null) {
+                int count = _variableNames.Length;
+                Dictionary<SymbolId, int> boxes = new Dictionary<SymbolId, int>(count);
+                for (int i = 0; i < count; i++) {
+                    boxes[_variableNames[i]] = i;
+                }
+                _staticLocalMapping = boxes;
+            }
+        }
+
+        private bool TryGetLocal(SymbolId name, out object value) {
+            EnsureBoxes();
+
+            int index;
+            if (_staticLocalMapping.TryGetValue(name, out index)) {
+                Debug.Assert(_locals != null);
+                value = _locals.GetValue(index);
+                return true;
+            }
+
+            if (_dynamicLocals == null) {
+                value = null;
+                return false;
+            }
+
+            lock (_dynamicLocals) {
+                return _dynamicLocals.TryGetValue(name, out value);
+            }
+        }
+
+        private bool TrySetLocal(SymbolId name, object value) {
+            EnsureBoxes();
+
+            int index;
+            if (_staticLocalMapping.TryGetValue(name, out index)) {
+                Debug.Assert(_locals != null);
+                _locals.SetValue(index, value);
+                return true;
+            }
+
+            if (_dynamicLocals == null) {
+                return false;
+            }
+
+            lock (_dynamicLocals) {
+                if (!_dynamicLocals.ContainsKey(name)) {
+                    return false;
+                }
+
+                _dynamicLocals[name] = value;
+            }
+            return true;
+        }
+
+        private IEnumerable<KeyValuePair<SymbolId, object>>/*!*/ GetDeclaredLocalVariables() {
+            for (int i = 0; i < _variableNames.Length; i++) {
+                Debug.Assert(_locals != null);
+                yield return new KeyValuePair<SymbolId, object>(_variableNames[i], _locals.GetValue(i));
+            }
+
+            if (_dynamicLocals != null) {
+                lock (_dynamicLocals) {
+                    foreach (var entry in _dynamicLocals) {
+                        yield return entry;
+                    }
+                }
+            }
+        }
+
+        private IEnumerable<SymbolId>/*!*/ GetDeclaredLocalSymbols() {
+            for (int i = 0; i < _variableNames.Length; i++) {
+                yield return _variableNames[i];
+            }
+
+            if (_dynamicLocals != null) {
+                lock (_dynamicLocals) {
+                    foreach (SymbolId name in _dynamicLocals.Keys) {
+                        yield return name;
+                    }
+                }
+            }
+        }
+
         public List<string/*!*/>/*!*/ GetVisibleLocalNames() {
             var result = new List<string>();
             RubyScope scope = this;
             while (true) {
-                foreach (object name in scope.Frame.Keys) {
-                    string strName = name as string;
-                    if (strName != null && !strName.StartsWith("#")) {
-                        result.Add(strName);
-                    }
+                foreach (SymbolId name in scope.GetDeclaredLocalSymbols()) {
+                    result.Add(SymbolTable.IdToString(name));
                 }
 
                 if (!scope.InheritsLocalVariables) {
@@ -205,7 +279,7 @@ namespace IronRuby.Runtime {
             RubyScope scope = this;
             while (true) {
                 object value;
-                if (scope.Frame.TryGetValue(name, out value)) {
+                if (scope.TryGetLocal(name, out value)) {
                     return value;
                 }
 
@@ -220,17 +294,27 @@ namespace IronRuby.Runtime {
         internal object ResolveAndSetLocalVariable(SymbolId name, object value) {
             RubyScope scope = this;
             while (true) {
-                if (scope.Frame.ContainsKey(name)) {
-                    return scope.Frame[name] = value;
+                if (scope.TrySetLocal(name, value)) {
+                    return value;
                 }
 
                 if (!scope.InheritsLocalVariables) {
-                    return this.Frame[name] = value;
+                    if (_dynamicLocals == null) {
+                        Interlocked.CompareExchange(ref _dynamicLocals, new Dictionary<SymbolId, object>(), null);
+                    }
+
+                    lock (_dynamicLocals) {
+                        return _dynamicLocals[name] = value;
+                    }
                 }
 
                 scope = scope.Parent;
             }
         }
+
+        #endregion
+
+        #region Lexical Resolution
 
         public RubyModule/*!*/ GetInnerMostModuleForConstantLookup() {
             return GetInnerMostModule(false, RubyContext.ObjectClass);
@@ -424,7 +508,24 @@ namespace IronRuby.Runtime {
             }
         }
 
+        #endregion
+
         #region Debug View
+
+#if DEBUG
+        private string _debugName;
+
+        public override string ToString() {
+            return _debugName;
+        }
+#endif
+        [Conditional("DEBUG")]
+        public void SetDebugName(string name) {
+#if DEBUG
+            _debugName = name;
+#endif
+        }
+
 #if !SILVERLIGHT
         internal sealed class DebugView {
             private readonly RubyScope/*!*/ _scope;
@@ -443,15 +544,13 @@ namespace IronRuby.Runtime {
                     List<VariableView> result = new List<VariableView>();
                     RubyScope scope = _scope;
                     while (true) {
-                        foreach (KeyValuePair<SymbolId, object> variable in scope._frame.SymbolAttributes) {
+                        foreach (var variable in scope.GetDeclaredLocalVariables()) {
                             string name = SymbolTable.IdToString(variable.Key);
-                            if (!name.StartsWith("#")) {
-                                string className = _scope.RubyContext.GetImmediateClassOf(variable.Value).GetDisplayName(_scope.RubyContext, true).ConvertToString();
-                                if (scope != _scope) {
-                                    name += " (outer)";
-                                }
-                                result.Add(new VariableView(name, variable.Value, className));
+                            string className = _scope.RubyContext.GetImmediateClassOf(variable.Value).GetDisplayName(_scope.RubyContext, true).ConvertToString();
+                            if (scope != _scope) {
+                                name += " (outer)";
                             }
+                            result.Add(new VariableView(name, variable.Value, className));
                         }
 
                         if (!scope.InheritsLocalVariables) {
@@ -482,7 +581,7 @@ namespace IronRuby.Runtime {
             public System.Collections.Hashtable/*!*/ D {
                 get {
                     System.Collections.Hashtable result = new System.Collections.Hashtable();
-                    foreach (KeyValuePair<SymbolId, object> variable in _scope._frame.SymbolAttributes) {
+                    foreach (var variable in _scope.GetDeclaredLocalVariables()) {
                         result.Add(variable.Key, variable.Value);
                     }
                     return result;
@@ -511,19 +610,13 @@ namespace IronRuby.Runtime {
 
     public abstract class RubyClosureScope : RubyScope {
         // $+
-        private MatchData _currentMatch; // TODO: per method scope and top level scope, not block scope
+        private MatchData _currentMatch;
 
         // $_
-        private object _lastInputLine; // TODO: per method scope and top level scope, not block scope
+        private object _lastInputLine;
 
-        // top scope:
-        protected RubyClosureScope(RuntimeFlowControl/*!*/ runtimeFlowControl, object selfObject)
-            : base(runtimeFlowControl, selfObject) {
-        }
-
-        // other scopes:
-        protected RubyClosureScope(RubyScope/*!*/ parent, RuntimeFlowControl/*!*/ runtimeFlowControl, object selfObject)
-            : base(parent, runtimeFlowControl, selfObject) {
+        internal RubyClosureScope() {
+            // Perf note: Initialization is performed completely in the most derived scope classes to improve perf.
         }
 
         protected override bool IsClosureScope {
@@ -596,7 +689,7 @@ var closureScope = scope as RubyClosureScope;
         private readonly RubyModule/*!*/ _declaringModule;
         private readonly string/*!*/ _definitionName;
         private readonly Proc _blockParameter;
-        
+
         public override ScopeKind Kind { get { return ScopeKind.Method; } }
         public override bool InheritsLocalVariables { get { return false; } }
 
@@ -613,13 +706,30 @@ var closureScope = scope as RubyClosureScope;
             get { return _blockParameter; }
         }
 
-        internal RubyMethodScope(RubyScope/*!*/ parent, RubyModule/*!*/ declaringModule, string/*!*/ definitionName, Proc blockParameter, 
-            RuntimeFlowControl/*!*/ runtimeFlowControl, object selfObject)
-            : base(parent, runtimeFlowControl, selfObject) {
+        internal RubyMethodScope(MutableTuple locals, SymbolId[]/*!*/ variableNames, 
+            RubyScope/*!*/ parent, RubyModule/*!*/ declaringModule, string/*!*/ definitionName,
+            object selfObject, Proc blockParameter, InterpretedFrame interpretedFrame) {
+            Assert.NotNull(parent, declaringModule, definitionName);
+
+            // RuntimeFlowControl:
+            _activeFlowControlScope = this;
+            
+            // RubyScope:
+            _parent = parent;
+            _top = parent.Top;
+            _selfObject = selfObject;
+            _methodAttributes = RubyMethodAttributes.PublicInstance;
+            _locals = locals;
+            _variableNames = variableNames;
+            InterpretedFrame = interpretedFrame;
+            
+            // RubyMethodScope:
             _declaringModule = declaringModule;
             _definitionName = definitionName;
             _blockParameter = blockParameter;
-            MethodAttributes = RubyMethodAttributes.PublicInstance;
+
+            InitializeRfc(blockParameter);
+            SetDebugName("method " + definitionName + ((blockParameter != null) ? "&" : null));
         }
     }
 
@@ -635,9 +745,19 @@ var closureScope = scope as RubyClosureScope;
 
         internal void SetModule(RubyModule/*!*/ module) { _module = module; }
 
-        internal RubyModuleScope(RubyScope/*!*/ parent, RubyModule module, bool isEval,
-            RuntimeFlowControl/*!*/ runtimeFlowControl, object selfObject)
-            : base(parent, runtimeFlowControl, selfObject) {
+        internal RubyModuleScope(RubyScope/*!*/ parent, RubyModule module, bool isEval, object selfObject) {
+            Assert.NotNull(parent);
+
+            // RuntimeFlowControl:
+            _activeFlowControlScope = parent.FlowControlScope;
+
+            // RubyScope:
+            _parent = parent;
+            _top = parent.Top;
+            _selfObject = selfObject;
+            _methodAttributes = RubyMethodAttributes.PrivateInstance;
+
+            // RubyModuleScope:
             _module = module;
             _isEval = isEval;
             InLoop = parent.InLoop;
@@ -647,23 +767,37 @@ var closureScope = scope as RubyClosureScope;
     }
 
     public sealed class RubyBlockScope : RubyScope {
-        private readonly BlockParam _blockFlowControl;
+        private readonly BlockParam/*!*/ _blockFlowControl;
 
         public override ScopeKind Kind { get { return ScopeKind.Block; } }
         public override bool InheritsLocalVariables { get { return true; } }
 
-        public BlockParam BlockFlowControl {
+        public BlockParam/*!*/ BlockFlowControl {
             get { return _blockFlowControl; }
         }
-        
-        internal RubyBlockScope(RubyScope/*!*/ parent, RuntimeFlowControl/*!*/ runtimeFlowControl, BlockParam/*!*/ blockFlowControl, object selfObject)
-            : base(parent, runtimeFlowControl, selfObject) {
-            Assert.NotNull(blockFlowControl);
+
+        internal RubyBlockScope(MutableTuple locals, SymbolId[]/*!*/ variableNames,
+            BlockParam/*!*/ blockFlowControl, object selfObject, InterpretedFrame interpretedFrame) {
+            var parent = blockFlowControl.Proc.LocalScope;
+
+            // RuntimeFlowControl:
+            _activeFlowControlScope = parent.FlowControlScope;
+
+            // RubyScope:
+            _parent = parent;
+            _top = parent.Top;
+            _selfObject = selfObject;
+            _methodAttributes = RubyMethodAttributes.PublicInstance;
+            _locals = locals;
+            _variableNames = variableNames;
+            InterpretedFrame = interpretedFrame;
+            
+            // RubyBlockScope:
             _blockFlowControl = blockFlowControl;
         }
     }
 
-    public class RubyTopLevelScope : RubyClosureScope {
+    public sealed class RubyTopLevelScope : RubyClosureScope {
         public override ScopeKind Kind { get { return ScopeKind.TopLevel; } }
         public override bool InheritsLocalVariables { get { return false; } }
 
@@ -702,16 +836,28 @@ var closureScope = scope as RubyClosureScope;
         }
 
         // empty scope:
-        internal RubyTopLevelScope(RubyContext/*!*/ context)
-            : base(new RuntimeFlowControl(), null) {
+        internal RubyTopLevelScope(RubyContext/*!*/ context) {
+            Assert.NotNull(context);
+
+            // RubyScope:
+            _top = this;
+            _methodAttributes = RubyMethodAttributes.PrivateInstance;
+
+            // RubyTopLevelScope:
             _context = context;
-            Frame = _EmptyLocals;
+            SetEmptyLocals();
         }
 
-        internal RubyTopLevelScope(RubyGlobalScope/*!*/ globalScope, RubyModule scopeModule, RubyModule methodLookupModule,
-            RuntimeFlowControl/*!*/ runtimeFlowControl, RubyObject/*!*/ selfObject)
-            : base(runtimeFlowControl, selfObject) {
+        internal RubyTopLevelScope(RubyGlobalScope/*!*/ globalScope, RubyModule scopeModule, RubyModule methodLookupModule, 
+            RubyObject/*!*/ selfObject) {
             Assert.NotNull(globalScope, selfObject);
+
+            // RubyScope:
+            _top = this;
+            _selfObject = selfObject;
+            _methodAttributes = RubyMethodAttributes.PrivateInstance;
+
+            // RubyTopLevelScope:
             _globalScope = globalScope;
             _context = globalScope.Context;
             _wrappingModule = scopeModule;
@@ -723,7 +869,7 @@ var closureScope = scope as RubyClosureScope;
         internal static RubyTopLevelScope/*!*/ CreateTopLevelScope(Scope/*!*/ globalScope, RubyContext/*!*/ context, bool isMain) {
             RubyGlobalScope rubyGlobalScope = context.InitializeGlobalScope(globalScope, false, false);
 
-            RubyTopLevelScope scope = new RubyTopLevelScope(rubyGlobalScope, null, null, new RuntimeFlowControl(), rubyGlobalScope.MainObject);
+            RubyTopLevelScope scope = new RubyTopLevelScope(rubyGlobalScope, null, null, rubyGlobalScope.MainObject);
             if (isMain) {
                 scope.SetDebugName("top-main");
                 context.ObjectClass.SetConstant("TOPLEVEL_BINDING", new Binding(scope));
@@ -741,7 +887,7 @@ var closureScope = scope as RubyClosureScope;
             RubyTopLevelScope scope = rubyGlobalScope.TopLocalScope;
             if (scope == null) {
                 scope = new RubyTopLevelScope(
-                    rubyGlobalScope, null, bindGlobals ? rubyGlobalScope.MainSingleton : null, new RuntimeFlowControl(), rubyGlobalScope.MainObject
+                    rubyGlobalScope, null, bindGlobals ? rubyGlobalScope.MainSingleton : null, rubyGlobalScope.MainObject
                 );
 
                 scope.SetDebugName(bindGlobals ? "top-level-bound" : "top-level");
@@ -761,7 +907,7 @@ var closureScope = scope as RubyClosureScope;
             RubyObject mainObject = new RubyObject(context.ObjectClass);
             context.CreateMainSingleton(mainObject, new[] { module });
 
-            RubyTopLevelScope scope = new RubyTopLevelScope(rubyGlobalScope, module, null, new RuntimeFlowControl(), mainObject);
+            RubyTopLevelScope scope = new RubyTopLevelScope(rubyGlobalScope, module, null, mainObject);
             scope.SetDebugName("top-level-wrapped");
 
             return scope;
@@ -770,39 +916,58 @@ var closureScope = scope as RubyClosureScope;
         // "method_missing" on main singleton in DLR Scope bound code.
         // Might be called via a site -> needs to be public in partial trust.
         public static object TopMethodMissing(RubyScope/*!*/ localScope, BlockParam block, object/*!*/ self, SymbolId name, [NotNull]params object[]/*!*/ args) {
-            Assert.NotNull(localScope, self);
-            Debug.Assert(!localScope.IsEmpty);
-            Scope globalScope = localScope.GlobalScope.Scope;
-            Debug.Assert(globalScope != null);
+            return ScopeMethodMissing(localScope.RubyContext, localScope.GlobalScope.Scope, block, self, name, args);
+        }
 
-            // TODO: error when arguments non-empty, block != null, ...
+        public static object ScopeMethodMissing(RubyContext/*!*/ context, Scope/*!*/ globalScope, BlockParam block, object self, SymbolId name, object[]/*!*/ args) {
+            Assert.NotNull(context, globalScope);
 
-            if (args.Length == 0) {
+            string str = SymbolTable.IdToString(name);
+            if (str.LastCharacter() == '=') {
+                if (args.Length != 1) {
+                    throw RubyOps.MakeWrongNumberOfArgumentsError(args.Length, 1);
+                }
+
+                // Consider this case:
+                // There is {"Foo" -> 1} in the scope.
+                // x.foo += 1
+                // Without name mangling this would result to {"Foo" -> 1, "foo" -> 2} while the expected result is {"Foo" -> 2}.
+
+                str = str.Substring(0, str.Length - 1);
+                name = SymbolTable.StringToId(str);
+
+                if (!globalScope.ContainsName(name)) {
+                    var unmangled = SymbolTable.StringToId(RubyUtils.TryUnmangleName(str));
+                    if (!unmangled.IsEmpty && globalScope.ContainsName(unmangled)) {
+                        name = unmangled;
+                    }
+                }
+
+                var value = args[0];
+                globalScope.SetName(name, value);
+                return value;
+            } else {
+                if (args.Length != 0) {
+                    throw RubyOps.MakeWrongNumberOfArgumentsError(args.Length, 0);
+                }
+
                 object value;
                 if (globalScope.TryGetName(name, out value)) {
                     return value;
                 }
 
-                string str = SymbolTable.IdToString(name);
                 string unmangled = RubyUtils.TryUnmangleName(str);
                 if (unmangled != null && globalScope.TryGetName(SymbolTable.StringToId(unmangled), out value)) {
                     return value;
                 }
 
-                if (str == "scope") {
+                if (self != null && str == "scope") {
                     return self;
-                }
-            } else if (args.Length == 1) {
-                string str = SymbolTable.IdToString(name);
-                if (str.LastCharacter() == '=') {
-                    SymbolId plainName = SymbolTable.StringToId(str.Substring(0, str.Length - 1));
-                    globalScope.SetName(plainName, args[0]);
-                    return args[0];
                 }
             }
 
             // TODO: call super
-            throw RubyExceptions.CreateMethodMissing(localScope.RubyContext, self, SymbolTable.IdToString(name));
+            throw RubyExceptions.CreateMethodMissing(context, self, SymbolTable.IdToString(name));
         }
 
         #endregion

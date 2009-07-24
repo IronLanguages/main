@@ -25,6 +25,7 @@ using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Generation;
+using IronRuby.Runtime.Calls;
 
 namespace IronRuby.Builtins {
 
@@ -96,7 +97,7 @@ namespace IronRuby.Builtins {
                 _context = context;
                 _recursionLimit = (limit.HasValue ? limit.Value : -1);
                 _symbols = new Dictionary<string, int>();
-                _objects = new Dictionary<object, int>(ReferenceEqualityComparer<object>.Instance);
+                _objects = new Dictionary<object, int>(ReferenceEqualityComparer.Instance);
 #if !SILVERLIGHT
                 _streamingContext = new StreamingContext(StreamingContextStates.Other, _context);
 #endif
@@ -384,8 +385,8 @@ namespace IronRuby.Builtins {
 
                         // TODO: replace with a table-driven implementation
                         // TODO: visibility?
-                        bool implementsDump = _context.ResolveMethod(obj, "_dump", RubyClass.IgnoreVisibility).Found;
-                        bool implementsMarshalDump = _context.ResolveMethod(obj, "marshal_dump", RubyClass.IgnoreVisibility).Found;
+                        bool implementsDump = _context.ResolveMethod(obj, "_dump", VisibilityContext.AllVisible).Found;
+                        bool implementsMarshalDump = _context.ResolveMethod(obj, "marshal_dump", VisibilityContext.AllVisible).Found;
 
                         bool writeInstanceData = false;
                         string[] instanceNames = null;

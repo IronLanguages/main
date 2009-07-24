@@ -78,7 +78,7 @@ namespace IronRuby.Runtime.Calls {
                     new[] { ToS, Symbols.MethodMissing }
                 );
 
-                conversionMethod = targetClass.ResolveMethodForSiteNoLock(ToS, RubyClass.IgnoreVisibility).Info;
+                conversionMethod = targetClass.ResolveMethodForSiteNoLock(ToS, VisibilityContext.AllVisible).Info;
 
                 // find method_missing - we need to add "to_xxx" methods to the missing methods table:
                 if (conversionMethod == null) {

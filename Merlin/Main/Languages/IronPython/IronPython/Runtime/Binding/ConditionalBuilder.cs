@@ -35,7 +35,6 @@ namespace IronPython.Runtime.Binding {
         private readonly List<Expression/*!*/>/*!*/ _bodies = new List<Expression>();
         private readonly List<ParameterExpression/*!*/>/*!*/ _variables = new List<ParameterExpression>();
         private Expression _body;
-        private bool _testCoercionRecursionCheck;
         private BindingRestrictions/*!*/ _restrictions = BindingRestrictions.Empty;
         private ParameterExpression _compareRetBool;
         private Type _retType;
@@ -102,15 +101,6 @@ namespace IronPython.Runtime.Binding {
             }
             set {
                 _restrictions = value;
-            }
-        }
-
-        public bool TestCoercionRecursionCheck {
-            get {
-                return _testCoercionRecursionCheck;
-            }
-            set {
-                _testCoercionRecursionCheck = value;
             }
         }
 

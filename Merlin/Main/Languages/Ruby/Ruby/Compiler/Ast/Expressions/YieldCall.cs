@@ -48,7 +48,7 @@ namespace IronRuby.Compiler.Ast {
                 postYield = Methods.BlockYield.OpCall(gen.CurrentScopeVariable, gen.CurrentBlock.BfcVariable, bfcVariable, resultVariable);
             } else {
                 // method:
-                postYield = Methods.MethodYield.OpCall(gen.CurrentRfcVariable, bfcVariable, resultVariable);
+                postYield = Methods.MethodYield.OpCall(gen.CurrentScopeVariable, bfcVariable, resultVariable);
             }
 
             return AstFactory.Block(

@@ -28,7 +28,7 @@ namespace IronPython.Runtime.Types {
     /// __slots__ have storage allocated for them with the type and provide fast get/set access.
     /// </summary>
     [PythonType("member_descriptor")]
-    class ReflectedSlotProperty : PythonTypeSlot, ICodeFormattable {
+    class ReflectedSlotProperty : PythonTypeDataSlot, ICodeFormattable {
         private readonly string/*!*/ _name, _typeName;
         private readonly int/*!*/ _index;        
 
@@ -64,10 +64,6 @@ namespace IronPython.Runtime.Types {
 
         internal override bool TryDeleteValue(CodeContext context, object instance, PythonType owner) {
             return TrySetValue(context, instance, owner, Uninitialized.Instance);
-        }
-
-        internal override bool IsSetDescriptor(CodeContext context, PythonType owner) {
-            return true;
         }
 
         #region ICodeFormattable Members

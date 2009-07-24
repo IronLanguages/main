@@ -16,3 +16,5 @@
 require 'stringio'
 require 'date'
 load_assembly 'IronRuby.Libraries.Yaml', 'IronRuby.StandardLibrary.Yaml'
+
+require 'yaml/types'

@@ -50,7 +50,7 @@ namespace IronRuby.Runtime {
     }
 
     public class CallSiteStorage<TCallSiteFunc> : RubyCallSiteStorage where TCallSiteFunc : class {
-        protected CallSite<TCallSiteFunc> Site;
+        public CallSite<TCallSiteFunc> Site;
 
         [Emitted]
         public CallSiteStorage(RubyContext/*!*/ context) : base(context) { }

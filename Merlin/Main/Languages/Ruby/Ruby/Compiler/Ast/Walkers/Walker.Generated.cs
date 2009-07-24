@@ -91,8 +91,12 @@ namespace IronRuby.Compiler.Ast {
         public virtual void Exit(OrExpression/*!*/ node) { }
         public virtual bool Enter(RangeExpression/*!*/ node) { return true; }
         public virtual void Exit(RangeExpression/*!*/ node) { }
+        public virtual bool Enter(RangeCondition/*!*/ node) { return true; }
+        public virtual void Exit(RangeCondition/*!*/ node) { }
         public virtual bool Enter(RegularExpression/*!*/ node) { return true; }
         public virtual void Exit(RegularExpression/*!*/ node) { }
+        public virtual bool Enter(RegularExpressionCondition/*!*/ node) { return true; }
+        public virtual void Exit(RegularExpressionCondition/*!*/ node) { }
         public virtual bool Enter(RescueExpression/*!*/ node) { return true; }
         public virtual void Exit(RescueExpression/*!*/ node) { }
         public virtual bool Enter(SelfReference/*!*/ node) { return true; }

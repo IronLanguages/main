@@ -20,24 +20,16 @@ namespace Microsoft.Scripting.Runtime {
     /// Helper for storing information about stack frames.
     /// </summary>
     public class DynamicStackFrame {
-        private CodeContext _context;
         private string _funcName;
         private string _filename;
         private int _lineNo;
         private MethodBase _method;
 
-        public DynamicStackFrame(CodeContext context, MethodBase method, string funcName, string filename, int line) {
-            _context = context;
+        public DynamicStackFrame(MethodBase method, string funcName, string filename, int line) {
             _funcName = funcName;
             _filename = filename;
             _lineNo = line;
             _method = method;
-        }
-
-        public CodeContext CodeContext {
-            get {
-                return _context;
-            }
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]

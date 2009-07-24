@@ -56,7 +56,7 @@ namespace IronPython.Compiler.Ast {
         private StrongBox<Type> _finalType = new StrongBox<Type>();        
 #endif
 
-        public StaticGlobalAllocator(LanguageContext/*!*/ context, string name) {
+        public StaticGlobalAllocator(PythonContext/*!*/ context, string name) {
             _typeGen = Snippets.Shared.DefineType(name, typeof(object), false, false);
 
             _codeContextField = _typeGen.AddStaticField(typeof(CodeContext), "__global_context");

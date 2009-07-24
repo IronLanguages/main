@@ -47,6 +47,13 @@ namespace IronRuby.Rack {
                 context.Response.Write("\r\n");
             }
             context.Response.Write("</pre>\r\n");
+            context.Response.Write("<h4>Gem paths</h4>\r\n");
+            context.Response.Write("<pre>\r\n");
+            foreach (var gempath in RubyEngine.Execute<RubyArray>("require 'rubygems'; Gem.path")) {
+                context.Response.Write(HttpUtility.HtmlEncode(((MutableString)gempath).ToString()));
+                context.Response.Write("\r\n");
+            }
+            context.Response.Write("</pre>\r\n");
             context.Response.Write("</html>\r\n");
         }
 

@@ -132,20 +132,20 @@ namespace IronPython.Runtime.Binding {
 
             ValidationInfo valInfo = BindingHelpers.GetValidationInfo(target);
             PythonType pt = DynamicHelpers.GetPythonType(target.Value);
-            PythonContext state = PythonContext.GetPythonContext(call);
+            PythonContext pyContext = PythonContext.GetPythonContext(call);
 
             // look for __call__, if it's present dispatch to it.  Otherwise fall back to the
             // default binder
             PythonTypeSlot callSlot;
             if (!typeof(Delegate).IsAssignableFrom(target.GetLimitType()) &&
-                pt.TryResolveSlot(state.SharedContext, Symbols.Call, out callSlot)) {
+                pt.TryResolveSlot(pyContext.SharedContext, Symbols.Call, out callSlot)) {
                 ConditionalBuilder cb = new ConditionalBuilder(call);
                 Expression body;
 
                 callSlot.MakeGetExpression(
-                    state.Binder,
+                    pyContext.Binder,
                     PythonContext.GetCodeContext(call),
-                    self.Expression,
+                    self,
                     GetPythonType(self),
                     cb
                 );
@@ -168,15 +168,13 @@ namespace IronPython.Runtime.Binding {
                     callArgs
                 );
 
-                if (PythonFunction._MaximumDepth != Int32.MaxValue) {
-                    body = Ast.TryFinally(
-                        Ast.Block(
-                            Ast.Call(typeof(PythonOps).GetMethod("FunctionPushFrame")),
-                            body
-                        ),
-                        Ast.Call(typeof(PythonOps).GetMethod("FunctionPopFrame"))
-                    );
-                }
+                body = Ast.TryFinally(
+                    Ast.Block(
+                        Ast.Call(typeof(PythonOps).GetMethod("FunctionPushFrame"), Ast.Constant(pyContext)),                        
+                        body
+                    ),
+                    Ast.Call(typeof(PythonOps).GetMethod("FunctionPopFrame"))
+                );
 
                 return BindingHelpers.AddDynamicTestAndDefer(
                     call,
@@ -189,17 +187,25 @@ namespace IronPython.Runtime.Binding {
             return null;
         }
 
-        private static Expression/*!*/ GetPythonType(DynamicMetaObject/*!*/ self) {
+        private static DynamicMetaObject/*!*/ GetPythonType(DynamicMetaObject/*!*/ self) {
             Assert.NotNull(self);
 
             PythonType pt = DynamicHelpers.GetPythonType(self.Value);
             if (pt.IsSystemType) {
-                return AstUtils.Constant(pt);
+                return new DynamicMetaObject(
+                    AstUtils.Constant(pt),
+                    BindingRestrictions.Empty,
+                    pt
+                );
             }
 
-            return Ast.Property(
-                Ast.Convert(self.Expression, typeof(IPythonObject)),
-                TypeInfo._IPythonObject.PythonType
+            return new DynamicMetaObject(
+                Ast.Property(
+                    Ast.Convert(self.Expression, typeof(IPythonObject)),
+                    TypeInfo._IPythonObject.PythonType
+                ),
+                BindingRestrictions.Empty,
+                pt
             );
         }
 

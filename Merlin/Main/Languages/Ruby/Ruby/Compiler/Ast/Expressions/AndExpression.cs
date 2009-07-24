@@ -62,9 +62,14 @@ namespace IronRuby.Compiler.Ast {
             return result;
         }
 
-        internal override Expression/*!*/ ToCondition() {
-            _left.ToCondition();
-            _right.ToCondition();
+        internal override Expression/*!*/ ToCondition(LexicalScope/*!*/ currentScope) {
+            var newLeft = _left.ToCondition(currentScope);
+            var newRight = _right.ToCondition(currentScope);
+
+            if (newLeft != _left || newRight != _right) {
+                return new AndExpression(newLeft, newRight, Location);
+            }
+
             return this;
         }
     }

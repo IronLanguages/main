@@ -74,14 +74,15 @@ namespace IronPython.Modules {
         [DllImport("kernel32.dll")]
         private static extern void RtlMoveMemory(IntPtr Destination, IntPtr src, IntPtr length);
 
-        [DllImport("kernel32.dll")]
-        private static extern void FillMemory(IntPtr Destination, IntPtr Length, byte fill);
-
         /// <summary>
-        /// Helper function for translating from memset to NT's FillMemory API.
+        /// Helper function for implementing memset.  Could be more efficient if we 
+        /// could P/Invoke or call some otherwise native code to do this.
         /// </summary>
-        private static IntPtr MemSet(IntPtr dest, byte value, IntPtr length) {
-            NativeFunctions.FillMemory(dest, length, value);
+        private static IntPtr MemSet(IntPtr dest, byte value, IntPtr length) {            
+            IntPtr end = dest.Add(length.ToInt32());
+            for (IntPtr cur = dest; cur != end; cur = new IntPtr(cur.ToInt64() + 1)) {
+                Marshal.WriteByte(cur, value);
+            }
             return dest;
         }
 

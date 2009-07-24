@@ -14,19 +14,21 @@
  * ***************************************************************************/
 
 using System;
+using System.Dynamic;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Dynamic;
+
+using Microsoft.Scripting.Actions.Calls;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Actions {
     using Ast = System.Linq.Expressions.Expression;
-
+    
     public partial class DefaultBinder : ActionBinder {
-
         /// <summary>
         /// Builds a MetaObject for performing a member get.  Supports all built-in .NET members, the OperatorMethod 
         /// GetBoundMember, and StrongBox instances.
@@ -38,31 +40,14 @@ namespace Microsoft.Scripting.Actions {
         /// <param name="target">
         /// The MetaObject from which the member is retrieved.
         /// </param>
-        public DynamicMetaObject GetMember(string name, DynamicMetaObject target) {
-            return GetMember(name, target, AstUtils.Constant(null, typeof(CodeContext)));
-        }
-
-        /// <summary>
-        /// Builds a MetaObject for performing a member get.  Supports all built-in .NET members, the OperatorMethod 
-        /// GetBoundMember, and StrongBox instances.
-        /// </summary>
-        /// <param name="name">
-        /// The name of the member to retrieve.  This name is not processed by the DefaultBinder and
-        /// is instead handed off to the GetMember API which can do name mangling, case insensitive lookups, etc...
+        /// <param name="resolverFactory">
+        /// Provides overload resolution and method binding for any calls which need to be performed for the GetMember.
         /// </param>
-        /// <param name="target">
-        /// The MetaObject from which the member is retrieved.
-        /// </param>
-        /// <param name="codeContext">
-        /// An expression which provides access to the CodeContext if its required for 
-        /// accessing the member (e.g. for an extension property which takes CodeContext).  By default this
-        /// a null CodeContext object is passed.
-        /// </param>
-        public DynamicMetaObject GetMember(string name, DynamicMetaObject target, Expression codeContext) {
+        public DynamicMetaObject GetMember(string name, DynamicMetaObject target, OverloadResolverFactory resolverFactory) {
             return GetMember(
                 name,
                 target,
-                codeContext,
+                resolverFactory,
                 false,
                 null
             );
@@ -79,10 +64,8 @@ namespace Microsoft.Scripting.Actions {
         /// <param name="target">
         /// The MetaObject from which the member is retrieved.
         /// </param>
-        /// <param name="codeContext">
-        /// An expression which provides access to the CodeContext if its required for 
-        /// accessing the member (e.g. for an extension property which takes CodeContext).  By default this
-        /// a null CodeContext object is passed.
+        /// <param name="resolverFactory">
+        /// An OverloadResolverFactory which can be used for performing overload resolution and method binding.
         /// </param>
         /// <param name="isNoThrow">
         /// True if the operation should return Operation.Failed on failure, false if it
@@ -91,15 +74,15 @@ namespace Microsoft.Scripting.Actions {
         /// <param name="errorSuggestion">
         /// The meta object to be used if the get results in an error.
         /// </param>
-        public DynamicMetaObject GetMember(string name, DynamicMetaObject target, Expression codeContext, bool isNoThrow, DynamicMetaObject errorSuggestion) {
+        public DynamicMetaObject GetMember(string name, DynamicMetaObject target, OverloadResolverFactory resolverFactory, bool isNoThrow, DynamicMetaObject errorSuggestion) {
             ContractUtils.RequiresNotNull(name, "name");
             ContractUtils.RequiresNotNull(target, "target");
-            ContractUtils.RequiresNotNull(codeContext, "codeContext");
+            ContractUtils.RequiresNotNull(resolverFactory, "resolverFactory");
 
             return MakeGetMemberTarget(
                 new GetMemberInfo(
                     name,
-                    codeContext,
+                    resolverFactory,
                     isNoThrow,
                     errorSuggestion
                 ),
@@ -110,14 +93,8 @@ namespace Microsoft.Scripting.Actions {
         private DynamicMetaObject MakeGetMemberTarget(GetMemberInfo getMemInfo, DynamicMetaObject target) {
             Type type = target.GetLimitType();
             BindingRestrictions restrictions = target.Restrictions;
-            Expression self = target.Expression;
+            DynamicMetaObject self = target;
             target = target.Restrict(target.GetLimitType());
-
-            // needed for GetMember call until DynamicAction goes away
-            OldDynamicAction act = OldGetMemberAction.Make(
-                this,
-                getMemInfo.Name
-            );
 
             // Specially recognized types: TypeTracker, NamespaceTracker, and StrongBox.  
             // TODO: TypeTracker and NamespaceTracker should technically be IDO's.
@@ -130,7 +107,7 @@ namespace Microsoft.Scripting.Actions {
                 TypeGroup tg = target.Value as TypeGroup;
                 Type nonGen;
                 if (tg == null || tg.TryGetNonGenericType(out nonGen)) {
-                    members = GetMember(act, ((TypeTracker)target.Value).Type, getMemInfo.Name);
+                    members = GetMember(MemberRequestKind.Get, ((TypeTracker)target.Value).Type, getMemInfo.Name);
                     if (members.Count > 0) {
                         // we have a member that's on the type associated w/ the tracker, return that...
                         type = ((TypeTracker)target.Value).Type;
@@ -141,7 +118,7 @@ namespace Microsoft.Scripting.Actions {
 
             if (members.Count == 0) {
                 // Get the members
-                members = GetMember(act, type, getMemInfo.Name);
+                members = GetMember(MemberRequestKind.Get, type, getMemInfo.Name);
             }
 
             if (members.Count == 0) {
@@ -152,20 +129,24 @@ namespace Microsoft.Scripting.Actions {
                 } else if (type.IsInterface) {
                     // all interfaces have object members
                     type = typeof(object);
-                    members = GetMember(act, type, getMemInfo.Name);
+                    members = GetMember(MemberRequestKind.Get, type, getMemInfo.Name);
                 }
             }
 
-            Expression propSelf = self;
+            DynamicMetaObject propSelf = self == null ? null : self;
             // if lookup failed try the strong-box type if available.
-            if (members.Count == 0 && typeof(IStrongBox).IsAssignableFrom(type)) {
+            if (members.Count == 0 && typeof(IStrongBox).IsAssignableFrom(type) && propSelf != null) {
                 // properties/fields need the direct value, methods hold onto the strong box.
-                propSelf = Ast.Field(AstUtils.Convert(self, type), type.GetField("Value"));
+                propSelf = new DynamicMetaObject(
+                    Ast.Field(AstUtils.Convert(propSelf.Expression, type), type.GetField("Value")),
+                    propSelf.Restrictions,
+                    ((IStrongBox)propSelf.Value).Value
+                );
 
                 type = type.GetGenericArguments()[0];
 
                 members = GetMember(
-                    act,
+                    MemberRequestKind.Get,
                     type,
                     getMemInfo.Name
                 );
@@ -177,7 +158,7 @@ namespace Microsoft.Scripting.Actions {
             return getMemInfo.Body.GetMetaObject(target);
         }
 
-        private void MakeBodyHelper(GetMemberInfo getMemInfo, Expression self, Expression propSelf, Type type, MemberGroup members) {
+        private void MakeBodyHelper(GetMemberInfo getMemInfo, DynamicMetaObject self, DynamicMetaObject propSelf, Type type, MemberGroup members) {
             if (self != null) {
                 MakeOperatorGetMemberBody(getMemInfo, propSelf, type, "GetCustomMember");
             }
@@ -192,7 +173,7 @@ namespace Microsoft.Scripting.Actions {
             }
         }
 
-        private void MakeSuccessfulMemberAccess(GetMemberInfo getMemInfo, Expression self, Expression propSelf, Type type, MemberGroup members, TrackerTypes memberType) {
+        private void MakeSuccessfulMemberAccess(GetMemberInfo getMemInfo, DynamicMetaObject self, DynamicMetaObject propSelf, Type type, MemberGroup members, TrackerTypes memberType) {
             switch (memberType) {
                 case TrackerTypes.TypeGroup:
                 case TrackerTypes.Type:
@@ -215,14 +196,14 @@ namespace Microsoft.Scripting.Actions {
                         MakeOperatorGetMemberBody(getMemInfo, propSelf, type, "GetBoundMember");
                     }
 
-                    MakeMissingMemberRuleForGet(getMemInfo, type);
+                    MakeMissingMemberRuleForGet(getMemInfo, self, type);
                     break;
                 default:
                     throw new InvalidOperationException(memberType.ToString());
             }
         }
 
-        private void MakeGenericBody(GetMemberInfo getMemInfo, Type type, MemberGroup members, Expression instance) {
+        private void MakeGenericBody(GetMemberInfo getMemInfo, Type type, MemberGroup members, DynamicMetaObject instance) {
             MemberTracker bestMember = members[0];
             if (members.Count > 1) {
                 // if we were given multiple members pick the member closest to the type...                
@@ -255,15 +236,15 @@ namespace Microsoft.Scripting.Actions {
                 typeTracker = TypeGroup.UpdateTypeEntity(typeTracker, (TypeTracker)members[i]);
             }
 
-            getMemInfo.Body.FinishCondition(typeTracker.GetValue(getMemInfo.CodeContext, this, type));
+            getMemInfo.Body.FinishCondition(typeTracker.GetValue(getMemInfo.ResolutionFactory, this, type));
         }
 
-        private void MakeGenericBodyWorker(GetMemberInfo getMemInfo, Type type, MemberTracker tracker, Expression instance) {
+        private void MakeGenericBodyWorker(GetMemberInfo getMemInfo, Type type, MemberTracker tracker, DynamicMetaObject instance) {
             if (instance != null) {
                 tracker = tracker.BindToInstance(instance);
             }
 
-            Expression val = tracker.GetValue(getMemInfo.CodeContext, this, type);
+            DynamicMetaObject val = tracker.GetValue(getMemInfo.ResolutionFactory, this, type);
 
             if (val != null) {
                 getMemInfo.Body.FinishCondition(val);
@@ -278,7 +259,7 @@ namespace Microsoft.Scripting.Actions {
         }
 
         /// <summary> if a member-injector is defined-on or registered-for this type call it </summary>
-        private void MakeOperatorGetMemberBody(GetMemberInfo getMemInfo, Expression instance, Type type, string name) {
+        private void MakeOperatorGetMemberBody(GetMemberInfo getMemInfo, DynamicMetaObject instance, Type type, string name) {
             MethodInfo getMem = GetMethod(type, name);
             if (getMem != null && getMem.IsSpecialName) {
                 ParameterExpression tmp = Ast.Variable(typeof(object), "getVal");
@@ -289,11 +270,19 @@ namespace Microsoft.Scripting.Actions {
                         Ast.Assign(
                             tmp,
                             MakeCallExpression(
-                                getMemInfo.CodeContext,
+                                getMemInfo.ResolutionFactory,
                                 getMem,
-                                AstUtils.Convert(instance, type),
-                                AstUtils.Constant(getMemInfo.Name)
-                            )
+                                new DynamicMetaObject(
+                                    Expression.Convert(instance.Expression, type),
+                                    instance.Restrictions,
+                                    instance.Value
+                                ),
+                                new DynamicMetaObject(
+                                    Expression.Constant(getMemInfo.Name),
+                                    BindingRestrictions.Empty,
+                                    getMemInfo.Name
+                                )
+                            ).Expression
                         ),
                         Ast.Field(null, typeof(OperationFailed).GetField("Value"))
                     ),
@@ -302,14 +291,14 @@ namespace Microsoft.Scripting.Actions {
             }
         }
 
-        private void MakeMissingMemberRuleForGet(GetMemberInfo getMemInfo, Type type) {
+        private void MakeMissingMemberRuleForGet(GetMemberInfo getMemInfo, DynamicMetaObject self, Type type) {
             if (getMemInfo.ErrorSuggestion != null) {
                 getMemInfo.Body.FinishCondition(getMemInfo.ErrorSuggestion.Expression);
             } else if (getMemInfo.IsNoThrow) {
                 getMemInfo.Body.FinishCondition(MakeOperationFailed());
             } else {
                 getMemInfo.Body.FinishCondition(
-                    MakeError(MakeMissingMemberError(type, getMemInfo.Name), typeof(object))
+                    MakeError(MakeMissingMemberError(type, self, getMemInfo.Name), typeof(object))
                 );
             }
         }
@@ -324,14 +313,14 @@ namespace Microsoft.Scripting.Actions {
         /// </summary>
         private sealed class GetMemberInfo {
             public readonly string Name;
-            public readonly Expression CodeContext;
+            public readonly OverloadResolverFactory ResolutionFactory;
             public readonly bool IsNoThrow;
             public readonly ConditionalBuilder Body = new ConditionalBuilder();
             public readonly DynamicMetaObject ErrorSuggestion;
 
-            public GetMemberInfo(string name, Expression codeContext, bool noThrow, DynamicMetaObject errorSuggestion) {
+            public GetMemberInfo(string name, OverloadResolverFactory resolutionFactory, bool noThrow, DynamicMetaObject errorSuggestion) {
                 Name = name;
-                CodeContext = codeContext;
+                ResolutionFactory = resolutionFactory;
                 IsNoThrow = noThrow;
                 ErrorSuggestion = errorSuggestion;
             }

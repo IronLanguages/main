@@ -22,7 +22,7 @@
     <SignedSym Condition="'$(SignAssembly)' == 'true'">SIGNED</SignedSym>
     <DelaySign>true</DelaySign>
     <BaseAddress>857735168</BaseAddress>
-    <SilverlightPath Condition="$(SilverlightPath) == ''">..\..\Utilities\Silverlight\x86ret\</SilverlightPath>
+    <SilverlightPath Condition="'$(SilverlightPath)' == ''">..\..\Utilities\Silverlight\x86ret\</SilverlightPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FxCop|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -85,8 +85,8 @@
     <SilverlightBuild>true</SilverlightBuild>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="System" Condition=" $(SilverlightBuild) != 'true' " />
-    <Reference Include="System.Configuration" Condition=" $(SilverlightBuild) != 'true' " />
+    <Reference Include="System" Condition=" '$(SilverlightBuild)' != 'true' " />
+    <Reference Include="System.Configuration" Condition=" '$(SilverlightBuild)' != 'true' " />
     <Reference Include="mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" Condition=" '$(SilverlightBuild)' == 'true' ">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(SilverlightPath)\mscorlib.dll</HintPath>
@@ -96,8 +96,8 @@
       <HintPath>$(SilverlightPath)\System.dll</HintPath>
     </Reference>
     <Reference Include="System.Data" />
-    <Reference Include="System.Runtime.Remoting" Condition=" $(SilverlightBuild) != 'true' " />
-    <Reference Include="System.Xml" Condition=" $(SilverlightBuild) != 'true' " />
+    <Reference Include="System.Runtime.Remoting" Condition=" '$(SilverlightBuild)' != 'true' " />
+    <Reference Include="System.Xml" Condition=" '$(SilverlightBuild)' != 'true' " />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\Hosts\Silverlight\SilverlightVersion.cs" Condition=" '$(SilverlightBuild)' == 'true' ">
@@ -134,15 +134,16 @@
     <Compile Include="Actions\Calls\ReturnReferenceArgBuilder.cs" />
     <Compile Include="Actions\Calls\SimpleArgBuilder.cs" />
     <Compile Include="Actions\Calls\TypeInferer.cs" />
+    <Compile Include="Actions\ConversionResultKind.cs" />
     <Compile Include="Actions\DefaultBinder.Operations.cs" />
     <Compile Include="Actions\Interceptor.cs" />
     <Compile Include="Actions\DynamicSiteHelper.cs" />
     <Compile Include="Actions\ExtensionBinaryOperationBinder.cs" />
     <Compile Include="Actions\ExtensionUnaryOperationBinder.cs" />
+    <Compile Include="Actions\MemberRequestKind.cs" />
     <Compile Include="Actions\OperationBinder.cs" />
     <Compile Include="Actions\OperationMetaObject.cs" />
     <Compile Include="ArgumentTypeException.cs" />
-    <Compile Include="Ast\CodeContextExpression.cs" />
     <Compile Include="Ast\FinallyFlowControlExpression.cs" />
     <Compile Include="Ast\FlowControlRewriter.cs" />
     <Compile Include="Ast\SourceFileInformation.cs" />
@@ -213,12 +214,10 @@
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
     </Compile>
-    <Compile Include="Actions\BinderHelper.cs" />
     <Compile Include="Actions\BinderHelpers.cs" />
     <Compile Include="Actions\ComboActionRewriter.cs" />
     <Compile Include="Actions\ComboBinder.cs" />
     <Compile Include="Actions\ConditionalBuilder.cs" />
-    <Compile Include="Actions\ConvertToBinderHelper.cs" />
     <Compile Include="Actions\DefaultBinder.Conversions.cs" />
     <Compile Include="Actions\DefaultBinder.DeleteMember.cs" />
     <Compile Include="Actions\DefaultBinder.GetMember.cs" />
@@ -226,12 +225,8 @@
     <Compile Include="Actions\DefaultBinder.MethodCalls.cs" />
     <Compile Include="Actions\DefaultBinder.SetMember.cs" />
     <Compile Include="Actions\DefaultBinder.cs" />
-    <Compile Include="Actions\DeleteMemberBinderHelper.cs" />
-    <Compile Include="Actions\GetMemberBinderHelper.cs" />
-    <Compile Include="Actions\MemberBinderHelper.cs" />
     <Compile Include="Actions\NoSideEffectsAttribute.cs" />
     <Compile Include="Actions\OperatorInfo.cs" />
-    <Compile Include="Actions\SetMemberBinderHelper.cs" />
     <Compile Include="Hosting\ExceptionOperations.cs" />
     <Compile Include="Ast\BinaryExpression.cs" />
     <Compile Include="Ast\Block.cs" />
@@ -337,15 +332,6 @@
     <Compile Include="DebugOptions.cs" />
     <Compile Include="SpecSharp.cs" />
     <Compile Include="MutableTuple.cs" />
-    <Compile Include="Actions\Old\OldCallAction.cs" />
-    <Compile Include="Actions\Old\OldConvertToAction.cs" />
-    <Compile Include="Actions\Old\OldCreateInstanceAction.cs" />
-    <Compile Include="Actions\Old\OldDeleteMemberAction.cs" />
-    <Compile Include="Actions\Old\OldDoOperationAction.cs" />
-    <Compile Include="Actions\Old\OldDynamicAction.cs" />
-    <Compile Include="Actions\Old\OldGetMemberAction.cs" />
-    <Compile Include="Actions\Old\OldMemberAction.cs" />
-    <Compile Include="Actions\Old\OldSetMemberAction.cs" />
     <Compile Include="Actions\ActionBinder.cs" />
     <Compile Include="Actions\Argument.cs" />
     <Compile Include="Actions\ArgumentType.cs" />
@@ -366,7 +352,6 @@
     <Compile Include="Actions\NestedTypeTracker.cs" />
     <Compile Include="Actions\PropertyTracker.cs" />
     <Compile Include="Actions\ReflectedPropertyTracker.cs" />
-    <Compile Include="Actions\RuleBuilder.cs" />
     <Compile Include="Actions\TopNamespaceTracker.cs" />
     <Compile Include="Actions\TrackerTypes.cs" />
     <Compile Include="Actions\TypeGroup.cs" />
@@ -382,7 +367,6 @@
     <Compile Include="Runtime\BaseSymbolDictionary.cs" />
     <Compile Include="Runtime\BinderType.cs" />
     <Compile Include="Runtime\CallTargets.cs" />
-    <Compile Include="Runtime\CodeContext.cs" />
     <Compile Include="Runtime\ContextId.cs" />
     <Compile Include="Runtime\CustomSymbolDictionary.cs" />
     <Compile Include="Runtime\DlrCachedCodeAttribute.cs" />

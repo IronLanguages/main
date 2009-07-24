@@ -47,7 +47,7 @@ namespace IronPython.Runtime.Types {
         HasDelAttr = 0x04,
     }
 
-    [PythonType("classobj")]
+    [PythonType("classobj"), DontMapGetMemberNamesToDir]
     [Serializable]
     public sealed class OldClass :
 #if !SILVERLIGHT // ICustomTypeDescriptor
@@ -55,13 +55,14 @@ namespace IronPython.Runtime.Types {
 #endif
  ICodeFormattable,
         IMembersList,
-        IDynamicMetaObjectProvider {
+        IDynamicMetaObjectProvider, 
+        IPythonMembersList {
 
         [NonSerialized]
         private List<OldClass> _bases;
         private PythonType _type = null;
 
-        public PythonDictionary __dict__;
+        internal PythonDictionary _dict;
         private int _attrs;  // actually OldClassAttributes - losing type safety for thread safety
         internal object _name;
 
@@ -102,14 +103,14 @@ namespace IronPython.Runtime.Types {
 
             InitializeInstanceNames(instanceNames);
 
-            __dict__ = dict as PythonDictionary ?? new PythonDictionary(new WrapperDictionaryStorage(dict));
+            _dict = dict as PythonDictionary ?? new PythonDictionary(new WrapperDictionaryStorage(dict));
 
             
-            if (!__dict__._storage.Contains(Symbols.Doc)) {
-                __dict__._storage.Add(Symbols.Doc, null);
+            if (!_dict._storage.Contains(Symbols.Doc)) {
+                _dict._storage.Add(Symbols.Doc, null);
             }
 
-            CheckSpecialMethods(__dict__);
+            CheckSpecialMethods(_dict);
         }
 
         private void CheckSpecialMethods(PythonDictionary dict) {
@@ -142,17 +143,17 @@ namespace IronPython.Runtime.Types {
         private OldClass(SerializationInfo info, StreamingContext context) {
             _bases = (List<OldClass>)info.GetValue("__class__", typeof(List<OldClass>));
             _name = info.GetValue("__name__", typeof(object));
-            __dict__ = new PythonDictionary();
+            _dict = new PythonDictionary();
 
             InitializeInstanceNames(""); //TODO should we serialize the optimization data
 
             List<object> keys = (List<object>)info.GetValue("keys", typeof(List<object>));
             List<object> values = (List<object>)info.GetValue("values", typeof(List<object>));
             for (int i = 0; i < keys.Count; i++) {
-                __dict__[keys[i]] = values[i];
+                _dict[keys[i]] = values[i];
             }
 
-            if (__dict__.has_key("__del__")) HasFinalizer = true;
+            if (_dict.has_key("__del__")) HasFinalizer = true;
         }
 
 #pragma warning disable 169 // unused method - called via reflection from serialization
@@ -165,7 +166,7 @@ namespace IronPython.Runtime.Types {
 
             List<object> keys = new List<object>();
             List<object> values = new List<object>();
-            foreach (KeyValuePair<object, object> kvp in __dict__._storage.GetItems()) {
+            foreach (KeyValuePair<object, object> kvp in _dict._storage.GetItems()) {
                 keys.Add(kvp.Key);
                 values.Add(kvp.Value);
             }
@@ -199,13 +200,13 @@ namespace IronPython.Runtime.Types {
             get { return _optimizedInstanceNamesVersion; }
         }
 
-        public string __name__ {
+        internal string Name {
             get { return _name.ToString(); }
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate")]
         internal bool TryLookupSlot(SymbolId name, out object ret) {
-            if (__dict__._storage.TryGetValue(name, out ret)) {
+            if (_dict._storage.TryGetValue(name, out ret)) {
                 return true;
             }
 
@@ -220,11 +221,11 @@ namespace IronPython.Runtime.Types {
         }
 
         internal bool TryLookupOneSlot(SymbolId name, out object ret) {
-            return __dict__._storage.TryGetValue(name, out ret);
+            return _dict._storage.TryGetValue(name, out ret);
         }
 
         internal string FullName {
-            get { return __dict__["__module__"].ToString() + '.' + _name; }
+            get { return _dict["__module__"].ToString() + '.' + _name; }
         }
 
 
@@ -353,7 +354,7 @@ namespace IronPython.Runtime.Types {
             object value;
 
             if (!TryGetBoundCustomMember(context, name, out value)) {
-                throw PythonOps.AttributeError("type object '{0}' has no attribute '{1}'", __name__, SymbolTable.IdToString(name));
+                throw PythonOps.AttributeError("type object '{0}' has no attribute '{1}'", Name, SymbolTable.IdToString(name));
             }
 
             return value;
@@ -365,7 +366,7 @@ namespace IronPython.Runtime.Types {
             if (name == Symbols.Dict) {
                 //!!! user code can modify __del__ property of __dict__ behind our back
                 HasDelAttr = HasSetAttr = true;  // pessimisticlly assume the user is setting __setattr__ in the dict
-                value = __dict__; return true;
+                value = _dict; return true;
             }
 
             if (TryLookupSlot(name, out value)) {
@@ -376,7 +377,7 @@ namespace IronPython.Runtime.Types {
         }
 
         internal bool DeleteCustomMember(CodeContext context, SymbolId name) {
-            if (!__dict__._storage.Remove(SymbolTable.IdToString(name))) {
+            if (!_dict._storage.Remove(SymbolTable.IdToString(name))) {
                 throw PythonOps.AttributeError("{0} is not a valid attribute", SymbolTable.IdToString(name));
             }
 
@@ -394,7 +395,7 @@ namespace IronPython.Runtime.Types {
         }
 
         internal static void RecurseAttrHierarchy(OldClass oc, IDictionary<object, object> attrs) {
-            foreach (KeyValuePair<object, object> kvp in oc.__dict__._storage.GetItems()) {
+            foreach (KeyValuePair<object, object> kvp in oc._dict._storage.GetItems()) {
                 if (!attrs.ContainsKey(kvp.Key)) {
                     attrs.Add(kvp.Key, kvp.Key);
                 }
@@ -410,8 +411,12 @@ namespace IronPython.Runtime.Types {
 
         #region IMembersList Members
 
-        IList<object> IMembersList.GetMemberNames(CodeContext context) {
-            PythonDictionary attrs = new PythonDictionary(__dict__);
+        IList<string> IMembersList.GetMemberNames() {
+            return PythonOps.GetStringMemberList(this);
+        }
+
+        IList<object> IPythonMembersList.GetMemberNames(CodeContext/*!*/ context) {
+            PythonDictionary attrs = new PythonDictionary(_dict);
             RecurseAttrHierarchy(this, attrs);
             return PythonOps.MakeListFromSequence(attrs);
         }
@@ -526,11 +531,11 @@ namespace IronPython.Runtime.Types {
         internal void SetDictionary(object value) {
             PythonDictionary d = value as PythonDictionary;
             if (d == null) throw PythonOps.TypeError("__dict__ must be set to dictionary");
-            __dict__ = d;
+            _dict = d;
         }
 
         internal void SetNameHelper(SymbolId name, object value) {
-            __dict__._storage.Add(name, value);
+            _dict._storage.Add(name, value);
 
             if (name == Symbols.Unassign) {
                 HasFinalizer = true;

@@ -254,14 +254,7 @@ namespace IronPython.Runtime.Binding {
                         Ast.Call(
                             typeof(PythonOps).GetMethod("ContainsFromEnumerable"),
                             AstUtils.Constant(state.SharedContext),
-                            Ast.Dynamic(
-                                state.Convert(
-                                    typeof(IEnumerator),
-                                    ConversionResultKind.ExplicitCast
-                                ),
-                                typeof(IEnumerator),
-                                sf.Target.Expression
-                            ),
+                            sf.Target.Expression,
                             AstUtils.Convert(types[1].Expression, typeof(object))
                         ),
                         BindingRestrictions.Combine(types)
@@ -641,50 +634,6 @@ namespace IronPython.Runtime.Binding {
                     )
                 ),
                 args[0].Restrictions
-            );
-        }
-
-        private static DynamicMetaObject/*!*/ MakeMemberNamesOperation(PythonOperationBinder/*!*/ operation, DynamicMetaObject[] args) {
-            DynamicMetaObject self = args[0];
-            CodeContext context;
-            if (args.Length > 1 && args[0].GetLimitType() == typeof(CodeContext)) {
-                self = args[1];
-                context = (CodeContext)args[0].Value;
-            } else {
-                context = PythonContext.GetPythonContext(operation).SharedContext;
-            }
-
-            if (typeof(IMembersList).IsAssignableFrom(self.GetLimitType())) {
-                return MakeIMembersListRule(PythonContext.GetCodeContext(operation), self);
-            }
-
-            PythonType pt = DynamicHelpers.GetPythonType(self.Value);
-            List<string> strNames = GetMemberNames(context, pt, self.Value);
-
-            if (pt.IsSystemType) {
-                return new DynamicMetaObject(
-                    AstUtils.Constant(strNames),
-                    BindingRestrictions.GetInstanceRestriction(self.Expression, self.Value).Merge(self.Restrictions)
-                );
-            }
-
-            return new DynamicMetaObject(
-                AstUtils.Constant(strNames),
-                BindingRestrictions.GetInstanceRestriction(self.Expression, self.Value).Merge(self.Restrictions)
-            );
-        }
-
-        private static DynamicMetaObject MakeIMembersListRule(Expression codeContext, DynamicMetaObject target) {
-            return new DynamicMetaObject(
-                Ast.Call(
-                    typeof(BinderOps).GetMethod("GetStringMembers"),
-                    Ast.Call(
-                        AstUtils.Convert(target.Expression, typeof(IMembersList)),
-                        typeof(IMembersList).GetMethod("GetMemberNames"),
-                        codeContext
-                    )
-                ),
-                BindingRestrictionsHelpers.GetRuntimeTypeRestriction(target.Expression, target.GetLimitType()).Merge(target.Restrictions)
             );
         }
 
@@ -1080,29 +1029,14 @@ namespace IronPython.Runtime.Binding {
         /// <summary>
         /// calls __coerce__ for old-style classes and performs the operation if the coercion is successful.
         /// </summary>
-        private static void DoCoerce(PythonContext/*!*/ state, ConditionalBuilder/*!*/ bodyBuilder, PythonOperationKind op, DynamicMetaObject/*!*/[]/*!*/ types, bool reverse, Func<Expression, Expression> returnTransform) {
+        private static void DoCoerce(PythonContext/*!*/ pyContext, ConditionalBuilder/*!*/ bodyBuilder, PythonOperationKind op, DynamicMetaObject/*!*/[]/*!*/ types, bool reverse, Func<Expression, Expression> returnTransform) {
             ParameterExpression coerceResult = Ast.Variable(typeof(object), "coerceResult");
             ParameterExpression coerceTuple = Ast.Variable(typeof(PythonTuple), "coerceTuple");
-
-            if (!bodyBuilder.TestCoercionRecursionCheck) {
-                // during coercion we need to enforce recursion limits if
-                // they're enabled and the rule's test needs to reflect this.                
-                bodyBuilder.Restrictions = bodyBuilder.Restrictions.Merge(
-                    BindingRestrictions.GetExpressionRestriction(
-                        Ast.Equal(
-                            Ast.Call(typeof(PythonOps).GetMethod("ShouldEnforceRecursion")),
-                            AstUtils.Constant(PythonFunction.EnforceRecursion)
-                        )
-                    )
-                );
-
-                bodyBuilder.TestCoercionRecursionCheck = true;
-            }
 
             // tmp = self.__coerce__(other)
             // if tmp != null && tmp != NotImplemented && (tuple = PythonOps.ValidateCoerceResult(tmp)) != null:
             //      return operation(tuple[0], tuple[1])                        
-            SlotOrFunction slot = SlotOrFunction.GetSlotOrFunction(state, Symbols.Coerce, types);
+            SlotOrFunction slot = SlotOrFunction.GetSlotOrFunction(pyContext, Symbols.Coerce, types);
 
             if (slot.Success) {
                 bodyBuilder.AddCondition(
@@ -1128,9 +1062,10 @@ namespace IronPython.Runtime.Binding {
                         )
                     ),
                     BindingHelpers.AddRecursionCheck(
+                        pyContext,
                         returnTransform(
                             Ast.Dynamic(
-                                state.Operation(op | PythonOperationKind.DisableCoerce),
+                                pyContext.Operation(op | PythonOperationKind.DisableCoerce),
                                 op == PythonOperationKind.Compare ? typeof(int) : typeof(object),
                                 reverse ? CoerceTwo(coerceTuple) : CoerceOne(coerceTuple),
                                 reverse ? CoerceOne(coerceTuple) : CoerceTwo(coerceTuple)
@@ -1804,10 +1739,14 @@ namespace IronPython.Runtime.Binding {
                 _slot.MakeGetExpression(
                     Binder,
                     AstUtils.Constant(PythonContext.SharedContext),
-                    args[0].Expression,
-                    Ast.Call(
-                        typeof(DynamicHelpers).GetMethod("GetPythonType"),
-                        AstUtils.Convert(args[0].Expression, typeof(object))
+                    args[0],
+                    new DynamicMetaObject(
+                        Ast.Call(
+                            typeof(DynamicHelpers).GetMethod("GetPythonType"),
+                            AstUtils.Convert(args[0].Expression, typeof(object))
+                        ),
+                        BindingRestrictions.Empty,
+                        DynamicHelpers.GetPythonType(args[0].Value)
                     ),
                     cb
                 );

@@ -38,18 +38,21 @@ namespace Chiron {
         }
 
         static void XapFiles(ZipArchive zip, string dir) {
-            ICollection<LanguageInfo> langs = FindSourceLanguages(dir);
-            
-            string manifestPath = Path.Combine(dir, "AppManifest.xaml");
-            IList<Uri> assemblies;
+            ICollection<LanguageInfo> langs;
+            IList<Uri> assemblies, externals;
 
+            string manifestPath = Path.Combine(dir, "AppManifest.xaml");
             if (File.Exists(manifestPath)) {
+                langs = FindSourceLanguages(dir);
                 assemblies = GetManifestAssemblies(manifestPath);
+
+                // Note: because the manifest file already exists, nothing 
+                // needs to be done to support TPEs: Chiron doesn't need to host
+                // them because they are assumed to be a well-known internet location.
+                externals = null;
             } else {
-                assemblies = GetLanguageAssemblies(langs);
-                // generate the manfiest
                 using (Stream appManifest = zip.Create("AppManifest.xaml")) {
-                    Chiron.ManifestTemplate.Generate(assemblies).Save(appManifest);
+                    GenerateManifest(dir, out langs, out assemblies, out externals).Save(appManifest);
                 }
             }
 
@@ -77,7 +80,7 @@ namespace Chiron {
 
         // Get the URIs of the assemblies from the AppManifest.xaml file
         private static IList<Uri> GetManifestAssemblies(string manifestPath) {
-            List<Uri> assemblies = new List<Uri>();
+            IList<Uri> assemblies = new List<Uri>();
 
             XmlDocument doc = new XmlDocument();
             doc.Load(manifestPath);
@@ -91,33 +94,66 @@ namespace Chiron {
             return assemblies;
         }
 
-        // Generates AppManifest.xaml as if we were generating it for the XAP
         internal static XmlDocument GenerateManifest(string dir) {
-            return Chiron.ManifestTemplate.Generate(GetLanguageAssemblies(FindSourceLanguages(dir)));
+            ICollection<LanguageInfo> langs;
+            IList<Uri> assemblies, externals;
+            return GenerateManifest(dir, out langs, out assemblies, out externals);
+        }
+
+        private static XmlDocument GenerateManifest(string dir, out ICollection<LanguageInfo> langs, out IList<Uri> assemblies, out IList<Uri> externals) {
+            langs = FindSourceLanguages(dir);
+            if (Chiron.ExternalUrlPrefix != null) {
+                externals = GetLanguageExternals(langs);
+                assemblies = new List<Uri>();
+            } else {
+                externals = new List<Uri>();
+                assemblies = GetLanguageAssemblies(langs);
+            }
+            return Chiron.ManifestTemplate.Generate(assemblies, externals);
         }
 
         // Gets the list of DLR+language assemblies that will be automatically added to the XAP
         private static IList<Uri> GetLanguageAssemblies(IEnumerable<LanguageInfo> langs) {
-            List<Uri> assemblies = new List<Uri>();
-            assemblies.Add(GetUri("Microsoft.Scripting.Silverlight.dll"));
-            assemblies.Add(GetUri("Microsoft.Scripting.ExtensionAttribute.dll"));
-            assemblies.Add(GetUri("Microsoft.Scripting.Core.dll"));
-            assemblies.Add(GetUri("Microsoft.Scripting.dll"));
+            IList<Uri> assemblies = new List<Uri>();
+            assemblies.Add(GetAssemblyUri("Microsoft.Scripting.Silverlight.dll"));
+            assemblies.Add(GetAssemblyUri("Microsoft.Scripting.ExtensionAttribute.dll"));
+            assemblies.Add(GetAssemblyUri("Microsoft.Scripting.Core.dll"));
+            assemblies.Add(GetAssemblyUri("Microsoft.Scripting.dll"));
             foreach (LanguageInfo lang in langs) {
                 foreach (string asm in lang.Assemblies) {
-                    assemblies.Add(GetUri(asm));
+                    assemblies.Add(GetAssemblyUri(asm));
                 }
             }
             return assemblies;
         }
 
+        // Gets the list of DLR+Language extensions that will be automatically added to the XAP
+        private static IList<Uri> GetLanguageExternals(IEnumerable<LanguageInfo> langs) {
+            IList<Uri> extensions = new List<Uri>();
+            extensions.Add(GetExternalUri("Microsoft.Scripting.slvx"));
+            foreach (LanguageInfo lang in langs) {
+                var asmParts = lang.GetContextAssemblyName().Split(new char[] { ',' });
+                if (asmParts.Length > 0)
+                    extensions.Add(GetExternalUri(asmParts[0] + ".slvx"));
+            }
+            return extensions;
+        }
+
         // prepends uriPrefix from the app.config file, unless the path is already absolute
-        private static Uri GetUri(string path) {
+        private static Uri GetAssemblyUri(string path) {
             Uri uri = new Uri(path, UriKind.RelativeOrAbsolute);
             string prefix = Chiron.UrlPrefix;
-            if (prefix != "" && !IsPathRooted(uri)) {
+            if (prefix != "" && !IsPathRooted(uri))
                 uri = new Uri(prefix + path, UriKind.RelativeOrAbsolute);
-            }
+            return uri;
+        }
+
+        // prepends externalUriPrefix from the app.config file, unless the path is already absolute
+        private static Uri GetExternalUri(string path) {
+            Uri uri = new Uri(path, UriKind.RelativeOrAbsolute);
+            string prefix = Chiron.ExternalUrlPrefix;
+            if (prefix != "" && !IsPathRooted(uri))
+                uri = new Uri(prefix + path, UriKind.RelativeOrAbsolute);
             return uri;
         }
 
@@ -195,9 +231,6 @@ namespace Chiron {
                 if (Chiron.Languages.TryGetValue(ext.ToLower(), out lang)) {
                     result[lang] = true;
                 }
-            }
-            if (result.Count == 0) {
-                throw new ApplicationException("Could not find any dynamic language source files under path: " + dir);
             }
 
             return result.Keys;

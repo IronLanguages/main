@@ -40,51 +40,6 @@ namespace Microsoft.Scripting.Actions {
         }
 
         /// <summary>
-        /// Produces a rule for the specified Action for the given arguments.
-        /// 
-        /// The default implementation can produce rules for standard .NET types.  Languages should
-        /// override this and provide any custom behavior they need and fallback to the default
-        /// implementation if no custom behavior is required.
-        /// </summary>
-        protected override void MakeRule(OldDynamicAction action, object[] args, RuleBuilder rule) {
-            ContractUtils.RequiresNotNull(action, "action");
-            ContractUtils.RequiresNotNull(args, "args");
-
-            object[] extracted;
-            CodeContext callerContext = ExtractCodeContext(args, out extracted);
-
-            ContractUtils.RequiresNotNull(callerContext, "callerContext");
-
-            switch (action.Kind) {
-                case DynamicActionKind.GetMember:
-                    new GetMemberBinderHelper(callerContext, (OldGetMemberAction)action, extracted, rule).MakeNewRule();
-                    return;
-                case DynamicActionKind.SetMember:
-                    new SetMemberBinderHelper(callerContext, (OldSetMemberAction)action, extracted, rule).MakeNewRule();
-                    return;
-                case DynamicActionKind.DeleteMember:
-                    new DeleteMemberBinderHelper(callerContext, (OldDeleteMemberAction)action, extracted, rule).MakeRule();
-                    return;
-                case DynamicActionKind.ConvertTo:
-                    new ConvertToBinderHelper(callerContext, (OldConvertToAction)action, extracted, rule).MakeRule();
-                    return;
-                default:
-                    throw new NotImplementedException(action.ToString());
-            }
-        }
-
-        protected static CodeContext ExtractCodeContext(object[] args, out object[] extracted) {
-            CodeContext cc;
-            if (args.Length > 0 && (cc = args[0] as CodeContext) != null) {
-                extracted = ArrayUtils.ShiftLeft(args, 1);
-            } else {
-                cc = null;
-                extracted = args;
-            }
-            return cc;
-        }
-
-        /// <summary>
         /// Provides a way for the binder to provide a custom error message when lookup fails.  Just
         /// doing this for the time being until we get a more robust error return mechanism.
         /// </summary>
@@ -97,7 +52,7 @@ namespace Microsoft.Scripting.Actions {
         /// 
         /// The default implementation allows access to the fields or properties using reflection.
         /// </summary>
-        public virtual ErrorInfo MakeNonPublicMemberGetError(Expression codeContext, MemberTracker member, Type type, Expression instance) {
+        public virtual ErrorInfo MakeNonPublicMemberGetError(OverloadResolverFactory resolverFactory, MemberTracker member, Type type, DynamicMetaObject instance) {
             switch (member.MemberType) {
                 case TrackerTypes.Field:
                     FieldTracker ft = (FieldTracker)member;
@@ -106,14 +61,14 @@ namespace Microsoft.Scripting.Actions {
                         Ast.Call(
                             AstUtils.Convert(AstUtils.Constant(ft.Field), typeof(FieldInfo)),
                             typeof(FieldInfo).GetMethod("GetValue"),
-                            AstUtils.Convert(instance, typeof(object))
+                            AstUtils.Convert(instance.Expression, typeof(object))
                         )
                     );
                 case TrackerTypes.Property:
                     PropertyTracker pt = (PropertyTracker)member;
 
                     return ErrorInfo.FromValueNoError(
-                        MemberTracker.FromMemberInfo(pt.GetGetMethod(true)).Call(codeContext, this, instance)
+                        MemberTracker.FromMemberInfo(pt.GetGetMethod(true)).Call(resolverFactory, this, instance).Expression
                     );
                 default:
                     throw new InvalidOperationException();
@@ -133,7 +88,7 @@ namespace Microsoft.Scripting.Actions {
             );
         }
 
-        public virtual ErrorInfo MakeEventValidation(MemberGroup members, Expression eventObject, Expression value, Expression codeContext) {
+        public virtual ErrorInfo MakeEventValidation(MemberGroup members, DynamicMetaObject eventObject, DynamicMetaObject value, OverloadResolverFactory resolverFactory) {
             EventTracker ev = (EventTracker)members[0];
 
             // handles in place addition of events - this validates the user did the right thing.
@@ -141,27 +96,27 @@ namespace Microsoft.Scripting.Actions {
                 Expression.Call(
                     typeof(BinderOps).GetMethod("SetEvent"),
                     AstUtils.Constant(ev),
-                    value
+                    value.Expression
                 )
             );
         }
 
-        public static Expression MakeError(ErrorInfo error, Type type) {
-            switch (error.Kind) {
-                case ErrorInfoKind.Error:
-                    // error meta objecT?
-                    return AstUtils.Convert(error.Expression, type);
-                case ErrorInfoKind.Exception:
-                    return AstUtils.Convert(Expression.Throw(error.Expression), type);
-                case ErrorInfoKind.Success:
-                    return error.Expression;
-                default:
-                    throw new InvalidOperationException();
-            }
+        public static DynamicMetaObject MakeError(ErrorInfo error, Type type) {
+            return MakeError(error, BindingRestrictions.Empty, type);
         }
 
         public static DynamicMetaObject MakeError(ErrorInfo error, BindingRestrictions restrictions, Type type) {
-            return new DynamicMetaObject(MakeError(error, type), restrictions);
+            switch (error.Kind) {
+                case ErrorInfoKind.Error:
+                    // error meta objecT?
+                    return new DynamicMetaObject(AstUtils.Convert(error.Expression, type), restrictions);
+                case ErrorInfoKind.Exception:
+                    return new DynamicMetaObject(AstUtils.Convert(Expression.Throw(error.Expression), type), restrictions);
+                case ErrorInfoKind.Success:
+                    return new DynamicMetaObject(error.Expression, restrictions);
+                default:
+                    throw new InvalidOperationException();
+            }
         }
 
         private static Expression MakeAmbiguousMatchError(MemberGroup members) {
@@ -228,7 +183,7 @@ namespace Microsoft.Scripting.Actions {
             } while (curType != null);
 
             return null;
-        }
+        }        
     }
 }
 

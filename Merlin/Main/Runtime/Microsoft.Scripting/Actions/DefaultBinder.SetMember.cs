@@ -14,19 +14,23 @@
  * ***************************************************************************/
 
 using System;
+using System.Diagnostics;
+using System.Dynamic;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Dynamic;
+
+using Microsoft.Scripting.Actions.Calls;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Actions {
     using Ast = System.Linq.Expressions.Expression;
-
-    public partial class DefaultBinder : ActionBinder {
+    
+    public partial class DefaultBinder : ActionBinder {        
         /// <summary>
         /// Builds a MetaObject for performing a member get.  Supports all built-in .NET members, the OperatorMethod 
         /// GetBoundMember, and StrongBox instances.
@@ -41,37 +45,17 @@ namespace Microsoft.Scripting.Actions {
         /// <param name="value">
         /// The value being assigned to the target member.
         /// </param>
-        public DynamicMetaObject SetMember(string name, DynamicMetaObject target, DynamicMetaObject value) {
-            return SetMember(name, target, value, AstUtils.Constant(null, typeof(CodeContext)));
-        }
-
-        /// <summary>
-        /// Builds a MetaObject for performing a member get.  Supports all built-in .NET members, the OperatorMethod 
-        /// GetBoundMember, and StrongBox instances.
-        /// </summary>
-        /// <param name="name">
-        /// The name of the member to retrieve.  This name is not processed by the DefaultBinder and
-        /// is instead handed off to the GetMember API which can do name mangling, case insensitive lookups, etc...
+        /// <param name="resolverFactory">
+        /// rovides overload resolution and method binding for any calls which need to be performed for the SetMember.
         /// </param>
-        /// <param name="target">
-        /// The MetaObject from which the member is retrieved.
-        /// </param>
-        /// <param name="value">
-        /// The value being assigned to the target member.
-        /// </param>
-        /// <param name="codeContext">
-        /// An expression which provides access to the CodeContext if its required for 
-        /// accessing the member (e.g. for an extension property which takes CodeContext).  By default this
-        /// a null CodeContext object is passed.
-        /// </param>
-        public DynamicMetaObject SetMember(string name, DynamicMetaObject target, DynamicMetaObject value, Expression codeContext) {
+        public DynamicMetaObject SetMember(string name, DynamicMetaObject target, DynamicMetaObject value, OverloadResolverFactory resolverFactory) {
             ContractUtils.RequiresNotNull(name, "name");
             ContractUtils.RequiresNotNull(target, "target");
             ContractUtils.RequiresNotNull(value, "value");
-            ContractUtils.RequiresNotNull(codeContext, "codeContext");
+            ContractUtils.RequiresNotNull(resolverFactory, "resolverFactory");
 
             return MakeSetMemberTarget(
-                new SetOrDeleteMemberInfo(name, codeContext),
+                new SetOrDeleteMemberInfo(name, resolverFactory),
                 target,
                 value
             );
@@ -79,7 +63,7 @@ namespace Microsoft.Scripting.Actions {
 
         private DynamicMetaObject MakeSetMemberTarget(SetOrDeleteMemberInfo memInfo, DynamicMetaObject target, DynamicMetaObject value) {
             Type type = target.GetLimitType();
-            Expression self = target.Expression;
+            DynamicMetaObject self = target;
             
             target = target.Restrict(target.GetLimitType());
 
@@ -99,25 +83,20 @@ namespace Microsoft.Scripting.Actions {
             return memInfo.Body.GetMetaObject(target, value);
         }
 
-        private void MakeSetMemberRule(SetOrDeleteMemberInfo memInfo, Type type, Expression self, DynamicMetaObject target) {
-            if (MakeOperatorSetMemberBody(memInfo, self, target, type, "SetMember")) {
+        private void MakeSetMemberRule(SetOrDeleteMemberInfo memInfo, Type type, DynamicMetaObject self, DynamicMetaObject value) {
+            if (MakeOperatorSetMemberBody(memInfo, self, value, type, "SetMember")) {
                 return;
             }
 
-            // needed for GetMember call until DynamicAction goes away
-            OldDynamicAction act = OldSetMemberAction.Make(
-                this,
-                memInfo.Name
-            );
 
-            MemberGroup members = GetMember(act, type, memInfo.Name);
+            MemberGroup members = GetMember(MemberRequestKind.Set, type, memInfo.Name);
 
             // if lookup failed try the strong-box type if available.
-            if (members.Count == 0 && typeof(IStrongBox).IsAssignableFrom(type)) {
-                self = Ast.Field(AstUtils.Convert(self, type), type.GetField("Value"));
+            if (self != null && members.Count == 0 && typeof(IStrongBox).IsAssignableFrom(type)) {
+                self = new DynamicMetaObject(Ast.Field(AstUtils.Convert(self.Expression, type), type.GetField("Value")), BindingRestrictions.Empty, ((IStrongBox)self.Value).Value);
                 type = type.GetGenericArguments()[0];
 
-                members = GetMember(act, type, memInfo.Name);
+                members = GetMember(MemberRequestKind.Set, type, memInfo.Name);
             }
 
             Expression error;
@@ -129,31 +108,31 @@ namespace Microsoft.Scripting.Actions {
                     case TrackerTypes.Type:
                     case TrackerTypes.Constructor:
                         memInfo.Body.FinishCondition(
-                            MakeError(MakeReadOnlyMemberError(type, memInfo.Name), typeof(object))
+                            MakeError(MakeReadOnlyMemberError(type, memInfo.Name), BindingRestrictions.Empty, typeof(object))
                         );
                         break;
                     case TrackerTypes.Event:
                         memInfo.Body.FinishCondition(
-                            MakeError(MakeEventValidation(members, self, target.Expression, memInfo.CodeContext), typeof(object))
+                            MakeError(MakeEventValidation(members, self, value, memInfo.ResolutionFactory), BindingRestrictions.Empty, typeof(object))
                         );
                         break;
                     case TrackerTypes.Field:
-                        MakeFieldRule(memInfo, self, target, type, members);
+                        MakeFieldRule(memInfo, self, value, type, members);
                         break;
                     case TrackerTypes.Property:
-                        MakePropertyRule(memInfo, self, target, type, members);
+                        MakePropertyRule(memInfo, self, value, type, members);
                         break;
                     case TrackerTypes.Custom:
-                        MakeGenericBody(memInfo, self, target, type, members[0]);
+                        MakeGenericBody(memInfo, self, value, type, members[0]);
                         break;
                     case TrackerTypes.All:
                         // no match
-                        if (MakeOperatorSetMemberBody(memInfo, self, target, type, "SetMemberAfter")) {
+                        if (MakeOperatorSetMemberBody(memInfo, self, value, type, "SetMemberAfter")) {
                             return;
                         }
 
                         memInfo.Body.FinishCondition(
-                            MakeError(MakeMissingMemberError(type, memInfo.Name), typeof(object))
+                            MakeError(MakeMissingMemberErrorForAssign(type, self, memInfo.Name), BindingRestrictions.Empty, typeof(object))
                         );
                         break;
                     default:
@@ -164,12 +143,12 @@ namespace Microsoft.Scripting.Actions {
             }
         }
 
-        private void MakeGenericBody(SetOrDeleteMemberInfo memInfo, Expression instance, DynamicMetaObject target, Type type, MemberTracker tracker) {
+        private void MakeGenericBody(SetOrDeleteMemberInfo memInfo, DynamicMetaObject instance, DynamicMetaObject target, Type type, MemberTracker tracker) {
             if (instance != null) {
                 tracker = tracker.BindToInstance(instance);
             }
 
-            Expression val = tracker.SetValue(memInfo.CodeContext, this, type, target.Expression);
+            DynamicMetaObject val = tracker.SetValue(memInfo.ResolutionFactory, this, type, target);
 
             if (val != null) {
                 memInfo.Body.FinishCondition(val);
@@ -180,7 +159,7 @@ namespace Microsoft.Scripting.Actions {
             }
         }
 
-        private void MakePropertyRule(SetOrDeleteMemberInfo memInfo, Expression instance, DynamicMetaObject target, Type targetType, MemberGroup properties) {
+        private void MakePropertyRule(SetOrDeleteMemberInfo memInfo, DynamicMetaObject instance, DynamicMetaObject target, Type targetType, MemberGroup properties) {
             PropertyTracker info = (PropertyTracker)properties[0];
 
             MethodInfo setter = info.GetSetMethod(true);
@@ -202,7 +181,7 @@ namespace Microsoft.Scripting.Actions {
                                 info,
                                 true,
                                 instance,
-                                target.Expression
+                                target
                             ), 
                             typeof(object)
                         )
@@ -210,7 +189,7 @@ namespace Microsoft.Scripting.Actions {
                 } else if (info.IsStatic && info.DeclaringType != targetType) {
                     memInfo.Body.FinishCondition(
                         MakeError(
-                            MakeStaticAssignFromDerivedTypeError(targetType, info, target.Expression, memInfo.CodeContext), 
+                            MakeStaticAssignFromDerivedTypeError(targetType, instance, info, target, memInfo.ResolutionFactory), 
                             typeof(object)
                         )
                     );
@@ -228,7 +207,7 @@ namespace Microsoft.Scripting.Actions {
                                         target.Expression,
                                         setter.GetParameters()[0].ParameterType,
                                         ConversionResultKind.ExplicitCast,
-                                        memInfo.CodeContext
+                                        memInfo.ResolutionFactory
                                     )
                                 ),
                                 Ast.Constant(null)
@@ -237,7 +216,7 @@ namespace Microsoft.Scripting.Actions {
                     } else {
                         memInfo.Body.FinishCondition(
                             MakeReturnValue(
-                                MakeCallExpression(memInfo.CodeContext, setter, instance, target.Expression),
+                                MakeCallExpression(memInfo.ResolutionFactory, setter, instance, target),
                                 target
                             )
                         );
@@ -249,13 +228,13 @@ namespace Microsoft.Scripting.Actions {
                             Ast.Call(
                                 AstUtils.Constant(((ReflectedPropertyTracker)info).Property), // TODO: Private binding on extension properties
                                 typeof(PropertyInfo).GetMethod("SetValue", new Type[] { typeof(object), typeof(object), typeof(object[]) }),
-                                instance == null ? AstUtils.Constant(null) : AstUtils.Convert(instance, typeof(object)),
+                                instance == null ? AstUtils.Constant(null) : AstUtils.Convert(instance.Expression, typeof(object)),
                                 AstUtils.Convert(
                                     ConvertExpression(
                                         target.Expression,
                                         setter.GetParameters()[0].ParameterType,
                                         ConversionResultKind.ExplicitCast,
-                                        memInfo.CodeContext
+                                        memInfo.ResolutionFactory
                                     ),
                                     typeof(object)
                                 ),
@@ -268,24 +247,24 @@ namespace Microsoft.Scripting.Actions {
             } else {
                 memInfo.Body.FinishCondition(
                     MakeError(
-                        MakeMissingMemberError(targetType, memInfo.Name), typeof(object)
+                        MakeMissingMemberErrorForAssignReadOnlyProperty(targetType, instance, memInfo.Name), typeof(object)
                     )
                 );
             }
         }
 
-        private void MakeFieldRule(SetOrDeleteMemberInfo memInfo, Expression instance, DynamicMetaObject target, Type targetType, MemberGroup fields) {
+        private void MakeFieldRule(SetOrDeleteMemberInfo memInfo, DynamicMetaObject instance, DynamicMetaObject target, Type targetType, MemberGroup fields) {
             FieldTracker field = (FieldTracker)fields[0];
 
             // TODO: Tmp variable for target
-            if (field.DeclaringType.IsGenericType && field.DeclaringType.GetGenericTypeDefinition() == typeof(StrongBox<>)) {
+            if (instance != null && field.DeclaringType.IsGenericType && field.DeclaringType.GetGenericTypeDefinition() == typeof(StrongBox<>)) {
                 // work around a CLR bug where we can't access generic fields from dynamic methods.
                 Type[] generic = field.DeclaringType.GetGenericArguments();
                 memInfo.Body.FinishCondition(
                     MakeReturnValue(
                         Ast.Assign(
                             Ast.Field(
-                                AstUtils.Convert(instance, field.DeclaringType),
+                                AstUtils.Convert(instance.Expression, field.DeclaringType),
                                 field.DeclaringType.GetField("Value")
                             ),
                             AstUtils.Convert(target.Expression, generic[0])
@@ -303,7 +282,7 @@ namespace Microsoft.Scripting.Actions {
             } else if (field.IsStatic && targetType != field.DeclaringType) {
                 memInfo.Body.FinishCondition(
                     MakeError(
-                        MakeStaticAssignFromDerivedTypeError(targetType, field, target.Expression, memInfo.CodeContext), 
+                        MakeStaticAssignFromDerivedTypeError(targetType, instance, field, target, memInfo.ResolutionFactory), 
                         typeof(object)
                     )
                 );
@@ -318,21 +297,25 @@ namespace Microsoft.Scripting.Actions {
                     )
                 );
             } else if (field.IsPublic && field.DeclaringType.IsVisible) {
+                Debug.Assert(field.IsStatic || instance != null);
+
                 memInfo.Body.FinishCondition(
                     MakeReturnValue(
                         Ast.Assign(
                             Ast.Field(
                                 field.IsStatic ?
                                     null :
-                                    AstUtils.Convert(instance, field.DeclaringType),
+                                    AstUtils.Convert(instance.Expression, field.DeclaringType),
                                 field.Field
                             ),
-                            ConvertExpression(target.Expression, field.FieldType, ConversionResultKind.ExplicitCast, memInfo.CodeContext)
+                            ConvertExpression(target.Expression, field.FieldType, ConversionResultKind.ExplicitCast, memInfo.ResolutionFactory)
                         ),
                         target
                     )
                 );
             } else {
+                Debug.Assert(field.IsStatic || instance != null);
+
                 memInfo.Body.FinishCondition(
                     MakeReturnValue(
                         Ast.Call(
@@ -340,13 +323,23 @@ namespace Microsoft.Scripting.Actions {
                             typeof(FieldInfo).GetMethod("SetValue", new Type[] { typeof(object), typeof(object) }),
                             field.IsStatic ?
                                 AstUtils.Constant(null) :
-                                (Expression)AstUtils.Convert(instance, typeof(object)),
+                                (Expression)AstUtils.Convert(instance.Expression, typeof(object)),
                             AstUtils.Convert(target.Expression, typeof(object))
                         ),
                         target
                     )
                 );
             }
+        }
+
+        private DynamicMetaObject MakeReturnValue(DynamicMetaObject expression, DynamicMetaObject target) {
+            return new DynamicMetaObject(
+                Ast.Block(
+                    expression.Expression,
+                    Expression.Convert(target.Expression, typeof(object))
+                ),
+                target.Restrictions.Merge(expression.Restrictions)
+            );
         }
 
         private Expression MakeReturnValue(Expression expression, DynamicMetaObject target) {
@@ -357,16 +350,22 @@ namespace Microsoft.Scripting.Actions {
         }
 
         /// <summary> if a member-injector is defined-on or registered-for this type call it </summary>
-        private bool MakeOperatorSetMemberBody(SetOrDeleteMemberInfo memInfo, Expression self, DynamicMetaObject target, Type type, string name) {
+        private bool MakeOperatorSetMemberBody(SetOrDeleteMemberInfo memInfo, DynamicMetaObject self, DynamicMetaObject target, Type type, string name) {
             if (self != null) {
                 MethodInfo setMem = GetMethod(type, name);
                 if (setMem != null && setMem.IsSpecialName) {
                     ParameterExpression tmp = Ast.Variable(target.Expression.Type, "setValue");
                     memInfo.Body.AddVariable(tmp);
 
-                    Expression call = MakeCallExpression(memInfo.CodeContext, setMem, AstUtils.Convert(self, type), AstUtils.Constant(memInfo.Name), tmp);
+                    var callMo = MakeCallExpression(
+                        memInfo.ResolutionFactory, 
+                        setMem, 
+                        self.Clone(AstUtils.Convert(self.Expression, type)),
+                        new DynamicMetaObject(AstUtils.Constant(memInfo.Name), BindingRestrictions.Empty, memInfo.Name),
+                        target.Clone(tmp)
+                    );
 
-                    call = Ast.Block(Ast.Assign(tmp, target.Expression), call);
+                    var call = Ast.Block(Ast.Assign(tmp, target.Expression), callMo.Expression);
 
                     if (setMem.ReturnType == typeof(bool)) {
                         memInfo.Body.AddCondition(

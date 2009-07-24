@@ -126,7 +126,22 @@ namespace IronPython.Runtime {
 
         [PythonHidden]
         public bool TryGetValue(object key, out object value) {
-            return _storage.TryGetValue(key, out value);
+            if (_storage.TryGetValue(key, out value)) {
+                return true;
+            }
+
+            // we need to manually look up a slot to get the correct behavior when
+            // the __missing__ function is declared on a sub-type which is an old-class
+            if (GetType() != typeof(PythonDictionary) &&
+                PythonTypeOps.TryInvokeBinaryOperator(DefaultContext.Default,
+                this,
+                key,
+                Symbols.Missing,
+                out value)) {
+                return true;
+            }
+
+            return false;
         }
 
         public ICollection<object> Values {
@@ -252,15 +267,7 @@ namespace IronPython.Runtime {
             Debug.Assert(!(key is SymbolId));
 
             object ret;
-            if (_storage.TryGetValue(key, out ret)) return ret;
-
-            // we need to manually look up a slot to get the correct behavior when
-            // the __missing__ function is declared on a sub-type which is an old-class
-            if (PythonTypeOps.TryInvokeBinaryOperator(DefaultContext.Default,
-                this,
-                key,
-                Symbols.Missing,
-                out ret)) {
+            if (TryGetValue(key, out ret)) {
                 return ret;
             }
 

@@ -37,8 +37,15 @@ class IRTest
     report
   end
   
-  def time(str, diff = 0)
-    puts str + " " + (Time.now - diff).to_s
+  def time(str, start_time = 0)
+    if start_time.kind_of? Time
+      diff_secs = (Time.now - start_time).to_int
+      mins = diff_secs / 60
+      secs = diff_secs % 60
+      puts "#{str} #{mins}:#{secs} minutes"
+    else
+      puts "#{str} #{Time.now}"
+    end
   end
 
   def kill

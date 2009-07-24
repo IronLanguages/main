@@ -1768,6 +1768,20 @@ namespace Microsoft.Scripting.Math {
             }
         }
 
-        #endregion
+        #endregion        
+    }
+
+    public static class BigIntegerExtensions {
+        public static BigInteger Random(this Random generator, BigInteger limit) {
+            ContractUtils.Requires(limit.Sign >= 0, "limit");
+            ContractUtils.RequiresNotNull(generator, "generator");
+
+            // TODO: this doesn't yield a uniform distribution (small numbers will be picked more frequently):
+            uint[] result = new uint[limit.Length + 1];
+            for (int i = 0; i < result.Length; i++) {
+                result[i] = unchecked((uint)generator.Next());
+            }
+            return new BigInteger(1, result) % limit;
+        }
     }
 }

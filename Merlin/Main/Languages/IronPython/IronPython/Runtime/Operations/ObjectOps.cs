@@ -15,13 +15,15 @@
 
 using System;
 using System.Collections.Generic;
-using System.Dynamic;
+using System.Reflection;
 using System.Threading;
-using IronPython.Runtime.Types;
+
 using Microsoft.Scripting;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+
+using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime.Operations {
 
@@ -65,13 +67,33 @@ namespace IronPython.Runtime.Operations {
         /// <summary>
         /// Initializes the object.  The base class does nothing.
         /// </summary>
-        public static void __init__(object self, params object[] args) {
+        public static void __init__(CodeContext/*!*/ context, object self) {
         }
 
         /// <summary>
         /// Initializes the object.  The base class does nothing.
         /// </summary>
-        public static void __init__(object self, [ParamDictionary] IAttributesCollection kwargs, params object[] args) {
+        public static void __init__(CodeContext/*!*/ context, object self, params object[] args\u00F8) {
+            InstanceOps.CheckInitArgs(context, null, args\u00F8, self);
+        }
+
+        /// <summary>
+        /// Initializes the object.  The base class does nothing.
+        /// </summary>
+        public static void __init__(CodeContext/*!*/ context, object self, [ParamDictionary] IAttributesCollection kwargs, params object[] args\u00F8) {
+            InstanceOps.CheckInitArgs(context, kwargs, args\u00F8, self);
+        }
+
+        /// <summary>
+        /// Creates a new instance of the type
+        /// </summary>
+        [StaticExtensionMethod]
+        public static object __new__(CodeContext/*!*/ context, PythonType cls) {
+            if (cls == null) {
+                throw PythonOps.TypeError("__new__ expected type object, got {0}", PythonOps.Repr(context, DynamicHelpers.GetPythonType(cls)));
+            }
+
+            return cls.CreateInstance(context);
         }
 
         /// <summary>
@@ -83,7 +105,7 @@ namespace IronPython.Runtime.Operations {
                 throw PythonOps.TypeError("__new__ expected type object, got {0}", PythonOps.Repr(context, DynamicHelpers.GetPythonType(cls)));
             }
 
-            InstanceOps.CheckInitArgs(context, null, args\u00F8, cls);
+            InstanceOps.CheckNewArgs(context, null, args\u00F8, cls);
 
             return cls.CreateInstance(context);
         }
@@ -97,7 +119,7 @@ namespace IronPython.Runtime.Operations {
                 throw PythonOps.TypeError("__new__ expected type object, got {0}", PythonOps.Repr(context, DynamicHelpers.GetPythonType(cls)));
             }
 
-            InstanceOps.CheckInitArgs(context, kwargs\u00F8, args\u00F8, cls);
+            InstanceOps.CheckNewArgs(context, kwargs\u00F8, args\u00F8, cls);
 
             return cls.CreateInstance(context);
         }
@@ -153,6 +175,46 @@ namespace IronPython.Runtime.Operations {
         /// </summary>
         public static void __setattr__(CodeContext/*!*/ context, object self, string name, object value) {
             PythonOps.ObjectSetAttribute(context, self, SymbolTable.StringToId(name), value);
+        }
+
+        private static int AdjustPointerSize(int size) {
+            if (IntPtr.Size == 4) {
+                return size;
+            }
+
+            return size * 2;
+        }
+
+        /// <summary>
+        /// Returns the number of bytes of memory required to allocate the object.
+        /// </summary>
+        public static int __sizeof__(object self) {
+            IPythonObject ipo = self as IPythonObject;
+            int res = AdjustPointerSize(8); // vtable, sync blk
+            if (ipo != null) {
+                res += AdjustPointerSize(12); // class, dict, slots 
+            }
+
+            Type t = PythonTypeOps.GetFinalSystemType(DynamicHelpers.GetPythonType(self));
+            res += GetTypeSize(t);
+
+            return res;
+        }
+
+        private static int GetTypeSize(Type t) {
+            FieldInfo[] fields = t.GetFields(System.Reflection.BindingFlags.FlattenHierarchy | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public);
+            int res = 0;
+            foreach (FieldInfo fi in fields) {
+                if (fi.FieldType.IsClass || fi.FieldType.IsInterface) {
+                    res += AdjustPointerSize(4);
+                } else if (fi.FieldType.IsPrimitive) {
+                    return System.Runtime.InteropServices.Marshal.SizeOf(fi.FieldType);
+                } else {
+                    res += GetTypeSize(fi.FieldType);
+                }
+            }
+
+            return res;
         }
 
         /// <summary>

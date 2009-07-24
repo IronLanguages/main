@@ -96,6 +96,21 @@ namespace IronRuby.StandardLibrary.StringIO {
             return length;
         }
 
+        [RubyMethod("ungetc")]
+        public static void UnGetCharacter(StringIO/*!*/ self, [DefaultProtocol]int ch) {
+            if (!RubyIO.IsReadable(self.Mode) || self.Closed) {
+                throw RubyExceptions.CreateIOError("not opened for reading");
+            }
+
+            long offset = self.Data.Position;
+            if (offset == 0) {
+                return;
+            }
+
+            self.Data.String.SetByte((int)(offset - 1), (byte)ch);
+            self.Data.Seek(-1, System.IO.SeekOrigin.Current);
+        }
+
         #endregion
     }
 }

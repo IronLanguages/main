@@ -501,15 +501,7 @@ namespace Microsoft.Scripting.Ast {
                 return Visit(node.ReduceExtensions());
             }
 
-            // Visit the child expression. It may not contain a yield, in which
-            // case we can just return the (possibly rewritten) node.
-            int yields = _yields.Count;
-            Expression result = base.VisitExtension(node);
-            if (yields == _yields.Count) {
-                return result;
-            }
-
-            // Otherwise, we have to reduce to ensure proper stack spilling.
+            // We have to reduce to ensure proper stack spilling.
             return Visit(node.ReduceExtensions());
         }
 
@@ -552,7 +544,7 @@ namespace Microsoft.Scripting.Ast {
                 return node;
             }
             if (yields == _yields.Count) {
-                return Expression.Block(node.Variables, b);
+                return Expression.Block(node.Type, node.Variables, b);
             }
 
             // save the variables for later

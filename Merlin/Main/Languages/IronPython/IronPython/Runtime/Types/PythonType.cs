@@ -45,7 +45,7 @@ namespace IronPython.Runtime.Types {
     [PythonType("type")]
     [Documentation(@"type(object) -> gets the type of the object
 type(name, bases, dict) -> creates a new type instance with the given name, base classes, and members from the dictionary")]
-    public class PythonType : IMembersList, IDynamicMetaObjectProvider, IWeakReferenceable, ICodeFormattable, IFastGettable, IFastSettable {
+    public partial class PythonType : IPythonMembersList, IDynamicMetaObjectProvider, IWeakReferenceable, ICodeFormattable, IFastGettable, IFastSettable, IFastInvokable {
         private Type/*!*/ _underlyingSystemType;            // the underlying CLI system type for this type
         private string _name;                               // the name of the type
         private Dictionary<SymbolId, PythonTypeSlot> _dict; // type-level slots & attributes
@@ -53,6 +53,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         private int _version = GetNextVersion();            // version of the type
         private List<WeakReference> _subtypes;              // all of the subtypes of the PythonType
         private PythonContext _pythonContext;               // the context the type was created from, or null for system types.
+        private bool? _objectNew, _objectInit;              // true if the type doesn't override __new__ / __init__ from object.
         internal Dictionary<string, FastGetBase> _cachedGets; // cached gets on user defined type instances
         internal Dictionary<string, FastGetBase> _cachedTryGets; // cached try gets on used defined type instances
         internal Dictionary<SetMemberKey, FastSetBase> _cachedSets; // cached sets on user defined instances
@@ -84,6 +85,21 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         private static readonly CommonDictionaryStorage _pythonTypes = new CommonDictionaryStorage();
         internal static PythonType _pythonTypeType = DynamicHelpers.GetPythonTypeFromType(typeof(PythonType));
         private static readonly WeakReference[] _emptyWeakRef = new WeakReference[0];
+        private static object _subtypesLock = new object();
+        /// <summary>
+        /// Provides delegates that will invoke a parameterless type ctor.  The first key provides
+        /// the dictionary for a specific type, the 2nd key provides the delegate for a specific
+        /// call site type used in conjunction w/ our IFastInvokable implementation.
+        /// </summary>
+        private static Dictionary<Type, Dictionary<Type, Delegate>> _fastBindCtors = new Dictionary<Type, Dictionary<Type, Delegate>>();
+
+        /// <summary>
+        /// Shared built-in functions for creating instances of user defined types.  Because all
+        /// types w/ the same UnderlyingSystemType share the same constructors these can be
+        /// shared across multiple types.
+        /// </summary>
+        private static Dictionary<Type, BuiltinFunction> _userTypeCtors = new Dictionary<Type, BuiltinFunction>();
+
 
         /// <summary>
         /// Creates a new type for a user defined type.  The name, base classes (a tuple of type
@@ -150,7 +166,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             EnsureDict();
 
             _underlyingSystemType = typeof(OldInstance);
-            Name = oc.__name__;
+            Name = oc.Name;
             OldClass = oc;
 
             List<PythonType> ocs = new List<PythonType>(oc.BaseClasses.Count);
@@ -206,6 +222,9 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             return new PythonType(context, name, bases, dict);
         }
 
+        public void __init__(string name, PythonTuple bases, IAttributesCollection dict) {
+        }
+
         internal static PythonType FindMetaClass(PythonType cls, PythonTuple bases) {
             PythonType meta = cls;
             foreach (object dt in bases) {
@@ -226,6 +245,9 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
         public static object __new__(CodeContext/*!*/ context, object cls, object o) {
             return DynamicHelpers.GetPythonType(o);
+        }
+
+        public void __init__(object o) {
         }
 
         [SpecialName, PropertyMethod, WrapperDescriptor]
@@ -535,6 +557,20 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         #endregion
 
         #region Internal API
+
+        internal bool IsMixedNewStyleOldStyle() {
+            if (!IsOldClass) {
+                foreach (PythonType baseType in ResolutionOrder) {
+                    if (baseType.IsOldClass) {
+                        // mixed new-style/old-style class, we can't handle
+                        // __init__ in an old-style class yet (it doesn't show
+                        // up in a slot).
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
 
         internal int SlotCount {
             get {
@@ -906,6 +942,10 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             get {
                 return (_attrs & PythonTypeAttributes.WeakReferencable) != 0;
             }
+            set {
+                if (value) _attrs |= PythonTypeAttributes.WeakReferencable;
+                else _attrs &= (~PythonTypeAttributes.WeakReferencable);
+            }
         }
 
         internal bool HasDictionary {
@@ -1052,6 +1092,43 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             Debug.Assert(!IsSystemType);
 
             _dict[name] = slot;
+            if (name == Symbols.NewInst) {
+                _objectNew = null;
+                ClearObjectNewInSubclasses(this);
+            } else if (name == Symbols.Init) {
+                _objectInit = null;
+                ClearObjectInitInSubclasses(this);
+            }
+        }
+
+        private void ClearObjectNewInSubclasses(PythonType pt) {
+            lock (_subtypesLock) {
+                if (pt._subtypes != null) {
+                    foreach (WeakReference wr in pt._subtypes) {
+                        PythonType type = wr.Target as PythonType;
+                        if (type != null) {
+                            type._objectNew = null;
+
+                            ClearObjectNewInSubclasses(type);
+                        }
+                    }
+                }
+            }
+        }
+
+        private void ClearObjectInitInSubclasses(PythonType pt) {
+            lock (_subtypesLock) {
+                if (pt._subtypes != null) {
+                    foreach (WeakReference wr in pt._subtypes) {
+                        PythonType type = wr.Target as PythonType;
+                        if (type != null) {
+                            type._objectInit = null;
+
+                            ClearObjectInitInSubclasses(type);
+                        }
+                    }
+                }
+            }
         }
 
         internal bool TryGetCustomSetAttr(CodeContext context, out PythonTypeSlot pts) {
@@ -1088,7 +1165,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             if (!(value is PythonTypeSlot) && _dict.TryGetValue(name, out curSlot) && curSlot is PythonTypeUserDescriptorSlot) {
                 ((PythonTypeUserDescriptorSlot)curSlot).Value = value;
             } else {
-                _dict[name] = ToTypeSlot(value);
+                AddSlot(name, ToTypeSlot(value));
                 UpdateVersion();
             }
         }
@@ -1126,6 +1203,16 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                     IronPython.Resources.MemberDoesNotExist,
                     name.ToString()));
             }
+
+            // match CPython's buggy behavior, there's a test in test_class for this.
+            /*
+            if (name == Symbols.NewInst) {
+                _objectNew = null;
+                ClearObjectNewInSubclasses(this);
+            } else if (name == Symbols.Init) {
+                _objectInit = null;
+                ClearObjectInitInSubclasses(this);
+            }*/
 
             UpdateVersion();
             return true;
@@ -1509,7 +1596,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         /// </summary>
         private void AddUserTypeMembers(CodeContext context, Dictionary<string, string> keys, PythonType dt, List res) {
             if (dt.OldClass != null) {
-                foreach (KeyValuePair<object, object> kvp in dt.OldClass.__dict__) {
+                foreach (KeyValuePair<object, object> kvp in dt.OldClass._dict) {
                     AddOneMember(keys, res, kvp.Key);
                 }
             } else {
@@ -1644,9 +1731,19 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             // then let the user intercept and rewrite the type - the user can't create
             // instances of this type yet.
             _underlyingSystemType = __clrtype__();
+            if (_underlyingSystemType == null) {
+                throw PythonOps.ValueError("__clrtype__ must return a type, not None");
+            }
             
             // finally assign the ctors from the real type the user provided
-            _ctor = BuiltinFunction.MakeMethod(Name, _underlyingSystemType.GetConstructors(), _underlyingSystemType, FunctionType.Function);
+
+            lock (_userTypeCtors) {
+                if (!_userTypeCtors.TryGetValue(_underlyingSystemType, out _ctor)) {
+                    _userTypeCtors[_underlyingSystemType] = _ctor = BuiltinFunction.MakeMethod(Name, _underlyingSystemType.GetConstructors(), _underlyingSystemType, FunctionType.Function);
+                }
+            }
+
+            UpdateObjectNewAndInit(context);
         }
 
         internal static List<string> GetSlots(IAttributesCollection dict) {
@@ -1661,10 +1758,10 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
         internal static List<string> SlotsToList(object slots) {
             List<string> res = new List<string>();
-            ISequence seq = slots as ISequence;
-            if (seq != null && !(seq is ExtensibleString)) {
-                res = new List<string>(seq.__len__());
-                for (int i = 0; i < seq.__len__(); i++) {
+            IList<object> seq = slots as IList<object>;
+            if (seq != null) {
+                res = new List<string>(seq.Count);
+                for (int i = 0; i < seq.Count; i++) {
                     res.Add(GetSlotName(seq[i]));
                 }
 
@@ -1676,6 +1773,56 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             return res;
         }
 
+        internal bool HasObjectNew(CodeContext context) {
+            if (!_objectNew.HasValue) {
+                UpdateObjectNewAndInit(context);
+            }
+
+            Debug.Assert(_objectNew.HasValue);
+            return _objectNew.Value;
+        }
+
+        internal bool HasObjectInit(CodeContext context) {
+            if (!_objectInit.HasValue) {
+                UpdateObjectNewAndInit(context);
+            }
+
+            Debug.Assert(_objectInit.HasValue);
+            return _objectInit.Value;
+        }
+
+        private void UpdateObjectNewAndInit(CodeContext context) {
+            PythonTypeSlot slot;
+            object funcObj;
+
+            foreach (PythonType pt in _bases) {
+                if (pt == TypeCache.Object) {
+                    continue;
+                }
+
+                if (pt._objectNew == null || pt._objectInit == null) {
+                    pt.UpdateObjectNewAndInit(context);
+                }
+
+                Debug.Assert(pt._objectInit != null && pt._objectNew != null);
+
+                if (!pt._objectNew.Value) {
+                    _objectNew = false;                    
+                }
+
+                if (!pt._objectInit.Value) {
+                    _objectInit = false;
+                }
+            }
+
+            if (_objectInit == null) {
+                _objectInit = TryResolveSlot(context, Symbols.Init, out slot) && slot.TryGetValue(context, null, this, out funcObj) && funcObj == InstanceOps.Init;
+            }
+
+            if (_objectNew == null) {
+                _objectNew = TryResolveSlot(context, Symbols.NewInst, out slot) && slot.TryGetValue(context, null, this, out funcObj) && funcObj == InstanceOps.New;
+            }
+        }
 
         private static string GetSlotName(object o) {
             string value;
@@ -1784,6 +1931,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             return hasSlot;
         }
 
+        [PythonHidden]
         public virtual Type __clrtype__() {
             return _underlyingSystemType;
         }
@@ -1813,7 +1961,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                     if (i != j && newBases[i] == newBases[j]) {
                         OldClass oc = newBases[i] as OldClass;
                         if (oc != null) {
-                            throw PythonOps.TypeError("duplicate base class {0}", oc.__name__);
+                            throw PythonOps.TypeError("duplicate base class {0}", oc.Name);
                         } else {
                             throw PythonOps.TypeError("duplicate base class {0}", ((PythonType)newBases[i]).Name);
                         }
@@ -1901,6 +2049,11 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
         private void AddSystemInterfaces(List<PythonType> mro) {
             if (_underlyingSystemType.IsArray) {
+                // include the standard array interfaces in the array MRO.  We pick the
+                // non-strongly typed versions which are also in Array.__mro__
+                mro.Add(DynamicHelpers.GetPythonTypeFromType(typeof(IList)));
+                mro.Add(DynamicHelpers.GetPythonTypeFromType(typeof(ICollection)));
+                mro.Add(DynamicHelpers.GetPythonTypeFromType(typeof(IEnumerable)));
                 return;
             } 
 
@@ -1915,6 +2068,10 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 // grab all the interface methods which would hide other members
                 for (int i = 0; i < mapping.TargetMethods.Length; i++) {
                     MethodInfo target = mapping.TargetMethods[i];
+                    
+                    if (target == null) {
+                        continue;
+                    }
 
                     if (!target.IsPrivate) {
                         methodMap[target.Name] = null;
@@ -1930,7 +2087,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
                         // any methods which aren't explicit are picked up at the appropriate
                         // time earlier in the MRO so they can be ignored
-                        if (target.IsPrivate) {
+                        if (target != null && target.IsPrivate) {
                             hasExplicitIface = true;
 
                             Type existing;
@@ -2055,7 +2212,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 Interlocked.CompareExchange<List<WeakReference>>(ref _subtypes, new List<WeakReference>(), null);
             }
 
-            lock (_subtypes) {
+            lock (_subtypesLock) {
                 _subtypes.Add(new WeakReference(subtype));
             }
         }
@@ -2063,7 +2220,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         private void RemoveSubType(PythonType subtype) {
             int i = 0;
             if (_subtypes != null) {
-                lock (_subtypes) {
+                lock (_subtypesLock) {
                     while (i < _subtypes.Count) {
                         if (!_subtypes[i].IsAlive || _subtypes[i].Target == subtype) {
                             _subtypes.RemoveAt(i);
@@ -2083,7 +2240,9 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             get {
                 if (_subtypes == null) return _emptyWeakRef;
 
-                lock (_subtypes) return _subtypes.ToArray();
+                lock (_subtypesLock) {
+                    return _subtypes.ToArray();
+                }
             }
         }
 
@@ -2101,7 +2260,11 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
         #region IMembersList Members
 
-        IList<object> IMembersList.GetMemberNames(CodeContext context) {
+        IList<string> IMembersList.GetMemberNames() {
+            return PythonOps.GetStringMemberList(this);
+        }
+
+        IList<object> IPythonMembersList.GetMemberNames(CodeContext/*!*/ context) {
             IList<object> res = GetMemberNames(context);
 
             object[] arr = new object[res.Count];
@@ -2210,7 +2373,6 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
 
         #endregion
-
     }
 
     enum OptimizedGetKind {

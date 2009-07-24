@@ -398,12 +398,11 @@ namespace IronRuby.Builtins {
             return block.Proc.ToLambda();
         }
 
-        #region load, require
+        #region load, load_assembly, require
 
         [RubyMethod("load", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("load", RubyMethodAttributes.PublicSingleton)]
-        public static bool Load(RubyScope/*!*/ scope, object self,
-            [DefaultProtocol, NotNull]MutableString/*!*/ libraryName, [Optional]bool wrap) {
+        public static bool Load(RubyScope/*!*/ scope, object self, [DefaultProtocol, NotNull]MutableString/*!*/ libraryName, [Optional]bool wrap) {
             return scope.RubyContext.Loader.LoadFile(scope.GlobalScope.Scope, self, libraryName, wrap ? LoadFlags.LoadIsolated : LoadFlags.None);
         }
 
@@ -413,13 +412,12 @@ namespace IronRuby.Builtins {
             [DefaultProtocol, NotNull]MutableString/*!*/ assemblyName, [DefaultProtocol, Optional, NotNull]MutableString libraryNamespace) {
 
             string initializer = libraryNamespace != null ? LibraryInitializer.GetFullTypeName(libraryNamespace.ConvertToString()) : null;
-            return context.Loader.LoadAssembly(assemblyName.ConvertToString(), initializer, true, true);
+            return context.Loader.LoadAssembly(assemblyName.ConvertToString(), initializer, true, true) != null;
         }
 
         [RubyMethod("require", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("require", RubyMethodAttributes.PublicSingleton)]
-        public static bool Require(RubyScope/*!*/ scope, object self, 
-            [DefaultProtocol, NotNull]MutableString/*!*/ libraryName) {
+        public static bool Require(RubyScope/*!*/ scope, object self, [DefaultProtocol, NotNull]MutableString/*!*/ libraryName) {
             return scope.RubyContext.Loader.LoadFile(scope.GlobalScope.Scope, self, libraryName, LoadFlags.LoadOnce | LoadFlags.AppendExtensions);
         }
 
@@ -793,47 +791,67 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        [RubyMethod("rand", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("rand", RubyMethodAttributes.PublicSingleton)]
-        public static double Rand(RubyContext/*!*/ context, object self) {
-            return new Random().NextDouble();
+        #region rand, srand
+
+        [RubyMethod("srand", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("srand", RubyMethodAttributes.PublicSingleton)]
+        public static object SeedRandomNumberGenerator(RubyContext/*!*/ context, object self, [DefaultProtocol]IntegerValue seed) {
+            object result = context.RandomNumberGeneratorSeed;
+            context.SeedRandomNumberGenerator(seed);
+            return result;
         }
 
         [RubyMethod("rand", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("rand", RubyMethodAttributes.PublicSingleton)]
-        public static object Rand(RubyContext/*!*/ context, object self, int limit) {
-            if (limit == 0) {
-                return Rand(context, self);
+        public static double Random(RubyContext/*!*/ context, object self) {
+            return context.RandomNumberGenerator.NextDouble();
+        }
+
+        [RubyMethod("rand", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("rand", RubyMethodAttributes.PublicSingleton)]
+        public static object Random(RubyContext/*!*/ context, object self, int limit) {
+            Random generator = context.RandomNumberGenerator;
+            if (limit == Int32.MinValue) {
+                return generator.Random(-(BigInteger)limit);
+            } else {
+                return ScriptingRuntimeHelpers.Int32ToObject(generator.Next(limit));
+            }
+        }
+
+        [RubyMethod("rand", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("rand", RubyMethodAttributes.PublicSingleton)]
+        public static object Random(ConversionStorage<IntegerValue>/*!*/ conversion, RubyContext/*!*/ context, object self, object limit) {
+            IntegerValue intLimit = Protocols.ConvertToInteger(conversion, limit);
+            Random generator = context.RandomNumberGenerator;
+
+            bool isFixnum;
+            int fixnum = 0;
+            BigInteger bignum = null;
+            if (intLimit.IsFixnum) {
+                if (intLimit.Fixnum == Int32.MinValue) {
+                    bignum = -(BigInteger)intLimit.Fixnum;
+                    isFixnum = false;
+                } else {
+                    fixnum = Math.Abs(intLimit.Fixnum);
+                    isFixnum = true;
+                }
+            } else {
+                bignum = intLimit.Bignum.Abs();
+                isFixnum = intLimit.Bignum.AsInt32(out fixnum);
             }
 
-            return ScriptingRuntimeHelpers.Int32ToObject((int)(new Random().NextDouble() * (limit - 1)));
-        }
-
-        [RubyMethod("rand", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("rand", RubyMethodAttributes.PublicSingleton)]
-        public static object Rand(RubyContext/*!*/ context, object self, double limit) {
-            if (limit < 1) {
-                return Rand(context, self);
+            if (isFixnum) {
+                if (fixnum == 0) {
+                    return generator.NextDouble();
+                } else {
+                    return ScriptingRuntimeHelpers.Int32ToObject(generator.Next(fixnum));
+                }
+            } else {
+                return generator.Random(bignum);
             }
-
-            return ScriptingRuntimeHelpers.Int32ToObject((int)(new Random().NextDouble() * (limit - 1)));
         }
 
-        [RubyMethod("rand", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("rand", RubyMethodAttributes.PublicSingleton)]
-        public static object Rand(RubyContext/*!*/ context, object self, [NotNull]BigInteger/*!*/ limit) {
-            throw new NotImplementedError("rand(BigInteger) not implemented");
-        }
-
-        [RubyMethod("rand", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("rand", RubyMethodAttributes.PublicSingleton)]
-        public static object Rand(ConversionStorage<int>/*!*/ conversionStorage, object self, object limit) {
-            if (limit == null) {
-                return Rand(conversionStorage.Context, self);
-            }
-            // TODO: to_int can return bignum here
-            return Rand(conversionStorage.Context, self, Protocols.CastToFixnum(conversionStorage, limit));
-        }
+        #endregion
 
         //readline
         //readlines
@@ -908,11 +926,72 @@ namespace IronRuby.Builtins {
             return new StringFormatter(storage, format.ConvertToString(), args).Format();
         }
 
-        //srand
         //sub
         //sub!
         //syscall
-        //test
+
+        [RubyMethod("test", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("test", RubyMethodAttributes.PublicSingleton)]
+        public static object Test(
+            RubyContext/*!*/ context, 
+            object self,
+            int cmd, 
+            [DefaultProtocol, NotNull]MutableString/*!*/ file1) {
+            cmd &= 0xFF;
+            switch (cmd) {
+                case 'A': throw new NotImplementedException();
+                case 'b': throw new NotImplementedException();
+                case 'C': throw new NotImplementedException();
+                case 'c': throw new NotImplementedException();
+
+                case 'd': 
+                    return RubyFileOps.DirectoryExists(context, file1.ConvertToString());
+
+                case 'e':
+                case 'f':
+                    return RubyFileOps.FileExists(context, file1.ConvertToString());
+
+                case 'g': throw new NotImplementedException();
+                case 'G': throw new NotImplementedException();
+                case 'k': throw new NotImplementedException();
+                case 'l': throw new NotImplementedException();
+                case 'M': throw new NotImplementedException();
+                case 'O': throw new NotImplementedException();
+                case 'o': throw new NotImplementedException();
+                case 'p': throw new NotImplementedException();
+                case 'r': throw new NotImplementedException();
+                case 'R': throw new NotImplementedException();
+                case 's': throw new NotImplementedException();
+                case 'S': throw new NotImplementedException();
+                case 'u': throw new NotImplementedException();
+                case 'w': throw new NotImplementedException();
+                case 'W': throw new NotImplementedException();
+                case 'x': throw new NotImplementedException();
+                case 'X': throw new NotImplementedException();
+                case 'z': throw new NotImplementedException();
+                default:
+                    throw new ArgumentException(String.Format("unknown command ?{0}", (char)cmd));
+            }
+        }
+
+        [RubyMethod("test", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("test", RubyMethodAttributes.PublicSingleton)]
+        public static object Test(
+            RubyContext/*!*/ context,
+            object self,
+            int cmd,
+            [DefaultProtocol, NotNull]MutableString/*!*/ file1,
+            [DefaultProtocol, NotNull]MutableString/*!*/ file2) {
+            cmd &= 0xFF;
+            switch (cmd) {
+                case '-': throw new NotImplementedException();
+                case '=': throw new NotImplementedException();
+                case '<': throw new NotImplementedException();
+                case '>': throw new NotImplementedException();
+                default:
+                    throw new ArgumentException(String.Format("unknown command ?{0}", (char)cmd));
+            }
+        }
 
         //trace_var
 
@@ -1456,7 +1535,7 @@ namespace IronRuby.Builtins {
         // thread-safe:
         [RubyMethod("method")]
         public static RubyMethod/*!*/ GetMethod(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]string/*!*/ name) {
-            RubyMemberInfo info = context.ResolveMethod(self, name, RubyClass.IgnoreVisibility).Info;
+            RubyMemberInfo info = context.ResolveMethod(self, name, VisibilityContext.AllVisible).Info;
             if (info == null) {
                 throw RubyExceptions.CreateUndefinedMethodError(context.GetClassOf(self), name);
             }

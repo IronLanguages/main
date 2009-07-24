@@ -24,6 +24,7 @@ namespace IronPython.Runtime.Types {
     /// Represents a ReflectedProperty created for an extension method.  Logically the property is an
     /// instance property but the method implementing it is static.
     /// </summary>
+    [PythonType("member_descriptor")]
     public class ReflectedExtensionProperty : ReflectedGetterSetter {
         private readonly MethodInfo _deleter;
         private readonly ExtensionPropertyInfo/*!*/ _extInfo;
@@ -79,6 +80,12 @@ namespace IronPython.Runtime.Types {
         public void __set__(CodeContext context, object instance, object value) {
             if (!TrySetValue(context, instance, DynamicHelpers.GetPythonType(instance), value)) {
                 throw PythonOps.TypeError("readonly attribute");
+            }
+        }
+
+        public void __delete__(CodeContext/*!*/ context, object instance) {
+            if (!TryDeleteValue(context, instance, DynamicHelpers.GetPythonType(instance))) {
+                throw PythonOps.AttributeErrorForMissingAttribute(DynamicHelpers.GetPythonType(instance).Name, Symbols.DeleteDescriptor);
             }
         }
 

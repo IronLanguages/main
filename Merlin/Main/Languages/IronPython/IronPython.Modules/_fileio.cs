@@ -32,8 +32,9 @@ using IronPython.Runtime.Exceptions;
 
 [assembly: PythonModule("_fileio", typeof(IronPython.Modules.PythonFileIOModule))]
 namespace IronPython.Modules {
-    [Documentation("Fast implementation of io.FileIO.")]
     public static class PythonFileIOModule {
+        public const string __doc__ = "Fast implementation of io.FileIO.";
+
         [Documentation("file(name: str[, mode: str]) -> file IO object\n\n"
             + "Open a file.  The mode can be 'r', 'w' or 'a' for reading (default),\n"
             + "writing or appending.   The file will be created if it doesn't exist\n"
@@ -42,6 +43,7 @@ namespace IronPython.Modules {
             + "reading and writing."
             )]
         [PythonType("_FileIO")]
+        [DontMapIDisposableToContextManager]
         public class _FileIO : IDisposable, IWeakReferenceable {
 
             #region Fields and constructors
@@ -240,7 +242,7 @@ namespace IronPython.Modules {
             }
 
             [Documentation("readinto() -> Undocumented.  Don't use this; it may go away.")]
-            public BigInteger readinto([NotNull]ArrayModule.PythonArray buffer) {
+            public BigInteger readinto([NotNull]ArrayModule.array buffer) {
                 EnsureReadable();
 
                 return BigInteger.Create(buffer.FromStream(_readStream, 0, buffer.__len__() * buffer.itemsize));
@@ -369,8 +371,8 @@ namespace IronPython.Modules {
             public BigInteger write(object b) {
                 if (b is PythonBuffer) {
                     return write(((PythonBuffer)b).ToString());
-                } else if (b is ArrayModule.PythonArray) {
-                    return write(((ArrayModule.PythonArray)b).ToByteArray());
+                } else if (b is ArrayModule.array) {
+                    return write(((ArrayModule.array)b).ToByteArray());
                 }
 
                 EnsureWritable();
@@ -382,7 +384,7 @@ namespace IronPython.Modules {
 
             #region IDisposable methods
 
-            public void Dispose() {
+            void IDisposable.Dispose() {
                 close();
 
                 PythonFileManager myManager = _context.RawFileManager;
@@ -395,17 +397,17 @@ namespace IronPython.Modules {
 
             #region IWeakReferenceable Members
 
-            public WeakRefTracker GetWeakRef() {
+            WeakRefTracker IWeakReferenceable.GetWeakRef() {
                 return _tracker;
             }
 
-            public bool SetWeakRef(WeakRefTracker value) {
+            bool IWeakReferenceable.SetWeakRef(WeakRefTracker value) {
                 _tracker = value;
                 return true;
             }
 
-            public void SetFinalizer(WeakRefTracker value) {
-                SetWeakRef(value);
+            void IWeakReferenceable.SetFinalizer(WeakRefTracker value) {
+                ((IWeakReferenceable)this).SetWeakRef(value);
             }
 
             #endregion

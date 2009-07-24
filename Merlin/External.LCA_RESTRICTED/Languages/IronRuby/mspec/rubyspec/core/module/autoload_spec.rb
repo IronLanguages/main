@@ -114,6 +114,19 @@ describe "Module#autoload" do
     ScratchPad.recorded.should be_nil
   end
 
+  it "overrides previous calls" do
+    ModuleSpecs::Autoload.autoload :X, @non_existent
+    ModuleSpecs::Autoload.autoload :X, fixture(__FILE__, "autoload_x.rb")
+    ModuleSpecs::Autoload::X.should == :x
+  end
+  
+  it "does not override the constant if the constant is already defined" do
+    ModuleSpecs::Autoload::X = :not_x
+    ModuleSpecs::Autoload.autoload :X, fixture(__FILE__, "autoload_x.rb")
+    ModuleSpecs::Autoload.autoload?(:X).should be_nil
+    ModuleSpecs::Autoload::X.should == :not_x
+  end
+  
   it "allows multiple autoload constants for a single file" do
     filename = fixture(__FILE__, "autoload_lm.rb")
     ModuleSpecs::Autoload.autoload :L, filename
