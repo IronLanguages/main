@@ -755,8 +755,10 @@ public partial class ClassWithIndexer {
 internal partial class PartialClassWithMethods {
     internal int Foo(){ return 1; }
   }
-#line 4 "./method/invocation/overload_spec.rb"
+#line 21 "./method/invocation/overload_spec.rb"
 public partial class ClassWithOverloads {
+    public string Tracker { get; set;}
+
     public string PublicProtectedOverload(){
       return "public overload";
     }
@@ -764,6 +766,109 @@ public partial class ClassWithOverloads {
     protected string PublicProtectedOverload(string str) {
       return "protected overload";
     }
+
+    public void VoidSignatureOverload() { Tracker = "SO void"; }
+    public void VoidSignatureOverload(string foo) { Tracker = "SO string"; }
+    public void VoidSignatureOverload(int foo) { Tracker = "SO int"; }
+    public void VoidSignatureOverload(string foo, params int[] bar) { Tracker = "SO string params(int[])"; }
+    public void VoidSignatureOverload(string foo, params string[] bar) { Tracker = "SO string params(string[])"; }
+    public void VoidSignatureOverload(string foo, int bar, int baz) { Tracker = "SO string int int";}
+    public void VoidSignatureOverload(params int[] args) { Tracker = "SO params(int[])";}
+    public void VoidSignatureOverload(ref string foo) { Tracker = "SO ref string"; }
+    public void VoidSignatureOverload(out int foo) { foo = 1;Tracker = "SO out int"; }
+    public void VoidSignatureOverload(string foo, ref string bar) { Tracker = "SO string ref"; }
+    public void VoidSignatureOverload(ref string foo, string bar) { Tracker = "SO ref string"; }
+    public void VoidSignatureOverload(out string foo, ref string bar) { foo = "out"; Tracker = "SO out ref"; }
+
+    public string RefSignatureOverload() { return "SO void"; }
+    public string RefSignatureOverload(string foo) { return "SO string"; }
+    public string RefSignatureOverload(int foo) { return "SO int"; }
+    public string RefSignatureOverload(string foo, params int[] bar) { return "SO string params(int[])"; }
+    public string RefSignatureOverload(string foo, params string[] bar) { return "SO string params(string[])"; }
+    public string RefSignatureOverload(string foo, int bar, int baz) { return "SO string int int";}
+    public string RefSignatureOverload(params int[] args) { return "SO params(int[])";}
+    public string RefSignatureOverload(ref string foo) { return "SO ref string"; }
+    public string RefSignatureOverload(out int foo) { foo = 1;return "SO out int"; }
+    public string RefSignatureOverload(string foo, ref string bar) { return "SO string ref"; }
+    public string RefSignatureOverload(ref string foo, string bar) { return "SO ref string"; }
+    public string RefSignatureOverload(out string foo, ref string bar) { foo = "out"; return "SO out ref"; }
+
+    public string[] RefArraySignatureOverload() { return new string[]{"SO void"}; }
+    public string[] RefArraySignatureOverload(string foo) { return new string[]{"SO string"}; }
+    public string[] RefArraySignatureOverload(int foo) { return new string[]{"SO int"}; }
+    public string[] RefArraySignatureOverload(string foo, params int[] bar) { return new string[]{"SO string params(int[])"}; }
+    public string[] RefArraySignatureOverload(string foo, params string[] bar) { return new string[]{"SO string params(string[])"}; }
+    public string[] RefArraySignatureOverload(string foo, int bar, int baz) { return new string[]{"SO string int int"};}
+    public string[] RefArraySignatureOverload(params int[] args) { return new string[]{"SO params(int[])"};}
+    public string[] RefArraySignatureOverload(ref string foo) { return new string[]{"SO ref string"}; }
+    public string[] RefArraySignatureOverload(out int foo) { foo = 1;return new string[]{"SO out int"}; }
+    public string[] RefArraySignatureOverload(string foo, ref string bar) { return new string[]{"SO string ref"}; }
+    public string[] RefArraySignatureOverload(ref string foo, string bar) { return new string[]{"SO ref string"}; }
+    public string[] RefArraySignatureOverload(out string foo, ref string bar) { foo = "out"; return new string[]{"SO out ref"}; }
+
+    public int ValSignatureOverload() { Tracker = "SO void";
+return 1; }
+    public int ValSignatureOverload(string foo) { Tracker = "SO string";
+return 1; }
+    public int ValSignatureOverload(int foo) { Tracker = "SO int";
+return 1; }
+    public int ValSignatureOverload(string foo, params int[] bar) { Tracker = "SO string params(int[])";
+return 1; }
+    public int ValSignatureOverload(string foo, params string[] bar) { Tracker = "SO string params(string[])";
+return 1; }
+    public int ValSignatureOverload(string foo, int bar, int baz) { Tracker = "SO string int int";
+return 1;}
+    public int ValSignatureOverload(params int[] args) { Tracker = "SO params(int[])";
+return 1;}
+    public int ValSignatureOverload(ref string foo) { Tracker = "SO ref string";
+return 1; }
+    public int ValSignatureOverload(out int foo) { foo = 1;Tracker = "SO out int";
+return 1; }
+    public int ValSignatureOverload(string foo, ref string bar) { Tracker = "SO string ref";
+return 1; }
+    public int ValSignatureOverload(ref string foo, string bar) { Tracker = "SO ref string";
+return 1; }
+    public int ValSignatureOverload(out string foo, ref string bar) { foo = "out"; Tracker = "SO out ref";
+return 1; }
+
+    public int[] ValArraySignatureOverload() { Tracker = "SO void";
+return new int[]{1}; }
+    public int[] ValArraySignatureOverload(string foo) { Tracker = "SO string";
+return new int[]{1}; }
+    public int[] ValArraySignatureOverload(int foo) { Tracker = "SO int";
+return new int[]{1}; }
+    public int[] ValArraySignatureOverload(string foo, params int[] bar) { Tracker = "SO string params(int[])";
+return new int[]{1}; }
+    public int[] ValArraySignatureOverload(string foo, params string[] bar) { Tracker = "SO string params(string[])";
+return new int[]{1}; }
+    public int[] ValArraySignatureOverload(string foo, int bar, int baz) { Tracker = "SO string int int";
+return new int[]{1};}
+    public int[] ValArraySignatureOverload(params int[] args) { Tracker = "SO params(int[])";
+return new int[]{1};}
+    public int[] ValArraySignatureOverload(ref string foo) { Tracker = "SO ref string";
+return new int[]{1}; }
+    public int[] ValArraySignatureOverload(out int foo) { foo = 1;Tracker = "SO out int";
+return new int[]{1}; }
+    public int[] ValArraySignatureOverload(string foo, ref string bar) { Tracker = "SO string ref";
+return new int[]{1}; }
+    public int[] ValArraySignatureOverload(ref string foo, string bar) { Tracker = "SO ref string";
+return new int[]{1}; }
+    public int[] ValArraySignatureOverload(out string foo, ref string bar) { foo = "out"; Tracker = "SO out ref";
+return new int[]{1}; }
+
+    public string GenericSignatureOverload<T>() { return "SO void" ; }
+    public string GenericSignatureOverload<T>(string foo) { return "SO string" ; }
+    public string GenericSignatureOverload<T>(int foo) { return "SO int" ; }
+    public string GenericSignatureOverload<T>(string foo, params int[] bar) { return "SO string params(int[])" ; }
+    public string GenericSignatureOverload<T>(string foo, params string[] bar) { return "SO string params(string[])" ; }
+    public string GenericSignatureOverload<T>(string foo, int bar, int baz) { return "SO string int int" ;}
+    public string GenericSignatureOverload<T>(params int[] args) { return "SO params(int[])" ;}
+    public string GenericSignatureOverload<T>(ref string foo) { return "SO ref string" ; }
+    public string GenericSignatureOverload<T>(out int foo) { foo = 1;return "SO out int" ; }
+    public string GenericSignatureOverload<T>(string foo, ref string bar) { return "SO string ref" ; }
+    public string GenericSignatureOverload<T>(ref string foo, string bar) { return "SO ref string" ; }
+    public string GenericSignatureOverload<T>(out string foo, ref string bar) { foo = "out"; return "SO out ref" ; }
+
   }
 #line 4 "./method/modification/override_spec.rb"
 public partial class ClassWithMethods {
