@@ -36,88 +36,228 @@
             May return null if no update is required.
             </summary>
         </member>
+        <member name="M:System.Dynamic.BoundDispEvent.TryBinaryOperation(System.Dynamic.BinaryOperationBinder,System.Object,System.Object@)">
+            <summary>
+            Provides the implementation of performing AddAssign and SubtractAssign binary operations.
+            </summary>
+            <param name="binder">The binder provided by the call site.</param>
+            <param name="handler">The handler for the operation.</param>
+            <param name="result">The result of the operation.</param>
+            <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
+        </member>
+        <member name="M:System.Dynamic.BoundDispEvent.InPlaceAdd(System.Object)">
+            <summary>
+            Adds a handler to an event.
+            </summary>
+            <param name="handler">The handler to be added.</param>
+            <returns>The original event with handler added.</returns>
+        </member>
+        <member name="M:System.Dynamic.BoundDispEvent.InPlaceSubtract(System.Object)">
+            <summary>
+            Removes handler from the event.
+            </summary>
+            <param name="handler">The handler to be removed.</param>
+            <returns>The original event with handler removed.</returns>
+        </member>
+        <member name="T:System.Dynamic.ComBinder">
+            <summary>
+            Provides helper methods to bind COM objects dynamically.
+            </summary>
+        </member>
+        <member name="M:System.Dynamic.ComBinder.IsComObject(System.Object)">
+            <summary>
+            Determines if an object is a COM object.
+            </summary>
+            <param name="value">The object to test.</param>
+            <returns>true if the object is a COM object, false otherwise.</returns>
+        </member>
+        <member name="M:System.Dynamic.ComBinder.TryBindGetMember(System.Dynamic.GetMemberBinder,System.Dynamic.DynamicMetaObject,System.Dynamic.DynamicMetaObject@,System.Boolean)">
+            <summary>
+            Tries to perform binding of the dynamic get member operation.
+            </summary>
+            <param name="binder">An instance of the <see cref="T:System.Dynamic.GetMemberBinder"/> that represents the details of the dynamic operation.</param>
+            <param name="instance">The target of the dynamic operation. </param>
+            <param name="result">The new <see cref="T:System.Dynamic.DynamicMetaObject"/> representing the result of the binding.</param>
+            <param name="delayInvocation">true if member evaluation may be delayed.</param>
+            <returns>true if operation was bound successfully; otherwise, false.</returns>
+        </member>
+        <member name="M:System.Dynamic.ComBinder.TryBindGetMember(System.Dynamic.GetMemberBinder,System.Dynamic.DynamicMetaObject,System.Dynamic.DynamicMetaObject@)">
+            <summary>
+            Tries to perform binding of the dynamic get member operation.
+            </summary>
+            <param name="binder">An instance of the <see cref="T:System.Dynamic.GetMemberBinder"/> that represents the details of the dynamic operation.</param>
+            <param name="instance">The target of the dynamic operation. </param>
+            <param name="result">The new <see cref="T:System.Dynamic.DynamicMetaObject"/> representing the result of the binding.</param>
+            <returns>true if operation was bound successfully; otherwise, false.</returns>
+        </member>
+        <member name="M:System.Dynamic.ComBinder.TryBindSetMember(System.Dynamic.SetMemberBinder,System.Dynamic.DynamicMetaObject,System.Dynamic.DynamicMetaObject,System.Dynamic.DynamicMetaObject@)">
+            <summary>
+            Tries to perform binding of the dynamic set member operation.
+            </summary>
+            <param name="binder">An instance of the <see cref="T:System.Dynamic.SetMemberBinder"/> that represents the details of the dynamic operation.</param>
+            <param name="instance">The target of the dynamic operation.</param>
+            <param name="value">The <see cref="T:System.Dynamic.DynamicMetaObject"/> representing the value for the set member operation.</param>
+            <param name="result">The new <see cref="T:System.Dynamic.DynamicMetaObject"/> representing the result of the binding.</param>
+            <returns>true if operation was bound successfully; otherwise, false.</returns>
+        </member>
+        <member name="M:System.Dynamic.ComBinder.TryBindInvoke(System.Dynamic.InvokeBinder,System.Dynamic.DynamicMetaObject,System.Dynamic.DynamicMetaObject[],System.Dynamic.DynamicMetaObject@)">
+            <summary>
+            Tries to perform binding of the dynamic invoke operation.
+            </summary>    
+            <param name="binder">An instance of the <see cref="T:System.Dynamic.InvokeBinder"/> that represents the details of the dynamic operation.</param>
+            <param name="instance">The target of the dynamic operation. </param>
+            <param name="args">An array of <see cref="T:System.Dynamic.DynamicMetaObject"/> instances - arguments to the invoke member operation.</param>
+            <param name="result">The new <see cref="T:System.Dynamic.DynamicMetaObject"/> representing the result of the binding.</param>
+            <returns>true if operation was bound successfully; otherwise, false.</returns>
+        </member>
+        <member name="M:System.Dynamic.ComBinder.TryBindInvokeMember(System.Dynamic.InvokeMemberBinder,System.Dynamic.DynamicMetaObject,System.Dynamic.DynamicMetaObject[],System.Dynamic.DynamicMetaObject@)">
+            <summary>
+            Tries to perform binding of the dynamic invoke member operation.
+            </summary>
+            <param name="binder">An instance of the <see cref="T:System.Dynamic.InvokeMemberBinder"/> that represents the details of the dynamic operation.</param>
+            <param name="instance">The target of the dynamic operation. </param>
+            <param name="args">An array of <see cref="T:System.Dynamic.DynamicMetaObject"/> instances - arguments to the invoke member operation.</param>
+            <param name="result">The new <see cref="T:System.Dynamic.DynamicMetaObject"/> representing the result of the binding.</param>
+            <returns>true if operation was bound successfully; otherwise, false.</returns>
+        </member>
+        <member name="M:System.Dynamic.ComBinder.TryBindGetIndex(System.Dynamic.GetIndexBinder,System.Dynamic.DynamicMetaObject,System.Dynamic.DynamicMetaObject[],System.Dynamic.DynamicMetaObject@)">
+            <summary>
+            Tries to perform binding of the dynamic get index operation.
+            </summary>
+            <param name="binder">An instance of the <see cref="T:System.Dynamic.GetIndexBinder"/> that represents the details of the dynamic operation.</param>
+            <param name="instance">The target of the dynamic operation. </param>
+            <param name="args">An array of <see cref="T:System.Dynamic.DynamicMetaObject"/> instances - arguments to the invoke member operation.</param>
+            <param name="result">The new <see cref="T:System.Dynamic.DynamicMetaObject"/> representing the result of the binding.</param>
+            <returns>true if operation was bound successfully; otherwise, false.</returns>
+        </member>
+        <member name="M:System.Dynamic.ComBinder.TryBindSetIndex(System.Dynamic.SetIndexBinder,System.Dynamic.DynamicMetaObject,System.Dynamic.DynamicMetaObject[],System.Dynamic.DynamicMetaObject,System.Dynamic.DynamicMetaObject@)">
+            <summary>
+            Tries to perform binding of the dynamic set index operation.
+            </summary>
+            <param name="binder">An instance of the <see cref="T:System.Dynamic.SetIndexBinder"/> that represents the details of the dynamic operation.</param>
+            <param name="instance">The target of the dynamic operation. </param>
+            <param name="args">An array of <see cref="T:System.Dynamic.DynamicMetaObject"/> instances - arguments to the invoke member operation.</param>
+            <param name="value">The <see cref="T:System.Dynamic.DynamicMetaObject"/> representing the value for the set index operation.</param>
+            <param name="result">The new <see cref="T:System.Dynamic.DynamicMetaObject"/> representing the result of the binding.</param>
+            <returns>true if operation was bound successfully; otherwise, false.</returns>
+        </member>
+        <member name="M:System.Dynamic.ComBinder.TryConvert(System.Dynamic.ConvertBinder,System.Dynamic.DynamicMetaObject,System.Dynamic.DynamicMetaObject@)">
+            <summary>
+            Tries to perform binding of the dynamic Convert operation.
+            </summary>
+            <param name="binder">An instance of the <see cref="T:System.Dynamic.ConvertBinder"/> that represents the details of the dynamic operation.</param>
+            <param name="instance">The target of the dynamic operation.</param>
+            <param name="result">The new <see cref="T:System.Dynamic.DynamicMetaObject"/> representing the result of the binding.</param>
+            <returns>true if operation was bound successfully; otherwise, false.</returns>
+        </member>
+        <member name="M:System.Dynamic.ComBinder.GetDynamicMemberNames(System.Object)">
+            <summary>
+            Gets the member names associated with the object.
+            This function can operate only with objects for which <see cref="M:System.Dynamic.ComBinder.IsComObject(System.Object)"/> returns true.
+            </summary>
+            <param name="value">The object for which member names are requested.</param>
+            <returns>The collection of member names.</returns>
+        </member>
+        <member name="M:System.Dynamic.ComBinder.GetDynamicDataMemberNames(System.Object)">
+            <summary>
+            Gets the member names of the data-like members associated with the object.
+            This function can operate only with objects for which <see cref="M:System.Dynamic.ComBinder.IsComObject(System.Object)"/> returns true.
+            </summary>
+            <param name="value">The object for which member names are requested.</param>
+            <returns>The collection of member names.</returns>
+        </member>
+        <member name="M:System.Dynamic.ComBinder.GetDynamicDataMembers(System.Object,System.Collections.Generic.IEnumerable{System.String})">
+            <summary>
+            Gets the data-like members and associated data for an object.
+            This function can operate only with objects for which <see cref="M:System.Dynamic.ComBinder.IsComObject(System.Object)"/> returns true.
+            </summary>
+            <param name="value">The object for which data members are requested.</param>
+            <param name="names">The enumeration of names of data members for which to retrieve values.</param>
+            <returns>The collection of pairs that represent data member's names and their data.</returns>
+        </member>
+        <member name="T:System.Dynamic.ComBinder.ComGetMemberBinder">
+            <summary>
+            Special binder that indicates special semantics for COM GetMember operation.
+            </summary>
+        </member>
+        <member name="T:System.Dynamic.ComEventSink">
+            <summary>
+            This class implements an event sink for a particular RCW.
+            Unlike the implementation of events in TlbImp'd assemblies,
+            we will create only one event sink per RCW (theoretically RCW might have
+            several ComEventSink evenk sinks - but all these implement different source intefaces).
+            Each ComEventSink contains a list of ComEventSinkMethod objects - which represent
+            a single method on the source interface an a multicast delegate to redirect 
+            the calls. Notice that we are chaining multicast delegates so that same 
+            ComEventSinkMedhod can invoke multiple event handlers).
+            
+            ComEventSink implements an IDisposable pattern to Unadvise from the connection point.
+            Typically, when RCW is finalized the corresponding Dispose will be triggered by 
+            ComEventSinksContainer finalizer. Notice that lifetime of ComEventSinksContainer
+            is bound to the lifetime of the RCW. 
+            </summary>
+        </member>
+        <member name="T:System.Dynamic.ComEventSink.ComEventSinkMethod">
+            <summary>
+            Contains a methods DISPID (in a string formatted of "[DISPID=N]"
+            and a chained list of delegates to invoke
+            </summary>
+        </member>
+        <member name="T:System.Dynamic.ComEventSinkProxy">
+            <summary>
+            ComEventSinkProxy class is responsible for handling QIs for sourceIid 
+            on instances of ComEventSink.
+            
+            Background: When a COM even sink advises to a connection point it is 
+            supposed to hand over the dispinterface. Now, some hosts will trust
+            the COM client to pass the correct pointer, but some will not.
+            E.g. Excel's implementation of Connection Points will not cause a
+            QI on the pointer that has been passed, however Word will QI the
+            pointer to return the required interface.
+            
+            ComEventSink does not, strongly speaking, implements the interface 
+            that it claims to implement - it is just "faking" it by using IReflect.
+            Thus, Word's QIs on the pointer passed to ICP::Advise would fail. To
+            prevent this we take advangate of RealProxy's ability of
+            "dressing up" like other classes and hence successfully respond to QIs 
+            for interfaces that it does not really support( it is OK to say 
+            "I implement this interface" for event sinks only since the common 
+            practice is to use IDistpach.Invoke when calling into event sinks). 
+            </summary>
+        </member>
+        <member name="T:System.Dynamic.ComEventSinksContainer">
+            <summary>
+            ComEventSinksContainer is just a regular list with a finalizer.
+            This list is usually attached as a custom data for RCW object and 
+            is finalized whenever RCW is finalized.
+            </summary>
+        </member>
         <member name="T:System.Dynamic.IDispatchMethodIndices">
             <summary>
             Layout of the IDispatch vtable
             </summary>
         </member>
-        <member name="T:System.Dynamic.DispCallable">
+        <member name="T:System.Dynamic.ComInvokeAction">
             <summary>
-            This represents a bound dispmember on a IDispatch object.
+            Invokes the object. If it falls back, just produce an error.
             </summary>
         </member>
-        <member name="T:System.Dynamic.NullArgBuilder">
+        <member name="T:System.Dynamic.SplatInvokeBinder">
             <summary>
-            ArgBuilder which always produces null.  
+            Splats the arguments to another nested dynamic site, which does the
+            real invocation of the IDynamicMetaObjectProvider. 
             </summary>
         </member>
-        <member name="T:System.Dynamic.IDispatchComObject">
+        <member name="M:System.Dynamic.ComInvokeBinder.MakeIDispatchInvokeTarget">
             <summary>
-            An object that implements IDispatch
-            
-            This currently has the following issues:
-            1. If we prefer ComObjectWithTypeInfo over IDispatchComObject, then we will often not
-               IDispatchComObject since implementations of IDispatch often rely on a registered type library. 
-               If we prefer IDispatchComObject over ComObjectWithTypeInfo, users get a non-ideal experience.
-            2. IDispatch cannot distinguish between properties and methods with 0 arguments (and non-0 
-               default arguments?). So obj.foo() is ambiguous as it could mean invoking method foo, 
-               or it could mean invoking the function pointer returned by property foo.
-               We are attempting to find whether we need to call a method or a property by examining
-               the ITypeInfo associated with the IDispatch. ITypeInfo tell's use what parameters the method
-               expects, is it a method or a property, what is the default property of the object, how to 
-               create an enumerator for collections etc.
-            3. IronPython processes the signature and converts ref arguments into return values. 
-               However, since the signature of a DispMethod is not available beforehand, this conversion 
-               is not possible. There could be other signature conversions that may be affected. How does 
-               VB6 deal with ref arguments and IDispatch?
-               
-            We also support events for IDispatch objects:
-            Background:
-            COM objects support events through a mechanism known as Connect Points.
-            Connection Points are separate objects created off the actual COM 
-            object (this is to prevent circular references between event sink
-            and event source). When clients want to sink events generated  by 
-            COM object they would implement callback interfaces (aka source 
-            interfaces) and hand it over (advise) to the Connection Point. 
-            
-            Implementation details:
-            When IDispatchComObject.TryGetMember request is received we first check
-            whether the requested member is a property or a method. If this check
-            fails we will try to determine whether an event is requested. To do 
-            so we will do the following set of steps:
-            1. Verify the COM object implements IConnectionPointContainer
-            2. Attempt to find COM object's coclass's description
-               a. Query the object for IProvideClassInfo interface. Go to 3, if found
-               b. From object's IDispatch retrieve primary interface description
-               c. Scan coclasses declared in object's type library.
-               d. Find coclass implementing this particular primary interface 
-            3. Scan coclass for all its source interfaces.
-            4. Check whether to any of the methods on the source interfaces matches 
-            the request name
-            
-            Once we determine that TryGetMember requests an event we will return
-            an instance of BoundDispEvent class. This class has InPlaceAdd and
-            InPlaceSubtract operators defined. Calling InPlaceAdd operator will:
-            1. An instance of ComEventSinksContainer class is created (unless 
-            RCW already had one). This instance is hanged off the RCW in attempt
-            to bind the lifetime of event sinks to the lifetime of the RCW itself,
-            meaning event sink will be collected once the RCW is collected (this
-            is the same way event sinks lifetime is controlled by PIAs).
-            Notice: ComEventSinksContainer contains a Finalizer which will go and
-            unadvise all event sinks.
-            Notice: ComEventSinksContainer is a list of ComEventSink objects. 
-            2. Unless we have already created a ComEventSink for the required 
-            source interface, we will create and advise a new ComEventSink. Each
-            ComEventSink implements a single source interface that COM object 
-            supports. 
-            3. ComEventSink contains a map between method DISPIDs to  the 
-            multicast delegate that will be invoked when the event is raised.
-            4. ComEventSink implements IReflect interface which is exposed as
-            custom IDispatch to COM consumers. This allows us to intercept calls
-            to IDispatch.Invoke and apply custom logic - in particular we will
-            just find and invoke the multicast delegate corresponding to the invoked
-            dispid.
-             </summary>
+            Create a stub for the target of the optimized lopop.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:System.Dynamic.ComInvokeBinder.MakeArgumentExpressions">
+            <summary>
+            Gets expressions to access all the arguments. This includes the instance argument.
+            </summary>
         </member>
         <member name="T:System.Dynamic.ComObject">
             <summary>
@@ -191,54 +331,9 @@
             Marshal.GetDelegateForFunctionPointer could be used here, but its too expensive (~2000 instructions on x86).
             </summary>
         </member>
-        <member name="T:System.Dynamic.ComInvokeAction">
+        <member name="T:System.Dynamic.DispCallable">
             <summary>
-            Invokes the object. If it falls back, just produce an error.
-            </summary>
-        </member>
-        <member name="T:System.Dynamic.SplatInvokeBinder">
-            <summary>
-            Splats the arguments to another nested dynamic site, which does the
-            real invocation of the IDynamicMetaObjectProvider. 
-            </summary>
-        </member>
-        <member name="T:System.Dynamic.ComEventSink">
-            <summary>
-            This class implements an event sink for a particular RCW.
-            Unlike the implementation of events in TlbImp'd assemblies,
-            we will create only one event sink per RCW (theoretically RCW might have
-            several ComEventSink evenk sinks - but all these implement different source intefaces).
-            Each ComEventSink contains a list of ComEventSinkMethod objects - which represent
-            a single method on the source interface an a multicast delegate to redirect 
-            the calls. Notice that we are chaining multicast delegates so that same 
-            ComEventSinkMedhod can invoke multiple event handlers).
-            
-            ComEventSink implements an IDisposable pattern to Unadvise from the connection point.
-            Typically, when RCW is finalized the corresponding Dispose will be triggered by 
-            ComEventSinksContainer finalizer. Notice that lifetime of ComEventSinksContainer
-            is bound to the lifetime of the RCW. 
-            </summary>
-        </member>
-        <member name="T:System.Dynamic.ComEventSink.ComEventSinkMethod">
-            <summary>
-            Contains a methods DISPID (in a string formatted of "[DISPID=N]"
-            and a chained list of delegates to invoke
-            </summary>
-        </member>
-        <member name="T:System.Dynamic.VariantBuilder">
-            <summary>
-            VariantBuilder handles packaging of arguments into a Variant for a call to IDispatch.Invoke
-            </summary>
-        </member>
-        <member name="M:System.Dynamic.ComInvokeBinder.MakeIDispatchInvokeTarget">
-            <summary>
-            Create a stub for the target of the optimized lopop.
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="M:System.Dynamic.ComInvokeBinder.MakeArgumentExpressions">
-            <summary>
-            Gets expressions to access all the arguments. This includes the instance argument.
+            This represents a bound dispmember on a IDispatch object.
             </summary>
         </member>
         <member name="T:System.Dynamic.Strings">
@@ -446,184 +541,82 @@
             NotImplementedException with message like "Variant.GetAccessor cannot handle {0}."
             </summary>
         </member>
-        <member name="T:System.Dynamic.ComEventSinksContainer">
-            <summary>
-            ComEventSinksContainer is just a regular list with a finalizer.
-            This list is usually attached as a custom data for RCW object and 
-            is finalized whenever RCW is finalized.
-            </summary>
-        </member>
-        <member name="T:System.Dynamic.ComEventSinkProxy">
-            <summary>
-            ComEventSinkProxy class is responsible for handling QIs for sourceIid 
-            on instances of ComEventSink.
-            
-            Background: When a COM even sink advises to a connection point it is 
-            supposed to hand over the dispinterface. Now, some hosts will trust
-            the COM client to pass the correct pointer, but some will not.
-            E.g. Excel's implementation of Connection Points will not cause a
-            QI on the pointer that has been passed, however Word will QI the
-            pointer to return the required interface.
-            
-            ComEventSink does not, strongly speaking, implements the interface 
-            that it claims to implement - it is just "faking" it by using IReflect.
-            Thus, Word's QIs on the pointer passed to ICP::Advise would fail. To
-            prevent this we take advangate of RealProxy's ability of
-            "dressing up" like other classes and hence successfully respond to QIs 
-            for interfaces that it does not really support( it is OK to say 
-            "I implement this interface" for event sinks only since the common 
-            practice is to use IDistpach.Invoke when calling into event sinks). 
-            </summary>
-        </member>
-        <member name="T:System.Dynamic.Variant">
-            <summary>
-            Variant is the basic COM type for late-binding. It can contain any other COM data type.
-            This type definition precisely matches the unmanaged data layout so that the struct can be passed
-            to and from COM calls.
-            </summary>
-        </member>
-        <member name="M:System.Dynamic.Variant.IsPrimitiveType(System.Runtime.InteropServices.VarEnum)">
-            <summary>
-            Primitive types are the basic COM types. It includes valuetypes like ints, but also reference types
-            like BStrs. It does not include composite types like arrays and user-defined COM types (IUnknown/IDispatch).
-            </summary>
-        </member>
-        <member name="M:System.Dynamic.Variant.ToObject">
-            <summary>
-            Get the managed object representing the Variant.
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="M:System.Dynamic.Variant.Clear">
-            <summary>
-            Release any unmanaged memory associated with the Variant
-            </summary>
-            <returns></returns>
-        </member>
         <member name="T:System.Dynamic.ExcepInfo">
             <summary>
             This is similar to ComTypes.EXCEPINFO, but lets us do our own custom marshaling
             </summary>
         </member>
-        <member name="T:System.Dynamic.ComBinder">
+        <member name="T:System.Dynamic.IDispatchComObject">
             <summary>
-            Provides helper methods to bind COM objects dynamically.
-            </summary>
+            An object that implements IDispatch
+            
+            This currently has the following issues:
+            1. If we prefer ComObjectWithTypeInfo over IDispatchComObject, then we will often not
+               IDispatchComObject since implementations of IDispatch often rely on a registered type library. 
+               If we prefer IDispatchComObject over ComObjectWithTypeInfo, users get a non-ideal experience.
+            2. IDispatch cannot distinguish between properties and methods with 0 arguments (and non-0 
+               default arguments?). So obj.foo() is ambiguous as it could mean invoking method foo, 
+               or it could mean invoking the function pointer returned by property foo.
+               We are attempting to find whether we need to call a method or a property by examining
+               the ITypeInfo associated with the IDispatch. ITypeInfo tell's use what parameters the method
+               expects, is it a method or a property, what is the default property of the object, how to 
+               create an enumerator for collections etc.
+            3. IronPython processes the signature and converts ref arguments into return values. 
+               However, since the signature of a DispMethod is not available beforehand, this conversion 
+               is not possible. There could be other signature conversions that may be affected. How does 
+               VB6 deal with ref arguments and IDispatch?
+               
+            We also support events for IDispatch objects:
+            Background:
+            COM objects support events through a mechanism known as Connect Points.
+            Connection Points are separate objects created off the actual COM 
+            object (this is to prevent circular references between event sink
+            and event source). When clients want to sink events generated  by 
+            COM object they would implement callback interfaces (aka source 
+            interfaces) and hand it over (advise) to the Connection Point. 
+            
+            Implementation details:
+            When IDispatchComObject.TryGetMember request is received we first check
+            whether the requested member is a property or a method. If this check
+            fails we will try to determine whether an event is requested. To do 
+            so we will do the following set of steps:
+            1. Verify the COM object implements IConnectionPointContainer
+            2. Attempt to find COM object's coclass's description
+               a. Query the object for IProvideClassInfo interface. Go to 3, if found
+               b. From object's IDispatch retrieve primary interface description
+               c. Scan coclasses declared in object's type library.
+               d. Find coclass implementing this particular primary interface 
+            3. Scan coclass for all its source interfaces.
+            4. Check whether to any of the methods on the source interfaces matches 
+            the request name
+            
+            Once we determine that TryGetMember requests an event we will return
+            an instance of BoundDispEvent class. This class has InPlaceAdd and
+            InPlaceSubtract operators defined. Calling InPlaceAdd operator will:
+            1. An instance of ComEventSinksContainer class is created (unless 
+            RCW already had one). This instance is hanged off the RCW in attempt
+            to bind the lifetime of event sinks to the lifetime of the RCW itself,
+            meaning event sink will be collected once the RCW is collected (this
+            is the same way event sinks lifetime is controlled by PIAs).
+            Notice: ComEventSinksContainer contains a Finalizer which will go and
+            unadvise all event sinks.
+            Notice: ComEventSinksContainer is a list of ComEventSink objects. 
+            2. Unless we have already created a ComEventSink for the required 
+            source interface, we will create and advise a new ComEventSink. Each
+            ComEventSink implements a single source interface that COM object 
+            supports. 
+            3. ComEventSink contains a map between method DISPIDs to  the 
+            multicast delegate that will be invoked when the event is raised.
+            4. ComEventSink implements IReflect interface which is exposed as
+            custom IDispatch to COM consumers. This allows us to intercept calls
+            to IDispatch.Invoke and apply custom logic - in particular we will
+            just find and invoke the multicast delegate corresponding to the invoked
+            dispid.
+             </summary>
         </member>
-        <member name="M:System.Dynamic.ComBinder.IsComObject(System.Object)">
+        <member name="T:System.Dynamic.NullArgBuilder">
             <summary>
-            Determines if an object is a COM object.
-            </summary>
-            <param name="value">The object to test.</param>
-            <returns>true if the object is a COM object, false otherwise.</returns>
-        </member>
-        <member name="M:System.Dynamic.ComBinder.TryBindGetMember(System.Dynamic.GetMemberBinder,System.Dynamic.DynamicMetaObject,System.Dynamic.DynamicMetaObject@,System.Boolean)">
-            <summary>
-            Tries to perform binding of the dynamic get member operation.
-            </summary>
-            <param name="binder">An instance of the <see cref="T:System.Dynamic.GetMemberBinder"/> that represents the details of the dynamic operation.</param>
-            <param name="instance">The target of the dynamic operation. </param>
-            <param name="result">The new <see cref="T:System.Dynamic.DynamicMetaObject"/> representing the result of the binding.</param>
-            <param name="delayInvocation">true if member evaluation may be delayed.</param>
-            <returns>true if operation was bound successfully; otherwise, false.</returns>
-        </member>
-        <member name="M:System.Dynamic.ComBinder.TryBindGetMember(System.Dynamic.GetMemberBinder,System.Dynamic.DynamicMetaObject,System.Dynamic.DynamicMetaObject@)">
-            <summary>
-            Tries to perform binding of the dynamic get member operation.
-            </summary>
-            <param name="binder">An instance of the <see cref="T:System.Dynamic.GetMemberBinder"/> that represents the details of the dynamic operation.</param>
-            <param name="instance">The target of the dynamic operation. </param>
-            <param name="result">The new <see cref="T:System.Dynamic.DynamicMetaObject"/> representing the result of the binding.</param>
-            <returns>true if operation was bound successfully; otherwise, false.</returns>
-        </member>
-        <member name="M:System.Dynamic.ComBinder.TryBindSetMember(System.Dynamic.SetMemberBinder,System.Dynamic.DynamicMetaObject,System.Dynamic.DynamicMetaObject,System.Dynamic.DynamicMetaObject@)">
-            <summary>
-            Tries to perform binding of the dynamic set member operation.
-            </summary>
-            <param name="binder">An instance of the <see cref="T:System.Dynamic.SetMemberBinder"/> that represents the details of the dynamic operation.</param>
-            <param name="instance">The target of the dynamic operation.</param>
-            <param name="value">The <see cref="T:System.Dynamic.DynamicMetaObject"/> representing the value for the set member operation.</param>
-            <param name="result">The new <see cref="T:System.Dynamic.DynamicMetaObject"/> representing the result of the binding.</param>
-            <returns>true if operation was bound successfully; otherwise, false.</returns>
-        </member>
-        <member name="M:System.Dynamic.ComBinder.TryBindInvoke(System.Dynamic.InvokeBinder,System.Dynamic.DynamicMetaObject,System.Dynamic.DynamicMetaObject[],System.Dynamic.DynamicMetaObject@)">
-            <summary>
-            Tries to perform binding of the dynamic invoke operation.
-            </summary>    
-            <param name="binder">An instance of the <see cref="T:System.Dynamic.InvokeBinder"/> that represents the details of the dynamic operation.</param>
-            <param name="instance">The target of the dynamic operation. </param>
-            <param name="args">An array of <see cref="T:System.Dynamic.DynamicMetaObject"/> instances - arguments to the invoke member operation.</param>
-            <param name="result">The new <see cref="T:System.Dynamic.DynamicMetaObject"/> representing the result of the binding.</param>
-            <returns>true if operation was bound successfully; otherwise, false.</returns>
-        </member>
-        <member name="M:System.Dynamic.ComBinder.TryBindInvokeMember(System.Dynamic.InvokeMemberBinder,System.Dynamic.DynamicMetaObject,System.Dynamic.DynamicMetaObject[],System.Dynamic.DynamicMetaObject@)">
-            <summary>
-            Tries to perform binding of the dynamic invoke member operation.
-            </summary>
-            <param name="binder">An instance of the <see cref="T:System.Dynamic.InvokeMemberBinder"/> that represents the details of the dynamic operation.</param>
-            <param name="instance">The target of the dynamic operation. </param>
-            <param name="args">An array of <see cref="T:System.Dynamic.DynamicMetaObject"/> instances - arguments to the invoke member operation.</param>
-            <param name="result">The new <see cref="T:System.Dynamic.DynamicMetaObject"/> representing the result of the binding.</param>
-            <returns>true if operation was bound successfully; otherwise, false.</returns>
-        </member>
-        <member name="M:System.Dynamic.ComBinder.TryBindGetIndex(System.Dynamic.GetIndexBinder,System.Dynamic.DynamicMetaObject,System.Dynamic.DynamicMetaObject[],System.Dynamic.DynamicMetaObject@)">
-            <summary>
-            Tries to perform binding of the dynamic get index operation.
-            </summary>
-            <param name="binder">An instance of the <see cref="T:System.Dynamic.GetIndexBinder"/> that represents the details of the dynamic operation.</param>
-            <param name="instance">The target of the dynamic operation. </param>
-            <param name="args">An array of <see cref="T:System.Dynamic.DynamicMetaObject"/> instances - arguments to the invoke member operation.</param>
-            <param name="result">The new <see cref="T:System.Dynamic.DynamicMetaObject"/> representing the result of the binding.</param>
-            <returns>true if operation was bound successfully; otherwise, false.</returns>
-        </member>
-        <member name="M:System.Dynamic.ComBinder.TryBindSetIndex(System.Dynamic.SetIndexBinder,System.Dynamic.DynamicMetaObject,System.Dynamic.DynamicMetaObject[],System.Dynamic.DynamicMetaObject,System.Dynamic.DynamicMetaObject@)">
-            <summary>
-            Tries to perform binding of the dynamic set index operation.
-            </summary>
-            <param name="binder">An instance of the <see cref="T:System.Dynamic.SetIndexBinder"/> that represents the details of the dynamic operation.</param>
-            <param name="instance">The target of the dynamic operation. </param>
-            <param name="args">An array of <see cref="T:System.Dynamic.DynamicMetaObject"/> instances - arguments to the invoke member operation.</param>
-            <param name="value">The <see cref="T:System.Dynamic.DynamicMetaObject"/> representing the value for the set index operation.</param>
-            <param name="result">The new <see cref="T:System.Dynamic.DynamicMetaObject"/> representing the result of the binding.</param>
-            <returns>true if operation was bound successfully; otherwise, false.</returns>
-        </member>
-        <member name="M:System.Dynamic.ComBinder.TryConvert(System.Dynamic.ConvertBinder,System.Dynamic.DynamicMetaObject,System.Dynamic.DynamicMetaObject@)">
-            <summary>
-            Tries to perform binding of the dynamic Convert operation.
-            </summary>
-            <param name="binder">An instance of the <see cref="T:System.Dynamic.ConvertBinder"/> that represents the details of the dynamic operation.</param>
-            <param name="instance">The target of the dynamic operation.</param>
-            <param name="result">The new <see cref="T:System.Dynamic.DynamicMetaObject"/> representing the result of the binding.</param>
-            <returns>true if operation was bound successfully; otherwise, false.</returns>
-        </member>
-        <member name="M:System.Dynamic.ComBinder.GetDynamicMemberNames(System.Object)">
-            <summary>
-            Gets the member names associated with the object.
-            This function can operate only with objects for which <see cref="M:System.Dynamic.ComBinder.IsComObject(System.Object)"/> returns true.
-            </summary>
-            <param name="value">The object for which member names are requested.</param>
-            <returns>The collection of member names.</returns>
-        </member>
-        <member name="M:System.Dynamic.ComBinder.GetDynamicDataMemberNames(System.Object)">
-            <summary>
-            Gets the member names of the data-like members associated with the object.
-            This function can operate only with objects for which <see cref="M:System.Dynamic.ComBinder.IsComObject(System.Object)"/> returns true.
-            </summary>
-            <param name="value">The object for which member names are requested.</param>
-            <returns>The collection of member names.</returns>
-        </member>
-        <member name="M:System.Dynamic.ComBinder.GetDynamicDataMembers(System.Object,System.Collections.Generic.IEnumerable{System.String})">
-            <summary>
-            Gets the data-like members and associated data for an object.
-            This function can operate only with objects for which <see cref="M:System.Dynamic.ComBinder.IsComObject(System.Object)"/> returns true.
-            </summary>
-            <param name="value">The object for which data members are requested.</param>
-            <param name="names">The enumeration of names of data members for which to retrieve values.</param>
-            <returns>The collection of pairs that represent data member's names and their data.</returns>
-        </member>
-        <member name="T:System.Dynamic.ComBinder.ComGetMemberBinder">
-            <summary>
-            Special binder that indicates special semantics for COM GetMember operation.
+            ArgBuilder which always produces null.  
             </summary>
         </member>
         <member name="T:System.Dynamic.VarEnumSelector">
@@ -683,28 +676,35 @@
             Get the COM Variant type that argument should be marshaled as for a call to COM
             </summary>
         </member>
-        <member name="M:System.Dynamic.BoundDispEvent.TryBinaryOperation(System.Dynamic.BinaryOperationBinder,System.Object,System.Object@)">
+        <member name="T:System.Dynamic.Variant">
             <summary>
-            Provides the implementation of performing AddAssign and SubtractAssign binary operations.
+            Variant is the basic COM type for late-binding. It can contain any other COM data type.
+            This type definition precisely matches the unmanaged data layout so that the struct can be passed
+            to and from COM calls.
             </summary>
-            <param name="binder">The binder provided by the call site.</param>
-            <param name="handler">The handler for the operation.</param>
-            <param name="result">The result of the operation.</param>
-            <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
         </member>
-        <member name="M:System.Dynamic.BoundDispEvent.InPlaceAdd(System.Object)">
+        <member name="M:System.Dynamic.Variant.IsPrimitiveType(System.Runtime.InteropServices.VarEnum)">
             <summary>
-            Adds a handler to an event.
+            Primitive types are the basic COM types. It includes valuetypes like ints, but also reference types
+            like BStrs. It does not include composite types like arrays and user-defined COM types (IUnknown/IDispatch).
             </summary>
-            <param name="handler">The handler to be added.</param>
-            <returns>The original event with handler added.</returns>
         </member>
-        <member name="M:System.Dynamic.BoundDispEvent.InPlaceSubtract(System.Object)">
+        <member name="M:System.Dynamic.Variant.ToObject">
             <summary>
-            Removes handler from the event.
+            Get the managed object representing the Variant.
             </summary>
-            <param name="handler">The handler to be removed.</param>
-            <returns>The original event with handler removed.</returns>
+            <returns></returns>
+        </member>
+        <member name="M:System.Dynamic.Variant.Clear">
+            <summary>
+            Release any unmanaged memory associated with the Variant
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="T:System.Dynamic.VariantBuilder">
+            <summary>
+            VariantBuilder handles packaging of arguments into a Variant for a call to IDispatch.Invoke
+            </summary>
         </member>
     </members>
 </doc>

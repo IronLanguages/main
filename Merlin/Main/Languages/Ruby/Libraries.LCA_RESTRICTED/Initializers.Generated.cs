@@ -2992,8 +2992,8 @@ namespace IronRuby.Builtins {
             
             #if !SILVERLIGHT
             module.DefineLibraryMethod("trap", 0x52, 
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Object, IronRuby.Builtins.Proc, System.Object>(IronRuby.Builtins.KernelOps.Trap), 
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, System.Object, System.Object, System.Object>(IronRuby.Builtins.KernelOps.Trap)
+                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, System.Object, System.Object, System.Object>(IronRuby.Builtins.KernelOps.Trap), 
+                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Object, IronRuby.Builtins.Proc, System.Object>(IronRuby.Builtins.KernelOps.Trap)
             );
             
             #endif
@@ -3227,8 +3227,8 @@ namespace IronRuby.Builtins {
             
             #if !SILVERLIGHT
             module.DefineLibraryMethod("trap", 0x61, 
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Object, IronRuby.Builtins.Proc, System.Object>(IronRuby.Builtins.KernelOps.Trap), 
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, System.Object, System.Object, System.Object>(IronRuby.Builtins.KernelOps.Trap)
+                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, System.Object, System.Object, System.Object>(IronRuby.Builtins.KernelOps.Trap), 
+                new System.Func<IronRuby.Runtime.RubyContext, System.Object, System.Object, IronRuby.Builtins.Proc, System.Object>(IronRuby.Builtins.KernelOps.Trap)
             );
             
             #endif

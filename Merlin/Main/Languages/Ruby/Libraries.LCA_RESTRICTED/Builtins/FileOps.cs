@@ -483,146 +483,7 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region expand_path
-
 #if !SILVERLIGHT
-        // Algorithm to find HOME equivalents under Windows. This is equivalent to Ruby 1.9 behavior:
-        // 
-        // 1. Try get HOME
-        // 2. Try to generate HOME equivalent using HOMEDRIVE + HOMEPATH
-        // 3. Try to generate HOME equivalent from USERPROFILE
-        // 4. Try to generate HOME equivalent from Personal special folder 
-
-        internal static string/*!*/ GetHomeDirectory(RubyContext/*!*/ context) {
-            PlatformAdaptationLayer pal = context.DomainManager.Platform;
-            string result = pal.GetEnvironmentVariable("HOME");
-
-            if (result == null) {
-                string homeDrive = pal.GetEnvironmentVariable("HOMEDRIVE");
-                string homePath = pal.GetEnvironmentVariable("HOMEPATH");
-                if (homeDrive == null && homePath == null) {
-                    string userEnvironment = pal.GetEnvironmentVariable("USERPROFILE");
-                    if (userEnvironment == null) {
-                        // This will always succeed with a non-null string, but it can fail
-                        // if the Personal folder was renamed or deleted. In this case it returns
-                        // an empty string.
-                        result = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
-                    } else {
-                        result = userEnvironment;
-                    }
-                } else if (homeDrive == null) {
-                    result = homePath;
-                } else if (homePath == null) {
-                    result = homeDrive;
-                } else {
-                    result = Path.Combine(homeDrive, homePath);
-                }
-            }
-            return result;
-        }
-
-        class PathExpander {
-            List<string> _pathComponents = new List<string>(); // does not include the root
-            string _root; // Typically "c:/" on Windows, and "/" on Unix
-
-            internal PathExpander(RubyContext/*!*/ context, string absoluteBasePath) {
-                Debug.Assert(RubyUtils.IsAbsolutePath(absoluteBasePath));
-                
-                string basePathAfterRoot = null;
-                _root = RubyUtils.GetPathRoot(context, absoluteBasePath, out basePathAfterRoot);
-                
-                // Normally, basePathAfterRoot[0] will not be '/', but here we deal with cases like "c:////foo"
-                basePathAfterRoot = basePathAfterRoot.TrimStart('/'); 
-                
-                AddRelativePath(basePathAfterRoot);
-            }
-
-            internal void AddRelativePath(string relPath) {
-                Debug.Assert(!RubyUtils.IsAbsolutePath(relPath));
-                
-                string[] relPathComponents = relPath.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
-
-                foreach (string pathComponent in relPathComponents) {
-                    if (pathComponent == "..") {
-                        if (_pathComponents.Count == 0) {
-                            // MRI allows more pops than the base path components
-                            continue;
-                        }
-                        _pathComponents.RemoveAt(_pathComponents.Count - 1);
-                    } else if (pathComponent == ".") {
-                        continue;
-                    } else {
-                        _pathComponents.Add(pathComponent);
-                    }
-                }
-            }
-
-            internal MutableString/*!*/ GetResult() {
-                StringBuilder result = new StringBuilder(_root);
-                
-                if (_pathComponents.Count >= 1) {
-                    // Here we make this work:
-                    //   File.expand_path("c:/..a..") -> "c:/..a"
-                    string lastComponent = _pathComponents[_pathComponents.Count - 1];
-                    if (RubyUtils.FileSystemUsesDriveLetters && !String.IsNullOrEmpty(lastComponent.TrimEnd('.'))) {
-                        _pathComponents[_pathComponents.Count - 1] = lastComponent.TrimEnd('.');
-                    }
-                }
-
-                for(int i = 0; i < _pathComponents.Count; i++) {
-                    result.Append(_pathComponents[i]);
-                    if (i < (_pathComponents.Count - 1)) {
-                        result.Append('/');
-                    }
-                }
-#if DEBUG
-                _pathComponents = null;
-                _root = null;
-#endif
-                return MutableString.CreateMutable(result.ToString());
-            }
-        }
-
-        // Expand directory path - these cases exist:
-        //
-        // 1. Empty string or nil means return current directory
-        // 2. ~ with non-existent HOME directory throws exception
-        // 3. ~, ~/ or ~\ which expands to HOME
-        // 4. ~foo is left unexpanded
-        // 5. Expand to full path if path is a relative path
-        // 
-        // No attempt is made to determine whether the path is valid or not
-        // Returned path is always canonicalized to forward slashes
-
-        private static MutableString/*!*/ ExpandPath(RubyContext/*!*/ context, RubyClass/*!*/ self, MutableString/*!*/ path) {
-            if (MutableString.IsNullOrEmpty(path)) {
-                return MutableString.Create(RubyUtils.CanonicalizePath(context.DomainManager.Platform.CurrentDirectory));
-            }
-
-            int length = path.Length;
-
-            if (path.GetChar(0) == '~') {
-                if (length == 1 || (path.GetChar(1) == '/')) {
-
-                    string homeDirectory = context.DomainManager.Platform.GetEnvironmentVariable("HOME");
-                    if (homeDirectory == null) {
-                        throw RubyExceptions.CreateArgumentError("couldn't find HOME environment -- expanding `~'");
-                    }
-
-                    if (length <= 2) {
-                        path = MutableString.Create(homeDirectory);
-                    } else {
-                        path = MutableString.Create(Path.Combine(homeDirectory, path.GetSlice(2).ConvertToString()));
-                    }
-                    return RubyUtils.CanonicalizePath(path);
-                } else {
-                    return path;
-                }
-            } else {
-                MutableString currentDirectory = ExpandPath(context, self, null);
-                return ExpandPath(context, self, path, currentDirectory);
-            }
-        }
 
         [RubyMethod("expand_path", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
         public static MutableString/*!*/ ExpandPath(
@@ -631,52 +492,13 @@ namespace IronRuby.Builtins {
             [DefaultProtocol, NotNull]MutableString/*!*/ path,
             [DefaultProtocol, Optional]MutableString basePath) {
 
-            // We ignore basePath parameter if first string starts with a ~
-            if (basePath == null || path.GetFirstChar() == '~') {
-                return ExpandPath(context, self, path);
-            } 
-
-            string pathStr = RubyUtils.CanonicalizePath(path).ConvertToString();
-            string basePathStr = RubyUtils.CanonicalizePath(basePath).ConvertToString();
-            char partialDriveLetter;
-            string relativePath;
-
-            if (RubyUtils.IsAbsolutePath(pathStr)) {
-                // "basePath" can be ignored is "path" is an absolute path
-                PathExpander pathExpander = new PathExpander(context, pathStr);
-                return pathExpander.GetResult();
-            } else if (RubyUtils.HasPartialDriveLetter(pathStr, out partialDriveLetter, out relativePath)) {
-                string currentDirectory = partialDriveLetter.ToString() + ":/";
-                if (DirectoryExists(context, currentDirectory)) {
-                    // File.expand_path("c:foo") returns "c:/current_folder_for_c_drive/foo"
-                    currentDirectory = Path.GetFullPath(partialDriveLetter.ToString() + ":");
-                }
-
-                return ExpandPath(
-                    context, 
-                    self, 
-                    MutableString.CreateMutable(relativePath), 
-                    MutableString.CreateMutable(currentDirectory));
-            } else if (RubyUtils.IsAbsolutePath(basePathStr)) {
-                PathExpander pathExpander = new PathExpander(context, basePathStr);
-                pathExpander.AddRelativePath(pathStr);
-                return pathExpander.GetResult();
-            } else if (RubyUtils.HasPartialDriveLetter(basePathStr, out partialDriveLetter, out relativePath)) {
-                // First expand basePath
-                MutableString expandedBasePath = ExpandPath(context, self, basePath);
-
-                return ExpandPath(context, self, path, expandedBasePath);
-            } else {
-                // First expand basePath
-                MutableString expandedBasePath = ExpandPath(context, self, basePath);
-                Debug.Assert(RubyUtils.IsAbsolutePath(expandedBasePath.ConvertToString()));
-
-                return ExpandPath(context, self, path, expandedBasePath);
-            }
+            string result = RubyUtils.ExpandPath(
+                context.DomainManager.Platform, 
+                path.ConvertToString(),
+                basePath == null ? null : basePath.ConvertToString());
+            return MutableString.Create(result);
         }
 #endif
-
-        #endregion
 
         //lchmod
         //lchown
@@ -710,12 +532,14 @@ namespace IronRuby.Builtins {
             if (!FileExists(context, strOldPath) && !DirectoryExists(context, strOldPath)) {
                 throw RubyErrno.CreateENOENT(String.Format("No such file or directory - {0}", oldPath));
             }
+
+            string strNewPath = newPath.ConvertToString();
 #if !SILVERLIGHT
-            if (ExpandPath(context, self, oldPath) == ExpandPath(context, self, newPath)) {
+            PlatformAdaptationLayer platform = context.DomainManager.Platform;
+            if (RubyUtils.ExpandPath(platform, strOldPath) == RubyUtils.ExpandPath(platform, strNewPath)) {
                 return 0;
             }
 #endif
-            string strNewPath = newPath.ConvertToString();
             if (FileExists(context, strNewPath)) {
                 Delete(self, newPath);
             }

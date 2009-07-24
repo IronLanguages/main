@@ -100,7 +100,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("chdir", RubyMethodAttributes.PublicSingleton)]
         public static object ChangeDirectory(RubyContext/*!*/ context, object self) {
 #if !SILVERLIGHT
-            string defaultDirectory = RubyFileOps.GetHomeDirectory(context);
+            string defaultDirectory = RubyUtils.GetHomeDirectory(context.DomainManager.Platform);
             if (defaultDirectory == null)
                 throw RubyExceptions.CreateArgumentError("HOME / USERPROFILE not set");
 
