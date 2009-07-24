@@ -360,7 +360,7 @@ the assembly object.")]
 
         private static void PublishTypeLibDesc(CodeContext context, ComTypeLibDesc typeLibDesc) {
             SymbolId symbol = SymbolTable.StringToId(typeLibDesc.Name);
-            context.LanguageContext.DomainManager.Globals.SetName(symbol, typeLibDesc);
+            context.LanguageContext.DomainManager.Globals.SetVariable(symbol, typeLibDesc);
         }
 #endif
         private static void AddReferenceByName(CodeContext/*!*/ context, string name) {
@@ -438,13 +438,14 @@ import Namespace.")]
             string path = System.IO.Path.GetDirectoryName(file);
             List list;
 
-            if (!PythonContext.GetContext(context).TryGetSystemPath(out list)) {
+            PythonContext pc = PythonContext.GetContext(context);
+            if (!pc.TryGetSystemPath(out list)) {
                 throw PythonOps.TypeError("cannot update path, it is not a list");
             }
 
             list.append(path);
 
-            Assembly asm = DefaultContext.Default.LanguageContext.LoadAssemblyFromFile(file);
+            Assembly asm = pc.LoadAssemblyFromFile(file);
             if (asm == null) throw PythonOps.IOError("file does not exist: {0}", file);
             AddReference(context, asm);
         }

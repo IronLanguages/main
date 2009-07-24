@@ -452,6 +452,7 @@
     <Compile Include="Runtime\Types\IPythonObject.cs" />
     <Compile Include="Runtime\Types\PythonTypeSlot.cs" />
     <Compile Include="Runtime\Types\DynamicHelpers.cs" />
+    <Compile Include="Runtime\UnboundNameException.cs" />
     <Compile Include="Runtime\WarningInfo.cs" />
     <Compile Include="Runtime\WeakRef.cs" />
     <Compile Include="Runtime\WrapperDescriptorAttribute.cs" />

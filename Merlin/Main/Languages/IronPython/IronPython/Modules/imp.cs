@@ -109,9 +109,9 @@ namespace IronPython.Modules {
             if (name == null) throw PythonOps.TypeError("new_module() argument 1 must be string, not None");
 
             Scope res = PythonContext.GetContext(context).CreateModule().Scope;
-            res.SetName(Symbols.Name, name);
-            res.SetName(Symbols.Doc, null);
-            res.SetName(Symbols.Package, null);
+            res.SetVariable(Symbols.Name, name);
+            res.SetVariable(Symbols.Doc, null);
+            res.SetVariable(Symbols.Package, null);
             return res;
         }
 
@@ -209,8 +209,8 @@ namespace IronPython.Modules {
 
             PythonModule mod = pc.CreateModule();
             Scope scope = mod.Scope;
-            scope.SetName(Symbols.Name, name);
-            scope.SetName(Symbols.Path, pathname);
+            scope.SetVariable(Symbols.Name, name);
+            scope.SetVariable(Symbols.Path, pathname);
 
             pc.SystemStateModules[name] = scope;
 

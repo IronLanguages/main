@@ -1153,7 +1153,6 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-
         #region Dynamic operations
 
         /// <summary>
@@ -1288,8 +1287,11 @@ namespace IronRuby.Builtins {
             } else {
                 // TODO: we need more refactoring of RubyMethodGroupInfo.BuildCall to be able to inline this:
                 metaBuilder.Result = Ast.Dynamic(
-                    RubyCallAction.Make(args.RubyContext, "initialize", 
-                        new RubyCallSignature(args.Signature.ArgumentCount, args.Signature.Flags | RubyCallFlags.HasImplicitSelf)
+                    RubyCallAction.Make(args.RubyContext, "initialize",
+                        new RubyCallSignature(
+                            args.Signature.ArgumentCount, 
+                            (args.Signature.Flags & ~RubyCallFlags.IsInteropCall) | RubyCallFlags.HasImplicitSelf
+                        )
                     ),
                     typeof(object),
                     args.GetCallSiteArguments(instanceVariable)

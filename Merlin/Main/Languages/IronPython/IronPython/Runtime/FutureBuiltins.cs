@@ -44,9 +44,9 @@ namespace IronPython.Runtime {
         public static void PerformModuleReload(PythonContext context, IAttributesCollection dict) {
             Scope scope = Importer.ImportModule(context.SharedContext, context.SharedContext.GlobalScope.Dict, "itertools", false, -1) as Scope;
             if (scope != null) {
-                dict[SymbolTable.StringToId("map")] = scope.LookupName(context, SymbolTable.StringToId("imap"));
-                dict[SymbolTable.StringToId("filter")] = scope.LookupName(context, SymbolTable.StringToId("ifilter"));
-                dict[SymbolTable.StringToId("zip")] = scope.LookupName(context, SymbolTable.StringToId("izip"));
+                dict[SymbolTable.StringToId("map")] = scope.GetVariable(SymbolTable.StringToId("imap"));
+                dict[SymbolTable.StringToId("filter")] = scope.GetVariable(SymbolTable.StringToId("ifilter"));
+                dict[SymbolTable.StringToId("zip")] = scope.GetVariable(SymbolTable.StringToId("izip"));
             }
         }
         

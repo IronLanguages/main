@@ -81,7 +81,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         protected override MSAst.Expression/*!*/ GetGlobal(string/*!*/ name, AstGenerator/*!*/ ag, bool isLocal) {
-            return new LookupGlobalVariable(Ast.Property(ag.LocalContext, "Scope"), name, isLocal);
+            return new LookupGlobalVariable(ag.LocalContext, name, isLocal);
         }
     }
 }

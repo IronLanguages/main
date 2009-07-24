@@ -42,7 +42,7 @@ namespace IronPython.Runtime {
                 if (pc.SystemStateModules.TryGetValue(_parentName, out parent)) {
                     Scope s = parent as Scope;
                     if (s != null) {
-                        s.SetName(SymbolTable.StringToId(_name), res);
+                        s.SetVariable(SymbolTable.StringToId(_name), res);
                     }
                 }
             }

@@ -535,11 +535,11 @@ namespace IronRuby.Runtime {
         }
 
         internal void SetGlobalConstant(string/*!*/ name, object value) {
-            _globalScope.SetName(SymbolTable.StringToId(name), value);
+            _globalScope.SetVariable(SymbolTable.StringToId(name), value);
         }
 
         internal bool TryGetGlobalConstant(string/*!*/ name, out object value) {
-            return _globalScope.TryGetName(SymbolTable.StringToId(name), out value);
+            return _globalScope.TryGetVariable(SymbolTable.StringToId(name), out value);
         }
 
         private void InitializeFileDescriptors(SharedIO/*!*/ io) {

@@ -135,9 +135,6 @@ InvalidArgumentType=Invalid type of argument {0}; expecting {1}.
 ## ExceptionType=ArgumentException
 CannotChangeNonCachingValue=Cannot change non-caching value.
 
-## ExceptionType=Microsoft.Scripting.Runtime.UnboundLocalException
-ReferencedBeforeAssignment=Local variable '{0}' referenced before assignment.
-
 ## ExceptionType=MissingMemberException
 FieldReadonly=Field {0} is read-only
 

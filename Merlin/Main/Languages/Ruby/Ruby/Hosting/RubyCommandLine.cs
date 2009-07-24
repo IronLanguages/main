@@ -67,7 +67,7 @@ namespace IronRuby.Hosting {
 
         protected override Scope/*!*/ CreateScope() {
             Scope scope = base.CreateScope();
-            scope.SetName(SymbolTable.StringToId("iron_ruby"), Engine);
+            scope.SetVariable(SymbolTable.StringToId("iron_ruby"), Engine);
             return scope;
         }
 

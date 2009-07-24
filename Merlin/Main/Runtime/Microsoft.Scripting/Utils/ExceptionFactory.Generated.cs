@@ -456,13 +456,6 @@ namespace Microsoft.Scripting {
         }
 
         /// <summary>
-        /// A string like  "Local variable '{0}' referenced before assignment."
-        /// </summary>
-        internal static string ReferencedBeforeAssignment(object p0) {
-            return FormatString("Local variable '{0}' referenced before assignment.", p0);
-        }
-
-        /// <summary>
         /// A string like  "Field {0} is read-only"
         /// </summary>
         internal static string FieldReadonly(object p0) {
@@ -871,13 +864,6 @@ namespace Microsoft.Scripting {
         /// </summary>
         internal static Exception CannotChangeNonCachingValue() {
             return new ArgumentException(Strings.CannotChangeNonCachingValue);
-        }
-
-        /// <summary>
-        /// Microsoft.Scripting.Runtime.UnboundLocalException with message like "Local variable '{0}' referenced before assignment."
-        /// </summary>
-        internal static Exception ReferencedBeforeAssignment(object p0) {
-            return new Microsoft.Scripting.Runtime.UnboundLocalException(Strings.ReferencedBeforeAssignment(p0));
         }
 
         /// <summary>

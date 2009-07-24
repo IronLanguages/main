@@ -789,6 +789,9 @@ end
 
         public void Dlr_Visibility() {
             Engine.Execute(@"
+class D < Hash
+end
+
 class C
   def public_m
     0
@@ -821,6 +824,11 @@ class C
 end");
             var r2 = MyInvokeMemberBinder.Invoke(c, "private_m");
             Assert(r2 is int && (int)r2 == 3);
+
+            // private initialize method can be called if called via new:
+            var classD = Runtime.Globals.GetVariable("D");
+            var d = Engine.Operations.CreateInstance(classD);
+            Assert(d is Hash);
         }
 
         public void Dlr_Languages() {
