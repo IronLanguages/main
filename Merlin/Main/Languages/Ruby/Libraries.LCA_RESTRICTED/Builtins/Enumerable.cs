@@ -441,26 +441,21 @@ namespace IronRuby.Builtins {
 
         #region zip
 
-        [RubyMethod("zip")]
-        public static RubyArray/*!*/ Zip(CallSiteStorage<EachSite>/*!*/ each, ConversionStorage<IList>/*!*/ tryToA, BlockParam block,
-            object self, [NotNull]params object[] args) {
-            RubyArray results = (block == null) ? new RubyArray() : null;
+        internal static RubyArray/*!*/ Zip(CallSiteStorage<EachSite>/*!*/ each, ConversionStorage<IList>/*!*/ tryToA, BlockParam block,
+            object self, params IList[]/*!*/ args) {
 
-            // Call to_a on each argument
-            IList[] otherArrays = new IList[args.Length];
-            for (int i = 0; i < args.Length; i++) {
-                otherArrays[i] = Protocols.TryConvertToArray(tryToA, args[i]);
-            }
+            RubyArray results = (block == null) ? new RubyArray() : null;
 
             int index = 0;
             Each(each, self, Proc.Create(each.Context, delegate(BlockParam/*!*/ selfBlock, object _, object item) {
                 // Collect items
-                RubyArray array = new RubyArray(otherArrays.Length + 1);
+                RubyArray array = new RubyArray(args.Length + 1);
                 array.Add(item);
-                foreach (IList otherArray in otherArrays) {
+                foreach (IList otherArray in args) {
                     if (index < otherArray.Count) {
                         array.Add(otherArray[index]);
-                    } else {
+                    }
+                    else {
                         array.Add(null);
                     }
                 }
@@ -472,13 +467,27 @@ namespace IronRuby.Builtins {
                     if (block.Yield(array, out blockResult)) {
                         return blockResult;
                     }
-                } else {
+                }
+                else {
                     results.Add(array);
                 }
                 return null;
             }));
 
             return results;
+        }
+
+        [RubyMethod("zip")]
+        public static RubyArray/*!*/ Zip(CallSiteStorage<EachSite>/*!*/ each, ConversionStorage<IList>/*!*/ tryToA, BlockParam block,
+            object self, [NotNull]params object[] args) {
+
+            // Call to_a on each argument
+            IList[] otherArrays = new IList[args.Length];
+            for (int i = 0; i < args.Length; i++) {
+                otherArrays[i] = args[i] as IList != null ? args[i] as IList : Protocols.TryConvertToArray(tryToA, args[i]);
+            }
+
+            return Zip(each, tryToA, block, self, otherArrays);
         }
 
         #endregion

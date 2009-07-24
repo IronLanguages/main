@@ -1904,6 +1904,7 @@ namespace IronRuby.Builtins {
             
             module.DefineLibraryMethod("%", 0x51, 
                 new System.Func<Microsoft.Scripting.Math.BigInteger, Microsoft.Scripting.Math.BigInteger, System.Object>(IronRuby.Builtins.ClrBigInteger.Modulo), 
+                new System.Func<Microsoft.Scripting.Math.BigInteger, System.Double, System.Object>(IronRuby.Builtins.ClrBigInteger.Modulo), 
                 new System.Func<IronRuby.Runtime.BinaryOpStorage, IronRuby.Runtime.BinaryOpStorage, System.Object, System.Object, System.Object>(IronRuby.Builtins.ClrBigInteger.ModuloOp)
             );
             
@@ -1928,7 +1929,7 @@ namespace IronRuby.Builtins {
             
             module.DefineLibraryMethod("/", 0x51, 
                 new System.Func<Microsoft.Scripting.Math.BigInteger, Microsoft.Scripting.Math.BigInteger, System.Object>(IronRuby.Builtins.ClrBigInteger.Divide), 
-                new System.Func<Microsoft.Scripting.Math.BigInteger, System.Double, System.Object>(IronRuby.Builtins.ClrBigInteger.Divide), 
+                new System.Func<Microsoft.Scripting.Math.BigInteger, System.Double, System.Object>(IronRuby.Builtins.ClrBigInteger.DivideOp), 
                 new System.Func<IronRuby.Runtime.BinaryOpStorage, IronRuby.Runtime.BinaryOpStorage, System.Object, System.Object, System.Object>(IronRuby.Builtins.ClrBigInteger.Divide)
             );
             
@@ -2004,6 +2005,7 @@ namespace IronRuby.Builtins {
             
             module.DefineLibraryMethod("divmod", 0x51, 
                 new System.Func<Microsoft.Scripting.Math.BigInteger, Microsoft.Scripting.Math.BigInteger, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.ClrBigInteger.DivMod), 
+                new System.Func<Microsoft.Scripting.Math.BigInteger, System.Double, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.ClrBigInteger.DivMod), 
                 new System.Func<IronRuby.Runtime.BinaryOpStorage, IronRuby.Runtime.BinaryOpStorage, System.Object, System.Object, System.Object>(IronRuby.Builtins.ClrBigInteger.DivMod)
             );
             
@@ -2019,6 +2021,7 @@ namespace IronRuby.Builtins {
             
             module.DefineLibraryMethod("modulo", 0x51, 
                 new System.Func<Microsoft.Scripting.Math.BigInteger, Microsoft.Scripting.Math.BigInteger, System.Object>(IronRuby.Builtins.ClrBigInteger.Modulo), 
+                new System.Func<Microsoft.Scripting.Math.BigInteger, System.Double, System.Object>(IronRuby.Builtins.ClrBigInteger.Modulo), 
                 new System.Func<IronRuby.Runtime.BinaryOpStorage, IronRuby.Runtime.BinaryOpStorage, System.Object, System.Object, System.Object>(IronRuby.Builtins.ClrBigInteger.Modulo)
             );
             
@@ -2030,6 +2033,7 @@ namespace IronRuby.Builtins {
             
             module.DefineLibraryMethod("remainder", 0x51, 
                 new System.Func<Microsoft.Scripting.Math.BigInteger, Microsoft.Scripting.Math.BigInteger, System.Object>(IronRuby.Builtins.ClrBigInteger.Remainder), 
+                new System.Func<Microsoft.Scripting.Math.BigInteger, System.Double, System.Double>(IronRuby.Builtins.ClrBigInteger.Remainder), 
                 new System.Func<IronRuby.Runtime.BinaryOpStorage, IronRuby.Runtime.BinaryOpStorage, System.Object, System.Object, System.Object>(IronRuby.Builtins.ClrBigInteger.Remainder)
             );
             
@@ -2039,7 +2043,7 @@ namespace IronRuby.Builtins {
             
             module.DefineLibraryMethod("to_s", 0x51, 
                 new System.Func<Microsoft.Scripting.Math.BigInteger, IronRuby.Builtins.MutableString>(IronRuby.Builtins.ClrBigInteger.ToString), 
-                new System.Func<Microsoft.Scripting.Math.BigInteger, System.UInt32, IronRuby.Builtins.MutableString>(IronRuby.Builtins.ClrBigInteger.ToString)
+                new System.Func<Microsoft.Scripting.Math.BigInteger, System.Int32, IronRuby.Builtins.MutableString>(IronRuby.Builtins.ClrBigInteger.ToString)
             );
             
         }
@@ -5465,6 +5469,10 @@ namespace IronRuby.Builtins {
             
             module.DefineLibraryMethod("values_at", 0x51, 
                 new System.Func<IronRuby.Runtime.ConversionStorage<System.Int32>, IronRuby.Runtime.CallSiteStorage<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Builtins.RubyClass, System.Object>>, System.Collections.IList, System.Object[], IronRuby.Builtins.RubyArray>(IronRuby.Builtins.IListOps.ValuesAt)
+            );
+            
+            module.DefineLibraryMethod("zip", 0x51, 
+                new System.Func<IronRuby.Runtime.CallSiteStorage<System.Func<System.Runtime.CompilerServices.CallSite, System.Object, IronRuby.Builtins.Proc, System.Object>>, IronRuby.Runtime.ConversionStorage<System.Collections.IList>, IronRuby.Runtime.BlockParam, System.Object, System.Collections.IList[], System.Collections.IList>(IronRuby.Builtins.IListOps.Zip)
             );
             
         }
