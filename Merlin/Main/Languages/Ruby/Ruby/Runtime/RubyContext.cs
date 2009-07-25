@@ -47,8 +47,8 @@ namespace IronRuby.Runtime {
         public static readonly string/*!*/ MriReleaseDate = "2008-05-28";
 
         // IronRuby:
-        public const string/*!*/ IronRubyVersionString = "0.6.0.0";
-        public static readonly Version IronRubyVersion = new Version(0, 6, 0, 0);
+        public const string/*!*/ IronRubyVersionString = "0.9.0.0";
+        public static readonly Version IronRubyVersion = new Version(0, 9, 0, 0);
         internal const string/*!*/ IronRubyDisplayName = "IronRuby";
         internal const string/*!*/ IronRubyNames = "IronRuby;Ruby;rb";
         internal const string/*!*/ IronRubyFileExtensions = ".rb";

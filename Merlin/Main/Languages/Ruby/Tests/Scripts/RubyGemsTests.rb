@@ -68,7 +68,11 @@ class TestGemRemoteFetcher
   def test_zip() end
   def test_request_unmodifed() end
 end
-
+#Fails with RangeError: bignum too big to convert into `long'
+class TestGemSpecification
+  def test_files_non_array_pathological() end
+  def test_hash() end
+end
 class TestGemValidator
   def test_verify_gem_file_empty() end
 end

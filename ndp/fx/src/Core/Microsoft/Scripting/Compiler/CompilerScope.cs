@@ -21,6 +21,10 @@ using System.Runtime.CompilerServices;
 using System.Dynamic;
 using System.Dynamic.Utils;
 
+#if SILVERLIGHT
+using System.Core;
+#endif
+
 namespace System.Linq.Expressions.Compiler {
     internal enum VariableStorageKind {
         Local,

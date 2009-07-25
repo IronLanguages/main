@@ -18,6 +18,10 @@ using System.Collections.ObjectModel;
 using System.Dynamic.Utils;
 using System.Reflection;
 
+#if SILVERLIGHT
+using System.Core;
+#endif
+
 namespace System.Linq.Expressions {
     /// <summary>
     /// Represents initializing members of a member of a newly created object.
