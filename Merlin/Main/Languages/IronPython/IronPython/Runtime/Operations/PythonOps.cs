@@ -1235,7 +1235,7 @@ namespace IronPython.Runtime.Operations {
             }
 
             // Otherwise, if there's a global variable named __metaclass__, it is used.
-            if (context.GlobalScope.TryLookupName(Symbols.MetaClass, out ret) && ret != null) {
+            if (context.GlobalScope.TryGetVariable(Symbols.MetaClass, out ret) && ret != null) {
                 return ret;
             }
 
@@ -1676,22 +1676,22 @@ namespace IronPython.Runtime.Operations {
 
                 // we special case several types to avoid one-off code gen of dynamic sites                
                 if (scope != null) {
-                    context.Scope.SetName(fieldId, scope.Dict[fieldId]);
+                    context.Scope.SetVariable(fieldId, scope.Dict[fieldId]);
                 } else if (nt != null) {
                     object value = NamespaceTrackerOps.GetCustomMember(context, nt, name);
                     if (value != OperationFailed.Value) {
-                        context.Scope.SetName(fieldId, value);
+                        context.Scope.SetVariable(fieldId, value);
                     }
                 } else if (pt != null) {
                     PythonTypeSlot pts;
                     object value;
                     if (pt.TryResolveSlot(context, fieldId, out pts) &&
                         pts.TryGetValue(context, null, pt, out value)) {
-                        context.Scope.SetName(fieldId, value);
+                        context.Scope.SetVariable(fieldId, value);
                     }
                 } else {
                     // not a known type, we'll do use a site to do the get...
-                    context.Scope.SetName(fieldId, PythonOps.GetBoundAttr(context, newmod, fieldId));
+                    context.Scope.SetVariable(fieldId, PythonOps.GetBoundAttr(context, newmod, fieldId));
                 }
             }
         }
@@ -3057,7 +3057,7 @@ namespace IronPython.Runtime.Operations {
         [NoSideEffects]
         public static object CheckUninitialized(object value, SymbolId name) {
             if (value == Uninitialized.Instance) {
-                ScriptingRuntimeHelpers.ThrowUnboundLocalError(name);
+                throw new UnboundLocalException(String.Format("Local variable '{0}' referenced before assignment.", SymbolTable.IdToString(name)));
             }
             return value;
         }
@@ -3227,7 +3227,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static void ModuleStarted(CodeContext/*!*/ context, PythonLanguageFeatures features) {
-            PythonModule scopeExtension = (PythonModule)context.LanguageContext.EnsureScopeExtension(context.Scope.ModuleScope);
+            PythonModule scopeExtension = (PythonModule)context.LanguageContext.EnsureScopeExtension(context.GlobalScope);
             scopeExtension.LanguageFeatures |= features;
         }
 
@@ -3521,22 +3521,33 @@ namespace IronPython.Runtime.Operations {
         /// <summary>
         /// Called from generated code, helper to remove a name
         /// </summary>
-        public static object RemoveName(CodeContext context, SymbolId name) {
-            return context.LanguageContext.RemoveName(context.Scope, name);
+        public static void RemoveName(CodeContext context, SymbolId name) {
+            if (!context.Scope.TryRemoveVariable(name)) {
+                throw PythonOps.NameError(name);
+            }
         }
 
         /// <summary>
         /// Called from generated code, helper to do name lookup
         /// </summary>
         public static object LookupName(CodeContext context, SymbolId name) {
-            return context.LanguageContext.LookupName(context.Scope, name);
+            object value;
+            if (context.TryLookupName(name, out value) && value != Uninitialized.Instance) {
+                return value;
+            }
+
+            if (context.TryLookupGlobal(name, out value) && value != Uninitialized.Instance) {
+                return value;
+            }
+
+            throw PythonOps.NameError(name);
         }
 
         /// <summary>
         /// Called from generated code, helper to do name assignment
         /// </summary>
         public static object SetName(CodeContext context, SymbolId name, object value) {
-            context.LanguageContext.SetName(context.Scope, name, value);
+            context.Scope.SetVariable(name, value);
             return value;
         }
 
@@ -3604,24 +3615,30 @@ namespace IronPython.Runtime.Operations {
             return generator.Context;
         }
 
-        public static object GetGlobal(Scope scope, SymbolId name) {
-            return GetVariable(scope.ModuleScope, name, true);
+        public static object GetGlobal(CodeContext/*!*/ context, SymbolId name) {
+            return GetVariable(context, name, true);
         }
 
-        public static object GetLocal(Scope scope, SymbolId name) {
-            return GetVariable(scope, name, false);
+        public static object GetLocal(CodeContext/*!*/ context, SymbolId name) {
+            return GetVariable(context, name, false);
         }
 
-        private static object GetVariable(Scope scope, SymbolId name, bool isGlobal) {
+        private static object GetVariable(CodeContext/*!*/ context, SymbolId name, bool isGlobal) {
             object res;
-            if (scope.TryLookupName(name, out res)) {
-                return res;
+            if (isGlobal) {
+                if (context.GlobalScope.TryGetVariable(name, out res)) {
+                    return res;
+                }
+            } else {
+                if (context.TryLookupName(name, out res)) {
+                    return res;
+                }
             }
 
             object builtins;
-            if (scope.ModuleScope.TryGetName(Symbols.Builtins, out builtins)) {
+            if (context.GlobalScope.TryGetVariable(Symbols.Builtins, out builtins)) {
                 Scope builtinsScope = builtins as Scope;
-                if (builtinsScope != null && builtinsScope.TryGetName(name, out res)) {
+                if (builtinsScope != null && builtinsScope.TryGetVariable(name, out res)) {
                     return res;
                 }
 
@@ -3637,45 +3654,50 @@ namespace IronPython.Runtime.Operations {
             throw NameError(name);
         }
 
-        public static object RawGetGlobal(Scope scope, SymbolId name) {
-            return RawGetLocal(scope.ModuleScope, name);
-        }
-
-        public static object RawGetLocal(Scope scope, SymbolId name) {
+        public static object RawGetGlobal(CodeContext/*!*/ context, SymbolId name) {
             object res;
-            if (scope.TryLookupName(name, out res)) {
+            if (context.GlobalScope.TryGetVariable(name, out res)) {
                 return res;
             }
 
             return Uninitialized.Instance;
         }
 
-        public static void SetGlobal(Scope scope, SymbolId name, object value) {
-            scope.ModuleScope.Dict[name] = value;
+        public static object RawGetLocal(CodeContext/*!*/ context, SymbolId name) {
+            object res;
+            if (context.TryLookupName(name, out res)) {
+                return res;
+            }
+
+            return Uninitialized.Instance;
         }
 
-        public static void SetLocal(Scope scope, SymbolId name, object value) {
-            scope.Dict[name] = value;
+        public static void SetGlobal(CodeContext/*!*/ context, SymbolId name, object value) {
+            context.GlobalScope.Dict[name] = value;
         }
 
-        public static void DeleteGlobal(Scope scope, SymbolId name) {
-            if (scope.ModuleScope.Dict.Remove(name)) {
+        public static void SetLocal(CodeContext/*!*/ context, SymbolId name, object value) {
+            context.Scope.Dict[name] = value;
+        }
+
+        public static void DeleteGlobal(CodeContext/*!*/ context, SymbolId name) {
+            if (context.GlobalScope.Dict.Remove(name)) {
                 return;
             }
 
             throw NameError(name);
         }
 
-        public static void DeleteLocal(Scope scope, SymbolId name) {
-            if (scope.Dict.Remove(name)) {
+        public static void DeleteLocal(CodeContext/*!*/ context, SymbolId name) {
+            if (context.Scope.Dict.Remove(name)) {
                 return;
             }
 
             throw NameError(name);
-
         }
+
         public static CodeContext/*!*/ CreateTopLevelCodeContext(Scope/*!*/ scope, LanguageContext/*!*/ context) {
-            context.EnsureScopeExtension(scope.ModuleScope);
+            context.EnsureScopeExtension(CodeContext.GetModuleScope(scope));
             return new CodeContext(scope, (PythonContext)context);
         }
 

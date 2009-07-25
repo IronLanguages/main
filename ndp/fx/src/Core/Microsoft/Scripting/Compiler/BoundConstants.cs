@@ -19,6 +19,10 @@ using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Dynamic.Utils;
 
+#if SILVERLIGHT
+using System.Core;
+#endif
+
 namespace System.Linq.Expressions.Compiler {
     /// <summary>
     /// This type tracks "runtime" constants--live objects that appear in

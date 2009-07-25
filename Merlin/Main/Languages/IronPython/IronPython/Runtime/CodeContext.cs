@@ -16,6 +16,7 @@
 using System.Diagnostics;
 using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting;
 
 namespace IronPython.Runtime {
     /// <summary>
@@ -51,7 +52,7 @@ namespace IronPython.Runtime {
         public Scope GlobalScope {
             get {
                 Debug.Assert(_scope != null, "Global scope not available");
-                return _scope.ModuleScope;
+                return GetModuleScope(_scope);
             }
         }
 
@@ -59,6 +60,51 @@ namespace IronPython.Runtime {
             get {
                 return _languageContext;
             }
+        }
+
+        /// <summary>
+        /// Attempts to lookup the provided name in this scope or any outer scope.
+        /// </summary>
+        internal bool TryLookupName(SymbolId name, out object value) {
+            Scope curScope = _scope;
+            do {
+                if (curScope == _scope || curScope.IsVisible) {
+                    if (curScope.TryGetVariable(name, out value)) {
+                        return true;
+                    }
+                }
+
+                curScope = curScope.Parent;
+            } while (curScope != null);
+
+            value = null;
+            return false;
+        }
+
+        internal bool TryLookupGlobal(SymbolId name, out object value) {
+            object builtins;
+            if (!GlobalScope.TryGetVariable(Symbols.Builtins, out builtins)) {
+                value = null;
+                return false;
+            }
+
+            Scope builtinsScope = builtins as Scope;
+            if (builtinsScope != null && builtinsScope.TryGetVariable(name, out value)) return true;
+
+            IAttributesCollection dict = builtins as IAttributesCollection;
+            if (dict != null && dict.TryGetValue(name, out value)) return true;
+
+            value = null;
+            return false;
+        }
+
+        internal static Scope GetModuleScope(Scope scope) {
+            Scope cur = scope;
+            while (cur.Parent != null) {
+                cur = cur.Parent;
+            }
+
+            return cur;
         }
     }
 }

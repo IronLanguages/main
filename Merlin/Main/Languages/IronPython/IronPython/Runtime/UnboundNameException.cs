@@ -16,7 +16,7 @@
 using System;
 using System.Runtime.Serialization;
 
-namespace Microsoft.Scripting.Runtime {
+namespace IronPython.Runtime {
     [Serializable]
     public class UnboundNameException : Exception {
         public UnboundNameException() : base() { }

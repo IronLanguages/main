@@ -21,6 +21,10 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 
+#if SILVERLIGHT
+using System.Core;
+#endif
+
 namespace System.Linq.Expressions {
     /// <summary>
     /// Represents indexing a property or array.

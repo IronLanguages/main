@@ -131,6 +131,7 @@
     <Compile Include="Builtins\RubyArray.Subclass.cs" />
     <Compile Include="Builtins\RubyEvent.cs" />
     <Compile Include="Builtins\RubyIO.cs" />
+    <Compile Include="Builtins\RubyObjectDebugView.cs" />
     <Compile Include="Builtins\RubyRegex.Subclass.cs" />
     <Compile Include="Builtins\MutableString.Content.cs">
       <SubType>Code</SubType>

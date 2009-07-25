@@ -510,7 +510,7 @@ namespace IronPython.Modules {
         public static PythonTuple _pickle(CodeContext/*!*/ context, RE_Pattern pattern) {
             object scope = Importer.ImportModule(context, new PythonDictionary(), "re", false, 0);
             object compile;
-            if (scope is Scope && ((Scope)scope).TryGetName(SymbolTable.StringToId("compile"), out compile)) {
+            if (scope is Scope && ((Scope)scope).TryGetVariable(SymbolTable.StringToId("compile"), out compile)) {
                 return PythonTuple.MakeTuple(compile, PythonTuple.MakeTuple(pattern.pattern, pattern.flags));
             }
             throw new InvalidOperationException("couldn't find compile method");

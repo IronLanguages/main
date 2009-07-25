@@ -1,1 +1,1 @@
-critical:Net::FTP#retrbinary
+fails:Net::FTP#retrbinary

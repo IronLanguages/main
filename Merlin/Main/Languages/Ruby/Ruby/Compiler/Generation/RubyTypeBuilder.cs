@@ -69,8 +69,8 @@ namespace IronRuby.Compiler.Generation {
 
         internal RubyTypeBuilder(TypeBuilder/*!*/ tb) {
             _tb = tb;
-            _immediateClassField = _tb.DefineField("_immediateClass", typeof(RubyClass), FieldAttributes.Private);
-            _instanceDataField = _tb.DefineField("_instanceData", typeof(RubyInstanceData), FieldAttributes.Private);
+            _immediateClassField = _tb.DefineField(RubyObject.ImmediateClassFieldName, typeof(RubyClass), FieldAttributes.Private);
+            _instanceDataField = _tb.DefineField(RubyObject.InstanceDataFieldName, typeof(RubyInstanceData), FieldAttributes.Private);
         }
 
         public void Implement(ClsTypeEmitter/*!*/ emitter) {
@@ -285,6 +285,18 @@ namespace IronRuby.Compiler.Generation {
 
         private void DefineRubyObjectImplementation() {
             _tb.AddInterfaceImplementation(typeof(IRubyObject));
+
+            _tb.SetCustomAttribute(new CustomAttributeBuilder(
+                typeof(DebuggerTypeProxyAttribute).GetConstructor(new[] { typeof(Type) }),
+                new[] { typeof(RubyObjectDebugView) }
+            ));
+
+            _tb.SetCustomAttribute(new CustomAttributeBuilder(
+                typeof(DebuggerDisplayAttribute).GetConstructor(new[] { typeof(string) }),
+                new[] { RubyObject.DebuggerDisplayValue },
+                new[] { typeof(DebuggerDisplayAttribute).GetProperty("Type") },
+                new[] { RubyObject.DebuggerDisplayType }
+            ));
 
             ILGen il;
 

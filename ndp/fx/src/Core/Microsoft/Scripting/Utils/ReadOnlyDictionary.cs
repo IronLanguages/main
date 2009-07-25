@@ -16,6 +16,10 @@
 using System.Collections.Generic;
 using System.Linq.Expressions;
 
+#if SILVERLIGHT
+using System.Core;
+#endif
+
 namespace System.Dynamic.Utils {
 
     // Like ReadOnlyCollection<T>: wraps an IDictionary<K, V> in a read-only wrapper

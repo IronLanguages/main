@@ -16,6 +16,10 @@
 using System.Dynamic.Utils;
 using System.Reflection;
 
+#if SILVERLIGHT
+using System.Core;
+#endif
+
 namespace System.Linq.Expressions {
     /// <summary>
     /// Represents assignment to a member of an object.

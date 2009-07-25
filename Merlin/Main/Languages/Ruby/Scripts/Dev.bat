@@ -42,20 +42,6 @@ if exist "%PROGRAM_FILES_32%\Microsoft.NET\SDK\v2.0\Bin\sdkvars.bat" (
 
 set PATH=%PATH%;%MERLIN_ROOT%\Languages\Ruby\Scripts;%MERLIN_ROOT%\Languages\Ruby\Scripts\bin;%RUBY18_BIN%;%MERLIN_ROOT%\..\External.LCA_RESTRICTED\Languages\IronRuby\mspec\mspec\bin
 
-if not DEFINED HOME (
-  if DEFINED HOMEDRIVE (
-    if DEFINED HOMEPATH (
-      set HOME=%HOMEDRIVE%\%HOMEPATH%
-      goto SetRubyEnv
-    )
-  )
-  if not DEFINED USERPROFILE (
-    echo Error: One of HOME, HOMEDRIVE,HOMEPATH, or USERPROFILE needs to be set
-    goto END
-  )
-  set HOME=%USERPROFILE%
-)
-
 :SetRubyEnv
 
 if NOT exist "%HOME%\.mspecrc" (
