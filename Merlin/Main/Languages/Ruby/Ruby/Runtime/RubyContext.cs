@@ -47,8 +47,8 @@ namespace IronRuby.Runtime {
         public static readonly string/*!*/ MriReleaseDate = "2008-05-28";
 
         // IronRuby:
-        public const string/*!*/ IronRubyVersionString = "0.6.0.0";
-        public static readonly Version IronRubyVersion = new Version(0, 6, 0, 0);
+        public const string/*!*/ IronRubyVersionString = "0.9.0.0";
+        public static readonly Version IronRubyVersion = new Version(0, 9, 0, 0);
         internal const string/*!*/ IronRubyDisplayName = "IronRuby";
         internal const string/*!*/ IronRubyNames = "IronRuby;Ruby;rb";
         internal const string/*!*/ IronRubyFileExtensions = ".rb";
@@ -535,11 +535,11 @@ namespace IronRuby.Runtime {
         }
 
         internal void SetGlobalConstant(string/*!*/ name, object value) {
-            _globalScope.SetName(SymbolTable.StringToId(name), value);
+            _globalScope.SetVariable(SymbolTable.StringToId(name), value);
         }
 
         internal bool TryGetGlobalConstant(string/*!*/ name, out object value) {
-            return _globalScope.TryGetName(SymbolTable.StringToId(name), out value);
+            return _globalScope.TryGetVariable(SymbolTable.StringToId(name), out value);
         }
 
         private void InitializeFileDescriptors(SharedIO/*!*/ io) {
@@ -1237,12 +1237,12 @@ namespace IronRuby.Runtime {
         // thread-safe:
         public MethodResolutionResult ResolveMethod(object target, string/*!*/ name, bool includePrivate) {
             var owner = GetImmediateClassOf(target);
-            return owner.ResolveMethod(name, includePrivate ? RubyClass.IgnoreVisibility : owner);
+            return owner.ResolveMethod(name, includePrivate ? VisibilityContext.AllVisible : new VisibilityContext(owner));
         }
 
         // thread-safe:
-        public MethodResolutionResult ResolveMethod(object target, string/*!*/ name, RubyClass visibilityContext) {
-            return GetImmediateClassOf(target).ResolveMethod(name, visibilityContext);
+        public MethodResolutionResult ResolveMethod(object target, string/*!*/ name, VisibilityContext visibility) {
+            return GetImmediateClassOf(target).ResolveMethod(name, visibility);
         }
 
         // thread-safe:

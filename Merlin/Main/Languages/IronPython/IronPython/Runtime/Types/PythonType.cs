@@ -45,7 +45,7 @@ namespace IronPython.Runtime.Types {
     [PythonType("type")]
     [Documentation(@"type(object) -> gets the type of the object
 type(name, bases, dict) -> creates a new type instance with the given name, base classes, and members from the dictionary")]
-    public partial class PythonType : IMembersList, IDynamicMetaObjectProvider, IWeakReferenceable, ICodeFormattable, IFastGettable, IFastSettable, IFastInvokable {
+    public partial class PythonType : IPythonMembersList, IDynamicMetaObjectProvider, IWeakReferenceable, ICodeFormattable, IFastGettable, IFastSettable, IFastInvokable {
         private Type/*!*/ _underlyingSystemType;            // the underlying CLI system type for this type
         private string _name;                               // the name of the type
         private Dictionary<SymbolId, PythonTypeSlot> _dict; // type-level slots & attributes
@@ -75,6 +75,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         private CallSite<Func<CallSite, object, int>> _hashSite;
         private CallSite<Func<CallSite, object, object, bool>> _eqSite;
         private CallSite<Func<CallSite, object, object, int>> _compareSite;
+        private Dictionary<CallSignature, LateBoundInitBinder> _lateBoundInitBinders;
 
         private PythonSiteCache _siteCache = new PythonSiteCache();
 
@@ -1014,7 +1015,25 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             return !TryResolveSlot(DefaultContext.Default, SymbolTable.StringToId(name), out dummySlot) &&
                     TryResolveSlot(DefaultContext.DefaultCLS, SymbolTable.StringToId(name), out dummySlot);
         }
+        
+        internal LateBoundInitBinder GetLateBoundInitBinder(CallSignature signature) {
+            Debug.Assert(!IsSystemType); // going to hold onto a PythonContext, shouldn't ever be a system type
+            Debug.Assert(_pythonContext != null);
 
+            if (_lateBoundInitBinders == null) {
+                Interlocked.CompareExchange(ref _lateBoundInitBinders, new Dictionary<CallSignature, LateBoundInitBinder>(), null);
+            }
+
+            lock(_lateBoundInitBinders) {
+                LateBoundInitBinder res;
+                if (!_lateBoundInitBinders.TryGetValue(signature, out res)) {
+                    _lateBoundInitBinders[signature] = res = new LateBoundInitBinder(this, signature);
+                }
+
+                return res;
+            }
+        }
+        
         #endregion
 
         #region Type member access
@@ -1893,7 +1912,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             }
 
             object modName;
-            if (context.Scope.TryLookupName(Symbols.Name, out modName)) {
+            if (context.Scope.TryGetVariable(Symbols.Name, out modName)) {
                 PopulateSlot(Symbols.Module, modName);
             }
 
@@ -1974,7 +1993,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         private static void EnsureModule(CodeContext context, IAttributesCollection dict) {
             if (!dict.ContainsKey(Symbols.Module)) {
                 object modName;
-                if (context.Scope.TryLookupName(Symbols.Name, out modName)) {
+                if (context.Scope.TryGetVariable(Symbols.Name, out modName)) {
                     dict[Symbols.Module] = modName;
                 }
             }
@@ -2260,7 +2279,11 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
         #region IMembersList Members
 
-        IList<object> IMembersList.GetMemberNames(CodeContext context) {
+        IList<string> IMembersList.GetMemberNames() {
+            return PythonOps.GetStringMemberList(this);
+        }
+
+        IList<object> IPythonMembersList.GetMemberNames(CodeContext/*!*/ context) {
             IList<object> res = GetMemberNames(context);
 
             object[] arr = new object[res.Count];
@@ -2900,5 +2923,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
             return type == _self;
         }
-    }       
+    }
+
+    
 }

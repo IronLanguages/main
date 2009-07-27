@@ -51,7 +51,7 @@ namespace IronPython.Runtime.Binding {
                 return com;
             }
 #endif
-            return Context.Binder.SetMember(Name, self, value, AstUtils.Constant(Context.SharedContext));
+            return Context.Binder.SetMember(Name, self, value, new PythonOverloadResolverFactory(_context.Binder, AstUtils.Constant(Context.SharedContext)));
         }
 
         public override T BindDelegate<T>(CallSite<T> site, object[] args) {

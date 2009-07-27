@@ -46,8 +46,8 @@ namespace IronRuby.Tests {
                 Scenario_ParseRegex1,
 
                 Scenario_RubyCategorizer1,
-                Scenario_RubyNameMangling1,
-                Scenario_RubyNameMangling2,
+                NameMangling1,
+                NameMangling2,
 
                 OverloadResolution_Block1,
                 OverloadResolution_ParamArrays1,
@@ -354,6 +354,7 @@ namespace IronRuby.Tests {
 
                 Require1,
                 RequireInterop1,
+                RequireInterop2,
                 Load1,
                 LibraryLoader1,
 
@@ -620,6 +621,7 @@ namespace IronRuby.Tests {
                 Dlr_Comparable,
                 Dlr_RubyObjects,
                 Dlr_Methods,
+                Dlr_Visibility,
                 Dlr_Languages,
             };
         }

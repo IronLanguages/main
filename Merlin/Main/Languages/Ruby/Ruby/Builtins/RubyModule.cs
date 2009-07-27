@@ -72,6 +72,7 @@ namespace IronRuby.Builtins {
 #if DEBUG
     [DebuggerDisplay("{DebugName}")]
 #endif
+    [DebuggerTypeProxy(typeof(RubyModule.DebugView))]
     public partial class RubyModule : IDuplicable, IRubyObject {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly")]
         public static readonly RubyModule[]/*!*/ EmptyArray = new RubyModule[0];
@@ -1109,8 +1110,8 @@ namespace IronRuby.Builtins {
                 SymbolId symbol = SymbolTable.StringToId(name);
 
                 using (Context.ClassHierarchyUnlocker()) {
-                    return _context.TopGlobalScope.TryGetName(symbol, out value) 
-                        && _context.TopGlobalScope.TryRemoveName(symbol);
+                    return _context.TopGlobalScope.TryGetVariable(symbol, out value) 
+                        && _context.TopGlobalScope.TryRemoveVariable(symbol);
                 }
             }
 
@@ -1215,7 +1216,7 @@ namespace IronRuby.Builtins {
             RubyMemberInfo method;
             using (Context.ClassHierarchyLocker()) {
                 // MRI: aliases a super-forwarder not the real method.
-                method = ResolveMethodNoLock(oldName, RubyClass.IgnoreVisibility, MethodLookup.FallbackToObject | MethodLookup.ReturnForwarder).Info;
+                method = ResolveMethodNoLock(oldName, VisibilityContext.AllVisible, MethodLookup.FallbackToObject | MethodLookup.ReturnForwarder).Info;
                 if (method == null) {
                     throw RubyExceptions.CreateUndefinedMethodError(this, oldName);
                 }
@@ -1496,32 +1497,32 @@ namespace IronRuby.Builtins {
         }
 
         // thread-safe:
-        public MethodResolutionResult ResolveMethodForSite(string/*!*/ name, RubyClass visibilityContext) {
+        public MethodResolutionResult ResolveMethodForSite(string/*!*/ name, VisibilityContext visibility) {
             using (Context.ClassHierarchyLocker()) {
-                return ResolveMethodForSiteNoLock(name, visibilityContext);
+                return ResolveMethodForSiteNoLock(name, visibility);
             }
         }
 
         // thread-safe:
-        public MethodResolutionResult ResolveMethod(string/*!*/ name, RubyClass visibilityContext) {
+        public MethodResolutionResult ResolveMethod(string/*!*/ name, VisibilityContext visibility) {
             using (Context.ClassHierarchyLocker()) {
-                return ResolveMethodNoLock(name, visibilityContext);
+                return ResolveMethodNoLock(name, visibility);
             }
         }
 
-        public MethodResolutionResult ResolveMethodForSiteNoLock(string/*!*/ name, RubyClass visibilityContext) {
-            return ResolveMethodForSiteNoLock(name, visibilityContext, MethodLookup.Default);
+        public MethodResolutionResult ResolveMethodForSiteNoLock(string/*!*/ name, VisibilityContext visibility) {
+            return ResolveMethodForSiteNoLock(name, visibility, MethodLookup.Default);
         }
 
-        internal MethodResolutionResult ResolveMethodForSiteNoLock(string/*!*/ name, RubyClass visibilityContext, MethodLookup options) {
-            return ResolveMethodNoLock(name, visibilityContext, options).InvalidateSitesOnOverride();
+        internal MethodResolutionResult ResolveMethodForSiteNoLock(string/*!*/ name, VisibilityContext visibility, MethodLookup options) {
+            return ResolveMethodNoLock(name, visibility, options).InvalidateSitesOnOverride();
         }
 
-        public MethodResolutionResult ResolveMethodNoLock(string/*!*/ name, RubyClass visibilityContext) {
-            return ResolveMethodNoLock(name, visibilityContext, MethodLookup.Default);
+        public MethodResolutionResult ResolveMethodNoLock(string/*!*/ name, VisibilityContext visibility) {
+            return ResolveMethodNoLock(name, visibility, MethodLookup.Default);
         }
 
-        public MethodResolutionResult ResolveMethodNoLock(string/*!*/ name, RubyClass visibilityContext, MethodLookup options) {
+        public MethodResolutionResult ResolveMethodNoLock(string/*!*/ name, VisibilityContext visibility, MethodLookup options) {
             Context.RequiresClassHierarchyLock();
             Assert.NotNull(name);
 
@@ -1534,12 +1535,12 @@ namespace IronRuby.Builtins {
 
             if (ForEachAncestor((module) => {
                 owner = module;
-                foundCallerSelf |= module == visibilityContext;
+                foundCallerSelf |= module == visibility.Class;
                 return module.TryGetMethod(name, ref skipHidden, (options & MethodLookup.Virtual) != 0, out info);
             })) {
                 if (info == null || info.IsUndefined) {
                     result = MethodResolutionResult.NotFound;
-                } else if (!IsMethodVisible(info, owner, visibilityContext, foundCallerSelf)) {
+                } else if (!IsMethodVisible(info, owner, visibility, foundCallerSelf)) {
                     result = new MethodResolutionResult(info, owner, false);
                 } else if (info.IsSuperForwarder) {
                     if ((options & MethodLookup.ReturnForwarder) != 0) {
@@ -1557,16 +1558,18 @@ namespace IronRuby.Builtins {
 
             // Note: all classes include Object in ancestors, so we don't need to search it again:
             if (!result.Found && (options & MethodLookup.FallbackToObject) != 0 && !IsClass) {
-                return _context.ObjectClass.ResolveMethodNoLock(name, visibilityContext, options & ~MethodLookup.FallbackToObject);
+                return _context.ObjectClass.ResolveMethodNoLock(name, visibility, options & ~MethodLookup.FallbackToObject);
             }
 
             return result;
         }
 
-        private bool IsMethodVisible(RubyMemberInfo/*!*/ method, RubyModule/*!*/ owner, RubyClass visibilityContext, bool foundCallerSelf) {
-            // call with implicit self => all methods are visible
-            if (visibilityContext == RubyClass.IgnoreVisibility) {
-                return true;
+        private bool IsMethodVisible(RubyMemberInfo/*!*/ method, RubyModule/*!*/ owner, VisibilityContext visibility, bool foundCallerSelf) {
+            // Visibility not constrained by a class:
+            // - call with implicit self => all methods are visible.
+            // - interop call => only public methods are visible.
+            if (visibility.Class == null) {
+                return visibility.IsVisible(method.Visibility);
             } 
             
             if (method.Visibility == RubyMethodVisibility.Protected) {
@@ -1576,7 +1579,7 @@ namespace IronRuby.Builtins {
                 }
                 // walk ancestors from caller's self class (visibilityContext)
                 // until the method owner is found or this module is found (this module is a descendant of the owner):
-                return visibilityContext.ForEachAncestor((module) => module == owner || module == this);
+                return visibility.Class.ForEachAncestor((module) => module == owner || module == this);
             } 
 
             return method.Visibility == RubyMethodVisibility.Public;
@@ -1639,7 +1642,7 @@ namespace IronRuby.Builtins {
 
             if (virtualLookup) {
                 string mangled;
-                if ((mangled = RubyUtils.MangleName(name)) != name && TryGetDefinedMethod(mangled, ref skipHidden, out method)
+                if ((mangled = RubyUtils.TryMangleName(name)) != null && TryGetDefinedMethod(mangled, ref skipHidden, out method)
                     && method.IsRubyMember) {
                     return true;
                 }
@@ -2111,5 +2114,103 @@ namespace IronRuby.Builtins {
         }
 
         #endregion      
+
+        #region Debug View
+
+        // see: RubyObject.DebuggerDisplayValue
+        internal string/*!*/ GetDebuggerDisplayValue(object obj) {
+            return Context.Inspect(obj).ConvertToString();
+        }
+
+        // see: RubyObject.DebuggerDisplayType
+        internal string/*!*/ GetDebuggerDisplayType() {
+            return Name;
+        }
+
+        internal sealed class DebugView {
+            private readonly RubyModule/*!*/ _obj;
+
+            public DebugView(RubyModule/*!*/ obj) {
+                Assert.NotNull(obj);
+                _obj = obj;
+            }
+
+            #region RubyObjectDebugView
+
+            [DebuggerDisplay("{GetModuleName(A),nq}", Name = "{GetClassKind(),nq}", Type = "")]
+            public object A {
+                get { return _obj.ImmediateClass; }
+            }
+
+            [DebuggerDisplay("{B}", Name = "tainted?", Type = "")]
+            public bool B {
+                get { return _obj.IsTainted; }
+                set { _obj.IsTainted = value; }
+            }
+
+            [DebuggerDisplay("{C}", Name = "frozen?", Type = "")]
+            public bool C {
+                get { return _obj.IsFrozen; }
+                set { if (value) { _obj.Freeze(); } }
+            }
+
+            [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+            public object D {
+                get {
+                    var instanceData = _obj.TryGetInstanceData();
+                    if (instanceData == null) {
+                        return new RubyInstanceData.VariableDebugView[0];
+                    }
+
+                    return instanceData.GetInstanceVariablesDebugView(_obj.ImmediateClass.Context);
+                }
+            }
+
+            private string GetClassKind() {
+                return _obj.ImmediateClass.IsSingletonClass ? "singleton class" : "class";
+            }
+
+            private static string GetModuleName(object module) {
+                var m = (RubyModule)module;
+                return m != null ? m.GetDisplayName(m.Context, false).ToString() : String.Empty;
+            }
+
+            #endregion
+
+            [DebuggerDisplay("{GetModuleName(E),nq}", Name = "super", Type = "")]
+            public object E {
+                get { return _obj.GetSuperClass(); }
+            }
+
+            [DebuggerDisplay("", Name = "mixins", Type = "")]
+            public object F {
+                get { return _obj.GetMixins(); }
+            }
+
+            [DebuggerDisplay("", Name = "instance methods", Type = "")]
+            public object G {
+                get { return GetMethods(RubyMethodAttributes.Instance); }
+            }
+
+            [DebuggerDisplay("", Name = "singleton methods", Type = "")]
+            public object H {
+                get { return GetMethods(RubyMethodAttributes.Singleton); }
+            }
+
+            private Dictionary<string, RubyMemberInfo> GetMethods(RubyMethodAttributes attributes) {
+                // TODO: custom view for methods, sorted
+                var result = new Dictionary<string, RubyMemberInfo>();
+                using (_obj.Context.ClassHierarchyLocker()) {
+                    _obj.ForEachMember(false, attributes | RubyMethodAttributes.VisibilityMask, (name, _, info) => {
+                        result[name] = info;
+                    });
+                }
+                return result;
+            }
+
+            // TODO: class variables
+        }
+
+        #endregion
     }
 }

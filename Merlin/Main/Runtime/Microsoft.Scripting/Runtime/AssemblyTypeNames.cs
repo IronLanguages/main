@@ -67,13 +67,12 @@ namespace Microsoft.Scripting.Runtime {
     internal static class AssemblyTypeNames {
         public static IEnumerable<TypeName> GetTypeNames(Assembly assem, bool includePrivateTypes) {
 #if !SILVERLIGHT
-            AssemblyName assemblyName = new AssemblyName(assem.FullName);
-            switch (assemblyName.Name) {
-                case "mscorlib": return Get_mscorlib_TypeNames();
-                case "System": return Get_System_TypeNames();
-                case "System.Xml": return Get_SystemXml_TypeNames();
-                case "System.Drawing": return Get_SystemDrawing_TypeNames();
-                case "System.Windows.Forms": return Get_SystemWindowsForms_TypeNames();
+            switch (assem.FullName) {
+                case "mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089": return Get_mscorlib_TypeNames();
+                case "System, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089": return Get_System_TypeNames();
+                case "System.Xml, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089": return Get_SystemXml_TypeNames();
+                case "System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a": return Get_SystemDrawing_TypeNames();
+                case "System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089": return Get_SystemWindowsForms_TypeNames();
             }
 #endif
 

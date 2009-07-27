@@ -20,6 +20,10 @@ using System.Reflection;
 using System.Text;
 using System.Dynamic.Utils;
 
+#if SILVERLIGHT
+using System.Core;
+#endif
+
 namespace System.Linq.Expressions {
     /// <summary>
     /// Represents the initialization of a list.

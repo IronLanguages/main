@@ -112,17 +112,7 @@ namespace Microsoft.Scripting.Runtime {
             return TryGetAssociatedStackTraces(rethrow, out result) ? result : null;
         }
 
-        public static void UpdateStackTrace(CodeContext context, MethodBase method, string funcName, string filename, int line) {
-            if (line != -1) {
-                Debug.Assert(filename != null);
-                if (_stackFrames == null) _stackFrames = new List<DynamicStackFrame>();
-    
-                Debug.Assert(line != SourceLocation.None.Line);
-    
-                _stackFrames.Add(new DynamicStackFrame(context, method, funcName, filename, line));
-            }
-        }
-
+        
         public static List<DynamicStackFrame> AssociateDynamicStackFrames(Exception clrException) {
             if (_stackFrames != null) {
                 clrException.Data[typeof(DynamicStackFrame)] = _stackFrames;
@@ -287,7 +277,7 @@ namespace Microsoft.Scripting.Runtime {
                 }
             }
 
-            return new DynamicStackFrame(null, method, methodName, filename, line);
+            return new DynamicStackFrame(method, methodName, filename, line);
         }
 
         #endregion

@@ -193,20 +193,20 @@ namespace IronRuby.Runtime.Calls {
                 );
 
                 // we can optimize if Kernel#respond_to? method is not overridden:
-                respondToMethod = targetClass.ResolveMethodForSiteNoLock(Symbols.RespondTo, RubyClass.IgnoreVisibility);
+                respondToMethod = targetClass.ResolveMethodForSiteNoLock(Symbols.RespondTo, VisibilityContext.AllVisible);
                 if (respondToMethod.Found && respondToMethod.Info.DeclaringModule == targetClass.Context.KernelModule && respondToMethod.Info is RubyLibraryMethodInfo) { // TODO: better override detection
                     respondToMethod = MethodResolutionResult.NotFound;
 
                     // get the first applicable conversion:
                     foreach (var conversion in conversions) {
                         selectedConversion = conversion;
-                        conversionMethod = targetClass.ResolveMethodForSiteNoLock(conversion.ToMethodName, RubyClass.IgnoreVisibility).Info;
+                        conversionMethod = targetClass.ResolveMethodForSiteNoLock(conversion.ToMethodName, VisibilityContext.AllVisible).Info;
                         if (conversionMethod != null) {
                             break;
                         } else {
                             // find method_missing - we need to add "to_xxx" methods to the missing methods table:
                             if (!methodMissing.Found) {
-                                methodMissing = targetClass.ResolveMethodNoLock(Symbols.MethodMissing, RubyClass.IgnoreVisibility);
+                                methodMissing = targetClass.ResolveMethodNoLock(Symbols.MethodMissing, VisibilityContext.AllVisible);
                             }
                             methodMissing.InvalidateSitesOnMissingMethodAddition(conversion.ToMethodName, targetClass.Context);
                         }

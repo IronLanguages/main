@@ -27,6 +27,8 @@ using Microsoft.Scripting.Utils;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
 
+using EachSite = System.Func<System.Runtime.CompilerServices.CallSite, object, IronRuby.Builtins.Proc, object>;
+
 namespace IronRuby.Builtins {
 
     [RubyModule(Extends = typeof(IList), Restrictions = ModuleRestrictions.None)]
@@ -302,8 +304,8 @@ namespace IronRuby.Builtins {
         #region ==, <=>, eql?, hash
 
         [RubyMethod("==")]
-        public static bool Equals(ConversionStorage<IList>/*!*/ arrayTryCast, BinaryOpStorage/*!*/ equals, IList/*!*/ self, object other) {
-            IList otherAsArray = Protocols.TryCastToArray(arrayTryCast, other);
+        public static bool Equals(ConversionStorage<IList>/*!*/ arrayTryConvert, BinaryOpStorage/*!*/ equals, IList/*!*/ self, object other) {
+            IList otherAsArray = Protocols.TryConvertToArray(arrayTryConvert, other);
             return otherAsArray != null ? Equals(equals, self, otherAsArray) : false;
         }
 
@@ -1530,6 +1532,17 @@ namespace IronRuby.Builtins {
             }
 
             return modified ? self : null;
+        }
+
+        #endregion
+
+        #region zip 
+
+        [RubyMethod("zip")]
+        public static IList/*!*/ Zip(CallSiteStorage<EachSite>/*!*/ each, ConversionStorage<IList>/*!*/ tryToAry, BlockParam block,
+            object self, [DefaultProtocol, NotNull, NotNullItems]params IList[]/*!*/ args) {
+
+            return Enumerable.Zip(each, tryToAry, block, self, args);
         }
 
         #endregion

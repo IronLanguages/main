@@ -122,17 +122,11 @@ namespace IronRuby.StandardLibrary.OpenSsl {
                     return MutableString.Create("");
                 }
 
-                var result = new StringBuilder(length);
-
                 byte[] data = new byte[length];
                 var generator = new Crypto.RNGCryptoServiceProvider();
                 generator.GetBytes(data);
 
-                for (int i = 0; i < length; i++) {
-                    result.Append(Convert.ToChar(data[i]));
-                }
-
-                return MutableString.Create(result.ToString());
+                return MutableString.CreateBinary(data);
             }
 
             // add(str, entropy) -> self

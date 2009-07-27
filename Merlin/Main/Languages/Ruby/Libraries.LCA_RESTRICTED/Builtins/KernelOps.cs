@@ -134,14 +134,19 @@ namespace IronRuby.Builtins {
 
 #if !SILVERLIGHT
         // Looks for RUBYSHELL and then COMSPEC under Windows
-        // It appears that COMSPEC is a special environment variable that cannot be undefined
         internal static ProcessStartInfo/*!*/ GetShell(RubyContext/*!*/ context, MutableString/*!*/ command) {
             PlatformAdaptationLayer pal = context.DomainManager.Platform;
             string shell = pal.GetEnvironmentVariable("RUBYSHELL");
             if (shell == null) {
                 shell = pal.GetEnvironmentVariable("COMSPEC");
             }
-            return new ProcessStartInfo(shell, String.Format("/C \"{0}\"", command.ConvertToString()));
+
+            if (shell == null) {
+                string [] commandParts = command.ConvertToString().Split(new char[] { ' ' }, 2);
+                return new ProcessStartInfo(commandParts[0], commandParts.Length == 2 ? commandParts[1] : null);
+            } else {
+                return new ProcessStartInfo(shell, String.Format("/C \"{0}\"", command.ConvertToString()));
+            }
         }
 
         private static MutableString/*!*/ JoinArguments(MutableString/*!*/[]/*!*/ args) {
@@ -398,12 +403,11 @@ namespace IronRuby.Builtins {
             return block.Proc.ToLambda();
         }
 
-        #region load, require
+        #region load, load_assembly, require
 
         [RubyMethod("load", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("load", RubyMethodAttributes.PublicSingleton)]
-        public static bool Load(RubyScope/*!*/ scope, object self,
-            [DefaultProtocol, NotNull]MutableString/*!*/ libraryName, [Optional]bool wrap) {
+        public static bool Load(RubyScope/*!*/ scope, object self, [DefaultProtocol, NotNull]MutableString/*!*/ libraryName, [Optional]bool wrap) {
             return scope.RubyContext.Loader.LoadFile(scope.GlobalScope.Scope, self, libraryName, wrap ? LoadFlags.LoadIsolated : LoadFlags.None);
         }
 
@@ -413,13 +417,12 @@ namespace IronRuby.Builtins {
             [DefaultProtocol, NotNull]MutableString/*!*/ assemblyName, [DefaultProtocol, Optional, NotNull]MutableString libraryNamespace) {
 
             string initializer = libraryNamespace != null ? LibraryInitializer.GetFullTypeName(libraryNamespace.ConvertToString()) : null;
-            return context.Loader.LoadAssembly(assemblyName.ConvertToString(), initializer, true, true);
+            return context.Loader.LoadAssembly(assemblyName.ConvertToString(), initializer, true, true) != null;
         }
 
         [RubyMethod("require", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("require", RubyMethodAttributes.PublicSingleton)]
-        public static bool Require(RubyScope/*!*/ scope, object self, 
-            [DefaultProtocol, NotNull]MutableString/*!*/ libraryName) {
+        public static bool Require(RubyScope/*!*/ scope, object self, [DefaultProtocol, NotNull]MutableString/*!*/ libraryName) {
             return scope.RubyContext.Loader.LoadFile(scope.GlobalScope.Scope, self, libraryName, LoadFlags.LoadOnce | LoadFlags.AppendExtensions);
         }
 
@@ -1537,7 +1540,7 @@ namespace IronRuby.Builtins {
         // thread-safe:
         [RubyMethod("method")]
         public static RubyMethod/*!*/ GetMethod(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]string/*!*/ name) {
-            RubyMemberInfo info = context.ResolveMethod(self, name, RubyClass.IgnoreVisibility).Info;
+            RubyMemberInfo info = context.ResolveMethod(self, name, VisibilityContext.AllVisible).Info;
             if (info == null) {
                 throw RubyExceptions.CreateUndefinedMethodError(context.GetClassOf(self), name);
             }

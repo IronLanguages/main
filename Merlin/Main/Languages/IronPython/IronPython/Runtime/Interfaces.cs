@@ -13,6 +13,7 @@
  *
  * ***************************************************************************/
 
+using System.Collections.Generic;
 using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime {
@@ -52,5 +53,19 @@ namespace IronPython.Runtime {
 
     public interface IProxyObject {
         object Target { get; }
+    }
+
+    /// <summary>
+    /// Provides a list of all the members of an instance.  ie. all the keys in the 
+    /// dictionary of the object. Note that it can contain objects that are not strings. 
+    /// 
+    /// Such keys can be added in IronPython using syntax like:
+    ///     obj.__dict__[100] = someOtherObject
+    ///     
+    /// This Python specific version also supports filtering based upon the show cls 
+    /// flag by flowing in the code context.
+    /// </summary>
+    public interface IPythonMembersList : IMembersList {
+        IList<object> GetMemberNames(CodeContext context);
     }
 }

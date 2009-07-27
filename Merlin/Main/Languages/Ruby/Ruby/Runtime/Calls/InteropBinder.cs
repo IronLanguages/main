@@ -248,7 +248,7 @@ namespace IronRuby.Runtime.Calls {
                 Func<DynamicMetaObject, DynamicMetaObject[], DynamicMetaObject>/*!*/ fallback) {
                 Debug.Assert(fallback != null);
 
-                var callArgs = new CallArguments(context, target, args, RubyCallSignature.WithImplicitSelf(callInfo.ArgumentCount));
+                var callArgs = new CallArguments(context, target, args, RubyCallSignature.Interop(callInfo.ArgumentCount));
                 var metaBuilder = new MetaObjectBuilder(target, args);
 
                 if (!RubyCallAction.BuildCall(metaBuilder, methodName, callArgs, false, false)) {
@@ -301,7 +301,7 @@ namespace IronRuby.Runtime.Calls {
                 Func<DynamicMetaObject, DynamicMetaObject>/*!*/ fallback) {
                 Debug.Assert(fallback != null);
 
-                var callArgs = new CallArguments(context, target, DynamicMetaObject.EmptyMetaObjects, RubyCallSignature.WithImplicitSelf(0));
+                var callArgs = new CallArguments(context, target, DynamicMetaObject.EmptyMetaObjects, RubyCallSignature.Interop(0));
                 var metaBuilder = new MetaObjectBuilder(target);
 
                 if (!RubyCallAction.BuildAccess(metaBuilder, binder.Name, callArgs, false, false)) {
@@ -357,7 +357,7 @@ namespace IronRuby.Runtime.Calls {
                 Debug.Assert(fallback != null);
 
                 var args = new[] { value };
-                var callArgs = new CallArguments(context, target, args, RubyCallSignature.WithImplicitSelf(1));
+                var callArgs = new CallArguments(context, target, args, RubyCallSignature.Interop(1));
                 var metaBuilder = new MetaObjectBuilder(target, args);
 
                 if (!RubyCallAction.BuildCall(metaBuilder, binder.Name + "=", callArgs, false, false)) {
@@ -414,7 +414,7 @@ namespace IronRuby.Runtime.Calls {
                 Func<DynamicMetaObject, DynamicMetaObject[], DynamicMetaObject>/*!*/ fallback) {
                 Debug.Assert(fallback != null);
                 
-                var callArgs = new CallArguments(context, target, indexes, RubyCallSignature.WithImplicitSelf(indexes.Length));
+                var callArgs = new CallArguments(context, target, indexes, RubyCallSignature.Interop(indexes.Length));
                 var metaBuilder = new MetaObjectBuilder(target, indexes);
 
                 if (!RubyCallAction.BuildCall(metaBuilder, "[]", callArgs, false, false)) {
@@ -472,7 +472,7 @@ namespace IronRuby.Runtime.Calls {
 
                 var args = ArrayUtils.Append(indexes, value);
                 var callArgs = new CallArguments(context, target, args,
-                    new RubyCallSignature(indexes.Length, RubyCallFlags.HasImplicitSelf | RubyCallFlags.HasRhsArgument)
+                    new RubyCallSignature(indexes.Length, RubyCallFlags.IsInteropCall | RubyCallFlags.HasRhsArgument)
                 );
 
                 var metaBuilder = new MetaObjectBuilder(target, args);

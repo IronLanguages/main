@@ -18,6 +18,10 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Dynamic.Utils;
 
+#if SILVERLIGHT
+using System.Core;
+#endif
+
 namespace System.Linq.Expressions.Compiler {
     /// <summary>
     /// Determines if variables are closed over in nested lambdas and need to

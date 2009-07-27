@@ -55,7 +55,8 @@ namespace IronPython.Runtime.Types {
 #endif
  ICodeFormattable,
         IMembersList,
-        IDynamicMetaObjectProvider {
+        IDynamicMetaObjectProvider, 
+        IPythonMembersList {
 
         [NonSerialized]
         private List<OldClass> _bases;
@@ -77,7 +78,7 @@ namespace IronPython.Runtime.Types {
 
             if (!dict.ContainsKey(Symbols.Module)) {
                 object moduleValue;
-                if (context.GlobalScope.TryGetName(Symbols.Name, out moduleValue)) {
+                if (context.GlobalScope.TryGetVariable(Symbols.Name, out moduleValue)) {
                     dict[Symbols.Module] = moduleValue;
                 }
             }
@@ -410,7 +411,11 @@ namespace IronPython.Runtime.Types {
 
         #region IMembersList Members
 
-        IList<object> IMembersList.GetMemberNames(CodeContext context) {
+        IList<string> IMembersList.GetMemberNames() {
+            return PythonOps.GetStringMemberList(this);
+        }
+
+        IList<object> IPythonMembersList.GetMemberNames(CodeContext/*!*/ context) {
             PythonDictionary attrs = new PythonDictionary(_dict);
             RecurseAttrHierarchy(this, attrs);
             return PythonOps.MakeListFromSequence(attrs);

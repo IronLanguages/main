@@ -143,53 +143,26 @@ namespace Microsoft.Scripting.Runtime {
         /// Trys to lookup the provided name in the current scope.  Search includes
         /// names that are only visible to the provided LanguageContext.
         /// </summary>
-        public bool TryGetName(SymbolId name, out object value) {
-            if (_dict.TryGetValue(name, out value)) return true;
-
-            value = null;
-            return false;
+        public bool TryGetVariable(SymbolId name, out object value) {
+            return _dict.TryGetValue(name, out value);
         }
-
-        /// <summary>
-        /// Attempts to lookup the provided name in this scope or any outer scope.
-        /// </summary>
-        public bool TryLookupName(SymbolId name, out object value) {
-            Scope curScope = this;
-            do {
-                if (curScope == this || curScope.IsVisible) {
-                    if (curScope.TryGetName(name, out value)) {
-                        return true;
-                    }
-                }
-
-                curScope = curScope.Parent;
-            } while (curScope != null);
-
-            value = null;
-            return false;
-        }
-
-        /// <summary>
-        /// Attempts to lookup the provided name in this scope or any outer scope.
-        /// If the name is not defined the language defined MissingName exception is thrown.
-        /// </summary>
-        public object LookupName(LanguageContext context, SymbolId name) {
-            object res;
-            if (!TryLookupName(name, out res)) {
-                throw context.MissingName(name);
+		
+		public object GetVariable(SymbolId name) {
+            object value;
+            if (!TryGetVariable(name, out value)) {
+                throw Error.NameNotDefined(SymbolTable.IdToString(name));
             }
-
-            return res;
+            return value;
         }
 
         /// <summary>
         /// Sets the name to the specified value for the current context.
         /// </summary>
         /// <exception cref="MemberAccessException">The name has already been published and marked as ReadOnly</exception>
-        public void SetName(SymbolId name, object value) {
+        public void SetVariable(SymbolId name, object value) {
             _dict[name] = value;
         }
-
+		
         /// <summary>
         /// Removes all members from the dictionary and any context-sensitive dictionaries.
         /// </summary>
@@ -200,20 +173,15 @@ namespace Microsoft.Scripting.Runtime {
             }
         }
 
-        /// <summary>
-        /// Determines if this context or any outer scope contains the defined name that
-        /// is available from the provided LanguageContext.
-        /// </summary>
-        public bool ContainsName(SymbolId name) {
-            object tmp;
-            return TryLookupName(name, out tmp);
+        public bool ContainsVariable(SymbolId name) {
+            return _dict.ContainsKey(name);
         }
 
         /// <summary>
         /// Attemps to remove the provided name from this scope removing names visible
         /// to both the current context and all contexts.
         /// </summary>
-        public bool TryRemoveName(SymbolId name) {
+        public bool TryRemoveVariable(SymbolId name) {
             bool fRemoved = false;
 
             // TODO: Ideally, we could do this without having to do two lookups.
@@ -223,19 +191,6 @@ namespace Microsoft.Scripting.Runtime {
             }
 
             return fRemoved;
-        }
-
-        // Emitted by TupleSlotFactory
-        /// <summary>
-        /// Gets the outer-most scope associated with this scope.  
-        /// </summary>
-        public Scope ModuleScope {
-            get {
-                Scope cur = this;
-                while (cur.Parent != null) cur = cur.Parent;
-
-                return cur;
-            }
         }
 
         /// <summary>
@@ -289,6 +244,25 @@ namespace Microsoft.Scripting.Runtime {
             foreach (KeyValuePair<object, object> kvp in _dict) {
                 yield return kvp;
             }
+        }
+
+        #endregion
+
+        #region Obsolete
+
+        [Obsolete("Use SetVariable instead")]
+        public void SetName(SymbolId name, object value) {
+            SetVariable(name, value);
+        }
+
+        [Obsolete("Use TryGetVariable instead")]
+        public bool TryGetName(SymbolId name, out object value) {
+            return TryGetVariable(name, out value);
+        }
+
+        [Obsolete("Use ContainsVariable instead")]
+        public bool ContainsName(SymbolId name) {
+            return ContainsVariable(name);
         }
 
         #endregion

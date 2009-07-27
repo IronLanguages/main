@@ -227,10 +227,21 @@ namespace IronRuby.Builtins {
                         }
                         count = Int32.Parse(format.Substring(pos1, (i - pos1)));
                         i--;
+                    } else if (c == '@' && c2 == '-') {
+                        int pos1 = i;
+                        i += 2;
+                        while (i < format.Length && Char.IsDigit(format[i])) {
+                            i++;
+                        }
+                        count = Int32.Parse(format.Substring(pos1, (i - pos1)));
+                        i--;
                     } else if (c2 == '*') {
                         count = null;
                     } else {
                         i--;
+                        if (c == '@') {
+                            count = 0;
+                        }
                     }
                     
                     yield return new FormatDirective(c, count);

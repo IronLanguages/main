@@ -52,10 +52,10 @@ namespace IronPython.Runtime.Types {
         }
 
         public static void __init__(Scope/*!*/ scope, string name, string documentation) {
-            scope.SetName(Symbols.Name, name);
+            scope.SetVariable(Symbols.Name, name);
 
             if (documentation != null) {
-                scope.SetName(Symbols.Doc, documentation);
+                scope.SetVariable(Symbols.Doc, documentation);
             }
         }
 
@@ -68,7 +68,7 @@ namespace IronPython.Runtime.Types {
 
             SymbolId si = SymbolTable.StringToId(name);
             object res;
-            if (self.TryGetName(si, out res)) {
+            if (self.TryGetVariable(si, out res)) {
                 return res;
             }
 
@@ -85,7 +85,7 @@ namespace IronPython.Runtime.Types {
 
             SymbolId si = SymbolTable.StringToId(name);
             object res;
-            if (self.TryGetName(si, out res)) {
+            if (self.TryGetVariable(si, out res)) {
                 return res;
             }
 
@@ -98,12 +98,12 @@ namespace IronPython.Runtime.Types {
         }
 
         public static void __setattr__(Scope/*!*/ self, string name, object value) {
-            self.SetName(SymbolTable.StringToId(name), value);
+            self.SetVariable(SymbolTable.StringToId(name), value);
         }
 
         public static void __delattr__(Scope/*!*/ self, string name) {
             SymbolId si = SymbolTable.StringToId(name);
-            if (!self.TryRemoveName(si)) {
+            if (!self.TryRemoveVariable(si)) {
                 throw PythonOps.AttributeErrorForMissingAttribute("module", si);
             }
         }
@@ -161,7 +161,7 @@ namespace IronPython.Runtime.Types {
         [SpecialName]
         public static object GetCustomMember(CodeContext/*!*/ context, Scope/*!*/ scope, string name) {
             object value;
-            if (scope.TryGetName(SymbolTable.StringToId(name), out value)) {
+            if (scope.TryGetVariable(SymbolTable.StringToId(name), out value)) {
                 if (value != Uninitialized.Instance) {
                     return value;
                 }
@@ -174,13 +174,13 @@ namespace IronPython.Runtime.Types {
             if (name == "__dict__") {
                 Set__dict__(scope, value);
             } else {
-                scope.SetName(SymbolTable.StringToId(name), value);
+                scope.SetVariable(SymbolTable.StringToId(name), value);
             }
         }
 
         [SpecialName]
         public static bool DeleteMember(CodeContext/*!*/ context, Scope/*!*/ scope, string name) {
-            return scope.TryRemoveName(SymbolTable.StringToId(name));
+            return scope.TryRemoveVariable(SymbolTable.StringToId(name));
         }
     }
 }

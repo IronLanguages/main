@@ -107,7 +107,7 @@ namespace IronRuby.StandardLibrary.StringIO {
                 return;
             }
 
-            self.Data.String.SetByte((int)(offset - 1), (byte)ch);
+            self.Data.String.SetByte((int)(offset - 1), unchecked((byte)ch));
             self.Data.Seek(-1, System.IO.SeekOrigin.Current);
         }
 

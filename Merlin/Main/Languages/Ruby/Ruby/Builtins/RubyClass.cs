@@ -35,11 +35,6 @@ using Microsoft.Scripting.Generation;
 
 namespace IronRuby.Builtins {
     public sealed partial class RubyClass : RubyModule, IDuplicable {
-        /// <summary>
-        /// Visibility context within which all methods are visible.
-        /// </summary>
-        public const RubyClass IgnoreVisibility = null;
-
         public const string/*!*/ ClassSingletonName = "__ClassSingleton";
         public const string/*!*/ ClassSingletonSingletonName = "__ClassSingletonSingleton";
         public const string/*!*/ MainSingletonName = "__MainSingleton";
@@ -641,7 +636,7 @@ namespace IronRuby.Builtins {
 
         internal RubyMemberInfo ResolveMethodMissingForSite(string/*!*/ name, RubyMethodVisibility incompatibleVisibility) {
             Context.RequiresClassHierarchyLock();
-            var methodMissing = ResolveMethodForSiteNoLock(Symbols.MethodMissing, null);
+            var methodMissing = ResolveMethodForSiteNoLock(Symbols.MethodMissing, VisibilityContext.AllVisible);
             if (incompatibleVisibility == RubyMethodVisibility.None) {
                 methodMissing.InvalidateSitesOnMissingMethodAddition(name, Context);
             }
@@ -1158,7 +1153,6 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-
         #region Dynamic operations
 
         /// <summary>
@@ -1208,7 +1202,7 @@ namespace IronRuby.Builtins {
                 // check version of the class so that we invalidate the rule whenever the initializer changes:
                 metaBuilder.AddVersionTest(this);
 
-                initializer = ResolveMethodForSiteNoLock(Symbols.Initialize, IgnoreVisibility).Info;
+                initializer = ResolveMethodForSiteNoLock(Symbols.Initialize, VisibilityContext.AllVisible).Info;
 
                 // Initializer resolves to Object#initializer unless overridden in a derived class.
                 // We ensure that this method cannot be removed.
@@ -1293,8 +1287,11 @@ namespace IronRuby.Builtins {
             } else {
                 // TODO: we need more refactoring of RubyMethodGroupInfo.BuildCall to be able to inline this:
                 metaBuilder.Result = Ast.Dynamic(
-                    RubyCallAction.Make(args.RubyContext, "initialize", 
-                        new RubyCallSignature(args.Signature.ArgumentCount, args.Signature.Flags | RubyCallFlags.HasImplicitSelf)
+                    RubyCallAction.Make(args.RubyContext, "initialize",
+                        new RubyCallSignature(
+                            args.Signature.ArgumentCount, 
+                            (args.Signature.Flags & ~RubyCallFlags.IsInteropCall) | RubyCallFlags.HasImplicitSelf
+                        )
                     ),
                     typeof(object),
                     args.GetCallSiteArguments(instanceVariable)
