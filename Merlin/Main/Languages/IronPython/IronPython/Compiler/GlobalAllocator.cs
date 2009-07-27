@@ -91,10 +91,27 @@ namespace IronPython.Compiler.Ast {
         }
 
         // TODO: Optimized overloads for various aritys.
+        public virtual MSAst.Expression/*!*/ Dynamic(DynamicMetaObjectBinder/*!*/ binder, Type/*!*/ retType, MSAst.Expression/*!*/ arg0) {
+            return Ast.Dynamic(binder, retType, arg0);
+        }
+
+        public virtual MSAst.Expression/*!*/ Dynamic(DynamicMetaObjectBinder/*!*/ binder, Type/*!*/ retType, MSAst.Expression/*!*/ arg0, MSAst.Expression/*!*/ arg1) {
+            return Ast.Dynamic(binder, retType, arg0, arg1);
+        }
+
+        public virtual MSAst.Expression/*!*/ Dynamic(DynamicMetaObjectBinder/*!*/ binder, Type/*!*/ retType, MSAst.Expression/*!*/ arg0, MSAst.Expression/*!*/ arg1, MSAst.Expression/*!*/ arg2) {
+            return Ast.Dynamic(binder, retType, arg0, arg1, arg2);
+        }
+
+        public virtual MSAst.Expression/*!*/ Dynamic(DynamicMetaObjectBinder/*!*/ binder, Type/*!*/ retType, MSAst.Expression/*!*/ arg0, MSAst.Expression/*!*/ arg1, MSAst.Expression/*!*/ arg2, MSAst.Expression/*!*/ arg3) {
+            return Ast.Dynamic(binder, retType, arg0, arg1, arg2, arg3);
+        }
+
         public virtual MSAst.Expression/*!*/ Dynamic(DynamicMetaObjectBinder/*!*/ binder, Type/*!*/ retType, params MSAst.Expression/*!*/[]/*!*/ args) {
             Assert.NotNull(binder, retType, args);
             Assert.NotNullItems(args);
 
+            
             return Ast.Dynamic(binder, retType, args);
         }
 

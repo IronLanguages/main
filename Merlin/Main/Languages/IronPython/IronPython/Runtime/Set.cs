@@ -213,8 +213,14 @@ namespace IronPython.Runtime {
         }
 
         public void __init__(object setData) {
-            clear();
-            update(setData);
+            CommonDictionaryStorage newStorage = new CommonDictionaryStorage();
+
+            IEnumerator ie = PythonOps.GetEnumerator(setData);
+            while (ie.MoveNext()) {
+                object current = ie.Current;
+                newStorage.AddNoLock(current, current);
+            }
+            _items = newStorage;
         }
 
         public static object __new__(CodeContext/*!*/ context, PythonType cls) {

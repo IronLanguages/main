@@ -275,6 +275,10 @@ namespace IronPython.Compiler.Ast {
             if (node.NeedsLocalsDictionary()) {
                 _currentScope.NeedsLocalsDictionary = true;
             }
+
+            if (node.Locals == null) {
+                _currentScope.HasLateBoundVariableSets = true;
+            }
         }
 
         // ForEachStatement
@@ -305,6 +309,7 @@ namespace IronPython.Compiler.Ast {
                 Debug.Assert(_currentScope != null);
                 _currentScope.ContainsImportStar = true;
                 _currentScope.NeedsLocalsDictionary = true;
+                _currentScope.HasLateBoundVariableSets = true;
             }
             return true;
         }

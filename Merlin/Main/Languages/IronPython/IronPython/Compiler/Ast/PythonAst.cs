@@ -132,19 +132,30 @@ namespace IronPython.Compiler.Ast {
             }
 
             AstGenerator ag = new AstGenerator(mode, context, _body.Span, name, false, _printExpressions);
-
             
-            MSAst.Expression body = Ast.Block(
-                Ast.Call(
-                    AstGenerator.GetHelperMethod("ModuleStarted"),
-                    ag.LocalContext,
-                    AstUtils.Constant(_languageFeatures)
-                ),
-                ag.UpdateLineNumber(0),
-                ag.UpdateLineUpdated(false),
-                ag.WrapScopeStatements(Transform(ag)),   // new ComboActionRewriter().VisitNode(Transform(ag))
-                AstUtils.Empty()
-            );
+            MSAst.Expression transformed = Transform(ag);
+            if (context.SourceUnit.Kind != SourceCodeKind.Expression) {
+                transformed = ag.WrapScopeStatements(transformed);   // new ComboActionRewriter().VisitNode(Transform(ag))
+            }
+
+            MSAst.Expression body;
+
+            // if we can change the language features or we're a module which needs __builtins__ initialized
+            // then we need to make the ModuleStarted call.
+            if (_languageFeatures != PythonLanguageFeatures.Default || _isModule) {
+                body = Ast.Block(
+                    Ast.Call(
+                        AstGenerator.GetHelperMethod("ModuleStarted"),
+                        ag.LocalContext,
+                        AstUtils.Constant(_languageFeatures)
+                    ),
+                    transformed,
+                    AstUtils.Empty()
+                );
+            } else {
+                body = transformed;
+            }
+
             if (_isModule) {
                 string moduleName = pco.ModuleName;
                 if (moduleName == null) {
@@ -208,6 +219,15 @@ namespace IronPython.Compiler.Ast {
             // Create the variables
             CreateVariables(ag, null, block, false, false);
 
+            if (block.Count == 0 && _body is ReturnStatement && _languageFeatures == PythonLanguageFeatures.Default) {
+                // for simple eval's we can construct a simple tree which just
+                // leaves the value on the stack.  Return's can't exist in modules
+                // so this is always safe.
+                Debug.Assert(!_isModule);
+
+                return ((ReturnStatement)_body).Expression.Transform(ag, typeof(object));                
+            }
+
             MSAst.Expression bodyStmt = ag.Transform(_body);
 
             string doc = ag.GetDocumentation(_body);
@@ -218,7 +238,12 @@ namespace IronPython.Compiler.Ast {
                     Ast.Constant(doc)
                 ));
             }
+            
             if (bodyStmt != null) {
+                if (block.Count == 0 && bodyStmt.Type == typeof(void)) {
+                    return bodyStmt;
+                }
+
                 block.Add(bodyStmt); //  bodyStmt could be null if we have an error - e.g. a top level break
             }
             block.Add(AstUtils.Empty());

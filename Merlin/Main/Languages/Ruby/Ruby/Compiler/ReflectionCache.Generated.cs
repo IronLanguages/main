@@ -85,8 +85,6 @@ namespace IronRuby.Compiler {
         private static MethodInfo _CreateDelegateFromMethod;
         public static MethodInfo/*!*/ CreateDelegateFromProc { get { return _CreateDelegateFromProc ?? (_CreateDelegateFromProc = GetMethod(typeof(RubyOps), "CreateDelegateFromProc")); } }
         private static MethodInfo _CreateDelegateFromProc;
-        public static MethodInfo/*!*/ CreateEmptyStrongBox { get { return _CreateEmptyStrongBox ?? (_CreateEmptyStrongBox = GetMethod(typeof(RubyOps), "CreateEmptyStrongBox")); } }
-        private static MethodInfo _CreateEmptyStrongBox;
         public static MethodInfo/*!*/ CreateEncoding { get { return _CreateEncoding ?? (_CreateEncoding = GetMethod(typeof(RubyOps), "CreateEncoding")); } }
         private static MethodInfo _CreateEncoding;
         public static MethodInfo/*!*/ CreateEvent { get { return _CreateEvent ?? (_CreateEvent = GetMethod(typeof(RubyOps), "CreateEvent")); } }
@@ -99,8 +97,6 @@ namespace IronRuby.Compiler {
         private static MethodInfo _CreateInclusiveIntegerRange;
         public static MethodInfo/*!*/ CreateInclusiveRange { get { return _CreateInclusiveRange ?? (_CreateInclusiveRange = GetMethod(typeof(RubyOps), "CreateInclusiveRange")); } }
         private static MethodInfo _CreateInclusiveRange;
-        public static MethodInfo/*!*/ CreateInitializedStrongBox { get { return _CreateInitializedStrongBox ?? (_CreateInitializedStrongBox = GetMethod(typeof(RubyOps), "CreateInitializedStrongBox")); } }
-        private static MethodInfo _CreateInitializedStrongBox;
         public static MethodInfo/*!*/ CreateMethodScope { get { return _CreateMethodScope ?? (_CreateMethodScope = GetMethod(typeof(RubyOps), "CreateMethodScope")); } }
         private static MethodInfo _CreateMethodScope;
         public static MethodInfo/*!*/ CreateModuleScope { get { return _CreateModuleScope ?? (_CreateModuleScope = GetMethod(typeof(RubyOps), "CreateModuleScope")); } }
@@ -275,6 +271,8 @@ namespace IronRuby.Compiler {
         private static MethodInfo _IRubyObject_BaseEquals;
         public static MethodInfo/*!*/ IRubyObject_BaseGetHashCode { get { return _IRubyObject_BaseGetHashCode ?? (_IRubyObject_BaseGetHashCode = GetMethod(typeof(IRubyObject), "BaseGetHashCode")); } }
         private static MethodInfo _IRubyObject_BaseGetHashCode;
+        public static MethodInfo/*!*/ IRubyObject_BaseToString { get { return _IRubyObject_BaseToString ?? (_IRubyObject_BaseToString = GetMethod(typeof(IRubyObject), "BaseToString")); } }
+        private static MethodInfo _IRubyObject_BaseToString;
         public static MethodInfo/*!*/ IRubyObject_get_ImmediateClass { get { return _IRubyObject_get_ImmediateClass ?? (_IRubyObject_get_ImmediateClass = GetMethod(typeof(IRubyObject), "get_ImmediateClass")); } }
         private static MethodInfo _IRubyObject_get_ImmediateClass;
         public static MethodInfo/*!*/ IRubyObject_GetInstanceData { get { return _IRubyObject_GetInstanceData ?? (_IRubyObject_GetInstanceData = GetMethod(typeof(IRubyObject), "GetInstanceData")); } }

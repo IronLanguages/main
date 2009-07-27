@@ -47,12 +47,38 @@ namespace IronRuby.Builtins {
         public override string/*!*/ ToString() {
 #if DEBUG && !SILVERLIGHT && !SYSTEM_CORE
             if (RubyBinder._DumpingExpression) {
-                return ToMutableString().ToString();
+                return BaseToMutableString(this).ToString();
             }
 #endif
-            // Translate ToString to to_s conversion for .NET callers.
-            var site = _immediateClass.StringConversionSite;
-            return site.Target(site, this).ToString();
+            var site = _immediateClass.ToStringSite;
+            object toStringResult = site.Target(site, this);
+            if (ReferenceEquals(toStringResult, RubyOps.ForwardToBase)) {
+                return BaseToString();
+            }
+
+            string str = toStringResult as string;
+            if (str != null) {
+                return str;
+            }
+
+            var mstr = toStringResult as MutableString ?? RubyUtils.ObjectToMutableString(_immediateClass.Context, toStringResult);
+            return mstr.ToString();
+        }
+
+        public string/*!*/ BaseToString() {
+            return ToMutableString(this).ToString();
+        }
+
+        public static MutableString/*!*/ ToMutableString(IRubyObject/*!*/ self) {
+            return RubyUtils.FormatObject(self.ImmediateClass.GetNonSingletonClass().Name, self.GetInstanceData().ObjectId, self.IsTainted);
+        }
+
+        public static MutableString/*!*/ BaseToMutableString(IRubyObject/*!*/ self) {
+            if (self is RubyObject) {
+                return ToMutableString(self);
+            } else {
+                return MutableString.CreateMutable(self.BaseToString());
+            }
         }
 
         public override bool Equals(object other) {
@@ -87,10 +113,6 @@ namespace IronRuby.Builtins {
 
         public int BaseGetHashCode() {
             return base.GetHashCode();
-        }
-
-        public MutableString/*!*/ ToMutableString() {
-            return RubyUtils.FormatObject(_immediateClass.GetNonSingletonClass().Name, GetInstanceData().ObjectId, IsTainted);
         }
 
         public MutableString/*!*/ Inspect() {

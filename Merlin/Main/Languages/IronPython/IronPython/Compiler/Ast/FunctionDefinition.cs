@@ -185,7 +185,7 @@ namespace IronPython.Compiler.Ast {
             }
 
             // Unbound variable
-            if (ContainsUnqualifiedExec || ContainsImportStar || NeedsLocalsDictionary) {
+            if (HasLateBoundVariableSets) {
                 // If the context contains unqualified exec, new locals can be introduced
                 // We introduce the locals for every free variable to optimize the name based
                 // lookup.

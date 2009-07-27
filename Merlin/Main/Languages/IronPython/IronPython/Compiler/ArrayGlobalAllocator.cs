@@ -15,8 +15,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Runtime.CompilerServices;
 
 using Microsoft.Scripting;
+using Microsoft.Scripting.Ast;
 using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime;
@@ -41,6 +44,7 @@ namespace IronPython.Compiler.Ast {
         private readonly Scope _scope;
         private readonly GlobalArrayConstant _array;
         internal static readonly MSAst.ParameterExpression/*!*/ _globalContext = Ast.Parameter(typeof(CodeContext), "$globalContext");
+        internal static readonly ReadOnlyCollection<MSAst.ParameterExpression> _globalContextList = new ReadOnlyCollectionBuilder<MSAst.ParameterExpression>(new[] { _globalContext }).ToReadOnlyCollection();
 
         public ArrayGlobalAllocator(PythonContext/*!*/ context) {
             _globalArray = Ast.Parameter(typeof(PythonGlobal[]), "$globalArray");
@@ -69,7 +73,7 @@ namespace IronPython.Compiler.Ast {
                     new[] { _globalArray, _globalContext },
                     Ast.Assign(_globalArray, Ast.Constant(globalArray)),
                     Ast.Assign(_globalContext, Ast.Constant(_context)),
-                    body
+                    Utils.Convert(body, typeof(object))
                 ),
                 name,
                 new MSAst.ParameterExpression[0]

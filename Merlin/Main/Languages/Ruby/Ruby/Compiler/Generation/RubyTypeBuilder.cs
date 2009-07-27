@@ -357,9 +357,9 @@ namespace IronRuby.Compiler.Generation {
             il.EmitCall(Methods.SetObjectTaint);
             il.Emit(OpCodes.Ret);
 
-            // TODO: can we merge this with #base#GetHashCode/Equals?
+            // TODO: can we merge this with #base#GetHashCode/Equals/ToString?
 
-            // int IRubyObject.BaseGetHashCode() { return base.GetHashCode; }
+            // int IRubyObject.BaseGetHashCode() { return base.GetHashCode(); }
             il = DefineMethodOverride(_tb, Methods.IRubyObject_BaseGetHashCode);
             il.EmitLoadArg(0);
             il.EmitCall(_tb.BaseType.GetMethod("GetHashCode", Type.EmptyTypes));
@@ -370,6 +370,12 @@ namespace IronRuby.Compiler.Generation {
             il.EmitLoadArg(0);
             il.EmitLoadArg(1);
             il.EmitCall(_tb.BaseType.GetMethod("Equals", new[] { typeof(object) }));
+            il.Emit(OpCodes.Ret);
+
+            // string IRubyObject.BaseToString() { return base.ToString(); }
+            il = DefineMethodOverride(_tb, Methods.IRubyObject_BaseToString);
+            il.EmitLoadArg(0);
+            il.EmitCall(_tb.BaseType.GetMethod("ToString", Type.EmptyTypes));
             il.Emit(OpCodes.Ret);
         }
 

@@ -2887,6 +2887,11 @@ namespace IronPython.Runtime.Operations {
             return new PythonGenerator(function, next, data);
         }
 
+        public static object MakeGeneratorExpression(object function, object input) {
+            PythonFunction func = (PythonFunction)function;
+            return ((Func<PythonFunction, object, object>)func.func_code.Target)(func, input);
+        }
+
         public static FunctionCode MakeFunctionCode(CodeContext context, string name, string documentation, string[] argNames, FunctionAttributes flags, SourceSpan span, string path, Delegate code, string[] closureVars) {
             return new FunctionCode(PythonContext.GetContext(context), code, name, documentation, argNames, flags, span, path, closureVars);
         }
