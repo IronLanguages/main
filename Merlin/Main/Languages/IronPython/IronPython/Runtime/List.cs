@@ -32,7 +32,7 @@ using SpecialNameAttribute = System.Runtime.CompilerServices.SpecialNameAttribut
 namespace IronPython.Runtime {
 
     [PythonType("list"), Serializable, System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
-    public class List : IList, ICodeFormattable, IValueEquality, IList<object> {
+    public class List : IList, ICodeFormattable, IValueEquality, IList<object>, IReversible {
         internal int _size;
         internal volatile object[] _data;
 
@@ -210,14 +210,21 @@ namespace IronPython.Runtime {
         #region binary operators
 
         public static List operator +([NotNull]List l1, [NotNull]List l2) {
-            using (new OrderedLocker(l1, l2)) {
-                object[] them = l2._data;
-                object[] ret = ArrayOps.CopyArray(l1._data, GetAddSize(l1._size , l2._size));
+            object[] ret;
+            int size;
+            lock (l1) {
+                ret = ArrayOps.CopyArray(l1._data, GetAddSize(l1._size, l2._size));
+                size = l1._size;
+            }
 
-                Array.Copy(them, 0, ret, l1._size, l2._size);
+            lock (l2) {
+                if (l2._size + size > ret.Length) {
+                    ret = ArrayOps.CopyArray(ret, GetAddSize(size, l2._size));
+                }
+                Array.Copy(l2._data, 0, ret, size, l2._size);
 
                 List lret = new List(ret);
-                lret._size = l1._size + l2._size;
+                lret._size = size + l2._size;
                 return lret;
             }
         }

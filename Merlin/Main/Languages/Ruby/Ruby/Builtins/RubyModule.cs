@@ -699,6 +699,10 @@ namespace IronRuby.Builtins {
             return base.Equals(other);
         }
 
+        public string/*!*/ BaseToString() {
+            return base.ToString();
+        }
+
         #endregion
 
         #region Factories (thread-safe)
@@ -1648,11 +1652,13 @@ namespace IronRuby.Builtins {
                 }
 
                 // Special mappings:
-                // Do not map to Kernel#hash/eql? to prevent recursion in case Object.GetHashCode/Equals is removed.
+                // Do not map to Kernel#hash/eql?/to_s to prevent recursion in case Object.GetHashCode/Equals/ToString is removed.
                 if (this != Context.KernelModule) {
                     if (name == "GetHashCode" && TryGetDefinedMethod("hash", out method) && method.IsRubyMember) {
                         return true;
                     } else if (name == "Equals" && TryGetDefinedMethod("eql?", out method) && method.IsRubyMember) {
+                        return true;
+                    } if (name == "ToString" && TryGetDefinedMethod("to_s", out method) && method.IsRubyMember) {
                         return true;
                     }
                 }

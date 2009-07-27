@@ -107,7 +107,7 @@ namespace IronPython.Compiler.Ast {
 
             if (_handlers != null) {
                 foreach (var handler in _handlers) {
-                    ag.HandlerLocations.Add(handler.Span.Start.Line, false);
+                    ag.HandlerLocations[handler.Span.Start.Line] = false;
                 }
             }
 

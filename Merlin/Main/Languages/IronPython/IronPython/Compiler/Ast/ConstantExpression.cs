@@ -45,6 +45,12 @@ namespace IronPython.Compiler.Ast {
                     null,
                     typeof(PythonOps).GetProperty("Ellipsis")
                 );
+            } else if (_value is bool) {
+                if ((bool)_value) {
+                    return Ast.Field(null, typeof(ScriptingRuntimeHelpers).GetField("True"));
+                } else {
+                    return Ast.Field(null, typeof(ScriptingRuntimeHelpers).GetField("False"));
+                }
             }
 
             return ag.Globals.GetConstant(_value);

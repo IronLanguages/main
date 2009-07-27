@@ -34,6 +34,10 @@ namespace IronPython.Runtime {
             this._getItemMethod = getitem;
         }
 
+        public static object __new__(CodeContext context, PythonType type, [NotNull]IReversible o) {
+            return o.__reversed__();
+        }
+
         public static object __new__(CodeContext context, PythonType type, object o) {
             object reversed;
             if (PythonOps.TryGetBoundAttr(context, o, Symbols.Reversed, out reversed)) {
