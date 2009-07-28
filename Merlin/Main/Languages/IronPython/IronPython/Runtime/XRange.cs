@@ -23,7 +23,7 @@ namespace IronPython.Runtime {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
     [PythonType("xrange")]
     [DontMapIEnumerableToContains]
-    public sealed class XRange : ICollection, IEnumerable, IEnumerable<int>, ICodeFormattable, IList {
+    public sealed class XRange : ICollection, IEnumerable, IEnumerable<int>, ICodeFormattable, IList, IReversible {
         private int _start, _stop, _step, _length;
 
         public XRange(int stop) : this(0, stop, 1) { }

@@ -80,6 +80,10 @@ namespace IronRuby.Builtins {
             public bool BaseEquals(object other) {
                 return base.Equals(other);
             }
+
+            public string/*!*/ BaseToString() {
+                return base.ToString();
+            }
         }
     }
 #endif
@@ -131,6 +135,10 @@ namespace IronRuby.Builtins {
             public bool BaseEquals(object other) {
                 return base.Equals(other);
             }
+
+            public string/*!*/ BaseToString() {
+                return base.ToString();
+            }
         }
     }
     public partial class Proc {
@@ -179,6 +187,10 @@ namespace IronRuby.Builtins {
 
             public bool BaseEquals(object other) {
                 return base.Equals(other);
+            }
+
+            public string/*!*/ BaseToString() {
+                return base.ToString();
             }
         }
     }
@@ -229,6 +241,10 @@ namespace IronRuby.Builtins {
             public bool BaseEquals(object other) {
                 return base.Equals(other);
             }
+
+            public string/*!*/ BaseToString() {
+                return base.ToString();
+            }
         }
     }
     public partial class RubyRegex {
@@ -277,6 +293,10 @@ namespace IronRuby.Builtins {
 
             public bool BaseEquals(object other) {
                 return base.Equals(other);
+            }
+
+            public string/*!*/ BaseToString() {
+                return base.ToString();
             }
         }
     }
@@ -330,6 +350,10 @@ namespace IronRuby.Builtins {
             public bool BaseEquals(object other) {
                 return base.Equals(other);
             }
+
+            public string/*!*/ BaseToString() {
+                return base.ToString();
+            }
         }
     }
 #endif
@@ -367,6 +391,10 @@ namespace IronRuby.Builtins {
 
             public bool BaseEquals(object other) {
                 return base.Equals(other);
+            }
+
+            public string/*!*/ BaseToString() {
+                return base.ToString();
             }
         }
     }

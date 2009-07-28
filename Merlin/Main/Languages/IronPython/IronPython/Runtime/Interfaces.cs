@@ -13,6 +13,7 @@
  *
  * ***************************************************************************/
 
+using System.Collections;
 using System.Collections.Generic;
 using Microsoft.Scripting.Runtime;
 
@@ -53,6 +54,10 @@ namespace IronPython.Runtime {
 
     public interface IProxyObject {
         object Target { get; }
+    }
+
+    public interface IReversible {
+        IEnumerator __reversed__();
     }
 
     /// <summary>

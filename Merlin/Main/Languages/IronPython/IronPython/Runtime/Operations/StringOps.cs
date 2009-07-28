@@ -716,7 +716,9 @@ namespace IronPython.Runtime.Operations {
 
                 AppendJoin(sequence._data[0], 0, ret);
                 for (int i = 1; i < sequence._size; i++) {
-                    ret.Append(self);
+                    if (self != String.Empty) {
+                        ret.Append(self);
+                    }
                     AppendJoin(sequence._data[i], i, ret);
                 }
 

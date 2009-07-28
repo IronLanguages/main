@@ -27,15 +27,15 @@ namespace Microsoft.Scripting.Interpreter {
             new Dictionary<Type, Func<CallSiteBinder, Instruction>>();
 
         public static Instruction MakeInstruction(Type delegateType, CallSiteBinder binder) {
-            if (delegateType.GetMethod("Invoke").ReturnType == typeof(void)) {
-                // TODO: We should generally support void returning binders but the only
-                // ones that exist are delete index/member who's perf isn't that critical.
-                return new DynamicInstructionN(delegateType, CallSite.Create(delegateType, binder), true);
-            }
-
             Func<CallSiteBinder, Instruction> factory;
             lock (_factories) {
                 if (!_factories.TryGetValue(delegateType, out factory)) {
+                    if (delegateType.GetMethod("Invoke").ReturnType == typeof(void)) {
+                        // TODO: We should generally support void returning binders but the only
+                        // ones that exist are delete index/member who's perf isn't that critical.
+                        return new DynamicInstructionN(delegateType, CallSite.Create(delegateType, binder), true);
+                    }
+
                     Type instructionType = GetDynamicInstructionType(delegateType);
                     if (instructionType == null) {
                         return new DynamicInstructionN(delegateType, CallSite.Create(delegateType, binder));

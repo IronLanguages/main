@@ -2990,8 +2990,8 @@ namespace IronRuby.Builtins {
             );
             
             module.DefineLibraryMethod("to_s", 0x51, 
-                new System.Func<IronRuby.Runtime.RubyContext, System.Object, IronRuby.Builtins.MutableString>(IronRuby.Builtins.KernelOps.ToS), 
-                new System.Func<IronRuby.Builtins.RubyObject, IronRuby.Builtins.MutableString>(IronRuby.Builtins.KernelOps.ToS)
+                new System.Func<IronRuby.Runtime.IRubyObject, IronRuby.Builtins.MutableString>(IronRuby.Builtins.KernelOps.ToS), 
+                new System.Func<System.Object, IronRuby.Builtins.MutableString>(IronRuby.Builtins.KernelOps.ToS)
             );
             
             #if !SILVERLIGHT
