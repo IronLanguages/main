@@ -18,6 +18,10 @@ using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Reflection;
 
+#if SILVERLIGHT
+using System.Core;
+#endif
+
 namespace System.Dynamic.Utils {
 
     internal static class TypeUtils {
@@ -139,8 +143,9 @@ namespace System.Dynamic.Utils {
             return false;
         }
 
-        internal static bool AreEquivalent(Type t1, Type t2) {
-#if MICROSOFT_SCRIPTING_CORE
+        internal static bool AreEquivalent(Type t1, Type t2)
+        {
+#if MICROSOFT_SCRIPTING_CORE || SILVERLIGHT
             return t1 == t2;
 #else
             return t1 == t2 || t1.IsEquivalentTo(t2);

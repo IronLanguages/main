@@ -19,6 +19,10 @@ using System.Diagnostics;
 using System.Dynamic.Utils;
 using System.Runtime.CompilerServices;
 
+#if SILVERLIGHT
+using System.Core;
+#endif
+
 namespace System.Linq.Expressions {
 
     /// <summary>

@@ -19,6 +19,13 @@ using System.Dynamic.Utils;
 
 #if SILVERLIGHT // Stubs
 
+// This is needed so we can build Silverlight version on Codeplex
+// where System.Core namespace is not defined.
+namespace System.Core 
+{ 
+    class Dummy { } 
+}
+
 namespace System {
 
     /// <summary>

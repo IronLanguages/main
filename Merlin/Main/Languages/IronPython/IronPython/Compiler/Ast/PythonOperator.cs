@@ -51,5 +51,11 @@ namespace IronPython.Compiler {
         NotIn,
         IsNot,
         Is,
+
+
+        // Aliases
+        ExclusiveOr = Xor,
+        Equals = Equal,
+        NotEquals = NotEqual,
     }
 }

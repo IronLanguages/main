@@ -72,6 +72,7 @@ namespace IronRuby.Builtins {
 #if DEBUG
     [DebuggerDisplay("{DebugName}")]
 #endif
+    [DebuggerTypeProxy(typeof(RubyModule.DebugView))]
     public partial class RubyModule : IDuplicable, IRubyObject {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly")]
         public static readonly RubyModule[]/*!*/ EmptyArray = new RubyModule[0];
@@ -698,6 +699,10 @@ namespace IronRuby.Builtins {
             return base.Equals(other);
         }
 
+        public string/*!*/ BaseToString() {
+            return base.ToString();
+        }
+
         #endregion
 
         #region Factories (thread-safe)
@@ -1109,8 +1114,8 @@ namespace IronRuby.Builtins {
                 SymbolId symbol = SymbolTable.StringToId(name);
 
                 using (Context.ClassHierarchyUnlocker()) {
-                    return _context.TopGlobalScope.TryGetName(symbol, out value) 
-                        && _context.TopGlobalScope.TryRemoveName(symbol);
+                    return _context.TopGlobalScope.TryGetVariable(symbol, out value) 
+                        && _context.TopGlobalScope.TryRemoveVariable(symbol);
                 }
             }
 
@@ -1647,11 +1652,13 @@ namespace IronRuby.Builtins {
                 }
 
                 // Special mappings:
-                // Do not map to Kernel#hash/eql? to prevent recursion in case Object.GetHashCode/Equals is removed.
+                // Do not map to Kernel#hash/eql?/to_s to prevent recursion in case Object.GetHashCode/Equals/ToString is removed.
                 if (this != Context.KernelModule) {
                     if (name == "GetHashCode" && TryGetDefinedMethod("hash", out method) && method.IsRubyMember) {
                         return true;
                     } else if (name == "Equals" && TryGetDefinedMethod("eql?", out method) && method.IsRubyMember) {
+                        return true;
+                    } if (name == "ToString" && TryGetDefinedMethod("to_s", out method) && method.IsRubyMember) {
                         return true;
                     }
                 }
@@ -2113,5 +2120,103 @@ namespace IronRuby.Builtins {
         }
 
         #endregion      
+
+        #region Debug View
+
+        // see: RubyObject.DebuggerDisplayValue
+        internal string/*!*/ GetDebuggerDisplayValue(object obj) {
+            return Context.Inspect(obj).ConvertToString();
+        }
+
+        // see: RubyObject.DebuggerDisplayType
+        internal string/*!*/ GetDebuggerDisplayType() {
+            return Name;
+        }
+
+        internal sealed class DebugView {
+            private readonly RubyModule/*!*/ _obj;
+
+            public DebugView(RubyModule/*!*/ obj) {
+                Assert.NotNull(obj);
+                _obj = obj;
+            }
+
+            #region RubyObjectDebugView
+
+            [DebuggerDisplay("{GetModuleName(A),nq}", Name = "{GetClassKind(),nq}", Type = "")]
+            public object A {
+                get { return _obj.ImmediateClass; }
+            }
+
+            [DebuggerDisplay("{B}", Name = "tainted?", Type = "")]
+            public bool B {
+                get { return _obj.IsTainted; }
+                set { _obj.IsTainted = value; }
+            }
+
+            [DebuggerDisplay("{C}", Name = "frozen?", Type = "")]
+            public bool C {
+                get { return _obj.IsFrozen; }
+                set { if (value) { _obj.Freeze(); } }
+            }
+
+            [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+            public object D {
+                get {
+                    var instanceData = _obj.TryGetInstanceData();
+                    if (instanceData == null) {
+                        return new RubyInstanceData.VariableDebugView[0];
+                    }
+
+                    return instanceData.GetInstanceVariablesDebugView(_obj.ImmediateClass.Context);
+                }
+            }
+
+            private string GetClassKind() {
+                return _obj.ImmediateClass.IsSingletonClass ? "singleton class" : "class";
+            }
+
+            private static string GetModuleName(object module) {
+                var m = (RubyModule)module;
+                return m != null ? m.GetDisplayName(m.Context, false).ToString() : String.Empty;
+            }
+
+            #endregion
+
+            [DebuggerDisplay("{GetModuleName(E),nq}", Name = "super", Type = "")]
+            public object E {
+                get { return _obj.GetSuperClass(); }
+            }
+
+            [DebuggerDisplay("", Name = "mixins", Type = "")]
+            public object F {
+                get { return _obj.GetMixins(); }
+            }
+
+            [DebuggerDisplay("", Name = "instance methods", Type = "")]
+            public object G {
+                get { return GetMethods(RubyMethodAttributes.Instance); }
+            }
+
+            [DebuggerDisplay("", Name = "singleton methods", Type = "")]
+            public object H {
+                get { return GetMethods(RubyMethodAttributes.Singleton); }
+            }
+
+            private Dictionary<string, RubyMemberInfo> GetMethods(RubyMethodAttributes attributes) {
+                // TODO: custom view for methods, sorted
+                var result = new Dictionary<string, RubyMemberInfo>();
+                using (_obj.Context.ClassHierarchyLocker()) {
+                    _obj.ForEachMember(false, attributes | RubyMethodAttributes.VisibilityMask, (name, _, info) => {
+                        result[name] = info;
+                    });
+                }
+                return result;
+            }
+
+            // TODO: class variables
+        }
+
+        #endregion
     }
 }

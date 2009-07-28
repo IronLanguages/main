@@ -400,7 +400,6 @@
     <Compile Include="Runtime\StaticExtensionMethodAttribute.cs" />
     <Compile Include="Runtime\SymbolDictionary.cs" />
     <Compile Include="Runtime\TransformDictEnumerator.cs" />
-    <Compile Include="Runtime\UnboundNameException.cs" />
     <Compile Include="Runtime\Uninitialized.cs" />
     <Compile Include="Utils\ArrayUtils.cs" />
     <Compile Include="Utils\AssemblyQualifiedTypeName.cs" />

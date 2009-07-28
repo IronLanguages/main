@@ -69,7 +69,7 @@ namespace IronPython.Compiler.Ast {
                             scope
                         )
                     ),
-                    body
+                    Utils.Convert(body, typeof(object))
                 ),
                 ((PythonCompilerOptions)context.Options).ModuleName,
                 new MSAst.ParameterExpression[] { scope, language }

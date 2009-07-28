@@ -16,6 +16,10 @@
 using System.Diagnostics;
 using System.Dynamic.Utils;
 
+#if SILVERLIGHT
+using System.Core;
+#endif
+
 namespace System.Linq.Expressions {
     /// <summary>
     /// Represents an infinite loop. It can be exited with "break".

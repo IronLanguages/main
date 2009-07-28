@@ -19,6 +19,9 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
+using IronPython.Runtime;
+using IronPython.Runtime.Operations;
+
 namespace IronPython.Compiler {
     /// <summary>
     /// Represents a script code which can be dynamically bound to execute against
@@ -26,9 +29,9 @@ namespace IronPython.Compiler {
     /// a particular scope as well as for exec and eval code as well.
     /// </summary>
     class PythonScriptCode : ScriptCode {
-        private readonly Func<Scope/*!*/, LanguageContext/*!*/, object>/*!*/ _target;
+        private readonly Func<CodeContext/*!*/, object>/*!*/ _target;
 
-        public PythonScriptCode(Func<Scope/*!*/, LanguageContext/*!*/, object>/*!*/ target, SourceUnit/*!*/ sourceUnit)
+        public PythonScriptCode(Func<CodeContext/*!*/, object>/*!*/ target, SourceUnit/*!*/ sourceUnit)
             : base(sourceUnit) {
             Assert.NotNull(target);
 
@@ -36,15 +39,32 @@ namespace IronPython.Compiler {
         }
 
         public override object Run() {
-            return _target(new Scope(), SourceUnit.LanguageContext);
+            if (SourceUnit.Kind == SourceCodeKind.Expression) {
+                return EvalWrapper(new Scope());
+            }
+            return _target(PythonOps.CreateTopLevelCodeContext(new Scope(), SourceUnit.LanguageContext));
         }
 
         public override object Run(Scope scope) {
-            return _target(scope, SourceUnit.LanguageContext);
+            if (SourceUnit.Kind == SourceCodeKind.Expression) {
+                return EvalWrapper(scope);
+            }
+
+            return _target(PythonOps.CreateTopLevelCodeContext(scope, SourceUnit.LanguageContext));
         }
 
         public override Scope/*!*/ CreateScope() {
             return new Scope();
+        }
+
+        // wrapper so we can do minimal code gen for eval code
+        private object EvalWrapper(Scope scope) {
+            try {
+                return _target(PythonOps.CreateTopLevelCodeContext(scope, SourceUnit.LanguageContext));
+            } catch (Exception) {
+                PythonOps.UpdateStackTrace(new CodeContext(scope, (PythonContext)SourceUnit.LanguageContext), _target.Method, "<module>", "<string>", 0);
+                throw;
+            }
         }
     }
 }

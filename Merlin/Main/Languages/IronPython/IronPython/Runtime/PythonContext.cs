@@ -100,6 +100,7 @@ namespace IronPython.Runtime {
         private CallSite<Func<CallSite, CodeContext, PythonFunction, object>> _functionCallSite;
         private CallSite<Func<CallSite, object, object, bool>> _greaterThanSite, _lessThanSite, _greaterThanEqualSite, _lessThanEqualSite, _containsSite;
         private CallSite<Func<CallSite, CodeContext, object, object[], object>> _callSplatSite;
+        private CallSite<Func<CallSite, CodeContext, object, object>> _callSite0;
         private CallSite<Func<CallSite, CodeContext, object, object, object>> _callSite1;
         private CallSite<Func<CallSite, CodeContext, object, object, object, object>> _callSite2;
         private CallSite<Func<CallSite, CodeContext, object, object[], IAttributesCollection, object>> _callDictSite;
@@ -253,7 +254,12 @@ namespace IronPython.Runtime {
             if (options == null ||
                 !options.TryGetValue("NoAssemblyResolveHook", out asmResolve) ||
                 !System.Convert.ToBoolean(asmResolve)) {
-                HookAssemblyResolve();
+                try {
+                    HookAssemblyResolve();
+                } catch (System.Security.SecurityException) {
+                    // We may not have SecurityPermissionFlag.ControlAppDomain. 
+                    // If so, we will not look up sys.path for module loads
+                }
             }
 #endif
 
@@ -969,8 +975,8 @@ namespace IronPython.Runtime {
             }
 
             PythonModule mod = CreateModule(null, new Scope(dict), null, options);
-            mod.Scope.SetName(Symbols.Name, moduleName);
-            mod.Scope.SetName(Symbols.Package, null);
+            mod.Scope.SetVariable(Symbols.Name, moduleName);
+            mod.Scope.SetVariable(Symbols.Package, null);
             return mod;
         }
 
@@ -999,8 +1005,8 @@ namespace IronPython.Runtime {
             if ((options & ModuleOptions.Initialize) != 0) {
                 scriptCode.Run(module.Scope);
                 
-                if (!scope.ContainsName(Symbols.Package)) {
-                    scope.SetName(Symbols.Package, null);
+                if (!scope.ContainsVariable(Symbols.Package)) {
+                    scope.SetVariable(Symbols.Package, null);
                 }
             }
 
@@ -1018,9 +1024,9 @@ namespace IronPython.Runtime {
             // pass the appropriate flags to control this behavior.
             if ((options & ModuleOptions.NoBuiltins) == 0 && !scope.Dict.ContainsKey(Symbols.Builtins)) {
                 if ((options & ModuleOptions.ModuleBuiltins) != 0) {
-                    module.Scope.SetName(Symbols.Builtins, BuiltinModuleInstance);
+                    module.Scope.SetVariable(Symbols.Builtins, BuiltinModuleInstance);
                 } else {
-                    module.Scope.SetName(Symbols.Builtins, BuiltinModuleInstance.Dict);
+                    module.Scope.SetVariable(Symbols.Builtins, BuiltinModuleInstance.Dict);
                 }
             }
 
@@ -1029,7 +1035,7 @@ namespace IronPython.Runtime {
             if (fileName != null && Path.GetFileName(fileName) == "__init__.py") {
                 string dirname = Path.GetDirectoryName(fileName);
                 string dir_path = DomainManager.Platform.GetFullPath(dirname);
-                module.Scope.SetName(Symbols.Path, PythonOps.MakeList(dir_path));
+                module.Scope.SetVariable(Symbols.Path, PythonOps.MakeList(dir_path));
             }
 
             return module;
@@ -1051,7 +1057,7 @@ namespace IronPython.Runtime {
             }
 
             object name;
-            if (!scope.TryLookupName(Symbols.Name, out name) || !(name is string)) {
+            if (!scope.TryGetVariable(Symbols.Name, out name) || !(name is string)) {
                 throw PythonOps.SystemError("nameless module");
             }
 
@@ -1087,31 +1093,6 @@ namespace IronPython.Runtime {
             }
         }
 
-        /// <summary>
-        /// Python's global scope includes looking at built-ins.  First check built-ins, and if
-        /// not there then fallback to any DLR globals.
-        /// </summary>
-        public override bool TryLookupGlobal(Scope scope, SymbolId name, out object value) {
-            object builtins;
-            if (!scope.ModuleScope.TryGetName(Symbols.Builtins, out builtins)) {
-                value = null;
-                return false;
-            }
-
-            Scope builtinsScope = builtins as Scope;
-            if (builtinsScope != null && builtinsScope.TryGetName(name, out value)) return true;
-
-            IAttributesCollection dict = builtins as IAttributesCollection;
-            if (dict != null && dict.TryGetValue(name, out value)) return true;
-
-            value = null;
-            return false;
-        }
-
-        protected override Exception MissingName(SymbolId name) {
-            throw PythonOps.NameError(name);
-        }
-
         internal ModuleGlobalCache GetModuleGlobalCache(SymbolId name) {
             ModuleGlobalCache res;
             if (!TryGetModuleGlobalCache(name, out res)) {
@@ -1123,7 +1104,7 @@ namespace IronPython.Runtime {
 
         #region Assembly Loading
 
-        public override Assembly LoadAssemblyFromFile(string file) {
+        internal Assembly LoadAssemblyFromFile(string file) {
 #if !SILVERLIGHT
             // check all files in the path...
             List path;
@@ -1167,13 +1148,9 @@ namespace IronPython.Runtime {
         /// However, when the CLR loader tries to resolve any of assembly references, it will not be able to
         /// find the dependencies, unless we can hook into the CLR loader.
         /// </summary>
+        [MethodImpl(MethodImplOptions.NoInlining)]   // avoid inlining due to LinkDemand from assembly resolve.
         private void HookAssemblyResolve() {
-            try {
-                AppDomain.CurrentDomain.AssemblyResolve += _resolveHolder.AssemblyResolveEvent;
-            } catch (System.Security.SecurityException) {
-                // We may not have SecurityPermissionFlag.ControlAppDomain. 
-                // If so, we will not look up sys.path for module loads
-            }
+            AppDomain.CurrentDomain.AssemblyResolve += _resolveHolder.AssemblyResolveEvent;
         }
 
         class AssemblyResolveHolder {
@@ -1232,7 +1209,7 @@ namespace IronPython.Runtime {
 #endif
 
             try {
-                if (_systemState.TryGetName(Symbols.SysExitFunc, out callable)) {
+                if (_systemState.TryGetVariable(Symbols.SysExitFunc, out callable)) {
                     PythonCalls.Call(new CodeContext(new Scope(), this), callable);
                 }
             } finally {
@@ -1704,7 +1681,7 @@ namespace IronPython.Runtime {
                     // only cache values currently in built-ins, everything else will have
                     // no caching policy and will fall back to the LanguageContext.
                     object value;
-                    if (BuiltinModuleInstance.TryGetName(name, out value)) {
+                    if (BuiltinModuleInstance.TryGetVariable(name, out value)) {
                         _builtinCache[name] = cache = new ModuleGlobalCache(value);
                     }
                 }
@@ -2555,6 +2532,12 @@ namespace IronPython.Runtime {
             return _callSplatSite.Target(_callSplatSite, context, func, args);
         }
 
+        internal object Call(CodeContext/*!*/ context, object func) {
+            EnsureCall0Site();
+
+            return _callSite0.Target(_callSite0, context, func);
+        }
+
         internal object Call(CodeContext/*!*/ context, object func, object arg0) {
             EnsureCall1Site();
 
@@ -2596,6 +2579,16 @@ namespace IronPython.Runtime {
                 Interlocked.CompareExchange(
                     ref _callSite1,
                     CallSite<Func<CallSite, CodeContext, object, object, object>>.Create(InvokeOne),
+                    null
+                );
+            }
+        }
+
+        private void EnsureCall0Site() {
+            if (_callSite0 == null) {
+                Interlocked.CompareExchange(
+                    ref _callSite0,
+                    CallSite<Func<CallSite, CodeContext, object, object>>.Create(InvokeNone),
                     null
                 );
             }

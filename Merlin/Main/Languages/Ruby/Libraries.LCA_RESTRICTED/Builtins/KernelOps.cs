@@ -134,14 +134,19 @@ namespace IronRuby.Builtins {
 
 #if !SILVERLIGHT
         // Looks for RUBYSHELL and then COMSPEC under Windows
-        // It appears that COMSPEC is a special environment variable that cannot be undefined
         internal static ProcessStartInfo/*!*/ GetShell(RubyContext/*!*/ context, MutableString/*!*/ command) {
             PlatformAdaptationLayer pal = context.DomainManager.Platform;
             string shell = pal.GetEnvironmentVariable("RUBYSHELL");
             if (shell == null) {
                 shell = pal.GetEnvironmentVariable("COMSPEC");
             }
-            return new ProcessStartInfo(shell, String.Format("/C \"{0}\"", command.ConvertToString()));
+
+            if (shell == null) {
+                string [] commandParts = command.ConvertToString().Split(new char[] { ' ' }, 2);
+                return new ProcessStartInfo(commandParts[0], commandParts.Length == 2 ? commandParts[1] : null);
+            } else {
+                return new ProcessStartInfo(shell, String.Format("/C \"{0}\"", command.ConvertToString()));
+            }
         }
 
         private static MutableString/*!*/ JoinArguments(MutableString/*!*/[]/*!*/ args) {
@@ -1071,7 +1076,7 @@ namespace IronRuby.Builtins {
 
         #region Public Instance Methods
 
-        #region ==, ===, =~, eql?, equal?, hash
+        #region ==, ===, =~, eql?, equal?, hash, to_s, inspect, to_a
 
         [RubyMethod("=~")]
         public static bool Match(object self, object other) {
@@ -1121,6 +1126,45 @@ namespace IronRuby.Builtins {
             }
 
             return false;
+        }
+
+        [RubyMethod("to_s")]
+        public static MutableString/*!*/ ToS([NotNull]IRubyObject/*!*/ self) {
+            return RubyObject.BaseToMutableString(self);
+        }
+
+        [RubyMethod("to_s")]
+        public static MutableString/*!*/ ToS(object self) {
+            return self == null ? MutableString.CreateEmpty() : MutableString.Create(self.ToString());
+        }
+
+        /// <summary>
+        /// Returns a string containing a human-readable representation of obj.
+        /// If not overridden, uses the to_s method to generate the string. 
+        /// </summary>
+        [RubyMethod("inspect")]
+        public static MutableString/*!*/ Inspect(UnaryOpStorage/*!*/ inspectStorage, ConversionStorage<MutableString>/*!*/ tosConversion,
+            object self)
+        {
+
+            var context = tosConversion.Context;
+            if (context.HasInstanceVariables(self))
+            {
+                return RubyUtils.InspectObject(inspectStorage, tosConversion, self);
+            }
+            else
+            {
+                var site = tosConversion.GetSite(ConvertToSAction.Make(context));
+                return site.Target(site, self);
+            }
+        }
+
+        [RubyMethod("to_a")]
+        public static RubyArray/*!*/ ToA(RubyContext/*!*/ context, object self)
+        {
+            RubyArray result = new RubyArray();
+            result.Add(self);
+            return context.TaintObjectBy(result, self);
         }
 
         #endregion
@@ -1590,50 +1634,6 @@ namespace IronRuby.Builtins {
         private static RubyArray/*!*/ GetMethods(RubyContext/*!*/ context, object self, bool inherited, RubyMethodAttributes attributes) {
             RubyClass immediateClass = context.GetImmediateClassOf(self);
             return ModuleOps.GetMethods(immediateClass, inherited, attributes);
-        }
-
-        #endregion
-
-        #region inspect, to_s
-
-        /// <summary>
-        /// Returns a string containing a human-readable representation of obj.
-        /// If not overridden, uses the to_s method to generate the string. 
-        /// </summary>
-        [RubyMethod("inspect")]
-        public static MutableString/*!*/ Inspect(UnaryOpStorage/*!*/ inspectStorage, ConversionStorage<MutableString>/*!*/ tosConversion, 
-            object self) {
-
-            var context = tosConversion.Context;
-            if (context.HasInstanceVariables(self)) {
-                return RubyUtils.InspectObject(inspectStorage, tosConversion, self);
-            } else {
-                var site = tosConversion.GetSite(ConvertToSAction.Make(context));
-                return site.Target(site, self);
-            }
-        }
-
-        [RubyMethod("to_s")]
-        public static MutableString/*!*/ ToS(RubyContext/*!*/ context, [NotNull]object/*!*/ self) {
-            if (self.GetType() == typeof(object)) {
-                return RubyUtils.ObjectToMutableString(context, self);
-            }
-
-            // maps to CLR's ToString:
-            return MutableString.Create(self.ToString()).TaintBy(self, context);
-        }
-
-        [RubyMethod("to_s")]
-        public static MutableString/*!*/ ToS([NotNull]RubyObject/*!*/ self) {
-            // default representation #<{class-name}: {object-id}> 
-            return self.ToMutableString();
-        }
-
-        [RubyMethod("to_a")]
-        public static RubyArray/*!*/ ToA(RubyContext/*!*/ context, object self) {
-            RubyArray result = new RubyArray();
-            result.Add(self);
-            return context.TaintObjectBy(result, self);
         }
 
         #endregion

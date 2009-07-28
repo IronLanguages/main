@@ -35,7 +35,7 @@ namespace IronPython.Modules {
 
         [PythonType]
         [DontMapIEnumerableToContains]
-        public class deque : IEnumerable, IComparable, ICodeFormattable, IValueEquality, ICollection {
+        public class deque : IEnumerable, IComparable, ICodeFormattable, IValueEquality, ICollection, IReversible {
             private object[] _data;
             private object _lockObj = new object();
             private int _head, _tail;

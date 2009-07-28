@@ -23,6 +23,10 @@ using System.Reflection.Emit;
 using System.Threading;
 using System.Runtime.CompilerServices;
 
+#if SILVERLIGHT
+using System.Core;
+#endif
+
 namespace System.Linq.Expressions {
     /// <summary>
     /// Creates a <see cref="LambdaExpression"/> node.

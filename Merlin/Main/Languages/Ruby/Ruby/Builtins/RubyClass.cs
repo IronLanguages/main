@@ -101,6 +101,7 @@ namespace IronRuby.Builtins {
         private CallSite<Func<CallSite, object, MutableString>> _stringConversionSite;
         private CallSite<Func<CallSite, object, object, object>> _eqlSite;
         private CallSite<Func<CallSite, object, object>> _hashSite;
+        private CallSite<Func<CallSite, object, object>> _toStringSite;
 
         public CallSite<Func<CallSite, object, object>>/*!*/ InspectSite { 
             get { return RubyUtils.GetCallSite(ref _inspectSite, Context, "inspect", 0); } 
@@ -121,6 +122,14 @@ namespace IronRuby.Builtins {
         internal CallSite<Func<CallSite, object, object>>/*!*/ GetHashCodeSite {
             get { 
                 return RubyUtils.GetCallSite(ref _hashSite, Context, "GetHashCode", 
+                    new RubyCallSignature(0, RubyCallFlags.HasImplicitSelf | RubyCallFlags.IsVirtualCall)
+                );
+            }
+        }
+
+        public CallSite<Func<CallSite, object, object>>/*!*/ ToStringSite {
+            get {
+                return RubyUtils.GetCallSite(ref _toStringSite, Context, "ToString",
                     new RubyCallSignature(0, RubyCallFlags.HasImplicitSelf | RubyCallFlags.IsVirtualCall)
                 );
             }
@@ -1153,7 +1162,6 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-
         #region Dynamic operations
 
         /// <summary>
@@ -1211,7 +1219,7 @@ namespace IronRuby.Builtins {
             }
 
             bool hasRubyInitializer = initializer is RubyMethodInfo;
-            bool hasLibraryInitializer = !hasRubyInitializer && initializer.DeclaringModule != Context.ObjectClass;
+            bool hasLibraryInitializer = !hasRubyInitializer && initializer.DeclaringModule != Context.ObjectClass && initializer is RubyLibraryMethodInfo;
 
             if (hasRubyInitializer || hasLibraryInitializer && _isRubyClass) {
                 // allocate and initialize:
@@ -1288,8 +1296,11 @@ namespace IronRuby.Builtins {
             } else {
                 // TODO: we need more refactoring of RubyMethodGroupInfo.BuildCall to be able to inline this:
                 metaBuilder.Result = Ast.Dynamic(
-                    RubyCallAction.Make(args.RubyContext, "initialize", 
-                        new RubyCallSignature(args.Signature.ArgumentCount, args.Signature.Flags | RubyCallFlags.HasImplicitSelf)
+                    RubyCallAction.Make(args.RubyContext, "initialize",
+                        new RubyCallSignature(
+                            args.Signature.ArgumentCount, 
+                            (args.Signature.Flags & ~RubyCallFlags.IsInteropCall) | RubyCallFlags.HasImplicitSelf
+                        )
                     ),
                     typeof(object),
                     args.GetCallSiteArguments(instanceVariable)
@@ -1312,6 +1323,10 @@ namespace IronRuby.Builtins {
 
         public bool BuildAllocatorCall(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, Func<Expression>/*!*/ defaultExceptionMessage) {
             Type type = GetUnderlyingSystemType();
+
+            if (type == typeof(object)) {
+                type = typeof(RubyObject);
+            }
 
             if (_structInfo != null) {
                 metaBuilder.Result = Methods.AllocateStructInstance.OpCall(AstUtils.Convert(args.TargetExpression, typeof(RubyClass)));

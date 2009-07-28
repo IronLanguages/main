@@ -19,7 +19,12 @@ using System.Dynamic.Utils;
 using System.Linq.Expressions;
 using System.Linq.Expressions.Compiler;
 using System.Runtime.CompilerServices;
+
+#if SILVERLIGHT
+using System.Core;
+#else
 using System.Runtime.Remoting;
+#endif
 
 namespace System.Dynamic {
     /// <summary>

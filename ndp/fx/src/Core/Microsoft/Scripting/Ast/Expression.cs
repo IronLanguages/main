@@ -22,6 +22,10 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
+#if SILVERLIGHT
+using System.Core;
+#endif
+
 namespace System.Linq.Expressions {
     /// <summary>
     /// The base type for all nodes in Expression Trees.

@@ -296,7 +296,7 @@ namespace IronPython.Runtime.Binding {
             return new ValidationInfo(typeTest);
         }
 
-        private static MethodCallExpression/*!*/ CheckTypeVersion(Expression/*!*/ tested, int version) {
+        internal static MethodCallExpression/*!*/ CheckTypeVersion(Expression/*!*/ tested, int version) {
             FieldInfo fi = tested.Type.GetField(NewTypeMaker.ClassFieldName);
             if (fi == null) {
                 return Ast.Call(

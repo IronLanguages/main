@@ -456,7 +456,7 @@ namespace Microsoft.Scripting.Hosting {
             ContractUtils.RequiresNotNull(scope, "scope");
             ContractUtils.RequiresNotNull(name, "name");
 
-            return _language.LookupName(scope.Scope, SymbolTable.StringToId(name));
+            return scope.Scope.GetVariable(SymbolTable.StringToId(name));
         }
 
         /// <summary>
@@ -474,7 +474,7 @@ namespace Microsoft.Scripting.Hosting {
             ContractUtils.RequiresNotNull(scope, "scope");
             ContractUtils.RequiresNotNull(name, "name");
 
-            return _language.RemoveName(scope.Scope, SymbolTable.StringToId(name));
+            return scope.Scope.TryRemoveVariable(SymbolTable.StringToId(name));
         }
 
         /// <summary>
@@ -490,7 +490,7 @@ namespace Microsoft.Scripting.Hosting {
             ContractUtils.RequiresNotNull(scope, "scope");
             ContractUtils.RequiresNotNull(name, "name");
 
-            _language.SetName(scope.Scope, SymbolTable.StringToId(name), value);
+            scope.Scope.SetVariable(SymbolTable.StringToId(name), value);
         }
 
         /// <summary>
@@ -509,7 +509,7 @@ namespace Microsoft.Scripting.Hosting {
             ContractUtils.RequiresNotNull(scope, "scope");
             ContractUtils.RequiresNotNull(name, "name");
 
-            return _language.TryLookupName(scope.Scope, SymbolTable.StringToId(name), out value);
+            return scope.Scope.TryGetVariable(SymbolTable.StringToId(name), out value);
         }
 
         /// <summary>

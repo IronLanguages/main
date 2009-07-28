@@ -835,7 +835,7 @@ namespace IronPython.Modules {
                     if (name == Symbols.Class || name == Symbols.Builtins) continue;
 
                     object value;
-                    if (scope.TryGetName(name, out value)) {
+                    if (scope.TryGetVariable(name, out value)) {
                         help(context, doced, doc, indent + 1, value);
                     }
                 }

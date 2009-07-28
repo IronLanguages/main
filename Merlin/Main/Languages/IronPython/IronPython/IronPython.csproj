@@ -102,6 +102,7 @@
     <Compile Include="Compiler\Ast\AssertStatement.cs" />
     <Compile Include="Compiler\Ast\AssignmentStatement.cs" />
     <Compile Include="Compiler\Ast\AstGenerator.cs" />
+    <Compile Include="Compiler\Ast\BinaryExpression.Generated.cs" />
     <Compile Include="Modules\imp.cs" />
     <Compile Include="Runtime\CodeContext.cs" />
     <Compile Include="Runtime\DontMapIEnumerableToIterAttribute.cs" />
@@ -452,6 +453,7 @@
     <Compile Include="Runtime\Types\IPythonObject.cs" />
     <Compile Include="Runtime\Types\PythonTypeSlot.cs" />
     <Compile Include="Runtime\Types\DynamicHelpers.cs" />
+    <Compile Include="Runtime\UnboundNameException.cs" />
     <Compile Include="Runtime\WarningInfo.cs" />
     <Compile Include="Runtime\WeakRef.cs" />
     <Compile Include="Runtime\WrapperDescriptorAttribute.cs" />

@@ -18,6 +18,10 @@ using System.Collections.ObjectModel;
 using System.Dynamic.Utils;
 using System.Linq.Expressions;
 
+#if SILVERLIGHT
+using System.Core;
+#endif //SILVERLIGHT
+
 namespace System.Dynamic {
 
     /// <summary>

@@ -537,7 +537,7 @@ namespace IronRuby.Runtime {
 
             // expose RubyMethod in the scope (the method is bound to the main singleton instance):
             if (owner.GlobalScope != null) {
-                owner.GlobalScope.Scope.SetName(
+                owner.GlobalScope.Scope.SetVariable(
                     SymbolTable.StringToId(method.DefinitionName),
                     new RubyMethod(owner.GlobalScope.MainObject, method, method.DefinitionName)
                 );

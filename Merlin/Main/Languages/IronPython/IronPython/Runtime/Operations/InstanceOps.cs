@@ -501,7 +501,7 @@ namespace IronPython.Runtime.Operations {
             PythonTuple data = ClrModule.Serialize(self);
 
             object deserializeNew;
-            bool res = PythonContext.GetContext(context).ClrModule.TryGetName(
+            bool res = PythonContext.GetContext(context).ClrModule.TryGetVariable(
                 SymbolTable.StringToId("Deserialize"),
                 out deserializeNew
             );
