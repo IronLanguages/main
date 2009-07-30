@@ -60,11 +60,6 @@ internal sealed class PythonConsoleHost : ConsoleHost {
             Environment.SetEnvironmentVariable("TERM", "dumb");
         }
 
-        if (typeof(DynamicMethod).GetConstructor(new Type[] { typeof(string), typeof(Type), typeof(Type[]), typeof(bool) }) == null) {
-            Console.WriteLine("IronPython requires .NET 2.0 SP1 or later to run.");
-            Environment.Exit(1);
-        }
-
         return new PythonConsoleHost().Run(args);
     }
 }

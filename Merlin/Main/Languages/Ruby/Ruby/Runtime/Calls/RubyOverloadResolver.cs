@@ -23,6 +23,7 @@ using System.Reflection;
 using System.Text;
 using IronRuby.Builtins;
 using IronRuby.Compiler;
+using IronRuby.Runtime.Conversions;
 using Microsoft.Scripting.Actions.Calls;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
@@ -38,14 +39,11 @@ namespace IronRuby.Runtime.Calls {
 
         //
         // We want to perform Ruby protocol conversions when binding to CLR methods. 
-        // However, Ruby some libraries don't allow protocol conversions on their parameters. 
+        // However, some Ruby libraries don't allow protocol conversions on their parameters. 
         // Hence in libraries protocol conversions should only be performed when DefaultProtocol attribute is present.
         // This flag is set if protocol conversions should be applied on all parameters regardless of DefaultProtocol attribute.
-        //
-        // Note that using DefaultProtocol explicitly is not the same as performing implicit protocol conversions. 
-        // A parameter marked with DP is treated as accepting any type of object for overload resolution purposes. 
-        // On the other hand, implicit protocol conversions are only applied on narrowing level 2. Hence the overload resolution
-        // uses the real parameter types in first 2 steps and only then falls back to dynamic conversions.
+        // This also implies a different narrowing level of the protocol conversions for library methods and other CLR methods 
+        // (see Converter.CanConvertFrom).
         //
         private readonly bool _implicitProtocolConversions;
 
@@ -416,58 +414,53 @@ namespace IronRuby.Runtime.Calls {
 
         #region Step 4: Argument Building, Conversions
 
-        public override bool CanConvertFrom(Type/*!*/ fromType, ParameterWrapper/*!*/ toParameter, NarrowingLevel level) {
-            Type toType = toParameter.Type;
-
-            if (toType == fromType) {
-                return true;
-            }
-
-            if (fromType == typeof(DynamicNull)) {
-                if (toParameter.ProhibitNull) {
-                    return false;
-                }
-
-                if (toType.IsGenericType && toType.GetGenericTypeDefinition() == typeof(Nullable<>)) {
-                    return true;
-                }
-
-                if (!toType.IsValueType) {
-                    return true;
-                }
-            }
-
-            // blocks:
-            if (fromType == typeof(MissingBlockParam)) {
-                return toType == typeof(BlockParam) && !toParameter.ProhibitNull;
-            }
-
-            if (fromType == typeof(BlockParam) && toType == typeof(MissingBlockParam)) {
-                return true;
-            }
-
-            // protocol conversions:
-            if (toParameter.ParameterInfo != null && toParameter.ParameterInfo.IsDefined(typeof(DefaultProtocolAttribute), false) &&
-                // default protocol doesn't apply on param-array/dict itself, only on the expanded parameters:
-                !toParameter.IsParamsArray) {
-
-                // any type is potentially convertible, except for nil if [NotNull] is used or the target type is a value type:
-                return fromType != typeof(DynamicNull) || !(toParameter.ProhibitNull || toType.IsValueType);
-            }
-
-            if (Converter.CanConvertFrom(fromType, toType, level, _implicitProtocolConversions)) {
-                return true;
-            }
-
-            return false;
+        /// <summary>
+        /// Returns true if fromArg of type fromType can be assigned to toParameter with a conversion on given narrowing level.
+        /// </summary>
+        public override bool CanConvertFrom(Type/*!*/ fromType, DynamicMetaObject fromArg, ParameterWrapper/*!*/ toParameter, NarrowingLevel level) {
+            return Converter.CanConvertFrom(fromArg, fromType, toParameter.Type, toParameter.ProhibitNull, level, 
+                HasExplicitProtocolConversion(toParameter), _implicitProtocolConversions
+            );
         }
 
-        public override Candidate SelectBestConversionFor(Type/*!*/ actualType, ParameterWrapper/*!*/ candidateOne, ParameterWrapper/*!*/ candidateTwo, NarrowingLevel level) {
+        public override bool CanConvertFrom(ParameterWrapper/*!*/ fromParameter, ParameterWrapper/*!*/ toParameter) {
+            return Converter.CanConvertFrom(null, fromParameter.Type, toParameter.Type, toParameter.ProhibitNull, NarrowingLevel.None, false, false);
+        }
+
+        private bool HasExplicitProtocolConversion(ParameterWrapper/*!*/ parameter) {
+            return
+                parameter.ParameterInfo != null &&
+                parameter.ParameterInfo.IsDefined(typeof(DefaultProtocolAttribute), false) &&
+                !parameter.IsParamsArray; // default protocol doesn't apply on param-array/dict itself, only on the expanded parameters
+        }
+
+        public override Candidate SelectBestConversionFor(DynamicMetaObject/*!*/ arg, ParameterWrapper/*!*/ candidateOne, 
+            ParameterWrapper/*!*/ candidateTwo, NarrowingLevel level) {
+
             Type typeOne = candidateOne.Type;
             Type typeTwo = candidateTwo.Type;
+            Type actualType = arg.GetLimitType();
 
+            // if nil is passed as a block argument prefer BlockParam over missing block:
             if (actualType == typeof(DynamicNull)) {
-                // if nil is passed as a block argument prefer BlockParam over missing block;
+                if (typeOne == typeof(BlockParam) && typeTwo == typeof(MissingBlockParam)) {
+                    Debug.Assert(!candidateOne.ProhibitNull);
+                    return Candidate.One;
+                }
+
+                if (typeOne == typeof(MissingBlockParam) && typeTwo == typeof(BlockParam)) {
+                    Debug.Assert(!candidateTwo.ProhibitNull);
+                    return Candidate.Two;
+                }
+            } else if (actualType == typeof(MissingBlockParam)) {
+                if (typeOne == typeof(BlockParam) && typeTwo == typeof(MissingBlockParam)) {
+                    return Candidate.Two;
+                }
+
+                if (typeOne == typeof(MissingBlockParam) && typeTwo == typeof(BlockParam)) {
+                    return Candidate.One;
+                }
+            } else if (actualType == typeof(BlockParam)) {
                 if (typeOne == typeof(BlockParam) && typeTwo == typeof(MissingBlockParam)) {
                     return Candidate.One;
                 }
@@ -475,26 +468,16 @@ namespace IronRuby.Runtime.Calls {
                 if (typeOne == typeof(MissingBlockParam) && typeTwo == typeof(BlockParam)) {
                     return Candidate.Two;
                 }
-            } else {
-                if (actualType == typeOne && candidateOne.ProhibitNull) {
-                    return Candidate.One;
+
+                if (typeOne == typeof(BlockParam) && typeTwo == typeof(BlockParam)) {
+                    if (candidateOne.ProhibitNull) {
+                        return Candidate.One;
+                    } else if (candidateTwo.ProhibitNull) {
+                        return Candidate.Two;
+                    }
                 }
-
-                if (actualType == typeTwo && candidateTwo.ProhibitNull) {
-                    return Candidate.Two;
-                }
             }
-
-            if (actualType == typeOne) {
-                return Candidate.One;
-            }
-
-            if (actualType == typeTwo) {
-                return Candidate.Two;
-            }
-
-
-            return Candidate.Equivalent;
+            return base.SelectBestConversionFor(arg, candidateOne, candidateTwo, level);
         }
 
         public override Expression/*!*/ Convert(DynamicMetaObject/*!*/ metaObject, Type restrictedType, ParameterInfo info, Type/*!*/ toType) {
@@ -519,7 +502,8 @@ namespace IronRuby.Runtime.Calls {
                     return Ast.Dynamic(action, toType, expr);
                 }
 
-                throw new InvalidOperationException(String.Format("No default protocol conversion for type {0}.", toType));
+                // Do not throw an exception here to allow generic type parameters to be used with D.P. attribute.
+                // The semantics should be to use DP if available for the current instantiation and ignore it otherwise.
             }
 
             if (restrictedType != null) {
@@ -538,7 +522,7 @@ namespace IronRuby.Runtime.Calls {
 
                 // if there is a simple conversion from restricted type, convert the expression to the restricted type and use that conversion:
                 Type visibleRestrictedType = CompilerHelpers.GetVisibleType(restrictedType);
-                if (Converter.CanConvertFrom(visibleRestrictedType, toType, NarrowingLevel.One, false)) {
+                if (Converter.CanConvertFrom(metaObject, visibleRestrictedType, toType, false, NarrowingLevel.None, false, false)) {
                     expr = AstUtils.Convert(expr, visibleRestrictedType);
                 }
             }
@@ -765,9 +749,18 @@ namespace IronRuby.Runtime.Calls {
                                     return Methods.CreateArgumentsErrorForMissingBlock.OpCall();
                                 }
 
+                                string toType;
+                                if (cr.To.IsGenericType && cr.To.GetGenericTypeDefinition() == typeof(Union<,>)) {
+                                    var g = cr.To.GetGenericArguments();
+                                    toType = Binder.GetTypeName(g[0]) + " or " + Binder.GetTypeName(g[1]);
+                                } else {
+                                    toType = Binder.GetTypeName(cr.To);
+                                }
+
                                 return Methods.CreateTypeConversionError.OpCall(
-                                        AstUtils.Constant(cr.GetArgumentTypeName(Binder)),
-                                        AstUtils.Constant(Binder.GetTypeName(cr.To)));
+                                    AstUtils.Constant(cr.GetArgumentTypeName(Binder)),
+                                    AstUtils.Constant(toType)
+                                );
                             }
                         }
                         break;

@@ -33,6 +33,17 @@ describe "Kernel.rand" do
       (rand(100) < 100).should == true
     end
   end
+
+  it "returns different values each time" do
+    result = false
+    5.times do
+      #this tests for caching the callsite when on the same line. Repeated 5
+      #times for the random chance that the two numbers are equal
+      a = [rand(100), rand(100)]
+      result |= (a[0] != a[1])
+    end
+    result.should == true
+  end
 end
 
 describe "Kernel#rand" do

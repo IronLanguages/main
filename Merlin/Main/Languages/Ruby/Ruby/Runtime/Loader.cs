@@ -28,6 +28,7 @@ using IronRuby.Runtime.Calls;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+using IronRuby.Runtime.Conversions;
 
 namespace IronRuby.Runtime {
     [Flags]

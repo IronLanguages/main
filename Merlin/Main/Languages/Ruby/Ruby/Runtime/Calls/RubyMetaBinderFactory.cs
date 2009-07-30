@@ -4,6 +4,7 @@ using System.Text;
 using Microsoft.Scripting.Utils;
 using System.Threading;
 using System.Dynamic;
+using IronRuby.Runtime.Conversions;
 
 namespace IronRuby.Runtime.Calls {
     internal sealed class RubyMetaBinderFactory {

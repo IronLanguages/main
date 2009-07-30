@@ -20,12 +20,13 @@ using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Utils;
 using IronRuby.Builtins;
 using IronRuby.Runtime;
+using IronRuby.Runtime.Calls;
+using IronRuby.Runtime.Conversions;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 using MSA = System.Linq.Expressions;
 
 namespace IronRuby.Compiler.Ast {
     using Ast = System.Linq.Expressions.Expression;
-    using IronRuby.Runtime.Calls;
 
     public partial class MatchExpression : Expression {
         private readonly RegularExpression/*!*/ _regex;

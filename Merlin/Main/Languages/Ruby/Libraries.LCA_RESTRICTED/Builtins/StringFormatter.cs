@@ -27,6 +27,7 @@ using IronRuby.Runtime.Calls;
 using System.Runtime.CompilerServices;
 using Microsoft.Scripting.Generation;
 using IronRuby.Compiler.Generation;
+using IronRuby.Runtime.Conversions;
 
 namespace IronRuby.Builtins {
 
