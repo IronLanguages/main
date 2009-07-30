@@ -25,6 +25,7 @@ using Microsoft.Scripting.Utils;
 using IronRuby.Builtins;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
+using IronRuby.Runtime.Conversions;
 using MSA = System.Linq.Expressions;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 

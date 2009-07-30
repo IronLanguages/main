@@ -11,19 +11,29 @@ describe "Name mangling on public types" do
       public string Mixed_Snake_case() {return "Mixed_Snake_case";}
       public string CAPITAL() { return "CAPITAL";}
       public string PartialCapitalID() { return "PartialCapitalID";}
+      public string PartialCapitalId() { return "PartialCapitalId";}
       public string __LeadingCamelCase() { return "__LeadingCamelCase";}
       public string __leading_snake_case() { return "__leading_snake_case";}
+      public string foNBar() { return "foNBar"; }
+      public string fNNBar() { return "fNNBar"; }
+      public string NNNBar() { return "NNNBar"; }
+      public string MyUIApp() { return "MyUIApp"; }
+      public string MyIdYA() { return "MyIdYA"; }
+      public string NaN() { return "NaN"; }
+      public string NaNa() { return "NaNa"; }
     }
 
     public class SubPublicNameHolder : PublicNameHolder {
     }
   EOL
 
+  @methods = %w{Unique snake_case CamelCase PartialCapitalId __LeadingCamelCase __leading_snake_case fNNBar MyUIApp MyIdYA NaNa Mixed_Snake_case}
   before(:each) do
     @objs = [PublicNameHolder.new, SubPublicNameHolder.new, Class.new(PublicNameHolder).new, Class.new(SubPublicNameHolder).new]
     @a_methods = %w{a A}
-    @methods = %w{Unique snake_case CamelCase Mixed_Snake_case CAPITAL PartialCapitalID __LeadingCamelCase __leading_snake_case}
-    @all_methods = @methods + @a_methods
+    @methods << "foNBar" 
+    @non_mangle_methods = %w{NNNBar NaN CAPITAL PartialCapitalID }
+    @all_methods = @methods + @a_methods + @non_mangle_methods
   end
   
   it "works with correct .NET names" do
@@ -34,8 +44,8 @@ describe "Name mangling on public types" do
     end
   end
 
-  it "works with mangled name if not conflicting" do
-    @methods.each do |meth|
+  @methods.each do |meth|
+    it "works with mangled name (#{meth}) if not conflicting" do
       @objs.each do |obj|
         obj.send(meth.to_snake_case).should equal_clr_string(meth)
       end

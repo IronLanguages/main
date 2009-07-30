@@ -24,6 +24,7 @@ using IronRuby.Builtins;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
 using System.Linq.Expressions;
+using IronRuby.Runtime.Conversions;
 
 namespace IronRuby.Compiler.Generation {
     public class RubyTypeEmitter : ClsTypeEmitter {

@@ -252,6 +252,12 @@ namespace IronPythonTest.BinderTest {
         // generics
         public void M130(Int32 arg) { Flag.Value = 130; }
         public void M130<T>(T arg) { Flag.Value = 230; }
+
+        // narrowing levels and __int__ conversion:
+        // If 2 instances of a Python subclass of C3 that implements __int__ are passed as arguments this 
+        // the first overload should be preferred.
+        public void M140(C3 a, int b) { Flag.Value = 140; }
+        public void M140(int a, int b) { Flag.Value = 240; } 
     }
 
     public interface I1 { void M(); }

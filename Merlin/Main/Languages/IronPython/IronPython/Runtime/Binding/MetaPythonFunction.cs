@@ -34,7 +34,7 @@ namespace IronPython.Runtime.Binding {
     using Ast = System.Linq.Expressions.Expression;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
 
-    class MetaPythonFunction : MetaPythonObject, IPythonInvokable, IPythonOperable, IPythonConvertible, IInferableInvokable {
+    class MetaPythonFunction : MetaPythonObject, IPythonInvokable, IPythonOperable, IPythonConvertible, IInferableInvokable, IConvertibleMetaObject {
         public MetaPythonFunction(Expression/*!*/ expression, BindingRestrictions/*!*/ restrictions, PythonFunction/*!*/ value)
             : base(expression, BindingRestrictions.Empty, value) {
             Assert.NotNull(value);
@@ -927,6 +927,14 @@ namespace IronPython.Runtime.Binding {
             }
 
             return null;
+        }
+
+        #endregion
+
+        #region IConvertibleMetaObject Members
+
+        bool IConvertibleMetaObject.CanConvertTo(Type/*!*/ type, bool @explicit) {
+            return type.IsSubclassOf(typeof(Delegate));
         }
 
         #endregion

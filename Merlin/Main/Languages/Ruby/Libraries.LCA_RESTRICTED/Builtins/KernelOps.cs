@@ -24,6 +24,7 @@ using System.Threading;
 using IronRuby.Compiler;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
+using IronRuby.Runtime.Conversions;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
@@ -565,12 +566,13 @@ namespace IronRuby.Builtins {
             object self, [NotNull]params object[]/*!*/ args) {
 
             var inspect = inspectStorage.GetCallSite("inspect");
+            var inspectedArgs = new object[args.Length];
             for (int i = 0; i < args.Length; i++) {
-                args[i] = inspect.Target(inspect, args[i]);
+                inspectedArgs[i] = inspect.Target(inspect, args[i]);
             }
             
             // no dynamic dispatch to "puts":
-            RubyIOOps.Puts(writeStorage, tosConversion, writeStorage.Context.StandardOutput, args);
+            RubyIOOps.Puts(writeStorage, tosConversion, writeStorage.Context.StandardOutput, inspectedArgs);
         }
 
         [RubyMethod("print", RubyMethodAttributes.PrivateInstance)]

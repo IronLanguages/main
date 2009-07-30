@@ -23,6 +23,7 @@ using System.Text;
 using IronRuby.Compiler;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
+using IronRuby.Runtime.Conversions;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;

@@ -34,6 +34,7 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using IronRuby.Compiler.Ast;
 using MSA = System.Linq.Expressions;
+using IronRuby.Runtime.Conversions;
 
 namespace IronRuby.Runtime {
     [ReflectionCached, CLSCompliant(false)]
@@ -849,68 +850,68 @@ namespace IronRuby.Runtime {
         #region CLR Vectors (factories mimic Ruby Array factories)
 
         [Emitted, RubyConstructor]
-        public static object/*!*/ CreateVector(ConversionStorage<Union<IList, int>>/*!*/ toAryToInt, BlockParam block, RubyClass/*!*/ self,
-            [NotNull]object/*!*/ arrayOrSize) {
+        public static object/*!*/ CreateVector<TElement>(
+            ConversionStorage<TElement>/*!*/ elementConversion, 
+            ConversionStorage<Union<IList, int>>/*!*/ toAryToInt, 
+            BlockParam block, RubyClass/*!*/ self, [NotNull]object/*!*/ arrayOrSize) {
 
-            var elementType = self.GetUnderlyingSystemType().GetElementType();
-            Debug.Assert(elementType != null);
+            Debug.Assert(typeof(TElement) == self.GetUnderlyingSystemType().GetElementType());
 
             var site = toAryToInt.GetSite(CompositeConversionAction.Make(self.Context, CompositeConversion.ToAryToInt));
             var union = site.Target(site, arrayOrSize);
 
             if (union.First != null) {
                 // block ignored
-                return CreateVectorInternal(self.Context, elementType, union.First);
+                return CreateVectorInternal(elementConversion, union.First);
             } else if (block != null) {
-                return PopulateVector(self.Context, CreateVectorInternal(elementType, union.Second), block);
+                return PopulateVector(elementConversion, CreateVectorInternal<TElement>(union.Second), block);
             } else {
-                return CreateVectorInternal(elementType, union.Second);
+                return CreateVectorInternal<TElement>(union.Second);
             }
         }
 
         [Emitted, RubyConstructor]
-        public static Array/*!*/ CreateVectorWithValues(RubyClass/*!*/ self, [DefaultProtocol]int size, object value) {
-            var elementType = self.GetUnderlyingSystemType().GetElementType();
-            Debug.Assert(elementType != null);
+        public static Array/*!*/ CreateVectorWithValues<TElement>(ConversionStorage<TElement>/*!*/ elementConversion,
+            RubyClass/*!*/ self, [DefaultProtocol]int size, [DefaultProtocol]TElement value) {
+            Debug.Assert(typeof(TElement) == self.GetUnderlyingSystemType().GetElementType());
 
-            var result = CreateVectorInternal(elementType, size);
-            for (int i = 0; i < size; i++) {
-                SetVectorItem(self.Context, result, i, value);
+            TElement[] result = CreateVectorInternal<TElement>(size);
+            for (int i = 0; i < result.Length; i++) {
+                result[i] = value;
             }
             return result;
         }
 
-        public static Array/*!*/ CreateVectorInternal(Type/*!*/ elementType, int size) {
+        private static TElement[]/*!*/ CreateVectorInternal<TElement>(int size) {
             if (size < 0) {
                 throw RubyExceptions.CreateArgumentError("negative array size");
             }
 
-            return Array.CreateInstance(elementType, size);
+            return new TElement[size];
         }
 
-        private static Array/*!*/ CreateVectorInternal(RubyContext/*!*/ context, Type/*!*/ elementType, IList/*!*/ list) {
-            var result = Array.CreateInstance(elementType, list.Count);
+        private static Array/*!*/ CreateVectorInternal<TElement>(ConversionStorage<TElement>/*!*/ elementConversion, IList/*!*/ list) {
+            var site = elementConversion.GetDefaultConversionSite();
+
+            var result = new TElement[list.Count];
             for (int i = 0; i < result.Length; i++) {
-                SetVectorItem(context, result, i, list[i]);
+                result[i] = site.Target(site, list[i]);
             }
 
             return result;
         }
 
-        private static object PopulateVector(RubyContext/*!*/ context, Array/*!*/ array, BlockParam/*!*/ block) {
+        private static object PopulateVector<TElement>(ConversionStorage<TElement>/*!*/ elementConversion, TElement[]/*!*/ array, BlockParam/*!*/ block) {
+            var site = elementConversion.GetDefaultConversionSite();
+
             for (int i = 0; i < array.Length; i++) {
                 object item;
                 if (block.Yield(i, out item)) {
                     return item;
                 }
-                SetVectorItem(context, array, i, item);
+                array[i] = site.Target(site, item);
             }
             return array;
-        }
-
-        private static void SetVectorItem(RubyContext/*!*/ context, Array/*!*/ array, int index, object value) {
-            // TODO: convert to the element type:
-            array.SetValue(value, index);
         }
 
         #endregion

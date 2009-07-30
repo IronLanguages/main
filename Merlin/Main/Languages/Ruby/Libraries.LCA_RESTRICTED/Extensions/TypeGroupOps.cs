@@ -50,6 +50,17 @@ namespace IronRuby.Builtins {
             return context.GetModule(concreteType);
         }
 
+        [RubyMethod("of")]
+        [RubyMethod("[]")]
+        public static RubyModule/*!*/ Of(RubyContext/*!*/ context, TypeGroup/*!*/ self, int genericArity) {
+            TypeTracker tracker = self.GetTypeForArity(genericArity);
+            if (tracker == null) {
+                throw RubyExceptions.CreateArgumentError(String.Format("Type group `{0}' does not contain a type of generic arity {1}", self.Name, genericArity));
+            }
+
+            return context.GetModule(tracker.Type);
+        }
+
         [RubyMethod("each")]
         public static object EachType(RubyContext/*!*/ context, BlockParam/*!*/ block, TypeGroup/*!*/ self) {
             if (block == null) {

@@ -1,1 +1,4 @@
-fails:Name mangling on public types works with mangled name if not conflicting
+fails:Name mangling on public types works with mangled name (__LeadingCamelCase) if not conflicting
+fails:Name mangling on public types works with mangled name (fNNBar) if not conflicting
+fails:Name mangling on public types works with mangled name (NaNa) if not conflicting
+fails:Name mangling on public types works with mangled name (Mixed_Snake_case) if not conflicting

@@ -1,8 +1,9 @@
-﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="3.5">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>9.0.30729</ProductVersion>
+    <ProductVersion>10.0.20624</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{811AC32C-11F3-4ED8-92A7-A7E39C2BB704}</ProjectGuid>
     <OutputType>Exe</OutputType>
@@ -14,7 +15,6 @@
     <SccAuxPath>SAK</SccAuxPath>
     <SccProvider>SAK</SccProvider>
     <ApplicationIcon>ipy.ico</ApplicationIcon>
-    <OldToolsVersion>2.0</OldToolsVersion>
     <WarningsNotAsErrors>618,1685</WarningsNotAsErrors>
     <AssemblyOriginatorKeyFile>..\..\..\Support\MSSharedLibKey.snk</AssemblyOriginatorKeyFile>
     <SignAssembly Condition="'$(SignAssembly)' == '' And Exists('$(AssemblyOriginatorKeyFile)')">true</SignAssembly>
@@ -23,6 +23,7 @@
     <SignedDir Condition="$(SignAssembly) != true">Unsigned</SignedDir>
     <DelaySign>true</DelaySign>
     <PlatformTarget>x86</PlatformTarget>
+    <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
