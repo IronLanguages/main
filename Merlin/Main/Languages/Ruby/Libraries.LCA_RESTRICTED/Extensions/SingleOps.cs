@@ -29,5 +29,10 @@ namespace IronRuby.Builtins {
         public static float Create(RubyClass/*!*/ self, [DefaultProtocol]double value) {
             return (float)value;
         }
+
+        [RubyMethod("inspect")]
+        public static MutableString/*!*/ Inspect(object/*!*/ self) {
+            return MutableString.CreateMutable().Append(self.ToString()).Append(" (Single)");
+        }
     }
 }

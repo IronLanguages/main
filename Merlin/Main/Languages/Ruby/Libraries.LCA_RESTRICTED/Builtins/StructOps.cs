@@ -39,28 +39,21 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("new", RubyMethodAttributes.PublicSingleton)]
-        public static object NewAnonymousStruct(BlockParam block, RubyClass/*!*/ self, int className,
+        public static object NewAnonymousStruct(BlockParam block, RubyClass/*!*/ self, SymbolId firstAttibuteName,
             [DefaultProtocol, NotNull, NotNullItems]params string/*!*/[]/*!*/ attributeNames) {
 
-            return CreateAnonymousWithFirstAttribute(block, self, RubyOps.ConvertFixnumToSymbol(self.Context, className), attributeNames);
+            return CreateAnonymousWithFirstAttribute(block, self, RubyOps.ConvertSymbolIdToSymbol(firstAttibuteName), attributeNames);
         }
 
         [RubyMethod("new", RubyMethodAttributes.PublicSingleton)]
-        public static object NewAnonymousStruct(BlockParam block, RubyClass/*!*/ self, SymbolId className,
+        public static object NewAnonymousStruct(BlockParam block, RubyClass/*!*/ self, [NotNull]string/*!*/ firstAttibuteName,
             [DefaultProtocol, NotNull, NotNullItems]params string/*!*/[]/*!*/ attributeNames) {
 
-            return CreateAnonymousWithFirstAttribute(block, self, RubyOps.ConvertSymbolIdToSymbol(className), attributeNames);
+            return CreateAnonymousWithFirstAttribute(block, self, firstAttibuteName, attributeNames);
         }
 
         [RubyMethod("new", RubyMethodAttributes.PublicSingleton)]
-        public static object NewAnonymousStruct(BlockParam block, RubyClass/*!*/ self, [NotNull]string/*!*/ className,
-            [DefaultProtocol, NotNull, NotNullItems]params string/*!*/[]/*!*/ attributeNames) {
-
-            return CreateAnonymousWithFirstAttribute(block, self, className, attributeNames);
-        }
-
-        [RubyMethod("new", RubyMethodAttributes.PublicSingleton)]
-        public static object NewStruct(BlockParam block, RubyClass/*!*/ self, [DefaultProtocol, Optional]MutableString className,
+        public static object NewStruct(BlockParam block, RubyClass/*!*/ self, [DefaultProtocol]MutableString className,
             [DefaultProtocol, NotNull, NotNullItems]params string/*!*/[]/*!*/ attributeNames) {
 
             if (className == null) {

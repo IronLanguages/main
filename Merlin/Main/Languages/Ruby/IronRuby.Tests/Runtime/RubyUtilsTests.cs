@@ -21,7 +21,7 @@ namespace IronRuby.Tests {
             Assert(RubyUtils.TryUnmangleName("stack") == "Stack");
             Assert(RubyUtils.TryUnmangleName("this_is_my_long_name") == "ThisIsMyLongName");
             Assert(RubyUtils.TryUnmangleName("f") == "F");
-            Assert(RubyUtils.TryUnmangleName("initialize") == "Initialize");
+            Assert(RubyUtils.TryUnmangleName("initialize") == null);
 
             // non-alpha characters are treated as lower-case letters: 
             Assert(RubyUtils.TryUnmangleName("foo_bar=") == "FooBar=");
@@ -78,7 +78,7 @@ namespace IronRuby.Tests {
             Assert(RubyUtils.TryMangleName("Stack") == "stack");
             Assert(RubyUtils.TryMangleName("ThisIsMyLongName") == "this_is_my_long_name");
             Assert(RubyUtils.TryMangleName("F") == "f");
-            Assert(RubyUtils.TryMangleName("Initialize") == "initialize");
+            Assert(RubyUtils.TryMangleName("Initialize") == null);
             Assert(RubyUtils.TryMangleName("fooBar") == "foo_bar");
 
             // characters that are not upper case letters are treated as lower-case:

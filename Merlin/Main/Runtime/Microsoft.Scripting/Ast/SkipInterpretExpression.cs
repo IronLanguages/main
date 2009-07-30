@@ -28,7 +28,7 @@ namespace Microsoft.Scripting.Ast {
 
         internal SkipInterpretExpression(Expression body) {
             if (body.Type != typeof(void)) {
-                body = Expression.Block(typeof(void), body);
+                body = Expression.Block(body, Utils.Empty());
             }
             _body = body;
         }

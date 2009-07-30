@@ -30,6 +30,7 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+using IronRuby.Runtime.Conversions;
 
 namespace IronRuby.Runtime {
     using EvalEntryPointDelegate = Func<RubyScope, object, RubyModule, Proc, object>;
@@ -196,7 +197,7 @@ namespace IronRuby.Runtime {
         /// </summary>
         public static string TryUnmangleName(string/*!*/ name) {
             ContractUtils.RequiresNotNull(name, "name");
-            if (name.Length == 0) {
+            if (name.Length == 0 || name == "initialize") {
                 return null;
             }
 
@@ -253,6 +254,10 @@ namespace IronRuby.Runtime {
         /// </summary>
         public static string TryMangleName(string/*!*/ name) {
             ContractUtils.RequiresNotNull(name, "name");
+            if (name == "Initialize") {
+                return null;
+            }
+
             StringBuilder mangled = null;
             int i = 0;
             while (i < name.Length) {

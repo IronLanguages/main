@@ -699,6 +699,10 @@ namespace IronRuby.Builtins {
             return base.Equals(other);
         }
 
+        public string/*!*/ BaseToString() {
+            return base.ToString();
+        }
+
         #endregion
 
         #region Factories (thread-safe)
@@ -1648,11 +1652,13 @@ namespace IronRuby.Builtins {
                 }
 
                 // Special mappings:
-                // Do not map to Kernel#hash/eql? to prevent recursion in case Object.GetHashCode/Equals is removed.
+                // Do not map to Kernel#hash/eql?/to_s to prevent recursion in case Object.GetHashCode/Equals/ToString is removed.
                 if (this != Context.KernelModule) {
                     if (name == "GetHashCode" && TryGetDefinedMethod("hash", out method) && method.IsRubyMember) {
                         return true;
                     } else if (name == "Equals" && TryGetDefinedMethod("eql?", out method) && method.IsRubyMember) {
+                        return true;
+                    } if (name == "ToString" && TryGetDefinedMethod("to_s", out method) && method.IsRubyMember) {
                         return true;
                     }
                 }
@@ -1663,8 +1669,8 @@ namespace IronRuby.Builtins {
 
         private bool TryGetClrMember(string/*!*/ name, bool virtualLookup, out RubyMemberInfo method) {
             // Skip hidden CLR overloads.
-            // Skip lookup on types that are not visible or interfaces.
-            if (_typeTracker != null && !_typeTracker.Type.IsInterface) {
+            // Skip lookup on types that are not visible, that are interfaces or generic type definitions.
+            if (_typeTracker != null && !_typeTracker.Type.IsInterface && !_typeTracker.Type.IsGenericTypeDefinition) {
                 // Note: Do not allow mangling for CLR virtual lookups - we want to match the overridden name exactly as is, 
                 // so that it corresponds to the base method call the override stub performs.
                 bool tryUnmangle = !virtualLookup && (_restrictions & ModuleRestrictions.NoNameMangling) == 0;
@@ -1898,14 +1904,6 @@ namespace IronRuby.Builtins {
 
             foreach (RubyModule module in expanded) {
                 if (module.IsInterface) {
-                    // Can't include generic interfaces
-                    if (module.TypeTracker.Type.ContainsGenericParameters) {
-                        throw RubyExceptions.CreateTypeError(String.Format(
-                            "{0}: cannot extend with open generic instantiation {1}. Only closed instantiations are supported.",
-                            Name, module.Name
-                            ));
-                    }
-
                     if (!CanIncludeClrInterface) {
                         bool alreadyIncluded = false;
                         foreach (RubyModule includedModule in _mixins) {
@@ -2000,11 +1998,11 @@ namespace IronRuby.Builtins {
             get { return true; }
         }
 
-        internal List<Type> GetClrInterfaces() {
+        internal List<Type> GetImplementedInterfaces() {
             List<Type> interfaces = new List<Type>();
             using (Context.ClassHierarchyLocker()) {
                 foreach (RubyModule m in _mixins) {
-                    if (m.IsInterface && !interfaces.Contains(m.TypeTracker.Type)) {
+                    if (m.IsInterface && !m.TypeTracker.Type.IsGenericTypeDefinition && !interfaces.Contains(m.TypeTracker.Type)) {
                         interfaces.Add(m.TypeTracker.Type);
                     }
                 }

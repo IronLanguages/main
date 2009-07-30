@@ -32,6 +32,7 @@ using Microsoft.Scripting.Utils;
 using Ast = System.Linq.Expressions.Expression;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 using Microsoft.Scripting.Generation;
+using IronRuby.Runtime.Conversions;
 
 namespace IronRuby.Builtins {
     public sealed partial class RubyClass : RubyModule, IDuplicable {
@@ -101,6 +102,7 @@ namespace IronRuby.Builtins {
         private CallSite<Func<CallSite, object, MutableString>> _stringConversionSite;
         private CallSite<Func<CallSite, object, object, object>> _eqlSite;
         private CallSite<Func<CallSite, object, object>> _hashSite;
+        private CallSite<Func<CallSite, object, object>> _toStringSite;
 
         public CallSite<Func<CallSite, object, object>>/*!*/ InspectSite { 
             get { return RubyUtils.GetCallSite(ref _inspectSite, Context, "inspect", 0); } 
@@ -121,6 +123,14 @@ namespace IronRuby.Builtins {
         internal CallSite<Func<CallSite, object, object>>/*!*/ GetHashCodeSite {
             get { 
                 return RubyUtils.GetCallSite(ref _hashSite, Context, "GetHashCode", 
+                    new RubyCallSignature(0, RubyCallFlags.HasImplicitSelf | RubyCallFlags.IsVirtualCall)
+                );
+            }
+        }
+
+        public CallSite<Func<CallSite, object, object>>/*!*/ ToStringSite {
+            get {
+                return RubyUtils.GetCallSite(ref _toStringSite, Context, "ToString",
                     new RubyCallSignature(0, RubyCallFlags.HasImplicitSelf | RubyCallFlags.IsVirtualCall)
                 );
             }
@@ -241,7 +251,7 @@ namespace IronRuby.Builtins {
                 Interlocked.Exchange(ref _underlyingSystemType, 
                     RubyTypeDispenser.GetOrCreateType(
                         _superClass.GetUnderlyingSystemType(), 
-                        GetClrInterfaces(),
+                        GetImplementedInterfaces(),
                         _superClass != null && (_superClass.Restrictions & ModuleRestrictions.NoOverrides) != 0
                     )
                 );
@@ -738,12 +748,19 @@ namespace IronRuby.Builtins {
                     return true;
                 }
             } else if (name == "[]" || name == "[]=") {
-                object[] attrs = type.GetCustomAttributes(typeof(DefaultMemberAttribute), false);
-                if (attrs.Length == 1) {
-                    // default indexer accessor:
+                if (type.IsArray && !_isSingletonClass) {
                     bool isSetter = name.Length == 3;
-                    if (TryGetClrProperty(type, bindingFlags, isSetter, name, ((DefaultMemberAttribute)attrs[0]).MemberName, null, out method)) {
-                        return true;
+                    TryGetClrMethod(type, bindingFlags, false, name, null, isSetter ? "Set" : "Get", null, out method);
+                    Debug.Assert(method != null);
+                    return true;
+                } else {
+                    object[] attrs = type.GetCustomAttributes(typeof(DefaultMemberAttribute), false);
+                    if (attrs.Length == 1) {
+                        // default indexer accessor:
+                        bool isSetter = name.Length == 3;
+                        if (TryGetClrProperty(type, bindingFlags, isSetter, name, ((DefaultMemberAttribute)attrs[0]).MemberName, null, out method)) {
+                            return true;
+                        }
                     }
                 }
             } else if (name.LastCharacter() == '=') {
@@ -1210,7 +1227,7 @@ namespace IronRuby.Builtins {
             }
 
             bool hasRubyInitializer = initializer is RubyMethodInfo;
-            bool hasLibraryInitializer = !hasRubyInitializer && initializer.DeclaringModule != Context.ObjectClass;
+            bool hasLibraryInitializer = !hasRubyInitializer && initializer.DeclaringModule != Context.ObjectClass && initializer is RubyLibraryMethodInfo;
 
             if (hasRubyInitializer || hasLibraryInitializer && _isRubyClass) {
                 // allocate and initialize:
@@ -1240,7 +1257,7 @@ namespace IronRuby.Builtins {
                     BuildDelegateConstructorCall(metaBuilder, args, type);
                     return;
                 } else if (type.IsArray && type.GetArrayRank() == 1) {
-                    constructionOverloads = ClrVectorFactories;
+                    constructionOverloads = GetClrVectorFactories();
                 } else if (_structInfo != null) {
                     constructionOverloads = new MethodBase[] { Methods.CreateStructInstance };
                 } else if (_factories.Length != 0) {
@@ -1315,6 +1332,10 @@ namespace IronRuby.Builtins {
         public bool BuildAllocatorCall(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, Func<Expression>/*!*/ defaultExceptionMessage) {
             Type type = GetUnderlyingSystemType();
 
+            if (type == typeof(object)) {
+                type = typeof(RubyObject);
+            }
+
             if (_structInfo != null) {
                 metaBuilder.Result = Methods.AllocateStructInstance.OpCall(AstUtils.Convert(args.TargetExpression, typeof(RubyClass)));
                 return true;
@@ -1373,16 +1394,19 @@ namespace IronRuby.Builtins {
             }
         }
 
-        private MethodBase/*!*/[]/*!*/ ClrVectorFactories {
-            get {
-                if (_clrVectorFactories == null) {
-                    _clrVectorFactories = new[] { Methods.CreateVector, Methods.CreateVectorWithValues };
-                }
-                return _clrVectorFactories;
+        private MethodBase/*!*/[]/*!*/ GetClrVectorFactories() {
+            if (_clrVectorFactories == null) {
+                Type elementType = GetUnderlyingSystemType().GetElementType();
+                _clrVectorFactories = new[] { 
+                    Methods.CreateVector.MakeGenericMethod(elementType), 
+                    Methods.CreateVectorWithValues.MakeGenericMethod(elementType) 
+                };
             }
+            return _clrVectorFactories;
         }
 
-        private static MethodBase[] _clrVectorFactories;
+        // thread-safe (the latest write wins):
+        private MethodBase[] _clrVectorFactories;
 
         #endregion
     }

@@ -36,6 +36,10 @@ namespace IronPython.Compiler.Ast {
             throw new InvalidOperationException();
         }
 
+        internal virtual Expression ConstantFold() {
+            return this;
+        }
+
         internal virtual string CheckAssign() {
             return "can't assign to " + NodeName;
         }

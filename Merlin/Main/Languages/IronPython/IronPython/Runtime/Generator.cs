@@ -17,6 +17,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
@@ -32,7 +33,16 @@ namespace IronPython.Runtime {
         private readonly Func<MutableTuple, object>/*!*/ _next;     // The delegate which contains the user code to perform the iteration.
         private readonly PythonFunction _function;                  // the function which created the generator
         private readonly MutableTuple _data;                        // the closure data we need to pass into each iteration.  Item000 is the index, Item001 is the current value
+        private readonly MutableTuple<int, object> _dataTuple;      // the tuple which has our current index and value
         private GeneratorFlags _flags;                              // Flags capturing various state for the generator
+        /// <summary>
+        /// True iff the thread is currently inside the generator (ie, invoking the _next delegate).
+        /// This can be used to enforce that a generator does not call back into itself. 
+        /// Pep255 says that a generator should throw a ValueError if called reentrantly.
+        /// </summary>
+        private bool _active;
+        private GeneratorFinalizer _finalizer;                      // finalizer object
+        private static GeneratorFinalizer _lastFinalizer;           // last finalier
 
         /// <summary>
         /// Fields set by Throw() to communicate an exception to the yield point.
@@ -50,13 +60,26 @@ namespace IronPython.Runtime {
             _function = function;
             _next = next;
             _data = data;
+            _dataTuple = GetDataTuple();
             State = GeneratorRewriter.NotStarted;
+
+            if (_lastFinalizer == null || (_finalizer = Interlocked.Exchange(ref _lastFinalizer, null)) == null) {
+                _finalizer = new GeneratorFinalizer(this);
+            } else {
+                _finalizer.Generator = this;
+            }
         }
 
         #region Python Public APIs
 
         public object next() {
-            object res = MoveNextWorker();
+            // Python's language policy on generators is that attempting to access after it's closed (returned)
+            // just continues to throw StopIteration exceptions.
+            if (Closed) {
+                throw new StopIterationException();
+            }
+            
+            object res = NextWorker();
             if (res == OperationFailed.Value) {
                 throw new StopIterationException();
             }
@@ -211,19 +234,19 @@ namespace IronPython.Runtime {
 
         private int State {
             get {
-                return GetDataTuple().Item000;
+                return _dataTuple.Item000;
             }
             set {
-                GetDataTuple().Item000 = value;
+                _dataTuple.Item000 = value;
             }
         }
 
         private object CurrentValue {
             get {
-                return GetDataTuple().Item001;
+                return _dataTuple.Item001;
             }
             set {
-                GetDataTuple().Item001 = value;
+                _dataTuple.Item001 = value;
             }
         }
 
@@ -256,10 +279,9 @@ namespace IronPython.Runtime {
             }
         }
 
-        // Silverlight doesn't allow finalizers in user code.
-#if !SILVERLIGHT
         // Pep 342 says generators now have finalizers (__del__) that call Close()
-        ~PythonGenerator() {
+
+        private void Finalizer() {
             // if there are no except or finally blocks then closing the
             // generator has no effect.
             if (CanSetSysExcInfo || ContainsTryFinally) {
@@ -287,7 +309,6 @@ namespace IronPython.Runtime {
                 }
             }
         }
-#endif // !SILVERLIGHT
 
         bool IEnumerator.MoveNext() {
             if (Closed) {
@@ -295,25 +316,45 @@ namespace IronPython.Runtime {
                 return false;
             }
 
-            try {
-                object res = MoveNextWorker();
-                if (res != OperationFailed.Value) {
-                    return true;
-                }
+            CheckSetActive();
 
-                return false;
-            } catch (StopIterationException) {
-                return false;
+            if (!CanSetSysExcInfo) {
+                return MoveNextWorker();
+            } else {
+                Exception save = SaveCurrentException();
+                try {
+                    return MoveNextWorker();
+                } finally {
+                    RestoreCurrentException(save);
+                }
             }
         }
 
-        private object MoveNextWorker() {
-            // Python's language policy on generators is that attempting to access after it's closed (returned)
-            // just continues to throw StopIteration exceptions.
-            if (Closed) {
-                throw new StopIterationException();
+        /// <summary>
+        /// Core implementation of IEnumerator.MoveNext()
+        /// </summary>
+        private bool MoveNextWorker() {
+            bool ret = false;
+            try {
+                try {
+                    _next(_data);
+                    ret = State != GeneratorRewriter.Finished;
+                } finally {
+                    Active = false;
+                    if (!ret) {
+                        Close();
+                    }
+                }
+            } catch (StopIterationException) {
+                return false;
             }
+            return ret;
+        }
 
+        /// <summary>
+        /// Core implementation of Python's next() method.
+        /// </summary>
+        private object NextWorker() {
             // Generators can not be called re-entrantly.
             CheckSetActive();
 
@@ -423,7 +464,12 @@ namespace IronPython.Runtime {
         private void Close() {
             Closed = true;
             // if we're closed the finalizer won't do anything, so suppress it.
-            GC.SuppressFinalize(this);
+            SuppressFinalize();
+        }
+
+        private void SuppressFinalize() {
+            _finalizer.Generator = null;
+            _lastFinalizer = _finalizer;            
         }
 
         private bool Closed {
@@ -438,11 +484,10 @@ namespace IronPython.Runtime {
 
         private bool Active {
             get {
-                return (_flags & GeneratorFlags.Active) != 0;
+                return _active;
             }
             set {
-                if (value) _flags |= GeneratorFlags.Active;
-                else _flags &= ~GeneratorFlags.Active;
+                _active = value;
             }
         }
 
@@ -483,12 +528,6 @@ namespace IronPython.Runtime {
             /// </summary>
             Closed = 0x01,
             /// <summary>
-            /// True iff the thread is currently inside the generator (ie, invoking the _next delegate).
-            /// This can be used to enforce that a generator does not call back into itself. 
-            /// Pep255 says that a generator should throw a ValueError if called reentrantly.
-            /// </summary>
-            Active = 0x02,
-            /// <summary>
             /// True if the generator can set sys exc info and therefore needs exception save/restore.
             /// </summary>
             CanSetSysExcInfo = 0x04
@@ -519,9 +558,22 @@ namespace IronPython.Runtime {
 
         void IDisposable.Dispose() {
             // nothing needed to dispose
-            GC.SuppressFinalize(this);
+            SuppressFinalize();
         }
 
         #endregion
+
+        class GeneratorFinalizer {
+            public PythonGenerator Generator;
+            public GeneratorFinalizer(PythonGenerator generator) {
+                Generator = generator;
+            }
+
+            ~GeneratorFinalizer() {
+                if (Generator != null) {
+                    Generator.Finalizer();
+                }
+            }
+        }
     }
 }

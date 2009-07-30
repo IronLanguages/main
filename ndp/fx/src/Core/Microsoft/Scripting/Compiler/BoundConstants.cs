@@ -125,7 +125,7 @@ namespace System.Linq.Expressions.Compiler {
             int count = 0;
             foreach (var reference in _references) {
                 if (!lc.CanEmitBoundConstants) {
-                    throw Error.CannotCompileConstant(reference.Value);
+                    throw Error.CannotCompileConstant(reference.Key.Value);
                 }
 
                 if (ShouldCache(reference.Value)) {

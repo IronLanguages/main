@@ -596,6 +596,16 @@ namespace IronRuby.Runtime.Calls {
                 );
             }
 
+            public static DynamicMetaObject/*!*/ Bind(DynamicMetaObject/*!*/ context, ConvertBinder/*!*/ binder,
+                DynamicMetaObject/*!*/ target, Func<DynamicMetaObject, DynamicMetaObject, DynamicMetaObject>/*!*/ fallback) {
+
+                // TODO:
+                return null;
+                //return InvokeMember.Bind(context, RubyUtils.MapOperator(binder.Operation), _CallInfo, binder, target, new[] { arg },
+                //    (trgt, args) => fallback(trgt, args[0])
+                //);
+            }
+
             public override string/*!*/ ToString() {
                 return String.Format("Interop.Convert({0}, {1}){2}", 
                     Type.Name, 

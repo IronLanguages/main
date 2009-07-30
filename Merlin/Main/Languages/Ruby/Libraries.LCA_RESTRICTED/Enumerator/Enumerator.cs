@@ -63,14 +63,24 @@ namespace IronRuby.StandardLibrary.Enumerator {
             }
 
             [RubyConstructor]
-            public static Enumerator/*!*/ Create(RubyClass/*!*/ self, object targetObject, [DefaultProtocol, Optional]string targetName, 
+            public static Enumerator/*!*/ Create(RubyClass/*!*/ self, object targetObject) {
+                return Reinitialize(new Enumerator(), targetObject, null, ArrayUtils.EmptyObjects);
+            }
+
+            [RubyConstructor]
+            public static Enumerator/*!*/ Create(RubyClass/*!*/ self, object targetObject, [DefaultProtocol]string targetName,
                 [NotNull]params object[] targetArguments) {
 
                 return Reinitialize(new Enumerator(), targetObject, targetName, targetArguments);
             }
 
             [RubyMethod("initialize", RubyMethodAttributes.PrivateInstance)]
-            public static Enumerator/*!*/ Reinitialize(Enumerator/*!*/ self, object targetObject, [DefaultProtocol, Optional]string targetName, 
+            public static Enumerator/*!*/ Reinitialize(Enumerator/*!*/ self, object targetObject) {
+                return Reinitialize(self, targetObject, null, ArrayUtils.EmptyObjects);
+            }
+
+            [RubyMethod("initialize", RubyMethodAttributes.PrivateInstance)]
+            public static Enumerator/*!*/ Reinitialize(Enumerator/*!*/ self, object targetObject, [DefaultProtocol]string targetName, 
                 [NotNull]params object[] targetArguments) {
 
                 self._targetObject = targetObject;

@@ -1251,6 +1251,47 @@ p C[Fixnum, Fixnum]
 InteropTests::Generics1::D[String]
 InteropTests::Generics1::C[Fixnum, Fixnum]
 ");
+
+            TestOutput(@"
+include InteropTests::Generics1
+p C[0]
+p C[1]
+p C[2]
+C[30] rescue p $!
+p C[1][Fixnum]
+p C[Fixnum][]
+p C[Fixnum][0]
+C[Fixnum][Fixnum] rescue p $!
+C[Fixnum][1] rescue p $!
+", @"
+InteropTests::Generics1::C
+InteropTests::Generics1::C[T]
+InteropTests::Generics1::C[T, S]
+#<ArgumentError: Type group `C' does not contain a type of generic arity 30>
+InteropTests::Generics1::C[Fixnum]
+InteropTests::Generics1::C[Fixnum]
+InteropTests::Generics1::C[Fixnum]
+#<ArgumentError: `InteropTests::Generics1::C[Fixnum]' is not a generic type definition>
+#<ArgumentError: `InteropTests::Generics1::C[Fixnum]' is not a generic type definition>
+");
+            
+            // C<T> instantiations are subclasses of C<>:
+            TestOutput(@"
+include InteropTests::Generics1
+C[1].class_eval do
+  def foo
+    p self.class
+  end
+end
+
+C[Fixnum].new.foo
+C[String].new.foo
+p C[Float].ancestors[0..2]
+", @"
+InteropTests::Generics1::C[Fixnum]
+InteropTests::Generics1::C[String]
+[InteropTests::Generics1::C[Float], InteropTests::Generics1::C[T], Object]
+");
         }
 
         public class ClassWithNestedGenericTypes1 {
@@ -1578,7 +1619,7 @@ p C.new.Count
 
         public class ClassWithToStringHashEquals1 {
             public override string ToString() {
-                return "hello";
+                return "b";
             }
 
             public override int GetHashCode() {
@@ -1596,69 +1637,27 @@ p C.new.Count
             }
         }
 
-        public void ClrToString1() {
-            Engine.Runtime.Globals.SetVariable("B", Context.GetClass(typeof(ClassWithToStringHashEquals1)));
-
-            var objs = Engine.Execute<RubyArray>(@"
-class C
-  def to_s
-    '123'
-  end
-end
-
-class D
-end
-
-class E < B
-end
-
-class F < B
-  def to_s
-    'abc'
-  end
-end
-
-[C.new, D.new, E.new, E.new.to_s, F.new]
-");
-
-            Assert(objs[0].ToString() == "123");
-
-            string s = objs[1].ToString();
-            Assert(s.StartsWith("#<D:0x") && s.EndsWith(">"));
-
-            s = objs[2].ToString();
-            Assert(s == "hello");
-
-            s = objs[3].ToString();
-            Assert(s == "hello");
-
-            //TODO:
-            //s = objs[4].ToString();
-            //Assert(s == "abc");
-
-            var range = new Range(1, 2, true);
-            Assert(range.ToString() == "1...2");
-
-            var regex = new RubyRegex("hello", RubyRegexOptions.IgnoreCase | RubyRegexOptions.Multiline);
-            Assert(regex.ToString() == "(?mi-x:hello)");
+        public void ClrHashEqualsToString1() {
+            Test_HashEqlToString("get_hash_code", "equals", "to_string");
         }
 
-        public void ClrHashEquals1() {
-            Test_HashClr("get_hash_code", "equals");
+        public void ClrHashEqualsToString2() {
+            Test_HashEqlToString("GetHashCode", "Equals", "ToString");
         }
 
-        public void ClrHashEquals2() {
-            Test_HashClr("GetHashCode", "Equals");
+        public void ClrHashEqualsToString3() {
+            Test_HashEqlToString("hash", "eql?", "to_s");
         }
 
-        public void ClrHashEquals3() {
-            Test_HashClr("hash", "eql?");
-        }
-
-        private void Test_HashClr(string/*!*/ hashMethodName, string/*!*/ equalsMethodName) {
+        private void Test_HashEqlToString(string/*!*/ hashMethodName, string/*!*/ equalsMethodName, string/*!*/ toStringMethodName) {
             Engine.Runtime.Globals.SetVariable("B", Context.GetClass(typeof(ClassWithToStringHashEquals1)));
 
             var objs = Engine.Execute<RubyArray>(String.Format(@"
+class Object
+  # Object.to_string is not defined by default since Object is a built-in class, so let's alias it
+  alias to_string ToString
+end
+
 class C
   def {0}
     789
@@ -1666,6 +1665,10 @@ class C
 
   def {1}(other)
     other == 1
+  end
+
+  def {2}
+    'c'
   end
 end
 
@@ -1683,31 +1686,62 @@ class F < B
   def {1}(other)
     other == 2
   end
+
+  def {2}
+    'f'
+  end
 end
 
-[C.new, D.new, E.new, F.new, E.new.{0}, E.new.{1}(0)]
-", hashMethodName, equalsMethodName));
+[C.new, D.new, E.new, F.new, E.new.{0}, E.new.{1}(0), D.new.{2}, E.new.{2}]
+", hashMethodName, equalsMethodName, toStringMethodName));
 
-            object c = objs[0], d = objs[1], e = objs[2], f = objs[3], eHash = objs[4], eEquals = objs[5];
+            object c = objs[0], d = objs[1], e = objs[2], f = objs[3];
+            object eHash = objs[4], eEquals = objs[5], dToString = objs[6], eToString = objs[7];
 
             int h = c.GetHashCode();
+            string s = c.ToString();
             Assert(h == 789);
-            Assert(objs[0].Equals(1));
+            Assert(c.Equals(1));
+            Assert(s == "c");
 
             h = d.GetHashCode();
+            s = d.ToString();
             Assert(h == RuntimeHelpers.GetHashCode(objs[1]));
             Assert(d.Equals(d) && !d.Equals(1));
+            Assert(s.StartsWith("#<D:0x") && s.EndsWith(">"));
 
             h = e.GetHashCode();
+            s = e.ToString();
             Assert(h == 1234);
             Assert(e.Equals(0));
+            Assert(s == "b");
 
             h = f.GetHashCode();
+            s = f.ToString();
             Assert(h == 1000);
             Assert(f.Equals(2));
+            Assert(s == "f");
 
             Assert((int)eHash == 1234);
             Assert((bool)eEquals);
+
+            string dToStringStr, eToStringStr;
+            if (toStringMethodName == "to_s") {
+                dToStringStr = ((MutableString)dToString).ToString();
+                eToStringStr = ((MutableString)eToString).ToString();
+            } else {
+                dToStringStr = (string)dToString;
+                eToStringStr = (string)eToString;
+            }
+            Assert(dToStringStr.StartsWith("#<D:0x") && dToStringStr.EndsWith(">"));
+            Assert(eToStringStr == "b");
+              
+            // special ToString cases:
+            var range = new Range(1, 2, true);
+            Assert(range.ToString() == "1...2");
+
+            var regex = new RubyRegex("hello", RubyRegexOptions.IgnoreCase | RubyRegexOptions.Multiline);
+            Assert(regex.ToString() == "(?mi-x:hello)");
         }
 
         public void ClrHashEquals4() {
@@ -1952,6 +1986,35 @@ hello world
 ", OutputFlags.Match);
         }
 
+        public class ClassWithInitialize {
+            public virtual string Initialize(int x) {
+                return "Init";
+            }
+        }
+
+        public void ClrConstructor4() {
+            Context.ObjectClass.SetConstant("C", Context.GetClass(typeof(ClassWithInitialize)));
+            
+            // C# Initialize is not called (argument is not needed):
+            Engine.Execute(@"class D < C; new; end");
+            
+            TestOutput(@"
+class E < C
+  def initialize
+    puts 'init'
+  end
+end
+
+e = E.new
+puts e.Initialize(1)
+e.send :initialize
+", @"
+init
+Init
+init
+");
+        }
+
         #endregion
 
         #region CLR Primitive Types: Numeric, Arrays, Char, Enums
@@ -1962,16 +2025,15 @@ hello world
         /// Shelveset "Numerics-MetaOpsWithNarrowing" contains prototype implementation of the narrowing.
         /// </summary>
         public void ClrPrimitiveNumericTypes1() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
+            TestOutput(@"
 [System::Byte, System::SByte, System::UInt16, System::Int16, System::UInt32, System::Int64, System::UInt64, System::Single].each_with_index do |t,i|
   p t.ancestors
   p t.new(i).class
   p x = t.new(i) + 1, x.class   
   p t.new(i).size rescue puts 'no size method'
 end
-");
-            }, @"
+",
+@"
 [System::Byte, Integer, Precision, Numeric, Comparable, Object, Kernel]
 System::Byte
 1
@@ -2017,8 +2079,7 @@ no size method
 
         public void ClrArrays1() {
             Context.SetGlobalConstant("A2", Context.GetClass(typeof(int[,])));
-            AssertOutput(delegate() {
-                CompilerTest(@"
+            TestOutput(@"
 # multi-dim array:
 a2 = A2.new(2,4)
 a2[0,1] = 123
@@ -2029,11 +2090,7 @@ p System::Array[Fixnum].new(10) { |i| i + 1 }
 p System::Array[Fixnum].new(3)
 p System::Array[Fixnum].new([1,2,3])
 p System::Array[Fixnum].new(3, 12)
-
-# TODO: conversions:
-# p System::Array[System::Char].new(3, 'x')
-");
-            }, @"
+", @"
 123
 [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 [0, 0, 0]
@@ -2041,14 +2098,41 @@ p System::Array[Fixnum].new(3, 12)
 [12, 12, 12]
 ");
         }
-        
+
+        public void ClrArrays2() {
+            TestOutput(@"
+class C
+  def to_str
+    'c'
+  end
+end
+
+a = System::Array[System::String].new(3)
+a[0] = 'x'
+a[1] = C.new
+a[2] = :z
+
+# TODO: params array parameter of 'p' binds to the vector if passed alone
+p a,
+  System::Array[System::String].new(3, C.new),
+  System::Array[System::String].new([C.new, C.new]),
+  System::Array[System::Byte].new(3) { |x| x },
+  System::Array[System::Byte].new(3, 1)
+", @"
+['x', 'c', 'z']
+['c', 'c', 'c']
+['c', 'c']
+[0 (Byte), 1 (Byte), 2 (Byte)]
+[1 (Byte), 1 (Byte), 1 (Byte)]
+");
+        }
+
         public void ClrChar1() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
+            TestOutput(@"
 p System::Char.ancestors
 p System::String.ancestors
 
-a = System::Array[System::Char].new([System::Char.new('a'), System::Char.new('b')])  # TODO: implicit conversion
+a = System::Array[System::Char].new(['a', 'b'])
 p System::Char.new(a)
 
 x = System::Char.new('foo')
@@ -2057,8 +2141,7 @@ p x.index('f')
 p x + 'oo'
 p x == 'f'
 p System::Char.new('9').to_i
-");
-            }, @"
+", @"
 [System::Char, IronRuby::Clr::String, Enumerable, Comparable, System::ValueType, Object, Kernel]
 [System::String, IronRuby::Clr::String, Enumerable, Comparable, Object, Kernel]
 'a'
@@ -2210,6 +2293,10 @@ false
                 return d;
             }
 
+            public Delegate Delegate(int bogusOverload) {
+                return new Func<object, object>((x) => x);
+            }
+
             public int Foo(int a) {
                 return a + 1;
             }
@@ -2218,20 +2305,8 @@ false
                 return (int)a;
             }
 
-            public int FixnumDefaultProtocol([DefaultProtocol]int a) {
-                return a + 2;
-            }
-
             public string Bool([Optional]bool a) {
                 return a ? "T" : "F";
-            }
-
-            public int ListOrString(IList a) {
-                return a.Count;
-            }
-
-            public int ListOrString([DefaultProtocol]MutableString str) {
-                return 0;
             }
 
             public int ListAndStrings(IList a, MutableString str1) {
@@ -2300,16 +2375,16 @@ p Inst.Double(2.0), Inst.Double(4), Inst.Double(System::Byte.new(8)), Inst.Doubl
             
             // primitive numerics:
             TestOutput(@"
-p Inst.numerics(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)
+p(*Inst.numerics(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11))
 ", @"
-1
-2
-3
-4
+1 (Byte)
+2 (SByte)
+3 (Int16)
+4 (UInt16)
 5
-6
-7
-8
+6 (UInt32)
+7 (Int64)
+8 (UInt64)
 9
 (10+0j)
 Convertible(11)
@@ -2326,13 +2401,11 @@ class C
     'xxx'
   end
 end
-p Inst.ListOrString(C.new)
 p Inst.ListAndStrings(C.new, C.new)
-p Inst.FixnumDefaultProtocol(Conv)
+p Inst.Foo(Conv)
 ", @"
-0
 8
-13
+12
 ");
             
             // protocol conversions:
@@ -2350,11 +2423,15 @@ p Inst.Foo(a) rescue p $!
 101
 ");
             // meta-object conversions:
-            TestOutput(@"
-p Inst.delegate(Proc.new { |x| x + 1 }).invoke(123)
-", @"
-124
-");
+            var r1 = Engine.Execute<int>("Inst.delegate(Proc.new { |x| x + 1 }).invoke(123)");
+            Assert(r1 == 124);
+
+            // foreign meta-object conversion:
+            var py = Runtime.GetEngine("python");
+            var scope = Runtime.CreateScope();
+            py.Execute(@"def foo(x): return x + 2", scope);
+            var r2 = Engine.Execute<int>(@"Inst.delegate(foo).invoke(123)", scope);
+            Assert(r2 == 125);
         }
 
         #endregion

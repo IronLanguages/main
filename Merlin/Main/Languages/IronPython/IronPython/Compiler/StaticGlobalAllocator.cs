@@ -95,7 +95,7 @@ namespace IronPython.Compiler.Ast {
             ScriptingRuntimeHelpers.InitializeSymbols(t);
 
             string name = ((PythonCompilerOptions)compilerContext.Options).ModuleName ?? "<unnamed>";
-            var func = Ast.Lambda<Func<object>>(lambda, name, new MSAst.ParameterExpression[0]);
+            var func = Ast.Lambda<Func<object>>(Utils.Convert(lambda, typeof(object)), name, new MSAst.ParameterExpression[0]);
             return new RuntimeScriptCode(compilerContext, func, ast, _context);
         }
 
@@ -118,6 +118,22 @@ namespace IronPython.Compiler.Ast {
         }
 
         #region Cached site support
+
+        public override MSAst.Expression/*!*/ Dynamic(DynamicMetaObjectBinder/*!*/ binder, Type/*!*/ retType, MSAst.Expression/*!*/ arg0) {
+            return Dynamic(binder, retType, new[] { arg0 });
+        }
+
+        public override MSAst.Expression/*!*/ Dynamic(DynamicMetaObjectBinder/*!*/ binder, Type/*!*/ retType, MSAst.Expression/*!*/ arg0, MSAst.Expression/*!*/ arg1) {
+            return Dynamic(binder, retType, new[] { arg0,arg1 });
+        }
+
+        public override MSAst.Expression/*!*/ Dynamic(DynamicMetaObjectBinder/*!*/ binder, Type/*!*/ retType, MSAst.Expression/*!*/ arg0, MSAst.Expression/*!*/ arg1, MSAst.Expression/*!*/ arg2) {
+            return Dynamic(binder, retType, new[] { arg0, arg1,arg2 });
+        }
+
+        public override MSAst.Expression/*!*/ Dynamic(DynamicMetaObjectBinder/*!*/ binder, Type/*!*/ retType, MSAst.Expression/*!*/ arg0, MSAst.Expression/*!*/ arg1, MSAst.Expression/*!*/ arg2, MSAst.Expression/*!*/ arg3) {
+            return Dynamic(binder, retType, new[] { arg0, arg1, arg2, arg3 });
+        }
 
         public override MSAst.Expression/*!*/ Dynamic(DynamicMetaObjectBinder/*!*/ binder, Type/*!*/ retType, params System.Linq.Expressions.Expression/*!*/[]/*!*/ args) {
             Assert.NotNull(binder, retType, args);
