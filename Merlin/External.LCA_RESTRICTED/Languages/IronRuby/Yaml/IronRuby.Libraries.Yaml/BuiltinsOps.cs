@@ -37,7 +37,7 @@ namespace IronRuby.StandardLibrary.Yaml {
             BinaryOpStorage/*!*/ greaterThanStorage,
             object self) {
             return ArrayOps.SortInPlace(comparisonStorage, lessThanStorage, greaterThanStorage,
-                null, KernelOps.InstanceVariables(comparisonStorage.Context, self)
+                KernelOps.InstanceVariables(comparisonStorage.Context, self)
             );
         }
 

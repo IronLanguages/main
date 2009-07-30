@@ -264,7 +264,7 @@ namespace IronRuby.Builtins {
         // For some unknown reason Struct defines the method even though it is mixed in from Enumerable
         // Until we discover the difference, delegate to Enumerable#select
         [RubyMethod("select")]
-        public static RubyArray/*!*/ Select(CallSiteStorage<EachSite>/*!*/ each, BlockParam predicate, RubyStruct/*!*/ self) {
+        public static object Select(CallSiteStorage<EachSite>/*!*/ each, BlockParam predicate, RubyStruct/*!*/ self) {
             return Enumerable.Select(each, predicate, self);
         }
 

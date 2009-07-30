@@ -278,7 +278,7 @@ namespace IronRuby.Hosting {
                 { "-compileRegexps", "Faster throughput, slower startup" },
 #endif
                 { "-trace",         "Enable support for set_trace_func" },
-                { "-profile",       "Enable support Clr.profile" },
+                { "-profile",       "Enable support for 'pi = IronRuby::Clr.profile { block_to_profile }'" },
                 { "-18",            "Ruby 1.8 mode" },
                 { "-19",            "Ruby 1.9 mode" },
                 { "-20",            "Ruby 2.0 mode" },

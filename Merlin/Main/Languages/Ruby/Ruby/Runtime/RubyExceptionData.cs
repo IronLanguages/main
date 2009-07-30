@@ -45,11 +45,15 @@ namespace IronRuby.Runtime {
         private static readonly bool DebugInfoAvailable = true;
 #endif
 
-        // owner exception, needed for lazy initialization of message, backtrace
+        // Real exception begin propagated by the CLR. Needed for lazy initialization of message, backtrace
         private Exception/*!*/ _exception;
-        // For asynchronous exceptions (Thread#raise), the user exception is wrapped in a TheadAbortException
+        // For asynchronous exceptions (Thread#raise), the user-visible exception (accessible via _visibleException)
+        // is wrapped in a TheadAbortException (accessible via _exception)
         private Exception/*!*/ _visibleException;
+#if DEBUG
+        // For asynchronous exceptions, this is useful to figure out which thread raised the exception
         private Thread/*!*/ _throwingThread;
+#endif
 
         // if this is set to null we need to initialize it
         private object _message; 
@@ -62,7 +66,9 @@ namespace IronRuby.Runtime {
         private RubyExceptionData(Exception/*!*/ exception) {
             _exception = exception;
             _visibleException = exception;
+#if DEBUG
             _throwingThread = Thread.CurrentThread;
+#endif
         }
 
         private RubyArray CreateBacktrace(RubyContext/*!*/ context, InterpretedFrame handlerFrame, StackTrace catchSiteTrace) {
@@ -327,9 +333,6 @@ namespace IronRuby.Runtime {
                 Debug.Assert(e is ThreadAbortException);
                 result = GetInstance(visibleException);
 
-                // Since visibleException was instantiated by the thread calling Thread#raise, we need to reset it here
-                result._throwingThread = Thread.CurrentThread;
-
                 if (result._exception == visibleException) {
                     // A different instance of ThreadAbortException is thrown at the end of every catch block (as long as
                     // Thread.ResetAbort is not called). However, we only want to remember the first one 
@@ -391,19 +394,21 @@ namespace IronRuby.Runtime {
 #if SILVERLIGHT // Thread.ExceptionState
         public static void ActiveExceptionHandled(Exception visibleException) {}
 #else
-        /// <summary>
-        /// This function calls Thread.ResetAbort. However, note that ResetAbort causes ThreadAbortException.ExceptionState 
-        /// to be cleared, and we use that to squirrel away the Ruby exception that the user is expecting. Hence, ResetAbort
-        /// should only be called when ThreadAbortException.ExceptionState no longer needs to be accessed.
-        /// </summary>
-        /// <param name="visibleException"></param>
         public static void ActiveExceptionHandled(Exception visibleException) {
             Debug.Assert(RubyUtils.GetVisibleException(visibleException) == visibleException);
 
             RubyExceptionData data = RubyExceptionData.GetInstance(visibleException);
-            if (data._exception != visibleException && data._throwingThread == Thread.CurrentThread) {
-                Debug.Assert((Thread.CurrentThread.ThreadState & System.Threading.ThreadState.AbortRequested) != 0);
-                Thread.ResetAbort();
+            if (data._exception != visibleException) {
+                // The exception was raised asynchronously with Thread.Abort. We can not just catch and ignore 
+                // the ThreadAbortException as the CLR keeps trying to re-raise it unless ResetAbort is called.
+                //
+                // Note that ResetAbort can cause ThreadAbortException.ExceptionState to be cleared (though it may 
+                // not be cleared under some circustances), and we use that to squirrel away the Ruby exception 
+                // that the user is expecting. Hence, ResetAbort should only be called when 
+                // ThreadAbortException.ExceptionState no longer needs to be accessed. 
+                if ((Thread.CurrentThread.ThreadState & System.Threading.ThreadState.AbortRequested) != 0) {
+                    Thread.ResetAbort();
+                }
             }
         }
 #endif
