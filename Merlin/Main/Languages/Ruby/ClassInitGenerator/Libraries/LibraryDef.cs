@@ -140,6 +140,10 @@ internal class LibraryDef {
         public IDictionary<string, HiddenMethod>/*!*/ HiddenInstanceMethods = new SortedDictionary<string, HiddenMethod>();
         public IDictionary<string, HiddenMethod>/*!*/ HiddenClassMethods = new SortedDictionary<string, HiddenMethod>();
 
+        // { new_name -> old_name }
+        public IDictionary<string, string>/*!*/ ClassMethodAliases = new SortedDictionary<string, string>();
+        public IDictionary<string, string>/*!*/ InstanceMethodAliases = new SortedDictionary<string, string>();
+
         public List<MethodInfo>/*!*/ Factories = new List<MethodInfo>();
 
         public List<MixinRef>/*!*/ Mixins = new List<MixinRef>();
@@ -206,7 +210,10 @@ internal class LibraryDef {
         }
 
         public bool HasInstanceInitializer {
-            get { return InstanceMethods.Count > 0 || HiddenInstanceMethods.Count > 0 || HasCopyInclusions || IsPrimitive; }
+            get { 
+                return InstanceMethods.Count > 0 || HiddenInstanceMethods.Count > 0 || InstanceMethodAliases.Count > 0
+                    || HasCopyInclusions || IsPrimitive; 
+            }
         }
 
         public bool HasConstantsInitializer {
@@ -214,7 +221,10 @@ internal class LibraryDef {
         }
 
         public bool HasClassInitializer {
-            get { return ClassMethods.Count > 0 || HiddenClassMethods.Count > 0 || HasCopyInclusions || IsPrimitive; }
+            get { 
+                return ClassMethods.Count > 0 || HiddenClassMethods.Count > 0 || ClassMethodAliases.Count > 0 
+                    || HasCopyInclusions || IsPrimitive; 
+            }
         }
 
         public const string/*!*/ ObjectClassRef = "Context.ObjectClass";
@@ -396,21 +406,35 @@ internal class LibraryDef {
 
                 // hidden CLR methods:
                 foreach (HideMethodAttribute method in trait.GetCustomAttributes(typeof(HideMethodAttribute), false)) {
-                    // TODO: warning, method already removed, method not found ...
-                    if (method.IsStatic) {
-                        def.HiddenClassMethods[method.Name] = HiddenMethod.ClrInvisible;
+                    var dict = (method.IsStatic) ? def.HiddenClassMethods : def.HiddenInstanceMethods;
+                    if (dict.ContainsKey(method.Name)) {
+                        LogError("Method {0} is already hidden/removed", method.Name);
                     } else {
-                        def.HiddenInstanceMethods[method.Name] = HiddenMethod.ClrInvisible;
+                        dict.Add(method.Name, HiddenMethod.ClrInvisible);
                     }
                 }
 
                 // undefined methods:
                 foreach (UndefineMethodAttribute method in trait.GetCustomAttributes(typeof(UndefineMethodAttribute), false)) {
-                    // TODO: warning, method already removed, method not found ...
-                    if (method.IsStatic) {
-                        def.HiddenClassMethods[method.Name] = HiddenMethod.Undefined;
+                    var dict = (method.IsStatic) ? def.HiddenClassMethods : def.HiddenInstanceMethods;
+                    if (dict.ContainsKey(method.Name)) {
+                        LogError("Method {0} is already hidden/removed", method.Name);
                     } else {
-                        def.HiddenInstanceMethods[method.Name] = HiddenMethod.Undefined;
+                        dict.Add(method.Name, HiddenMethod.Undefined);
+                    }
+                }
+
+                // aliased methods:
+                foreach (AliasMethodAttribute method in trait.GetCustomAttributes(typeof(AliasMethodAttribute), false)) {
+                    var aliasDict = (method.IsStatic) ? def.ClassMethodAliases : def.InstanceMethodAliases;
+                    var hiddenDict = (method.IsStatic) ? def.HiddenClassMethods : def.HiddenInstanceMethods;
+
+                    if (hiddenDict.ContainsKey(method.NewName)) {
+                        LogError("Cannot alias hidden/removed method {0}", method.NewName);
+                    } else if (aliasDict.ContainsKey(method.NewName)) {
+                        LogError("Duplicate method alias {0} {1}", method.NewName, method.OldName);
+                    } else {
+                        aliasDict.Add(method.NewName, method.OldName);
                     }
                 }
             }
@@ -421,6 +445,10 @@ internal class LibraryDef {
         // declaring modules, build configurations:
         foreach (ModuleDef def in _moduleDefs.Values) {
             if (!def.IsExtension) {
+                if (def.Extends.IsGenericTypeDefinition) {
+                    LogError("Only extension modules or classes can be generic type definitions '{0}'", def.QualifiedName);
+                }
+
                 // finds the inner most Ruby module def containing this module def:
                 ModuleDef declaringDef = GetDeclaringModuleDef(def);
                 if (declaringDef != null) {
@@ -497,6 +525,10 @@ internal class LibraryDef {
                 } else if (!mixin.Copy) {
                     // define a module ref-variable for the type of the mixin:
                     mixin.Module.RefName = MakeModuleReference(mixin.Module.Type);
+                } else {
+                    LogError("Cannot copy-include a mixin not defined in this library ('{0}' includes '{1}')", 
+                        def.QualifiedName, mixin.Module.Type
+                    );
                 }
             }
         }
@@ -1102,6 +1134,7 @@ internal class LibraryDef {
             GenerateIncludedTraitLoaders(moduleDef, isInstance);
             GenerateHiddenMethods(isInstance ? moduleDef.HiddenInstanceMethods : moduleDef.HiddenClassMethods);
             GenerateMethods(moduleDef.Trait, isInstance ? moduleDef.InstanceMethods : moduleDef.ClassMethods);
+            GenerateMethodAliases(isInstance ? moduleDef.InstanceMethodAliases : moduleDef.ClassMethodAliases);
 
             _output.Indent--;
             _output.WriteLine("}");
@@ -1174,6 +1207,12 @@ internal class LibraryDef {
             } else {
                 _output.WriteLine("module.HideMethod(\"{0}\");", entry.Key);
             }
+        }
+    }
+
+    private void GenerateMethodAliases(IDictionary<string, string>/*!*/ aliases) {
+        foreach (var alias in aliases) {
+            _output.WriteLine("module.AddMethodAlias(\"{0}\", \"{1}\");", alias.Key, alias.Value);
         }
     }
 

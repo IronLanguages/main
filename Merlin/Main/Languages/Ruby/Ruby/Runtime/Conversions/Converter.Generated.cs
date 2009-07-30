@@ -16,7 +16,7 @@
 using System;
 using Microsoft.Scripting.Math;
 
-namespace IronRuby.Runtime {
+namespace IronRuby.Runtime.Conversions {
     internal enum NumericTypeCode {
         Invalid = 0,
 

@@ -30,6 +30,7 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+using IronRuby.Runtime.Conversions;
 
 namespace IronRuby.Runtime {
     using EvalEntryPointDelegate = Func<RubyScope, object, RubyModule, Proc, object>;

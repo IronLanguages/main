@@ -31,8 +31,9 @@ using Ast = System.Linq.Expressions.Expression;
 using AstFactory = IronRuby.Compiler.Ast.AstFactory;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 using Microsoft.Scripting.Generation;
+using IronRuby.Runtime.Calls;
 
-namespace IronRuby.Runtime.Calls {
+namespace IronRuby.Runtime.Conversions {
     public abstract class RubyConversionAction : RubyMetaBinder {
         protected RubyConversionAction() 
             : base(null) {
@@ -345,7 +346,7 @@ namespace IronRuby.Runtime.Calls {
 
         internal static bool TryImplicitConversionInternal(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
             if (args.Target == null) {
-                metaBuilder.Result = AstUtils.Constant(null);
+                metaBuilder.Result = AstUtils.Constant(null, typeof(TTargetType));
                 return true;
             }
 

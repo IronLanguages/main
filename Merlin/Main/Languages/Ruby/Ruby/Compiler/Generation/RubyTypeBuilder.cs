@@ -416,7 +416,7 @@ namespace IronRuby.Compiler.Generation {
         }
 
         private void DefineDynamicObjectImplementation() {
-            _tb.AddInterfaceImplementation(typeof(IDynamicMetaObjectProvider));
+            _tb.AddInterfaceImplementation(typeof(IRubyDynamicMetaObjectProvider));
 
             // MetaObject! IDynamicMetaObjectProvider.GetMetaObject(Expression! parameter) {
             //   return RubyOps.GetMetaObject(this, parameter);

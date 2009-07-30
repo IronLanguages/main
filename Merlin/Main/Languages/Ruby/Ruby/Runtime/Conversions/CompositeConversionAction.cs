@@ -24,8 +24,9 @@ using Microsoft.Scripting.Utils;
 using Ast = System.Linq.Expressions.Expression;
 using System.Diagnostics;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
+using IronRuby.Runtime.Calls;
 
-namespace IronRuby.Runtime.Calls {
+namespace IronRuby.Runtime.Conversions {
     public enum CompositeConversion {
         ToFixnumToStr,
         ToStrToFixnum,

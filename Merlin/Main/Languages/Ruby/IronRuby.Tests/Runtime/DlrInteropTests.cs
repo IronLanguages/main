@@ -216,7 +216,7 @@ namespace IronRuby.Tests {
 
         }
 
-        internal static T Invoke<T>(object obj, T fallbackResult) {
+        internal static T Convert<T>(object obj, T fallbackResult) {
             var site = CallSite<Func<CallSite, object, T>>.Create(new MyConvertBinder(typeof(T), fallbackResult));
             return site.Target(site, obj);
         }
@@ -386,27 +386,6 @@ end
 self.misc = Miscellaneous.new
 
 #------------------------------------------------------------------------------
-class Convertible
-    def initialize v
-        @val = v
-    end
-    
-    def to_i
-        @val.to_i
-    end
-    
-    def to_f
-        @val.to_f
-    end
-    
-    def to_str
-        @val.to_str
-    end
-end
-
-self.convertible = Convertible.new('0')
-
-#------------------------------------------------------------------------------
 class Indexable
     def initialize a=nil
         if a then
@@ -492,20 +471,6 @@ class Helpers
         s
     end
 end
-
-#------------------------------------------------------------------------------
-class RubyEnumerable
-    include Enumerable
-    def initialize a
-        @array = a
-    end
-    
-    def each
-        @array.each {|elem| yield elem }
-    end
-end
-
-self.ruby_enumerable = RubyEnumerable.new([1,2,3])
 
 #------------------------------------------------------------------------------
 class RubyComparable
@@ -596,11 +561,6 @@ class SanityTest
         assert_equal main.misc.ruby_callable_called, true
         assert_equal main.misc.ToString(), 'to_s'
         
-        # main.convertible
-        assert_error lambda { System::GC.Collect(main.convertible) }, TypeError # convert to int - Bug!!!!!!!!!!
-        assert_equal System::Exception.new(main.convertible).class, Exception
-        # need to convert to float
-        
         # main.indexable
         assert_equal main.indexable[2], 2
         main.indexable[10] = 100
@@ -612,9 +572,6 @@ class SanityTest
         assert_equal((main.number - 1), 99)
         assert_equal((main.number * 2), 200)
         assert_equal((main.number / 2), 50)
-        
-        # RubyEnumerable
-        assert_equal main.ruby_enumerable.min, 1
         
         # RubyComparable
         assert_equal((main.ruby_comparable == 100), true)
@@ -725,13 +682,38 @@ end
             AreEqual(MyInvokeMemberBinder.Invoke(misc_class, "ToString"), "FallbackInvokeMember");
         }
 
-        // TODO: conversions
         public void Dlr_Convertible() {
-            var scope = CreateInteropScope();
-            object convertible = scope.GetVariable("convertible");
-            AreEqualBug(MyConvertBinder.Invoke<int>(convertible, -1234), 0, -1234);
-            AreEqualBug(MyConvertBinder.Invoke<string>(convertible, "FallbackConvert"), "0", "FallbackConvert");
-            AreEqualBug(MyConvertBinder.Invoke<float>(convertible, -1234.0f), 0.0, -1234.0f);
+            Engine.Execute(@"
+class C
+  def to_int
+    1
+  end
+  
+  def to_f
+    2.0
+  end
+  
+  def to_str
+    'str'
+  end
+
+  def each
+    [1,2,3].each {|x| yield x }
+  end
+end
+");
+            var classC = Runtime.Globals.GetVariable("C");
+            var c = Engine.Operations.CreateInstance(classC);
+
+            // TODO:
+            //AreEqual(MyConvertBinder.Convert<int>(c, 10), 1);
+            //AreEqual(MyConvertBinder.Convert<byte>(c, 10), 1);
+            //AreEqual(MyConvertBinder.Convert<string>(c, "FallbackConvert"), "str");
+            //AreEqual(MyConvertBinder.Convert<double>(c, -8.0), 2.0);
+            //AreEqual(MyConvertBinder.Convert<float>(c, -8.0f), 2.0f);
+            //IEnumerable e = MyConvertBinder.Convert<IEnumerable>(c, null)
+            //Assert(e != null);
+            //new List<object>(e);
         }
 
         public void Dlr_Indexable() {
@@ -752,16 +734,6 @@ end
             AreEqual(MyBinaryOperationBinder.Invoke(ExpressionType.Divide, one_hundred, 2), 100/2);
             AreEqual(MyUnaryOperationBinder.Invoke(ExpressionType.Negate, one_hundred), -100);
             AreEqual(MyUnaryOperationBinder.Invoke(ExpressionType.OnesComplement, one_hundred), ~100);
-        }
-
-        // TODO: conversion to IEnumerable
-        public void Dlr_Enumerable() {
-            var scope = CreateInteropScope();
-            object ruby_enumerable = scope.GetVariable("ruby_enumerable");
-            IEnumerable e = MyConvertBinder.Invoke<IEnumerable>(ruby_enumerable, null);
-            AreEqualBug(e != null, true, false);
-            IEnumerable<object> e2 = MyConvertBinder.Invoke<IEnumerable<object>>(ruby_enumerable, null);
-            AreEqualBug(e2 != null, true, false);
         }
 
         public void Dlr_Comparable() {

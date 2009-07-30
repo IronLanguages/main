@@ -32,6 +32,7 @@ using Microsoft.Scripting.Utils;
 using Ast = System.Linq.Expressions.Expression;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 using Microsoft.Scripting.Generation;
+using IronRuby.Runtime.Conversions;
 
 namespace IronRuby.Builtins {
     public sealed partial class RubyClass : RubyModule, IDuplicable {
@@ -250,7 +251,7 @@ namespace IronRuby.Builtins {
                 Interlocked.Exchange(ref _underlyingSystemType, 
                     RubyTypeDispenser.GetOrCreateType(
                         _superClass.GetUnderlyingSystemType(), 
-                        GetClrInterfaces(),
+                        GetImplementedInterfaces(),
                         _superClass != null && (_superClass.Restrictions & ModuleRestrictions.NoOverrides) != 0
                     )
                 );
@@ -747,12 +748,19 @@ namespace IronRuby.Builtins {
                     return true;
                 }
             } else if (name == "[]" || name == "[]=") {
-                object[] attrs = type.GetCustomAttributes(typeof(DefaultMemberAttribute), false);
-                if (attrs.Length == 1) {
-                    // default indexer accessor:
+                if (type.IsArray && !_isSingletonClass) {
                     bool isSetter = name.Length == 3;
-                    if (TryGetClrProperty(type, bindingFlags, isSetter, name, ((DefaultMemberAttribute)attrs[0]).MemberName, null, out method)) {
-                        return true;
+                    TryGetClrMethod(type, bindingFlags, false, name, null, isSetter ? "Set" : "Get", null, out method);
+                    Debug.Assert(method != null);
+                    return true;
+                } else {
+                    object[] attrs = type.GetCustomAttributes(typeof(DefaultMemberAttribute), false);
+                    if (attrs.Length == 1) {
+                        // default indexer accessor:
+                        bool isSetter = name.Length == 3;
+                        if (TryGetClrProperty(type, bindingFlags, isSetter, name, ((DefaultMemberAttribute)attrs[0]).MemberName, null, out method)) {
+                            return true;
+                        }
                     }
                 }
             } else if (name.LastCharacter() == '=') {
@@ -1249,7 +1257,7 @@ namespace IronRuby.Builtins {
                     BuildDelegateConstructorCall(metaBuilder, args, type);
                     return;
                 } else if (type.IsArray && type.GetArrayRank() == 1) {
-                    constructionOverloads = ClrVectorFactories;
+                    constructionOverloads = GetClrVectorFactories();
                 } else if (_structInfo != null) {
                     constructionOverloads = new MethodBase[] { Methods.CreateStructInstance };
                 } else if (_factories.Length != 0) {
@@ -1386,16 +1394,19 @@ namespace IronRuby.Builtins {
             }
         }
 
-        private MethodBase/*!*/[]/*!*/ ClrVectorFactories {
-            get {
-                if (_clrVectorFactories == null) {
-                    _clrVectorFactories = new[] { Methods.CreateVector, Methods.CreateVectorWithValues };
-                }
-                return _clrVectorFactories;
+        private MethodBase/*!*/[]/*!*/ GetClrVectorFactories() {
+            if (_clrVectorFactories == null) {
+                Type elementType = GetUnderlyingSystemType().GetElementType();
+                _clrVectorFactories = new[] { 
+                    Methods.CreateVector.MakeGenericMethod(elementType), 
+                    Methods.CreateVectorWithValues.MakeGenericMethod(elementType) 
+                };
             }
+            return _clrVectorFactories;
         }
 
-        private static MethodBase[] _clrVectorFactories;
+        // thread-safe (the latest write wins):
+        private MethodBase[] _clrVectorFactories;
 
         #endregion
     }

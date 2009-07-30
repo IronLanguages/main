@@ -17,6 +17,7 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Utils;
 using IronRuby.Builtins;
 using IronRuby.Runtime.Calls;
+using IronRuby.Runtime.Conversions;
 using MSA = System.Linq.Expressions;
 
 namespace IronRuby.Compiler.Ast {

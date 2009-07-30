@@ -26,8 +26,9 @@ using System.Dynamic;
 using System.Reflection;
 using System.Diagnostics;
 using System.Collections.Generic;
+using IronRuby.Runtime.Calls;
 
-namespace IronRuby.Runtime.Calls {
+namespace IronRuby.Runtime.Conversions {
 
     // 1) implicit conversion to MutableString
     // 2) calls to_s

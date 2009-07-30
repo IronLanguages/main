@@ -24,8 +24,9 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 using IronRuby.Compiler.Generation;
 using System.Linq.Expressions;
 using System.Diagnostics;
+using IronRuby.Runtime.Calls;
 
-namespace IronRuby.Runtime.Calls {
+namespace IronRuby.Runtime.Conversions {
     public sealed class GenericConversionAction : RubyConversionAction {
         private readonly Type/*!*/ _type;
 
@@ -86,6 +87,7 @@ namespace IronRuby.Runtime.Calls {
         }
 
         internal bool TryImplicitConversion(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
+            // TODO: include this into ImplicitConvert?
             if (args.Target == null) {
                 if (!_type.IsValueType || _type.IsGenericType && _type.GetGenericTypeDefinition() == typeof(Nullable<>)) {
                     metaBuilder.Result = AstUtils.Constant(null, _type);
@@ -95,12 +97,11 @@ namespace IronRuby.Runtime.Calls {
                 }
             }
 
-            if (_type.IsAssignableFrom(args.Target.GetType())) {
-                metaBuilder.Result = Ast.Convert(args.MetaTarget.Expression, _type);
-                return true;
-            }
-
-            return false;
+            Type fromType = args.Target.GetType();
+            return null != (metaBuilder.Result = 
+                Converter.ImplicitConvert(args.TargetExpression, fromType, _type) ??
+                Converter.ExplicitConvert(args.TargetExpression, fromType, _type)
+            );
         }
     }
 

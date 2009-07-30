@@ -26,16 +26,53 @@ using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Utils;
 using Ast = System.Linq.Expressions.Expression;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
+using Microsoft.Scripting.Runtime;
 
-namespace IronRuby.Runtime {
+namespace IronRuby.Runtime.Conversions {
     internal static partial class Converter {
-        internal static bool CanConvertFrom(Type/*!*/ fromType, Type/*!*/ toType, NarrowingLevel level, bool implicitProtocolConversions) {
+        internal static bool CanConvertFrom(DynamicMetaObject fromArg, Type/*!*/ fromType, Type/*!*/ toType, bool toNotNullable,
+            NarrowingLevel level, bool explicitProtocolConversions, bool implicitProtocolConversions) {
             ContractUtils.RequiresNotNull(fromType, "fromType");
             ContractUtils.RequiresNotNull(toType, "toType");
+
+            var metaConvertible = fromArg as IConvertibleMetaObject;
 
             //
             // narrowing level 0:
             //
+
+            if (toType == fromType) {
+                return true;
+            }
+
+            if (fromType == typeof(DynamicNull)) {
+                if (toNotNullable) {
+                    return false;
+                }
+
+                if (toType.IsGenericType && toType.GetGenericTypeDefinition() == typeof(Nullable<>)) {
+                    return true;
+                }
+
+                if (!toType.IsValueType) {
+                    // null convertible to any reference type:
+                    return true;
+                } else if (toType == typeof(bool)) {
+                    return true;
+                } else if (!ProtocolConversionAction.HasDefaultConversion(toType)) {
+                    // null not convertible to a value type unless a protocol conversion is allowed:
+                    return false;
+                }
+            }
+
+            // blocks:
+            if (fromType == typeof(MissingBlockParam)) {
+                return toType == typeof(BlockParam) && !toNotNullable;
+            }
+
+            if (fromType == typeof(BlockParam) && toType == typeof(MissingBlockParam)) {
+                return true;
+            }
 
             if (toType.IsAssignableFrom(fromType)) {
                 return true;
@@ -54,11 +91,27 @@ namespace IronRuby.Runtime {
                 return true;
             }
 
+            if (metaConvertible != null) {
+                return metaConvertible.CanConvertTo(toType, false);
+            }
+
             //
             // narrowing level 1:
             //
 
             if (level < NarrowingLevel.One) {
+                return false;
+            }
+
+            if (explicitProtocolConversions && ProtocolConversionAction.HasDefaultConversion(toType)) {
+                return true;
+            }
+
+            //
+            // narrowing level 2:
+            //
+
+            if (level < NarrowingLevel.Two) {
                 return false;
             }
 
@@ -82,36 +135,31 @@ namespace IronRuby.Runtime {
                 return true;
             }
 
-            //
-            // narrowing level 2:
-            //
+            if (metaConvertible != null) {
+                return metaConvertible.CanConvertTo(toType, true);
+            }
 
-            if (level < NarrowingLevel.Two) {
+            // 
+            // narrowing level 3:
+            // 
+
+            if (level < NarrowingLevel.Three) {
                 return false;
             }
 
-            // we can convert any object to any type for which we have a default protocol:
             if (implicitProtocolConversions && ProtocolConversionAction.HasDefaultConversion(toType)) {
-                return true;
-            }
-
-            // any dynamic object is potentially convertible to any type:
-            if (typeof(IDynamicMetaObjectProvider).IsAssignableFrom(fromType)) {
                 return true;
             }
 
             return false;
         }
 
-        internal static Expression ConvertExpression(Expression/*!*/ expr, Type/*!*/ toType, RubyContext/*!*/ context, Expression/*!*/ contextExpression,
+        internal static Expression/*!*/ ConvertExpression(Expression/*!*/ expr, Type/*!*/ toType, RubyContext/*!*/ context, Expression/*!*/ contextExpression,
             bool implicitProtocolConversions) {
 
             return
-                // narrowing level 0:
                 ImplicitConvert(expr, expr.Type, toType) ??
-                // narrowing level 1:
                 ExplicitConvert(expr, expr.Type, toType) ??
-                // narrowing level 2:
                 Ast.Dynamic(ProtocolConversionAction.GetConversionAction(context, toType, implicitProtocolConversions), toType, expr);
         }
 
