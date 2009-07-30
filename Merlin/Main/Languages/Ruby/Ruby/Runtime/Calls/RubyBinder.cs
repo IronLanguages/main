@@ -21,6 +21,7 @@ using Microsoft.Scripting.Actions.Calls;
 using Microsoft.Scripting.Utils;
 using System.Threading;
 using System.Diagnostics;
+using IronRuby.Runtime.Conversions;
 
 namespace IronRuby.Runtime.Calls {
     public sealed class RubyBinder : DefaultBinder {
@@ -46,7 +47,7 @@ namespace IronRuby.Runtime.Calls {
         }
 
         public override bool CanConvertFrom(Type/*!*/ fromType, Type/*!*/ toType, bool toNotNullable, NarrowingLevel level) {
-            return Converter.CanConvertFrom(fromType, toType, level, true);
+            return Converter.CanConvertFrom(null, fromType, toType, toNotNullable, level, false, false);
         }
 
         public override Candidate PreferConvert(Type t1, Type t2) {

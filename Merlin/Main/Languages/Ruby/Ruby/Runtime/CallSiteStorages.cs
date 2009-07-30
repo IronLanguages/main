@@ -14,25 +14,12 @@
  * ***************************************************************************/
 
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq.Expressions;
-using System.Reflection;
-using System.Runtime.Serialization;
-using System.Text;
-using System.Threading;
-using Microsoft.Scripting;
-using Microsoft.Scripting.Actions;
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
-using IronRuby.Builtins;
-using IronRuby.Compiler;
-using IronRuby.Runtime.Calls;
-using System.Dynamic;
-using Microsoft.Scripting.Math;
 using System.Runtime.CompilerServices;
-using Microsoft.Scripting.Generation;
 using IronRuby.Compiler.Generation;
+using IronRuby.Runtime.Calls;
+using IronRuby.Runtime.Conversions;
+using Microsoft.Scripting;
+using Microsoft.Scripting.Utils;
 
 namespace IronRuby.Runtime {
 
@@ -97,6 +84,11 @@ namespace IronRuby.Runtime {
 
         public CallSite<Func<CallSite, object, TResult>>/*!*/ GetSite(RubyConversionAction/*!*/ conversion) {
             return RubyUtils.GetCallSite(ref Site, conversion);
+        }
+
+        internal CallSite<Func<CallSite, object, TResult>>/*!*/ GetDefaultConversionSite() {
+            return RubyUtils.GetCallSite(ref Site, ProtocolConversionAction.GetConversionAction(Context, typeof(TResult), true));
+
         }
     }
 }

@@ -26,4 +26,28 @@ describe "Inheriting from classes with" do
 
 
   end
+
+  describe "method attributes that are abstract" do
+    #TODO: the marshal attribute shouldn't be needed. this was due to a super
+    #bug not a marshal bug.
+    csc <<-EOL
+      public abstract class Unsafe {
+        [return: MarshalAs(UnmanagedType.U1)]
+        public virtual bool Foo() { return true;}
+      }
+    EOL
+
+    before(:all) do
+      class SubUnsafe < Unsafe
+      end
+    end
+
+    it "can call super" do
+      lambda {class SubUnsafe < Unsafe
+        def foo
+          super
+        end
+      end}.should_not raise_error
+    end
+  end
 end

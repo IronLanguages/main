@@ -95,7 +95,15 @@ namespace Microsoft.Scripting.Utils {
                 string genericName = type.GetGenericTypeDefinition().FullName.Replace('+', '.');
                 int tickIndex = genericName.IndexOf('`');
                 result.Append(tickIndex != -1 ? genericName.Substring(0, tickIndex) : genericName);
-                FormatTypeArgs(result, type.GetGenericArguments());
+
+                Type[] typeArgs = type.GetGenericArguments();
+                if (type.IsGenericTypeDefinition) {
+                    result.Append('<');
+                    result.Append(',', typeArgs.Length - 1);
+                    result.Append('>');
+                } else {
+                    FormatTypeArgs(result, typeArgs);
+                }
             } else if (type.IsGenericParameter) {
                 result.Append(type.Name);
             } else {

@@ -16,22 +16,22 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Dynamic;
 using System.IO;
 using System.Runtime.CompilerServices;
-using System.Dynamic;
 using System.Security;
 using System.Text;
 using System.Threading;
 using IronRuby.Builtins;
 using IronRuby.Compiler;
+using IronRuby.Compiler.Ast;
 using IronRuby.Compiler.Generation;
 using IronRuby.Runtime.Calls;
+using IronRuby.Runtime.Conversions;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
-using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-using IronRuby.Compiler.Ast;
 using MSA = System.Linq.Expressions;
 
 namespace IronRuby.Runtime {
@@ -718,7 +718,16 @@ namespace IronRuby.Runtime {
             }
 
             TypeTracker tracker = (TypeTracker)TypeTracker.FromMemberInfo(interfaceType);
-            result = CreateModule(GetQualifiedNameNoLock(interfaceType), null, null, null, null, null, tracker, ModuleRestrictions.None);
+
+            RubyModule[] mixins;
+            if (interfaceType.IsGenericType && !interfaceType.IsGenericTypeDefinition) {
+                // I<T0..Tn> mixes in its generic definition I<,..,>
+                mixins = new[] { GetOrCreateModuleNoLock(interfaceType.GetGenericTypeDefinition()) };
+            } else {
+                mixins = null;
+            }
+
+            result = CreateModule(GetQualifiedNameNoLock(interfaceType), null, null, null, mixins, null, tracker, ModuleRestrictions.None);
             _moduleCache[interfaceType] = result;
             return result;
         }
@@ -731,7 +740,15 @@ namespace IronRuby.Runtime {
                 return result;
             }
 
-            RubyClass baseClass = GetOrCreateClassNoLock(type.BaseType);
+            RubyClass baseClass;
+
+            if (type.IsGenericType && !type.IsGenericTypeDefinition) {
+                // C<T0..Tn>'s super class is its generic definition C<,..,>
+                baseClass = GetOrCreateClassNoLock(type.GetGenericTypeDefinition());
+            } else {
+                baseClass = GetOrCreateClassNoLock(type.BaseType);
+            }
+
             TypeTracker tracker = (TypeTracker)TypeTracker.FromMemberInfo(type);
             RubyModule[] interfaceMixins = GetDeclaredInterfaceModulesNoLock(type);
             RubyModule[] expandedMixins;

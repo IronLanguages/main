@@ -38,7 +38,7 @@ namespace IronRuby.Builtins {
 
         [RubyConstructor]
         public static RubyFile/*!*/ CreateFile(RubyClass/*!*/ self, 
-            [DefaultProtocol]Union<int, MutableString> descriptorOrPath, [Optional, DefaultProtocol]MutableString mode, [Optional]int permission) {
+            [DefaultProtocol, NotNull]Union<int, MutableString> descriptorOrPath, [Optional, DefaultProtocol]MutableString mode, [Optional]int permission) {
 
             if (descriptorOrPath.IsFixnum()) {
                 // TODO: descriptor
@@ -51,7 +51,7 @@ namespace IronRuby.Builtins {
 
         [RubyConstructor]
         public static RubyFile/*!*/ CreateFile(RubyClass/*!*/ self,
-            [DefaultProtocol]Union<int, MutableString> descriptorOrPath, int mode, [Optional]int permission) {
+            [DefaultProtocol, NotNull]Union<int, MutableString> descriptorOrPath, int mode, [Optional]int permission) {
 
             if (descriptorOrPath.IsFixnum()) {
                 // TODO: descriptor
@@ -63,17 +63,17 @@ namespace IronRuby.Builtins {
         }
 
         [RubyConstructor]
-        public static RubyFile/*!*/ CreateFile(RubyClass/*!*/ self, MutableString/*!*/ path) {
+        public static RubyFile/*!*/ CreateFile(RubyClass/*!*/ self, [NotNull]MutableString/*!*/ path) {
             return new RubyFile(self.Context, path.ConvertToString(), "r");
         }
 
         [RubyConstructor]
-        public static RubyFile/*!*/ CreateFile(RubyClass/*!*/ self, MutableString/*!*/ path, MutableString mode) {
+        public static RubyFile/*!*/ CreateFile(RubyClass/*!*/ self, [NotNull]MutableString/*!*/ path, MutableString mode) {
             return new RubyFile(self.Context, path.ConvertToString(), (mode != null) ? mode.ConvertToString() : "r");
         }
 
         [RubyConstructor]
-        public static RubyFile/*!*/ CreateFile(RubyClass/*!*/ self, MutableString/*!*/ path, int mode) {
+        public static RubyFile/*!*/ CreateFile(RubyClass/*!*/ self, [NotNull]MutableString/*!*/ path, int mode) {
             return new RubyFile(self.Context, path.ConvertToString(), (RubyFileMode)mode);
         }
 

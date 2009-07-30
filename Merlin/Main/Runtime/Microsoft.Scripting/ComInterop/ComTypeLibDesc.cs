@@ -25,6 +25,10 @@ using ComTypes = System.Runtime.InteropServices.ComTypes;
 
 namespace Microsoft.Scripting.ComInterop {
 
+    /// <summary>
+    /// Cached information from a TLB. Only information that is required is saved. CoClasses are used
+    /// for event hookup. Enums are stored for accessing symbolic names from scripts. 
+    /// </summary>
     public sealed class ComTypeLibDesc : IDynamicMetaObjectProvider {
 
         // typically typelibs contain very small number of coclasses
@@ -120,14 +124,31 @@ namespace Microsoft.Scripting.ComInterop {
                 typeLib.GetTypeInfoType(i, out typeKind);
 
                 ComTypes.ITypeInfo typeInfo;
+                typeLib.GetTypeInfo(i, out typeInfo);
                 if (typeKind == ComTypes.TYPEKIND.TKIND_COCLASS) {
-                    typeLib.GetTypeInfo(i, out typeInfo);
                     ComTypeClassDesc classDesc = new ComTypeClassDesc(typeInfo, typeLibDesc);
                     typeLibDesc._classes.AddLast(classDesc);
                 } else if (typeKind == ComTypes.TYPEKIND.TKIND_ENUM) {
-                    typeLib.GetTypeInfo(i, out typeInfo);
                     ComTypeEnumDesc enumDesc = new ComTypeEnumDesc(typeInfo, typeLibDesc);
                     typeLibDesc._enums.Add(enumDesc.TypeName, enumDesc);
+                } 
+                else if (typeKind == ComTypes.TYPEKIND.TKIND_ALIAS) {
+                    ComTypes.TYPEATTR typeAttr = ComRuntimeHelpers.GetTypeAttrForTypeInfo(typeInfo);
+                    if (typeAttr.tdescAlias.vt == (short)VarEnum.VT_USERDEFINED) {
+                        string aliasName, documentation;
+                        ComRuntimeHelpers.GetInfoFromType(typeInfo, out aliasName, out documentation);
+
+                        ComTypes.ITypeInfo referencedTypeInfo;
+                        typeInfo.GetRefTypeInfo(typeAttr.tdescAlias.lpValue.ToInt32(), out referencedTypeInfo);
+
+                        ComTypes.TYPEATTR referencedTypeAttr = ComRuntimeHelpers.GetTypeAttrForTypeInfo(referencedTypeInfo);
+                        ComTypes.TYPEKIND referencedTypeKind = referencedTypeAttr.typekind;
+
+                        if (referencedTypeKind == ComTypes.TYPEKIND.TKIND_ENUM) {
+                            ComTypeEnumDesc enumDesc = new ComTypeEnumDesc(referencedTypeInfo, typeLibDesc);
+                            typeLibDesc._enums.Add(aliasName, enumDesc);
+                        }
+                    }
                 }
             }
 
@@ -157,7 +178,6 @@ namespace Microsoft.Scripting.ComInterop {
         public string[] GetMemberNames() {
             string[] retval = new string[_enums.Count + _classes.Count];
             int i = 0;
-
             foreach (ComTypeClassDesc coclass in _classes) {
                 retval[i++] = coclass.TypeName;
             }

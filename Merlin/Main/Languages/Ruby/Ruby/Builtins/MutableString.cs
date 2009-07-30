@@ -623,15 +623,22 @@ namespace IronRuby.Builtins {
         }
 
         // used by auto-conversions
-        [Obsolete("Do not use in code")]
-        public static implicit operator string(MutableString/*!*/ self) {
+        public static explicit operator string(MutableString/*!*/ self) {
             return self._content.ConvertToString();
         }
 
         // used by auto-conversions
-        [Obsolete("Do not use in code")]
-        public static implicit operator byte[](MutableString/*!*/ self) {
+        public static explicit operator byte[](MutableString/*!*/ self) {
             return self._content.ConvertToBytes();
+        }
+
+        // used by auto-conversions
+        public static explicit operator char(MutableString/*!*/ self) {
+            try {
+                return self.GetChar(0);
+            } catch (IndexOutOfRangeException) {
+                throw RubyExceptions.CreateTypeConversionError("String", "System::Char");
+            }
         }
 
         #endregion

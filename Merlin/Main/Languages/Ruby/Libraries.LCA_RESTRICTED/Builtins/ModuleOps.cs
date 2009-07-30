@@ -986,23 +986,45 @@ namespace IronRuby.Builtins {
 
             if (provided == 1 && type == typeof(Array)) {
                 return self.Context.GetModule(Protocols.ToType(self.Context, typeArgs[0]).MakeArrayType());
-            } 
-
-            int required = type.GetGenericArguments().Length;
-            if (required == 0 && provided > 0) {
-                throw RubyExceptions.CreateArgumentError(String.Format("'{0}' is not a generic type", type.FullName));
             }
 
-            if (required != provided) {
-                throw RubyExceptions.CreateArgumentError(String.Format("Type '{0}' requires {1} generic type arguments, {2} provided", type.FullName, required, provided));
-            }
-
-            if (typeArgs.Length > 0) {
-                Type concreteType = type.MakeGenericType(Protocols.ToTypes(self.Context, typeArgs));
-                return self.Context.GetModule(concreteType);
-            } else {
+            if (!type.IsGenericTypeDefinition) {
+                if (provided > 0) {
+                    throw RubyExceptions.CreateArgumentError(String.Format("`{0}' is not a generic type definition", self.Name));
+                }
                 return self;
             }
+
+            int required = type.GetGenericArguments().Length;
+            if (required != provided) {
+                throw RubyExceptions.CreateArgumentError(String.Format("Type `{0}' requires {1} generic type arguments, {2} provided", self.Name, required, provided));
+            }
+
+            Type concreteType = type.MakeGenericType(Protocols.ToTypes(self.Context, typeArgs));
+            return self.Context.GetModule(concreteType);
+        }
+
+        [RubyMethod("of")]
+        [RubyMethod("[]")]
+        public static RubyModule/*!*/ Of(RubyModule/*!*/ self, int genericArity) {
+            if (self.TypeTracker == null) {
+                throw RubyExceptions.CreateArgumentError(String.Format("`{0}' is not a type", self.Name));
+            }
+
+            Type type = self.TypeTracker.Type;
+
+            if (!type.IsGenericTypeDefinition) {
+                if (genericArity > 0) {
+                    throw RubyExceptions.CreateArgumentError(String.Format("`{0}' is not a generic type definition", self.Name));
+                }
+                return self;
+            }
+            
+            if (type.GetGenericArguments().Length != genericArity) {
+                throw RubyExceptions.CreateArgumentError(String.Format("`{0}' does not have generic arity {1}", self.Name, genericArity));
+            }
+
+            return self;
         }
 
         #endregion
