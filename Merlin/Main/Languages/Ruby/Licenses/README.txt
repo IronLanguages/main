@@ -34,6 +34,8 @@ Will run rubyfile.rb with the IronRuby compiler.
 
   /bin              IronRuby binaries, ir.exe, iirb, irake, igem, iri, irdoc, etc.
   /lib              Ruby standard library, including RubyGems
+  /silverlight      Samples and scripts for Silverlight. 
+                    See /silverlight/README.txt
   CHANGELOG.txt     Changes for each release
   RELEASE.txt       Release notes
   LICENSE.Ruby.txt  Ruby license
