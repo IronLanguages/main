@@ -1,6 +1,515 @@
 CHANGELOG
 =========
 
+ironruby-0.9.0.0 - 2009-07-30
+-----------------------------
+
+	Date: Wednesday, July 29, 2009 4:56:49 PM
+		(sborde) Tweaks IPy tutorial now that the MSI includes the Python standard library.
+		I had changed Ruby’s dev.bat to not set HOME since ir.exe itself now sets it.
+		However, HOME is needed by the rest of dev.bat to copy the .mspecrc file. 
+		So added that code back using the name HOME_FOR_MSPECRC.
+		TypeLibs were not exposing aliased types. There are important enums that are
+		declared as aliases. I noticed this when adding WIN32OLE support in IronRuby.
+		
+	Date: Wednesday, July 29, 2009 3:55:16 PM
+		(tomat) (MiscConversions)
+		
+		DLR:
+		Fixes ReflectionUtils.FormatTypeName so that it formats generic type 
+		definitions as C# does – using empty type names: C<,> instead of C<K,V>.
+		
+		Ruby:
+		1) A Ruby class corresponding to a CLR generic type definition is now a 
+		   super-class of all instantiations of that type. So for example, List<> is
+		   a super-class of List<int>, List<string>, etc. Similarly all
+		   instantiations of a generic interface include the module that corresponds
+		   to their generic interface definition. This allows to add methods to the
+		   generic definition and call them from any instantiation. For example, 
+		
+			include System::Collections::Generic
+		
+			class List
+			  def foo
+			    p self.class
+			  end
+			end
+		
+		List.of(Fixnum).new.foo   # => System::Collections::Generic::List[Fixnum]
+		List.of(String).new.foo   # => System::Collections::Generic::List[String]
+		
+		2) Implements TypeGroup#[] overload taking a Fixnum. This is useful when one 
+		   needs to select a generic type definition out of a group of types. For example, 
+			 given three classes C:
+		
+			public class C {
+			  public virtual int Arity { get { return 0; } }
+			}
+			public class C<T> {
+			  public virtual int Arity { get { return 1; } }
+			}
+			public class C<T,S> {
+			  public virtual int Arity { get { return 2; } }
+			}
+		
+			p C[0]  # => C
+			p C[1]  # => C[T]
+			p C[2]  # => C[T, S]
+		
+		Note that the resulting classes are not generic instantiations – they are still 
+		generic definitions and need to be instantiated.
+		
+		3) Maps [] and []= on CLR arrays to Get/Set methods. This enables to apply Ruby 
+		conversions on array elements assignment.
+		Changes CLR array factories so that they perform conversions of elements like so:
+		
+			class C
+			  def to_str; 'c';  end
+			end
+		
+			System::Array[System::String].new(3, C.new)      # => [‘c’, ‘c’, ‘c’]
+			System::Array[String].new([C.new, C.new])        # => [“c”, “c”, “c”]
+			System::Array[System::Byte].new(3) { |x| x + 1 } # => [1 (Byte), 2 (Byte), 3 (Byte)]
+		
+	Date: Wednesday, July 29, 2009 2:51:30 PM
+		(tomat) Updates ToolsVersion of IronPython and IronRuby projects to 4.0.
+	
+	Date: Monday, July 27, 2009 6:59:09 PM
+		(tomat) Adds IConvertibleMetaObject interfaces to DLR so that binders can query 
+		meta-objects on their convertibility to given types.
+		Implements this interface for MetaPythonFunction.
+		Adds DynamicMetaObject fromArg parameter to OverloadResolver.CanConvertFrom. This 
+		allows to check if the argument is convertible to certain types via 
+		IConvertibleMetaObject interface.
+		
+		Slightly improves overload resolution:
+		
+		Overload resolution first tries to convert arguments to parameter types on 
+		increasing narrowing levels. On each level only the overloads whose parameters 
+		are convertible from the actual arguments are further considered. Pairs of 
+		corresponding parameters are ordered based upon convertibility of their types 
+		to each other. If the parameter types are unordered (one cannot be converted 
+		to the other and vice versa) the resolution goes on and tries to choose the 
+		overload based on other traits of the methods (like generic parameters etc.).
+		When comparing parameters the actual type of the argument is not considered. 
+		Therefore the following method call (in Python) is considered ambiguous. There
+		is no ordering of the types of the first parameters (int and D types), which
+		would prefer one or the other.
+		
+		Adds IConvertibleMetaObject interfaces to DLR so that binders can query
+		meta-objects on their convertibility to given types.
+		Implements this interface for MetaPythonFunction.
+		Adds DynamicMetaObject fromArg parameter to OverloadResolver.CanConvertFrom. 
+		This allows to check if the argument is convertible to certain types via
+		IConvertibleMetaObject interface.
+
+	Date: Monday, July 27, 2009 12:10:11 PM
+		(jdeville) Bug closing:
+		YAML does not properly deserialize Time values
+		overriding unsafe methods
+		Better error message for running ir.exe on pre-.Net 2.0 SP1
+		rand doesn't work collectly
+		Rubygems failures
+		Adding a random object to Time which responds to to_f
+		ArgumentError when calling System.String..ctor(Char[], int, int)
+		Unverifiable code generated by mspec :lang
+		-X:PrivateBinding does not enable referring to classes that have 
+		internal visibility
+		
+		Notes on these:
+		 * To get better error messages on pre-.NET 2.0sp1, I moved the error 
+		   checking code from PythonConsoleHost up to ConsoleHost
+		 * As part of writing name_mangling specs, I created stubs for all of 
+		   the IronRuby module. I'll start filling those specs out going forward.
+		 
+	Date: Monday, July 27, 2009 12:05:25 AM
+		(tomat) Disallows mangling of initialize method.
+	
+	Date: Sunday, July 26, 2009 10:44:47 PM
+		(tomat) Makes to_s override to_string and ToString methods.
+		Fixes bug:
+		- If a CLR class has Initialize method its Ruby subclasses called it when instantiated.
+		
+	commit 74d580cebe5dc74dbf6ce67399159dfc8ce8686b
+	Author: Shri Borde <sborde@microsoft.com>
+	Date:   Thu Jul 23 14:22:15 2009 -0700
+
+		Fixes HTTP.post_form (http://ironruby.codeplex.com/WorkItem/View.aspx?WorkItemId=1353). 
+		Socket#write was not flushing the data, and so a later read could block since the
+		endpoint would not send any response
+
+	Date: Thursday, July 23, 2009 11:07:06 AM
+		(tomat)   Implements basic debug views for classes that implement IRubyObject.
+		
+
+	Date: Thursday, July 23, 2009 10:23:09 AM
+		(tomat) The long term goal is to allow Scopes to be backed by arbitrary objects and 
+		implement GetVariable/SetVariable/… via dynamic GetMember/SetMember/… actions. This
+		will also allow languages to cache lookups to the scopes. 
+		
+		The first step is to move Python specific stuff off the Scope and LanguageContext.
+		
+		Breaking changes in Hosting API:
+		- ScriptScope.GetVariable throws MissingMemberException if a variable is not found 
+		  in the scope instead of a language specific exception (like Python’s UnboundNameException).
+		- ScriptScope.GetVariable doesn’t return variables that are not contained in the scope 
+		  itself. Previously it returned e.g. Python built-ins (like “dir”) if the scope was 
+		  associated with Python.
+		- ScriptScope.RemoveVariable doesn’t throw an exception if the member is not present. 
+		  It returns false.
+		
+	Date: Wednesday, July 22, 2009 10:43:09 AM
+		(tomat) Disallows interop calls to Ruby non-public methods.
+	
+
+	Date: Tuesday, July 21, 2009 9:49:14 AM
+		(dinov) Moves CodeContext up into IronPython.
+		
+		Wherever we had CodeContext before or an Expression for flowing CodeContext it’s
+		been replaced w/ a OverloadResolverFactory instead.
+		There’s lots of now we flow full MetaObjects instead of just flowing Expressions 
+		through in the DLR binding (more cleanup could be done here in the future)
+		Added IPythonMembersList which takes CodeContext, made IMembersList not take it.
+		Removed some dead code related to old-style DLR binders
+		
+		Also fixing 20262 - quoting in MSBuild files
+		codeplexcomment
+		
+	Date: Monday, July 20, 2009 5:32:44 PM
+		(tomat) Replaces IronRuby.Tests.VS by ircoverage.bat that gathers the code coverage data 
+		for IronRuby.Tests.exe.
+		
+	Date: Monday, July 20, 2009 4:53:53 PM
+		(tomat) DLR changes:
+		Makes ReadOnlyDictionary and SynchronizedDistionary public.
+		
+		Ruby changes:
+		
+		Provides API for accessing DLR Scopes created by importing files of other DLR languages. 
+		
+		IronRuby#require(path), load(path)
+		- These have the same semantics as Kernel#require and Kernel#load except for they execute
+		  given script against a new Scope and it. If the target is an assembly they return the
+		  loaded assembly.
+		IronRuby#loaded_scripts 
+		- Returns a dictionary that holds on loaded scripts and their Scopes.
+		IronRuby#loaded_assemblies
+		- Returns an array of assemblies loaded to the current runtime.
+		IronRuby#globals
+		- Returns the current ScriptRuntime.Globals scope.
+		
+		This allows to easily import e.g. IronPython files and work with the modules they define:
+
+		a.py:
+			Foo = 1
+			
+			class Bar(object):
+			  def baz(self):
+			  print Foo
+		
+		b.rb:
+			a = IronRuby.require('a')   # a is an instance of Scope
+			a.foo += 1                  # get and set Python module variable 
+			a.bar.new.baz               # instantiate Python class and call its instance method
+		
+		Also includes “mangling” shelveset.
+
+	commit a24144a45743c5e6d8ec27532c6afceb6607cc62
+	Author: Daniele Alessandri <suppakilla@gmail.com>
+	Date:   Sat Jul 18 18:09:39 2009 +0200
+
+		- Bignum related fixes:
+			o Changed the signature for ClrBigInteger.ToString(self,radix), now 
+			  Bignum#to_s works as expected raising an ArgumentException if base 
+			  is less than 2 or higher than 36.
+			o Fixed Bignum#divmod, Bignum#remainder, Bignum#% and Bignum#modulo 
+			  to work with Float values as argument.
+			o Fixed Bignum#/ and Bignum#div as they behave differently with each
+			  other when Float values are passed as argument.
+
+	commit 7dfb0b3a82c4316380dcc8e18ca1067a2f03065e
+	Author: Daniele Alessandri <suppakilla@gmail.com>
+	Date:   Sat Jul 18 16:26:05 2009 +0200
+
+		- Array related fixes:
+			o Array#== does not call #to_ary on its argument but it calls #to_a (it 
+			  basically performs a conversion of the argument rather than casting it
+			  to a ruby array)
+			o Array#zip calls #to_ary to cast the argument to an Array, therefore it
+			  overrides Enumerable#zip in which the argument is converted by calling #to_a.
+
+	commit 30c16c3a3d079f6fddb0d35d3c76d6bb080ce3f2
+	Author: Daniele Alessandri <suppakilla@gmail.com>
+	Date:   Fri Jul 17 21:29:24 2009 +0200
+
+		- More fixes for String#unpack:
+			o Fixed errors when unpacking data with 'Z' and '@' directives
+			o Implemented 'Q' and 'q' directives
+
+	Date: Friday, July 17, 2009 12:11:49 PM
+		(tomat) Removes IronRuby.Libraries.Scanner - it's not used.
+		Adds ConsoleAny project as a copy of Ruby.Console except for that it
+		produces assembly ir64.exe.
+		Changes Ruby.Console to build with x86 platform flag so that ir.exe
+		starts in a 32bit process on 64bit OS.
+		
+
+	commit 0522ad7bd4109660cff42e57b45e6bfc8759efbc
+	Author: Shri Borde <sborde@microsoft.com>
+	Date:   Wed Jul 22 15:03:20 2009 -0700
+
+		Move check for task.should_run? up. Otherwise, an empty repl section would 
+		show at the top
+		Make tutorial.bat work in a dev environment
+		Disable a RubyGems test which was failing non-deterministically
+
+	commit e488dec40234a5806ff19da7373beb67c64e7dfc
+	Author: Jim Deville <jdeville@microsoft.com>
+	Date:   Wed Jul 22 11:38:40 2009 -0700
+
+		syncing to head of tfs
+
+	commit 421d9869c60d892b36ba324ce9cb8c89bdc77125
+	Author: Shri Borde <sborde@microsoft.com>
+	Date:   Tue Jul 21 21:59:43 2009 -0700
+
+		Moves setting of %HOME% from IronRuby.Libraries.dll to ir.exe. This is ruby.exe
+		feature, not necessarily a language feature, and setting of environment variables
+		should be something that the host controls.
+		Moved the ExpandPath logic to RubyUtils, and also made it work with System.String
+	  	instead of MutableString
+
+	commit 0696a772f7f9708a15f18a5966125943cafb2010
+	Author: Shri Borde <sborde@microsoft.com>
+	Date:   Tue Jul 21 12:42:11 2009 -0700
+
+		Adds support for ENV['HOME'] by setting the HOME environment variable on startup. 
+		I have confirmed that MRI does actually set the process environment variable
+		(and not just some value on a Ruby object)
+		Modifies the algorithm to calculate the value to set for HOME so that it passes 
+		the new tests
+		KernelOps.GetShell had to be modified to be able to span processes even after 
+		doing ENV.clear (like MRI)
+		Removes logic to calculate HOME from dev.bat
+
+	commit bdc0ac4002eb3a46e84a87cb1cc3fd203011cd2f
+	Author: Jim Deville <jdeville@microsoft.com>
+	Date:   Sun Jul 19 00:55:46 2009 -0700
+
+		added back ubygems.rb
+
+	commit 6f32be3294cbd4a814066d08a30b51f4f6ea5c3a
+	Author: Daniele Alessandri <suppakilla@gmail.com>
+	Date:   Thu Jul 16 22:03:02 2009 +0200
+
+		- Implemented 'V' and 'v' directives for String#unpack.
+		- Implemented 'B' and 'b' directives for String#unpack.
+		- Cleared all the failing expectations in core/string related to an unthrown TypeError 
+		  exception when calling in-place methods on frozen strings.
+
+	commit 51563a0a4b54f3c2cddb29b8f989e1fc61e9db3b
+	Author: Jimmy Schementi <jschementi@gmail.com>
+	Date:   Thu Jul 16 13:29:11 2009 -0700
+
+		Default to Segoe UI in Silverlight, so fonts look closer to desktop. Fix 
+		newline/whitespace in SL.
+
+	commit 5b80e2140cd4185a18e1aadaaaf6d7e585699d26
+	Author: Shri Borde <sborde@microsoft.com>
+	Date:   Thu Jul 16 10:12:58 2009 -0700
+
+		More fixes to win32ole to get the ADO DBI driver working
+		- Convert return values from DBNull to nil, from System::Decimal to String
+		Also, removes support for indexed property syntax like excel.Workbooks[1]. 
+		Instead, like win32ole, you need to use excel.Worksheets(1)
+		Added WIN32OLE#setproperty to set indexed properties like 
+		"worksheet.setproperty('Cells', i, j, value)"
+
+	commit ffef26a418310ace70af782b0fd51d4900344da4
+	Author: Jimmy Schementi <jschementi@gmail.com>
+	Date:   Thu Jul 16 03:23:07 2009 -0700
+
+		first crack at the ironruby tutorial in Silverlight
+		- design/TutorialSL ... needs to be merged with original
+		- scripts for launching sl and wpf versions
+		- refactor wpf_tutorial.rb into gui_tutorial.rb, and then wpf_tutorial.rb 
+		  and sl_tutorial.rb launch in the respective technology
+		- various tweaks to get SL working -- but doesn't have rich text yet
+		- adds erb.rb and stringio.rb to Libs so SL can get them.
+		- Tweak Chiron so it won't copy to test dir if not present
+		- Tweak to RubyEncoding to utf-8 works in SL
+		- Make sure console is loaded after the ScriptEngine
+		- Make BrowserVirtualFilesytem.NormalizePath virtual so children can override it
+
+	commit de4dd18760df2d4f3f41b326449fcf605ab1bde3
+	Author: Jimmy Schementi <jschementi@gmail.com>
+	Date:   Thu Jul 16 01:18:43 2009 -0700
+
+		Build Silverlight.sln aliases (bsd/bsr), get Chiron building, and remove 
+		JS/TestConsoleHost from Silverlight.sln
+
+	Date: Wednesday, July 15, 2009 10:18:44 PM
+		(jdeville) Files related to the git automation and getting rake compile working
+		again.
+
+	Date: Wednesday, July 15, 2009 4:15:48 PM
+		(tomat) Virtual methods that have been detached from the CLR type and redefined
+		on the corresponding Ruby class or its subclass should not directly invoked from
+		a dynamic virtual call since that leads to an infinite recursion. 
+		
+		Example:
+		 class C < ArrayList           
+		   define_method(:Add, instance_method(:Add))          
+		 end
+		 
+		 C.new.Add(1)
+		 
+		C.new.Add dispatches to the virtual ArrayList::Add, which in turn dispatches to 
+		the auto-generated override C$1::Add. If we called the resolved method directly
+		from the dynamic virtual call rule it would invoke the C$1::Add override again
+		leading to a stack overflow. So we need to use a base call instead.
+
+	Date: Wednesday, July 15, 2009 1:59:58 PM
+		(tomat)   DLR:
+		Adds a simple random number generator for BigIntegers.
+		Ruby:
+			Implements Kernel#rand, Kernel#srand. 
+			Improves scope allocation perf.
+
+	Date: Monday, July 13, 2009 5:10:48 PM
+		(tomat) DLR:
+		Implements interpretation of coalescing expression.
+			
+		Ruby:
+			Reuses delegates created for blocks. BlockDispatcher is baked into the lambda
+			as a runtime constant with initially uninitialized target delegate. This
+			delegate is initialized first time the block is defined and then reused
+			next time. This makes nested block loops much faster as it avoids unnecessary
+			calls to DynamicMethod.CreateDelegate.
+		
+			Uses MutableTuple for local variable storage instead of StrongBox<object>[]. 
+			Fixes a bug in state variable allocation for flip-flop operator.
+
+	commit 427cd3038a649103e18abacf78c0a83d467a19ac
+	Author: Shri Borde <sborde@microsoft.com>
+	Date:   Sat Jul 11 23:26:12 2009 -0700
+
+		Add hosting of IronPython to hosting tutorial
+
+	Date: Friday, July 10, 2009 2:32:46 PM
+		(tomat) DLR:
+		- Renames CollectionUtils.Sort to ToSortedList to avoid collisions with Sort
+		  methods on classes implementing ICollection.
+		- Adds helper that converts delegate Comparion<T> to IComparable.
+		
+		Ruby:
+		
+		Improves implementation of RubyArray. So for example a loop doing Array#shift is
+		not shifting the entire array content left every iteration. 
+		
+		Also adds MsTest.cs stub to IronRuby.Tests so that we can easily get code coverage
+		numbers for unit tests in VS. This depends on
+		Microsoft.VisualStudio.QualityTools.UnitTestFramework assembly that is not
+		available on Mono so our rake build removes this file from build.
+	
+	Date: Friday, July 10, 2009 2:14:49 AM
+		(jomes) Improves the ExpressionVisitor API (720267):
+		
+		- Expression.Accept is protected.
+		
+		- Expression.VisitChildren takes an ExpressionVisitor.
+		
+		- ExpressionVisitor helpers are public:
+			o Visit(ReadOnlyCollection<Expression>)
+			o Visit<T>(ReadOnlyCollection<T>, Func<T, T>)
+			o VisitAndConvert<T>(T, string)
+			o VisitAndConvert<T>(ReadOnlyCollection<T>, string)
+		
+		- All nodes with children have an Update method that replaces the children
+			o Returns the same node if none of the children changed
+			o Most Update methods are tested already by the visitor
+			o Added tests for those that were not: Block, Dynamic, Invocation, MethodCall, Index
+		
+	commit 5fb483dd13b8c0c950627e9624973e4fa60cf784
+	Author: Shri Borde <sborde@microsoft.com>
+	Date:   Thu Jul 9 22:01:29 2009 -0700
+
+		Converts COM interop tests to using win32ole. Hardly any changes were required! 
+		The only change required is that win32ole requires using parenthesis to access
+		indexed properties, but the tests used square brackets. For now, I have added
+		support to win32ole for square brackets instead of modifying the tests. Also,
+		WIN32OLE_EVENT does not seem to have any way of unsubscribing from an event.
+		adodb_spec has a weird failure only with non-managled names, and so I have left
+		it using Type.GetTypeFromProgID for now
+
+	commit 7e0f79ec26bb9ba0e9f5066552bc85fbba2dabbb
+	Author: Shri Borde <sborde@microsoft.com>
+	Date:   Thu Jul 9 10:18:15 2009 -0700
+
+		Basic implementation of win32ole, building on top of IronRubyâ€™s COM interop support.
+		Simple samples work reasonably work. Features that work are:
+			* Object instantiation with WIN32OLE.new
+			* Calling methods, accessing properties
+			* Converting Ruby type arguments (ie. String, Array, etc) to 
+			  System.String, System.Array, etc
+			* Enumeration via WIN32OLE#each
+			* Accessing enum values from the type library via WIN32OLE.const_load
+			
+		Events (WIN32OLE_EVENT) are not supported since IronRuby does not support COM events yet.
+		Also, this TODO from win32ole.rb :
+		# TODO - Instead of wrapping the RCWs (runtime-callable-wrapper), we should just
+		# return them directly (and make WIN32OLE an alias for System.__ComObject). We currently
+		# wrap them so that we can cheaply customize the behavior of the resulting object
+		# (for eg, to convert the arguments).
+		# However, all the customizations should be moved into the IronRuby runtime
+		# itself and made to work directly against RCWs. This will allow better cross-language
+		# inteorp of passing RCW arguments, better perf since it will avail of call-site
+		# caching, and object identity.
+
+	Date: Wednesday, July 08, 2009 8:39:37 PM
+		(jomes) Change ComBinder class to internal (723713).
+
+	Date: Monday, July 06, 2009 5:30:52 PM
+		(tomat) Perf improvements of misc String operations:
+		- MutableString no longer tracks its version. It was only used to detect changes made
+		  to the string. The same is possible by checking for “HasChanged” flag which is set 
+		  by every mutating operation. 
+		- Reimplements “tr”, “tr!”, “tr_s”, “tr_s!”. The new implementation is almost 12x faster.
+		- Reimplements “join” to achieve better perf.
+		
+		Improves handling of KCoding – combination of two strings k-coded by a different 
+		encoding doesn’t result to an error but to a binary encoded string. The string
+		loses its encoded appearance and it behaves like raw binary data to .NET programs.
+
+	commit 09059350eb4d3f281a7e54e85ddecfd4932754a3
+	Author: Shri Borde <sborde@microsoft.com>
+	Date:   Thu Jul 2 12:54:04 2009 -0700
+
+		Implement StringIO#ungetc which is used in ActiveSupport
+		Changes irtests.rb to print total time in minutes. A full run takes 45 mins on my machine,
+		which is faster than before even though we have added Rake tests!
+		Undo my change to paths in RakeTests.rb
+
+	Date: Wednesday, July 01, 2009 4:07:04 PM
+		(tomat) Replaces DLR closures by a Ruby specific implementation. This will allow us
+		to overcome DynamicMethod limitations (ldftn doesn’t work for dynamic methods)
+		and reduce closure creation time. We can also optimize the closures more than
+		DLR does right now.
+
+	commit 226ceebdd8e64fc86042e626b9de1e96b4226029
+	Author: Shri Borde <sborde@microsoft.com>
+	Date:   Fri Jun 26 14:25:04 2009 -0700
+
+		Module#autoload call should be ignored if the constant is defined. Without 
+		this, a class definition was being lost if autoload was called after the 
+		class definition was executed
+		(timeObj == "string") should return nil. It was throwing TypeError because
+		method overload resolution was finding System.DateTime.op_Equality. Throwing
+		a TypeError is ok for .NET types with strongly typed op_Equality, but not
+		for those types that represent Ruby types.
+		Fix typo in multi-line regex in YAML engine causing incorrect parsing of
+		Time yaml strings
+
 ironruby-0.6.0.0 - 2009-07-01
 -----------------------------
 
