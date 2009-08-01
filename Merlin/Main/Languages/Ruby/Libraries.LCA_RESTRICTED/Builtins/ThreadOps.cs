@@ -15,17 +15,13 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq.Expressions;
-using Microsoft.Scripting;
-using System.Dynamic;
-using Microsoft.Scripting.Actions;
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using IronRuby.Runtime;
-using System.Text;
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
+using Microsoft.Scripting;
+using Microsoft.Scripting.Runtime;
 
 namespace IronRuby.Builtins {
     /// <summary>
@@ -76,6 +72,7 @@ namespace IronRuby.Builtins {
             private readonly int _id;
             private ThreadGroup _group;
             private readonly Thread _thread;
+            private bool _blocked;
             private bool _abortOnException;
             private AutoResetEvent _runSignal = new AutoResetEvent(false);
             private bool _isSleeping;
@@ -159,6 +156,16 @@ namespace IronRuby.Builtins {
             internal object Result { get; set; }
             internal bool CreatedFromRuby { get; set; }
             internal bool ExitRequested { get; set; }
+            
+            internal bool Blocked {
+                get {
+                    return _blocked;
+                }
+                set {
+                    System.Diagnostics.Debug.Assert(Thread.CurrentThread == _thread);
+                    _blocked = value;
+                }
+            }
 
             internal bool AbortOnException {
                 get {
@@ -516,7 +523,11 @@ namespace IronRuby.Builtins {
             }
 
             if ((state & ThreadState.Running) == ThreadState.Running) {
-                return RubyThreadStatus.Running;
+                if (info.Blocked) {
+                    return RubyThreadStatus.Sleeping;
+                } else {
+                    return RubyThreadStatus.Running;
+                }
             }
 
             throw new ArgumentException("unknown thread status: " + state);

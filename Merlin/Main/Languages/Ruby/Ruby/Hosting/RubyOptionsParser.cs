@@ -71,6 +71,16 @@ namespace IronRuby.Hosting {
         }
 #endif
 
+        private static string[] GetPaths(string input) {
+            string[] paths = StringUtils.Split(input, new char[] { Path.PathSeparator }, Int32.MaxValue, StringSplitOptions.RemoveEmptyEntries);
+            for (int i = 0; i < paths.Length; i++) {
+                // Trim any occurrances of "
+                string[] parts = StringUtils.Split(paths[i], new char[] { '"' }, Int32.MaxValue, StringSplitOptions.RemoveEmptyEntries);
+                paths[i] = String.Concat(parts);
+            }
+            return paths;
+        }
+
         /// <exception cref="Exception">On error.</exception>
         protected override void ParseArgument(string arg) {
             ContractUtils.RequiresNotNull(arg, "arg");
@@ -186,11 +196,14 @@ namespace IronRuby.Hosting {
 
                 default:
                     if (arg.StartsWith("-I")) {
+                        string includePaths;
                         if (arg == "-I") {
-                            _loadPaths.Add(PopNextArg());
+                            includePaths = PopNextArg();
                         } else {
-                            _loadPaths.Add(arg.Substring(2));
+                            includePaths = arg.Substring(2);
                         }
+
+                        _loadPaths.AddRange(GetPaths(includePaths));
                         break;
                     }
 
@@ -228,7 +241,7 @@ namespace IronRuby.Hosting {
             try {
                 string rubylib = Environment.GetEnvironmentVariable("RUBYLIB");
                 if (rubylib != null) {
-                    _loadPaths.AddRange(rubylib.Split(Path.PathSeparator));
+                    _loadPaths.AddRange(GetPaths(rubylib));
                 }
             } catch (SecurityException) {
                 // nop

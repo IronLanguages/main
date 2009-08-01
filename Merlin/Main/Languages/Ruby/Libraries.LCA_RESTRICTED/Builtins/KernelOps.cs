@@ -203,7 +203,11 @@ namespace IronRuby.Builtins {
         [RubyMethod("`", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
         public static MutableString/*!*/ ExecuteCommand(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]MutableString/*!*/ command) {
             Process p = ExecuteProcessCapturingStandardOutput(GetShell(context, command));
-            MutableString result = MutableString.Create(p.StandardOutput.ReadToEnd());
+            string output = p.StandardOutput.ReadToEnd();
+            if (Environment.NewLine != "\n") {
+                output = output.Replace(Environment.NewLine, "\n");
+            }
+            MutableString result = MutableString.Create(output);
             context.ChildProcessExitStatus = new RubyProcess.Status(p);
             return result;
         }
@@ -911,14 +915,14 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("sleep", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("sleep", RubyMethodAttributes.PublicSingleton)]
-        public static double Sleep(object self, double seconds) {
+        public static int Sleep(object self, double seconds) {
             if (seconds < 0) {
                 throw RubyExceptions.CreateArgumentError("time interval must be positive");
             }
 
             double ms = seconds * 1000;
             Thread.Sleep(ms > Int32.MaxValue ? Timeout.Infinite : (int)ms);
-            return seconds;
+            return (int)seconds;
         }
         
         //split

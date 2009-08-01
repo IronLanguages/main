@@ -19,7 +19,8 @@ class IRTest
       :RubySpec_C => "#{mspec_base} :core2 :lib2",
       :RubyGems => "#{ir} #{@root}\\Languages\\Ruby\\Tests\\Scripts\\RubyGemsTests.rb",
       :Rake => "#{ir} #{@root}\\Languages\\Ruby\\Tests\\Scripts\\RakeTests.rb",
-      :Yaml => "#{ir} #{@root}\\..\\External.LCA_RESTRICTED\\Languages\\IronRuby\\yaml\\YamlTest\\yaml_test_suite.rb"
+      :Yaml => "#{ir} #{@root}\\..\\External.LCA_RESTRICTED\\Languages\\IronRuby\\yaml\\YamlTest\\yaml_test_suite.rb",
+      :Tutorial => "#{ir} #{@root}\\Languages\\Ruby\\Samples\\Tutorial\\test\\test_console.rb"
     }
   end
 

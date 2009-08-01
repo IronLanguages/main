@@ -2931,7 +2931,7 @@ namespace IronRuby.Builtins {
             module.DefineLibraryMethod("sleep", 0x52, 
                 new System.Action<System.Object>(IronRuby.Builtins.KernelOps.Sleep), 
                 new System.Func<System.Object, System.Int32, System.Int32>(IronRuby.Builtins.KernelOps.Sleep), 
-                new System.Func<System.Object, System.Double, System.Double>(IronRuby.Builtins.KernelOps.Sleep)
+                new System.Func<System.Object, System.Double, System.Int32>(IronRuby.Builtins.KernelOps.Sleep)
             );
             
             module.DefineLibraryMethod("sprintf", 0x52, 
@@ -3183,7 +3183,7 @@ namespace IronRuby.Builtins {
             module.DefineLibraryMethod("sleep", 0x61, 
                 new System.Action<System.Object>(IronRuby.Builtins.KernelOps.Sleep), 
                 new System.Func<System.Object, System.Int32, System.Int32>(IronRuby.Builtins.KernelOps.Sleep), 
-                new System.Func<System.Object, System.Double, System.Double>(IronRuby.Builtins.KernelOps.Sleep)
+                new System.Func<System.Object, System.Double, System.Int32>(IronRuby.Builtins.KernelOps.Sleep)
             );
             
             module.DefineLibraryMethod("sprintf", 0x61, 
