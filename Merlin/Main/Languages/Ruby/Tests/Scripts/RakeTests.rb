@@ -1,7 +1,16 @@
 require "rubygems"
 
 rake_tests_dir = File.expand_path("../External.LCA_RESTRICTED/Languages/IronRuby/RakeTests", ENV["MERLIN_ROOT"])
-all_test_files = Dir.glob("#{rake_tests_dir}/test/test*.rb") + Dir.glob("#{rake_tests_dir}/test/contrib/test*.rb") + Dir.glob("#{rake_tests_dir}/test/fun*.rb")
+all_test_files = Dir.glob("#{rake_tests_dir}/test/test*.rb") + Dir.glob("#{rake_tests_dir}/test/contrib/test*.rb")
+
+if RUBY_PLATFORM =~ /mswin/
+  # The "session" gem uses "fork" and so does not work on Windows
+  # Print a friendly message to indicate that it is expected for these tests to be skipped
+  puts "(Skipping functional tests on Windows)"
+else
+  all_test_files += Dir.glob("#{rake_tests_dir}/test/fun*.rb")
+end
+
 # Do some sanity checks
 abort("Did not find enough Rake tests files...") unless all_test_files.size > 25
 abort("Did not find some expected files...") unless File.exist?(rake_tests_dir + "/test/test_rake.rb")

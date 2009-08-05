@@ -16,6 +16,7 @@ Topics covered
 - Creating domain-specific-languages (DSLs) in Ruby
 - Creating an application that can be developed incrementally from an
   interactive session with ability to reload modified source files.
+- Using a splash screen at application startup
 
 Running the app
 ---------------

@@ -90,3 +90,13 @@ class TestGemSourceInfoCache
   #   Expected /Bulk updating/ to match "".
   def test_self_cache_refreshes() end
 end
+
+# Merlin\External.LCA_RESTRICTED\Languages\IronRuby\RubyGems-1_3_1-test\gemutilities.rb has a workaround
+# for http://rubyforge.org/tracker/?func=detail&group_id=126&aid=24169&atid=575. However, the following
+# test fails inspite of the workaround. So we check if %TMP% is something like
+# C:\DOCUME~1\JANEDO~1\LOCALS~1\Temp
+if ENV['TMP'].include?('~')
+  class TestGemDependencyInstaller
+    def test_find_gems_with_sources_local() end
+  end
+end

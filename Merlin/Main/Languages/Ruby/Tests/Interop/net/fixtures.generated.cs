@@ -123,7 +123,7 @@ public class ClassWithOptionalConstructor {
         Arg = arg;
       }
     }
-#line 31 "./class/derivation/attribute_spec.rb"
+#line 33 "./class/derivation/attribute_spec.rb"
 public abstract class Unsafe {
         [return: MarshalAs(UnmanagedType.U1)]
         public virtual bool Foo() { return true;}
