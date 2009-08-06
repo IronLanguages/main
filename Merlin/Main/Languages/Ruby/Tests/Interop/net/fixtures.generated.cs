@@ -342,6 +342,11 @@ public interface IDoFoo {
         return stuff.StuffBar(2);
       }
     }
+#line 158 "./interface/implementation_spec.rb"
+public interface IExposing {
+    event EventHandler<EventArgs> IsExposedChanged;
+    bool IsExposed {get; set;}
+  }
 #line 4 "./interface/mapping_spec.rb"
 public interface IEmptyInterface {}
     public interface IInterface { void m();}

@@ -1,2 +1,1 @@
-fails:System::Int64 can be induced from a Float
 fails:System::Int64 raises a RangeError if out of range for Float

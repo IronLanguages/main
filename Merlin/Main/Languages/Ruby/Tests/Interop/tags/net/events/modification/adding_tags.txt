@@ -1,5 +1,0 @@
-fails:Basic .NET events allow adding method handlers via +=
-fails:Basic .NET events allow adding lambda's via +=
-fails:Basic .NET events allow adding procs via +=
-fails:Basic .NET events allow adding multiple items via +=
-fails:Basic .NET events allow adding one item multiple times via +=
