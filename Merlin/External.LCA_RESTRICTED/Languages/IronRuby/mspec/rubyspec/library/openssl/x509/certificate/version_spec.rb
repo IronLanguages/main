@@ -9,8 +9,8 @@ describe "OpenSSL::X509::Certificate#version" do
   end
   
   it 'returns the version' do
-    x509_cert = OpenSSL::X509::Certificate.new(HMACConstants::X509CERT)
-    x509_cert.version.should == HMACConstants::X509Version
+    x509_cert = OpenSSL::X509::Certificate.new(X509Constants::X509CERT)
+    x509_cert.version.should == X509Constants::X509Version
   end
 end
 
@@ -21,7 +21,7 @@ describe "OpenSSL::X509::Certificate#version=" do
   
   it 'returns the argument' do
     n = 20
-    (@x509_cert.version = n).should equal(n)
+    (@x509_cert.version=(n)).should equal(n)
   end
   
   it 'raises TypeError if argument is nil' do
@@ -29,7 +29,7 @@ describe "OpenSSL::X509::Certificate#version=" do
   end
   
   it 'raises TypeError if argument is not a OpenSSL::BN' do
-    m = mock(10).should_not_receive(:to_i)
+    m = mock(10).should_not_receive(:to_int) 
     lambda { @x509_cert.version = m }.should raise_error(TypeError)
   end
 end

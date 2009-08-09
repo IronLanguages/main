@@ -6,14 +6,14 @@ describe "OpenSSL::X509::Certificate.new" do
 
   it 'returns a x509 certificate' do
     x509_cert = OpenSSL::X509::Certificate.new
-    x509_cert.subject.should == ""
-    x509_cert.issuer.should == ""
+    x509_cert.subject.class.should == OpenSSL::X509::Name
+    x509_cert.issuer.class.should == OpenSSL::X509::Name
   end
   
   it 'create a x509 certificate with data' do
-    x509_cert = OpenSSL::X509::Certificate.new(HMACConstants::X509CERT)
-    x509_cert.subject.should == HMACConstants::X509Subject
-    x509_cert.issuer.should == HMACConstants::X509Issuer
+    x509_cert = OpenSSL::X509::Certificate.new(X509Constants::X509CERT)
+    x509_cert.subject.to_s.should == X509Constants::X509Subject
+    x509_cert.issuer.to_s.should == X509Constants::X509Issuer
   end
   
   it 'raises CertificateError if argument is supply not enought data' do

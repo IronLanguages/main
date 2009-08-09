@@ -9,7 +9,7 @@ describe "OpenSSL::X509::Certificate#signature_algorithm" do
   end
   
   it 'returns the not before datetime' do
-    x509_cert = OpenSSL::X509::Certificate.new(HMACConstants::X509CERT)
-    x509_cert.signature_algorithm.should == HMACConstants::X509Signature
+    x509_cert = OpenSSL::X509::Certificate.new(X509Constants::X509CERT)
+    x509_cert.signature_algorithm.should == X509Constants::X509Signature
   end
 end

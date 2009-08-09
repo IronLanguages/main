@@ -11,7 +11,7 @@ describe "OpenSSL::PKey::RSA.new" do
   
   it 'new with key size' do
     rsa = OpenSSL::PKey::RSA.new(2048)
-    rsa.to_s.should == PrivateKeyConstants::RSA2048
+    rsa.to_s.should_not be_empty
   end
   
   it 'new with data' do

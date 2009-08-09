@@ -103,7 +103,7 @@ namespace IronRuby.StandardLibrary.OpenSsl {
         }
 
         [RubyMethod("digest_size")]
-        public static int/*!*/ Seed(Digest/*!*/ self) {
+        public static int Seed(Digest/*!*/ self) {
           return self._algorithm.OutputBlockSize;
         }
 
@@ -176,13 +176,13 @@ namespace IronRuby.StandardLibrary.OpenSsl {
 
       [RubyMethod("pseudo_bytes", RubyMethodAttributes.PublicSingleton)]
       [RubyMethod("random_bytes", RubyMethodAttributes.PublicSingleton)]
-      public static MutableString/*!*/ RandomBytes(RubyModule/*!*/ self, [DefaultProtocol, NotNull]int/*!*/ length) {
+      public static MutableString/*!*/ RandomBytes(RubyModule/*!*/ self, [DefaultProtocol]int length) {
         if (length < 0) {
           throw RubyExceptions.CreateArgumentError("negative string size");
         }
 
         if (length == 0) {
-          return MutableString.Create("");
+          return MutableString.CreateEmpty();
         }
 
         byte[] data = new byte[length];
@@ -282,7 +282,7 @@ namespace IronRuby.StandardLibrary.OpenSsl {
 
         [RubyMethod("issuer")]
         public static MutableString Issuer(Certificate/*!*/ self) {
-          if (self._certificate.Handle.ToInt32() == 0) {
+          if (self._certificate.Handle == IntPtr.Zero) {
             return null;
           } else {
             return MutableString.Create(OpenSSLFormat(self._certificate.Issuer));
@@ -296,9 +296,9 @@ namespace IronRuby.StandardLibrary.OpenSsl {
 
         [RubyMethod("public_key")]
         public static MutableString PublicKey(Certificate/*!*/ self) {
-          if (self._certificate.Handle.ToInt32() == 0) {
+          if (self._certificate.Handle == IntPtr.Zero) {
             // TODO: Raise OpenSSL::X509::CertificateError
-            return MutableString.Create("");
+            return MutableString.CreateEmpty();
           } else {
             return MutableString.Create(self._certificate.GetPublicKeyString());
           }
@@ -307,7 +307,7 @@ namespace IronRuby.StandardLibrary.OpenSsl {
 
         private int SerailNumber {
           get {
-            if (_certificate.Handle.ToInt32() == 0) {
+            if (_certificate.Handle == IntPtr.Zero) {
               return 0;
             } else {
               return int.Parse(_certificate.GetSerialNumberString());
@@ -326,7 +326,7 @@ namespace IronRuby.StandardLibrary.OpenSsl {
 
         [RubyMethod("subject")]
         public static MutableString Subject(Certificate/*!*/ self) {
-          if (self._certificate.Handle.ToInt32() == 0) {
+          if (self._certificate.Handle == IntPtr.Zero) {
             return null;
           } else {
             return MutableString.Create(OpenSSLFormat(self._certificate.Subject));
@@ -350,7 +350,7 @@ namespace IronRuby.StandardLibrary.OpenSsl {
               return result.Append(":...>");
             }
             result.Append(' ');
-            if (self._certificate.Handle.ToInt32() == 0) {
+            if (self._certificate.Handle == IntPtr.Zero) {
               result.Append("subject=, issuer=, serial=0, not_before=nil, not_after=nil");
             } else {
               result.Append(string.Format("subject={0}", OpenSSLFormat(self._certificate.Subject)));
@@ -369,7 +369,7 @@ namespace IronRuby.StandardLibrary.OpenSsl {
 
         [RubyMethod("version")]
         public static int Version(Certificate/*!*/ self) {
-          if (self._certificate.Handle.ToInt32() == 0) {
+          if (self._certificate.Handle == IntPtr.Zero) {
             return 0;
           } else {
             return 2;
