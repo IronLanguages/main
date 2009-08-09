@@ -13,9 +13,9 @@
 #
 # ****************************************************************************
 
-require "stringio"
+SILVERLIGHT = false unless defined? SILVERLIGHT
 
-SILVERLIGHT = false unless defined?(SILVERLIGHT)
+require "stringio"
 
 module Tutorial
 
@@ -178,6 +178,7 @@ module Tutorial
     else
       get_tutorial 'Tutorials/ironruby_tutorial.rb'
       get_tutorial 'Tutorials/tryruby_tutorial.rb'
+      get_tutorial 'Tutorials/hosting_tutorial.rb'
     end
 
     @@tutorials
