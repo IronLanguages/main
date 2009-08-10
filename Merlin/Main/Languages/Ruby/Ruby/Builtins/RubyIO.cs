@@ -160,7 +160,8 @@ namespace IronRuby.Builtins {
             set { _preserveEndOfLines = value; }
         }
 
-        public bool HasBufferedData { get; set; }
+        public bool HasBufferedReadData { get; set; }
+        public bool HasBufferedWriteData { get; set; }
 
         #region Mode
 
@@ -370,7 +371,8 @@ namespace IronRuby.Builtins {
 
         public void Flush() {
             _stream.Flush();
-            HasBufferedData = false;
+            HasBufferedReadData = false;
+            HasBufferedWriteData = false;
         }
 
         public long Length {
@@ -398,7 +400,8 @@ namespace IronRuby.Builtins {
         }
 
         public int Write(byte[]/*!*/ buffer, int index, int count) {
-            HasBufferedData = true;
+            HasBufferedWriteData = true;
+            HasBufferedReadData = false;
             if (_preserveEndOfLines) {
                 _stream.Write(buffer, index, count);
                 return buffer.Length;
@@ -442,7 +445,8 @@ namespace IronRuby.Builtins {
         }
 
         public int ReadByte() {
-            HasBufferedData = true;
+            HasBufferedReadData = true;
+            HasBufferedWriteData = false;
             if (_peekAhead != -1) {
                 int result = _peekAhead;
                 _peekAhead = -1;
@@ -452,7 +456,8 @@ namespace IronRuby.Builtins {
         }
 
         public int ReadBytes(byte[]/*!*/ buffer, int offset, int count) {
-            HasBufferedData = true;
+            HasBufferedReadData = true;
+            HasBufferedWriteData = false;
             return _stream.Read(buffer, offset, count);
         }
 
@@ -514,7 +519,8 @@ namespace IronRuby.Builtins {
         private void AppendRawBytes(MutableString/*!*/ buffer, int count) {
             Debug.Assert(count > 0);
 
-            HasBufferedData = true;
+            HasBufferedReadData = true;
+            HasBufferedWriteData = false;
 
             if (_peekAhead != -1) {
                 buffer.Append((byte)_peekAhead);

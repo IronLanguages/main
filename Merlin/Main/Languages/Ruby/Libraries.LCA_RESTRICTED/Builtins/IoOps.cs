@@ -1003,7 +1003,7 @@ namespace IronRuby.Builtins {
                 throw RubyExceptions.CreateIOError("closed stream");
             }
 
-            if (self.HasBufferedData) {
+            if (self.HasBufferedReadData) {
                 throw RubyExceptions.CreateIOError("sysread for buffered IO");
             }
 
@@ -1044,7 +1044,7 @@ namespace IronRuby.Builtins {
             RubyIO/*!*/ self,
             [NotNull]MutableString/*!*/ val) {
 
-            if (self.HasBufferedData) {
+            if (self.HasBufferedWriteData) {
                 ReportWarning(writeStorage, tosConversion, "syswrite for buffered IO");
             }
             int bytes = Write(self, val);
