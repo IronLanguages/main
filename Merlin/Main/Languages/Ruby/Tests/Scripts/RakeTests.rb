@@ -4,9 +4,16 @@ rake_tests_dir = File.expand_path("../External.LCA_RESTRICTED/Languages/IronRuby
 all_test_files = Dir.glob("#{rake_tests_dir}/test/test*.rb") + Dir.glob("#{rake_tests_dir}/test/contrib/test*.rb")
 
 if RUBY_PLATFORM =~ /mswin/
-  # The "session" gem uses "fork" and so does not work on Windows
-  # Print a friendly message to indicate that it is expected for these tests to be skipped
-  puts "(Skipping functional tests on Windows)"
+  if true
+    # The session gem uses "fork" by default, but can use popen3. However, it still does 
+    # not work on Windows. It is currently very *nix oriented. For eg, it assumes that the
+    # default shell is bash.
+    puts "(Skipping functional tests on Windows)"
+  else
+    ENV['SESSION_USE_OPEN3'] = true
+    require "open3"
+    all_test_files += Dir.glob("#{rake_tests_dir}/test/fun*.rb")
+  end
 else
   all_test_files += Dir.glob("#{rake_tests_dir}/test/fun*.rb")
 end

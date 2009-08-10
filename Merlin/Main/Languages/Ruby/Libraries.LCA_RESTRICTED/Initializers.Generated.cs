@@ -27,6 +27,7 @@
 [assembly: IronRuby.Runtime.RubyLibraryAttribute(typeof(IronRuby.StandardLibrary.BigDecimal.BigDecimalLibraryInitializer))]
 [assembly: IronRuby.Runtime.RubyLibraryAttribute(typeof(IronRuby.StandardLibrary.Iconv.IconvLibraryInitializer))]
 [assembly: IronRuby.Runtime.RubyLibraryAttribute(typeof(IronRuby.StandardLibrary.ParseTree.ParseTreeLibraryInitializer))]
+[assembly: IronRuby.Runtime.RubyLibraryAttribute(typeof(IronRuby.StandardLibrary.Open3.Open3LibraryInitializer))]
 
 namespace IronRuby.Builtins {
     public sealed class BuiltinsLibraryInitializer : IronRuby.Builtins.LibraryInitializer {
@@ -1799,7 +1800,18 @@ namespace IronRuby.Builtins {
             );
             
             module.DefineLibraryMethod("sysread", 0x51, 
-                new System.Func<IronRuby.Builtins.RubyIO, System.Int32, IronRuby.Builtins.MutableString>(IronRuby.Builtins.RubyIOOps.SystemRead)
+                new System.Func<IronRuby.Builtins.RubyIO, System.Int32, IronRuby.Builtins.MutableString>(IronRuby.Builtins.RubyIOOps.SystemRead), 
+                new System.Func<IronRuby.Builtins.RubyIO, System.Int32, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString>(IronRuby.Builtins.RubyIOOps.SystemRead)
+            );
+            
+            module.DefineLibraryMethod("sysseek", 0x51, 
+                new System.Func<IronRuby.Builtins.RubyIO, System.Int32, System.Int32, System.Int32>(IronRuby.Builtins.RubyIOOps.SysSeek), 
+                new System.Func<IronRuby.Builtins.RubyIO, Microsoft.Scripting.Math.BigInteger, System.Int32, System.Int32>(IronRuby.Builtins.RubyIOOps.SysSeek)
+            );
+            
+            module.DefineLibraryMethod("syswrite", 0x51, 
+                new System.Func<IronRuby.Runtime.BinaryOpStorage, IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Runtime.RubyContext, IronRuby.Builtins.RubyIO, IronRuby.Builtins.MutableString, System.Int32>(IronRuby.Builtins.RubyIOOps.SysWrite), 
+                new System.Func<IronRuby.Runtime.BinaryOpStorage, IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Runtime.RubyContext, IronRuby.Builtins.RubyIO, System.Object, System.Int32>(IronRuby.Builtins.RubyIOOps.SysWrite)
             );
             
             module.DefineLibraryMethod("tell", 0x51, 
@@ -1823,6 +1835,10 @@ namespace IronRuby.Builtins {
                 new System.Func<IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Builtins.RubyIO, System.Object, System.Int32>(IronRuby.Builtins.RubyIOOps.Write)
             );
             
+            module.DefineLibraryMethod("write_nonblock", 0x51, 
+                new System.Func<IronRuby.Runtime.ConversionStorage<IronRuby.Builtins.MutableString>, IronRuby.Builtins.RubyIO, System.Object, System.Int32>(IronRuby.Builtins.RubyIOOps.NonBlockingWrite)
+            );
+            
         }
         
         private static void LoadIO_Class(IronRuby.Builtins.RubyModule/*!*/ module) {
@@ -1835,6 +1851,12 @@ namespace IronRuby.Builtins {
             
             module.DefineRuleGenerator("open", 0x61, IronRuby.Builtins.RubyIOOps.Open());
             
+            #if !SILVERLIGHT
+            module.DefineLibraryMethod("pipe", 0x61, 
+                new System.Func<IronRuby.Builtins.RubyClass, IronRuby.Builtins.RubyArray>(IronRuby.Builtins.RubyIOOps.OpenPipe)
+            );
+            
+            #endif
             #if !SILVERLIGHT
             module.DefineLibraryMethod("popen", 0x61, 
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, IronRuby.Builtins.RubyClass, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, System.Object>(IronRuby.Builtins.RubyIOOps.OpenPipe), 
@@ -8185,6 +8207,26 @@ namespace IronRuby.StandardLibrary.ParseTree {
                 new System.Func<IronRuby.Runtime.RubyScope, System.Object, IronRuby.Builtins.MutableString, IronRuby.Builtins.MutableString, System.Int32, IronRuby.Builtins.RubyArray>(IronRuby.StandardLibrary.ParseTree.IronRubyOps.ParseTreeOps.CreateParseTreeForString)
             );
             
+        }
+        
+    }
+}
+
+namespace IronRuby.StandardLibrary.Open3 {
+    public sealed class Open3LibraryInitializer : IronRuby.Builtins.LibraryInitializer {
+        protected override void LoadModules() {
+            
+            
+            DefineGlobalModule("Open3", typeof(IronRuby.StandardLibrary.Open3.Open3), 0x00000103, null, LoadOpen3_Class, null, IronRuby.Builtins.RubyModule.EmptyArray);
+        }
+        
+        private static void LoadOpen3_Class(IronRuby.Builtins.RubyModule/*!*/ module) {
+            #if !SILVERLIGHT
+            module.DefineLibraryMethod("popen3", 0x21, 
+                new System.Func<IronRuby.Runtime.RubyContext, System.Object, IronRuby.Builtins.MutableString, IronRuby.Builtins.RubyArray>(IronRuby.StandardLibrary.Open3.Open3.OpenPipe)
+            );
+            
+            #endif
         }
         
     }

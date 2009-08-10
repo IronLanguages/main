@@ -4,6 +4,15 @@ describe "Regression dev tests" do
 
 end
 
+describe "Command line options" do
+  describe "-profile" do
+    s = ruby_exe("puts IronRuby::Clr.profile{ require 'rubygems' }.size", :options => "-profile").chomp.to_i
+    s.should > 15
+    # We check for an upper bound only so that we can increase the lower bound, which is currently lower than we would like it to be
+    s.should < 40
+  end
+end
+
 describe "Enumerable blocks (Codeplex 1301)" do
   before :each do
     @b = [2, 5, 3, 6, 1, 4]  

@@ -14,10 +14,10 @@
  * ***************************************************************************/
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using IronRuby.Compiler.Generation;
@@ -26,7 +26,6 @@ using IronRuby.Runtime.Calls;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Ast = System.Linq.Expressions.Expression;
-using System.Collections;
 
 namespace IronRuby.Builtins {
 
@@ -170,9 +169,18 @@ namespace IronRuby.Builtins {
         #endregion
 
         #region pipe, popen
-#if !SILVERLIGHT
 
-        //pipe
+        [RubyMethod("pipe", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
+        public static RubyArray/*!*/ OpenPipe(RubyClass/*!*/ self) {
+            Stream reader, writer;
+            RubyPipe.CreatePipe(out reader, out writer);
+            RubyArray result = new RubyArray(2);
+            result.Add(new RubyIO(self.Context, reader, RubyFileMode.RDONLY));
+            result.Add(new RubyIO(self.Context, writer, RubyFileMode.WRONLY));
+            return result;
+        }
+
+#if !SILVERLIGHT
 
         [RubyMethod("popen", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
         public static object OpenPipe(RubyContext/*!*/ context, BlockParam block, RubyClass/*!*/ self,
@@ -187,18 +195,44 @@ namespace IronRuby.Builtins {
 
             bool preserveEndOfLines;
             IOMode mode = RubyIO.ParseIOMode(modeString.ConvertToString(), out preserveEndOfLines);
+            bool redirectStandardInput = false, redirectStandardOutput = false;
+            if (mode == IOMode.ReadOnlyFromStart) {
+                redirectStandardOutput = true;
+            } else if (mode == IOMode.WriteOnlyAppend || mode == IOMode.WriteOnlyTruncate) {
+                redirectStandardInput = true;
+            } else {
+                redirectStandardInput = true;
+                redirectStandardOutput = true;
+            }
+
+            Process process = OpenPipe(context, command, redirectStandardInput, redirectStandardOutput, false);
+
+            StreamReader reader = null;
+            StreamWriter writer = null;
+            if (redirectStandardOutput) {
+                reader = process.StandardOutput;
+            }
+
+            if (redirectStandardInput) {
+                writer = process.StandardInput;
+            }
+
+            return new RubyIO(context, reader, writer, modeString.ConvertToString());
+        }
+
+        internal static Process OpenPipe(
+            RubyContext/*!*/ context, 
+            MutableString/*!*/ command,
+            bool redirectStandardInput,
+            bool redirectStandardOutput,
+            bool redirectStandardError) {
 
             ProcessStartInfo startInfo = KernelOps.GetShell(context, command);
             startInfo.UseShellExecute = false;
 
-            if (mode == IOMode.ReadOnlyFromStart) {
-                startInfo.RedirectStandardOutput = true;
-            } else if (mode == IOMode.WriteOnlyAppend || mode == IOMode.WriteOnlyTruncate) {
-                startInfo.RedirectStandardInput = true;
-            } else {
-                startInfo.RedirectStandardOutput = true;
-                startInfo.RedirectStandardInput = true;
-            }
+            startInfo.RedirectStandardInput = redirectStandardInput;
+            startInfo.RedirectStandardOutput = redirectStandardOutput;
+            startInfo.RedirectStandardError = redirectStandardError;
 
             Process process;
             try {
@@ -209,17 +243,7 @@ namespace IronRuby.Builtins {
 
             context.ChildProcessExitStatus = new RubyProcess.Status(process);
 
-            StreamReader reader = null;
-            StreamWriter writer = null;
-            if (startInfo.RedirectStandardOutput) {
-                reader = process.StandardOutput;
-            }
-
-            if (startInfo.RedirectStandardInput) {
-                writer = process.StandardInput;
-            }
-
-            return new RubyIO(context, reader, writer, modeString.ConvertToString());
+            return process;
         }
 #endif
         #endregion
@@ -643,6 +667,16 @@ namespace IronRuby.Builtins {
             }
         }
 
+        public static void ReportWarning(BinaryOpStorage/*!*/ writeStorage, ConversionStorage<MutableString>/*!*/ tosConversion, object message) {
+            if (writeStorage.Context.Verbose != null) {
+                var output = writeStorage.Context.StandardErrorOutput;
+                // MRI: unlike Kernel#puts this outputs \n even if the message ends with \n:
+                var site = writeStorage.GetCallSite("write", 1);
+                site.Target(site, output, RubyIOOps.ToPrintedString(tosConversion, message));
+                RubyIOOps.PutsEmptyLine(writeStorage, output);
+            }
+        }
+
         [RubyMethod("puts")]
         public static void PutsEmptyLine(BinaryOpStorage/*!*/ writeStorage, object self) {
             Protocols.Write(writeStorage, self, MutableString.CreateMutable("\n"));
@@ -702,8 +736,11 @@ namespace IronRuby.Builtins {
             return Write(self, Protocols.ConvertToString(tosConversion, obj));
         }
 
-        //write_nonblock
-        
+        [RubyMethod("write_nonblock")]
+        public static int NonBlockingWrite(ConversionStorage<MutableString>/*!*/ tosConversion, RubyIO/*!*/ self, object obj) {
+            throw new Errno.BadFileDescriptorError("Non-blocking IO is not supported on Windows");
+        }
+
         #endregion
 
         #region read, read_nonblock
@@ -949,21 +986,82 @@ namespace IronRuby.Builtins {
 
         //readpartial
 
+        /// <summary>
+        /// We use Flush to simulate non-buffered IO. A better approach would be to create a parallel FileStream with 
+        /// System.IO.FileOptions.WriteThrough (which corresponds to FILE_FLAG_NO_BUFFERING), and also maybe 
+        /// System.IO.FileOptions.SequentialScan (FILE_FLAG_SEQUENTIAL_SCAN).
+        /// </summary>
         [RubyMethod("sysread")]
         public static MutableString/*!*/ SystemRead(RubyIO/*!*/ self, [DefaultProtocol]int bytes) {
+            MutableString result = MutableString.CreateBinary();
+            return SystemRead(self, bytes, result);
+        }
+
+        [RubyMethod("sysread")]
+        public static MutableString/*!*/ SystemRead(RubyIO/*!*/ self, [DefaultProtocol]int bytes, [DefaultProtocol, NotNull]MutableString/*!*/ result) {
+            if (self.Closed) {
+                throw RubyExceptions.CreateIOError("closed stream");
+            }
+
+            if (self.HasBufferedData) {
+                throw RubyExceptions.CreateIOError("sysread for buffered IO");
+            }
+
+            self.Flush();
             var fixedBuffer = new byte[bytes];
             int len = self.ReadBytes(fixedBuffer, 0, bytes);
             if (len == 0) {
                 throw new EOFError("end of file reached");
             }
 
-            MutableString result = MutableString.CreateBinary();
+            result.Clear();
             result.Append(fixedBuffer, 0, len);
+            self.Flush();
             return result;
         }
 
-        //sysseek
-        //syswrite
+        [RubyMethod("sysseek")]
+        public static int SysSeek(RubyIO/*!*/ self, [DefaultProtocol]int pos, [DefaultProtocol, DefaultParameterValue(SEEK_SET)]int seekOrigin) {
+            SysSeek(self, (long)pos, seekOrigin);
+            return 0;
+        }
+
+        [RubyMethod("sysseek")]
+        public static int SysSeek(RubyIO/*!*/ self, [NotNull]BigInteger/*!*/ pos, [DefaultProtocol, DefaultParameterValue(SEEK_SET)]int seekOrigin) {
+            if (self.Closed) {
+                throw RubyExceptions.CreateIOError("closed stream");
+            }
+
+            self.Flush();
+            return Seek(self, pos, seekOrigin);
+        }
+
+        [RubyMethod("syswrite")]
+        public static int SysWrite(
+            BinaryOpStorage/*!*/ writeStorage,
+            ConversionStorage<MutableString>/*!*/ tosConversion,
+            RubyContext/*!*/ context,
+            RubyIO/*!*/ self,
+            [NotNull]MutableString/*!*/ val) {
+
+            if (self.HasBufferedData) {
+                ReportWarning(writeStorage, tosConversion, "syswrite for buffered IO");
+            }
+            int bytes = Write(self, val);
+            Flush(self);
+            return bytes;
+        }
+
+        [RubyMethod("syswrite")]
+        public static int SysWrite(
+            BinaryOpStorage/*!*/ writeStorage,
+            ConversionStorage<MutableString>/*!*/ tosConversion,
+            RubyContext/*!*/ context,
+            RubyIO/*!*/ self,
+            object obj) {
+
+            return SysWrite(writeStorage, tosConversion, context, self, Protocols.ConvertToString(tosConversion, obj));
+        }
 
         #endregion
 
@@ -987,6 +1085,129 @@ namespace IronRuby.Builtins {
             canBeClosed = Protocols.RespondTo(respondToStorage, io, "close");
 
             return new IOWrapper(respondToStorage.Context, io, canRead, canWrite, canSeek, canFlush, canBeClosed);
+        }
+    }
+
+    /// <summary>
+    /// Pipe for intra-process producer-consumer style message passing
+    /// </summary>
+    internal class RubyPipe : Stream {
+        private EventWaitHandle _dataAvailableEvent;
+        private EventWaitHandle _writerClosedEvent;
+        private WaitHandle[] _eventArray;
+        private Queue<byte> _queue;
+
+        private const int WriterClosedEventIndex = 1;
+
+        private RubyPipe() {
+            _dataAvailableEvent = new AutoResetEvent(false);
+            _writerClosedEvent = new ManualResetEvent(false);
+            _eventArray = new WaitHandle[2];
+            _queue = new Queue<byte>();
+
+            _eventArray[0] = _dataAvailableEvent;
+            _eventArray[1] = _writerClosedEvent;
+            Debug.Assert(_eventArray[WriterClosedEventIndex] == _writerClosedEvent);
+        }
+
+        private RubyPipe(RubyPipe pipe) {
+            _dataAvailableEvent = pipe._dataAvailableEvent;
+            _writerClosedEvent = pipe._writerClosedEvent;
+            _eventArray = pipe._eventArray;
+            _queue = pipe._queue;
+        }
+
+        internal void CloseWriter() {
+            _writerClosedEvent.Set();
+        }
+
+        public static void CreatePipe(out Stream reader, out Stream writer) {
+            RubyPipe pipe = new RubyPipe();
+            reader = pipe;
+            writer = new PipeWriter(pipe);
+        }
+
+        public override bool CanRead {
+            get { return true; }
+        }
+
+        public override bool CanSeek {
+            get { throw new NotImplementedException(); }
+        }
+
+        public override bool CanWrite {
+            get { return true; }
+        }
+
+        public override void Flush() {
+            throw new NotImplementedException();
+        }
+
+        public override long Length {
+            get { throw new NotImplementedException(); }
+        }
+
+        public override long Position {
+            get {
+                throw new NotImplementedException();
+            }
+            set {
+                throw new NotImplementedException();
+            }
+        }
+
+        public override int Read(byte[] buffer, int offset, int count) {
+            // Wait until data is available, or if the writer has closed the pipe
+            //
+            // In the latter case, we do need to return any pending data, and so fall through.
+            // Pending data will be returned the first time, and 0 will naturually be returned subsequent times 
+            WaitHandle.WaitAny(_eventArray);
+
+            lock (((ICollection)_queue).SyncRoot) {
+                if (_queue.Count <= count) {
+                    _queue.CopyTo(buffer, 0);
+                    _queue.Clear();
+                    return _queue.Count;
+                } else {
+                    for (int idx = 0; idx < count; idx++) {
+                        buffer[idx] = _queue.Dequeue();
+                    }
+                    return count;
+                }
+            }
+        }
+
+        public override long Seek(long offset, SeekOrigin origin) {
+            throw new NotImplementedException();
+        }
+
+        public override void SetLength(long value) {
+            throw new NotImplementedException();
+        }
+
+        public override void Write(byte[] buffer, int offset, int count) {
+            lock (((ICollection)_queue).SyncRoot) {
+                for (int idx = 0; idx < count; idx++) {
+                    _queue.Enqueue(buffer[offset + idx]);
+                }
+                _dataAvailableEvent.Set();
+            }
+        }
+
+        /// <summary>
+        /// PipeWriter instance always exists as a sibling of a RubyPipe. Two objects are needed
+        /// so that we can detect whether Close is being called on the reader end of a pipe,
+        /// or on the writer end of a pipe.
+        /// </summary>
+        internal class PipeWriter : RubyPipe {
+            
+            internal PipeWriter(RubyPipe pipe) : base(pipe) {
+            }
+
+            public override void Close() {
+                base.Close();
+                CloseWriter();
+            }
         }
     }
 }

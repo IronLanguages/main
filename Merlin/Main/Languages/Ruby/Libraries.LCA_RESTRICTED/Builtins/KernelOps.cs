@@ -682,13 +682,7 @@ namespace IronRuby.Builtins {
         public static void ReportWarning(BinaryOpStorage/*!*/ writeStorage, ConversionStorage<MutableString>/*!*/ tosConversion, 
             object self, object message) {
 
-            if (writeStorage.Context.Verbose != null) {
-                var output = writeStorage.Context.StandardErrorOutput;
-                // MRI: unlike Kernel#puts this outputs \n even if the message ends with \n:
-                var site = writeStorage.GetCallSite("write", 1);
-                site.Target(site, output, RubyIOOps.ToPrintedString(tosConversion, message));
-                RubyIOOps.PutsEmptyLine(writeStorage, output);
-            }
+            RubyIOOps.ReportWarning(writeStorage, tosConversion, message);
         }
 
         // TODO: not supported in Ruby 1.9
