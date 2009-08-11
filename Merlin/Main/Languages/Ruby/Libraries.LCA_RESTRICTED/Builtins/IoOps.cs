@@ -750,7 +750,7 @@ namespace IronRuby.Builtins {
             if (!File.Exists(strPath)) {
                 throw RubyErrno.CreateENOENT(String.Format("No such file or directory - {0}", strPath));
             }
-            return new RubyIO(context, File.OpenRead(strPath), "r");
+            return new RubyIO(context, File.Open(strPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite), "r");
         }
         
         private static byte[]/*!*/ ReadAllBytes(RubyIO/*!*/ io) {

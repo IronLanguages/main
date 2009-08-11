@@ -561,7 +561,38 @@ namespace IronRuby.Builtins {
             return result;
         }
 
-        //truncate
+#if !SILVERLIGHT
+        [RubyMethod("truncate", BuildConfig = "!SILVERLIGHT")]
+        public static int Truncate(RubyFile/*!*/ self, [DefaultProtocol]int size) {
+            if (size < 0) {
+                throw new InvalidError();
+            }
+            if (self.Closed) {
+                throw RubyExceptions.CreateIOError("closed stream");
+            }
+
+            try {
+                self.Length = size;
+            } catch (NotSupportedException) {
+                throw RubyExceptions.CreateIOError("not opened for writing");
+            }
+            return 0;
+        }
+
+        [RubyMethod("truncate", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
+        public static int Truncate(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path, [DefaultProtocol]int size) {
+            if (size < 0) {
+                throw new InvalidError();
+            }
+            using (RubyFile f = new RubyFile(self.Context, path.ConvertToString(), "r+")) {
+                if (f.Closed) {
+                    throw RubyExceptions.CreateIOError("closed stream");
+                }
+                f.Length = size;
+            }
+            return 0;
+        }
+#endif
 
         internal static readonly object UmaskKey = new object();
 

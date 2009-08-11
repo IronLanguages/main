@@ -377,6 +377,7 @@ namespace IronRuby.Builtins {
 
         public long Length {
             get { return _stream.Length; }
+            set { _stream.SetLength(value); }
         }
 
         // returns the number of bytes written to the stream:
