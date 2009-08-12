@@ -21,6 +21,8 @@ using System;
 using IronRuby.Compiler;
 using System.Runtime.InteropServices;
 using Microsoft.Scripting;
+using System.Runtime.CompilerServices;
+using IronRuby.Runtime.Calls;
 
 namespace IronRuby.Builtins {
 
@@ -58,7 +60,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("%")]
         public static string/*!*/ Format(StringFormatterSiteStorage/*!*/ storage, string/*!*/ self, object arg) {
             IList args = arg as IList ?? new object[] { arg };
-            StringFormatter formatter = new StringFormatter(storage, self, args);
+            StringFormatter formatter = new StringFormatter(storage, self, RubyEncoding.UTF8, args);
             return formatter.Format().ToString();
         }
 
@@ -141,15 +143,17 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("inspect", RubyMethodAttributes.PublicInstance)]
         public static MutableString/*!*/ Inspect(string/*!*/ self) {
-            return MutableString.Create(MutableString.AppendUnicodeRepresentation(
-                new StringBuilder().Append('\''), self, false, false, '\'', -1).Append('\'').ToString()
+            return MutableString.Create(
+                MutableString.AppendUnicodeRepresentation(new StringBuilder().Append('\''), self, false, false, '\'', -1).Append('\'').ToString(),
+                RubyEncoding.UTF8
             );
         }
 
         [RubyMethod("dump", RubyMethodAttributes.PublicInstance)]
         public static MutableString/*!*/ Dump(string/*!*/ self) {
-            return MutableString.Create(MutableString.AppendUnicodeRepresentation(
-                new StringBuilder().Append('\''), self, false, true, '\'', -1).Append('\'').ToString()
+            return MutableString.Create(
+                MutableString.AppendUnicodeRepresentation(new StringBuilder().Append('\''), self, false, true, '\'', -1).Append('\'').ToString(), 
+                RubyEncoding.UTF8
             );
         }
 
@@ -198,7 +202,25 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region TODO: match
+        #region =~, TODO: match
+
+        [RubyMethod("=~")]
+        public static object Match(RubyScope/*!*/ scope, string/*!*/ self, [NotNull]RubyRegex/*!*/ regex) {
+            return RegexpOps.MatchIndex(scope, regex, MutableString.Create(self, RubyEncoding.UTF8));
+        }
+
+        [RubyMethod("=~")]
+        public static object Match(string/*!*/ self, [NotNull]string/*!*/ str) {
+            throw RubyExceptions.CreateTypeError("type mismatch: String given");
+        }
+
+        [RubyMethod("=~")]
+        public static object Match(CallSiteStorage<Func<CallSite, RubyScope, object, string, object>>/*!*/ storage,
+            RubyScope/*!*/ scope, string/*!*/ self, object obj) {
+            var site = storage.GetCallSite("=~", new RubyCallSignature(1, RubyCallFlags.HasScope | RubyCallFlags.HasImplicitSelf));
+            return site.Target(site, scope, obj, self);
+        }
+
         #endregion
 
         #region TODO: scan

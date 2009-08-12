@@ -45,6 +45,14 @@ namespace IronRuby.Runtime {
         private static readonly bool DebugInfoAvailable = true;
 #endif
 
+        // An exception class can implement singleton method "new" that returns an arbitrary instance of an exception.
+        // This mapping needs to be applied on exceptions created in libraries as well (they should be created "dynamically").
+        // That would however need to pass RubyContext to every method that might throw an exception. Instead, we call
+        // "new" on the exception's class as soon as it gets to the first Ruby EH handler (rescue/ensure/else).
+        //
+        // True if the exception has already been handled by Ruby EH clause or if it was constructed "dynamically" via Class#new.
+        internal bool Handled { get; set; }
+
         // owner exception, needed for lazy initialization of message, backtrace
         private Exception/*!*/ _exception;
         // For asynchronous exceptions (Thread#raise), the user exception is wrapped in a TheadAbortException
@@ -175,7 +183,7 @@ namespace IronRuby.Runtime {
                     }
 
                     if (skipFrames == 0) {
-                        result.Add(MutableString.Create(FormatFrame(file, line, methodName)));
+                        result.Add(MutableString.Create(FormatFrame(file, line, methodName), RubyEncoding.UTF8));
                     } else {
                         skipFrames--;
                     }
@@ -274,7 +282,7 @@ namespace IronRuby.Runtime {
         }
 
         // \u2111\u211c;{method-name};{file-name};{line-number};{dlr-suffix}
-        private static bool TryParseRubyMethodName(ref string methodName, ref string fileName, ref int line) {
+        internal static bool TryParseRubyMethodName(ref string methodName, ref string fileName, ref int line) {
             if (methodName.StartsWith(RubyMethodPrefix)) {
                 string[] parts = methodName.Split(';');
                 if (parts.Length > 4) {
@@ -349,7 +357,7 @@ namespace IronRuby.Runtime {
         public object Message {
             get {
                 if (_message == null) {
-                    _message = MutableString.Create(_visibleException.Message);
+                    _message = MutableString.Create(_visibleException.Message, RubyEncoding.UTF8);
                 }
                 return _message;
             }
@@ -386,6 +394,47 @@ namespace IronRuby.Runtime {
             }
 
             return exception;
+        }
+
+        internal static Exception/*!*/ HandleException(RubyContext/*!*/ context, Exception/*!*/ exception) {
+            // already handled:
+            var instanceData = GetInstance(exception);
+            if (instanceData.Handled) {
+                return exception;
+            }
+
+            RubyClass exceptionClass = context.GetClass(exception.GetType());
+
+            // new resolves to Class#new built-in method:
+            var newMethod = exceptionClass.SingletonClass.ResolveMethod("new", VisibilityContext.AllVisible);
+            if (newMethod.Found && newMethod.Info.DeclaringModule == context.ClassClass && newMethod.Info is RubyCustomMethodInfo) {
+                // initialize resolves to a built-in method:
+                var initializeMethod = exceptionClass.ResolveMethod("initialize", VisibilityContext.AllVisible);
+                if (initializeMethod.Found && initializeMethod.Info is RubyLibraryMethodInfo) {
+                    instanceData.Handled = true;
+                    return exception;
+                }
+            }
+
+            var site = exceptionClass.NewSite;
+            Exception newException;
+            try {
+                newException = site.Target(site, exceptionClass, instanceData.Message) as Exception;
+            } catch (Exception e) {
+                // MRI: this can lead to stack overflow:
+                return HandleException(context, e);
+            }
+
+            // MRI doesn't handle this correctly, see http://redmine.ruby-lang.org/issues/show/1886:
+            if (newException == null) {
+                newException = RubyExceptions.CreateTypeError("exception object expected");
+            }
+
+            var newInstanceData = GetInstance(newException);
+            
+            newInstanceData.Handled = true;
+            newInstanceData._backtrace = instanceData._backtrace;
+            return newException;
         }
 
 #if SILVERLIGHT // Thread.ExceptionState

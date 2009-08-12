@@ -16,11 +16,12 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using System.Text;
-using System.Dynamic;
+
+using Microsoft.Scripting.Generation;
 
 namespace Microsoft.Scripting.Utils {
     public static class ReflectionUtils {
@@ -125,57 +126,6 @@ namespace Microsoft.Scripting.Utils {
                 result.Append(">");
             }
             return result;
-        }
-
-        public static T CreateInstance<T>(Type actualType, params object[] args) {
-            Type type = typeof(T);
-
-            Debug.Assert(type.IsAssignableFrom(actualType));
-
-            try {
-                return (T)Activator.CreateInstance(actualType, args);
-            } catch (TargetInvocationException e) {
-                throw new InvalidImplementationException(Strings.InvalidCtorImplementation(actualType, e.InnerException.Message), e.InnerException);
-            } catch (Exception e) {
-                throw new InvalidImplementationException(Strings.InvalidCtorImplementation(actualType, e.Message), e);
-            }
-        }
-
-        public static object InvokeDelegate(Delegate d, params object[] args) {
-#if SILVERLIGHT
-            // delegates:
-            //   - close (target != null)
-            //     - static (target becomes the first argument)
-            //     - instance (no argument shuffling)
-            //   - open (target == null)
-            //     - static (no argument shuffling)
-            //     - instance (first argument becomes the target)
-
-            object target = d.Target;
-
-            if (d.Method.IsStatic && target != null) {
-                // closed static -> target needs to be passed as the first arg:
-                object[] new_args = new object[args.Length + 1];
-                args.CopyTo(new_args, 1);
-                new_args[0] = d.Target;
-
-                target = null;
-                args = new_args;
-
-            } else if (!d.Method.IsStatic && target == null) {
-
-                // open instance -> the first arg is the target:
-                object[] new_args = new object[args.Length - 1];
-                System.Array.Copy(args, 1, new_args, 0, new_args.Length);
-
-                target = args[0];
-                args = new_args;
-            }
-
-            return d.Method.Invoke(target, args);
-#else
-            return d.DynamicInvoke(args);
-#endif
         }
 
         /// <summary>
@@ -295,6 +245,39 @@ namespace Microsoft.Scripting.Utils {
             if (backtick != -1) return typeName.Substring(0, backtick);
             return typeName;
         }
+
+        /// <summary>
+        /// Gets a Func of CallSite, object * paramCnt, object delegate type
+        /// that's suitable for use in a non-strongly typed call site.
+        /// </summary>
+        public static Type GetObjectCallSiteDelegateType(int paramCnt) {
+            switch (paramCnt) {
+                case 0: return typeof(Func<CallSite, object, object>);
+                case 1: return typeof(Func<CallSite, object, object, object>);
+                case 2: return typeof(Func<CallSite, object, object, object, object>);
+                case 3: return typeof(Func<CallSite, object, object, object, object, object>);
+                case 4: return typeof(Func<CallSite, object, object, object, object, object, object>);
+                case 5: return typeof(Func<CallSite, object, object, object, object, object, object, object>);
+                case 6: return typeof(Func<CallSite, object, object, object, object, object, object, object, object>);
+                case 7: return typeof(Func<CallSite, object, object, object, object, object, object, object, object, object>);
+                case 8: return typeof(Func<CallSite, object, object, object, object, object, object, object, object, object, object>);
+                case 9: return typeof(Func<CallSite, object, object, object, object, object, object, object, object, object, object, object>);
+                case 10: return typeof(Func<CallSite, object, object, object, object, object, object, object, object, object, object, object, object>);
+                case 11: return typeof(Func<CallSite, object, object, object, object, object, object, object, object, object, object, object, object, object>);
+                case 12: return typeof(Func<CallSite, object, object, object, object, object, object, object, object, object, object, object, object, object, object>);
+                case 13: return typeof(Func<CallSite, object, object, object, object, object, object, object, object, object, object, object, object, object, object, object>);
+                case 14: return typeof(Func<CallSite, object, object, object, object, object, object, object, object, object, object, object, object, object, object, object, object>);
+                default:
+                    Type[] paramTypes = new Type[paramCnt + 2];
+                    paramTypes[0] = typeof(CallSite);
+                    paramTypes[1] = typeof(object);
+                    for (int i = 0; i < paramCnt; i++) {
+                        paramTypes[i + 2] = typeof(object);
+                    }
+                    return Snippets.Shared.DefineDelegate("InvokeDelegate" + paramCnt, typeof(object), paramTypes);
+            }
+        }
+
 
     }
 }

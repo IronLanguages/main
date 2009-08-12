@@ -33,9 +33,9 @@ namespace IronRuby.StandardLibrary.Sockets {
     [RubyClass("BasicSocket", BuildConfig = "!SILVERLIGHT")]
     public abstract class RubyBasicSocket : RubyIO {
         // TODO: do these escape out of the library?
-        private static readonly MutableString BROADCAST_STRING = MutableString.Create("<broadcast>").Freeze();
-        private static readonly MutableString BROADCAST_IP_STRING = MutableString.Create("255.255.255.255").Freeze();
-        private static readonly MutableString ANY_IP_STRING = MutableString.Create("0.0.0.0").Freeze();
+        private static readonly MutableString BROADCAST_STRING = MutableString.CreateAscii("<broadcast>").Freeze();
+        private static readonly MutableString BROADCAST_IP_STRING = MutableString.CreateAscii("255.255.255.255").Freeze();
+        private static readonly MutableString ANY_IP_STRING = MutableString.CreateAscii("0.0.0.0").Freeze();
 
         private readonly Socket/*!*/ _socket;
 
@@ -388,15 +388,16 @@ namespace IronRuby.StandardLibrary.Sockets {
 
             IPEndPoint ep = (IPEndPoint)endPoint;
 
-            result.Add(MutableString.Create(AddressFamilyToString(ep.AddressFamily)));
+            result.Add(MutableString.CreateAscii(AddressFamilyToString(ep.AddressFamily)));
             result.Add(ep.Port);
             if (DoNotReverseLookup(context).Value) {
-                result.Add(MutableString.Create(ep.Address.ToString()));
+                result.Add(MutableString.CreateAscii(ep.Address.ToString()));
             } else {
                 // TODO: MRI returns localhost rather than the local machine name here
-                result.Add(MutableString.Create(Dns.GetHostEntry(ep.Address).HostName));
+                // TODO (encoding):
+                result.Add(MutableString.Create(Dns.GetHostEntry(ep.Address).HostName, RubyEncoding.UTF8));
             }
-            result.Add(MutableString.Create(ep.Address.ToString()));
+            result.Add(MutableString.CreateAscii(ep.Address.ToString()));
             return result;
         }
 
@@ -592,12 +593,14 @@ namespace IronRuby.StandardLibrary.Sockets {
         internal static RubyArray/*!*/ CreateHostEntryArray(IPHostEntry/*!*/ hostEntry, bool packIpAddresses) {
             RubyArray result = new RubyArray(4);
             // Canonical Hostname
-            result.Add(MutableString.Create(hostEntry.HostName));
+            // TODO (encoding):
+            result.Add(MutableString.Create(hostEntry.HostName, RubyEncoding.UTF8));
 
             // Aliases
             RubyArray aliases = new RubyArray(hostEntry.Aliases.Length);
             foreach (string alias in hostEntry.Aliases) {
-                aliases.Add(MutableString.Create(alias));
+                // TODO (encoding):
+                aliases.Add(MutableString.Create(alias, RubyEncoding.UTF8));
             }
             result.Add(aliases);
 
@@ -612,25 +615,24 @@ namespace IronRuby.StandardLibrary.Sockets {
                     str.Append(bytes, 0, bytes.Length);
                     result.Add(str);
                 } else {
-                    result.Add(MutableString.Create(address.ToString()));
+                    result.Add(MutableString.CreateAscii(address.ToString()));
                 }
             }
             return result;
         }
 
 
-        class AddressFamilyName {
-            MutableString _name;
-            AddressFamily _family;
-            public MutableString Name { get { return _name; } }
-            public AddressFamily Family { get { return _family; } }
-            public AddressFamilyName(string name, AddressFamily family) {
-                _name = MutableString.Create(name);
-                _family = family;
+        private struct AddressFamilyName {
+            public readonly MutableString/*!*/ Name;
+            public readonly AddressFamily Family;
+
+            public AddressFamilyName(string/*!*/ name, AddressFamily family) {
+                Name = MutableString.CreateAscii(name);
+                Family = family;
             }
         }
 
-        static List<AddressFamilyName> FamilyNames = new List<AddressFamilyName>(new AddressFamilyName[] {
+        private static AddressFamilyName[] FamilyNames = new[] {
             new AddressFamilyName("AF_INET", AddressFamily.InterNetwork),
             new AddressFamilyName("AF_UNIX", AddressFamily.Unix),
             //new AddressFamilyName("AF_AX25", AddressFamily.Ax),
@@ -668,25 +670,21 @@ namespace IronRuby.StandardLibrary.Sockets {
             //new AddressFamilyName("AF_NETGRAPH", AddressFamily.Netgraph),
             new AddressFamilyName("AF_MAX", AddressFamily.Max),
             //new AddressFamilyName("AF_E164", AddressFamily.E164),
-        });
+        };
 
-        internal class ServiceName {
-            int _port;
-            MutableString _protocol;
-            MutableString _name;
+        internal sealed class ServiceName {
+            public readonly int Port;
+            public readonly MutableString Protocol;
+            public readonly MutableString Name;
 
-            public int Port { get { return _port; } }
-            public MutableString Protocol { get { return _protocol; } }
-            public MutableString Name { get { return _name; } }
-
-            public ServiceName(int port, string protocol, string name) {
-                _port = port;
-                _protocol = MutableString.Create(protocol);
-                _name = MutableString.Create(name);
+            public ServiceName(int port, string/*!*/ protocol, string/*!*/ name) {
+                Port = port;
+                Protocol = MutableString.CreateAscii(protocol);
+                Name = MutableString.CreateAscii(name);
             }
         }
 
-        static List<ServiceName> ServiceNames = new List<ServiceName>(new ServiceName[] {
+        private static ServiceName[] ServiceNames = new[] {
             new ServiceName(7, "tcp", "echo"),
             new ServiceName(7, "udp", "echo"),
             new ServiceName(9, "tcp", "discard"),
@@ -830,7 +828,7 @@ namespace IronRuby.StandardLibrary.Sockets {
             new ServiceName(10011, "udp", "rscsb"),
             new ServiceName(10012, "tcp", "qmaster"),
             new ServiceName(10012, "udp", "qmaster")
-        });
+        };
 
         #endregion
     }

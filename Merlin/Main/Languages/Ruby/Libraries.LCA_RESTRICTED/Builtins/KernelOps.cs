@@ -151,12 +151,12 @@ namespace IronRuby.Builtins {
         }
 
         private static MutableString/*!*/ JoinArguments(MutableString/*!*/[]/*!*/ args) {
-            MutableString result = MutableString.CreateMutable();
+            MutableString result = MutableString.CreateMutable(RubyEncoding.Binary);
 
             for (int i = 0; i < args.Length; i++) {
                 result.Append(args[i]);
                 if (args.Length > 1 && i < args.Length - 1) {
-                    result.Append(" ");
+                    result.Append(' ');
                 }
             }
 
@@ -171,7 +171,7 @@ namespace IronRuby.Builtins {
                 p.WaitForExit();
                 return p;
             } catch (Exception e) {
-                throw RubyErrno.CreateENOENT(psi.FileName, e);
+                throw RubyExceptions.CreateENOENT(psi.FileName, e);
             }
         }
 
@@ -183,7 +183,7 @@ namespace IronRuby.Builtins {
             try {
                 return Process.Start(psi);
             } catch (Exception e) {
-                throw RubyErrno.CreateENOENT(psi.FileName, e);
+                throw RubyExceptions.CreateENOENT(psi.FileName, e);
             }
         }
 
@@ -203,7 +203,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("`", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
         public static MutableString/*!*/ ExecuteCommand(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]MutableString/*!*/ command) {
             Process p = ExecuteProcessCapturingStandardOutput(GetShell(context, command));
-            MutableString result = MutableString.Create(p.StandardOutput.ReadToEnd());
+            MutableString result = MutableString.Create(p.StandardOutput.ReadToEnd(), RubyEncoding.GetRubyEncoding(p.StandardOutput.CurrentEncoding));
             context.ChildProcessExitStatus = new RubyProcess.Status(p);
             return result;
         }
@@ -379,7 +379,8 @@ namespace IronRuby.Builtins {
                 foreach (KeyValuePair<string, GlobalVariable> global in context.GlobalVariables) {
                     if (global.Value.IsEnumerated) {
                         // TODO: Ruby 1.9 returns symbols:
-                        result.Add(MutableString.Create(global.Key));
+                        // TODO (encoding):
+                        result.Add(MutableString.Create(global.Key, RubyEncoding.UTF8));
                     }
                 }
             }
@@ -436,7 +437,8 @@ namespace IronRuby.Builtins {
 
             RubyArray result = new RubyArray(names.Count);
             for (int i = 0; i < names.Count; i++) {
-                result.Add(MutableString.Create(names[i]));
+                // TODO (encoding):
+                result.Add(MutableString.Create(names[i], RubyEncoding.UTF8));
             }
             return result;
         }
@@ -930,7 +932,7 @@ namespace IronRuby.Builtins {
         public static MutableString/*!*/ Sprintf(StringFormatterSiteStorage/*!*/ storage, 
             object self, [DefaultProtocol, NotNull]MutableString/*!*/ format, [NotNull]params object[] args) {
 
-            return new StringFormatter(storage, format.ConvertToString(), args).Format();
+            return new StringFormatter(storage, format.ConvertToString(), format.Encoding, args).Format();
         }
 
         //sub
@@ -1137,7 +1139,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("to_s")]
         public static MutableString/*!*/ ToS(object self) {
-            return self == null ? MutableString.CreateEmpty() : MutableString.Create(self.ToString());
+            return self == null ? MutableString.CreateEmpty() : MutableString.Create(self.ToString(), RubyEncoding.UTF8);
         }
 
         /// <summary>
@@ -1363,7 +1365,8 @@ namespace IronRuby.Builtins {
 
             RubyArray result = new RubyArray(names.Length);
             foreach (string name in names) {
-                result.Add(MutableString.Create(name));
+                // TODO (encoding):
+                result.Add(MutableString.Create(name, RubyEncoding.UTF8));
             }
             return result;
         }

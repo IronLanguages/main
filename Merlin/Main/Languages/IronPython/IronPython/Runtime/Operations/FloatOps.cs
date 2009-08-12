@@ -45,6 +45,10 @@ namespace IronPython.Runtime.Operations {
                 if (x is string) {
                     return ParseFloat((string)x);
                 } else if (x is Extensible<string>) {
+                    object res;
+                    if (PythonTypeOps.TryInvokeUnaryOperator(context, x, Symbols.ConvertToFloat, out res)) {
+                        return res;
+                    }
                     return ParseFloat(((Extensible<string>)x).Value);
                 } else if (x is char) {
                     return ParseFloat(ScriptingRuntimeHelpers.CharToString((char)x));
@@ -93,12 +97,16 @@ namespace IronPython.Runtime.Operations {
             }
             return PythonTuple.MakeTuple((BigInteger)self, dem);
         }
+        
+        private static char[] _whitespace = new[] { ' ', '\t', '\n', '\f', '\v', '\r' };
 
         [ClassMethod, StaticExtensionMethod]
         public static object fromhex(CodeContext/*!*/ context, PythonType/*!*/ cls, string self) {
             if (String.IsNullOrEmpty(self)) {
                 throw PythonOps.ValueError("expected non empty string");
             }
+            
+            self = self.Trim(_whitespace);
 
             // look for inf, infinity, nan, etc...
             double? specialRes = TryParseSpecialFloat(self);
@@ -674,9 +682,20 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static string __repr__(CodeContext/*!*/ context, double self) {
+            if (Double.IsNaN(self)) {
+                return "nan";
+            }
+
+            // first format using Python's specific formatting rules...
             StringFormatter sf = new StringFormatter(context, "%.17g", self);
             sf._TrailingZeroAfterWholeFloat = true;
-            return sf.Format();
+            string res = sf.Format();
+            if (LiteralParser.ParseFloat(res) == self) {
+                return res;
+            }
+
+            // if it's not round trippable though use .NET's round-trip format
+            return self.ToString("R", CultureInfo.InvariantCulture);
         }
 
         public static BigInteger/*!*/ __long__(double self) {
@@ -877,7 +896,7 @@ namespace IronPython.Runtime.Operations {
                     }
                     break;
                 default:
-                    throw PythonOps.ValueError("Unknown conversion type {0}", spec.Type.ToString());
+                    throw PythonOps.ValueError("Unknown format code '{0}' for object of type 'float'", spec.Type.ToString());
             }
 
             return digits;

@@ -70,7 +70,7 @@ namespace IronPython.Runtime.Binding {
             if (icc != null) {
                 // get the member using our interface which also supports CodeContext.
                 return icc.GetMember(this, cc);
-            } else if (target.Value is IDynamicMetaObjectProvider && !(target is MetaPythonObject)) {
+            } else if (target.Value is IDynamicMetaObjectProvider) {
                 return GetForeignObject(target);
             }
 #if !SILVERLIGHT
@@ -521,6 +521,11 @@ namespace IronPython.Runtime.Binding {
         public DynamicMetaObject/*!*/ Fallback(DynamicMetaObject/*!*/ self, DynamicMetaObject/*!*/ codeContext) {
             // Python always provides an extra arg to GetMember to flow the context.
             return FallbackWorker(_context, self, codeContext, Name, _options, this, null);
+        }
+
+        public DynamicMetaObject/*!*/ Fallback(DynamicMetaObject/*!*/ self, DynamicMetaObject/*!*/ codeContext, DynamicMetaObject errorSuggestion) {
+            // Python always provides an extra arg to GetMember to flow the context.
+            return FallbackWorker(_context, self, codeContext, Name, _options, this, errorSuggestion);
         }
 
         internal static DynamicMetaObject FallbackWorker(PythonContext context, DynamicMetaObject/*!*/ self, DynamicMetaObject/*!*/ codeContext, string name, GetMemberOptions options, DynamicMetaObjectBinder action, DynamicMetaObject errorSuggestion) {

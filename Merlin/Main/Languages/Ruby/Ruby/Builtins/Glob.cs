@@ -15,16 +15,14 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
-using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
 using System.Text;
 using System.Text.RegularExpressions;
 using IronRuby.Runtime;
+using Microsoft.Scripting;
+using Microsoft.Scripting.Utils;
 
 namespace IronRuby.Builtins {
-    public class Glob {
+    public static class Glob {
         // Duplicated constants from File.Constants
         private static class Constants {
             public readonly static int FNM_CASEFOLD = 0x08;
@@ -125,20 +123,19 @@ namespace IronRuby.Builtins {
             return (charClass == null) ? result.ToString() : String.Empty;
         }
 
-        public static bool FnMatch(MutableString/*!*/ pattern, MutableString/*!*/ path, int flags) {
-            if (pattern.IsEmpty) {
-                return path.IsEmpty;
+        public static bool FnMatch(string/*!*/ pattern, string/*!*/ path, int flags) {
+            if (pattern.Length == 0) {
+                return path.Length == 0;
             }
 
             bool pathName = ((flags & Constants.FNM_PATHNAME) != 0);
             bool noEscape = ((flags & Constants.FNM_NOESCAPE) != 0);
-            string sPath = path.ConvertToString();
-            string regexPattern = PatternToRegex(pattern.ConvertToString(), pathName, noEscape);
+            string regexPattern = PatternToRegex(pattern, pathName, noEscape);
             if (regexPattern.Length == 0) {
                 return false;
             }
 
-            if (((flags & Constants.FNM_DOTMATCH) == 0) && sPath.Length > 0 && sPath[0] == '.') {
+            if (((flags & Constants.FNM_DOTMATCH) == 0) && path.Length > 0 && path[0] == '.') {
                 // Starting dot requires an explicit dot in the pattern
                 if (regexPattern.Length < 4 || regexPattern[2] != '[' || regexPattern[3] != '.') {
                     return false;
@@ -149,7 +146,7 @@ namespace IronRuby.Builtins {
             if ((flags & Constants.FNM_CASEFOLD) != 0) {
                 options |= RegexOptions.IgnoreCase;
             }
-            Match match = Regex.Match(sPath, regexPattern, options);
+            Match match = Regex.Match(path, regexPattern, options);
             return match != null && match.Success && (match.Length == path.Length);
         }
 
@@ -482,31 +479,29 @@ namespace IronRuby.Builtins {
                     return;
                 }
 
-                MutableString mPattern = MutableString.Create(dirSegment);
                 bool doubleStar = dirSegment.Equals("**");
                 if (doubleStar && !isPreviousDoubleStar) {
                     DoGlob(baseDirectory, patternEnd, true);
                 }
 
-                string[] files = Directory.GetFileSystemEntries(baseDirectory);
-                foreach (string file in files) {
-                    string objectName = Path.GetFileName(file);
-                    if (FnMatch(mPattern, MutableString.Create(objectName), _flags)) {
+                foreach (string file in _pal.GetDirectories(baseDirectory, "*").Concat(_pal.GetFiles(baseDirectory, "*"))) {
+                    string objectName = _pal.GetFileName(file);
+                    if (FnMatch(dirSegment, objectName, _flags)) {
                         TestPath(file, patternEnd, isLastPathSegment);
                         if (doubleStar) {
                             DoGlob(file, position, true);
                         }
                     }
                 }
-                if (isLastPathSegment && (_flags & Constants.FNM_DOTMATCH) != 0 || mPattern.GetChar(0) == '.') {
-                    if (FnMatch(mPattern, MutableString.Create("."), _flags)) {
+                if (isLastPathSegment && (_flags & Constants.FNM_DOTMATCH) != 0 || dirSegment[0] == '.') {
+                    if (FnMatch(dirSegment, ".", _flags)) {
                         string directory = baseDirectory + "/.";
                         if (_dirOnly) {
                             directory += '/';
                         }
                         TestPath(directory, patternEnd, true);
                     }
-                    if (FnMatch(mPattern, MutableString.Create(".."), _flags)) {
+                    if (FnMatch(dirSegment, "..", _flags)) {
                         string directory = baseDirectory + "/..";
                         if (_dirOnly) {
                             directory += '/';
@@ -517,24 +512,19 @@ namespace IronRuby.Builtins {
             }
         }
 
-        private static IList<string>/*!*/ DoGlob(PlatformAdaptationLayer/*!*/ pal, string/*!*/ pattern, int flags) {
-            GlobMatcher matcher = new GlobMatcher(pal, pattern, flags);
-            return matcher.DoGlob();
-        }
-
-        public static IEnumerable<string>/*!*/ GlobResults(RubyContext/*!*/ context, string/*!*/ pattern, int flags) {
+        public static IEnumerable<string>/*!*/ GlobResults(PlatformAdaptationLayer/*!*/ pal, string/*!*/ pattern, int flags) {
             if (pattern.Length == 0) {
                 yield break;
             }
             bool noEscape = ((flags & Constants.FNM_NOESCAPE) != 0);
-            string sPattern = pattern;
-            string[] groups = UngroupGlobs(sPattern, noEscape);
+            string[] groups = UngroupGlobs(pattern, noEscape);
             if (groups.Length == 0) {
                 yield break;
             }
 
             foreach (string group in groups) {
-                foreach (string filename in DoGlob(context.DomainManager.Platform, group, flags)) {                 
+                GlobMatcher matcher = new GlobMatcher(pal, group, flags);
+                foreach (string filename in matcher.DoGlob()) {                 
                     yield return filename;
                 }
             }

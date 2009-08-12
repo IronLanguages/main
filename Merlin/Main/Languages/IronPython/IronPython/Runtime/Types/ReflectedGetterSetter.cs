@@ -33,6 +33,7 @@ namespace IronPython.Runtime.Types {
     public abstract class ReflectedGetterSetter : PythonTypeSlot {
         private MethodInfo/*!*/[]/*!*/ _getter, _setter;
         private readonly NameType _nameType;
+        private BuiltinFunction _getfunc, _setfunc;
 
         protected ReflectedGetterSetter(MethodInfo[]/*!*/ getter, MethodInfo[]/*!*/ setter, NameType nt) {
             Debug.Assert(getter != null);
@@ -50,11 +51,25 @@ namespace IronPython.Runtime.Types {
         }
 
         internal void AddGetter(MethodInfo mi) {
-            _getter = ArrayUtils.Append(_getter, mi);
+            lock (this) {
+                _getter = ArrayUtils.Append(_getter, mi);
+                MakeGetFunc();
+            }
+        }
+
+        private void MakeGetFunc() {
+            _getfunc = PythonTypeOps.GetBuiltinFunction(DeclaringType, __name__, _getter);
         }
 
         internal void AddSetter(MethodInfo mi) {
-            _setter = ArrayUtils.Append(_setter, mi);
+            lock (this) {
+                _setter = ArrayUtils.Append(_setter, mi);
+                MakeSetFunc();
+            }
+        }
+
+        private void MakeSetFunc() {
+            _setfunc = PythonTypeOps.GetBuiltinFunction(DeclaringType, __name__, _setter);
         }
 
         internal abstract Type DeclaringType {
@@ -98,7 +113,15 @@ namespace IronPython.Runtime.Types {
                 throw new MissingMemberException("unreadable property");
             }
 
-            return CallTarget(context, storage, _getter, instance, args);
+            if (_getfunc == null) {
+                lock (this) {
+                    if (_getfunc == null) {
+                        MakeGetFunc();
+                    }
+                }
+            }
+
+            return _getfunc.Call(context, storage, instance, args);
         }
 
         internal object CallTarget(CodeContext context, SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object, object[], object>>> storage, MethodInfo[] targets, object instance, params object[] args) {
@@ -130,10 +153,18 @@ namespace IronPython.Runtime.Types {
                 return false;
             }
 
+            if (_setfunc == null) {
+                lock (this) {
+                    if (_setfunc == null) {
+                        MakeSetFunc();
+                    }
+                }
+            }
+
             if (args.Length != 0) {
-                CallTarget(context, storage, _setter, instance, ArrayUtils.Append(args, value));
+                _setfunc.Call(context, storage, instance, ArrayUtils.Append(args, value));
             } else {
-                CallTarget(context, storage, _setter, instance, value);
+                _setfunc.Call(context, storage, instance, new [] { value });
             }
 
             return true;

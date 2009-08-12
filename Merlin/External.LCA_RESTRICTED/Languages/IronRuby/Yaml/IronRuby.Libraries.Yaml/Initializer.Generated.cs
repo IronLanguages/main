@@ -330,7 +330,7 @@ namespace IronRuby.StandardLibrary.Yaml {
             );
             
             module.DefineLibraryMethod("quick_emit", 0x21, 
-                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, IronRuby.Builtins.RubyModule, System.Object, IronRuby.Builtins.Hash, IronRuby.Builtins.MutableString>(IronRuby.StandardLibrary.Yaml.RubyYaml.QuickEmit), 
+                new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, IronRuby.Builtins.RubyModule, System.Object, IronRuby.Builtins.Hash, System.Object>(IronRuby.StandardLibrary.Yaml.RubyYaml.QuickEmit), 
                 new System.Func<IronRuby.Runtime.RubyContext, IronRuby.Runtime.BlockParam, IronRuby.Builtins.RubyModule, System.Object, IronRuby.StandardLibrary.Yaml.RubyRepresenter, IronRuby.StandardLibrary.Yaml.Node>(IronRuby.StandardLibrary.Yaml.RubyYaml.QuickEmit)
             );
             

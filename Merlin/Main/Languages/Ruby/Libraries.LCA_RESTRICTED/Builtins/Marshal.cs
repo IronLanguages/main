@@ -70,9 +70,9 @@ namespace IronRuby.Builtins {
             
         #region Constants
 
-        private static readonly MutableString _positiveInfinityString = MutableString.Create("inf").Freeze();
-        private static readonly MutableString _negativeInfinityString = MutableString.Create("-inf").Freeze();
-        private static readonly MutableString _nanString = MutableString.Create("nan").Freeze();
+        private static readonly MutableString _positiveInfinityString = MutableString.CreateAscii("inf").Freeze();
+        private static readonly MutableString _negativeInfinityString = MutableString.CreateAscii("-inf").Freeze();
+        private static readonly MutableString _nanString = MutableString.CreateAscii("nan").Freeze();
 
         #endregion
 
@@ -190,7 +190,7 @@ namespace IronRuby.Builtins {
                 } else if (Double.IsNaN(value)) {
                     WriteStringValue(_nanString);
                 } else {
-                    StringFormatter sf = new StringFormatter(_context, "%.15g", new object[] { value });
+                    StringFormatter sf = new StringFormatter(_context, "%.15g", RubyEncoding.Binary, new object[] { value });
                     sf.TrailingZeroAfterWholeFloat = false;
                     WriteStringValue(sf.Format());
                 }
@@ -203,7 +203,7 @@ namespace IronRuby.Builtins {
 
                     if (libClass != theClass && !(obj is RubyStruct)) {
                         marshaller._writer.Write((byte)'C');
-                        marshaller.WriteSymbol(theClass.Name);
+                        marshaller.WriteModuleName(theClass);
                     }
                 }
             }
@@ -215,8 +215,12 @@ namespace IronRuby.Builtins {
                 _writer.Write(data);
             }
 
-            private void WriteStringValue(string/*!*/ value) {
-                byte[] data = MutableString.Create(value).ConvertToBytes();
+            private void WriteModuleName(RubyModule/*!*/ module) {
+                WriteSymbol(module.Name, RubyEncoding.ClassName);
+            }
+
+            private void WriteStringValue(string/*!*/ value, RubyEncoding/*!*/ encoding) {
+                byte[] data = encoding.StrictEncoding.GetBytes(value);
                 WriteInt32(data.Length);
                 _writer.Write(data);
             }
@@ -261,7 +265,7 @@ namespace IronRuby.Builtins {
                 }
             }
 
-            private void WriteSymbol(string/*!*/ value) {
+            private void WriteSymbol(string/*!*/ value, RubyEncoding/*!*/ encoding) {
                 int position;
                 if (_symbols.TryGetValue(value, out position)) {
                     _writer.Write((byte)';');
@@ -270,7 +274,7 @@ namespace IronRuby.Builtins {
                     position = _symbols.Count;
                     _symbols[value] = position;
                     _writer.Write((byte)':');
-                    WriteStringValue(value);
+                    WriteStringValue(value, encoding);
                 }
             }
 
@@ -288,11 +292,11 @@ namespace IronRuby.Builtins {
                 WriteInt32(3);
                 // Write the attributes that are implemented in C#. Any user-defined attributes (for subtypes of Range)
                 // will be handled by the default handling of IRubyObject
-                WriteSymbol("begin");
+                WriteSymbol("begin", RubyEncoding.Binary);
                 WriteAnObject(range.Begin);
-                WriteSymbol("end");
+                WriteSymbol("end", RubyEncoding.Binary);
                 WriteAnObject(range.End);
-                WriteSymbol("excl");
+                WriteSymbol("excl", RubyEncoding.Binary);
                 WriteAnObject(range.ExcludeEnd);
             }
 
@@ -300,14 +304,14 @@ namespace IronRuby.Builtins {
                 _writer.Write((byte)'o');
                 RubyClass theClass = _context.GetClassOf(obj);
                 TestForAnonymous(theClass);
-                WriteSymbol(theClass.Name);
+                WriteModuleName(theClass);
             }
 
             private void WriteUsingDump(object/*!*/ obj) {
                 _writer.Write((byte)'u');
                 RubyClass theClass = _context.GetClassOf(obj);
                 TestForAnonymous(theClass);
-                WriteSymbol(theClass.Name);
+                WriteModuleName(theClass);
                 MutableString dumpResult = _sites.Dump.Target(_sites.Dump, obj, _recursionLimit) as MutableString;
                 if (dumpResult == null) {
                     throw RubyExceptions.CreateTypeError("_dump() must return string");
@@ -319,20 +323,20 @@ namespace IronRuby.Builtins {
                 _writer.Write((byte)'U');
                 RubyClass theClass = _context.GetClassOf(obj);
                 TestForAnonymous(theClass);
-                WriteSymbol(theClass.Name);
+                WriteModuleName(theClass);
                 WriteAnObject(_sites.MarshalDump.Target(_sites.MarshalDump, obj));
             }
 
             private void WriteClass(RubyClass/*!*/ obj) {
                 _writer.Write((byte)'c');
                 TestForAnonymous(obj);
-                WriteStringValue(obj.Name);
+                WriteStringValue(obj.Name, RubyEncoding.ClassName);
             }
 
             private void WriteModule(RubyModule/*!*/ obj) {
                 _writer.Write((byte)'m');
                 TestForAnonymous(obj);
-                WriteStringValue(obj.Name);
+                WriteStringValue(obj.Name, RubyEncoding.ClassName);
             }
 
             private void WriteStruct(RubyStruct/*!*/ obj) {
@@ -340,12 +344,13 @@ namespace IronRuby.Builtins {
                 _writer.Write((byte)'S');
                 RubyClass theClass = _context.GetClassOf(obj);
                 TestForAnonymous(theClass);
-                WriteSymbol(theClass.Name);
+                WriteModuleName(theClass);
                 var names = obj.GetNames();
                 WriteInt32(names.Count);
                 foreach (string name in names) {
                     int index = obj.GetIndex(name);
-                    WriteSymbol(name);
+                    // TODO (encoding):
+                    WriteSymbol(name, RubyEncoding.UTF8);
                     WriteAnObject(obj[index]);
                 }
             }
@@ -373,7 +378,8 @@ namespace IronRuby.Builtins {
                 } else if (obj is int) {
                     WriteFixnum((int)obj);
                 } else if (obj is SymbolId) {
-                    WriteSymbol(SymbolTable.IdToString((SymbolId)obj));
+                    // TODO (encoding):
+                    WriteSymbol(SymbolTable.IdToString((SymbolId)obj), RubyEncoding.UTF8);
                 } else {
                     int objectRef;
                     if (_objects.TryGetValue(obj, out objectRef)) {
@@ -406,7 +412,7 @@ namespace IronRuby.Builtins {
                             if (theClass.IsSingletonClass) {
                                 foreach (var mixin in theClass.GetMixins()) {
                                     _writer.Write((byte)'e');
-                                    WriteSymbol(mixin.Name);
+                                    WriteModuleName(mixin);
                                 }
                             }
                         }
@@ -454,7 +460,8 @@ namespace IronRuby.Builtins {
                                 if (!_context.TryGetInstanceVariable(obj, name, out value)) {
                                     value = null;
                                 }
-                                WriteSymbol(name);
+                                // TODO (encoding):
+                                WriteSymbol(name, RubyEncoding.UTF8);
                                 WriteAnObject(value);
                             }
                         }

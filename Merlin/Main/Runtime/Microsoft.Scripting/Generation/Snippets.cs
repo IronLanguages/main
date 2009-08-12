@@ -226,6 +226,18 @@ namespace Microsoft.Scripting.Generation {
             );
         }
 
+        private static readonly Type[] _DelegateCtorSignature = new Type[] { typeof(object), typeof(IntPtr) };
+
+        public Type DefineDelegate(string name, Type returnType, params Type[] argTypes) {
+            TypeBuilder tb = DefineDelegateType(name);
+            tb.DefineConstructor(
+                MethodAttributes.RTSpecialName | MethodAttributes.HideBySig | MethodAttributes.Public, 
+                CallingConventions.Standard, _DelegateCtorSignature).SetImplementationFlags(MethodImplAttributes.Runtime | MethodImplAttributes.Managed);
+            tb.DefineMethod("Invoke", MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.NewSlot | MethodAttributes.Virtual, returnType, argTypes).SetImplementationFlags(MethodImplAttributes.Runtime | MethodImplAttributes.Managed);
+            return tb.CreateType();
+
+        }
+
         internal bool IsSnippetsAssembly(Assembly asm) {
             return (_assembly != null && asm == _assembly.AssemblyBuilder) ||
                    (_debugAssembly != null && asm == _debugAssembly.AssemblyBuilder);

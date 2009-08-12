@@ -33,7 +33,7 @@ namespace IronRuby.StandardLibrary.Sockets {
         
         [RubyMethod("getaddress", RubyMethodAttributes.PublicSingleton)]
         public static MutableString/*!*/ GetAddress(ConversionStorage<MutableString>/*!*/ stringCast, RubyClass/*!*/ self, object hostNameOrAddress) {
-            return MutableString.Create(GetHostAddress(ConvertToHostString(stringCast, hostNameOrAddress)).ToString());
+            return MutableString.CreateAscii(GetHostAddress(ConvertToHostString(stringCast, hostNameOrAddress)).ToString());
         }
 
         #region Public Instance Methods

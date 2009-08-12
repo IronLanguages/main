@@ -102,7 +102,7 @@ namespace IronRuby.StandardLibrary.Yaml {
 
             [RubyMethod("inspect")]
             public static MutableString/*!*/ Inspect(RubyContext/*!*/ context, YamlStream/*!*/ self) {
-                MutableString result = MutableString.CreateMutable("#<YAML::Stream:");
+                MutableString result = MutableString.CreateMutable("#<YAML::Stream:", RubyEncoding.Binary);
                 RubyUtils.AppendFormatHexObjectId(result, RubyUtils.GetObjectId(context, self))
                 .Append(" @documents=")
                 .Append(context.Inspect(self._documents))

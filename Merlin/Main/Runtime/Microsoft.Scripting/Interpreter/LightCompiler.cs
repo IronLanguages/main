@@ -22,6 +22,7 @@ using System.Threading;
 using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 using Microsoft.Scripting.Generation;
+using Microsoft.Scripting.Runtime;
 
 namespace Microsoft.Scripting.Interpreter {
 
@@ -351,15 +352,42 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         private void CompileDefaultExpression(Expression expr) {
-            var node = (DefaultExpression)expr;
-            if (node.Type != typeof(void)) {
-                object value;
-                if (node.Type.IsValueType) {
-                    value = Activator.CreateInstance(node.Type);
+            CompileDefaultExpression(expr.Type);
+        }
+
+        private void CompileDefaultExpression(Type type) {
+            if (type != typeof(void)) {
+                if (type.IsValueType) {
+                    object value = GetImmutableDefaultValue(type);
+                    if (value != null) {
+                        PushConstant(value);
+                    } else {
+                        AddInstruction(new NewValueTypeInstruction(type));
+                    }
                 } else {
-                    value = null;
+                    PushConstant(null);
                 }
-                PushConstant(value);
+            }
+        }
+
+        internal static object GetImmutableDefaultValue(Type type) {
+            switch (Type.GetTypeCode(type)) {
+                case TypeCode.Boolean: return ScriptingRuntimeHelpers.False;
+                case TypeCode.SByte: return default(SByte);
+                case TypeCode.Byte: return default(Byte);
+                case TypeCode.Char: return default(Char);
+                case TypeCode.Int16: return default(Int16);
+                case TypeCode.Int32: return ScriptingRuntimeHelpers.Int32ToObject(0);
+                case TypeCode.Int64: return default(Int64);
+                case TypeCode.UInt16: return default(UInt16);
+                case TypeCode.UInt32: return default(UInt32);
+                case TypeCode.UInt64: return default(UInt64);
+                case TypeCode.Single: return default(Single);
+                case TypeCode.Double: return default(Double);
+                case TypeCode.DBNull: return default(DBNull);
+                case TypeCode.DateTime: return default(DateTime);
+                case TypeCode.Decimal: return default(Decimal);
+                default: return null;
             }
         }
 
@@ -1171,11 +1199,15 @@ namespace Microsoft.Scripting.Interpreter {
         private void CompileNewExpression(Expression expr) {
             var node = (NewExpression)expr;
 
-            foreach (var arg in node.Arguments) {
-                this.Compile(arg);
+            if (node.Constructor != null) {
+                foreach (var arg in node.Arguments) {
+                    this.Compile(arg);
+                }
+                AddInstruction(new NewInstruction(node.Constructor));
+            } else {
+                Debug.Assert(expr.Type.IsValueType);
+                AddInstruction(new NewValueTypeInstruction(node.Type));
             }
-            AddInstruction(new NewInstruction(node.Constructor));
-
         }
 
         private void CompileMemberExpression(Expression expr) {

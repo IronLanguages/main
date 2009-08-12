@@ -52,77 +52,111 @@ namespace IronPython.Modules {
 
             private Stream _readStream;
             private Stream _writeStream;
-            private bool _closed;
+            private bool _closed, _closefd;
             private string _mode;
             private WeakRefTracker _tracker;
             private PythonContext _context;
 
+            public _FileIO(CodeContext/*!*/ context, int fd, [DefaultParameterValue("r")]string mode, [DefaultParameterValue(true)]bool closefd) {
+                if (fd < 0) {
+                    throw PythonOps.ValueError("fd must be >= 0");
+                }
+
+                PythonContext pc = PythonContext.GetContext(context);
+                _FileIO file = (_FileIO)pc.FileManager.GetObjectFromId(pc, fd);
+                Console.WriteLine(file);
+
+                _context = pc;
+                switch (mode) {
+                    case "r": _mode = "rb"; break;
+                    case "w": _mode = "wb"; break;
+                    case "a": _mode = "w"; break;
+                    case "r+":
+                    case "+r": _mode = "rb+"; break;
+                    case "w+":
+                    case "+w": _mode = "rb+"; break;
+                    case "a+":
+                    case "+a": _mode = "r+"; break;
+                    default:
+                        BadMode(mode);
+                        break;
+                }
+                _readStream = file._readStream;
+                _writeStream = file._writeStream;
+                _closefd = closefd;
+            }
+            
             public _FileIO(CodeContext/*!*/ context, string name, [DefaultParameterValue("r")]string mode, [DefaultParameterValue(true)]bool closefd) {
                 if (!closefd) {
                     throw PythonOps.ValueError("Cannot use closefd=False with file name");
                 }
-                
+                _closefd = true;
                 PlatformAdaptationLayer pal = PythonContext.GetContext(context).DomainManager.Platform;
 
                 switch (mode) {
                     case "r":
-                        _readStream = _writeStream = OpenFile(pal, name, FileMode.Open, FileAccess.Read, FileShare.None);
-                        _mode = "r";
+                        _readStream = _writeStream = OpenFile(context, pal, name, FileMode.Open, FileAccess.Read, FileShare.None);
+                        _mode = "rb";
                         break;
                     case "w":
-                        _readStream = _writeStream = OpenFile(pal, name, FileMode.Create, FileAccess.Write, FileShare.None);
-                        _mode = "w";
+                        _readStream = _writeStream = OpenFile(context, pal, name, FileMode.Create, FileAccess.Write, FileShare.None);
+                        _mode = "wb";
                         break;
                     case "a":
-                        _readStream = _writeStream = OpenFile(pal, name, FileMode.Append, FileAccess.Write, FileShare.None);
+                        _readStream = _writeStream = OpenFile(context, pal, name, FileMode.Append, FileAccess.Write, FileShare.None);
                         _mode = "w";
                         break;
                     case "r+":
                     case "+r":
-                        _readStream = _writeStream = OpenFile(pal, name, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
-                        _mode = "r+";
+                        _readStream = _writeStream = OpenFile(context, pal, name, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
+                        _mode = "rb+";
                         break;
                     case "w+":
                     case "+w":
-                        _readStream = _writeStream = OpenFile(pal, name, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
-                        _mode = "r+";
+                        _readStream = _writeStream = OpenFile(context, pal, name, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
+                        _mode = "rb+";
                         break;
                     case "a+":
                     case "+a":
-                        _readStream = OpenFile(pal, name, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                        _writeStream = OpenFile(pal, name, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
+                        _readStream = OpenFile(context, pal, name, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                        _writeStream = OpenFile(context, pal, name, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
                         _mode = "r+";
                         break;
                     default:
-                        bool foundMode = false, foundPlus = false;
-                        foreach (char c in mode) {
-                            switch (c) {
-                                case 'r':
-                                case 'w':
-                                case 'a':
-                                    if (foundMode) {
-                                        throw PythonOps.ValueError("Must have exactly one of read/write/append mode");
-                                    } else {
-                                        foundMode = true;
-                                        continue;
-                                    }
-                                case '+':
-                                    if (foundPlus) {
-                                        throw PythonOps.ValueError("Must have exactly one of read/write/append mode");
-                                    } else {
-                                        foundPlus = true;
-                                        continue;
-                                    }
-                                default:
-                                    throw PythonOps.ValueError("invalid mode: {0}", mode);
-                            }
-                        }
-
-                        throw PythonOps.ValueError("Must have exactly one of read/write/append mode");
+                        BadMode(mode);
+                        break;
                 }
 
                 _closed = false;
                 _context = PythonContext.GetContext(context);
+            }
+
+            private static void BadMode(string mode) {
+                bool foundMode = false, foundPlus = false;
+                foreach (char c in mode) {
+                    switch (c) {
+                        case 'r':
+                        case 'w':
+                        case 'a':
+                            if (foundMode) {
+                                throw PythonOps.ValueError("Must have exactly one of read/write/append mode");
+                            } else {
+                                foundMode = true;
+                                continue;
+                            }
+                        case '+':
+                            if (foundPlus) {
+                                throw PythonOps.ValueError("Must have exactly one of read/write/append mode");
+                            } else {
+                                foundPlus = true;
+                                continue;
+                            }
+                        default:
+                            throw PythonOps.ValueError("invalid mode: {0}", mode);
+                    }
+                }
+
+                throw PythonOps.ValueError("Must have exactly one of read/write/append mode");
             }
 
             #endregion
@@ -159,12 +193,24 @@ namespace IronPython.Modules {
                     _writeStream.Close();
                     _writeStream.Dispose();
                 }
+
+
+                PythonFileManager myManager = _context.RawFileManager;
+                if (myManager != null) {
+                    myManager.Remove(this);
+                }
             }
 
             [Documentation("True if the file is closed")]
             public bool closed {
                 get {
                     return _closed;
+                }
+            }
+
+            public bool closefd {
+                get {
+                    return _closefd;
                 }
             }
 
@@ -386,11 +432,6 @@ namespace IronPython.Modules {
 
             void IDisposable.Dispose() {
                 close();
-
-                PythonFileManager myManager = _context.RawFileManager;
-                if (myManager != null) {
-                    myManager.Remove(this);
-                }
             }
 
             #endregion
@@ -414,12 +455,15 @@ namespace IronPython.Modules {
 
             #region Private implementation details
 
-            private static Stream OpenFile(PlatformAdaptationLayer pal, string name, FileMode fileMode, FileAccess fileAccess, FileShare fileShare) {
-                if (pal.DirectoryExists(name)) {
-                    // TODO: properly set errno
-                    throw PythonOps.IOError("[Errno 13] Permission denied");
+            private static Stream OpenFile(CodeContext context, PlatformAdaptationLayer pal, string name, FileMode fileMode, FileAccess fileAccess, FileShare fileShare) {
+                try {
+                    return pal.OpenInputFileStream(name, fileMode, fileAccess, fileShare);
+                } catch (UnauthorizedAccessException e) {
+                    throw PythonFile.ToIoException(context, name, e);
+                } catch (IOException e) {
+                    PythonFile.AddFilename(context, name, e);
+                    throw e;
                 }
-                return pal.OpenInputFileStream(name, fileMode, fileAccess, fileShare);
             }
             
             private void EnsureOpen() {

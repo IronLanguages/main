@@ -260,6 +260,7 @@ namespace IronRuby.Builtins {
             ConversionStorage<MutableString>/*!*/ stringCast, 
             RubyContext/*!*/ context, RubyArray/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ format) {
 
+            // TODO (encoding):
             using (MutableStringStream stream = new MutableStringStream()) {
                 BinaryWriter writer = new BinaryWriter(stream);
                 int i = 0;

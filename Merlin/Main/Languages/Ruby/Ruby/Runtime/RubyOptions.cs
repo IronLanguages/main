@@ -19,12 +19,14 @@ using System.Collections.ObjectModel;
 using System.Threading;
 using IronRuby.Builtins;
 using Microsoft.Scripting;
+using Microsoft.Scripting.Utils;
 
 namespace IronRuby.Runtime {
 
     [Serializable]
     public sealed class RubyOptions : LanguageOptions {
         private readonly ReadOnlyCollection<string>/*!*/ _arguments;
+        private readonly RubyEncoding/*!*/ _argumentEncoding;
         private readonly ReadOnlyCollection<string>/*!*/ _libraryPaths;
         private readonly string _mainFile;
         private readonly bool _enableTracing;
@@ -45,6 +47,10 @@ namespace IronRuby.Runtime {
 
         public ReadOnlyCollection<string>/*!*/ Arguments {
             get { return _arguments; }
+        }
+
+        public RubyEncoding/*!*/ ArgumentEncoding {
+            get { return _argumentEncoding; }
         }
 
         public string MainFile {
@@ -94,6 +100,7 @@ namespace IronRuby.Runtime {
         public RubyOptions(IDictionary<string, object>/*!*/ options)
             : base(options) {
             _arguments = GetStringCollectionOption(options, "Arguments") ?? EmptyStringCollection;
+            _argumentEncoding = GetOption(options, "ArgumentEncoding", RubyEncoding.Default);
 
             _mainFile = GetOption(options, "MainFile", (string)null);
             _verbosity = GetOption(options, "Verbosity", 1);

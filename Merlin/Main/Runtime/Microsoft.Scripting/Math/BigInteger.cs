@@ -336,13 +336,12 @@ namespace Microsoft.Scripting.Math {
         [CLSCompliant(false)]
         public BigInteger(int sign, params uint[] data) {
             ContractUtils.RequiresNotNull(data, "data");
-            if (sign != -1 && sign != 0 && sign != 1) throw new ArgumentException(MathResources.InvalidArgument, "sign");
-            if (GetLength(data) != 0) {
-                if (sign == 0) throw new ArgumentException(MathResources.InvalidArgument, "sign");
-            } else sign = 0;
-
+            ContractUtils.Requires(sign >= -1 && sign <= +1, "sign");
+            int length = GetLength(data);
+            ContractUtils.Requires(length == 0 || sign != 0, "sign");
+            
             this.data = data;
-            this.sign = (short)sign;
+            this.sign = (short)(length == 0 ? 0 : sign);
         }
 
         /// <summary>
@@ -455,32 +454,32 @@ namespace Microsoft.Scripting.Math {
         public uint ToUInt32() {
             uint ret;
             if (AsUInt32(out ret)) return ret;
-            throw new OverflowException(MathResources.BigIntWontFitUInt);
+            throw new OverflowException("big integer won't fit into uint");
         }
 
         public int ToInt32() {
             int ret;
             if (AsInt32(out ret)) return ret;
-            throw new OverflowException(MathResources.BigIntWontFitInt);
+            throw new OverflowException("big integer won't fit into int");
         }
 
         public decimal ToDecimal() {
             decimal ret;
             if (AsDecimal(out ret)) return ret;
-            throw new OverflowException(MathResources.BigIntWontFitDecimal);
+            throw new OverflowException("big integer won't fit into decimal");
         }
 
         [CLSCompliant(false)]
         public ulong ToUInt64() {
             ulong ret;
             if (AsUInt64(out ret)) return ret;
-            throw new OverflowException(MathResources.BigIntWontFitULong);
+            throw new OverflowException("big integer won't fit into ulong");
         }
 
         public long ToInt64() {
             long ret;
             if (AsInt64(out ret)) return ret;
-            throw new OverflowException(MathResources.BigIntWontFitLong);
+            throw new OverflowException("big integer won't fit into long");
         }
 
         public bool TryToFloat64(out double result) {
@@ -1286,7 +1285,7 @@ namespace Microsoft.Scripting.Math {
         public BigInteger Power(int exp) {
             if (exp == 0) return One;
             if (exp < 0) {
-                throw new ArgumentOutOfRangeException(MathResources.NonNegativePower);
+                throw new ArgumentOutOfRangeException("power must be >= 0");
             }
             BigInteger factor = this;
             BigInteger result = One;
@@ -1305,7 +1304,7 @@ namespace Microsoft.Scripting.Math {
             }
 
             if (power < 0) {
-                throw new ArgumentOutOfRangeException(MathResources.NonNegativePower);
+                throw new ArgumentOutOfRangeException("power must be >= 0");
             }
             BigInteger factor = this;
             BigInteger result = One % mod; // Handle special case of power=0, mod=1
@@ -1331,7 +1330,7 @@ namespace Microsoft.Scripting.Math {
             }
 
             if (power < 0) {
-                throw new ArgumentOutOfRangeException(MathResources.NonNegativePower);
+                throw new ArgumentOutOfRangeException("power must be >= 0");
             }
 
             BigInteger factor = this;
@@ -1365,10 +1364,10 @@ namespace Microsoft.Scripting.Math {
         [CLSCompliant(false), Confined]
         public string ToString(uint radix) {
             if (radix < 2) {
-                throw ExceptionUtils.MakeArgumentOutOfRangeException("radix", radix, MathResources.RadixLessThan2);
+                throw ExceptionUtils.MakeArgumentOutOfRangeException("radix", radix, "radix must be >= 2");
             }
             if (radix > 36) {
-                throw ExceptionUtils.MakeArgumentOutOfRangeException("radix", radix, MathResources.RadixGreaterThan36);
+                throw ExceptionUtils.MakeArgumentOutOfRangeException("radix", radix, "radix must be <= 36");
             }
 
             int len = Length;
@@ -1530,7 +1529,7 @@ namespace Microsoft.Scripting.Math {
             }
             BigInteger o = obj as BigInteger;
             if (object.ReferenceEquals(o, null)) {
-                throw new ArgumentException(MathResources.ExpectedInteger);
+                throw new ArgumentException("expected integer");
             }
             return Compare(this, o);
         }
@@ -1555,7 +1554,7 @@ namespace Microsoft.Scripting.Math {
             if (AsUInt32(out ret) && (ret & ~0xFF) == 0) {
                 return (byte)ret;
             }
-            throw new OverflowException(MathResources.BigIntWontFitByte);
+            throw new OverflowException("big integer won't fit into byte");
         }
 
         /// <summary>
@@ -1614,7 +1613,7 @@ namespace Microsoft.Scripting.Math {
             if (AsInt32(out ret) && (ret <= Char.MaxValue) && (ret >= Char.MinValue)) {
                 return (char)ret;
             }
-            throw new OverflowException(MathResources.BigIntWontFitChar);
+            throw new OverflowException("big integer won't fit into char");
         }
 
         [Confined]
@@ -1626,7 +1625,7 @@ namespace Microsoft.Scripting.Math {
         public decimal ToDecimal(IFormatProvider provider) {
             decimal ret;
             if (AsDecimal(out ret)) return ret;
-            throw new OverflowException(MathResources.BigIntWontFitDecimal);
+            throw new OverflowException("big integer won't fit into decimal");
         }
 
         [Confined]
@@ -1640,7 +1639,7 @@ namespace Microsoft.Scripting.Math {
             if (AsInt32(out ret) && (ret <= short.MaxValue) && (ret >= short.MinValue)) {
                 return (short)ret;
             }
-            throw new OverflowException(MathResources.BigIntWontFitShort);
+            throw new OverflowException("big integer won't fit into short");
         }
 
         [Confined]
@@ -1649,7 +1648,7 @@ namespace Microsoft.Scripting.Math {
             if (AsInt32(out ret)) {
                 return ret;
             }
-            throw new OverflowException(MathResources.BigIntWontFitInt);
+            throw new OverflowException("big integer won't fit into int");
         }
 
         [Confined]
@@ -1658,7 +1657,7 @@ namespace Microsoft.Scripting.Math {
             if (AsInt64(out ret)) {
                 return ret;
             }
-            throw new OverflowException(MathResources.BigIntWontFitLong);
+            throw new OverflowException("big integer won't fit into long");
         }
 
         [CLSCompliant(false), Confined]
@@ -1667,7 +1666,7 @@ namespace Microsoft.Scripting.Math {
             if (AsInt32(out ret) && (ret <= sbyte.MaxValue) && (ret >= sbyte.MinValue)) {
                 return (sbyte)ret;
             }
-            throw new OverflowException(MathResources.BigIntWontFitSByte);
+            throw new OverflowException("big integer won't fit into sbyte");
         }
 
         [Confined]
@@ -1694,7 +1693,7 @@ namespace Microsoft.Scripting.Math {
             if (AsUInt32(out ret) && ret <= ushort.MaxValue) {
                 return (ushort)ret;
             }
-            throw new OverflowException(MathResources.BigIntWontFitUShort);
+            throw new OverflowException("big integer won't fit into ushort");
         }
 
         [CLSCompliant(false), Confined]
@@ -1703,7 +1702,7 @@ namespace Microsoft.Scripting.Math {
             if (AsUInt32(out ret)) {
                 return ret;
             }
-            throw new OverflowException(MathResources.BigIntWontFitUInt);
+            throw new OverflowException("big integer won't fit into uint");
         }
 
         [CLSCompliant(false), Confined]
@@ -1712,7 +1711,7 @@ namespace Microsoft.Scripting.Math {
             if (AsUInt64(out ret)) {
                 return ret;
             }
-            throw new OverflowException(MathResources.BigIntWontFitULong);
+            throw new OverflowException("big integer won't fit into ulong");
         }
 
         #endregion
@@ -1764,7 +1763,7 @@ namespace Microsoft.Scripting.Math {
 
                     return res.ToString();
                 default:
-                    throw new NotImplementedException(MathResources.FormatNotImplemented);
+                    throw new NotImplementedException("format not implemented");
             }
         }
 

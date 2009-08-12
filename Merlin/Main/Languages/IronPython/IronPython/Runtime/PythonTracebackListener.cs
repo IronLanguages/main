@@ -36,7 +36,9 @@ namespace IronPython.Runtime {
 #if PROFILE_SUPPORT
         private bool _profile;
 #endif
+        [ThreadStatic]
         private TracebackDelegate _globalTraceDispatch;
+        [ThreadStatic]
         private object _globalTraceObject;
         private PythonContext _pythonContext;
 

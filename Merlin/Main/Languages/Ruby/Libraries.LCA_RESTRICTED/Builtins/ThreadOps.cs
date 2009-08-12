@@ -279,7 +279,7 @@ namespace IronRuby.Builtins {
         public static MutableString/*!*/ Inspect(RubyContext/*!*/ context, Thread/*!*/ self) {
             RubyThreadInfo.RegisterThread(Thread.CurrentThread);
 
-            MutableString result = MutableString.CreateMutable();
+            MutableString result = MutableString.CreateMutable(RubyEncoding.ClassName);
             result.Append("#<");
             result.Append(context.GetClassDisplayName(self));
             result.Append(':');
@@ -527,13 +527,13 @@ namespace IronRuby.Builtins {
             RubyThreadInfo.RegisterThread(Thread.CurrentThread);
             switch (GetStatus(self)) {
                 case RubyThreadStatus.Unstarted:
-                    return MutableString.Create("unstarted");
+                    return MutableString.CreateAscii("unstarted");
                 case RubyThreadStatus.Running:
-                    return MutableString.Create("run");
+                    return MutableString.CreateAscii("run");
                 case RubyThreadStatus.Sleeping:
-                    return MutableString.Create("sleep");
+                    return MutableString.CreateAscii("sleep");
                 case RubyThreadStatus.Aborting:
-                    return MutableString.Create("aborting");
+                    return MutableString.CreateAscii("aborting");
                 case RubyThreadStatus.Completed:
                     return false;
                 case RubyThreadStatus.Aborted:

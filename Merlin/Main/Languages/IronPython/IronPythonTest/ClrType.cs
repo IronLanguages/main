@@ -316,7 +316,7 @@ namespace IronPythonTest.interop.net.type.clrtype {
         }
 
         public PythonType PythonType {
-            get { throw new NotImplementedException(); }
+            get { return TypeCache.Int32; }
         }
 
         public void SetPythonType(PythonType newType) {

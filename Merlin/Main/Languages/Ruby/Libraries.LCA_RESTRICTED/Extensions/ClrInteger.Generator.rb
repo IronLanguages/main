@@ -66,6 +66,6 @@ public static partial class $SelfOps {
     
     [RubyMethod("inspect")]
     public static MutableString/*!*/ Inspect(object/*!*/ self) {
-        return MutableString.CreateMutable().Append(self.ToString()).Append(" ($Self)");
+        return MutableString.CreateMutable(RubyEncoding.Binary).Append(self.ToString()).Append(" ($Self)");
     }
 }
