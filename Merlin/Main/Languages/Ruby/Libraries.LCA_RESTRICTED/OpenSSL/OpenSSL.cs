@@ -96,7 +96,8 @@ namespace IronRuby.StandardLibrary.OpenSsl {
                 digest.Algorithm.Key = key.ConvertToBytes();
                 byte[] hash = digest.Algorithm.ComputeHash(data.ConvertToBytes());
 
-                return MutableString.Create(BitConverter.ToString(hash).Replace("-", "").ToLower());
+                // TODO (opt):
+                return MutableString.CreateAscii(BitConverter.ToString(hash).Replace("-", "").ToLower());
             }
         }
 
@@ -119,20 +120,14 @@ namespace IronRuby.StandardLibrary.OpenSsl {
                 }
 
                 if (length == 0) {
-                    return MutableString.Create("");
+                    return MutableString.CreateEmpty();
                 }
-
-                var result = new StringBuilder(length);
 
                 byte[] data = new byte[length];
                 var generator = new Crypto.RNGCryptoServiceProvider();
                 generator.GetBytes(data);
 
-                for (int i = 0; i < length; i++) {
-                    result.Append(Convert.ToChar(data[i]));
-                }
-
-                return MutableString.Create(result.ToString());
+                return MutableString.CreateBinary(data);
             }
 
             // add(str, entropy) -> self

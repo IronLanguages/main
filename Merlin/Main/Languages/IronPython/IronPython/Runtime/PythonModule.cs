@@ -157,13 +157,13 @@ namespace IronPython.Runtime {
 
         internal object GetName() {
             object result;
-            Scope.TryLookupName(Symbols.Name, out result);
+            Scope.TryGetVariable(Symbols.Name, out result);
             return result;
         }
 
         internal object GetFile() {
             object result;
-            Scope.TryLookupName(Symbols.File, out result);
+            Scope.TryGetVariable(Symbols.File, out result);
             return result;
         }
     }

@@ -14,21 +14,15 @@
  * ***************************************************************************/
 
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Reflection;
-using System.Runtime.Serialization;
-using Microsoft.Scripting.Runtime;
-using IronRuby.Runtime;
-using IronRuby.Builtins;
-using System.IO;
-using System.Linq.Expressions;
 using System.Dynamic;
-using Microsoft.Scripting.Utils;
-using Microsoft.Scripting.Hosting;
+using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
-using Microsoft.Scripting;
+using IronRuby.Builtins;
+using Microsoft.Scripting.Hosting;
+using Microsoft.Scripting.Math;
+using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
+using System.Collections;
 
 namespace IronRuby.Tests {
     #region Custom binders
@@ -216,7 +210,7 @@ namespace IronRuby.Tests {
 
         }
 
-        internal static T Invoke<T>(object obj, T fallbackResult) {
+        internal static T Convert<T>(object obj, T fallbackResult) {
             var site = CallSite<Func<CallSite, object, T>>.Create(new MyConvertBinder(typeof(T), fallbackResult));
             return site.Target(site, obj);
         }
@@ -386,27 +380,6 @@ end
 self.misc = Miscellaneous.new
 
 #------------------------------------------------------------------------------
-class Convertible
-    def initialize v
-        @val = v
-    end
-    
-    def to_i
-        @val.to_i
-    end
-    
-    def to_f
-        @val.to_f
-    end
-    
-    def to_str
-        @val.to_str
-    end
-end
-
-self.convertible = Convertible.new('0')
-
-#------------------------------------------------------------------------------
 class Indexable
     def initialize a=nil
         if a then
@@ -492,20 +465,6 @@ class Helpers
         s
     end
 end
-
-#------------------------------------------------------------------------------
-class RubyEnumerable
-    include Enumerable
-    def initialize a
-        @array = a
-    end
-    
-    def each
-        @array.each {|elem| yield elem }
-    end
-end
-
-self.ruby_enumerable = RubyEnumerable.new([1,2,3])
 
 #------------------------------------------------------------------------------
 class RubyComparable
@@ -596,11 +555,6 @@ class SanityTest
         assert_equal main.misc.ruby_callable_called, true
         assert_equal main.misc.ToString(), 'to_s'
         
-        # main.convertible
-        assert_error lambda { System::GC.Collect(main.convertible) }, TypeError # convert to int - Bug!!!!!!!!!!
-        assert_equal System::Exception.new(main.convertible).class, Exception
-        # need to convert to float
-        
         # main.indexable
         assert_equal main.indexable[2], 2
         main.indexable[10] = 100
@@ -612,9 +566,6 @@ class SanityTest
         assert_equal((main.number - 1), 99)
         assert_equal((main.number * 2), 200)
         assert_equal((main.number / 2), 50)
-        
-        # RubyEnumerable
-        assert_equal main.ruby_enumerable.min, 1
         
         # RubyComparable
         assert_equal((main.ruby_comparable == 100), true)
@@ -725,13 +676,37 @@ end
             AreEqual(MyInvokeMemberBinder.Invoke(misc_class, "ToString"), "FallbackInvokeMember");
         }
 
-        // TODO: conversions
-        public void Dlr_Convertible() {
-            var scope = CreateInteropScope();
-            object convertible = scope.GetVariable("convertible");
-            AreEqualBug(MyConvertBinder.Invoke<int>(convertible, -1234), 0, -1234);
-            AreEqualBug(MyConvertBinder.Invoke<string>(convertible, "FallbackConvert"), "0", "FallbackConvert");
-            AreEqualBug(MyConvertBinder.Invoke<float>(convertible, -1234.0f), 0.0, -1234.0f);
+        public void Dlr_Conversions() {
+            Engine.Execute(@"
+class C
+  def to_int
+    1
+  end
+  
+  def to_f
+    2.0
+  end
+  
+  def to_str
+    'str'
+  end
+end
+");
+            var classC = Runtime.Globals.GetVariable("C");
+            var c = Engine.Operations.CreateInstance(classC);
+
+            AreEqual(MyConvertBinder.Convert<sbyte>(c, 10), (sbyte)1);
+            AreEqual(MyConvertBinder.Convert<byte>(c, 10), (byte)1);
+            AreEqual(MyConvertBinder.Convert<short>(c, 10), (short)1);
+            AreEqual(MyConvertBinder.Convert<ushort>(c, 10), (ushort)1);
+            AreEqual(MyConvertBinder.Convert<int>(c, 10), 1);
+            AreEqual(MyConvertBinder.Convert<uint>(c, 10), (uint)1);
+            AreEqual(MyConvertBinder.Convert<long>(c, 10), (long)1);
+            AreEqual(MyConvertBinder.Convert<ulong>(c, 10), (ulong)1);
+            AreEqual(MyConvertBinder.Convert<BigInteger>(c, 10), (BigInteger)1);
+            AreEqual(MyConvertBinder.Convert<double>(c, -8.0), 2.0);
+            AreEqual(MyConvertBinder.Convert<float>(c, -8.0f), 2.0f);
+            AreEqual(MyConvertBinder.Convert<string>(c, "FallbackConvert"), "str");
         }
 
         public void Dlr_Indexable() {
@@ -752,16 +727,6 @@ end
             AreEqual(MyBinaryOperationBinder.Invoke(ExpressionType.Divide, one_hundred, 2), 100/2);
             AreEqual(MyUnaryOperationBinder.Invoke(ExpressionType.Negate, one_hundred), -100);
             AreEqual(MyUnaryOperationBinder.Invoke(ExpressionType.OnesComplement, one_hundred), ~100);
-        }
-
-        // TODO: conversion to IEnumerable
-        public void Dlr_Enumerable() {
-            var scope = CreateInteropScope();
-            object ruby_enumerable = scope.GetVariable("ruby_enumerable");
-            IEnumerable e = MyConvertBinder.Invoke<IEnumerable>(ruby_enumerable, null);
-            AreEqualBug(e != null, true, false);
-            IEnumerable<object> e2 = MyConvertBinder.Invoke<IEnumerable<object>>(ruby_enumerable, null);
-            AreEqualBug(e2 != null, true, false);
         }
 
         public void Dlr_Comparable() {
@@ -785,6 +750,50 @@ end
             //assert_equal Methods.varargs(100, 200), '100 200'
             //assert_equal Methods.multiple_return_values, [100, 200]
             //assert_equal Methods.with_block {|x| x + 1000}, 1100
+        }
+
+        public void Dlr_Visibility() {
+            Engine.Execute(@"
+class D < Hash
+end
+
+class C
+  def public_m
+    0
+  end
+
+  private
+  def private_m
+    1
+  end
+
+  protected
+  def protected_m
+    2
+  end
+end
+");
+            var classC = Runtime.Globals.GetVariable("C");
+            var c = Engine.Operations.CreateInstance(classC);
+
+            AssertExceptionThrown<MissingMethodException>(() => MyInvokeMemberBinder.Invoke(c, "private_m"));
+            AssertExceptionThrown<MissingMethodException>(() => MyInvokeMemberBinder.Invoke(c, "protected_m"));
+            var r1 = MyInvokeMemberBinder.Invoke(c, "public_m");
+            Assert(r1 is int && (int)r1 == 0);
+
+            Engine.Execute(@"
+class C
+  def method_missing name
+    3
+  end
+end");
+            var r2 = MyInvokeMemberBinder.Invoke(c, "private_m");
+            Assert(r2 is int && (int)r2 == 3);
+
+            // private initialize method can be called if called via new:
+            var classD = Runtime.Globals.GetVariable("D");
+            var d = Engine.Operations.CreateInstance(classD);
+            Assert(d is Hash);
         }
 
         public void Dlr_Languages() {

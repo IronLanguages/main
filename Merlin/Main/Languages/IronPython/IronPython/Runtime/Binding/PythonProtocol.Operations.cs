@@ -119,6 +119,9 @@ namespace IronPython.Runtime.Binding {
                 case ExpressionType.OnesComplement:
                     res = BindingHelpers.AddPythonBoxing(MakeUnaryOperation(operation, arg, Symbols.OperatorOnesComplement));
                     break;
+                case ExpressionType.Not:
+                    res = MakeUnaryNotOperation(operation, arg, typeof(object));
+                    break;
                 case ExpressionType.IsFalse:
                     res = MakeUnaryNotOperation(operation, arg, typeof(bool));
                     retType = typeof(bool);
@@ -637,50 +640,6 @@ namespace IronPython.Runtime.Binding {
             );
         }
 
-        private static DynamicMetaObject/*!*/ MakeMemberNamesOperation(PythonOperationBinder/*!*/ operation, DynamicMetaObject[] args) {
-            DynamicMetaObject self = args[0];
-            CodeContext context;
-            if (args.Length > 1 && args[0].GetLimitType() == typeof(CodeContext)) {
-                self = args[1];
-                context = (CodeContext)args[0].Value;
-            } else {
-                context = PythonContext.GetPythonContext(operation).SharedContext;
-            }
-
-            if (typeof(IMembersList).IsAssignableFrom(self.GetLimitType())) {
-                return MakeIMembersListRule(PythonContext.GetCodeContext(operation), self);
-            }
-
-            PythonType pt = DynamicHelpers.GetPythonType(self.Value);
-            List<string> strNames = GetMemberNames(context, pt, self.Value);
-
-            if (pt.IsSystemType) {
-                return new DynamicMetaObject(
-                    AstUtils.Constant(strNames),
-                    BindingRestrictions.GetInstanceRestriction(self.Expression, self.Value).Merge(self.Restrictions)
-                );
-            }
-
-            return new DynamicMetaObject(
-                AstUtils.Constant(strNames),
-                BindingRestrictions.GetInstanceRestriction(self.Expression, self.Value).Merge(self.Restrictions)
-            );
-        }
-
-        private static DynamicMetaObject MakeIMembersListRule(Expression codeContext, DynamicMetaObject target) {
-            return new DynamicMetaObject(
-                Ast.Call(
-                    typeof(BinderOps).GetMethod("GetStringMembers"),
-                    Ast.Call(
-                        AstUtils.Convert(target.Expression, typeof(IMembersList)),
-                        typeof(IMembersList).GetMethod("GetMemberNames"),
-                        codeContext
-                    )
-                ),
-                BindingRestrictionsHelpers.GetRuntimeTypeRestriction(target.Expression, target.GetLimitType()).Merge(target.Restrictions)
-            );
-        }
-
         internal static DynamicMetaObject/*!*/ MakeCallSignatureOperation(DynamicMetaObject/*!*/ self, IList<MethodBase/*!*/>/*!*/ targets) {
             List<string> arrres = new List<string>();
             foreach (MethodBase mb in targets) {
@@ -1165,11 +1124,18 @@ namespace IronPython.Runtime.Binding {
             SlotOrFunction.GetCombinedTargets(fop, rop, out fop, out rop);
             SlotOrFunction.GetCombinedTargets(cmp, rcmp, out cmp, out rcmp);
 
+            bool shouldWarn = false;
+            WarningInfo info = null;
+
             // first try __op__ or __rop__ and return the value
+            shouldWarn = fop.ShouldWarn(state, out info);
             if (MakeOneCompareGeneric(fop, false, types, MakeCompareReturn, bodyBuilder, typeof(object))) {
+                shouldWarn = shouldWarn || rop.ShouldWarn(state, out info);
                 if (MakeOneCompareGeneric(rop, true, types, MakeCompareReturn, bodyBuilder, typeof(object))) {
 
                     // then try __cmp__ or __rcmp__ and compare the resulting int appropriaetly
+                    shouldWarn = shouldWarn || cmp.ShouldWarn(state, out info);
+
                     if (ShouldCoerce(state, opString, xType, yType, true)) {
                         DoCoerce(state, bodyBuilder, PythonOperationKind.Compare, types, false, delegate(Expression e) {
                             return GetCompareTest(op, e, false);
@@ -1185,6 +1151,8 @@ namespace IronPython.Runtime.Binding {
                         },
                         bodyBuilder,
                         typeof(object))) {
+
+                        shouldWarn = shouldWarn || rcmp.ShouldWarn(state, out info);
 
                         if (ShouldCoerce(state, opString, yType, xType, true)) {
                             DoCoerce(state, bodyBuilder, PythonOperationKind.Compare, rTypes, true, delegate(Expression e) {
@@ -1207,7 +1175,12 @@ namespace IronPython.Runtime.Binding {
                 }
             }
 
-            return bodyBuilder.GetMetaObject(types);
+            DynamicMetaObject res = bodyBuilder.GetMetaObject(types);
+            if (!shouldWarn || res == null) {
+                return res;
+            } else {
+                return info.AddWarning(Ast.Constant(state.SharedContext), res);
+            }
         }
 
         /// <summary>
@@ -1755,7 +1728,7 @@ namespace IronPython.Runtime.Binding {
                     }
 
                     WarningInfo info;
-                    if (BindingWarnings.ShouldWarn(Binder, target.Method, out info)) {
+                    if (BindingWarnings.ShouldWarn(Binder.Context, target.Method, out info)) {
                         res = info.AddWarning(Ast.Constant(PythonContext.SharedContext), res);
                     }
                 } else if (customFailure == null || (res = customFailure()) == null) {
@@ -1783,10 +1756,14 @@ namespace IronPython.Runtime.Binding {
                 _slot.MakeGetExpression(
                     Binder,
                     AstUtils.Constant(PythonContext.SharedContext),
-                    args[0].Expression,
-                    Ast.Call(
-                        typeof(DynamicHelpers).GetMethod("GetPythonType"),
-                        AstUtils.Convert(args[0].Expression, typeof(object))
+                    args[0],
+                    new DynamicMetaObject(
+                        Ast.Call(
+                            typeof(DynamicHelpers).GetMethod("GetPythonType"),
+                            AstUtils.Convert(args[0].Expression, typeof(object))
+                        ),
+                        BindingRestrictions.Empty,
+                        DynamicHelpers.GetPythonType(args[0].Value)
                     ),
                     cb
                 );

@@ -117,7 +117,7 @@ end
 ";
         
         public void ToIntToStrConversion1() {
-            Context.DefineGlobalVariable("protocol_tester", MutableString.Create(typeof(DefaultProtocolTester).AssemblyQualifiedName));
+            Context.DefineGlobalVariable("protocol_tester", MutableString.CreateAscii(typeof(DefaultProtocolTester).AssemblyQualifiedName));
 
             Engine.Execute(StrIntDeclarations);
 

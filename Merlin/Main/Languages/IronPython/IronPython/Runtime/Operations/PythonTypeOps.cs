@@ -28,7 +28,7 @@ using Microsoft.Scripting.Utils;
 
 namespace IronPython.Runtime.Operations {
     internal static class PythonTypeOps {
-        private static readonly Dictionary<FieldInfo, ReflectedField> _fieldCache = new Dictionary<FieldInfo, ReflectedField>();
+        private static readonly Dictionary<FieldInfo, PythonTypeSlot> _fieldCache = new Dictionary<FieldInfo, PythonTypeSlot>();
         private static readonly Dictionary<BuiltinFunction, BuiltinMethodDescriptor> _methodCache = new Dictionary<BuiltinFunction, BuiltinMethodDescriptor>();
         private static readonly Dictionary<BuiltinFunction, ClassMethodDescriptor> _classMethodCache = new Dictionary<BuiltinFunction, ClassMethodDescriptor>();
         internal static readonly Dictionary<BuiltinFunctionKey, BuiltinFunction> _functions = new Dictionary<BuiltinFunctionKey, BuiltinFunction>();
@@ -365,27 +365,33 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static BuiltinFunction GetConstructorFunction(Type type, string name) {
-            BuiltinFunction reflectedCtors = null;
+            List<MethodBase> methods = new List<MethodBase>();
             bool hasDefaultConstructor = false;
 
             foreach (ConstructorInfo ci in type.GetConstructors(BindingFlags.Public | BindingFlags.Instance)) {
                 if (ci.IsPublic) {
-                    if (ci.GetParameters().Length == 0) hasDefaultConstructor = true;
-                    reflectedCtors = BuiltinFunction.MakeOrAdd(reflectedCtors, name, ci, type, FunctionType.Function);
+                    if (ci.GetParameters().Length == 0) {
+                        hasDefaultConstructor = true;
+                    }
+
+                    methods.Add(ci);
                 }
             }
             
             if (type.IsValueType && !hasDefaultConstructor && type != typeof(void)) {
                 try {
-                    MethodInfo mi = typeof(ScriptingRuntimeHelpers).GetMethod("CreateInstance", Type.EmptyTypes).MakeGenericMethod(type);
-
-                    reflectedCtors = BuiltinFunction.MakeOrAdd(reflectedCtors, name, mi, type, FunctionType.Function);
+                    methods.Add(typeof(ScriptingRuntimeHelpers).GetMethod("CreateInstance", Type.EmptyTypes).MakeGenericMethod(type));
                 } catch (BadImageFormatException) {
                     // certain types (e.g. ArgIterator) won't survive the above call.
                     // we won't let you create instances of these types.
                 }
             }
-            return reflectedCtors;
+
+            if (methods.Count > 0) {
+                return BuiltinFunction.MakeFunction(name, methods.ToArray(), type);
+            }
+
+            return null;
         }
 
         internal static ReflectedEvent GetReflectedEvent(EventTracker tracker) {
@@ -494,6 +500,20 @@ namespace IronPython.Runtime.Operations {
 
                 lock (_functions) {
                     if (!_functions.TryGetValue(cache, out res)) {
+                        if (PythonTypeOps.GetFinalSystemType(type) == type) {
+                            IList<MethodInfo> overriddenMethods = NewTypeMaker.GetOverriddenMethods(type, cacheName);
+
+                            if (overriddenMethods.Count > 0) {
+                                List<MemberInfo> newMems = new List<MemberInfo>(mems);
+
+                                foreach (MethodInfo mi in overriddenMethods) {
+                                    newMems.Add(mi);
+                                }
+
+                                mems = newMems.ToArray();
+                            }
+                        }
+
                         _functions[cache] = res = BuiltinFunction.MakeMethod(pythonName, ReflectionUtils.GetMethodInfos(mems), type, ft);
                     }
                 }
@@ -664,8 +684,8 @@ namespace IronPython.Runtime.Operations {
                 (mi.DeclaringType.IsAssignableFrom(type) || mi.IsDefined(typeof(StaticExtensionMethodAttribute), false)); // or it's not an extension method or it's a static extension method
         }
 
-        internal static ReflectedField GetReflectedField(FieldInfo info) {
-            ReflectedField res;
+        internal static PythonTypeSlot GetReflectedField(FieldInfo info) {
+            PythonTypeSlot res;
 
             NameType nt = NameType.Field;
             if (!PythonBinder.IsExtendedType(info.DeclaringType) && 
@@ -675,7 +695,28 @@ namespace IronPython.Runtime.Operations {
 
             lock (_fieldCache) {
                 if (!_fieldCache.TryGetValue(info, out res)) {
-                    _fieldCache[info] = res = new ReflectedField(info, nt);
+                    if (nt == NameType.PythonField && info.IsLiteral) {
+                        if (info.FieldType == typeof(int)) {
+                            res = new PythonTypeUserDescriptorSlot(
+                                ScriptingRuntimeHelpers.Int32ToObject((int)info.GetRawConstantValue()),
+                                true
+                            );
+                        } else if (info.FieldType == typeof(bool)) {
+                            res = new PythonTypeUserDescriptorSlot(
+                                ScriptingRuntimeHelpers.BooleanToObject((bool)info.GetRawConstantValue()),
+                                true
+                            );
+                        } else {
+                            res = new PythonTypeUserDescriptorSlot(
+                                info.GetValue(null),
+                                true
+                            );
+                        }
+                    } else {
+                        res = new ReflectedField(info, nt);
+                    }
+
+                    _fieldCache[info] = res;
                 }
             }
 
@@ -727,13 +768,10 @@ namespace IronPython.Runtime.Operations {
                 if ((getter != null && getter.IsDefined(typeof(PythonHiddenAttribute), true)) ||
                     setter != null && setter.IsDefined(typeof(PythonHiddenAttribute), true)) {
                     nt = NameType.Property;
-                }
+                }                
 
                 ExtensionPropertyTracker ept = pt as ExtensionPropertyTracker;
-                if (ept != null) {
-                    rp = new ReflectedExtensionProperty(new ExtensionPropertyInfo(pt.DeclaringType,
-                        getter ?? setter), nt);
-                } else {
+                if (ept == null) {
                     ReflectedPropertyTracker rpt = pt as ReflectedPropertyTracker;
                     Debug.Assert(rpt != null);
 
@@ -742,25 +780,40 @@ namespace IronPython.Runtime.Operations {
                         nt = NameType.Property;
                     }
 
-                    if (pt.GetIndexParameters().Length > 0) {
-                        rp = new ReflectedIndexer(((ReflectedPropertyTracker)pt).Property, NameType.Property, privateBinding);
-                    } else if (allProperties != null && allProperties.Count > 1) {
+                    if (pt.GetIndexParameters().Length == 0) {
                         List<MethodInfo> getters = new List<MethodInfo>();
                         List<MethodInfo> setters = new List<MethodInfo>();
-                        for (int i = 0; i < allProperties.Count; i++) {
-                            MethodInfo method = ((PropertyTracker)allProperties[i]).GetGetMethod(privateBinding);
+
+                        IList<ExtensionPropertyTracker> overriddenProperties = NewTypeMaker.GetOverriddenProperties((getter ?? setter).DeclaringType, pt.Name);
+                        foreach (ExtensionPropertyTracker tracker in overriddenProperties) {
+                            MethodInfo method = tracker.GetGetMethod(privateBinding);
                             if (method != null) {
                                 getters.Add(method);
                             }
-                            method = ((PropertyTracker)allProperties[i]).GetSetMethod(privateBinding);
+
+                            method = tracker.GetSetMethod(privateBinding);
+                            if (method != null) {
+                                setters.Add(method);
+                            }
+                        }
+
+                        foreach (PropertyTracker propTracker in allProperties) {
+                            MethodInfo method = propTracker.GetGetMethod(privateBinding);
+                            if (method != null) {
+                                getters.Add(method);
+                            }
+
+                            method = propTracker.GetSetMethod(privateBinding);
                             if (method != null) {
                                 setters.Add(method);
                             }
                         }
                         rp = new ReflectedProperty(rpt.Property, getters.ToArray(), setters.ToArray(), nt);
                     } else {
-                        rp = new ReflectedProperty(rpt.Property, getter, setter, nt);
+                        rp = new ReflectedIndexer(((ReflectedPropertyTracker)pt).Property, NameType.Property, privateBinding);
                     }
+                } else {
+                    rp = new ReflectedExtensionProperty(new ExtensionPropertyInfo(pt.DeclaringType, getter ?? setter), nt);
                 }
 
                 _propertyCache[pt] = rp;

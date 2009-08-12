@@ -20,6 +20,7 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Ast;
 using Microsoft.Scripting.Runtime;
 
+using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 
 using MSAst = System.Linq.Expressions;
@@ -30,7 +31,7 @@ namespace IronPython.Compiler.Ast {
     class SavableGlobalAllocator : ArrayGlobalAllocator {
         private readonly List<MSAst.Expression/*!*/>/*!*/ _constants;
 
-        public SavableGlobalAllocator(LanguageContext/*!*/ context)
+        public SavableGlobalAllocator(PythonContext/*!*/ context)
             : base(context) {
             _constants = new List<MSAst.Expression>();
         }
@@ -53,25 +54,22 @@ namespace IronPython.Compiler.Ast {
         }
 
         public override ScriptCode/*!*/ MakeScriptCode(MSAst.Expression/*!*/ body, CompilerContext/*!*/ context, PythonAst/*!*/ ast) {
-            MSAst.ParameterExpression scope = Ast.Parameter(typeof(Scope), "$scope");
-            MSAst.ParameterExpression language = Ast.Parameter(typeof(LanguageContext), "$language ");
-
-            // finally build the funcion that's closed over the array and
-            var func = Ast.Lambda<Func<Scope, LanguageContext, object>>(
+            // finally build the funcion that's closed over the array
+            var func = Ast.Lambda<Func<CodeContext, object>>(
                 Ast.Block(
                     new[] { GlobalArray },
                     Ast.Assign(
                         GlobalArray, 
                         Ast.Call(
                             null,
-                            typeof(PythonOps).GetMethod("GetGlobalArray"),
-                            scope
+                            typeof(PythonOps).GetMethod("GetGlobalArrayFromContext"),
+                            IronPython.Compiler.Ast.ArrayGlobalAllocator._globalContext 
                         )
                     ),
-                    body
+                    Utils.Convert(body, typeof(object))
                 ),
                 ((PythonCompilerOptions)context.Options).ModuleName,
-                new MSAst.ParameterExpression[] { scope, language }
+                new MSAst.ParameterExpression[] { IronPython.Compiler.Ast.ArrayGlobalAllocator._globalContext }
             );
 
             PythonCompilerOptions pco = context.Options as PythonCompilerOptions;

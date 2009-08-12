@@ -26,6 +26,9 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
+using IronRuby.Runtime.Conversions;
+
+using EachSite = System.Func<System.Runtime.CompilerServices.CallSite, object, IronRuby.Builtins.Proc, object>;
 
 namespace IronRuby.Builtins {
 
@@ -45,6 +48,14 @@ namespace IronRuby.Builtins {
 
         internal static int NormalizeIndex(IList/*!*/ list, int index) {
             return NormalizeIndex(list.Count, index);
+        }
+
+        internal static int NormalizeIndexThrowIfNegative(IList/*!*/ list, int index) {
+            index = NormalizeIndex(list.Count, index);
+            if (index < 0) {
+                throw RubyExceptions.CreateIndexError(String.Format("index {0} out of array", index));
+            }
+            return index;
         }
 
         internal static int NormalizeIndex(int count, int index) {
@@ -215,7 +226,9 @@ namespace IronRuby.Builtins {
         #region *, +, concat
 
         [RubyMethod("*")]
-        public static IList/*!*/ Repetition(CallSiteStorage<Func<CallSite, RubyClass, object>>/*!*/ allocateStorage, IList/*!*/ self, int repeat) {
+        public static IList/*!*/ Repetition(CallSiteStorage<Func<CallSite, RubyClass, object>>/*!*/ allocateStorage, 
+            IList/*!*/ self, int repeat) {
+
             if (repeat < 0) {
                 throw RubyExceptions.CreateArgumentError("negative argument");
             }
@@ -234,12 +247,16 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("*")]
-        public static MutableString Repetition(ConversionStorage<MutableString>/*!*/ tosConversion, IList/*!*/ self, [NotNull]MutableString/*!*/ separator) {
+        public static MutableString Repetition(ConversionStorage<MutableString>/*!*/ tosConversion, 
+            IList/*!*/ self, [NotNull]MutableString/*!*/ separator) {
             return Join(tosConversion, self, separator);
         }
 
         [RubyMethod("*")]
-        public static object Repetition(CallSiteStorage<Func<CallSite, RubyClass, object>>/*!*/ allocateStorage, ConversionStorage<MutableString>/*!*/ tosConversion, IList/*!*/ self, [DefaultProtocol]Union<MutableString, int> repeat) {
+        public static object Repetition(
+            CallSiteStorage<Func<CallSite, RubyClass, object>>/*!*/ allocateStorage, 
+            ConversionStorage<MutableString>/*!*/ tosConversion, 
+            IList/*!*/ self, [DefaultProtocol, NotNull]Union<MutableString, int> repeat) {
 
             if (repeat.IsFixnum()) {
                 return Repetition(allocateStorage, self, repeat.Fixnum());
@@ -302,8 +319,8 @@ namespace IronRuby.Builtins {
         #region ==, <=>, eql?, hash
 
         [RubyMethod("==")]
-        public static bool Equals(ConversionStorage<IList>/*!*/ arrayTryCast, BinaryOpStorage/*!*/ equals, IList/*!*/ self, object other) {
-            IList otherAsArray = Protocols.TryCastToArray(arrayTryCast, other);
+        public static bool Equals(ConversionStorage<IList>/*!*/ arrayTryConvert, BinaryOpStorage/*!*/ equals, IList/*!*/ self, object other) {
+            IList otherAsArray = Protocols.TryConvertToArray(arrayTryConvert, other);
             return otherAsArray != null ? Equals(equals, self, otherAsArray) : false;
         }
 
@@ -449,15 +466,21 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("[]=")]
-        public static object SetElement(IList/*!*/ self, [DefaultProtocol]int index, object value) {
-            index = NormalizeIndex(self, index);
+        public static object SetElement(RubyArray/*!*/ self, [DefaultProtocol]int index, object value) {
+            index = NormalizeIndexThrowIfNegative(self, index);
 
-            if (index < 0) {
-                throw RubyExceptions.CreateIndexError(String.Format("index {0} out of array", index));
+            if (index >= self.Count) {
+                self.AddMultiple(index + 1 - self.Count, null);
             }
 
+            return self[index] = value;
+        }
+
+        [RubyMethod("[]=")]
+        public static object SetElement(IList/*!*/ self, [DefaultProtocol]int index, object value) {
+            index = NormalizeIndexThrowIfNegative(self, index);
+
             if (index < self.Count) {
-                // TODO: conversions
                 self[index] = value;
             } else {
                 ExpandList(self, index);
@@ -473,10 +496,7 @@ namespace IronRuby.Builtins {
                 throw RubyExceptions.CreateIndexError(String.Format("negative length ({0})", length));
             }
 
-            index = NormalizeIndex(self, index);
-            if (index < 0) {
-                throw RubyExceptions.CreateIndexError(String.Format("index {0} out of array", index));
-            }
+            index = NormalizeIndexThrowIfNegative(self, index);
 
             if (value == null) {
                 DeleteItems(self, index, length);
@@ -1245,9 +1265,9 @@ namespace IronRuby.Builtins {
 
             using (IDisposable handle = RubyUtils.InfiniteInspectTracker.TrackObject(self)) {
                 if (handle == null) {
-                    return MutableString.Create("[...]");
+                    return MutableString.CreateAscii("[...]");
                 }
-                MutableString str = MutableString.CreateMutable();
+                MutableString str = MutableString.CreateMutable(RubyEncoding.Binary);
                 str.Append('[');
                 bool first = true;
                 foreach (object obj in self) {
@@ -1530,6 +1550,17 @@ namespace IronRuby.Builtins {
             }
 
             return modified ? self : null;
+        }
+
+        #endregion
+
+        #region zip 
+
+        [RubyMethod("zip")]
+        public static IList/*!*/ Zip(CallSiteStorage<EachSite>/*!*/ each, ConversionStorage<IList>/*!*/ tryToAry, BlockParam block,
+            object self, [DefaultProtocol, NotNull, NotNullItems]params IList[]/*!*/ args) {
+
+            return Enumerable.Zip(each, tryToAry, block, self, args);
         }
 
         #endregion

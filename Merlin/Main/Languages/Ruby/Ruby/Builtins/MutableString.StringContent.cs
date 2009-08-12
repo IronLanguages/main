@@ -154,6 +154,10 @@ namespace IronRuby.Builtins {
                 return (sb != null) ? new StringContent(sb.ToString(), _owner) : this;
             }
 
+            public override void CheckEncoding() {
+                _owner._encoding.StrictEncoding.GetByteCount(_data);
+            }
+
             #endregion
 
             #region CompareTo (read-only)

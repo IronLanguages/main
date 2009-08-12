@@ -57,18 +57,18 @@ namespace IronRuby.Builtins {
         [RubyMethod("name")]
         [RubyMethod("to_s")]
         public static MutableString/*!*/ ToS(RubyEncoding/*!*/ self) {
-            return MutableString.Create(self.Name);
+            return MutableString.CreateAscii(self.Name);
         }
 
         [RubyMethod("inspect")]
         public static MutableString/*!*/ Inspect(RubyContext/*!*/ context, RubyEncoding/*!*/ self) {
             // TODO: to_s overridden
-            MutableString result = MutableString.CreateMutable();
+            MutableString result = MutableString.CreateMutable(RubyEncoding.ClassName);
             result.Append("#<");
             result.Append(context.GetClassDisplayName(self));
             result.Append(':');
             result.Append(self.Name);
-            result.Append(">");
+            result.Append('>');
             return result;
         }
 
@@ -124,7 +124,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("locale_charmap", RubyMethodAttributes.PublicSingleton)]
         public static MutableString/*!*/ GetDefaultCharmap(RubyClass/*!*/ self) {
-            return MutableString.Create("CP" + StringUtils.DefaultEncoding.CodePage.ToString());
+            return MutableString.CreateAscii("CP" + StringUtils.DefaultEncoding.CodePage.ToString());
         }
 
         #endregion

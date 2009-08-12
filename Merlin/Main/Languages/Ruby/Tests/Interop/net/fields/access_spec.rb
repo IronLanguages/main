@@ -68,7 +68,7 @@ describe "Reading .NET Fields" do
     it_behaves_like :accessing_fields, nil
   end
   
-  if IronRuby.dlr_config.private_binding
+  if IronRuby.configuration.private_binding
     describe "works with private" do
       before(:each) do
         @result = {
@@ -137,7 +137,7 @@ describe "Setting .NET Fields" do
     end
   end
 
-  if IronRuby.dlr_config.private_binding
+  if IronRuby.configuration.private_binding
     describe "with private" do
       it "fields works" do
         @klass.privateField = "bar"

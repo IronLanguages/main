@@ -363,7 +363,7 @@ namespace Microsoft.Scripting.Actions.Calls {
                     return MakeSuccessfulBindingTarget(applicable[0], potential, level, targetSet);
                 }
 
-                var bestCandidate = SelectBestCandidate(applicable);
+                var bestCandidate = SelectBestCandidate(applicable, level);
                 if (bestCandidate != null) {
                     return MakeSuccessfulBindingTarget(bestCandidate, potential, level, targetSet);
                 } else {
@@ -472,7 +472,7 @@ namespace Microsoft.Scripting.Actions.Calls {
 
             bool success = true;
             for (int i = 0; i < _actualArguments.Count; i++) {
-                success &= (hasConversion[i] = CanConvertFrom(_actualArguments[i].GetLimitType(), candidate.GetParameter(i, namesBinding), narrowingLevel));
+                success &= (hasConversion[i] = CanConvertFrom(_actualArguments[i].GetLimitType(), _actualArguments[i], candidate.GetParameter(i, namesBinding), narrowingLevel));
             }
 
             if (!success) {
@@ -499,7 +499,7 @@ namespace Microsoft.Scripting.Actions.Calls {
                 object value = GetCollapsedArgumentValue(i);
                 Type argType = CompilerHelpers.GetType(value);
 
-                if (!CanConvertFrom(argType, parameter, narrowingLevel)) {
+                if (!CanConvertFrom(argType, null, parameter, narrowingLevel)) {
                     failure = new CallFailure(candidate, new[] { new ConversionResult(value, argType, parameter.Type, false) });
                     return false;
                 }
@@ -598,21 +598,21 @@ namespace Microsoft.Scripting.Actions.Calls {
             return false;
         }
 
-        private bool IsBest(ApplicableCandidate candidate, List<ApplicableCandidate> candidates) {
+        private bool IsBest(ApplicableCandidate candidate, List<ApplicableCandidate> candidates, NarrowingLevel level) {
             foreach (ApplicableCandidate other in candidates) {
                 if (candidate == other) {
                     continue;
                 }
 
-                if (GetPreferredCandidate(candidate, other) != Candidate.One) {
+                if (GetPreferredCandidate(candidate, other, level) != Candidate.One) {
                     return false;
                 }
             }
             return true;
         }
 
-        internal Candidate GetPreferredCandidate(ApplicableCandidate one, ApplicableCandidate two) {
-            Candidate cmpParams = GetPreferredParameters(one, two);
+        internal Candidate GetPreferredCandidate(ApplicableCandidate one, ApplicableCandidate two, NarrowingLevel level) {
+            Candidate cmpParams = GetPreferredParameters(one, two, level);
             if (cmpParams.Chosen()) {
                 return cmpParams;
             }
@@ -692,13 +692,13 @@ namespace Microsoft.Scripting.Actions.Calls {
             return max;
         }
 
-        internal Candidate GetPreferredParameters(ApplicableCandidate one, ApplicableCandidate two) {
+        private Candidate GetPreferredParameters(ApplicableCandidate one, ApplicableCandidate two, NarrowingLevel level) {
             Debug.Assert(one.Method.ParameterCount == two.Method.ParameterCount);
             var args = GetActualArguments();
 
             Candidate result = Candidate.Equivalent;
             for (int i = 0; i < args.Count; i++) {
-                Candidate preferred = GetPreferredParameter(one.GetParameter(i), two.GetParameter(i), args[i].GetLimitType());
+                Candidate preferred = GetPreferredParameter(one.GetParameter(i), two.GetParameter(i), args[i], level);
 
                 switch (result) {
                     case Candidate.Equivalent:
@@ -729,46 +729,32 @@ namespace Microsoft.Scripting.Actions.Calls {
             return result;
         }
 
-        internal Candidate GetPreferredParameter(ParameterWrapper candidateOne, ParameterWrapper candidateTwo, Type argType) {
-            Assert.NotNull(candidateOne, candidateTwo, argType);
-
-            if (ParametersEquivalent(candidateOne, candidateTwo)) {
-                return Candidate.Equivalent;
-            }
-
-            for (NarrowingLevel curLevel = NarrowingLevel.None; curLevel <= NarrowingLevel.All; curLevel++) {
-                Candidate candidate = SelectBestConversionFor(argType, candidateOne, candidateTwo, curLevel);
-                if (candidate.Chosen()) {
-                    return candidate;
-                }
-            }
-
-            return GetPreferredParameter(candidateOne, candidateTwo);
-        }
-
-        internal Candidate GetPreferredParameter(ParameterWrapper candidateOne, ParameterWrapper candidateTwo) {
+        private Candidate GetPreferredParameter(ParameterWrapper candidateOne, ParameterWrapper candidateTwo, DynamicMetaObject arg, NarrowingLevel level) {
             Assert.NotNull(candidateOne, candidateTwo);
 
             if (ParametersEquivalent(candidateOne, candidateTwo)) {
                 return Candidate.Equivalent;
             }
 
-            Type t1 = candidateOne.Type;
-            Type t2 = candidateTwo.Type;
+            Candidate candidate = SelectBestConversionFor(arg, candidateOne, candidateTwo, level);
+            if (candidate.Chosen()) {
+                return candidate;
+            }
 
-            if (CanConvertFrom(t2, candidateOne, NarrowingLevel.None)) {
-                if (CanConvertFrom(t1, candidateTwo, NarrowingLevel.None)) {
+            if (CanConvertFrom(candidateTwo, candidateOne)) {
+                if (CanConvertFrom(candidateOne, candidateTwo)) {
                     return Candidate.Ambiguous;
                 } else {
                     return Candidate.Two;
                 }
-            }
-
-            if (CanConvertFrom(t1, candidateTwo, NarrowingLevel.None)) {
+            } else if (CanConvertFrom(candidateOne, candidateTwo)) {
                 return Candidate.One;
             }
 
             // Special additional rules to order numeric value types
+            Type t1 = candidateOne.Type;
+            Type t2 = candidateTwo.Type;
+
             Candidate preferred = PreferConvert(t1, t2);
             if (preferred.Chosen()) {
                 return preferred;
@@ -779,12 +765,38 @@ namespace Microsoft.Scripting.Actions.Calls {
                 return preferred;
             }
 
-            return Candidate.Ambiguous;
+            // consider the actual argument type:
+            Type argType = arg.GetLimitType();
+            NarrowingLevel levelOne = NarrowingLevel.None;
+            while (levelOne < level && !CanConvertFrom(argType, arg, candidateOne, levelOne)) {
+                if (levelOne == NarrowingLevel.All) {
+                    Debug.Assert(false, "Each argument should be convertible to the corresponding parameter");
+                    break;
+                }
+                levelOne++;
+            }
+
+            NarrowingLevel levelTwo = NarrowingLevel.None;
+            while (levelTwo < level && !CanConvertFrom(argType, arg, candidateTwo, levelTwo)) {
+                if (levelTwo == NarrowingLevel.All) {
+                    Debug.Assert(false, "Each argument should be convertible to the corresponding parameter");
+                    break;
+                }
+                levelTwo++;
+            }
+
+            if (levelOne < levelTwo) {
+                return Candidate.One;
+            } else if (levelOne > levelTwo) {
+                return Candidate.Two;
+            } else {
+                return Candidate.Ambiguous;
+            }
         }
 
-        private ApplicableCandidate SelectBestCandidate(List<ApplicableCandidate> candidates) {
+        private ApplicableCandidate SelectBestCandidate(List<ApplicableCandidate> candidates, NarrowingLevel level) {
             foreach (var candidate in candidates) {
-                if (IsBest(candidate, candidates)) {
+                if (IsBest(candidate, candidates, level)) {
                     return candidate;
                 }
             }
@@ -824,7 +836,11 @@ namespace Microsoft.Scripting.Actions.Calls {
             return parameter1.Type == parameter2.Type && parameter1.ProhibitNull == parameter2.ProhibitNull;
         }
 
-        public virtual bool CanConvertFrom(Type fromType, ParameterWrapper toParameter, NarrowingLevel level) {
+        public virtual bool CanConvertFrom(ParameterWrapper parameter1, ParameterWrapper parameter2) {
+            return CanConvertFrom(parameter1.Type, null, parameter2, NarrowingLevel.None);
+        }
+
+        public virtual bool CanConvertFrom(Type fromType, DynamicMetaObject fromArgument, ParameterWrapper toParameter, NarrowingLevel level) {
             Assert.NotNull(fromType, toParameter);
 
             Type toType = toParameter.Type;
@@ -853,7 +869,7 @@ namespace Microsoft.Scripting.Actions.Calls {
         /// <summary>
         /// Selects the best (of two) candidates for conversion from actualType
         /// </summary>
-        public virtual Candidate SelectBestConversionFor(Type actualType, ParameterWrapper candidateOne, ParameterWrapper candidateTwo, NarrowingLevel level) {
+        public virtual Candidate SelectBestConversionFor(DynamicMetaObject arg, ParameterWrapper candidateOne, ParameterWrapper candidateTwo, NarrowingLevel level) {
             return Candidate.Equivalent;
         }
 

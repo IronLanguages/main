@@ -84,6 +84,11 @@ namespace IronRuby.Builtins {
             }
             throw RubyExceptions.CreateRangeError(String.Format("Float {0} out of range of {1}", value, self.Name));
         }
+        
+        [RubyMethod("inspect")]
+        public static MutableString/*!*/ Inspect(object/*!*/ self) {
+            return MutableString.CreateMutable(RubyEncoding.Binary).Append(self.ToString()).Append(" (Byte)");
+        }
     }
     
     public static partial class SByteOps {
@@ -117,6 +122,11 @@ namespace IronRuby.Builtins {
                 return (SByte)value;
             }
             throw RubyExceptions.CreateRangeError(String.Format("Float {0} out of range of {1}", value, self.Name));
+        }
+        
+        [RubyMethod("inspect")]
+        public static MutableString/*!*/ Inspect(object/*!*/ self) {
+            return MutableString.CreateMutable(RubyEncoding.Binary).Append(self.ToString()).Append(" (SByte)");
         }
     }
     
@@ -152,6 +162,11 @@ namespace IronRuby.Builtins {
             }
             throw RubyExceptions.CreateRangeError(String.Format("Float {0} out of range of {1}", value, self.Name));
         }
+        
+        [RubyMethod("inspect")]
+        public static MutableString/*!*/ Inspect(object/*!*/ self) {
+            return MutableString.CreateMutable(RubyEncoding.Binary).Append(self.ToString()).Append(" (Int16)");
+        }
     }
     
     public static partial class UInt16Ops {
@@ -185,6 +200,11 @@ namespace IronRuby.Builtins {
                 return (UInt16)value;
             }
             throw RubyExceptions.CreateRangeError(String.Format("Float {0} out of range of {1}", value, self.Name));
+        }
+        
+        [RubyMethod("inspect")]
+        public static MutableString/*!*/ Inspect(object/*!*/ self) {
+            return MutableString.CreateMutable(RubyEncoding.Binary).Append(self.ToString()).Append(" (UInt16)");
         }
     }
     
@@ -220,6 +240,11 @@ namespace IronRuby.Builtins {
             }
             throw RubyExceptions.CreateRangeError(String.Format("Float {0} out of range of {1}", value, self.Name));
         }
+        
+        [RubyMethod("inspect")]
+        public static MutableString/*!*/ Inspect(object/*!*/ self) {
+            return MutableString.CreateMutable(RubyEncoding.Binary).Append(self.ToString()).Append(" (UInt32)");
+        }
     }
     
     public static partial class Int64Ops {
@@ -254,6 +279,11 @@ namespace IronRuby.Builtins {
             }
             throw RubyExceptions.CreateRangeError(String.Format("Float {0} out of range of {1}", value, self.Name));
         }
+        
+        [RubyMethod("inspect")]
+        public static MutableString/*!*/ Inspect(object/*!*/ self) {
+            return MutableString.CreateMutable(RubyEncoding.Binary).Append(self.ToString()).Append(" (Int64)");
+        }
     }
     
     public static partial class UInt64Ops {
@@ -287,6 +317,11 @@ namespace IronRuby.Builtins {
                 return (UInt64)value;
             }
             throw RubyExceptions.CreateRangeError(String.Format("Float {0} out of range of {1}", value, self.Name));
+        }
+        
+        [RubyMethod("inspect")]
+        public static MutableString/*!*/ Inspect(object/*!*/ self) {
+            return MutableString.CreateMutable(RubyEncoding.Binary).Append(self.ToString()).Append(" (UInt64)");
         }
     }
 

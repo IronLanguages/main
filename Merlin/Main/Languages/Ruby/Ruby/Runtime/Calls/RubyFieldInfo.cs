@@ -22,6 +22,7 @@ using Microsoft.Scripting.Utils;
 using IronRuby.Builtins;
 using IronRuby.Compiler;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
+using IronRuby.Runtime.Conversions;
 
 namespace IronRuby.Runtime.Calls {
     using Ast = System.Linq.Expressions.Expression;

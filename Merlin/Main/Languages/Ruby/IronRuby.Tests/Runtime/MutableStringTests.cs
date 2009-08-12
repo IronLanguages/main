@@ -44,6 +44,10 @@ namespace IronRuby.Tests {
             Test_Translate();
         }
 
+        private MutableString/*!*/ MS(string/*!*/ data) {
+            return MutableString.CreateMutable(data.Length * 3, RubyEncoding.Binary).Append(data);
+        }
+
         private MutableString/*!*/ MS(string/*!*/ data, RubyEncoding/*!*/ e) {
             return MutableString.CreateMutable(data.Length * 3, e).Append(data);
         }
@@ -57,7 +61,7 @@ namespace IronRuby.Tests {
         }
 
         private void Test_Factories() {
-            var x = MutableString.Create("");
+            var x = MutableString.CreateAscii("");
             Assert(!x.IsBinary && x.IsEmpty);
 
             var y = MutableString.Create(x);
@@ -124,7 +128,7 @@ namespace IronRuby.Tests {
             // ASCII characters only:
             a = MutableString.Create("hello", RubyEncoding.UTF8);
             b = MutableString.Create("hello", RubyEncoding.GetRubyEncoding("SJIS"));
-            c = MutableString.Create("hello", RubyEncoding.Binary);
+            c = MutableString.CreateAscii("hello");
             Assert(a.GetHashCode() == b.GetHashCode());
             Assert(a.GetHashCode() == c.GetHashCode());
             Assert(b.GetHashCode() == c.GetHashCode());
@@ -469,7 +473,7 @@ namespace IronRuby.Tests {
                 () => Test_Reverse(invalid_utf8, RubyEncoding.UTF8, rev_invalid_utf8)
             );
 
-            Assert(MutableStringOps.Reverse(MutableString.Create("αΣ")).ToString() == "Σα");
+            Assert(MutableStringOps.Reverse(MutableString.Create("αΣ", RubyEncoding.UTF8)).ToString() == "Σα");
 
             // TODO: KCODE
         }

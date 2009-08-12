@@ -38,8 +38,8 @@ namespace IronRuby.Builtins {
     /// </summary>
     public class RubyIO : IDisposable {
         private RubyContext/*!*/ _context;
-        private Encoding/*!*/ _externalEncoding;
-        private Encoding _internalEncoding;
+        private RubyEncoding/*!*/ _externalEncoding;
+        private RubyEncoding _internalEncoding;
 
         private Stream _stream;
         private bool _preserveEndOfLines;
@@ -68,8 +68,8 @@ namespace IronRuby.Builtins {
             _peekAhead = -1;
             _stream = Stream.Null;
 
-            // TODO: enable setting
-            _externalEncoding = BinaryEncoding.Instance;
+            // TODO (encoding): enable setting
+            _externalEncoding = RubyEncoding.Binary;
             _internalEncoding = null;
         }
 
@@ -112,11 +112,11 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        public Encoding ExternalEncoding {
+        public RubyEncoding ExternalEncoding {
             get { return _externalEncoding; }
         }
 
-        public Encoding InternalEncoding {
+        public RubyEncoding InternalEncoding {
             get { return _internalEncoding; }
         }
 
@@ -376,14 +376,14 @@ namespace IronRuby.Builtins {
 
         // returns the number of bytes written to the stream:
         public int Write(char[]/*!*/ buffer, int index, int count) {
-            byte[] bytes = _externalEncoding.GetBytes(buffer, index, count);
+            byte[] bytes = _externalEncoding.StrictEncoding.GetBytes(buffer, index, count);
             Write(bytes, 0, bytes.Length);
             return bytes.Length;
         }
 
         // returns the number of bytes written to the stream:
         public int Write(string/*!*/ value) {
-            byte[] bytes = _externalEncoding.GetBytes(value);
+            byte[] bytes = _externalEncoding.StrictEncoding.GetBytes(value);
             Write(bytes, 0, bytes.Length);
             return bytes.Length;
         }
@@ -525,7 +525,7 @@ namespace IronRuby.Builtins {
         }
 
         public int ReadByteNormalizeEoln() {
-            // TODO: encoding
+            // TODO (encoding):
             int first = ReadByte();
             if (first == '\r' && !_preserveEndOfLines) {
                 int second = PeekByte();
@@ -576,7 +576,8 @@ namespace IronRuby.Builtins {
             }
 
             int separatorOffset = 0;
-            MutableString result = MutableString.CreateMutable();
+            // TODO (encoding):
+            MutableString result = MutableString.CreateMutable(_externalEncoding);
 
             do {
                 result.Append((char)c);
@@ -597,7 +598,7 @@ namespace IronRuby.Builtins {
         }
 
         public MutableString ReadParagraph() {
-            var result = ReadLine(MutableString.Create("\n\n"));
+            var result = ReadLine(MutableString.CreateAscii("\n\n"));
 
             int c;
             while ((c = PeekByteNormalizeEoln()) != -1) {

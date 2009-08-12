@@ -153,7 +153,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         public override System.Collections.Generic.IEnumerable<string> GetDynamicMemberNames() {
-            foreach (object o in ((IMembersList)Value).GetMemberNames(DefaultContext.Default)) {
+            foreach (object o in ((IPythonMembersList)Value).GetMemberNames(DefaultContext.Default)) {
                 if (o is string) {
                     yield return (string)o;
                 }

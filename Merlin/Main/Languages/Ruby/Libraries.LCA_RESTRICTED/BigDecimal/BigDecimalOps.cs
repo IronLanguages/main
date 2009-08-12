@@ -186,7 +186,7 @@ namespace IronRuby.StandardLibrary.BigDecimal {
 
         [RubyMethod("ver", RubyMethodAttributes.PublicSingleton)]
         public static MutableString/*!*/ Version(RubyClass/*!*/ self) {
-            return MutableString.Create("1.0.1");
+            return MutableString.CreateAscii("1.0.1");
         }
 
         #region induced_from
@@ -236,7 +236,7 @@ namespace IronRuby.StandardLibrary.BigDecimal {
 
         [RubyMethod("split")]
         public static RubyArray/*!*/ Split(BigDecimal/*!*/ self) {
-            return RubyOps.MakeArray4(self.Sign, MutableString.Create(self.GetFractionString()), 10, self.Exponent);
+            return RubyOps.MakeArray4(self.Sign, MutableString.CreateAscii(self.GetFractionString()), 10, self.Exponent);
         }
 
         [RubyMethod("fix")]
@@ -257,12 +257,12 @@ namespace IronRuby.StandardLibrary.BigDecimal {
 
         [RubyMethod("to_s")]
         public static MutableString/*!*/ ToString(BigDecimal/*!*/ self) {
-            return MutableString.Create(self.ToString());
+            return MutableString.CreateAscii(self.ToString());
         }
 
         [RubyMethod("to_s")]
         public static MutableString/*!*/ ToString(BigDecimal/*!*/ self, [DefaultProtocol]int separateAt) {
-            return MutableString.Create(self.ToString(separateAt));
+            return MutableString.CreateAscii(self.ToString(separateAt));
         }
 
         [RubyMethod("to_s")]
@@ -282,14 +282,14 @@ namespace IronRuby.StandardLibrary.BigDecimal {
                 separateAt = Int32.Parse(m.Groups["separateAt"].Value);
             }
             bool floatFormat = floatFormatGroup.Success;
-            return MutableString.Create(self.ToString(separateAt, posSign, floatFormat));
+            return MutableString.CreateAscii(self.ToString(separateAt, posSign, floatFormat));
         }
 
         #endregion
 
         [RubyMethod("inspect")]
         public static MutableString/*!*/ Inspect(RubyContext/*!*/ context, BigDecimal/*!*/ self) {
-            MutableString str = MutableString.CreateMutable();
+            MutableString str = MutableString.CreateMutable(RubyEncoding.ClassName);
             str.AppendFormat("#<{0}:", context.GetClassOf(self).Name);
             RubyUtils.AppendFormatHexObjectId(str, RubyUtils.GetObjectId(context, self));
             str.AppendFormat(",'{0}',", self.ToString(10));
@@ -326,10 +326,11 @@ namespace IronRuby.StandardLibrary.BigDecimal {
         [RubyMethod("_dump")]
         public static MutableString/*!*/ Dump(BigDecimal/*!*/ self, [Optional]object limit) {
             // We ignore the limit value as BigDecimal does not contain other objects.
-            return MutableString.CreateMutable(
-                string.Format("{0}:{1}",
-                    self.MaxPrecisionDigits,
-                    self));
+            return MutableString.CreateMutable(RubyEncoding.Binary).
+                Append(self.MaxPrecisionDigits.ToString()).
+                Append(':').
+                Append(self.ToString()
+            );
         }
 
         #endregion

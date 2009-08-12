@@ -17,30 +17,32 @@ using System;
 using System.IO;
 using System.Text;
 using IronRuby.Builtins;
+using Microsoft.Scripting.Utils;
 
 namespace IronRuby.StandardLibrary.Yaml {
 
     internal class MutableStringWriter : TextWriter {
-        private readonly MutableString _str = MutableString.Create("");
+        private readonly MutableString _storage;
 
-        public override Encoding Encoding {
-            get {
-                // TODO: return MutableString encoding
-                throw new NotImplementedException();
-            }
+        public MutableStringWriter(MutableString/*!*/ storage) {
+            Assert.NotNull(storage);
+            _storage = storage;
+        }
+
+        public override Encoding/*!*/ Encoding {
+            get { return _storage.Encoding.Encoding; }
         }
 
         public override void  Write(char value) {
-            _str.Append(value);
+            _storage.Append(value);
         }
 
-        public override void Write(char[] buffer, int index, int count) {
-            // TODO: MutableString needs Append(char[], index, count)
-            _str.Append(new string(buffer), index, count);
+        public override void Write(char[]/*!*/ buffer, int index, int count) {
+            _storage.Append(buffer, index, count);
         }
 
-        internal MutableString String {
-            get { return _str; }
+        internal MutableString/*!*/ String {
+            get { return _storage; }
         }
     }
 }

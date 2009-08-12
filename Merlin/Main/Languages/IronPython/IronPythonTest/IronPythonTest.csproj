@@ -1,8 +1,8 @@
-﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="3.5">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>9.0.30729</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{B6B42537-07F8-4F6C-A99A-B155CAEB124E}</ProjectGuid>
     <OutputType>Library</OutputType>
@@ -16,12 +16,12 @@
     <StartupObject>
     </StartupObject>
     <WarningsNotAsErrors>618,1685</WarningsNotAsErrors>
-    <OldToolsVersion>2.0</OldToolsVersion>
     <AssemblyOriginatorKeyFile>..\..\..\Support\MSSharedLibKey.snk</AssemblyOriginatorKeyFile>
     <SignAssembly Condition="'$(SignAssembly)' == '' And Exists('$(AssemblyOriginatorKeyFile)')">true</SignAssembly>
     <SignedSym Condition="'$(SignAssembly)' == 'true'">SIGNED</SignedSym>
     <DelaySign>true</DelaySign>
-    <SilverlightPath Condition="$(SilverlightPath) == ''">..\..\..\Utilities\Silverlight\x86ret\</SilverlightPath>
+    <SilverlightPath Condition="'$(SilverlightPath)' == ''">..\..\..\Utilities\Silverlight\x86ret\</SilverlightPath>
+    <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>

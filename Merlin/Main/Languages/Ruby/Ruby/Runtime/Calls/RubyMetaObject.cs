@@ -23,13 +23,14 @@ using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Runtime;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
+using IronRuby.Runtime.Conversions;
 using IronRuby.Compiler;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Runtime.Calls {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = System.Linq.Expressions.Expression;    
 
-    interface IRubyDynamicMetaObjectProvider : IDynamicMetaObjectProvider {
+    public interface IRubyDynamicMetaObjectProvider : IDynamicMetaObjectProvider {
     }
 
     public abstract class RubyMetaObject : DynamicMetaObject {
@@ -71,6 +72,15 @@ namespace IronRuby.Runtime.Calls {
 
         public override DynamicMetaObject/*!*/ BindBinaryOperation(BinaryOperationBinder/*!*/ binder, DynamicMetaObject/*!*/ arg) {
             return InteropBinder.BinaryOperation.Bind(CreateMetaContext(), binder, this, arg, binder.FallbackBinaryOperation);
+        }
+
+        public override DynamicMetaObject/*!*/ BindConvert(ConvertBinder/*!*/ binder) {
+            var protocolConversion = ProtocolConversionAction.TryGetDefaultConversionAction(Context, binder.Type);
+            if (protocolConversion != null) {
+                return protocolConversion.Bind(this, DynamicMetaObject.EmptyMetaObjects);
+            } else {
+                return binder.FallbackConvert(this);
+            }
         }
     }
     

@@ -18,6 +18,7 @@ using IronRuby.Runtime;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
+using System.Globalization;
 
 namespace IronRuby.Builtins {
 
@@ -172,9 +173,18 @@ namespace IronRuby.Builtins {
         /// Divides self by other, where other is Float
         /// </summary>
         /// <returns>self / other as Float</returns>
-        [RubyMethod("/"), RubyMethod("div")]
-        public static object Divide(BigInteger/*!*/ self, double other) {
+        [RubyMethod("/")]
+        public static object DivideOp(BigInteger/*!*/ self, double other) {
             return self.ToFloat64() / other;
+        }
+
+        /// <summary>
+        /// Divides self by other, where other is Float
+        /// </summary>
+        /// <returns>self divided by other as Float</returns>
+        [RubyMethod("div")]
+        public static object Divide(BigInteger/*!*/ self, double other) {
+            return DivMod(self, other)[0];
         }
 
         /// <summary>
@@ -300,6 +310,20 @@ namespace IronRuby.Builtins {
         }
 
         /// <summary>
+        /// Returns self modulo other, where other is Float.
+        /// </summary>
+        /// <returns>self modulo other, as Float</returns>
+        /// <remarks>Calls divmod directly to get the modulus.</remarks>
+        [RubyMethod("%"), RubyMethod("modulo")]
+        public static object Modulo(BigInteger/*!*/ self, double other) {
+            if (other == 0.0) {
+                return Double.NaN;
+            }
+            RubyArray result = DivMod(self, other);
+            return result[1];
+        }
+
+        /// <summary>
         /// Returns self % other, where other is not Fixnum or Bignum.
         /// </summary>
         /// <returns>self % other, as Fixnum or Bignum</returns>
@@ -343,6 +367,27 @@ namespace IronRuby.Builtins {
         }
 
         /// <summary>
+        /// Returns an array containing the quotient and modulus obtained by dividing self by other, where other is Float.
+        /// If <code>q, r = x.divmod(y)</code>, then 
+        ///     <code>q = floor(float(x)/float(y))</code>
+        ///     <code>x = q*y + r</code>
+        /// </summary>
+        /// <returns>[self div other, self modulo other] as RubyArray</returns>
+        /// <remarks>Normalizes div to Fixnum as necessary</remarks>
+        [RubyMethod("divmod")]
+        public static RubyArray DivMod(BigInteger/*!*/ self, double other) {
+            if (other == 0.0) {
+                throw new FloatDomainError("NaN");
+            }
+
+            double selfFloat = self.ToFloat64();
+            BigInteger div = BigInteger.Create(selfFloat / other);
+            double mod = selfFloat % other;
+
+            return RubyOps.MakeArray2(Protocols.Normalize(div), mod);
+        }
+
+        /// <summary>
         /// Returns an array containing the quotient and modulus obtained by dividing self by other, where other is not Fixnum or Bignum.
         /// If <code>q, r = x.divmod(y)</code>, then 
         ///     <code>q = floor(float(x)/float(y))</code>
@@ -374,12 +419,24 @@ namespace IronRuby.Builtins {
         }
 
         /// <summary>
-        /// Returns the remainder after dividing self by other, where other is not Fixnum or Bignum.
+        /// Returns the remainder after dividing self by other, where other is Float.
         /// </summary>
         /// <example>
         /// -1234567890987654321.remainder(13731.24)   #=> -9906.22531493148
         /// </example>
-        /// <returns>Float, Fixnum or Bignum</returns>
+        /// <returns>Float</returns>
+        [RubyMethod("remainder")]
+        public static double Remainder(BigInteger/*!*/ self, double other) {
+            return self.ToFloat64() % other;
+        }
+
+        /// <summary>
+        /// Returns the remainder after dividing self by other, where other is not Fixnum or Bignum.
+        /// </summary>
+        /// <example>
+        /// -1234567890987654321.remainder(13731)      #=> -6966
+        /// </example>
+        /// <returns>Fixnum or Bignum</returns>
         /// <remarks>Coerces self and other using other.coerce(self) then dynamically invokes remainder</remarks>
         [RubyMethod("remainder")]
         public static object Remainder(BinaryOpStorage/*!*/ coercionStorage, BinaryOpStorage/*!*/ binaryOpSite, object/*!*/ self, object other) {
@@ -754,7 +811,7 @@ namespace IronRuby.Builtins {
         /// </summary>
         [RubyMethod("to_s")]
         public static MutableString/*!*/ ToString(BigInteger/*!*/ self) {
-            return MutableString.Create(self.ToString());
+            return MutableString.CreateAscii(self.ToString());
         }
 
         /// <summary>
@@ -762,13 +819,13 @@ namespace IronRuby.Builtins {
         /// </summary>
         /// <param name="radix">An integer between 2 and 36 inclusive</param>
         [RubyMethod("to_s")]
-        public static MutableString/*!*/ ToString(BigInteger/*!*/ self, uint radix) {
+        public static MutableString/*!*/ ToString(BigInteger/*!*/ self, int radix) {
             if (radix < 2 || radix > 36) {
                 throw RubyExceptions.CreateArgumentError(String.Format("illegal radix {0}", radix));
             }
 
             // TODO: Can we do the ToLower in BigInteger?
-            return MutableString.Create(self.ToString((uint)radix).ToLower());
+            return MutableString.CreateAscii(self.ToString((uint)radix).ToLower());
         }
 
         #endregion

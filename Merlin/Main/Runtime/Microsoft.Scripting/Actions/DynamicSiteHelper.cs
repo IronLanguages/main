@@ -33,13 +33,6 @@ namespace Microsoft.Scripting.Actions {
 
         private static Dictionary<ICollection<Type>, Type> _DelegateTypes;
 
-        private const MethodAttributes CtorAttributes = MethodAttributes.RTSpecialName | MethodAttributes.HideBySig | MethodAttributes.Public;
-        private const MethodImplAttributes ImplAttributes = MethodImplAttributes.Runtime | MethodImplAttributes.Managed;
-        private const MethodAttributes InvokeAttributes = MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.NewSlot | MethodAttributes.Virtual;
-
-        private static readonly Type[] _DelegateCtorSignature = new Type[] { typeof(object), typeof(IntPtr) };
-
-
         // TODO: remove in favor of Expression.GetDelegateType
         public static Type MakeCallSiteDelegate(params Type[] types) {
             Debug.Assert(types != null);
@@ -207,10 +200,7 @@ namespace Microsoft.Scripting.Actions {
             Type returnType = types[types.Length - 1];
             Type[] parameters = types.RemoveLast();
 
-            TypeBuilder builder = Snippets.Shared.DefineDelegateType("Delegate" + types.Length);
-            builder.DefineConstructor(CtorAttributes, CallingConventions.Standard, _DelegateCtorSignature).SetImplementationFlags(ImplAttributes);
-            builder.DefineMethod("Invoke", InvokeAttributes, returnType, parameters).SetImplementationFlags(ImplAttributes);
-            return builder.CreateType();
+            return Snippets.Shared.DefineDelegate("Delegate" + types.Length, returnType, parameters);
         }
 
         /// <summary>

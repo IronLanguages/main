@@ -392,22 +392,25 @@ namespace Microsoft.Scripting.Actions {
 
                 lock (_topPackage.HierarchyLock) {
                     List<object> res = new List<object>();
-                    foreach (string s in _dict.Keys) {
-                        res.Add(s);
-                    }
-
-                    foreach (KeyValuePair<Assembly, TypeNames> kvp in _typeNames) {
-                        foreach (string typeName in kvp.Value.GetNormalizedTypeNames()) {
-                            if (!res.Contains(typeName)) {
-                                res.Add(typeName);
-                            }
-                        }
-                    }
-
-                    res.Sort();
-                    return res;
+                    return (ICollection<object>)AddKeys(res);
                 }
             }
+        }
+
+        private IList AddKeys(IList res) {
+            foreach (string s in _dict.Keys) {
+                res.Add(s);
+            }
+
+            foreach (KeyValuePair<Assembly, TypeNames> kvp in _typeNames) {
+                foreach (string typeName in kvp.Value.GetNormalizedTypeNames()) {
+                    if (!res.Contains(typeName)) {
+                        res.Add(typeName);
+                    }
+                }
+            }
+            
+            return res;
         }
 
         #endregion
@@ -545,8 +548,16 @@ namespace Microsoft.Scripting.Actions {
 
         #region IMembersList Members
 
-        public IList<object> GetMemberNames(CodeContext context) {
-            return (IList<object>)Keys;
+        public IList<string> GetMemberNames() {
+            LoadNamespaces();
+
+            lock (_topPackage.HierarchyLock) {
+
+                List<string> res = new List<string>();
+                AddKeys(res);
+                res.Sort();
+               return res;
+            }
         }
 
         #endregion

@@ -63,4 +63,9 @@ public static partial class $SelfOps {
         }
         throw RubyExceptions.CreateRangeError(String.Format("Float {0} out of range of {1}", value, self.Name));
     }
+    
+    [RubyMethod("inspect")]
+    public static MutableString/*!*/ Inspect(object/*!*/ self) {
+        return MutableString.CreateMutable(RubyEncoding.Binary).Append(self.ToString()).Append(" ($Self)");
+    }
 }

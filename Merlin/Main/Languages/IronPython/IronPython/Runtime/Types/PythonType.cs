@@ -45,7 +45,7 @@ namespace IronPython.Runtime.Types {
     [PythonType("type")]
     [Documentation(@"type(object) -> gets the type of the object
 type(name, bases, dict) -> creates a new type instance with the given name, base classes, and members from the dictionary")]
-    public partial class PythonType : IMembersList, IDynamicMetaObjectProvider, IWeakReferenceable, ICodeFormattable, IFastGettable, IFastSettable, IFastInvokable {
+    public partial class PythonType : IPythonMembersList, IDynamicMetaObjectProvider, IWeakReferenceable, ICodeFormattable, IFastGettable, IFastSettable, IFastInvokable {
         private Type/*!*/ _underlyingSystemType;            // the underlying CLI system type for this type
         private string _name;                               // the name of the type
         private Dictionary<SymbolId, PythonTypeSlot> _dict; // type-level slots & attributes
@@ -75,6 +75,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         private CallSite<Func<CallSite, object, int>> _hashSite;
         private CallSite<Func<CallSite, object, object, bool>> _eqSite;
         private CallSite<Func<CallSite, object, object, int>> _compareSite;
+        private Dictionary<CallSignature, LateBoundInitBinder> _lateBoundInitBinders;
 
         private PythonSiteCache _siteCache = new PythonSiteCache();
 
@@ -371,6 +372,26 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 return res;
             }
             return 0;
+        }
+
+        [Python3Warning("type inequality comparisons not supported in 3.x")]
+        public static bool operator >(PythonType self, PythonType other) {
+            return self.__cmp__(other) > 0;
+        }
+
+        [Python3Warning("type inequality comparisons not supported in 3.x")]
+        public static bool operator <(PythonType self, PythonType other) {
+            return self.__cmp__(other) < 0;
+        }
+
+        [Python3Warning("type inequality comparisons not supported in 3.x")]
+        public static bool operator >=(PythonType self, PythonType other) {
+            return self.__cmp__(other) >= 0;
+        }
+
+        [Python3Warning("type inequality comparisons not supported in 3.x")]
+        public static bool operator <=(PythonType self, PythonType other) {
+            return self.__cmp__(other) <= 0;
         }
 
         public void __delattr__(CodeContext/*!*/ context, string name) {
@@ -956,7 +977,13 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 if (value) _attrs |= PythonTypeAttributes.HasDictionary;
                 else _attrs &= (~PythonTypeAttributes.HasDictionary);
             }
-        }        
+        }
+
+        internal bool HasSystemCtor {
+            get {
+                return (_attrs & PythonTypeAttributes.SystemCtor) != 0;
+            }
+        }
 
         internal void SetConstructor(BuiltinFunction ctor) {
             _ctor = ctor;
@@ -1014,7 +1041,25 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             return !TryResolveSlot(DefaultContext.Default, SymbolTable.StringToId(name), out dummySlot) &&
                     TryResolveSlot(DefaultContext.DefaultCLS, SymbolTable.StringToId(name), out dummySlot);
         }
+        
+        internal LateBoundInitBinder GetLateBoundInitBinder(CallSignature signature) {
+            Debug.Assert(!IsSystemType); // going to hold onto a PythonContext, shouldn't ever be a system type
+            Debug.Assert(_pythonContext != null);
 
+            if (_lateBoundInitBinders == null) {
+                Interlocked.CompareExchange(ref _lateBoundInitBinders, new Dictionary<CallSignature, LateBoundInitBinder>(), null);
+            }
+
+            lock(_lateBoundInitBinders) {
+                LateBoundInitBinder res;
+                if (!_lateBoundInitBinders.TryGetValue(signature, out res)) {
+                    _lateBoundInitBinders[signature] = res = new LateBoundInitBinder(this, signature);
+                }
+
+                return res;
+            }
+        }
+        
         #endregion
 
         #region Type member access
@@ -1739,7 +1784,31 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
             lock (_userTypeCtors) {
                 if (!_userTypeCtors.TryGetValue(_underlyingSystemType, out _ctor)) {
-                    _userTypeCtors[_underlyingSystemType] = _ctor = BuiltinFunction.MakeMethod(Name, _underlyingSystemType.GetConstructors(), _underlyingSystemType, FunctionType.Function);
+                    ConstructorInfo[] ctors = _underlyingSystemType.GetConstructors();
+
+                    bool isPythonType = false;
+                    foreach (ConstructorInfo ci in ctors) {
+                        ParameterInfo[] pis = ci.GetParameters();
+                        if((pis.Length > 1 && pis[0].ParameterType == typeof(CodeContext) && pis[1].ParameterType == typeof(PythonType)) ||
+                            (pis.Length > 0 && pis[0].ParameterType == typeof(PythonType))) {
+                            isPythonType = true;
+                            break;
+                        }
+                    }
+
+                    _ctor = BuiltinFunction.MakeFunction(Name, ctors, _underlyingSystemType);
+
+                    if (isPythonType) {
+                        _userTypeCtors[_underlyingSystemType] = _ctor;
+                    } else {
+                        // __clrtype__ returned a type w/o any PythonType parameters, force this to
+                        // be created like a normal .NET type.  Presumably the user is planning on storing
+                        // the Python type in a static field or something and passing the Type object to
+                        // some .NET API which wants to Activator.CreateInstance on it w/o providing a 
+                        // PythonType object.
+                        _instanceCtor = new SystemInstanceCreator(this);
+                        _attrs |= PythonTypeAttributes.SystemCtor;
+                    }
                 }
             }
 
@@ -1893,7 +1962,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             }
 
             object modName;
-            if (context.Scope.TryLookupName(Symbols.Name, out modName)) {
+            if (context.Scope.TryGetVariable(Symbols.Name, out modName)) {
                 PopulateSlot(Symbols.Module, modName);
             }
 
@@ -1931,6 +2000,14 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             return hasSlot;
         }
 
+        /// <summary>
+        /// Gets the .NET type which is used for instances of the Python type.
+        /// 
+        /// When overridden by a metaclass enables a customization of the .NET type which
+        /// is used for instances of the Python type.  Meta-classes can construct custom
+        /// types at runtime which include new .NET methods, fields, custom attributes or
+        /// other features to better interoperate with .NET.
+        /// </summary>
         [PythonHidden]
         public virtual Type __clrtype__() {
             return _underlyingSystemType;
@@ -1974,7 +2051,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         private static void EnsureModule(CodeContext context, IAttributesCollection dict) {
             if (!dict.ContainsKey(Symbols.Module)) {
                 object modName;
-                if (context.Scope.TryLookupName(Symbols.Name, out modName)) {
+                if (context.Scope.TryGetVariable(Symbols.Name, out modName)) {
                     dict[Symbols.Module] = modName;
                 }
             }
@@ -2126,11 +2203,10 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         private void AddSystemConstructors() {
             if (typeof(Delegate).IsAssignableFrom(_underlyingSystemType)) {
                 SetConstructor(
-                    BuiltinFunction.MakeMethod(
+                    BuiltinFunction.MakeFunction(
                         _underlyingSystemType.Name,
-                        typeof(DelegateOps).GetMethod("__new__"),
-                        _underlyingSystemType,
-                        FunctionType.Function | FunctionType.AlwaysVisible
+                        new[] { typeof(DelegateOps).GetMethod("__new__") },
+                        _underlyingSystemType
                     )
                 );
             } else if (!_underlyingSystemType.IsAbstract) {
@@ -2254,13 +2330,23 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             IsPythonType = 0x04,
             WeakReferencable = 0x08,
             HasDictionary = 0x10,
+
+            /// <summary>
+            /// The type has a ctor which does not accept PythonTypes.  This is used
+            /// for user defined types which implement __clrtype__
+            /// </summary>
+            SystemCtor    = 0x20
         }
 
         #endregion
 
         #region IMembersList Members
 
-        IList<object> IMembersList.GetMemberNames(CodeContext context) {
+        IList<string> IMembersList.GetMemberNames() {
+            return PythonOps.GetStringMemberList(this);
+        }
+
+        IList<object> IPythonMembersList.GetMemberNames(CodeContext/*!*/ context) {
             IList<object> res = GetMemberNames(context);
 
             object[] arr = new object[res.Count];
@@ -2900,5 +2986,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
             return type == _self;
         }
-    }       
+    }
+
+    
 }

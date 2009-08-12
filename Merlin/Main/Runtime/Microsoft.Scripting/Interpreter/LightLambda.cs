@@ -17,7 +17,10 @@ using System;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+
 using Microsoft.Scripting.Generation;
+using Microsoft.Scripting.Utils;
+
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Interpreter {
@@ -33,6 +36,7 @@ namespace Microsoft.Scripting.Interpreter {
     public partial class LightLambda {
         private readonly StrongBox<object>[] _closure;
         private readonly Interpreter _interpreter;
+        private static readonly CacheDict<Type, Func<LightLambda, Delegate>> _runCache = new CacheDict<Type, Func<LightLambda, Delegate>>(100);
 
         // Adaptive compilation support
         private readonly LightDelegateCreator _delegateCreator;
@@ -49,13 +53,25 @@ namespace Microsoft.Scripting.Interpreter {
             _interpreter = delegateCreator.Interpreter;
         }
 
-        private static MethodInfo GetRunMethod(Type delegateType) {
-            // insert a cache here?
+        private static MethodInfo GetRunMethodOrFastCtor(Type delegateType, out Func<LightLambda, Delegate> fastCtor) {
+            lock (_runCache) {
+                if (_runCache.TryGetValue(delegateType, out fastCtor)) {
+                    return null;
+                }
+                return MakeRunMethodOrFastCtor(delegateType, out fastCtor);
+            }
+        }
+
+        private static MethodInfo MakeRunMethodOrFastCtor(Type delegateType, out Func<LightLambda, Delegate> fastCtor) {
             var method = delegateType.GetMethod("Invoke");
             var paramInfos = method.GetParameters();
             Type[] paramTypes;
             string name = "Run";
-            if (paramInfos.Length > MaxParameters) return null;
+            fastCtor = null;
+
+            if (paramInfos.Length >= MaxParameters) {
+                return null;
+            }
 
             if (method.ReturnType == typeof(void)) {
                 name += "Void";
@@ -67,24 +83,32 @@ namespace Microsoft.Scripting.Interpreter {
 
             MethodInfo runMethod;
 
-            if (method.ReturnType == typeof(void) && paramTypes.Length == 2 && 
-                paramInfos[0].ParameterType.IsByRef && paramInfos[1].ParameterType.IsByRef)
-            {
+            if (method.ReturnType == typeof(void) && paramTypes.Length == 2 &&
+                paramInfos[0].ParameterType.IsByRef && paramInfos[1].ParameterType.IsByRef) {
                 runMethod = typeof(LightLambda).GetMethod("RunVoidRef2", BindingFlags.NonPublic | BindingFlags.Instance);
                 paramTypes[0] = paramInfos[0].ParameterType.GetElementType();
                 paramTypes[1] = paramInfos[1].ParameterType.GetElementType();
-            } else if(method.ReturnType == typeof(void) && paramTypes.Length == 0) {
+            } else if (method.ReturnType == typeof(void) && paramTypes.Length == 0) {
                 return typeof(LightLambda).GetMethod("RunVoid0", BindingFlags.NonPublic | BindingFlags.Instance);
-            } else if (paramInfos.Length < LightLambda.MaxParameters) {
+            } else {
                 for (int i = 0; i < paramInfos.Length; i++) {
                     paramTypes[i] = paramInfos[i].ParameterType;
-                    if (paramTypes[i].IsByRef) return null;
+                    if (paramTypes[i].IsByRef) {
+                        return null;
+                    }
+                }
+
+                if (DelegateHelpers.MakeDelegate(paramTypes) == delegateType) {
+                    name = "Make" + name + paramInfos.Length;
+                    
+                    MethodInfo ctorMethod = typeof(LightLambda).GetMethod(name, BindingFlags.NonPublic | BindingFlags.Static).MakeGenericMethod(paramTypes);
+                    _runCache[delegateType] = fastCtor = (Func<LightLambda, Delegate>)Delegate.CreateDelegate(typeof(Func<LightLambda, Delegate>), ctorMethod);
+                    return null;
                 }
 
                 runMethod = typeof(LightLambda).GetMethod(name + paramInfos.Length, BindingFlags.NonPublic | BindingFlags.Instance);
-            } else {
-                return null;
             }
+
             return runMethod.MakeGenericMethod(paramTypes);
         }
 
@@ -109,9 +133,12 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
 
-        internal Delegate MakeDelegate(Type delegateType) {
-            var method = GetRunMethod(delegateType);
-            if (method == null) {
+        internal Delegate MakeDelegate(Type delegateType) {            
+            Func<LightLambda, Delegate> fastCtor;
+            var method = GetRunMethodOrFastCtor(delegateType, out fastCtor);
+            if (fastCtor != null) {
+                return fastCtor(this);
+            } else if (method == null) {
                 return CreateCustomDelegate(delegateType);
             }
             return Delegate.CreateDelegate(delegateType, this, method);

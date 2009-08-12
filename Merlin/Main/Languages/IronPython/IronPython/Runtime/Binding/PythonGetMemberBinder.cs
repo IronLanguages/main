@@ -70,7 +70,7 @@ namespace IronPython.Runtime.Binding {
             if (icc != null) {
                 // get the member using our interface which also supports CodeContext.
                 return icc.GetMember(this, cc);
-            } else if (target.Value is IDynamicMetaObjectProvider && !(target is MetaPythonObject)) {
+            } else if (target.Value is IDynamicMetaObjectProvider) {
                 return GetForeignObject(target);
             }
 #if !SILVERLIGHT
@@ -520,13 +520,19 @@ namespace IronPython.Runtime.Binding {
 
         public DynamicMetaObject/*!*/ Fallback(DynamicMetaObject/*!*/ self, DynamicMetaObject/*!*/ codeContext) {
             // Python always provides an extra arg to GetMember to flow the context.
-            return FallbackWorker(self, codeContext, Name, _options, this, null);
+            return FallbackWorker(_context, self, codeContext, Name, _options, this, null);
         }
 
-        internal static DynamicMetaObject FallbackWorker(DynamicMetaObject/*!*/ self, DynamicMetaObject/*!*/ codeContext, string name, GetMemberOptions options, DynamicMetaObjectBinder action, DynamicMetaObject errorSuggestion) {
+        public DynamicMetaObject/*!*/ Fallback(DynamicMetaObject/*!*/ self, DynamicMetaObject/*!*/ codeContext, DynamicMetaObject errorSuggestion) {
+            // Python always provides an extra arg to GetMember to flow the context.
+            return FallbackWorker(_context, self, codeContext, Name, _options, this, errorSuggestion);
+        }
+
+        internal static DynamicMetaObject FallbackWorker(PythonContext context, DynamicMetaObject/*!*/ self, DynamicMetaObject/*!*/ codeContext, string name, GetMemberOptions options, DynamicMetaObjectBinder action, DynamicMetaObject errorSuggestion) {
             if (self.NeedsDeferral()) {
                 return action.Defer(self);
             }
+            PythonOverloadResolverFactory resolverFactory = new PythonOverloadResolverFactory(context.Binder, codeContext.Expression);
 
             PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, "FallbackGet");
 
@@ -544,7 +550,7 @@ namespace IronPython.Runtime.Binding {
                     DynamicMetaObject baseRes = PythonContext.GetPythonContext(action).Binder.GetMember(
                         name,
                         self,
-                        codeContext.Expression,
+                        resolverFactory,
                         isNoThrow,
                         errorSuggestion
                     );
@@ -581,11 +587,11 @@ namespace IronPython.Runtime.Binding {
                 }
             }
 
-            var res = PythonContext.GetPythonContext(action).Binder.GetMember(name, self, codeContext.Expression, isNoThrow, errorSuggestion);
+            var res = PythonContext.GetPythonContext(action).Binder.GetMember(name, self, resolverFactory, isNoThrow, errorSuggestion);
 
             // Default binder can return something typed to boolean or int.
             // If that happens, we need to apply Python's boxing rules.
-            if (res.Expression.Type == typeof(bool) || res.Expression.Type == typeof(int)) {
+            if (res.Expression.Type.IsValueType) {
                 res = new DynamicMetaObject(
                     AstUtils.Convert(res.Expression, typeof(object)),
                     res.Restrictions
@@ -605,7 +611,7 @@ namespace IronPython.Runtime.Binding {
                         name
                     ),
                     typeof(object)
-                );
+                ).Expression;
         }
 
         public string Name {
@@ -660,16 +666,16 @@ namespace IronPython.Runtime.Binding {
     }
 
     class CompatibilityGetMember : GetMemberBinder, IPythonSite {
-        private readonly PythonContext/*!*/ _state;
+        private readonly PythonContext/*!*/ _context;
 
-        public CompatibilityGetMember(PythonContext/*!*/ binder, string/*!*/ name)
+        public CompatibilityGetMember(PythonContext/*!*/ context, string/*!*/ name)
             : base(name, false) {
-            _state = binder;
+            _context = context;
         }
 
-        public CompatibilityGetMember(PythonContext/*!*/ binder, string/*!*/ name, bool ignoreCase)
+        public CompatibilityGetMember(PythonContext/*!*/ context, string/*!*/ name, bool ignoreCase)
             : base(name, ignoreCase) {
-            _state = binder;
+            _context = context;
         }
 
         public override DynamicMetaObject FallbackGetMember(DynamicMetaObject self, DynamicMetaObject errorSuggestion) {
@@ -679,19 +685,19 @@ namespace IronPython.Runtime.Binding {
                 return com;
             }
 #endif
-            return PythonGetMemberBinder.FallbackWorker(self, PythonContext.GetCodeContextMOCls(this), Name, GetMemberOptions.None, this, errorSuggestion);
+            return PythonGetMemberBinder.FallbackWorker(_context, self, PythonContext.GetCodeContextMOCls(this), Name, GetMemberOptions.None, this, errorSuggestion);
         }
 
         #region IPythonSite Members
 
         public PythonContext Context {
-            get { return _state; }
+            get { return _context; }
         }
 
         #endregion
 
         public override int GetHashCode() {
-            return base.GetHashCode() ^ _state.Binder.GetHashCode();
+            return base.GetHashCode() ^ _context.Binder.GetHashCode();
         }
 
         public override bool Equals(object obj) {
@@ -700,7 +706,7 @@ namespace IronPython.Runtime.Binding {
                 return false;
             }
 
-            return ob._state.Binder == _state.Binder &&
+            return ob._context.Binder == _context.Binder &&
                 base.Equals(obj);
         }
     }

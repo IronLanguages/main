@@ -24,6 +24,7 @@ using System.Threading;
 using IronRuby.Compiler;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
+using IronRuby.Runtime.Conversions;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
@@ -134,23 +135,28 @@ namespace IronRuby.Builtins {
 
 #if !SILVERLIGHT
         // Looks for RUBYSHELL and then COMSPEC under Windows
-        // It appears that COMSPEC is a special environment variable that cannot be undefined
         internal static ProcessStartInfo/*!*/ GetShell(RubyContext/*!*/ context, MutableString/*!*/ command) {
             PlatformAdaptationLayer pal = context.DomainManager.Platform;
             string shell = pal.GetEnvironmentVariable("RUBYSHELL");
             if (shell == null) {
                 shell = pal.GetEnvironmentVariable("COMSPEC");
             }
-            return new ProcessStartInfo(shell, String.Format("/C \"{0}\"", command.ConvertToString()));
+
+            if (shell == null) {
+                string [] commandParts = command.ConvertToString().Split(new char[] { ' ' }, 2);
+                return new ProcessStartInfo(commandParts[0], commandParts.Length == 2 ? commandParts[1] : null);
+            } else {
+                return new ProcessStartInfo(shell, String.Format("/C \"{0}\"", command.ConvertToString()));
+            }
         }
 
         private static MutableString/*!*/ JoinArguments(MutableString/*!*/[]/*!*/ args) {
-            MutableString result = MutableString.CreateMutable();
+            MutableString result = MutableString.CreateMutable(RubyEncoding.Binary);
 
             for (int i = 0; i < args.Length; i++) {
                 result.Append(args[i]);
                 if (args.Length > 1 && i < args.Length - 1) {
-                    result.Append(" ");
+                    result.Append(' ');
                 }
             }
 
@@ -165,7 +171,7 @@ namespace IronRuby.Builtins {
                 p.WaitForExit();
                 return p;
             } catch (Exception e) {
-                throw RubyErrno.CreateENOENT(psi.FileName, e);
+                throw RubyExceptions.CreateENOENT(psi.FileName, e);
             }
         }
 
@@ -177,7 +183,7 @@ namespace IronRuby.Builtins {
             try {
                 return Process.Start(psi);
             } catch (Exception e) {
-                throw RubyErrno.CreateENOENT(psi.FileName, e);
+                throw RubyExceptions.CreateENOENT(psi.FileName, e);
             }
         }
 
@@ -197,7 +203,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("`", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
         public static MutableString/*!*/ ExecuteCommand(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]MutableString/*!*/ command) {
             Process p = ExecuteProcessCapturingStandardOutput(GetShell(context, command));
-            MutableString result = MutableString.Create(p.StandardOutput.ReadToEnd());
+            MutableString result = MutableString.Create(p.StandardOutput.ReadToEnd(), RubyEncoding.GetRubyEncoding(p.StandardOutput.CurrentEncoding));
             context.ChildProcessExitStatus = new RubyProcess.Status(p);
             return result;
         }
@@ -373,7 +379,8 @@ namespace IronRuby.Builtins {
                 foreach (KeyValuePair<string, GlobalVariable> global in context.GlobalVariables) {
                     if (global.Value.IsEnumerated) {
                         // TODO: Ruby 1.9 returns symbols:
-                        result.Add(MutableString.Create(global.Key));
+                        // TODO (encoding):
+                        result.Add(MutableString.Create(global.Key, RubyEncoding.UTF8));
                     }
                 }
             }
@@ -398,12 +405,11 @@ namespace IronRuby.Builtins {
             return block.Proc.ToLambda();
         }
 
-        #region load, require
+        #region load, load_assembly, require
 
         [RubyMethod("load", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("load", RubyMethodAttributes.PublicSingleton)]
-        public static bool Load(RubyScope/*!*/ scope, object self,
-            [DefaultProtocol, NotNull]MutableString/*!*/ libraryName, [Optional]bool wrap) {
+        public static bool Load(RubyScope/*!*/ scope, object self, [DefaultProtocol, NotNull]MutableString/*!*/ libraryName, [Optional]bool wrap) {
             return scope.RubyContext.Loader.LoadFile(scope.GlobalScope.Scope, self, libraryName, wrap ? LoadFlags.LoadIsolated : LoadFlags.None);
         }
 
@@ -413,13 +419,12 @@ namespace IronRuby.Builtins {
             [DefaultProtocol, NotNull]MutableString/*!*/ assemblyName, [DefaultProtocol, Optional, NotNull]MutableString libraryNamespace) {
 
             string initializer = libraryNamespace != null ? LibraryInitializer.GetFullTypeName(libraryNamespace.ConvertToString()) : null;
-            return context.Loader.LoadAssembly(assemblyName.ConvertToString(), initializer, true, true);
+            return context.Loader.LoadAssembly(assemblyName.ConvertToString(), initializer, true, true) != null;
         }
 
         [RubyMethod("require", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("require", RubyMethodAttributes.PublicSingleton)]
-        public static bool Require(RubyScope/*!*/ scope, object self, 
-            [DefaultProtocol, NotNull]MutableString/*!*/ libraryName) {
+        public static bool Require(RubyScope/*!*/ scope, object self, [DefaultProtocol, NotNull]MutableString/*!*/ libraryName) {
             return scope.RubyContext.Loader.LoadFile(scope.GlobalScope.Scope, self, libraryName, LoadFlags.LoadOnce | LoadFlags.AppendExtensions);
         }
 
@@ -432,7 +437,8 @@ namespace IronRuby.Builtins {
 
             RubyArray result = new RubyArray(names.Count);
             for (int i = 0; i < names.Count; i++) {
-                result.Add(MutableString.Create(names[i]));
+                // TODO (encoding):
+                result.Add(MutableString.Create(names[i], RubyEncoding.UTF8));
             }
             return result;
         }
@@ -562,12 +568,13 @@ namespace IronRuby.Builtins {
             object self, [NotNull]params object[]/*!*/ args) {
 
             var inspect = inspectStorage.GetCallSite("inspect");
+            var inspectedArgs = new object[args.Length];
             for (int i = 0; i < args.Length; i++) {
-                args[i] = inspect.Target(inspect, args[i]);
+                inspectedArgs[i] = inspect.Target(inspect, args[i]);
             }
             
             // no dynamic dispatch to "puts":
-            RubyIOOps.Puts(writeStorage, tosConversion, writeStorage.Context.StandardOutput, args);
+            RubyIOOps.Puts(writeStorage, tosConversion, writeStorage.Context.StandardOutput, inspectedArgs);
         }
 
         [RubyMethod("print", RubyMethodAttributes.PrivateInstance)]
@@ -925,7 +932,7 @@ namespace IronRuby.Builtins {
         public static MutableString/*!*/ Sprintf(StringFormatterSiteStorage/*!*/ storage, 
             object self, [DefaultProtocol, NotNull]MutableString/*!*/ format, [NotNull]params object[] args) {
 
-            return new StringFormatter(storage, format.ConvertToString(), args).Format();
+            return new StringFormatter(storage, format.ConvertToString(), format.Encoding, args).Format();
         }
 
         //sub
@@ -1073,7 +1080,7 @@ namespace IronRuby.Builtins {
 
         #region Public Instance Methods
 
-        #region ==, ===, =~, eql?, equal?, hash
+        #region ==, ===, =~, eql?, equal?, hash, to_s, inspect, to_a
 
         [RubyMethod("=~")]
         public static bool Match(object self, object other) {
@@ -1123,6 +1130,45 @@ namespace IronRuby.Builtins {
             }
 
             return false;
+        }
+
+        [RubyMethod("to_s")]
+        public static MutableString/*!*/ ToS([NotNull]IRubyObject/*!*/ self) {
+            return RubyObject.BaseToMutableString(self);
+        }
+
+        [RubyMethod("to_s")]
+        public static MutableString/*!*/ ToS(object self) {
+            return self == null ? MutableString.CreateEmpty() : MutableString.Create(self.ToString(), RubyEncoding.UTF8);
+        }
+
+        /// <summary>
+        /// Returns a string containing a human-readable representation of obj.
+        /// If not overridden, uses the to_s method to generate the string. 
+        /// </summary>
+        [RubyMethod("inspect")]
+        public static MutableString/*!*/ Inspect(UnaryOpStorage/*!*/ inspectStorage, ConversionStorage<MutableString>/*!*/ tosConversion,
+            object self)
+        {
+
+            var context = tosConversion.Context;
+            if (context.HasInstanceVariables(self))
+            {
+                return RubyUtils.InspectObject(inspectStorage, tosConversion, self);
+            }
+            else
+            {
+                var site = tosConversion.GetSite(ConvertToSAction.Make(context));
+                return site.Target(site, self);
+            }
+        }
+
+        [RubyMethod("to_a")]
+        public static RubyArray/*!*/ ToA(RubyContext/*!*/ context, object self)
+        {
+            RubyArray result = new RubyArray();
+            result.Add(self);
+            return context.TaintObjectBy(result, self);
         }
 
         #endregion
@@ -1319,7 +1365,8 @@ namespace IronRuby.Builtins {
 
             RubyArray result = new RubyArray(names.Length);
             foreach (string name in names) {
-                result.Add(MutableString.Create(name));
+                // TODO (encoding):
+                result.Add(MutableString.Create(name, RubyEncoding.UTF8));
             }
             return result;
         }
@@ -1537,7 +1584,7 @@ namespace IronRuby.Builtins {
         // thread-safe:
         [RubyMethod("method")]
         public static RubyMethod/*!*/ GetMethod(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]string/*!*/ name) {
-            RubyMemberInfo info = context.ResolveMethod(self, name, RubyClass.IgnoreVisibility).Info;
+            RubyMemberInfo info = context.ResolveMethod(self, name, VisibilityContext.AllVisible).Info;
             if (info == null) {
                 throw RubyExceptions.CreateUndefinedMethodError(context.GetClassOf(self), name);
             }
@@ -1592,50 +1639,6 @@ namespace IronRuby.Builtins {
         private static RubyArray/*!*/ GetMethods(RubyContext/*!*/ context, object self, bool inherited, RubyMethodAttributes attributes) {
             RubyClass immediateClass = context.GetImmediateClassOf(self);
             return ModuleOps.GetMethods(immediateClass, inherited, attributes);
-        }
-
-        #endregion
-
-        #region inspect, to_s
-
-        /// <summary>
-        /// Returns a string containing a human-readable representation of obj.
-        /// If not overridden, uses the to_s method to generate the string. 
-        /// </summary>
-        [RubyMethod("inspect")]
-        public static MutableString/*!*/ Inspect(UnaryOpStorage/*!*/ inspectStorage, ConversionStorage<MutableString>/*!*/ tosConversion, 
-            object self) {
-
-            var context = tosConversion.Context;
-            if (context.HasInstanceVariables(self)) {
-                return RubyUtils.InspectObject(inspectStorage, tosConversion, self);
-            } else {
-                var site = tosConversion.GetSite(ConvertToSAction.Make(context));
-                return site.Target(site, self);
-            }
-        }
-
-        [RubyMethod("to_s")]
-        public static MutableString/*!*/ ToS(RubyContext/*!*/ context, [NotNull]object/*!*/ self) {
-            if (self.GetType() == typeof(object)) {
-                return RubyUtils.ObjectToMutableString(context, self);
-            }
-
-            // maps to CLR's ToString:
-            return MutableString.Create(self.ToString()).TaintBy(self, context);
-        }
-
-        [RubyMethod("to_s")]
-        public static MutableString/*!*/ ToS([NotNull]RubyObject/*!*/ self) {
-            // default representation #<{class-name}: {object-id}> 
-            return self.ToMutableString();
-        }
-
-        [RubyMethod("to_a")]
-        public static RubyArray/*!*/ ToA(RubyContext/*!*/ context, object self) {
-            RubyArray result = new RubyArray();
-            result.Add(self);
-            return context.TaintObjectBy(result, self);
         }
 
         #endregion

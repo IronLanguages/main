@@ -1104,7 +1104,7 @@ for k, v in toError.iteritems():
         /// </summary>
         [PythonHidden]
         public static PythonType CreateSubType(PythonContext/*!*/ context, PythonType baseType, string name, string module, string documentation) {
-            PythonType res = new PythonType(null, baseType, name, module, documentation);
+            PythonType res = new PythonType(context, baseType, name, module, documentation);
             res.SetCustomMember(context.SharedContext, Symbols.WeakRef, new PythonTypeWeakRefSlot(res));
             res.IsWeakReferencable = true;
             return res;

@@ -1,4 +1,4 @@
-﻿/* ****************************************************************************
+/* ****************************************************************************
  *
  * Copyright (c) Microsoft Corporation. 
  *
@@ -15,14 +15,19 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Runtime.CompilerServices;
-using Microsoft.Scripting.Runtime;
-using IronPython.Runtime.Binding;
-using System.Reflection;
-using IronPython.Runtime.Operations;
+using System.Dynamic;
 using System.Linq.Expressions;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+
 using Microsoft.Scripting.Actions;
+using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
+
+using IronPython.Runtime.Binding;
+using IronPython.Runtime.Operations;
+
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Runtime.Types {
     public partial class PythonType {
@@ -36,11 +41,10 @@ namespace IronPython.Runtime.Types {
         /// of the same types and improved startup time due to reduced code generation.
         /// </summary>
         FastBindResult<T> IFastInvokable.MakeInvokeBinding<T>(CallSite<T> site, PythonInvokeBinder binder, CodeContext context, object[] args) {
-            PythonTypeSlot del;
             if (IsSystemType ||                                         // limited numbers of these, just generate optimal code
                 IsMixedNewStyleOldStyle() ||                            // old-style classes shouldn't be commonly used
-                TryResolveSlot(context, Symbols.Unassign, out del) ||   // same w/ finalizers.
-                args.Length > 5 ||                                     // and we only generate optimal code for a small number of calls.
+                args.Length > 5 ||                                      // and we only generate optimal code for a small number of calls.
+                HasSystemCtor ||                                        // __clrtype__ overridden and ctor doesn't take PythonType as 1st arg
                 GetType() != typeof(PythonType)) {                      // and we don't handle meta classes yet (they could override __call__)...
                 return new FastBindResult<T>();
             }
@@ -102,8 +106,7 @@ namespace IronPython.Runtime.Types {
             public FastBindingBuilderBase(CodeContext context, PythonType type, PythonInvokeBinder binder, Type siteType, Type[] genTypeArgs) {
                 _context = context;
                 _type = type;
-                // binder is used for nested call sites which have 1 extra argument (the type passed to __new__, or the instance passed to __init__).
-                _binder = binder.Context.Invoke(binder.Signature.InsertArgument(Argument.Simple));
+                _binder = binder;
                 _siteType = siteType;
                 _genTypeArgs = genTypeArgs;
             }
@@ -116,24 +119,16 @@ namespace IronPython.Runtime.Types {
                 _type.TryResolveSlot(_context, Symbols.Init, out init);
 
                 Delegate newDlg;
-                Delegate initDlg;
-                if (init == InstanceOps.Init) {
-                    if (_genTypeArgs.Length > 0 & newInst == InstanceOps.New) {
-                        // init needs to report an error, we don't optimize for the error case.
+                
+                if (newInst == InstanceOps.New) {
+                    if (_genTypeArgs.Length > 0 && init == InstanceOps.Init) {
+                        // new needs to report an error, we don't optimize for the error case.
                         return null;
                     }
-                    initDlg = null;
-                } else if (init is PythonFunction) {
-                    initDlg = GetNewOrInitSiteDelegate(_binder, init);
-                } else {
-                    // odd slot in __init__, we don't handle this either.
-                    return null;
-                }
-
-                if (newInst == InstanceOps.New) {
                     newDlg = GetOrCreateFastNew();
                 } else if (newInst.GetType() == typeof(staticmethod) && ((staticmethod)newInst)._func is PythonFunction) {
-                    newDlg = GetNewOrInitSiteDelegate(_binder, ((staticmethod)newInst)._func);
+                    // need an extra argument to pass the class to __new__
+                    newDlg = GetNewSiteDelegate(_binder.Context.Invoke(_binder.Signature.InsertArgument(Argument.Simple)), ((staticmethod)newInst)._func);
                 } else {
                     // odd slot in __new__, we don't handle this.
                     newDlg = null;
@@ -144,7 +139,7 @@ namespace IronPython.Runtime.Types {
                     return null;
                 }
 
-                return MakeDelegate(version, newDlg, initDlg);
+                return MakeDelegate(version, newDlg, _type.GetLateBoundInitBinder(_binder.Signature));
             }
 
             /// <summary>
@@ -191,8 +186,8 @@ namespace IronPython.Runtime.Types {
                 return newDlg;
             }
 
-            protected abstract Delegate GetNewOrInitSiteDelegate(PythonInvokeBinder binder, object func);
-            protected abstract Delegate MakeDelegate(int version, Delegate newDlg, Delegate initDlg);
+            protected abstract Delegate GetNewSiteDelegate(PythonInvokeBinder binder, object func);
+            protected abstract Delegate MakeDelegate(int version, Delegate newDlg, LateBoundInitBinder initBinder);
         }
 
         class FastBindingBuilder : FastBindingBuilderBase {
@@ -200,16 +195,17 @@ namespace IronPython.Runtime.Types {
                 base(context, type, binder, siteType, genTypeArgs) {
             }
 
-            protected override Delegate GetNewOrInitSiteDelegate(PythonInvokeBinder binder, object func) {
-                return new Func<CodeContext, object, object>(new NewInitSite(binder, func).Call);
+            protected override Delegate GetNewSiteDelegate(PythonInvokeBinder binder, object func) {
+                return new Func<CodeContext, object, object>(new NewSite(binder, func).Call);
             }
 
-            protected override Delegate MakeDelegate(int version, Delegate newDlg, Delegate initDlg) {
+            protected override Delegate MakeDelegate(int version, Delegate newDlg, LateBoundInitBinder initBinder) {
                 return new Func<CallSite, CodeContext, object, object>(
                             new FastTypeSite(
                                 version,
                                 (Func<CodeContext, object, object>)newDlg,
-                                (Func<CodeContext, object, object>)initDlg).CallTarget
+                                initBinder
+                            ).CallTarget
                 );
             }
         }
@@ -217,21 +213,19 @@ namespace IronPython.Runtime.Types {
         class FastTypeSite {
             private readonly int _version;
             private readonly Func<CodeContext, object, object> _new;
-            private readonly Func<CodeContext, object, object> _init;
+            private readonly CallSite<Func<CallSite, CodeContext, object, object>> _initSite;
 
-            public FastTypeSite(int version, Func<CodeContext, object, object> @new, Func<CodeContext, object, object> init) {
+            public FastTypeSite(int version, Func<CodeContext, object, object> @new, LateBoundInitBinder initBinder) {
                 _version = version;
                 _new = @new;
-                _init = init;
+                _initSite = CallSite<Func<CallSite, CodeContext, object, object>>.Create(initBinder);
             }
 
             public object CallTarget(CallSite site, CodeContext context, object type) {
                 PythonType pt = type as PythonType;
                 if (pt != null && pt.Version == _version) {
                     object res = _new(context, type);
-                    if (_init != null && res != null && res.GetType() == pt.UnderlyingSystemType) {
-                        _init(context, res);
-                    }
+                    _initSite.Target(_initSite, context, res);
 
                     return res;
                 }
@@ -240,17 +234,17 @@ namespace IronPython.Runtime.Types {
             }
         }
 
-        class NewInitSite {
+        class NewSite {
             private readonly CallSite<Func<CallSite, CodeContext, object, object, object>> _site;
             private readonly object _target;
 
-            public NewInitSite(PythonInvokeBinder binder, object target) {
+            public NewSite(PythonInvokeBinder binder, object target) {
                 _site = CallSite<Func<CallSite, CodeContext, object, object, object>>.Create(binder);
                 _target = target;
             }
 
-            public object Call(CodeContext context, object typeOrInstance) {
-                return _site.Target(_site, context, _target, typeOrInstance);
+            public object Call(CodeContext context, object type) {
+                return _site.Target(_site, context, _target, type);
             }
         }
 
@@ -267,16 +261,17 @@ namespace IronPython.Runtime.Types {
                 base(context, type, binder, siteType, genTypeArgs) {
             }
 
-            protected override Delegate GetNewOrInitSiteDelegate(PythonInvokeBinder binder, object func) {
-                return new Func<CodeContext, object, T0, object>(new NewInitSite<T0>(binder, func).Call);
+            protected override Delegate GetNewSiteDelegate(PythonInvokeBinder binder, object func) {
+                return new Func<CodeContext, object, T0, object>(new NewSite<T0>(binder, func).Call);
             }
 
-            protected override Delegate MakeDelegate(int version, Delegate newDlg, Delegate initDlg) {
+            protected override Delegate MakeDelegate(int version, Delegate newDlg, LateBoundInitBinder initBinder) {
                 return new Func<CallSite, CodeContext, object, T0, object>(
-                            new FastTypeSite<T0>
-                                (version, 
-                                (Func<CodeContext, object, T0, object>)newDlg, 
-                                (Func<CodeContext, object, T0, object>)initDlg).CallTarget
+                    new FastTypeSite<T0>(
+                        version, 
+                        (Func<CodeContext, object, T0, object>)newDlg,
+                        initBinder
+                    ).CallTarget
                 );
             }
         }
@@ -284,21 +279,19 @@ namespace IronPython.Runtime.Types {
         class FastTypeSite<T0> {
             private readonly int _version;
             private readonly Func<CodeContext, object, T0, object> _new;
-            private readonly Func<CodeContext, object, T0, object> _init;
+            private readonly CallSite<Func<CallSite, CodeContext, object, T0, object>> _initSite;
 
-            public FastTypeSite(int version, Func<CodeContext, object, T0, object> @new, Func<CodeContext, object, T0, object> init) {
+            public FastTypeSite(int version, Func<CodeContext, object, T0, object> @new, LateBoundInitBinder initBinder) {
                 _version = version;
                 _new = @new;
-                _init = init;
+                _initSite = CallSite<Func<CallSite, CodeContext, object, T0, object>>.Create(initBinder);
             }
 
             public object CallTarget(CallSite site, CodeContext context, object type, T0 arg0) {
                 PythonType pt = type as PythonType;
                 if (pt != null && pt.Version == _version) {
                     object res = _new(context, type, arg0);
-                    if (_init != null && res != null && res.GetType() == pt.UnderlyingSystemType) {
-                        _init(context, res, arg0);
-                    }
+                    _initSite.Target(_initSite, context, res, arg0);
 
                     return res;
                 }
@@ -307,11 +300,11 @@ namespace IronPython.Runtime.Types {
             }
         }
 
-        class NewInitSite<T0> {
+        class NewSite<T0> {
             private readonly CallSite<Func<CallSite, CodeContext, object, object, T0, object>> _site;
             private readonly object _target;
 
-            public NewInitSite(PythonInvokeBinder binder, object target) {
+            public NewSite(PythonInvokeBinder binder, object target) {
                 _site = CallSite<Func<CallSite, CodeContext, object, object, T0, object>>.Create(binder);
                 _target = target;
             }
@@ -327,16 +320,17 @@ namespace IronPython.Runtime.Types {
                 base(context, type, binder, siteType, genTypeArgs) {
             }
 
-            protected override Delegate GetNewOrInitSiteDelegate(PythonInvokeBinder binder, object func) {
-                return new Func<CodeContext, object, T0, T1, object>(new NewInitSite<T0, T1>(binder, func).Call);
+            protected override Delegate GetNewSiteDelegate(PythonInvokeBinder binder, object func) {
+                return new Func<CodeContext, object, T0, T1, object>(new NewSite<T0, T1>(binder, func).Call);
             }
 
-            protected override Delegate MakeDelegate(int version, Delegate newDlg, Delegate initDlg) {
+            protected override Delegate MakeDelegate(int version, Delegate newDlg, LateBoundInitBinder initBinder) {
                 return new Func<CallSite, CodeContext, object, T0, T1, object>(
-                            new FastTypeSite<T0, T1>
-                                (version, 
-                                (Func<CodeContext, object, T0, T1, object>)newDlg, 
-                                (Func<CodeContext, object, T0, T1, object>)initDlg).CallTarget
+                    new FastTypeSite<T0, T1>(
+                        version, 
+                        (Func<CodeContext, object, T0, T1, object>)newDlg,
+                        initBinder
+                    ).CallTarget
                 );
             }
         }
@@ -344,21 +338,19 @@ namespace IronPython.Runtime.Types {
         class FastTypeSite<T0, T1> {
             private readonly int _version;
             private readonly Func<CodeContext, object, T0, T1, object> _new;
-            private readonly Func<CodeContext, object, T0, T1, object> _init;
+            private readonly CallSite<Func<CallSite, CodeContext, object, T0, T1, object>> _initSite;
 
-            public FastTypeSite(int version, Func<CodeContext, object, T0, T1, object> @new, Func<CodeContext, object, T0, T1, object> init) {
+            public FastTypeSite(int version, Func<CodeContext, object, T0, T1, object> @new, LateBoundInitBinder initBinder) {
                 _version = version;
                 _new = @new;
-                _init = init;
+                _initSite = CallSite<Func<CallSite, CodeContext, object, T0, T1, object>>.Create(initBinder);
             }
 
             public object CallTarget(CallSite site, CodeContext context, object type, T0 arg0, T1 arg1) {
                 PythonType pt = type as PythonType;
                 if (pt != null && pt.Version == _version) {
                     object res = _new(context, type, arg0, arg1);
-                    if (_init != null && res != null && res.GetType() == pt.UnderlyingSystemType) {
-                        _init(context, res, arg0, arg1);
-                    }
+                    _initSite.Target(_initSite, context, res, arg0, arg1);
 
                     return res;
                 }
@@ -367,11 +359,11 @@ namespace IronPython.Runtime.Types {
             }
         }
 
-        class NewInitSite<T0, T1> {
+        class NewSite<T0, T1> {
             private readonly CallSite<Func<CallSite, CodeContext, object, object, T0, T1, object>> _site;
             private readonly object _target;
 
-            public NewInitSite(PythonInvokeBinder binder, object target) {
+            public NewSite(PythonInvokeBinder binder, object target) {
                 _site = CallSite<Func<CallSite, CodeContext, object, object, T0, T1, object>>.Create(binder);
                 _target = target;
             }
@@ -387,16 +379,17 @@ namespace IronPython.Runtime.Types {
                 base(context, type, binder, siteType, genTypeArgs) {
             }
 
-            protected override Delegate GetNewOrInitSiteDelegate(PythonInvokeBinder binder, object func) {
-                return new Func<CodeContext, object, T0, T1, T2, object>(new NewInitSite<T0, T1, T2>(binder, func).Call);
+            protected override Delegate GetNewSiteDelegate(PythonInvokeBinder binder, object func) {
+                return new Func<CodeContext, object, T0, T1, T2, object>(new NewSite<T0, T1, T2>(binder, func).Call);
             }
 
-            protected override Delegate MakeDelegate(int version, Delegate newDlg, Delegate initDlg) {
+            protected override Delegate MakeDelegate(int version, Delegate newDlg, LateBoundInitBinder initBinder) {
                 return new Func<CallSite, CodeContext, object, T0, T1, T2, object>(
-                            new FastTypeSite<T0, T1, T2>
-                                (version, 
-                                (Func<CodeContext, object, T0, T1, T2, object>)newDlg, 
-                                (Func<CodeContext, object, T0, T1, T2, object>)initDlg).CallTarget
+                    new FastTypeSite<T0, T1, T2>(
+                        version, 
+                        (Func<CodeContext, object, T0, T1, T2, object>)newDlg,
+                        initBinder
+                    ).CallTarget
                 );
             }
         }
@@ -404,21 +397,19 @@ namespace IronPython.Runtime.Types {
         class FastTypeSite<T0, T1, T2> {
             private readonly int _version;
             private readonly Func<CodeContext, object, T0, T1, T2, object> _new;
-            private readonly Func<CodeContext, object, T0, T1, T2, object> _init;
+            private readonly CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, object>> _initSite;
 
-            public FastTypeSite(int version, Func<CodeContext, object, T0, T1, T2, object> @new, Func<CodeContext, object, T0, T1, T2, object> init) {
+            public FastTypeSite(int version, Func<CodeContext, object, T0, T1, T2, object> @new, LateBoundInitBinder initBinder) {
                 _version = version;
                 _new = @new;
-                _init = init;
+                _initSite = CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, object>>.Create(initBinder);
             }
 
             public object CallTarget(CallSite site, CodeContext context, object type, T0 arg0, T1 arg1, T2 arg2) {
                 PythonType pt = type as PythonType;
                 if (pt != null && pt.Version == _version) {
                     object res = _new(context, type, arg0, arg1, arg2);
-                    if (_init != null && res != null && res.GetType() == pt.UnderlyingSystemType) {
-                        _init(context, res, arg0, arg1, arg2);
-                    }
+                    _initSite.Target(_initSite, context, res, arg0, arg1, arg2);
 
                     return res;
                 }
@@ -427,11 +418,11 @@ namespace IronPython.Runtime.Types {
             }
         }
 
-        class NewInitSite<T0, T1, T2> {
+        class NewSite<T0, T1, T2> {
             private readonly CallSite<Func<CallSite, CodeContext, object, object, T0, T1, T2, object>> _site;
             private readonly object _target;
 
-            public NewInitSite(PythonInvokeBinder binder, object target) {
+            public NewSite(PythonInvokeBinder binder, object target) {
                 _site = CallSite<Func<CallSite, CodeContext, object, object, T0, T1, T2, object>>.Create(binder);
                 _target = target;
             }
@@ -447,16 +438,17 @@ namespace IronPython.Runtime.Types {
                 base(context, type, binder, siteType, genTypeArgs) {
             }
 
-            protected override Delegate GetNewOrInitSiteDelegate(PythonInvokeBinder binder, object func) {
-                return new Func<CodeContext, object, T0, T1, T2, T3, object>(new NewInitSite<T0, T1, T2, T3>(binder, func).Call);
+            protected override Delegate GetNewSiteDelegate(PythonInvokeBinder binder, object func) {
+                return new Func<CodeContext, object, T0, T1, T2, T3, object>(new NewSite<T0, T1, T2, T3>(binder, func).Call);
             }
 
-            protected override Delegate MakeDelegate(int version, Delegate newDlg, Delegate initDlg) {
+            protected override Delegate MakeDelegate(int version, Delegate newDlg, LateBoundInitBinder initBinder) {
                 return new Func<CallSite, CodeContext, object, T0, T1, T2, T3, object>(
-                            new FastTypeSite<T0, T1, T2, T3>
-                                (version, 
-                                (Func<CodeContext, object, T0, T1, T2, T3, object>)newDlg, 
-                                (Func<CodeContext, object, T0, T1, T2, T3, object>)initDlg).CallTarget
+                    new FastTypeSite<T0, T1, T2, T3>(
+                        version, 
+                        (Func<CodeContext, object, T0, T1, T2, T3, object>)newDlg,
+                        initBinder
+                    ).CallTarget
                 );
             }
         }
@@ -464,21 +456,19 @@ namespace IronPython.Runtime.Types {
         class FastTypeSite<T0, T1, T2, T3> {
             private readonly int _version;
             private readonly Func<CodeContext, object, T0, T1, T2, T3, object> _new;
-            private readonly Func<CodeContext, object, T0, T1, T2, T3, object> _init;
+            private readonly CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, object>> _initSite;
 
-            public FastTypeSite(int version, Func<CodeContext, object, T0, T1, T2, T3, object> @new, Func<CodeContext, object, T0, T1, T2, T3, object> init) {
+            public FastTypeSite(int version, Func<CodeContext, object, T0, T1, T2, T3, object> @new, LateBoundInitBinder initBinder) {
                 _version = version;
                 _new = @new;
-                _init = init;
+                _initSite = CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, object>>.Create(initBinder);
             }
 
             public object CallTarget(CallSite site, CodeContext context, object type, T0 arg0, T1 arg1, T2 arg2, T3 arg3) {
                 PythonType pt = type as PythonType;
                 if (pt != null && pt.Version == _version) {
                     object res = _new(context, type, arg0, arg1, arg2, arg3);
-                    if (_init != null && res != null && res.GetType() == pt.UnderlyingSystemType) {
-                        _init(context, res, arg0, arg1, arg2, arg3);
-                    }
+                    _initSite.Target(_initSite, context, res, arg0, arg1, arg2, arg3);
 
                     return res;
                 }
@@ -487,11 +477,11 @@ namespace IronPython.Runtime.Types {
             }
         }
 
-        class NewInitSite<T0, T1, T2, T3> {
+        class NewSite<T0, T1, T2, T3> {
             private readonly CallSite<Func<CallSite, CodeContext, object, object, T0, T1, T2, T3, object>> _site;
             private readonly object _target;
 
-            public NewInitSite(PythonInvokeBinder binder, object target) {
+            public NewSite(PythonInvokeBinder binder, object target) {
                 _site = CallSite<Func<CallSite, CodeContext, object, object, T0, T1, T2, T3, object>>.Create(binder);
                 _target = target;
             }
@@ -507,16 +497,17 @@ namespace IronPython.Runtime.Types {
                 base(context, type, binder, siteType, genTypeArgs) {
             }
 
-            protected override Delegate GetNewOrInitSiteDelegate(PythonInvokeBinder binder, object func) {
-                return new Func<CodeContext, object, T0, T1, T2, T3, T4, object>(new NewInitSite<T0, T1, T2, T3, T4>(binder, func).Call);
+            protected override Delegate GetNewSiteDelegate(PythonInvokeBinder binder, object func) {
+                return new Func<CodeContext, object, T0, T1, T2, T3, T4, object>(new NewSite<T0, T1, T2, T3, T4>(binder, func).Call);
             }
 
-            protected override Delegate MakeDelegate(int version, Delegate newDlg, Delegate initDlg) {
+            protected override Delegate MakeDelegate(int version, Delegate newDlg, LateBoundInitBinder initBinder) {
                 return new Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, object>(
-                            new FastTypeSite<T0, T1, T2, T3, T4>
-                                (version, 
-                                (Func<CodeContext, object, T0, T1, T2, T3, T4, object>)newDlg, 
-                                (Func<CodeContext, object, T0, T1, T2, T3, T4, object>)initDlg).CallTarget
+                    new FastTypeSite<T0, T1, T2, T3, T4>(
+                        version, 
+                        (Func<CodeContext, object, T0, T1, T2, T3, T4, object>)newDlg,
+                        initBinder
+                    ).CallTarget
                 );
             }
         }
@@ -524,21 +515,19 @@ namespace IronPython.Runtime.Types {
         class FastTypeSite<T0, T1, T2, T3, T4> {
             private readonly int _version;
             private readonly Func<CodeContext, object, T0, T1, T2, T3, T4, object> _new;
-            private readonly Func<CodeContext, object, T0, T1, T2, T3, T4, object> _init;
+            private readonly CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, object>> _initSite;
 
-            public FastTypeSite(int version, Func<CodeContext, object, T0, T1, T2, T3, T4, object> @new, Func<CodeContext, object, T0, T1, T2, T3, T4, object> init) {
+            public FastTypeSite(int version, Func<CodeContext, object, T0, T1, T2, T3, T4, object> @new, LateBoundInitBinder initBinder) {
                 _version = version;
                 _new = @new;
-                _init = init;
+                _initSite = CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, object>>.Create(initBinder);
             }
 
             public object CallTarget(CallSite site, CodeContext context, object type, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4) {
                 PythonType pt = type as PythonType;
                 if (pt != null && pt.Version == _version) {
                     object res = _new(context, type, arg0, arg1, arg2, arg3, arg4);
-                    if (_init != null && res != null && res.GetType() == pt.UnderlyingSystemType) {
-                        _init(context, res, arg0, arg1, arg2, arg3, arg4);
-                    }
+                    _initSite.Target(_initSite, context, res, arg0, arg1, arg2, arg3, arg4);
 
                     return res;
                 }
@@ -547,11 +536,11 @@ namespace IronPython.Runtime.Types {
             }
         }
 
-        class NewInitSite<T0, T1, T2, T3, T4> {
+        class NewSite<T0, T1, T2, T3, T4> {
             private readonly CallSite<Func<CallSite, CodeContext, object, object, T0, T1, T2, T3, T4, object>> _site;
             private readonly object _target;
 
-            public NewInitSite(PythonInvokeBinder binder, object target) {
+            public NewSite(PythonInvokeBinder binder, object target) {
                 _site = CallSite<Func<CallSite, CodeContext, object, object, T0, T1, T2, T3, T4, object>>.Create(binder);
                 _target = target;
             }
@@ -565,6 +554,456 @@ namespace IronPython.Runtime.Types {
         // *** END GENERATED CODE ***
 
         #endregion
+    }
 
+    /// <summary>
+    /// Used when a type overrides __new__ with a Python function or other object
+    /// that can return an arbitrary value.  If the return value is not the same type
+    /// as the type which had __new__ then we need to lookup __init__ on the type
+    /// and invoke it.  Also handles initialization for finalization when __del__
+    /// is defined for the same reasons.
+    /// </summary>
+    class LateBoundInitBinder : DynamicMetaObjectBinder {
+        private readonly PythonType _newType;           // the type __new__ was invoked on
+        private readonly CallSignature _signature;      // the call signature for the call
+
+        public LateBoundInitBinder(PythonType type, CallSignature signature) {
+            _newType = type;
+            _signature = signature;
+        }
+
+        /// <summary>
+        /// target is the newly initialized value.
+        /// args are the arguments to be passed to __init__
+        /// </summary>
+        public override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args) {
+            DynamicMetaObject codeContext = target;
+            CodeContext context = (CodeContext)codeContext.Value;
+            target = args[0];
+            args = ArrayUtils.RemoveFirst(args);
+
+            ValidationInfo valInfo = BindingHelpers.GetValidationInfo(target);
+
+            Expression res;
+            PythonType instType = DynamicHelpers.GetPythonType(target.Value);
+            BindingRestrictions initRestrictions = BindingRestrictions.Empty;
+
+            if (IronPython.Modules.Builtin.isinstance(target.Value, _newType) &&
+                NeedsInitCall((CodeContext)codeContext.Value, instType, args.Length)) {
+
+                // resolve __init__
+                PythonTypeSlot init;
+                instType.TryResolveSlot(context, Symbols.Init, out init);
+
+                if (instType.IsMixedNewStyleOldStyle()) {
+                    // mixed new-style/old-style class, we need to look up __init__ every time
+                    res = MakeDynamicInitInvoke(
+                        context,
+                        args,
+                        Expression.Call(
+                            typeof(PythonOps).GetMethod("GetMixedMember"),
+                            codeContext.Expression,
+                            Expression.Convert(AstUtils.WeakConstant(instType), typeof(PythonType)),
+                            AstUtils.Convert(target.Expression, typeof(object)),
+                            AstUtils.Constant(Symbols.Init)
+                        ),
+                        codeContext.Expression
+                    );
+                } else if (init is PythonFunction) {
+                    // avoid creating the bound method, just invoke it directly
+                    Expression[] allArgs = new Expression[args.Length + 3];
+                    allArgs[0] = codeContext.Expression;
+                    allArgs[1] = AstUtils.WeakConstant(init);
+                    allArgs[2] = target.Expression;
+                    for (int i = 0; i < args.Length; i++) {
+                        allArgs[3 + i] = args[i].Expression;
+                    }
+
+                    res = Expression.Dynamic(
+                        context.LanguageContext.Invoke(_signature.InsertArgument(Argument.Simple)),
+                        typeof(object),
+                        allArgs
+                    );
+                } else if(init is BuiltinMethodDescriptor || init is BuiltinFunction) {
+                    IList<MethodBase> targets;
+                    if (init is BuiltinMethodDescriptor) {
+                        targets = ((BuiltinMethodDescriptor)init).Template.Targets;
+                    } else {
+                        targets = ((BuiltinFunction)init).Targets;
+                    }
+
+                    PythonBinder binder = context.LanguageContext.Binder;
+
+                    DynamicMetaObject initInvoke = binder.CallMethod(
+                        new PythonOverloadResolver(
+                            binder,
+                            target,
+                            args,
+                            _signature,
+                            codeContext.Expression
+                        ),
+                        targets,
+                        BindingRestrictions.Empty
+                    );
+
+                    res = initInvoke.Expression;
+                    initRestrictions = initInvoke.Restrictions;
+                } else {
+                    // some weird descriptor has been put in place for __init__, we need
+                    // to call __get__ on it each time.
+                    res = MakeDynamicInitInvoke(
+                        context,
+                        args,
+                        Expression.Call(
+                            typeof(PythonOps).GetMethod("GetInitSlotMember"),
+                            codeContext.Expression,
+                            Expression.Convert(AstUtils.WeakConstant(_newType), typeof(PythonType)),
+                            Expression.Convert(AstUtils.WeakConstant(init), typeof(PythonTypeSlot)),
+                            AstUtils.Convert(target.Expression, typeof(object))
+                        ),
+                        codeContext.Expression
+                    );
+                }
+            } else {
+                // returned something that isn't a subclass of the creating type
+                // __init__ will not be run.
+                res = AstUtils.Empty();
+            }
+
+            // check for __del__
+            PythonTypeSlot delSlot;
+            if (instType.TryResolveSlot(context, Symbols.Unassign, out delSlot)) {
+                res = Expression.Block(
+                    res,
+                    Expression.Call(
+                        typeof(PythonOps).GetMethod("InitializeForFinalization"),
+                        codeContext.Expression,
+                        AstUtils.Convert(target.Expression, typeof(object))
+                    )
+                );
+            }
+
+            return BindingHelpers.AddDynamicTestAndDefer(
+                this,
+                new DynamicMetaObject(
+                    Expression.Block(
+                        res,
+                        target.Expression
+                    ),
+                    target.Restrict(target.LimitType).Restrictions.Merge(initRestrictions)
+                ),
+                args,
+                valInfo
+            );
+        }
+
+        #region Generated Python Fast Init Max Args
+
+        // *** BEGIN GENERATED CODE ***
+        // generated by function: gen_fast_init_max_args from: generate_calls.py
+
+        public const int MaxFastLateBoundInitArgs = 6;
+
+        // *** END GENERATED CODE ***
+
+        #endregion
+
+        public override T BindDelegate<T>(CallSite<T> site, object[] args) {
+            if (args.Length <= MaxFastLateBoundInitArgs) {
+                CodeContext context = (CodeContext)args[0];
+                object inst = args[1];
+                PythonType instType = DynamicHelpers.GetPythonType(inst);
+
+                PythonTypeSlot delSlot;
+                PythonFunction initFunc = null;
+                string callTarget = null;
+                if (!instType.TryResolveSlot(context, Symbols.Unassign, out delSlot)        // we don't have fast code for classes w/ finalizers
+                    && !instType.IsMixedNewStyleOldStyle()) {                               // we also don't have fast code for mixed new-style/old-style classes
+
+                    if (IronPython.Modules.Builtin.isinstance(inst, _newType) &&
+                        NeedsInitCall((CodeContext)context, instType, args.Length)) {
+
+                        PythonTypeSlot init;
+                        instType.TryResolveSlot(context, Symbols.Init, out init);
+
+                        if (init is PythonFunction) {
+                            // we can do a fast bind                        
+                            callTarget = "CallTarget";
+                            initFunc = (PythonFunction)init;
+                        }
+                    } else {
+                        // we need no initialization, we can do a fast bind
+                        callTarget = "EmptyCallTarget";
+                    }
+                }
+
+                if (callTarget != null) {
+                    int genArgCount = args.Length - 2;
+                    PythonInvokeBinder binder = context.LanguageContext.Invoke(_signature.InsertArgument(Argument.Simple));
+                    if (genArgCount == 0) {
+                        FastInitSite fastSite = new FastInitSite(instType.Version, binder, initFunc);
+                        if (callTarget == "CallTarget") {
+                            return (T)(object)new Func<CallSite, CodeContext, object, object>(fastSite.CallTarget);
+                        } else {
+                            return (T)(object)new Func<CallSite, CodeContext, object, object>(fastSite.EmptyCallTarget);
+                        }
+
+                    } else {
+                        Type[] genArgs = ArrayUtils.ConvertAll(typeof(T).GetMethod("Invoke").GetParameters(), x => x.ParameterType);
+                        Type initSiteType;
+
+                        switch (args.Length - 2) {
+                            #region Generated Python Fast Init Switch
+
+                            // *** BEGIN GENERATED CODE ***
+                            // generated by function: gen_fast_init_switch from: generate_calls.py
+
+                            case 1: initSiteType = typeof(FastInitSite<>); break;
+                            case 2: initSiteType = typeof(FastInitSite<,>); break;
+                            case 3: initSiteType = typeof(FastInitSite<,,>); break;
+                            case 4: initSiteType = typeof(FastInitSite<,,,>); break;
+                            case 5: initSiteType = typeof(FastInitSite<,,,,>); break;
+
+                            // *** END GENERATED CODE ***
+
+                            #endregion
+
+                            default: throw new InvalidOperationException();
+                        }
+
+                        Type genType = initSiteType.MakeGenericType(ArrayUtils.ShiftLeft(genArgs, 3));
+                        object initSiteInst = Activator.CreateInstance(genType, instType.Version, binder, initFunc);
+                        return (T)(object)Delegate.CreateDelegate(typeof(T), initSiteInst, genType.GetMethod(callTarget));
+                    }
+                }
+            }
+
+            return base.BindDelegate(site, args);
+        }
+
+        class FastInitSite {
+            private readonly int _version;
+            private readonly PythonFunction _slot;
+            private readonly CallSite<Func<CallSite, CodeContext, PythonFunction, object, object>> _initSite;
+
+            public FastInitSite(int version, PythonInvokeBinder binder, PythonFunction target) {
+                _version = version;
+                _slot = target;
+                _initSite = CallSite<Func<CallSite, CodeContext, PythonFunction, object, object>>.Create(binder);
+            }
+
+            public object CallTarget(CallSite site, CodeContext context, object inst) {
+                IPythonObject pyObj = inst as IPythonObject;
+                if (pyObj != null && pyObj.PythonType.Version == _version) {
+                    _initSite.Target(_initSite, context, _slot, inst);
+                    return inst;
+                }
+
+                return ((CallSite<Func<CallSite, CodeContext, object, object>>)site).Update(site, context, inst);
+            }
+
+            public object EmptyCallTarget(CallSite site, CodeContext context, object inst) {
+                IPythonObject pyObj = inst as IPythonObject;
+                if ((pyObj != null && pyObj.PythonType.Version == _version) || DynamicHelpers.GetPythonType(inst).Version == _version) {
+                    return inst;
+                }
+
+                return ((CallSite<Func<CallSite, CodeContext, object, object>>)site).Update(site, context, inst);
+            }
+        }
+
+
+        #region Generated Python Fast Init Callers
+
+        // *** BEGIN GENERATED CODE ***
+        // generated by function: gen_fast_init_callers from: generate_calls.py
+
+
+        class FastInitSite<T0> {
+            private readonly int _version;
+            private readonly PythonFunction _slot;
+            private readonly CallSite<Func<CallSite, CodeContext, PythonFunction, object, T0, object>> _initSite;
+
+            public FastInitSite(int version, PythonInvokeBinder binder, PythonFunction target) {
+                _version = version;
+                _slot = target;
+                _initSite = CallSite<Func<CallSite, CodeContext, PythonFunction, object,  T0, object>>.Create(binder);
+            }
+
+            public object CallTarget(CallSite site, CodeContext context, object inst, T0 arg0) {
+                IPythonObject pyObj = inst as IPythonObject;
+                if (pyObj != null && pyObj.PythonType.Version == _version) {
+                    _initSite.Target(_initSite, context, _slot, inst, arg0);
+                    return inst;
+                }
+
+                return ((CallSite<Func<CallSite, CodeContext, object,  T0, object>>)site).Update(site, context, inst, arg0);
+            }
+
+            public object EmptyCallTarget(CallSite site, CodeContext context, object inst, T0 arg0) {
+                IPythonObject pyObj = inst as IPythonObject;
+                if ((pyObj != null && pyObj.PythonType.Version == _version) || DynamicHelpers.GetPythonType(inst).Version == _version) {
+                    return inst;
+                }
+
+                return ((CallSite<Func<CallSite, CodeContext, object,  T0, object>>)site).Update(site, context, inst, arg0);
+            }
+        }
+
+
+        class FastInitSite<T0, T1> {
+            private readonly int _version;
+            private readonly PythonFunction _slot;
+            private readonly CallSite<Func<CallSite, CodeContext, PythonFunction, object, T0, T1, object>> _initSite;
+
+            public FastInitSite(int version, PythonInvokeBinder binder, PythonFunction target) {
+                _version = version;
+                _slot = target;
+                _initSite = CallSite<Func<CallSite, CodeContext, PythonFunction, object,  T0, T1, object>>.Create(binder);
+            }
+
+            public object CallTarget(CallSite site, CodeContext context, object inst, T0 arg0, T1 arg1) {
+                IPythonObject pyObj = inst as IPythonObject;
+                if (pyObj != null && pyObj.PythonType.Version == _version) {
+                    _initSite.Target(_initSite, context, _slot, inst, arg0, arg1);
+                    return inst;
+                }
+
+                return ((CallSite<Func<CallSite, CodeContext, object,  T0, T1, object>>)site).Update(site, context, inst, arg0, arg1);
+            }
+
+            public object EmptyCallTarget(CallSite site, CodeContext context, object inst, T0 arg0, T1 arg1) {
+                IPythonObject pyObj = inst as IPythonObject;
+                if ((pyObj != null && pyObj.PythonType.Version == _version) || DynamicHelpers.GetPythonType(inst).Version == _version) {
+                    return inst;
+                }
+
+                return ((CallSite<Func<CallSite, CodeContext, object,  T0, T1, object>>)site).Update(site, context, inst, arg0, arg1);
+            }
+        }
+
+
+        class FastInitSite<T0, T1, T2> {
+            private readonly int _version;
+            private readonly PythonFunction _slot;
+            private readonly CallSite<Func<CallSite, CodeContext, PythonFunction, object, T0, T1, T2, object>> _initSite;
+
+            public FastInitSite(int version, PythonInvokeBinder binder, PythonFunction target) {
+                _version = version;
+                _slot = target;
+                _initSite = CallSite<Func<CallSite, CodeContext, PythonFunction, object,  T0, T1, T2, object>>.Create(binder);
+            }
+
+            public object CallTarget(CallSite site, CodeContext context, object inst, T0 arg0, T1 arg1, T2 arg2) {
+                IPythonObject pyObj = inst as IPythonObject;
+                if (pyObj != null && pyObj.PythonType.Version == _version) {
+                    _initSite.Target(_initSite, context, _slot, inst, arg0, arg1, arg2);
+                    return inst;
+                }
+
+                return ((CallSite<Func<CallSite, CodeContext, object,  T0, T1, T2, object>>)site).Update(site, context, inst, arg0, arg1, arg2);
+            }
+
+            public object EmptyCallTarget(CallSite site, CodeContext context, object inst, T0 arg0, T1 arg1, T2 arg2) {
+                IPythonObject pyObj = inst as IPythonObject;
+                if ((pyObj != null && pyObj.PythonType.Version == _version) || DynamicHelpers.GetPythonType(inst).Version == _version) {
+                    return inst;
+                }
+
+                return ((CallSite<Func<CallSite, CodeContext, object,  T0, T1, T2, object>>)site).Update(site, context, inst, arg0, arg1, arg2);
+            }
+        }
+
+
+        class FastInitSite<T0, T1, T2, T3> {
+            private readonly int _version;
+            private readonly PythonFunction _slot;
+            private readonly CallSite<Func<CallSite, CodeContext, PythonFunction, object, T0, T1, T2, T3, object>> _initSite;
+
+            public FastInitSite(int version, PythonInvokeBinder binder, PythonFunction target) {
+                _version = version;
+                _slot = target;
+                _initSite = CallSite<Func<CallSite, CodeContext, PythonFunction, object,  T0, T1, T2, T3, object>>.Create(binder);
+            }
+
+            public object CallTarget(CallSite site, CodeContext context, object inst, T0 arg0, T1 arg1, T2 arg2, T3 arg3) {
+                IPythonObject pyObj = inst as IPythonObject;
+                if (pyObj != null && pyObj.PythonType.Version == _version) {
+                    _initSite.Target(_initSite, context, _slot, inst, arg0, arg1, arg2, arg3);
+                    return inst;
+                }
+
+                return ((CallSite<Func<CallSite, CodeContext, object,  T0, T1, T2, T3, object>>)site).Update(site, context, inst, arg0, arg1, arg2, arg3);
+            }
+
+            public object EmptyCallTarget(CallSite site, CodeContext context, object inst, T0 arg0, T1 arg1, T2 arg2, T3 arg3) {
+                IPythonObject pyObj = inst as IPythonObject;
+                if ((pyObj != null && pyObj.PythonType.Version == _version) || DynamicHelpers.GetPythonType(inst).Version == _version) {
+                    return inst;
+                }
+
+                return ((CallSite<Func<CallSite, CodeContext, object,  T0, T1, T2, T3, object>>)site).Update(site, context, inst, arg0, arg1, arg2, arg3);
+            }
+        }
+
+
+        class FastInitSite<T0, T1, T2, T3, T4> {
+            private readonly int _version;
+            private readonly PythonFunction _slot;
+            private readonly CallSite<Func<CallSite, CodeContext, PythonFunction, object, T0, T1, T2, T3, T4, object>> _initSite;
+
+            public FastInitSite(int version, PythonInvokeBinder binder, PythonFunction target) {
+                _version = version;
+                _slot = target;
+                _initSite = CallSite<Func<CallSite, CodeContext, PythonFunction, object,  T0, T1, T2, T3, T4, object>>.Create(binder);
+            }
+
+            public object CallTarget(CallSite site, CodeContext context, object inst, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4) {
+                IPythonObject pyObj = inst as IPythonObject;
+                if (pyObj != null && pyObj.PythonType.Version == _version) {
+                    _initSite.Target(_initSite, context, _slot, inst, arg0, arg1, arg2, arg3, arg4);
+                    return inst;
+                }
+
+                return ((CallSite<Func<CallSite, CodeContext, object,  T0, T1, T2, T3, T4, object>>)site).Update(site, context, inst, arg0, arg1, arg2, arg3, arg4);
+            }
+
+            public object EmptyCallTarget(CallSite site, CodeContext context, object inst, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4) {
+                IPythonObject pyObj = inst as IPythonObject;
+                if ((pyObj != null && pyObj.PythonType.Version == _version) || DynamicHelpers.GetPythonType(inst).Version == _version) {
+                    return inst;
+                }
+
+                return ((CallSite<Func<CallSite, CodeContext, object,  T0, T1, T2, T3, T4, object>>)site).Update(site, context, inst, arg0, arg1, arg2, arg3, arg4);
+            }
+        }
+
+
+        // *** END GENERATED CODE ***
+
+        #endregion
+
+
+        private bool NeedsInitCall(CodeContext context, PythonType type, int argCount) {
+            if (!type.HasObjectInit(context) || type.IsMixedNewStyleOldStyle()) {
+                return true;
+            } else if (_newType.HasObjectNew(context)) {
+                return argCount > 0;
+            }
+
+            return false;
+        }
+
+        private DynamicExpression MakeDynamicInitInvoke(CodeContext context, DynamicMetaObject[] args, Expression initFunc, Expression codeContext) {
+            return Expression.Dynamic(
+                context.LanguageContext.Invoke(_signature),
+                typeof(object),
+                ArrayUtils.Insert(
+                    codeContext,
+                    initFunc,
+                    DynamicUtils.GetExpressions(args)
+                )
+            );
+        }
     }
 }

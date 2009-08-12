@@ -1,8 +1,8 @@
-﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="3.5">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>9.0.30729</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{EB66B766-6354-4208-A3D4-AACBDCB5C3B3}</ProjectGuid>
     <OutputType>Library</OutputType>
@@ -16,13 +16,13 @@
     <DocumentationFile>..\..\Bin\Release\Microsoft.Scripting.XML</DocumentationFile>
     <WarningsNotAsErrors>1685</WarningsNotAsErrors>
     <NoWarn>1591</NoWarn>
-    <OldToolsVersion>2.0</OldToolsVersion>
     <AssemblyOriginatorKeyFile>..\..\Support\MSSharedLibKey.snk</AssemblyOriginatorKeyFile>
     <SignAssembly Condition="'$(SignAssembly)' == '' And Exists('$(AssemblyOriginatorKeyFile)')">true</SignAssembly>
     <SignedSym Condition="'$(SignAssembly)' == 'true'">SIGNED</SignedSym>
     <DelaySign>true</DelaySign>
     <BaseAddress>857735168</BaseAddress>
-    <SilverlightPath Condition="$(SilverlightPath) == ''">..\..\Utilities\Silverlight\x86ret\</SilverlightPath>
+    <SilverlightPath Condition="'$(SilverlightPath)' == ''">..\..\Utilities\Silverlight\x86ret\</SilverlightPath>
+    <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FxCop|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -85,8 +85,8 @@
     <SilverlightBuild>true</SilverlightBuild>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="System" Condition=" $(SilverlightBuild) != 'true' " />
-    <Reference Include="System.Configuration" Condition=" $(SilverlightBuild) != 'true' " />
+    <Reference Include="System" Condition=" '$(SilverlightBuild)' != 'true' " />
+    <Reference Include="System.Configuration" Condition=" '$(SilverlightBuild)' != 'true' " />
     <Reference Include="mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" Condition=" '$(SilverlightBuild)' == 'true' ">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(SilverlightPath)\mscorlib.dll</HintPath>
@@ -96,8 +96,8 @@
       <HintPath>$(SilverlightPath)\System.dll</HintPath>
     </Reference>
     <Reference Include="System.Data" />
-    <Reference Include="System.Runtime.Remoting" Condition=" $(SilverlightBuild) != 'true' " />
-    <Reference Include="System.Xml" Condition=" $(SilverlightBuild) != 'true' " />
+    <Reference Include="System.Runtime.Remoting" Condition=" '$(SilverlightBuild)' != 'true' " />
+    <Reference Include="System.Xml" Condition=" '$(SilverlightBuild)' != 'true' " />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\Hosts\Silverlight\SilverlightVersion.cs" Condition=" '$(SilverlightBuild)' == 'true' ">
@@ -144,7 +144,6 @@
     <Compile Include="Actions\OperationBinder.cs" />
     <Compile Include="Actions\OperationMetaObject.cs" />
     <Compile Include="ArgumentTypeException.cs" />
-    <Compile Include="Ast\CodeContextExpression.cs" />
     <Compile Include="Ast\FinallyFlowControlExpression.cs" />
     <Compile Include="Ast\FlowControlRewriter.cs" />
     <Compile Include="Ast\SourceFileInformation.cs" />
@@ -210,11 +209,6 @@
     <Compile Include="Generation\Snippets.cs" />
     <Compile Include="Generation\TypeGen.cs" />
     <Compile Include="LanguageOptions.cs" />
-    <Compile Include="Math\MathResources.Designer.cs">
-      <DependentUpon>MathResources.resx</DependentUpon>
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-    </Compile>
     <Compile Include="Actions\BinderHelpers.cs" />
     <Compile Include="Actions\ComboActionRewriter.cs" />
     <Compile Include="Actions\ComboBinder.cs" />
@@ -242,6 +236,7 @@
     <Compile Include="PerfTrack.cs" />
     <Compile Include="Runtime\CompilerContext.cs" />
     <Compile Include="Runtime\DynamicLanguageProviderAttribute.cs" />
+    <Compile Include="Runtime\IConvertibleMetaObject.cs" />
     <Compile Include="Runtime\ICustomScriptCodeData.cs" />
     <Compile Include="Runtime\IRestrictedMetaObject.cs" />
     <Compile Include="Runtime\LegacyScriptCode.cs" />
@@ -353,7 +348,6 @@
     <Compile Include="Actions\NestedTypeTracker.cs" />
     <Compile Include="Actions\PropertyTracker.cs" />
     <Compile Include="Actions\ReflectedPropertyTracker.cs" />
-    <Compile Include="Actions\RuleBuilder.cs" />
     <Compile Include="Actions\TopNamespaceTracker.cs" />
     <Compile Include="Actions\TrackerTypes.cs" />
     <Compile Include="Actions\TypeGroup.cs" />
@@ -369,7 +363,6 @@
     <Compile Include="Runtime\BaseSymbolDictionary.cs" />
     <Compile Include="Runtime\BinderType.cs" />
     <Compile Include="Runtime\CallTargets.cs" />
-    <Compile Include="Runtime\CodeContext.cs" />
     <Compile Include="Runtime\ContextId.cs" />
     <Compile Include="Runtime\CustomSymbolDictionary.cs" />
     <Compile Include="Runtime\DlrCachedCodeAttribute.cs" />
@@ -403,7 +396,6 @@
     <Compile Include="Runtime\StaticExtensionMethodAttribute.cs" />
     <Compile Include="Runtime\SymbolDictionary.cs" />
     <Compile Include="Runtime\TransformDictEnumerator.cs" />
-    <Compile Include="Runtime\UnboundNameException.cs" />
     <Compile Include="Runtime\Uninitialized.cs" />
     <Compile Include="Utils\ArrayUtils.cs" />
     <Compile Include="Utils\AssemblyQualifiedTypeName.cs" />
@@ -447,13 +439,6 @@
       <Project>{8B0F1074-750E-4D64-BF23-A1E0F54261E5}</Project>
       <Name>Microsoft.Scripting.ExtensionAttribute</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Math\MathResources.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>MathResources.Designer.cs</LastGenOutput>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <Content Include="Microsoft.Scripting.txt" />

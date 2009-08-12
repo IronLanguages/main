@@ -639,5 +639,76 @@ to_ary
 ok
 ");
         }
+
+        public void ExceptionMapping1() {
+            TestOutput(@"
+class LoadError
+  def self.new message
+    ZeroDivisionError.new message
+  end
+end
+
+begin
+  require 'non-existent'
+rescue ZeroDivisionError
+  puts 'Caught ZeroDivisionError'
+end
+", @"
+Caught ZeroDivisionError
+");
+        }
+
+        public void ExceptionMapping2() {
+            TestOutput(@"
+class ZeroDivisionError
+  def self.new(message)
+    puts 'new ZeroDivError'
+    'not an exception'
+  end
+end
+
+module Any
+  def self.===(other)
+    puts ""?#{other.inspect}""
+    true
+  end
+end
+
+begin
+  1/0
+rescue Any
+  puts 'rescue'
+  p $!
+end
+
+puts 'Done'
+", @"
+new ZeroDivError
+?#<TypeError: exception object expected>
+rescue
+#<TypeError: exception object expected>
+Done
+");
+        }
+
+        public void ExceptionMapping3() {
+            TestOutput(@"
+class LoadError
+  def initialize *args
+    puts 'init'
+  end
+end
+
+begin
+  require 'non-existent'
+rescue LoadError
+  puts 'Caught LoadError'
+end
+", @"
+init
+Caught LoadError
+");
+        }
+
     }
 }

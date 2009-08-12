@@ -39,6 +39,11 @@ namespace IronPython.Runtime.Binding {
         #region IPythonInvokable Members
 
         public DynamicMetaObject/*!*/ Invoke(PythonInvokeBinder/*!*/ pythonInvoke, Expression/*!*/ codeContext, DynamicMetaObject/*!*/ target, DynamicMetaObject/*!*/[]/*!*/ args) {
+            DynamicMetaObject translated = BuiltinFunction.TranslateArguments(pythonInvoke, codeContext, target, args, false, Value.Name);
+            if (translated != null) {
+                return translated;
+            }
+
             return InvokeWorker(pythonInvoke, args, codeContext);
         }
 
@@ -47,6 +52,17 @@ namespace IronPython.Runtime.Binding {
         #region MetaObject Overrides
 
         public override DynamicMetaObject/*!*/ BindInvokeMember(InvokeMemberBinder/*!*/ action, DynamicMetaObject/*!*/[]/*!*/ args) {
+            foreach (PythonType pt in Value.ResolutionOrder) {
+                PythonTypeSlot dummy;
+                if (pt.IsSystemType) {
+                    return action.FallbackInvokeMember(this, args);
+                } else if (
+                    pt.TryResolveSlot(DefaultContext.DefaultCLS, SymbolTable.StringToId(action.Name), out dummy) ||
+                    pt.IsOldClass) {
+                    break;
+                }
+            }
+
             return BindingHelpers.GenericInvokeMember(action, null, this, args);
         }
 
@@ -134,7 +150,8 @@ namespace IronPython.Runtime.Binding {
                 BindingRestrictionsHelpers.GetRuntimeTypeRestriction(Expression, LimitType),
                 Value
             );
-            ArgumentValues ai = new ArgumentValues(BindingHelpers.GetCallSignature(call), self, args);
+            CallSignature sig = BindingHelpers.GetCallSignature(call);
+            ArgumentValues ai = new ArgumentValues(sig, self, args);
             NewAdapter newAdapter;
             InitAdapter initAdapter;
 
@@ -163,76 +180,89 @@ namespace IronPython.Runtime.Binding {
                 );                    
             }
 
-            // then get the statement for calling __init__
-            ParameterExpression allocatedInst = Ast.Variable(createExpr.GetLimitType(), "newInst");
-            Expression tmpRead = allocatedInst;
-            DynamicMetaObject initCall = initAdapter.MakeInitCall(
-                state.Binder,
-                new RestrictedMetaObject(
-                    AstUtils.Convert(allocatedInst, Value.UnderlyingSystemType),
-                    createExpr.Restrictions
-                )
-            );
-
-            List<Expression> body = new List<Expression>();
-            // then get the call to __del__ if we need one
-            if (HasFinalizer(call)) {
-                body.Add(
-                    Ast.Assign(allocatedInst, createExpr.Expression)
-                );
-                body.Add(
-                    GetFinalizerInitialization(call, allocatedInst)
-                );
-            }
-
-            // add the call to init if we need to
-            if (initCall.Expression != tmpRead) {
-                // init can fail but if __new__ returns a different type
-                // no exception is raised.
-                DynamicMetaObject initStmt = initCall;
-
-                if (body.Count == 0) {
-                    body.Add(
-                        Ast.Assign(allocatedInst, createExpr.Expression)
-                    );
-                }
-
-                if (!Value.UnderlyingSystemType.IsAssignableFrom(createExpr.Expression.Type)) {
-                    // return type of object, we need to check the return type before calling __init__.
-                    body.Add(
-                        AstUtils.IfThen(
-                            Ast.TypeIs(allocatedInst, Value.UnderlyingSystemType),
-                            initStmt.Expression
-                        )
-                    );
-                } else {
-                    // just call the __init__ method, no type check necessary (TODO: need null check?)
-                    body.Add(initStmt.Expression);
-                }
-            }
-
             Expression res;
-            // and build the target from everything we have
-            if (body.Count == 0) {
-                res = createExpr.Expression;
+            BindingRestrictions additionalRestrictions = BindingRestrictions.Empty;
+            if (!Value.IsSystemType && (!(newAdapter is DefaultNewAdapter) || HasFinalizer(call))) {
+                // we need to dynamically check the return value to see if it's a subtype of
+                // the type that we are calling.  If it is then we need to call __init__/__del__
+                // for the actual returned type.
+                res = Expression.Dynamic(
+                    Value.GetLateBoundInitBinder(sig),
+                    typeof(object),
+                    ArrayUtils.Insert(
+                        codeContext,
+                        Expression.Convert(createExpr.Expression, typeof(object)),
+                        DynamicUtils.GetExpressions(args)
+                    )
+                );
+                additionalRestrictions = createExpr.Restrictions;
             } else {
-                body.Add(allocatedInst);
-                res = Ast.Block(body);
+                // just call the __init__ method, built-in types currently have
+                // no wacky return values which don't return the derived type.
+
+                // then get the statement for calling __init__
+                ParameterExpression allocatedInst = Ast.Variable(createExpr.GetLimitType(), "newInst");
+                Expression tmpRead = allocatedInst;
+                DynamicMetaObject initCall = initAdapter.MakeInitCall(
+                    state.Binder,
+                    new RestrictedMetaObject(
+                        AstUtils.Convert(allocatedInst, Value.UnderlyingSystemType),
+                        createExpr.Restrictions
+                    )
+                );
+
+                List<Expression> body = new List<Expression>();
+                Debug.Assert(!HasFinalizer(call));
+
+                // add the call to init if we need to
+                if (initCall.Expression != tmpRead) {
+                    // init can fail but if __new__ returns a different type
+                    // no exception is raised.
+                    DynamicMetaObject initStmt = initCall;
+
+                    if (body.Count == 0) {
+                        body.Add(
+                            Ast.Assign(allocatedInst, createExpr.Expression)
+                        );
+                    }
+
+                    if (!Value.UnderlyingSystemType.IsAssignableFrom(createExpr.Expression.Type)) {
+                        // return type of object, we need to check the return type before calling __init__.
+                        body.Add(
+                            AstUtils.IfThen(
+                                Ast.TypeIs(allocatedInst, Value.UnderlyingSystemType),
+                                initStmt.Expression
+                            )
+                        );
+                    } else {
+                        // just call the __init__ method, no type check necessary (TODO: need null check?)
+                        body.Add(initStmt.Expression);
+                    }
+                }
+
+                // and build the target from everything we have
+                if (body.Count == 0) {
+                    res = createExpr.Expression;
+                } else {
+                    body.Add(allocatedInst);
+                    res = Ast.Block(body);
+                }
+                res = Ast.Block(new ParameterExpression[] { allocatedInst }, res);
+
+                additionalRestrictions = initCall.Restrictions;
             }
-            res = Ast.Block(new ParameterExpression[] { allocatedInst }, res);
 
             return BindingHelpers.AddDynamicTestAndDefer(
                 call,
                 new DynamicMetaObject(
                     res,
-                    self.Restrictions.Merge(initCall.Restrictions)
+                    self.Restrictions.Merge(additionalRestrictions)
                 ),
                 ArrayUtils.Insert(this, args),
                 valInfo
             );
         }
-
-
+        
         #endregion
 
         #region Adapter support
@@ -399,7 +429,7 @@ namespace IronPython.Runtime.Binding {
 
             public override DynamicMetaObject/*!*/ GetExpression(PythonBinder/*!*/ binder) {
                 PythonOverloadResolver resolver;
-                if (_creating.IsSystemType) {
+                if (_creating.IsSystemType || _creating.HasSystemCtor) {
                     resolver = new PythonOverloadResolver(binder, DynamicMetaObject.EmptyMetaObjects, new CallSignature(0), CodeContext);
                 } else {
                     resolver = new PythonOverloadResolver(binder, new[] { Arguments.Self }, new CallSignature(1), CodeContext);
@@ -420,7 +450,7 @@ namespace IronPython.Runtime.Binding {
             public override DynamicMetaObject/*!*/ GetExpression(PythonBinder/*!*/ binder) {
                 PythonOverloadResolver resolve;
 
-                if (_creating.IsSystemType) {
+                if (_creating.IsSystemType || _creating.HasSystemCtor) {
                     resolve = new PythonOverloadResolver(
                         binder, 
                         Arguments.Arguments, 
@@ -502,21 +532,19 @@ namespace IronPython.Runtime.Binding {
             protected DynamicMetaObject/*!*/ MakeDefaultInit(PythonBinder/*!*/ binder, DynamicMetaObject/*!*/ createExpr, Expression/*!*/ init) {
                 List<Expression> args = new List<Expression>();
                 args.Add(CodeContext);
-                args.Add(init);
+                args.Add(Expression.Convert(createExpr.Expression, typeof(object)));
                 foreach (DynamicMetaObject mo in Arguments.Arguments) {
                     args.Add(mo.Expression);
                 }
 
                 return new DynamicMetaObject(
-                    Ast.Dynamic(
-                        PythonContext.Invoke(
-                            Arguments.Signature
-                        ),
+                    Expression.Dynamic(
+                        ((PythonType)Arguments.Self.Value).GetLateBoundInitBinder(Arguments.Signature),
                         typeof(object),
-                        args
+                        args.ToArray()
                     ),
                     Arguments.Self.Restrictions.Merge(createExpr.Restrictions)
-                );
+                );                
             }
         }
 
@@ -610,10 +638,10 @@ namespace IronPython.Runtime.Binding {
                     // this is a type we can't create ANY instances of, give the user a half-way decent error message
                     message = "cannot create instances of " + Value.Name;
                 } else {
-                    message = "default __new__ does not take parameters";
+                    message = InstanceOps.ObjectNewNoParameters;
                 }
             } else {
-                message = "default __new__ does not take parameters";
+                message = InstanceOps.ObjectNewNoParameters;
             }
 
             return BindingHelpers.AddDynamicTestAndDefer(

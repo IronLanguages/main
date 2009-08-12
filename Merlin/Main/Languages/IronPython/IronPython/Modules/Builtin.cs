@@ -835,7 +835,7 @@ namespace IronPython.Modules {
                     if (name == Symbols.Class || name == Symbols.Builtins) continue;
 
                     object value;
-                    if (scope.TryGetName(name, out value)) {
+                    if (scope.TryGetVariable(name, out value)) {
                         help(context, doced, doc, indent + 1, value);
                     }
                 }
@@ -853,7 +853,7 @@ namespace IronPython.Modules {
                     doc.AppendLine();
                 }
 
-                IList<object> names = ((IMembersList)oldClass).GetMemberNames(context);
+                IList<object> names = ((IPythonMembersList)oldClass).GetMemberNames(context);
                 List sortNames = new List(names);
                 sortNames.sort(context);
                 names = sortNames;
@@ -1736,8 +1736,9 @@ namespace IronPython.Modules {
         /// 
         /// The method binder would usally report an OverflowError in this case.
         /// </summary>
-        public static List range(double stop) {
-            return range(GetRangeAsInt(stop, "stop"));
+        public static List range(CodeContext/*!*/ context, double stop) {
+            PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "range: integer argument expected, got float");
+            return range(GetRangeAsInt(stop, "end"));
         }
 
         /// <summary>
@@ -1745,12 +1746,13 @@ namespace IronPython.Modules {
         /// 
         /// The method binder would usally report an OverflowError in this case.
         /// </summary>
-        public static List range(double start, double stop, [DefaultParameterValue(1.0)]double step) {
-            return range(GetRangeAsInt(start, "start"), GetRangeAsInt(stop, "stop"), GetRangeAsInt(step, "step"));
+        public static List range(CodeContext/*!*/ context, double start, double stop, [DefaultParameterValue(1.0)]double step) {
+            PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "range: integer argument expected, got float");
+            return range(GetRangeAsInt(start, "start"), GetRangeAsInt(stop, "end"), GetRangeAsInt(step, "step"));
         }
 
         private static int GetRangeAsInt(double index, string name) {
-            if (index < Int32.MaxValue || index > Int32.MaxValue) {
+            if (index < Int32.MinValue || index > Int32.MaxValue) {
                 throw PythonOps.TypeError("expected integer for " + name + " argument, got float");
             }
             return (int)index;

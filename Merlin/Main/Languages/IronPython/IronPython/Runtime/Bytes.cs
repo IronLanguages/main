@@ -659,7 +659,7 @@ namespace IronPython.Runtime {
             );
         }
 
-        public virtual string/*!*/ __repr__(Microsoft.Scripting.Runtime.CodeContext context) {
+        public virtual string/*!*/ __repr__(CodeContext context) {
             return _bytes.BytesRepr();
         }
         

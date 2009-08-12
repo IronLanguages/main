@@ -32,14 +32,10 @@ using Microsoft.Scripting.Utils;
 using Ast = System.Linq.Expressions.Expression;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 using Microsoft.Scripting.Generation;
+using IronRuby.Runtime.Conversions;
 
 namespace IronRuby.Builtins {
     public sealed partial class RubyClass : RubyModule, IDuplicable {
-        /// <summary>
-        /// Visibility context within which all methods are visible.
-        /// </summary>
-        public const RubyClass IgnoreVisibility = null;
-
         public const string/*!*/ ClassSingletonName = "__ClassSingleton";
         public const string/*!*/ ClassSingletonSingletonName = "__ClassSingletonSingleton";
         public const string/*!*/ MainSingletonName = "__MainSingleton";
@@ -106,9 +102,15 @@ namespace IronRuby.Builtins {
         private CallSite<Func<CallSite, object, MutableString>> _stringConversionSite;
         private CallSite<Func<CallSite, object, object, object>> _eqlSite;
         private CallSite<Func<CallSite, object, object>> _hashSite;
+        private CallSite<Func<CallSite, object, object>> _toStringSite;
+        private CallSite<Func<CallSite, object, object, object>> _newSite;
 
         public CallSite<Func<CallSite, object, object>>/*!*/ InspectSite { 
             get { return RubyUtils.GetCallSite(ref _inspectSite, Context, "inspect", 0); } 
+        }
+
+        public CallSite<Func<CallSite, object, object, object>>/*!*/ NewSite {
+            get { return RubyUtils.GetCallSite(ref _newSite, Context, "new", 1); }
         }
         
         public CallSite<Func<CallSite, object, MutableString>>/*!*/ StringConversionSite {
@@ -126,6 +128,14 @@ namespace IronRuby.Builtins {
         internal CallSite<Func<CallSite, object, object>>/*!*/ GetHashCodeSite {
             get { 
                 return RubyUtils.GetCallSite(ref _hashSite, Context, "GetHashCode", 
+                    new RubyCallSignature(0, RubyCallFlags.HasImplicitSelf | RubyCallFlags.IsVirtualCall)
+                );
+            }
+        }
+
+        public CallSite<Func<CallSite, object, object>>/*!*/ ToStringSite {
+            get {
+                return RubyUtils.GetCallSite(ref _toStringSite, Context, "ToString",
                     new RubyCallSignature(0, RubyCallFlags.HasImplicitSelf | RubyCallFlags.IsVirtualCall)
                 );
             }
@@ -246,7 +256,7 @@ namespace IronRuby.Builtins {
                 Interlocked.Exchange(ref _underlyingSystemType, 
                     RubyTypeDispenser.GetOrCreateType(
                         _superClass.GetUnderlyingSystemType(), 
-                        GetClrInterfaces(),
+                        GetImplementedInterfaces(),
                         _superClass != null && (_superClass.Restrictions & ModuleRestrictions.NoOverrides) != 0
                     )
                 );
@@ -641,7 +651,7 @@ namespace IronRuby.Builtins {
 
         internal RubyMemberInfo ResolveMethodMissingForSite(string/*!*/ name, RubyMethodVisibility incompatibleVisibility) {
             Context.RequiresClassHierarchyLock();
-            var methodMissing = ResolveMethodForSiteNoLock(Symbols.MethodMissing, null);
+            var methodMissing = ResolveMethodForSiteNoLock(Symbols.MethodMissing, VisibilityContext.AllVisible);
             if (incompatibleVisibility == RubyMethodVisibility.None) {
                 methodMissing.InvalidateSitesOnMissingMethodAddition(name, Context);
             }
@@ -737,18 +747,25 @@ namespace IronRuby.Builtins {
             }
 
             string operatorName;
-            if (!_isSingletonClass && (operatorName = RubyUtils.MapOperator(name)) != null) {
+            if (tryUnmangle && !_isSingletonClass && (operatorName = RubyUtils.MapOperator(name)) != null) {
                 // instance invocation of an operator:
                 if (TryGetClrMethod(type, basicBindingFlags | BindingFlags.Static, true, name, null, operatorName, null, out method)) {
                     return true;
                 }
-            } else if (name == "[]" || name == "[]=") {
-                object[] attrs = type.GetCustomAttributes(typeof(DefaultMemberAttribute), false);
-                if (attrs.Length == 1) {
-                    // default indexer accessor:
+            } else if (tryUnmangle && (name == "[]" || name == "[]=")) {
+                if (type.IsArray && !_isSingletonClass) {
                     bool isSetter = name.Length == 3;
-                    if (TryGetClrProperty(type, bindingFlags, isSetter, name, ((DefaultMemberAttribute)attrs[0]).MemberName, null, out method)) {
-                        return true;
+                    TryGetClrMethod(type, bindingFlags, false, name, null, isSetter ? "Set" : "Get", null, out method);
+                    Debug.Assert(method != null);
+                    return true;
+                } else {
+                    object[] attrs = type.GetCustomAttributes(typeof(DefaultMemberAttribute), false);
+                    if (attrs.Length == 1) {
+                        // default indexer accessor:
+                        bool isSetter = name.Length == 3;
+                        if (TryGetClrProperty(type, bindingFlags, isSetter, name, ((DefaultMemberAttribute)attrs[0]).MemberName, null, out method)) {
+                            return true;
+                        }
                     }
                 }
             } else if (name.LastCharacter() == '=') {
@@ -1158,7 +1175,6 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-
         #region Dynamic operations
 
         /// <summary>
@@ -1208,7 +1224,7 @@ namespace IronRuby.Builtins {
                 // check version of the class so that we invalidate the rule whenever the initializer changes:
                 metaBuilder.AddVersionTest(this);
 
-                initializer = ResolveMethodForSiteNoLock(Symbols.Initialize, IgnoreVisibility).Info;
+                initializer = ResolveMethodForSiteNoLock(Symbols.Initialize, VisibilityContext.AllVisible).Info;
 
                 // Initializer resolves to Object#initializer unless overridden in a derived class.
                 // We ensure that this method cannot be removed.
@@ -1216,7 +1232,7 @@ namespace IronRuby.Builtins {
             }
 
             bool hasRubyInitializer = initializer is RubyMethodInfo;
-            bool hasLibraryInitializer = !hasRubyInitializer && initializer.DeclaringModule != Context.ObjectClass;
+            bool hasLibraryInitializer = !hasRubyInitializer && initializer.DeclaringModule != Context.ObjectClass && initializer is RubyLibraryMethodInfo;
 
             if (hasRubyInitializer || hasLibraryInitializer && _isRubyClass) {
                 // allocate and initialize:
@@ -1246,7 +1262,7 @@ namespace IronRuby.Builtins {
                     BuildDelegateConstructorCall(metaBuilder, args, type);
                     return;
                 } else if (type.IsArray && type.GetArrayRank() == 1) {
-                    constructionOverloads = ClrVectorFactories;
+                    constructionOverloads = GetClrVectorFactories();
                 } else if (_structInfo != null) {
                     constructionOverloads = new MethodBase[] { Methods.CreateStructInstance };
                 } else if (_factories.Length != 0) {
@@ -1270,11 +1286,18 @@ namespace IronRuby.Builtins {
 
                 RubyMethodGroupInfo.BuildCallNoFlow(metaBuilder, args, methodName, constructionOverloads, callConvention, implicitProtocolConversions);
 
-                // we need to handle break, which unwinds to a proc-converter that could be this method's frame:
                 if (!metaBuilder.Error) {
+                    metaBuilder.Result = MarkNewException(metaBuilder.Result);
+
+                    // we need to handle break, which unwinds to a proc-converter that could be this method's frame:
                     metaBuilder.ControlFlowBuilder = RubyMethodGroupInfo.RuleControlFlowBuilder;
                 }
             }
+        }
+
+        private Expression/*!*/ MarkNewException(Expression/*!*/ expression) {
+            // mark the exception as "Ruby created" so that "new" is not called again on its class when handled in rescue clause:
+            return IsException() ? Methods.MarkException.OpCall(AstUtils.Convert(expression, typeof(Exception))) : expression;
         }
 
         private static void BuildOverriddenInitializerCall(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, RubyMemberInfo/*!*/ initializer) {
@@ -1293,8 +1316,11 @@ namespace IronRuby.Builtins {
             } else {
                 // TODO: we need more refactoring of RubyMethodGroupInfo.BuildCall to be able to inline this:
                 metaBuilder.Result = Ast.Dynamic(
-                    RubyCallAction.Make(args.RubyContext, "initialize", 
-                        new RubyCallSignature(args.Signature.ArgumentCount, args.Signature.Flags | RubyCallFlags.HasImplicitSelf)
+                    RubyCallAction.Make(args.RubyContext, "initialize",
+                        new RubyCallSignature(
+                            args.Signature.ArgumentCount, 
+                            (args.Signature.Flags & ~RubyCallFlags.IsInteropCall) | RubyCallFlags.HasImplicitSelf
+                        )
                     ),
                     typeof(object),
                     args.GetCallSiteArguments(instanceVariable)
@@ -1316,45 +1342,52 @@ namespace IronRuby.Builtins {
         }
 
         public bool BuildAllocatorCall(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, Func<Expression>/*!*/ defaultExceptionMessage) {
+            var newExpression = GetAllocatorNewExpression(args, defaultExceptionMessage);
+            if (newExpression != null) {
+                metaBuilder.Result = MarkNewException(newExpression);
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        private Expression GetAllocatorNewExpression(CallArguments/*!*/ args, Func<Expression>/*!*/ defaultExceptionMessage) {
             Type type = GetUnderlyingSystemType();
 
+            if (type == typeof(object)) {
+                type = typeof(RubyObject);
+            }
+
             if (_structInfo != null) {
-                metaBuilder.Result = Methods.AllocateStructInstance.OpCall(AstUtils.Convert(args.TargetExpression, typeof(RubyClass)));
-                return true;
+                return Methods.AllocateStructInstance.OpCall(AstUtils.Convert(args.TargetExpression, typeof(RubyClass)));
             }
 
             ConstructorInfo ctor;
             if (IsException()) {
                 if ((ctor = type.GetConstructor(new[] { typeof(string) })) != null) {
-                    metaBuilder.Result = Ast.New(ctor, defaultExceptionMessage());
-                    return true;
+                    return Ast.New(ctor, defaultExceptionMessage());
                 } else if ((ctor = type.GetConstructor(new[] { typeof(string), typeof(Exception) })) != null) {
-                    metaBuilder.Result = Ast.New(ctor, defaultExceptionMessage(), AstUtils.Constant(null));
-                    return true;
+                    return Ast.New(ctor, defaultExceptionMessage(), AstUtils.Constant(null));
                 }
             }
 
             if ((ctor = type.GetConstructor(new[] { typeof(RubyClass) })) != null) {
-                metaBuilder.Result = Ast.New(ctor, AstUtils.Convert(args.TargetExpression, typeof(RubyClass)));
-                return true;
+                return Ast.New(ctor, AstUtils.Convert(args.TargetExpression, typeof(RubyClass)));
             }
 
             if ((ctor = type.GetConstructor(new[] { typeof(RubyContext) })) != null) {
-                metaBuilder.Result = Ast.New(ctor, AstUtils.Convert(args.MetaContext.Expression, typeof(RubyContext)));
-                return true;
+                return Ast.New(ctor, AstUtils.Convert(args.MetaContext.Expression, typeof(RubyContext)));
             }
 
             if ((ctor = type.GetConstructor(Type.EmptyTypes)) != null) {
-                metaBuilder.Result = Ast.New(ctor);
-                return true;
+                return Ast.New(ctor);
             }
 
             if (type.IsValueType && type != typeof(int) && type != typeof(double)) {
-                metaBuilder.Result = Ast.New(type);
-                return true;
+                return Ast.New(type);
             }
 
-            return false;
+            return null;
         }
 
         private void BuildDelegateConstructorCall(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, Type/*!*/ type) {
@@ -1376,16 +1409,19 @@ namespace IronRuby.Builtins {
             }
         }
 
-        private MethodBase/*!*/[]/*!*/ ClrVectorFactories {
-            get {
-                if (_clrVectorFactories == null) {
-                    _clrVectorFactories = new[] { Methods.CreateVector, Methods.CreateVectorWithValues };
-                }
-                return _clrVectorFactories;
+        private MethodBase/*!*/[]/*!*/ GetClrVectorFactories() {
+            if (_clrVectorFactories == null) {
+                Type elementType = GetUnderlyingSystemType().GetElementType();
+                _clrVectorFactories = new[] { 
+                    Methods.CreateVector.MakeGenericMethod(elementType), 
+                    Methods.CreateVectorWithValues.MakeGenericMethod(elementType) 
+                };
             }
+            return _clrVectorFactories;
         }
 
-        private static MethodBase[] _clrVectorFactories;
+        // thread-safe (the latest write wins):
+        private MethodBase[] _clrVectorFactories;
 
         #endregion
     }

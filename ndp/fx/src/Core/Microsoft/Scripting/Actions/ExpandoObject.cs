@@ -21,6 +21,10 @@ using System.Dynamic.Utils;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 
+#if SILVERLIGHT
+using System.Core;
+#endif
+
 namespace System.Dynamic {
     /// <summary>
     /// Represents an object with members that can be dynamically added and removed at runtime.

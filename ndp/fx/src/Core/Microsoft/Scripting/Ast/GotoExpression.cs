@@ -16,6 +16,10 @@
 using System.Diagnostics;
 using System.Dynamic.Utils;
 
+#if SILVERLIGHT
+using System.Core;
+#endif
+
 namespace System.Linq.Expressions {
     /// <summary>
     /// Specifies what kind of jump this <see cref="GotoExpression"/> represents.

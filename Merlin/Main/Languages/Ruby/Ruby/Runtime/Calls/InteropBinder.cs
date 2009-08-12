@@ -24,6 +24,7 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using Ast = System.Linq.Expressions.Expression;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
+using IronRuby.Runtime.Conversions;
 
 namespace IronRuby.Runtime.Calls {
     internal interface IInteropBinder {
@@ -248,7 +249,7 @@ namespace IronRuby.Runtime.Calls {
                 Func<DynamicMetaObject, DynamicMetaObject[], DynamicMetaObject>/*!*/ fallback) {
                 Debug.Assert(fallback != null);
 
-                var callArgs = new CallArguments(context, target, args, RubyCallSignature.WithImplicitSelf(callInfo.ArgumentCount));
+                var callArgs = new CallArguments(context, target, args, RubyCallSignature.Interop(callInfo.ArgumentCount));
                 var metaBuilder = new MetaObjectBuilder(target, args);
 
                 if (!RubyCallAction.BuildCall(metaBuilder, methodName, callArgs, false, false)) {
@@ -301,7 +302,7 @@ namespace IronRuby.Runtime.Calls {
                 Func<DynamicMetaObject, DynamicMetaObject>/*!*/ fallback) {
                 Debug.Assert(fallback != null);
 
-                var callArgs = new CallArguments(context, target, DynamicMetaObject.EmptyMetaObjects, RubyCallSignature.WithImplicitSelf(0));
+                var callArgs = new CallArguments(context, target, DynamicMetaObject.EmptyMetaObjects, RubyCallSignature.Interop(0));
                 var metaBuilder = new MetaObjectBuilder(target);
 
                 if (!RubyCallAction.BuildAccess(metaBuilder, binder.Name, callArgs, false, false)) {
@@ -357,7 +358,7 @@ namespace IronRuby.Runtime.Calls {
                 Debug.Assert(fallback != null);
 
                 var args = new[] { value };
-                var callArgs = new CallArguments(context, target, args, RubyCallSignature.WithImplicitSelf(1));
+                var callArgs = new CallArguments(context, target, args, RubyCallSignature.Interop(1));
                 var metaBuilder = new MetaObjectBuilder(target, args);
 
                 if (!RubyCallAction.BuildCall(metaBuilder, binder.Name + "=", callArgs, false, false)) {
@@ -414,7 +415,7 @@ namespace IronRuby.Runtime.Calls {
                 Func<DynamicMetaObject, DynamicMetaObject[], DynamicMetaObject>/*!*/ fallback) {
                 Debug.Assert(fallback != null);
                 
-                var callArgs = new CallArguments(context, target, indexes, RubyCallSignature.WithImplicitSelf(indexes.Length));
+                var callArgs = new CallArguments(context, target, indexes, RubyCallSignature.Interop(indexes.Length));
                 var metaBuilder = new MetaObjectBuilder(target, indexes);
 
                 if (!RubyCallAction.BuildCall(metaBuilder, "[]", callArgs, false, false)) {
@@ -472,7 +473,7 @@ namespace IronRuby.Runtime.Calls {
 
                 var args = ArrayUtils.Append(indexes, value);
                 var callArgs = new CallArguments(context, target, args,
-                    new RubyCallSignature(indexes.Length, RubyCallFlags.HasImplicitSelf | RubyCallFlags.HasRhsArgument)
+                    new RubyCallSignature(indexes.Length, RubyCallFlags.IsInteropCall | RubyCallFlags.HasRhsArgument)
                 );
 
                 var metaBuilder = new MetaObjectBuilder(target, args);
@@ -586,14 +587,15 @@ namespace IronRuby.Runtime.Calls {
                     return result;
                 }
 #endif
+                var metaBuilder = new MetaObjectBuilder(this, target, DynamicMetaObject.EmptyMetaObjects);
 
-                // TODO:
-                return errorSuggestion ?? new DynamicMetaObject(
-                    Expression.Throw(Methods.MakeTypeConversionError.OpCall(
-                        AstUtils.Constant(_context), AstUtils.Convert(target.Expression, typeof(object)), Ast.Constant(ReturnType)
-                    ), ReturnType),
-                    target.Restrictions
-                );
+                if (!GenericConversionAction.BuildConversion(metaBuilder, target, Ast.Constant(_context), Type, errorSuggestion == null)) {
+                    Debug.Assert(errorSuggestion != null);
+                    // no conversion applicable so we didn't do any operation with arguments that would require restrictions converted to conditions:
+                    metaBuilder.SetMetaResult(errorSuggestion, false);
+                }
+
+                return metaBuilder.CreateMetaObject(this);
             }
 
             public override string/*!*/ ToString() {

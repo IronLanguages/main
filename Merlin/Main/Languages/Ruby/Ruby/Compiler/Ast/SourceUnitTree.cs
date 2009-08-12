@@ -25,6 +25,7 @@ using Microsoft.Scripting.Utils;
 using IronRuby.Builtins;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
+using IronRuby.Runtime.Conversions;
 using MSA = System.Linq.Expressions;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
@@ -96,10 +97,6 @@ namespace IronRuby.Compiler.Ast {
                 blockParameter = null;
             }
 
-            if (_statements.Count == 0) {
-                return Ast.Lambda<T>(AstUtils.Constant(null), parameters);
-            }
-
             gen.EnterSourceUnit(
                 scope,
                 selfVariable,
@@ -111,31 +108,36 @@ namespace IronRuby.Compiler.Ast {
 
             MSA.Expression body;
 
-            if (gen.PrintInteractiveResult) {
-                var resultVariable = scope.DefineHiddenVariable("#result", typeof(object));
 
-                var epilogue = Methods.PrintInteractiveResult.OpCall(runtimeScopeVariable,
-                    Ast.Dynamic(ConvertToSAction.Make(gen.Context), typeof(MutableString),
-                        CallBuilder.InvokeMethod(gen.Context, "inspect", RubyCallSignature.WithScope(0),
-                            gen.CurrentScopeVariable, resultVariable
+            if (_statements.Count > 0) {
+                if (gen.PrintInteractiveResult) {
+                    var resultVariable = scope.DefineHiddenVariable("#result", typeof(object));
+
+                    var epilogue = Methods.PrintInteractiveResult.OpCall(runtimeScopeVariable,
+                        Ast.Dynamic(ConvertToSAction.Make(gen.Context), typeof(MutableString),
+                            CallBuilder.InvokeMethod(gen.Context, "inspect", RubyCallSignature.WithScope(0),
+                                gen.CurrentScopeVariable, resultVariable
+                            )
                         )
-                    )
+                    );
+
+                    body = gen.TransformStatements(null, _statements, epilogue, ResultOperation.Store(resultVariable));
+                } else {
+                    body = gen.TransformStatements(_statements, ResultOperation.Return);
+                }
+
+                // TODO:
+                var exceptionVariable = Ast.Parameter(typeof(Exception), "#exception");
+                body = AstUtils.Try(
+                    body
+                ).Filter(exceptionVariable, Methods.TraceTopLevelCodeFrame.OpCall(runtimeScopeVariable, exceptionVariable),
+                    Ast.Empty()
+                ).Finally(
+                    LeaveInterpretedFrameExpression.Instance
                 );
-
-                body = gen.TransformStatements(null, _statements, epilogue, ResultOperation.Store(resultVariable));
             } else {
-                body = gen.TransformStatements(_statements, ResultOperation.Return);
+                body = AstUtils.Constant(null);
             }
-
-            // TODO:
-            var exceptionVariable = Ast.Parameter(typeof(Exception), "#exception");
-            body = AstUtils.Try(
-                body
-            ).Filter(exceptionVariable, Methods.TraceTopLevelCodeFrame.OpCall(runtimeScopeVariable, exceptionVariable),
-                Ast.Empty()
-            ).Finally(
-                LeaveInterpretedFrameExpression.Instance
-            );
 
             // scope initialization:
             MSA.Expression prologue;

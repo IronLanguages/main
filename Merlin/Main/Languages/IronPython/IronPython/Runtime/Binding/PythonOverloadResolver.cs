@@ -29,7 +29,7 @@ using System.Collections;
 namespace IronPython.Runtime.Binding {
     internal sealed class PythonOverloadResolverFactory : OverloadResolverFactory {
         private readonly PythonBinder/*!*/ _binder;
-        private readonly Expression/*!*/ _codeContext;
+        internal readonly Expression/*!*/ _codeContext;
 
         public PythonOverloadResolverFactory(PythonBinder/*!*/ binder, Expression/*!*/ codeContext) {
             Assert.NotNull(binder, codeContext);
@@ -75,7 +75,7 @@ namespace IronPython.Runtime.Binding {
             }
         }
 
-        public override bool CanConvertFrom(Type fromType, ParameterWrapper toParameter, NarrowingLevel level) {
+        public override bool CanConvertFrom(Type fromType, DynamicMetaObject fromArg, ParameterWrapper toParameter, NarrowingLevel level) {
             if ((fromType == typeof(List) || fromType.IsSubclassOf(typeof(List)))) {
                 if (toParameter.Type.IsGenericType &&
                     toParameter.Type.GetGenericTypeDefinition() == typeof(IList<>) &&
@@ -98,7 +98,7 @@ namespace IronPython.Runtime.Binding {
                 }
             }
 
-            return base.CanConvertFrom(fromType, toParameter, level);
+            return base.CanConvertFrom(fromType, fromArg, toParameter, level);
         }
 
         protected override BitArray MapSpecialParameters(ParameterMapping/*!*/ mapping) {
@@ -137,7 +137,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         public override Expression Convert(DynamicMetaObject metaObject, Type restrictedType, ParameterInfo info, Type toType) {
-            return Binder.ConvertExpression(metaObject.Expression, toType, ConversionResultKind.ExplicitCast, _context);
+            return Binder.ConvertExpression(metaObject.Expression, toType, ConversionResultKind.ExplicitCast, new PythonOverloadResolverFactory(Binder, _context));
         }
 
         public override Expression GetDynamicConversion(Expression value, Type type) {

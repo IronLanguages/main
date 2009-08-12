@@ -14,24 +14,20 @@
  * ***************************************************************************/
 
 using System;
+using System.Diagnostics;
 using System.IO;
-using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
+using System.Runtime.InteropServices;
 using System.Security;
 using IronRuby.Builtins;
-using IronRuby.Compiler;
-using System.Runtime.InteropServices;
-using System.Net.Sockets;
-using System.Runtime.CompilerServices;
-using IronRuby.Runtime.Calls;
-using System.Diagnostics;
+using Microsoft.Scripting.Utils;
 
 namespace IronRuby.Runtime {
     /// <summary>
     /// Helper class for creating the corresponding .NET exceptions from the Ruby error names
     /// </summary>
     public static class RubyExceptions {
+        #region TypeError (InvalidOperationException)
+
         public static Exception/*!*/ CreateTypeError(string/*!*/ message) {
             return new InvalidOperationException(message);
         }
@@ -58,13 +54,6 @@ namespace IronRuby.Runtime {
             return CreateTypeConversionError(context.GetClassName(param), toType);
         }
 
-        public static Exception/*!*/ MethodShouldReturnType(RubyContext/*!*/ context, object param, string/*!*/ method, string/*!*/ targetType) {
-            Assert.NotNull(context, method, targetType);
-            return new InvalidOperationException(String.Format("{0}#{1} should return {2}",
-                context.GetClassName(param), method, targetType
-            ));
-        }
-
         public static Exception/*!*/ CreateAllocatorUndefinedError(RubyClass/*!*/ rubyClass) {
             return CreateTypeError(String.Format("allocator undefined for {0}", rubyClass.Name));
         }
@@ -85,6 +74,33 @@ namespace IronRuby.Runtime {
             ));
         }
 
+        public static Exception/*!*/ MakeCoercionError(RubyContext/*!*/ context, object self, object other) {
+            string selfClass = context.GetClassOf(self).Name;
+            string otherClass = context.GetClassOf(other).Name;
+            return CreateTypeError(String.Format("{0} can't be coerced into {1}", selfClass, otherClass));
+        }
+
+        public static Exception/*!*/ CreateReturnTypeError(string/*!*/ className, string/*!*/ methodName, string/*!*/ returnTypeName) {
+            return CreateTypeError(String.Format("{0}#{1} should return {2}", className, methodName, returnTypeName));
+        }
+
+        #endregion
+
+        #region NameError (MemberAccessException)
+
+        public static Exception/*!*/ CreateNameError(string/*!*/ message) {
+            return new MemberAccessException(message);
+        }
+
+        public static Exception/*!*/ CreateUndefinedMethodError(RubyModule/*!*/ module, string/*!*/ methodName) {
+            return CreateNameError(String.Format("undefined method `{0}' for {2} `{1}'",
+                methodName, module.Name, module.IsClass ? "class" : "module"));
+        }
+
+        #endregion
+
+        #region ArgumentError (ArgumentException)
+
         public static Exception/*!*/ CreateArgumentError(string/*!*/ message) {
             return new ArgumentException(message);
         }
@@ -92,6 +108,60 @@ namespace IronRuby.Runtime {
         public static Exception/*!*/ CreateArgumentError(string/*!*/ message, Exception innerException) {
             return new ArgumentException(message, innerException);
         }
+
+        public static Exception/*!*/ InvalidValueForType(RubyContext/*!*/ context, object obj, string type) {
+            return CreateArgumentError(String.Format("invalid value for {0}: {1}", type, context.Inspect(obj)));
+        }
+
+        public static Exception/*!*/ MakeComparisonError(RubyContext/*!*/ context, object self, object other) {
+            string selfClass = context.GetClassOf(self).Name;
+            string otherClass = context.GetClassOf(other).Name;
+            return CreateArgumentError(String.Format("comparison of {0} with {1} failed", selfClass, otherClass));
+        }
+
+        #endregion
+
+        #region MissingMethodException
+
+        private static Exception/*!*/ CreateMethodMissing(string/*!*/ message) {
+            return new MissingMethodException(message);
+        }
+
+        public static Exception/*!*/ CreateMethodMissing(RubyContext/*!*/ context, object self, string/*!*/ name) {
+            return CreateMethodMissing(FormatMethodMissingMessage(context, self, name));
+        }
+
+        public static Exception/*!*/ CreatePrivateMethodCalled(RubyContext/*!*/ context, object self, string/*!*/ name) {
+            return CreateMethodMissing(FormatMethodMissingMessage(context, self, name, "private method `{0}' called for {1}"));
+        }
+
+        public static Exception/*!*/ CreateProtectedMethodCalled(RubyContext/*!*/ context, object self, string/*!*/ name) {
+            return CreateMethodMissing(FormatMethodMissingMessage(context, self, name, "protected method `{0}' called for {1}"));
+        }
+
+        public static string/*!*/ FormatMethodMissingMessage(RubyContext/*!*/ context, object self, string/*!*/ name) {
+            return FormatMethodMissingMessage(context, self, name, "undefined method `{0}' for {1}");
+        }
+
+        internal static string/*!*/ FormatMethodMissingMessage(RubyContext/*!*/ context, object self, string/*!*/ name, string/*!*/ message) {
+            Assert.NotNull(name);
+            string strObject = context.InspectEnsuringClassName(self);
+            return String.Format(message, name, strObject);
+        }
+
+        #endregion
+
+        #region LoadError
+
+        public static Exception/*!*/ CreateLoadError(Exception/*!*/ innerException) {
+            return new LoadError(innerException.Message, innerException);
+        }
+
+        public static Exception/*!*/ CreateLoadError(string/*!*/ message) {
+            return new LoadError(message);
+        }
+
+        #endregion
 
         public static Exception/*!*/ CreateNotImplementedError(string/*!*/ message) {
             return new NotImplementedError(message);
@@ -113,10 +183,6 @@ namespace IronRuby.Runtime {
             return new ArgumentOutOfRangeException(String.Empty, message);
         }
 
-        public static Exception/*!*/ CreateNameError(string/*!*/ message) {
-            return new MemberAccessException(message);
-        }
-
         public static Exception/*!*/ CreateLocalJumpError(string/*!*/ message) {
             return new LocalJumpError(message);
         }
@@ -124,7 +190,7 @@ namespace IronRuby.Runtime {
         public static Exception/*!*/ NoBlockGiven() {
             return new LocalJumpError("no block given");
         }
-        
+
         public static Exception/*!*/ CreateIOError(string/*!*/ message) {
             return new IOException(message);
         }
@@ -133,56 +199,68 @@ namespace IronRuby.Runtime {
             return new ExternalException(message);
         }
 
-        public static Exception/*!*/ InvalidValueForType(RubyContext/*!*/ context, object obj, string type) {
-            return CreateArgumentError(String.Format("invalid value for {0}: {1}", type, context.Inspect(obj)));
-        }
-
-        public static Exception/*!*/ CreateUndefinedMethodError(RubyModule/*!*/ module, string/*!*/ methodName) {
-            return RubyExceptions.CreateNameError(String.Format("undefined method `{0}' for {2} `{1}'",
-                methodName, module.Name, module.IsClass ? "class" : "module"));
-        }
-
-        public static Exception/*!*/ MakeCoercionError(RubyContext/*!*/ context, object self, object other) {
-            string selfClass = context.GetClassOf(self).Name;
-            string otherClass = context.GetClassOf(other).Name;
-            return RubyExceptions.CreateTypeError(String.Format("{0} can't be coerced into {1}", selfClass, otherClass));
-        }
-
-        public static Exception/*!*/ MakeComparisonError(RubyContext/*!*/ context, object self, object other) {
-            string selfClass = context.GetClassOf(self).Name;
-            string otherClass = context.GetClassOf(other).Name;
-            return RubyExceptions.CreateArgumentError(String.Format("comparison of {0} with {1} failed", selfClass, otherClass));
-        }
-
         public static Exception/*!*/ CreateSecurityError(string/*!*/ message) {
             throw new SecurityException(message);
         }
 
-        public static string/*!*/ FormatMethodMissingMessage(RubyContext/*!*/ context, object self, string/*!*/ name) {
-            return FormatMethodMissingMessage(context, self, name, "undefined method `{0}' for {1}");
-        }
-
-        internal static string/*!*/ FormatMethodMissingMessage(RubyContext/*!*/ context, object self, string/*!*/ name, string/*!*/ message) {
-            Assert.NotNull(name);
-            string strObject = context.InspectEnsuringClassName(self);
-            return String.Format(message, name, strObject);
-        }
-
-        public static Exception/*!*/ CreateMethodMissing(RubyContext/*!*/ context, object self, string/*!*/ name) {
-            return new MissingMethodException(FormatMethodMissingMessage(context, self, name));
-        }
-
-        public static Exception/*!*/ CreatePrivateMethodCalled(RubyContext/*!*/ context, object self, string/*!*/ name) {
-            return new MissingMethodException(FormatMethodMissingMessage(context, self, name, "private method `{0}' called for {1}"));
-        }
-
-        public static Exception/*!*/ CreateProtectedMethodCalled(RubyContext/*!*/ context, object self, string/*!*/ name) {
-            return new MissingMethodException(FormatMethodMissingMessage(context, self, name, "protected method `{0}' called for {1}"));
-        }
-
         public static Exception/*!*/ CreateEncodingCompatibilityError(RubyEncoding/*!*/ encoding1, RubyEncoding/*!*/ encoding2) {
-            return new EncodingCompatibilityError(String.Format("incompatible character encodings: {0}{1} and {2}{3}",
-                encoding1.Name, encoding1.IsKCoding ? " (KCODE)" : null, encoding2.Name, encoding2.IsKCoding ? " (KCODE)" : null));
+            return new EncodingCompatibilityError(
+                String.Format("incompatible character encodings: {0}{1} and {2}{3}",
+                    encoding1.Name, encoding1.IsKCoding ? " (KCODE)" : null, encoding2.Name, encoding2.IsKCoding ? " (KCODE)" : null
+                )
+            );
         }
+
+        #region Errno
+
+        public static string/*!*/ MakeMessage(string message, string/*!*/ baseMessage) {
+            Assert.NotNull(baseMessage);
+            return (message != null) ? String.Concat(baseMessage, " - ", message) : baseMessage;
+        }
+
+        public static string/*!*/ MakeMessage(ref MutableString message, string/*!*/ baseMessage) {
+            Assert.NotNull(baseMessage);
+            string result = MakeMessage(message != null ? message.ConvertToString() : null, baseMessage);
+            message = MutableString.Create(result, message != null ? message.Encoding : RubyEncoding.UTF8);
+            return result;
+        }
+
+        public static Exception/*!*/ CreateEEXIST() {
+            return new ExistError();
+        }
+
+        public static Exception/*!*/ CreateEEXIST(string message) {
+            return new ExistError(message);
+        }
+
+        public static Exception/*!*/ CreateEEXIST(string message, Exception inner) {
+            return new ExistError(message, inner);
+        }
+
+        public static Exception/*!*/ CreateEINVAL() {
+            return new InvalidError();
+        }
+
+        public static Exception/*!*/ CreateEINVAL(string message) {
+            return new InvalidError(message);
+        }
+
+        public static Exception/*!*/ CreateEINVAL(string message, Exception inner) {
+            return new InvalidError(message, inner);
+        }
+
+        public static Exception/*!*/ CreateENOENT() {
+            return new FileNotFoundException();
+        }
+
+        public static Exception/*!*/ CreateENOENT(string message, Exception inner) {
+            return new FileNotFoundException(message, inner);
+        }
+
+        public static Exception/*!*/ CreateENOENT(string message) {
+            return new FileNotFoundException(message);
+        }
+
+        #endregion
     }
 }

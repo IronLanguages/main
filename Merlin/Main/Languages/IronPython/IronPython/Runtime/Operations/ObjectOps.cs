@@ -234,7 +234,7 @@ namespace IronPython.Runtime.Operations {
             StringFormatSpec spec = StringFormatSpec.FromString(formatSpec);
 
             if (spec.Type != null && spec.Type != 's') {
-                throw PythonOps.ValueError("Unknown conversion type {0}", spec.Type.Value.ToString());
+                throw PythonOps.ValueError("Unknown format code '{0}' for object of type 'str'", spec.Type.Value.ToString());
             } else if (spec.Sign != null) {
                 throw PythonOps.ValueError("Sign not allowed in string format specifier");
             } else if (spec.Alignment == '=') {
@@ -349,7 +349,9 @@ namespace IronPython.Runtime.Operations {
             if (hasGetState) {
                 state = PythonOps.CallWithContext(context, getState);
             } else {
-                PythonOps.TryGetBoundAttr(context, self, Symbols.Dict, out state);
+                if (!PythonOps.TryGetBoundAttr(context, self, Symbols.Dict, out state)) {
+                    state = null;
+                }
             }
             if (!PythonOps.IsTrue(state)) state = null;
 

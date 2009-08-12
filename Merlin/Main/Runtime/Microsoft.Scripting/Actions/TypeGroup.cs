@@ -83,7 +83,7 @@ namespace Microsoft.Scripting.Actions {
             return repr.ToString();
         }
 
-        public override IList<object> GetMemberNames(CodeContext context) {
+        public override IList<string> GetMemberNames() {
             Dictionary<string, string> members = new Dictionary<string, string>();
             foreach (Type t in this.Types) {
                 CollectMembers(members, t);

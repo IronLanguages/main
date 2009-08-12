@@ -16,6 +16,7 @@
 using System;
 
 using Microsoft.Scripting;
+using Microsoft.Scripting.Ast;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 
@@ -34,39 +35,26 @@ namespace IronPython.Compiler.Ast {
     /// arbitrary dictionary given to us by a user.
     /// </summary>
     class DictionaryGlobalAllocator : GlobalAllocator {
-        private MSAst.ParameterExpression/*!*/ _globalScope, _language, _globalCtx;
-
-        public DictionaryGlobalAllocator() {            
-            _globalScope = Ast.Parameter(typeof(Scope), "$scope");
-            _language = Ast.Parameter(typeof(LanguageContext), "$language");
-            _globalCtx = ArrayGlobalAllocator._globalContext;
+        public DictionaryGlobalAllocator() {
         }
 
-        public override ScriptCode/*!*/ MakeScriptCode(MSAst.Expression/*!*/ body, CompilerContext/*!*/ context, PythonAst/*!*/ ast) {            
-            MSAst.Expression finalBody = Ast.Block(
-                new[] { _globalCtx },
-                Ast.Assign(
-                    _globalCtx,
-                    Ast.Call(typeof(PythonOps).GetMethod("CreateTopLevelCodeContext"),
-                        _globalScope,
-                        _language
-                    )
-                ),
-                body
-            );
-
+        public override ScriptCode/*!*/ MakeScriptCode(MSAst.Expression/*!*/ body, CompilerContext/*!*/ context, PythonAst/*!*/ ast) {
             PythonCompilerOptions pco = ((PythonCompilerOptions)context.Options);
-            string name = pco.ModuleName ?? "<unnamed>";
-            var lambda = Ast.Lambda<Func<Scope, LanguageContext, object>>(
-                finalBody, 
-                name,
-                new[] { _globalScope, _language } 
+            PythonContext pc = (PythonContext)context.SourceUnit.LanguageContext;
+
+            if (body is MSAst.ConstantExpression) {
+                object value = ((MSAst.ConstantExpression)body).Value;
+                return new PythonScriptCode(codeCtx => value, context.SourceUnit);
+            }
+
+            var lambda = Ast.Lambda<Func<CodeContext, object>>(
+                Utils.Convert(body, typeof(object)),
+                pco.ModuleName ?? "<unnamed>",
+                ArrayGlobalAllocator._globalContextList
             );
 
+            Func<CodeContext, object> func;
 
-            Func<Scope, LanguageContext, object> func;
-
-            PythonContext pc = (PythonContext)context.SourceUnit.LanguageContext;
             if (pc.ShouldInterpret(pco, context.SourceUnit)) {
                 func = CompilerHelpers.LightCompile(lambda);
             } else {
@@ -77,11 +65,11 @@ namespace IronPython.Compiler.Ast {
         }
 
         public override MSAst.Expression/*!*/ GlobalContext {
-            get { return _globalCtx; }
+            get { return ArrayGlobalAllocator._globalContext; }
         }
 
         protected override MSAst.Expression/*!*/ GetGlobal(string/*!*/ name, AstGenerator/*!*/ ag, bool isLocal) {
-            return new LookupGlobalVariable(Ast.Property(ag.LocalContext, "Scope"), name, isLocal);
+            return new LookupGlobalVariable(ag.LocalContext, name, isLocal);
         }
     }
 }

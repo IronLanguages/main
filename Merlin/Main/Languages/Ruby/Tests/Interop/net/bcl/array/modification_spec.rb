@@ -6,6 +6,6 @@ describe "Modifying .NET arrays" do
   end
 
   it "doesn't dynamicly resize" do
-    lambda {@array[10] = 1}.should raise_error(System::NotSupportedException)
+    lambda {@array[10] = 1}.should raise_error(IndexError)
   end
 end

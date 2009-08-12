@@ -13,7 +13,9 @@
  *
  * ***************************************************************************/
 
-using System.Collections.Generic;
+using System.Diagnostics;
+using IronRuby.Runtime;
+using IronRuby.Runtime.Conversions;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Ast;
 using Microsoft.Scripting.Utils;
@@ -22,10 +24,6 @@ using MSA = System.Linq.Expressions;
 
 namespace IronRuby.Compiler.Ast {
     using Ast = System.Linq.Expressions.Expression;
-    using System.Diagnostics;
-    using IronRuby.Runtime.Calls;
-    using System.Collections;
-    using IronRuby.Runtime;
 
     // rescue type
     //   statements

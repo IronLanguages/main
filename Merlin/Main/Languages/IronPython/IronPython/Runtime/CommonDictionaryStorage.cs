@@ -413,7 +413,7 @@ namespace IronPython.Runtime {
 
                 Bucket bucket = buckets[hc % buckets.Length];
                 while (bucket != null) {
-                    if (bucket.HashCode == hc && eqFunc(key, bucket.Key)) {
+                    if (bucket.HashCode == hc && (Object.ReferenceEquals(key, bucket.Key) || eqFunc(key, bucket.Key))) {
                         value = bucket.Value;
                         return true;
                     }

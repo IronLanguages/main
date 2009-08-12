@@ -112,10 +112,6 @@ namespace Microsoft.Scripting.Runtime {
             return new MissingMemberException(message);
         }
 
-        public static void ThrowUnboundLocalError(SymbolId name) {
-            throw Error.ReferencedBeforeAssignment(SymbolTable.IdToString(name));
-        }
-
         public static object ReadOnlyAssignError(bool field, string fieldName) {
             if (field) {
                 throw Error.FieldReadonly(fieldName);

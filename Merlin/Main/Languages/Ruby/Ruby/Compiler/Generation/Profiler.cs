@@ -24,8 +24,27 @@ using IronRuby.Compiler.Generation;
 using IronRuby.Runtime;
 
 namespace IronRuby.Compiler.Generation {
-
     public sealed class Profiler {
+        public struct MethodCounter {
+            public readonly string/*!*/ Name;
+            public readonly string/*!*/ File;
+            public readonly int Line;
+            public readonly long Ticks;
+
+            public MethodCounter(string/*!*/ name, string/*!*/ file, int line, long ticks) {
+                Name = name;
+                File = file;
+                Line = line;
+                Ticks = ticks;
+	        }
+
+            public string/*!*/ Id {
+                get {
+                    return String.Format("{0};{1};{2}", Name, File, Line);
+                }
+            }
+        }
+
         public static readonly Profiler/*!*/ Instance = new Profiler();
         internal static long[] _ProfileTicks = new long[100];
         
@@ -53,8 +72,8 @@ namespace IronRuby.Compiler.Generation {
             return index;
         }
 
-        public Dictionary<string/*!*/, long>/*!*/ GetProfile() {
-            var result = new Dictionary<string, long>();
+        public List<MethodCounter/*!*/>/*!*/ GetProfile() {
+            var result = new List<MethodCounter>();
             lock (_counters) {
                 // capture the current profile:
                 long[] newProfile = new long[_ProfileTicks.Length];
@@ -69,7 +88,12 @@ namespace IronRuby.Compiler.Generation {
                 }
 
                 foreach (var counter in _counters) {
-                    result.Add(counter.Key, total[counter.Value]);
+                    string methodName = counter.Key;
+                    string fileName = null;
+                    int line = 0;
+                    if (RubyExceptionData.TryParseRubyMethodName(ref methodName, ref fileName, ref line)) {
+                        result.Add(new MethodCounter(methodName, fileName, line, total[counter.Value]));
+                    }
                 }
             }
 

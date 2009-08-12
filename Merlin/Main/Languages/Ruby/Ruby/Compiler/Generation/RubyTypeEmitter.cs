@@ -24,6 +24,7 @@ using IronRuby.Builtins;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
 using System.Linq.Expressions;
+using IronRuby.Runtime.Conversions;
 
 namespace IronRuby.Compiler.Generation {
     public class RubyTypeEmitter : ClsTypeEmitter {
@@ -47,7 +48,7 @@ namespace IronRuby.Compiler.Generation {
         }
 
         [Emitted]
-        public static Exception InvokeMethodMissing(object o, string/*!*/ name) {
+        public static Exception/*!*/ InvokeMethodMissing(object o, string/*!*/ name) {
             return RubyExceptions.CreateMethodMissing(RubyContext._Default, o, name);
         }
 

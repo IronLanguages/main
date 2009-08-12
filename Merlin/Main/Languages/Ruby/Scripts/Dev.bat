@@ -42,10 +42,15 @@ if exist "%PROGRAM_FILES_32%\Microsoft.NET\SDK\v2.0\Bin\sdkvars.bat" (
 
 set PATH=%PATH%;%MERLIN_ROOT%\Languages\Ruby\Scripts;%MERLIN_ROOT%\Languages\Ruby\Scripts\bin;%RUBY18_BIN%;%MERLIN_ROOT%\..\External.LCA_RESTRICTED\Languages\IronRuby\mspec\mspec\bin
 
-if not DEFINED HOME (
+if not DEFINED HOME_FOR_MSPECRC (
+  if DEFINED HOME (
+      set HOME_FOR_MSPECRC=%HOME%
+      goto SetRubyEnv
+  )
+  
   if DEFINED HOMEDRIVE (
     if DEFINED HOMEPATH (
-      set HOME=%HOMEDRIVE%\%HOMEPATH%
+      set HOME_FOR_MSPECRC=%HOMEDRIVE%%HOMEPATH%
       goto SetRubyEnv
     )
   )
@@ -53,13 +58,13 @@ if not DEFINED HOME (
     echo Error: One of HOME, HOMEDRIVE,HOMEPATH, or USERPROFILE needs to be set
     goto END
   )
-  set HOME=%USERPROFILE%
+  set HOME_FOR_MSPECRC=%USERPROFILE%
 )
 
 :SetRubyEnv
 
-if NOT exist "%HOME%\.mspecrc" (
-  copy "%MERLIN_ROOT%\Languages\Ruby\default.mspec" "%HOME%\.mspecrc"
+if NOT EXIST "%HOME_FOR_MSPECRC%\.mspecrc" (
+  copy "%MERLIN_ROOT%\Languages\Ruby\default.mspec" "%HOME_FOR_MSPECRC%\.mspecrc"
 )
 
 call doskey /macrofile=%MERLIN_ROOT%\Scripts\Bat\%Alias.txt

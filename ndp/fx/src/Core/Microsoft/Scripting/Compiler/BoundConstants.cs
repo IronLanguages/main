@@ -19,6 +19,10 @@ using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Dynamic.Utils;
 
+#if SILVERLIGHT
+using System.Core;
+#endif
+
 namespace System.Linq.Expressions.Compiler {
     /// <summary>
     /// This type tracks "runtime" constants--live objects that appear in
@@ -121,7 +125,7 @@ namespace System.Linq.Expressions.Compiler {
             int count = 0;
             foreach (var reference in _references) {
                 if (!lc.CanEmitBoundConstants) {
-                    throw Error.CannotCompileConstant(reference.Value);
+                    throw Error.CannotCompileConstant(reference.Key.Value);
                 }
 
                 if (ShouldCache(reference.Value)) {

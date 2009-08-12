@@ -51,13 +51,13 @@ namespace IronPython.Runtime.Types {
             return true;
         }
 
-        internal override void MakeGetExpression(PythonBinder/*!*/ binder, Expression/*!*/ codeContext, Expression instance, Expression/*!*/ owner, ConditionalBuilder/*!*/ builder) {
+        internal override void MakeGetExpression(PythonBinder/*!*/ binder, Expression/*!*/ codeContext, DynamicMetaObject instance, DynamicMetaObject/*!*/ owner, ConditionalBuilder/*!*/ builder) {
             if (instance != null) {
                 builder.FinishCondition(
                     Ast.Call(
                         typeof(PythonOps).GetMethod("MakeBoundBuiltinFunction"),
                         AstUtils.Constant(_template),
-                        instance
+                        instance.Expression
                     )
                 );
             } else {

@@ -21,6 +21,7 @@ using Microsoft.Scripting.Actions;
 using MSAst = System.Linq.Expressions;
 
 namespace IronPython.Compiler.Ast {
+    using Ast = System.Linq.Expressions.Expression;
 
     public class GeneratorExpression : Expression {
         private readonly FunctionDefinition _function;
@@ -34,9 +35,8 @@ namespace IronPython.Compiler.Ast {
         internal override MSAst.Expression Transform(AstGenerator ag, Type type) {
             MSAst.Expression func = _function.TransformToFunctionExpression(ag);
 
-            return ag.Invoke(
-                typeof(object),
-                new CallSignature(1),
+            return Ast.Call(
+                AstGenerator.GetHelperMethod("MakeGeneratorExpression"),
                 func,
                 ag.TransformAsObject(_iterable)
             );

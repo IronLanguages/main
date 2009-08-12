@@ -266,7 +266,7 @@ namespace IronRuby.Builtins {
                         options |= MethodLookup.ReturnForwarder;
                     }
 
-                    method = module.ResolveMethodNoLock(methodName, RubyClass.IgnoreVisibility, options).Info;
+                    method = module.ResolveMethodNoLock(methodName, VisibilityContext.AllVisible, options).Info;
                     if (method == null) {
                         throw RubyExceptions.CreateNameError(RubyExceptions.FormatMethodMissingMessage(context, module, methodName));
                     }
@@ -310,7 +310,9 @@ namespace IronRuby.Builtins {
         public static RubyMethod/*!*/ DefineMethod(RubyScope/*!*/ scope, RubyModule/*!*/ self,
             [NotNull]ClrName/*!*/ methodName, [NotNull]RubyMethod/*!*/ method) {
             var result = DefineMethod(scope, self, methodName.MangledName, method);
-            self.AddMethodAlias(methodName.ActualName, methodName.MangledName);
+            if (methodName.HasMangledName) {
+                self.AddMethodAlias(methodName.ActualName, methodName.MangledName);
+            }
             return result;
         }
 
@@ -329,7 +331,9 @@ namespace IronRuby.Builtins {
         public static UnboundMethod/*!*/ DefineMethod(RubyScope/*!*/ scope, RubyModule/*!*/ self,
             [NotNull]ClrName/*!*/ methodName, [NotNull]UnboundMethod/*!*/ method) {
             var result = DefineMethod(scope, self, methodName.MangledName, method);
-            self.AddMethodAlias(methodName.ActualName, methodName.MangledName);
+            if (methodName.HasMangledName) {
+                self.AddMethodAlias(methodName.ActualName, methodName.MangledName);
+            }
             return result;
         }
 
@@ -366,7 +370,9 @@ namespace IronRuby.Builtins {
             RubyModule/*!*/ self, [NotNull]ClrName/*!*/ methodName) {
 
             var result = DefineMethod(scope, block, self, methodName.MangledName);
-            self.AddMethodAlias(methodName.ActualName, methodName.MangledName);
+            if (methodName.HasMangledName) {
+                self.AddMethodAlias(methodName.ActualName, methodName.MangledName);
+            }
             return result;
         }
 
@@ -386,7 +392,9 @@ namespace IronRuby.Builtins {
             [NotNull]ClrName/*!*/ methodName, [NotNull]Proc/*!*/ method) {
 
             var result = DefineMethod(scope, self, methodName.MangledName, method);
-            self.AddMethodAlias(methodName.ActualName, methodName.MangledName);
+            if (methodName.HasMangledName) {
+                self.AddMethodAlias(methodName.ActualName, methodName.MangledName);
+            }
             return result;
         }
 
@@ -528,7 +536,7 @@ namespace IronRuby.Builtins {
         // thread-safe:
         [RubyMethod("undef_method", RubyMethodAttributes.PrivateInstance)]
         public static RubyModule/*!*/ UndefineMethod(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ methodName) {
-            if (!self.ResolveMethod(methodName, RubyClass.IgnoreVisibility).Found) {
+            if (!self.ResolveMethod(methodName, VisibilityContext.AllVisible).Found) {
                 throw RubyExceptions.CreateUndefinedMethodError(self, methodName);
             }
             self.UndefineMethod(methodName);
@@ -717,7 +725,8 @@ namespace IronRuby.Builtins {
             using (self.Context.ClassHierarchyLocker()) {
                 self.ForEachClassVariable(true, delegate(RubyModule/*!*/ module, string name, object value) {
                     if (name != null && !visited.ContainsKey(name)) {
-                        result.Add(MutableString.Create(name));
+                        // TODO (encoding):
+                        result.Add(MutableString.Create(name, RubyEncoding.UTF8));
                         visited.Add(name, true);
                     }
                     return false;
@@ -779,7 +788,8 @@ namespace IronRuby.Builtins {
 
                     if (!visited.ContainsKey(name)) {
                         visited.Add(name, true);
-                        result.Add(MutableString.Create(name));
+                        // TODO (encoding):
+                        result.Add(MutableString.Create(name, RubyEncoding.UTF8));
                     }
                     return false;
                 });
@@ -871,7 +881,8 @@ namespace IronRuby.Builtins {
             if (symbolicNames) {
                 return SymbolTable.StringToId(name);
             } else {
-                return MutableString.Create(name);
+                // TODO (encoding):
+                return MutableString.Create(name, RubyEncoding.UTF8);
             }
         }
 
@@ -882,28 +893,28 @@ namespace IronRuby.Builtins {
         // thread-safe:
         [RubyMethod("method_defined?")]
         public static bool MethodDefined(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ methodName) {
-            RubyMemberInfo method = self.ResolveMethod(methodName, RubyClass.IgnoreVisibility).Info;
+            RubyMemberInfo method = self.ResolveMethod(methodName, VisibilityContext.AllVisible).Info;
             return method != null && method.Visibility != RubyMethodVisibility.Private;
         }
 
         // thread-safe:
         [RubyMethod("private_method_defined?")]
         public static bool PrivateMethodDefined(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ methodName) {
-            RubyMemberInfo method = self.ResolveMethod(methodName, RubyClass.IgnoreVisibility).Info;
+            RubyMemberInfo method = self.ResolveMethod(methodName, VisibilityContext.AllVisible).Info;
             return method != null && method.Visibility == RubyMethodVisibility.Private;
         }
 
         // thread-safe:
         [RubyMethod("protected_method_defined?")]
         public static bool ProtectedMethodDefined(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ methodName) {
-            RubyMemberInfo method = self.ResolveMethod(methodName, RubyClass.IgnoreVisibility).Info;
+            RubyMemberInfo method = self.ResolveMethod(methodName, VisibilityContext.AllVisible).Info;
             return method != null && method.Visibility == RubyMethodVisibility.Protected;
         }
 
         // thread-safe:
         [RubyMethod("public_method_defined?")]
         public static bool PublicMethodDefined(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ methodName) {
-            RubyMemberInfo method = self.ResolveMethod(methodName, RubyClass.IgnoreVisibility).Info;
+            RubyMemberInfo method = self.ResolveMethod(methodName, VisibilityContext.AllVisible).Info;
             return method != null && method.Visibility == RubyMethodVisibility.Public;
         }
 
@@ -914,7 +925,7 @@ namespace IronRuby.Builtins {
         // thread-safe:
         [RubyMethod("instance_method")]
         public static UnboundMethod/*!*/ GetInstanceMethod(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ methodName) {
-            RubyMemberInfo method = self.ResolveMethod(methodName, RubyClass.IgnoreVisibility).Info;
+            RubyMemberInfo method = self.ResolveMethod(methodName, VisibilityContext.AllVisible).Info;
             if (method == null) {
                 throw RubyExceptions.CreateUndefinedMethodError(self, methodName);
             }
@@ -978,23 +989,45 @@ namespace IronRuby.Builtins {
 
             if (provided == 1 && type == typeof(Array)) {
                 return self.Context.GetModule(Protocols.ToType(self.Context, typeArgs[0]).MakeArrayType());
-            } 
-
-            int required = type.GetGenericArguments().Length;
-            if (required == 0 && provided > 0) {
-                throw RubyExceptions.CreateArgumentError(String.Format("'{0}' is not a generic type", type.FullName));
             }
 
-            if (required != provided) {
-                throw RubyExceptions.CreateArgumentError(String.Format("Type '{0}' requires {1} generic type arguments, {2} provided", type.FullName, required, provided));
-            }
-
-            if (typeArgs.Length > 0) {
-                Type concreteType = type.MakeGenericType(Protocols.ToTypes(self.Context, typeArgs));
-                return self.Context.GetModule(concreteType);
-            } else {
+            if (!type.IsGenericTypeDefinition) {
+                if (provided > 0) {
+                    throw RubyExceptions.CreateArgumentError(String.Format("`{0}' is not a generic type definition", self.Name));
+                }
                 return self;
             }
+
+            int required = type.GetGenericArguments().Length;
+            if (required != provided) {
+                throw RubyExceptions.CreateArgumentError(String.Format("Type `{0}' requires {1} generic type arguments, {2} provided", self.Name, required, provided));
+            }
+
+            Type concreteType = type.MakeGenericType(Protocols.ToTypes(self.Context, typeArgs));
+            return self.Context.GetModule(concreteType);
+        }
+
+        [RubyMethod("of")]
+        [RubyMethod("[]")]
+        public static RubyModule/*!*/ Of(RubyModule/*!*/ self, int genericArity) {
+            if (self.TypeTracker == null) {
+                throw RubyExceptions.CreateArgumentError(String.Format("`{0}' is not a type", self.Name));
+            }
+
+            Type type = self.TypeTracker.Type;
+
+            if (!type.IsGenericTypeDefinition) {
+                if (genericArity > 0) {
+                    throw RubyExceptions.CreateArgumentError(String.Format("`{0}' is not a generic type definition", self.Name));
+                }
+                return self;
+            }
+            
+            if (type.GetGenericArguments().Length != genericArity) {
+                throw RubyExceptions.CreateArgumentError(String.Format("`{0}' does not have generic arity {1}", self.Name, genericArity));
+            }
+
+            return self;
         }
 
         #endregion

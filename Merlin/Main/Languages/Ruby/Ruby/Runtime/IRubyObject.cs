@@ -40,5 +40,9 @@ namespace IronRuby.Runtime {
         // Calls Equals via static virtual dispatch, not virtual dynamic dispatch.
         [Emitted]
         bool BaseEquals(object other);
+
+        // Calls ToString via static virtual dispatch, not virtual dynamic dispatch.
+        [Emitted]
+        string/*!*/ BaseToString();
     }
 }

@@ -16,6 +16,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -29,6 +30,7 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+using IronRuby.Runtime.Conversions;
 
 namespace IronRuby.Runtime {
     using EvalEntryPointDelegate = Func<RubyScope, object, RubyModule, Proc, object>;
@@ -69,10 +71,10 @@ namespace IronRuby.Runtime {
             var context = tosConversion.Context;
             using (IDisposable handle = RubyUtils.InfiniteInspectTracker.TrackObject(obj)) {
                 if (handle == null) {
-                    return MutableString.Create("...");
+                    return MutableString.CreateAscii("...");
                 }
 
-                MutableString str = MutableString.CreateMutable();
+                MutableString str = MutableString.CreateMutable(RubyEncoding.ClassName);
                 str.Append("#<");
                 str.Append(context.GetClassDisplayName(obj));
 
@@ -86,13 +88,14 @@ namespace IronRuby.Runtime {
                     bool first = true;
                     foreach (KeyValuePair<string, object> var in vars) {
                         if (first) {
-                            str.Append(" ");
+                            str.Append(' ');
                             first = false;
                         } else {
                             str.Append(", ");
                         }
+                        // TODO (encoding):
                         str.Append(var.Key);
-                        str.Append("=");
+                        str.Append('=');
 
                         var inspectSite = inspectStorage.GetCallSite("inspect");
                         object inspectedValue = inspectSite.Target(inspectSite, var.Value);
@@ -111,7 +114,7 @@ namespace IronRuby.Runtime {
         }
 
         public static MutableString/*!*/ FormatObjectPrefix(string/*!*/ className, long objectId, bool isTainted) {
-            MutableString str = MutableString.CreateMutable();
+            MutableString str = MutableString.CreateMutable(RubyEncoding.ClassName);
             str.Append("#<");
             str.Append(className);
 
@@ -188,67 +191,171 @@ namespace IronRuby.Runtime {
 
         #region Names
 
-        // Unmangles a method name. Not all names can be unmangled.
-        // For a name to be unmangle-able, it must be lower_case_with_underscores.
-        // If a name can't be unmangled, this function returns null
+        /// <summary>
+        /// Converts a Ruby name to PascalCase name (foo_bar -> FooBar).
+        /// Returns null if the name is not a well-formed Ruby name (it contains upper-case latter or subsequent underscores).
+        /// Characters that are not upper case letters are treated as lower-case letters.
+        /// </summary>
         public static string TryUnmangleName(string/*!*/ name) {
-            if (name.ToUpper().Equals("INITIALIZE")) {
-                // Special case for compatibility with CLR
-                return name;
+            ContractUtils.RequiresNotNull(name, "name");
+            if (name.Length == 0 || name == "initialize") {
+                return null;
             }
 
-            StringBuilder sb = new StringBuilder(name.Length);
-            bool upcase = true;
-            foreach (char c in name) {
-                if (char.IsUpper(c)) {
-                    // can't unmangle a name with uppercase letters
+            StringBuilder mangled = new StringBuilder();
+
+            bool lastWasSpecial = false;
+            int i = 0, j = 0;
+            while (i < name.Length) {
+                char c;
+                while (j < name.Length && (c = name[j]) != '_') {
+                    if (Char.IsUpper(c)) {
+                        return null;
+                    }
+                    j++;
+                }
+
+                if (j == i || j == name.Length - 1) {
                     return null;
                 }
 
-                if (c == '_') {
-                    if (upcase) {
-                        // can't unmangle a name with consecutive or leading underscores
+                if (j - i == 1) {
+                    // "ip_f_xxx" -/-> "IPFXxx"
+                    if (lastWasSpecial) {
                         return null;
                     }
-                    upcase = true;
+                    mangled.Append(name[i].ToUpperInvariant());
+                    lastWasSpecial = false;
                 } else {
-                    if (upcase) {
-                        sb.Append(char.ToUpper(c));
-                        upcase = false;
+                    string special = MapSpecialWord(name, i, j - i);
+                    if (special != null) {
+                        // "ip_ip" -/-> "IPIP"
+                        if (lastWasSpecial) {
+                            return null;
+                        }
+                        mangled.Append(special.ToUpperInvariant());
+                        lastWasSpecial = true;
                     } else {
-                        sb.Append(c);
+                        mangled.Append(name[i].ToUpperInvariant());
+                        mangled.Append(name, i + 1, j - i - 1);
+                        lastWasSpecial = false;
                     }
                 }
+
+                i = ++j;
             }
-            if (upcase) {
-                // string was empty or ended with an underscore, can't unmangle
-                return null;
-            }
-            return sb.ToString();
+
+            return mangled.ToString();
         }
 
-        public static string/*!*/ MangleName(string/*!*/ name) {
-            Assert.NotNull(name);
-
-            if (name.ToUpper().Equals("INITIALIZE")) {
-                // Special case for compatibility with CLR
-                return name;
+        /// <summary>
+        /// Converts a camelCase or PascalCase name to a Ruby name (FooBar -> foo_bar).
+        /// Returns null if the name is not in camelCase or PascalCase (FooBAR, foo, etc.).
+        /// Characters that are not upper case letters are treated as lower-case letters.
+        /// </summary>
+        public static string TryMangleName(string/*!*/ name) {
+            ContractUtils.RequiresNotNull(name, "name");
+            if (name == "Initialize") {
+                return null;
             }
 
-            StringBuilder result = new StringBuilder(name.Length);
-
-            for (int i = 0; i < name.Length; i++) {
-                if (Char.IsUpper(name[i])) {
-                    if (!(i == 0 || i + 1 < name.Length && Char.IsUpper(name[i + 1]) || i + 1 == name.Length && Char.IsUpper(name[i - 1]))) {
-                        result.Append('_');
+            StringBuilder mangled = null;
+            int i = 0;
+            while (i < name.Length) {
+                char c = name[i];
+                if (Char.IsUpper(c)) {
+                    int j = i + 1;
+                    while (j < name.Length && Char.IsUpper(name, j)) {
+                        j++;
                     }
-                    result.Append(Char.ToLower(name[i]));
+
+                    if (j < name.Length) {
+                        j--;
+                    }
+
+                    if (mangled == null) {
+                        mangled = new StringBuilder();
+                        mangled.Append(name, 0, i);
+                    } 
+
+                    if (i > 0) {
+                        mangled.Append('_');
+                    }
+
+                    int count = j - i;
+                    if (count == 0) {
+                        // NaN{end}, NaNXxx
+                        if (i + 2 < name.Length && 
+                            Char.IsUpper(name[i + 2]) && 
+                            (i + 3 == name.Length || Char.IsUpper(name[i + 3]) && 
+                            (i + 4 < name.Length && !Char.IsUpper(name[i + 4])))) {
+                            return null;
+                        } else {
+                            // X{end}, In, NaN, Xml, Html, ...
+                            mangled.Append(c.ToLowerInvariant());
+                            i++;
+                        }
+                    } else if (count == 1) {
+                        // FXx
+                        mangled.Append(c.ToLowerInvariant());
+                        i++;
+                    } else {
+                        // FOXxx, FOOXxx, FOOOXxx, ...
+                        string special = MapSpecialWord(name, i, count);
+                        if (special != null) {
+                            mangled.Append(special.ToLowerInvariant());
+                            i = j;
+                        } else {
+                            return null;
+                        }
+                    }
+                } else if (c == '_') {
+                    return null;
                 } else {
-                    result.Append(name[i]);
+                    if (mangled != null) {
+                        mangled.Append(c);
+                    }
+                    i++;
                 }
             }
 
-            return result.ToString();
+            return mangled != null ? mangled.ToString() : null;
+        }
+
+        private static string MapSpecialWord(string/*!*/ name, int start, int count) {
+            if (count == 2) {
+                return IsTwoLetterWord(name, start) ? null : name.Substring(start, count);
+            }
+
+            return null;
+        }
+
+        private static bool IsTwoLetterWord(string/*!*/ str, int index) {
+            int c = LetterPair(str, index);
+            switch (c) {
+                case ('a' << 8) | 't':
+                case ('a' << 8) | 's':
+                case ('b' << 8) | 'y':
+                case ('d' << 8) | 'o':
+                case ('i' << 8) | 'd':
+                case ('i' << 8) | 't':
+                case ('i' << 8) | 'f':
+                case ('i' << 8) | 'n':
+                case ('i' << 8) | 's':
+                case ('g' << 8) | 'o':
+                case ('m' << 8) | 'y':
+                case ('o' << 8) | 'f':
+                case ('o' << 8) | 'k':
+                case ('o' << 8) | 'n':
+                case ('t' << 8) | 'o':
+                case ('u' << 8) | 'p':
+                    return true;
+            }
+            return false;
+        }
+
+        private static int LetterPair(string/*!*/ str, int index) {
+            return (str[index + 1] & 0xff00) == 0 ? (str[index].ToLowerInvariant() << 8) | str[index + 1].ToLowerInvariant() : -1;
         }
 
         #endregion
@@ -490,7 +597,7 @@ namespace IronRuby.Runtime {
 
         #region Tracking operations that have the potential for infinite recursion
 
-        public static readonly MutableString InfiniteRecursionMarker = MutableString.Create("[...]").Freeze();
+        public static readonly MutableString InfiniteRecursionMarker = MutableString.CreateAscii("[...]").Freeze();
 
         public class RecursionTracker {
             [ThreadStatic]
@@ -899,7 +1006,7 @@ namespace IronRuby.Runtime {
                 basePath + "/" + path;
         }
 
-        public static bool FileSystemUsesDriveLetters { get { return System.IO.Path.DirectorySeparatorChar == '\\'; } }
+        public static bool FileSystemUsesDriveLetters { get { return Path.DirectorySeparatorChar == '\\'; } }
 
         // Is path something like "/foo/bar" (or "c:/foo/bar" on Windows)
         // We need this instead of Path.IsPathRooted since we need to be able to deal with Unix-style path names even on Windows
@@ -929,7 +1036,7 @@ namespace IronRuby.Runtime {
         }
 
         // returns "/" or something like "c:/"
-        public static string GetPathRoot(RubyContext/*!*/ context, string path, out string pathAfterRoot) {
+        public static string GetPathRoot(PlatformAdaptationLayer/*!*/ platform, string path, out string pathAfterRoot) {
             Debug.Assert(IsAbsolutePath(path));
             if (IsAbsoluteDriveLetterPath(path)) {
                 pathAfterRoot = path.Substring(3);
@@ -946,10 +1053,10 @@ namespace IronRuby.Runtime {
                 if (!FileSystemUsesDriveLetters || initialSlashesCount > 1) {
                     return initialSlashes;
                 } else {
-                    string currentDirectory = RubyUtils.CanonicalizePath(context.DomainManager.Platform.CurrentDirectory);
+                    string currentDirectory = RubyUtils.CanonicalizePath(platform.CurrentDirectory);
                     Debug.Assert(IsAbsoluteDriveLetterPath(currentDirectory));
                     string temp;
-                    return GetPathRoot(context, currentDirectory, out temp);
+                    return GetPathRoot(platform, currentDirectory, out temp);
                 }
             }
         }
@@ -975,6 +1082,205 @@ namespace IronRuby.Runtime {
                 return false;
             }
         }
+
+        #region expand_path
+
+#if !SILVERLIGHT
+        // Algorithm to find HOME equivalents under Windows. This is equivalent to Ruby 1.9 behavior:
+        // 
+        // 1. Try get HOME
+        // 2. Try to generate HOME equivalent using HOMEDRIVE + HOMEPATH
+        // 3. Try to generate HOME equivalent from USERPROFILE
+        // 4. Try to generate HOME equivalent from Personal special folder 
+
+        public static string/*!*/ GetHomeDirectory(PlatformAdaptationLayer/*!*/ platform) {
+            PlatformAdaptationLayer pal = platform;
+            string result = pal.GetEnvironmentVariable("HOME");
+
+            if (result != null) {
+                return result;
+            }
+
+            string homeDrive = pal.GetEnvironmentVariable("HOMEDRIVE");
+            string homePath = pal.GetEnvironmentVariable("HOMEPATH");
+            if (homeDrive == null && homePath == null) {
+                string userEnvironment = pal.GetEnvironmentVariable("USERPROFILE");
+                if (userEnvironment == null) {
+                    // This will always succeed with a non-null string, but it can fail
+                    // if the Personal folder was renamed or deleted. In this case it returns
+                    // an empty string.
+                    result = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
+                } else {
+                    result = userEnvironment;
+                }
+            } else if (homeDrive == null) {
+                result = homePath;
+            } else if (homePath == null) {
+                result = homeDrive + Path.DirectorySeparatorChar;
+            } else {
+                result = homeDrive + homePath;
+            }
+
+            if (result != null) {
+                result = ExpandPath(platform, result);
+            }
+
+            return result;
+        }
+
+        class PathExpander {
+            List<string> _pathComponents = new List<string>(); // does not include the root
+            string _root; // Typically "c:/" on Windows, and "/" on Unix
+
+            internal PathExpander(PlatformAdaptationLayer/*!*/ platform, string absoluteBasePath) {
+                Debug.Assert(RubyUtils.IsAbsolutePath(absoluteBasePath));
+
+                string basePathAfterRoot = null;
+                _root = RubyUtils.GetPathRoot(platform, absoluteBasePath, out basePathAfterRoot);
+
+                // Normally, basePathAfterRoot[0] will not be '/', but here we deal with cases like "c:////foo"
+                basePathAfterRoot = basePathAfterRoot.TrimStart('/');
+
+                AddRelativePath(basePathAfterRoot);
+            }
+
+            internal void AddRelativePath(string relPath) {
+                Debug.Assert(!RubyUtils.IsAbsolutePath(relPath));
+
+                string[] relPathComponents = relPath.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+
+                foreach (string pathComponent in relPathComponents) {
+                    if (pathComponent == "..") {
+                        if (_pathComponents.Count == 0) {
+                            // MRI allows more pops than the base path components
+                            continue;
+                        }
+                        _pathComponents.RemoveAt(_pathComponents.Count - 1);
+                    } else if (pathComponent == ".") {
+                        continue;
+                    } else {
+                        _pathComponents.Add(pathComponent);
+                    }
+                }
+            }
+
+            internal string/*!*/ GetResult() {
+                StringBuilder result = new StringBuilder(_root);
+
+                if (_pathComponents.Count >= 1) {
+                    // Here we make this work:
+                    //   File.expand_path("c:/..a..") -> "c:/..a"
+                    string lastComponent = _pathComponents[_pathComponents.Count - 1];
+                    if (RubyUtils.FileSystemUsesDriveLetters && !String.IsNullOrEmpty(lastComponent.TrimEnd('.'))) {
+                        _pathComponents[_pathComponents.Count - 1] = lastComponent.TrimEnd('.');
+                    }
+                }
+
+                for (int i = 0; i < _pathComponents.Count; i++) {
+                    result.Append(_pathComponents[i]);
+                    if (i < (_pathComponents.Count - 1)) {
+                        result.Append('/');
+                    }
+                }
+#if DEBUG
+                _pathComponents = null;
+                _root = null;
+#endif
+                return result.ToString();
+            }
+        }
+
+        // Expand directory path - these cases exist:
+        //
+        // 1. Empty string or nil means return current directory
+        // 2. ~ with non-existent HOME directory throws exception
+        // 3. ~, ~/ or ~\ which expands to HOME
+        // 4. ~foo is left unexpanded
+        // 5. Expand to full path if path is a relative path
+        // 
+        // No attempt is made to determine whether the path is valid or not
+        // Returned path is always canonicalized to forward slashes
+
+        public static string/*!*/ ExpandPath(PlatformAdaptationLayer/*!*/ platform, string/*!*/ path) {
+            if (String.IsNullOrEmpty(path)) {
+                return RubyUtils.CanonicalizePath(platform.CurrentDirectory);
+            }
+
+            int length = path.Length;
+
+            if (path[0] == '~') {
+                if (length == 1 || (path[1] == '/')) {
+
+                    string homeDirectory = platform.GetEnvironmentVariable("HOME");
+                    if (homeDirectory == null) {
+                        throw RubyExceptions.CreateArgumentError("couldn't find HOME environment -- expanding `~'");
+                    }
+
+                    if (length <= 2) {
+                        path = homeDirectory;
+                    } else {
+                        path = Path.Combine(homeDirectory, path.Substring(2));
+                    }
+                    return RubyUtils.CanonicalizePath(path);
+                } else {
+                    return path;
+                }
+            } else {
+                string currentDirectory = ExpandPath(platform, null);
+                return ExpandPath(platform, path, currentDirectory);
+            }
+        }
+
+        public static string/*!*/ ExpandPath(
+            PlatformAdaptationLayer/*!*/ platform,
+            string/*!*/ path,
+            string basePath) {
+
+            // We ignore basePath parameter if first string starts with a ~
+            if (basePath == null || (path.Length > 0 && path[0] == '~')) {
+                return ExpandPath(platform, path);
+            }
+
+            path = RubyUtils.CanonicalizePath(path);
+            basePath = RubyUtils.CanonicalizePath(basePath);
+            char partialDriveLetter;
+            string relativePath;
+
+            if (RubyUtils.IsAbsolutePath(path)) {
+                // "basePath" can be ignored is "path" is an absolute path
+                PathExpander pathExpander = new PathExpander(platform, path);
+                return pathExpander.GetResult();
+            } else if (RubyUtils.HasPartialDriveLetter(path, out partialDriveLetter, out relativePath)) {
+                string currentDirectory = partialDriveLetter.ToString() + ":/";
+                if (platform.DirectoryExists(currentDirectory)) {
+                    // File.expand_path("c:foo") returns "c:/current_folder_for_c_drive/foo"
+                    currentDirectory = Path.GetFullPath(partialDriveLetter.ToString() + ":");
+                }
+
+                return ExpandPath(
+                    platform,
+                    relativePath,
+                    currentDirectory);
+            } else if (RubyUtils.IsAbsolutePath(basePath)) {
+                PathExpander pathExpander = new PathExpander(platform, basePath);
+                pathExpander.AddRelativePath(path);
+                return pathExpander.GetResult();
+            } else if (RubyUtils.HasPartialDriveLetter(basePath, out partialDriveLetter, out relativePath)) {
+                // First expand basePath
+                string expandedBasePath = ExpandPath(platform, basePath);
+
+                return ExpandPath(platform, path, expandedBasePath);
+            } else {
+                // First expand basePath
+                string expandedBasePath = ExpandPath(platform, basePath);
+                Debug.Assert(RubyUtils.IsAbsolutePath(expandedBasePath));
+
+                return ExpandPath(platform, path, expandedBasePath);
+            }
+        }
+#endif
+
+        #endregion
 
         #endregion
     }

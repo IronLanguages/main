@@ -109,6 +109,15 @@ namespace IronPython.Runtime {
                         [DefaultParameterValue(null)]object fdel,
                         [DefaultParameterValue(null)]object doc) {
             _fget = fget; _fset = fset; _fdel = fdel; _doc = doc;
+            if (GetType() != typeof(PythonProperty) && _fget is PythonFunction) {
+                // http://bugs.python.org/issue5890
+                IAttributesCollection dict = UserTypeOps.GetDictionary((IPythonObject)this);
+                if (dict == null) {
+                    throw PythonOps.AttributeError("{0} object has no __doc__ attribute", PythonTypeOps.GetName(this));
+                }
+
+                dict[Symbols.Doc] = ((PythonFunction)_fget).__doc__;
+            }
         }
 
         internal override bool TryGetValue(CodeContext context, object instance, PythonType owner, out object value) {
@@ -149,7 +158,7 @@ namespace IronPython.Runtime {
         }
 
         [SpecialName, PropertyMethod, WrapperDescriptor]
-        public static void Set__doc__(PythonProperty self) {
+        public static void Set__doc__(PythonProperty self, object value) {
             throw PythonOps.TypeError("'property' object is immutable");
         }
 

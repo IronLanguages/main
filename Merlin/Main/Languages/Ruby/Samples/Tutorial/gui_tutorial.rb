@@ -95,12 +95,11 @@ module GuiTutorial
 
     def select_next_task
       unless @tasks.empty?
-        @task = @tasks.shift
+        begin @task = @tasks.shift end until @task.should_run? Window.repl.context.bind
         @window.next_step
         if @task.description
           fd = FlowDocument.from_simple_markup @task.description
           fd << "Full path: #{@task.source_files.tr('/', '\\')}" if @task.source_files
-          return select_next_task if not @task.should_run? Window.repl.context.bind
           @task.setup.call(Window.repl.context.bind) if @task.setup
           if @task.code
             unless SILVERLIGHT
@@ -424,7 +423,6 @@ module GuiTutorial
     end
     
     def on_repl_input
-      puts "in on_repl_input"
       print '' if @prev_newline
       history.show!
 

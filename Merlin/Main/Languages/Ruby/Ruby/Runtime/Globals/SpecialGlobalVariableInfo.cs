@@ -120,7 +120,7 @@ namespace IronRuby.Runtime {
                     if (context.RubyOptions.Compatibility == RubyCompatibility.Ruby18) {
                         var kcode = KCoding.GetKCodeName(context.KCode);
                         Utils.Log("KCODE set to " + kcode, "KCODE");
-                        return MutableString.Create(kcode);
+                        return MutableString.CreateAscii(kcode);
                     }
 #endif
                     context.ReportWarning("variable $KCODE is no longer effective");

@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if MICROSOFT_SCRIPTING_CORE
+#if MICROSOFT_SCRIPTING_CORE || SILVERLIGHT
 using ILGenerator = System.Linq.Expressions.Compiler.OffsetTrackingILGenerator;
 #endif
 
@@ -23,6 +23,10 @@ using System.Dynamic.Utils;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
+
+#if SILVERLIGHT
+using System.Core;
+#endif
 
 namespace System.Linq.Expressions.Compiler {
 

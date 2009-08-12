@@ -98,11 +98,11 @@ namespace IronPython.Runtime.Exceptions {
         }
 
         internal TraceBackFrame(PythonTracebackListener traceAdapter, object code, TraceBackFrame back, PythonDebuggingPayload debugProperties, Func<Scope> scopeCallback) {
-            this._traceAdapter = traceAdapter;
-            this._code = code;
-            this._back = back;
-            this._debugProperties = debugProperties;
-            this._scopeCallback = scopeCallback;
+            _traceAdapter = traceAdapter;
+            _code = code;
+            _back = back;
+            _debugProperties = debugProperties;
+            _scopeCallback = scopeCallback;
         }
         
         public TracebackDelegate f_trace {

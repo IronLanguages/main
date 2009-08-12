@@ -379,7 +379,13 @@ namespace Microsoft.Scripting.Interpreter {
             }
 
             public override int Run(InterpretedFrame frame) {
-                frame.Data[_index] = Activator.CreateInstance(_type);
+				try {
+	                frame.Data[_index] = Activator.CreateInstance(_type);
+	            } catch (TargetInvocationException e) {
+	                ExceptionHelpers.UpdateForRethrow(e.InnerException);
+	                throw e.InnerException;
+	            }
+
                 return 1;
             }
 
@@ -423,35 +429,14 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         private static LocalAccessInstruction CreateInstance(int index, ParameterExpression local) {
-            switch (Type.GetTypeCode(local.Type)) {
-                case TypeCode.Boolean: return new ImmutableValue(index, ScriptingRuntimeHelpers.False);
-                case TypeCode.SByte: return new ImmutableValue(index, default(SByte));
-                case TypeCode.Byte: return new ImmutableValue(index, default(Byte));
-                case TypeCode.Char: return new ImmutableValue(index, default(Char));
-                case TypeCode.Int16: return new ImmutableValue(index, default(Int16));
-                case TypeCode.Int32: return new ImmutableValue(index, ScriptingRuntimeHelpers.Int32ToObject(0));
-                case TypeCode.Int64: return new ImmutableValue(index, default(Int64));
-                case TypeCode.UInt16: return new ImmutableValue(index, default(UInt16));
-                case TypeCode.UInt32: return new ImmutableValue(index, default(UInt32));
-                case TypeCode.UInt64: return new ImmutableValue(index, default(UInt64));
-                case TypeCode.Single: return new ImmutableValue(index, default(Single));
-                case TypeCode.Double: return new ImmutableValue(index, default(Double));
-                case TypeCode.DBNull: return new ImmutableValue(index, default(DBNull));
-                case TypeCode.DateTime: return new ImmutableValue(index, default(DateTime));
-                case TypeCode.Decimal: return new ImmutableValue(index, default(Decimal));
-                
-                case TypeCode.String:
-                case TypeCode.Object: 
-                    if (local.Type.IsValueType) {
-                        return new MutableValue(index, local.Type);
-                    } else {
-                        return new Reference(index);
-                    }
-
-                default:
-                    throw Assert.Unreachable;
+            object value = LightCompiler.GetImmutableDefaultValue(local.Type);
+            if (value != null) {
+                return new ImmutableValue(index, value);
+            } else if (local.Type.IsValueType) {
+                return new MutableValue(index, local.Type);
+            } else {
+                return new Reference(index);
             }
-
         }
     }
 
@@ -919,6 +904,35 @@ namespace Microsoft.Scripting.Interpreter {
 
         public override string ToString() {
             return "New " + _constructor.DeclaringType.Name + "(" + _constructor + ")";
+        }
+    }
+
+    public sealed class NewValueTypeInstruction : Instruction {
+        private readonly Type _type;
+
+        public NewValueTypeInstruction(Type type) {
+            Assert.NotNull(type);
+            Debug.Assert(type.IsValueType);
+            _type = type;
+        }
+
+        public override int ConsumedStack { get { return 0; } }
+        public override int ProducedStack { get { return 1; } }
+
+        public override int Run(InterpretedFrame frame) {
+            object ret;
+            try {
+                ret = Activator.CreateInstance(_type);
+            } catch (TargetInvocationException e) {
+                ExceptionHelpers.UpdateForRethrow(e.InnerException);
+                throw e.InnerException;
+            }
+            frame.Push(ret);
+            return +1;
+        }
+
+        public override string ToString() {
+            return "New " + _type + "()";
         }
     }
 

@@ -18,12 +18,18 @@ using System.Collections.ObjectModel;
 using System.Dynamic.Utils;
 using System.Linq.Expressions;
 
+#if SILVERLIGHT
+using System.Core;
+#endif
+
 namespace System.Runtime.CompilerServices {
     /// <summary>
     /// The builder for read only collection.
     /// </summary>
     /// <typeparam name="T">The type of the collection element.</typeparam>
+#if !SILVERLIGHT
     [Serializable]
+#endif
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
     public sealed class ReadOnlyCollectionBuilder<T> : IList<T>, System.Collections.IList {
         private const int DefaultCapacity = 4;
@@ -31,7 +37,10 @@ namespace System.Runtime.CompilerServices {
         private T[] _items;
         private int _size;
         private int _version;
+
+#if !SILVERLIGHT
         [NonSerialized]
+#endif
         private Object _syncRoot;
 
         static readonly T[] _emptyArray = new T[0];
@@ -439,7 +448,9 @@ namespace System.Runtime.CompilerServices {
             throw new ArgumentException(Strings.InvalidObjectType(value != null ? value.GetType() : (object)"null", typeof(T)), argument);
         }
 
+#if !SILVERLIGHT
         [Serializable]
+#endif
         private class Enumerator : IEnumerator<T>, System.Collections.IEnumerator {
             private readonly ReadOnlyCollectionBuilder<T> _builder;
             private readonly int _version;

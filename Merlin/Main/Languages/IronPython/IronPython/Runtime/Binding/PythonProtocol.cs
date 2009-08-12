@@ -145,7 +145,7 @@ namespace IronPython.Runtime.Binding {
                 callSlot.MakeGetExpression(
                     pyContext.Binder,
                     PythonContext.GetCodeContext(call),
-                    self.Expression,
+                    self,
                     GetPythonType(self),
                     cb
                 );
@@ -187,17 +187,25 @@ namespace IronPython.Runtime.Binding {
             return null;
         }
 
-        private static Expression/*!*/ GetPythonType(DynamicMetaObject/*!*/ self) {
+        private static DynamicMetaObject/*!*/ GetPythonType(DynamicMetaObject/*!*/ self) {
             Assert.NotNull(self);
 
             PythonType pt = DynamicHelpers.GetPythonType(self.Value);
             if (pt.IsSystemType) {
-                return AstUtils.Constant(pt);
+                return new DynamicMetaObject(
+                    AstUtils.Constant(pt),
+                    BindingRestrictions.Empty,
+                    pt
+                );
             }
 
-            return Ast.Property(
-                Ast.Convert(self.Expression, typeof(IPythonObject)),
-                TypeInfo._IPythonObject.PythonType
+            return new DynamicMetaObject(
+                Ast.Property(
+                    Ast.Convert(self.Expression, typeof(IPythonObject)),
+                    TypeInfo._IPythonObject.PythonType
+                ),
+                BindingRestrictions.Empty,
+                pt
             );
         }
 

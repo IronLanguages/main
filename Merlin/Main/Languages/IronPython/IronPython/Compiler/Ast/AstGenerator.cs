@@ -15,12 +15,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Dynamic;
 using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Text;
+using System.Runtime.CompilerServices;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
@@ -34,7 +32,6 @@ using IronPython.Runtime.Binding;
 using IronPython.Runtime.Operations;
 
 using AstUtils = Microsoft.Scripting.Ast.Utils;
-using Debugging = Microsoft.Scripting.Debugging;
 using MSAst = System.Linq.Expressions;
 
 namespace IronPython.Compiler.Ast {
@@ -54,7 +51,7 @@ namespace IronPython.Compiler.Ast {
         private LabelTarget _returnLabel;                               // the label for the end of the current method, if "return" was used
         private readonly MSAst.SymbolDocumentInfo _document;            // if set, used to wrap expressions with debug information
         private readonly GlobalAllocator/*!*/ _globals;                 // helper class for generating globals code gen
-        private readonly List<ParameterExpression> _locals;             // local variables allocated during the transformation of the code
+        private readonly ReadOnlyCollectionBuilder<ParameterExpression> _locals;             // local variables allocated during the transformation of the code
         private readonly List<ParameterExpression> _params;             // parameters allocated during the transformation of the code
         private List<ClosureInfo> _liftedVars;                          // list of all variables and which ones are closed over.
         private MSAst.ParameterExpression _localCodeContext;            // the current context if it's different from the global context.
@@ -71,11 +68,12 @@ namespace IronPython.Compiler.Ast {
         private Dictionary<int, bool> _handlerLocations;                // list of all exception handlers and finallys.  - used for debugging/tracing support to disallow jumping into handlers.  Value is true if handler is finally
 
         private static readonly Dictionary<string, MethodInfo> _HelperMethods = new Dictionary<string, MethodInfo>(); // cache of helper methods
-        private static readonly MethodInfo _UpdateStackTrace = typeof(ExceptionHelpers).GetMethod("UpdateStackTrace");
+        private static readonly MethodInfo _UpdateStackTrace = typeof(PythonOps).GetMethod("UpdateStackTrace");
         private static readonly MSAst.Expression _GetCurrentMethod = Ast.Call(typeof(MethodBase).GetMethod("GetCurrentMethod"));
         internal static readonly MSAst.Expression[] EmptyExpression = new MSAst.Expression[0];
         internal static readonly MSAst.BlockExpression EmptyBlock = Ast.Block(AstUtils.Empty());
         internal static readonly LabelTarget GeneratorLabel = Ast.Label(typeof(object), "generatorLabel");
+        internal static MSAst.ParameterExpression _functionStack = Ast.Variable(typeof(List<FunctionStack>), "funcStack");
         private const string NameForExec = "module: <exec>";
 
         private AstGenerator(string name, bool generator, string profilerName, bool print) {
@@ -83,7 +81,7 @@ namespace IronPython.Compiler.Ast {
             _isGenerator = generator;
 
             _name = name;
-            _locals = new List<ParameterExpression>();
+            _locals = new ReadOnlyCollectionBuilder<ParameterExpression>();
             _params = new List<ParameterExpression>();
 
             if (profilerName == null) {
@@ -115,16 +113,15 @@ namespace IronPython.Compiler.Ast {
             _context = context;
             _pythonContext = (PythonContext)context.SourceUnit.LanguageContext;
             _document = _context.SourceUnit.Document ?? Ast.SymbolDocument(name, PyContext.LanguageGuid, PyContext.VendorGuid);
-
-            LanguageContext pc = context.SourceUnit.LanguageContext;
+            
             switch (mode) {
-                case CompilationMode.Collectable: _globals = new ArrayGlobalAllocator(pc); break;
+                case CompilationMode.Collectable: _globals = new ArrayGlobalAllocator(_pythonContext); break;
                 case CompilationMode.Lookup: _globals = new DictionaryGlobalAllocator(); break;
-                case CompilationMode.ToDisk: _globals = new SavableGlobalAllocator(pc); break;
-                case CompilationMode.Uncollectable: _globals = new StaticGlobalAllocator(pc, name); break;
+                case CompilationMode.ToDisk: _globals = new SavableGlobalAllocator(_pythonContext); break;
+                case CompilationMode.Uncollectable: _globals = new StaticGlobalAllocator(_pythonContext, name); break;
             }
 
-            PythonOptions po = (pc.Options as PythonOptions);
+            PythonOptions po = (_pythonContext.Options as PythonOptions);
             Assert.NotNull(po);
             if (po.EnableProfiler && mode != CompilationMode.ToDisk) {
                 _profiler = Profiler.GetProfiler(PyContext);
@@ -391,7 +388,7 @@ namespace IronPython.Compiler.Ast {
 
             // wrap a scope if needed
             if (_locals != null && _locals.Count > 0) {
-                body = Ast.Block(new ReadOnlyCollection<ParameterExpression>(_locals.ToArray()), body);
+                body = Ast.Block(_locals.ToReadOnlyCollection(), body);
             }
 
             return body;
@@ -531,12 +528,8 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal MSAst.Expression/*!*/ AddReturnTarget(MSAst.Expression/*!*/ expression) {
-            return AddReturnTarget(expression, typeof(object));
-        }
-
-        internal MSAst.Expression/*!*/ AddReturnTarget(MSAst.Expression/*!*/ expression, Type type) {
             if (_returnLabel != null) {
-                expression = Ast.Label(_returnLabel, AstUtils.Convert(expression, type));
+                expression = Ast.Label(_returnLabel, AstUtils.Convert(expression, typeof(object)));
                 _returnLabel = null;
             }
             return expression;
@@ -638,7 +631,7 @@ namespace IronPython.Compiler.Ast {
                             LineNumberUpdated
                         ),
                         Ast.Call(
-                            typeof(ExceptionHelpers).GetMethod("UpdateStackTrace"),
+                            _UpdateStackTrace,
                             LocalContext,
                             _GetCurrentMethod,
                             AstUtils.Constant(Name),
@@ -807,7 +800,7 @@ namespace IronPython.Compiler.Ast {
 
             MSAst.Expression toExpr = fromStmt.Transform(this);
 
-            if (toExpr != null && updateLine) {
+            if (toExpr != null && updateLine && Context.SourceUnit.Kind != SourceCodeKind.Expression) {
                 toExpr = Ast.Block(
                     UpdateLineNumber(fromStmt.Start.Line),
                     toExpr
@@ -962,6 +955,37 @@ namespace IronPython.Compiler.Ast {
             return body;
         }
 
+        /// <summary>
+        /// Creates a method frame for tracking purposes and enforces recursion
+        /// </summary>
+        internal static MSAst.Expression AddFrame(MSAst.Expression localContext, MSAst.Expression codeObject, MSAst.Expression body) {
+            body = AstUtils.Try(
+                Ast.Assign(
+                    _functionStack,
+                    Ast.Call(
+                        typeof(PythonOps).GetMethod("PushFrame"),
+                        localContext,
+                        codeObject
+                    )
+                ),
+                body
+            ).Finally(
+                Ast.Call(
+                    _functionStack,
+                    typeof(List<FunctionStack>).GetMethod("RemoveAt"),
+                    Ast.Add(
+                        Ast.Property(
+                            _functionStack,
+                            "Count"
+                        ),
+                        Ast.Constant(-1)
+                    )
+                )
+            );
+
+            return body;
+        }
+
         internal bool ShouldInterpret {
             get {
                 if (_globals is DictionaryGlobalAllocator) {
@@ -977,8 +1001,17 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
+        internal MSAst.SymbolDocumentInfo Document {
+            get {
+                return _document;
+            }
+        }
+
         internal ScriptCode MakeScriptCode(MSAst.Expression/*!*/ body, CompilerContext/*!*/ context, PythonAst/*!*/ ast) {
-            return Globals.MakeScriptCode(Ast.Block(_locals, body), context, ast);
+            if (_locals.Count > 0) {
+                body = Ast.Block(_locals.ToReadOnlyCollection(), body);
+            }
+            return Globals.MakeScriptCode(body, context, ast);
         }
 
         #region Binder Factories

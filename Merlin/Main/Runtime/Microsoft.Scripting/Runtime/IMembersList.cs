@@ -18,13 +18,9 @@ using System.Collections.Generic;
 namespace Microsoft.Scripting.Runtime {
 
     /// <summary>
-    /// Provides a list of all the members of an instance.  ie. all the keys in the 
-    /// dictionary of the object. Note that it can contain objects that are not strings. 
-    /// 
-    /// Such keys can be added in IronPython using syntax like:
-    ///     obj.__dict__[100] = someOtherObject
+    /// Provides a list of all the members of an instance.  
     /// </summary>
     public interface IMembersList {
-        IList<object> GetMemberNames(CodeContext context);
+        IList<string> GetMemberNames();
     }
 }

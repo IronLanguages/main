@@ -17,7 +17,12 @@ using System.Collections.Generic;
 using System.Dynamic.Utils;
 using System.Linq.Expressions;
 using System.Reflection;
+
+#if SILVERLIGHT
+using System.Core;
+#else
 using System.Runtime.Remoting;
+#endif
 
 namespace System.Dynamic {
     /// <summary>

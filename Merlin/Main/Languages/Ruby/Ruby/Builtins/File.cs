@@ -49,7 +49,7 @@ namespace IronRuby.Builtins {
             } else if (readWriteFlags == RubyFileMode.RDWR) {
                 access = FileAccess.ReadWrite;
             } else {
-                throw RubyErrno.CreateEINVAL(String.Format("illegal access mode {0}", mode));
+                throw RubyExceptions.CreateEINVAL(String.Format("illegal access mode {0}", mode));
             }
 
             if ((mode & RubyFileMode.APPEND) != 0) {
@@ -63,17 +63,17 @@ namespace IronRuby.Builtins {
             }
 
             if ((mode & RubyFileMode.EXCL) != 0 && (mode & RubyFileMode.CREAT) != 0 && context.DomainManager.Platform.FileExists(path)) {
-                throw RubyErrno.CreateEEXIST(String.Format("No such file or directory - {0}", path));
+                throw RubyExceptions.CreateEEXIST(String.Format("No such file or directory - {0}", path));
             }
 
             try {
                 return context.DomainManager.Platform.OpenInputFileStream(path, fileMode, access, share);
             } catch (DirectoryNotFoundException e) {
-                throw RubyErrno.CreateENOENT(e.Message, e);
+                throw RubyExceptions.CreateENOENT(e.Message, e);
             } catch (PathTooLongException e) {
-                throw RubyErrno.CreateENOENT(e.Message, e);
+                throw RubyExceptions.CreateENOENT(e.Message, e);
             } catch (ArgumentException e) {
-                throw RubyErrno.CreateEINVAL(e.Message, e);
+                throw RubyExceptions.CreateEINVAL(e.Message, e);
             }
         }
 
@@ -110,24 +110,24 @@ namespace IronRuby.Builtins {
                     break;
 
                 default:
-                    throw RubyErrno.CreateEINVAL(String.Format("illegal access mode {0}", modeString));
+                    throw RubyExceptions.CreateEINVAL(String.Format("illegal access mode {0}", modeString));
             }
 
             try {
                 return context.DomainManager.Platform.OpenInputFileStream(path, mode, access, FileShare.ReadWrite);
             } catch (DirectoryNotFoundException e) {
-                throw RubyErrno.CreateENOENT(e.Message, e);
+                throw RubyExceptions.CreateENOENT(e.Message, e);
             } catch (PathTooLongException e) {
-                throw RubyErrno.CreateENOENT(e.Message, e);
+                throw RubyExceptions.CreateENOENT(e.Message, e);
             } catch (ArgumentException e) {
-                throw RubyErrno.CreateEINVAL(e.Message, e);
+                throw RubyExceptions.CreateEINVAL(e.Message, e);
             }
         }
 
         public RubyFile(RubyContext/*!*/ context, string/*!*/ path, string/*!*/ modeString)
             : base(context, OpenFileStream(context, path, modeString), modeString) {
             if (string.IsNullOrEmpty(path)) {
-                throw RubyErrno.CreateEINVAL();
+                throw RubyExceptions.CreateEINVAL();
             }
 
             _path = path;
@@ -136,7 +136,7 @@ namespace IronRuby.Builtins {
         public RubyFile(RubyContext/*!*/ context, string/*!*/ path, RubyFileMode mode)
             : base(context, OpenFileStream(context, path, mode), mode) {
             if (string.IsNullOrEmpty(path)) {
-                throw RubyErrno.CreateEINVAL();
+                throw RubyExceptions.CreateEINVAL();
             }
 
             _path = path;

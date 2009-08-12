@@ -34,7 +34,7 @@ namespace IronPython.Runtime.Binding {
     using Ast = System.Linq.Expressions.Expression;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
 
-    class MetaPythonFunction : MetaPythonObject, IPythonInvokable, IPythonOperable, IPythonConvertible, IInferableInvokable {
+    class MetaPythonFunction : MetaPythonObject, IPythonInvokable, IPythonOperable, IPythonConvertible, IInferableInvokable, IConvertibleMetaObject, IPythonGetable {
         public MetaPythonFunction(Expression/*!*/ expression, BindingRestrictions/*!*/ restrictions, PythonFunction/*!*/ value)
             : base(expression, BindingRestrictions.Empty, value) {
             Assert.NotNull(value);
@@ -47,11 +47,57 @@ namespace IronPython.Runtime.Binding {
         }
 
         #endregion
-        
+
+
+        #region IPythonGetable Members
+
+        public DynamicMetaObject GetMember(PythonGetMemberBinder member, DynamicMetaObject codeContext) {
+            return BindGetMemberWorker(member, member.Name, codeContext);
+        }
+
+        #endregion
+
         #region MetaObject Overrides
 
         public override DynamicMetaObject/*!*/ BindInvokeMember(InvokeMemberBinder/*!*/ action, DynamicMetaObject/*!*/[]/*!*/ args) {
-            return BindingHelpers.GenericInvokeMember(action, null, this, args);
+            ParameterExpression tmp = Expression.Parameter(typeof(object));
+
+            // first get the default binder value
+            DynamicMetaObject fallback = action.FallbackInvokeMember(this, args);
+
+            // then fallback w/ an error suggestion that does a late bound lookup.
+            return action.FallbackInvokeMember(
+                this,
+                args,
+                new DynamicMetaObject(
+                    Ast.Block(
+                        new[] { tmp },
+                        Ast.Condition(
+                            Ast.NotEqual(
+                                Ast.Assign(
+                                    tmp,
+                                    Ast.Call(
+                                        typeof(PythonOps).GetMethod("PythonFunctionGetMember"),
+                                        AstUtils.Convert(
+                                            Expression,
+                                            typeof(PythonFunction)
+                                        ),
+                                        Expression.Constant(SymbolTable.StringToId(action.Name))
+                                    )
+                                ),
+                                Ast.Constant(OperationFailed.Value)
+                            ),
+                            action.FallbackInvoke(
+                                new DynamicMetaObject(tmp, BindingRestrictions.Empty),
+                                args,
+                                null
+                            ).Expression,
+                            AstUtils.Convert(fallback.Expression, typeof(object))
+                        )
+                    ),
+                    BindingRestrictions.GetTypeRestriction(Expression, typeof(PythonFunction)).Merge(fallback.Restrictions)
+                )
+            );
         }
 
         public override DynamicMetaObject/*!*/ BindInvoke(InvokeBinder/*!*/ call, params DynamicMetaObject/*!*/[]/*!*/ args) {
@@ -80,6 +126,143 @@ namespace IronPython.Runtime.Binding {
                 }
             }
         }
+
+        public override DynamicMetaObject BindGetMember(GetMemberBinder binder) {
+            return BindGetMemberWorker(binder, binder.Name, PythonContext.GetCodeContextMO(binder));
+        }
+
+        private DynamicMetaObject BindGetMemberWorker(DynamicMetaObjectBinder binder, string name, DynamicMetaObject codeContext) {
+            ParameterExpression tmp = Expression.Parameter(typeof(object));
+
+            // first get the default binder value
+            DynamicMetaObject fallback = FallbackGetMember(binder, this, codeContext);
+
+            // then fallback w/ an error suggestion that does a late bound lookup.
+            return FallbackGetMember(
+                binder,
+                this,
+                codeContext,
+                new DynamicMetaObject(
+                    Ast.Block(
+                        new[] { tmp },
+                        Ast.Condition(
+                            Ast.NotEqual(
+                                Ast.Assign(
+                                    tmp,
+                                    Ast.Call(
+                                        typeof(PythonOps).GetMethod("PythonFunctionGetMember"),
+                                        AstUtils.Convert(
+                                            Expression,
+                                            typeof(PythonFunction)
+                                        ),
+                                        Expression.Constant(SymbolTable.StringToId(name))
+                                    )
+                                ),
+                                Ast.Constant(OperationFailed.Value)
+                            ),
+                            tmp,
+                            AstUtils.Convert(fallback.Expression, typeof(object))
+                        )
+                    ),
+                    BindingRestrictions.GetTypeRestriction(Expression, typeof(PythonFunction)).Merge(fallback.Restrictions)
+                )
+            );
+        }
+
+        private DynamicMetaObject FallbackGetMember(DynamicMetaObjectBinder binder, DynamicMetaObject self, DynamicMetaObject codeContext) {
+            return FallbackGetMember(binder, self, codeContext, null);
+        }
+
+        private DynamicMetaObject FallbackGetMember(DynamicMetaObjectBinder binder, DynamicMetaObject self, DynamicMetaObject codeContext, DynamicMetaObject errorSuggestion) {
+            PythonGetMemberBinder pyGetMem = binder as PythonGetMemberBinder;
+            if (pyGetMem != null) {
+                return pyGetMem.Fallback(self, codeContext, errorSuggestion);
+            }
+
+            return ((GetMemberBinder)binder).FallbackGetMember(self, errorSuggestion);
+        }
+
+        public override DynamicMetaObject BindSetMember(SetMemberBinder binder, DynamicMetaObject value) {
+            ParameterExpression tmp = Expression.Parameter(typeof(bool));
+
+            // fallback w/ an error suggestion that does a late bound set
+            return binder.FallbackSetMember(
+                this,
+                value,
+                new DynamicMetaObject(
+                    Ast.Call(
+                        typeof(PythonOps).GetMethod("PythonFunctionSetMember"),
+                        AstUtils.Convert(
+                            Expression,
+                            typeof(PythonFunction)
+                        ),
+                        Expression.Constant(SymbolTable.StringToId(binder.Name)),
+                        AstUtils.Convert(
+                            value.Expression,
+                            typeof(object)
+                        )
+                    ),
+                    BindingRestrictions.GetTypeRestriction(Expression, typeof(PythonFunction))
+                )
+            );
+        }
+
+        public override DynamicMetaObject BindDeleteMember(DeleteMemberBinder binder) {
+            switch (binder.Name) {
+                case "func_dict":
+                case "__dict__":
+                    return new DynamicMetaObject(
+                        Expression.Call(
+                            typeof(PythonOps).GetMethod("PythonFunctionDeleteDict")
+                        ),
+                        BindingRestrictions.GetTypeRestriction(Expression, typeof(PythonFunction))
+                    );
+                case "__doc__":
+                case "func_doc":
+                    return new DynamicMetaObject(
+                        Expression.Call(
+                            typeof(PythonOps).GetMethod("PythonFunctionDeleteDoc"),
+                            Expression.Convert(Expression, typeof(PythonFunction))
+                        ),
+                        BindingRestrictions.GetTypeRestriction(Expression, typeof(PythonFunction))
+                    );
+                case "func_defaults":
+                    return new DynamicMetaObject(
+                        Expression.Call(
+                            typeof(PythonOps).GetMethod("PythonFunctionDeleteDefaults"),
+                            Expression.Convert(Expression, typeof(PythonFunction))
+                        ),
+                        BindingRestrictions.GetTypeRestriction(Expression, typeof(PythonFunction))
+                    ); 
+            }
+
+            // first get the default binder value
+            DynamicMetaObject fallback = binder.FallbackDeleteMember(this);
+
+            // then fallback w/ an error suggestion that does a late bound delete
+            return binder.FallbackDeleteMember(
+                this,
+                new DynamicMetaObject(
+                    Expression.Condition(
+                        Ast.Call(
+                            typeof(PythonOps).GetMethod("PythonFunctionDeleteMember"),
+                            AstUtils.Convert(
+                                Expression,
+                                typeof(PythonFunction)
+                            ),
+                            Expression.Constant(SymbolTable.StringToId(binder.Name))
+                        ),
+                        Expression.Default(typeof(void)),       // we deleted the member
+                        AstUtils.Convert(
+                            fallback.Expression,                // report language specific error,
+                            typeof(void)
+                        )
+                    ),
+                    BindingRestrictions.GetTypeRestriction(Expression, typeof(PythonFunction)).Merge(fallback.Restrictions)
+                )
+            );
+        }
+
         #endregion
 
         #region Calls
@@ -927,6 +1110,14 @@ namespace IronPython.Runtime.Binding {
             }
 
             return null;
+        }
+
+        #endregion
+
+        #region IConvertibleMetaObject Members
+
+        bool IConvertibleMetaObject.CanConvertTo(Type/*!*/ type, bool @explicit) {
+            return type.IsSubclassOf(typeof(Delegate));
         }
 
         #endregion

@@ -23,6 +23,7 @@ using System.Text;
 using IronRuby.Compiler;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
+using IronRuby.Runtime.Conversions;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
@@ -227,10 +228,21 @@ namespace IronRuby.Builtins {
                         }
                         count = Int32.Parse(format.Substring(pos1, (i - pos1)));
                         i--;
+                    } else if (c == '@' && c2 == '-') {
+                        int pos1 = i;
+                        i += 2;
+                        while (i < format.Length && Char.IsDigit(format[i])) {
+                            i++;
+                        }
+                        count = Int32.Parse(format.Substring(pos1, (i - pos1)));
+                        i--;
                     } else if (c2 == '*') {
                         count = null;
                     } else {
                         i--;
+                        if (c == '@') {
+                            count = 0;
+                        }
                     }
                     
                     yield return new FormatDirective(c, count);
@@ -248,6 +260,7 @@ namespace IronRuby.Builtins {
             ConversionStorage<MutableString>/*!*/ stringCast, 
             RubyContext/*!*/ context, RubyArray/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ format) {
 
+            // TODO (encoding):
             using (MutableStringStream stream = new MutableStringStream()) {
                 BinaryWriter writer = new BinaryWriter(stream);
                 int i = 0;

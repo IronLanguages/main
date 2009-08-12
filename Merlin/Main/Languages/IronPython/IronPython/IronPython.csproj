@@ -1,8 +1,8 @@
-﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="3.5">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>9.0.30729</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{95289EA9-5778-489D-AB48-F81F2CE2DA32}</ProjectGuid>
     <OutputType>Library</OutputType>
@@ -13,7 +13,6 @@
     <SccLocalPath>SAK</SccLocalPath>
     <SccAuxPath>SAK</SccAuxPath>
     <SccProvider>SAK</SccProvider>
-    <OldToolsVersion>2.0</OldToolsVersion>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <WarningsNotAsErrors>618,1685</WarningsNotAsErrors>
     <AssemblyOriginatorKeyFile>..\..\..\Support\MSSharedLibKey.snk</AssemblyOriginatorKeyFile>
@@ -22,6 +21,7 @@
     <DelaySign>true</DelaySign>
     <SilverlightPath Condition="$(SilverlightPath) == ''">..\..\..\Utilities\Silverlight\x86ret\</SilverlightPath>
     <BaseAddress>879755264</BaseAddress>
+    <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
@@ -80,7 +80,7 @@
     <NoWarn>1591</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="System" Condition=" $(SilverlightBuild) != 'true' " />
+    <Reference Include="System" Condition=" '$(SilverlightBuild)' != 'true' " />
     <Reference Include="mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" Condition=" '$(SilverlightBuild)' == 'true' ">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(SilverlightPath)\mscorlib.dll</HintPath>
@@ -90,7 +90,7 @@
       <HintPath>$(SilverlightPath)\System.dll</HintPath>
     </Reference>
     <Reference Include="System.Data" />
-    <Reference Include="System.Xml" Condition=" $(SilverlightBuild) != 'true' " />
+    <Reference Include="System.Xml" Condition=" '$(SilverlightBuild)' != 'true' " />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\..\Hosts\SilverLight\SilverlightVersion.cs" Condition=" '$(SilverlightBuild)' == 'true' ">
@@ -102,7 +102,10 @@
     <Compile Include="Compiler\Ast\AssertStatement.cs" />
     <Compile Include="Compiler\Ast\AssignmentStatement.cs" />
     <Compile Include="Compiler\Ast\AstGenerator.cs" />
+    <Compile Include="Compiler\Ast\BinaryExpression.Generated.cs" />
+    <Compile Include="Compiler\RunnableScriptCode.cs" />
     <Compile Include="Modules\imp.cs" />
+    <Compile Include="Runtime\CodeContext.cs" />
     <Compile Include="Runtime\DontMapIEnumerableToIterAttribute.cs" />
     <Compile Include="Runtime\Binding\ContextArgBuilder.cs" />
     <Compile Include="Runtime\Binding\IFastSettable.cs" />
@@ -247,6 +250,7 @@
     <Compile Include="Runtime\Operations\IListOfByteOps.cs" />
     <Compile Include="Runtime\BytesConversionAttribute.cs" />
     <Compile Include="Runtime\Python3Warning.cs" />
+    <Compile Include="Runtime\PythonDynamicStackFrame.cs" />
     <Compile Include="Runtime\PythonFunction.Generated.cs" />
     <Compile Include="Runtime\PythonOptions.cs" />
     <Compile Include="Runtime\CompiledLoader.cs" />
@@ -306,7 +310,6 @@
     <Compile Include="Runtime\Exceptions\ObjectException.cs" />
     <Compile Include="Runtime\Exceptions\OldInstanceException.cs" />
     <Compile Include="Runtime\Exceptions\OSException.Generated.cs" />
-    <Compile Include="Runtime\Exceptions\OverflowWarningException.Generated.cs" />
     <Compile Include="Runtime\Exceptions\PendingDeprecationWarningException.Generated.cs" />
     <Compile Include="Runtime\Exceptions\PythonExceptions.cs" />
     <Compile Include="Runtime\Exceptions\PythonExceptions.Generated.cs" />
@@ -337,7 +340,6 @@
     <Compile Include="Runtime\Binding\PythonOperationBinder.cs" />
     <Compile Include="Runtime\MissingParameter.cs" />
     <Compile Include="Runtime\ModuleDictionaryStorage.cs" />
-    <Compile Include="Runtime\Operations\ScriptScopeOps.cs" />
     <Compile Include="Runtime\Operations\DBNullOps.cs" />
     <Compile Include="Runtime\Operations\DictionaryOfTOps.cs" />
     <Compile Include="Runtime\Operations\ListOfTOps.cs" />
@@ -450,6 +452,7 @@
     <Compile Include="Runtime\Types\IPythonObject.cs" />
     <Compile Include="Runtime\Types\PythonTypeSlot.cs" />
     <Compile Include="Runtime\Types\DynamicHelpers.cs" />
+    <Compile Include="Runtime\UnboundNameException.cs" />
     <Compile Include="Runtime\WarningInfo.cs" />
     <Compile Include="Runtime\WeakRef.cs" />
     <Compile Include="Runtime\WrapperDescriptorAttribute.cs" />

@@ -26,39 +26,6 @@ namespace IronRuby.Builtins {
     /// </summary>
     [RubyModule("MultiDimensionalArray", DefineIn = typeof(IronRubyOps.ClrOps), Extends = typeof(MultiDimensionalArray), Restrictions = ModuleRestrictions.None)]
     public static class MultiDimensionalArrayOps {
-        [RubyMethod("[]=")]
-        public static object SetElement(Array/*!*/ self, int index1, int index2, object value) {
-            self.SetValue(value, index1, index2);
-            return value;
-        }
-
-        [RubyMethod("[]=")]
-        public static object SetElement(Array/*!*/ self, int index1, int index2, int index3, object value) {
-            self.SetValue(value, index1, index2, index3);
-            return value;
-        }
-
-        // TODO: params array in the middle of parameters -> needs special attribute or a meta-implementation (meta-impl could call 
-        // T[...].Get()/Set() directly).
-        [RubyMethod("[]=")]
-        public static object SetElement(Array/*!*/ self, /*params*/ int[] indices, object value) {
-            self.SetValue(value, indices);
-            return value;
-        }
-
-        [RubyMethod("[]")]
-        public static object GetElement(Array/*!*/ self, int index1, int index2) {
-            return self.GetValue(index1, index2);
-        }
-
-        [RubyMethod("[]")]
-        public static object GetElement(Array/*!*/ self, int index1, int index2, int index3) {
-            return self.GetValue(index1, index2, index3);
-        }
-
-        [RubyMethod("[]")]
-        public static object GetElement(Array/*!*/ self, int[] indices) {
-            return self.GetValue(indices);
-        }
+        // [], []= methods are mapped to Get/Set methods
     }
 }

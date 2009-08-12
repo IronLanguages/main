@@ -28,6 +28,7 @@ using IronRuby.Runtime.Calls;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+using IronRuby.Runtime.Conversions;
 
 namespace IronRuby.Runtime {
     [Flags]
@@ -36,6 +37,7 @@ namespace IronRuby.Runtime {
         LoadOnce = 1,
         LoadIsolated = 2,
         AppendExtensions = 4,
+        ResolveLoaded = 8
     }
 
     // TODO: thread safety
@@ -58,7 +60,10 @@ namespace IronRuby.Runtime {
         private readonly RubyArray/*!*/ _loadedFiles;
 
         // files that were required but their execution haven't completed yet:
-        private readonly Stack<string>/*!*/ _unfinishedFiles; 
+        private readonly Stack<string>/*!*/ _unfinishedFiles;
+
+        // lazy init
+        private SynchronizedDictionary<string, Scope> _loadedScripts;
 
         // TODO: static
         // maps full normalized path to compiled code:
@@ -97,6 +102,21 @@ namespace IronRuby.Runtime {
             get { return _loadedFiles; }
         }
 
+        /// <summary>
+        /// Contains all loaded foreign language scripts. Maps path to scope created for each loaded script.
+        /// A script is published here as soon as its scopr is created just before it is executed.
+        /// </summary>
+        public IDictionary<string, Scope>/*!*/ LoadedScripts {
+            get {
+                if (_loadedScripts == null) {
+                    Interlocked.CompareExchange(ref _loadedScripts, 
+                        new SynchronizedDictionary<string, Scope>(new Dictionary<string, Scope>(DomainManager.Platform.PathComparer)), null
+                    );
+                }
+                return _loadedScripts;
+            }
+        }
+
         private PlatformAdaptationLayer/*!*/ Platform {
             get { return DomainManager.Platform; }
         }
@@ -104,7 +124,7 @@ namespace IronRuby.Runtime {
         private ScriptDomainManager/*!*/ DomainManager {
             get { return _context.DomainManager; }
         }
-        
+
         internal Loader(RubyContext/*!*/ context) {
             Assert.NotNull(context);
             _context = context;
@@ -126,7 +146,7 @@ namespace IronRuby.Runtime {
             
             if (options.HasSearchPaths) {
                 foreach (string path in options.SearchPaths) {
-                    loadPaths.Add(MutableString.Create(path.Replace('\\', '/')));
+                    loadPaths.Add(MutableString.Create(path.Replace('\\', '/'), RubyEncoding.Path));
                 }
             }
             
@@ -140,7 +160,7 @@ namespace IronRuby.Runtime {
             
             AddAbsoluteLibraryPaths(loadPaths, applicationBaseDir, options.LibraryPaths);
 #endif
-            loadPaths.Add(MutableString.Create("."));
+            loadPaths.Add(MutableString.CreateAscii("."));
             return loadPaths;
         }
 
@@ -157,7 +177,7 @@ namespace IronRuby.Runtime {
                 } else {
                     fullPath = path;
                 }
-                result.Add(MutableString.Create(fullPath.Replace('\\', '/')));
+                result.Add(MutableString.Create(fullPath.Replace('\\', '/'), RubyEncoding.Path));
             }
         }
 
@@ -231,10 +251,19 @@ namespace IronRuby.Runtime {
             }
         }
 
+        public bool LoadFile(Scope globalScope, object self, MutableString/*!*/ path, LoadFlags flags) {
+            object loaded;
+            return LoadFile(globalScope, self, path, flags, out loaded);
+        }
+
         /// <summary>
         /// Returns <b>true</b> if a Ruby file is successfully loaded, <b>false</b> if it is already loaded.
         /// </summary>
-        public bool LoadFile(Scope globalScope, object self, MutableString/*!*/ path, LoadFlags flags) {
+        /// <param name="globalScope">
+        /// A scope against which the file should be executed or null to create a new scope.
+        /// </param>
+        /// <returns>True if the file was loaded/executed by this call.</returns>
+        public bool LoadFile(Scope globalScope, object self, MutableString/*!*/ path, LoadFlags flags, out object loaded) {
             Assert.NotNull(path);
 
             string assemblyName, typeName;
@@ -243,53 +272,78 @@ namespace IronRuby.Runtime {
             if (TryParseAssemblyName(strPath, out typeName, out assemblyName)) {
 
                 if (AlreadyLoaded(path, flags)) {
+                    loaded = ((flags & LoadFlags.ResolveLoaded) != 0) ? GetAssembly(assemblyName, true, false) : null;
                     return false;
                 }
 
-                if (LoadAssembly(assemblyName, typeName, false, false)) {
+                Assembly assembly = LoadAssembly(assemblyName, typeName, false, false);
+                if (assembly != null) {
                     FileLoaded(path, flags);
+                    loaded = assembly;
                     return true;
                 }
             }
 
-            return LoadFromPath(globalScope, self, strPath, flags);
+            return LoadFromPath(globalScope, self, strPath, flags, out loaded);
         }
 
         #region Assemblies
 
+        public Assembly LoadAssembly(string/*!*/ assemblyName, string typeName, bool throwOnError, bool tryPartialName) {
+            Assembly assembly = GetAssembly(assemblyName, throwOnError, tryPartialName);
+            return (assembly != null && LoadAssembly(assembly, typeName, throwOnError)) ? assembly : null;
+        }
+        
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods", MessageId = "System.Reflection.Assembly.LoadWithPartialName")]
-        public bool LoadAssembly(string/*!*/ assemblyName, string typeName, bool throwOnError, bool tryPartialName) {
-            Utils.Log(String.Format("Loading assembly '{0}' and type '{1}'", assemblyName, typeName), "LOADER");
-            
-            Assembly assembly;
-            try {
-                try {
-                    assembly = Platform.LoadAssembly(assemblyName);
-                } catch (FileNotFoundException) {
+        private Assembly GetAssembly(string/*!*/ assemblyName, bool throwOnError, bool tryPartialName) {
 #if SILVERLIGHT
-                    throw;
-#else
-                    if (tryPartialName) {
-#pragma warning disable 618,612 // csc, gmcs
-                        assembly = Assembly.LoadWithPartialName(assemblyName);
-#pragma warning restore 618,612
-                    } else {
-                        throw;
-                    }
+            tryPartialName = false;
 #endif
-                }
+            try {
+                return Platform.LoadAssembly(assemblyName);
             } catch (Exception e) {
-                if (throwOnError) throw new LoadError(e.Message, e);
-                return false;
+                if (!tryPartialName || !(e is FileNotFoundException)) {
+                    if (throwOnError) {
+                        throw RubyExceptions.CreateLoadError(e);
+                    } else {
+                        return null;
+                    }
+                }
             }
 
+#if SILVERLIGHT
+            throw Assert.Unreachable;
+#else
+#pragma warning disable 618,612 // csc, gmcs
+            Assembly assembly;
+            try { 
+                assembly = Assembly.LoadWithPartialName(assemblyName);
+            } catch (Exception e) {
+                if (throwOnError) {
+                    throw RubyExceptions.CreateLoadError(e);
+                } else {
+                    return null;
+                }
+            }
+            if (assembly == null && throwOnError) {
+                throw RubyExceptions.CreateLoadError(String.Format("Assembly '{0}' not found", assemblyName));
+            }
+#pragma warning restore 618,612
+            return assembly;
+#endif
+        }
+        
+        private bool LoadAssembly(Assembly/*!*/ assembly, string typeName, bool throwOnError) {
+            Utils.Log(String.Format("Loading assembly '{0}' and type '{1}'", assembly, typeName), "LOADER");
             Type initializerType;
             if (typeName != null) {
                 // load Ruby library:
                 try {
                     initializerType = assembly.GetType(typeName, true);
                 } catch (Exception e) {
-                    if (throwOnError) throw new LoadError(e.Message, e);
+                    if (throwOnError) {
+                        throw new LoadError(e.Message, e);
+                    }
                     return false;
                 }
 
@@ -299,7 +353,9 @@ namespace IronRuby.Runtime {
                 try {
                     DomainManager.LoadAssembly(assembly);
                 } catch (Exception e) {
-                    if (throwOnError) throw new LoadError(e.Message, e);
+                    if (throwOnError) {
+                        throw RubyExceptions.CreateLoadError(e);
+                    }
                     return false;
                 }
             }
@@ -384,7 +440,7 @@ namespace IronRuby.Runtime {
                     return assembly;
                 }
             } catch (Exception e) {
-                throw new LoadError(e.Message, e);
+                throw RubyExceptions.CreateLoadError(e);
             }
 
             return null;
@@ -411,21 +467,35 @@ namespace IronRuby.Runtime {
             }
         }
 
-        private bool LoadFromPath(Scope globalScope, object self, string/*!*/ path, LoadFlags flags) {
+        private bool LoadFromPath(Scope globalScope, object self, string/*!*/ path, LoadFlags flags, out object loaded) {
             Assert.NotNull(path);
 
             string[] sourceFileExtensions = DomainManager.Configuration.GetFileExtensions();
             ResolvedFile file = FindFile(path, (flags & LoadFlags.AppendExtensions) != 0, sourceFileExtensions);
             if (file == null) {
-                throw new LoadError(String.Format("no such file to load -- {0}", path));
+                throw RubyExceptions.CreateLoadError(String.Format("no such file to load -- {0}", path));
             }
 
-            MutableString pathWithExtension = MutableString.Create(path);
+            MutableString pathWithExtension = MutableString.Create(path, RubyEncoding.Path);
             if (file.AppendedExtension != null) {
                 pathWithExtension.Append(file.AppendedExtension);
             }
 
             if (AlreadyLoaded(pathWithExtension, flags) || _unfinishedFiles.Contains(pathWithExtension.ToString())) {
+                if ((flags & LoadFlags.ResolveLoaded) != 0) {
+                    var fullPath = Platform.GetFullPath(file.Path);
+                    if (file.SourceUnit != null) {
+                        Scope loadedScope;
+                        if (!LoadedScripts.TryGetValue(fullPath, out loadedScope)) {
+                            throw RubyExceptions.CreateLoadError(String.Format("no such file to load -- {0}", file.Path));
+                        }
+                        loaded = loadedScope;
+                    } else {
+                        loaded = Platform.LoadAssemblyFromPath(fullPath);
+                    }
+                } else {
+                    loaded = null;
+                }
                 return false;
             }
 
@@ -434,20 +504,21 @@ namespace IronRuby.Runtime {
                 _unfinishedFiles.Push(pathWithExtension.ToString());
 
                 if (file.SourceUnit != null) {
-
-                    RubyContext rubySource = file.SourceUnit.LanguageContext as RubyContext;
-                    if (rubySource != null) {
-                        ExecuteRubySourceUnit(file.SourceUnit, globalScope, flags);
+                    ScriptCode compiledCode;
+                    if (file.SourceUnit.LanguageContext == _context) {
+                        compiledCode = CompileRubySource(file.SourceUnit, flags);
                     } else {
-                        file.SourceUnit.Execute();
+                        compiledCode = file.SourceUnit.Compile();
                     }
+                    loaded = Execute(globalScope, compiledCode);
                 } else {
                     Debug.Assert(file.Path != null);
                     try {
-                        Assembly asm = Platform.LoadAssemblyFromPath(Platform.GetFullPath(file.Path));
-                        DomainManager.LoadAssembly(asm);
+                        Assembly assembly = Platform.LoadAssemblyFromPath(Platform.GetFullPath(file.Path));
+                        DomainManager.LoadAssembly(assembly);
+                        loaded = assembly;
                     } catch (Exception e) {
-                        throw new LoadError(e.Message, e);
+                        throw RubyExceptions.CreateLoadError(e);
                     }
                 }
 
@@ -459,7 +530,7 @@ namespace IronRuby.Runtime {
             return true;
         }
 
-        private void ExecuteRubySourceUnit(SourceUnit/*!*/ sourceUnit, Scope globalScope, LoadFlags flags) {
+        private ScriptCode/*!*/ CompileRubySource(SourceUnit/*!*/ sourceUnit, LoadFlags flags) {
             Assert.NotNull(sourceUnit);
             
             // TODO: check file timestamp
@@ -467,11 +538,8 @@ namespace IronRuby.Runtime {
             CompiledFile compiledFile;
             if (TryGetCompiledFile(fullPath, out compiledFile)) {
                 Utils.Log(String.Format("{0}: {1}", ++_cacheHitCount, sourceUnit.Path), "LOAD_CACHED");
-                if (globalScope != null) {
-                    compiledFile.CompiledCode.Run(globalScope);
-                } else {
-                    compiledFile.CompiledCode.Run();
-                }
+
+                return compiledFile.CompiledCode;
             } else {
                 Utils.Log(String.Format("{0}: {1}", ++_compiledFileCount, sourceUnit.Path), "LOAD_COMPILED");
 
@@ -486,12 +554,22 @@ namespace IronRuby.Runtime {
 
                 AddCompiledFile(fullPath, compiledCode);
 
-                CompileAndRun(globalScope, compiledCode);
+                return compiledCode;
             }
         }
 
-        internal object CompileAndRun(Scope globalScope, ScriptCode/*!*/ code) {
-            return globalScope != null ? code.Run(globalScope) : code.Run();
+        internal Scope Execute(Scope globalScope, ScriptCode/*!*/ code) {
+            if (globalScope == null || code.LanguageContext != _context) {
+                globalScope = code.CreateScope();
+                if (code.SourceUnit.Path != null) {
+                    LoadedScripts[Platform.GetFullPath(code.SourceUnit.Path)] = globalScope;
+                }
+                code.Run(globalScope);
+                return globalScope;
+            } else {
+                code.Run(globalScope);
+                return null;
+            }
         }
 
         private ResolvedFile FindFile(string/*!*/ path, bool appendExtensions, string[] sourceFileExtensions) {
@@ -522,7 +600,7 @@ namespace IronRuby.Runtime {
                 isAbsolutePath = Platform.IsAbsolutePath(path);
                 extension = Path.GetExtension(path);
             } catch (ArgumentException e) {
-                throw new LoadError(e.Message, e);
+                throw RubyExceptions.CreateLoadError(e);
             }
 
             // Absolute path -> load paths not consulted.
@@ -592,7 +670,7 @@ namespace IronRuby.Runtime {
                     return GetSourceUnit(path + matchingExtensions[0], matchingExtensions[0], true);
                 } else if (matchingExtensions.Count > 1) {
                     Exception e = new AmbiguousFileNameException(path + matchingExtensions[0], path + matchingExtensions[1]);
-                    throw new LoadError(e.Message, e);
+                    throw RubyExceptions.CreateLoadError(e);
                 }
 
                 foreach (string libExtension in _LibraryExtensions) {
@@ -657,7 +735,7 @@ namespace IronRuby.Runtime {
             lock (_loadPaths) {
                 _loadPaths.Clear();
                 foreach (string path in paths) {
-                    _loadPaths.Add(MutableString.Create(path));
+                    _loadPaths.Add(MutableString.Create(path, RubyEncoding.Path));
                 }
             }
         }
@@ -667,7 +745,7 @@ namespace IronRuby.Runtime {
 
             lock (_loadPaths) {
                 foreach (string path in paths) {
-                    _loadPaths.Add(MutableString.Create(path));
+                    _loadPaths.Add(MutableString.Create(path, RubyEncoding.Path));
                 }
             }
         }
@@ -677,7 +755,7 @@ namespace IronRuby.Runtime {
 
             lock (_loadPaths) {
                 foreach (string path in paths) {
-                    _loadPaths.Insert(0, MutableString.Create(path));
+                    _loadPaths.Insert(0, MutableString.Create(path, RubyEncoding.Path));
                 }
             }
         }
@@ -736,7 +814,7 @@ namespace IronRuby.Runtime {
                 Assembly assembly = _context.DomainManager.Platform.LoadAssembly(GetIronRubyAssemblyLongName("IronRuby.Libraries"));
                 initializerType = assembly.GetType(LibraryInitializer.GetBuiltinsFullTypeName());
             } catch (Exception e) {
-                throw new LoadError(e.Message, e);
+                throw RubyExceptions.CreateLoadError(e);
             }
 
             LoadLibrary(initializerType, true);
@@ -755,13 +833,13 @@ namespace IronRuby.Runtime {
             try {
                 initializer = Activator.CreateInstance(initializerType) as LibraryInitializer;
             } catch (TargetInvocationException e) {
-                throw new LoadError(e.Message, e);
+                throw RubyExceptions.CreateLoadError(e.InnerException);
             } catch (Exception e) {
-                throw new LoadError(e.Message, e);
+                throw RubyExceptions.CreateLoadError(e);
             }
 
             if (initializer == null) {
-                throw new LoadError(String.Format("Specified type {0} is not a subclass of {1}", 
+                throw RubyExceptions.CreateLoadError(String.Format("Specified type {0} is not a subclass of {1}", 
                     initializerType.FullName,
                     typeof(LibraryInitializer).FullName)
                 );

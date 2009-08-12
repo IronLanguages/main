@@ -13,15 +13,13 @@
  *
  * ***************************************************************************/
 
+using System.Diagnostics;
 using System.Runtime.Serialization;
-using Microsoft.Scripting.Actions;
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
-using IronRuby.Runtime;
-using IronRuby.Runtime.Calls;
 using System.Security.Permissions;
 using IronRuby.Compiler.Generation;
-using System.Diagnostics;
+using IronRuby.Runtime;
+using IronRuby.Runtime.Calls;
+using Microsoft.Scripting.Utils;
 
 namespace IronRuby.Builtins {
     /// <summary>
@@ -29,8 +27,14 @@ namespace IronRuby.Builtins {
     /// 
     /// Note that for classes that inherit from some other class, RubyTypeDispenser gets used
     /// </summary>
-    [DebuggerDisplay("{Inspect().ConvertToString()}")]
+    [DebuggerTypeProxy(typeof(RubyObjectDebugView))]
+    [DebuggerDisplay(RubyObject.DebuggerDisplayValue, Type = RubyObject.DebuggerDisplayType)]
     public partial class RubyObject : IRubyObject, IDuplicable, ISerializable {
+        internal const string ImmediateClassFieldName = "_immediateClass"; 
+        internal const string InstanceDataFieldName = "_instanceData";
+        internal const string DebuggerDisplayValue = "{" + ImmediateClassFieldName + ".GetDebuggerDisplayValue(this),nq}";
+        internal const string DebuggerDisplayType = "{" + ImmediateClassFieldName + ".GetDebuggerDisplayType(),nq}";
+
         private RubyInstanceData _instanceData;
         private RubyClass/*!*/ _immediateClass;
 
@@ -43,12 +47,38 @@ namespace IronRuby.Builtins {
         public override string/*!*/ ToString() {
 #if DEBUG && !SILVERLIGHT && !SYSTEM_CORE
             if (RubyBinder._DumpingExpression) {
-                return ToMutableString().ToString();
+                return BaseToMutableString(this).ToString();
             }
 #endif
-            // Translate ToString to to_s conversion for .NET callers.
-            var site = _immediateClass.StringConversionSite;
-            return site.Target(site, this).ToString();
+            var site = _immediateClass.ToStringSite;
+            object toStringResult = site.Target(site, this);
+            if (ReferenceEquals(toStringResult, RubyOps.ForwardToBase)) {
+                return BaseToString();
+            }
+
+            string str = toStringResult as string;
+            if (str != null) {
+                return str;
+            }
+
+            var mstr = toStringResult as MutableString ?? RubyUtils.ObjectToMutableString(_immediateClass.Context, toStringResult);
+            return mstr.ToString();
+        }
+
+        public string/*!*/ BaseToString() {
+            return ToMutableString(this).ToString();
+        }
+
+        public static MutableString/*!*/ ToMutableString(IRubyObject/*!*/ self) {
+            return RubyUtils.FormatObject(self.ImmediateClass.GetNonSingletonClass().Name, self.GetInstanceData().ObjectId, self.IsTainted);
+        }
+
+        public static MutableString/*!*/ BaseToMutableString(IRubyObject/*!*/ self) {
+            if (self is RubyObject) {
+                return ToMutableString(self);
+            } else {
+                return MutableString.CreateMutable(self.BaseToString(), RubyEncoding.UTF8);
+            }
         }
 
         public override bool Equals(object other) {
@@ -85,24 +115,9 @@ namespace IronRuby.Builtins {
             return base.GetHashCode();
         }
 
-        public MutableString/*!*/ ToMutableString() {
-            return RubyUtils.FormatObject(_immediateClass.GetNonSingletonClass().Name, GetInstanceData().ObjectId, IsTainted);
-        }
-
         public MutableString/*!*/ Inspect() {
             return _immediateClass.Context.Inspect(this);
         }
-
-#if !SILVERLIGHT
-        protected RubyObject(SerializationInfo/*!*/ info, StreamingContext context) {
-            RubyOps.DeserializeObject(out _instanceData, out _immediateClass, info);
-        }
-
-        [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.SerializationFormatter)]
-        public virtual void GetObjectData(SerializationInfo/*!*/ info, StreamingContext context) {
-            RubyOps.SerializeObject(_instanceData, _immediateClass, info);
-        }
-#endif
 
         protected virtual RubyObject/*!*/ CreateInstance() {
             return new RubyObject(_immediateClass.NominalClass);
@@ -144,5 +159,16 @@ namespace IronRuby.Builtins {
         }
 
         #endregion
+
+#if !SILVERLIGHT
+        protected RubyObject(SerializationInfo/*!*/ info, StreamingContext context) {
+            RubyOps.DeserializeObject(out _instanceData, out _immediateClass, info);
+        }
+
+        [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.SerializationFormatter)]
+        public virtual void GetObjectData(SerializationInfo/*!*/ info, StreamingContext context) {
+            RubyOps.SerializeObject(_instanceData, _immediateClass, info);
+        }
+#endif
     }
 }

@@ -18,6 +18,8 @@ using Microsoft.Scripting;
 using System.Threading;
 using IronRuby.Builtins;
 using Microsoft.Scripting.Utils;
+using System.Diagnostics;
+using System;
 
 namespace IronRuby.Runtime {
     /// <summary>
@@ -97,7 +99,7 @@ namespace IronRuby.Runtime {
             return _instanceVars;
         }
 
-        #region instance variable support
+        #region Instance Variables
 
         internal bool HasInstanceVariables {
             get {
@@ -181,6 +183,62 @@ namespace IronRuby.Runtime {
             Dictionary<string, object> vars = GetInstanceVariables();
             lock (vars) {
                 vars[name] = value;
+            }
+        }
+
+        internal VariableDebugView[]/*!*/ GetInstanceVariablesDebugView(RubyContext/*!*/ context) {
+            if (_instanceVars == null) {
+                return new RubyInstanceData.VariableDebugView[0];
+            }
+
+            var result = new List<VariableDebugView>();
+            lock (_instanceVars) {
+                foreach (var var in _instanceVars) {
+                    result.Add(new VariableDebugView(context, this, var.Key));
+                }
+            }
+
+            result.Sort((var1, var2) => var1._name.CompareTo(var2._name));
+            return result.ToArray();
+        }
+
+        [DebuggerDisplay("{GetValue()}", Name = "{_name,nq}", Type = "{GetClassName(),nq}")]
+        public sealed class VariableDebugView {
+            [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+            private readonly RubyContext/*!*/ _context;
+            [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+            private readonly RubyInstanceData/*!*/ _data;
+            [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+            internal readonly string/*!*/ _name;
+
+            [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+            public object A {
+                get { return GetValue(); }
+            }
+            
+            [DebuggerDisplay("{B}", Name = "Raw Value", Type = "{GetClrType()}")]
+            public object B {
+                get { return GetValue(); }
+                set { _data.SetInstanceVariable(_name, value); }
+            }
+            
+            private object GetValue() {
+                return _data.GetInstanceVariable(_name);
+            }
+
+            private Type GetClrType() {
+                var value = GetValue();
+                return value != null ? value.GetType() : null;
+            }
+
+            private string/*!*/ GetClassName() {
+                return _context.GetClassDisplayName(GetValue());
+            }
+
+            internal VariableDebugView(RubyContext/*!*/ context, RubyInstanceData/*!*/ data, string/*!*/ name) {
+                _context = context;
+                _data = data;
+                _name = name;
             }
         }
 

@@ -214,7 +214,7 @@ namespace IronPython.Runtime.Binding {
                 );
             }
 
-            return res ?? EnsureReturnType(Context.Binder.ConvertTo(Type, ResultKind, self));
+            return res ?? EnsureReturnType(Context.Binder.ConvertTo(Type, ResultKind, self, _context.SharedOverloadResolverFactory));
         }
 
         private DynamicMetaObject EnsureReturnType(DynamicMetaObject dynamicMetaObject) {

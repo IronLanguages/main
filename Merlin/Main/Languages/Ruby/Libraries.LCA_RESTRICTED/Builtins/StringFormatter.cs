@@ -27,6 +27,7 @@ using IronRuby.Runtime.Calls;
 using System.Runtime.CompilerServices;
 using Microsoft.Scripting.Generation;
 using IronRuby.Compiler.Generation;
+using IronRuby.Runtime.Conversions;
 
 namespace IronRuby.Builtins {
 
@@ -67,7 +68,6 @@ namespace IronRuby.Builtins {
     /// TODO: Many dynamic languages have similar printf style functionality.
     ///       Combine this with IronPython's StringFormatter and move the common code into the DLR
     /// 
-    /// TODO: Use MutableString instead of StringBuilder for building the string
     /// TODO: Support negative numbers for %u and %o and %x
     /// </summary>
     internal sealed class StringFormatter {      
@@ -116,23 +116,30 @@ namespace IronRuby.Builtins {
         // Should ddd.0 be displayed as "ddd" or "ddd.0". "'%g' % ddd.0" needs "ddd", but str(ddd.0) needs "ddd.0"
         private bool _TrailingZeroAfterWholeFloat;
 
+        /// TODO: Use MutableString instead of StringBuilder for building the string + encodings
         private StringBuilder _buf;
+
+        // TODO (encoding):
+        private readonly RubyEncoding/*!*/ _encoding;
 
         private readonly StringFormatterSiteStorage/*!*/ _siteStorage;
 
         #region Constructors
 
         // TODO: remove
-        internal StringFormatter(RubyContext/*!*/ context, string/*!*/ format, IList/*!*/ data) {
-            Assert.NotNull(context, format, data);
+        internal StringFormatter(RubyContext/*!*/ context, string/*!*/ format, RubyEncoding/*!*/ encoding, IList/*!*/ data) {
+            Assert.NotNull(context, format, data, encoding);
 
             _context = context;
             _format = format;
             _data = data;
+
+            // TODO (encoding):
+            _encoding = encoding;
         }
 
-        internal StringFormatter(StringFormatterSiteStorage/*!*/ siteStorage, string/*!*/ format, IList/*!*/ data)
-            : this(siteStorage.Context, format, data) {
+        internal StringFormatter(StringFormatterSiteStorage/*!*/ siteStorage, string/*!*/ format, RubyEncoding/*!*/ encoding, IList/*!*/ data)
+            : this(siteStorage.Context, format, encoding, data) {
             Assert.NotNull(siteStorage);
             _siteStorage = siteStorage;
         }
@@ -161,7 +168,7 @@ namespace IronRuby.Builtins {
 
             _buf.Append(_format, _index, _format.Length - _index);
 
-            MutableString result = MutableString.Create(_buf.ToString());
+            MutableString result = MutableString.Create(_buf.ToString(), _encoding);
 
             if (_tainted) {
                 KernelOps.Taint(_context, result);

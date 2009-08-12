@@ -20,6 +20,9 @@ using System.Reflection;
 using IronRuby.Builtins;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
+using Microsoft.Scripting;
+using Microsoft.Scripting.Actions.Calls;
+using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Ast = System.Linq.Expressions.Expression;
 
@@ -34,6 +37,10 @@ namespace IronRuby.Tests {
 
         private static MethodInfo/*!*/[]/*!*/ GetStaticMethods(Type/*!*/ type, string/*!*/ name) {
             return Array.ConvertAll(type.GetMember(name, BindingFlags.Public | BindingFlags.Static), (mi) => (MethodInfo)mi);
+        }
+
+        private static MethodInfo/*!*/[]/*!*/ GetInstanceMethods(Type/*!*/ type, string/*!*/ name) {
+            return Array.ConvertAll(type.GetMember(name, BindingFlags.Public | BindingFlags.Instance), (mi) => (MethodInfo)mi);
         }
 
         #region Block
@@ -81,14 +88,103 @@ namespace IronRuby.Tests {
 
             var metaBuilder = new MetaObjectBuilder(null);
             for (int i = 0; i < arguments.Length; i++) {
-                RubyOverloadResolver parameterBinder;
+                RubyOverloadResolver resolver;
                 var bindingTarget = RubyMethodGroupInfo.ResolveOverload(
                     metaBuilder, arguments[i], "times", GetStaticMethods(typeof(OverloadsWithBlock), "Times*"), SelfCallConvention.SelfIsParameter,
-                    false, out parameterBinder
+                    false, out resolver
                 );
 
                 Assert(bindingTarget.Success);
                 Assert(bindingTarget.Method.Name == results[i]);
+            }
+        }
+
+        public class Overloads1 {
+            public class X {
+            }
+
+            public void F1(int a) { }
+            public void F2(BigInteger a) { }
+            public void F3(double a) { }
+
+            public void G1([DefaultProtocol]int a) { }
+            public void G2(BigInteger a) { }
+            public void G3(double a) { }
+
+            public void I1(int a) { }
+            public void I2([NotNull]MutableString a) { }
+            public void I3([DefaultProtocol]Union<int, MutableString> a) { }
+
+            public void J1(int a) { }
+            public void J2([NotNull]BigInteger a) { }
+            public void J3([DefaultProtocol]IntegerValue a) { }
+
+            // This is rather useless overload combination:
+            // If DP parameter behaved exaclty like object it would be ambiguous.
+            // Since we try implicit conversions first, all types but numerics assignable to integer prefer K1.
+            // Therefore [DP] is irrelevant here.
+            public void K1(object a) { }
+            public void K2([DefaultProtocol]int a) { }
+
+            // level 0: no overload applicable
+            // level 1: {L1, L3} applicable, MutableString <-/-> SymbolId
+            public void L1(SymbolId a, [DefaultProtocol, NotNull]string b) { }
+            public void L2([NotNull]string a, [DefaultProtocol, NotNull]string b) { }
+            public void L3([DefaultProtocol]MutableString a, [DefaultProtocol, NotNull]string b) { }
+        }
+
+        public void OverloadResolution_Numeric1() {
+            var metaBuilder = new MetaObjectBuilder(null);
+            Context.ObjectClass.SetConstant("X", Context.GetClass(typeof(Overloads1.X)));
+
+            var c = Engine.Execute(@"class C < X; new; end");
+            var sym = SymbolTable.StringToId("x");
+            var ms = MutableString.CreateAscii("x");
+
+            var cases = new[] {
+                // F
+                new { Args = new[] { MO(1) }, Overloads = "F*", Result = "F1" },
+                new { Args = new[] { MO((byte)1) }, Overloads = "F*", Result = "F1" },
+                new { Args = new[] { MO(1L) }, Overloads = "F*", Result = "F2" },
+                new { Args = new[] { MO(1.2F) }, Overloads = "F*", Result = "F3" },
+
+                // G
+                new { Args = new[] { MO(1) }, Overloads = "G*", Result = "G1" },
+                new { Args = new[] { MO((byte)1) }, Overloads = "G*", Result = "G1" },
+                new { Args = new[] { MO(1L) }, Overloads = "G*", Result = "G2" },
+                new { Args = new[] { MO(1.2F) }, Overloads = "G*", Result = "G3" },
+                new { Args = new[] { MO(c) }, Overloads = "G*", Result = "G1" },
+
+                // I
+                new { Args = new[] { MO(c) }, Overloads = "I*", Result = "I3" },
+
+                // J
+                new { Args = new[] { MO(1) }, Overloads = "J*", Result = "J1" },
+                new { Args = new[] { MO((BigInteger)1000) }, Overloads = "J*", Result = "J2" },
+                new { Args = new[] { MO((byte)12) }, Overloads = "J*", Result = "J1" },
+                new { Args = new[] { MO(c) }, Overloads = "J*", Result = "J3" },
+                new { Args = new[] { MO(1.0) }, Overloads = "J*", Result = "J3" },
+      
+                // K
+                new { Args = new[] { MO(1) }, Overloads = "K*", Result = "K2" },
+                new { Args = new[] { MO(c) }, Overloads = "K*", Result = "K1" },
+                new { Args = new[] { MO("x") }, Overloads = "K*", Result = "K1" },
+
+                // L
+                new { Args = new[] { MO(sym), MO(sym) }, Overloads = "L*", Result = "L1" },
+                new { Args = new[] { MO("x"), MO(sym) }, Overloads = "L*", Result = "L2" },
+                new { Args = new[] { MO(ms), MO(sym) }, Overloads = "L*", Result = "L3" },
+                new { Args = new[] { MO(null), MO(sym) }, Overloads = "L*", Result = "L3" },
+                new { Args = new[] { MO(c), MO(sym) }, Overloads = "L*", Result = "L3" },
+            };
+
+            for (int i = 0; i < cases.Length; i++) {
+                var args = new CallArguments(Context, MO(new Overloads1()), cases[i].Args, RubyCallSignature.Simple(cases[i].Args.Length));
+                var resolver = new RubyOverloadResolver(metaBuilder, args, SelfCallConvention.SelfIsInstance, false);
+                var overloads = GetInstanceMethods(typeof(Overloads1), cases[i].Overloads);
+                var result = resolver.ResolveOverload(i.ToString(), overloads, NarrowingLevel.None, NarrowingLevel.All);
+
+                Assert(result.Success && result.Method.Name == cases[i].Result);
             }
         }
 
@@ -145,12 +241,12 @@ namespace IronRuby.Tests {
                 return 2;
             }
 
-            public static int F(string p) {
+            public static int F(MutableString p) {
                 return 3;
             }
         }
 
-        public void AmbiguousMatch() {
+        public void AmbiguousMatch1() {
             Context.SetGlobalConstant("C", Context.GetClass(typeof(AmbiguousOverloads)));
             AssertOutput(() => CompilerTest(@"
 [1, nil, 'foo'].each do |x| 

@@ -69,8 +69,8 @@ namespace IronRuby.Compiler.Generation {
 
         internal RubyTypeBuilder(TypeBuilder/*!*/ tb) {
             _tb = tb;
-            _immediateClassField = _tb.DefineField("_immediateClass", typeof(RubyClass), FieldAttributes.Private);
-            _instanceDataField = _tb.DefineField("_instanceData", typeof(RubyInstanceData), FieldAttributes.Private);
+            _immediateClassField = _tb.DefineField(RubyObject.ImmediateClassFieldName, typeof(RubyClass), FieldAttributes.Private);
+            _instanceDataField = _tb.DefineField(RubyObject.InstanceDataFieldName, typeof(RubyInstanceData), FieldAttributes.Private);
         }
 
         public void Implement(ClsTypeEmitter/*!*/ emitter) {
@@ -286,6 +286,18 @@ namespace IronRuby.Compiler.Generation {
         private void DefineRubyObjectImplementation() {
             _tb.AddInterfaceImplementation(typeof(IRubyObject));
 
+            _tb.SetCustomAttribute(new CustomAttributeBuilder(
+                typeof(DebuggerTypeProxyAttribute).GetConstructor(new[] { typeof(Type) }),
+                new[] { typeof(RubyObjectDebugView) }
+            ));
+
+            _tb.SetCustomAttribute(new CustomAttributeBuilder(
+                typeof(DebuggerDisplayAttribute).GetConstructor(new[] { typeof(string) }),
+                new[] { RubyObject.DebuggerDisplayValue },
+                new[] { typeof(DebuggerDisplayAttribute).GetProperty("Type") },
+                new[] { RubyObject.DebuggerDisplayType }
+            ));
+
             ILGen il;
 
             // RubyClass! IRubyObject.ImmediateClass { get { return _immediateClassField; } }
@@ -345,9 +357,9 @@ namespace IronRuby.Compiler.Generation {
             il.EmitCall(Methods.SetObjectTaint);
             il.Emit(OpCodes.Ret);
 
-            // TODO: can we merge this with #base#GetHashCode/Equals?
+            // TODO: can we merge this with #base#GetHashCode/Equals/ToString?
 
-            // int IRubyObject.BaseGetHashCode() { return base.GetHashCode; }
+            // int IRubyObject.BaseGetHashCode() { return base.GetHashCode(); }
             il = DefineMethodOverride(_tb, Methods.IRubyObject_BaseGetHashCode);
             il.EmitLoadArg(0);
             il.EmitCall(_tb.BaseType.GetMethod("GetHashCode", Type.EmptyTypes));
@@ -358,6 +370,12 @@ namespace IronRuby.Compiler.Generation {
             il.EmitLoadArg(0);
             il.EmitLoadArg(1);
             il.EmitCall(_tb.BaseType.GetMethod("Equals", new[] { typeof(object) }));
+            il.Emit(OpCodes.Ret);
+
+            // string IRubyObject.BaseToString() { return base.ToString(); }
+            il = DefineMethodOverride(_tb, Methods.IRubyObject_BaseToString);
+            il.EmitLoadArg(0);
+            il.EmitCall(_tb.BaseType.GetMethod("ToString", Type.EmptyTypes));
             il.Emit(OpCodes.Ret);
         }
 
@@ -398,7 +416,7 @@ namespace IronRuby.Compiler.Generation {
         }
 
         private void DefineDynamicObjectImplementation() {
-            _tb.AddInterfaceImplementation(typeof(IDynamicMetaObjectProvider));
+            _tb.AddInterfaceImplementation(typeof(IRubyDynamicMetaObjectProvider));
 
             // MetaObject! IDynamicMetaObjectProvider.GetMetaObject(Expression! parameter) {
             //   return RubyOps.GetMetaObject(this, parameter);

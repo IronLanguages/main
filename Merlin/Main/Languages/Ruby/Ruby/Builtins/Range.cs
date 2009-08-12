@@ -136,7 +136,7 @@ namespace IronRuby.Builtins {
         }
 
         public MutableString/*!*/ Inspect(RubyContext/*!*/ context) {
-            var result = MutableString.CreateMutable();
+            var result = MutableString.CreateMutable(RubyEncoding.Binary);
             result.Append(context.Inspect(_begin));
             result.Append(Separator);
             result.Append(context.Inspect(_end));

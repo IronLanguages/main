@@ -1614,59 +1614,25 @@ namespace IronPython.Runtime.Types {
                 }
             }
         }
-
-        private static void StoreOverriddenProperty(MethodInfo mi, string newName) {
-            Type baseType = mi.DeclaringType.BaseType;
-
-            string propName = newName.Substring(4); // get_ or set_
-            ExtensionPropertyTracker newProp = null;
-            foreach (PropertyInfo pi in baseType.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.FlattenHierarchy)) {
-                if (pi.Name == propName) {
-                    if (newName.StartsWith("get_")) {
-                        newProp = AddPropertyInfo(propName, mi, null);
-                    } else if (newName.StartsWith("set_")) {
-                        newProp = AddPropertyInfo(propName, null, mi);
-                    }
-                }
-            }
-
-            if (newProp != null) {
-                // back-patch any existing functions so that cached rules will work
-                // when called again...
-                foreach (ReflectedGetterSetter rg in PythonTypeOps._propertyCache.Values) {
-                    if (rg.DeclaringType != baseType ||
-                        rg.__name__ != newProp.Name) {
-                        continue;
-                    }
-
-                    if (newProp.GetGetMethod(true) != null) {
-                        rg.AddGetter(newProp.GetGetMethod(true));
-                    }
-
-                    if (newProp.GetSetMethod(true) != null) {
-                        rg.AddSetter(newProp.GetSetMethod(true));
-                    }
-                }
-            }
-        }
-
+        
         private static void StoreOverriddenField(MethodInfo mi, string newName) {
             Type baseType = mi.DeclaringType.BaseType;
             string fieldName = newName.Substring(FieldGetterPrefix.Length); // get_ or set_
-            foreach (FieldInfo pi in baseType.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.FlattenHierarchy)) {
-                if (pi.Name == fieldName) {
-                    if (newName.StartsWith(FieldGetterPrefix)) {
-                        AddPropertyInfo(fieldName, mi, null);
-                    } else if (newName.StartsWith(FieldSetterPrefix)) {
-                        AddPropertyInfo(fieldName, null, mi);
+            lock (PythonTypeOps._propertyCache) {
+                foreach (FieldInfo pi in baseType.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.FlattenHierarchy)) {
+                    if (pi.Name == fieldName) {
+                        if (newName.StartsWith(FieldGetterPrefix)) {
+                            AddPropertyInfo(pi.DeclaringType, fieldName, mi, null);
+                        } else if (newName.StartsWith(FieldSetterPrefix)) {
+                            AddPropertyInfo(pi.DeclaringType, fieldName, null, mi);
+                        }
                     }
                 }
             }
         }
 
-        private static ExtensionPropertyTracker AddPropertyInfo(string/*!*/ propName, MethodInfo get, MethodInfo set) {
+        private static ExtensionPropertyTracker AddPropertyInfo(Type baseType, string/*!*/ propName, MethodInfo get, MethodInfo set) {
             MethodInfo mi = get ?? set;
-            Type baseType = mi.DeclaringType.BaseType;
 
             Dictionary<string, List<ExtensionPropertyTracker>> propInfoList;
 
@@ -1729,20 +1695,58 @@ namespace IronPython.Runtime.Types {
                         break;
                     }
                 }
-            }
 
-            lock (_overriddenMethods) {
                 Dictionary<string, List<MethodInfo>> overrideInfo;
                 if (!_overriddenMethods.TryGetValue(declType, out overrideInfo)) {
                     _overriddenMethods[declType] = overrideInfo = new Dictionary<string, List<MethodInfo>>();
                 }
 
                 List<MethodInfo> methods;
-                if (!overrideInfo.TryGetValue(newName, out methods)) {
-                    overrideInfo[newName] = methods = new List<MethodInfo>();
+                if (!overrideInfo.TryGetValue(pythonName, out methods)) {
+                    overrideInfo[pythonName] = methods = new List<MethodInfo>();
                 }
 
                 methods.Add(mi);
+            }
+        }
+
+        private static void StoreOverriddenProperty(MethodInfo mi, string newName) {
+            Type baseType = mi.DeclaringType.BaseType;
+
+            lock (PythonTypeOps._propertyCache) {
+                string propName = newName.Substring(4); // get_ or set_
+                ExtensionPropertyTracker newProp = null;
+                foreach (PropertyInfo pi in baseType.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.FlattenHierarchy)) {                    
+                    if (pi.Name == propName) {
+                        Type declType = pi.DeclaringType;
+                        if (newName.StartsWith("get_")) {                            
+                            newProp = AddPropertyInfo(declType, propName, mi, null);
+                        } else if (newName.StartsWith("set_")) {
+                            newProp = AddPropertyInfo(declType, propName, null, mi);
+                        }
+                    }
+                }
+
+                if (newProp != null) {
+                    // back-patch any existing properties so that cached rules will work
+                    // when called again...
+
+                    foreach (ReflectedGetterSetter rg in PythonTypeOps._propertyCache.Values) {
+                        if (rg.DeclaringType != baseType ||
+                            rg.__name__ != newProp.Name) {
+                            continue;
+                        }
+
+                        if (newProp.GetGetMethod(true) != null) {
+                            rg.AddGetter(newProp.GetGetMethod(true));
+                        }
+
+                        if (newProp.GetSetMethod(true) != null) {
+                            rg.AddSetter(newProp.GetSetMethod(true));
+                        }
+                    }
+
+                }
             }
         }
 
@@ -1763,31 +1767,33 @@ namespace IronPython.Runtime.Types {
             return specialNames[newName];
         }
 
+        /// <summary>
+        /// Called from PythonTypeOps - the BuiltinFunction._function lock must be held.
+        /// </summary>
         internal static IList<MethodInfo> GetOverriddenMethods(Type type, string name) {
-            lock (_overriddenMethods) {
-                Dictionary<string, List<MethodInfo>> methods;
-                List<MethodInfo> res = null;
-                Type curType = type;
-                while (curType != null) {
-                    if (_overriddenMethods.TryGetValue(curType, out methods)) {
-                        List<MethodInfo> methodList;
-                        if (methods.TryGetValue(name, out methodList)) {
-                            if (res == null) {
-                                res = new List<MethodInfo>(methodList.Count);
-                            }
-                            foreach (MethodInfo method in methodList) {
-                                if (type.IsAssignableFrom(method.DeclaringType)) {
-                                    res.Add(method);
-                                }
+            Dictionary<string, List<MethodInfo>> methods;
+            List<MethodInfo> res = null;
+            Type curType = type;
+            while (curType != null) {
+                if (_overriddenMethods.TryGetValue(curType, out methods)) {
+                    List<MethodInfo> methodList;
+                    if (methods.TryGetValue(name, out methodList)) {
+                        if (res == null) {
+                            res = new List<MethodInfo>(methodList.Count);
+                        }
+                        foreach (MethodInfo method in methodList) {
+                            if (type.IsAssignableFrom(method.DeclaringType)) {
+                                res.Add(method);
                             }
                         }
                     }
-                    curType = curType.BaseType;
                 }
-                if (res != null) {
-                    return res;
-                }
+                curType = curType.BaseType;
             }
+            if (res != null) {
+                return res;
+            }
+        
             return new MethodInfo[0];
         }
 

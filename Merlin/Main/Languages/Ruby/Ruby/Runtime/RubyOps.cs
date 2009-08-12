@@ -34,6 +34,7 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using IronRuby.Compiler.Ast;
 using MSA = System.Linq.Expressions;
+using IronRuby.Runtime.Conversions;
 
 namespace IronRuby.Runtime {
     [ReflectionCached, CLSCompliant(false)]
@@ -537,7 +538,7 @@ namespace IronRuby.Runtime {
 
             // expose RubyMethod in the scope (the method is bound to the main singleton instance):
             if (owner.GlobalScope != null) {
-                owner.GlobalScope.Scope.SetName(
+                owner.GlobalScope.Scope.SetVariable(
                     SymbolTable.StringToId(method.DefinitionName),
                     new RubyMethod(owner.GlobalScope.MainObject, method, method.DefinitionName)
                 );
@@ -553,7 +554,7 @@ namespace IronRuby.Runtime {
         public static void UndefineMethod(RubyScope/*!*/ scope, string/*!*/ name) {
             RubyModule owner = scope.GetInnerMostModuleForMethodLookup();
 
-            if (!owner.ResolveMethod(name, RubyClass.IgnoreVisibility).Found) {
+            if (!owner.ResolveMethod(name, VisibilityContext.AllVisible).Found) {
                 throw RubyExceptions.CreateUndefinedMethodError(owner, name);
             }
             owner.UndefineMethod(name);
@@ -563,7 +564,7 @@ namespace IronRuby.Runtime {
         public static bool IsDefinedMethod(object self, RubyScope/*!*/ scope, string/*!*/ name) {
             // MRI: this is different from UndefineMethod, it behaves like Kernel#method (i.e. doesn't use lexical scope):
             // TODO: visibility
-            return scope.RubyContext.ResolveMethod(self, name, RubyClass.IgnoreVisibility).Found;
+            return scope.RubyContext.ResolveMethod(self, name, VisibilityContext.AllVisible).Found;
         }
 
         #endregion
@@ -849,68 +850,68 @@ namespace IronRuby.Runtime {
         #region CLR Vectors (factories mimic Ruby Array factories)
 
         [Emitted, RubyConstructor]
-        public static object/*!*/ CreateVector(ConversionStorage<Union<IList, int>>/*!*/ toAryToInt, BlockParam block, RubyClass/*!*/ self,
-            [NotNull]object/*!*/ arrayOrSize) {
+        public static object/*!*/ CreateVector<TElement>(
+            ConversionStorage<TElement>/*!*/ elementConversion, 
+            ConversionStorage<Union<IList, int>>/*!*/ toAryToInt, 
+            BlockParam block, RubyClass/*!*/ self, [NotNull]object/*!*/ arrayOrSize) {
 
-            var elementType = self.GetUnderlyingSystemType().GetElementType();
-            Debug.Assert(elementType != null);
+            Debug.Assert(typeof(TElement) == self.GetUnderlyingSystemType().GetElementType());
 
             var site = toAryToInt.GetSite(CompositeConversionAction.Make(self.Context, CompositeConversion.ToAryToInt));
             var union = site.Target(site, arrayOrSize);
 
             if (union.First != null) {
                 // block ignored
-                return CreateVectorInternal(self.Context, elementType, union.First);
+                return CreateVectorInternal(elementConversion, union.First);
             } else if (block != null) {
-                return PopulateVector(self.Context, CreateVectorInternal(elementType, union.Second), block);
+                return PopulateVector(elementConversion, CreateVectorInternal<TElement>(union.Second), block);
             } else {
-                return CreateVectorInternal(elementType, union.Second);
+                return CreateVectorInternal<TElement>(union.Second);
             }
         }
 
         [Emitted, RubyConstructor]
-        public static Array/*!*/ CreateVectorWithValues(RubyClass/*!*/ self, [DefaultProtocol]int size, object value) {
-            var elementType = self.GetUnderlyingSystemType().GetElementType();
-            Debug.Assert(elementType != null);
+        public static Array/*!*/ CreateVectorWithValues<TElement>(ConversionStorage<TElement>/*!*/ elementConversion,
+            RubyClass/*!*/ self, [DefaultProtocol]int size, [DefaultProtocol]TElement value) {
+            Debug.Assert(typeof(TElement) == self.GetUnderlyingSystemType().GetElementType());
 
-            var result = CreateVectorInternal(elementType, size);
-            for (int i = 0; i < size; i++) {
-                SetVectorItem(self.Context, result, i, value);
+            TElement[] result = CreateVectorInternal<TElement>(size);
+            for (int i = 0; i < result.Length; i++) {
+                result[i] = value;
             }
             return result;
         }
 
-        public static Array/*!*/ CreateVectorInternal(Type/*!*/ elementType, int size) {
+        private static TElement[]/*!*/ CreateVectorInternal<TElement>(int size) {
             if (size < 0) {
                 throw RubyExceptions.CreateArgumentError("negative array size");
             }
 
-            return Array.CreateInstance(elementType, size);
+            return new TElement[size];
         }
 
-        private static Array/*!*/ CreateVectorInternal(RubyContext/*!*/ context, Type/*!*/ elementType, IList/*!*/ list) {
-            var result = Array.CreateInstance(elementType, list.Count);
+        private static Array/*!*/ CreateVectorInternal<TElement>(ConversionStorage<TElement>/*!*/ elementConversion, IList/*!*/ list) {
+            var site = elementConversion.GetDefaultConversionSite();
+
+            var result = new TElement[list.Count];
             for (int i = 0; i < result.Length; i++) {
-                SetVectorItem(context, result, i, list[i]);
+                result[i] = site.Target(site, list[i]);
             }
 
             return result;
         }
 
-        private static object PopulateVector(RubyContext/*!*/ context, Array/*!*/ array, BlockParam/*!*/ block) {
+        private static object PopulateVector<TElement>(ConversionStorage<TElement>/*!*/ elementConversion, TElement[]/*!*/ array, BlockParam/*!*/ block) {
+            var site = elementConversion.GetDefaultConversionSite();
+
             for (int i = 0; i < array.Length; i++) {
                 object item;
                 if (block.Yield(i, out item)) {
                     return item;
                 }
-                SetVectorItem(context, array, i, item);
+                array[i] = site.Target(site, item);
             }
             return array;
-        }
-
-        private static void SetVectorItem(RubyContext/*!*/ context, Array/*!*/ array, int index, object value) {
-            // TODO: convert to the element type:
-            array.SetValue(value, index);
         }
 
         #endregion
@@ -1200,12 +1201,51 @@ namespace IronRuby.Runtime {
         // Exception Ops go directly to the current exception object. MRI ignores potential aliases.
         //
 
+        /// <summary>
+        /// Called in try-filter that wraps the entire body of a block. 
+        /// We just need to capture stack trace, should not filter out any exception.
+        /// </summary>
         [Emitted]
         public static bool FilterBlockException(RubyScope/*!*/ scope, Exception/*!*/ exception) {
             RubyExceptionData.GetInstance(exception).CaptureExceptionTrace(scope);
             return false;
         }
 
+        /// <summary>
+        /// Called in try-filter that wraps the entire top-level code. 
+        /// We just need to capture stack trace, should not filter out any exception.
+        /// </summary>
+        [Emitted]
+        public static bool TraceTopLevelCodeFrame(RubyScope/*!*/ scope, Exception/*!*/ exception) {
+            RubyExceptionData.GetInstance(exception).CaptureExceptionTrace(scope);
+            return false;
+        }
+
+        // Ruby method exit filter:
+        [Emitted]
+        public static bool IsMethodUnwinderTargetFrame(RubyScope/*!*/ scope, Exception/*!*/ exception) {
+            var unwinder = exception as MethodUnwinder;
+            if (unwinder == null) {
+                RubyExceptionData.GetInstance(exception).CaptureExceptionTrace(scope);
+                return false;
+            } else {
+                return unwinder.TargetFrame == scope.FlowControlScope;
+            }
+        }
+
+        [Emitted]
+        public static object GetMethodUnwinderReturnValue(Exception/*!*/ exception) {
+            return ((MethodUnwinder)exception).ReturnValue;
+        }
+
+        [Emitted]
+        public static void LeaveMethodFrame(RuntimeFlowControl/*!*/ rfc) {
+            rfc.LeaveMethod();
+        }
+        
+        /// <summary>
+        /// Filters exceptions raised from EH-body, EH-rescue and EH-else clauses.
+        /// </summary>
         [Emitted]
         public static bool CanRescue(RubyScope/*!*/ scope, Exception/*!*/ exception) {
             if (exception is StackUnwinder) {
@@ -1217,23 +1257,29 @@ namespace IronRuby.Runtime {
                 return false;
             }
 
-            RubyExceptionData.GetInstance(exception).CaptureExceptionTrace(scope);
+            // calls "new" on the exception class if it hasn't been called yet:
+            exception = RubyExceptionData.HandleException(scope.RubyContext, exception);
+
             scope.RubyContext.CurrentException = exception;
+            RubyExceptionData.GetInstance(exception).CaptureExceptionTrace(scope);
             return true;
         }
 
         [Emitted]
-        public static bool TraceTopLevelCodeFrame(RubyScope/*!*/ scope, Exception/*!*/ exception) {
-            RubyExceptionData.GetInstance(exception).CaptureExceptionTrace(scope);
-            return false;
+        public static Exception/*!*/ MarkException(Exception/*!*/ exception) {
+            RubyExceptionData.GetInstance(exception).Handled = true;
+            return exception;
         }
 
-        [Emitted] //Body, RescueClause:
+        [Emitted]
         public static Exception GetCurrentException(RubyScope/*!*/ scope) {
             return scope.RubyContext.CurrentException;
         }
 
-        [Emitted] //Body:
+        /// <summary>
+        /// Sets $!. Used in EH finally clauses to restore exception stored in oldExceptionVariable local.
+        /// </summary>
+        [Emitted] 
         public static void SetCurrentException(RubyScope/*!*/ scope, Exception exception) {
             scope.RubyContext.CurrentException = exception;
         }
@@ -1469,7 +1515,7 @@ namespace IronRuby.Runtime {
         public static Proc/*!*/ ToProcValidator(string/*!*/ className, object obj) {
             Proc result = obj as Proc;
             if (result == null) {
-                throw new InvalidOperationException(String.Format("{0}#to_proc should return Proc", className));
+                throw RubyExceptions.CreateReturnTypeError(className, "to_proc", "Proc");
             }
             return result;
         }
@@ -1490,7 +1536,7 @@ namespace IronRuby.Runtime {
         public static MutableString/*!*/ ToStringValidator(string/*!*/ className, object obj) {
             MutableString result = obj as MutableString;
             if (result == null) {
-                throw new InvalidOperationException(String.Format("{0}#to_str should return String", className));
+                throw RubyExceptions.CreateReturnTypeError(className, "to_str", "String");
             }
             return result;
         }
@@ -1499,7 +1545,7 @@ namespace IronRuby.Runtime {
         public static string/*!*/ ToSymbolValidator(string/*!*/ className, object obj) {
             var str = obj as MutableString;
             if (str == null) {
-                throw new InvalidOperationException(String.Format("{0}#to_str should return String", className));
+                throw RubyExceptions.CreateReturnTypeError(className, "to_str", "String"); 
             }
             return str.ConvertToString();
         }
@@ -1540,7 +1586,7 @@ namespace IronRuby.Runtime {
         public static IList/*!*/ ToArrayValidator(string/*!*/ className, object obj) {
             var result = obj as IList;
             if (result == null) {
-                throw new InvalidOperationException(String.Format("{0}#to_ary should return Array", className));
+                throw RubyExceptions.CreateReturnTypeError(className, "to_ary", "Array");
             }
             return result;
         }
@@ -1549,13 +1595,12 @@ namespace IronRuby.Runtime {
         public static IDictionary<object, object>/*!*/ ToHashValidator(string/*!*/ className, object obj) {
             var result = obj as IDictionary<object, object>;
             if (result == null) {
-                throw new InvalidOperationException(String.Format("{0}#to_hash should return Hash", className));
+                throw RubyExceptions.CreateReturnTypeError(className, "to_hash", "Hash");
             }
             return result;
         }
 
-        [Emitted] // ProtocolConversionAction
-        public static int ToFixnumValidator(string/*!*/ className, object obj) {
+        private static int ToIntValidator(string/*!*/ className, string/*!*/ targetType, object obj) {
             if (obj is int) {
                 return (int)obj;
             }
@@ -1566,10 +1611,91 @@ namespace IronRuby.Runtime {
                 if (bignum.AsInt32(out fixnum)) {
                     return fixnum;
                 }
-                throw RubyExceptions.CreateRangeError("bignum too big to convert into `long'");
+                throw RubyExceptions.CreateRangeError(String.Format("bignum too big to convert into {0}", targetType));
             }
 
-            throw new InvalidOperationException(String.Format("{0}#to_int should return Integer", className));
+            throw RubyExceptions.CreateReturnTypeError(className, "to_int", "Integer");
+        }
+
+        [Emitted] // ProtocolConversionAction
+        public static int ToFixnumValidator(string/*!*/ className, object obj) {
+            return ToIntValidator(className, "Fixnum", obj);
+        }
+
+        [Emitted] // ProtocolConversionAction
+        public static Byte ToByteValidator(string/*!*/ className, object obj) {
+            return Converter.ToByte(ToIntValidator(className, "System::Byte", obj));
+        }
+
+        [Emitted] // ProtocolConversionAction
+        public static SByte ToSByteValidator(string/*!*/ className, object obj) {
+            return Converter.ToSByte(ToIntValidator(className, "System::SByte", obj));
+        }
+
+        [Emitted] // ProtocolConversionAction
+        public static Int16 ToInt16Validator(string/*!*/ className, object obj) {
+            return Converter.ToInt16(ToIntValidator(className, "System::Int16", obj));
+        }
+
+        [Emitted] // ProtocolConversionAction
+        public static UInt16 ToUInt16Validator(string/*!*/ className, object obj) {
+            return Converter.ToUInt16(ToIntValidator(className, "System::UInt16", obj));
+        }
+
+        [Emitted] // ProtocolConversionAction
+        public static UInt32 ToUInt32Validator(string/*!*/ className, object obj) {
+            if (obj is int) {
+                return Converter.ToUInt32((int)obj);
+            }
+
+            var bignum = obj as BigInteger;
+            if ((object)bignum != null) {
+                return Converter.ToUInt32(bignum);
+            }
+
+            throw RubyExceptions.CreateReturnTypeError(className, "to_int/to_i", "Integer");
+        }
+
+        [Emitted] // ProtocolConversionAction
+        public static Int64 ToInt64Validator(string/*!*/ className, object obj) {
+            if (obj is int) {
+                return (int)obj;
+            }
+
+            var bignum = obj as BigInteger;
+            if ((object)bignum != null) {
+                return Converter.ToInt64(bignum);
+            }
+
+            throw RubyExceptions.CreateReturnTypeError(className, "to_int/to_i", "Integer");
+        }
+
+        [Emitted] // ProtocolConversionAction
+        public static UInt64 ToUInt64Validator(string/*!*/ className, object obj) {
+            if (obj is int) {
+                return Converter.ToUInt64((int)obj);
+            }
+
+            var bignum = obj as BigInteger;
+            if ((object)bignum != null) {
+                return Converter.ToUInt64(bignum);
+            }
+
+            throw RubyExceptions.CreateReturnTypeError(className, "to_int/to_i", "Integer");
+        }
+
+        [Emitted] // ProtocolConversionAction
+        public static BigInteger ToBignumValidator(string/*!*/ className, object obj) {
+            if (obj is int) {
+                return (int)obj;
+            }
+
+            var bignum = obj as BigInteger;
+            if ((object)bignum != null) {
+                return bignum;
+            }
+
+            throw RubyExceptions.CreateReturnTypeError(className, "to_int/to_i", "Integer");
         }
 
         [Emitted] // ProtocolConversionAction
@@ -1583,21 +1709,33 @@ namespace IronRuby.Runtime {
                 return new IntegerValue(bignum);
             }
 
-            throw new InvalidOperationException(String.Format("{0}#to_int/to_i should return Integer", className));
+            throw RubyExceptions.CreateReturnTypeError(className, "to_int/to_i", "Integer");
         }
 
         [Emitted] // ProtocolConversionAction
-        public static double ToFloatValidator(string/*!*/ className, object obj) {
+        public static double ToDoubleValidator(string/*!*/ className, object obj) {
             if (obj is double) {
                 return (double)obj;
             }
 
-            // to_f should not return System.Single in pure Ruby code. However, we allow it in IronRuby code
             if (obj is float) {
                 return (double)(float)obj;
             }
 
-            throw new InvalidOperationException(String.Format("{0}#to_f should return Float", className));
+            throw RubyExceptions.CreateReturnTypeError(className, "to_f", "Float");
+        }
+
+        [Emitted] // ProtocolConversionAction
+        public static float ToSingleValidator(string/*!*/ className, object obj) {
+            if (obj is double) {
+                return (float)(double)obj;
+            }
+
+            if (obj is float) {
+                return (float)obj;
+            }
+
+            throw RubyExceptions.CreateReturnTypeError(className, "to_f", "System::Single");
         }
 
         [Emitted]
@@ -1633,7 +1771,7 @@ namespace IronRuby.Runtime {
             if (bignum.AsInt32(out fixnum)) {
                 return fixnum;
             }
-            throw RubyExceptions.CreateRangeError("bignum too big to convert into `long'");
+            throw RubyExceptions.CreateRangeError("bignum too big to convert into Fixnum");
         }
 
         [Emitted] // ConvertDoubleToFixnum

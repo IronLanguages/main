@@ -194,8 +194,8 @@ namespace IronPython.Hosting {
             ModuleOptions trueDiv = (PythonContext.PythonOptions.DivisionOptions == PythonDivisionOptions.New) ? ModuleOptions.TrueDivision : ModuleOptions.None;
             PythonModule module = PythonContext.CreateModule(trueDiv | ModuleOptions.ModuleBuiltins);
             PythonContext.PublishModule("__main__", module);
-            module.Scope.SetName(Symbols.Doc, null);
-            module.Scope.SetName(Symbols.Name, "__main__");
+            module.Scope.SetVariable(Symbols.Doc, null);
+            module.Scope.SetVariable(Symbols.Name, "__main__");
             return module.Scope;
         }
         
@@ -510,6 +510,13 @@ namespace IronPython.Hosting {
         protected override void UnhandledException(Exception e) {
             PythonOps.PrintException(new CodeContext(Scope, Language), e, Console);
         }
+
+        private new PythonContext Language {
+            get {
+                return (PythonContext)base.Language;
+            }
+        }
+
     }
 #endif
 }
