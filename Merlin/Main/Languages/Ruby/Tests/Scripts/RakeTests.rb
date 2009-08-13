@@ -1,4 +1,5 @@
 require "rubygems"
+require "rake"
 
 rake_tests_dir = File.expand_path("../External.LCA_RESTRICTED/Languages/IronRuby/RakeTests", ENV["MERLIN_ROOT"])
 all_test_files = Dir.glob("#{rake_tests_dir}/test/test*.rb") + Dir.glob("#{rake_tests_dir}/test/contrib/test*.rb")
@@ -21,6 +22,7 @@ end
 # Do some sanity checks
 abort("Did not find enough Rake tests files...") unless all_test_files.size > 25
 abort("Did not find some expected files...") unless File.exist?(rake_tests_dir + "/test/test_rake.rb")
+abort("Loaded the wrong version #{RAKEVERSION} of Rake instead of the expected 0.8.4 ...") unless RAKEVERSION == '0.8.4'
 
 # Some tests load data assuming the current folder
 Dir.chdir(rake_tests_dir)

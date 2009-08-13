@@ -120,21 +120,6 @@ namespace IronRuby.Hosting {
                     RuntimeSetup.DebugMode = true;          // $DEBUG = true
                     break;
                 
-                case "-r":
-                    string libPath = PopNextArg();
-                    LanguageSetup.Options["RequiredLibraries"] = libPath;
-                    break;
-
-                case "-e":
-                    LanguageSetup.Options["MainFile"] = "-e";
-                    if (CommonConsoleOptions.Command == null) {
-                        CommonConsoleOptions.Command = String.Empty;
-                    } else {
-                        CommonConsoleOptions.Command += "\n";
-                    }
-                    CommonConsoleOptions.Command += PopNextArg();
-                    break;
-
                 #endregion
 
 #if DEBUG && !SILVERLIGHT
@@ -195,6 +180,24 @@ namespace IronRuby.Hosting {
                     break;
 
                 default:
+                    if (arg.StartsWith("-e")) {
+                        string command;
+                        if (arg == "-e") {
+                            command = PopNextArg();
+                        } else {
+                            command = arg.Substring(2);
+                        }
+
+                        LanguageSetup.Options["MainFile"] = "-e";
+                        if (CommonConsoleOptions.Command == null) {
+                            CommonConsoleOptions.Command = String.Empty;
+                        } else {
+                              CommonConsoleOptions.Command += "\n";
+                        }
+                        CommonConsoleOptions.Command += command;
+                        break;
+                    }
+
                     if (arg.StartsWith("-I")) {
                         string includePaths;
                         if (arg == "-I") {
@@ -204,6 +207,18 @@ namespace IronRuby.Hosting {
                         }
 
                         _loadPaths.AddRange(GetPaths(includePaths));
+                        break;
+                    }
+
+                    if (arg.StartsWith("-r")) {
+                        string libPath;
+                        if (arg == "-r") {
+                            libPath = PopNextArg();
+                        } else {
+                            libPath = arg.Substring(2);
+                        }
+
+                        LanguageSetup.Options["RequiredLibraries"] = libPath;
                         break;
                     }
 
