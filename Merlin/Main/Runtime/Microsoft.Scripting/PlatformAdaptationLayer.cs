@@ -230,6 +230,10 @@ namespace Microsoft.Scripting {
 #endif
         }
 
+        public virtual string GetFileName(string file) {
+            return Path.GetFileName(file);
+        }
+
         /// <exception cref="ArgumentException">Invalid path.</exception>
         public virtual bool IsAbsolutePath(string path) {
 #if !SILVERLIGHT

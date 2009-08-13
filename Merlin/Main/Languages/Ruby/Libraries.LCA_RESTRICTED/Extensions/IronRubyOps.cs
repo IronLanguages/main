@@ -81,20 +81,20 @@ namespace IronRuby.Builtins {
         public static class ClrOps {
             [RubyMethod("profile", RubyMethodAttributes.PublicSingleton)]
             public static Hash/*!*/ GetProfile(RubyContext/*!*/ context, object self) {
-                if (!((RubyOptions)context.Options).Profile) {
+                if (!context.RubyOptions.Profile) {
                     throw RubyExceptions.CreateSystemCallError("You must enable profiling to use Clr.profile");
                 }
 
                 Hash result = new Hash(context);
                 foreach (var entry in Profiler.Instance.GetProfile()) {
-                    result[entry.Key] = Protocols.Normalize(Utils.DateTimeTicksFromStopwatch(entry.Value));
+                    result[entry.Id] = Utils.DateTimeTicksFromStopwatch(entry.Ticks);
                 }
                 return result;
             }
 
             [RubyMethod("profile", RubyMethodAttributes.PublicSingleton)]
             public static object GetProfile(RubyContext/*!*/ context, BlockParam/*!*/ block, object self) {
-                if (!((RubyOptions)context.Options).Profile) {
+                if (!context.RubyOptions.Profile) {
                     throw RubyExceptions.CreateSystemCallError("You must enable profiling to use Clr.profile");
                 }
 
@@ -104,15 +104,20 @@ namespace IronRuby.Builtins {
                     return blockResult;
                 }
 
+                var startDict = new Dictionary<string, long>();
+                foreach (var counter in start) {
+                    startDict[counter.Id] = counter.Ticks;
+                }
+
                 Hash result = new Hash(context);
                 foreach (var entry in Profiler.Instance.GetProfile()) {
                     long startTime;
-                    if (!start.TryGetValue(entry.Key, out startTime)) {
+                    if (!startDict.TryGetValue(entry.Id, out startTime)) {
                         startTime = 0;
                     }
-                    long elapsed = entry.Value - startTime;
+                    long elapsed = entry.Ticks - startTime;
                     if (elapsed > 0) {
-                        result[entry.Key] = Protocols.Normalize(Utils.DateTimeTicksFromStopwatch(elapsed));
+                        result[entry.Id] = Utils.DateTimeTicksFromStopwatch(elapsed);
                     }
                 }
                 return result;

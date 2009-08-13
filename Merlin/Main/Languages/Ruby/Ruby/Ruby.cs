@@ -117,7 +117,7 @@ namespace IronRuby {
 
         internal static bool RequireFile(LanguageContext/*!*/ context, KeyValuePair<string, Scope> pathAndScope) {
             var rc = (RubyContext)context;
-            return rc.Loader.LoadFile(pathAndScope.Value, null, MutableString.Create(pathAndScope.Key),
+            return rc.Loader.LoadFile(pathAndScope.Value, null, MutableString.Create(pathAndScope.Key, RubyEncoding.UTF8),
                 LoadFlags.LoadOnce | LoadFlags.AppendExtensions);
         }
 

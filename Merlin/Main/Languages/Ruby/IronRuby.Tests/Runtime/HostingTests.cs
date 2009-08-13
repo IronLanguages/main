@@ -198,9 +198,8 @@ bar
 
         public void Scenario_RubyInteractive1() {
             ScriptScope scope = Runtime.CreateScope();
-            AssertOutput(delegate() {
-                Engine.CreateScriptSourceFromString("1+1", SourceCodeKind.InteractiveCode).Execute(scope);
-            }, "=> 2");
+            AssertOutput(() => Engine.CreateScriptSourceFromString("", SourceCodeKind.InteractiveCode).Execute(scope), "");
+            AssertOutput(() => Engine.CreateScriptSourceFromString("x = 1 + 1", SourceCodeKind.InteractiveCode).Execute(scope), "=> 2");
         }
 
         public void Scenario_RubyInteractive2() {
@@ -266,7 +265,7 @@ module M; end
 class C; include M; end
 "));
         }
-
+        
         public void ObjectOperations1() {
             var cls = Engine.Execute(@"
 class C
@@ -287,6 +286,18 @@ end
 
             AssertOutput(() => Engine.Operations.Invoke(foo, 1, 2), "[1, 2]");
             AssertOutput(() => Engine.Operations.InvokeMember(obj, "foo", 1, 2), "[1, 2]");
+
+            var str = Engine.Operations.ConvertTo<string>(MutableString.CreateAscii("foo"));
+            Assert(str == "foo");
+
+            str = Engine.Operations.ConvertTo<string>(Engine.Execute("class C; def to_str; 'bar'; end; new; end"));
+            Assert(str == "bar");
+
+            var b = Engine.Operations.ConvertTo<byte>(Engine.Execute("class C; def to_int; 123; end; new; end"));
+            Assert(b == 123);
+
+            var lambda = Engine.Operations.ConvertTo<Func<int, int>>(Engine.Execute("lambda { |x| x * 2 }"));
+            Assert(lambda(10) == 20);
         }
 
         public void ObjectOperations2() {
@@ -418,6 +429,18 @@ a = A().new
 a.Count
 ", scope) == 123);
             
+        }
+
+        public void PythonInterop6() {
+            if (!_driver.RunPython) return;
+
+            var py = Runtime.GetEngine("python");
+
+            var scope = py.CreateScope();
+            py.Execute(@"def foo(): pass", scope);
+
+            // TODO:
+            var s = Engine.Execute("foo.inspect", scope);
         }
 
         public void CustomTypeDescriptor1() {

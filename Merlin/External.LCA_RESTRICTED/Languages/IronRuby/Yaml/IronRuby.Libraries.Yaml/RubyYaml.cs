@@ -60,32 +60,33 @@ namespace IronRuby.StandardLibrary.Yaml {
 
         private static Hash CreateDefaultTagMapping(RubyContext/*!*/ context) {
             Hash taggedClasses = new Hash(context.EqualityComparer);
-            taggedClasses.Add(MutableString.Create("tag:ruby.yaml.org,2002:array"), context.GetClass(typeof(RubyArray)));
-            taggedClasses.Add(MutableString.Create("tag:ruby.yaml.org,2002:exception"), context.GetClass(typeof(Exception)));
-            taggedClasses.Add(MutableString.Create("tag:ruby.yaml.org,2002:hash"), context.GetClass(typeof(Hash)));
-            taggedClasses.Add(MutableString.Create("tag:ruby.yaml.org,2002:object"), context.GetClass(typeof(object)));
-            taggedClasses.Add(MutableString.Create("tag:ruby.yaml.org,2002:range"), context.GetClass(typeof(Range)));
-            taggedClasses.Add(MutableString.Create("tag:ruby.yaml.org,2002:regexp"), context.GetClass(typeof(RubyRegex)));
-            taggedClasses.Add(MutableString.Create("tag:ruby.yaml.org,2002:string"), context.GetClass(typeof(MutableString)));
-            taggedClasses.Add(MutableString.Create("tag:ruby.yaml.org,2002:struct"), context.GetClass(typeof(RubyStruct)));
-            taggedClasses.Add(MutableString.Create("tag:ruby.yaml.org,2002:sym"), context.GetClass(typeof(SymbolId)));
-            taggedClasses.Add(MutableString.Create("tag:ruby.yaml.org,2002:symbol"), context.GetClass(typeof(SymbolId)));
-            taggedClasses.Add(MutableString.Create("tag:ruby.yaml.org,2002:time"), context.GetClass(typeof(DateTime)));
-            taggedClasses.Add(MutableString.Create("tag:yaml.org,2002:binary"), context.GetClass(typeof(MutableString)));
-            taggedClasses.Add(MutableString.Create("tag:yaml.org,2002:bool#no"), context.FalseClass);
-            taggedClasses.Add(MutableString.Create("tag:yaml.org,2002:bool#yes"), context.TrueClass);
-            taggedClasses.Add(MutableString.Create("tag:yaml.org,2002:float"), context.GetClass(typeof(Double)));
-            taggedClasses.Add(MutableString.Create("tag:yaml.org,2002:int"), context.GetClass(typeof(Integer)));
-            taggedClasses.Add(MutableString.Create("tag:yaml.org,2002:map"), context.GetClass(typeof(Hash)));
-            taggedClasses.Add(MutableString.Create("tag:yaml.org,2002:null"), context.NilClass);            
-            taggedClasses.Add(MutableString.Create("tag:yaml.org,2002:seq"), context.GetClass(typeof(RubyArray)));            
-            taggedClasses.Add(MutableString.Create("tag:yaml.org,2002:str"), context.GetClass(typeof(MutableString)));
-            taggedClasses.Add(MutableString.Create("tag:yaml.org,2002:timestamp"), context.GetClass(typeof(DateTime)));
-            //Currently not supported
-            //taggedClasses.Add(MutableString.Create("tag:yaml.org,2002:omap"), ec.GetClass(typeof()));
-            //taggedClasses.Add(MutableString.Create("tag:yaml.org,2002:pairs"),//    ec.GetClass(typeof()));
-            //taggedClasses.Add(MutableString.Create("tag:yaml.org,2002:set"),//    ec.GetClass(typeof()));
-            //taggedClasses.Add(MutableString.Create("tag:yaml.org,2002:timestamp#ymd'"), );
+            taggedClasses.Add(MutableString.CreateAscii("tag:ruby.yaml.org,2002:array"), context.GetClass(typeof(RubyArray)));
+            taggedClasses.Add(MutableString.CreateAscii("tag:ruby.yaml.org,2002:exception"), context.GetClass(typeof(Exception)));
+            taggedClasses.Add(MutableString.CreateAscii("tag:ruby.yaml.org,2002:hash"), context.GetClass(typeof(Hash)));
+            taggedClasses.Add(MutableString.CreateAscii("tag:ruby.yaml.org,2002:object"), context.GetClass(typeof(object)));
+            taggedClasses.Add(MutableString.CreateAscii("tag:ruby.yaml.org,2002:range"), context.GetClass(typeof(Range)));
+            taggedClasses.Add(MutableString.CreateAscii("tag:ruby.yaml.org,2002:regexp"), context.GetClass(typeof(RubyRegex)));
+            taggedClasses.Add(MutableString.CreateAscii("tag:ruby.yaml.org,2002:string"), context.GetClass(typeof(MutableString)));
+            taggedClasses.Add(MutableString.CreateAscii("tag:ruby.yaml.org,2002:struct"), context.GetClass(typeof(RubyStruct)));
+            taggedClasses.Add(MutableString.CreateAscii("tag:ruby.yaml.org,2002:sym"), context.GetClass(typeof(SymbolId)));
+            taggedClasses.Add(MutableString.CreateAscii("tag:ruby.yaml.org,2002:symbol"), context.GetClass(typeof(SymbolId)));
+            taggedClasses.Add(MutableString.CreateAscii("tag:ruby.yaml.org,2002:time"), context.GetClass(typeof(DateTime)));
+            taggedClasses.Add(MutableString.CreateAscii("tag:yaml.org,2002:binary"), context.GetClass(typeof(MutableString)));
+            taggedClasses.Add(MutableString.CreateAscii("tag:yaml.org,2002:float"), context.GetClass(typeof(Double)));
+            taggedClasses.Add(MutableString.CreateAscii("tag:yaml.org,2002:int"), context.GetClass(typeof(Integer)));
+            taggedClasses.Add(MutableString.CreateAscii("tag:yaml.org,2002:map"), context.GetClass(typeof(Hash)));
+            taggedClasses.Add(MutableString.CreateAscii("tag:yaml.org,2002:seq"), context.GetClass(typeof(RubyArray)));
+            taggedClasses.Add(MutableString.CreateAscii("tag:yaml.org,2002:str"), context.GetClass(typeof(MutableString)));
+            taggedClasses.Add(MutableString.CreateAscii("tag:yaml.org,2002:timestamp"), context.GetClass(typeof(DateTime)));
+                                                 
+            taggedClasses.Add(MutableString.CreateAscii("tag:yaml.org,2002:bool#no"), context.FalseClass);
+            taggedClasses.Add(MutableString.CreateAscii("tag:yaml.org,2002:bool#yes"), context.TrueClass);
+            taggedClasses.Add(MutableString.CreateAscii("tag:yaml.org,2002:null"), context.NilClass);
+            //Currently not supported             
+            //taggedClasses.Add(MutableString.CreateAscii("tag:yaml.org,2002:omap"), ec.GetClass(typeof()));
+            //taggedClasses.Add(MutableString.CreateAscii("tag:yaml.org,2002:pairs"),//    ec.GetClass(typeof()));
+            //taggedClasses.Add(MutableString.CreateAscii("tag:yaml.org,2002:set"),//    ec.GetClass(typeof()));
+            //taggedClasses.Add(MutableString.CreateAscii("tag:yaml.org,2002:timestamp#ymd'"), );
             return taggedClasses;
         }
 
@@ -110,8 +111,10 @@ namespace IronRuby.StandardLibrary.Yaml {
             if (io != null) {
                 writer = new RubyIOWriter(io);
             } else {
-                writer = new MutableStringWriter();
+                // TODO: encoding?
+                writer = new MutableStringWriter(MutableString.CreateMutable(RubyEncoding.UTF8));
             }
+
             YamlOptions cfg = YamlOptions.DefaultOptions;
             using (Serializer s = new Serializer(new Emitter(writer, cfg), cfg)) {
                 RubyRepresenter r = new RubyRepresenter(context, s, cfg);
@@ -119,7 +122,8 @@ namespace IronRuby.StandardLibrary.Yaml {
                     r.Represent(obj);
                 }
             }
-            if (null != io) {
+
+            if (io != null) {
                 return io;
             } else {
                 return ((MutableStringWriter)writer).String;
@@ -247,17 +251,22 @@ namespace IronRuby.StandardLibrary.Yaml {
         }
 
         [RubyMethod("quick_emit", RubyMethodAttributes.PublicSingleton)]
-        public static MutableString QuickEmit(RubyContext/*!*/ context, [NotNull]BlockParam/*!*/ block, RubyModule/*!*/ self, object objectId, [NotNull]Hash/*!*/ opts) {
+        public static object QuickEmit(RubyContext/*!*/ context, [NotNull]BlockParam/*!*/ block, RubyModule/*!*/ self, object objectId, [NotNull]Hash/*!*/ opts) {
             YamlOptions cfg = YamlOptions.DefaultOptions;
-            MutableStringWriter writer = new MutableStringWriter();
+            
+            // TODO: encoding
+            MutableStringWriter writer = new MutableStringWriter(MutableString.CreateMutable(RubyEncoding.UTF8));
             Emitter emitter = new Emitter(writer, cfg);
 
             using (Serializer s = new Serializer(emitter, cfg)) {
                 RubyRepresenter r = new RubyRepresenter(context, s, cfg);
                 object result;
-                block.Yield(r, out result);
-                s.Serialize(result as Node);
 
+                if (block.Yield(r, out result)) {
+                    return result;
+                }
+
+                s.Serialize(result as Node);
                 return writer.String;
             }
         }
@@ -272,7 +281,7 @@ namespace IronRuby.StandardLibrary.Yaml {
         [RubyMethod("tagurize", RubyMethodAttributes.PublicSingleton)]
         public static object Tagurize(ConversionStorage<MutableString>/*!*/ stringTryCast, RubyModule/*!*/ self, object arg) {
             var str = Protocols.TryCastToString(stringTryCast, arg);
-            return (str != null) ? MutableString.Create("tag:yaml.org,2002:").Append(str) : arg;
+            return (str != null) ? MutableString.CreateMutable(str.Encoding).Append("tag:yaml.org,2002:").Append(str) : arg;
         }
 
         [RubyMethod("add_domain_type", RubyMethodAttributes.PublicSingleton)]
@@ -280,10 +289,14 @@ namespace IronRuby.StandardLibrary.Yaml {
             MutableString/*!*/ domainAndDate, MutableString/*!*/ typeName) {
             if (block == null) {
                 throw RubyExceptions.NoBlockGiven();
-            }                        
-            MutableString tag = MutableString.Create("tag:").
-                                Append(domainAndDate).Append(":").
-                                Append(typeName);
+            }
+
+            MutableString tag = MutableString.CreateMutable(typeName.Encoding).
+                Append("tag:").
+                Append(domainAndDate).
+                Append(":").
+                Append(typeName);
+
             RubyConstructor.AddExternalConstructor(tag.ConvertToString(), block);            
             return null;
         }
@@ -293,10 +306,15 @@ namespace IronRuby.StandardLibrary.Yaml {
             MutableString/*!*/ domainAndDate, RubyRegex/*!*/ typeRegex) {
             if (block == null) {
                 throw RubyExceptions.NoBlockGiven();
-            }                        
-            MutableString tag = MutableString.Create("tag:").
-                                Append(domainAndDate).Append(":").
-                                Append(typeRegex.GetPattern());
+            }
+
+            MutableString pattern = typeRegex.GetPattern();
+            MutableString tag = MutableString.CreateMutable(pattern.Encoding).
+                Append("tag:").
+                Append(domainAndDate).
+                Append(':').
+                Append(pattern);
+
             RubyConstructor.AddExternalMultiConstructor(tag.ConvertToString(), block);
             return null;
         }

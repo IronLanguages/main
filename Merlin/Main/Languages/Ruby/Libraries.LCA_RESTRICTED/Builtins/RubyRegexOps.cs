@@ -178,10 +178,10 @@ namespace IronRuby.Builtins {
         public static MutableString GetEncoding(RubyRegex/*!*/ self) {
             switch (self.Options & RubyRegexOptions.EncodingMask) {
                 case RubyRegexOptions.NONE: return null;
-                case RubyRegexOptions.EUC: return MutableString.Create("euc");
-                case RubyRegexOptions.FIXED: return MutableString.Create("none");
-                case RubyRegexOptions.UTF8: return MutableString.Create("utf8");
-                case RubyRegexOptions.SJIS: return MutableString.Create("sjis");
+                case RubyRegexOptions.EUC: return MutableString.CreateAscii("euc");
+                case RubyRegexOptions.FIXED: return MutableString.CreateAscii("none");
+                case RubyRegexOptions.UTF8: return MutableString.CreateAscii("utf8");
+                case RubyRegexOptions.SJIS: return MutableString.CreateAscii("sjis");
                 default: throw Assert.Unreachable;
             }
         }
@@ -261,7 +261,7 @@ namespace IronRuby.Builtins {
                 return new RubyRegex("(?!)", RubyRegexOptions.NONE);
             }
 
-            MutableString result = MutableString.CreateMutable();
+            MutableString result = MutableString.CreateMutable(RubyEncoding.Binary);
             for (int i = 0; i < strings.Length; i++) {
                 if (i > 0) {
                     result.Append('|');

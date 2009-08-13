@@ -76,7 +76,18 @@ namespace Microsoft.Scripting.Runtime {
                     )); 
                 }
 
-                var context = ReflectionUtils.CreateInstance<LanguageContext>(type, domainManager, _options);
+                LanguageContext context;
+                try {
+                    context = (LanguageContext)Activator.CreateInstance(type, new object[] { domainManager, _options });
+                } catch (TargetInvocationException e) {
+                    throw new TargetInvocationException(
+                        String.Format("Failed to load language '{0}': {1}", _displayName, e.InnerException.Message), 
+                        e.InnerException
+                    );
+                } catch (Exception e) {
+                    throw new InvalidImplementationException(Strings.InvalidCtorImplementation(type, e.Message), e);
+                }
+
                 alreadyLoaded = Interlocked.CompareExchange(ref _context, context, null) != null;
             } else {
                 alreadyLoaded = true;

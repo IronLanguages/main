@@ -38,14 +38,14 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("clr_name")]
         public static MutableString/*!*/ GetClrName(ClrName/*!*/ self) {
-            return MutableString.Create(self.ActualName);
+            return MutableString.Create(self.ActualName, RubyEncoding.UTF8);
         }
 
         [RubyMethod("to_s")]
         [RubyMethod("to_str")]
         [RubyMethod("ruby_name")]
         public static MutableString/*!*/ GetRubyName(ClrName/*!*/ self) {
-            return MutableString.Create(self.MangledName);
+            return MutableString.Create(self.MangledName, RubyEncoding.UTF8);
         }
 
         [RubyMethod("to_sym")]
@@ -98,7 +98,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("unmangle", RubyMethodAttributes.PublicSingleton)]
         public static MutableString Unmangle(RubyClass/*!*/ self, [DefaultProtocol]string/*!*/ rubyName) {
             var clr = RubyUtils.TryUnmangleName(rubyName);
-            return clr != null ? MutableString.Create(clr) : null;
+            return clr != null ? MutableString.Create(clr, RubyEncoding.UTF8) : null;
         }
 
         /// <summary>
@@ -110,7 +110,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("mangle", RubyMethodAttributes.PublicSingleton)]
         public static MutableString Mangle(RubyClass/*!*/ self, [DefaultProtocol]string/*!*/ clrName) {
             var ruby = RubyUtils.TryMangleName(clrName);
-            return ruby != null ? MutableString.Create(ruby) : null;
+            return ruby != null ? MutableString.Create(ruby, RubyEncoding.UTF8) : null;
         }
     }
 }

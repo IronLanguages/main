@@ -764,13 +764,13 @@ namespace IronRuby.Tests {
             var sjisEncoding = RubyEncoding.KCodeSJIS;
 
             // change KCODE at runtime:
-            Context.SetGlobalVariable(null, "KCODE", MutableString.Create("S"));
+            Context.SetGlobalVariable(null, "KCODE", MS("S"));
             Assert(ReferenceEquals(Context.KCode, sjisEncoding));
 
             // load file encoded in SJIS:
             var tmpPath = Path.GetTempFileName();
             try {
-                Runtime.Globals.SetVariable("TempFileName", MutableString.Create(tmpPath));
+                Runtime.Globals.SetVariable("TempFileName", MS(tmpPath));
                 File.WriteAllBytes(tmpPath, sjisEncoding.Encoding.GetBytes("Cﾎ = 'ﾎ'"));
                 Engine.Execute(@"load(TempFileName)");
                 var str = Runtime.Globals.GetVariable<MutableString>("Cﾎ");
@@ -878,7 +878,7 @@ __ENCODING__
 
         // Ruby preamble overrides the encoding's preamble (BOM)
         [Options(Compatibility = RubyCompatibility.Ruby19)]
-        private void Encoding_Host2() {
+        public void Encoding_Host2() {
             var src = "# encoding: ASCII-8BIT\r\n$X = '\u0394'";
             var binsrc = Encoding.UTF8.GetBytes(src);
 
@@ -893,6 +893,54 @@ __ENCODING__
             // \u0394 is encoded in 2 bytes, which are represented by 2 characters in binary encoding:
             Assert(actualCode.Length == src.Length + 1);
             Assert(actualCode.Length == binsrc.Length);
+        }
+
+        [Options(Compatibility = RubyCompatibility.Ruby19)]
+        public void NamesEncoding1() {
+            // TODO:
+            XTestOutput(@"#encoding: SJIS
+class Cﾎ
+  def initialize
+    @ﾎ = 1
+    @@ﾎ = 2
+  end
+  
+  def ﾎ
+  end
+  
+  Xﾎ = 5
+end
+
+$Xﾎ = 3
+ﾎ = 4
+
+puts Cﾎ.name
+puts Cﾎ.name.encoding
+puts Cﾎ.new.inspect
+
+Cﾎ.instance_methods(false).each { |x| puts x,x.encoding }
+Cﾎ.new.instance_variables.each { |x| puts x,x.encoding }
+Cﾎ.class_variables.each { |x| puts x,x.encoding }
+Cﾎ.constants.each { |x| puts x,x.encoding }
+local_variables.each { |x| puts x,x.encoding }
+global_variables.each { |x| puts x,x.encoding if x[0] == 'X' }
+", @"
+Cﾎ
+#<Encoding: SJIS>
+#<Cﾎ TODO>
+ﾎ
+#<Encoding: SJIS>
+@ﾎ
+#<Encoding: SJIS>
+@@ﾎ
+#<Encoding: SJIS>
+Xﾎ
+#<Encoding: SJIS>
+ﾎ
+#<Encoding: SJIS>
+$ﾎ
+#<Encoding: SJIS>
+");
         }
 
         // TODO:

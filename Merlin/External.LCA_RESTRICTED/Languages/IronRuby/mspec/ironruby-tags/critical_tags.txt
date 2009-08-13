@@ -43,6 +43,20 @@ core\thread\critical_tags.txt:0:critical:Thread.critical= can be mismatched
 core\thread\raise_tags.txt:0:critical:Thread#raise on another thread re-raises active exception
 core\thread\critical_tags.txt:0:unstable:Thread.critical= does not change status of other existing threads
 language\method_tags.txt:0:critical:Calling a method fails with both lambda and block argument
+library\net\ftp\get_tags.txt:0:critical:Net::FTP#get (binary mode)
+library\net\ftp\getbinaryfile_tags.txt:0:critical:Net::FTP#getbinaryfile
+library\net\ftp\retrbinary_tags.txt:0:critical:Net::FTP#retrbinary
+library\net\http\http\get_print_tags.txt:0:critical:Net::HTTP.get_print when passed URI it prints the body of the specified uri to $stdout
+library\net\http\http\get_print_tags.txt:0:critical:Net::HTTP.get_print when passed host, path, port it prints the body of the specified uri to $stdout
+library\net\http\http\lock_tags.txt:0:critical:Net::HTTP#lock sends a LOCK request to the passed path and returns the response
+library\net\http\http\post_form_tags.txt:0:critical:Net::HTTP.post_form when passed URI POSTs the passed form data to the given uri
+library\net\http\http\post_tags.txt:0:critical:Net::HTTP#post
+library\net\http\http\propfind_tags.txt:0:critical:Net::HTTP#propfind
+library\net\http\http\proppatch_tags.txt:0:critical:Net::HTTP#proppatch
+library\net\http\http\put_tags.txt:0:critical:Net::HTTP#put
+library\net\http\http\request_tags.txt:0:critical:Net::HTTP#request
+library\net\http\http\send_request_tags.txt:0:critical:Net::HTTP#send_request
+library\net\http\http\unlock_tags.txt:0:critical:Net::HTTP#unlock
 library\resolv\get_address_tags.txt:0:critical:Resolv#getaddress
 library\resolv\get_addresses_tags.txt:0:critical:Resolv#getaddresses
 library\resolv\get_name_tags.txt:0:critical:Resolv#getname

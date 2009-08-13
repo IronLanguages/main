@@ -645,7 +645,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         private static Expression ReturnPropertyTracker(PropertyTracker propertyTracker, bool privateBinding) {
-            return AstUtils.Constant(PythonTypeOps.GetReflectedProperty(propertyTracker, null, privateBinding));
+            return AstUtils.Constant(PythonTypeOps.GetReflectedProperty(propertyTracker, new MemberGroup(propertyTracker), privateBinding));
         }
 
         private static DynamicMetaObject ReturnTypeTracker(TypeTracker memberTracker) {
@@ -704,8 +704,7 @@ namespace IronPython.Runtime.Binding {
             res[typeof(char)] = new Type[] { typeof(CharOps) };
             res[typeof(decimal)] = new Type[] { typeof(DecimalOps) };
             res[typeof(float)] = new Type[] { typeof(SingleOps) };
-            res[typeof(ScriptScope)] = new Type[] { typeof(ScriptScopeOps) };   // ScriptScope extensions should go away but we still need a methods for dir() support.
-
+            
             return res;
         }
 
@@ -764,12 +763,6 @@ namespace IronPython.Runtime.Binding {
             Debug.Assert(t != null);
 
             return _sysTypes.ContainsKey(t) || t.IsDefined(typeof(PythonTypeAttribute), false);
-        }
-
-        public bool WarnOnPython3000 {
-            get {
-                return _context.PythonOptions.WarnPython30;
-            }
         }
 
         /// <summary>

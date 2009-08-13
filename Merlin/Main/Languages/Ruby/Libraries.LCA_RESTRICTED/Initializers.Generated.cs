@@ -2507,6 +2507,12 @@ namespace IronRuby.Builtins {
                 new System.Func<IronRuby.Runtime.BinaryOpStorage, IronRuby.Runtime.RespondToStorage, System.String, System.Object, System.Object>(IronRuby.Builtins.ClrString.Compare)
             );
             
+            module.DefineLibraryMethod("=~", 0x51, 
+                new System.Func<IronRuby.Runtime.RubyScope, System.String, IronRuby.Builtins.RubyRegex, System.Object>(IronRuby.Builtins.ClrString.Match), 
+                new System.Func<System.String, System.String, System.Object>(IronRuby.Builtins.ClrString.Match), 
+                new System.Func<IronRuby.Runtime.CallSiteStorage<System.Func<System.Runtime.CompilerServices.CallSite, IronRuby.Runtime.RubyScope, System.Object, System.String, System.Object>>, IronRuby.Runtime.RubyScope, System.String, System.Object, System.Object>(IronRuby.Builtins.ClrString.Match)
+            );
+            
             module.DefineLibraryMethod("==", 0x51, 
                 new System.Func<System.String, System.String, System.Boolean>(IronRuby.Builtins.ClrString.StringEquals), 
                 new System.Func<System.String, IronRuby.Builtins.MutableString, System.Boolean>(IronRuby.Builtins.ClrString.StringEquals), 

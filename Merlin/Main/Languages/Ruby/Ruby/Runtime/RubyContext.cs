@@ -40,6 +40,7 @@ namespace IronRuby.Runtime {
     /// </summary>
     public sealed class RubyContext : LanguageContext {
         internal static readonly Guid RubyLanguageGuid = new Guid("F03C4640-DABA-473f-96F1-391400714DAB");
+        private static readonly Guid LanguageVendor_Microsoft = new Guid(-1723120188, -6423, 0x11d2, 0x90, 0x3f, 0, 0xc0, 0x4f, 0xa3, 2, 0xa1);
         private static int _RuntimeIdGenerator = 0;
 
         // MRI compliance:
@@ -208,9 +209,7 @@ namespace IronRuby.Runtime {
 
         [Conditional("DEBUG")]
         internal void RequiresClassHierarchyLock() {
-            if (!_classHierarchyLock.IsLocked) {
-                throw new InvalidOperationException("Code can only be executed while holding class hierarchy lock.");
-            }
+            ContractUtils.Requires(_classHierarchyLock.IsLocked, "Code can only be executed while holding class hierarchy lock.");
         }
 
         // classes used by runtime (we need to update initialization generator if any of these are added):
@@ -362,6 +361,10 @@ namespace IronRuby.Runtime {
             get { return RubyLanguageGuid; }
         }
 
+        public override Guid VendorGuid {
+            get { return LanguageVendor_Microsoft; }
+        }
+
         public int RuntimeId {
             get { return _runtimeId; }
         }
@@ -378,7 +381,7 @@ namespace IronRuby.Runtime {
             _runtimeId = Interlocked.Increment(ref _RuntimeIdGenerator);
             _upTime = new Stopwatch();
             _upTime.Start();
-
+            
             Binder = new RubyBinder(this);
 
             _metaBinderFactory = new RubyMetaBinderFactory(this);
@@ -389,17 +392,17 @@ namespace IronRuby.Runtime {
             _namespaceCache = new Dictionary<NamespaceTracker, RubyModule>();
             _referenceTypeInstanceData = new WeakTable<object, RubyInstanceData>();
             _valueTypeInstanceData = new Dictionary<object, RubyInstanceData>();
-            _inputProvider = new RubyInputProvider(this, _options.Arguments);
+            _inputProvider = new RubyInputProvider(this, _options.Arguments, _options.ArgumentEncoding);
             _globalScope = DomainManager.Globals;
             _loader = new Loader(this);
             _emptyScope = new RubyTopLevelScope(this);
             if (_options.MainFile != null) {
-                _commandLineProgramPath = MutableString.Create(_options.MainFile);
+                _commandLineProgramPath = MutableString.Create(_options.MainFile, RubyEncoding.Path);
             }
             _currentException = null;
             _currentSafeLevel = 0;
             _childProcessExitStatus = null;
-            _inputSeparator = MutableString.Create("\n");
+            _inputSeparator = MutableString.CreateAscii("\n");
             _outputSeparator = null;
             _stringSeparator = null;
             _itemSeparator = null;
@@ -502,10 +505,10 @@ namespace IronRuby.Runtime {
         private void InitializeGlobalConstants() {
             Debug.Assert(_objectClass != null);
 
-            MutableString version = MutableString.Create(RubyContext.MriVersion);
-            MutableString platform = MutableString.Create("i386-mswin32");   // TODO: make this the correct string for MAC OS X in Silverlight
-            MutableString releaseDate = MutableString.Create(RubyContext.MriReleaseDate);
-            MutableString rubyEngine = MutableString.Create("ironruby");
+            MutableString version = MutableString.CreateAscii(RubyContext.MriVersion);
+            MutableString platform = MutableString.CreateAscii("i386-mswin32");   // TODO: make this the correct string for MAC OS X in Silverlight
+            MutableString releaseDate = MutableString.CreateAscii(RubyContext.MriReleaseDate);
+            MutableString rubyEngine = MutableString.CreateAscii("ironruby");
 
             SetGlobalConstant("RUBY_ENGINE", rubyEngine);
             SetGlobalConstant("RUBY_VERSION", version);
@@ -517,7 +520,7 @@ namespace IronRuby.Runtime {
             SetGlobalConstant("PLATFORM", platform);
             SetGlobalConstant("RELEASE_DATE", releaseDate);
 
-            SetGlobalConstant("IRONRUBY_VERSION", MutableString.Create(RubyContext.IronRubyVersionString));
+            SetGlobalConstant("IRONRUBY_VERSION", MutableString.CreateAscii(RubyContext.IronRubyVersionString));
 
             SetGlobalConstant("STDIN", StandardInput);
             SetGlobalConstant("STDOUT", StandardOutput);
@@ -2047,14 +2050,15 @@ namespace IronRuby.Runtime {
 
                     int i = 0;
                     foreach (var counter in profile) {
-                        if (counter.Key.Length > maxLength) {
-                            maxLength = counter.Key.Length;
+                        string methodInfo = counter.Id;
+                        if (methodInfo.Length > maxLength) {
+                            maxLength = methodInfo.Length;
                         }
 
-                        totalTicks += counter.Value;
+                        totalTicks += counter.Ticks;
 
-                        keys[i] = counter.Key;
-                        values[i] = counter.Value;
+                        keys[i] = methodInfo;
+                        values[i] = counter.Ticks;
                         i++;
                     }
 
@@ -2312,6 +2316,10 @@ namespace IronRuby.Runtime {
             return new InteropBinder.CreateInstance(this, callInfo);
         }
 
+        public override ConvertBinder/*!*/ CreateConvertBinder(Type toType, bool explicitCast) {
+            return new InteropBinder.Convert(this, toType, explicitCast);
+        }
+
         // TODO: override GetMemberNames?
         public IList<string>/*!*/ GetForeignDynamicMemberNames(object obj) {
             if (obj is IRubyDynamicMetaObjectProvider) {
@@ -2386,12 +2394,12 @@ namespace IronRuby.Runtime {
                     _traceListenerSuspended = true;
 
                     _traceListener.Call(new[] {
-                        MutableString.Create(operation),                                          // event
-                        fileName != null ? MutableString.Create(fileName) : null,                 // file
-                        ScriptingRuntimeHelpers.Int32ToObject(lineNumber),                        // line
-                        SymbolTable.StringToId(name),                                             // TODO: alias
-                        new Binding(scope),                                                       // binding
-                        module.IsSingletonClass ? ((RubyClass)module).SingletonClassOf : module   // module
+                        MutableString.CreateAscii(operation),                                         // event
+                        fileName != null ? MutableString.Create(fileName, RubyEncoding.Path) : null,  // file
+                        ScriptingRuntimeHelpers.Int32ToObject(lineNumber),                            // line
+                        SymbolTable.StringToId(name),                                                 // TODO: alias
+                        new Binding(scope),                                                           // binding
+                        module.IsSingletonClass ? ((RubyClass)module).SingletonClassOf : module       // module
                     });
                 } finally {
                     _traceListenerSuspended = false;

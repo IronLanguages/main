@@ -323,8 +323,6 @@ namespace IronRuby.Compiler {
         private static MethodInfo _IsSuperCallTarget;
         public static MethodInfo/*!*/ IsTrue { get { return _IsTrue ?? (_IsTrue = GetMethod(typeof(RubyOps), "IsTrue")); } }
         private static MethodInfo _IsTrue;
-        public static MethodInfo/*!*/ LeaveBlockFrame { get { return _LeaveBlockFrame ?? (_LeaveBlockFrame = GetMethod(typeof(RubyOps), "LeaveBlockFrame")); } }
-        private static MethodInfo _LeaveBlockFrame;
         public static MethodInfo/*!*/ LeaveLoop { get { return _LeaveLoop ?? (_LeaveLoop = GetMethod(typeof(RubyOps), "LeaveLoop")); } }
         private static MethodInfo _LeaveLoop;
         public static MethodInfo/*!*/ LeaveMethodFrame { get { return _LeaveMethodFrame ?? (_LeaveMethodFrame = GetMethod(typeof(RubyOps), "LeaveMethodFrame")); } }
@@ -379,6 +377,8 @@ namespace IronRuby.Compiler {
         private static MethodInfo _MakeTypeConversionError;
         public static MethodInfo/*!*/ MakeWrongNumberOfArgumentsError { get { return _MakeWrongNumberOfArgumentsError ?? (_MakeWrongNumberOfArgumentsError = GetMethod(typeof(RubyOps), "MakeWrongNumberOfArgumentsError")); } }
         private static MethodInfo _MakeWrongNumberOfArgumentsError;
+        public static MethodInfo/*!*/ MarkException { get { return _MarkException ?? (_MarkException = GetMethod(typeof(RubyOps), "MarkException")); } }
+        private static MethodInfo _MarkException;
         public static MethodInfo/*!*/ MatchLastInputLine { get { return _MatchLastInputLine ?? (_MatchLastInputLine = GetMethod(typeof(RubyOps), "MatchLastInputLine")); } }
         private static MethodInfo _MatchLastInputLine;
         public static MethodInfo/*!*/ MatchString { get { return _MatchString ?? (_MatchString = GetMethod(typeof(RubyOps), "MatchString")); } }
@@ -441,24 +441,42 @@ namespace IronRuby.Compiler {
         private static MethodInfo _StringToMutableString;
         public static MethodInfo/*!*/ ToArrayValidator { get { return _ToArrayValidator ?? (_ToArrayValidator = GetMethod(typeof(RubyOps), "ToArrayValidator")); } }
         private static MethodInfo _ToArrayValidator;
+        public static MethodInfo/*!*/ ToBignumValidator { get { return _ToBignumValidator ?? (_ToBignumValidator = GetMethod(typeof(RubyOps), "ToBignumValidator")); } }
+        private static MethodInfo _ToBignumValidator;
+        public static MethodInfo/*!*/ ToByteValidator { get { return _ToByteValidator ?? (_ToByteValidator = GetMethod(typeof(RubyOps), "ToByteValidator")); } }
+        private static MethodInfo _ToByteValidator;
+        public static MethodInfo/*!*/ ToDoubleValidator { get { return _ToDoubleValidator ?? (_ToDoubleValidator = GetMethod(typeof(RubyOps), "ToDoubleValidator")); } }
+        private static MethodInfo _ToDoubleValidator;
         public static MethodInfo/*!*/ ToFixnumValidator { get { return _ToFixnumValidator ?? (_ToFixnumValidator = GetMethod(typeof(RubyOps), "ToFixnumValidator")); } }
         private static MethodInfo _ToFixnumValidator;
-        public static MethodInfo/*!*/ ToFloatValidator { get { return _ToFloatValidator ?? (_ToFloatValidator = GetMethod(typeof(RubyOps), "ToFloatValidator")); } }
-        private static MethodInfo _ToFloatValidator;
         public static MethodInfo/*!*/ ToHashValidator { get { return _ToHashValidator ?? (_ToHashValidator = GetMethod(typeof(RubyOps), "ToHashValidator")); } }
         private static MethodInfo _ToHashValidator;
+        public static MethodInfo/*!*/ ToInt16Validator { get { return _ToInt16Validator ?? (_ToInt16Validator = GetMethod(typeof(RubyOps), "ToInt16Validator")); } }
+        private static MethodInfo _ToInt16Validator;
+        public static MethodInfo/*!*/ ToInt64Validator { get { return _ToInt64Validator ?? (_ToInt64Validator = GetMethod(typeof(RubyOps), "ToInt64Validator")); } }
+        private static MethodInfo _ToInt64Validator;
         public static MethodInfo/*!*/ ToIntegerValidator { get { return _ToIntegerValidator ?? (_ToIntegerValidator = GetMethod(typeof(RubyOps), "ToIntegerValidator")); } }
         private static MethodInfo _ToIntegerValidator;
         public static MethodInfo/*!*/ ToProcValidator { get { return _ToProcValidator ?? (_ToProcValidator = GetMethod(typeof(RubyOps), "ToProcValidator")); } }
         private static MethodInfo _ToProcValidator;
         public static MethodInfo/*!*/ ToRegexValidator { get { return _ToRegexValidator ?? (_ToRegexValidator = GetMethod(typeof(RubyOps), "ToRegexValidator")); } }
         private static MethodInfo _ToRegexValidator;
+        public static MethodInfo/*!*/ ToSByteValidator { get { return _ToSByteValidator ?? (_ToSByteValidator = GetMethod(typeof(RubyOps), "ToSByteValidator")); } }
+        private static MethodInfo _ToSByteValidator;
         public static MethodInfo/*!*/ ToSDefaultConversion { get { return _ToSDefaultConversion ?? (_ToSDefaultConversion = GetMethod(typeof(RubyOps), "ToSDefaultConversion")); } }
         private static MethodInfo _ToSDefaultConversion;
+        public static MethodInfo/*!*/ ToSingleValidator { get { return _ToSingleValidator ?? (_ToSingleValidator = GetMethod(typeof(RubyOps), "ToSingleValidator")); } }
+        private static MethodInfo _ToSingleValidator;
         public static MethodInfo/*!*/ ToStringValidator { get { return _ToStringValidator ?? (_ToStringValidator = GetMethod(typeof(RubyOps), "ToStringValidator")); } }
         private static MethodInfo _ToStringValidator;
         public static MethodInfo/*!*/ ToSymbolValidator { get { return _ToSymbolValidator ?? (_ToSymbolValidator = GetMethod(typeof(RubyOps), "ToSymbolValidator")); } }
         private static MethodInfo _ToSymbolValidator;
+        public static MethodInfo/*!*/ ToUInt16Validator { get { return _ToUInt16Validator ?? (_ToUInt16Validator = GetMethod(typeof(RubyOps), "ToUInt16Validator")); } }
+        private static MethodInfo _ToUInt16Validator;
+        public static MethodInfo/*!*/ ToUInt32Validator { get { return _ToUInt32Validator ?? (_ToUInt32Validator = GetMethod(typeof(RubyOps), "ToUInt32Validator")); } }
+        private static MethodInfo _ToUInt32Validator;
+        public static MethodInfo/*!*/ ToUInt64Validator { get { return _ToUInt64Validator ?? (_ToUInt64Validator = GetMethod(typeof(RubyOps), "ToUInt64Validator")); } }
+        private static MethodInfo _ToUInt64Validator;
         public static MethodInfo/*!*/ TraceBlockCall { get { return _TraceBlockCall ?? (_TraceBlockCall = GetMethod(typeof(RubyOps), "TraceBlockCall")); } }
         private static MethodInfo _TraceBlockCall;
         public static MethodInfo/*!*/ TraceBlockReturn { get { return _TraceBlockReturn ?? (_TraceBlockReturn = GetMethod(typeof(RubyOps), "TraceBlockReturn")); } }

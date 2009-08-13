@@ -490,7 +490,7 @@ namespace IronPython.Runtime.Operations {
                     digits = Builtin.chr(self);
                     break;
                 default:
-                    throw PythonOps.ValueError("Unknown conversion type {0}", spec.Type.ToString());
+                    throw PythonOps.ValueError("Unknown format code '{0}'", spec.Type.ToString());
             }
 
             if (self < 0 && digits[0] == '-') {

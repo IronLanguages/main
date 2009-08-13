@@ -81,13 +81,13 @@ namespace IronRuby.Builtins {
 
         [RubyMethodAttribute("inspect")]
         public static MutableString Inspect(object self) {
-            return MutableString.Create("nil");
+            return MutableString.CreateAscii("nil");
         }
 
         [RubyMethodAttribute("to_s")]
         public static MutableString/*!*/ ToString(object self) {
             Debug.Assert(self == null);
-            return MutableString.Create(String.Empty);
+            return MutableString.CreateEmpty();
         }
 
         [SpecialName]

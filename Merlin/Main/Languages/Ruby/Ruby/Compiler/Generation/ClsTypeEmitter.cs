@@ -301,16 +301,13 @@ namespace IronRuby.Compiler.Generation {
                     }
                 }
             } else if (!TryOverrideProperty(mi, overridden)) {
-                string name;
                 EventInfo[] eis = mi.DeclaringType.GetEvents(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
                 foreach (EventInfo ei in eis) {
                     if (ei.GetAddMethod() == mi) {
-                        if (!TryGetName(mi.DeclaringType, ei, mi, out name)) return;
-                        CreateVTableEventOverride(mi, mi.Name);
+                        CreateVTableMethodOverride(mi, mi.Name);
                         return;
                     } else if (ei.GetRemoveMethod() == mi) {
-                        if (!TryGetName(mi.DeclaringType, ei, mi, out name)) return;
-                        CreateVTableEventOverride(mi, mi.Name);
+                        CreateVTableMethodOverride(mi, mi.Name);
                         return;
                     }
                 }
@@ -509,27 +506,6 @@ namespace IronRuby.Compiler.Generation {
 
             _tb.DefineMethodOverride(impl, mi);
             return impl;
-        }
-
-        private void CreateVTableEventOverride(MethodInfo mi, string name) {
-#if TODO
-            // override the add/remove method  
-            MethodBuilder impl;
-            ILGen il = DefineMethodOverride(mi, out impl);
-
-            LocalBuilder callTarget = EmitBaseClassCallCheckForProperties(il, mi, name);
-
-            il.Emit(OpCodes.Ldloc, callTarget);
-            il.EmitLoadArg(0);
-            il.EmitLoadArg(0);
-            EmitClassObjectFromInstance(il);
-            il.EmitLoadArg(1);
-            il.EmitBoxing(mi.GetParameters()[0].ParameterType);
-            il.Emit(OpCodes.Ldstr, name);
-            il.EmitCall(EventHelper());
-            il.Emit(OpCodes.Ret);
-            _tb.DefineMethodOverride(impl, mi);
-#endif
         }
 
         private MethodBuilder CreateVTableMethodOverride(MethodInfo mi, string name) {

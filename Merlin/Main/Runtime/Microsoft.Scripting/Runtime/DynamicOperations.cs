@@ -18,10 +18,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
 using System.Linq.Expressions;
-using System.Runtime.CompilerServices;
-using Microsoft.Contracts;
-using Microsoft.Scripting.Utils;
 using System.Reflection;
+using System.Runtime.CompilerServices;
+
+using Microsoft.Contracts;
+using Microsoft.Scripting.Generation;
+using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Runtime {
 
@@ -65,6 +67,8 @@ namespace Microsoft.Scripting.Runtime {
 
         #region Basic Operations
 
+        private Dictionary<int, Func<DynamicOperations, CallSiteBinder, object, object[], object>> _invokers = new Dictionary<int, Func<DynamicOperations, CallSiteBinder, object, object[], object>>();
+
         /// <summary>
         /// Calls the provided object with the given parameters and returns the result.
         /// 
@@ -72,28 +76,46 @@ namespace Microsoft.Scripting.Runtime {
         /// using the ConvertTo methods and then invoking that delegate.
         /// </summary>
         public object Invoke(object obj, params object[] parameters) {
-            // we support a couple of parameters instead of just splatting because JS doesn't yet support splatted arguments for function calls.
-            switch (parameters.Length) {
-                case 0: {
-                        CallSite<Func<CallSite, object, object>> site;
-                        site = GetOrCreateSite<object, object>(_lc.CreateInvokeBinder(new CallInfo(0)));
-                        return site.Target(site, obj);
+            Func<DynamicOperations, CallSiteBinder, object, object[], object> invoker;
+            lock(_invokers) {
+                if (!_invokers.TryGetValue(parameters.Length, out invoker)) {
+                    ParameterExpression dynOps = Expression.Parameter(typeof(DynamicOperations));
+                    ParameterExpression callInfo = Expression.Parameter(typeof(CallSiteBinder));
+                    ParameterExpression target = Expression.Parameter(typeof(object));
+                    ParameterExpression args = Expression.Parameter(typeof(object[]));
+                    Type funcType = ReflectionUtils.GetObjectCallSiteDelegateType(parameters.Length);
+                    ParameterExpression site = Expression.Parameter(typeof(CallSite<>).MakeGenericType(funcType));
+                    Expression[] siteArgs = new Expression[parameters.Length + 2];
+                    siteArgs[0] = site;
+                    siteArgs[1] = target;
+                    for (int i = 0; i < parameters.Length; i++) {
+                        siteArgs[i + 2] = Expression.ArrayIndex(args, Expression.Constant(i));
                     }
-                case 1: {
-                        CallSite<Func<CallSite, object, object, object>> site;
-                        site = GetOrCreateSite<object, object, object>(_lc.CreateInvokeBinder(new CallInfo(1)));
-                        return site.Target(site, obj, parameters[0]);
-                    }
-                case 2: {
-                        CallSite<Func<CallSite, object, object, object, object>> site;
-                        site = GetOrCreateSite<object, object, object, object>(_lc.CreateInvokeBinder(new CallInfo(2)));
-                        return site.Target(site, obj, parameters[0], parameters[1]);
-                    }
-                default:
-                    throw new NotImplementedException();
-            }
-        }
 
+                    var getOrCreateSiteFunc = new Func<CallSiteBinder, CallSite<Func<object>>>(GetOrCreateSite<Func<object>>).Method.GetGenericMethodDefinition();
+                    _invokers[parameters.Length] = invoker = Expression.Lambda<Func<DynamicOperations, CallSiteBinder, object, object[], object>>(
+                        Expression.Block(
+                            new[] { site },
+                            Expression.Assign(
+                                site, 
+                                Expression.Call(dynOps, getOrCreateSiteFunc.MakeGenericMethod(funcType), callInfo)
+                            ),
+                            Expression.Invoke(
+                                Expression.Field(
+                                    site,
+                                    site.Type.GetField("Target")
+                                ),
+                                siteArgs
+                            )
+                        ),
+                        new[] { dynOps, callInfo, target, args }
+                    ).Compile();
+                }
+            }
+
+            return invoker(this, _lc.CreateInvokeBinder(new CallInfo(parameters.Length)), obj, parameters);
+        }
+       
         /// <summary>
         /// Invokes a member on the provided object with the given parameters and returns the result.
         /// </summary>

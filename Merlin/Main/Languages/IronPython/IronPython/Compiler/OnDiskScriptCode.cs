@@ -22,24 +22,31 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting;
 
 using IronPython.Runtime;
+using IronPython.Runtime.Operations;
 
 namespace IronPython.Compiler {
     /// <summary>
     /// A ScriptCode which has been loaded from an assembly which is saved on disk.
     /// </summary>
-    class OnDiskScriptCode : ScriptCode {
-        private readonly Func<Scope, LanguageContext, object> _code;
+    class OnDiskScriptCode : RunnableScriptCode {
+        private readonly Func<CodeContext, object> _code;
         private Scope _optimizedScope;
         private readonly string _moduleName;
 
-        public OnDiskScriptCode(Func<Scope, LanguageContext, object> code, SourceUnit sourceUnit, string moduleName) :
+        public OnDiskScriptCode(Func<CodeContext, object> code, SourceUnit sourceUnit, string moduleName) :
             base(sourceUnit) {
             _code = code;
             _moduleName = moduleName;
         }
 
         public override object Run() {
-            return _code(CreateScope(), SourceUnit.LanguageContext);
+            CodeContext ctx = CreateTopLevelCodeContext(CreateScope(), (PythonContext)SourceUnit.LanguageContext);
+            try {
+                PushFrame(ctx, _code);
+                return _code(ctx);
+            } finally {
+                PopFrame();
+            }
         }
 
         public override object Run(Scope scope) {

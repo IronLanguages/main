@@ -17,6 +17,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -238,7 +239,7 @@ namespace IronRuby.Builtins {
             try {
                 process = Process.Start(startInfo);
             } catch (Exception e) {
-                throw RubyErrno.CreateENOENT(startInfo.FileName, e);
+                throw RubyExceptions.CreateENOENT(startInfo.FileName, e);
             }
 
             context.ChildProcessExitStatus = new RubyProcess.Status(process);
@@ -293,7 +294,7 @@ namespace IronRuby.Builtins {
                         return null;
                     }
                 } catch (Exception e) {
-                    throw RubyErrno.CreateEINVAL(e.Message, e);
+                    throw RubyExceptions.CreateEINVAL(e.Message, e);
                 }
 
                 result = new RubyArray();
@@ -491,13 +492,13 @@ namespace IronRuby.Builtins {
         // TODO: 1.9 only
         [RubyMethod("external_encoding")]
         public static RubyEncoding GetExternalEncoding(RubyIO/*!*/ self) {
-            return (self.ExternalEncoding != null) ? RubyEncoding.GetRubyEncoding(self.ExternalEncoding) : null;
+            return self.ExternalEncoding;
         }
 
         // TODO: 1.9 only
         [RubyMethod("internal_encoding")]
         public static RubyEncoding GetInternalEncoding(RubyIO/*!*/ self) {
-            return (self.InternalEncoding != null) ? RubyEncoding.GetRubyEncoding(self.InternalEncoding) : null;
+            return self.InternalEncoding;
         }
 
         // TODO: 1.9 only
@@ -638,7 +639,7 @@ namespace IronRuby.Builtins {
             return c;
         }
 
-        private static readonly MutableString NewLine = MutableString.CreateMutable("\n").Freeze();
+        private static readonly MutableString NewLine = MutableString.CreateMutable("\n", RubyEncoding.Binary).Freeze();
 
         public static MutableString/*!*/ ToPrintedString(ConversionStorage<MutableString>/*!*/ tosConversion, object obj) {
             IDictionary<object, object> hash;
@@ -650,12 +651,12 @@ namespace IronRuby.Builtins {
             } else if ((hash = obj as IDictionary<object, object>) != null) {
                 return IDictionaryOps.ToMutableString(tosConversion, hash);
             } else if (obj == null) {
-                return MutableString.Create("nil");
+                return MutableString.CreateAscii("nil");
             } else if (obj is bool) {
-                return MutableString.Create((bool)obj ? "true" : "false");
+                return MutableString.CreateAscii((bool)obj ? "true" : "false");
             } else if (obj is double) {
                 double value = (double)obj;
-                var result = MutableString.Create(value.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                var result = MutableString.CreateAscii(value.ToString(CultureInfo.InvariantCulture));
                 if ((double)(int)value == value) {
                     result.Append(".0");
                 }
@@ -679,7 +680,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("puts")]
         public static void PutsEmptyLine(BinaryOpStorage/*!*/ writeStorage, object self) {
-            Protocols.Write(writeStorage, self, MutableString.CreateMutable("\n"));
+            Protocols.Write(writeStorage, self, MutableString.CreateMutable("\n", RubyEncoding.Binary));
         }
 
         [RubyMethod("puts")]
@@ -748,7 +749,7 @@ namespace IronRuby.Builtins {
         private static RubyIO/*!*/ OpenFileForRead(RubyContext/*!*/ context, MutableString/*!*/ path) {
             string strPath = path.ConvertToString();
             if (!File.Exists(strPath)) {
-                throw RubyErrno.CreateENOENT(String.Format("No such file or directory - {0}", strPath));
+                throw RubyExceptions.CreateENOENT(String.Format("No such file or directory - {0}", strPath));
             }
             return new RubyIO(context, File.Open(strPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite), "r");
         }
@@ -807,7 +808,7 @@ namespace IronRuby.Builtins {
             [DefaultProtocol, NotNull]MutableString/*!*/ path, [DefaultProtocol]int length, [DefaultProtocol, Optional]int offset) {
 
             if (offset < 0) {
-                throw RubyErrno.CreateEINVAL();
+                throw RubyExceptions.CreateEINVAL();
             }
 
             if (length < 0) {

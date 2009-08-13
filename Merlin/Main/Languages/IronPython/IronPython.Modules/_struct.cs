@@ -30,6 +30,7 @@ using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+using IronPython.Runtime.Binding;
 
 [assembly: PythonModule("_struct", typeof(IronPython.Modules.PythonStruct))]
 namespace IronPython.Modules {
@@ -168,12 +169,12 @@ namespace IronPython.Modules {
                             break;
                         case FormatType.UnsignedInt:
                             for (int j = 0; j < curFormat.Count; j++) {
-                                WriteUInt(res, _isLittleEndian, GetUIntValue(context, _isStandardized, curObj++, values));
+                                WriteUInt(res, _isLittleEndian, GetULongValue(context, _isStandardized, curObj++, values, "unsigned int"));
                             }
                             break;
                         case FormatType.UnsignedLong:
                             for (int j = 0; j < curFormat.Count; j++) {
-                                WriteUInt(res, _isLittleEndian, GetULongValue(context, _isStandardized, curObj++, values));
+                                WriteUInt(res, _isLittleEndian, GetULongValue(context, _isStandardized, curObj++, values, "unsigned long"));
                             }
                             break;
                         case FormatType.Pointer:
@@ -962,19 +963,52 @@ namespace IronPython.Modules {
             return 0;
         }
 
-        internal static uint GetULongValue(CodeContext/*!*/ context, bool isStandardized, int index, object[] args) {
+        internal static uint GetULongValue(CodeContext/*!*/ context, bool isStandardized, int index, object[] args, string type) {
             object val = GetValue(context, index, args);
             uint res;
-            if (Converter.TryConvertToUInt32(val, out res)) {
-                return res;
+            if (val is int) {
+                res = (uint)(int)val;
+                WarnRange(context, (int)val, isStandardized, type);
+            } else if (val is BigInteger) {
+                res = (uint)(((BigInteger)val) & 0xffffffff);
+                WarnRange(context, (BigInteger)val, isStandardized, type);                
+            } else if (val is Extensible<int>) {
+                res = (uint)((Extensible<int>)val).Value;
+                WarnRange(context, ((Extensible<int>)val).Value, isStandardized, type);
+            } else if (val is Extensible<BigInteger>) {
+                res = (uint)(((Extensible<BigInteger>)val).Value & 0xffffffff);
+                BigInteger bi = ((Extensible<BigInteger>)val).Value;
+                WarnRange(context, bi, isStandardized, type);                
+            } else {
+                PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "struct integer overflow masking is deprecated");
+                
+                object maskedValue = PythonContext.GetContext(context).Operation(PythonOperationKind.BitwiseAnd, val, (BigInteger)4294967295);
+                if (!Converter.TryConvertToUInt32(maskedValue, out res)) {
+                    throw PythonOps.OverflowError("can't convert to " + type);
+                }
             }
 
+            return res;
+        }
+
+        private static void WarnRange(CodeContext context, int val, bool isStandardized, string type) {
+            if (val < 0) {
+                WarnRange(context, isStandardized, type);
+            }
+        }
+
+        private static void WarnRange(CodeContext context, BigInteger bi, bool isStandardized, string type) {
+            if (bi < 0 || bi > 4294967295) {
+                WarnRange(context, isStandardized, type);
+            }
+        }
+
+        private static void WarnRange(CodeContext context, bool isStandardized, string type) {
             if (isStandardized) {
-                throw Error(context, "expected unsigned long value");
+                throw Error(context, "expected " + type + " value");
             }
 
-            PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "'L' format requires 0 <= number <= 4294967295");
-            return (uint)0;
+            PythonOps.Warn(context, PythonExceptions.DeprecationWarning, (type == "unsigned long" ? "'L'" : "'I'") + " format requires 0 <= number <= 4294967295");
         }
 
         internal static IntPtr GetPointer(CodeContext/*!*/ context, int index, object[] args) {

@@ -78,12 +78,13 @@ namespace IronRuby.StandardLibrary.Sockets {
                 result.Add(ToAddressFamilyString(address.AddressFamily));
                 result.Add(iPort);
                 if (DoNotReverseLookup(self.Context).Value) {
-                    result.Add(MutableString.Create(address.ToString()));
+                    result.Add(MutableString.CreateAscii(address.ToString()));
                 } else {
                     IPHostEntry alias = GetHostEntry(address);
-                    result.Add(MutableString.Create(alias.HostName));
+                    // TODO (encoding):
+                    result.Add(MutableString.Create(alias.HostName, RubyEncoding.UTF8));
                 }
-                result.Add(MutableString.Create(address.ToString()));
+                result.Add(MutableString.CreateAscii(address.ToString()));
                 result.Add((int)address.AddressFamily);
                 result.Add(socketType);
 
@@ -122,10 +123,11 @@ namespace IronRuby.StandardLibrary.Sockets {
 
         [RubyMethod("gethostname", RubyMethodAttributes.PublicSingleton)]
         public static MutableString GetHostname(RubyClass/*!*/ self) {
-            return MutableString.Create(Dns.GetHostName());
+            // TODO (encoding):
+            return MutableString.Create(Dns.GetHostName(), RubyEncoding.UTF8);
         }
 
-        private static readonly MutableString/*!*/ _DefaultProtocol = MutableString.Create("tcp").Freeze();
+        private static readonly MutableString/*!*/ _DefaultProtocol = MutableString.CreateAscii("tcp").Freeze();
 
         [RubyMethod("getservbyname", RubyMethodAttributes.PublicSingleton)]
         public static int GetServiceByName(RubyClass/*!*/ self, 
@@ -146,9 +148,7 @@ namespace IronRuby.StandardLibrary.Sockets {
             try {
                 return ParseInteger(self.Context, name.ConvertToString());
             } catch (InvalidOperationException) {
-                throw SocketErrorOps.Create(
-                    String.Format("no such service {0} {1}", name.ConvertToString(), protocol.ConvertToString())
-                );
+                throw SocketErrorOps.Create(MutableString.FormatMessage("no such service {0} {1}", name, protocol));
             }
         }
 
@@ -186,7 +186,8 @@ namespace IronRuby.StandardLibrary.Sockets {
             IPHostEntry entry = GetHostEntry(ConvertToHostString(stringCast, hostName));
 
             RubyArray result = new RubyArray(2);
-            result.Add(MutableString.Create(entry.HostName));
+            // TODO (encoding):
+            result.Add(MutableString.Create(entry.HostName, RubyEncoding.UTF8));
             if (service != null) {
                 result.Add(MutableString.Create(service.Name));
             } else {
@@ -204,7 +205,8 @@ namespace IronRuby.StandardLibrary.Sockets {
             ServiceName service = SearchForService(ep.Port);
 
             RubyArray result = new RubyArray(2);
-            result.Add(MutableString.Create(entry.HostName));
+            // TODO (encoding):
+            result.Add(MutableString.Create(entry.HostName, RubyEncoding.UTF8));
             if (service != null) {
                 result.Add(MutableString.Create(service.Name));
             } else {
@@ -243,7 +245,7 @@ namespace IronRuby.StandardLibrary.Sockets {
             IPEndPoint ep = UnpackSockAddr(address);
             RubyArray result = new RubyArray(2);
             result.Add(ep.Port);
-            result.Add(MutableString.Create(ep.Address.ToString()));
+            result.Add(MutableString.CreateAscii(ep.Address.ToString()));
             return result;
         }
 
@@ -267,7 +269,7 @@ namespace IronRuby.StandardLibrary.Sockets {
             RubySocket s = new RubySocket(context, self.Socket.Accept());
             result.Add(s);
             SocketAddress addr = s.Socket.RemoteEndPoint.Serialize();
-            result.Add(MutableString.Create(addr.ToString()));
+            result.Add(MutableString.CreateAscii(addr.ToString()));
             return result;
         }
 
@@ -342,7 +344,7 @@ namespace IronRuby.StandardLibrary.Sockets {
             RubySocket s = new RubySocket(context, self.Socket.Accept());
             result.Add(s.FileDescriptor);
             SocketAddress addr = s.Socket.RemoteEndPoint.Serialize();
-            result.Add(MutableString.Create(addr.ToString()));
+            result.Add(MutableString.CreateAscii(addr.ToString()));
             return result;
         }
 

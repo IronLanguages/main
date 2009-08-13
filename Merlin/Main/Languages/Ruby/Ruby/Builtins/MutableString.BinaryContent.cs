@@ -174,6 +174,10 @@ namespace IronRuby.Builtins {
                 return new BinaryContent(BinaryRegex.Escape(ToByteArray()), _owner);
             }
 
+            public override void CheckEncoding() {
+                _owner._encoding.StrictEncoding.GetCharCount(_data, 0, _count);
+            }
+
             #endregion
 
             #region CompareTo (read-only)

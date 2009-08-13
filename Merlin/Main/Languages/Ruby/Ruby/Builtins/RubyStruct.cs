@@ -66,7 +66,8 @@ namespace IronRuby.Builtins {
             internal RubyArray/*!*/ GetMembers() {
                 RubyArray list = new RubyArray(_names.Length);
                 foreach (string id in _names) {
-                    list.Add(MutableString.Create(id));
+                    // TODO: we need to add encoding to symbols and preserve it here:
+                    list.Add(MutableString.Create(id, RubyEncoding.UTF8));
                 }
                 return list;
             }

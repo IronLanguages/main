@@ -73,6 +73,7 @@ namespace IronPython.Compiler.Ast {
         internal static readonly MSAst.Expression[] EmptyExpression = new MSAst.Expression[0];
         internal static readonly MSAst.BlockExpression EmptyBlock = Ast.Block(AstUtils.Empty());
         internal static readonly LabelTarget GeneratorLabel = Ast.Label(typeof(object), "generatorLabel");
+        internal static MSAst.ParameterExpression _functionStack = Ast.Variable(typeof(List<FunctionStack>), "funcStack");
         private const string NameForExec = "module: <exec>";
 
         private AstGenerator(string name, bool generator, string profilerName, bool print) {
@@ -954,6 +955,37 @@ namespace IronPython.Compiler.Ast {
             return body;
         }
 
+        /// <summary>
+        /// Creates a method frame for tracking purposes and enforces recursion
+        /// </summary>
+        internal static MSAst.Expression AddFrame(MSAst.Expression localContext, MSAst.Expression codeObject, MSAst.Expression body) {
+            body = AstUtils.Try(
+                Ast.Assign(
+                    _functionStack,
+                    Ast.Call(
+                        typeof(PythonOps).GetMethod("PushFrame"),
+                        localContext,
+                        codeObject
+                    )
+                ),
+                body
+            ).Finally(
+                Ast.Call(
+                    _functionStack,
+                    typeof(List<FunctionStack>).GetMethod("RemoveAt"),
+                    Ast.Add(
+                        Ast.Property(
+                            _functionStack,
+                            "Count"
+                        ),
+                        Ast.Constant(-1)
+                    )
+                )
+            );
+
+            return body;
+        }
+
         internal bool ShouldInterpret {
             get {
                 if (_globals is DictionaryGlobalAllocator) {
@@ -966,6 +998,12 @@ namespace IronPython.Compiler.Ast {
         internal bool EmitDebugSymbols {
             get {
                 return _context.SourceUnit.EmitDebugSymbols;
+            }
+        }
+
+        internal MSAst.SymbolDocumentInfo Document {
+            get {
+                return _document;
             }
         }
 

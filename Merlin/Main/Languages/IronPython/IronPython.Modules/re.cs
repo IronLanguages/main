@@ -1156,6 +1156,11 @@ namespace IronPython.Modules {
             ExtensibleString es = str as ExtensibleString;
             if (es != null) return es.Value;
 
+            PythonBuffer buf = str as PythonBuffer;
+            if (buf != null) {
+                return buf.ToString();
+            }
+
             throw PythonOps.TypeError("expected string for parameter '{0}' but got '{1}'", param, PythonOps.GetPythonTypeName(str));
         }
 

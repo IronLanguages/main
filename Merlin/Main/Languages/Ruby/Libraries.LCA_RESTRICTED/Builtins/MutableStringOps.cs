@@ -39,7 +39,7 @@ namespace IronRuby.Builtins {
 
         [RubyConstructor]
         public static MutableString/*!*/ Create(RubyClass/*!*/ self) {
-            return MutableString.CreateMutable();
+            return MutableString.CreateEmpty();
         }
         
         [RubyConstructor]
@@ -331,7 +331,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("%")]
         public static MutableString/*!*/ Format(StringFormatterSiteStorage/*!*/ storage, MutableString/*!*/ self, object arg) {
             IList args = arg as IList ?? new object[] { arg };
-            StringFormatter formatter = new StringFormatter(storage, self.ConvertToString(), args);
+            StringFormatter formatter = new StringFormatter(storage, self.ConvertToString(), self.Encoding, args);
             return formatter.Format().TaintBy(self);
         }
 
@@ -657,7 +657,7 @@ namespace IronRuby.Builtins {
 
             if (value.IsEmpty) {
                 self.Remove(index, 1).TaintBy(value);
-                return MutableString.CreateMutable();
+                return MutableString.CreateEmpty();
             }
 
             self.Replace(index, 1, value).TaintBy(value);
@@ -898,7 +898,7 @@ namespace IronRuby.Builtins {
 
         #region center
 
-        private static readonly MutableString _DefaultPadding = MutableString.Create(" ").Freeze();
+        private static readonly MutableString _DefaultPadding = MutableString.CreateAscii(" ").Freeze();
 
         [RubyMethod("center")]
         public static MutableString/*!*/ Center(MutableString/*!*/ self, 
@@ -1121,8 +1121,8 @@ namespace IronRuby.Builtins {
             return EachLine(block, self, context.InputSeparator);
         }
 
-        private static readonly MutableString _DefaultLineSeparator = MutableString.Create("\n").Freeze();
-        private static readonly MutableString _DefaultDoubleLineSeparator = MutableString.Create("\n\n").Freeze();
+        private static readonly MutableString _DefaultLineSeparator = MutableString.CreateAscii("\n").Freeze();
+        private static readonly MutableString _DefaultDoubleLineSeparator = MutableString.CreateAscii("\n\n").Freeze();
 
         [RubyMethod("each")]
         [RubyMethod("each_line")]
@@ -1233,7 +1233,7 @@ namespace IronRuby.Builtins {
             result = input.Clone();
             matchScope.CurrentMatch = match;
 
-            if (block.Yield(MutableString.Create(match.Value), out blockResult)) {
+            if (block.Yield(MutableString.Create(match.Value, input.Encoding), out blockResult)) {
                 return true;
             }
 
@@ -1275,7 +1275,7 @@ namespace IronRuby.Builtins {
                 matchScope.CurrentMatch = currentMatch;
 
                 input.TrackChanges();
-                if (block.Yield(MutableString.Create(match.Value), out blockResult)) {
+                if (block.Yield(MutableString.Create(match.Value, input.Encoding), out blockResult)) {
                     return true;
                 }
                 if (input.HasChanged) {
@@ -1815,7 +1815,7 @@ namespace IronRuby.Builtins {
         #endregion
 
 
-        #region match
+        #region =~, match
 
         [RubyMethod("=~")]
         public static object Match(RubyScope/*!*/ scope, MutableString/*!*/ self, [NotNull]RubyRegex/*!*/ regex) {
@@ -1901,12 +1901,12 @@ namespace IronRuby.Builtins {
 
         private static object MatchToScanResult(RubyScope/*!*/ scope, MutableString/*!*/ self, RubyRegex/*!*/ regex, Match/*!*/ match) {
             if (match.Groups.Count == 1) {
-                return MutableString.Create(match.Value).TaintBy(self).TaintBy(regex, scope);
+                return MutableString.Create(match.Value, self.Encoding).TaintBy(self).TaintBy(regex, scope);
             } else {
                 var result = new RubyArray(match.Groups.Count - 1);
                 for (int i = 1; i < match.Groups.Count; i++) {
                     if (match.Groups[i].Success) {
-                        result.Add(MutableString.Create(match.Groups[i].Value).TaintBy(self).TaintBy(regex, scope));
+                        result.Add(MutableString.Create(match.Groups[i].Value, self.Encoding).TaintBy(self).TaintBy(regex, scope));
                     } else {
                         result.Add(null);
                     }
@@ -2673,8 +2673,7 @@ namespace IronRuby.Builtins {
                                     }
                                     str.Append(((buffer[i] & (1 << b)) != 0 ? '1' : '0'));
                                 }
-                            }
-                            else {
+                            } else {
                                 str = MutableString.CreateEmpty();
                             }
                             result.Add(str);

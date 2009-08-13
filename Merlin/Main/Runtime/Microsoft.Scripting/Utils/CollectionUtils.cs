@@ -195,5 +195,19 @@ namespace Microsoft.Scripting.Utils {
             Array.Sort(array, comparison);
             return array;
         }
+
+        // .NET 3.5 method:
+        public static IEnumerable<TSource> Concat<TSource>(this IEnumerable<TSource> first, IEnumerable<TSource> second) {
+            ContractUtils.RequiresNotNull(first, "first");
+            ContractUtils.RequiresNotNull(second, "second");
+
+            foreach (var item in first) {
+                yield return item;
+            }
+
+            foreach (var item in second) {
+                yield return item;
+            }
+        }
     }
 }

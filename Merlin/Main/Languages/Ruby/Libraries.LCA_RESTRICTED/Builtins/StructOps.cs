@@ -230,7 +230,7 @@ namespace IronRuby.Builtins {
 
             using (IDisposable handle = RubyUtils.InfiniteInspectTracker.TrackObject(self)) {
                 // #<struct Struct::Foo name=nil, val=nil>
-                var result = MutableString.CreateMutable();
+                var result = MutableString.CreateMutable(RubyEncoding.Binary);
                 result.Append("#<struct ");
                 result.Append(context.Inspect(context.GetClassOf(self)));
 
@@ -245,8 +245,9 @@ namespace IronRuby.Builtins {
                     if (i != 0) {
                         result.Append(", ");
                     }
+                    // TODO (encoding):
                     result.Append(members[i]);
-                    result.Append("=");
+                    result.Append('=');
                     result.Append(context.Inspect(data[i]));
                 }
                 result.Append('>');

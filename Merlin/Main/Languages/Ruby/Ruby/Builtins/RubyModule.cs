@@ -2066,7 +2066,7 @@ namespace IronRuby.Builtins {
             if (IsSingletonClass) {
                 RubyClass c = (RubyClass)this;
                 object singletonOf;
-                MutableString result = MutableString.CreateMutable();
+                MutableString result = MutableString.CreateMutable(RubyEncoding.ClassName);
 
                 int nestings = 0;
                 while (true) {
@@ -2098,7 +2098,7 @@ namespace IronRuby.Builtins {
                 if (showEmptyName) {
                     return MutableString.FrozenEmpty;
                 } else {
-                    MutableString result = MutableString.CreateMutable();
+                    MutableString result = MutableString.CreateMutable(RubyEncoding.ClassName);
                     result.Append("#<");
                     result.Append(_context.GetClassOf(this).GetName(context));
                     result.Append(':');
@@ -2107,7 +2107,7 @@ namespace IronRuby.Builtins {
                     return result;
                 }
             } else {
-                return MutableString.CreateMutable(GetName(context));
+                return MutableString.CreateMutable(GetName(context), RubyEncoding.ClassName);
             }
         }
 

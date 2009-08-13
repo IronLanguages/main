@@ -67,7 +67,7 @@ namespace IronRuby.Tests {
             Assert(io.AppendBytes(buffer, 1) == 1);
             Assert(buffer.ToString() == "e");
 
-            buffer = MutableString.CreateMutable("x:");
+            buffer = MutableString.CreateMutable("x:", RubyEncoding.Binary);
             int c = s.Length - s_crlf_count - 2;
             Assert(io.AppendBytes(buffer, c) == c);
             Assert(buffer.ToString() == "x:" + s.Replace(crlf, "\n").Substring(0, c));

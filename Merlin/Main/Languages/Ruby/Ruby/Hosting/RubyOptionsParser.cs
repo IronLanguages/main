@@ -237,6 +237,12 @@ namespace IronRuby.Hosting {
                     if (ConsoleOptions.FileName != null) {
                         LanguageSetup.Options["MainFile"] = RubyUtils.CanonicalizePath(ConsoleOptions.FileName);
                         LanguageSetup.Options["Arguments"] = PopRemainingArgs();
+                        LanguageSetup.Options["ArgumentEncoding"] = 
+#if SILVERLIGHT
+                            RubyEncoding.UTF8;
+#else
+                            RubyEncoding.GetRubyEncoding(Console.InputEncoding);
+#endif
                         CommonConsoleOptions.Exit = false;
                     } 
                     break;
@@ -262,7 +268,6 @@ namespace IronRuby.Hosting {
                 // nop
             }
 #endif
-
             LanguageSetup.Options["SearchPaths"] = _loadPaths;
         }
 
