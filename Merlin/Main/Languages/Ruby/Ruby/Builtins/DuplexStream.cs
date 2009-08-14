@@ -35,8 +35,12 @@ namespace IronRuby.Builtins {
         }
 
         public override void Close() {
-            _reader.Close();
-            _writer.Close();
+            if (_reader != null) {
+                _reader.Close();
+            }
+            if (_writer != null) {
+                _writer.Close();
+            }
         }
 
         public StreamReader Reader {
@@ -60,8 +64,12 @@ namespace IronRuby.Builtins {
         }
 
         public override void Flush() {
-            _reader.BaseStream.Flush();
-            _writer.Flush();
+            if (_reader != null) {
+                _reader.BaseStream.Flush();
+            }
+            if (_writer != null) {
+                _writer.Flush();
+            }
         }
 
         public override long Length {
@@ -74,10 +82,17 @@ namespace IronRuby.Builtins {
         }
 
         public override int ReadByte() {
+            if (_reader == null) {
+                throw new InvalidOperationException();
+            }
             return _reader.Read();
         }
 
         public override int Read(byte[]/*!*/ buffer, int offset, int count) {
+            if (_reader == null) {
+                throw new InvalidOperationException();
+            }
+
             // TODO:
             return _reader.BaseStream.Read(buffer, offset, count);
         }
@@ -91,6 +106,10 @@ namespace IronRuby.Builtins {
         }
 
         public override void Write(byte[] buffer, int offset, int count) {
+            if (_writer == null) {
+                throw new InvalidOperationException();
+            }
+
             // TODO:
             Debug.Assert(_writer != null);
             _writer.Write(_writer.Encoding.GetString(buffer, offset, count));

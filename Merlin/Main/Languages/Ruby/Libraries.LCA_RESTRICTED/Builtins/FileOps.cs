@@ -42,8 +42,9 @@ namespace IronRuby.Builtins {
             [DefaultProtocol, NotNull]Union<int, MutableString> descriptorOrPath, [Optional, DefaultProtocol]MutableString mode, [Optional]int permission) {
 
             if (descriptorOrPath.IsFixnum()) {
-                // TODO: descriptor
-                throw new NotImplementedException();
+                return new RubyFile(
+                    self.Context, RubyIOOps.GetDescriptorStream(self.Context, descriptorOrPath.Fixnum()), descriptorOrPath.Fixnum(), IOModeEnum.Parse(mode)
+                );
             } else {
                 // TODO: permissions
                 return CreateFile(self, descriptorOrPath.Second, mode);
@@ -55,8 +56,9 @@ namespace IronRuby.Builtins {
             [DefaultProtocol, NotNull]Union<int, MutableString> descriptorOrPath, int mode, [Optional]int permission) {
 
             if (descriptorOrPath.IsFixnum()) {
-                // TODO: descriptor
-                throw new NotImplementedException();
+                return new RubyFile(
+                    self.Context, RubyIOOps.GetDescriptorStream(self.Context, descriptorOrPath.Fixnum()), descriptorOrPath.Fixnum(), (IOMode)mode
+                );
             } else {
                 // TODO: permissions
                 return CreateFile(self, descriptorOrPath.Second, mode);
@@ -65,17 +67,17 @@ namespace IronRuby.Builtins {
 
         [RubyConstructor]
         public static RubyFile/*!*/ CreateFile(RubyClass/*!*/ self, [NotNull]MutableString/*!*/ path) {
-            return new RubyFile(self.Context, path.ConvertToString(), "r");
+            return new RubyFile(self.Context, path.ConvertToString(), IOMode.Default);
         }
 
         [RubyConstructor]
         public static RubyFile/*!*/ CreateFile(RubyClass/*!*/ self, [NotNull]MutableString/*!*/ path, MutableString mode) {
-            return new RubyFile(self.Context, path.ConvertToString(), (mode != null) ? mode.ConvertToString() : "r");
+            return new RubyFile(self.Context, path.ConvertToString(), IOModeEnum.Parse(mode));
         }
 
         [RubyConstructor]
         public static RubyFile/*!*/ CreateFile(RubyClass/*!*/ self, [NotNull]MutableString/*!*/ path, int mode) {
-            return new RubyFile(self.Context, path.ConvertToString(), (RubyFileMode)mode);
+            return new RubyFile(self.Context, path.ConvertToString(), (IOMode)mode);
         }
 
         #endregion
@@ -114,13 +116,13 @@ namespace IronRuby.Builtins {
         [RubyModule("Constants")]
         public static class Constants {
             [RubyConstant]
-            public readonly static int APPEND = (int)RubyFileMode.APPEND;
+            public readonly static int APPEND = (int)IOMode.WriteAppends;
             [RubyConstant]
-            public readonly static int BINARY = (int)RubyFileMode.BINARY;
+            public readonly static int BINARY = (int)IOMode.PreserveEndOfLines;
             [RubyConstant]
-            public readonly static int CREAT = (int)RubyFileMode.CREAT;
+            public readonly static int CREAT = (int)IOMode.CreateIfNotExists;
             [RubyConstant]
-            public readonly static int EXCL = (int)RubyFileMode.EXCL;
+            public readonly static int EXCL = (int)IOMode.ErrorIfExists;
             [RubyConstant]
             public readonly static int FNM_CASEFOLD = 0x08;
             [RubyConstant]
@@ -140,15 +142,15 @@ namespace IronRuby.Builtins {
             [RubyConstant]
             public readonly static int LOCK_UN = 0x08;
             [RubyConstant]
-            public readonly static int NONBLOCK = (int)RubyFileMode.NONBLOCK;
+            public readonly static int NONBLOCK = (int)IOMode.WriteOnly;
             [RubyConstant]
-            public readonly static int RDONLY = (int)RubyFileMode.RDONLY;
+            public readonly static int RDONLY = (int)IOMode.ReadOnly;
             [RubyConstant]
-            public readonly static int RDWR = (int)RubyFileMode.RDWR;
+            public readonly static int RDWR = (int)IOMode.ReadWrite;
             [RubyConstant]
-            public readonly static int TRUNC = (int)RubyFileMode.TRUNC;
+            public readonly static int TRUNC = (int)IOMode.Truncate;
             [RubyConstant]
-            public readonly static int WRONLY = (int)RubyFileMode.WRONLY;
+            public readonly static int WRONLY = (int)IOMode.WriteOnly;
         }
 
         #endregion
@@ -656,8 +658,8 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("path")]
-        public static MutableString/*!*/ GetPath(RubyFile/*!*/ self) {
-            return MutableString.Create(self.Path, RubyEncoding.Path);
+        public static MutableString GetPath(RubyFile/*!*/ self) {
+            return self.Path != null ? MutableString.Create(self.Path, RubyEncoding.Path) : null;
         }
 
         //truncate

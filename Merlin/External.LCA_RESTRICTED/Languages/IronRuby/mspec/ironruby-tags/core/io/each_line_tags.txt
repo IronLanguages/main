@@ -1,4 +1,0 @@
-fails:IO#each_line yields each line starting from the current position
-fails:IO#each_line returns self
-fails:IO#each_line when passed a separator returns self
-fails:IO#each_line when passed a separator yields self's content starting from the current position when the passed separator is nil

@@ -99,7 +99,7 @@ namespace IronRuby.Builtins {
         #region Dynamic Sites
 
         private CallSite<Func<CallSite, object, object>> _inspectSite;
-        private CallSite<Func<CallSite, object, MutableString>> _stringConversionSite;
+        private CallSite<Func<CallSite, object, MutableString>> _inspectResultConversionSite;
         private CallSite<Func<CallSite, object, object, object>> _eqlSite;
         private CallSite<Func<CallSite, object, object>> _hashSite;
         private CallSite<Func<CallSite, object, object>> _toStringSite;
@@ -113,8 +113,8 @@ namespace IronRuby.Builtins {
             get { return RubyUtils.GetCallSite(ref _newSite, Context, "new", 1); }
         }
         
-        public CallSite<Func<CallSite, object, MutableString>>/*!*/ StringConversionSite {
-            get { return RubyUtils.GetCallSite(ref _stringConversionSite, ConvertToSAction.Make(Context)); } 
+        public CallSite<Func<CallSite, object, MutableString>>/*!*/ InspectResultConversionSite {
+            get { return RubyUtils.GetCallSite(ref _inspectResultConversionSite, ConvertToSAction.Make(Context)); } 
         }
 
         public CallSite<Func<CallSite, object, object, object>>/*!*/ EqualsSite {

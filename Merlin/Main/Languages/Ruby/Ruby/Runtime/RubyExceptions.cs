@@ -20,6 +20,7 @@ using System.Runtime.InteropServices;
 using System.Security;
 using IronRuby.Builtins;
 using Microsoft.Scripting.Utils;
+using IronRuby.Runtime.Calls;
 
 namespace IronRuby.Runtime {
     /// <summary>
@@ -143,10 +144,33 @@ namespace IronRuby.Runtime {
             return FormatMethodMissingMessage(context, self, name, "undefined method `{0}' for {1}");
         }
 
-        internal static string/*!*/ FormatMethodMissingMessage(RubyContext/*!*/ context, object self, string/*!*/ name, string/*!*/ message) {
+        [ThreadStatic]
+        private static bool _disableMethodMissingMessageFormatting;
+
+        internal static string/*!*/ FormatMethodMissingMessage(RubyContext/*!*/ context, object obj, string/*!*/ name, string/*!*/ message) {
             Assert.NotNull(name);
-            string strObject = context.InspectEnsuringClassName(self);
-            return String.Format(message, name, strObject);
+
+            string str;
+            if (obj == null) {
+                str = "nil:NilClass";
+            } else if (_disableMethodMissingMessageFormatting) {
+                str = RubyUtils.ObjectToMutableString(context, obj).ToString();
+            } else {
+                _disableMethodMissingMessageFormatting = true;
+                try {
+                    str = context.Inspect(obj).ConvertToString();
+                    if (!str.StartsWith("#")) {
+                        str += ":" + context.GetClassName(obj);
+                    }
+                } catch (Exception) {
+                    // MRI: swallows all exceptions
+                    str = RubyUtils.ObjectToMutableString(context, obj).ToString();
+                } finally {
+                    _disableMethodMissingMessageFormatting = false;
+                }
+            }
+            
+            return String.Format(message, name, str);
         }
 
         #endregion
@@ -259,6 +283,10 @@ namespace IronRuby.Runtime {
 
         public static Exception/*!*/ CreateENOENT(string message) {
             return new FileNotFoundException(message);
+        }
+
+        public static Exception/*!*/ CreateEBADF() {
+            return new BadFileDescriptorError();
         }
 
         #endregion

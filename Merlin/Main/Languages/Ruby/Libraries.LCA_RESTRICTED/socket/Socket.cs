@@ -342,7 +342,7 @@ namespace IronRuby.StandardLibrary.Sockets {
             // TODO: Do we need some kind of strong reference to the socket
             // here to stop the RubySocket from being garbage collected?
             RubySocket s = new RubySocket(context, self.Socket.Accept());
-            result.Add(s.FileDescriptor);
+            result.Add(s.GetFileDescriptor());
             SocketAddress addr = s.Socket.RemoteEndPoint.Serialize();
             result.Add(MutableString.CreateAscii(addr.ToString()));
             return result;
