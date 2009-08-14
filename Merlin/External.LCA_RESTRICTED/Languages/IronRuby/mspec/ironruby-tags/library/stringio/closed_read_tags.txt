@@ -1,1 +1,0 @@
-fails:StringIO#closed_read? returns true if self is not readable

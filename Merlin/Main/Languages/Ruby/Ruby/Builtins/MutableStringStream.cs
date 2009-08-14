@@ -57,7 +57,7 @@ namespace IronRuby.Builtins {
         }
 
         public override long Length {
-            get { return _string.ConvertToBytes().Length; }
+            get { return _string.GetByteCount(); }
         }
 
         public override long Position {
@@ -91,31 +91,11 @@ namespace IronRuby.Builtins {
         }
 
         public override long Seek(long offset, SeekOrigin origin) {
-            int byteCount = _string.GetByteCount();
-
-            int position = _position;
-            switch (origin) {
-                case SeekOrigin.Begin:
-                    position = (int)offset;
-                    break;
-                case SeekOrigin.End:
-                    position = byteCount + (int)offset;
-                    break;
-                case SeekOrigin.Current:
-                    position += (int)offset;
-                    break;
-            }
-            Position = position;
-            return Position;
+            return Position = RubyIO.GetSeekPosition(_string.GetByteCount(), _position, offset, origin);
         }
 
         public override void SetLength(long value) {
-            int byteCount = _string.GetByteCount();
-            if (byteCount < value) {
-                _string.Append(0, (int)(value - byteCount));
-            } else if (byteCount > value) {
-                _string.Remove((int)value, byteCount - (int)value);
-            }
+            _string.SetByteCount((int)value);
         }
 
         public override void Write(byte[]/*!*/ buffer, int offset, int count) {

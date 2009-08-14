@@ -118,17 +118,20 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        // TODO: dynamic library loading?
         protected RubyClass/*!*/ GetClass(Type/*!*/ type) {
             Debug.Assert(type != null && !type.IsInterface);
+            // TODO: CLR class vs library class:
             return _context.GetOrCreateClass(type);
         }
 
-        // TODO: dynamic library loading?
         protected RubyModule/*!*/ GetModule(Type/*!*/ type) {
-            Debug.Assert(type != null && type.IsInterface);
-            throw new NotImplementedException("TODO");
-            // return _context.GetOrCreateInterfaceModule(type);
+            Debug.Assert(type != null);
+            RubyModule result;
+            if (!_context.TryGetModule(type, out result)) {
+                // TODO: we should load the library that contains this type if it is not a CLR type
+                throw new NotSupportedException(String.Format("Ruby library that contains type {0} hasn't been loaded yet.", type));
+            }
+            return result;
         }
 
         protected virtual void LoadModules() { 

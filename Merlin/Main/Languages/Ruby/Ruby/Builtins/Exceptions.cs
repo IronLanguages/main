@@ -223,6 +223,21 @@ namespace IronRuby.Builtins {
     }
 
     [Serializable]
+    public class BadFileDescriptorError : ExternalException {
+        private const string/*!*/ M = "Bad file descriptor";
+
+        public BadFileDescriptorError() : this(null, null) { }
+        public BadFileDescriptorError(string message) : this(message, null) { }
+        public BadFileDescriptorError(string message, Exception inner) : base(RubyExceptions.MakeMessage(message, M), inner) { }
+        public BadFileDescriptorError(MutableString message) : base(RubyExceptions.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
+
+#if !SILVERLIGHT
+        protected BadFileDescriptorError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
+            : base(info, context) { }
+#endif
+    }
+
+    [Serializable]
     public class InvalidError : ExternalException {
         private const string/*!*/ M = "Invalid argument";
 

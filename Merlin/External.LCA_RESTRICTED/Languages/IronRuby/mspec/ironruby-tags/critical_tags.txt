@@ -23,9 +23,7 @@ core\array\equal_value_tags.txt:0:critical:Array#== properly handles recursive a
 core\array\hash_tags.txt:0:critical:Array#hash properly handles recursive arrays
 core\array\hash_tags.txt:0:critical:Array#hash properly handles recursive arrays
 core\array\intersection_tags.txt:0:critical:Array#& properly handles recursive arrays
-core\array\join_tags.txt:0:critical:Array#join raises a NoMethodError if an element does not respond to #to_s 
 core\array\join_tags.txt:0:critical:Array#join does not separates elements when the passed separator is nil
-core\array\multiply_tags.txt:0:critical:Array#* raises a NoMethodError if an element does not respond to #to_s
 core\array\union_tags.txt:0:critical:Array#| properly handles recursive arrays
 core\array\uniq_tags.txt:0:critical:Array#uniq properly handles recursive arrays
 core\array\uniq_tags.txt:0:critical:Array#uniq! properly handles recursive arrays

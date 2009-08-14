@@ -1121,25 +1121,28 @@ namespace IronRuby.Builtins {
             return EachLine(block, self, context.InputSeparator);
         }
 
-        private static readonly MutableString _DefaultLineSeparator = MutableString.CreateAscii("\n").Freeze();
-        private static readonly MutableString _DefaultDoubleLineSeparator = MutableString.CreateAscii("\n\n").Freeze();
+        internal static readonly MutableString DefaultLineSeparator = MutableString.CreateAscii("\n").Freeze();
+        internal static readonly MutableString DefaultParagraphSeparator = MutableString.CreateAscii("\n\n").Freeze();
 
         [RubyMethod("each")]
         [RubyMethod("each_line")]
         public static object EachLine(BlockParam block, MutableString/*!*/ self, [DefaultProtocol]MutableString separator) {
+            return EachLine(block, self, separator, 0);
+        }
+
+        public static object EachLine(BlockParam block, MutableString/*!*/ self, [DefaultProtocol]MutableString separator, int start) {
             self.TrackChanges();
 
             MutableString paragraphSeparator;
             if (separator == null || separator.IsEmpty) {
-                separator = _DefaultLineSeparator;
-                paragraphSeparator = _DefaultDoubleLineSeparator;
+                separator = DefaultLineSeparator;
+                paragraphSeparator = DefaultParagraphSeparator;
             } else {
                 paragraphSeparator = null;
             }
 
             // TODO: this is slow, refactor when we redo MutableString
             MutableString str = self;
-            int start = 0;
 
             // In "normal" mode just split the string at the end of each seperator occurrance.
             // In "paragraph" mode, split the string at the end of each occurrance of two or more
