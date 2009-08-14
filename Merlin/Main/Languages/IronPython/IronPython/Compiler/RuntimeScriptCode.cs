@@ -32,7 +32,7 @@ namespace IronPython.Compiler {
     /// Represents a script code which can be consumed at runtime as-is.  This code has
     /// no external dependencies and is closed over it's scope.  
     /// </summary>
-    class RuntimeScriptCode : ScriptCode {
+    class RuntimeScriptCode : RunnableScriptCode {
         private readonly CompilerContext/*!*/ _context;
         private readonly PythonAst/*!*/ _ast;
         private readonly CodeContext/*!*/ _optimizedContext;
@@ -61,10 +61,15 @@ namespace IronPython.Compiler {
             if (scope == _optimizedContext.Scope) {
                 EnsureCompiled();
 
-                if (_context.SourceUnit.Kind == SourceCodeKind.Expression) {
-                    return OptimizedEvalWrapper();
+                PushFrame(_optimizedContext, _optimizedTarget);
+                try {
+                    if (_context.SourceUnit.Kind == SourceCodeKind.Expression) {
+                        return OptimizedEvalWrapper();
+                    }
+                    return _optimizedTarget();
+                } finally {
+                    PopFrame();
                 }
-                return _optimizedTarget();
             }
 
             // if we're running different code then re-compile the code under a new scope
@@ -78,22 +83,12 @@ namespace IronPython.Compiler {
                 );
             }
 
-            if (_context.SourceUnit.Kind == SourceCodeKind.Expression) {
-                return EvalWrapper(scope);
-            }
+            // This is a brand new ScriptCode which also handles all appropriate ScriptCode
+            // things such as pushing a function code or updating the stack trace for
+            // exec/eval code.  Therefore we don't need to do any of that here.
             return _unoptimizedCode.Run(scope);
         }
-
-        // wrappers so we can do minimal code gen for eval code
-        private object EvalWrapper(Scope scope) {
-            try {
-                return _unoptimizedCode.Run(scope);
-            } catch (Exception) {
-                PythonOps.UpdateStackTrace(new CodeContext(scope, (PythonContext)_optimizedContext.LanguageContext), _optimizedTarget.Method, "<module>", "<string>", 0);
-                throw;
-            }
-        }
-
+        
         private object OptimizedEvalWrapper() {
             try {
                 return _optimizedTarget();

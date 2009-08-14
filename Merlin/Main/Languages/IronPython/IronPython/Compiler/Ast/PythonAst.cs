@@ -193,17 +193,6 @@ namespace IronPython.Compiler.Ast {
                 }
             }
 
-            if (ag.PyContext.PythonOptions.Frames) {
-                body = Ast.Block(
-                    new[] { FunctionDefinition._functionStack },
-                    FunctionDefinition.AddFrame(
-                        ag.LocalContext, 
-                        Ast.Constant(null, typeof(PythonFunction)), 
-                        body
-                    )
-                );
-            }
-
             body = ag.AddProfiling(body);
             body = ag.AddReturnTarget(body);
 

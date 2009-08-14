@@ -26,7 +26,7 @@ namespace IronRuby.Builtins {
         [RubyMethodAttribute("to_s")]
         public static MutableString/*!*/ ToString(bool self) {
             Debug.Assert(self == true);
-            return MutableString.Create("true"); 
+            return MutableString.CreateAscii("true"); 
         }
 
         [RubyMethodAttribute("&")]

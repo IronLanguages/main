@@ -68,9 +68,18 @@ describe :io_new, :shared => true do
     lambda { IO.send(@method, fd, 'w') }.should raise_error(Errno::EBADF)
   end
 
-  it "raises EINVAL if mode is not compatible with the descriptor's current mode" do
-    lambda { IO.send(@method, @file.fileno, 'r') }.should raise_error(Errno::EINVAL)
-    lambda { io = IO.send(@method, @file.fileno, 'w'); io.close }.should_not raise_error
+  platform_is :windows do
+    it "doesn't raise EINVAL even if mode is not compatible with the descriptor's current mode" do
+      lambda { IO.send(@method, @file.fileno, 'r') }.should_not raise_error
+      lambda { io = IO.send(@method, @file.fileno, 'w'); io.close }.should_not raise_error
+    end
+  end
+  
+  platform_is_not :windows do
+    it "doesn't raise EINVAL even if mode is not compatible with the descriptor's current mode" do
+      lambda { IO.send(@method, @file.fileno, 'r') }.should_not raise_error
+     lambda { io = IO.send(@method, @file.fileno, 'w'); io.close }.should_not raise_error
+    end
   end
 
   it "raises IOError on closed stream" do
@@ -106,7 +115,9 @@ describe :io_new, :shared => true do
     io.close
   end
 
+  platform_is_not :windows do
     it "cannot open an IO with incompatible flags" do
       lambda { IO.new(@file.fileno, "r") }.should raise_error
     end
+  end
 end

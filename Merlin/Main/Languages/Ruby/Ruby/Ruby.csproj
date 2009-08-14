@@ -3,7 +3,6 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>10.0.20624</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{7F6984B4-EE6D-4E6F-ABB1-E210D7DC4FDD}</ProjectGuid>
     <OutputType>Library</OutputType>
@@ -124,8 +123,9 @@
     <Compile Include="Builtins\CharacterMap.cs" />
     <Compile Include="Builtins\ConsoleStream.cs" />
     <None Include="Builtins\Subclasses.Generator.rb" />
-    <Compile Include="Builtins\RubyErrno.cs" />
+    <Compile Include="Builtins\IOMode.cs" />
     <Compile Include="Builtins\MutableStringBuilder.cs" />
+    <Compile Include="Builtins\RubyBufferedStream.cs" />
     <Compile Include="Builtins\RubyEvent.Meta.cs" />
     <Compile Include="Builtins\DuplexStream.cs" />
     <Compile Include="Builtins\GenericRegex.cs" />
@@ -147,7 +147,7 @@
     <Compile Include="Builtins\MutableString.CharArrayContent.cs" />
     <Compile Include="Builtins\MutableString.StringContent.cs" />
     <Compile Include="Builtins\RubyMethod.Meta.cs" />
-    <Compile Include="Builtins\File.cs" />
+    <Compile Include="Builtins\RubyFile.cs" />
     <Compile Include="Builtins\Glob.cs" />
     <Compile Include="Builtins\MatchData.cs" />
     <Compile Include="Builtins\MutableStringStream.cs" />
@@ -256,7 +256,7 @@
     <Compile Include="Compiler\Ast\Expressions\RangeExpression.cs" />
     <Compile Include="Runtime\Conversions\Converter.cs" />
     <Compile Include="Runtime\Conversions\Converter.Generated.cs" />
-    <Compile Include="Builtins\Initializer.cs" />
+    <Compile Include="Builtins\LibraryInitializer.cs" />
     <Compile Include="Compiler\AstGenerator.cs" />
     <Compile Include="Compiler\Ast\Arguments.cs" />
     <Compile Include="Compiler\Ast\AstFactory.cs" />
@@ -379,7 +379,6 @@
     <Compile Include="RubyCompatibility.cs" />
     <Compile Include="Runtime\IOWrapper.cs" />
     <None Include="Compiler\Parser\Parser.y" />
-    <None Include="Migrated rules for Ruby.ruleset" />
     <None Include="Runtime\Calls\MethodDispatcher.Generator.rb" />
     <None Include="Runtime\Conversions\Converter.Generator.rb" />
   </ItemGroup>

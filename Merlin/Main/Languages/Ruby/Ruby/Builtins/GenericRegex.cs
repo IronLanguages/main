@@ -157,7 +157,8 @@ namespace IronRuby.Builtins {
         }
 
         public override MutableString/*!*/ GetPattern() {
-            return MutableString.Create(_pattern);
+            // TODO (encoding):
+            return MutableString.Create(_pattern, RubyEncoding.UTF8);
         }
 
 #if DEBUG
@@ -166,7 +167,7 @@ namespace IronRuby.Builtins {
         }
 #endif
         public override MutableString[]/*!*/ Split(MutableString/*!*/ input, int count, int start) {
-            return MutableString.MakeArray(_regex.Split(input.ConvertToString(), count, start));
+            return MutableString.MakeArray(_regex.Split(input.ConvertToString(), count, start), input.Encoding);
         }
 
         private static int SkipNonSpecial(string/*!*/ pattern, int i, out char escaped) {

@@ -36,6 +36,7 @@ namespace IronPython.Compiler.Ast {
         private readonly Statement _body;
         private readonly Expression[] _bases;
         private IList<Expression> _decorators;
+        private List<SymbolId> _closureVars;
 
         private PythonVariable _variable;           // Variable corresponding to the class name
         private PythonVariable _modVariable;        // Variable for the the __module__ (module name)
@@ -119,6 +120,14 @@ namespace IronPython.Compiler.Ast {
             for (ScopeStatement parent = Parent; parent != null; parent = parent.Parent) {
                 if (parent.TryBindOuter(name, out variable)) {
                     variable.AccessedInNestedScope = true;
+                    if (variable.Kind != VariableKind.Global) {
+                        if (_closureVars == null) {
+                            _closureVars = new List<SymbolId>();
+                        }
+                        if (!_closureVars.Contains(name)) {
+                            _closureVars.Add(name);
+                        }
+                    }
                     return variable;
                 }
             }
@@ -160,9 +169,29 @@ namespace IronPython.Compiler.Ast {
                 );
             }
 
+            FunctionCode funcCodeObj = null;
             if (_body.CanThrow && ag.PyContext.PythonOptions.Frames) {
-                bodyStmt = FunctionDefinition.AddFrame(classGen.LocalContext, Ast.Constant(null, typeof(PythonFunction)), bodyStmt);
-                classGen.AddHiddenVariable(FunctionDefinition._functionStack);
+                funcCodeObj = new FunctionCode(
+                    ag.PyContext,
+                    null,
+                    null,
+                    SymbolTable.IdToString(Name),
+                    ag.GetDocumentation(_body),
+                    ArrayUtils.EmptyStrings,
+                    FunctionAttributes.None,
+                    Span,
+                    ag.Context.SourceUnit.Path,
+                    ag.EmitDebugSymbols,
+                    ag.ShouldInterpret,
+                    _closureVars,
+                    classGen.LoopLocationsNoCreate,
+                    classGen.HandlerLocationsNoCreate
+                );
+
+                MSAst.Expression funcCode = Ast.Constant(funcCodeObj);
+
+                bodyStmt = AstGenerator.AddFrame(classGen.LocalContext, funcCode, bodyStmt);
+                classGen.AddHiddenVariable(AstGenerator._functionStack);
             }
 
             bodyStmt = classGen.WrapScopeStatements(
@@ -181,6 +210,10 @@ namespace IronPython.Compiler.Ast {
                 classGen.Name + "$" + _classId++,
                 classGen.Parameters
             );
+            
+            if (funcCodeObj != null) {
+                funcCodeObj.Code = lambda;
+            }
 
             MSAst.Expression classDef = Ast.Call(
                 AstGenerator.GetHelperMethod("MakeClass"),

@@ -197,7 +197,7 @@ Python
         }
 
         public void LibraryLoader1() {
-            Context.DefineGlobalVariable("lib_name", MutableString.Create(typeof(TestLibraryInitializer1).AssemblyQualifiedName));
+            Context.DefineGlobalVariable("lib_name", MutableString.CreateAscii(typeof(TestLibraryInitializer1).AssemblyQualifiedName));
 
             AssertOutput(delegate() {
                 CompilerTest(@"

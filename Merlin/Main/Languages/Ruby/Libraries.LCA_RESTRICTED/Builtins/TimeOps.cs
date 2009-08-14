@@ -21,6 +21,7 @@ using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using IronRuby.Runtime;
+using System.Globalization;
 
 namespace IronRuby.Builtins {
 
@@ -383,6 +384,8 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("strftime")]
         public static MutableString/*!*/ FormatTime(DateTime self, [DefaultProtocol, NotNull]MutableString/*!*/ format) {
+            // TODO (encoding):
+
             bool inEscape = false;
             StringBuilder builder = new StringBuilder();
             foreach (char c in format.ToString()) {
@@ -469,7 +472,7 @@ namespace IronRuby.Builtins {
                             break;
                     }
                     if (thisFormat != null) {
-                        builder.Append(self.ToString(thisFormat));
+                        builder.Append(self.ToString(thisFormat, CultureInfo.InvariantCulture));
                     }
                     inEscape = false;
                 } else {
@@ -477,7 +480,7 @@ namespace IronRuby.Builtins {
                 }
             }
 
-            return MutableString.Create(builder.ToString());
+            return MutableString.Create(builder.ToString(), format.Encoding);
         }
 
         [RubyMethod("succ")]
@@ -512,7 +515,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("inspect")]
         [RubyMethod("to_s")]
         public static MutableString/*!*/ ToString(DateTime self) {
-            return MutableString.Create(self.ToString("ddd MMM dd HH:mm:ss K yyyy"));
+            return MutableString.CreateAscii(self.ToString("ddd MMM dd HH:mm:ss K yyyy", CultureInfo.InvariantCulture));
         }
 
         [RubyMethod("gmtoff")]
@@ -578,7 +581,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("zone")]
         public static MutableString/*!*/ GetZone(DateTime/*!*/ self) {
             // TODO: 
-            return MutableString.Create("UTC");
+            return MutableString.CreateAscii("UTC");
         }
     }
 }

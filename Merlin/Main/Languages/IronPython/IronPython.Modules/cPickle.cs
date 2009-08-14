@@ -803,7 +803,26 @@ namespace IronPython.Modules {
                 }
 
                 if (needMark) Write(context, Opcode.Mark);
-                foreach (object o in t) Save(context, o);
+                foreach (object o in t) {
+                    Save(context, o);
+                }
+
+                if (_memo.Contains(PythonOps.Id(obj))) {
+                    // recursive tuple
+                    if (_protocol == 1) {
+                        Write(context, Opcode.PopMark);
+                    } else {
+                        if (_protocol == 0) {
+                            Write(context, Opcode.Pop);
+                        }
+                        for (int i = 0; i < t.__len__(); i++) {
+                            Write(context, Opcode.Pop);
+                        }
+                    }
+                    WriteGet(context, obj);
+                    return;
+                }
+
                 Write(context, opcode);
 
                 if (t.__len__() > 0) {
@@ -836,10 +855,7 @@ namespace IronPython.Modules {
             /// </summary>
             private void WriteFloatAsString(CodeContext/*!*/ context, object value) {                
                 Debug.Assert(DynamicHelpers.GetPythonType(value).Equals(TypeCache.Double));
-                // 17 digits of precision are necessary for accurate roundtripping
-                StringFormatter sf = new StringFormatter(context, "%.17g", value);
-                sf._TrailingZeroAfterWholeFloat = true;
-                Write(context, sf.Format());
+                Write(context, DoubleOps.__repr__(context, (double)value));
                 Write(context, Newline);
             }
 
@@ -1173,12 +1189,13 @@ namespace IronPython.Modules {
                     msgBuilder.Append(": ");
                     msgBuilder.Append(String.Format(format, args));
                 }
-                return PythonExceptions.CreateThrowable(PicklingError(context), msgBuilder.ToString());
+                return PythonExceptions.CreateThrowable(PickleError(context), msgBuilder.ToString());
             }
 
             private void Memoize(object obj) {
-                Debug.Assert(!_memo.Contains(PythonOps.Id(obj)));
-                _memo[PythonOps.Id(obj)] = PythonTuple.MakeTuple(_memo.Count, obj);
+                if (!_memo.Contains(PythonOps.Id(obj))) {
+                    _memo[PythonOps.Id(obj)] = PythonTuple.MakeTuple(_memo.Count, obj);
+                }
             }
 
             /// <summary>
@@ -1396,7 +1413,11 @@ namespace IronPython.Modules {
             }
 
             private string Read(CodeContext/*!*/ context, int size) {
-                return _file.Read(context, size);
+                string res = _file.Read(context, size);
+                if (res.Length < size) {
+                    throw PythonOps.EofError("unexpected EOF while unpickling");
+                }
+                return res;
             }
 
             private string ReadLineNoNewline(CodeContext/*!*/ context) {

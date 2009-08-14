@@ -174,6 +174,10 @@ namespace IronRuby.Builtins {
                 return new BinaryContent(BinaryRegex.Escape(ToByteArray()), _owner);
             }
 
+            public override void CheckEncoding() {
+                _owner._encoding.StrictEncoding.GetCharCount(_data, 0, _count);
+            }
+
             #endregion
 
             #region CompareTo (read-only)
@@ -342,7 +346,9 @@ namespace IronRuby.Builtins {
             }
 
             public override void SetByte(int index, byte b) {
-                Debug.Assert(index < _count);
+                if (index >= _count) {
+                    throw new ArgumentOutOfRangeException("index");
+                }
                 _data[index] = b;
             }
 

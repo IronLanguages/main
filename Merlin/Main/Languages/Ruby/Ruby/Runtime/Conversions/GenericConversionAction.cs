@@ -61,24 +61,32 @@ namespace IronRuby.Runtime.Conversions {
         }
 
         protected override bool Build(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, bool defaultFallback) {
-            if (TryImplicitConversion(metaBuilder, args)) {
-                metaBuilder.AddObjectTypeRestriction(args.Target, args.TargetExpression);
-                return true;
-            }
-
             // TODO: this is our meta object, should we add IRubyMetaConvertible interface instead of using interop-binder?
             if (args.Target is IDynamicMetaObjectProvider) {
                 metaBuilder.SetMetaResult(args.MetaTarget.BindConvert(new InteropBinder.Convert(args.RubyContext, _type, true)), false);
                 return true;
             }
 
+            return BuildConversion(metaBuilder, args.MetaTarget, args.MetaContext.Expression, _type, defaultFallback);
+        }
+
+        internal static bool BuildConversion(MetaObjectBuilder/*!*/ metaBuilder, DynamicMetaObject/*!*/ target, Expression/*!*/ contextExpression, 
+            Type/*!*/ toType, bool defaultFallback) {
+
+            Expression expr = TryImplicitConversion(target, toType);
+            if (expr != null) {
+                metaBuilder.Result = expr;
+                metaBuilder.AddObjectTypeRestriction(target.Value, target.Expression);
+                return true;
+            }
+
             if (defaultFallback) {
-                metaBuilder.AddObjectTypeRestriction(args.Target, args.TargetExpression);
+                metaBuilder.AddObjectTypeRestriction(target.Value, target.Expression);
 
                 metaBuilder.SetError(Methods.MakeTypeConversionError.OpCall(
-                    args.MetaContext.Expression,
-                    AstUtils.Convert(args.TargetExpression, typeof(object)),
-                    Ast.Constant(_type)
+                    contextExpression,
+                    AstUtils.Convert(target.Expression, typeof(object)),
+                    Ast.Constant(toType)
                 ));
                 return true;
             }
@@ -86,22 +94,20 @@ namespace IronRuby.Runtime.Conversions {
             return false;
         }
 
-        internal bool TryImplicitConversion(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
+        private static Expression TryImplicitConversion(DynamicMetaObject/*!*/ target, Type/*!*/ toType) {
             // TODO: include this into ImplicitConvert?
-            if (args.Target == null) {
-                if (!_type.IsValueType || _type.IsGenericType && _type.GetGenericTypeDefinition() == typeof(Nullable<>)) {
-                    metaBuilder.Result = AstUtils.Constant(null, _type);
-                    return true;
+            if (target.Value == null) {
+                if (!toType.IsValueType || toType.IsGenericType && toType.GetGenericTypeDefinition() == typeof(Nullable<>)) {
+                    return AstUtils.Constant(null, toType);
                 } else {
-                    return false;
+                    return null;
                 }
             }
 
-            Type fromType = args.Target.GetType();
-            return null != (metaBuilder.Result = 
-                Converter.ImplicitConvert(args.TargetExpression, fromType, _type) ??
-                Converter.ExplicitConvert(args.TargetExpression, fromType, _type)
-            );
+            Type fromType = target.Value.GetType();
+            return 
+                Converter.ImplicitConvert(target.Expression, fromType, toType) ??
+                Converter.ExplicitConvert(target.Expression, fromType, toType);
         }
     }
 

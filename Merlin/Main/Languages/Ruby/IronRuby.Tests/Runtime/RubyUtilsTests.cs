@@ -85,7 +85,6 @@ namespace IronRuby.Tests {
             Assert(RubyUtils.TryMangleName("Foo123bar") == "foo123bar");
             Assert(RubyUtils.TryMangleName("123Bar") == "123_bar");
             Assert(RubyUtils.TryMangleName("?Bar") == "?_bar");
-            Assert(RubyUtils.TryMangleName("B__") == "b__");
 
             // special cases:
             Assert(RubyUtils.TryUnmangleName("ON") == null);
@@ -131,6 +130,11 @@ namespace IronRuby.Tests {
             Assert(RubyUtils.TryMangleName("FooBAR") == null);
             Assert(RubyUtils.TryMangleName("foo") == null);
             Assert(RubyUtils.TryMangleName("initialize") == null);
+
+            // name containing underscore(s) cannot be mangled:
+            Assert(RubyUtils.TryMangleName("a_b") == null);
+            Assert(RubyUtils.TryMangleName("add_Foo") == null);
+            Assert(RubyUtils.TryMangleName("B__") == null);
             Assert(RubyUtils.TryMangleName("foo_bar=") == null);
             Assert(RubyUtils.TryMangleName("foo__bar") == null);
             Assert(RubyUtils.TryMangleName("_foo") == null);

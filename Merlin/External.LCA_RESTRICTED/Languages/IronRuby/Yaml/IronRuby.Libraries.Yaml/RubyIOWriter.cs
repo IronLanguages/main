@@ -36,11 +36,11 @@ namespace IronRuby.StandardLibrary.Yaml {
         }
 
         public override void Write(char value) {
-            _io.Write(new string(value, 1));
+            _io.WriteBytes(new string(value, 1));
         }
 
         public override void Write(char[] buffer, int index, int count) {
-            _io.Write(buffer, index, count);
+            _io.WriteBytes(buffer, index, count);
         }
 
         public override void Flush() {

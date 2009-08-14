@@ -56,30 +56,37 @@ namespace IronRuby.Tests {
             ));
             int s_crlf_count = 6;
 
-            var io = new RubyIO(Context, stream, "r");
-            Assert(io.PeekByte() == (byte)'a');
+            var io = new RubyBufferedStream(stream);
+            Assert(io.PeekByte(0) == (byte)'a');
 
             var buffer = MutableString.CreateBinary(B("foo:"));
-            Assert(io.AppendBytes(buffer, 4) == 4);
+            Assert(io.AppendBytes(buffer, 4, false) == 4);
             Assert(buffer.ToString() == "foo:ab\r\n");
 
             buffer = MutableString.CreateBinary();
-            Assert(io.AppendBytes(buffer, 1) == 1);
+            Assert(io.AppendBytes(buffer, 1, false) == 1);
             Assert(buffer.ToString() == "e");
 
-            buffer = MutableString.CreateMutable("x:");
+            buffer = MutableString.CreateMutable("x:", RubyEncoding.Binary);
             int c = s.Length - s_crlf_count - 2;
-            Assert(io.AppendBytes(buffer, c) == c);
+            Assert(io.AppendBytes(buffer, c, false) == c);
             Assert(buffer.ToString() == "x:" + s.Replace(crlf, "\n").Substring(0, c));
 
             buffer = MutableString.CreateBinary();
-            Assert(io.AppendBytes(buffer, 10) == 4);
+            Assert(io.AppendBytes(buffer, 10, false) == 4);
             Assert(buffer.ToString() == "st\n!");
 
             buffer = MutableString.CreateBinary();
-            Assert(io.AppendBytes(buffer, 10) == 0);
+            Assert(io.AppendBytes(buffer, 10, false) == 0);
             Assert(buffer.ToString() == "");
 
+            stream = new TestStream(false, B(s = "abcd" + crlf + "xyz" + crlf + "qqq;"));
+            io = new RubyBufferedStream(stream);
+            buffer = MutableString.CreateBinary();
+            Assert(io.AppendBytes(buffer, Int32.MaxValue, true) == s.Length);
+            io.BaseStream.Seek(0, SeekOrigin.Begin);
+            Assert(io.AppendBytes(buffer, Int32.MaxValue, false) == s.Length - 2);
+            Assert(buffer.ToString() == s + s.Replace(crlf, "\n"));
         }
     }
 }

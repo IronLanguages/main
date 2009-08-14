@@ -55,7 +55,13 @@ namespace Microsoft.Scripting.Hosting {
             DlrConfiguration config = setup.ToConfiguration();
             _setup = setup;
 
-            _host = ReflectionUtils.CreateInstance<ScriptHost>(setup.HostType, setup.HostArguments.ToArray<object>());
+            try {
+                _host = (ScriptHost)Activator.CreateInstance(setup.HostType, setup.HostArguments.ToArray<object>());
+            } catch (TargetInvocationException e) {
+                throw new InvalidImplementationException(Strings.InvalidCtorImplementation(setup.HostType, e.InnerException.Message), e.InnerException);
+            } catch (Exception e) {
+                throw new InvalidImplementationException(Strings.InvalidCtorImplementation(setup.HostType, e.Message), e);
+            }
 
             ScriptHostProxy hostProxy = new ScriptHostProxy(_host);
 

@@ -29,7 +29,7 @@ namespace IronPython.Runtime.Binding {
     /// Provides support for emitting warnings when built in methods are invoked at runtime.
     /// </summary>
     internal static class BindingWarnings {
-        public static bool ShouldWarn(PythonBinder/*!*/ binder, MethodBase/*!*/ method, out WarningInfo info) {
+        public static bool ShouldWarn(PythonContext/*!*/ context, MethodBase/*!*/ method, out WarningInfo info) {
             Assert.NotNull(method);
 
             ObsoleteAttribute[] os = (ObsoleteAttribute[])method.GetCustomAttributes(typeof(ObsoleteAttribute), true);
@@ -46,7 +46,7 @@ namespace IronPython.Runtime.Binding {
                 return true;
             }
 
-            if (binder.WarnOnPython3000) {
+            if (context.PythonOptions.WarnPython30) {
                 Python3WarningAttribute[] py3kwarnings = (Python3WarningAttribute[])method.GetCustomAttributes(typeof(Python3WarningAttribute), true);
                 if (py3kwarnings.Length > 0) {
                     info = new WarningInfo(

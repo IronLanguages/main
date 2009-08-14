@@ -779,9 +779,7 @@ namespace IronPython.Modules {
             int ri;
             if (r != null) {
                 ri = Converter.ConvertToInt32(r);
-                if (ri > data.Count) {
-                    throw PythonOps.ValueError("r cannot be bigger than the iterable");
-                } else if (ri < 0) {
+                if (ri < 0) {
                     throw PythonOps.ValueError("r cannot be negative");
                 }
             } else {

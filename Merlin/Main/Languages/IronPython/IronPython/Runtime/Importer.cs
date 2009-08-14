@@ -102,8 +102,15 @@ namespace IronPython.Runtime {
                 NamespaceTracker nt;
                 if (scope != null) {
                     object ret;
-                    if (scope.TryGetVariable(SymbolTable.StringToId(name), out ret)) {
-                        return ret;
+                    if (scope.GetType() == typeof(Scope)) {
+                        if (scope.TryGetVariable(SymbolTable.StringToId(name), out ret)) {
+                            return ret;
+                        }
+                    } else {
+                        // subclass of module, it could have overridden __getattr__ or __getattribute__
+                        if (PythonOps.TryGetBoundAttr(context, scope, SymbolTable.StringToId(name), out ret)) {
+                            return ret;
+                        }
                     }
 
                     object path;
@@ -615,10 +622,13 @@ namespace IronPython.Runtime {
                 return ret;
             }
 
-            if (TryGetNestedModule(context, scope, name, out ret)) { return ret; }
+            if (TryGetNestedModule(context, scope, name, out ret)) { 
+                return ret; 
+            }
 
-            object importedScope = ImportFromPath(context, name, fullName, path);
-            if (importedScope != null) {
+            ImportFromPath(context, name, fullName, path);
+            object importedScope;
+            if (PythonContext.GetContext(context).SystemStateModules.TryGetValue(fullName, out importedScope)) {
                 module.Scope.SetVariable(SymbolTable.StringToId(name), importedScope);
                 return importedScope;
             }
