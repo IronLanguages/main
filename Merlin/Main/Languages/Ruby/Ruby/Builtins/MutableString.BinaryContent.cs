@@ -346,7 +346,9 @@ namespace IronRuby.Builtins {
             }
 
             public override void SetByte(int index, byte b) {
-                Debug.Assert(index < _count);
+                if (index >= _count) {
+                    throw new ArgumentOutOfRangeException("index");
+                }
                 _data[index] = b;
             }
 

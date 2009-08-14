@@ -15,6 +15,8 @@
 
 require "stringio"
 
+SILVERLIGHT = false unless defined?(SILVERLIGHT)
+
 module Tutorial
 
   class Summary

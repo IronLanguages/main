@@ -34,7 +34,7 @@ describe "IO#write_nonblock on a file" do
       lambda { @readonly_file.write_nonblock("") }.should raise_error
     end
   end
-
+  
   platform_is :windows do
     it "raises Errno::EBADF" do
       lambda { @file.write_nonblock("abcde") }.should raise_error(Errno::EBADF)

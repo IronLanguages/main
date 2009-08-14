@@ -91,6 +91,16 @@ namespace IronRuby.Runtime {
             return (object)_bignum ?? ScriptingRuntimeHelpers.Int32ToObject(_fixnum);
         }
 
+        public long ToInt64() {
+            long result;
+            if (IsFixnum) {
+                result = _fixnum;
+            } else if (!_bignum.AsInt64(out result)) {
+                throw RubyExceptions.CreateRangeError("Bignum too big to convert into 64-bit signed integer");
+            }
+            return result;
+        }
+
         public bool Equals(IntegerValue other) {
             if (_fixnum != other.Fixnum) return false;
             if (ReferenceEquals(_bignum, null)) return ReferenceEquals(other._bignum, null);

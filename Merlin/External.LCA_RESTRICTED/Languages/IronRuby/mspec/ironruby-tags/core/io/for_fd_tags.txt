@@ -1,7 +1,1 @@
-fails:IO.for_fd returns a new IO object
-fails:IO.for_fd associates new IO with the old descriptor so each IO directly affects the other
-fails:IO.for_fd raises EBADF if the file descriptor given is not a valid and open one
-fails:IO.for_fd raises EINVAL if mode is not compatible with the descriptor's current mode
-fails:IO.for_fd raises IOError on closed stream
 fails:IO.for_fd emits a warning if given a block
-fails:IO.for_fd cannot open an IO with incompatible flags

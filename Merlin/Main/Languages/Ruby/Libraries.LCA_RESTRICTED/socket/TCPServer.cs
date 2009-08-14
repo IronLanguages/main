@@ -127,7 +127,7 @@ namespace IronRuby.StandardLibrary.Sockets {
 
         [RubyMethod("sysaccept")]
         public static int SysAccept(RubyContext/*!*/ context, TCPServer/*!*/ self) {
-            return Accept(context, self).FileDescriptor;
+            return Accept(context, self).GetFileDescriptor();
         }
 
         [RubyMethod("listen")]

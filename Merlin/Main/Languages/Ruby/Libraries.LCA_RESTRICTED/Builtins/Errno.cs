@@ -125,25 +125,20 @@ namespace IronRuby.Builtins {
         public class ExistErrorOps {
             [RubyConstructor]
             public static ExistError/*!*/ Create(RubyClass/*!*/ self, [DefaultProtocol, DefaultParameterValue(null)]MutableString message) {
-                ExistError result = new ExistError(RubyExceptions.MakeMessage(ref message, "File exists"));
+                var result = new ExistError(RubyExceptions.MakeMessage(ref message, "File exists"));
                 RubyExceptionData.InitializeException(result, message);
                 return result;
             }
         }
 
-        [RubyClass("EBADF"), Serializable]
-        public class BadFileDescriptorError : ExternalException {
-            private const string/*!*/ M = "Bad file descriptor";
-
-            public BadFileDescriptorError() : this(null, null) { }
-            public BadFileDescriptorError(string message) : this(message, null) { }
-            public BadFileDescriptorError(string message, Exception inner) : base(RubyExceptions.MakeMessage(message, M), inner) { }
-            public BadFileDescriptorError(MutableString message) : base(RubyExceptions.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
-
-#if !SILVERLIGHT
-            protected BadFileDescriptorError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
-                : base(info, context) { }
-#endif
+        [RubyClass("EBADF", Extends = typeof(BadFileDescriptorError), Inherits = typeof(ExternalException))]
+        public class BadFileDescriptorErrorOps {
+            [RubyConstructor]
+            public static BadFileDescriptorError/*!*/ Create(RubyClass/*!*/ self, [DefaultProtocol, DefaultParameterValue(null)]MutableString message) {
+                var result = new BadFileDescriptorError(RubyExceptions.MakeMessage(ref message, "Bad file descriptor"));
+                RubyExceptionData.InitializeException(result, message);
+                return result;
+            }
         }
 
         [RubyClass("EPIPE"), Serializable]

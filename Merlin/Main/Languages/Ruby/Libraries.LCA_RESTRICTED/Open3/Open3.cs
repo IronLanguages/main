@@ -31,9 +31,9 @@ namespace IronRuby.StandardLibrary.Open3 {
 
             Process process = RubyIOOps.OpenPipe(context, command, true, true, true);
             RubyArray result = new RubyArray();
-            result.Add(new RubyIO(context, null, process.StandardInput, "w"));
-            result.Add(new RubyIO(context, process.StandardOutput, null, "r"));
-            result.Add(new RubyIO(context, process.StandardError, null, "r"));
+            result.Add(new RubyIO(context, null, process.StandardInput, IOMode.WriteOnly));
+            result.Add(new RubyIO(context, process.StandardOutput, null, IOMode.ReadOnly));
+            result.Add(new RubyIO(context, process.StandardError, null, IOMode.ReadOnly));
 
             if (context.RubyOptions.Compatibility >= RubyCompatibility.Ruby19) {
                 result.Add(ThreadOps.RubyThreadInfo.FromThread(System.Threading.Thread.CurrentThread));
