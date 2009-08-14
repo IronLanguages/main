@@ -701,17 +701,29 @@ namespace IronRuby.Builtins {
             return _content.Count;
         }
 
-        public int SetLength(int value) {
-            ContractUtils.Requires(value >= _content.Count);
-            return _content.Count = value;
+        public void SetLength(int value) {
+            ContractUtils.Requires(value >= 0, "value");
+            if (value < _content.Count) {
+                _content.Remove(value, _content.Count - value);
+            } else {
+                _content.Count = value;
+            }
         }
 
         public int GetCharCount() {
             return _content.GetCharCount();
         }
 
+        public void SetCharCount(int value) {
+            SwitchToCharacters().SetLength(value);
+        }
+
         public int GetByteCount() {
             return _content.GetByteCount();
+        }
+
+        public void SetByteCount(int value) {
+            SwitchToBytes().SetLength(value);
         }
 
         public MutableString/*!*/ TrimExcess() {
@@ -1074,7 +1086,8 @@ namespace IronRuby.Builtins {
         }
 
         /// <summary>
-        /// Reads "count" bytes from "source" stream and appends them to this string.
+        /// Reads at most "count" bytes from "source" stream and appends them to this string.
+        /// Allocates space for "count" bytes, so the string might need to be trimmed after the operation.
         /// </summary>
         public MutableString/*!*/ Append(Stream/*!*/ stream, int count) {
             ContractUtils.RequiresNotNull(stream, "stream");

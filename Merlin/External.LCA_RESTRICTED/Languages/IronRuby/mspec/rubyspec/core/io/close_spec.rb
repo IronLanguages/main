@@ -43,35 +43,37 @@ describe "IO#close" do
 end
 
 describe "IO#close on an IO.popen stream" do
+  
+  # TODO: rewrite the specs so thay don't depend on platform specific utilities ("yes", "true")
+  platform_is_not :windows do
+    it "clears #pid" do
+      io = IO.popen 'yes', 'r'
 
-  it "clears #pid" do
-    io = IO.popen 'yes', 'r'
+      io.pid.should_not == 0
 
-    io.pid.should_not == 0
+      io.close
 
-    io.close
+      lambda { io.pid }.should raise_error(IOError)
+    end
 
-    lambda { io.pid }.should raise_error(IOError)
+    it "sets $?" do
+      io = IO.popen 'true', 'r'
+      io.close
+
+      $?.exitstatus.should == 0
+
+      io = IO.popen 'false', 'r'
+      io.close
+
+      $?.exitstatus.should == 1
+    end
+
+    it "waits for the child to exit" do
+      io = IO.popen 'yes', 'r'
+      io.close
+
+      $?.exitstatus.should_not == 0 # SIGPIPE/EPIPE
+    end
   end
-
-  it "sets $?" do
-    io = IO.popen 'true', 'r'
-    io.close
-
-    $?.exitstatus.should == 0
-
-    io = IO.popen 'false', 'r'
-    io.close
-
-    $?.exitstatus.should == 1
-  end
-
-  it "waits for the child to exit" do
-    io = IO.popen 'yes', 'r'
-    io.close
-
-    $?.exitstatus.should_not == 0 # SIGPIPE/EPIPE
-  end
-
 end
 

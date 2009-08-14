@@ -4,7 +4,15 @@ require File.dirname(__FILE__) + '/fixtures/classes'
 describe "IO#close_write" do
 
   before :each do
-    @io = IO.popen 'cat', 'r+'
+    # TODO: rewrite the specs so thay don't depend on platform specific utilities ("yes", "true")
+    platform_is :windows do
+      @io = IO.popen 'more', "r+"
+    end
+    
+    platform_is_not :windows do
+      @io = IO.popen 'cat', "r+"
+    end
+    
     @path = tmp('io.close.txt')
   end
 
@@ -50,12 +58,24 @@ describe "IO#close_write" do
     File.unlink @path
   end
 
-  it "flushes and closes the write stream" do
-    @io.puts '12345'
+  platform_is :windows do
+    it "flushes and closes the write stream" do
+      @io.puts '12345'
 
-    @io.close_write
+      @io.close_write
 
-    @io.read.should == "12345\n"
+      @io.read.should == "12345\n\n"
+    end
+  end
+  
+  platform_is_not :windows do
+    it "flushes and closes the write stream" do
+      @io.puts '12345'
+
+      @io.close_write
+
+      @io.read.should == "12345\n"
+    end
   end
 
   it "raises IOError on closed stream" do

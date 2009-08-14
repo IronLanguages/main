@@ -28,6 +28,7 @@ using IronRuby.Builtins;
 using IronRuby.Runtime;
 using IronRuby.StandardLibrary.FileControl;
 using Microsoft.Scripting.Math;
+using IronRuby.Runtime.Calls;
 
 namespace IronRuby.StandardLibrary.Sockets {
     [RubyClass("BasicSocket", BuildConfig = "!SILVERLIGHT")]
@@ -52,7 +53,7 @@ namespace IronRuby.StandardLibrary.Sockets {
         /// Create a new RubyBasicSocket from a specified stream and mode
         /// </summary>
         protected RubyBasicSocket(RubyContext/*!*/ context, Socket/*!*/ socket)
-            : base(context, new SocketStream(socket), "rb+") {
+            : base(context, new SocketStream(socket), IOMode.ReadWrite | IOMode.PreserveEndOfLines) {
             _socket = socket;
         }
 
@@ -120,8 +121,8 @@ namespace IronRuby.StandardLibrary.Sockets {
         /// </summary>
         /// <returns>The corresponding socket</returns>
         [RubyMethod("for_fd", RubyMethodAttributes.PublicSingleton)]
-        public static RubyBasicSocket/*!*/ ForFileDescriptor(RubyClass/*!*/ self, [DefaultProtocol]int fileDescriptor) {
-            return (RubyBasicSocket)self.Context.GetDescriptor(fileDescriptor);
+        public static RuleGenerator/*!*/ ForFileDescriptor() {
+            return new RuleGenerator(RuleGenerators.InstanceConstructor);
         }
 
         #endregion

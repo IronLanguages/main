@@ -1,1 +1,0 @@
-fails:StringIO#flush returns self

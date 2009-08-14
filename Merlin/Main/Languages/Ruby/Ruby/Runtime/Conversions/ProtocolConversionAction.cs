@@ -80,7 +80,7 @@ namespace IronRuby.Runtime.Conversions {
 
         private static Func<RubyMetaBinderFactory, RubyConversionAction> TryGetDefaultConversionAction(Type/*!*/ parameterType) {
             // TODO: 
-            // nullable int (see Array#fill, Sockets:ConvertToSocketFlag, Kernel#open(perm=nil), File.chown)
+            // nullable int (see Array#fill, Sockets:ConvertToSocketFlag, Kernel#open(perm=nil), File.chown, IO#read)
 
             switch (Type.GetTypeCode(parameterType)) {
                 case TypeCode.SByte: return (factory) => factory.Conversion<ConvertToSByteAction>();

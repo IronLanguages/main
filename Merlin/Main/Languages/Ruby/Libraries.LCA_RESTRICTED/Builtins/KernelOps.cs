@@ -502,7 +502,7 @@ namespace IronRuby.Builtins {
                 throw new NotImplementedError();
             }
 
-            RubyIO file = new RubyFile(context, fileName, (mode != null) ? mode.ToString() : "r");
+            RubyIO file = new RubyFile(context, fileName, IOModeEnum.Parse(mode));
 
             SetPermission(context, fileName, permission);
 
@@ -537,7 +537,7 @@ namespace IronRuby.Builtins {
                 throw new NotImplementedError();
             }
 
-            RubyIO file = new RubyFile(context, fileName, (RubyFileMode)mode);
+            RubyIO file = new RubyFile(context, fileName, (IOMode)mode);
 
             SetPermission(context, fileName, permission);
 
@@ -568,36 +568,38 @@ namespace IronRuby.Builtins {
             object self, [NotNull]params object[]/*!*/ args) {
 
             var inspect = inspectStorage.GetCallSite("inspect");
-            var inspectedArgs = new object[args.Length];
+            var inspectedArgs = new MutableString[args.Length];
             for (int i = 0; i < args.Length; i++) {
-                inspectedArgs[i] = inspect.Target(inspect, args[i]);
+                inspectedArgs[i] = Protocols.ConvertToString(tosConversion, inspect.Target(inspect, args[i]));
             }
             
             // no dynamic dispatch to "puts":
-            RubyIOOps.Puts(writeStorage, tosConversion, writeStorage.Context.StandardOutput, inspectedArgs);
+            foreach (var arg in inspectedArgs) {
+                PrintOps.Puts(writeStorage, writeStorage.Context.StandardOutput, arg);
+            }
         }
 
         [RubyMethod("print", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("print", RubyMethodAttributes.PublicSingleton)]
         public static void Print(BinaryOpStorage/*!*/ writeStorage, RubyScope/*!*/ scope, object self) {
             // no dynamic dispatch to "print":
-            RubyIOOps.Print(writeStorage, scope, scope.RubyContext.StandardOutput);
+            PrintOps.Print(writeStorage, scope, scope.RubyContext.StandardOutput);
         }
 
         [RubyMethod("print", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("print", RubyMethodAttributes.PublicSingleton)]
         public static void Print(BinaryOpStorage/*!*/ writeStorage, object self, object val) {
             // no dynamic dispatch to "print":
-            RubyIOOps.Print(writeStorage, writeStorage.Context.StandardOutput, val);
+            PrintOps.Print(writeStorage, writeStorage.Context.StandardOutput, val);
         }
 
         [RubyMethod("print", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("print", RubyMethodAttributes.PublicSingleton)]
-        public static void Print(BinaryOpStorage/*!*/ writeStorage, ConversionStorage<MutableString>/*!*/ tosConversion, 
+        public static void Print(BinaryOpStorage/*!*/ writeStorage,  
             object self, [NotNull]params object[]/*!*/ args) {
 
             // no dynamic dispatch to "print":
-            RubyIOOps.Print(writeStorage, tosConversion, tosConversion.Context.StandardOutput, args);
+            PrintOps.Print(writeStorage, writeStorage.Context.StandardOutput, args);
         }
 
         // this overload is called only if the first parameter is string:
@@ -633,46 +635,46 @@ namespace IronRuby.Builtins {
         [RubyMethod("putc", RubyMethodAttributes.PublicSingleton)]
         public static MutableString/*!*/ Putc(BinaryOpStorage/*!*/ writeStorage, object self, [NotNull]MutableString/*!*/ arg) {
             // no dynamic dispatch:
-            return RubyIOOps.Putc(writeStorage, writeStorage.Context.StandardOutput, arg);
+            return PrintOps.Putc(writeStorage, writeStorage.Context.StandardOutput, arg);
         }
 
         [RubyMethod("putc", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("putc", RubyMethodAttributes.PublicSingleton)]
         public static int Putc(BinaryOpStorage/*!*/ writeStorage, object self, [DefaultProtocol]int arg) {
             // no dynamic dispatch:
-            return RubyIOOps.Putc(writeStorage, writeStorage.Context.StandardOutput, arg);
+            return PrintOps.Putc(writeStorage, writeStorage.Context.StandardOutput, arg);
         }
 
         [RubyMethod("puts", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("puts", RubyMethodAttributes.PublicSingleton)]
         public static void PutsEmptyLine(BinaryOpStorage/*!*/ writeStorage, object self) {
             // call directly, no dynamic dispatch to "self":
-            RubyIOOps.PutsEmptyLine(writeStorage, writeStorage.Context.StandardOutput);
+            PrintOps.PutsEmptyLine(writeStorage, writeStorage.Context.StandardOutput);
         }
 
         [RubyMethod("puts", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("puts", RubyMethodAttributes.PublicSingleton)]
-        public static void PutString(BinaryOpStorage/*!*/ writeStorage, ConversionStorage<MutableString>/*!*/ tosConversion, 
-            object self, object arg) {
+        public static void PutString(BinaryOpStorage/*!*/ writeStorage, ConversionStorage<MutableString>/*!*/ tosConversion,
+            ConversionStorage<IList>/*!*/ tryToAry, object self, object arg) {
 
             // call directly, no dynamic dispatch to "self":
-            RubyIOOps.Puts(writeStorage, tosConversion, writeStorage.Context.StandardOutput, arg);
+            PrintOps.Puts(writeStorage, tosConversion, tryToAry, writeStorage.Context.StandardOutput, arg);
         }
 
         [RubyMethod("puts", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("puts", RubyMethodAttributes.PublicSingleton)]
         public static void PutString(BinaryOpStorage/*!*/ writeStorage, object self, [NotNull]MutableString/*!*/ arg) {
             // call directly, no dynamic dispatch to "self":
-            RubyIOOps.Puts(writeStorage, writeStorage.Context.StandardOutput, arg);
+            PrintOps.Puts(writeStorage, writeStorage.Context.StandardOutput, arg);
         }
 
         [RubyMethod("puts", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("puts", RubyMethodAttributes.PublicSingleton)]
-        public static void PutString(BinaryOpStorage/*!*/ writeStorage, ConversionStorage<MutableString>/*!*/ tosConversion, 
-            object self, [NotNull]params object[]/*!*/ args) {
+        public static void PutString(BinaryOpStorage/*!*/ writeStorage, ConversionStorage<MutableString>/*!*/ tosConversion,
+            ConversionStorage<IList>/*!*/ tryToAry, object self, [NotNull]params object[]/*!*/ args) {
 
             // call directly, no dynamic dispatch to "self":
-            RubyIOOps.Puts(writeStorage, tosConversion, writeStorage.Context.StandardOutput, args);
+            PrintOps.Puts(writeStorage, tosConversion, tryToAry, writeStorage.Context.StandardOutput, args);
         }
 
         [RubyMethod("warn", RubyMethodAttributes.PrivateInstance)]
@@ -684,8 +686,8 @@ namespace IronRuby.Builtins {
                 var output = writeStorage.Context.StandardErrorOutput;
                 // MRI: unlike Kernel#puts this outputs \n even if the message ends with \n:
                 var site = writeStorage.GetCallSite("write", 1);
-                site.Target(site, output, RubyIOOps.ToPrintedString(tosConversion, message));
-                RubyIOOps.PutsEmptyLine(writeStorage, output);
+                site.Target(site, output, PrintOps.ToPrintedString(tosConversion, message));
+                PrintOps.PutsEmptyLine(writeStorage, output);
             }
         }
 
@@ -1148,24 +1150,19 @@ namespace IronRuby.Builtins {
         /// </summary>
         [RubyMethod("inspect")]
         public static MutableString/*!*/ Inspect(UnaryOpStorage/*!*/ inspectStorage, ConversionStorage<MutableString>/*!*/ tosConversion,
-            object self)
-        {
+            object self) {
 
             var context = tosConversion.Context;
-            if (context.HasInstanceVariables(self))
-            {
+            if (context.HasInstanceVariables(self)) {
                 return RubyUtils.InspectObject(inspectStorage, tosConversion, self);
-            }
-            else
-            {
+            } else {
                 var site = tosConversion.GetSite(ConvertToSAction.Make(context));
                 return site.Target(site, self);
             }
         }
 
         [RubyMethod("to_a")]
-        public static RubyArray/*!*/ ToA(RubyContext/*!*/ context, object self)
-        {
+        public static RubyArray/*!*/ ToA(RubyContext/*!*/ context, object self) {
             RubyArray result = new RubyArray();
             result.Add(self);
             return context.TaintObjectBy(result, self);

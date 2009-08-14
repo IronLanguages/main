@@ -22,6 +22,8 @@ using IronRuby.Builtins;
 using IronRuby.Runtime;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
+using IronRuby.Runtime.Conversions;
+using System.Text;
 
 namespace IronRuby.StandardLibrary.Yaml {
 
@@ -131,9 +133,11 @@ namespace IronRuby.StandardLibrary.Yaml {
         }
 
         [RubyMethod("load", RubyMethodAttributes.PublicSingleton)]
-        public static object Load(RubyScope/*!*/ scope, RubyModule/*!*/ self, object io) {
+        public static object Load(ConversionStorage<MutableString>/*!*/ toStr, RespondToStorage/*!*/ respondTo,
+            RubyScope/*!*/ scope, RubyModule/*!*/ self, object io) {
+
             try {
-                foreach (object obj in MakeConstructor(scope.GlobalScope, CheckYamlPort(io))) {
+                foreach (object obj in MakeConstructor(scope.GlobalScope, CheckYamlPort(toStr, respondTo, io))) {
                     return obj;
                 }
                 return null;
@@ -147,13 +151,19 @@ namespace IronRuby.StandardLibrary.Yaml {
 
         [RubyMethod("load_file", RubyMethodAttributes.PublicSingleton)]
         public static object LoadFile(RubyScope/*!*/ scope, RubyModule/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return Load(scope, self, new RubyFile(self.Context, path.ConvertToString(), "r"));
+            using (RubyFile file = new RubyFile(self.Context, path.ConvertToString(), IOMode.Default)) {
+                foreach (object obj in MakeConstructor(scope.GlobalScope, file.GetReadableStream())) {
+                    return obj;
+                }
+            }
+            return null;
         }
 
         [RubyMethod("each_document", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("load_documents", RubyMethodAttributes.PublicSingleton)]
-        public static object EachDocument(RubyScope/*!*/ scope, BlockParam block, RubyModule/*!*/ self, object io) {
-            RubyConstructor rc = MakeConstructor(scope.GlobalScope, CheckYamlPort(io));
+        public static object EachDocument(ConversionStorage<MutableString>/*!*/ toStr, RespondToStorage/*!*/ respondTo, 
+            RubyScope/*!*/ scope, BlockParam block, RubyModule/*!*/ self, object io) {
+            RubyConstructor rc = MakeConstructor(scope.GlobalScope, CheckYamlPort(toStr, respondTo, io));
             if (block == null && rc.CheckData()) {
                 throw RubyExceptions.NoBlockGiven();
             }
@@ -168,10 +178,11 @@ namespace IronRuby.StandardLibrary.Yaml {
         }
 
         [RubyMethod("load_stream", RubyMethodAttributes.PublicSingleton)]
-        public static object LoadStream(UnaryOpStorage/*!*/ newStorage, BinaryOpStorage/*!*/ addStorage, RubyScope/*!*/ scope, 
+        public static object LoadStream(ConversionStorage<MutableString>/*!*/ toStr, RespondToStorage/*!*/ respondTo, 
+            UnaryOpStorage/*!*/ newStorage, BinaryOpStorage/*!*/ addStorage, RubyScope/*!*/ scope, 
             RubyModule/*!*/ self, object io) {
             
-            RubyConstructor rc = MakeConstructor(scope.GlobalScope, CheckYamlPort(io));
+            RubyConstructor rc = MakeConstructor(scope.GlobalScope, CheckYamlPort(toStr, respondTo, io));
 
             // TODO: only if io was converted to a string:
             io = CreateDefaultStream(newStorage, scope, self);
@@ -194,24 +205,31 @@ namespace IronRuby.StandardLibrary.Yaml {
         }
 
         [RubyMethod("parse", RubyMethodAttributes.PublicSingleton)]
-        public static object Parse(RubyModule self, object io) {
-            try {
-                foreach (object obj in MakeComposer(CheckYamlPort(io))) {
+        public static object Parse(ConversionStorage<MutableString>/*!*/ toStr, RespondToStorage/*!*/ respondTo, RubyModule/*!*/ self, object io) {
+            using (Stream stream = CheckYamlPort(toStr, respondTo, io)) {
+                foreach (object obj in MakeComposer(stream)) {
                     return obj;
                 }
-                return null;
-            } finally {
-                RubyIO rio = io as RubyIO;
-                if (rio != null) {
-                    rio.Close();
+            }
+            return null;
+        }
+
+        [RubyMethod("parse_file", RubyMethodAttributes.PublicSingleton)]
+        public static object ParseFile(RubyModule/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
+            using (Stream stream = new RubyFile(self.Context, path.ConvertToString(), IOMode.Default).GetReadableStream()) {
+                foreach (object obj in MakeComposer(stream)) {
+                    return obj;
                 }
             }
+            return null;
         }
 
         [RubyMethod("parse_documents", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("each_node", RubyMethodAttributes.PublicSingleton)]
-        public static object ParseDocuments(BlockParam block, RubyModule self, object io) {
-            Composer c = MakeComposer(CheckYamlPort(io));
+        public static object ParseDocuments(ConversionStorage<MutableString>/*!*/ toStr, RespondToStorage/*!*/ respondTo,
+            BlockParam block, RubyModule/*!*/ self, object io) {
+
+            Composer c = MakeComposer(CheckYamlPort(toStr, respondTo, io));
             if (block == null && c.CheckNode()) {
                 throw RubyExceptions.NoBlockGiven();
             }
@@ -222,11 +240,6 @@ namespace IronRuby.StandardLibrary.Yaml {
                 }
             }
             return null;
-        }
-
-        [RubyMethod("parse_file", RubyMethodAttributes.PublicSingleton)]
-        public static object ParseFile(RubyModule/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return Parse(self, new RubyFile(self.Context, path.ConvertToString(), "r"));
         }
 
         [RubyMethod("dump_stream", RubyMethodAttributes.PublicSingleton)]
@@ -319,34 +332,31 @@ namespace IronRuby.StandardLibrary.Yaml {
             return null;
         }
 
-        private static RubyConstructor/*!*/ MakeConstructor(RubyGlobalScope/*!*/ scope, TextReader/*!*/ reader) {
-            return new RubyConstructor(scope, MakeComposer(reader));
+        private static RubyConstructor/*!*/ MakeConstructor(RubyGlobalScope/*!*/ scope, Stream/*!*/ stream) {
+            return new RubyConstructor(scope, MakeComposer(stream));
+        }
+
+        internal static Composer/*!*/ MakeComposer(Stream/*!*/ stream) {
+            return MakeComposer(new StreamReader(stream, Encoding.UTF8));
         }
 
         internal static Composer/*!*/ MakeComposer(TextReader/*!*/ reader) {
             return new Composer(new Parser(new Scanner(reader), YamlOptions.DefaultOptions.Version));
         }
 
-        private static TextReader CheckYamlPort(object port) {
-            // TODO: should do try-to_str conversion and create IOWrapper if not convertible to string
-
-            MutableString ms = port as MutableString;
-            if (ms != null) {
-                return new MutableStringReader(ms);
-            }
-
-            string str = port as string;
+        private static Stream/*!*/ CheckYamlPort(ConversionStorage<MutableString>/*!*/ toStr, RespondToStorage/*!*/ respondTo, object port) {
+            var toStrSite = toStr.GetSite(TryConvertToStrAction.Make(toStr.Context));
+            MutableString str = toStrSite.Target(toStrSite, port);
             if (str != null) {
-                return new StringReader(str);
+                return new MutableStringStream(str);
             }
 
-            RubyIO io = port as RubyIO;
-            if (io != null) {
-                RubyIOOps.Binmode(io);
-                return new RubyIOReader(io);
+            IOWrapper wrapper = RubyIOOps.CreateIOWrapper(respondTo, port, FileAccess.Read);
+            if (!wrapper.CanRead) {
+                throw RubyExceptions.CreateTypeError("instance of IO needed");
             }
 
-            throw RubyExceptions.CreateTypeError("instance of IO needed");
+            return wrapper;
         }
    
     }

@@ -547,9 +547,12 @@ namespace IronRuby.Runtime {
 
         private void InitializeFileDescriptors(SharedIO/*!*/ io) {
             Debug.Assert(_fileDescriptors.Count == 0);
-            StandardInput = new RubyIO(this, new ConsoleStream(io, ConsoleStreamType.Input), "r");
-            StandardOutput = new RubyIO(this, new ConsoleStream(io, ConsoleStreamType.Output), "a");
-            StandardErrorOutput = new RubyIO(this, new ConsoleStream(io, ConsoleStreamType.ErrorOutput), "a");
+            Stream stream = new ConsoleStream(io, ConsoleStreamType.Input);                
+            StandardInput = new RubyIO(this, stream, AllocateFileDescriptor(stream), IOMode.ReadOnly);
+            stream = new ConsoleStream(io, ConsoleStreamType.Output);
+            StandardOutput = new RubyIO(this, stream, AllocateFileDescriptor(stream), IOMode.WriteOnly | IOMode.WriteAppends);
+            stream = new ConsoleStream(io, ConsoleStreamType.ErrorOutput);
+            StandardErrorOutput = new RubyIO(this, stream, AllocateFileDescriptor(stream), IOMode.WriteOnly | IOMode.WriteAppends);
         }
 
         // TODO: internal
@@ -621,6 +624,7 @@ namespace IronRuby.Runtime {
 
             AddModuleToCacheNoLock(typeof(Kernel), _kernelModule);
             AddModuleToCacheNoLock(objectTracker.Type, _objectClass);
+            AddModuleToCacheNoLock(typeof(RubyObject), _objectClass);
             AddModuleToCacheNoLock(_moduleClass.GetUnderlyingSystemType(), _moduleClass);
             AddModuleToCacheNoLock(_classClass.GetUnderlyingSystemType(), _classClass);
 
@@ -1503,24 +1507,11 @@ namespace IronRuby.Runtime {
         public MutableString/*!*/ Inspect(object obj) {
             RubyClass cls = GetClassOf(obj);
             var inspect = cls.InspectSite;
-            var toS = cls.StringConversionSite;
+            var toS = cls.InspectResultConversionSite;
             return toS.Target(toS, inspect.Target(inspect, obj));
         }
 
         #endregion
-
-        internal string InspectEnsuringClassName(object self) {
-            if (self == null) {
-                return "nil:NilClass";
-            } else {
-                string strObject = Inspect(self).ConvertToString();
-                if (!strObject.StartsWith("#")) {
-                    strObject += ":" + GetClassName(self);
-                }
-                return strObject;
-            }
-        }
-
 
         #region Global Variables: General access (thread-safe)
 
@@ -1682,7 +1673,25 @@ namespace IronRuby.Runtime {
 
         #region IO (thread-safe)
 
-        private readonly List<RubyIO>/*!*/ _fileDescriptors = new List<RubyIO>(10);
+        private sealed class FileDescriptor {
+            public int DuplicateCount;
+            public readonly Stream/*!*/ Stream;
+
+            public FileDescriptor(Stream/*!*/ stream) {
+                Assert.NotNull(stream);
+                Stream = stream;
+                DuplicateCount = 1;
+            }
+
+            public void Close() {
+                DuplicateCount--;
+                if (DuplicateCount == 0) {
+                    Stream.Close();
+                }
+            }
+        }
+
+        private readonly List<FileDescriptor>/*!*/ _fileDescriptors = new List<FileDescriptor>(10);
 
         public const int StandardInputDescriptor = 0;
         public const int StandardOutputDescriptor = 1;
@@ -1692,37 +1701,98 @@ namespace IronRuby.Runtime {
         public object StandardOutput { get; set; }
         public object StandardErrorOutput { get; set; }
 
-        public RubyIO GetDescriptor(int fileDescriptor) {
+        private FileDescriptor TryGetFileDescriptorNoLock(int descriptor) {
+            return (descriptor < 0 || descriptor >= _fileDescriptors.Count) ? null : _fileDescriptors[descriptor];
+        }
+
+        private int AddFileDescriptorNoLock(FileDescriptor/*!*/ fd) {
+            for (int i = 0; i < _fileDescriptors.Count; i++) {
+                if (_fileDescriptors[i] == null) {
+                    _fileDescriptors[i] = fd;
+                    return i;
+                }
+            }
+            _fileDescriptors.Add(fd);
+            return _fileDescriptors.Count - 1;
+        }
+
+        public Stream GetStream(int descriptor) {
             lock (_fileDescriptors) {
-                if (fileDescriptor < 0 || fileDescriptor >= _fileDescriptors.Count) {
-                    return null;
-                } else {
-                    return _fileDescriptors[fileDescriptor];
+                var fd = TryGetFileDescriptorNoLock(descriptor);
+                return (fd != null) ? fd.Stream : null;
+            }
+        }
+
+        public void SetStream(int descriptor, Stream/*!*/ stream) {
+            ContractUtils.RequiresNotNull(stream, "stream");
+
+            lock (_fileDescriptors) {
+                var fd = TryGetFileDescriptorNoLock(descriptor);
+                if (fd == null) {
+                    throw RubyExceptions.CreateEBADF();
+                }
+                if (fd.Stream != stream) {
+                    fd.Close();
+                    _fileDescriptors[descriptor] = new FileDescriptor(stream);
                 }
             }
         }
 
-        public int AddDescriptor(RubyIO/*!*/ descriptor) {
-            ContractUtils.RequiresNotNull(descriptor, "descriptor");
-
+        public void RedirectFileDescriptor(int descriptor, int toDescriptor) {
             lock (_fileDescriptors) {
-                for (int i = 0; i < _fileDescriptors.Count; ++i) {
-                    if (_fileDescriptors[i] == null) {
-                        _fileDescriptors[i] = descriptor;
-                        return i;
-                    }
+                var fd = TryGetFileDescriptorNoLock(descriptor);
+                if (fd == null) {
+                    throw RubyExceptions.CreateEBADF();
                 }
-                _fileDescriptors.Add(descriptor);
-                return _fileDescriptors.Count - 1;
+
+                var toFd = TryGetFileDescriptorNoLock(toDescriptor);
+                if (toFd == null) {
+                    throw RubyExceptions.CreateEBADF();
+                }
+
+                if (fd == toFd) {
+                    return;
+                }
+
+                fd.Close();
+                toFd.DuplicateCount++;
+                _fileDescriptors[descriptor] = toFd;
             }
         }
 
-        public void RemoveDescriptor(int descriptor) {
-            ContractUtils.Requires(!RubyIO.IsConsoleDescriptor(descriptor));
-
+        public int AllocateFileDescriptor(Stream/*!*/ stream) {
+            ContractUtils.RequiresNotNull(stream, "stream");
             lock (_fileDescriptors) {
-                if (descriptor < _fileDescriptors.Count) {
-                    throw new ArgumentException("Invalid file descriptor", "descriptor");
+                return AddFileDescriptorNoLock(new FileDescriptor(stream));
+            }
+        }
+
+        public int DuplicateFileDescriptor(int descriptor) {
+            lock (_fileDescriptors) {
+                var fd = TryGetFileDescriptorNoLock(descriptor);
+                if (fd == null) {
+                    throw RubyExceptions.CreateEBADF();
+                }
+                fd.DuplicateCount++;
+                return AddFileDescriptorNoLock(fd);
+            }
+        }
+
+        public void CloseStream(int descriptor) {
+            lock (_fileDescriptors) {
+                var fd = TryGetFileDescriptorNoLock(descriptor);
+                if (fd == null) {
+                    throw RubyExceptions.CreateEBADF();
+                }
+                fd.Close();
+                _fileDescriptors[descriptor] = null;
+            }
+        }
+
+        public void RemoveFileDescriptor(int descriptor) {
+            lock (_fileDescriptors) {
+                if (TryGetFileDescriptorNoLock(descriptor) == null) {
+                    throw RubyExceptions.CreateEBADF();
                 }
 
                 _fileDescriptors[descriptor] = null;
