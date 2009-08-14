@@ -9,10 +9,16 @@ describe "win32ole" do
   end
   
   it "supports enumeration" do    
-    windir = @fs.GetFolder ENV["windir"]
-    subfolders = []
-    windir.SubFolders.each {|sub| subfolders << sub.name.to_str}
-    subfolders.include?("System32").should == true
+    tmp = tmp("")
+    Dir.mkdir(tmp + "/a_folder")
+    begin
+      tempdir = @fs.GetFolder tmp
+      subfolders = []
+      tempdir.SubFolders.each {|sub| subfolders << sub.name.to_str}
+      subfolders.include?("a_folder").should be_true
+    ensure
+      Dir.rmdir(tmp + "/a_folder")
+    end
   end
   
   it "supports const_load" do
