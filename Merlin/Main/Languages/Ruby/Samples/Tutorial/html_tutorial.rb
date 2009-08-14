@@ -74,10 +74,6 @@ class ToStyledHtml < SM::ToHtml
     def self.convert text, paragraph_tag = '<p class="Body">'
         if not text then return "" end
         
-        if text =~ /\A(\s+)/
-            text = "#{$1}dummy\n\n" + text # TODO - This is a workaround for http://ironruby.codeplex.com/WorkItem/View.aspx?WorkItemId=1301
-        end
-        
         if not @markupParser
             @markupParser = SM::SimpleMarkup.new
             # external hyperlinks

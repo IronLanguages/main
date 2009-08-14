@@ -2,7 +2,10 @@ require File.dirname(__FILE__) + '/../spec_helper'
 
 describe "The -e command line option" do
   it "evaluates the given string" do
-    ruby_exe("puts 'foo'").chomp.should == "foo"
+    [%Q{-e "puts 'hello'"},
+     %Q{-e"puts 'hello'"}].each do |cmd|
+      ruby_exe(nil, :args => cmd).chomp.should == "hello"
+    end
   end
 
   it "joins multiple strings with newlines" do

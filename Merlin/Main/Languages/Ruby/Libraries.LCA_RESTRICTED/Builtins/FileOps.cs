@@ -553,7 +553,28 @@ namespace IronRuby.Builtins {
             return result;
         }
 
-        //truncate
+#if !SILVERLIGHT
+        [RubyMethod("truncate", BuildConfig = "!SILVERLIGHT")]
+        public static int Truncate(RubyFile/*!*/ self, [DefaultProtocol]int size) {
+            if (size < 0) {
+                throw new InvalidError();
+            }
+
+            self.Length = size;
+            return 0;
+        }
+
+        [RubyMethod("truncate", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
+        public static int Truncate(RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path, [DefaultProtocol]int size) {
+            if (size < 0) {
+                throw new InvalidError();
+            }
+            using (RubyFile f = new RubyFile(self.Context, path.ConvertToString(), IOMode.ReadWrite)) {
+                f.Length = size;
+            }
+            return 0;
+        }
+#endif
 
         internal static readonly object UmaskKey = new object();
 
@@ -695,7 +716,7 @@ namespace IronRuby.Builtins {
                 } else if (pal.DirectoryExists(path)) {
                     result = new DirectoryInfo(path);                    
                 } else if (path.ToUpper().Equals(NUL_VALUE)) {
-                    result = null;
+                    result = new DeviceInfo(NUL_VALUE);
                 } else {
                     return false;
                 }
@@ -875,17 +896,25 @@ namespace IronRuby.Builtins {
 
             [RubyMethod("size")]
             public static int Size(FileSystemInfo/*!*/ self) {
+                if (self is DeviceInfo) {
+                    return 0;
+                }
+
                 FileInfo info = (self as FileInfo);
                 return (info == null) ? 0 : (int)info.Length;
             }
 
             [RubyMethod("size?")]
             public static object NullableSize(FileSystemInfo/*!*/ self) {
+                if (self is DeviceInfo) {
+                    return 0;
+                }
+
                 FileInfo info = (self as FileInfo);
                 if (info == null) {
                     return null;
                 }
-                return (int)info.Length;
+                return (info.Length == 0) ? null : (object)(int)info.Length;
             }
 
             [RubyMethod("socket?")]
@@ -918,7 +947,33 @@ namespace IronRuby.Builtins {
 
             [RubyMethod("zero?")]
             public static bool IsZeroLength(FileSystemInfo/*!*/ self) {
-                return (Size(self) == 0);
+                if (self is DeviceInfo) {
+                    return true;
+                }
+
+                FileInfo info = (self as FileInfo);
+                return (info == null) ? false : info.Length == 0;
+            }
+
+            internal class DeviceInfo : FileSystemInfo {
+                
+                private string/*!*/ _name;
+
+                internal DeviceInfo(string/*!*/ name) {
+                    _name = name;
+                }
+
+                public override void Delete() {
+                    throw new NotImplementedException();
+                }
+
+                public override bool Exists {
+                    get { return true; }
+                }
+
+                public override string Name {
+                    get { return _name; }
+                }
             }
         }
 

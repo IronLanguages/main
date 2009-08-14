@@ -10,9 +10,17 @@ describe "File::Stat#blksize" do
     File.delete(@file) if File.exist?(@file)
   end
   
-  it "should be able to determine the blksize on a File::Stat object" do
-    st = File.stat(@file)
-    st.blksize.is_a?(Integer).should == true
-    st.blksize.should > 0
+  platform_is_not :windows do
+    it "should be able to determine the blksize on a File::Stat object" do
+      st = File.stat(@file)
+      st.blksize.is_a?(Integer).should == true
+      st.blksize.should > 0
+    end
+  end
+
+  platform_is :windows do
+    it "returns nil" do
+      File.stat(@file).blksize.should be_nil
+    end
   end
 end

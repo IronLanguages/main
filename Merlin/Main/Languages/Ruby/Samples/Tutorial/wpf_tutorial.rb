@@ -13,6 +13,21 @@
 #
 # ****************************************************************************
 
+if $0 == __FILE__
+  $LOAD_PATH << File.dirname(__FILE__)
+  begin
+    require("wpf/SplashScreen.dll")
+    SplashScreen::SplashScreen.show
+  rescue System::IO::FileNotFoundException => e
+    abort %{
+      The GUI tutorial requires .NET 3.5 SP1 which can be downloaded from
+      http://go.microsoft.com/fwlink/?LinkId=122089. Please send email to 
+      ironruby-core@rubyforge.org for information on alternate formats of the tutorial.
+      Exception details: #{e}
+    }.gsub(/\n/, "").gsub(/\s+/, ' ').strip
+  end
+end
+
 begin
   require 'c:/dev/repl'
   alias debugger repl

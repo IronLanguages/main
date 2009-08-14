@@ -143,6 +143,7 @@
     <Compile Include="FileControl\Fcntl.cs" />
     <Compile Include="Iconv\Iconv.cs" />
     <Compile Include="Initializers.Generated.cs" />
+    <Compile Include="Open3\Open3.cs" />
     <Compile Include="OpenSSL\OpenSSL.cs" />
     <Compile Include="ParseTree\IronRubyParseTreeOps.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

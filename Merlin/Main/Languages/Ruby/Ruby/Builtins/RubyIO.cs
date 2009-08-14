@@ -262,6 +262,17 @@ namespace IronRuby.Builtins {
                     throw RubyExceptions.CreateEBADF();
                 }
             }
+
+            set {
+                var stream = GetStream();
+                try {
+                    stream.SetLength(value);
+                } catch (ObjectDisposedException) {
+                    throw RubyExceptions.CreateIOError("closed stream");
+                } catch (NotSupportedException) {
+                    throw RubyExceptions.CreateIOError("not opened for writing");
+                }
+            }
         }
 
         public int WriteBytes(byte[]/*!*/ buffer, int index, int count) {

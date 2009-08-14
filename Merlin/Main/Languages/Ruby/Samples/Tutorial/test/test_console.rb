@@ -132,6 +132,7 @@ module TutorialTests
         result = context.interact task.code_string
         assert_task_success task, task.code_string, result
       end
+      task.test_hook.call(:cleanup, context.bind) if task.test_hook
     end
   end
 end

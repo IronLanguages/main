@@ -203,7 +203,11 @@ namespace IronRuby.Builtins {
         [RubyMethod("`", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
         public static MutableString/*!*/ ExecuteCommand(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]MutableString/*!*/ command) {
             Process p = ExecuteProcessCapturingStandardOutput(GetShell(context, command));
-            MutableString result = MutableString.Create(p.StandardOutput.ReadToEnd(), RubyEncoding.GetRubyEncoding(p.StandardOutput.CurrentEncoding));
+            string output = p.StandardOutput.ReadToEnd();
+            if (Environment.NewLine != "\n") {
+                output = output.Replace(Environment.NewLine, "\n");
+            }
+            MutableString result = MutableString.Create(output, RubyEncoding.GetRubyEncoding(p.StandardOutput.CurrentEncoding));
             context.ChildProcessExitStatus = new RubyProcess.Status(p);
             return result;
         }
@@ -682,13 +686,7 @@ namespace IronRuby.Builtins {
         public static void ReportWarning(BinaryOpStorage/*!*/ writeStorage, ConversionStorage<MutableString>/*!*/ tosConversion, 
             object self, object message) {
 
-            if (writeStorage.Context.Verbose != null) {
-                var output = writeStorage.Context.StandardErrorOutput;
-                // MRI: unlike Kernel#puts this outputs \n even if the message ends with \n:
-                var site = writeStorage.GetCallSite("write", 1);
-                site.Target(site, output, PrintOps.ToPrintedString(tosConversion, message));
-                PrintOps.PutsEmptyLine(writeStorage, output);
-            }
+            PrintOps.ReportWarning(writeStorage, tosConversion, message);
         }
 
         // TODO: not supported in Ruby 1.9
@@ -915,14 +913,14 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("sleep", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("sleep", RubyMethodAttributes.PublicSingleton)]
-        public static double Sleep(object self, double seconds) {
+        public static int Sleep(object self, double seconds) {
             if (seconds < 0) {
                 throw RubyExceptions.CreateArgumentError("time interval must be positive");
             }
 
             double ms = seconds * 1000;
             Thread.Sleep(ms > Int32.MaxValue ? Timeout.Infinite : (int)ms);
-            return seconds;
+            return (int)seconds;
         }
         
         //split

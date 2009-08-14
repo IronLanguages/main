@@ -29,6 +29,11 @@ module HostingTutorial
   end
   
   class RedirectingOutputStream < System::IO::Stream
+    def initialize
+      @encoding = System::Text::UTF8Encoding.new
+      super
+    end
+    
     def can_seek
      false
     end
@@ -43,11 +48,9 @@ module HostingTutorial
     
     # TODO - This does not deal with any encoding issues
     def write(buffer, offset, count)
-      char_array = System::Array[System::Char].new(buffer.length)
-      buffer.each_index { |idx| char_array[idx] = buffer[idx] }
       # Do the actual write. Note that this will automatically honor $stdout redirection 
       # of the ScriptEngine of the tutorial application.
-      print System::String.clr_new(char_array, offset, count)
+      print @encoding.get_string(buffer, offset, count)
     end
   end
 end
@@ -60,8 +63,8 @@ module Microsoft
       class ScriptEngine
         def redirect_output
           stream = HostingTutorial::RedirectingOutputStream.new
-          # TODO - This does not deal with any encoding issues
-          self.runtime.i_o.set_output(stream, System::Text::UTF8Encoding.new)
+          @encoding ||= System::Text::UTF8Encoding.new
+          self.runtime.io.set_output(stream, @encoding)
         end
       end
     end
