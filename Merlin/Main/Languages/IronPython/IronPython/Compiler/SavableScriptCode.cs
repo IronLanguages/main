@@ -23,6 +23,7 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 
+using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 
 namespace IronPython.Compiler {
@@ -31,11 +32,11 @@ namespace IronPython.Compiler {
     /// the clr.CompileModules API.  This ScriptCode does not support running.
     /// </summary>
     class SavableScriptCode : ScriptCode, ICustomScriptCodeData {
-        private readonly Expression<Func<Scope, LanguageContext, object>> _code;
+        private readonly Expression<Func<CodeContext, object>> _code;
         private readonly string[] _names;
         private readonly string _moduleName;
         
-        public SavableScriptCode(Expression<Func<Scope, LanguageContext, object>> code, SourceUnit sourceUnit, string[] names, string moduleName)
+        public SavableScriptCode(Expression<Func<CodeContext, object>> code, SourceUnit sourceUnit, string[] names, string moduleName)
             : base(sourceUnit) {
             _code = code;
             _names = names;
@@ -45,24 +46,6 @@ namespace IronPython.Compiler {
         protected override KeyValuePair<MethodBuilder, Type> CompileForSave(TypeGen typeGen, Dictionary<SymbolId, FieldBuilder> symbolDict) {
             var lambda = RewriteForSave(typeGen, _code);
 
-            lambda = Expression.Lambda<Func<Scope, LanguageContext, object>>(
-                Expression.Block(
-                    new[] { IronPython.Compiler.Ast.ArrayGlobalAllocator._globalContext },
-                    Expression.Assign(
-                        IronPython.Compiler.Ast.ArrayGlobalAllocator._globalContext,
-                        Expression.Call(
-                            null,
-                            typeof(PythonOps).GetMethod("CreateTopLevelCodeContext"),
-                            lambda.Parameters[0],
-                            lambda.Parameters[1]
-                        )
-                    ),
-                    lambda.Body
-                ),
-                lambda.Name,
-                lambda.Parameters
-            );
-
             MethodBuilder mb = typeGen.TypeBuilder.DefineMethod(lambda.Name ?? "lambda_method", CompilerHelpers.PublicStatic | MethodAttributes.SpecialName);
             lambda.CompileToMethod(mb, false);
 
@@ -71,7 +54,7 @@ namespace IronPython.Compiler {
                 new object[] { _names }
             ));
 
-            return new KeyValuePair<MethodBuilder, Type>(mb, typeof(Func<Scope, LanguageContext, object>));
+            return new KeyValuePair<MethodBuilder, Type>(mb, typeof(Func<CodeContext, object>));
         }
 
         public override object Run() {

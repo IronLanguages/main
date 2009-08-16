@@ -155,7 +155,8 @@ namespace IronRuby.StandardLibrary.Digest {
             #region Helpers
 
             internal static MutableString/*!*/ Bytes2Hex(byte[]/*!*/ bytes) {
-                return MutableString.Create(System.BitConverter.ToString(bytes).Replace("-", "").ToLower());
+                // TODO (opt): see also OpenSSL
+                return MutableString.CreateAscii(System.BitConverter.ToString(bytes).Replace("-", "").ToLower());
             }
 
             internal static MutableString/*!*/ HexEncode(MutableString/*!*/ str) {

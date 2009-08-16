@@ -99,7 +99,7 @@ namespace IronRuby.StandardLibrary.OpenSsl {
 
         [RubyMethod("name")]
         public static MutableString/*!*/ Name(Digest/*!*/ self) {
-          return MutableString.Create(self._algorithm.HashName);
+          return MutableString.CreateAscii(self._algorithm.HashName);
         }
 
         [RubyMethod("digest_size")]
@@ -119,7 +119,7 @@ namespace IronRuby.StandardLibrary.OpenSsl {
         public static MutableString/*!*/ BlankHexDigest(Digest/*!*/ self) {
           byte[] blank_data = Encoding.UTF8.GetBytes("");
           byte[] hash = new SHA1CryptoServiceProvider().ComputeHash(blank_data);
-          return MutableString.Create(BitConverter.ToString(hash).Replace("-", "").ToLower());
+		  return MutableString.CreateAscii(BitConverter.ToString(hash).Replace("-", "").ToLower());
         }
       }
     }
@@ -142,7 +142,8 @@ namespace IronRuby.StandardLibrary.OpenSsl {
 
         byte[] hash = Digest(digest, key, data);
 
-        return MutableString.Create(BitConverter.ToString(hash).Replace("-", "").ToLower());
+                // TODO (opt):
+                return MutableString.CreateAscii(BitConverter.ToString(hash).Replace("-", "").ToLower());
       }
 
       [RubyMethod("digest", RubyMethodAttributes.PublicSingleton)]
@@ -182,7 +183,7 @@ namespace IronRuby.StandardLibrary.OpenSsl {
         }
 
         if (length == 0) {
-          return MutableString.CreateEmpty();
+                    return MutableString.CreateEmpty();
         }
 
         byte[] data = new byte[length];
@@ -228,7 +229,7 @@ namespace IronRuby.StandardLibrary.OpenSsl {
       public class CryptographicExceptionOps {
         [RubyConstructor]
         public static CryptographicException/*!*/ Create(RubyClass/*!*/ self, [DefaultProtocol, DefaultParameterValue(null)]MutableString message) {
-          CryptographicException result = new CryptographicException(RubyErrno.MakeMessage(ref message, "Not enought data."));
+			  CryptographicException result = new CryptographicException(RubyExceptions.MakeMessage(ref message, "Not enought data."));
           RubyExceptionData.InitializeException(result, message);
           return result;
         }
@@ -285,7 +286,7 @@ namespace IronRuby.StandardLibrary.OpenSsl {
           if (self._certificate.Handle == IntPtr.Zero) {
             return null;
           } else {
-            return MutableString.Create(OpenSSLFormat(self._certificate.Issuer));
+			  return MutableString.CreateAscii(OpenSSLFormat(self._certificate.Issuer));
           }
         }
 
@@ -300,7 +301,7 @@ namespace IronRuby.StandardLibrary.OpenSsl {
             // TODO: Raise OpenSSL::X509::CertificateError
             return MutableString.CreateEmpty();
           } else {
-            return MutableString.Create(self._certificate.GetPublicKeyString());
+			  return MutableString.CreateAscii(self._certificate.GetPublicKeyString());
           }
         }
         // public_key=
@@ -329,7 +330,7 @@ namespace IronRuby.StandardLibrary.OpenSsl {
           if (self._certificate.Handle == IntPtr.Zero) {
             return null;
           } else {
-            return MutableString.Create(OpenSSLFormat(self._certificate.Subject));
+			  return MutableString.CreateAscii(OpenSSLFormat(self._certificate.Subject));
           }
         }
 
@@ -342,7 +343,7 @@ namespace IronRuby.StandardLibrary.OpenSsl {
         public static MutableString ToString(RubyContext/*!*/ context, Certificate/*!*/ self) {
           using (IDisposable handle = RubyUtils.InfiniteInspectTracker.TrackObject(self)) {
             // #<OpenSSL::X509::Certificate subject=, issuer=, serial=0, not_before=nil, not_after=nil>
-            var result = MutableString.CreateMutable();
+            var result = MutableString.CreateEmpty();
             result.Append("#<");
             result.Append(context.Inspect(context.GetClassOf(self)));
 

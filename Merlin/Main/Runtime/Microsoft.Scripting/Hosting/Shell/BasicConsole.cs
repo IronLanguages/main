@@ -82,7 +82,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
 
             if (colorful) {
                 _promptColor = PickColor(ConsoleColor.Gray, ConsoleColor.White);
-                _outColor = PickColor(ConsoleColor.Green, ConsoleColor.White);
+                _outColor = PickColor(ConsoleColor.Cyan, ConsoleColor.White);
                 _errorColor = PickColor(ConsoleColor.Red, ConsoleColor.White);
                 _warningColor = PickColor(ConsoleColor.Yellow, ConsoleColor.White);
             } else {

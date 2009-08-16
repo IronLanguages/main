@@ -31,14 +31,14 @@ namespace IronRuby.Builtins {
         // $.
         private int _lastInputLineNumber;
 
-        internal RubyInputProvider(RubyContext/*!*/ context, ICollection<string>/*!*/ arguments) {
-            Assert.NotNull(context);
+        internal RubyInputProvider(RubyContext/*!*/ context, ICollection<string>/*!*/ arguments, RubyEncoding/*!*/ encoding) {
+            Assert.NotNull(context, encoding);
             Assert.NotNullItems(arguments);
             _context = context;
 
             var args = new RubyArray();
             foreach (var arg in arguments) {
-                ExpandArgument(args, arg);
+                ExpandArgument(args, arg, encoding);
             }
 
             _commandLineArguments = args;
@@ -71,7 +71,7 @@ namespace IronRuby.Builtins {
         public MutableString/*!*/ CurrentFileName {
             get {
                 // TODO:
-                return MutableString.Create("-");
+                return MutableString.CreateAscii("-");
             }
         }
 
@@ -79,19 +79,19 @@ namespace IronRuby.Builtins {
             Interlocked.Increment(ref _lastInputLineNumber);
         }
 
-        private void ExpandArgument(RubyArray/*!*/ args, string/*!*/ arg) {
+        private void ExpandArgument(RubyArray/*!*/ args, string/*!*/ arg, RubyEncoding/*!*/ encoding) {
             if (arg.IndexOf('*') != -1 || arg.IndexOf('?') != -1) {
                 bool added = false;
-                foreach (string path in Glob.GlobResults(_context, arg, 0)) {
-                    args.Add(MutableString.Create(path));
+                foreach (string path in Glob.GlobResults(_context.DomainManager.Platform, arg, 0)) {
+                    args.Add(MutableString.Create(path, encoding));
                     added = true;
                 }
 
                 if (!added) {
-                    args.Add(MutableString.Create(arg));
+                    args.Add(MutableString.Create(arg, encoding));
                 }
             } else {
-                args.Add(MutableString.Create(arg));
+                args.Add(MutableString.Create(arg, encoding));
             }
         }
     }

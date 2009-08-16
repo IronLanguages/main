@@ -32,7 +32,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("inspect")]
         public static MutableString/*!*/ Inspect(object/*!*/ self) {
-            return MutableString.CreateMutable().Append(self.ToString()).Append(" (Single)");
+            return MutableString.CreateMutable(RubyEncoding.Binary).Append(self.ToString()).Append(" (Single)");
         }
     }
 }

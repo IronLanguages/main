@@ -582,6 +582,9 @@ namespace IronPython.Runtime {
             return true;
         }
 
+        public const object __hash__ = null;
+
+
         #endregion
 
         #region IDictionary Members

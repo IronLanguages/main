@@ -46,7 +46,7 @@ namespace Microsoft.Scripting.Actions {
         /// The value being assigned to the target member.
         /// </param>
         /// <param name="resolverFactory">
-        /// rovides overload resolution and method binding for any calls which need to be performed for the SetMember.
+        /// Provides overload resolution and method binding for any calls which need to be performed for the SetMember.
         /// </param>
         public DynamicMetaObject SetMember(string name, DynamicMetaObject target, DynamicMetaObject value, OverloadResolverFactory resolverFactory) {
             ContractUtils.RequiresNotNull(name, "name");
@@ -57,11 +57,47 @@ namespace Microsoft.Scripting.Actions {
             return MakeSetMemberTarget(
                 new SetOrDeleteMemberInfo(name, resolverFactory),
                 target,
-                value
+                value,
+                null
             );
         }
 
-        private DynamicMetaObject MakeSetMemberTarget(SetOrDeleteMemberInfo memInfo, DynamicMetaObject target, DynamicMetaObject value) {
+        /// <summary>
+        /// Builds a MetaObject for performing a member get.  Supports all built-in .NET members, the OperatorMethod 
+        /// GetBoundMember, and StrongBox instances.
+        /// </summary>
+        /// <param name="name">
+        /// The name of the member to retrieve.  This name is not processed by the DefaultBinder and
+        /// is instead handed off to the GetMember API which can do name mangling, case insensitive lookups, etc...
+        /// </param>
+        /// <param name="target">
+        /// The MetaObject from which the member is retrieved.
+        /// </param>
+        /// <param name="value">
+        /// The value being assigned to the target member.
+        /// </param>
+        /// <param name="resolverFactory">
+        /// Provides overload resolution and method binding for any calls which need to be performed for the SetMember.
+        /// </param>
+        /// <param name="errorSuggestion">
+        /// Provides a DynamicMetaObject that is to be used as the result if the member cannot be set.  If null then then a language
+        /// specific error code is provided by ActionBinder.MakeMissingMemberErrorForAssign which can be overridden by the language.
+        /// </param>
+        public DynamicMetaObject SetMember(string name, DynamicMetaObject target, DynamicMetaObject value, DynamicMetaObject errorSuggestion, OverloadResolverFactory resolverFactory) {
+            ContractUtils.RequiresNotNull(name, "name");
+            ContractUtils.RequiresNotNull(target, "target");
+            ContractUtils.RequiresNotNull(value, "value");
+            ContractUtils.RequiresNotNull(resolverFactory, "resolverFactory");
+
+            return MakeSetMemberTarget(
+                new SetOrDeleteMemberInfo(name, resolverFactory),
+                target,
+                value,
+                errorSuggestion
+            );
+        }
+
+        private DynamicMetaObject MakeSetMemberTarget(SetOrDeleteMemberInfo memInfo, DynamicMetaObject target, DynamicMetaObject value, DynamicMetaObject errorSuggestion) {
             Type type = target.GetLimitType();
             DynamicMetaObject self = target;
             
@@ -78,12 +114,12 @@ namespace Microsoft.Scripting.Actions {
                 );
             }
 
-            MakeSetMemberRule(memInfo, type, self, value);
+            MakeSetMemberRule(memInfo, type, self, value, errorSuggestion);
 
             return memInfo.Body.GetMetaObject(target, value);
         }
 
-        private void MakeSetMemberRule(SetOrDeleteMemberInfo memInfo, Type type, DynamicMetaObject self, DynamicMetaObject value) {
+        private void MakeSetMemberRule(SetOrDeleteMemberInfo memInfo, Type type, DynamicMetaObject self, DynamicMetaObject value, DynamicMetaObject errorSuggestion) {
             if (MakeOperatorSetMemberBody(memInfo, self, value, type, "SetMember")) {
                 return;
             }
@@ -132,7 +168,7 @@ namespace Microsoft.Scripting.Actions {
                         }
 
                         memInfo.Body.FinishCondition(
-                            MakeError(MakeMissingMemberErrorForAssign(type, self, memInfo.Name), BindingRestrictions.Empty, typeof(object))
+                            errorSuggestion ?? MakeError(MakeMissingMemberErrorForAssign(type, self, memInfo.Name), BindingRestrictions.Empty, typeof(object))
                         );
                         break;
                     default:
@@ -297,22 +333,33 @@ namespace Microsoft.Scripting.Actions {
                     )
                 );
             } else if (field.IsPublic && field.DeclaringType.IsVisible) {
-                Debug.Assert(field.IsStatic || instance != null);
-
-                memInfo.Body.FinishCondition(
-                    MakeReturnValue(
-                        Ast.Assign(
-                            Ast.Field(
-                                field.IsStatic ?
-                                    null :
-                                    AstUtils.Convert(instance.Expression, field.DeclaringType),
-                                field.Field
+                if (!field.IsStatic && instance == null) {
+                    memInfo.Body.FinishCondition(
+                        Ast.Throw(
+                            Ast.New(
+                                typeof(ArgumentException).GetConstructor(new Type[] { typeof(string) }),
+                                AstUtils.Constant("assignment to instance field w/o instance")
                             ),
-                            ConvertExpression(target.Expression, field.FieldType, ConversionResultKind.ExplicitCast, memInfo.ResolutionFactory)
-                        ),
-                        target
-                    )
-                );
+                            typeof(object)
+                        )
+                    );
+
+                } else {
+                    memInfo.Body.FinishCondition(
+                        MakeReturnValue(
+                            Ast.Assign(
+                                Ast.Field(
+                                    field.IsStatic ?
+                                        null :
+                                        AstUtils.Convert(instance.Expression, field.DeclaringType),
+                                    field.Field
+                                ),
+                                ConvertExpression(target.Expression, field.FieldType, ConversionResultKind.ExplicitCast, memInfo.ResolutionFactory)
+                            ),
+                            target
+                        )
+                    );
+                }
             } else {
                 Debug.Assert(field.IsStatic || instance != null);
 

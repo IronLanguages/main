@@ -328,9 +328,9 @@ namespace IronRuby.Builtins {
 
             using (IDisposable handle = RubyUtils.InfiniteInspectTracker.TrackObject(self)) {
                 if (handle == null) {
-                    return MutableString.Create("{...}");
+                    return MutableString.CreateAscii("{...}");
                 }
-                MutableString str = MutableString.CreateMutable();
+                MutableString str = MutableString.CreateMutable(RubyEncoding.Binary);
                 str.Append('{');
                 foreach (KeyValuePair<object, object> pair in self) {
                     if (str.Length != 1) {
@@ -522,7 +522,7 @@ namespace IronRuby.Builtins {
 
             using (IDisposable handle = RubyUtils.InfiniteToSTracker.TrackObject(self)) {
                 if (handle == null) {
-                    return MutableString.Create("{...}");
+                    return MutableString.CreateAscii("{...}");
                 } else {
                     return IListOps.Join(tosConversion, ToArray(self));
                 }

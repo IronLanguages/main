@@ -99,17 +99,22 @@ namespace IronRuby.Builtins {
         #region Dynamic Sites
 
         private CallSite<Func<CallSite, object, object>> _inspectSite;
-        private CallSite<Func<CallSite, object, MutableString>> _stringConversionSite;
+        private CallSite<Func<CallSite, object, MutableString>> _inspectResultConversionSite;
         private CallSite<Func<CallSite, object, object, object>> _eqlSite;
         private CallSite<Func<CallSite, object, object>> _hashSite;
         private CallSite<Func<CallSite, object, object>> _toStringSite;
+        private CallSite<Func<CallSite, object, object, object>> _newSite;
 
         public CallSite<Func<CallSite, object, object>>/*!*/ InspectSite { 
             get { return RubyUtils.GetCallSite(ref _inspectSite, Context, "inspect", 0); } 
         }
+
+        public CallSite<Func<CallSite, object, object, object>>/*!*/ NewSite {
+            get { return RubyUtils.GetCallSite(ref _newSite, Context, "new", 1); }
+        }
         
-        public CallSite<Func<CallSite, object, MutableString>>/*!*/ StringConversionSite {
-            get { return RubyUtils.GetCallSite(ref _stringConversionSite, ConvertToSAction.Make(Context)); } 
+        public CallSite<Func<CallSite, object, MutableString>>/*!*/ InspectResultConversionSite {
+            get { return RubyUtils.GetCallSite(ref _inspectResultConversionSite, ConvertToSAction.Make(Context)); } 
         }
 
         public CallSite<Func<CallSite, object, object, object>>/*!*/ EqualsSite {
@@ -742,12 +747,12 @@ namespace IronRuby.Builtins {
             }
 
             string operatorName;
-            if (!_isSingletonClass && (operatorName = RubyUtils.MapOperator(name)) != null) {
+            if (tryUnmangle && !_isSingletonClass && (operatorName = RubyUtils.MapOperator(name)) != null) {
                 // instance invocation of an operator:
                 if (TryGetClrMethod(type, basicBindingFlags | BindingFlags.Static, true, name, null, operatorName, null, out method)) {
                     return true;
                 }
-            } else if (name == "[]" || name == "[]=") {
+            } else if (tryUnmangle && (name == "[]" || name == "[]=")) {
                 if (type.IsArray && !_isSingletonClass) {
                     bool isSetter = name.Length == 3;
                     TryGetClrMethod(type, bindingFlags, false, name, null, isSetter ? "Set" : "Get", null, out method);
@@ -1281,11 +1286,18 @@ namespace IronRuby.Builtins {
 
                 RubyMethodGroupInfo.BuildCallNoFlow(metaBuilder, args, methodName, constructionOverloads, callConvention, implicitProtocolConversions);
 
-                // we need to handle break, which unwinds to a proc-converter that could be this method's frame:
                 if (!metaBuilder.Error) {
+                    metaBuilder.Result = MarkNewException(metaBuilder.Result);
+
+                    // we need to handle break, which unwinds to a proc-converter that could be this method's frame:
                     metaBuilder.ControlFlowBuilder = RubyMethodGroupInfo.RuleControlFlowBuilder;
                 }
             }
+        }
+
+        private Expression/*!*/ MarkNewException(Expression/*!*/ expression) {
+            // mark the exception as "Ruby created" so that "new" is not called again on its class when handled in rescue clause:
+            return IsException() ? Methods.MarkException.OpCall(AstUtils.Convert(expression, typeof(Exception))) : expression;
         }
 
         private static void BuildOverriddenInitializerCall(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, RubyMemberInfo/*!*/ initializer) {
@@ -1330,6 +1342,16 @@ namespace IronRuby.Builtins {
         }
 
         public bool BuildAllocatorCall(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, Func<Expression>/*!*/ defaultExceptionMessage) {
+            var newExpression = GetAllocatorNewExpression(args, defaultExceptionMessage);
+            if (newExpression != null) {
+                metaBuilder.Result = MarkNewException(newExpression);
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        private Expression GetAllocatorNewExpression(CallArguments/*!*/ args, Func<Expression>/*!*/ defaultExceptionMessage) {
             Type type = GetUnderlyingSystemType();
 
             if (type == typeof(object)) {
@@ -1337,42 +1359,35 @@ namespace IronRuby.Builtins {
             }
 
             if (_structInfo != null) {
-                metaBuilder.Result = Methods.AllocateStructInstance.OpCall(AstUtils.Convert(args.TargetExpression, typeof(RubyClass)));
-                return true;
+                return Methods.AllocateStructInstance.OpCall(AstUtils.Convert(args.TargetExpression, typeof(RubyClass)));
             }
 
             ConstructorInfo ctor;
             if (IsException()) {
                 if ((ctor = type.GetConstructor(new[] { typeof(string) })) != null) {
-                    metaBuilder.Result = Ast.New(ctor, defaultExceptionMessage());
-                    return true;
+                    return Ast.New(ctor, defaultExceptionMessage());
                 } else if ((ctor = type.GetConstructor(new[] { typeof(string), typeof(Exception) })) != null) {
-                    metaBuilder.Result = Ast.New(ctor, defaultExceptionMessage(), AstUtils.Constant(null));
-                    return true;
+                    return Ast.New(ctor, defaultExceptionMessage(), AstUtils.Constant(null));
                 }
             }
 
             if ((ctor = type.GetConstructor(new[] { typeof(RubyClass) })) != null) {
-                metaBuilder.Result = Ast.New(ctor, AstUtils.Convert(args.TargetExpression, typeof(RubyClass)));
-                return true;
+                return Ast.New(ctor, AstUtils.Convert(args.TargetExpression, typeof(RubyClass)));
             }
 
             if ((ctor = type.GetConstructor(new[] { typeof(RubyContext) })) != null) {
-                metaBuilder.Result = Ast.New(ctor, AstUtils.Convert(args.MetaContext.Expression, typeof(RubyContext)));
-                return true;
+                return Ast.New(ctor, AstUtils.Convert(args.MetaContext.Expression, typeof(RubyContext)));
             }
 
             if ((ctor = type.GetConstructor(Type.EmptyTypes)) != null) {
-                metaBuilder.Result = Ast.New(ctor);
-                return true;
+                return Ast.New(ctor);
             }
 
             if (type.IsValueType && type != typeof(int) && type != typeof(double)) {
-                metaBuilder.Result = Ast.New(type);
-                return true;
+                return Ast.New(type);
             }
 
-            return false;
+            return null;
         }
 
         private void BuildDelegateConstructorCall(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, Type/*!*/ type) {

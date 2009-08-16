@@ -28,6 +28,7 @@ using Microsoft.Scripting.Utils;
 
 using IronPython.Compiler;
 using IronPython.Runtime.Operations;
+using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime {
     /// <summary>
@@ -44,7 +45,7 @@ namespace IronPython.Runtime {
         private readonly ScriptCode _code;
         private readonly string _filename;                          // the filename that created the function co
         private readonly FunctionAttributes _flags;                 // future division, generator
-        private readonly LambdaExpression _lambda;                  // the original DLR lambda that contains the code
+        private LambdaExpression _lambda;                           // the original DLR lambda that contains the code
         private readonly bool _shouldInterpret;                     // true if we should interpret the code
         private readonly bool _debuggable;                          // true if the code should be compiled as debuggable code
         private readonly SourceSpan _span;                          // the source span for the source code
@@ -181,6 +182,10 @@ namespace IronPython.Runtime {
         /// number of code objects are alive.
         /// </summary>
         private void RegisterFunctionCode(PythonContext context) {
+            if (_lambda == null) {
+                return;
+            }
+
             WeakReference codeRef = new WeakReference(this, true);
             CodeList prevCode;
             lock (_CodeCreateAndUpdateDelegateLock) {
@@ -477,6 +482,9 @@ namespace IronPython.Runtime {
             get {
                 return _lambda;
             }
+            set {
+                _lambda = value;
+            }
         }
 
         internal object Call(CodeContext/*!*/ context, Scope/*!*/ scope) {
@@ -485,7 +493,26 @@ namespace IronPython.Runtime {
             }
 
             if (_closureVars != PythonTuple.EMPTY) {
-                throw PythonOps.TypeError("cannot exec code object that contains free variables");
+                throw PythonOps.TypeError("cannot exec code object that contains free variables: {0}", _closureVars.__repr__(context));
+            }
+
+            if (Target == null) {
+                UpdateDelegate(context.LanguageContext, true);
+            }
+
+            Func<CodeContext, CodeContext> classTarget = Target as Func<CodeContext, CodeContext>;
+            if (classTarget != null) {
+                return classTarget(new CodeContext(scope, context.LanguageContext));
+            }
+
+            Func<CodeContext, object> moduleCode = Target as Func<CodeContext, object>;
+            if (moduleCode != null) {
+                return moduleCode(new CodeContext(scope, context.LanguageContext));
+            }
+
+            Func<object> optimizedModuleCode = Target as Func<object>;
+            if (optimizedModuleCode != null) {
+                return optimizedModuleCode();
             }
 
             var func = new PythonFunction(context, this, null, ArrayUtils.EmptyObjects, new MutableTuple<object>());
@@ -549,6 +576,40 @@ namespace IronPython.Runtime {
             }
 
             return _lambda.GetHashCode();
+        }
+
+        public int __cmp__(CodeContext/*!*/ context, [NotNull]FunctionCode/*!*/  other) {
+            if (other == this) {
+                return 0;
+            }
+
+            long lres = IdDispenser.GetId(this) - IdDispenser.GetId(other);
+            return lres > 0 ? 1 : -1;
+        }
+
+        // these are present in CPython but always return NotImplemented.
+        [return: MaybeNotImplemented]
+        [Python3Warning("code inequality comparisons not supported in 3.x")]
+        public static NotImplementedType operator >(FunctionCode self, FunctionCode other) {
+            return PythonOps.NotImplemented;
+        }
+
+        [return: MaybeNotImplemented]
+        [Python3Warning("code inequality comparisons not supported in 3.x")]
+        public static NotImplementedType operator <(FunctionCode self, FunctionCode other) {
+            return PythonOps.NotImplemented;
+        }
+
+        [return: MaybeNotImplemented]
+        [Python3Warning("code inequality comparisons not supported in 3.x")]
+        public static NotImplementedType operator >=(FunctionCode self, FunctionCode other) {
+            return PythonOps.NotImplemented;
+        }
+
+        [return: MaybeNotImplemented]
+        [Python3Warning("code inequality comparisons not supported in 3.x")]
+        public static NotImplementedType operator <=(FunctionCode self, FunctionCode other) {
+            return PythonOps.NotImplemented;
         }
 
         /// <summary>

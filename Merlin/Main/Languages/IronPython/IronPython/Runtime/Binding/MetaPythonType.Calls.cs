@@ -39,6 +39,11 @@ namespace IronPython.Runtime.Binding {
         #region IPythonInvokable Members
 
         public DynamicMetaObject/*!*/ Invoke(PythonInvokeBinder/*!*/ pythonInvoke, Expression/*!*/ codeContext, DynamicMetaObject/*!*/ target, DynamicMetaObject/*!*/[]/*!*/ args) {
+            DynamicMetaObject translated = BuiltinFunction.TranslateArguments(pythonInvoke, codeContext, target, args, false, Value.Name);
+            if (translated != null) {
+                return translated;
+            }
+
             return InvokeWorker(pythonInvoke, args, codeContext);
         }
 
@@ -47,6 +52,17 @@ namespace IronPython.Runtime.Binding {
         #region MetaObject Overrides
 
         public override DynamicMetaObject/*!*/ BindInvokeMember(InvokeMemberBinder/*!*/ action, DynamicMetaObject/*!*/[]/*!*/ args) {
+            foreach (PythonType pt in Value.ResolutionOrder) {
+                PythonTypeSlot dummy;
+                if (pt.IsSystemType) {
+                    return action.FallbackInvokeMember(this, args);
+                } else if (
+                    pt.TryResolveSlot(DefaultContext.DefaultCLS, SymbolTable.StringToId(action.Name), out dummy) ||
+                    pt.IsOldClass) {
+                    break;
+                }
+            }
+
             return BindingHelpers.GenericInvokeMember(action, null, this, args);
         }
 
@@ -413,7 +429,7 @@ namespace IronPython.Runtime.Binding {
 
             public override DynamicMetaObject/*!*/ GetExpression(PythonBinder/*!*/ binder) {
                 PythonOverloadResolver resolver;
-                if (_creating.IsSystemType) {
+                if (_creating.IsSystemType || _creating.HasSystemCtor) {
                     resolver = new PythonOverloadResolver(binder, DynamicMetaObject.EmptyMetaObjects, new CallSignature(0), CodeContext);
                 } else {
                     resolver = new PythonOverloadResolver(binder, new[] { Arguments.Self }, new CallSignature(1), CodeContext);
@@ -434,7 +450,7 @@ namespace IronPython.Runtime.Binding {
             public override DynamicMetaObject/*!*/ GetExpression(PythonBinder/*!*/ binder) {
                 PythonOverloadResolver resolve;
 
-                if (_creating.IsSystemType) {
+                if (_creating.IsSystemType || _creating.HasSystemCtor) {
                     resolve = new PythonOverloadResolver(
                         binder, 
                         Arguments.Arguments, 
@@ -622,10 +638,10 @@ namespace IronPython.Runtime.Binding {
                     // this is a type we can't create ANY instances of, give the user a half-way decent error message
                     message = "cannot create instances of " + Value.Name;
                 } else {
-                    message = "default __new__ does not take parameters";
+                    message = InstanceOps.ObjectNewNoParameters;
                 }
             } else {
-                message = "default __new__ does not take parameters";
+                message = InstanceOps.ObjectNewNoParameters;
             }
 
             return BindingHelpers.AddDynamicTestAndDefer(

@@ -22,3 +22,4 @@ sources
 *.vshost.exe
 *.vshost.exe.manifest
 .eprj
+*_S*

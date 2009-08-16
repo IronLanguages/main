@@ -161,10 +161,10 @@ namespace IronRuby.Builtins {
 
             using (IDisposable handle = RubyUtils.InfiniteInspectTracker.TrackObject(self)) {
                 if (handle == null) {
-                    return MutableString.Create("{...}");
+                    return MutableString.CreateAscii("{...}");
                 }
 
-                MutableString str = MutableString.CreateMutable();
+                MutableString str = MutableString.CreateMutable(RubyEncoding.Binary);
                 str.Append('{');
                 bool first = true;
                 foreach (var entry in self) {

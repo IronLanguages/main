@@ -1009,65 +1009,147 @@ namespace IronRuby.Builtins {
 
         #region flatten, flatten!
 
-        [MultiRuntimeAware]
-        private static RubyUtils.RecursionTracker _infiniteFlattenTracker = new RubyUtils.RecursionTracker();
-
-        public static bool TryFlattenArray(
-            CallSiteStorage<Func<CallSite, RubyClass, object>>/*!*/ allocateStorage, 
-            ConversionStorage<IList>/*!*/ tryToAry, 
-            IList list, out IList/*!*/ result) {
-
-            result = CreateResultArray(allocateStorage, list);
-
-            using (IDisposable handle = _infiniteFlattenTracker.TrackObject(list)) {
-                if (handle == null) {
-                    throw RubyExceptions.CreateArgumentError("tried to flatten recursive array");
+        private static int IndexOfList(ConversionStorage<IList>/*!*/ tryToAry, IList/*!*/ list, int start, out IList listItem) {
+            for (int i = start; i < list.Count; i++) {
+                listItem = Protocols.TryCastToArray(tryToAry, list[i]);
+                if (listItem != null) {
+                    return i;
                 }
-                bool flattened = false;
-                for (int i = 0; i < list.Count; i++) {
-                    IList item = Protocols.TryCastToArray(tryToAry, list[i]);
-                    if (item != null) {
-                        flattened = true;
-                        IList flattenedList;
+            }
+            listItem = null;
+            return -1;
+        }
 
-                        TryFlattenArray(allocateStorage, tryToAry, item, out flattenedList);
-                        if (flattenedList != null) {
-                            AddRange(result, flattenedList);
-                        } else {
-                            result.Add(item);
-                        }
-                    } else {
-                        result.Add(list[i]);
+        /// <summary>
+        /// Enumerates all items of the list recursively - if there are any items convertible to IList the items of that lists are enumerated as well.
+        /// Returns null if there are no nested lists and so the list can be enumerated using a standard enumerator.
+        /// </summary>
+        public static IEnumerable<object> EnumerateRecursively(ConversionStorage<IList>/*!*/ tryToAry, IList/*!*/ list, Func<IList, object>/*!*/ loopDetected) {
+            IList nested;
+            int nestedIndex = IndexOfList(tryToAry, list, 0, out nested);
+
+            if (nestedIndex == -1) {
+                return null;
+            }
+
+            return EnumerateRecursively(tryToAry, list, list, nested, nestedIndex, loopDetected);
+        }
+
+        private static IEnumerable<object>/*!*/ EnumerateRecursively(ConversionStorage<IList>/*!*/ tryToAry, IList/*!*/ root, 
+            IList/*!*/ list, IList nested, int nestedIndex, Func<IList, object>/*!*/ loopDetected) {
+
+            var worklist = new Stack<KeyValuePair<IList, int>>();
+            var recursionPath = new Dictionary<object, bool>(ReferenceEqualityComparer.Instance);
+            int start = 0;
+
+            while (true) {
+                if (nestedIndex >= 0) {
+                    // push a workitem for the items following the nested list:
+                    if (nestedIndex < list.Count - 1) {
+                        worklist.Push(new KeyValuePair<IList, int>(list, nestedIndex + 1));
+                    }
+
+                    // yield items preceding the nested list:
+                    for (int i = start; i < nestedIndex; i++) {
+                        yield return list[i];
+                    }
+
+                    // push a workitem for the nested list:
+                    if (nestedIndex != -1) {
+                        worklist.Push(new KeyValuePair<IList, int>(nested, 0));                        
+                    }
+                } else {
+                    // there is no nested list => yield all remaining items:
+                    for (int i = start; i < list.Count; i++) {
+                        yield return list[i];
                     }
                 }
-                return flattened;
+
+                // finished nested list workitem:
+                if (start == 0) {
+                    recursionPath.Remove(list);
+                }
+
+            next:
+                if (worklist.Count == 0) {
+                    break;
+                }
+
+                var workitem = worklist.Pop();
+                list = workitem.Key;
+                start = workitem.Value;
+
+                // starting nested workitem:
+                if (start == 0) {
+                    if (ReferenceEquals(nested, root) || recursionPath.ContainsKey(nested)) {
+                        yield return loopDetected(nested);
+                        goto next;
+                    } else {
+                        recursionPath.Add(nested, true);
+                    }
+                }
+                
+                nestedIndex = IndexOfList(tryToAry, list, start, out nested);
             }
         }
 
         [RubyMethod("flatten")]
-        public static IList/*!*/ Flatten(
-            CallSiteStorage<Func<CallSite, RubyClass, object>>/*!*/ allocateStorage, 
-            ConversionStorage<IList>/*!*/ tryToAry, 
+        public static IList/*!*/ Flatten(CallSiteStorage<Func<CallSite, RubyClass, object>>/*!*/ allocateStorage, ConversionStorage<IList>/*!*/ tryToAry, 
             IList/*!*/ self) {
 
-            IList result;
-            TryFlattenArray(allocateStorage, tryToAry, self, out result);
+            IList result = CreateResultArray(allocateStorage, self);
+            var recEnum = EnumerateRecursively(tryToAry, self, (_) => { throw RubyExceptions.CreateArgumentError("tried to flatten recursive array"); });
+
+            if (recEnum != null) {
+                foreach (var item in recEnum) {
+                    result.Add(item);
+                }
+            } else {
+                AddRange(result, self);
+            }
+
             return result;
         }
 
         [RubyMethod("flatten!")]
-        public static IList FlattenInPlace(
-            CallSiteStorage<Func<CallSite, RubyClass, object>>/*!*/ allocateStorage, 
-            ConversionStorage<IList>/*!*/ tryToAry, 
-            IList/*!*/ self) {
+        public static IList FlattenInPlace(ConversionStorage<IList>/*!*/ tryToAry, IList/*!*/ self) {
+            IList nested;
+            int nestedIndex = IndexOfList(tryToAry, self, 0, out nested);
 
-            IList result;
-            if (!TryFlattenArray(allocateStorage, tryToAry, self, out result)) {
+            if (nestedIndex == -1) {
                 return null;
             }
 
-            self.Clear();
-            AddRange(self, result);
+            var remaining = new object[self.Count - nestedIndex];
+            for (int i = 0, j = nestedIndex; i < remaining.Length; i++) {
+                remaining[i] = self[j++];
+            }
+
+            bool isRecursive = false;
+            var recEnum = EnumerateRecursively(tryToAry, self, remaining, nested, 0, (rec) => {
+                isRecursive = true;
+                return rec;
+            });
+
+            // rewrite items following the first nested list (including the list):
+            int itemCount = nestedIndex;
+            foreach (var item in recEnum) {
+                if (itemCount < self.Count) {
+                    self[itemCount] = item;
+                } else {
+                    self.Add(item);
+                }
+                itemCount++;
+            }
+
+            // empty arrays can make the list shrink:
+            while (self.Count > itemCount) {
+                self.RemoveAt(self.Count - 1);
+            }
+
+            if (isRecursive) {
+                throw RubyExceptions.CreateArgumentError("tried to flatten recursive array");
+            }
             return self;
         }
 
@@ -1265,9 +1347,9 @@ namespace IronRuby.Builtins {
 
             using (IDisposable handle = RubyUtils.InfiniteInspectTracker.TrackObject(self)) {
                 if (handle == null) {
-                    return MutableString.Create("[...]");
+                    return MutableString.CreateAscii("[...]");
                 }
-                MutableString str = MutableString.CreateMutable();
+                MutableString str = MutableString.CreateMutable(RubyEncoding.Binary);
                 str.Append('[');
                 bool first = true;
                 foreach (object obj in self) {

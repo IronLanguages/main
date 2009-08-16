@@ -64,12 +64,20 @@ describe "Dir.chdir" do
     end
   end
 
-  it "always returns to the original directory when given a block" do
+  it "always returns to the original directory when given a block (raise)" do
     begin
       Dir.chdir(DirSpecs.mock_dir) do
         raise StandardError, "something bad happened"
       end
     rescue StandardError
+    end
+
+    Dir.pwd.should == @original
+  end
+  
+  it "always returns to the original directory when given a block ()" do
+    Dir.chdir(DirSpecs.mock_dir) do
+      break
     end
 
     Dir.pwd.should == @original

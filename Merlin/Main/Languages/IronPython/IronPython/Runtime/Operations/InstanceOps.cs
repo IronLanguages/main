@@ -519,15 +519,18 @@ namespace IronPython.Runtime.Operations {
             return formattable.ToString(format, null);
         }
 
+        internal const string ObjectNewNoParameters = "object.__new__() takes no parameters";
+
+
         internal static void CheckNewArgs(CodeContext context, IAttributesCollection dict, object[] args, PythonType pt) {
             if (((args != null && args.Length > 0) || (dict != null && dict.Count > 0))) {
                 bool hasObjectInit = pt.HasObjectInit(context);
                 bool hasObjectNew = pt.HasObjectNew(context);
 
                 if (hasObjectInit && hasObjectNew) {
-                    throw PythonOps.TypeError("default __new__ does not take parameters");
+                    throw PythonOps.TypeError(ObjectNewNoParameters);
                 } else if (!hasObjectNew && !hasObjectInit) {
-                    PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "object.__new__() takes no parameters");
+                    PythonOps.Warn(context, PythonExceptions.DeprecationWarning, ObjectNewNoParameters);
                 }
             }
         }
@@ -560,7 +563,7 @@ namespace IronPython.Runtime.Operations {
             for (int i = 0; i < methods.Length; i++) {
                 methods[i] = typeof(InstanceOps).GetMethod(methodNames[i]);
             }
-            return BuiltinFunction.MakeMethod(name, methods, typeof(object), FunctionType.Function | FunctionType.AlwaysVisible);
+            return BuiltinFunction.MakeFunction(name, methods, typeof(object));
         }
 
         private static void GetKeywordArgs(IAttributesCollection dict, object[] args, out object[] finalArgs, out string[] names) {

@@ -53,12 +53,12 @@ namespace IronRuby.Compiler.Ast {
             get { return _value; }
         }
 
-        public MutableString/*!*/ GetMutableString() {
+        public MutableString/*!*/ GetMutableString(RubyEncoding/*!*/ encoding) {
             string str = _value as string;
             if (str != null) {
-                return MutableString.Create(str);
+                return MutableString.Create(str, encoding);
             } else {
-                return MutableString.CreateBinary((byte[])_value);
+                return MutableString.CreateBinary((byte[])_value, encoding);
             }
         }
 

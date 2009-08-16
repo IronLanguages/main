@@ -1,2 +1,0 @@
-fails:StringIO#gets when passed [separator] returns the next paragraph when the passed separator is an empty String
-fails:StringIO#gets when in write-only mode raises an IOError

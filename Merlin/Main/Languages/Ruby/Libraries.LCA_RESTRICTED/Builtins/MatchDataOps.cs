@@ -171,7 +171,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("to_s")]
         public static MutableString/*!*/ ToS(RubyContext/*!*/ context, MatchData/*!*/ self) {
-            return MutableString.Create(self.Value).TaintBy(self, context);
+            return MutableString.Create(self.Value, self.Encoding).TaintBy(self, context);
         }
 
         #endregion

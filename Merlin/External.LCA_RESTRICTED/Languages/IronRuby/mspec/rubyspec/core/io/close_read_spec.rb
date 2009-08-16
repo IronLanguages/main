@@ -5,7 +5,15 @@ require 'fileutils'
 describe "IO#close_read" do
 
   before :each do
-    @io = IO.popen 'cat', "r+"
+    # TODO: rewrite the specs so that they don't depend on platform specific utilities
+    platform_is :windows do
+      @io = IO.popen 'dir', "r+"
+    end
+    
+    platform_is_not :windows do
+      @io = IO.popen 'cat', "r+"
+    end
+    
     @path = tmp('io.close.txt')
   end
 

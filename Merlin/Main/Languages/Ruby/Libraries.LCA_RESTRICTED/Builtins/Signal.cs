@@ -26,14 +26,14 @@ namespace IronRuby.Builtins {
         [RubyMethod("list", RubyMethodAttributes.PublicSingleton)]
         public static Hash/*!*/ List(RubyContext/*!*/ context, RubyModule/*!*/ self) {
             Hash result = new Hash(context);
-            result.Add(MutableString.Create("TERM"), ScriptingRuntimeHelpers.Int32ToObject(15));
-            result.Add(MutableString.Create("SEGV"), ScriptingRuntimeHelpers.Int32ToObject(11));
-            result.Add(MutableString.Create("KILL"), ScriptingRuntimeHelpers.Int32ToObject(9));
-            result.Add(MutableString.Create("EXIT"), ScriptingRuntimeHelpers.Int32ToObject(0));
-            result.Add(MutableString.Create("INT"), ScriptingRuntimeHelpers.Int32ToObject(2));
-            result.Add(MutableString.Create("FPE"), ScriptingRuntimeHelpers.Int32ToObject(8));
-            result.Add(MutableString.Create("ABRT"), ScriptingRuntimeHelpers.Int32ToObject(22));
-            result.Add(MutableString.Create("ILL"), ScriptingRuntimeHelpers.Int32ToObject(4));
+            result.Add(MutableString.CreateAscii("TERM"), ScriptingRuntimeHelpers.Int32ToObject(15));
+            result.Add(MutableString.CreateAscii("SEGV"), ScriptingRuntimeHelpers.Int32ToObject(11));
+            result.Add(MutableString.CreateAscii("KILL"), ScriptingRuntimeHelpers.Int32ToObject(9));
+            result.Add(MutableString.CreateAscii("EXIT"), ScriptingRuntimeHelpers.Int32ToObject(0));
+            result.Add(MutableString.CreateAscii("INT"), ScriptingRuntimeHelpers.Int32ToObject(2));
+            result.Add(MutableString.CreateAscii("FPE"), ScriptingRuntimeHelpers.Int32ToObject(8));
+            result.Add(MutableString.CreateAscii("ABRT"), ScriptingRuntimeHelpers.Int32ToObject(22));
+            result.Add(MutableString.CreateAscii("ILL"), ScriptingRuntimeHelpers.Int32ToObject(4));
             return result;
         }
 

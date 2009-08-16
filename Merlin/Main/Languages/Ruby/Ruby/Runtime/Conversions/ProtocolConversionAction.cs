@@ -23,15 +23,14 @@ using System.Reflection;
 using IronRuby.Builtins;
 using IronRuby.Compiler;
 using IronRuby.Compiler.Generation;
+using IronRuby.Runtime.Calls;
 using Microsoft.Scripting;
+using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Math;
-using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using Ast = System.Linq.Expressions.Expression;
 using AstFactory = IronRuby.Compiler.Ast.AstFactory;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
-using Microsoft.Scripting.Generation;
-using IronRuby.Runtime.Calls;
 
 namespace IronRuby.Runtime.Conversions {
     public abstract class RubyConversionAction : RubyMetaBinder {
@@ -80,25 +79,33 @@ namespace IronRuby.Runtime.Conversions {
         }
 
         private static Func<RubyMetaBinderFactory, RubyConversionAction> TryGetDefaultConversionAction(Type/*!*/ parameterType) {
+            // TODO: 
+            // nullable int (see Array#fill, Sockets:ConvertToSocketFlag, Kernel#open(perm=nil), File.chown, IO#read)
+
+            switch (Type.GetTypeCode(parameterType)) {
+                case TypeCode.SByte: return (factory) => factory.Conversion<ConvertToSByteAction>();
+                case TypeCode.Byte: return (factory) => factory.Conversion<ConvertToByteAction>();
+                case TypeCode.Int16: return (factory) => factory.Conversion<ConvertToInt16Action>();
+                case TypeCode.UInt16: return (factory) => factory.Conversion<ConvertToUInt16Action>();
+                case TypeCode.Int32: return (factory) => factory.Conversion<ConvertToFixnumAction>();
+                case TypeCode.UInt32: return (factory) => factory.Conversion<ConvertToUInt32Action>();
+                case TypeCode.Int64: return (factory) => factory.Conversion<ConvertToInt64Action>();
+                case TypeCode.UInt64: return (factory) => factory.Conversion<ConvertToUInt64Action>();
+                case TypeCode.Single: return (factory) => factory.Conversion<ConvertToSingleAction>();
+                case TypeCode.Double: return (factory) => factory.Conversion<ConvertToFAction>();
+                case TypeCode.String: return (factory) => factory.Conversion<ConvertToSymbolAction>();
+            }
+
             if (parameterType == typeof(MutableString)) {
                 return (factory) => factory.Conversion<ConvertToStrAction>();
             }
 
-            // TODO: nullable int (see Array#fill, Sockets:ConvertToSocketFlag, Kernel#open(perm=nil), File.chown)
-            if (parameterType == typeof(int)) {
-                return (factory) => factory.Conversion<ConvertToFixnumAction>();
-            }
-
-            if (parameterType == typeof(string)) {
-                return (factory) => factory.Conversion<ConvertToSymbolAction>();
+            if (parameterType == typeof(BigInteger)) {
+                return (factory) => factory.Conversion<ConvertToBignumAction>();
             }
 
             if (parameterType == typeof(IntegerValue)) {
                 return (factory) => factory.Conversion<ConvertToIntAction>();
-            }
-
-            if (parameterType == typeof(double)) {
-                return (factory) => factory.Conversion<ConvertToFAction>();
             }
 
             if (parameterType == typeof(Union<int, MutableString>)) {
@@ -124,18 +131,18 @@ namespace IronRuby.Runtime.Conversions {
             return null;
         }
 
-        internal static Expression ImplicitConvert(Type/*!*/ type, CallArguments/*!*/ args) {
-            return Converter.ImplicitConvert(args.TargetExpression, CompilerHelpers.GetType(args.Target), type);
+        internal static Expression ImplicitConvert(Type/*!*/ toType, CallArguments/*!*/ args) {
+            return Converter.ImplicitConvert(args.TargetExpression, CompilerHelpers.GetType(args.Target), toType);
         }
 
-        internal static Expression ExplicitConvert(Type/*!*/ type, CallArguments/*!*/ args) {
-            return Converter.ExplicitConvert(args.TargetExpression, CompilerHelpers.GetType(args.Target), type);
+        internal static Expression ExplicitConvert(Type/*!*/ toType, CallArguments/*!*/ args) {
+            return Converter.ExplicitConvert(args.TargetExpression, CompilerHelpers.GetType(args.Target), toType);
         }
 
-        internal static Expression Convert(Type/*!*/ type, CallArguments/*!*/ args) {
+        internal static Expression Convert(Type/*!*/ toType, CallArguments/*!*/ args) {
             var fromType = CompilerHelpers.GetType(args.Target);
-            return Converter.ImplicitConvert(args.TargetExpression, fromType, type)
-                ?? Converter.ExplicitConvert(args.TargetExpression, fromType, type);
+            return Converter.ImplicitConvert(args.TargetExpression, fromType, toType)
+                ?? Converter.ExplicitConvert(args.TargetExpression, fromType, toType);
         }
     }
 
@@ -216,13 +223,6 @@ namespace IronRuby.Runtime.Conversions {
             }
 
             if (!respondToMethod.Found) {
-                // TODO: Is MRI consistent on respond_to? visibility?
-                //if (respondToMethod.IncompatibleVisibility != RubyMethodVisibility.None) {
-                //    // respond_to? is not visible:
-                //    conversions[conversions.Length - 1].SetError(metaBuilder, args, targetClassNameConstant, resultType);
-                //    return;
-                //} else 
-                    
                 if (conversionMethod == null) {
                     // error:
                     selectedConversion.SetError(metaBuilder, args, targetClassNameConstant, resultType);
@@ -380,6 +380,8 @@ namespace IronRuby.Runtime.Conversions {
         protected override MethodInfo ConversionResultValidator { get { return Methods.ToProcValidator; } }
     }
 
+    #region String, Symbol, Regex
+
     public sealed class ConvertToStrAction : ConvertToReferenceTypeAction<ConvertToStrAction, MutableString> {
         protected override string/*!*/ ToMethodName { get { return Symbols.ToStr; } }
         protected override string/*!*/ TargetTypeName { get { return "String"; } }
@@ -405,6 +407,46 @@ namespace IronRuby.Runtime.Conversions {
         protected override string/*!*/ TargetTypeName { get { return "Regexp"; } }
         protected override MethodInfo ConversionResultValidator { get { return Methods.ToRegexValidator; } }
     }
+
+    public sealed class ConvertToSymbolAction : ConvertToReferenceTypeAction<ConvertToSymbolAction, string> {
+        protected override string/*!*/ ToMethodName { get { return Symbols.ToStr; } }
+        protected override string/*!*/ TargetTypeName { get { return "Symbol"; } }
+        protected override MethodInfo ConversionResultValidator { get { return Methods.ToSymbolValidator; } }
+
+        internal protected override bool TryImplicitConversion(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
+            if (base.TryImplicitConversion(metaBuilder, args)) {
+                return true;
+            }
+
+            object target = args.Target;
+            var targetExpression = args.TargetExpression;
+
+            var str = target as MutableString;
+            if (str != null) {
+                metaBuilder.Result = Methods.ConvertMutableStringToSymbol.OpCall(AstUtils.Convert(targetExpression, typeof(MutableString)));
+                return true;
+            }
+
+            if (target is SymbolId) {
+                metaBuilder.Result = Methods.ConvertSymbolIdToSymbol.OpCall(AstUtils.Convert(targetExpression, typeof(SymbolId)));
+                return true;
+            }
+
+            if (target is int) {
+                metaBuilder.Result = Methods.ConvertFixnumToSymbol.OpCall(
+                    AstUtils.Convert(args.MetaContext.Expression, typeof(RubyContext)),
+                    AstUtils.Convert(targetExpression, typeof(int))
+                );
+                return true;
+            }
+
+            return false;
+        }
+    }
+
+    #endregion
+
+    #region Array, Hash, Enumerable
 
     public sealed class ConvertToArrayAction : ConvertToReferenceTypeAction<ConvertToArrayAction, IList> {
         protected override string/*!*/ ToMethodName { get { return Symbols.ToAry; } }
@@ -449,10 +491,13 @@ namespace IronRuby.Runtime.Conversions {
         }
     }
 
-    public sealed class ConvertToFixnumAction : ProtocolConversionAction<ConvertToFixnumAction> {
+    #endregion
+
+    #region Integers
+
+    public abstract class ConvertToIntegerAction<TSelf> : ProtocolConversionAction<TSelf>
+        where TSelf : ConvertToIntegerAction<TSelf>, new() {
         protected override string/*!*/ ToMethodName { get { return Symbols.ToInt; } }
-        protected override string/*!*/ TargetTypeName { get { return "Fixnum"; } }
-        protected override MethodInfo ConversionResultValidator { get { return Methods.ToFixnumValidator; } }
 
         internal protected override bool TryImplicitConversion(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
             object target = args.Target;
@@ -462,12 +507,61 @@ namespace IronRuby.Runtime.Conversions {
                 return true;
             }
 
-            return (metaBuilder.Result = Convert(typeof(int), args)) != null;
+            return (metaBuilder.Result = Convert(ReturnType, args)) != null;
         }
     }
 
-    public abstract class ConvertToIntegerActionBase<TSelf> : ProtocolConversionAction<TSelf>
-        where TSelf : ConvertToIntegerActionBase<TSelf>, new() {
+    public sealed class ConvertToFixnumAction : ConvertToIntegerAction<ConvertToFixnumAction> {
+        protected override string/*!*/ TargetTypeName { get { return "Fixnum"; } }
+        protected override MethodInfo ConversionResultValidator { get { return Methods.ToFixnumValidator; } }
+    }
+
+    public sealed class ConvertToByteAction : ConvertToIntegerAction<ConvertToByteAction> {
+        protected override string/*!*/ TargetTypeName { get { return "System::Byte"; } }
+        protected override MethodInfo ConversionResultValidator { get { return Methods.ToByteValidator; } }
+    }
+
+    public sealed class ConvertToSByteAction : ConvertToIntegerAction<ConvertToSByteAction> {
+        protected override string/*!*/ TargetTypeName { get { return "System::SByte"; } }
+        protected override MethodInfo ConversionResultValidator { get { return Methods.ToSByteValidator; } }
+    }
+
+    public sealed class ConvertToInt16Action : ConvertToIntegerAction<ConvertToInt16Action> {
+        protected override string/*!*/ TargetTypeName { get { return "System::Int16"; } }
+        protected override MethodInfo ConversionResultValidator { get { return Methods.ToInt16Validator; } }
+    }
+
+    public sealed class ConvertToUInt16Action : ConvertToIntegerAction<ConvertToUInt16Action> {
+        protected override string/*!*/ TargetTypeName { get { return "System::UInt16"; } }
+        protected override MethodInfo ConversionResultValidator { get { return Methods.ToUInt16Validator; } }
+    }
+
+    public sealed class ConvertToUInt32Action : ConvertToIntegerAction<ConvertToUInt32Action> {
+        protected override string/*!*/ TargetTypeName { get { return "System::UInt32"; } }
+        protected override MethodInfo ConversionResultValidator { get { return Methods.ToUInt32Validator; } }
+    }
+
+    public sealed class ConvertToUInt64Action : ConvertToIntegerAction<ConvertToUInt64Action> {
+        protected override string/*!*/ TargetTypeName { get { return "System::UInt64"; } }
+        protected override MethodInfo ConversionResultValidator { get { return Methods.ToUInt64Validator; } }
+    }
+
+    public sealed class ConvertToInt64Action : ConvertToIntegerAction<ConvertToInt64Action> {
+        protected override string/*!*/ TargetTypeName { get { return "System::Int64"; } }
+        protected override MethodInfo ConversionResultValidator { get { return Methods.ToInt64Validator; } }
+    }
+
+    public sealed class ConvertToBignumAction : ConvertToIntegerAction<ConvertToBignumAction> {
+        protected override string/*!*/ TargetTypeName { get { return "Bignum"; } }
+        protected override MethodInfo ConversionResultValidator { get { return Methods.ToBignumValidator; } }
+    }
+
+    #endregion
+
+    #region IntegerValue
+
+    public abstract class ConvertToIntegerValueAction<TSelf> : ProtocolConversionAction<TSelf>
+        where TSelf : ConvertToIntegerValueAction<TSelf>, new() {
 
         protected override string/*!*/ TargetTypeName { get { return "Integer"; } }
 
@@ -490,7 +584,7 @@ namespace IronRuby.Runtime.Conversions {
     /// <summary>
     /// Calls to_int and wraps the result (Fixnum or Bignum) into IntegerValue.
     /// </summary>
-    public sealed class ConvertToIntAction : ConvertToIntegerActionBase<ConvertToIntAction> {
+    public sealed class ConvertToIntAction : ConvertToIntegerValueAction<ConvertToIntAction> {
         protected override string/*!*/ ToMethodName { get { return Symbols.ToInt; } }
         protected override MethodInfo ConversionResultValidator { get { return Methods.ToIntegerValidator; } }
     }
@@ -498,18 +592,21 @@ namespace IronRuby.Runtime.Conversions {
     /// <summary>
     /// Calls to_i and wraps the result (Fixnum or Bignum) into IntegerValue.
     /// </summary>
-    public sealed class ConvertToIAction : ConvertToIntegerActionBase<ConvertToIAction> {
+    public sealed class ConvertToIAction : ConvertToIntegerValueAction<ConvertToIAction> {
         protected override string/*!*/ ToMethodName { get { return Symbols.ToI; } }
         protected override MethodInfo ConversionResultValidator { get { return Methods.ToIntegerValidator; } }
     }
 
+    #endregion
+
+    #region Floating Point
+
     /// <summary>
     /// Calls to_f (in most cases) and wraps the result into double. It directly calls Kernel.Float for String, Fixnum and Bignum.
     /// </summary>
-    public sealed class ConvertToFAction : ProtocolConversionAction<ConvertToFAction> {
-        protected override string/*!*/ TargetTypeName { get { return "Float"; } }
+    public abstract class ConvertToFloatingPointAction<TSelf> : ProtocolConversionAction<TSelf>
+        where TSelf : ConvertToFloatingPointAction<TSelf>, new() {
         protected override string/*!*/ ToMethodName { get { return Symbols.ToF; } }
-        protected override MethodInfo ConversionResultValidator { get { return Methods.ToFloatValidator; } }
 
         internal protected override bool TryImplicitConversion(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
             object target = args.Target;
@@ -519,7 +616,7 @@ namespace IronRuby.Runtime.Conversions {
                 return true;
             }
 
-            metaBuilder.Result = Convert(typeof(double), args) ?? FromString(args);
+            metaBuilder.Result = Convert(ReturnType, args) ?? FromString(args);
 
             return metaBuilder.Result != null;
         }
@@ -539,39 +636,15 @@ namespace IronRuby.Runtime.Conversions {
         }
     }
 
-    public sealed class ConvertToSymbolAction : ConvertToReferenceTypeAction<ConvertToSymbolAction, string> {
-        protected override string/*!*/ ToMethodName { get { return Symbols.ToStr; } }
-        protected override string/*!*/ TargetTypeName { get { return "Symbol"; } }
-        protected override MethodInfo ConversionResultValidator { get { return Methods.ToSymbolValidator; } }
-
-        internal protected override bool TryImplicitConversion(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
-            if (base.TryImplicitConversion(metaBuilder, args)) {
-                return true;
-            }
-
-            object target = args.Target;
-            var targetExpression = args.TargetExpression;
-            
-            var str = target as MutableString;
-            if (str != null) {
-                metaBuilder.Result = Methods.ConvertMutableStringToSymbol.OpCall(AstUtils.Convert(targetExpression, typeof(MutableString)));
-                return true;
-            }
-
-            if (target is SymbolId) {
-                metaBuilder.Result = Methods.ConvertSymbolIdToSymbol.OpCall(AstUtils.Convert(targetExpression, typeof(SymbolId)));
-                return true;
-            }
-
-            if (target is int) {
-                metaBuilder.Result = Methods.ConvertFixnumToSymbol.OpCall(
-                    AstUtils.Convert(args.MetaContext.Expression, typeof(RubyContext)), 
-                    AstUtils.Convert(targetExpression, typeof(int))
-                );
-                return true;
-            }
-
-            return false;
-        }
+    public sealed class ConvertToFAction : ConvertToFloatingPointAction<ConvertToFAction> {
+        protected override string/*!*/ TargetTypeName { get { return "Float"; } }
+        protected override MethodInfo ConversionResultValidator { get { return Methods.ToDoubleValidator; } }
     }
+
+    public sealed class ConvertToSingleAction : ConvertToFloatingPointAction<ConvertToSingleAction> {
+        protected override string/*!*/ TargetTypeName { get { return "System::Single"; } }
+        protected override MethodInfo ConversionResultValidator { get { return Methods.ToSingleValidator; } }
+    }
+
+    #endregion
 }

@@ -87,7 +87,7 @@ namespace IronRuby.Builtins {
         
         [RubyMethod("inspect")]
         public static MutableString/*!*/ Inspect(object/*!*/ self) {
-            return MutableString.CreateMutable().Append(self.ToString()).Append(" (Byte)");
+            return MutableString.CreateMutable(RubyEncoding.Binary).Append(self.ToString()).Append(" (Byte)");
         }
     }
     
@@ -126,7 +126,7 @@ namespace IronRuby.Builtins {
         
         [RubyMethod("inspect")]
         public static MutableString/*!*/ Inspect(object/*!*/ self) {
-            return MutableString.CreateMutable().Append(self.ToString()).Append(" (SByte)");
+            return MutableString.CreateMutable(RubyEncoding.Binary).Append(self.ToString()).Append(" (SByte)");
         }
     }
     
@@ -165,7 +165,7 @@ namespace IronRuby.Builtins {
         
         [RubyMethod("inspect")]
         public static MutableString/*!*/ Inspect(object/*!*/ self) {
-            return MutableString.CreateMutable().Append(self.ToString()).Append(" (Int16)");
+            return MutableString.CreateMutable(RubyEncoding.Binary).Append(self.ToString()).Append(" (Int16)");
         }
     }
     
@@ -204,7 +204,7 @@ namespace IronRuby.Builtins {
         
         [RubyMethod("inspect")]
         public static MutableString/*!*/ Inspect(object/*!*/ self) {
-            return MutableString.CreateMutable().Append(self.ToString()).Append(" (UInt16)");
+            return MutableString.CreateMutable(RubyEncoding.Binary).Append(self.ToString()).Append(" (UInt16)");
         }
     }
     
@@ -243,7 +243,7 @@ namespace IronRuby.Builtins {
         
         [RubyMethod("inspect")]
         public static MutableString/*!*/ Inspect(object/*!*/ self) {
-            return MutableString.CreateMutable().Append(self.ToString()).Append(" (UInt32)");
+            return MutableString.CreateMutable(RubyEncoding.Binary).Append(self.ToString()).Append(" (UInt32)");
         }
     }
     
@@ -282,7 +282,7 @@ namespace IronRuby.Builtins {
         
         [RubyMethod("inspect")]
         public static MutableString/*!*/ Inspect(object/*!*/ self) {
-            return MutableString.CreateMutable().Append(self.ToString()).Append(" (Int64)");
+            return MutableString.CreateMutable(RubyEncoding.Binary).Append(self.ToString()).Append(" (Int64)");
         }
     }
     
@@ -321,7 +321,7 @@ namespace IronRuby.Builtins {
         
         [RubyMethod("inspect")]
         public static MutableString/*!*/ Inspect(object/*!*/ self) {
-            return MutableString.CreateMutable().Append(self.ToString()).Append(" (UInt64)");
+            return MutableString.CreateMutable(RubyEncoding.Binary).Append(self.ToString()).Append(" (UInt64)");
         }
     }
 

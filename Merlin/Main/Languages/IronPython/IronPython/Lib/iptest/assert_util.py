@@ -584,6 +584,21 @@ class stderr_trapper(object):
     def __exit__(self, *args):
         sys.stderr = self.oldstderr
 
+class stdout_trapper(object):
+    class myfile(object):
+        def __init__(self, messages):
+            self.messages = messages
+        def write(self, *args):
+            self.messages.append(args)
+    def __init__(self):
+        self.messages = []
+    def __enter__(self):
+        self.oldstdout, sys.stdout = sys.stdout, stdout_trapper.myfile(self.messages)
+        return self
+    def __exit__(self, *args):
+        sys.stdout = self.oldstdout
+
+
 #------------------------------------------------------------------------------
 MAX_FAILURE_RETRY = 3
 

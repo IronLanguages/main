@@ -48,7 +48,7 @@ namespace IronRuby.Compiler.Generation {
         }
 
         [Emitted]
-        public static Exception InvokeMethodMissing(object o, string/*!*/ name) {
+        public static Exception/*!*/ InvokeMethodMissing(object o, string/*!*/ name) {
             return RubyExceptions.CreateMethodMissing(RubyContext._Default, o, name);
         }
 

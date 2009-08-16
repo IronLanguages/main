@@ -58,6 +58,7 @@ namespace IronRuby.Builtins {
             public abstract void SwitchToBinaryContent();
             public abstract void SwitchToStringContent();
             public abstract void SwitchToMutableContent();
+            public abstract void CheckEncoding();
 
             public abstract byte[]/*!*/ ToByteArray();
             internal abstract byte[]/*!*/ GetByteArray();
