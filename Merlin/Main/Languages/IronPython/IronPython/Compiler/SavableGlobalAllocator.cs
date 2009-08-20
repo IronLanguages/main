@@ -55,7 +55,7 @@ namespace IronPython.Compiler.Ast {
 
         public override ScriptCode/*!*/ MakeScriptCode(MSAst.Expression/*!*/ body, CompilerContext/*!*/ context, PythonAst/*!*/ ast) {
             // finally build the funcion that's closed over the array
-            var func = Ast.Lambda<Func<CodeContext, object>>(
+            var func = Ast.Lambda<Func<CodeContext, FunctionCode, object>>(
                 Ast.Block(
                     new[] { GlobalArray },
                     Ast.Assign(
@@ -69,7 +69,7 @@ namespace IronPython.Compiler.Ast {
                     Utils.Convert(body, typeof(object))
                 ),
                 ((PythonCompilerOptions)context.Options).ModuleName,
-                new MSAst.ParameterExpression[] { IronPython.Compiler.Ast.ArrayGlobalAllocator._globalContext }
+                ArrayGlobalAllocator._arrayFuncParams
             );
 
             PythonCompilerOptions pco = context.Options as PythonCompilerOptions;

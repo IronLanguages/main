@@ -95,7 +95,7 @@ namespace IronPython.Compiler.Ast {
             ScriptingRuntimeHelpers.InitializeSymbols(t);
 
             string name = ((PythonCompilerOptions)compilerContext.Options).ModuleName ?? "<unnamed>";
-            var func = Ast.Lambda<Func<object>>(Utils.Convert(lambda, typeof(object)), name, new MSAst.ParameterExpression[0]);
+            var func = Ast.Lambda<Func<FunctionCode, object>>(Utils.Convert(lambda, typeof(object)), name, new [] { AstGenerator._functionCode });
             return new RuntimeScriptCode(compilerContext, func, ast, _context);
         }
 
@@ -299,7 +299,13 @@ namespace IronPython.Compiler.Ast {
             ConstantInfo ci;
             if (!_constants.TryGetValue(value, out ci)) {
                 string name = "Constant " + (_constantsCreated++) + CompilerHelpers.GetType(value).Name;
-                FieldBuilder field = _typeGen.AddStaticField(typeof(object), FieldAttributes.Public, name);
+
+                Type constType = value.GetType();
+                if (constType.IsValueType) {
+                    constType = typeof(object);
+                }
+
+                FieldBuilder field = _typeGen.AddStaticField(constType, FieldAttributes.Public, name);
 
                 _constants[value] = ci = new ConstantInfo(field, CreateFieldBuilderExpression(field));
             }
