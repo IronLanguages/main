@@ -30,10 +30,10 @@ namespace IronPython.Modules {
 
         #region Public marshal APIs
         public static void dump(object value, PythonFile/*!*/ file) {
-            dump(value, file, null);
+            dump(value, file, version);
         }
 
-        public static void dump(object value, PythonFile/*!*/ file, object version) {
+        public static void dump(object value, PythonFile/*!*/ file, int version) {
             if (file == null) throw PythonOps.TypeError("expected file, found None");
 
             file.write(dumps(value, version));
@@ -46,11 +46,11 @@ namespace IronPython.Modules {
         }
 
         public static object dumps(object value) {
-            return dumps(value, null);
+            return dumps(value, version);
         }
 
-        public static string dumps(object value, object version) {
-            byte[] bytes = ObjectToBytes(value);
+        public static string dumps(object value, int version) {
+            byte[] bytes = ObjectToBytes(value, version);
             StringBuilder sb = new StringBuilder(bytes.Length);
             for (int i = 0; i < bytes.Length; i++) {
                 sb.Append((char)bytes[i]);
@@ -62,13 +62,13 @@ namespace IronPython.Modules {
             return BytesToObject(StringEnumerator(@string));
         }
 
-        public const int version = 1;
+        public const int version = 2;
         #endregion
 
         #region Implementation details
 
-        private static byte[] ObjectToBytes(object o) {
-            MarshalWriter mw = new MarshalWriter();
+        private static byte[] ObjectToBytes(object o, int version) {
+            MarshalWriter mw = new MarshalWriter(version);
             mw.WriteObject(o);
             return mw.GetBytes();
         }
@@ -103,6 +103,7 @@ namespace IronPython.Modules {
          * Dict:  '{',key item, value item, '0' terminator
          * Int :  'i',4 bytes
          * float: 'f', 1 byte len, float in string
+         * float: 'g', 8 bytes - float in binary form
          * BigInt:  'l', int encodingSize
          *      if the value is negative then the size is negative
          *      and needs to be subtracted from int.MaxValue
@@ -115,6 +116,7 @@ namespace IronPython.Modules {
          * Float: 'f', str len, float in str
          * string: 't', int len, bytes  (ascii)
          * string: 'u', int len, bytes (unicode)
+         * string: 'R' <id> - refer to interned string
          * StopIteration: 'S'   
          * None: 'N'
          * Long: 'I' followed by 8 bytes (little endian 64-bit value)
@@ -124,10 +126,16 @@ namespace IronPython.Modules {
          * 
          */
         private class MarshalWriter {
-            List<byte> _bytes;
+            private readonly List<byte> _bytes;
+            private readonly int _version;
+            private readonly Dictionary<string, int> _strings;
 
-            public MarshalWriter() {
+            public MarshalWriter(int version) {
                 _bytes = new List<byte>();
+                _version = version;
+                if (_version > 0) {
+                    _strings = new Dictionary<string, int>();
+                }
             }
 
             public void WriteObject(object o) {
@@ -162,25 +170,27 @@ namespace IronPython.Modules {
             }
 
             private void WriteFloat(float f) {
-                _bytes.Add((byte)'f');
-                WriteFloatString(f);
+                if (_version > 1) {
+                    _bytes.Add((byte)'g');
+                    _bytes.AddRange(BitConverter.GetBytes((double)f));
+                } else {
+                    _bytes.Add((byte)'f');
+                    WriteDoubleString(f);
+                }
             }
 
             private void WriteFloat(double f) {
-                _bytes.Add((byte)'f');
-                WriteDoubleString(f);
-            }
-
-            private void WriteFloatString(float f) {
-                string s = f.ToString("G17");   // get maximum percision
-                _bytes.Add((byte)s.Length);
-                for (int i = 0; i < s.Length; i++) {
-                    _bytes.Add((byte)s[i]);
+                if (_version > 1) {
+                    _bytes.Add((byte)'g');
+                    _bytes.AddRange(BitConverter.GetBytes(f));
+                } else {
+                    _bytes.Add((byte)'f');
+                    WriteDoubleString(f);
                 }
             }
 
             private void WriteDoubleString(double d) {
-                string s = d.ToString("G17");  // get maximum percision
+                string s = DoubleOps.__repr__(DefaultContext.Default, d);
                 _bytes.Add((byte)s.Length);
                 for (int i = 0; i < s.Length; i++) {
                     _bytes.Add((byte)s[i]);
@@ -298,11 +308,25 @@ namespace IronPython.Modules {
                         _bytes.Add(utfBytes[i]);
                     }
                 } else {
-                    byte[] strBytes = PythonAsciiEncoding.Instance.GetBytes(s);
-                    _bytes.Add((byte)'t');
-                    WriteInt32(strBytes.Length);
-                    for (int i = 0; i < strBytes.Length; i++) {
-                        _bytes.Add(strBytes[i]);
+                    int index;
+                    if (_strings != null && _strings.TryGetValue(s, out index)) {
+                        _bytes.Add((byte)'R');
+                        WriteInt32(index);
+                    } else {
+                        byte[] strBytes = PythonAsciiEncoding.Instance.GetBytes(s);
+                        if (_strings != null) {
+                            _bytes.Add((byte)'t');
+                        } else {
+                            _bytes.Add((byte)'s');
+                        }
+                        WriteInt32(strBytes.Length);
+                        for (int i = 0; i < strBytes.Length; i++) {
+                            _bytes.Add(strBytes[i]);
+                        }
+
+                        if (_strings != null) {
+                            _strings[s] = _strings.Count;
+                        }
                     }
                 }
             }
@@ -362,10 +386,12 @@ namespace IronPython.Modules {
         private class MarshalReader {
             private IEnumerator<byte> _myBytes;
             private Stack<ProcStack> _stack;
+            private readonly Dictionary<int, string> _strings;
             private object _result;
 
             public MarshalReader(IEnumerator<byte> bytes) {
                 _myBytes = bytes;
+                _strings = new Dictionary<int, string>();
             }
 
             public object ReadObject() {
@@ -561,11 +587,13 @@ namespace IronPython.Modules {
                     case 'x': res = ReadComplex(); break;
                     case 's': res = ReadBuffer(); break;
                     case 'I': res = ReadLong(); break;
+                    case 'R': res = _strings[ReadInt32()]; break;
+                    case 'g': res = ReadBinaryFloat(); break;
                     default: throw PythonOps.ValueError("bad marshal data");
                 }
                 return res;
             }
-            
+
             private byte[] ReadBytes(int len) {
                 byte[] bytes = new byte[len];
                 for (int i = 0; i < len; i++) {
@@ -637,8 +665,14 @@ namespace IronPython.Modules {
                 return ReadFloatStr();
             }
 
+            private object ReadBinaryFloat() {
+                return BitConverter.ToDouble(ReadBytes(8), 0);
+            }
+            
             private object ReadAsciiString() {
-                return DecodeString(PythonAsciiEncoding.Instance, ReadBytes(ReadInt32()));
+                string res = DecodeString(PythonAsciiEncoding.Instance, ReadBytes(ReadInt32()));
+                _strings[_strings.Count] = res;
+                return res;
             }
 
             private object ReadUnicodeString() {

@@ -221,10 +221,9 @@ namespace IronPython.Runtime {
             }
 
             if (_options.Frames) {
-                _systemState.Dict[SymbolTable.StringToId("_getframe")] = BuiltinFunction.MakeMethod("_getframe", 
+                _systemState.Dict[SymbolTable.StringToId("_getframe")] = BuiltinFunction.MakeFunction("_getframe", 
                     ArrayUtils.ConvertAll(typeof(SysModule).GetMember("_getframeImpl"), (x) => (MethodBase)x), 
-                    typeof(SysModule), 
-                    FunctionType.Function);
+                    typeof(SysModule));
             }
 
             List path = new List(_options.SearchPaths);
@@ -727,7 +726,7 @@ namespace IronPython.Runtime {
 
         protected override ScriptCode/*!*/ LoadCompiledCode(Delegate/*!*/ method, string path, string customData) {
             SourceUnit su = new SourceUnit(this, NullTextContentProvider.Null, path, SourceCodeKind.File);
-            return new OnDiskScriptCode((Func<Scope, LanguageContext, object>)method, su, customData);
+            return new OnDiskScriptCode((Func<CodeContext, object>)method, su, customData);
         }
 
         public override SourceCodeReader/*!*/ GetSourceReader(Stream/*!*/ stream, Encoding/*!*/ defaultEncoding, string path) {

@@ -7,9 +7,10 @@ module ComHelper
   def app_installed?(appname, binary = appname)
     app = nil
 
-    app = Registry.local_machine.open_sub_key("Software\\Microsoft\\Office\\12.0\\#{appname}\\InstallRoot")
-    app ||= Registry.local_machine.open_sub_key("Software\\Microsoft\\Office\\11.0\\#{appname}\\InstallRoot")
-    app ||= Registry.local_machine.open_sub_key("Software\\Microsoft\\Office\\14.0\\#{appname}\\InstallRoot")
+    # check for any of the Office versions known to work with the tests
+    [10.0, 11.0, 12.0, 14.0].each do |version|
+      app ||= Registry.local_machine.open_sub_key("Software\\Microsoft\\Office\\#{version}\\#{appname}\\InstallRoot")
+    end
 
     return nil unless app
 

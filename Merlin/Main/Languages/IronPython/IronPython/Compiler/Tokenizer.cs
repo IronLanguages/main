@@ -671,11 +671,6 @@ namespace IronPython.Compiler {
                         // backup over the eoln:
                         _buffer.SeekRelative(-eol_size);
 
-                        if (_verbatim) {
-                            complete = false;
-                            break;
-                        }
-
                         _buffer.MarkTokenEnd(multi_line);
                         UnexpectedEndOfString(isTriple, false);
                         return new ErrorToken((quote == '"') ? Resources.NewLineInDoubleQuotedString : Resources.NewLineInSingleQuotedString);

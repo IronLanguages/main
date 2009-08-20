@@ -19,6 +19,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Text;
 using IronRuby.Compiler;
 using IronRuby.Runtime;
@@ -260,6 +261,7 @@ namespace IronRuby.Builtins {
             ConversionStorage<MutableString>/*!*/ stringCast, 
             RubyContext/*!*/ context, RubyArray/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ format) {
 
+            // TODO (encoding):
             using (MutableStringStream stream = new MutableStringStream()) {
                 BinaryWriter writer = new BinaryWriter(stream);
                 int i = 0;
@@ -484,7 +486,7 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("sort")]
-        public static RubyArray/*!*/ Sort(
+        public static object Sort(
             BinaryOpStorage/*!*/ comparisonStorage,
             BinaryOpStorage/*!*/ lessThanStorage,
             BinaryOpStorage/*!*/ greaterThanStorage,
@@ -496,12 +498,42 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("sort!")]
+        public static object SortInPlace(
+            BinaryOpStorage/*!*/ comparisonStorage,
+            BinaryOpStorage/*!*/ lessThanStorage,
+            BinaryOpStorage/*!*/ greaterThanStorage,
+            BlockParam block, RubyArray/*!*/ self) {
+
+            StrongBox<object> breakResult;
+            RubyArray result = SortInPlace(comparisonStorage, lessThanStorage, greaterThanStorage, block, self, out breakResult);
+            if (breakResult != null) {
+                return breakResult.Value;
+            } else {
+                return result;
+            }
+        }
+
         public static RubyArray/*!*/ SortInPlace(
             BinaryOpStorage/*!*/ comparisonStorage,
             BinaryOpStorage/*!*/ lessThanStorage,
-            BinaryOpStorage/*!*/ greaterThanStorage,            
-            BlockParam block, RubyArray/*!*/ self) {
+            BinaryOpStorage/*!*/ greaterThanStorage,
+            RubyArray/*!*/ self) {
 
+            StrongBox<object> breakResult;
+            RubyArray result = SortInPlace(comparisonStorage, lessThanStorage, greaterThanStorage, null, self, out breakResult);
+            Debug.Assert(result != null && breakResult == null);
+            return result;
+        }
+
+        internal static RubyArray SortInPlace(
+            BinaryOpStorage/*!*/ comparisonStorage,
+            BinaryOpStorage/*!*/ lessThanStorage,
+            BinaryOpStorage/*!*/ greaterThanStorage,            
+            BlockParam block,
+            RubyArray/*!*/ self,
+            out StrongBox<object> breakResult) {
+
+            breakResult = null;
             var context = comparisonStorage.Context;
             RubyUtils.RequiresNotFrozen(context, self);
 
@@ -512,11 +544,13 @@ namespace IronRuby.Builtins {
             if (block == null) {
                 self.Sort((x, y) => Protocols.Compare(comparisonStorage, lessThanStorage, greaterThanStorage, x, y));
             } else {
+                object nonRefBreakResult = null;
                 try {
-                    self.Sort((x, y) => {
-                        object result;
+                    self.Sort((x, y) =>
+                    {
+                        object result = null;
                         if (block.Yield(x, y, out result)) {
-                            // TODO: this doesn't work
+                            nonRefBreakResult = result;
                             throw new BreakException();
                         }
 
@@ -526,7 +560,17 @@ namespace IronRuby.Builtins {
 
                         return Protocols.ConvertCompareResult(lessThanStorage, greaterThanStorage, result);
                     });
-                } catch (BreakException) {
+                } catch (InvalidOperationException e) {
+                    if (e.InnerException == null) {
+                        throw;
+                    }
+
+                    if (e.InnerException is BreakException) {
+                        breakResult = new StrongBox<object>(nonRefBreakResult);
+                        return null;
+                    } else {
+                        throw e.InnerException;
+                    }
                 }
             }
 

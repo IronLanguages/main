@@ -41,6 +41,12 @@ namespace IronRuby.Runtime {
         }
 
         public override int GetByteCount(char[]/*!*/ chars, int index, int count) {
+            for (int i = 0; i < count; i++) {
+                if (chars[index + i] > 0xff) {
+                    // TODO: we don't support fallbacks (we should add the result of the fallback to the count):
+                    throw new EncoderFallbackException();
+                }
+            }
             return count;
         }
 

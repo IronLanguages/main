@@ -71,10 +71,10 @@ namespace IronRuby.Runtime {
             var context = tosConversion.Context;
             using (IDisposable handle = RubyUtils.InfiniteInspectTracker.TrackObject(obj)) {
                 if (handle == null) {
-                    return MutableString.Create("...");
+                    return MutableString.CreateAscii("...");
                 }
 
-                MutableString str = MutableString.CreateMutable();
+                MutableString str = MutableString.CreateMutable(RubyEncoding.ClassName);
                 str.Append("#<");
                 str.Append(context.GetClassDisplayName(obj));
 
@@ -88,13 +88,14 @@ namespace IronRuby.Runtime {
                     bool first = true;
                     foreach (KeyValuePair<string, object> var in vars) {
                         if (first) {
-                            str.Append(" ");
+                            str.Append(' ');
                             first = false;
                         } else {
                             str.Append(", ");
                         }
+                        // TODO (encoding):
                         str.Append(var.Key);
-                        str.Append("=");
+                        str.Append('=');
 
                         var inspectSite = inspectStorage.GetCallSite("inspect");
                         object inspectedValue = inspectSite.Target(inspectSite, var.Value);
@@ -113,7 +114,7 @@ namespace IronRuby.Runtime {
         }
 
         public static MutableString/*!*/ FormatObjectPrefix(string/*!*/ className, long objectId, bool isTainted) {
-            MutableString str = MutableString.CreateMutable();
+            MutableString str = MutableString.CreateMutable(RubyEncoding.ClassName);
             str.Append("#<");
             str.Append(className);
 
@@ -308,6 +309,8 @@ namespace IronRuby.Runtime {
                             return null;
                         }
                     }
+                } else if (c == '_') {
+                    return null;
                 } else {
                     if (mangled != null) {
                         mangled.Append(c);
@@ -594,7 +597,7 @@ namespace IronRuby.Runtime {
 
         #region Tracking operations that have the potential for infinite recursion
 
-        public static readonly MutableString InfiniteRecursionMarker = MutableString.Create("[...]").Freeze();
+        public static readonly MutableString InfiniteRecursionMarker = MutableString.CreateAscii("[...]").Freeze();
 
         public class RecursionTracker {
             [ThreadStatic]

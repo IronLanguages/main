@@ -13,9 +13,22 @@ describe "File::Stat#inspect" do
   
   it "produces a nicely formatted description of a File::Stat object" do
     st = File.stat(@file)  
-    #p "#<File::Stat dev=0x#{st.dev.to_s(16)}, ino=#{st.ino}, mode=#{sprintf("%06s", st.mode.to_s(8))}, nlink=#{st.nlink}, uid=#{st.uid}, gid=#{st.gid}, rdev=0x#{st.rdev.to_s(16)}, size=#{st.size}, blksize=#{st.blksize}, blocks=#{st.blocks}, atime=#{st.atime}, mtime=#{st.mtime}, ctime=#{st.ctime}>"
-    st.inspect.should == "#<File::Stat dev=0x#{st.dev.to_s(16)}, ino=#{st.ino}, mode=#{sprintf("%07d", st.mode.to_s(8).to_i)}, nlink=#{st.nlink}, uid=#{st.uid}, gid=#{st.gid}, rdev=0x#{st.rdev.to_s(16)}, size=#{st.size}, blksize=#{st.blksize}, blocks=#{st.blocks}, atime=#{st.atime}, mtime=#{st.mtime}, ctime=#{st.ctime}>"
-    
+    st.inspect.should =~ /
+      \#<File::Stat \s
+      dev=0x#{st.dev.to_s(16)}, \s
+      ino=#{st.ino}, \s
+      mode=#{sprintf("%07d", st.mode.to_s(8).to_i)}, \s
+      nlink=#{st.nlink}, \s
+      uid=#{st.uid}, \s
+      gid=#{st.gid}, \s
+      rdev=0x#{st.rdev.to_s(16)}, \s
+      size=#{st.size}, \s
+      blksize=(#{st.blksize}|nil), \s
+      blocks=(#{st.blocks}|nil), \s
+      atime=#{Regexp.escape(st.atime.to_s)}, \s
+      mtime=#{Regexp.escape(st.mtime.to_s)}, \s
+      ctime=#{Regexp.escape(st.ctime.to_s)}>
+      /x
   end
 
 

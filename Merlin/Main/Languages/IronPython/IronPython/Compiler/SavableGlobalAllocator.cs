@@ -54,25 +54,22 @@ namespace IronPython.Compiler.Ast {
         }
 
         public override ScriptCode/*!*/ MakeScriptCode(MSAst.Expression/*!*/ body, CompilerContext/*!*/ context, PythonAst/*!*/ ast) {
-            MSAst.ParameterExpression scope = Ast.Parameter(typeof(Scope), "$scope");
-            MSAst.ParameterExpression language = Ast.Parameter(typeof(LanguageContext), "$language ");
-
-            // finally build the funcion that's closed over the array and
-            var func = Ast.Lambda<Func<Scope, LanguageContext, object>>(
+            // finally build the funcion that's closed over the array
+            var func = Ast.Lambda<Func<CodeContext, object>>(
                 Ast.Block(
                     new[] { GlobalArray },
                     Ast.Assign(
                         GlobalArray, 
                         Ast.Call(
                             null,
-                            typeof(PythonOps).GetMethod("GetGlobalArray"),
-                            scope
+                            typeof(PythonOps).GetMethod("GetGlobalArrayFromContext"),
+                            IronPython.Compiler.Ast.ArrayGlobalAllocator._globalContext 
                         )
                     ),
                     Utils.Convert(body, typeof(object))
                 ),
                 ((PythonCompilerOptions)context.Options).ModuleName,
-                new MSAst.ParameterExpression[] { scope, language }
+                new MSAst.ParameterExpression[] { IronPython.Compiler.Ast.ArrayGlobalAllocator._globalContext }
             );
 
             PythonCompilerOptions pco = context.Options as PythonCompilerOptions;

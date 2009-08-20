@@ -83,6 +83,11 @@ namespace IronRuby.Builtins {
             get { return _regex.Options; }
         }
 
+        public RubyEncoding/*!*/ Encoding {
+            // TODO:
+            get { return _regex.GetPattern().Encoding; }
+        }
+
         public MutableString/*!*/ GetPattern() {
             return _regex.GetPattern();
         }
@@ -112,7 +117,7 @@ namespace IronRuby.Builtins {
 
         public Match/*!*/ Match(MutableString/*!*/ input, int start) {
             ContractUtils.RequiresNotNull(input, "input");
-            return Match(input, start, input.Length - start);
+            return Match(input, start, input.GetCharCount() - start);
         }
 
         public Match/*!*/ Match(MutableString/*!*/ input, int start, int count) {
@@ -220,11 +225,11 @@ namespace IronRuby.Builtins {
         }
 
         public MutableString/*!*/ ToMutableString() {
-            return AppendTo(MutableString.CreateMutable());
+            return AppendTo(MutableString.CreateMutable(RubyEncoding.Binary));
         }
 
         public MutableString/*!*/ Inspect() {
-            MutableString result = MutableString.CreateMutable();
+            MutableString result = MutableString.CreateMutable(RubyEncoding.Binary);
             result.Append('/');
             AppendEscapeForwardSlash(result, GetPattern());
             result.Append('/');

@@ -24,6 +24,7 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using Ast = System.Linq.Expressions.Expression;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
+using IronRuby.Runtime.Conversions;
 
 namespace IronRuby.Runtime.Calls {
     internal interface IInteropBinder {
@@ -586,24 +587,15 @@ namespace IronRuby.Runtime.Calls {
                     return result;
                 }
 #endif
+                var metaBuilder = new MetaObjectBuilder(this, target, DynamicMetaObject.EmptyMetaObjects);
 
-                // TODO:
-                return errorSuggestion ?? new DynamicMetaObject(
-                    Expression.Throw(Methods.MakeTypeConversionError.OpCall(
-                        AstUtils.Constant(_context), AstUtils.Convert(target.Expression, typeof(object)), Ast.Constant(ReturnType)
-                    ), ReturnType),
-                    target.Restrictions
-                );
-            }
+                if (!GenericConversionAction.BuildConversion(metaBuilder, target, Ast.Constant(_context), Type, errorSuggestion == null)) {
+                    Debug.Assert(errorSuggestion != null);
+                    // no conversion applicable so we didn't do any operation with arguments that would require restrictions converted to conditions:
+                    metaBuilder.SetMetaResult(errorSuggestion, false);
+                }
 
-            public static DynamicMetaObject/*!*/ Bind(DynamicMetaObject/*!*/ context, ConvertBinder/*!*/ binder,
-                DynamicMetaObject/*!*/ target, Func<DynamicMetaObject, DynamicMetaObject, DynamicMetaObject>/*!*/ fallback) {
-
-                // TODO:
-                return null;
-                //return InvokeMember.Bind(context, RubyUtils.MapOperator(binder.Operation), _CallInfo, binder, target, new[] { arg },
-                //    (trgt, args) => fallback(trgt, args[0])
-                //);
+                return metaBuilder.CreateMetaObject(this);
             }
 
             public override string/*!*/ ToString() {

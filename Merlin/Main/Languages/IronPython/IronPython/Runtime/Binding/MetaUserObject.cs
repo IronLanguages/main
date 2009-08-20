@@ -126,7 +126,20 @@ namespace IronPython.Runtime.Binding {
 
         private DynamicMetaObject/*!*/ InvokeWorker(DynamicMetaObjectBinder/*!*/ action, Expression/*!*/ codeContext, DynamicMetaObject/*!*/[] args) {
             ValidationInfo typeTest = BindingHelpers.GetValidationInfo(this, Value.PythonType);
-            
+
+            if (Value is PythonType) {
+                PythonContext context = PythonContext.GetPythonContext(action);
+                // optimization for meta classes.  Don't dispatch to type.__call__ if it's inherited,
+                // instead produce a normal type call rule.
+                PythonTypeSlot callSlot, typeCallSlot;
+                if (Value.PythonType.TryResolveMixedSlot(context.SharedContext, Symbols.Call, out callSlot) &&
+                    TypeCache.PythonType.TryResolveSlot(context.SharedContext, Symbols.Call, out typeCallSlot) &&
+                    callSlot == typeCallSlot) {
+                    
+                    return InvokeFallback(action, codeContext, args);
+                }
+            }
+
             return BindingHelpers.AddDynamicTestAndDefer(
                 action,
                 PythonProtocol.Call(action, this, args) ?? InvokeFallback(action, codeContext, args),

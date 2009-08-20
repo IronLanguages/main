@@ -18,6 +18,7 @@ using IronRuby.Runtime;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
+using System.Globalization;
 
 namespace IronRuby.Builtins {
 
@@ -810,7 +811,7 @@ namespace IronRuby.Builtins {
         /// </summary>
         [RubyMethod("to_s")]
         public static MutableString/*!*/ ToString(BigInteger/*!*/ self) {
-            return MutableString.Create(self.ToString());
+            return MutableString.CreateAscii(self.ToString());
         }
 
         /// <summary>
@@ -824,7 +825,7 @@ namespace IronRuby.Builtins {
             }
 
             // TODO: Can we do the ToLower in BigInteger?
-            return MutableString.Create(self.ToString((uint)radix).ToLower());
+            return MutableString.CreateAscii(self.ToString((uint)radix).ToLower());
         }
 
         #endregion

@@ -40,6 +40,7 @@ namespace IronRuby.Runtime {
     /// </summary>
     public sealed class RubyContext : LanguageContext {
         internal static readonly Guid RubyLanguageGuid = new Guid("F03C4640-DABA-473f-96F1-391400714DAB");
+        private static readonly Guid LanguageVendor_Microsoft = new Guid(-1723120188, -6423, 0x11d2, 0x90, 0x3f, 0, 0xc0, 0x4f, 0xa3, 2, 0xa1);
         private static int _RuntimeIdGenerator = 0;
 
         // MRI compliance:
@@ -208,9 +209,7 @@ namespace IronRuby.Runtime {
 
         [Conditional("DEBUG")]
         internal void RequiresClassHierarchyLock() {
-            if (!_classHierarchyLock.IsLocked) {
-                throw new InvalidOperationException("Code can only be executed while holding class hierarchy lock.");
-            }
+            ContractUtils.Requires(_classHierarchyLock.IsLocked, "Code can only be executed while holding class hierarchy lock.");
         }
 
         // classes used by runtime (we need to update initialization generator if any of these are added):
@@ -362,6 +361,10 @@ namespace IronRuby.Runtime {
             get { return RubyLanguageGuid; }
         }
 
+        public override Guid VendorGuid {
+            get { return LanguageVendor_Microsoft; }
+        }
+
         public int RuntimeId {
             get { return _runtimeId; }
         }
@@ -378,7 +381,7 @@ namespace IronRuby.Runtime {
             _runtimeId = Interlocked.Increment(ref _RuntimeIdGenerator);
             _upTime = new Stopwatch();
             _upTime.Start();
-
+            
             Binder = new RubyBinder(this);
 
             _metaBinderFactory = new RubyMetaBinderFactory(this);
@@ -389,17 +392,17 @@ namespace IronRuby.Runtime {
             _namespaceCache = new Dictionary<NamespaceTracker, RubyModule>();
             _referenceTypeInstanceData = new WeakTable<object, RubyInstanceData>();
             _valueTypeInstanceData = new Dictionary<object, RubyInstanceData>();
-            _inputProvider = new RubyInputProvider(this, _options.Arguments);
+            _inputProvider = new RubyInputProvider(this, _options.Arguments, _options.ArgumentEncoding);
             _globalScope = DomainManager.Globals;
             _loader = new Loader(this);
             _emptyScope = new RubyTopLevelScope(this);
             if (_options.MainFile != null) {
-                _commandLineProgramPath = MutableString.Create(_options.MainFile);
+                _commandLineProgramPath = MutableString.Create(_options.MainFile, RubyEncoding.Path);
             }
             _currentException = null;
             _currentSafeLevel = 0;
             _childProcessExitStatus = null;
-            _inputSeparator = MutableString.Create("\n");
+            _inputSeparator = MutableString.CreateAscii("\n");
             _outputSeparator = null;
             _stringSeparator = null;
             _itemSeparator = null;
@@ -502,10 +505,10 @@ namespace IronRuby.Runtime {
         private void InitializeGlobalConstants() {
             Debug.Assert(_objectClass != null);
 
-            MutableString version = MutableString.Create(RubyContext.MriVersion);
-            MutableString platform = MutableString.Create("i386-mswin32");   // TODO: make this the correct string for MAC OS X in Silverlight
-            MutableString releaseDate = MutableString.Create(RubyContext.MriReleaseDate);
-            MutableString rubyEngine = MutableString.Create("ironruby");
+            MutableString version = MutableString.CreateAscii(RubyContext.MriVersion);
+            MutableString platform = MutableString.CreateAscii("i386-mswin32");   // TODO: make this the correct string for MAC OS X in Silverlight
+            MutableString releaseDate = MutableString.CreateAscii(RubyContext.MriReleaseDate);
+            MutableString rubyEngine = MutableString.CreateAscii("ironruby");
 
             SetGlobalConstant("RUBY_ENGINE", rubyEngine);
             SetGlobalConstant("RUBY_VERSION", version);
@@ -517,7 +520,7 @@ namespace IronRuby.Runtime {
             SetGlobalConstant("PLATFORM", platform);
             SetGlobalConstant("RELEASE_DATE", releaseDate);
 
-            SetGlobalConstant("IRONRUBY_VERSION", MutableString.Create(RubyContext.IronRubyVersionString));
+            SetGlobalConstant("IRONRUBY_VERSION", MutableString.CreateAscii(RubyContext.IronRubyVersionString));
 
             SetGlobalConstant("STDIN", StandardInput);
             SetGlobalConstant("STDOUT", StandardOutput);
@@ -544,9 +547,12 @@ namespace IronRuby.Runtime {
 
         private void InitializeFileDescriptors(SharedIO/*!*/ io) {
             Debug.Assert(_fileDescriptors.Count == 0);
-            StandardInput = new RubyIO(this, new ConsoleStream(io, ConsoleStreamType.Input), "r");
-            StandardOutput = new RubyIO(this, new ConsoleStream(io, ConsoleStreamType.Output), "a");
-            StandardErrorOutput = new RubyIO(this, new ConsoleStream(io, ConsoleStreamType.ErrorOutput), "a");
+            Stream stream = new ConsoleStream(io, ConsoleStreamType.Input);                
+            StandardInput = new RubyIO(this, stream, AllocateFileDescriptor(stream), IOMode.ReadOnly);
+            stream = new ConsoleStream(io, ConsoleStreamType.Output);
+            StandardOutput = new RubyIO(this, stream, AllocateFileDescriptor(stream), IOMode.WriteOnly | IOMode.WriteAppends);
+            stream = new ConsoleStream(io, ConsoleStreamType.ErrorOutput);
+            StandardErrorOutput = new RubyIO(this, stream, AllocateFileDescriptor(stream), IOMode.WriteOnly | IOMode.WriteAppends);
         }
 
         // TODO: internal
@@ -618,6 +624,7 @@ namespace IronRuby.Runtime {
 
             AddModuleToCacheNoLock(typeof(Kernel), _kernelModule);
             AddModuleToCacheNoLock(objectTracker.Type, _objectClass);
+            AddModuleToCacheNoLock(typeof(RubyObject), _objectClass);
             AddModuleToCacheNoLock(_moduleClass.GetUnderlyingSystemType(), _moduleClass);
             AddModuleToCacheNoLock(_classClass.GetUnderlyingSystemType(), _classClass);
 
@@ -1500,24 +1507,11 @@ namespace IronRuby.Runtime {
         public MutableString/*!*/ Inspect(object obj) {
             RubyClass cls = GetClassOf(obj);
             var inspect = cls.InspectSite;
-            var toS = cls.StringConversionSite;
+            var toS = cls.InspectResultConversionSite;
             return toS.Target(toS, inspect.Target(inspect, obj));
         }
 
         #endregion
-
-        internal string InspectEnsuringClassName(object self) {
-            if (self == null) {
-                return "nil:NilClass";
-            } else {
-                string strObject = Inspect(self).ConvertToString();
-                if (!strObject.StartsWith("#")) {
-                    strObject += ":" + GetClassName(self);
-                }
-                return strObject;
-            }
-        }
-
 
         #region Global Variables: General access (thread-safe)
 
@@ -1679,7 +1673,25 @@ namespace IronRuby.Runtime {
 
         #region IO (thread-safe)
 
-        private readonly List<RubyIO>/*!*/ _fileDescriptors = new List<RubyIO>(10);
+        private sealed class FileDescriptor {
+            public int DuplicateCount;
+            public readonly Stream/*!*/ Stream;
+
+            public FileDescriptor(Stream/*!*/ stream) {
+                Assert.NotNull(stream);
+                Stream = stream;
+                DuplicateCount = 1;
+            }
+
+            public void Close() {
+                DuplicateCount--;
+                if (DuplicateCount == 0) {
+                    Stream.Close();
+                }
+            }
+        }
+
+        private readonly List<FileDescriptor>/*!*/ _fileDescriptors = new List<FileDescriptor>(10);
 
         public const int StandardInputDescriptor = 0;
         public const int StandardOutputDescriptor = 1;
@@ -1689,37 +1701,98 @@ namespace IronRuby.Runtime {
         public object StandardOutput { get; set; }
         public object StandardErrorOutput { get; set; }
 
-        public RubyIO GetDescriptor(int fileDescriptor) {
+        private FileDescriptor TryGetFileDescriptorNoLock(int descriptor) {
+            return (descriptor < 0 || descriptor >= _fileDescriptors.Count) ? null : _fileDescriptors[descriptor];
+        }
+
+        private int AddFileDescriptorNoLock(FileDescriptor/*!*/ fd) {
+            for (int i = 0; i < _fileDescriptors.Count; i++) {
+                if (_fileDescriptors[i] == null) {
+                    _fileDescriptors[i] = fd;
+                    return i;
+                }
+            }
+            _fileDescriptors.Add(fd);
+            return _fileDescriptors.Count - 1;
+        }
+
+        public Stream GetStream(int descriptor) {
             lock (_fileDescriptors) {
-                if (fileDescriptor < 0 || fileDescriptor >= _fileDescriptors.Count) {
-                    return null;
-                } else {
-                    return _fileDescriptors[fileDescriptor];
+                var fd = TryGetFileDescriptorNoLock(descriptor);
+                return (fd != null) ? fd.Stream : null;
+            }
+        }
+
+        public void SetStream(int descriptor, Stream/*!*/ stream) {
+            ContractUtils.RequiresNotNull(stream, "stream");
+
+            lock (_fileDescriptors) {
+                var fd = TryGetFileDescriptorNoLock(descriptor);
+                if (fd == null) {
+                    throw RubyExceptions.CreateEBADF();
+                }
+                if (fd.Stream != stream) {
+                    fd.Close();
+                    _fileDescriptors[descriptor] = new FileDescriptor(stream);
                 }
             }
         }
 
-        public int AddDescriptor(RubyIO/*!*/ descriptor) {
-            ContractUtils.RequiresNotNull(descriptor, "descriptor");
-
+        public void RedirectFileDescriptor(int descriptor, int toDescriptor) {
             lock (_fileDescriptors) {
-                for (int i = 0; i < _fileDescriptors.Count; ++i) {
-                    if (_fileDescriptors[i] == null) {
-                        _fileDescriptors[i] = descriptor;
-                        return i;
-                    }
+                var fd = TryGetFileDescriptorNoLock(descriptor);
+                if (fd == null) {
+                    throw RubyExceptions.CreateEBADF();
                 }
-                _fileDescriptors.Add(descriptor);
-                return _fileDescriptors.Count - 1;
+
+                var toFd = TryGetFileDescriptorNoLock(toDescriptor);
+                if (toFd == null) {
+                    throw RubyExceptions.CreateEBADF();
+                }
+
+                if (fd == toFd) {
+                    return;
+                }
+
+                fd.Close();
+                toFd.DuplicateCount++;
+                _fileDescriptors[descriptor] = toFd;
             }
         }
 
-        public void RemoveDescriptor(int descriptor) {
-            ContractUtils.Requires(!RubyIO.IsConsoleDescriptor(descriptor));
-
+        public int AllocateFileDescriptor(Stream/*!*/ stream) {
+            ContractUtils.RequiresNotNull(stream, "stream");
             lock (_fileDescriptors) {
-                if (descriptor < _fileDescriptors.Count) {
-                    throw new ArgumentException("Invalid file descriptor", "descriptor");
+                return AddFileDescriptorNoLock(new FileDescriptor(stream));
+            }
+        }
+
+        public int DuplicateFileDescriptor(int descriptor) {
+            lock (_fileDescriptors) {
+                var fd = TryGetFileDescriptorNoLock(descriptor);
+                if (fd == null) {
+                    throw RubyExceptions.CreateEBADF();
+                }
+                fd.DuplicateCount++;
+                return AddFileDescriptorNoLock(fd);
+            }
+        }
+
+        public void CloseStream(int descriptor) {
+            lock (_fileDescriptors) {
+                var fd = TryGetFileDescriptorNoLock(descriptor);
+                if (fd == null) {
+                    throw RubyExceptions.CreateEBADF();
+                }
+                fd.Close();
+                _fileDescriptors[descriptor] = null;
+            }
+        }
+
+        public void RemoveFileDescriptor(int descriptor) {
+            lock (_fileDescriptors) {
+                if (TryGetFileDescriptorNoLock(descriptor) == null) {
+                    throw RubyExceptions.CreateEBADF();
                 }
 
                 _fileDescriptors[descriptor] = null;
@@ -2047,14 +2120,15 @@ namespace IronRuby.Runtime {
 
                     int i = 0;
                     foreach (var counter in profile) {
-                        if (counter.Key.Length > maxLength) {
-                            maxLength = counter.Key.Length;
+                        string methodInfo = counter.Id;
+                        if (methodInfo.Length > maxLength) {
+                            maxLength = methodInfo.Length;
                         }
 
-                        totalTicks += counter.Value;
+                        totalTicks += counter.Ticks;
 
-                        keys[i] = counter.Key;
-                        values[i] = counter.Value;
+                        keys[i] = methodInfo;
+                        values[i] = counter.Ticks;
                         i++;
                     }
 
@@ -2312,6 +2386,10 @@ namespace IronRuby.Runtime {
             return new InteropBinder.CreateInstance(this, callInfo);
         }
 
+        public override ConvertBinder/*!*/ CreateConvertBinder(Type toType, bool explicitCast) {
+            return new InteropBinder.Convert(this, toType, explicitCast);
+        }
+
         // TODO: override GetMemberNames?
         public IList<string>/*!*/ GetForeignDynamicMemberNames(object obj) {
             if (obj is IRubyDynamicMetaObjectProvider) {
@@ -2386,12 +2464,12 @@ namespace IronRuby.Runtime {
                     _traceListenerSuspended = true;
 
                     _traceListener.Call(new[] {
-                        MutableString.Create(operation),                                          // event
-                        fileName != null ? MutableString.Create(fileName) : null,                 // file
-                        ScriptingRuntimeHelpers.Int32ToObject(lineNumber),                        // line
-                        SymbolTable.StringToId(name),                                             // TODO: alias
-                        new Binding(scope),                                                       // binding
-                        module.IsSingletonClass ? ((RubyClass)module).SingletonClassOf : module   // module
+                        MutableString.CreateAscii(operation),                                         // event
+                        fileName != null ? MutableString.Create(fileName, RubyEncoding.Path) : null,  // file
+                        ScriptingRuntimeHelpers.Int32ToObject(lineNumber),                            // line
+                        SymbolTable.StringToId(name),                                                 // TODO: alias
+                        new Binding(scope),                                                           // binding
+                        module.IsSingletonClass ? ((RubyClass)module).SingletonClassOf : module       // module
                     });
                 } finally {
                     _traceListenerSuspended = false;

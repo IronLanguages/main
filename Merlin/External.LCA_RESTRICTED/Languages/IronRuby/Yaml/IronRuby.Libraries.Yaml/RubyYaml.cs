@@ -22,6 +22,8 @@ using IronRuby.Builtins;
 using IronRuby.Runtime;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
+using IronRuby.Runtime.Conversions;
+using System.Text;
 
 namespace IronRuby.StandardLibrary.Yaml {
 
@@ -60,32 +62,33 @@ namespace IronRuby.StandardLibrary.Yaml {
 
         private static Hash CreateDefaultTagMapping(RubyContext/*!*/ context) {
             Hash taggedClasses = new Hash(context.EqualityComparer);
-            taggedClasses.Add(MutableString.Create("tag:ruby.yaml.org,2002:array"), context.GetClass(typeof(RubyArray)));
-            taggedClasses.Add(MutableString.Create("tag:ruby.yaml.org,2002:exception"), context.GetClass(typeof(Exception)));
-            taggedClasses.Add(MutableString.Create("tag:ruby.yaml.org,2002:hash"), context.GetClass(typeof(Hash)));
-            taggedClasses.Add(MutableString.Create("tag:ruby.yaml.org,2002:object"), context.GetClass(typeof(object)));
-            taggedClasses.Add(MutableString.Create("tag:ruby.yaml.org,2002:range"), context.GetClass(typeof(Range)));
-            taggedClasses.Add(MutableString.Create("tag:ruby.yaml.org,2002:regexp"), context.GetClass(typeof(RubyRegex)));
-            taggedClasses.Add(MutableString.Create("tag:ruby.yaml.org,2002:string"), context.GetClass(typeof(MutableString)));
-            taggedClasses.Add(MutableString.Create("tag:ruby.yaml.org,2002:struct"), context.GetClass(typeof(RubyStruct)));
-            taggedClasses.Add(MutableString.Create("tag:ruby.yaml.org,2002:sym"), context.GetClass(typeof(SymbolId)));
-            taggedClasses.Add(MutableString.Create("tag:ruby.yaml.org,2002:symbol"), context.GetClass(typeof(SymbolId)));
-            taggedClasses.Add(MutableString.Create("tag:ruby.yaml.org,2002:time"), context.GetClass(typeof(DateTime)));
-            taggedClasses.Add(MutableString.Create("tag:yaml.org,2002:binary"), context.GetClass(typeof(MutableString)));
-            taggedClasses.Add(MutableString.Create("tag:yaml.org,2002:bool#no"), context.FalseClass);
-            taggedClasses.Add(MutableString.Create("tag:yaml.org,2002:bool#yes"), context.TrueClass);
-            taggedClasses.Add(MutableString.Create("tag:yaml.org,2002:float"), context.GetClass(typeof(Double)));
-            taggedClasses.Add(MutableString.Create("tag:yaml.org,2002:int"), context.GetClass(typeof(Integer)));
-            taggedClasses.Add(MutableString.Create("tag:yaml.org,2002:map"), context.GetClass(typeof(Hash)));
-            taggedClasses.Add(MutableString.Create("tag:yaml.org,2002:null"), context.NilClass);            
-            taggedClasses.Add(MutableString.Create("tag:yaml.org,2002:seq"), context.GetClass(typeof(RubyArray)));            
-            taggedClasses.Add(MutableString.Create("tag:yaml.org,2002:str"), context.GetClass(typeof(MutableString)));
-            taggedClasses.Add(MutableString.Create("tag:yaml.org,2002:timestamp"), context.GetClass(typeof(DateTime)));
-            //Currently not supported
-            //taggedClasses.Add(MutableString.Create("tag:yaml.org,2002:omap"), ec.GetClass(typeof()));
-            //taggedClasses.Add(MutableString.Create("tag:yaml.org,2002:pairs"),//    ec.GetClass(typeof()));
-            //taggedClasses.Add(MutableString.Create("tag:yaml.org,2002:set"),//    ec.GetClass(typeof()));
-            //taggedClasses.Add(MutableString.Create("tag:yaml.org,2002:timestamp#ymd'"), );
+            taggedClasses.Add(MutableString.CreateAscii("tag:ruby.yaml.org,2002:array"), context.GetClass(typeof(RubyArray)));
+            taggedClasses.Add(MutableString.CreateAscii("tag:ruby.yaml.org,2002:exception"), context.GetClass(typeof(Exception)));
+            taggedClasses.Add(MutableString.CreateAscii("tag:ruby.yaml.org,2002:hash"), context.GetClass(typeof(Hash)));
+            taggedClasses.Add(MutableString.CreateAscii("tag:ruby.yaml.org,2002:object"), context.GetClass(typeof(object)));
+            taggedClasses.Add(MutableString.CreateAscii("tag:ruby.yaml.org,2002:range"), context.GetClass(typeof(Range)));
+            taggedClasses.Add(MutableString.CreateAscii("tag:ruby.yaml.org,2002:regexp"), context.GetClass(typeof(RubyRegex)));
+            taggedClasses.Add(MutableString.CreateAscii("tag:ruby.yaml.org,2002:string"), context.GetClass(typeof(MutableString)));
+            taggedClasses.Add(MutableString.CreateAscii("tag:ruby.yaml.org,2002:struct"), context.GetClass(typeof(RubyStruct)));
+            taggedClasses.Add(MutableString.CreateAscii("tag:ruby.yaml.org,2002:sym"), context.GetClass(typeof(SymbolId)));
+            taggedClasses.Add(MutableString.CreateAscii("tag:ruby.yaml.org,2002:symbol"), context.GetClass(typeof(SymbolId)));
+            taggedClasses.Add(MutableString.CreateAscii("tag:ruby.yaml.org,2002:time"), context.GetClass(typeof(DateTime)));
+            taggedClasses.Add(MutableString.CreateAscii("tag:yaml.org,2002:binary"), context.GetClass(typeof(MutableString)));
+            taggedClasses.Add(MutableString.CreateAscii("tag:yaml.org,2002:float"), context.GetClass(typeof(Double)));
+            taggedClasses.Add(MutableString.CreateAscii("tag:yaml.org,2002:int"), context.GetClass(typeof(Integer)));
+            taggedClasses.Add(MutableString.CreateAscii("tag:yaml.org,2002:map"), context.GetClass(typeof(Hash)));
+            taggedClasses.Add(MutableString.CreateAscii("tag:yaml.org,2002:seq"), context.GetClass(typeof(RubyArray)));
+            taggedClasses.Add(MutableString.CreateAscii("tag:yaml.org,2002:str"), context.GetClass(typeof(MutableString)));
+            taggedClasses.Add(MutableString.CreateAscii("tag:yaml.org,2002:timestamp"), context.GetClass(typeof(DateTime)));
+                                                 
+            taggedClasses.Add(MutableString.CreateAscii("tag:yaml.org,2002:bool#no"), context.FalseClass);
+            taggedClasses.Add(MutableString.CreateAscii("tag:yaml.org,2002:bool#yes"), context.TrueClass);
+            taggedClasses.Add(MutableString.CreateAscii("tag:yaml.org,2002:null"), context.NilClass);
+            //Currently not supported             
+            //taggedClasses.Add(MutableString.CreateAscii("tag:yaml.org,2002:omap"), ec.GetClass(typeof()));
+            //taggedClasses.Add(MutableString.CreateAscii("tag:yaml.org,2002:pairs"),//    ec.GetClass(typeof()));
+            //taggedClasses.Add(MutableString.CreateAscii("tag:yaml.org,2002:set"),//    ec.GetClass(typeof()));
+            //taggedClasses.Add(MutableString.CreateAscii("tag:yaml.org,2002:timestamp#ymd'"), );
             return taggedClasses;
         }
 
@@ -110,8 +113,10 @@ namespace IronRuby.StandardLibrary.Yaml {
             if (io != null) {
                 writer = new RubyIOWriter(io);
             } else {
-                writer = new MutableStringWriter();
+                // TODO: encoding?
+                writer = new MutableStringWriter(MutableString.CreateMutable(RubyEncoding.UTF8));
             }
+
             YamlOptions cfg = YamlOptions.DefaultOptions;
             using (Serializer s = new Serializer(new Emitter(writer, cfg), cfg)) {
                 RubyRepresenter r = new RubyRepresenter(context, s, cfg);
@@ -119,7 +124,8 @@ namespace IronRuby.StandardLibrary.Yaml {
                     r.Represent(obj);
                 }
             }
-            if (null != io) {
+
+            if (io != null) {
                 return io;
             } else {
                 return ((MutableStringWriter)writer).String;
@@ -127,9 +133,11 @@ namespace IronRuby.StandardLibrary.Yaml {
         }
 
         [RubyMethod("load", RubyMethodAttributes.PublicSingleton)]
-        public static object Load(RubyScope/*!*/ scope, RubyModule/*!*/ self, object io) {
+        public static object Load(ConversionStorage<MutableString>/*!*/ toStr, RespondToStorage/*!*/ respondTo,
+            RubyScope/*!*/ scope, RubyModule/*!*/ self, object io) {
+
             try {
-                foreach (object obj in MakeConstructor(scope.GlobalScope, CheckYamlPort(io))) {
+                foreach (object obj in MakeConstructor(scope.GlobalScope, CheckYamlPort(toStr, respondTo, io))) {
                     return obj;
                 }
                 return null;
@@ -143,13 +151,19 @@ namespace IronRuby.StandardLibrary.Yaml {
 
         [RubyMethod("load_file", RubyMethodAttributes.PublicSingleton)]
         public static object LoadFile(RubyScope/*!*/ scope, RubyModule/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return Load(scope, self, new RubyFile(self.Context, path.ConvertToString(), "r"));
+            using (RubyFile file = new RubyFile(self.Context, path.ConvertToString(), IOMode.Default)) {
+                foreach (object obj in MakeConstructor(scope.GlobalScope, file.GetReadableStream())) {
+                    return obj;
+                }
+            }
+            return null;
         }
 
         [RubyMethod("each_document", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("load_documents", RubyMethodAttributes.PublicSingleton)]
-        public static object EachDocument(RubyScope/*!*/ scope, BlockParam block, RubyModule/*!*/ self, object io) {
-            RubyConstructor rc = MakeConstructor(scope.GlobalScope, CheckYamlPort(io));
+        public static object EachDocument(ConversionStorage<MutableString>/*!*/ toStr, RespondToStorage/*!*/ respondTo, 
+            RubyScope/*!*/ scope, BlockParam block, RubyModule/*!*/ self, object io) {
+            RubyConstructor rc = MakeConstructor(scope.GlobalScope, CheckYamlPort(toStr, respondTo, io));
             if (block == null && rc.CheckData()) {
                 throw RubyExceptions.NoBlockGiven();
             }
@@ -164,10 +178,11 @@ namespace IronRuby.StandardLibrary.Yaml {
         }
 
         [RubyMethod("load_stream", RubyMethodAttributes.PublicSingleton)]
-        public static object LoadStream(UnaryOpStorage/*!*/ newStorage, BinaryOpStorage/*!*/ addStorage, RubyScope/*!*/ scope, 
+        public static object LoadStream(ConversionStorage<MutableString>/*!*/ toStr, RespondToStorage/*!*/ respondTo, 
+            UnaryOpStorage/*!*/ newStorage, BinaryOpStorage/*!*/ addStorage, RubyScope/*!*/ scope, 
             RubyModule/*!*/ self, object io) {
             
-            RubyConstructor rc = MakeConstructor(scope.GlobalScope, CheckYamlPort(io));
+            RubyConstructor rc = MakeConstructor(scope.GlobalScope, CheckYamlPort(toStr, respondTo, io));
 
             // TODO: only if io was converted to a string:
             io = CreateDefaultStream(newStorage, scope, self);
@@ -190,24 +205,31 @@ namespace IronRuby.StandardLibrary.Yaml {
         }
 
         [RubyMethod("parse", RubyMethodAttributes.PublicSingleton)]
-        public static object Parse(RubyModule self, object io) {
-            try {
-                foreach (object obj in MakeComposer(CheckYamlPort(io))) {
+        public static object Parse(ConversionStorage<MutableString>/*!*/ toStr, RespondToStorage/*!*/ respondTo, RubyModule/*!*/ self, object io) {
+            using (Stream stream = CheckYamlPort(toStr, respondTo, io)) {
+                foreach (object obj in MakeComposer(stream)) {
                     return obj;
                 }
-                return null;
-            } finally {
-                RubyIO rio = io as RubyIO;
-                if (rio != null) {
-                    rio.Close();
+            }
+            return null;
+        }
+
+        [RubyMethod("parse_file", RubyMethodAttributes.PublicSingleton)]
+        public static object ParseFile(RubyModule/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
+            using (Stream stream = new RubyFile(self.Context, path.ConvertToString(), IOMode.Default).GetReadableStream()) {
+                foreach (object obj in MakeComposer(stream)) {
+                    return obj;
                 }
             }
+            return null;
         }
 
         [RubyMethod("parse_documents", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("each_node", RubyMethodAttributes.PublicSingleton)]
-        public static object ParseDocuments(BlockParam block, RubyModule self, object io) {
-            Composer c = MakeComposer(CheckYamlPort(io));
+        public static object ParseDocuments(ConversionStorage<MutableString>/*!*/ toStr, RespondToStorage/*!*/ respondTo,
+            BlockParam block, RubyModule/*!*/ self, object io) {
+
+            Composer c = MakeComposer(CheckYamlPort(toStr, respondTo, io));
             if (block == null && c.CheckNode()) {
                 throw RubyExceptions.NoBlockGiven();
             }
@@ -218,11 +240,6 @@ namespace IronRuby.StandardLibrary.Yaml {
                 }
             }
             return null;
-        }
-
-        [RubyMethod("parse_file", RubyMethodAttributes.PublicSingleton)]
-        public static object ParseFile(RubyModule/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            return Parse(self, new RubyFile(self.Context, path.ConvertToString(), "r"));
         }
 
         [RubyMethod("dump_stream", RubyMethodAttributes.PublicSingleton)]
@@ -247,17 +264,22 @@ namespace IronRuby.StandardLibrary.Yaml {
         }
 
         [RubyMethod("quick_emit", RubyMethodAttributes.PublicSingleton)]
-        public static MutableString QuickEmit(RubyContext/*!*/ context, [NotNull]BlockParam/*!*/ block, RubyModule/*!*/ self, object objectId, [NotNull]Hash/*!*/ opts) {
+        public static object QuickEmit(RubyContext/*!*/ context, [NotNull]BlockParam/*!*/ block, RubyModule/*!*/ self, object objectId, [NotNull]Hash/*!*/ opts) {
             YamlOptions cfg = YamlOptions.DefaultOptions;
-            MutableStringWriter writer = new MutableStringWriter();
+            
+            // TODO: encoding
+            MutableStringWriter writer = new MutableStringWriter(MutableString.CreateMutable(RubyEncoding.UTF8));
             Emitter emitter = new Emitter(writer, cfg);
 
             using (Serializer s = new Serializer(emitter, cfg)) {
                 RubyRepresenter r = new RubyRepresenter(context, s, cfg);
                 object result;
-                block.Yield(r, out result);
-                s.Serialize(result as Node);
 
+                if (block.Yield(r, out result)) {
+                    return result;
+                }
+
+                s.Serialize(result as Node);
                 return writer.String;
             }
         }
@@ -272,7 +294,7 @@ namespace IronRuby.StandardLibrary.Yaml {
         [RubyMethod("tagurize", RubyMethodAttributes.PublicSingleton)]
         public static object Tagurize(ConversionStorage<MutableString>/*!*/ stringTryCast, RubyModule/*!*/ self, object arg) {
             var str = Protocols.TryCastToString(stringTryCast, arg);
-            return (str != null) ? MutableString.Create("tag:yaml.org,2002:").Append(str) : arg;
+            return (str != null) ? MutableString.CreateMutable(str.Encoding).Append("tag:yaml.org,2002:").Append(str) : arg;
         }
 
         [RubyMethod("add_domain_type", RubyMethodAttributes.PublicSingleton)]
@@ -280,10 +302,14 @@ namespace IronRuby.StandardLibrary.Yaml {
             MutableString/*!*/ domainAndDate, MutableString/*!*/ typeName) {
             if (block == null) {
                 throw RubyExceptions.NoBlockGiven();
-            }                        
-            MutableString tag = MutableString.Create("tag:").
-                                Append(domainAndDate).Append(":").
-                                Append(typeName);
+            }
+
+            MutableString tag = MutableString.CreateMutable(typeName.Encoding).
+                Append("tag:").
+                Append(domainAndDate).
+                Append(":").
+                Append(typeName);
+
             RubyConstructor.AddExternalConstructor(tag.ConvertToString(), block);            
             return null;
         }
@@ -293,42 +319,44 @@ namespace IronRuby.StandardLibrary.Yaml {
             MutableString/*!*/ domainAndDate, RubyRegex/*!*/ typeRegex) {
             if (block == null) {
                 throw RubyExceptions.NoBlockGiven();
-            }                        
-            MutableString tag = MutableString.Create("tag:").
-                                Append(domainAndDate).Append(":").
-                                Append(typeRegex.GetPattern());
+            }
+
+            MutableString pattern = typeRegex.GetPattern();
+            MutableString tag = MutableString.CreateMutable(pattern.Encoding).
+                Append("tag:").
+                Append(domainAndDate).
+                Append(':').
+                Append(pattern);
+
             RubyConstructor.AddExternalMultiConstructor(tag.ConvertToString(), block);
             return null;
         }
 
-        private static RubyConstructor/*!*/ MakeConstructor(RubyGlobalScope/*!*/ scope, TextReader/*!*/ reader) {
-            return new RubyConstructor(scope, MakeComposer(reader));
+        private static RubyConstructor/*!*/ MakeConstructor(RubyGlobalScope/*!*/ scope, Stream/*!*/ stream) {
+            return new RubyConstructor(scope, MakeComposer(stream));
+        }
+
+        internal static Composer/*!*/ MakeComposer(Stream/*!*/ stream) {
+            return MakeComposer(new StreamReader(stream, Encoding.UTF8));
         }
 
         internal static Composer/*!*/ MakeComposer(TextReader/*!*/ reader) {
             return new Composer(new Parser(new Scanner(reader), YamlOptions.DefaultOptions.Version));
         }
 
-        private static TextReader CheckYamlPort(object port) {
-            // TODO: should do try-to_str conversion and create IOWrapper if not convertible to string
-
-            MutableString ms = port as MutableString;
-            if (ms != null) {
-                return new MutableStringReader(ms);
-            }
-
-            string str = port as string;
+        private static Stream/*!*/ CheckYamlPort(ConversionStorage<MutableString>/*!*/ toStr, RespondToStorage/*!*/ respondTo, object port) {
+            var toStrSite = toStr.GetSite(TryConvertToStrAction.Make(toStr.Context));
+            MutableString str = toStrSite.Target(toStrSite, port);
             if (str != null) {
-                return new StringReader(str);
+                return new MutableStringStream(str);
             }
 
-            RubyIO io = port as RubyIO;
-            if (io != null) {
-                RubyIOOps.Binmode(io);
-                return new RubyIOReader(io);
+            IOWrapper wrapper = RubyIOOps.CreateIOWrapper(respondTo, port, FileAccess.Read);
+            if (!wrapper.CanRead) {
+                throw RubyExceptions.CreateTypeError("instance of IO needed");
             }
 
-            throw RubyExceptions.CreateTypeError("instance of IO needed");
+            return wrapper;
         }
    
     }

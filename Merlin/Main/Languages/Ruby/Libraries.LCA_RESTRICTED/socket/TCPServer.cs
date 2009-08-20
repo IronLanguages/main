@@ -56,7 +56,13 @@ namespace IronRuby.StandardLibrary.Sockets {
             IAsyncResult result = Interlocked.Exchange(ref _acceptResult, null);
 
             if (result == null) {
-                return Socket.Accept();
+                ThreadOps.RubyThreadInfo info = ThreadOps.RubyThreadInfo.FromThread(Thread.CurrentThread);
+                info.Blocked = true;
+                try {
+                    return Socket.Accept();
+                } finally {
+                    info.Blocked = false;
+                }
             }
 
             // wait until accept finishes:
@@ -121,7 +127,7 @@ namespace IronRuby.StandardLibrary.Sockets {
 
         [RubyMethod("sysaccept")]
         public static int SysAccept(RubyContext/*!*/ context, TCPServer/*!*/ self) {
-            return Accept(context, self).FileDescriptor;
+            return Accept(context, self).GetFileDescriptor();
         }
 
         [RubyMethod("listen")]

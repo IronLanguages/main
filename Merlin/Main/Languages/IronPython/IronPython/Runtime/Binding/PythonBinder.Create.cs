@@ -50,8 +50,8 @@ namespace IronPython.Runtime.Binding {
                         signature,
                         contextExpression
                     ), 
-                    CompilerHelpers.GetConstructors(t, PrivateBinding), 
-                    BindingRestrictions.Empty
+                    CompilerHelpers.GetConstructors(t, PrivateBinding),
+                    target.Restrictions.Merge(BindingRestrictions.GetInstanceRestriction(target.Expression, target.Value))
                 );
             }
 

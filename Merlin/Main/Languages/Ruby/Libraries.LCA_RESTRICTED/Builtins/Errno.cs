@@ -42,8 +42,8 @@ namespace IronRuby.Builtins {
 
             public AddressInUseError() : this(null, null) { }
             public AddressInUseError(string message) : this(message, null) { }
-            public AddressInUseError(string message, Exception inner) : base(RubyErrno.MakeMessage(message, M), inner) { }
-            public AddressInUseError(MutableString message) : base(RubyErrno.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
+            public AddressInUseError(string message, Exception inner) : base(RubyExceptions.MakeMessage(message, M), inner) { }
+            public AddressInUseError(MutableString message) : base(RubyExceptions.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
 
 #if !SILVERLIGHT
             protected AddressInUseError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
@@ -57,8 +57,8 @@ namespace IronRuby.Builtins {
 
             public DomainError() : this(null, null) { }
             public DomainError(string message) : this(message, null) { }
-            public DomainError(string message, Exception inner) : base(RubyErrno.MakeMessage(message, M), inner) { }
-            public DomainError(MutableString message) : base(RubyErrno.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
+            public DomainError(string message, Exception inner) : base(RubyExceptions.MakeMessage(message, M), inner) { }
+            public DomainError(MutableString message) : base(RubyExceptions.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
 
 #if !SILVERLIGHT
             protected DomainError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
@@ -70,7 +70,7 @@ namespace IronRuby.Builtins {
         public class InvalidErrorOps {
             [RubyConstructor]
             public static InvalidError/*!*/ Create(RubyClass/*!*/ self, [DefaultProtocol, DefaultParameterValue(null)]MutableString message) {
-                InvalidError result = new InvalidError(RubyErrno.MakeMessage(ref message, "Invalid Argument"));
+                InvalidError result = new InvalidError(RubyExceptions.MakeMessage(ref message, "Invalid Argument"));
                 RubyExceptionData.InitializeException(result, message);
                 return result;
             }
@@ -80,7 +80,7 @@ namespace IronRuby.Builtins {
         public class FileNotFoundExceptionOps {
             [RubyConstructor]
             public static FileNotFoundException/*!*/ Create(RubyClass/*!*/ self, [DefaultProtocol, DefaultParameterValue(null)]MutableString message) {
-                FileNotFoundException result = new FileNotFoundException(RubyErrno.MakeMessage(ref message, "No such file or directory"));
+                FileNotFoundException result = new FileNotFoundException(RubyExceptions.MakeMessage(ref message, "No such file or directory"));
                 RubyExceptionData.InitializeException(result, message);
                 return result;
             }
@@ -90,7 +90,7 @@ namespace IronRuby.Builtins {
         public class DirectoryNotFoundExceptionOps {
             [RubyConstructor]
             public static DirectoryNotFoundException/*!*/ Create(RubyClass/*!*/ self, [DefaultProtocol, DefaultParameterValue(null)]MutableString message) {
-                DirectoryNotFoundException result = new DirectoryNotFoundException(RubyErrno.MakeMessage(ref message, "Not a directory"));
+                DirectoryNotFoundException result = new DirectoryNotFoundException(RubyExceptions.MakeMessage(ref message, "Not a directory"));
                 RubyExceptionData.InitializeException(result, message);
                 return result;
             }
@@ -100,7 +100,7 @@ namespace IronRuby.Builtins {
         public class UnauthorizedAccessExceptionOps {
             [RubyConstructor]
             public static UnauthorizedAccessException/*!*/ Create(RubyClass/*!*/ self, [DefaultProtocol, DefaultParameterValue(null)]MutableString message) {
-                UnauthorizedAccessException result = new UnauthorizedAccessException(RubyErrno.MakeMessage(ref message, "Permission denied"));
+                UnauthorizedAccessException result = new UnauthorizedAccessException(RubyExceptions.MakeMessage(ref message, "Permission denied"));
                 RubyExceptionData.InitializeException(result, message);
                 return result;
             }
@@ -112,8 +112,8 @@ namespace IronRuby.Builtins {
 
             public ChildError() : this(null, null) { }
             public ChildError(string message) : this(message, null) { }
-            public ChildError(string message, Exception inner) : base(RubyErrno.MakeMessage(message, M), inner) { }
-            public ChildError(MutableString message) : base(RubyErrno.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
+            public ChildError(string message, Exception inner) : base(RubyExceptions.MakeMessage(message, M), inner) { }
+            public ChildError(MutableString message) : base(RubyExceptions.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
 
 #if !SILVERLIGHT
             protected ChildError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
@@ -125,25 +125,20 @@ namespace IronRuby.Builtins {
         public class ExistErrorOps {
             [RubyConstructor]
             public static ExistError/*!*/ Create(RubyClass/*!*/ self, [DefaultProtocol, DefaultParameterValue(null)]MutableString message) {
-                ExistError result = new ExistError(RubyErrno.MakeMessage(ref message, "File exists"));
+                var result = new ExistError(RubyExceptions.MakeMessage(ref message, "File exists"));
                 RubyExceptionData.InitializeException(result, message);
                 return result;
             }
         }
 
-        [RubyClass("EBADF"), Serializable]
-        public class BadFileDescriptorError : ExternalException {
-            private const string/*!*/ M = "Bad file descriptor";
-
-            public BadFileDescriptorError() : this(null, null) { }
-            public BadFileDescriptorError(string message) : this(message, null) { }
-            public BadFileDescriptorError(string message, Exception inner) : base(RubyErrno.MakeMessage(message, M), inner) { }
-            public BadFileDescriptorError(MutableString message) : base(RubyErrno.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
-
-#if !SILVERLIGHT
-            protected BadFileDescriptorError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
-                : base(info, context) { }
-#endif
+        [RubyClass("EBADF", Extends = typeof(BadFileDescriptorError), Inherits = typeof(ExternalException))]
+        public class BadFileDescriptorErrorOps {
+            [RubyConstructor]
+            public static BadFileDescriptorError/*!*/ Create(RubyClass/*!*/ self, [DefaultProtocol, DefaultParameterValue(null)]MutableString message) {
+                var result = new BadFileDescriptorError(RubyExceptions.MakeMessage(ref message, "Bad file descriptor"));
+                RubyExceptionData.InitializeException(result, message);
+                return result;
+            }
         }
 
         [RubyClass("EPIPE"), Serializable]
@@ -152,8 +147,8 @@ namespace IronRuby.Builtins {
 
             public PipeError() : this(null, null) { }
             public PipeError(string message) : this(message, null) { }
-            public PipeError(string message, Exception inner) : base(RubyErrno.MakeMessage(message, M), inner) { }
-            public PipeError(MutableString message) : base(RubyErrno.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
+            public PipeError(string message, Exception inner) : base(RubyExceptions.MakeMessage(message, M), inner) { }
+            public PipeError(MutableString message) : base(RubyExceptions.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
 
 #if !SILVERLIGHT
             protected PipeError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
@@ -167,8 +162,8 @@ namespace IronRuby.Builtins {
 
             public NotConnectedError() : this(null, null) { }
             public NotConnectedError(string message) : this(message, null) { }
-            public NotConnectedError(string message, Exception inner) : base(RubyErrno.MakeMessage(message, M), inner) { }
-            public NotConnectedError(MutableString message) : base(RubyErrno.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
+            public NotConnectedError(string message, Exception inner) : base(RubyExceptions.MakeMessage(message, M), inner) { }
+            public NotConnectedError(MutableString message) : base(RubyExceptions.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
 
 #if !SILVERLIGHT
             protected NotConnectedError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
@@ -182,8 +177,8 @@ namespace IronRuby.Builtins {
 
             public ConnectionRefusedError() : this(null, null) { }
             public ConnectionRefusedError(string message) : this(message, null) { }
-            public ConnectionRefusedError(string message, Exception inner) : base(RubyErrno.MakeMessage(message, M), inner) { }
-            public ConnectionRefusedError(MutableString message) : base(RubyErrno.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
+            public ConnectionRefusedError(string message, Exception inner) : base(RubyExceptions.MakeMessage(message, M), inner) { }
+            public ConnectionRefusedError(MutableString message) : base(RubyExceptions.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
 
 #if !SILVERLIGHT
             protected ConnectionRefusedError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
@@ -197,8 +192,8 @@ namespace IronRuby.Builtins {
 
             public ConnectionResetError() : this(null, null) { }
             public ConnectionResetError(string message) : this(message, null) { }
-            public ConnectionResetError(string message, Exception inner) : base(RubyErrno.MakeMessage(message, M), inner) { }
-            public ConnectionResetError(MutableString message) : base(RubyErrno.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
+            public ConnectionResetError(string message, Exception inner) : base(RubyExceptions.MakeMessage(message, M), inner) { }
+            public ConnectionResetError(MutableString message) : base(RubyExceptions.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
 
 #if !SILVERLIGHT
             protected ConnectionResetError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
@@ -212,8 +207,8 @@ namespace IronRuby.Builtins {
 
             public ConnectionAbortError() : this(null, null) { }
             public ConnectionAbortError(string message) : this(message, null) { }
-            public ConnectionAbortError(string message, Exception inner) : base(RubyErrno.MakeMessage(message, M), inner) { }
-            public ConnectionAbortError(MutableString message) : base(RubyErrno.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
+            public ConnectionAbortError(string message, Exception inner) : base(RubyExceptions.MakeMessage(message, M), inner) { }
+            public ConnectionAbortError(MutableString message) : base(RubyExceptions.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
 
 #if !SILVERLIGHT
             protected ConnectionAbortError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
@@ -227,8 +222,8 @@ namespace IronRuby.Builtins {
 
             public ImproperLinkError() : this(null, null) { }
             public ImproperLinkError(string message) : this(message, null) { }
-            public ImproperLinkError(string message, Exception inner) : base(RubyErrno.MakeMessage(message, M), inner) { }
-            public ImproperLinkError(MutableString message) : base(RubyErrno.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
+            public ImproperLinkError(string message, Exception inner) : base(RubyExceptions.MakeMessage(message, M), inner) { }
+            public ImproperLinkError(MutableString message) : base(RubyExceptions.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
 
 #if !SILVERLIGHT
             protected ImproperLinkError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
@@ -243,8 +238,8 @@ namespace IronRuby.Builtins {
 
         public InvalidSeekError() : this(null, null) { }
         public InvalidSeekError(string message) : this(message, null) { }
-        public InvalidSeekError(string message, Exception inner) : base(RubyErrno.MakeMessage(message, M), inner) { }
-        public InvalidSeekError(MutableString message) : base(RubyErrno.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
+        public InvalidSeekError(string message, Exception inner) : base(RubyExceptions.MakeMessage(message, M), inner) { }
+        public InvalidSeekError(MutableString message) : base(RubyExceptions.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
 
 #if !SILVERLIGHT
         protected InvalidSeekError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)

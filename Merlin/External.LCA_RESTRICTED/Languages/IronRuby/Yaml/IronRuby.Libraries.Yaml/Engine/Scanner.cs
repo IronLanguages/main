@@ -61,7 +61,7 @@ namespace IronRuby.StandardLibrary.Yaml {
 
         private bool _inFlowSequence = false;
 
-        public Scanner(TextReader reader) {
+        public Scanner(TextReader/*!*/ reader) {
             _reader = reader;
             FetchStreamStart();
         }

@@ -1,6 +1,7 @@
 require File.dirname(__FILE__) + '/../../spec_helper'
 
 describe "IO::popen" do
+  # TODO: rewrite to not depend on platform specific utilities
   # NOTE: cause Errno::EBADF on 1.8.6
   #ruby_bug "#", "1.8.6" do
     it "reads from a read-only pipe" do
@@ -41,16 +42,34 @@ describe "IO::popen" do
       end
     end
 
-    it "allows the io to be closed inside the block" do
-      io = IO.popen('yes', 'r') do |io|
-        io.close
+    platform_is :windows do
+      it "allows the io to be closed inside the block" do
+      
+        io = IO.popen('dir', 'r') do |io|
+          io.close
+
+          io.closed?.should == true
+
+          io
+        end
 
         io.closed?.should == true
-
-        io
       end
+    end
+    
+    platform_is_not :windows do
+      it "allows the io to be closed inside the block" do
+      
+        io = IO.popen('ls', 'r') do |io|
+          io.close
 
-      io.closed?.should == true
+          io.closed?.should == true
+
+          io
+        end
+
+        io.closed?.should == true
+      end
     end
   #end
 end

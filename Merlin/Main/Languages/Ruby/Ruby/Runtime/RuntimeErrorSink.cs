@@ -46,13 +46,23 @@ namespace IronRuby.Runtime {
 
             string path;
             string codeLine;
+            RubyEncoding encoding;
             int line = span.Start.Line;
             if (sourceUnit != null) {
                 path = sourceUnit.Path;
-                codeLine = (line > 0) ? sourceUnit.GetCodeLine(line) : null;
+                using (SourceCodeReader reader = sourceUnit.GetReader()) {
+                    if (line > 0) {
+                        reader.SeekLine(line);
+                        codeLine = reader.ReadLine();
+                    } else {
+                        codeLine = null;
+                    }
+                    encoding = RubyEncoding.GetRubyEncoding(reader.Encoding);
+                }
             } else {
                 path = null;
                 codeLine = null;
+                encoding = RubyEncoding.UTF8;
             }
 
             if (severity == Severity.Error || severity == Severity.FatalError) {
@@ -69,7 +79,7 @@ namespace IronRuby.Runtime {
 
                 message = RubyContext.FormatErrorMessage(message, "warning", path, line, span.Start.Column, null);
 
-                _WriteSite.Target(_WriteSite, _context.StandardErrorOutput, MutableString.CreateMutable(message));
+                _WriteSite.Target(_WriteSite, _context.StandardErrorOutput, MutableString.Create(message, encoding));
             }
         }
 

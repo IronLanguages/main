@@ -567,14 +567,21 @@ namespace IronPython.Runtime {
         }
 
         bool IValueEquality.ValueEquals(object other) {
-            if (Object.ReferenceEquals(other, this)) return true;
+            if (!Object.ReferenceEquals(other, this)) {
+                PythonTuple l = other as PythonTuple;
+                if (l == null || _data.Length != l._data.Length) {
+                    return false;
+                }
 
-            PythonTuple l = other as PythonTuple;
-            if (l == null) return false;
+                for (int i = 0; i < _data.Length; i++) {
+                    object obj1 = _data[i], obj2 = l._data[i];
 
-            if (_data.Length != l._data.Length) return false;
-            for (int i = 0; i < _data.Length; i++) {
-                if (!PythonOps.EqualRetBool(_data[i], l._data[i])) return false;
+                    if (Object.ReferenceEquals(obj1, obj2)) {
+                        continue;
+                    } else if (!PythonOps.EqualRetBool(obj1, obj2)) {
+                        return false;
+                    }
+                }
             }
             return true;
         }

@@ -1,8 +1,8 @@
 describe :file_directory, :shared => true do
   before :each do
     platform_is :windows do
-      @dir  = "C:\\"
-      @file = "C:\\winnt\\notepad.exe"
+      @dir  = "#{ENV['SystemDrive']}\\"
+      @file = "#{ENV['SystemRoot']}\\notepad.exe"
     end
 
     platform_is_not :windows do

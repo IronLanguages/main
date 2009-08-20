@@ -45,7 +45,7 @@ namespace IronPython.Runtime {
         public readonly MutableTuple Closure;
 
         private object[]/*!*/ _defaults;                // the default parameters of the method
-        private IAttributesCollection _dict;            // a dictionary to story arbitrary members on the function object
+        internal IAttributesCollection _dict;           // a dictionary to story arbitrary members on the function object
         private object _module;                         // the module name
 
         private int _id, _compat;                       // ID/Compat flags used for testing in rules
@@ -403,43 +403,6 @@ namespace IronPython.Runtime {
        
         #region Custom member lookup operators
 
-        [SpecialName]
-        public void SetMemberAfter(CodeContext context, string name, object value) {
-            EnsureDict();
-
-            _dict[SymbolTable.StringToId(name)] = value;
-        }
-
-        [SpecialName]
-        public object GetBoundMember(CodeContext context, string name) {
-            object value;
-            if (_dict != null && _dict.TryGetValue(SymbolTable.StringToId(name), out value)) {
-                return value;
-            }
-            return OperationFailed.Value;
-        }
-
-        [SpecialName]
-        public bool DeleteMember(CodeContext context, string name) {
-            switch (name) {
-                case "func_dict":
-                case "__dict__":
-                    throw PythonOps.TypeError("function's dictionary may not be deleted");
-                case "__doc__":
-                case "func_doc":
-                    _doc = null;
-                    return true;
-                case "func_defaults":
-                    _defaults = ArrayUtils.EmptyObjects;
-                    _compat = CalculatedCachedCompat();
-                    return true;
-            }
-
-            if (_dict == null) return false;
-
-            return _dict.Remove(SymbolTable.StringToId(name));
-        }
-
         IList<string> IMembersList.GetMemberNames() {
             return PythonOps.GetStringMemberList(this);
         }
@@ -485,7 +448,7 @@ namespace IronPython.Runtime {
 
         #region Private APIs
 
-        private IAttributesCollection EnsureDict() {
+        internal IAttributesCollection EnsureDict() {
             if (_dict == null) {
                 Interlocked.CompareExchange(ref _dict, (IAttributesCollection)PythonDictionary.MakeSymbolDictionary(), null);
             }
@@ -598,6 +561,7 @@ namespace IronPython.Runtime {
 
         #endregion
 
+        [Python3Warning("cell comparisons not supported in 3.x")]
         public int __cmp__(object other) {
             ClosureCell cc = other as ClosureCell;
             if (cc == null) throw PythonOps.TypeError("cell.__cmp__(x,y) expected cell, got {0}", PythonTypeOps.GetName(other));

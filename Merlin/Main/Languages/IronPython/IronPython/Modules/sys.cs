@@ -150,15 +150,15 @@ namespace IronPython.Modules {
                     if (elem.Frame != null) {
                         cur = elem.Frame;
                     } else {
-                        cur = elem.Frame = new TraceBackFrame(
+                        cur = new TraceBackFrame(
                             context,
                             Builtin.globals(elem.Context),
                             Builtin.locals(elem.Context),
-                            elem.Function != null ?
-                                elem.Function.func_code :
-                                null,
+                            elem.Code,
                             cur
                         );
+
+                        stack[i] = new FunctionStack(elem.Context, elem.Code, cur);
                     }
                 }
                 return cur; 

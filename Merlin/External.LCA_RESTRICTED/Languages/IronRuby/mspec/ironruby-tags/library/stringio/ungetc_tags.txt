@@ -1,2 +1,0 @@
-fails:StringIO#ungetc when passed [char] pads with \000 when the current position is after the end
-fails:StringIO#ungetc when self is not readable raises an IOError after close_read

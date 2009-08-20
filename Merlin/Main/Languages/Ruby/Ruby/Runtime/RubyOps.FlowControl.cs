@@ -26,7 +26,7 @@ namespace IronRuby.Runtime {
     public static partial class RubyOps {
         private static readonly object/*!*/ RetrySingleton = new object();
         
-        #region Unwinders, RFC Flags
+        #region RFC Flags
 
         [Emitted]
         public static RuntimeFlowControl/*!*/ CreateRfcForMethod(Proc proc) {
@@ -34,33 +34,6 @@ namespace IronRuby.Runtime {
             result._activeFlowControlScope = result;
             result.InitializeRfc(proc);
             return result;
-        }
-
-        // Ruby method exit filter:
-        [Emitted]
-        public static bool IsMethodUnwinderTargetFrame(RubyScope/*!*/ scope, Exception/*!*/ exception) {
-            var unwinder = exception as MethodUnwinder;
-            if (unwinder == null) {
-                RubyExceptionData.GetInstance(exception).CaptureExceptionTrace(scope);
-                return false;
-            } else {
-                return unwinder.TargetFrame == scope.FlowControlScope;
-            }
-        }
-
-        [Emitted]
-        public static object GetMethodUnwinderReturnValue(Exception/*!*/ exception) {
-            return ((MethodUnwinder)exception).ReturnValue;
-        }
-
-        [Emitted]
-        public static void LeaveMethodFrame(RuntimeFlowControl/*!*/ rfc) {
-            rfc.LeaveMethod();
-        }
-        
-        [Emitted]
-        public static void LeaveBlockFrame(RubyBlockScope/*!*/ scope) {
-            
         }
 
         [Emitted]

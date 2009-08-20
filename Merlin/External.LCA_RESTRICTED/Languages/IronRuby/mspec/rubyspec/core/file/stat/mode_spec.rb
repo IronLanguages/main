@@ -14,6 +14,11 @@ describe "File::Stat#mode" do
   it "should be able to determine the mode through a File::Stat object" do
     st = File.stat(@file)
     st.mode.is_a?(Integer).should == true
-    st.mode.should == 33261
+    platform_is_not :windows do
+      st.mode.should == 33261
+    end
+    platform_is :windows do
+      st.mode.should == 33188
+    end
   end
 end

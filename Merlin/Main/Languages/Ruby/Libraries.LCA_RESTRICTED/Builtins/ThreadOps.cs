@@ -15,17 +15,13 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq.Expressions;
-using Microsoft.Scripting;
-using System.Dynamic;
-using Microsoft.Scripting.Actions;
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using IronRuby.Runtime;
-using System.Text;
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
+using Microsoft.Scripting;
+using Microsoft.Scripting.Runtime;
 
 namespace IronRuby.Builtins {
     /// <summary>
@@ -76,6 +72,7 @@ namespace IronRuby.Builtins {
             private readonly int _id;
             private ThreadGroup _group;
             private readonly Thread _thread;
+            private bool _blocked;
             private bool _abortOnException;
             private AutoResetEvent _runSignal = new AutoResetEvent(false);
             private bool _isSleeping;
@@ -159,6 +156,16 @@ namespace IronRuby.Builtins {
             internal object Result { get; set; }
             internal bool CreatedFromRuby { get; set; }
             internal bool ExitRequested { get; set; }
+            
+            internal bool Blocked {
+                get {
+                    return _blocked;
+                }
+                set {
+                    System.Diagnostics.Debug.Assert(Thread.CurrentThread == _thread);
+                    _blocked = value;
+                }
+            }
 
             internal bool AbortOnException {
                 get {
@@ -279,7 +286,7 @@ namespace IronRuby.Builtins {
         public static MutableString/*!*/ Inspect(RubyContext/*!*/ context, Thread/*!*/ self) {
             RubyThreadInfo.RegisterThread(Thread.CurrentThread);
 
-            MutableString result = MutableString.CreateMutable();
+            MutableString result = MutableString.CreateMutable(RubyEncoding.ClassName);
             result.Append("#<");
             result.Append(context.GetClassDisplayName(self));
             result.Append(':');
@@ -516,7 +523,11 @@ namespace IronRuby.Builtins {
             }
 
             if ((state & ThreadState.Running) == ThreadState.Running) {
-                return RubyThreadStatus.Running;
+                if (info.Blocked) {
+                    return RubyThreadStatus.Sleeping;
+                } else {
+                    return RubyThreadStatus.Running;
+                }
             }
 
             throw new ArgumentException("unknown thread status: " + state);
@@ -527,13 +538,13 @@ namespace IronRuby.Builtins {
             RubyThreadInfo.RegisterThread(Thread.CurrentThread);
             switch (GetStatus(self)) {
                 case RubyThreadStatus.Unstarted:
-                    return MutableString.Create("unstarted");
+                    return MutableString.CreateAscii("unstarted");
                 case RubyThreadStatus.Running:
-                    return MutableString.Create("run");
+                    return MutableString.CreateAscii("run");
                 case RubyThreadStatus.Sleeping:
-                    return MutableString.Create("sleep");
+                    return MutableString.CreateAscii("sleep");
                 case RubyThreadStatus.Aborting:
-                    return MutableString.Create("aborting");
+                    return MutableString.CreateAscii("aborting");
                 case RubyThreadStatus.Completed:
                     return false;
                 case RubyThreadStatus.Aborted:

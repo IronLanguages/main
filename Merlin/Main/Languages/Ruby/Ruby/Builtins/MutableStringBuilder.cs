@@ -137,9 +137,9 @@ namespace IronRuby.Builtins {
             object value = ToValue();
             string str = value as string;
             if (str != null) {
-                return MutableString.Create(str);
+                return MutableString.Create(str, _encoding);
             } else {
-                return MutableString.CreateBinary((byte[])value);
+                return MutableString.CreateBinary((byte[])value, _encoding);
             }
         }
 

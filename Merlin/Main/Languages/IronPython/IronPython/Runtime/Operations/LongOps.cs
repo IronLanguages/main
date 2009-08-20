@@ -694,7 +694,7 @@ namespace IronPython.Runtime.Operations {
                     digits = Builtin.chr(iVal);
                     break;
                 default:
-                    throw PythonOps.ValueError("Unknown conversion type {0}", spec.Type.ToString());
+                    throw PythonOps.ValueError("Unknown format code '{0}'", spec.Type.ToString());
             }
 
             Debug.Assert(digits[0] != '-');

@@ -28,7 +28,7 @@ namespace IronPython.Compiler {
     /// arbitrary Scope objects.  This is used for code when the user runs against
     /// a particular scope as well as for exec and eval code as well.
     /// </summary>
-    class PythonScriptCode : ScriptCode {
+    class PythonScriptCode : RunnableScriptCode {
         private readonly Func<CodeContext/*!*/, object>/*!*/ _target;
 
         public PythonScriptCode(Func<CodeContext/*!*/, object>/*!*/ target, SourceUnit/*!*/ sourceUnit)
@@ -42,7 +42,14 @@ namespace IronPython.Compiler {
             if (SourceUnit.Kind == SourceCodeKind.Expression) {
                 return EvalWrapper(new Scope());
             }
-            return _target(PythonOps.CreateTopLevelCodeContext(new Scope(), SourceUnit.LanguageContext));
+            
+            CodeContext ctx = CreateTopLevelCodeContext(new Scope(), SourceUnit.LanguageContext);
+            PushFrame(ctx, _target);
+            try {
+                return _target(ctx);
+            } finally {
+                PopFrame();
+            }
         }
 
         public override object Run(Scope scope) {
@@ -50,7 +57,13 @@ namespace IronPython.Compiler {
                 return EvalWrapper(scope);
             }
 
-            return _target(PythonOps.CreateTopLevelCodeContext(scope, SourceUnit.LanguageContext));
+            CodeContext ctx = CreateTopLevelCodeContext(scope, SourceUnit.LanguageContext);
+            PushFrame(ctx, _target);
+            try {
+                return _target(ctx);
+            } finally {
+                PopFrame();
+            }
         }
 
         public override Scope/*!*/ CreateScope() {
@@ -60,7 +73,13 @@ namespace IronPython.Compiler {
         // wrapper so we can do minimal code gen for eval code
         private object EvalWrapper(Scope scope) {
             try {
-                return _target(PythonOps.CreateTopLevelCodeContext(scope, SourceUnit.LanguageContext));
+                CodeContext ctx = CreateTopLevelCodeContext(scope, SourceUnit.LanguageContext);
+                try {
+                    PushFrame(ctx, _target);
+                    return _target(ctx);
+                } finally {
+                    PopFrame();
+                }
             } catch (Exception) {
                 PythonOps.UpdateStackTrace(new CodeContext(scope, (PythonContext)SourceUnit.LanguageContext), _target.Method, "<module>", "<string>", 0);
                 throw;

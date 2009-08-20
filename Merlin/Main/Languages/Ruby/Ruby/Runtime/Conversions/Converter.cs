@@ -270,5 +270,75 @@ namespace IronRuby.Runtime.Conversions {
             }
             return Candidate.Equivalent;
         }
+
+        #region Runtime Conversions
+
+        internal static Byte ToByte(int value) {
+            if (value >= Byte.MinValue && value <= Byte.MaxValue) {
+                return (Byte)value;
+            }
+            throw RubyExceptions.CreateRangeError("number too big to convert into System::Byte");
+        }
+
+        internal static SByte ToSByte(int value) {
+            if (value >= SByte.MinValue && value <= SByte.MaxValue) {
+                return (SByte)value;
+            }
+            throw RubyExceptions.CreateRangeError("number too big to convert into System::SByte");
+        }
+
+        internal static Int16 ToInt16(int value) {
+            if (value >= Int16.MinValue && value <= Int16.MaxValue) {
+                return (Int16)value;
+            }
+            throw RubyExceptions.CreateRangeError("number too big to convert into System::Int16");
+        }
+
+        internal static UInt16 ToUInt16(int value) {
+            if (value >= UInt16.MinValue && value <= UInt16.MaxValue) {
+                return (UInt16)value;
+            }
+            throw RubyExceptions.CreateRangeError("number too big to convert into System::UInt16");
+        }
+
+        internal static UInt32 ToUInt32(int value) {
+            if (value >= UInt32.MinValue) {
+                return (UInt32)value;
+            }
+            throw RubyExceptions.CreateRangeError("number too big to convert into System::UInt32");
+        }
+
+        internal static UInt32 ToUInt32(BigInteger value) {
+            UInt32 result;
+            if (value.AsUInt32(out result)) {
+                return result;
+            }
+            throw RubyExceptions.CreateRangeError("number too big to convert into System::UInt32");
+        }
+
+        internal static Int64 ToInt64(BigInteger value) {
+            Int64 result;
+            if (value.AsInt64(out result)) {
+                return result;
+            }
+            throw RubyExceptions.CreateRangeError("number too big to convert into System::Int64");
+        }
+
+        internal static UInt64 ToUInt64(int value) {
+            if (value >= 0) {
+                return (UInt64)value;
+            }
+            throw RubyExceptions.CreateRangeError("number too big to convert into System::UInt64");
+        }
+
+        internal static UInt64 ToUInt64(BigInteger value) {
+            UInt64 result;
+            if (value.AsUInt64(out result)) {
+                return result;
+            }
+            throw RubyExceptions.CreateRangeError("number too big to convert into System::UInt64");
+        }
+
+        #endregion
     }
 }

@@ -365,6 +365,10 @@ namespace IronPython.Runtime {
                         // handle computed format specifiers
                         formatSpec = ReplaceComputedFormats(formatSpec);
 
+                        if (argValue == null) {
+                            throw PythonOps.ValueError("NoneType does not have __format__ method");
+                        }
+
                         // append the string
                         builder.Append(Builtin.format(_context.SharedContext, argValue, formatSpec));
                     }

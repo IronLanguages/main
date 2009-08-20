@@ -1,0 +1,135 @@
+
+== TestUnit
+* still works on its own
+* supports should good enough
+* works inside test/spec
+
+== CustomTestUnitSubclass
+* truth
+
+== test/spec
+* has should.satisfy
+* has should.equal
+* has should.raise
+* has should.raise with a block
+* should.raise should return the exception
+* has should.be.an.instance_of
+* has should.be.nil
+* has should.include
+* has should.be.a.kind_of
+* has should.match
+* has should.be
+* has should.not.raise
+* has should.not.satisfy
+* has should.not.be
+* has should.not.equal
+* has should.not.match
+* has should.throw
+* has should.not.throw
+* has should.respond_to
+* has should.be_close
+* multiple negation works
+* has should.<predicate>
+* has should.<predicate>?
+* has should <operator> (>, >=, <, <=, ===)
+* is robust against careless users
+* should detect warnings
+* should message/blame faults
+* should allow for custom shoulds
+* disabled specification (disabled)
+* empty specification (disabled)
+=== more disabled
+* this is intentional (disabled)
+* an empty specification (empty)
+==== even more disabled
+* we can cut out (disabled)
+* entire contexts, now (disabled)
+
+== setup/teardown
+* run in the right order
+
+== before all
+* runs parent before all
+
+== nested teardown
+=== nested
+* should call local teardown then parent teardown
+
+== before all
+=== nested
+* should call parent then local
+
+== after all
+=== after nested
+* should call local then parent
+
+== contexts
+* are defined in class scope
+* can include modules
+
+== contexts with subclasses
+* use the supplied class as the superclass
+* truth
+
+== xcontexts with subclasses
+* work great! (disabled)
+* truth
+
+== Shared contexts
+* can be included several times
+* can include other shared contexts
+* can be included several times
+* can include other shared contexts
+* can be nested
+* can access data
+* should raise when the context cannot be found
+
+== SpecDox
+* can unmangle Test::Unit names correctly
+* can unmangle Test::Spec names correctly
+* has sensible fallbacks
+
+== flexmock
+* can not be found.  BAIL OUT! (empty)
+
+== mocha
+* can not be found.  BAIL OUT! (empty)
+
+== Outer context
+=== Inner context
+* is nested (empty)
+* has multiple empty specifications (empty)
+=== Second Inner context
+* is indented properly (empty)
+* still runs in order of definition (empty)
+==== Inmost context
+* works too! (empty)
+* whoo! (empty)
+
+== A new-style description
+* should run before-clauses
+* should behave like context/specify
+* this is disabled (disabled)
+* should raise on unimplement{ed,able} before/after
+* should work as well with shared descriptions
+=== when nested
+* should work
+
+== An disabled description
+* should not be run (disabled)
+
+== should.output
+* works for print
+* works for puts
+* works with readline
+
+== Context First
+* runs before Second
+
+== Context Second
+* runs before Last
+
+== Context Last
+* runs last
+
+80 specifications, 8 disabled, 9 empty (602 requirements), 0 failures

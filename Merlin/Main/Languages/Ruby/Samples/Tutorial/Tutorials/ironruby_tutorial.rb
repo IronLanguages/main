@@ -605,7 +605,8 @@ tutorial "IronRuby tutorial" do
                 :setup => lambda {
                     # TODO - Position the form so that it is not hidden behind the current window
                 },
-                :code => "f.text = 'Hello'"
+                :code => "f.text = 'Hello'",
+                :test_hook => lambda { |type, bind| bind.f.close if type == :cleanup }
                 ) { |iar| /hello/i =~ iar.bind.f.text }
         end
         
@@ -754,7 +755,8 @@ tutorial "IronRuby tutorial" do
                     However, we will just clear out the content so that we can use the same window in the
                     next chapter.
                 },
-                :code => 'w.content = nil'
+                :code => 'w.content = nil',
+                :test_hook => lambda { |type, bind| bind.w.close if type == :cleanup }
                 ) { |iar| not iar.bind.w.content }
         end
 

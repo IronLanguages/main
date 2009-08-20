@@ -31,7 +31,7 @@ namespace IronRuby.Builtins {
         public static string/*!*/ MakeMessage(ref MutableString message, string/*!*/ baseMessage) {
             Assert.NotNull(baseMessage);
             string result = MakeMessage(message != null ? message.ConvertToString() : null, baseMessage);
-            message = MutableString.Create(result);
+            message = MutableString.Create(result, message != null ? message.Encoding : RubyEncoding.UTF8);
             return result;
         }
 

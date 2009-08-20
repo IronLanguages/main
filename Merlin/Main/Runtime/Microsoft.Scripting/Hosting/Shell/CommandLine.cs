@@ -329,8 +329,12 @@ namespace Microsoft.Scripting.Hosting.Shell {
                 return null;
             }
 
-            ExecuteCommand(_engine.CreateScriptSourceFromString(s, SourceCodeKind.InteractiveCode));
+            ExecuteCommand(s);
             return null;
+        }
+
+        protected virtual void ExecuteCommand(string command) {
+            ExecuteCommand(_engine.CreateScriptSourceFromString(command, SourceCodeKind.InteractiveCode));
         }
 
         protected object ExecuteCommand(ScriptSource source) {

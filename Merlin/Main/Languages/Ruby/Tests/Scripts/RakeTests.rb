@@ -1,10 +1,28 @@
 require "rubygems"
+require "rake"
 
 rake_tests_dir = File.expand_path("../External.LCA_RESTRICTED/Languages/IronRuby/RakeTests", ENV["MERLIN_ROOT"])
-all_test_files = Dir.glob("#{rake_tests_dir}/test/test*.rb") + Dir.glob("#{rake_tests_dir}/test/contrib/test*.rb") + Dir.glob("#{rake_tests_dir}/test/fun*.rb")
+all_test_files = Dir.glob("#{rake_tests_dir}/test/test*.rb") + Dir.glob("#{rake_tests_dir}/test/contrib/test*.rb")
+
+if RUBY_PLATFORM =~ /mswin/
+  if true
+    # The session gem uses "fork" by default, but can use popen3. However, it still does 
+    # not work on Windows. It is currently very *nix oriented. For eg, it assumes that the
+    # default shell is bash.
+    puts "(Skipping functional tests on Windows)"
+  else
+    ENV['SESSION_USE_OPEN3'] = true
+    require "open3"
+    all_test_files += Dir.glob("#{rake_tests_dir}/test/fun*.rb")
+  end
+else
+  all_test_files += Dir.glob("#{rake_tests_dir}/test/fun*.rb")
+end
+
 # Do some sanity checks
 abort("Did not find enough Rake tests files...") unless all_test_files.size > 25
 abort("Did not find some expected files...") unless File.exist?(rake_tests_dir + "/test/test_rake.rb")
+abort("Loaded the wrong version #{RAKEVERSION} of Rake instead of the expected 0.8.4 ...") unless RAKEVERSION == '0.8.4'
 
 # Some tests load data assuming the current folder
 Dir.chdir(rake_tests_dir)

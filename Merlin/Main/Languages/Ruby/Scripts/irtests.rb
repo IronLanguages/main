@@ -6,9 +6,9 @@ class IRTest
   attr_accessor :options  
   def initialize
     @options = {}
-    @results = ["Results:"]
+    @results = ["irtests FAILURES:"]
     @root = ENV["MERLIN_ROOT"]
-    mspec_base = "mspec ci -fd"
+    mspec_base = "#{@root}\\..\\External.LCA_RESTRICTED\\Languages\\IronRuby\\mspec\\mspec\\bin\\mspec.bat ci -fd"
     ir = "#{@root}\\bin\\debug\\ir.exe"
     @start = Time.now
     @suites = {
@@ -19,7 +19,8 @@ class IRTest
       :RubySpec_C => "#{mspec_base} :core2 :lib2",
       :RubyGems => "#{ir} #{@root}\\Languages\\Ruby\\Tests\\Scripts\\RubyGemsTests.rb",
       :Rake => "#{ir} #{@root}\\Languages\\Ruby\\Tests\\Scripts\\RakeTests.rb",
-      :Yaml => "#{ir} #{@root}\\..\\External.LCA_RESTRICTED\\Languages\\IronRuby\\yaml\\YamlTest\\yaml_test_suite.rb"
+      :Yaml => "#{ir} #{@root}\\..\\External.LCA_RESTRICTED\\Languages\\IronRuby\\yaml\\YamlTest\\yaml_test_suite.rb",
+      :Tutorial => "#{ir} #{@root}\\Languages\\Ruby\\Samples\\Tutorial\\test\\test_console.rb"
     }
   end
 
@@ -100,14 +101,16 @@ class IRTest
   end
   
   def report
+    puts "=" * 70
     exit_code = if @results.size == 1
-      puts "Success!!"
+      puts "IRTESTS PASSED!!"
       0
     else
       puts @results.join("\n")
       1
     end
-    
+
+    puts    
     time("Finished")
     time("Total Elapsed time: ", @start)
     exit exit_code

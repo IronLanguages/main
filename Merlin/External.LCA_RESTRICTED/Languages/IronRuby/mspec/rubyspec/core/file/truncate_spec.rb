@@ -3,12 +3,10 @@ require File.dirname(__FILE__) + '/../../spec_helper'
 describe "File.truncate" do
   before :each do
     @name = "test.txt"
-    @file  = File.open(@name, 'w')
     File.open(@name,"w") { |f| f.write("1234567890") }
   end
 
   after :each do
-    @file.close
     File.delete(@name) if File.exist?(@name)
     @name = nil
   end
@@ -170,6 +168,7 @@ describe "File#truncate" do
   it "raises an IOError if file is not opened for writing" do
     file = File.new(@name, 'r')
     lambda { file.truncate(42) }.should raise_error(IOError)
+    file.close
   end
 
   it "raises a TypeError if not passed an Integer type for the for the argument" do

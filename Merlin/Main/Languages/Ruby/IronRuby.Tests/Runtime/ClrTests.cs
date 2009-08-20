@@ -1467,6 +1467,53 @@ false
 ");
         }
 
+        public class ClassWithVirtualEvent1 {
+            public virtual event Func<int, int> OnEvent;
+
+            public int Fire(int arg) {
+                return OnEvent(arg);
+            }
+        }
+
+        public void ClrEventImpl1() {
+            // TODO: fix
+            if (_driver.PartialTrust) return;
+
+            var e = new ClassWithVirtualEvent1();
+            Context.ObjectClass.SetConstant("E", Context.GetClass(typeof(ClassWithVirtualEvent1)));
+
+            var f = Engine.Execute<ClassWithVirtualEvent1>(@"
+class F < E
+  def add_OnEvent handler
+    puts 'add ' + handler.inspect
+    super
+  end
+
+  def remove_OnEvent handler
+    puts 'remove ' + handler.inspect
+    super
+  end
+end
+
+F.new
+");
+            var handler = new Func<int, int>((i) => i + 1);
+
+            AssertOutput(() => f.OnEvent += handler, @"add System.Func`2[System.Int32,System.Int32]");
+            var r = f.Fire(10);
+            Assert(r == 11);
+            AssertOutput(() => f.OnEvent -= handler, @"remove System.Func`2[System.Int32,System.Int32]");
+
+            TestOutput(@"
+f = F.new
+f.on_event { |x| x * 2 }
+puts f.fire(10)
+", @"
+add System.Func`2[System.Int32,System.Int32]
+20
+");
+        }
+
         #endregion
 
         #region Virtual method overrides
@@ -2015,6 +2062,16 @@ init
 ");
         }
 
+        public struct Struct1 {
+            public int Foo;
+        }
+
+        public void ClrConstructor5() {
+            Context.ObjectClass.SetConstant("S", Context.GetClass(typeof(Struct1)));
+            var s = Engine.Execute(@"S.new");
+            Assert(s is Struct1);
+        }
+
         #endregion
 
         #region CLR Primitive Types: Numeric, Arrays, Char, Enums
@@ -2260,8 +2317,7 @@ false
         }
 
         public void ClrOperators2() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
+            TestOutput(@"
 p :b == true                # Symbol hides SymbolId::op_Equality
 p String == Fixnum          # Only instance operator calls are allowed (MutableString::op_Equality shound be ignored)
 
@@ -2272,11 +2328,29 @@ class C < Numeric
 end
 
 p C.new.ceil                 # Numeric#ceil uses self with DefaultProtocol attribute
-");
-            }, @"
+", @"
 false
 false
 2
+");
+        }
+
+        /// <summary>
+        /// Operator mapping is not performed for builtin classes. 
+        /// CLR DateTime defines op_LessThan but we want less-than operator to call comparison method &lt;=&gt;.
+        /// </summary>
+        public void ClrOperators3() {
+            TestOutput(@"
+class Time
+  def <=>(other)
+    puts '<=>'
+    1
+  end
+end
+p Time.mktime(1) < Time.mktime(10)
+", @"
+<=>
+false
 ");
         }
 
@@ -2287,6 +2361,10 @@ false
 
             public object[] Numerics(byte a, sbyte b, short c, ushort d, int e, uint f, long g, ulong h, BigInteger i, Complex64 j, Convertible1 k) {
                 return new object[] { a, b, c, d, e, f, g, h, i, j, k };
+            }
+
+            public object[] Numerics(byte a, sbyte b, short c, ushort d, int e, uint f, long g, ulong h, BigInteger i) {
+                return new object[] { a, b, c, d, e, f, g, h, i };
             }
 
             public Delegate Delegate(Func<object, object> d) {
@@ -2389,7 +2467,7 @@ p(*Inst.numerics(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11))
 (10+0j)
 Convertible(11)
 ");
-
+                        
             // protocol conversions:
             TestOutput(@"
 class C
@@ -2400,12 +2478,28 @@ class C
   def to_str
     'xxx'
   end
+
+  def to_int
+    1
+  end
 end
-p Inst.ListAndStrings(C.new, C.new)
+c = C.new
+
+p Inst.ListAndStrings(c, c)
 p Inst.Foo(Conv)
+p(*Inst.numerics(c, c, c, c, c, c, c, c, c))
 ", @"
 8
 12
+1 (Byte)
+1 (SByte)
+1 (Int16)
+1 (UInt16)
+1
+1 (UInt32)
+1 (Int64)
+1 (UInt64)
+1
 ");
             
             // protocol conversions:

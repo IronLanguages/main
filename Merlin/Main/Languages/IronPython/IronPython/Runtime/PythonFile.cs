@@ -21,6 +21,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 
+using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
@@ -964,12 +965,17 @@ namespace IronPython.Runtime {
 
             try {
                 Stream stream;
-                if (Environment.OSVersion.Platform == PlatformID.Win32NT && name == "nul") {
-                    stream = Stream.Null;
-                } else if (buffering <= 0) {
-                    stream = PythonContext.GetContext(context).DomainManager.Platform.OpenInputFileStream(name, fmode, faccess, fshare);
-                } else {
-                    stream = PythonContext.GetContext(context).DomainManager.Platform.OpenInputFileStream(name, fmode, faccess, fshare, buffering);
+                try {
+                    if (Environment.OSVersion.Platform == PlatformID.Win32NT && name == "nul") {
+                        stream = Stream.Null;
+                    } else if (buffering <= 0) {
+                        stream = PythonContext.GetContext(context).DomainManager.Platform.OpenInputFileStream(name, fmode, faccess, fshare);
+                    } else {
+                        stream = PythonContext.GetContext(context).DomainManager.Platform.OpenInputFileStream(name, fmode, faccess, fshare, buffering);
+                    }
+                } catch (IOException e) {
+                    AddFilename(context, name, e);
+                    throw;
                 }
 
                 // we want to own the lifetime of the stream so we can flush & dispose in our finalizer...
@@ -980,8 +986,19 @@ namespace IronPython.Runtime {
                 __init__(stream, PythonContext.GetContext(context).DefaultEncoding, name, mode);
                 this._isOpen = true;
             } catch (UnauthorizedAccessException e) {
-                throw new IOException(e.Message, e);
+                throw ToIoException(context, name, e);
             }
+        }
+
+        internal static Exception ToIoException(CodeContext context, string name, UnauthorizedAccessException e) {
+            Exception excp = new IOException(e.Message, e);
+            AddFilename(context, name, excp);
+            return excp;
+        }
+
+        internal static void AddFilename(CodeContext context, string name, Exception ioe) {
+            var pyExcep = PythonExceptions.ToPython(ioe);
+            PythonOps.SetAttr(context, pyExcep, SymbolTable.StringToId("filename"), name);
         }
 
         internal static void ValidateMode(string mode) {
