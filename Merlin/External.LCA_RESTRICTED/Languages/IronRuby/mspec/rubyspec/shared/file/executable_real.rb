@@ -22,10 +22,10 @@ describe :file_executable_real, :shared => true do
       @object.send(@method, @file1).should == true
       @object.send(@method, @file2).should == false
     end
-  end
 
-  it "returns true if named file is readable by the real user id of the process, otherwise false" do
-    @object.send(@method, @file1).should == true
+    it "returns true if named file is readable by the real user id of the process, otherwise false" do
+      @object.send(@method, @file1).should == true
+    end
   end
 
   it "raises an ArgumentError if not passed one argument" do

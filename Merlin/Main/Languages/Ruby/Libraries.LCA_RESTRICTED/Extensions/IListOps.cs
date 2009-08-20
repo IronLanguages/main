@@ -1513,7 +1513,7 @@ namespace IronRuby.Builtins {
         #region sort, sort!
 
         [RubyMethod("sort")]
-        public static IList/*!*/ Sort(
+        public static object Sort(
             CallSiteStorage<Func<CallSite, RubyClass, object>>/*!*/ allocateStorage,
             BinaryOpStorage/*!*/ comparisonStorage,
             BinaryOpStorage/*!*/ lessThanStorage,
@@ -1522,13 +1522,19 @@ namespace IronRuby.Builtins {
 
             // TODO: this is not optimal because it makes an extra array copy
             // (only affects sorting of .NET types, do we need our own quicksort?)
-            IList result = CreateResultArray(allocateStorage, self);
-            Replace(result, ArrayOps.SortInPlace(comparisonStorage, lessThanStorage, greaterThanStorage, block, ToArray(self)));
-            return result;
+            IList resultList = CreateResultArray(allocateStorage, self);
+            StrongBox<object> breakResult;
+            RubyArray result = ArrayOps.SortInPlace(comparisonStorage, lessThanStorage, greaterThanStorage, block, ToArray(self), out breakResult);
+            if (breakResult == null) {
+                Replace(resultList, result);
+                return resultList;
+            } else {
+                return breakResult.Value;
+            }
         }
 
         [RubyMethod("sort!")]
-        public static IList/*!*/ SortInPlace(
+        public static object SortInPlace(
             BinaryOpStorage/*!*/ comparisonStorage,
             BinaryOpStorage/*!*/ lessThanStorage,
             BinaryOpStorage/*!*/ greaterThanStorage,
@@ -1539,8 +1545,14 @@ namespace IronRuby.Builtins {
 
             // TODO: this is not optimal because it makes an extra array copy
             // (only affects sorting of .NET types, do we need our own quicksort?)
-            Replace(self, ArrayOps.SortInPlace(comparisonStorage, lessThanStorage, greaterThanStorage, block, ToArray(self)));
-            return self;
+            StrongBox<object> breakResult;
+            RubyArray result = ArrayOps.SortInPlace(comparisonStorage, lessThanStorage, greaterThanStorage, block, ToArray(self), out breakResult);
+            if (breakResult == null) {
+                Replace(self, result);
+                return self;
+            } else {
+                return breakResult.Value;
+            }
         }
 
         #endregion
@@ -1639,7 +1651,7 @@ namespace IronRuby.Builtins {
         #region zip 
 
         [RubyMethod("zip")]
-        public static IList/*!*/ Zip(CallSiteStorage<EachSite>/*!*/ each, ConversionStorage<IList>/*!*/ tryToAry, BlockParam block,
+        public static object Zip(CallSiteStorage<EachSite>/*!*/ each, ConversionStorage<IList>/*!*/ tryToAry, BlockParam block,
             object self, [DefaultProtocol, NotNull, NotNullItems]params IList[]/*!*/ args) {
 
             return Enumerable.Zip(each, tryToAry, block, self, args);

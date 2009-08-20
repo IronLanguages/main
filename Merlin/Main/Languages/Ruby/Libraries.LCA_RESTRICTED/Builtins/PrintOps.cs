@@ -128,5 +128,16 @@ namespace IronRuby.Builtins {
 
             KernelOps.PrintFormatted(storage, stringCast, writeStorage, null, self, format, args);
         }
+
+        internal static void ReportWarning(BinaryOpStorage/*!*/ writeStorage, ConversionStorage<MutableString>/*!*/ tosConversion, object message) {
+            if (writeStorage.Context.Verbose != null) {
+                var output = writeStorage.Context.StandardErrorOutput;
+                // MRI: unlike Kernel#puts this outputs \n even if the message ends with \n:
+                var site = writeStorage.GetCallSite("write", 1);
+                site.Target(site, output, PrintOps.ToPrintedString(tosConversion, message));
+                PrintOps.PutsEmptyLine(writeStorage, output);
+            }
+        }
+
     }
 }

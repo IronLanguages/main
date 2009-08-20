@@ -12,10 +12,12 @@ describe "File::Stat#nlink" do
     File.delete(@link) rescue nil
   end
 
-  it "returns the number of links to a file" do
-    File::Stat.new(@file).nlink.should == 1
-    File.link(@file, @link)
-    File::Stat.new(@file).nlink.should == 2
-    File.delete(@link)
+  platform_is_not :windows do
+    it "returns the number of links to a file" do
+      File::Stat.new(@file).nlink.should == 1
+      File.link(@file, @link)
+      File::Stat.new(@file).nlink.should == 2
+      File.delete(@link)
+    end
   end
 end

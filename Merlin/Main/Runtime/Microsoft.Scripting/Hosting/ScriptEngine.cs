@@ -24,7 +24,7 @@ using System.Threading;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
-#if !SYSTEM_CORE
+#if !CLR4
 using dynamic = System.Object;
 #endif
 
