@@ -107,19 +107,29 @@ namespace IronRuby.StandardLibrary.OpenSsl {
           return self._algorithm.OutputBlockSize;
         }
 
+        //TODO: Properly disable this with BuildConfig
         [RubyMethod("digest")]
         public static MutableString/*!*/ BlankDigest(Digest/*!*/ self) {
+#if !SILVERLIGHT
           // TODO: This support only SHA1, It should use self._algorithm but It is not
           byte[] blank_data = Encoding.UTF8.GetBytes("");
           byte[] hash = new SHA1CryptoServiceProvider().ComputeHash(blank_data);
           return MutableString.CreateBinary(hash);
+#else
+            throw new NotSupportedException();
+#endif
         }
 
+        //TODO: Properly disable with BuildConfig
         [RubyMethod("hexdigest")]
         public static MutableString/*!*/ BlankHexDigest(Digest/*!*/ self) {
+#if !SILVERLIGHT
           byte[] blank_data = Encoding.UTF8.GetBytes("");
           byte[] hash = new SHA1CryptoServiceProvider().ComputeHash(blank_data);
 		  return MutableString.CreateAscii(BitConverter.ToString(hash).Replace("-", "").ToLower());
+#else
+            throw new NotSupportedException();
+#endif
         }
       }
     }

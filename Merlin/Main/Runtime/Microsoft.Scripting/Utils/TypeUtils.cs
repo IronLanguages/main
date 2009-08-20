@@ -239,7 +239,7 @@ namespace Microsoft.Scripting.Utils {
 
         // keep in sync with System.Core version
         internal static bool AreEquivalent(Type t1, Type t2) {
-#if !SYSTEM_CORE
+#if !CLR4
             return t1 == t2;
 #else
             return t1 == t2 || t1.IsEquivalentTo(t2);

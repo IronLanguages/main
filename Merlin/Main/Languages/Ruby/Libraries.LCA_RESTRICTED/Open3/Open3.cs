@@ -20,9 +20,9 @@ using Microsoft.Scripting.Runtime;
 
 namespace IronRuby.StandardLibrary.Open3 {
 
-#if !SILVERLIGHT
     [RubyModule("Open3")]
     public static class Open3 {
+#if !SILVERLIGHT
         [RubyMethod("popen3", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
         public static RubyArray/*!*/ OpenPipe(
             RubyContext/*!*/ context, 
@@ -41,6 +41,6 @@ namespace IronRuby.StandardLibrary.Open3 {
 
             return result;
         }
-    }
 #endif
+    }
 }

@@ -38,3 +38,7 @@ using System.Security;
 [assembly: AllowPartiallyTrustedCallers]
 [assembly: SecurityTransparent]
 #endif
+
+#if CLR4
+[assembly: SecurityRules(SecurityRuleSet.Level1)]
+#endif
