@@ -967,13 +967,13 @@ xrange = xrange
             }
 
             site = CallSite<Func<CallSite, object, object>>.Create(new MyUnaryBinder(ExpressionType.Not));
-            AreEqual(site.Target(site, scope.GetVariable("nsinst")), true);
-            AreEqual(site.Target(site, scope.GetVariable("ns_nonzero_inst")), false);
-            AreEqual(site.Target(site, scope.GetVariable("ns_len0_inst")), true);
-            AreEqual(site.Target(site, scope.GetVariable("ns_len1_inst")), false);
+            AreEqual(site.Target(site, (object)scope.GetVariable("nsinst")), true);
+            AreEqual(site.Target(site, (object)scope.GetVariable("ns_nonzero_inst")), false);
+            AreEqual(site.Target(site, (object)scope.GetVariable("ns_len0_inst")), true);
+            AreEqual(site.Target(site, (object)scope.GetVariable("ns_len1_inst")), false);
 
             site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("ToString", new CallInfo(0)));
-            AreEqual(site.Target(site, scope.GetVariable("xrange")), "FallbackInvokeMember");
+            AreEqual(site.Target(site, (object)scope.GetVariable("xrange")), "FallbackInvokeMember");
 
             // invoke a function defined as a member of a function
             site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("SubFunc", new CallInfo(0)));

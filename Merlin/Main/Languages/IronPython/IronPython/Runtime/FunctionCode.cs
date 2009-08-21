@@ -42,7 +42,6 @@ namespace IronPython.Runtime {
         public Delegate Target;                                     // the current target for the function.  This can change based upon adaptive compilation, recursion enforcement, and tracing.
         private Delegate _normalDelegate;                           // the normal delegate - this can be a compiled or interpreted delegate.
 
-        private readonly ScriptCode _code;
         private readonly string _filename;                          // the filename that created the function co
         private readonly FunctionAttributes _flags;                 // future division, generator
         private LambdaExpression _lambda;                           // the original DLR lambda that contains the code
@@ -50,10 +49,12 @@ namespace IronPython.Runtime {
         private readonly bool _debuggable;                          // true if the code should be compiled as debuggable code
         private readonly SourceSpan _span;                          // the source span for the source code
         private readonly string[] _argNames;                        // the argument names for the function
-        private readonly PythonTuple _closureVars;                  // a tuple of variable names which have been closed over
+        private readonly PythonTuple _freevars, _names;             // a tuple of variable names which have been closed over and global variables that have been accessed
+        private readonly PythonTuple _cellvars;                     // variables which are accessed by nested functions
         private readonly string _name;                              // the name of the function
+        private readonly int _localCount;                           // the number of local variables in the code
         internal readonly string _initialDoc;                       // the initial doc string
-        private PythonTuple _varnames;                              // lazily computed variable names
+        private readonly PythonTuple _varnames;                     // variable names (parameters and locals)
 
         // debugging/tracing support
         private readonly Dictionary<int, bool> _handlerLocations; // list of exception handler locations for debugging
@@ -71,17 +72,6 @@ namespace IronPython.Runtime {
         /// </summary>
         private static CodeList _CodeCreateAndUpdateDelegateLock = new CodeList();
 
-        internal FunctionCode() {
-            _closureVars = PythonTuple.EMPTY;
-        }
-
-        internal FunctionCode(string name, string filename, int lineNo) {
-            _name = name;
-            _filename = filename;
-            _span = new SourceSpan(new SourceLocation(0, lineNo == 0 ? 1 : lineNo, 1), new SourceLocation(0, lineNo == 0 ? 1 : lineNo, 1));
-            _closureVars = PythonTuple.EMPTY;
-        }
-
         /// <summary>
         /// Constructor used to create a FunctionCode for code that's been serialized to disk.  
         /// 
@@ -89,7 +79,7 @@ namespace IronPython.Runtime {
         /// 
         /// Function codes created this way do support recursion enforcement and are therefore registered in the global function code registry.
         /// </summary>
-        internal FunctionCode(PythonContext context, Delegate code, string name, string documentation, string[] argNames, FunctionAttributes flags, SourceSpan span, string path, string[] closureVars) {
+        internal FunctionCode(PythonContext context, Delegate code, string name, string documentation, string[] argNames, FunctionAttributes flags, SourceSpan span, string path, string[] freeVars, string[] names, string[] cellVars, string[] varNames, int localCount) {
             _name = name;
             _span = span;
             _initialDoc = documentation;
@@ -97,11 +87,11 @@ namespace IronPython.Runtime {
             _flags = flags;
             _span = span;
             _filename = path;
-            if (_closureVars != null) {
-                _closureVars = PythonTuple.MakeTuple((object[])closureVars);
-            } else {
-                _closureVars = PythonTuple.EMPTY;
-            }
+            _freevars = StringArrayToTuple(freeVars);
+            _names = StringArrayToTuple(names);
+            _cellvars = StringArrayToTuple(cellVars);
+            _varnames = StringArrayToTuple(varNames);
+            _localCount = localCount;
 
             _normalDelegate = code;
 
@@ -123,7 +113,7 @@ namespace IronPython.Runtime {
         /// 
         /// the initial delegate provided here should NOT be the actual code.  It should always be a delegate which updates our Target lazily.
         /// </summary>
-        internal FunctionCode(PythonContext context, Delegate initialDelegate, LambdaExpression code, string name, string documentation, string[] argNames, FunctionAttributes flags, SourceSpan span, string path, bool isDebuggable, bool shouldInterpret, IList<SymbolId> closureVars, Dictionary<int, Dictionary<int, bool>> loopLocations, Dictionary<int, bool> handlerLocations) {
+        internal FunctionCode(PythonContext context, Delegate initialDelegate, LambdaExpression code, string name, string documentation, string[] argNames, FunctionAttributes flags, SourceSpan span, string path, bool isDebuggable, bool shouldInterpret, IList<SymbolId> freeVars, IList<SymbolId> names, IList<SymbolId> cellVars, IList<SymbolId> varNames, int localCount, Dictionary<int, Dictionary<int, bool>> loopLocations, Dictionary<int, bool> handlerLocations) {
             _lambda = code;
             _name = name;
             _span = span;
@@ -134,11 +124,12 @@ namespace IronPython.Runtime {
             _filename = path ?? "<string>";
 
             _shouldInterpret = shouldInterpret;
-            if (closureVars != null) {
-                _closureVars = PythonTuple.MakeTuple(SymbolTable.IdsToStrings(closureVars));
-            } else {
-                _closureVars = PythonTuple.EMPTY;
-            }
+            _freevars = SymbolListToTuple(freeVars);
+            _names = SymbolListToTuple(names);
+            _cellvars = SymbolListToTuple(cellVars);
+            _varnames = SymbolListToTuple(varNames);
+            _localCount = localCount;
+
             _handlerLocations = handlerLocations;
             _loopAndFinallyLocations = loopLocations;
 
@@ -148,19 +139,20 @@ namespace IronPython.Runtime {
             RegisterFunctionCode(context);
         }
 
-        internal FunctionCode(ScriptCode code, CompileFlags compilerFlags, string fileName)
-            : this(code) {
-
-            if ((compilerFlags & CompileFlags.CO_FUTURE_DIVISION) != 0) {
-                _flags |= FunctionAttributes.FutureDivision;
+        private static PythonTuple SymbolListToTuple(IList<SymbolId> vars) {
+            if (vars != null) {
+                return PythonTuple.MakeTuple(SymbolTable.IdsToStrings(vars));
+            } else {
+                return PythonTuple.EMPTY;
             }
-            _filename = fileName;
-            _closureVars = PythonTuple.EMPTY;
         }
 
-        internal FunctionCode(ScriptCode code) {
-            _code = code;
-            _closureVars = PythonTuple.EMPTY;
+        private static PythonTuple StringArrayToTuple(string[] closureVars) {
+            if (closureVars != null) {
+                return PythonTuple.MakeTuple((object[])closureVars);
+            } else {
+                return PythonTuple.EMPTY;
+            }
         }
 
         /// <summary>
@@ -381,11 +373,8 @@ namespace IronPython.Runtime {
 
         #region Public Python API Surface
 
-        public object co_varnames {
+        public PythonTuple co_varnames {
             get {
-                if (_varnames == null) {
-                    _varnames = GetArgNames();
-                }
                 return _varnames;
             }
         }
@@ -399,18 +388,32 @@ namespace IronPython.Runtime {
             }
         }
 
-        public object co_cellvars {
+        /// <summary>
+        /// Returns a list of variable names which are accessed from nested functions.
+        /// </summary>
+        public PythonTuple co_cellvars {
             get {
-                throw PythonOps.NotImplementedError("");
+                return _cellvars;
             }
         }
 
+        /// <summary>
+        /// Returns the byte code.  IronPython does not implement this and always
+        /// returns an empty string for byte code.
+        /// </summary>
         public object co_code {
             get {
-                throw PythonOps.NotImplementedError("");
+                return String.Empty;
             }
         }
 
+        /// <summary>
+        /// Returns a list of constants used by the function.
+        /// 
+        /// The first constant is the doc string, or None if no doc string is provided.
+        /// 
+        /// IronPython currently does not include any other constants than the doc string.
+        /// </summary>
         public PythonTuple co_consts {
             get {
                 if (this._initialDoc != null) {
@@ -421,59 +424,95 @@ namespace IronPython.Runtime {
             }
         }
 
+        /// <summary>
+        /// Returns the filename that the code object was defined in.
+        /// </summary>
         public string co_filename {
             get {
                 return _filename;
             }
         }
 
+        /// <summary>
+        /// Returns the 1st line number of the code object.
+        /// </summary>
         public int co_firstlineno {
             get {
                 return _span.Start.Line;
             }
         }
 
+        /// <summary>
+        /// Returns a set of flags for the function.
+        /// 
+        ///     0x04 is set if the function used *args
+        ///     0x08 is set if the function used **args
+        ///     0x20 is set if the function is a generator
+        /// </summary>
         public int co_flags {
             get {
                 return (int)_flags;
             }
         }
 
-        public object co_freevars {
+        /// <summary>
+        /// Returns a list of free variables (variables accessed
+        /// from an outer scope).  This does not include variables
+        /// accessed in the global scope.
+        /// </summary>
+        public PythonTuple co_freevars {
             get {
-                return _closureVars;
+                return _freevars;
             }
         }
 
+        /// <summary>
+        /// Returns a mapping between byte code and line numbers.  IronPython does
+        /// not implement this because byte code is not available.
+        /// </summary>
         public object co_lnotab {
             get {
                 throw PythonOps.NotImplementedError("");
             }
         }
 
+        /// <summary>
+        /// Returns the name of the code (function name, class name, or &lt;module&gt;).
+        /// </summary>
         public string co_name {
             get {
                 return _name;
             }
         }
 
-        public object co_names {
+        /// <summary>
+        /// Returns a list of global variable names accessed by the code.
+        /// </summary>
+        public PythonTuple co_names {
             get {
-                throw PythonOps.NotImplementedError("");
+                return _names;
             }
         }
 
+        /// <summary>
+        /// Returns the number of local varaibles defined in the function.
+        /// </summary>
         public object co_nlocals {
             get {
-                throw PythonOps.NotImplementedError("");
+                return _localCount;
             }
         }
 
+        /// <summary>
+        /// Returns the stack size.  IronPython does not implement this
+        /// because byte code is not supported.
+        /// </summary>
         public object co_stacksize {
             get {
                 throw PythonOps.NotImplementedError("");
             }
         }
+
         #endregion
 
         #region Internal API Surface
@@ -488,12 +527,8 @@ namespace IronPython.Runtime {
         }
 
         internal object Call(CodeContext/*!*/ context, Scope/*!*/ scope) {
-            if (_code != null) {
-                return _code.Run(scope);
-            }
-
-            if (_closureVars != PythonTuple.EMPTY) {
-                throw PythonOps.TypeError("cannot exec code object that contains free variables: {0}", _closureVars.__repr__(context));
+            if (_freevars != PythonTuple.EMPTY) {
+                throw PythonOps.TypeError("cannot exec code object that contains free variables: {0}", _freevars.__repr__(context));
             }
 
             if (Target == null) {
@@ -505,14 +540,14 @@ namespace IronPython.Runtime {
                 return classTarget(new CodeContext(scope, context.LanguageContext));
             }
 
-            Func<CodeContext, object> moduleCode = Target as Func<CodeContext, object>;
+            Func<CodeContext, FunctionCode, object> moduleCode = Target as Func<CodeContext, FunctionCode, object>;
             if (moduleCode != null) {
-                return moduleCode(new CodeContext(scope, context.LanguageContext));
+                return moduleCode(new CodeContext(scope, context.LanguageContext), this);
             }
 
-            Func<object> optimizedModuleCode = Target as Func<object>;
+            Func<FunctionCode, object> optimizedModuleCode = Target as Func<FunctionCode, object>;
             if (optimizedModuleCode != null) {
-                return optimizedModuleCode();
+                return optimizedModuleCode(this);
             }
 
             var func = new PythonFunction(context, this, null, ArrayUtils.EmptyObjects, new MutableTuple<object>());
@@ -523,29 +558,6 @@ namespace IronPython.Runtime {
         #endregion
 
         #region Private helper functions
-
-        private PythonTuple GetArgNames() {
-            if (_code != null) return PythonTuple.MakeTuple();
-
-            List<string> names = new List<string>();
-            List<PythonTuple> nested = new List<PythonTuple>();
-
-
-            for (int i = 0; i < ArgNames.Length; i++) {
-                if (ArgNames[i].IndexOf('#') != -1 && ArgNames[i].IndexOf('!') != -1) {
-                    names.Add("." + (i * 2));
-                    // TODO: need to get local variable names here!!!
-                    //nested.Add(FunctionDefinition.DecodeTupleParamName(func.ArgNames[i]));
-                } else {
-                    names.Add(ArgNames[i]);
-                }
-            }
-
-            for (int i = 0; i < nested.Count; i++) {
-                ExpandArgsTuple(names, nested[i]);
-            }
-            return PythonTuple.Make(names);
-        }
 
         private void ExpandArgsTuple(List<string> names, PythonTuple toExpand) {
             for (int i = 0; i < toExpand.__len__(); i++) {
@@ -560,22 +572,13 @@ namespace IronPython.Runtime {
         #endregion
 
         public override bool Equals(object obj) {
-            FunctionCode other = obj as FunctionCode;
-            if (other == null) return false;
-
-            if (_code != null) {
-                return _code == other._code;
-            }
-
-            return _lambda == other._lambda;
+            // overridden because CPython defines this on code objects
+            return base.Equals(obj);
         }
 
         public override int GetHashCode() {
-            if (_code != null) {
-                return _code.GetHashCode();
-            }
-
-            return _lambda.GetHashCode();
+            // overridden because CPython defines this on code objects
+            return base.GetHashCode();
         }
 
         public int __cmp__(CodeContext/*!*/ context, [NotNull]FunctionCode/*!*/  other) {
@@ -635,7 +638,7 @@ namespace IronPython.Runtime {
         internal void UpdateDelegate(PythonContext context, bool forceCreation) {
             Delegate finalTarget;
 
-            if (context._enableTracing && _lambda != null) {
+            if (context.EnableTracing && _lambda != null) {
                 if (_tracingLambda == null) {
                     if (!forceCreation) {
                         // the user just called sys.settrace(), don't force re-compilation of every method in the system.  Instead
@@ -865,13 +868,21 @@ namespace IronPython.Runtime {
                 ),
                 Expression.Constant(_filename),
                 GetGeneratorOrNormalLambda(),
-                _closureVars.Count > 0 ?
-                    (Expression)Expression.NewArrayInit(
-                        typeof(string),
-                        ArrayUtils.ConvertAll(_closureVars._data, (x) => Expression.Constant(x))
-                    ) :
-                    (Expression)Expression.Constant(null, typeof(string[]))
+                TupleToStringArray(_freevars),
+                TupleToStringArray(_names),
+                TupleToStringArray(_cellvars),
+                TupleToStringArray(_varnames),
+                Expression.Constant(_localCount)
             );
+        }
+
+        private Expression TupleToStringArray(PythonTuple tuple) {
+            return tuple.Count > 0 ?
+                (Expression)Expression.NewArrayInit(
+                    typeof(string),
+                    ArrayUtils.ConvertAll(tuple._data, (x) => Expression.Constant(x))
+                ) :
+                (Expression)Expression.Constant(null, typeof(string[]));
         }
 
         #endregion

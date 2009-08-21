@@ -245,7 +245,6 @@ namespace Microsoft.Scripting.Runtime {
         public SourceUnit CreateSourceUnit(StreamContentProvider contentProvider, string path, Encoding encoding, SourceCodeKind kind) {
             ContractUtils.RequiresNotNull(contentProvider, "contentProvider");
             ContractUtils.RequiresNotNull(encoding, "encoding");
-            ContractUtils.Requires(path == null || path.Length > 0, "path", Strings.EmptyStringIsInvalidPath);
             ContractUtils.Requires(kind.IsValid(), "kind");
             ContractUtils.Requires(CanCreateSourceCode);
 
@@ -254,7 +253,6 @@ namespace Microsoft.Scripting.Runtime {
 
         public SourceUnit CreateSourceUnit(TextContentProvider contentProvider, string path, SourceCodeKind kind) {
             ContractUtils.RequiresNotNull(contentProvider, "contentProvider");
-            ContractUtils.Requires(path == null || path.Length > 0, "path", Strings.EmptyStringIsInvalidPath);
             ContractUtils.Requires(kind.IsValid(), "kind");
             ContractUtils.Requires(CanCreateSourceCode);
 

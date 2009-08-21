@@ -407,9 +407,13 @@ namespace IronPython.Runtime {
             if (Active) {
                 // A generator could catch this exception and continue executing, so this does
                 // not necessarily close the generator.
-                throw PythonOps.ValueError("generator already executing");
+                AlreadyExecuting();
             }
             Active = true;
+        }
+
+        private static void AlreadyExecuting() {
+            throw PythonOps.ValueError("generator already executing");
         }
 
         /// <summary>

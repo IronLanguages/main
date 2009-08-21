@@ -62,25 +62,29 @@ namespace IronPython.Runtime.Binding {
                     }
                     break;
                 case ExpressionType.IsFalse:
-                    if (CompilerHelpers.GetType(args[0]) == typeof(string)) {
+                    if (args[0] == null) {
+                        if (typeof(T) == typeof(Func<CallSite, object, bool>)) {
+                            return (T)(object)new Func<CallSite, object, bool>(NoneIsFalse);
+                        }
+                    } else if (args[0].GetType() == typeof(string)) {
                         if (typeof(T) == typeof(Func<CallSite, object, bool>)) {
                             return (T)(object)new Func<CallSite, object, bool>(StringIsFalse);
                         }
-                    } else if (CompilerHelpers.GetType(args[0]) == typeof(bool)) {
+                    } else if (args[0].GetType() == typeof(bool)) {
                         if (typeof(T) == typeof(Func<CallSite, object, bool>)) {
                             return (T)(object)new Func<CallSite, object, bool>(BoolIsFalse);
                         }
-                    } else if (CompilerHelpers.GetType(args[0]) == typeof(List)) {
+                    } else if (args[0].GetType() == typeof(List)) {
                         if (typeof(T) == typeof(Func<CallSite, object, bool>)) {
                             return (T)(object)new Func<CallSite, object, bool>(ListIsFalse);
                         }
-                    } else if (CompilerHelpers.GetType(args[0]) == typeof(PythonTuple)) {
+                    } else if (args[0].GetType() == typeof(PythonTuple)) {
                         if (typeof(T) == typeof(Func<CallSite, object, bool>)) {
                             return (T)(object)new Func<CallSite, object, bool>(TupleIsFalse);
                         }
-                    } else if (args[0] == null) {
+                    } else if (args[0].GetType() == typeof(int)) {
                         if (typeof(T) == typeof(Func<CallSite, object, bool>)) {
-                            return (T)(object)new Func<CallSite, object, bool>(NoneIsFalse);
+                            return (T)(object)new Func<CallSite, object, bool>(IntIsFalse);
                         }
                     } 
                     break;
@@ -101,6 +105,9 @@ namespace IronPython.Runtime.Binding {
             string strVal = value as string;
             if (strVal != null) {
                 return strVal.Length == 0;
+            } else if (value == null) {
+                // improve perf of sites just polymorphic on str & None
+                return true;
             }
 
             return ((CallSite<Func<CallSite, object, bool>>)site).Update(site, value);
@@ -109,6 +116,9 @@ namespace IronPython.Runtime.Binding {
         private bool ListIsFalse(CallSite site, object value) {
             if (value != null && value.GetType() == typeof(List)) {
                 return ((List)value).Count == 0;
+            } else if (value == null) {
+                // improve perf of sites just polymorphic on list & None
+                return true;
             }
 
             return ((CallSite<Func<CallSite, object, bool>>)site).Update(site, value);
@@ -122,9 +132,23 @@ namespace IronPython.Runtime.Binding {
             return ((CallSite<Func<CallSite, object, bool>>)site).Update(site, value);
         }
 
+        private bool IntIsFalse(CallSite site, object value) {
+            if (value is int) {
+                return (int)value == 0;
+            } else if (value == null) {
+                // improve perf of sites just polymorphic on int & None
+                return true;
+            }
+
+            return ((CallSite<Func<CallSite, object, bool>>)site).Update(site, value);
+        }
+
         private bool TupleIsFalse(CallSite site, object value) {
             if (value != null && value.GetType() == typeof(PythonTuple)) {
                 return ((PythonTuple)value).Count == 0;
+            } else if (value == null) {
+                // improve perf of sites just polymorphic on tuple & None
+                return true;
             }
 
             return ((CallSite<Func<CallSite, object, bool>>)site).Update(site, value);
@@ -133,6 +157,9 @@ namespace IronPython.Runtime.Binding {
         private bool BoolIsFalse(CallSite site, object value) {
             if (value is bool) {
                 return !(bool)value;
+            } else if (value == null) {
+                // improve perf of sites just polymorphic on bool & None
+                return true;
             }
 
             return ((CallSite<Func<CallSite, object, bool>>)site).Update(site, value);

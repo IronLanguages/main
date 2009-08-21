@@ -29,11 +29,11 @@ namespace IronPython.Compiler {
     /// A ScriptCode which has been loaded from an assembly which is saved on disk.
     /// </summary>
     class OnDiskScriptCode : RunnableScriptCode {
-        private readonly Func<CodeContext, object> _code;
+        private readonly Func<CodeContext, FunctionCode, object> _code;
         private Scope _optimizedScope;
         private readonly string _moduleName;
 
-        public OnDiskScriptCode(Func<CodeContext, object> code, SourceUnit sourceUnit, string moduleName) :
+        public OnDiskScriptCode(Func<CodeContext, FunctionCode, object> code, SourceUnit sourceUnit, string moduleName) :
             base(sourceUnit) {
             _code = code;
             _moduleName = moduleName;
@@ -43,7 +43,7 @@ namespace IronPython.Compiler {
             CodeContext ctx = CreateTopLevelCodeContext(CreateScope(), (PythonContext)SourceUnit.LanguageContext);
             try {
                 PushFrame(ctx, _code);
-                return _code(ctx);
+                return _code(ctx, EnsureFunctionCode(_code));
             } finally {
                 PopFrame();
             }
@@ -61,6 +61,10 @@ namespace IronPython.Compiler {
             get {
                 return _moduleName;
             }
+        }
+
+        public override FunctionCode GetFunctionCode() {
+            return EnsureFunctionCode(_code);
         }
 
         public override Scope CreateScope() {

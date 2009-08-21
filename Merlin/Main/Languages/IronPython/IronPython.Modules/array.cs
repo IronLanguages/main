@@ -274,7 +274,7 @@ namespace IronPython.Modules {
             public void fromunicode(CodeContext/*!*/ context, string s) {
                 if (s == null) throw PythonOps.TypeError("expected string");
                 if (s.Length == 0) throw PythonOps.ValueError("empty string");
-                if ((s.Length % itemsize) != 0) throw PythonOps.ValueError("string length not a multiple of itemsize");
+                if (_typeCode != 'u' && (s.Length % itemsize) != 0) throw PythonOps.ValueError("string length not a multiple of itemsize");
                 MemoryStream ms = new MemoryStream(PythonContext.GetContext(context).DefaultEncoding.GetBytes(s));
 
                 FromStream(ms);
@@ -305,8 +305,8 @@ namespace IronPython.Modules {
                         case 'x': // pad byte
                         case 's': // null-terminated string
                         case 'p': // Pascal string
-                        case 'u': // unicode char
                             return 1;
+                        case 'u': // unicode char
                         case 'h': // signed short
                         case 'H': // unsigned short
                             return 2;

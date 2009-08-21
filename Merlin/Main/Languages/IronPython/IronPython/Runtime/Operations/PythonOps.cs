@@ -1388,6 +1388,9 @@ namespace IronPython.Runtime.Operations {
         /// Python Runtime Helper for enumerator unpacking (tuple assignments, ...)
         /// Creates enumerator from the input parameter e, and then extracts 
         /// expected number of values, returning them as array
+        /// 
+        /// If the input is a Python tuple returns the tuples underlying data array.  Callers
+        /// should not mutate the resulting tuple.
         /// </summary>
         /// <param name="context">The code context of the AST getting enumerator values.</param>
         /// <param name="e">object to enumerate</param>
@@ -1397,6 +1400,11 @@ namespace IronPython.Runtime.Operations {
         /// Otherwise throws exception
         /// </returns>
         public static object[] GetEnumeratorValues(CodeContext/*!*/ context, object e, int expected) {
+            if (e != null && e.GetType() == typeof(PythonTuple)) {
+                // fast path for tuples, avoid enumerating & copying the tuple.
+                return GetEnumeratorValuesFromTuple((PythonTuple)e, expected);
+            }
+
             IEnumerator ie = PythonOps.GetEnumeratorForUnpack(context, e);
 
             int count = 0;
@@ -1415,6 +1423,14 @@ namespace IronPython.Runtime.Operations {
             }
 
             return values;
+        }
+
+        private static object[] GetEnumeratorValuesFromTuple(PythonTuple pythonTuple, int expected) {
+            if (pythonTuple.Count == expected) {
+                return pythonTuple._data;
+            }
+
+            throw PythonOps.ValueErrorForUnpackMismatch(expected, pythonTuple.Count);
         }
 
         /// <summary>
@@ -1786,7 +1802,7 @@ namespace IronPython.Runtime.Operations {
                 PythonCompilerOptions compilerOptions = Builtin.GetRuntimeGeneratedCodeCompilerOptions(context, true, 0);
 
                 // do interpretation only on strings -- not on files, streams, or code objects
-                code = new FunctionCode(pythonContext.CompilePythonCode(Compiler.CompilationMode.Lookup, source, compilerOptions, ThrowingErrorSink.Default));
+                code = ((RunnableScriptCode)pythonContext.CompilePythonCode(Compiler.CompilationMode.Lookup, source, compilerOptions, ThrowingErrorSink.Default)).GetFunctionCode();
             }
 
             FunctionCode fc = code as FunctionCode;
@@ -1802,7 +1818,16 @@ namespace IronPython.Runtime.Operations {
             }
 
             Scope execScope = Builtin.GetExecEvalScope(context, globals, Builtin.GetAttrLocals(context, locals), true, false);
-            fc.Call(context, execScope);
+            if (context.LanguageContext.PythonOptions.Frames) {
+                List<FunctionStack> stack = PushFrame(new CodeContext(execScope, context.LanguageContext), fc);
+                try {
+                    fc.Call(context, execScope);
+                } finally {
+                    stack.RemoveAt(stack.Count - 1);
+                }
+            } else {
+                fc.Call(context, execScope);
+            }
         }
 
         #endregion
@@ -2027,26 +2052,19 @@ namespace IronPython.Runtime.Operations {
                 }
 
                 PythonDynamicStackFrame pyFrame = frame as PythonDynamicStackFrame;
-                CodeContext context;
                 if (pyFrame != null) {
-                    context = pyFrame.CodeContext;
-                } else {
-                    context = DefaultContext.Default;
+                    CodeContext context = pyFrame.CodeContext;
+                    FunctionCode code = pyFrame.Code;
+
+                    TraceBackFrame tbf = new TraceBackFrame(
+                        context,
+                        new PythonDictionary(new GlobalScopeDictionaryStorage(context.Scope)),
+                        context.Scope.Dict,
+                        code);
+
+                    tb = new TraceBack(tb, tbf);
+                    tb.SetLine(frame.GetFileLineNumber());
                 }
-
-                // TODO?: We could consider scanning our weak list of function codes and getting the
-                // live function code associated with this code.  But that won't necessarily always
-                // work and might be very slow.
-
-                FunctionCode code = new FunctionCode(name, frame.GetFileName(), frame.GetFileLineNumber());
-                TraceBackFrame tbf = new TraceBackFrame(
-                    context,
-                    new PythonDictionary(new GlobalScopeDictionaryStorage(context.Scope)),
-                    context.Scope.Dict,
-                    code);
-
-                tb = new TraceBack(tb, tbf);
-                tb.SetLine(frame.GetFileLineNumber());
             }
 
             e.Data[typeof(TraceBack)] = tb;
@@ -4142,7 +4160,7 @@ namespace IronPython.Runtime.Operations {
             );
         }
 
-        public static void UpdateStackTrace(CodeContext context, MethodBase method, string funcName, string filename, int line) {
+        public static void UpdateStackTrace(CodeContext context, FunctionCode funcCode, MethodBase method, string funcName, string filename, int line) {
             if (line != -1) {
                 Debug.Assert(filename != null);
                 if (ExceptionHelpers.DynamicStackFrames == null) {
@@ -4151,7 +4169,7 @@ namespace IronPython.Runtime.Operations {
 
                 Debug.Assert(line != SourceLocation.None.Line);
 
-                ExceptionHelpers.DynamicStackFrames.Add(new PythonDynamicStackFrame(context, method, funcName, filename, line));
+                ExceptionHelpers.DynamicStackFrames.Add(new PythonDynamicStackFrame(context, funcCode, method, funcName, filename, line));
             }
         }
 

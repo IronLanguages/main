@@ -14,25 +14,49 @@
  * ***************************************************************************/
 
 using System;
-using System.Collections.Generic;
-using System.Text;
-using Microsoft.Scripting.Runtime;
 using System.Reflection;
 
-namespace IronPython.Runtime {
-    class PythonDynamicStackFrame : DynamicStackFrame {
-        private CodeContext _context;
+using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
-        public PythonDynamicStackFrame(CodeContext context, MethodBase method, string funcName, string filename, int line)
+namespace IronPython.Runtime {
+    /// <summary>
+    /// A DynamicStackFrame which has Python specific data.  Currently this
+    /// includes the code context which may provide access to locals and the
+    /// function code object which is needed to build frame objects from.
+    /// </summary>
+    class PythonDynamicStackFrame : DynamicStackFrame {
+        private readonly CodeContext/*!*/ _context;
+        private readonly FunctionCode/*!*/ _code;
+
+        public PythonDynamicStackFrame(CodeContext/*!*/ context, FunctionCode/*!*/ funcCode, MethodBase method, string funcName, string filename, int line)
             : base(method, funcName, filename, line) {
+            Assert.NotNull(context, funcCode);
+
             _context = context;
+            _code = funcCode;
         }
 
-        public CodeContext CodeContext {
+        /// <summary>
+        /// Gets the code context of the function.
+        /// 
+        /// If the function included a call to locals() or the FullFrames
+        /// option is enabled then the code context includes all local variables.
+        /// </summary>
+        public CodeContext/*!*/ CodeContext {
             get {
                 return _context;
             }
         }
 
+        /// <summary>
+        /// Gets the code object for this frame.  This is used in creating
+        /// the trace back.
+        /// </summary>
+        public FunctionCode/*!*/ Code {
+            get {
+                return _code;
+            }
+        }
     }
 }
