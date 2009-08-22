@@ -171,13 +171,18 @@ module Tutorial
   end
 
   def self.all
-    unless SILVERLIGHT
+    all_files = [
+      'Tutorials/ironruby_tutorial.rb', 
+      'Tutorials/tryruby_tutorial.rb', 
+      'Tutorials/hosting_tutorial.rb']
+      
+    if SILVERLIGHT
+      all_files.each {|f| get_tutorial f }
+    else
       Dir[File.expand_path("Tutorials/*_tutorial.rb", File.dirname(__FILE__))].each do |t|
         self.get_tutorial t unless File.directory?(t)
       end
-    else
-      get_tutorial 'Tutorials/ironruby_tutorial.rb'
-      get_tutorial 'Tutorials/tryruby_tutorial.rb'
+      abort("List of files need to be updated for Silverlight") unless @@tutorials.size == all_files.size or not ENV['MERLIN_ROOT']
     end
 
     @@tutorials
@@ -188,13 +193,21 @@ module Tutorial
       all
       return @@tutorials.values.first
     end
-    path = File.expand_path path unless SILVERLIGHT
-    if not @@tutorials.has_key? path
+    
+    if SILVERLIGHT
+      # TODO - On Silverlight, currently __FILE__ does not include the folders, and File.expand_path does not
+      # work either. As a workaround, we drop all folder names
+      path_key = File.basename(path)
+    else
+      path = File.expand_path path
+      path_key = path
+    end
+    if not @@tutorials.has_key? path_key
       require path
-      raise "#{path} does not contains a tutorial definition" if not @@tutorials.has_key?(SILVERLIGHT ? path.split('/').last : path)
+      raise "#{path} does not contains a tutorial definition" if not @@tutorials.has_key? path_key
     end
     
-    return @@tutorials[path]
+    return @@tutorials[path_key]
   end
   
   class ReplContext

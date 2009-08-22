@@ -23,7 +23,8 @@ module HostingTutorial
              following commands, or go through the first chapter first.
          },
          :code => [
-            '$engine = IronRuby.create_engine',
+            'engine = IronRuby.create_engine',
+            '$engine = engine',
             'def script(script_code) $engine.execute(script_code) end']
          ) { |iar| iar.bind.script('2+2') == 4 }
   end

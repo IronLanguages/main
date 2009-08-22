@@ -31,6 +31,7 @@ class IRTest
   def run
     time("Starting")
     kill
+    prereqs
     time("Compiling")
     build_all
     time("Running tests")
@@ -49,6 +50,27 @@ class IRTest
     end
   end
 
+  def git?
+    git = File.exists? @root + "\\..\\..\\.git" # exists only for github.com
+    tfs = File.exists? @root + "\\..\\Snap" # exists only in TFS
+    abort("Could not determine if this is a GIT repo or not") if git == tfs
+    git
+  end
+  
+  def prereqs
+    if git?
+      autocrlf = `git.cmd config core.autocrlf`
+      message = %{
+        Please do 'git config core.autocrlf true'        
+        Everyone should have autocrlf=true (the default value) so that the GIT blobs always use \\n
+        as newline, while developers can edit the source files on platforms where newline is either
+        \\n or \\r\\n. See http://www.kernel.org/pub/software/scm/git/docs/git-config.html for details
+        
+      }.gsub(/  +/, "")
+      abort(message) if autocrlf.chomp != "true"
+    end
+  end 
+
   def kill
     %w{ir.exe ipy.exe}.each do |app|
       3.times do
@@ -62,20 +84,37 @@ class IRTest
       puts "Skipping compile step..."
       return
     end
-    msbuild "Ruby\\Ruby.sln"
-    msbuild "IronPython\\IronPython.sln"
+    msbuild "Languages\\Ruby\\Ruby.sln"
+    msbuild "Languages\\IronPython\\IronPython.sln"
 
     if File.exists?(file = "#{@root}\\Scripts\\Python\\GenerateSystemCoreCsproj.py")
       cmd = "#{@root}\\Bin\\Debug\\ipy.exe #{file}"
       run_cmd(cmd) { @results << "Dev10 Build failed!!!" }
     end
+    
+    build_sl
   end
-
-  def msbuild(project)
-    cmd = "msbuild.exe /verbosity:minimal #{@root}\\Languages\\#{project} /p:Configuration=\"Debug\""
+  
+  def build_sl
+    options = ""
+    if git?
+      sl_path = "#{ENV['PROGRAM_FILES_32']}\\Microsoft Silverlight\\3.0.40624.0"
+      if File.exist? sl_path
+        options = "/p:SilverlightPath=\"#{sl_path}\""
+      else
+        puts "Skipping Silverlight build since a Silverlight installation was not found at #{sl_path}..."
+        return
+      end
+    end
+    
+    msbuild "Hosts\\Silverlight\\Silverlight.sln", '"Silverlight Debug"', options
+   end
+ 
+  def msbuild(project, build_config = '"Debug"', options = "")
+    cmd = "msbuild.exe /verbosity:minimal #{@root}\\#{project} /p:Configuration=#{build_config} #{options}"
     run_cmd(cmd) { exit 1 }
   end
-
+   
   def test_all
     @suites.each_key do |key|
       test(key)

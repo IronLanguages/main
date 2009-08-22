@@ -20,3 +20,9 @@ $stderr = Repl.current.output_buffer
 require 'gui_tutorial'
 
 Application.Current.RootVisual = GuiTutorial::Window.current
+
+load_assembly("System.Windows.Browser")
+if System::Windows::Browser::HtmlPage.document.query_string.contains_key "test"
+  require "test/silverlight"
+end
+

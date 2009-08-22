@@ -13,4 +13,27 @@
 #
 # ****************************************************************************
 
-load_assembly 'IronRuby.Libraries', 'IronRuby.StandardLibrary.StringIO'
+class ReplBufferStream
+  def write_to_repl(str)
+    Microsoft::Scripting::Silverlight::Repl.current.output_buffer.write str
+  end
+  
+  def puts(*args)
+    args.each do |arg| 
+      write_to_repl arg.to_s
+      write_to_repl "\n"
+    end
+  end
+  
+  def print (*args)
+    args.each {|arg| write_to_repl arg.to_s }
+  end
+end
+
+$LOAD_PATH << "./Libs/minitest-1.3.1/lib"
+$0 = __FILE__ # minitest expects this to be non-nil
+require "minitest/spec"
+MiniTest::Unit.output = ReplBufferStream.new
+require "test/test_console"
+MiniTest::Unit.new.run([])
+
