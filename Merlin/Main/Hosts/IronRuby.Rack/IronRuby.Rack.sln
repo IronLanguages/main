@@ -23,6 +23,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "IronRuby", "IronRuby", "{24
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronRuby.Rack.Example", "IronRuby.Rack.Example\IronRuby.Rack.Example.csproj", "{78345AFF-EDEB-4951-B5DC-4AD97FF0C649}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronRuby.Sinatra.Example", "IronRuby.Sinatra.Example\IronRuby.Sinatra.Example.csproj", "{5A581C53-6C26-4C67-8FA2-42281F1BA25F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronRuby.Rails.Example", "IronRuby.Rails.Example\IronRuby.Rails.Example.csproj", "{8466DA65-56B3-4CAB-8EDA-77F39D96B4B6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -132,6 +136,26 @@ Global
 		{78345AFF-EDEB-4951-B5DC-4AD97FF0C649}.Silverlight Debug|Any CPU.Build.0 = Debug|Any CPU
 		{78345AFF-EDEB-4951-B5DC-4AD97FF0C649}.Silverlight Release|Any CPU.ActiveCfg = Release|Any CPU
 		{78345AFF-EDEB-4951-B5DC-4AD97FF0C649}.Silverlight Release|Any CPU.Build.0 = Release|Any CPU
+		{5A581C53-6C26-4C67-8FA2-42281F1BA25F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5A581C53-6C26-4C67-8FA2-42281F1BA25F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5A581C53-6C26-4C67-8FA2-42281F1BA25F}.FxCop|Any CPU.ActiveCfg = Release|Any CPU
+		{5A581C53-6C26-4C67-8FA2-42281F1BA25F}.FxCop|Any CPU.Build.0 = Release|Any CPU
+		{5A581C53-6C26-4C67-8FA2-42281F1BA25F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5A581C53-6C26-4C67-8FA2-42281F1BA25F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5A581C53-6C26-4C67-8FA2-42281F1BA25F}.Silverlight Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5A581C53-6C26-4C67-8FA2-42281F1BA25F}.Silverlight Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5A581C53-6C26-4C67-8FA2-42281F1BA25F}.Silverlight Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5A581C53-6C26-4C67-8FA2-42281F1BA25F}.Silverlight Release|Any CPU.Build.0 = Release|Any CPU
+		{8466DA65-56B3-4CAB-8EDA-77F39D96B4B6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8466DA65-56B3-4CAB-8EDA-77F39D96B4B6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8466DA65-56B3-4CAB-8EDA-77F39D96B4B6}.FxCop|Any CPU.ActiveCfg = Release|Any CPU
+		{8466DA65-56B3-4CAB-8EDA-77F39D96B4B6}.FxCop|Any CPU.Build.0 = Release|Any CPU
+		{8466DA65-56B3-4CAB-8EDA-77F39D96B4B6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8466DA65-56B3-4CAB-8EDA-77F39D96B4B6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8466DA65-56B3-4CAB-8EDA-77F39D96B4B6}.Silverlight Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8466DA65-56B3-4CAB-8EDA-77F39D96B4B6}.Silverlight Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8466DA65-56B3-4CAB-8EDA-77F39D96B4B6}.Silverlight Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8466DA65-56B3-4CAB-8EDA-77F39D96B4B6}.Silverlight Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -2,13 +2,14 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>9.0.30729</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{78345AFF-EDEB-4951-B5DC-4AD97FF0C649}</ProjectGuid>
+    <ProjectGuid>{8466DA65-56B3-4CAB-8EDA-77F39D96B4B6}</ProjectGuid>
     <ProjectTypeGuids>{349c5851-65df-11da-9384-00065b846f21};{fae04ec0-301f-11d3-bf4b-00c04f79efbc}</ProjectTypeGuids>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>IronRuby.Rack.Sample</RootNamespace>
-    <AssemblyName>IronRuby.Rack.Sample</AssemblyName>
+    <RootNamespace>IronRuby.Rails.Sample</RootNamespace>
+    <AssemblyName>IronRuby.Rails.Sample</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -52,11 +53,42 @@
     <Reference Include="System.Web.Mobile" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="public\404.html" />
+    <Content Include="public\422.html" />
+    <Content Include="public\500.html" />
+    <Content Include="public\favicon.ico" />
+    <Content Include="public\images\rails.png" />
+    <Content Include="public\javascripts\application.js" />
+    <Content Include="public\javascripts\controls.js" />
+    <Content Include="public\javascripts\dragdrop.js" />
+    <Content Include="public\javascripts\effects.js" />
+    <Content Include="public\javascripts\prototype.js" />
+    <Content Include="public\robots.txt" />
     <Content Include="Web.config" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="app.rb" />
+    <None Include="app\controllers\application_controller.rb" />
+    <None Include="app\controllers\test_controller.rb" />
+    <None Include="app\helpers\application_helper.rb" />
+    <None Include="app\helpers\test_helper.rb" />
+    <None Include="app\views\test\index.html.erb" />
     <None Include="config.ru" />
+    <None Include="config\boot.rb" />
+    <None Include="config\environment.rb" />
+    <None Include="config\environments\development.rb" />
+    <None Include="config\environments\production.rb" />
+    <None Include="config\environments\test.rb" />
+    <None Include="config\initializers\backtrace_silencers.rb" />
+    <None Include="config\initializers\inflections.rb" />
+    <None Include="config\initializers\mime_types.rb" />
+    <None Include="config\initializers\new_rails_defaults.rb" />
+    <None Include="config\initializers\session_store.rb" />
+    <None Include="config\locales\en.yml" />
+    <None Include="config\routes.rb" />
+    <None Include="test\functional\test_controller_test.rb" />
+    <None Include="test\performance\browsing_test.rb" />
+    <None Include="test\test_helper.rb" />
+    <None Include="test\unit\helpers\test_helper_test.rb" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\..\ndp\fx\src\Core\Microsoft\Scripting\Microsoft.Scripting.Core.csproj">
@@ -89,7 +121,14 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="app\models\" />
+    <Folder Include="app\views\layouts\" />
+    <Folder Include="lib\tasks\" />
     <Folder Include="Properties\" />
+    <Folder Include="public\stylesheets\" />
+    <Folder Include="test\fixtures\" />
+    <Folder Include="test\integration\" />
+    <Folder Include="vendor\plugins\" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <Import Project="$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v9.0\WebApplications\Microsoft.WebApplication.targets" />
@@ -108,7 +147,7 @@
           <AutoAssignPort>True</AutoAssignPort>
           <DevelopmentServerPort>10883</DevelopmentServerPort>
           <DevelopmentServerVPath>/</DevelopmentServerVPath>
-          <IISUrl>http://localhost/IronRuby.Rack.Example</IISUrl>
+          <IISUrl>http://localhost/IronRuby.Rails.Example</IISUrl>
           <NTLMAuthentication>False</NTLMAuthentication>
           <UseCustomServer>False</UseCustomServer>
           <CustomServerUrl>

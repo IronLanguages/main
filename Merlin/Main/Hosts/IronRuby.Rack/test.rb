@@ -4,7 +4,7 @@ require 'stringio'
 usage = <<-EOS
 ir test.rb framework [url] [-tc] [-tr]
 
-framework .. sinatra or rack
+framework .. rails, sinatra, or rack
 url ........ URL to visit ('/' is default)
 -tr ........ trace all requires 
 -tc ........ trace all method calls
@@ -63,11 +63,11 @@ if ARGV.include? "-tc"
   }
 end
 
-require File.dirname(__FILE__) + '/bin/release/IronRuby.Rack.dll'
+colsize = 79
 
-puts '='*79, fx.capitalize, url, '='*79
+puts '='*colsize, fx.capitalize, url, '='*colsize
 
-$app_root = File.dirname(__FILE__) + "/IronRuby.#{fx.capitalize}.App"
+$app_root = File.dirname(__FILE__) + "/IronRuby.#{fx.capitalize}.Example"
 
 env = {
   "APPL_PHYSICAL_PATH" => $app_root,
@@ -120,7 +120,6 @@ app = nil
 Benchmark.bm(16) { |x|
   x.report("Startup") {
     require 'rubygems'
-    gem 'rack', '=0.9.1' if fx == 'sinatra'
     require 'rack'
 
     config = File.read $app_root + '/config.ru'
@@ -150,8 +149,6 @@ status, headers, body = app.call env
 
 bbody = ''
 body.each {|b| bbody << b}
-
-colsize = 79
 
 puts "="*colsize, "Body:", bbody
 puts "-"*colsize, "Headers:", headers.inspect
