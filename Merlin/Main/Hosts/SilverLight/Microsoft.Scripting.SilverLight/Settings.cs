@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Windows;
 using System.IO;
+using System.Windows.Browser;
 
 namespace Microsoft.Scripting.Silverlight {
     internal static class Settings {
@@ -28,8 +29,6 @@ namespace Microsoft.Scripting.Silverlight {
         /// </summary>
         internal static string EntryPoint {
             get {
-                if (_entryPoint != null)
-                    return _entryPoint;
                 Stream stream = null;
                 if (_entryPoint == null) {
                     if (DynamicApplication.Current.Engine == null || DynamicApplication.Current.Engine.Runtime == null)
@@ -44,8 +43,17 @@ namespace Microsoft.Scripting.Silverlight {
                             stream = tempStream;
                         }
                     }
-                    if (_entryPoint == null || stream == null)
-                        throw new ApplicationException(string.Format("Application must have an entry point called {0}.*, where * is the language's extension", DefaultEntryPoint));
+                    if (_entryPoint == null && DynamicApplication.Current.ScriptTags.InlineCode.Count == 0)
+                        throw new ApplicationException(string.Format(
+@"Application must either:
+(1) At least one <script type='application/*'></script> tag, where * is a valid language name, or
+(2) Have a script in the XAP file called {0}.*, where * is the language's extension."
+                            , DefaultEntryPoint));
+                }
+                if (_entryPoint != null && stream == null) {
+                    stream = BrowserPAL.PAL.VirtualFilesystem.GetFile(_entryPoint);
+                    if (stream == null)
+                        throw new ApplicationException(string.Format("Application expected to have an entry point called {0}, but was not found (check the {1})", _entryPoint, BrowserPAL.PAL.VirtualFilesystem.Name()));
                 }
                 return _entryPoint;
             }

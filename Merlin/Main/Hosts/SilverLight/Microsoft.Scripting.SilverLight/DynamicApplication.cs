@@ -27,6 +27,7 @@ using Microsoft.Scripting.Utils;
 using System.Net;
 using System.Text.RegularExpressions;
 using System.Windows.Markup;
+using System.Windows.Browser;
 
 namespace Microsoft.Scripting.Silverlight {
 
@@ -67,6 +68,8 @@ namespace Microsoft.Scripting.Silverlight {
         /// Application Manifest abstraction to handle loading assemblies.
         /// </summary>
         public DynamicAppManifest AppManifest { get; private set; }
+
+        internal DynamicScriptTags ScriptTags { get; private set; }
 
         internal static bool InUIThread {
             get { return _UIThreadId == Thread.CurrentThread.ManagedThreadId; }
@@ -187,9 +190,18 @@ namespace Microsoft.Scripting.Silverlight {
 
         void DynamicApplication_Startup(object sender, StartupEventArgs e) {
             Settings.Parse(InitParams = NormalizeInitParams(e.InitParams));
-            Engine = new DynamicEngine();
             AppManifest = new DynamicAppManifest();
-            AppManifest.LoadAssemblies(() => Engine.Start());
+            AppManifest.LoadAssemblies(() => {
+                Engine = new DynamicEngine();
+                ScriptTags = new DynamicScriptTags();
+                ScriptTags.GetScriptTags(() => {
+                    ScriptTags.Run(Engine);
+                    if (Settings.ConsoleEnabled)
+                        Repl.Show();
+                    if (Settings.EntryPoint != null)
+                        Engine.Run(Settings.EntryPoint);
+                });
+            });
         }
 
         private IDictionary<string, string> NormalizeInitParams(IDictionary<string, string> initParams) {

@@ -21,7 +21,7 @@ using System.Reflection;
 using System.Windows.Resources;
 using System.Windows;
 using System.Windows.Browser;
-using Microsoft.Scripting.Utils;
+using System.Net;
 
 namespace Microsoft.Scripting.Silverlight {
 
@@ -122,9 +122,9 @@ namespace Microsoft.Scripting.Silverlight {
         }
 
         #region Depricated Methods
-        [Obsolete("Use DynamicApplication.Current.Engine.GetEntryPointContents() instead")]
+        [Obsolete("This method will be unavaliable in the next version")]
         public string GetEntryPointContents() {
-            return DynamicApplication.Current.Engine.GetEntryPointContents();
+            return ((BrowserPAL)DynamicApplication.Current.Engine.Runtime.Host.PlatformAdaptationLayer).VirtualFilesystem.GetFileContents(Settings.EntryPoint);
         }
 
         [Obsolete("Use DynamicApplication.Current.AppManifest.AssemblyParts() instead")]
@@ -180,6 +180,38 @@ namespace Microsoft.Scripting.Silverlight {
         internal void ClearCache() {
             _cache = null;
             _cache = new Dictionary<Uri, string>();
+        }
+
+        internal void AddToCache(Uri uri, string code) {
+            _cache.Add(uri, code);
+        }
+        
+        private static readonly object _lock = new object();
+
+        internal void DownloadAndCache(List<Uri> uris, Action onComplete) {
+            if(uris.Count == 0) {
+                onComplete.Invoke();
+            }
+            var downloadQueue = new List<Uri>(uris);
+            foreach (var uri in downloadQueue) {
+                WebClient wc = new WebClient();
+                wc.OpenReadCompleted += (sender, e) => {
+                    // Make sure two handlers never step on eachother (could this even happen?)
+                    lock (_lock) {
+                        HtmlPage.Window.Alert("downloaded!");
+                        var content = "";
+                        using(var s = new StreamReader(e.Result)) {
+                            content = s.ReadToEnd();
+                        }
+                        _cache.Add((Uri)e.UserState, content);
+                        downloadQueue.Remove((Uri)e.UserState);
+                        if (downloadQueue.Count == 0) {
+                            onComplete.Invoke();
+                        }
+                    }
+                };
+                wc.OpenReadAsync(uri, uri);
+            }
         }
     }
 

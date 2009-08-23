@@ -23,6 +23,7 @@ using Microsoft.Scripting.Runtime;
 using System.Xml;
 using System.Windows;
 using System.Windows.Browser;
+using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Silverlight {
     public class DynamicEngine {
@@ -31,9 +32,8 @@ namespace Microsoft.Scripting.Silverlight {
         public ScriptEngine Engine { get; private set; }
         public ScriptScope EntryPointScope { get; private set; }
 
-        public void Start() {
+        public DynamicEngine() {
             InitializeRuntime(Settings.Debug);
-            Run(Settings.GetEntryPoint(), Settings.ConsoleEnabled);
         }
 
         public static ScriptRuntimeSetup CreateRuntimeSetup(bool debugMode) {
@@ -70,29 +70,22 @@ namespace Microsoft.Scripting.Silverlight {
         }
 
 
-        private void Run(string entryPoint, bool consoleEnabled) {
-            string code = GetEntryPointContents();
+        public void Run(string entryPoint) {
+            ContractUtils.RequiresNotNull(entryPoint, "entryPoint");
+            
+            string code = ((BrowserPAL)Runtime.Host.PlatformAdaptationLayer).VirtualFilesystem.GetFileContents(entryPoint);
             Engine = Runtime.GetEngineByFileExtension(Path.GetExtension(entryPoint));
             EntryPointScope = Engine.CreateScope();
 
-            if (consoleEnabled) Repl.Show();
-
             ScriptSource sourceCode = Engine.CreateScriptSourceFromString(code, entryPoint, SourceCodeKind.File);
             sourceCode.Compile(new ErrorFormatter.Sink()).Execute(EntryPointScope);
-        }
+        }   
 
         internal IEnumerable<string> LanguageExtensions() {
             foreach (var language in Runtime.Setup.LanguageSetups) {
                 foreach (var ext in language.FileExtensions) {
                     yield return ext;
                 }
-            }
-        }
-
-        public string GetEntryPointContents() {
-            var stream = Runtime.Host.PlatformAdaptationLayer.OpenInputFileStream(Settings.EntryPoint);
-            using (StreamReader sr = new StreamReader(stream)) {
-                return sr.ReadToEnd();
             }
         }
 
