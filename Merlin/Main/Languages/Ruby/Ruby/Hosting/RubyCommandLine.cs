@@ -65,6 +65,16 @@ namespace IronRuby.Hosting {
             return RunFile(Engine.CreateScriptSourceFromFile(RubyUtils.CanonicalizePath(fileName), (((RubyContext)Language).RubyOptions.KCode ?? RubyEncoding.Binary).Encoding));
         }
 
+        protected override void ExecuteCommand(string command) {
+#if SILVERLIGHT
+            base.ExecuteCommand(command);
+#else
+            var kcode = ((RubyContext)Language).RubyOptions.KCode;
+            var encoding = kcode != null ? kcode.Encoding : System.Console.InputEncoding;
+            ExecuteCommand(Engine.CreateScriptSource(new BinaryContentProvider(encoding.GetBytes(command)), null, encoding, SourceCodeKind.InteractiveCode));
+#endif
+        }
+        
         protected override Scope/*!*/ CreateScope() {
             Scope scope = base.CreateScope();
             scope.SetVariable(SymbolTable.StringToId("iron_ruby"), Engine);

@@ -230,7 +230,7 @@ namespace IronRuby.Builtins {
 
             using (IDisposable handle = RubyUtils.InfiniteInspectTracker.TrackObject(self)) {
                 // #<struct Struct::Foo name=nil, val=nil>
-                var result = MutableString.CreateMutable();
+                var result = MutableString.CreateMutable(RubyEncoding.Binary);
                 result.Append("#<struct ");
                 result.Append(context.Inspect(context.GetClassOf(self)));
 
@@ -245,8 +245,9 @@ namespace IronRuby.Builtins {
                     if (i != 0) {
                         result.Append(", ");
                     }
+                    // TODO (encoding):
                     result.Append(members[i]);
-                    result.Append("=");
+                    result.Append('=');
                     result.Append(context.Inspect(data[i]));
                 }
                 result.Append('>');
@@ -257,7 +258,7 @@ namespace IronRuby.Builtins {
         // For some unknown reason Struct defines the method even though it is mixed in from Enumerable
         // Until we discover the difference, delegate to Enumerable#select
         [RubyMethod("select")]
-        public static RubyArray/*!*/ Select(CallSiteStorage<EachSite>/*!*/ each, BlockParam predicate, RubyStruct/*!*/ self) {
+        public static object Select(CallSiteStorage<EachSite>/*!*/ each, BlockParam predicate, RubyStruct/*!*/ self) {
             return Enumerable.Select(each, predicate, self);
         }
 

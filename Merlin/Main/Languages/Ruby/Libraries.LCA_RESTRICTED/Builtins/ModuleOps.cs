@@ -725,7 +725,8 @@ namespace IronRuby.Builtins {
             using (self.Context.ClassHierarchyLocker()) {
                 self.ForEachClassVariable(true, delegate(RubyModule/*!*/ module, string name, object value) {
                     if (name != null && !visited.ContainsKey(name)) {
-                        result.Add(MutableString.Create(name));
+                        // TODO (encoding):
+                        result.Add(MutableString.Create(name, RubyEncoding.UTF8));
                         visited.Add(name, true);
                     }
                     return false;
@@ -787,7 +788,8 @@ namespace IronRuby.Builtins {
 
                     if (!visited.ContainsKey(name)) {
                         visited.Add(name, true);
-                        result.Add(MutableString.Create(name));
+                        // TODO (encoding):
+                        result.Add(MutableString.Create(name, RubyEncoding.UTF8));
                     }
                     return false;
                 });
@@ -879,7 +881,8 @@ namespace IronRuby.Builtins {
             if (symbolicNames) {
                 return SymbolTable.StringToId(name);
             } else {
-                return MutableString.Create(name);
+                // TODO (encoding):
+                return MutableString.Create(name, RubyEncoding.UTF8);
             }
         }
 

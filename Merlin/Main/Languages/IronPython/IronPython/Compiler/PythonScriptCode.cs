@@ -28,13 +28,15 @@ namespace IronPython.Compiler {
     /// arbitrary Scope objects.  This is used for code when the user runs against
     /// a particular scope as well as for exec and eval code as well.
     /// </summary>
-    class PythonScriptCode : ScriptCode {
-        private readonly Func<CodeContext/*!*/, object>/*!*/ _target;
+    class PythonScriptCode : RunnableScriptCode {
+        private readonly Func<CodeContext/*!*/, FunctionCode/*!*/, object>/*!*/ _target;
+        private readonly CompilerContext/*!*/ _context;
 
-        public PythonScriptCode(Func<CodeContext/*!*/, object>/*!*/ target, SourceUnit/*!*/ sourceUnit)
+        public PythonScriptCode(CompilerContext/*!*/ context, Func<CodeContext/*!*/, FunctionCode/*!*/, object>/*!*/ target, SourceUnit/*!*/ sourceUnit)
             : base(sourceUnit) {
-            Assert.NotNull(target);
+            Assert.NotNull(target, context);
 
+            _context = context;
             _target = target;
         }
 
@@ -42,7 +44,14 @@ namespace IronPython.Compiler {
             if (SourceUnit.Kind == SourceCodeKind.Expression) {
                 return EvalWrapper(new Scope());
             }
-            return _target(PythonOps.CreateTopLevelCodeContext(new Scope(), SourceUnit.LanguageContext));
+            
+            CodeContext ctx = CreateTopLevelCodeContext(new Scope(), SourceUnit.LanguageContext);
+            PushFrame(ctx, _target);
+            try {
+                return _target(ctx, EnsureFunctionCode(_target));
+            } finally {
+                PopFrame();
+            }
         }
 
         public override object Run(Scope scope) {
@@ -50,19 +59,39 @@ namespace IronPython.Compiler {
                 return EvalWrapper(scope);
             }
 
-            return _target(PythonOps.CreateTopLevelCodeContext(scope, SourceUnit.LanguageContext));
+            CodeContext ctx = CreateTopLevelCodeContext(scope, SourceUnit.LanguageContext);
+            PushFrame(ctx, _target);
+            try {
+                return _target(ctx, EnsureFunctionCode(_target));
+            } finally {
+                PopFrame();
+            }
+        }
+
+        public override FunctionCode GetFunctionCode() {
+            return EnsureFunctionCode(_target);
         }
 
         public override Scope/*!*/ CreateScope() {
             return new Scope();
         }
 
+        protected override FunctionAttributes GetCodeAttributes() {
+            return GetCodeAttributes(_context);
+        }
+
         // wrapper so we can do minimal code gen for eval code
         private object EvalWrapper(Scope scope) {
             try {
-                return _target(PythonOps.CreateTopLevelCodeContext(scope, SourceUnit.LanguageContext));
+                CodeContext ctx = CreateTopLevelCodeContext(scope, SourceUnit.LanguageContext);
+                try {
+                    PushFrame(ctx, _target);
+                    return _target(ctx, EnsureFunctionCode(_target));
+                } finally {
+                    PopFrame();
+                }
             } catch (Exception) {
-                PythonOps.UpdateStackTrace(new CodeContext(scope, (PythonContext)SourceUnit.LanguageContext), _target.Method, "<module>", "<string>", 0);
+                PythonOps.UpdateStackTrace(new CodeContext(scope, (PythonContext)SourceUnit.LanguageContext), Code, _target.Method, "<module>", "<string>", 0);
                 throw;
             }
         }

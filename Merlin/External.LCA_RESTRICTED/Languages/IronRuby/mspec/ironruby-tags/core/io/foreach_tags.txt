@@ -1,2 +1,0 @@
-fails:IO::foreach updates $. with each yield
-fails:IO::foreach converts second parameter to string and uses as separator

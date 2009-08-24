@@ -168,8 +168,9 @@ namespace IronRuby.StandardLibrary.Yaml {
 
         internal void AddYamlProperties(object self, Dictionary<MutableString, object>/*!*/ map, RubyArray/*!*/ props) {
             foreach (object prop in props) {
+                // TODO: ToString? encoding?
                 string p = prop.ToString();
-                map[MutableString.Create(p.Substring(1))] = KernelOps.InstanceVariableGet(_context, self, p);
+                map[MutableString.Create(p.Substring(1), RubyEncoding.UTF8)] = KernelOps.InstanceVariableGet(_context, self, p);
             }
         }
     }

@@ -1096,6 +1096,7 @@ namespace IronPython.Modules {
 
         public static string strerror(int code) {
             switch(code) {
+                case 0: return "No error";
                 case PythonErrorNumber.E2BIG: return "Arg list too long";
                 case PythonErrorNumber.EACCES: return "Permission denied";
                 case PythonErrorNumber.EAGAIN: return "Resource temporarily unavailable";
@@ -1158,12 +1159,16 @@ namespace IronPython.Modules {
             ProcessStartInfo psi = GetProcessInfo(command);
             psi.CreateNoWindow = false;
 
-            Process process = Process.Start(psi);
-            if (process == null) {
-                return -1;
+            try {
+                Process process = Process.Start(psi);
+                if (process == null) {
+                    return -1;
+                }
+                process.WaitForExit();
+                return process.ExitCode;
+            } catch (Win32Exception) {
+                return 1;
             }
-            process.WaitForExit();
-            return process.ExitCode;
         }
 
         public static string tempnam(CodeContext/*!*/ context) {

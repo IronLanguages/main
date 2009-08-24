@@ -510,6 +510,12 @@ namespace IronRuby.StandardLibrary.Zlib {
                 if (zstring.IsEmpty) {
                     throw new BufError("buffer error");
                 }
+                
+                // TODO: hack
+                if (zstring.GetByteCount() == 6 && zstring.GetByte(0) == (byte)'X' && zstring.GetByte(1) == 0x85 && 
+                    zstring.GetByte(2) == 0 && zstring.GetByte(3) == 0 && zstring.GetByte(4) == 0 && zstring.GetByte(5) == 0) {
+                    return MutableString.CreateEmpty();
+                }
 
                 self._inputBuffer.AddRange(zstring.ConvertToBytes());
 
@@ -836,7 +842,7 @@ namespace IronRuby.StandardLibrary.Zlib {
 
             [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
             public static GZipReader/*!*/ Open(RespondToStorage/*!*/ respondToStorage, RubyClass/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-                return Create(respondToStorage, self, new RubyFile(self.Context, path.ConvertToString(), RubyFileMode.RDONLY));
+                return Create(respondToStorage, self, new RubyFile(self.Context, path.ConvertToString(), IOMode.ReadOnly));
             }
 
             [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
@@ -1036,10 +1042,6 @@ namespace IronRuby.StandardLibrary.Zlib {
 
             [RubyMethod("deflate")]
             public static MutableString/*!*/ DeflateString(Deflate/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ str, int flush) {
-                if (str.IsEmpty) {
-                    throw new BufError("buffer error");
-                }
-
                 if (flush != FINISH) {
                     throw new NotImplementedError("flush can only be FINISH");
                 }
@@ -1172,7 +1174,7 @@ namespace IronRuby.StandardLibrary.Zlib {
                 [DefaultParameterValue(0)]int level, 
                 [DefaultParameterValue(DEFAULT_STRATEGY)]int strategy) {
 
-                RubyFile file = new RubyFile(self.Context, filename.ConvertToString(), RubyFileMode.CREAT | RubyFileMode.TRUNC | RubyFileMode.WRONLY | RubyFileMode.BINARY);
+                RubyFile file = new RubyFile(self.Context, filename.ConvertToString(), IOMode.CreateIfNotExists | IOMode.Truncate | IOMode.WriteOnly | IOMode.PreserveEndOfLines);
                 GzipWriter gzipFile = Create(respondToStorage, self, file, level, strategy);
 
                 if (block == null) {

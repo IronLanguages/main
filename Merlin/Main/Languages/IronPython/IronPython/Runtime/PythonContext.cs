@@ -179,7 +179,7 @@ namespace IronPython.Runtime {
         internal readonly object _codeCleanupLock = new object(), _codeUpdateLock = new object();
         internal int _codeCount, _nextCodeCleanup = 200;
         private int _recursionLimit;
-        internal bool _enableTracing;
+        private bool _enableTracing;
 
         /// <summary>
         /// Creates a new PythonContext not bound to Engine.
@@ -221,10 +221,9 @@ namespace IronPython.Runtime {
             }
 
             if (_options.Frames) {
-                _systemState.Dict[SymbolTable.StringToId("_getframe")] = BuiltinFunction.MakeMethod("_getframe", 
+                _systemState.Dict[SymbolTable.StringToId("_getframe")] = BuiltinFunction.MakeFunction("_getframe", 
                     ArrayUtils.ConvertAll(typeof(SysModule).GetMember("_getframeImpl"), (x) => (MethodBase)x), 
-                    typeof(SysModule), 
-                    FunctionType.Function);
+                    typeof(SysModule));
             }
 
             List path = new List(_options.SearchPaths);
@@ -296,7 +295,7 @@ namespace IronPython.Runtime {
 
         internal bool EnableTracing {
             get {
-                return _enableTracing;
+                return _enableTracing || PythonOptions.Tracing;
             }
             set {
                 lock (_codeUpdateLock) {
@@ -632,16 +631,19 @@ namespace IronPython.Runtime {
 
 
         private Compiler.CompilationMode GetCompilationMode(PythonCompilerOptions options, SourceUnit source) {
+            if ((options.Module & ModuleOptions.ExecOrEvalCode) != 0) {
+                return CompilationMode.Lookup;
+            }
 
             if (ShouldInterpret(options, source)) {
                 // force collectible code for the adaptive compiler.  Technically these should
                 // be orthogonal but 
-                return Compiler.CompilationMode.Collectable;
+                return CompilationMode.Collectable;
             }
 
             return ((_options.Optimize || options.Optimized) && !_options.LightweightScopes) ?
-                Compiler.CompilationMode.Uncollectable :
-                Compiler.CompilationMode.Collectable;
+                CompilationMode.Uncollectable :
+                CompilationMode.Collectable;
         }
 
         internal bool ShouldInterpret(PythonCompilerOptions options, SourceUnit source) {
@@ -727,7 +729,7 @@ namespace IronPython.Runtime {
 
         protected override ScriptCode/*!*/ LoadCompiledCode(Delegate/*!*/ method, string path, string customData) {
             SourceUnit su = new SourceUnit(this, NullTextContentProvider.Null, path, SourceCodeKind.File);
-            return new OnDiskScriptCode((Func<Scope, LanguageContext, object>)method, su, customData);
+            return new OnDiskScriptCode((Func<CodeContext, FunctionCode, object>)method, su, customData);
         }
 
         public override SourceCodeReader/*!*/ GetSourceReader(Stream/*!*/ stream, Encoding/*!*/ defaultEncoding, string path) {
@@ -3713,23 +3715,23 @@ namespace IronPython.Runtime {
         internal void RegisterTracebackHandler() {
             Debug.Assert(_tracePipeline != null);   // ensure debug context should have been called
 
-            if (_tracePipeline.TraceCallback == null) {
-                _tracePipeline.TraceCallback = _tracebackListeners.Peek();
-                EnableTracing = true;
-            }
+            _tracePipeline.TraceCallback = _tracebackListeners.Peek();
+            EnableTracing = true;
         }
 
         internal void UnregisterTracebackHandler() {
             Debug.Assert(_tracePipeline != null);  // ensure debug context should have been called
 
-            if (_tracePipeline.TraceCallback != null) {
-                _tracePipeline.TraceCallback = null;
-                EnableTracing = false;
-            }
+            _tracePipeline.TraceCallback = null;
+            EnableTracing = false;
         }
 
         internal void PushTracebackHandler(PythonTracebackListener listener) {
             if (_debugContext != null) {
+                while (_tracebackListeners.Count > 0 && _tracebackListeners.Peek().ExceptionThrown) {
+                    // remove any orphaned traceback listeners that are just doing pops
+                    _tracebackListeners.Pop();
+                }
                 _tracebackListeners.Push(listener);
             }
         }

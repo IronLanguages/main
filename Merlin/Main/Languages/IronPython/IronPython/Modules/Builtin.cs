@@ -286,16 +286,15 @@ namespace IronPython.Modules {
             string unitPath = String.IsNullOrEmpty(filename) ? null : filename;
 
             switch (mode) {
-                case "exec": sourceUnit = context.LanguageContext.CreateSnippet(source, unitPath, SourceCodeKind.Statements); break;
-                case "eval": sourceUnit = context.LanguageContext.CreateSnippet(source, unitPath, SourceCodeKind.Expression); break;
-                case "single": sourceUnit = context.LanguageContext.CreateSnippet(source, unitPath, SourceCodeKind.InteractiveCode); break;
+                case "exec": sourceUnit = context.LanguageContext.CreateSnippet(source, filename, SourceCodeKind.Statements); break;
+                case "eval": sourceUnit = context.LanguageContext.CreateSnippet(source, filename, SourceCodeKind.Expression); break;
+                case "single": sourceUnit = context.LanguageContext.CreateSnippet(source, filename, SourceCodeKind.InteractiveCode); break;
                 default:
                     throw PythonOps.ValueError("compile() arg 3 must be 'exec' or 'eval' or 'single'");
             }
 
-            ScriptCode compiledCode = sourceUnit.Compile(opts, ThrowingErrorSink.Default);
-
-            return new FunctionCode(compiledCode, cflags, filename);
+            var compiledCode = (RunnableScriptCode)sourceUnit.Compile(opts, ThrowingErrorSink.Default);
+            return compiledCode.GetFunctionCode();
         }
 
         private static string RemoveBom(string source) {
@@ -1736,8 +1735,9 @@ namespace IronPython.Modules {
         /// 
         /// The method binder would usally report an OverflowError in this case.
         /// </summary>
-        public static List range(double stop) {
-            return range(GetRangeAsInt(stop, "stop"));
+        public static List range(CodeContext/*!*/ context, double stop) {
+            PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "range: integer argument expected, got float");
+            return range(GetRangeAsInt(stop, "end"));
         }
 
         /// <summary>
@@ -1745,12 +1745,13 @@ namespace IronPython.Modules {
         /// 
         /// The method binder would usally report an OverflowError in this case.
         /// </summary>
-        public static List range(double start, double stop, [DefaultParameterValue(1.0)]double step) {
-            return range(GetRangeAsInt(start, "start"), GetRangeAsInt(stop, "stop"), GetRangeAsInt(step, "step"));
+        public static List range(CodeContext/*!*/ context, double start, double stop, [DefaultParameterValue(1.0)]double step) {
+            PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "range: integer argument expected, got float");
+            return range(GetRangeAsInt(start, "start"), GetRangeAsInt(stop, "end"), GetRangeAsInt(step, "step"));
         }
 
         private static int GetRangeAsInt(double index, string name) {
-            if (index < Int32.MaxValue || index > Int32.MaxValue) {
+            if (index < Int32.MinValue || index > Int32.MaxValue) {
                 throw PythonOps.TypeError("expected integer for " + name + " argument, got float");
             }
             return (int)index;
@@ -2040,7 +2041,11 @@ namespace IronPython.Modules {
                 } else {
                     pco = new PythonCompilerOptions(PythonLanguageFeatures.Default);
                 }
-            } else if (((cflags & (CompileFlags.CO_FUTURE_DIVISION | CompileFlags.CO_FUTURE_ABSOLUTE_IMPORT | CompileFlags.CO_FUTURE_WITH_STATEMENT)) != 0)) {
+            } else {
+                pco = DefaultContext.DefaultPythonContext.GetPythonCompilerOptions();
+            }
+            
+            if (((cflags & (CompileFlags.CO_FUTURE_DIVISION | CompileFlags.CO_FUTURE_ABSOLUTE_IMPORT | CompileFlags.CO_FUTURE_WITH_STATEMENT)) != 0)) {
                 PythonLanguageFeatures langFeat = PythonLanguageFeatures.Default;
                 if ((cflags & CompileFlags.CO_FUTURE_DIVISION) != 0) {
                     langFeat |= PythonLanguageFeatures.TrueDivision;
@@ -2051,10 +2056,8 @@ namespace IronPython.Modules {
                 if ((cflags & CompileFlags.CO_FUTURE_ABSOLUTE_IMPORT) != 0) {
                     langFeat |= PythonLanguageFeatures.AbsoluteImports;
                 }
-                pco = new PythonCompilerOptions(langFeat);
-            } else {
-                pco = DefaultContext.DefaultPythonContext.GetPythonCompilerOptions();
-            }
+                pco.LanguageFeatures |= langFeat;
+            } 
 
             // The options created this way never creates
             // optimized module (exec, compile)

@@ -151,12 +151,12 @@ namespace IronRuby.Builtins {
         }
 
         private static MutableString/*!*/ JoinArguments(MutableString/*!*/[]/*!*/ args) {
-            MutableString result = MutableString.CreateMutable();
+            MutableString result = MutableString.CreateMutable(RubyEncoding.Binary);
 
             for (int i = 0; i < args.Length; i++) {
                 result.Append(args[i]);
                 if (args.Length > 1 && i < args.Length - 1) {
-                    result.Append(" ");
+                    result.Append(' ');
                 }
             }
 
@@ -171,7 +171,7 @@ namespace IronRuby.Builtins {
                 p.WaitForExit();
                 return p;
             } catch (Exception e) {
-                throw RubyErrno.CreateENOENT(psi.FileName, e);
+                throw RubyExceptions.CreateENOENT(psi.FileName, e);
             }
         }
 
@@ -183,7 +183,7 @@ namespace IronRuby.Builtins {
             try {
                 return Process.Start(psi);
             } catch (Exception e) {
-                throw RubyErrno.CreateENOENT(psi.FileName, e);
+                throw RubyExceptions.CreateENOENT(psi.FileName, e);
             }
         }
 
@@ -203,7 +203,11 @@ namespace IronRuby.Builtins {
         [RubyMethod("`", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
         public static MutableString/*!*/ ExecuteCommand(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]MutableString/*!*/ command) {
             Process p = ExecuteProcessCapturingStandardOutput(GetShell(context, command));
-            MutableString result = MutableString.Create(p.StandardOutput.ReadToEnd());
+            string output = p.StandardOutput.ReadToEnd();
+            if (Environment.NewLine != "\n") {
+                output = output.Replace(Environment.NewLine, "\n");
+            }
+            MutableString result = MutableString.Create(output, RubyEncoding.GetRubyEncoding(p.StandardOutput.CurrentEncoding));
             context.ChildProcessExitStatus = new RubyProcess.Status(p);
             return result;
         }
@@ -379,7 +383,8 @@ namespace IronRuby.Builtins {
                 foreach (KeyValuePair<string, GlobalVariable> global in context.GlobalVariables) {
                     if (global.Value.IsEnumerated) {
                         // TODO: Ruby 1.9 returns symbols:
-                        result.Add(MutableString.Create(global.Key));
+                        // TODO (encoding):
+                        result.Add(MutableString.Create(global.Key, RubyEncoding.UTF8));
                     }
                 }
             }
@@ -436,7 +441,8 @@ namespace IronRuby.Builtins {
 
             RubyArray result = new RubyArray(names.Count);
             for (int i = 0; i < names.Count; i++) {
-                result.Add(MutableString.Create(names[i]));
+                // TODO (encoding):
+                result.Add(MutableString.Create(names[i], RubyEncoding.UTF8));
             }
             return result;
         }
@@ -500,7 +506,7 @@ namespace IronRuby.Builtins {
                 throw new NotImplementedError();
             }
 
-            RubyIO file = new RubyFile(context, fileName, (mode != null) ? mode.ToString() : "r");
+            RubyIO file = new RubyFile(context, fileName, IOModeEnum.Parse(mode));
 
             SetPermission(context, fileName, permission);
 
@@ -535,7 +541,7 @@ namespace IronRuby.Builtins {
                 throw new NotImplementedError();
             }
 
-            RubyIO file = new RubyFile(context, fileName, (RubyFileMode)mode);
+            RubyIO file = new RubyFile(context, fileName, (IOMode)mode);
 
             SetPermission(context, fileName, permission);
 
@@ -566,36 +572,38 @@ namespace IronRuby.Builtins {
             object self, [NotNull]params object[]/*!*/ args) {
 
             var inspect = inspectStorage.GetCallSite("inspect");
-            var inspectedArgs = new object[args.Length];
+            var inspectedArgs = new MutableString[args.Length];
             for (int i = 0; i < args.Length; i++) {
-                inspectedArgs[i] = inspect.Target(inspect, args[i]);
+                inspectedArgs[i] = Protocols.ConvertToString(tosConversion, inspect.Target(inspect, args[i]));
             }
             
             // no dynamic dispatch to "puts":
-            RubyIOOps.Puts(writeStorage, tosConversion, writeStorage.Context.StandardOutput, inspectedArgs);
+            foreach (var arg in inspectedArgs) {
+                PrintOps.Puts(writeStorage, writeStorage.Context.StandardOutput, arg);
+            }
         }
 
         [RubyMethod("print", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("print", RubyMethodAttributes.PublicSingleton)]
         public static void Print(BinaryOpStorage/*!*/ writeStorage, RubyScope/*!*/ scope, object self) {
             // no dynamic dispatch to "print":
-            RubyIOOps.Print(writeStorage, scope, scope.RubyContext.StandardOutput);
+            PrintOps.Print(writeStorage, scope, scope.RubyContext.StandardOutput);
         }
 
         [RubyMethod("print", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("print", RubyMethodAttributes.PublicSingleton)]
         public static void Print(BinaryOpStorage/*!*/ writeStorage, object self, object val) {
             // no dynamic dispatch to "print":
-            RubyIOOps.Print(writeStorage, writeStorage.Context.StandardOutput, val);
+            PrintOps.Print(writeStorage, writeStorage.Context.StandardOutput, val);
         }
 
         [RubyMethod("print", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("print", RubyMethodAttributes.PublicSingleton)]
-        public static void Print(BinaryOpStorage/*!*/ writeStorage, ConversionStorage<MutableString>/*!*/ tosConversion, 
+        public static void Print(BinaryOpStorage/*!*/ writeStorage,  
             object self, [NotNull]params object[]/*!*/ args) {
 
             // no dynamic dispatch to "print":
-            RubyIOOps.Print(writeStorage, tosConversion, tosConversion.Context.StandardOutput, args);
+            PrintOps.Print(writeStorage, writeStorage.Context.StandardOutput, args);
         }
 
         // this overload is called only if the first parameter is string:
@@ -631,46 +639,46 @@ namespace IronRuby.Builtins {
         [RubyMethod("putc", RubyMethodAttributes.PublicSingleton)]
         public static MutableString/*!*/ Putc(BinaryOpStorage/*!*/ writeStorage, object self, [NotNull]MutableString/*!*/ arg) {
             // no dynamic dispatch:
-            return RubyIOOps.Putc(writeStorage, writeStorage.Context.StandardOutput, arg);
+            return PrintOps.Putc(writeStorage, writeStorage.Context.StandardOutput, arg);
         }
 
         [RubyMethod("putc", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("putc", RubyMethodAttributes.PublicSingleton)]
         public static int Putc(BinaryOpStorage/*!*/ writeStorage, object self, [DefaultProtocol]int arg) {
             // no dynamic dispatch:
-            return RubyIOOps.Putc(writeStorage, writeStorage.Context.StandardOutput, arg);
+            return PrintOps.Putc(writeStorage, writeStorage.Context.StandardOutput, arg);
         }
 
         [RubyMethod("puts", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("puts", RubyMethodAttributes.PublicSingleton)]
         public static void PutsEmptyLine(BinaryOpStorage/*!*/ writeStorage, object self) {
             // call directly, no dynamic dispatch to "self":
-            RubyIOOps.PutsEmptyLine(writeStorage, writeStorage.Context.StandardOutput);
+            PrintOps.PutsEmptyLine(writeStorage, writeStorage.Context.StandardOutput);
         }
 
         [RubyMethod("puts", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("puts", RubyMethodAttributes.PublicSingleton)]
-        public static void PutString(BinaryOpStorage/*!*/ writeStorage, ConversionStorage<MutableString>/*!*/ tosConversion, 
-            object self, object arg) {
+        public static void PutString(BinaryOpStorage/*!*/ writeStorage, ConversionStorage<MutableString>/*!*/ tosConversion,
+            ConversionStorage<IList>/*!*/ tryToAry, object self, object arg) {
 
             // call directly, no dynamic dispatch to "self":
-            RubyIOOps.Puts(writeStorage, tosConversion, writeStorage.Context.StandardOutput, arg);
+            PrintOps.Puts(writeStorage, tosConversion, tryToAry, writeStorage.Context.StandardOutput, arg);
         }
 
         [RubyMethod("puts", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("puts", RubyMethodAttributes.PublicSingleton)]
         public static void PutString(BinaryOpStorage/*!*/ writeStorage, object self, [NotNull]MutableString/*!*/ arg) {
             // call directly, no dynamic dispatch to "self":
-            RubyIOOps.Puts(writeStorage, writeStorage.Context.StandardOutput, arg);
+            PrintOps.Puts(writeStorage, writeStorage.Context.StandardOutput, arg);
         }
 
         [RubyMethod("puts", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("puts", RubyMethodAttributes.PublicSingleton)]
-        public static void PutString(BinaryOpStorage/*!*/ writeStorage, ConversionStorage<MutableString>/*!*/ tosConversion, 
-            object self, [NotNull]params object[]/*!*/ args) {
+        public static void PutString(BinaryOpStorage/*!*/ writeStorage, ConversionStorage<MutableString>/*!*/ tosConversion,
+            ConversionStorage<IList>/*!*/ tryToAry, object self, [NotNull]params object[]/*!*/ args) {
 
             // call directly, no dynamic dispatch to "self":
-            RubyIOOps.Puts(writeStorage, tosConversion, writeStorage.Context.StandardOutput, args);
+            PrintOps.Puts(writeStorage, tosConversion, tryToAry, writeStorage.Context.StandardOutput, args);
         }
 
         [RubyMethod("warn", RubyMethodAttributes.PrivateInstance)]
@@ -678,13 +686,7 @@ namespace IronRuby.Builtins {
         public static void ReportWarning(BinaryOpStorage/*!*/ writeStorage, ConversionStorage<MutableString>/*!*/ tosConversion, 
             object self, object message) {
 
-            if (writeStorage.Context.Verbose != null) {
-                var output = writeStorage.Context.StandardErrorOutput;
-                // MRI: unlike Kernel#puts this outputs \n even if the message ends with \n:
-                var site = writeStorage.GetCallSite("write", 1);
-                site.Target(site, output, RubyIOOps.ToPrintedString(tosConversion, message));
-                RubyIOOps.PutsEmptyLine(writeStorage, output);
-            }
+            PrintOps.ReportWarning(writeStorage, tosConversion, message);
         }
 
         // TODO: not supported in Ruby 1.9
@@ -911,14 +913,14 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("sleep", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("sleep", RubyMethodAttributes.PublicSingleton)]
-        public static double Sleep(object self, double seconds) {
+        public static int Sleep(object self, double seconds) {
             if (seconds < 0) {
                 throw RubyExceptions.CreateArgumentError("time interval must be positive");
             }
 
             double ms = seconds * 1000;
             Thread.Sleep(ms > Int32.MaxValue ? Timeout.Infinite : (int)ms);
-            return seconds;
+            return (int)seconds;
         }
         
         //split
@@ -930,7 +932,7 @@ namespace IronRuby.Builtins {
         public static MutableString/*!*/ Sprintf(StringFormatterSiteStorage/*!*/ storage, 
             object self, [DefaultProtocol, NotNull]MutableString/*!*/ format, [NotNull]params object[] args) {
 
-            return new StringFormatter(storage, format.ConvertToString(), args).Format();
+            return new StringFormatter(storage, format.ConvertToString(), format.Encoding, args).Format();
         }
 
         //sub
@@ -1137,7 +1139,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("to_s")]
         public static MutableString/*!*/ ToS(object self) {
-            return self == null ? MutableString.CreateEmpty() : MutableString.Create(self.ToString());
+            return self == null ? MutableString.CreateEmpty() : MutableString.Create(self.ToString(), RubyEncoding.UTF8);
         }
 
         /// <summary>
@@ -1146,24 +1148,19 @@ namespace IronRuby.Builtins {
         /// </summary>
         [RubyMethod("inspect")]
         public static MutableString/*!*/ Inspect(UnaryOpStorage/*!*/ inspectStorage, ConversionStorage<MutableString>/*!*/ tosConversion,
-            object self)
-        {
+            object self) {
 
             var context = tosConversion.Context;
-            if (context.HasInstanceVariables(self))
-            {
+            if (context.HasInstanceVariables(self)) {
                 return RubyUtils.InspectObject(inspectStorage, tosConversion, self);
-            }
-            else
-            {
+            } else {
                 var site = tosConversion.GetSite(ConvertToSAction.Make(context));
                 return site.Target(site, self);
             }
         }
 
         [RubyMethod("to_a")]
-        public static RubyArray/*!*/ ToA(RubyContext/*!*/ context, object self)
-        {
+        public static RubyArray/*!*/ ToA(RubyContext/*!*/ context, object self) {
             RubyArray result = new RubyArray();
             result.Add(self);
             return context.TaintObjectBy(result, self);
@@ -1363,7 +1360,8 @@ namespace IronRuby.Builtins {
 
             RubyArray result = new RubyArray(names.Length);
             foreach (string name in names) {
-                result.Add(MutableString.Create(name));
+                // TODO (encoding):
+                result.Add(MutableString.Create(name, RubyEncoding.UTF8));
             }
             return result;
         }

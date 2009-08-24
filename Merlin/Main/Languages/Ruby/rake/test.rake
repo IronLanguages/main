@@ -70,13 +70,13 @@ namespace :test do
     IRTest.test(:Yaml)
   end
 
-  desc "(NOT IMPLEMENTED) Run tests corresponding to samples"
+  desc "Run tests corresponding to samples"
   task :samples => :happy do
-
+    IRTest.test(:Tutorial)
   end
 
   desc "Run all tests"
-  task :all => [:compile, "compile:ironpython", :smoke, :legacy, :spec_a, :spec_b, :spec_c, :apps]
+  task :all => [:compile, "compile:ironpython", :smoke, :legacy, :spec_a, :spec_b, :spec_c, :apps, :samples]
 end
 
 task :default => "test:all"

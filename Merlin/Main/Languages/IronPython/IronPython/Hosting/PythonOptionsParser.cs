@@ -143,6 +143,9 @@ namespace IronPython.Hosting {
                 case "-X:FullFrames":
                     LanguageSetup.Options["Frames"] = LanguageSetup.Options["FullFrames"] = ScriptingRuntimeHelpers.True;
                     break;
+                case "-X:Tracing":
+                    LanguageSetup.Options["Tracing"] = ScriptingRuntimeHelpers.True;
+                    break;
                 case "-X:GCStress":
                     int gcStress;
                     if (!StringUtils.TryParseInt32(PopNextArg(), out gcStress) || (gcStress < 0 || gcStress > GC.MaxGeneration)) {
@@ -239,6 +242,7 @@ namespace IronPython.Hosting {
 
                 { "-X:Frames",              "Enable basic sys._getframe support" },
                 { "-X:FullFrames",          "Enable sys._getframe with access to locals" },
+                { "-X:Tracing",             "Enable support for tracing all methods even before sys.settrace is called" },
                 { "-X:GCStress",            "Specifies the GC stress level (the generation to collect each statement)" },
                 { "-X:MaxRecursion",        "Set the maximum recursion level" },
                 { "-X:Debug",               "Enable application debugging (preferred over -D)" },

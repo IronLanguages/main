@@ -16,6 +16,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using Microsoft.Contracts;
 
 namespace Microsoft.Scripting.Utils {
@@ -58,13 +59,13 @@ namespace Microsoft.Scripting.Utils {
             // in the objects being kept alive forever. The caller needs to ensure that this cannot happen.
             Debug.Assert(!dict.ContainsKey(value));
 
-            dict.Add(new WeakObject<TKey>(key), value);
+            dict.Add(new WeakObject(key), value);
         }
 
         [Confined]
         public bool ContainsKey(TKey key) {
-            // We dont have to worry about creating "new WeakObject<TKey>(key)" since the comparer
-            // can compare raw objects with WeakObject<T>.
+            // We dont have to worry about creating "new WeakObject(key)" since the comparer
+            // can compare raw objects with WeakObject.
             return dict.ContainsKey(key);
         }
 
@@ -101,7 +102,7 @@ namespace Microsoft.Scripting.Utils {
                 // in the objects being kept alive forever. The caller needs to ensure that this cannot happen.
                 Debug.Assert(!dict.ContainsKey(value));
 
-                dict[new WeakObject<TKey>(key)] = value;
+                dict[new WeakObject(key)] = value;
             }
         }
 
@@ -147,7 +148,7 @@ namespace Microsoft.Scripting.Utils {
             int liveCount = 0;
             int emptyCount = 0;
 
-            foreach (WeakObject<TKey> w in dict.Keys) {
+            foreach (WeakObject w in dict.Keys) {
                 if (w.Target != null)
                     liveCount++;
                 else
@@ -158,7 +159,7 @@ namespace Microsoft.Scripting.Utils {
             if (emptyCount > liveCount / 4) {
                 Dictionary<object, TValue> newtable = new Dictionary<object, TValue>(liveCount + liveCount / 4, comparer);
 
-                foreach (WeakObject<TKey> w in dict.Keys) {
+                foreach (WeakObject w in dict.Keys) {
                     object target = w.Target;
 
                     if (target != null)
@@ -239,18 +240,18 @@ namespace Microsoft.Scripting.Utils {
         #endregion
     }
 
-    internal class WeakObject<T> {
+    internal class WeakObject {
         WeakReference weakReference;
         int hashCode;
 
-        public WeakObject(T obj) {
+        public WeakObject(object obj) {
             weakReference = new WeakReference(obj, true);
-            hashCode = (obj == null) ? 0 : obj.GetHashCode();
+            hashCode = (obj == null) ? 0 : RuntimeHelpers.GetHashCode(obj);
         }
 
-        public T Target {
+        public object Target {
             get {
-                return (T)weakReference.Target;
+                return weakReference.Target;
             }
         }
 
@@ -266,30 +267,30 @@ namespace Microsoft.Scripting.Utils {
                 return false;
             }
 
-            return ((T)target).Equals(obj);
+            return target.Equals(obj);
         }
     }
 
     // WeakComparer treats WeakObject as transparent envelope
     sealed class WeakComparer<T> : IEqualityComparer<T> {
         bool IEqualityComparer<T>.Equals(T x, T y) {
-            WeakObject<T> wx = x as WeakObject<T>;
+            WeakObject wx = x as WeakObject;
             if (wx != null)
-                x = wx.Target;
+                x = (T)wx.Target;
 
-            WeakObject<T> wy = y as WeakObject<T>;
+            WeakObject wy = y as WeakObject;
             if (wy != null)
-                y = wy.Target;
+                y = (T)wy.Target;
 
             return Object.Equals(x, y);
         }
 
         int IEqualityComparer<T>.GetHashCode(T obj) {
-            WeakObject<T> wobj = obj as WeakObject<T>;
+            WeakObject wobj = obj as WeakObject;
             if (wobj != null)
                 return wobj.GetHashCode();
 
-            return (obj == null) ? 0 : obj.GetHashCode();
+            return (obj == null) ? 0 : RuntimeHelpers.GetHashCode(obj);
         }
     }
 
@@ -302,7 +303,8 @@ namespace Microsoft.Scripting.Utils {
         private const int SIZE = 4096;
         private const int MIN_RANGE = SIZE / 2;
 
-        public HybridMapping() : this(0) {
+        public HybridMapping()
+            : this(0) {
         }
 
         public HybridMapping(int offset) {
@@ -327,7 +329,7 @@ namespace Microsoft.Scripting.Utils {
                     if (_current == saved)
                         throw new InvalidOperationException("HybridMapping is full");
                 }
-                _dict.Add(_current, new WeakObject<T>(value));
+                _dict.Add(_current, new WeakObject(value));
                 return _current;
             }
         }
@@ -348,9 +350,9 @@ namespace Microsoft.Scripting.Utils {
         public T GetObjectFromId(int id) {
             object ret;
             if (_dict.TryGetValue(id, out ret)) {
-                WeakObject<T> weakObj = ret as WeakObject<T>;
+                WeakObject weakObj = ret as WeakObject;
                 if (weakObj != null) {
-                    return weakObj.Target;
+                    return (T)weakObj.Target;
                 }
                 if (ret is T) {
                     return (T)ret;
@@ -364,8 +366,8 @@ namespace Microsoft.Scripting.Utils {
         public int GetIdFromObject(T value) {
             lock (_synchObject) {
                 foreach (KeyValuePair<int, object> kv in _dict) {
-                    if (kv.Value is WeakObject<T>) {
-                        object target = ((WeakObject<T>)kv.Value).Target;
+                    if (kv.Value is WeakObject) {
+                        object target = ((WeakObject)kv.Value).Target;
                         if (target != null && target.Equals(value))
                             return kv.Key;
                     } else if (kv.Value is T) {

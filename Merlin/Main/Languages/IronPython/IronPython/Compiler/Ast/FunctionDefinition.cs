@@ -56,7 +56,6 @@ namespace IronPython.Compiler.Ast {
         private List<SymbolId> _closureVars;
 
         private static MSAst.ParameterExpression _functionParam = Ast.Parameter(typeof(PythonFunction), "$function");
-        internal static MSAst.ParameterExpression _functionStack = Ast.Variable(typeof(List<FunctionStack>), "funcStack");
 
         public bool IsLambda {
             get {
@@ -308,6 +307,8 @@ namespace IronPython.Compiler.Ast {
             List<MSAst.Expression> names = new List<MSAst.Expression>();
 
             List<MSAst.Expression> init = new List<MSAst.Expression>();
+            init.Add(Ast.ClearDebugInfo(ag.Document));
+
             TransformParameters(ag, bodyGen, defaults, names, needsWrapperMethod, init);
 
             MSAst.Expression parentContext;
@@ -387,8 +388,8 @@ namespace IronPython.Compiler.Ast {
             }
 
             if (_body.CanThrow && ag.PyContext.PythonOptions.Frames) {
-                body = AddFrame(bodyGen.LocalContext, _functionParam, body);
-                bodyGen.AddHiddenVariable(_functionStack);
+                body = AstGenerator.AddFrame(bodyGen.LocalContext, Ast.Property(_functionParam, typeof(PythonFunction).GetProperty("__code__")), body);
+                bodyGen.AddHiddenVariable(AstGenerator._functionStack);
             }
 
             body = bodyGen.AddProfiling(body);
@@ -415,16 +416,15 @@ namespace IronPython.Compiler.Ast {
             );
 
             Delegate originalDelegate;
-            MSAst.LambdaExpression code; code = Ast.Lambda(
+            MSAst.LambdaExpression code = Ast.Lambda(
                 GetDelegateType(_parameters, needsWrapperMethod, out originalDelegate),
                 AstGenerator.AddDefaultReturn(bodyStmt, typeof(object)),
                 bodyGen.Name + "$" + _lambdaId++,
                 bodyGen.Parameters
             );
-            
 
             // create the function code object which all function instances will share
-            MSAst.Expression funcCode = Ast.Constant(
+            MSAst.Expression funcCode = ag.Globals.GetConstant(
                 new FunctionCode(
                     ag.PyContext,
                     ag.EmitDebugSymbols ? null : originalDelegate,
@@ -442,6 +442,7 @@ namespace IronPython.Compiler.Ast {
                     bodyGen.HandlerLocationsNoCreate
                 )                
             );
+            bodyGen.FuncCodeExpr = funcCode;
 
             MSAst.Expression ret;
             if (ag.EmitDebugSymbols && !ag.PyContext.EnableTracing) {
@@ -477,36 +478,6 @@ namespace IronPython.Compiler.Ast {
             return ret;
         }
 
-        /// <summary>
-        /// Creates a method frame for tracking purposes and enforces recursion
-        /// </summary>
-        internal static MSAst.Expression AddFrame(MSAst.Expression localContext, MSAst.Expression function, MSAst.Expression body) {
-            body = AstUtils.Try(
-                Ast.Assign(
-                    _functionStack,
-                    Ast.Call(
-                        typeof(PythonOps).GetMethod("PushFrame"),
-                        localContext,
-                        function
-                    )
-                ),
-                body
-            ).Finally(
-                Ast.Call(
-                    _functionStack,
-                    typeof(List<FunctionStack>).GetMethod("RemoveAt"),
-                    Ast.Add(
-                        Ast.Property(
-                            _functionStack,
-                            "Count"
-                        ),
-                        Ast.Constant(-1)
-                    )
-                )                
-            );
-
-            return body;
-        }
 
         private void TransformParameters(AstGenerator outer, AstGenerator inner, List<MSAst.Expression> defaults, List<MSAst.Expression> names, bool needsWrapperMethod, List<MSAst.Expression> init) {
             inner.Parameter(_functionParam);

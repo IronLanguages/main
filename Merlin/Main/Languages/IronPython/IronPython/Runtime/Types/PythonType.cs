@@ -374,6 +374,26 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             return 0;
         }
 
+        [Python3Warning("type inequality comparisons not supported in 3.x")]
+        public static bool operator >(PythonType self, PythonType other) {
+            return self.__cmp__(other) > 0;
+        }
+
+        [Python3Warning("type inequality comparisons not supported in 3.x")]
+        public static bool operator <(PythonType self, PythonType other) {
+            return self.__cmp__(other) < 0;
+        }
+
+        [Python3Warning("type inequality comparisons not supported in 3.x")]
+        public static bool operator >=(PythonType self, PythonType other) {
+            return self.__cmp__(other) >= 0;
+        }
+
+        [Python3Warning("type inequality comparisons not supported in 3.x")]
+        public static bool operator <=(PythonType self, PythonType other) {
+            return self.__cmp__(other) <= 0;
+        }
+
         public void __delattr__(CodeContext/*!*/ context, string name) {
             DeleteCustomMember(context, SymbolTable.StringToId(name));
         }
@@ -957,7 +977,13 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 if (value) _attrs |= PythonTypeAttributes.HasDictionary;
                 else _attrs &= (~PythonTypeAttributes.HasDictionary);
             }
-        }        
+        }
+
+        internal bool HasSystemCtor {
+            get {
+                return (_attrs & PythonTypeAttributes.SystemCtor) != 0;
+            }
+        }
 
         internal void SetConstructor(BuiltinFunction ctor) {
             _ctor = ctor;
@@ -1758,7 +1784,31 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
             lock (_userTypeCtors) {
                 if (!_userTypeCtors.TryGetValue(_underlyingSystemType, out _ctor)) {
-                    _userTypeCtors[_underlyingSystemType] = _ctor = BuiltinFunction.MakeMethod(Name, _underlyingSystemType.GetConstructors(), _underlyingSystemType, FunctionType.Function);
+                    ConstructorInfo[] ctors = _underlyingSystemType.GetConstructors();
+
+                    bool isPythonType = false;
+                    foreach (ConstructorInfo ci in ctors) {
+                        ParameterInfo[] pis = ci.GetParameters();
+                        if((pis.Length > 1 && pis[0].ParameterType == typeof(CodeContext) && pis[1].ParameterType == typeof(PythonType)) ||
+                            (pis.Length > 0 && pis[0].ParameterType == typeof(PythonType))) {
+                            isPythonType = true;
+                            break;
+                        }
+                    }
+
+                    _ctor = BuiltinFunction.MakeFunction(Name, ctors, _underlyingSystemType);
+
+                    if (isPythonType) {
+                        _userTypeCtors[_underlyingSystemType] = _ctor;
+                    } else {
+                        // __clrtype__ returned a type w/o any PythonType parameters, force this to
+                        // be created like a normal .NET type.  Presumably the user is planning on storing
+                        // the Python type in a static field or something and passing the Type object to
+                        // some .NET API which wants to Activator.CreateInstance on it w/o providing a 
+                        // PythonType object.
+                        _instanceCtor = new SystemInstanceCreator(this);
+                        _attrs |= PythonTypeAttributes.SystemCtor;
+                    }
                 }
             }
 
@@ -1950,6 +2000,14 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             return hasSlot;
         }
 
+        /// <summary>
+        /// Gets the .NET type which is used for instances of the Python type.
+        /// 
+        /// When overridden by a metaclass enables a customization of the .NET type which
+        /// is used for instances of the Python type.  Meta-classes can construct custom
+        /// types at runtime which include new .NET methods, fields, custom attributes or
+        /// other features to better interoperate with .NET.
+        /// </summary>
         [PythonHidden]
         public virtual Type __clrtype__() {
             return _underlyingSystemType;
@@ -2145,11 +2203,10 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         private void AddSystemConstructors() {
             if (typeof(Delegate).IsAssignableFrom(_underlyingSystemType)) {
                 SetConstructor(
-                    BuiltinFunction.MakeMethod(
+                    BuiltinFunction.MakeFunction(
                         _underlyingSystemType.Name,
-                        typeof(DelegateOps).GetMethod("__new__"),
-                        _underlyingSystemType,
-                        FunctionType.Function | FunctionType.AlwaysVisible
+                        new[] { typeof(DelegateOps).GetMethod("__new__") },
+                        _underlyingSystemType
                     )
                 );
             } else if (!_underlyingSystemType.IsAbstract) {
@@ -2273,6 +2330,12 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             IsPythonType = 0x04,
             WeakReferencable = 0x08,
             HasDictionary = 0x10,
+
+            /// <summary>
+            /// The type has a ctor which does not accept PythonTypes.  This is used
+            /// for user defined types which implement __clrtype__
+            /// </summary>
+            SystemCtor    = 0x20
         }
 
         #endregion

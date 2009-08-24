@@ -3,7 +3,6 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>10.0.20624</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{77323B06-15A2-4CF4-8A7A-86EAA2B66498}</ProjectGuid>
     <OutputType>Library</OutputType>
@@ -86,6 +85,7 @@
     <Compile Include="Builtins\FileTest.cs" />
     <Compile Include="Builtins\FixnumOps.cs" />
     <Compile Include="Builtins\FloatOps.cs" />
+    <Compile Include="Builtins\PrintOps.cs" />
     <Compile Include="Builtins\RubyGC.cs" />
     <Compile Include="Builtins\HashOps.cs" />
     <Compile Include="Builtins\Integer.cs" />
@@ -103,6 +103,7 @@
     <Compile Include="Builtins\Numeric.cs" />
     <Compile Include="Builtins\ObjectOps.cs" />
     <Compile Include="Builtins\Precision.cs" />
+    <Compile Include="Builtins\RubyPipe.cs" />
     <Compile Include="Builtins\RubyProcess.cs" />
     <Compile Include="Builtins\ProcOps.cs" />
     <Compile Include="Builtins\RangeOps.cs" />
@@ -142,6 +143,7 @@
     <Compile Include="FileControl\Fcntl.cs" />
     <Compile Include="Iconv\Iconv.cs" />
     <Compile Include="Initializers.Generated.cs" />
+    <Compile Include="Open3\Open3.cs" />
     <Compile Include="OpenSSL\OpenSSL.cs" />
     <Compile Include="ParseTree\IronRubyParseTreeOps.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

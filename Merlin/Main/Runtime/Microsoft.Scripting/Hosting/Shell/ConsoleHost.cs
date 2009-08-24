@@ -164,12 +164,6 @@ namespace Microsoft.Scripting.Hosting.Shell {
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         public virtual int Run(string[] args) {
-#if !SILVERLIGHT
-            if (typeof(DynamicMethod).GetConstructor(new Type[] { typeof(string), typeof(Type), typeof(Type[]), typeof(bool) }) == null) {
-                Console.WriteLine("IronPython requires .NET 2.0 SP1 or later to run.");
-                Environment.Exit(1);
-            }
-#endif
             var runtimeSetup = CreateRuntimeSetup();
             var options = new ConsoleHostOptions();
             _optionsParser = new ConsoleHostOptionsParser(options, runtimeSetup);
@@ -208,6 +202,13 @@ namespace Microsoft.Scripting.Hosting.Shell {
                 Console.Error.WriteLine(e.Message);
                 return _exitCode = -1;
             }
+
+#if !SILVERLIGHT
+            if (typeof(DynamicMethod).GetConstructor(new Type[] { typeof(string), typeof(Type), typeof(Type[]), typeof(bool) }) == null) {
+                Console.WriteLine(string.Format("{0} requires .NET 2.0 SP1 or later to run.", languageSetup.DisplayName));
+                Environment.Exit(1);
+            }
+#endif
 
             _runtime = new ScriptRuntime(runtimeSetup);
 

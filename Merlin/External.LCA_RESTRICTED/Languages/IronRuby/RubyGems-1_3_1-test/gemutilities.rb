@@ -53,7 +53,12 @@ class RubyGemTestCase < MiniTest::Unit::TestCase
 
     @ui = MockGemUi.new
     tmpdir = nil
-    Dir.chdir Dir.tmpdir do tmpdir = Dir.pwd end # HACK OSX /private/tmp
+    if defined? RUBY_ENGINE and RUBY_ENGINE == "ironruby"
+      # workaround for http://rubyforge.org/tracker/?func=detail&group_id=126&aid=24169&atid=575
+      tmpdir = Dir.tmpdir
+    else
+      Dir.chdir Dir.tmpdir do tmpdir = Dir.pwd end # HACK OSX /private/tmp
+    end
     @tempdir = File.join tmpdir, "test_rubygems_#{$$}"
     @tempdir.untaint
     @gemhome = File.join @tempdir, "gemhome"

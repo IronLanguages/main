@@ -26,6 +26,7 @@ namespace IronRuby.Builtins {
 
         public Match/*!*/ Match { get { return _match; } }
         public MutableString/*!*/ OriginalString { get { return _originalString; } }
+        public RubyEncoding/*!*/ Encoding { get { return _originalString.Encoding; } }
         public bool Success { get { return _match.Success; } }
         public GroupCollection Groups { get { return _match.Groups; } }
         public int Index { get { return _match.Index; } }
@@ -69,7 +70,7 @@ namespace IronRuby.Builtins {
 
         public MutableString GetGroupValue(RubyContext/*!*/ context, int index) {
             var group = Groups[index];
-            return group.Success ? MutableString.Create(group.Value).TaintBy(this, context) : null;
+            return group.Success ? MutableString.Create(group.Value, Encoding).TaintBy(this, context) : null;
         }
 
         public Group/*!*/ GetExistingGroup(int index) {

@@ -37,7 +37,7 @@ describe "IO#syswrite on a file" do
   end
 
   it "does not warn if called after IO#write with intervening IO#sysread" do
-    @file.syswrite("abcde")
+    @file.write("abcde")
     @file.sysread(5)
     lambda { @file.syswrite("fghij") }.should_not complain
   end

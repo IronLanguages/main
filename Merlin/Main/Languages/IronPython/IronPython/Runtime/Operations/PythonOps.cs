@@ -1244,11 +1244,17 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static object MakeClass(object body, CodeContext/*!*/ parentContext, string name, object[] bases, string selfNames) {
+            Func<CodeContext, CodeContext> func = GetClassCode(body);
+
+            return MakeClass(parentContext, name, bases, selfNames, func(parentContext).Scope.Dict);
+        }
+
+        private static Func<CodeContext, CodeContext> GetClassCode(object body) {
             Func<CodeContext, CodeContext> func = body as Func<CodeContext, CodeContext>;
             if (func == null) {
                 func = ((Compiler.LazyCode<Func<CodeContext, CodeContext>>)body).EnsureDelegate();
             }
-            return MakeClass(parentContext, name, bases, selfNames, func(parentContext).Scope.Dict);
+            return func;
         }
 
         internal static object MakeClass(CodeContext context, string name, object[] bases, string selfNames, IAttributesCollection vars) {
@@ -1382,6 +1388,9 @@ namespace IronPython.Runtime.Operations {
         /// Python Runtime Helper for enumerator unpacking (tuple assignments, ...)
         /// Creates enumerator from the input parameter e, and then extracts 
         /// expected number of values, returning them as array
+        /// 
+        /// If the input is a Python tuple returns the tuples underlying data array.  Callers
+        /// should not mutate the resulting tuple.
         /// </summary>
         /// <param name="context">The code context of the AST getting enumerator values.</param>
         /// <param name="e">object to enumerate</param>
@@ -1391,6 +1400,11 @@ namespace IronPython.Runtime.Operations {
         /// Otherwise throws exception
         /// </returns>
         public static object[] GetEnumeratorValues(CodeContext/*!*/ context, object e, int expected) {
+            if (e != null && e.GetType() == typeof(PythonTuple)) {
+                // fast path for tuples, avoid enumerating & copying the tuple.
+                return GetEnumeratorValuesFromTuple((PythonTuple)e, expected);
+            }
+
             IEnumerator ie = PythonOps.GetEnumeratorForUnpack(context, e);
 
             int count = 0;
@@ -1409,6 +1423,14 @@ namespace IronPython.Runtime.Operations {
             }
 
             return values;
+        }
+
+        private static object[] GetEnumeratorValuesFromTuple(PythonTuple pythonTuple, int expected) {
+            if (pythonTuple.Count == expected) {
+                return pythonTuple._data;
+            }
+
+            throw PythonOps.ValueErrorForUnpackMismatch(expected, pythonTuple.Count);
         }
 
         /// <summary>
@@ -1431,7 +1453,7 @@ namespace IronPython.Runtime.Operations {
                 f = pc.SystemStandardOut;
             }
             if (f == null || f == Uninitialized.Instance) {
-                throw PythonOps.RuntimeError("lost sys.std_out");
+                throw PythonOps.RuntimeError("lost sys.stdout");
             }
 
             PythonFile pf = f as PythonFile;
@@ -1772,7 +1794,7 @@ namespace IronPython.Runtime.Operations {
                 SourceUnit source;
 
                 if (noLineFeed) {
-                    source = pythonContext.CreateSourceUnit(new NoLineFeedSourceContentProvider(strCode), null, SourceCodeKind.Statements);
+                    source = pythonContext.CreateSourceUnit(new NoLineFeedSourceContentProvider(strCode), "<string>", SourceCodeKind.Statements);
                 } else {
                     source = pythonContext.CreateSnippet(strCode, SourceCodeKind.Statements);
                 }
@@ -1780,12 +1802,12 @@ namespace IronPython.Runtime.Operations {
                 PythonCompilerOptions compilerOptions = Builtin.GetRuntimeGeneratedCodeCompilerOptions(context, true, 0);
 
                 // do interpretation only on strings -- not on files, streams, or code objects
-                code = new FunctionCode(pythonContext.CompilePythonCode(Compiler.CompilationMode.Lookup, source, compilerOptions, ThrowingErrorSink.Default));
+                code = ((RunnableScriptCode)pythonContext.CompilePythonCode(Compiler.CompilationMode.Lookup, source, compilerOptions, ThrowingErrorSink.Default)).GetFunctionCode();
             }
 
             FunctionCode fc = code as FunctionCode;
             if (fc == null) {
-                throw PythonOps.TypeError("arg 1 must be a string, file, Stream, or code object");
+                throw PythonOps.TypeError("arg 1 must be a string, file, Stream, or code object, not {0}", PythonTypeOps.GetName(code));
             }
 
             if (locals == null) locals = globals;
@@ -1796,7 +1818,16 @@ namespace IronPython.Runtime.Operations {
             }
 
             Scope execScope = Builtin.GetExecEvalScope(context, globals, Builtin.GetAttrLocals(context, locals), true, false);
-            fc.Call(context, execScope);
+            if (context.LanguageContext.PythonOptions.Frames) {
+                List<FunctionStack> stack = PushFrame(new CodeContext(execScope, context.LanguageContext), fc);
+                try {
+                    fc.Call(context, execScope);
+                } finally {
+                    stack.RemoveAt(stack.Count - 1);
+                }
+            } else {
+                fc.Call(context, execScope);
+            }
         }
 
         #endregion
@@ -2021,26 +2052,19 @@ namespace IronPython.Runtime.Operations {
                 }
 
                 PythonDynamicStackFrame pyFrame = frame as PythonDynamicStackFrame;
-                CodeContext context;
                 if (pyFrame != null) {
-                    context = pyFrame.CodeContext;
-                } else {
-                    context = DefaultContext.Default;
+                    CodeContext context = pyFrame.CodeContext;
+                    FunctionCode code = pyFrame.Code;
+
+                    TraceBackFrame tbf = new TraceBackFrame(
+                        context,
+                        new PythonDictionary(new GlobalScopeDictionaryStorage(context.Scope)),
+                        context.Scope.Dict,
+                        code);
+
+                    tb = new TraceBack(tb, tbf);
+                    tb.SetLine(frame.GetFileLineNumber());
                 }
-
-                // TODO?: We could consider scanning our weak list of function codes and getting the
-                // live function code associated with this code.  But that won't necessarily always
-                // work and might be very slow.
-
-                FunctionCode code = new FunctionCode(name, frame.GetFileName(), frame.GetFileLineNumber());
-                TraceBackFrame tbf = new TraceBackFrame(
-                    context,
-                    new PythonDictionary(new GlobalScopeDictionaryStorage(context.Scope)),
-                    context.Scope.Dict,
-                    code);
-
-                tb = new TraceBack(tb, tbf);
-                tb.SetLine(frame.GetFileLineNumber());
             }
 
             e.Data[typeof(TraceBack)] = tb;
@@ -2389,6 +2413,37 @@ namespace IronPython.Runtime.Operations {
             }
 
             return true;
+        }
+
+        public static object PythonFunctionGetMember(PythonFunction function, SymbolId name) {
+            object res;
+            if (function._dict != null && function._dict.TryGetValue(name, out res)) {
+                return res;
+            }
+
+            return OperationFailed.Value;
+        }
+
+        public static object PythonFunctionSetMember(PythonFunction function, SymbolId name, object value) {
+            return function.__dict__[name] = value;
+        }
+
+        public static void PythonFunctionDeleteDict() {
+            throw PythonOps.TypeError("function's dictionary may not be deleted");
+        }
+
+        public static void PythonFunctionDeleteDoc(PythonFunction function) {
+            function.__doc__ = null;
+        }
+
+        public static void PythonFunctionDeleteDefaults(PythonFunction function) {
+            function.__defaults__ = null;
+        }
+
+        public static bool PythonFunctionDeleteMember(PythonFunction function, SymbolId name) {
+            if (function._dict == null) return false;
+
+            return function._dict.Remove(name);
         }
 
         /// <summary>
@@ -3701,12 +3756,7 @@ namespace IronPython.Runtime.Operations {
             throw NameError(name);
         }
 
-        public static CodeContext/*!*/ CreateTopLevelCodeContext(Scope/*!*/ scope, LanguageContext/*!*/ context) {
-            context.EnsureScopeExtension(CodeContext.GetModuleScope(scope));
-            return new CodeContext(scope, (PythonContext)context);
-        }
-
-        public static PythonGlobal/*!*/[]/*!*/ GetGlobalArray(Scope/*!*/ scope) {
+        private static PythonGlobal/*!*/[]/*!*/ GetGlobalArray(Scope/*!*/ scope) {
             return ((GlobalDictionaryStorage)((PythonDictionary)scope.Dict)._storage).Data;
         }
 
@@ -3886,9 +3936,10 @@ namespace IronPython.Runtime.Operations {
 
         public static SyntaxErrorException BadSourceError(byte badByte, SourceSpan span, string path) {
             SyntaxErrorException res = new SyntaxErrorException(
-                String.Format("Non-ASCII character '\\x{0:x}' in file x.py on line {1}, but no encoding declared; see http://www.python.org/peps/pep-0263.html for details",
+                String.Format("Non-ASCII character '\\x{0:x2}' in file {2} on line {1}, but no encoding declared; see http://www.python.org/peps/pep-0263.html for details",
                     badByte,
-                    span.Start.Line
+                    span.Start.Line,
+                    path
                 ),
                 path,
                 null,
@@ -4094,7 +4145,7 @@ namespace IronPython.Runtime.Operations {
             return _funcStack.GetOrCreate(Creator);
         }
 
-        public static List<FunctionStack> PushFrame(CodeContext context, PythonFunction function) {
+        public static List<FunctionStack> PushFrame(CodeContext context, FunctionCode function) {
             List<FunctionStack> stack = GetFunctionStack();
             stack.Add(new FunctionStack(context, function));
             return stack;
@@ -4109,7 +4160,7 @@ namespace IronPython.Runtime.Operations {
             );
         }
 
-        public static void UpdateStackTrace(CodeContext context, MethodBase method, string funcName, string filename, int line) {
+        public static void UpdateStackTrace(CodeContext context, FunctionCode funcCode, MethodBase method, string funcName, string filename, int line) {
             if (line != -1) {
                 Debug.Assert(filename != null);
                 if (ExceptionHelpers.DynamicStackFrames == null) {
@@ -4118,21 +4169,31 @@ namespace IronPython.Runtime.Operations {
 
                 Debug.Assert(line != SourceLocation.None.Line);
 
-                ExceptionHelpers.DynamicStackFrames.Add(new PythonDynamicStackFrame(context, method, funcName, filename, line));
+                ExceptionHelpers.DynamicStackFrames.Add(new PythonDynamicStackFrame(context, funcCode, method, funcName, filename, line));
             }
         }
 
     }
 
     public struct FunctionStack {
-        public readonly CodeContext Context;
-        public readonly PythonFunction Function;
+        public readonly CodeContext/*!*/ Context;
+        public readonly FunctionCode/*!*/ Code;
         public TraceBackFrame Frame;
 
-        public FunctionStack(CodeContext/*!*/ context, PythonFunction/*!*/ function) {
+        internal FunctionStack(CodeContext/*!*/ context, FunctionCode/*!*/ code) {
+            Assert.NotNull(context, code);
+
             Context = context;
-            Function = function;
+            Code = code;
             Frame = null;
+        }
+
+        internal FunctionStack(CodeContext/*!*/ context, FunctionCode/*!*/ code, TraceBackFrame frame) {
+            Assert.NotNull(context, code);
+
+            Context = context;
+            Code = code;
+            Frame = frame;
         }
     }
 

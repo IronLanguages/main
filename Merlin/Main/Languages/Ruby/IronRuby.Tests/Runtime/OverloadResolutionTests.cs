@@ -139,7 +139,7 @@ namespace IronRuby.Tests {
 
             var c = Engine.Execute(@"class C < X; new; end");
             var sym = SymbolTable.StringToId("x");
-            var ms = MutableString.Create("x");
+            var ms = MutableString.CreateAscii("x");
 
             var cases = new[] {
                 // F

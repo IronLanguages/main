@@ -81,12 +81,12 @@ namespace IronRuby.Builtins {
         [RubyMethod("name")]
         [RubyMethod("to_s")]
         public static MutableString/*!*/ GetName(TypeGroup/*!*/ self) {
-            return MutableString.Create(self.Name);
+            return MutableString.Create(self.Name, RubyEncoding.UTF8);
         }
 
         [RubyMethod("inspect")]
         public static MutableString/*!*/ Inspect(RubyContext/*!*/ context, TypeGroup/*!*/ self) {
-            var result = MutableString.CreateMutable();
+            var result = MutableString.CreateMutable(RubyEncoding.ClassName);
             result.Append("#<TypeGroup: ");
 
             bool isFirst = true;
@@ -101,7 +101,7 @@ namespace IronRuby.Builtins {
 
                 result.Append(context.GetTypeName(type, true));
             }
-            result.Append(">");
+            result.Append('>');
 
             return result;
         }

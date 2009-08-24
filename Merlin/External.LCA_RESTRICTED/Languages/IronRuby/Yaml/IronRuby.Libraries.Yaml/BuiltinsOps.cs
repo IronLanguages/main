@@ -24,6 +24,7 @@ using Microsoft.Scripting.Runtime;
 using System.Runtime.InteropServices;
 using Microsoft.Scripting.Generation;
 using System.Collections.Generic;
+using System.Globalization;
 
 namespace IronRuby.StandardLibrary.Yaml {
 
@@ -37,7 +38,7 @@ namespace IronRuby.StandardLibrary.Yaml {
             BinaryOpStorage/*!*/ greaterThanStorage,
             object self) {
             return ArrayOps.SortInPlace(comparisonStorage, lessThanStorage, greaterThanStorage,
-                null, KernelOps.InstanceVariables(comparisonStorage.Context, self)
+                KernelOps.InstanceVariables(comparisonStorage.Context, self)
             );
         }
 
@@ -59,11 +60,10 @@ namespace IronRuby.StandardLibrary.Yaml {
         }
 
         [RubyMethod("taguri")]
-        public static MutableString TagUri(RubyContext/*!*/ context, object self) {
-            MutableString str = MutableString.Create("!ruby/object:");
-            str.Append(context.GetClassName(self));
-            str.Append(' ');
-            return str;
+        public static MutableString/*!*/ TagUri(RubyContext/*!*/ context, object self) {
+            return MutableString.Create("!ruby/object:", RubyEncoding.ClassName).
+                Append(context.GetClassName(self)).
+                Append(' ');
         }
     }
 
@@ -93,8 +93,8 @@ namespace IronRuby.StandardLibrary.Yaml {
         }
 
         [RubyMethod("taguri")]
-        public static MutableString TagUri(RubyContext/*!*/ context, object self) {
-            return MutableString.Create("tag:yaml.org,2002:map");
+        public static MutableString/*!*/ TagUri(RubyContext/*!*/ context, object self) {
+            return MutableString.CreateAscii("tag:yaml.org,2002:map");
         }
     }
 
@@ -106,8 +106,8 @@ namespace IronRuby.StandardLibrary.Yaml {
         }
 
         [RubyMethod("taguri")]
-        public static MutableString TagUri(RubyContext/*!*/ context, object self) {
-            return MutableString.Create("tag:yaml.org,2002:seq");
+        public static MutableString/*!*/ TagUri(RubyContext/*!*/ context, object self) {
+            return MutableString.CreateAscii("tag:yaml.org,2002:seq");
         }
     }
 
@@ -118,15 +118,16 @@ namespace IronRuby.StandardLibrary.Yaml {
             var fieldNames = self.GetNames();
             var map = new Dictionary<MutableString, object>(fieldNames.Count);
             for (int i = 0; i < fieldNames.Count; i++) {
-                map[MutableString.Create(fieldNames[i])] = self.GetValue(i);
+                // TODO: symbol encodings
+                map[MutableString.Create(fieldNames[i], RubyEncoding.UTF8)] = self.GetValue(i);
             }
             rep.AddYamlProperties(self, map);
             return rep.Map(self, map);
         }
 
         [RubyMethod("taguri")]
-        public static MutableString TagUri(RubyStruct/*!*/ self) {
-            MutableString str = MutableString.Create("tag:ruby.yaml.org,2002:struct:");
+        public static MutableString/*!*/ TagUri(RubyStruct/*!*/ self) {
+            MutableString str = MutableString.CreateMutable("tag:ruby.yaml.org,2002:struct:", RubyEncoding.ClassName);
             string name = self.ImmediateClass.GetNonSingletonClass().Name;
             if (name != null) {
                 string structPrefix = "Struct::";
@@ -146,7 +147,7 @@ namespace IronRuby.StandardLibrary.Yaml {
 
             var site = messageStorage.GetCallSite("message", 0);
             var map = new Dictionary<MutableString, object>() {
-                { MutableString.Create("message"), site.Target(site, self) }
+                { MutableString.CreateAscii("message"), site.Target(site, self) }
             };
             
             rep.AddYamlProperties(self, map);
@@ -155,9 +156,9 @@ namespace IronRuby.StandardLibrary.Yaml {
 
         [RubyMethod("taguri")]
         public static MutableString TagUri(RubyContext/*!*/ context, object self) {
-            MutableString str = MutableString.Create("!ruby/exception:");
-            str.Append(context.GetClassName(self));
-            return str;
+            return MutableString.CreateMutable(RubyEncoding.ClassName).
+                Append("!ruby/exception:").
+                Append(context.GetClassName(self));
         }
     }
 
@@ -221,7 +222,7 @@ namespace IronRuby.StandardLibrary.Yaml {
             }
 
             var map = new Dictionary<MutableString, object>() {
-                { MutableString.Create("str"), str }
+                { MutableString.CreateAscii("str"), str }
             };
             rep.AddYamlProperties(self, map, props);
             return rep.Map(self, map);
@@ -229,7 +230,7 @@ namespace IronRuby.StandardLibrary.Yaml {
 
         [RubyMethod("taguri")]
         public static MutableString/*!*/ TagUri(object self) {
-            return MutableString.Create("tag:yaml.org,2002:str");
+            return MutableString.CreateAscii("tag:yaml.org,2002:str");
         }
     }
 
@@ -242,7 +243,7 @@ namespace IronRuby.StandardLibrary.Yaml {
 
         [RubyMethod("taguri")]
         public static MutableString/*!*/ TagUri(object self) {
-            return MutableString.Create("tag:yaml.org,2002:int");
+            return MutableString.CreateAscii("tag:yaml.org,2002:int");
         }
     }
 
@@ -254,8 +255,8 @@ namespace IronRuby.StandardLibrary.Yaml {
         } 
 
         [RubyMethod("taguri")]
-        public static MutableString/*!*/ TagUri([NotNull]BigInteger self) {     
-            return MutableString.Create("tag:yaml.org,2002:int:Bignum");            
+        public static MutableString/*!*/ TagUri([NotNull]BigInteger self) {
+            return MutableString.CreateAscii("tag:yaml.org,2002:int:Bignum");            
         }
     }
 
@@ -266,11 +267,11 @@ namespace IronRuby.StandardLibrary.Yaml {
             MutableString str = Protocols.ConvertToString(tosConversion, self);
             if (str != null) {
                 if (str.Equals("Infinity")) {
-                    str = MutableString.Create(".Inf");
+                    str = MutableString.CreateAscii(".Inf");
                 } else if (str.Equals("-Infinity")) {
-                    str = MutableString.Create("-.Inf");
+                    str = MutableString.CreateAscii("-.Inf");
                 } else if (str.Equals("NaN")) {
-                    str = MutableString.Create(".NaN");
+                    str = MutableString.CreateAscii(".NaN");
                 }
             }
             return rep.Scalar(self, str);
@@ -278,7 +279,7 @@ namespace IronRuby.StandardLibrary.Yaml {
 
         [RubyMethod("taguri")]
         public static MutableString/*!*/ TagUri(double self) {
-            return MutableString.Create("tag:yaml.org,2002:float");
+            return MutableString.CreateAscii("tag:yaml.org,2002:float");
         }
     }
 
@@ -292,9 +293,9 @@ namespace IronRuby.StandardLibrary.Yaml {
             var end = endStorage.GetCallSite("end");
 
             var map = new Dictionary<MutableString, object>() {
-                { MutableString.Create("begin"), begin.Target(begin, self) },
-                { MutableString.Create("end"), end.Target(end, self) },
-                { MutableString.Create("excl"), self.ExcludeEnd },
+                { MutableString.CreateAscii("begin"), begin.Target(begin, self) },
+                { MutableString.CreateAscii("end"), end.Target(end, self) },
+                { MutableString.CreateAscii("excl"), self.ExcludeEnd },
             };
 
             rep.AddYamlProperties(self, map);
@@ -303,7 +304,7 @@ namespace IronRuby.StandardLibrary.Yaml {
 
         [RubyMethod("taguri")]
         public static MutableString TagUri([NotNull]Range self) {
-            return MutableString.Create("tag:ruby.yaml.org,2002:range");
+            return MutableString.CreateAscii("tag:ruby.yaml.org,2002:range");
         }
     }
 
@@ -316,7 +317,7 @@ namespace IronRuby.StandardLibrary.Yaml {
 
         [RubyMethod("taguri")]
         public static MutableString/*!*/ TagUri(RubyRegex/*!*/ self) {
-            return MutableString.Create("tag:ruby.yaml.org,2002:regexp");
+            return MutableString.CreateAscii("tag:ruby.yaml.org,2002:regexp");
         }
     }
 
@@ -325,12 +326,12 @@ namespace IronRuby.StandardLibrary.Yaml {
         [RubyMethod("to_yaml_node", RubyMethodAttributes.PrivateInstance)]
         public static Node/*!*/ ToYaml(DateTime self, [NotNull]RubyRepresenter/*!*/ rep) {
             string format = (self.Millisecond != 0) ? "yyyy-MM-dd HH:mm:ss.fffffff K" : "yyyy-MM-dd HH:mm:ss K";
-            return rep.Scalar(self, MutableString.Create(self.ToString(format)));
+            return rep.Scalar(self, MutableString.CreateAscii(self.ToString(format, CultureInfo.InvariantCulture)));
         }
 
         [RubyMethod("taguri")]
         public static MutableString/*!*/ TagUri(DateTime self) {
-            return MutableString.Create("tag:yaml.org,2002:timestamp");
+            return MutableString.CreateAscii("tag:yaml.org,2002:timestamp");
         }
     }
 
@@ -343,7 +344,7 @@ namespace IronRuby.StandardLibrary.Yaml {
         
         [RubyMethod("taguri")]
         public static MutableString/*!*/ TagUri(object self) {
-            return MutableString.Create("tag:yaml.org,2002:str");
+            return MutableString.CreateAscii("tag:yaml.org,2002:str");
         }
     }
 
@@ -356,7 +357,7 @@ namespace IronRuby.StandardLibrary.Yaml {
 
         [RubyMethod("taguri")]
         public static MutableString/*!*/ TagUri(object self) {
-            return MutableString.Create("tag:yaml.org,2002:bool");
+            return MutableString.CreateAscii("tag:yaml.org,2002:bool");
         }
     }
 
@@ -369,7 +370,7 @@ namespace IronRuby.StandardLibrary.Yaml {
 
         [RubyMethod("taguri")]
         public static MutableString/*!*/ TagUri(object self) {
-            return MutableString.Create("tag:yaml.org,2002:bool");
+            return MutableString.CreateAscii("tag:yaml.org,2002:bool");
         }
     }
 
@@ -382,7 +383,7 @@ namespace IronRuby.StandardLibrary.Yaml {
 
         [RubyMethod("taguri")]
         public static MutableString/*!*/ TagUri(object self) {
-            return MutableString.Create("tag:yaml.org,2002:null");
+            return MutableString.CreateAscii("tag:yaml.org,2002:null");
         }
     }
 

@@ -44,16 +44,16 @@ namespace IronPython.Compiler.Ast {
 
             if (body is MSAst.ConstantExpression) {
                 object value = ((MSAst.ConstantExpression)body).Value;
-                return new PythonScriptCode(codeCtx => value, context.SourceUnit);
+                return new PythonScriptCode(context, (codeCtx, functionCode) => value, context.SourceUnit);
             }
 
-            var lambda = Ast.Lambda<Func<CodeContext, object>>(
+            var lambda = Ast.Lambda<Func<CodeContext, FunctionCode, object>>(
                 Utils.Convert(body, typeof(object)),
                 pco.ModuleName ?? "<unnamed>",
-                ArrayGlobalAllocator._globalContextList
+                ArrayGlobalAllocator._arrayFuncParams
             );
 
-            Func<CodeContext, object> func;
+            Func<CodeContext, FunctionCode, object> func;
 
             if (pc.ShouldInterpret(pco, context.SourceUnit)) {
                 func = CompilerHelpers.LightCompile(lambda);
@@ -61,7 +61,7 @@ namespace IronPython.Compiler.Ast {
                 func = lambda.Compile(context.SourceUnit.EmitDebugSymbols);
             }
 
-            return new PythonScriptCode(func, context.SourceUnit);
+            return new PythonScriptCode(context, func, context.SourceUnit);
         }
 
         public override MSAst.Expression/*!*/ GlobalContext {

@@ -368,7 +368,7 @@ class CSProjCompiler
 
   def transform_config_file(configuration, source_path, target_build_path)
     # signing is on for IronRuby in Merlin, off for SVN and Binary
-    layout = {'Merlin' => { :LibraryPaths => '..\..\Languages\Ruby\libs;..\..\..\External.LCA_RESTRICTED\Languages\Ruby\Ruby-1.8.6p287\lib\ruby\site_ruby\1.8;..\..\..\External.LCA_RESTRICTED\Languages\Ruby\Ruby-1.8.6p287\lib\ruby\site_ruby;..\..\..\External.LCA_RESTRICTED\Languages\Ruby\Ruby-1.8.6p287\lib\ruby\1.8' }, 
+    layout = {'Merlin' => { :LibraryPaths => '..\..\Languages\Ruby\libs;..\..\..\External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\site_ruby\1.8;..\..\..\External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\site_ruby;..\..\..\External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.8' }, 
               'Binary' => { :LibraryPaths => '..\lib\IronRuby;..\lib\ruby\site_ruby\1.8;..\lib\ruby\site_ruby;..\lib\ruby\1.8' } }
     
     transform_config source_path, target_build_path, layout[configuration][:LibraryPaths]
@@ -404,7 +404,6 @@ IronRubyCompiler = CSProjCompiler.new do
                 
   dlr_libs  :references => ['Microsoft.Scripting.Core.dll', '!System.Xml.dll', '!System.dll', '!System.Configuration.dll', 'Microsoft.Scripting.ExtensionAttribute.dll','!System.Runtime.Remoting.dll'],
             :switches   => ['target:library'], 
-            :resources  => {Pathname.new('Math') + 'MathResources.resx' => Pathname.new('Microsoft.Scripting.Math.MathResources.resources')}, 
             :output     => 'Microsoft.Scripting.dll', 
             :csproj     => 'Microsoft.Scripting.csproj',
             :dir        => '../../Runtime/Microsoft.Scripting'

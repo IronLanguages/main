@@ -119,6 +119,9 @@ namespace IronPython.Runtime.Binding {
                 case ExpressionType.OnesComplement:
                     res = BindingHelpers.AddPythonBoxing(MakeUnaryOperation(operation, arg, Symbols.OperatorOnesComplement));
                     break;
+                case ExpressionType.Not:
+                    res = MakeUnaryNotOperation(operation, arg, typeof(object));
+                    break;
                 case ExpressionType.IsFalse:
                     res = MakeUnaryNotOperation(operation, arg, typeof(bool));
                     retType = typeof(bool);
@@ -1121,11 +1124,18 @@ namespace IronPython.Runtime.Binding {
             SlotOrFunction.GetCombinedTargets(fop, rop, out fop, out rop);
             SlotOrFunction.GetCombinedTargets(cmp, rcmp, out cmp, out rcmp);
 
+            bool shouldWarn = false;
+            WarningInfo info = null;
+
             // first try __op__ or __rop__ and return the value
+            shouldWarn = fop.ShouldWarn(state, out info);
             if (MakeOneCompareGeneric(fop, false, types, MakeCompareReturn, bodyBuilder, typeof(object))) {
+                shouldWarn = shouldWarn || rop.ShouldWarn(state, out info);
                 if (MakeOneCompareGeneric(rop, true, types, MakeCompareReturn, bodyBuilder, typeof(object))) {
 
                     // then try __cmp__ or __rcmp__ and compare the resulting int appropriaetly
+                    shouldWarn = shouldWarn || cmp.ShouldWarn(state, out info);
+
                     if (ShouldCoerce(state, opString, xType, yType, true)) {
                         DoCoerce(state, bodyBuilder, PythonOperationKind.Compare, types, false, delegate(Expression e) {
                             return GetCompareTest(op, e, false);
@@ -1141,6 +1151,8 @@ namespace IronPython.Runtime.Binding {
                         },
                         bodyBuilder,
                         typeof(object))) {
+
+                        shouldWarn = shouldWarn || rcmp.ShouldWarn(state, out info);
 
                         if (ShouldCoerce(state, opString, yType, xType, true)) {
                             DoCoerce(state, bodyBuilder, PythonOperationKind.Compare, rTypes, true, delegate(Expression e) {
@@ -1163,7 +1175,12 @@ namespace IronPython.Runtime.Binding {
                 }
             }
 
-            return bodyBuilder.GetMetaObject(types);
+            DynamicMetaObject res = bodyBuilder.GetMetaObject(types);
+            if (!shouldWarn || res == null) {
+                return res;
+            } else {
+                return info.AddWarning(Ast.Constant(state.SharedContext), res);
+            }
         }
 
         /// <summary>
@@ -1711,7 +1728,7 @@ namespace IronPython.Runtime.Binding {
                     }
 
                     WarningInfo info;
-                    if (BindingWarnings.ShouldWarn(Binder, target.Method, out info)) {
+                    if (BindingWarnings.ShouldWarn(Binder.Context, target.Method, out info)) {
                         res = info.AddWarning(Ast.Constant(PythonContext.SharedContext), res);
                     }
                 } else if (customFailure == null || (res = customFailure()) == null) {

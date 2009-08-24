@@ -86,7 +86,6 @@ namespace Microsoft.Scripting {
 
         public SourceUnit(LanguageContext context, TextContentProvider contentProvider, string path, SourceCodeKind kind) {
             Assert.NotNull(context, contentProvider);
-            Debug.Assert(path == null || path.Length > 0);
             Debug.Assert(context.CanCreateSourceCode);
 
             _language = context;

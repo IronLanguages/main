@@ -14,21 +14,15 @@
  * ***************************************************************************/
 
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Reflection;
-using System.Runtime.Serialization;
-using Microsoft.Scripting.Runtime;
-using IronRuby.Runtime;
-using IronRuby.Builtins;
-using System.IO;
-using System.Linq.Expressions;
 using System.Dynamic;
-using Microsoft.Scripting.Utils;
-using Microsoft.Scripting.Hosting;
+using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
-using Microsoft.Scripting;
+using IronRuby.Builtins;
+using Microsoft.Scripting.Hosting;
+using Microsoft.Scripting.Math;
+using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
+using System.Collections;
 
 namespace IronRuby.Tests {
     #region Custom binders
@@ -682,7 +676,7 @@ end
             AreEqual(MyInvokeMemberBinder.Invoke(misc_class, "ToString"), "FallbackInvokeMember");
         }
 
-        public void Dlr_Convertible() {
+        public void Dlr_Conversions() {
             Engine.Execute(@"
 class C
   def to_int
@@ -696,24 +690,23 @@ class C
   def to_str
     'str'
   end
-
-  def each
-    [1,2,3].each {|x| yield x }
-  end
 end
 ");
             var classC = Runtime.Globals.GetVariable("C");
             var c = Engine.Operations.CreateInstance(classC);
 
-            // TODO:
-            //AreEqual(MyConvertBinder.Convert<int>(c, 10), 1);
-            //AreEqual(MyConvertBinder.Convert<byte>(c, 10), 1);
-            //AreEqual(MyConvertBinder.Convert<string>(c, "FallbackConvert"), "str");
-            //AreEqual(MyConvertBinder.Convert<double>(c, -8.0), 2.0);
-            //AreEqual(MyConvertBinder.Convert<float>(c, -8.0f), 2.0f);
-            //IEnumerable e = MyConvertBinder.Convert<IEnumerable>(c, null)
-            //Assert(e != null);
-            //new List<object>(e);
+            AreEqual(MyConvertBinder.Convert<sbyte>(c, 10), (sbyte)1);
+            AreEqual(MyConvertBinder.Convert<byte>(c, 10), (byte)1);
+            AreEqual(MyConvertBinder.Convert<short>(c, 10), (short)1);
+            AreEqual(MyConvertBinder.Convert<ushort>(c, 10), (ushort)1);
+            AreEqual(MyConvertBinder.Convert<int>(c, 10), 1);
+            AreEqual(MyConvertBinder.Convert<uint>(c, 10), (uint)1);
+            AreEqual(MyConvertBinder.Convert<long>(c, 10), (long)1);
+            AreEqual(MyConvertBinder.Convert<ulong>(c, 10), (ulong)1);
+            AreEqual(MyConvertBinder.Convert<BigInteger>(c, 10), (BigInteger)1);
+            AreEqual(MyConvertBinder.Convert<double>(c, -8.0), 2.0);
+            AreEqual(MyConvertBinder.Convert<float>(c, -8.0f), 2.0f);
+            AreEqual(MyConvertBinder.Convert<string>(c, "FallbackConvert"), "str");
         }
 
         public void Dlr_Indexable() {

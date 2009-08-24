@@ -213,11 +213,26 @@ namespace IronRuby.Builtins {
 
         public ExistError() : this(null, null) { }
         public ExistError(string message) : this(message, null) { }
-        public ExistError(string message, Exception inner) : base(RubyErrno.MakeMessage(message, M), inner) { }
-        public ExistError(MutableString message) : base(RubyErrno.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
+        public ExistError(string message, Exception inner) : base(RubyExceptions.MakeMessage(message, M), inner) { }
+        public ExistError(MutableString message) : base(RubyExceptions.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
 
 #if !SILVERLIGHT
         protected ExistError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
+            : base(info, context) { }
+#endif
+    }
+
+    [Serializable]
+    public class BadFileDescriptorError : ExternalException {
+        private const string/*!*/ M = "Bad file descriptor";
+
+        public BadFileDescriptorError() : this(null, null) { }
+        public BadFileDescriptorError(string message) : this(message, null) { }
+        public BadFileDescriptorError(string message, Exception inner) : base(RubyExceptions.MakeMessage(message, M), inner) { }
+        public BadFileDescriptorError(MutableString message) : base(RubyExceptions.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
+
+#if !SILVERLIGHT
+        protected BadFileDescriptorError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
             : base(info, context) { }
 #endif
     }
@@ -228,8 +243,8 @@ namespace IronRuby.Builtins {
 
         public InvalidError() : this(null, null) { }
         public InvalidError(string message) : this(message, null) { }
-        public InvalidError(string message, Exception inner) : base(RubyErrno.MakeMessage(message, M), inner) { }
-        public InvalidError(MutableString message) : base(RubyErrno.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
+        public InvalidError(string message, Exception inner) : base(RubyExceptions.MakeMessage(message, M), inner) { }
+        public InvalidError(MutableString message) : base(RubyExceptions.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
 
 #if !SILVERLIGHT
         protected InvalidError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)

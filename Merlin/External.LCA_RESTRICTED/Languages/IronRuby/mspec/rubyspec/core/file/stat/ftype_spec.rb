@@ -20,13 +20,15 @@ describe "File::Stat#ftype" do
     end
   end
 
-  it "returns 'characterSpecial' when the file is a char"  do
-    FileSpecs.character_device do |char|
-      File.lstat(char).ftype.should == 'characterSpecial'
+  platform_is_not :windows do
+    it "returns 'characterSpecial' when the file is a char"  do
+      FileSpecs.character_device do |char|
+        File.lstat(char).ftype.should == 'characterSpecial'
+      end
     end
   end
 
-  platform_is_not :freebsd do  # FreeBSD does not have block devices
+  platform_is_not :freebsd, :windows do  # FreeBSD does not have block devices
     it "returns 'blockSpecial' when the file is a block" do
       FileSpecs.block_device do |block|
         File.lstat(block).ftype.should == 'blockSpecial'
@@ -34,15 +36,19 @@ describe "File::Stat#ftype" do
     end
   end
 
-  it "returns 'link' when the file is a link" do
-    FileSpecs.symlink do |link|
-      File.lstat(link).ftype.should == 'link'
+  platform_is_not :windows do
+    it "returns 'link' when the file is a link" do
+      FileSpecs.symlink do |link|
+        File.lstat(link).ftype.should == 'link'
+      end
     end
   end
 
-  it "returns fifo when the file is a fifo" do
-    FileSpecs.fifo do |fifo|
-      File.lstat(fifo).ftype.should == 'fifo'
+  platform_is_not :windows do
+    it "returns fifo when the file is a fifo" do
+      FileSpecs.fifo do |fifo|
+        File.lstat(fifo).ftype.should == 'fifo'
+      end
     end
   end
 
@@ -50,9 +56,11 @@ describe "File::Stat#ftype" do
   # can be found. However, if you are running X, there is
   # a good chance that if nothing else, at least the X
   # Server socket exists.
-  it "returns 'socket' when the file is a socket" do
-    FileSpecs.socket do |socket|
-      File.lstat(socket).ftype.should == 'socket'
+  platform_is_not :windows do
+    it "returns 'socket' when the file is a socket" do
+      FileSpecs.socket do |socket|
+        File.lstat(socket).ftype.should == 'socket'
+     end
     end
   end
 end
