@@ -187,8 +187,9 @@ describe "String#gsub with pattern and replacement" do
   end
 
   it "raises a TypeError when pattern can't be converted to a string" do
-    lambda { "hello".gsub(:woot, "x") }.should raise_error(TypeError)
-    lambda { "hello".gsub(?e, "x")    }.should raise_error(TypeError)
+    lambda { "hello".gsub([], "x")            }.should raise_error(TypeError)
+    lambda { "hello".gsub(Object.new, "x")    }.should raise_error(TypeError)
+    lambda { "hello".gsub(nil, "x")           }.should raise_error(TypeError)
   end
   
   it "tries to convert replacement to a string using to_str" do
@@ -199,8 +200,9 @@ describe "String#gsub with pattern and replacement" do
   end
   
   it "raises a TypeError when replacement can't be converted to a string" do
-    lambda { "hello".gsub(/[aeiou]/, :woot) }.should raise_error(TypeError)
-    lambda { "hello".gsub(/[aeiou]/, ?f)    }.should raise_error(TypeError)
+    lambda { "hello".gsub(/[aeiou]/, [])            }.should raise_error(TypeError)
+    lambda { "hello".gsub(/[aeiou]/, Object.new)    }.should raise_error(TypeError)
+    lambda { "hello".gsub(/[aeiou]/, nil)           }.should raise_error(TypeError)
   end
   
   it "returns subclass instances when called on a subclass" do
@@ -224,6 +226,100 @@ describe "String#gsub with pattern and replacement" do
   
     'hello.'.gsub(/not/, 'x')
     $~.should == nil
+  end
+end
+
+ruby_version_is "1.9" do
+
+  describe "String#gsub with pattern and Hash" do
+  
+    it "returns a copy of self with all occurrences of pattern replaced with the value of the corresponding hash key" do
+      "hello".gsub(/./, 'l' => 'L').should == "LL"
+      "hello!".gsub(/(.)(.)/, 'he' => 'she ', 'll' => 'said').should == 'she said'
+      "hello".gsub('l', 'l' => 'el').should == 'heelelo'
+    end
+    
+    it "ignores keys that don't correspond to matches" do
+      "hello".gsub(/./, 'z' => 'L', 'h' => 'b', 'o' => 'ow').should == "bow"
+    end
+
+    it "returns an empty string if the pattern matches but the hash specifies no replacements" do
+      "hello".gsub(/./, 'z' => 'L').should == ""
+    end
+
+    it "ignores non-String keys" do
+      "hello".gsub(/(ll)/, 'll' => 'r', :ll => 'z').should == "hero"
+    end
+
+    it "uses a key's value as many times as needed" do
+      "food".gsub(/o/, 'o' => '0').should == "f00d"
+    end
+
+    it "uses the hash's default value for missing keys" do
+      hsh = new_hash
+      hsh.default='?'
+      hsh['o'] = '0'
+      "food".gsub(/./, hsh).should == "?00?"
+    end
+
+    it "coerces the hash values with #to_s" do
+      hsh = new_hash
+      hsh.default=[]
+      hsh['o'] = 0
+      obj = mock('!')
+      obj.should_receive(:to_s).and_return('!')
+      hsh['!'] = obj
+      "food!".gsub(/./, hsh).should == "[]00[]!"
+    end
+
+    it "raises a TypeError if the hash has a default proc" do
+      hsh = new_hash
+      hsh.default_proc = lambda { 'lamb' }
+      lambda do
+        "food!".gsub(/./, hsh)
+      end.should_not raise_error(TypeError)
+    end
+    
+    it "sets $~ to MatchData of last match and nil when there's none for access from outside" do
+      'hello.'.gsub('l', 'l' => 'L')
+      $~.begin(0).should == 3
+      $~[0].should == 'l'
+
+      'hello.'.gsub('not', 'ot' => 'to')
+      $~.should == nil
+
+      'hello.'.gsub(/.(.)/, 'o' => ' hole')
+      $~[0].should == 'o.'
+
+      'hello.'.gsub(/not/, 'z' => 'glark')
+      $~.should == nil
+    end
+
+    it "doesn't interpolate special sequences like \\1 for the block's return value" do
+      repl = '\& \0 \1 \` \\\' \+ \\\\ foo'
+      "hello".gsub(/(.+)/, 'hello' => repl ).should == repl
+    end
+    
+    it "untrusts the result if the original string is untrusted" do
+      str = "Ghana".untrust
+      str.gsub(/[Aa]na/, 'ana' => '').untrusted?.should be_true
+    end
+
+    it "untrusts the result if a hash value is untrusted" do
+      str = "Ghana"
+      str.gsub(/a$/, 'a' => 'di'.untrust).untrusted?.should be_true
+    end
+
+    it "taints the result if the original string is tainted" do
+      str = "Ghana".taint
+      str.gsub(/[Aa]na/, 'ana' => '').tainted?.should be_true
+    end
+
+    it "taints the result if a hash value is tainted" do
+      str = "Ghana"
+      str.gsub(/a$/, 'a' => 'di'.taint).tainted?.should be_true
+    end
+
   end
 end
 
@@ -261,7 +357,7 @@ describe "String#gsub with pattern and block" do
         "x"
       end
 
-      $~.should == old_md
+      $~[0].should == old_md[0]
       $~.string.should == "hello"
     end
   end
@@ -281,9 +377,11 @@ describe "String#gsub with pattern and block" do
     $~.should == nil
   end
 
-  it "raises a RuntimeError if the string is modified while substituting" do
-    str = "hello"
-    lambda { str.gsub(//) { str[0] = 'x' } }.should raise_error(RuntimeError)
+  ruby_version_is ""..."1.9" do
+    it "raises a RuntimeError if the string is modified while substituting" do
+      str = "hello"
+      lambda { str.gsub(//) { str[0] = 'x' } }.should raise_error(RuntimeError)
+    end
   end
   
   it "doesn't interpolate special sequences like \\1 for the block's return value" do
@@ -354,13 +452,28 @@ describe "String#gsub! with pattern and replacement" do
     a.should == "hello"
   end
   
-  it "raises a TypeError when self is frozen" do
-    s = "hello"
-    s.freeze
-  
-    s.gsub!(/ROAR/, "x") # ok
-    lambda { s.gsub!(/e/, "e")       }.should raise_error(TypeError)
-    lambda { s.gsub!(/[aeiou]/, '*') }.should raise_error(TypeError)
+  ruby_version_is ""..."1.9" do
+    it "raises a TypeError when self is frozen" do
+      s = "hello"
+      s.freeze
+    
+      s.gsub!(/ROAR/, "x") # ok
+      lambda { s.gsub!(/e/, "e")       }.should raise_error(TypeError)
+      lambda { s.gsub!(/[aeiou]/, '*') }.should raise_error(TypeError)
+    end
+  end
+
+  ruby_version_is "1.9" do
+    ruby_bug "[ruby-core:23666]", "1.9.2" do
+      it "raises a RuntimeError when self is frozen" do
+        s = "hello"
+        s.freeze
+      
+        lambda { s.gsub!(/ROAR/, "x")    }.should raise_error(RuntimeError)
+        lambda { s.gsub!(/e/, "e")       }.should raise_error(RuntimeError)
+        lambda { s.gsub!(/[aeiou]/, '*') }.should raise_error(RuntimeError)
+      end
+    end
   end
 end
 
@@ -392,12 +505,14 @@ describe "String#gsub! with pattern and block" do
     a.should == "hello"
   end
   
-  it "raises a RuntimeError when self is frozen" do
-    s = "hello"
-    s.freeze
+  ruby_bug "[ruby-core:23663]", "1.9" do
+    it "raises a RuntimeError when self is frozen" do
+      s = "hello"
+      s.freeze
 
-    s.gsub!(/ROAR/) { "x" } # ok
-    lambda { s.gsub!(/e/) { "e" }       }.should raise_error(RuntimeError)
-    lambda { s.gsub!(/[aeiou]/) { '*' } }.should raise_error(RuntimeError)
+      lambda { s.gsub!(/ROAR/)    { "x" } }.should raise_error(RuntimeError)
+      lambda { s.gsub!(/e/)       { "e" } }.should raise_error(RuntimeError)
+      lambda { s.gsub!(/[aeiou]/) { '*' } }.should raise_error(RuntimeError)
+    end
   end
 end

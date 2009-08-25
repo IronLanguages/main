@@ -103,10 +103,13 @@
     <Compile Include="Compiler\Ast\AssignmentStatement.cs" />
     <Compile Include="Compiler\Ast\AstGenerator.cs" />
     <Compile Include="Compiler\Ast\BinaryExpression.Generated.cs" />
+    <Compile Include="Compiler\SharedGlobalAllocator.Generated.cs" />
     <Compile Include="Compiler\RunnableScriptCode.cs" />
     <Compile Include="Modules\imp.cs" />
+    <Compile Include="Runtime\Binding\IComConvertible.cs" />
     <Compile Include="Runtime\CodeContext.cs" />
     <Compile Include="Runtime\DontMapIEnumerableToIterAttribute.cs" />
+    <Compile Include="Compiler\SharedGlobalAllocator.cs" />
     <Compile Include="Runtime\Binding\ContextArgBuilder.cs" />
     <Compile Include="Runtime\Binding\IFastSettable.cs" />
     <Compile Include="Runtime\Binding\PythonBinder.Create.cs" />
@@ -167,7 +170,6 @@
     <Compile Include="Compiler\Ast\Node.cs" />
     <Compile Include="Compiler\ReducableDynamicExpression.cs" />
     <Compile Include="Compiler\SavableScriptCode.cs" />
-    <Compile Include="Compiler\StaticGlobalAllocator.cs" />
     <Compile Include="Compiler\Ast\OrExpression.cs" />
     <Compile Include="Compiler\Ast\Parameter.cs" />
     <Compile Include="Compiler\Ast\ParenthesisExpression.cs" />

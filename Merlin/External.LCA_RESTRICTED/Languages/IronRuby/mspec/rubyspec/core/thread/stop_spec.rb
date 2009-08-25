@@ -4,18 +4,20 @@ require File.dirname(__FILE__) + '/fixtures/classes'
 describe "Thread.stop" do
   it "causes the current thread to sleep indefinitely" do
     t = Thread.new { Thread.stop; 5 }
-    Thread.pass until t.status == 'sleep'
+    Thread.pass while t.status and t.status != 'sleep'
     t.status.should == 'sleep'
     t.run
     t.value.should == 5
   end
 
-  it "resets Thread.critical to false" do
-    t = Thread.new { Thread.critical = true; Thread.stop }
-    Thread.pass until t.status == 'sleep'
-    Thread.critical.should == false
-    t.run
-    t.join
+  ruby_version_is ""..."1.9" do
+    it "resets Thread.critical to false" do
+      t = Thread.new { Thread.critical = true; Thread.stop }
+      Thread.pass while t.status and t.status != 'sleep'
+      Thread.critical.should == false
+      t.run
+      t.join
+    end
   end
 end
 

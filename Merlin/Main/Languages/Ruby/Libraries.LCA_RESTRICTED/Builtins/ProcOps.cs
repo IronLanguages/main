@@ -160,7 +160,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("new", RubyMethodAttributes.PublicSingleton)]
         public static Proc/*!*/ CreateNew(CallSiteStorage<Func<CallSite, Proc, Proc, object>>/*!*/ storage, 
-            BlockParam/*!*/ block, RubyClass/*!*/ self) {
+            BlockParam block, RubyClass/*!*/ self) {
 
             if (block == null) {
                 throw RubyExceptions.CreateArgumentError("tried to create Proc object without a block");

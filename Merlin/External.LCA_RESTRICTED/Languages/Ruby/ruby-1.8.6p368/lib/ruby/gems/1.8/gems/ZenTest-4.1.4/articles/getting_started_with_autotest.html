@@ -1,0 +1,532 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xml:lang="en-US" lang="en-US" xmlns=
+"http://www.w3.org/1999/xhtml">
+<head>
+<title>PH7 - Getting started with Autotest - Continuous
+Testing</title>
+<link href="Article.css" media="all" rel="Stylesheet" type="text/css" />
+</head>
+<body>
+<div class="content">
+<h1 style="text-align: center;">Getting started with Autotest -
+Continuous Testing</h1>
+<div id="abstract" class="Abstract">
+<p class="first">Why manually run your tests, when the computer can
+do it for you! <a href=
+"http://www.zenspider.com/ZSS/Products/ZenTest/">Autotest</a> is a
+great tool to speed up test-driven development with Ruby or Ruby on
+Rails. Autotest makes your coding session even more productive as
+<strong>it automatically runs a subset of your test suite each time
+you change a file. Autotest is smart -- it figures out which subset
+to run based on the files you've changed.</strong> Think of it as
+<strong><q>Continuous Testing</q></strong>.</p>
+<p>Autotest source code is well-documented (<a href=
+"http://zentest.rubyforge.org/ZenTest/" title=
+"ZenTest documentation">rdoc</a>) but finding a high level overview
+online is a little more challenging. This article will get you up
+and running in no time, so that you may concentrate on writing
+code. <a href="getting_started_with_autotest">Let's get
+started!</a></p>
+</div>
+<h2 id="why_autotest">Why Autotest?</h2>
+<h3 id="continuous_testing">Continuous Testing</h3>
+<p>The cool thing about Autotest is that you have <strong>instant
+feedback on your code</strong> (tests run within a second). Even
+better, <strong>the testing happens on its own</strong> so
+<strong>you no longer have to switch back and forth</strong> from
+the coding context to the testing context anymore (both wise
+cognitively and from a <acronym title="User Interface">UI</acronym>
+perspective). This effortless and immediate feedback on your code
+as well as the automated and unattended test runs are quite similar
+to the characteristics of <a href=
+"http://www.martinfowler.com/articles/continuousIntegration.html"
+title=
+"Martin Fowler's legendary introduction to Continuous Integration">Continuous
+Integration</a> at the team level. However, continuous integration
+concentrates on improving <em>integration</em> at a <em>team</em>
+level while Autotest concentrates on facilitating the
+<em>development</em> for a <em>single</em> developer (or
+programming-pair) <em>before</em> the code gets integrated -- hence
+the term <strong><dfn>Continuous Testing</dfn></strong>.</p>
+<p>As this is highly visual, <strong>have a look at Nuby on Rails'
+<a href="http://topfunky.com/clients/blog/autotest-tm.mov">autotest
+screencast</a></strong>.</p>
+<h3 id="quicker_test_runs">Quicker Test Runs</h3>
+<p>Autotest can also provide <strong>quicker test runs</strong>
+than standard convention since it intelligently monitors the
+changes and only runs the tests that are impacted by these changes.
+In practice this is relevant only for <q>classic</q> Rails
+applications because:</p>
+<ul>
+<li><strong>Rails conventions provide good heuristics</strong> for
+Autotest to decide which tests to run when a file changes. If your
+application does not stick to the classic Rails layout and naming
+conventions the <q>magic</q> does not work so well anymore. In this
+case, it is probably better to have Autotest <a href=
+"getting_started_with_autotest#running_whole_test_suite">run your
+whole test suite for all changes</a>.</li>
+<li>There is value in running a <em>subset</em> of the whole test
+suite <strong>only because running <q>classic</q> Rails unit tests
+can be slow</strong>. This is mostly since Rails approach to unit
+testing is quite unconventional and involves database access. This
+approach goes against general <q>agile</q> wisdom that you should
+make sure your unit tests run quickly, and do not have any
+dependency for external systems. Also note that there are <a href=
+"http://jayfields.blogspot.com/2006/06/ruby-on-rails-unit-tests.html">
+well-documented ways</a> to have your Rails unit tests not depend
+on the database and have them run blazing fast!</li>
+</ul>
+<h3 id="lack_of_proper_ide">Make Up for a Lack of a Proper Ruby
+IDE</h3>
+<p>Autotest can come in handy if your favorite IDE has limited Ruby
+support, or if you prefer a more ligthweight development
+environment (text editor + terminal + Autotest): it gives you an
+easy and automated way to run your tests.</p>
+<h2 id="install_autotest">Install Autotest</h2>
+<h3>Make Sure You Already have RubyGem Installed</h3>
+<p>The easiest way to install <code>Autotest</code> is to use the
+<strong>ZenTest gem</strong>. If you have no idea of what a
+<dfn>gem</dfn> is, or you have not installed the RubyGem packaging
+system yet, please have a look at the <a href=
+"http://rubygems.org/">RubyGem official website</a>. If you are
+serious about Ruby development, it will be hard <em>not</em> to use
+RubyGem.</p>
+<h3 id="install_osx_ubuntu">OS X and Ubuntu</h3>
+<p>On OS X or Ubuntu launch from a terminal:</p>
+<pre class="command-box">
+$ sudo gem install ZenTest
+</pre>
+<h3 id="install_other_unix">Other Unix flavors</h3>
+<p>For other *Nix flavors, try</p>
+<pre class="command-box">
+$ suPassword:<span class=
+"placeholder">Type root password here</span>$ gem install ZenTest
+</pre>
+<h2 id="run_autotest">Run autotest</h2>
+<h3 id="run_rails">Ruby on Rails project</h3>
+<p>Consistent with Rails principles, Autotest does not require any
+configuration to run. Provided you follow classic Rails
+conventions, Autotest will figure things out on its own.
+<strong>Simply launch Autotest from the base directory of your Ruby
+on Rails project.</strong></p>
+<pre class="command-box">
+$ cd <span class=
+"placeholder">base directory of your Ruby on Rails project</span>$ autotest
+</pre>
+<p>Autotest will then run all your tests (the first time), and wait
+for you to modify some code:</p>
+<pre class="command-box">
+$ autotest
+/usr/bin/ruby1.8 -I.:lib:test -rtest/unit -e "%w[test/functional/tasks_controller_test.rb test/unit/quarter_test.rb test/unit/task_test.rb].each { |f| require f }" | unit_diff -u
+Loaded suite -e
+Started
+.......................
+Finished in 0.672928 seconds.
+
+================================================================================
+<strong>23 tests, 60 assertions, 0 failures, 0 errors</strong>
+</pre>
+<p>Go ahead and <strong>modify some code in your project so that a
+test fails.</strong> Save the modified file to disk and Autotest
+will automatically rerun some of the tests:</p>
+<pre class="command-box">
+/usr/bin/ruby1.8 -I.:lib:test -rtest/unit -e "%w[test/functional/tasks_controller_test.rb test/unit/task_test.rb].each { |f| require f }" | unit_diff -u
+Loaded suite -e
+Started
+...F........
+Finished in 0.42272 seconds.
+
+1) Failure:
+test_should_be_found(TaskTest) [<strong>./test/unit/task_test.rb:22</strong>]:
+--- /tmp/diff6647.0     2006-11-15 20:46:43.000000000 -0800
++++ /tmp/diff6647.1     2006-11-15 20:46:43.000000000 -0800
+@@ -1 +1 @@
+<strong>
+-Expected result
++Actual result</strong>
+
+================================================================================
+<strong>4 tests, 9 assertions, 1 failures, 0 errors</strong>
+</pre>
+<p>Note that autotest ran only a <em>subset</em> of your test suite
+this time (4 tests out of 23 in my case). Also note that
+<strong>Autotest is especially good in providing brief and relevant
+feedback on the test failures</strong>.</p>
+<p>Autotest focuses on running previous failures until you have
+fixed them. So <strong>test failures are run until they have all
+passed. Then the full test suite is run</strong> to ensure that
+nothing else was inadvertently broken.</p>
+<h3 id="run_ruby">Ruby Project</h3>
+<p>In theory you would run Autotest the same way as you would for
+any Ruby project -- even if it is not based on Rails:</p>
+<pre class="command-box">
+$ cd <span class=
+"placeholder">base directory of your Ruby project</span>$ autotest
+</pre>
+<p>In practice, Autotest might have problems finding your tests or
+figuring out which tests to run when you change some code. If this
+is the case, take a look at the <a href=
+"getting_started_with_autotest#troubleshoot_test_detection"><q>troubleshooting
+test detection</q></a> section.</p>
+<h3 id="full_test_run">Forcing a Full Test Run and Stopping
+Autotest</h3>
+<p><strong>If you want to force Autotest to run the <em>entire</em>
+test suite</strong> <strong>hit <kbd>Ctrl - C</kbd> once</strong>
+in the terminal running Autotest. Hitting <kbd>Ctrl - C</kbd> twice
+will stop Autotest.</p>
+<h2 id="configure_plugins">Configure Plugins</h2>
+<p>Autotest also provides some cool plugins that enable you to
+<strong>get feedback the way you want</strong>.</p>
+<h3 id="create_dot_autotest">Create a <code>.autotest</code>
+file</h3>
+<p><strong>You configure plugins by creating a
+<code>.autotest</code> file in your project base
+directory</strong>. You can also provide a default configuration
+for all your projects by creating a <code>.autotest</code> file in
+your home directory (when present, project configuration files
+override user default configuration file).</p>
+<p><strong>You enable a plugin by adding a line requiring the
+plugin in the <code>.autotest</code> file</strong>. For instance,
+to enable the <q>Growl</q> plugin, you would add the following
+line:</p>
+<pre class="source-code-box">
+require 'autotest/growl'
+</pre>
+<p>Below you will find a description of the most popular plugins
+and how to enable them.</p>
+<h3 id="red_green_plugin">Red / Green Plugin</h3>
+<p>The <q>Red / Green</q> plugin provides color to
+<code>Autotest</code> messages in the terminal window. As expected,
+output is green if all the tests pass, red if some test fails.
+Having red / green visual output makes it easier for one to scan
+the output and quickly determine whether everything is OK or
+something went wrong.</p>
+<p>Visually, the <q>Red /Green</q> plugin turns</p>
+<pre class="command-box">
+================================================================================
+200 tests, 520 assertions, 0 failures, 0 errors
+</pre>
+<p>into</p>
+<pre class="command-box" style="color: green;">
+================================================================================
+200 tests, 520 assertions, 0 failures, 0 errors
+</pre>
+<p>or</p>
+<pre class="command-box" style="color: red;">
+================================================================================
+5 tests, 20 assertions, 1 failures, 0 errors
+</pre>
+<p>To enable the <q>Red / Green</q> plugin add the following line
+to your <code>.autotest</code> file:</p>
+<pre class="source-code-box">
+require 'autotest/redgreen'
+</pre>
+<h3 id="desktop_notification_plugins">Desktop Notification
+Plugins</h3>
+<p>You might not even have to look at <code>the Autotest</code>
+terminal output to figure out the result of a test run.
+<strong>Several plugins provide desktop notification messages
+capabilities</strong>. In this way you can run Autotest in the
+background and see popup messages when something fails.</p>
+<h4 id="growl_plugin">Growl Plugin (OS X)</h4>
+<p><a href="http://growl.info/">Growl</a> is a popular desktop
+notification system for OSX. If you are developing on a Mac, enable
+the Growl plugin by adding</p>
+<pre class="source-code-box">
+require 'autotest/growl'
+</pre>
+<p>to your <code>.autotest</code> file. Note that for this plugin
+to work, you not only need to install <a href="http://growl.info/"
+title="Growl website">Growl</a> <strong>but also its command line
+interface: <a href=
+"http://growl.info/documentation/growlnotify.php">growlnotify</a>.</strong></p>
+<h4 id="snarl_plugin">Snarl Plugin (Windows)</h4>
+<p><a href="http://www.fullphat.net/">Snarl</a> is a notification
+system for Windows largely inspired by Growl. Autotest will use it
+if you enable the Snarl plugin in your <code>.autotest</code>
+file:</p>
+<pre class="source-code-box">
+require 'autotest/snarl'
+</pre>
+<h4 id="kde_notify_plugin">KDE Notify Plugin (Linux)</h4>
+<p>If you are running Linux and use KDE as your desktop
+environment, you will get desktop notification by adding to your
+<code>.autotest</code> file:</p>
+<pre class="source-code-box">
+require 'autotest/kdenotify'
+</pre>
+<h4 id="gnome_notify_plugin">Gnome Notify plugin (Linux)</h4>
+<p>If you are running Linux and use Gnome as your desktop
+environment, unfortunately there is no official plugin for desktop
+notification. You can still get desktop notifications by adding the
+following code snipet in your <code>.autotest</code> file:</p>
+<pre class="source-code-box">
+module Autotest::GnomeNotify
+
+  # Time notification will be displayed before disappearing automatically
+  EXPIRATION_IN_SECONDS = 2
+  ERROR_STOCK_ICON = "gtk-dialog-error"
+  SUCCESS_STOCK_ICON = "gtk-dialog-info"
+
+  # Convenience method to send an error notification message
+  #
+  # [stock_icon]   Stock icon name of icon to display
+  # [title]        Notification message title
+  # [message]      Core message for the notification
+  def self.notify stock_icon, title, message
+    options = "-t #{EXPIRATION_IN_SECONDS * 1000} -i #{stock_icon}"
+    system "notify-send #{options} '#{title}' '#{message}'"
+  end
+
+  Autotest.add_hook :red do |at|
+    notify ERROR_STOCK_ICON, "Tests failed", "#{at.files_to_test.size} tests failed"
+  end
+
+  Autotest.add_hook :green do |at|
+    notify SUCCESS_STOCK_ICON, "All tests passed, good job!", ""
+  end
+
+end
+</pre>
+<p>For this to work <strong>you need to have <a href=
+"http://trac.galago-project.org/wiki/DesktopNotifications">libnotify</a>
+installed on your system and a program named
+<code>notify-send</code> in your <code>PATH</code></strong>. For
+most Linux distributions this simply means that you should install
+the <code>libnotify-bin</code> package. If you are running Ubuntu,
+run</p>
+<pre class="command-box">
+sudo apt-get install libnotify-bin
+</pre>
+<h3 id="pretty_plugin">Pretty Plugin</h3>
+<p>If you are running Autotest on a Mac you can enable the
+<q>pretty</q> plugin to <strong>visualize your Autotest status
+history</strong> as a sequence of red and green squares:</p>
+<p class="figure"><img alt="Autotest Pretty Plugin Screenshot" src=
+"http://blog.zenspider.com/img/autotest_pretty.png" /></p>
+<p>Of course a green square indicates passing tests while a red
+square signals some test failures. If you want to get a feel of
+what a session is like with this plugin enabled, ZenSpider has a
+<a href=
+"http://vanity.zenspider.com.nyud.net:8090/~ryan/autotest_plugins.mov"
+title="ZenSpider pretty plugin video">nice video</a> demonstrating
+the pretty plugin in action.</p>
+<p>To enable this plugin <strong>you will need to install <a href=
+"http://rubycocoa.sourceforge.net/doc/" title=
+"Ruby Cocoa documentation">RubyCocoa</a></strong> and add the
+folowing line to your <code>.autotest</code> file:</p>
+<pre class="source-code-box">
+require 'autotest/pretty'
+</pre>
+<h3 id="html_report_plugin">HTML Report Plugin</h3>
+<p>The <q>HTML report</q> plugin <strong>publishes most recent
+Autotest statuses as a web page</strong> under
+<code>~/Sites/autotest.html</code>. You can then point a browser to
+this page and see something like:</p>
+<div class="sample-box">
+<div style="COLOR:green">Sat Feb 03 14:34:09 PST 2007: 0</div>
+<div style="COLOR:red">Sat Feb 03 14:33:50 PST 2007: 1</div>
+<div style="COLOR:green">Sat Feb 03 14:33:45 PST 2007: 0</div>
+<div style="COLOR:red">Sat Feb 03 14:33:29 PST 2007: 4</div>
+<div style="COLOR:green">Sat Feb 03 14:33:19 PST 2007: 0</div>
+</div>
+<p>Of course the content of the web page is updated while you work.
+Note that <strong>you need to have an an existing
+<code>~/Sites</code> directory</strong> <em>before</em> you enable
+the plugin with the following line:</p>
+<pre class="source-code-box">
+require 'autotest/html_report'
+</pre>
+<h3 id="menu_plugin">Menu Plugin</h3>
+<p>Remember that, by default, hitting <code>Ctrl - C</code> once
+will force Autotest to run the entire test suite, and hitting
+<code>Ctrl - C</code> twice will stop Autotest? The <q>menu</q>
+plugin changes this behavior: each time you hit <code>Ctrl -
+C</code> it will explicitly ask you whether you want to quit,
+restart or just keep going.</p>
+<pre class="command-box">
+c: continue q: quit r: restart menu&gt;
+</pre>
+<p>Enable the menu plugin by adding the following line to your
+<code>.autotest</code> file.</p>
+<pre class="source-code-box">
+require 'autotest/menu'
+</pre>
+<h3 id="timestamp_plugin">Timestamp Plugin</h3>
+<p>While Autotest waits for you to save a file, the timestamp
+plugin prints a message with the current time. Messages look
+like:</p>
+<pre class="command-box">
+# waiting... Sat Feb 03 15:56:23 EST 2007
+</pre>
+<p>To enable the timestamp plugin add the following to your
+<code>.autotest</code> file:</p>
+<pre class="source-code-box">
+require 'autotest/timestamp'
+</pre>
+<h3>Getting More Information</h3>
+<p>Your Autotest install comes with a sample <code>.autotest</code>
+file listing all available plugins. It is named
+<code>example_dot_autotest.rb</code>. You will find it in the gems
+install directory. Most likely this directory will look like:</p>
+<ul>
+<li><code>/usr/local/lib/ruby/gems/1.8/gems/ZenTest-3.4.3/</code>
+on OS X.</li>
+<li><code>/usr/lib/ruby/gems/1.8/gems/ZenTest-3.4.3/</code> on
+other Unix platforms</li>
+</ul>
+<p>Interesting plugins that are not distributed with Autotest can
+also be found within <a href=
+"http://rubyforge.org/tracker/?atid=1680&amp;group_id=419&amp;func=browse">
+autotest pending patches</a>. The <a href=
+"http://rspec.rubyforge.org/" title=
+"RSpec project website">RSpec</a> patches you will find there will
+be of particular interest to those of you that enjoy <a href=
+"http://behaviour-driven.org/" title=
+"Official Behavior Driven Development website">behavior-driven
+development</a>.</p>
+<h2 id="troubleshoot_test_detection">Troubleshooting Autotest Test
+Detection</h2>
+<p>Whether Autotest does not work out of the box for you or its
+magics eludes you, it is always good to get some understanding of
+the heuristics that Autotest uses to figure which test(s) to
+run.</p>
+<h3 id="rails_heuristics">Heuristics for Rails</h3>
+<p>Autotest automatically discovers Ruby on Rails projects by
+checking for a <code>config/environment.rb</code> file. If there is
+one, Autotest will base its logic on standard Rails file mappings
+and conventions.</p>
+<p>If for some reason you want to force Ruby on Rails mode you can
+always launch Autotest it with the <code>-rails</code> option:</p>
+<pre class="command-box">
+$ autotest -rails
+</pre>
+<p>A <em>simplified</em> version of Autotest heuristics in this
+mode would be:</p>
+<ul>
+<li>When changing a test file, only this file is run (e.g.
+<code>test/unit/foo_test.rb</code> &rarr;
+<code>test/unit/foo_test.rb</code>).</li>
+<li>When changing a model file, only associated unit test file is
+run (e.g. <code>app/models/foo.rb</code> &rarr;
+<code>test/unit/foo_test.rb</code>).</li>
+<li>When changing a controller file, associated functional test
+file is run (e.g. <code>app/controllers/foo_controller.rb</code>
+&rarr; <code>test/functional/foo_controller_test.rb</code>).</li>
+<li>When changing a fixture file, associated unit test and
+functional test are run (e.g. <code>app/fixtures/foos.yml</code>
+&rarr; <code>test/unit/foo_test.rb</code> +
+<code>test/functional/foo_controller_test.rb</code>).</li>
+<li>When changing a helper file, associated functional test file is
+run (e.g. <code>app/helpers/foo_helper.rb</code> &rarr;
+<code>test/functional/foo_controller_test.rb</code>).</li>
+<li>When changing <code>application_helper.rb</code> file all
+functional test files are run (e.g.
+<code>application_helper.rb</code> &rarr;
+<code>test/functional/*_test.rb</code>).</li>
+<li>When changing a file under the <code>config</code> directory,
+all tests are run.</li>
+</ul>
+<p>You've got the idea. Actual heuristics are a little more complex
+and also handle the concept of <code>view</code> and
+<code>controller</code> tests. <strong>For a more thourough
+understanding have look at the <code>rails_autotest.rb</code>
+file</strong> in ZenTest gem install directory.</p>
+<p>In case these heuristics do not play well with your own
+conventions, do not give up yet: <strong>you can always configure
+Autotest to <a href=
+"getting_started_with_autotest#running_whole_test_suite">run the
+whole test suite for all changes</a></strong>.</p>
+<h3 id="ruby_heuristics">Heuristics for Non Rails Projects</h3>
+<p>For non Rails project, Autotest uses a simple naming scheme to
+map implementation files to test files:</p>
+<ul>
+<li>Test files must be stored in the <code>test</code>
+directory</li>
+<li>Implementation files must be stored in the <code>lib</code>
+directory</li>
+<li>Test files names must start with <code>test_</code></li>
+<li>Test class names must start with <code>Test</code></li>
+<li>Test files corresponding to a specific implementation file must
+be named <code>test_*<span class="placeholder">name of
+implementation file</span>.rb</code></li>
+</ul>
+<p>If you can live with these conventions, Autotest will work
+out-of-the-box for you. If these conventions are not your cup of
+tea and you have your own, the next paragraph explains how to
+configure Autotest so that it runs the whole test suite each time
+you save a file.</p>
+<h3 id="running_whole_test_suite">Running the Whole Test Suite for
+All Changes</h3>
+<p>If for some reason Autotest heuristics do not work for you, you
+can customize them in your <code>.autotest</code> file with a
+little bit of work.</p>
+<p>For instance, if your entire test suite runs quickly (as it
+should), you can easily configure Autotest to run the whole test
+suite for any change by adding the following code to your
+<code>.autotest</code> file:</p>
+<pre class="command-box">
+#
+# Override autotest default magic deciding which test to run when
+# a file is changed : enable more flexible naming conventions
+# trading some of the efficiency: we rerun all the tests each time.
+#
+class Autotest
+
+  def tests_files_for(filename)
+    return Dir["test/**/*.rb"]
+  end 
+
+end
+</pre>
+<h2>Conclusion</h2>
+<p>Autotest provides an easy and effortless way to run your tests:
+just save a file. This is a great way to get quick feedback on your
+code and avoid any context switch. Autotest automated test runs are
+also extremelly valuable if your favorite IDE has poor Ruby
+support, or if you prefer a more ligthweight development
+environment (text editor + terminal + Autotest).</p>
+<p>Autotest also tries hard to be smart on deciding which tests to
+run:</p>
+<ul>
+<li>It only runs the tests affected by your latest code
+changes.</li>
+<li>When some tests fail, Autotest focuses on running previous
+failures until you have fixed them. Once they pass, the full test
+suite is run to ensure that nothing else was inadvertently
+broken.</li>
+</ul>
+<p>On deciding which tests to run, Autotest <q>magic</q> works out
+of the box if your application follows classic Ruby on Rails
+conventions. If this is not your cup of tea, it is extremely easy
+to customize Autotest to fit your conventions.</p>
+<p>Via its plugins Autotest also offers a lot of interesting
+feedback options, from terminal output to html publishing to
+desktop notifications. The pretty plugin offers a highly visual
+representation of your test runs history, which could be useful
+when teaching Test Driven Development (green, red, green, red,
+...).</p>
+<p>On the flip side, It is important to note that Autotest does not
+fit all developement styles: Some developers like better control on
+which tests they are running. While working on a piece of code,
+they will typically focuss on a few tests (which they know they
+could have broken), and then run the whole test suite just before
+committing. Autotest emulates this as well as it can with his focus
+on running previous failures; but ultimately a human will always
+have a better intuition, especially if your project does not follow
+classic Rails conventions.</p>
+<p>In all cases, it is worth spending some time playing with
+Autotest and experiment with its innovative, lightweight and
+effortless approach to test runs, what I have been calling
+<q>continuous testing</q>.</p>
+</div>
+<p class="Copyright">&copy; Copyright Philippe Hanrigou, all rights
+reserved.</p>
+<p class="License">This work is licensed under a <a rel="license"
+href="http://creativecommons.org/licenses/by/2.5/">Creative Commons
+Attribution 2.5 License</a>.</p>
+<p class="License">Used and distributed with permission from
+Philippe Hanrigou.</p>
+</body>
+</html>

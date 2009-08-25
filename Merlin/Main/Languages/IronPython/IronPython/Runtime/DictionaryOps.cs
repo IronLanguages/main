@@ -71,13 +71,13 @@ namespace IronPython.Runtime {
             }
         }
 
-        public static object get(IDictionary<object, object> self, object key) {
+        public static object get(PythonDictionary self, object key) {
             return get(self, key, null);
         }
 
-        public static object get(IDictionary<object, object> self, object key, object defaultValue) {
+        public static object get(PythonDictionary self, object key, object defaultValue) {
             object ret;
-            if (self.TryGetValue(key, out ret)) return ret;
+            if (self.TryGetValueNoMissing(key, out ret)) return ret;
             return defaultValue;
         }
 
@@ -105,10 +105,10 @@ namespace IronPython.Runtime {
             return PythonOps.MakeListFromSequence(self.Keys);
         }
 
-        public static object pop(IDictionary<object, object> self, object key) {
+        public static object pop(PythonDictionary self, object key) {
             //??? perf won't match expected Python perf
             object ret;
-            if (self.TryGetValue(key, out ret)) {
+            if (self.TryGetValueNoMissing(key, out ret)) {
                 self.Remove(key);
                 return ret;
             } else {
@@ -116,10 +116,10 @@ namespace IronPython.Runtime {
             }
         }
 
-        public static object pop(IDictionary<object, object> self, object key, object defaultValue) {
+        public static object pop(PythonDictionary self, object key, object defaultValue) {
             //??? perf won't match expected Python perf
             object ret;
-            if (self.TryGetValue(key, out ret)) {
+            if (self.TryGetValueNoMissing(key, out ret)) {
                 self.Remove(key);
                 return ret;
             } else {
@@ -138,13 +138,13 @@ namespace IronPython.Runtime {
             throw PythonOps.KeyError("dictionary is empty");
         }
 
-        public static object setdefault(IDictionary<object, object> self, object key) {
+        public static object setdefault(PythonDictionary self, object key) {
             return setdefault(self, key, null);
         }
 
-        public static object setdefault(IDictionary<object, object> self, object key, object defaultValue) {
+        public static object setdefault(PythonDictionary self, object key, object defaultValue) {
             object ret;
-            if (self.TryGetValue(key, out ret)) return ret;
+            if (self.TryGetValueNoMissing(key, out ret)) return ret;
             self[key] = defaultValue;
             return defaultValue;
         }

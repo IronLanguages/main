@@ -32,121 +32,6 @@ namespace IronRuby.Builtins {
     [RubyClass("Module", Extends = typeof(RubyModule), Inherits = typeof(Object))]
     public static class ModuleOps {
 
-        #region CLR extensions
-
-        [RubyMethod("to_clr_type")]
-        public static Type ToClrType(RubyModule/*!*/ self) {
-            return self.TypeTracker != null ? self.TypeTracker.Type : null;
-        }
-
-        #endregion
-
-        #region Private Instance Methods
-
-        #region class_variable_get, class_variable_set, remove_class_variable, remove_const
-
-        // not thread-safe:
-        [RubyMethod("class_variable_get", RubyMethodAttributes.PrivateInstance)]
-        public static object GetClassVariable(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ variableName) {
-            object value;
-            if (self.TryResolveClassVariable(variableName, out value) == null) {
-                self.Context.CheckClassVariableName(variableName);
-                throw RubyExceptions.CreateNameError(String.Format("uninitialized class variable {0} in {1}", variableName, self.Name));
-            }
-            return value;
-        }
-
-        // not thread-safe:
-        [RubyMethod("class_variable_set", RubyMethodAttributes.PrivateInstance)]
-        public static object ClassVariableSet(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ variableName, object value) {
-            self.Context.CheckClassVariableName(variableName);
-            self.SetClassVariable(variableName, value);
-            return value;
-        }
-
-        // not thread-safe:
-        [RubyMethod("remove_class_variable", RubyMethodAttributes.PrivateInstance)]
-        public static object RemoveClassVariable(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ variableName) {
-            object value;
-            if (!self.TryGetClassVariable(variableName, out value)) {
-                self.Context.CheckClassVariableName(variableName);
-                throw RubyExceptions.CreateNameError(String.Format("class variable {0} not defined for {1}", variableName, self.Name));
-            }
-            self.RemoveClassVariable(variableName);
-            return value;
-        }
-
-        // thread-safe:
-        [RubyMethod("remove_const", RubyMethodAttributes.PrivateInstance)]
-        public static object RemoveConstant(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ constantName) {
-            object value;
-            if (!self.TryRemoveConstant(constantName, out value)) {
-                self.Context.CheckConstantName(constantName);
-                throw RubyExceptions.CreateNameError(String.Format("constant {0}::{1} not defined", self.Name, constantName));
-            }
-            return value;
-        }
-
-        #endregion
-
-        #region extend_object, extended, include, included
-
-        // thread-safe:
-        [RubyMethod("extend_object", RubyMethodAttributes.PrivateInstance)]
-        public static RubyModule/*!*/ ExtendObject(RubyModule/*!*/ self, [NotNull]RubyModule/*!*/ extendedModule) {
-            // include self into extendedModule's singleton class
-            extendedModule.SingletonClass.IncludeModules(self);
-            return self;
-        }
-        
-        // thread-safe:
-        [RubyMethod("extend_object", RubyMethodAttributes.PrivateInstance)]
-        public static object ExtendObject(RubyModule/*!*/ self, object extendedObject) {
-            // include self into extendedObject's singleton
-            self.Context.CreateSingletonClass(extendedObject).IncludeModules(self);
-            return extendedObject;
-        }
-
-        [RubyMethod("extended", RubyMethodAttributes.PrivateInstance)]
-        public static void ObjectExtended(RubyModule/*!*/ self, object extendedObject) {
-            // extendedObject has been extended by self, i.e. self has been included into extendedObject's singleton class
-        }
-
-        [RubyMethod("include", RubyMethodAttributes.PrivateInstance)]
-        public static RubyModule/*!*/ Include(
-            CallSiteStorage<Func<CallSite, RubyModule, RubyModule, object>>/*!*/ appendFeaturesStorage,
-            CallSiteStorage<Func<CallSite, RubyModule, RubyModule, object>>/*!*/ includedStorage,
-            RubyModule/*!*/ self, [NotNull]params RubyModule[]/*!*/ modules) {
-
-            RubyUtils.RequireMixins(self, modules);
-
-            var appendFeatures = appendFeaturesStorage.GetCallSite("append_features", 1);
-            var included = includedStorage.GetCallSite("included", 1);
-            
-            // Kernel#append_features inserts the module at the beginning of ancestors list;
-            // ancestors after include: [modules[0], modules[1], ..., modules[N-1], self, ...]
-            for (int i = modules.Length - 1; i >= 0; i--) {
-                appendFeatures.Target(appendFeatures, modules[i], self);
-                included.Target(included, modules[i], self);
-            }
-
-            return self;
-        }
-
-        [RubyMethod("included", RubyMethodAttributes.PrivateInstance)]
-        public static void Included(RubyModule/*!*/ self, RubyModule/*!*/ owner) {
-            // self has been included into owner
-        }
-
-        // thread-safe:
-        [RubyMethod("append_features", RubyMethodAttributes.PrivateInstance)]
-        public static RubyModule/*!*/ AppendFeatures(RubyModule/*!*/ self, [NotNull]RubyModule/*!*/ owner) {
-            owner.IncludeModules(self);
-            return self;
-        }
-        
-        #endregion
-
         #region initialize, initialize_copy
 
         [RubyMethod("initialize", RubyMethodAttributes.PrivateInstance)]
@@ -177,6 +62,64 @@ namespace IronRuby.Builtins {
             return self;
         }
         
+        #endregion
+
+        #region extend_object, extended, include, included
+
+        // thread-safe:
+        [RubyMethod("extend_object", RubyMethodAttributes.PrivateInstance)]
+        public static RubyModule/*!*/ ExtendObject(RubyModule/*!*/ self, [NotNull]RubyModule/*!*/ extendedModule) {
+            // include self into extendedModule's singleton class
+            extendedModule.SingletonClass.IncludeModules(self);
+            return self;
+        }
+
+        // thread-safe:
+        [RubyMethod("extend_object", RubyMethodAttributes.PrivateInstance)]
+        public static object ExtendObject(RubyModule/*!*/ self, object extendedObject) {
+            // include self into extendedObject's singleton
+            self.Context.CreateSingletonClass(extendedObject).IncludeModules(self);
+            return extendedObject;
+        }
+
+        [RubyMethod("extended", RubyMethodAttributes.PrivateInstance)]
+        public static void ObjectExtended(RubyModule/*!*/ self, object extendedObject) {
+            // extendedObject has been extended by self, i.e. self has been included into extendedObject's singleton class
+        }
+
+        [RubyMethod("include", RubyMethodAttributes.PrivateInstance)]
+        public static RubyModule/*!*/ Include(
+            CallSiteStorage<Func<CallSite, RubyModule, RubyModule, object>>/*!*/ appendFeaturesStorage,
+            CallSiteStorage<Func<CallSite, RubyModule, RubyModule, object>>/*!*/ includedStorage,
+            RubyModule/*!*/ self, [NotNull]params RubyModule[]/*!*/ modules) {
+
+            RubyUtils.RequireMixins(self, modules);
+
+            var appendFeatures = appendFeaturesStorage.GetCallSite("append_features", 1);
+            var included = includedStorage.GetCallSite("included", 1);
+
+            // Kernel#append_features inserts the module at the beginning of ancestors list;
+            // ancestors after include: [modules[0], modules[1], ..., modules[N-1], self, ...]
+            for (int i = modules.Length - 1; i >= 0; i--) {
+                appendFeatures.Target(appendFeatures, modules[i], self);
+                included.Target(included, modules[i], self);
+            }
+
+            return self;
+        }
+
+        [RubyMethod("included", RubyMethodAttributes.PrivateInstance)]
+        public static void Included(RubyModule/*!*/ self, RubyModule/*!*/ owner) {
+            // self has been included into owner
+        }
+
+        // thread-safe:
+        [RubyMethod("append_features", RubyMethodAttributes.PrivateInstance)]
+        public static RubyModule/*!*/ AppendFeatures(RubyModule/*!*/ self, [NotNull]RubyModule/*!*/ owner) {
+            owner.IncludeModules(self);
+            return self;
+        }
+
         #endregion
 
         #region private, protected, public, private_class_method, public_class_method, module_function
@@ -445,6 +388,10 @@ namespace IronRuby.Builtins {
         private static void DefineAccessor(RubyScope/*!*/ scope, RubyModule/*!*/ self, string/*!*/ name, bool readable, bool writable) {
             // MRI: ignores ModuleFunction scope flag (doesn't create singleton methods):
 
+            if (!Tokenizer.IsVariableName(name, true)) {
+                throw RubyExceptions.CreateNameError(String.Format("invalid attribute name `{0}'", name));
+            }
+
             var varName = "@" + name;
             var attributesScope = scope.GetMethodAttributesDefinitionScope();
 
@@ -545,9 +492,6 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #endregion
-
-        #region Public Instance Methods
 
         #region <, >, <=, >=, <=>, ==, ===, ancestors, included_modules, include? (thread-safe)
 
@@ -692,7 +636,7 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region module_eval, class_eval
+        #region (module|class)_(eval|exec)
 
         [RubyMethod("module_eval")]
         [RubyMethod("class_eval")]
@@ -709,15 +653,22 @@ namespace IronRuby.Builtins {
         [RubyMethod("module_eval")]
         [RubyMethod("class_eval")]
         public static object Evaluate([NotNull]BlockParam/*!*/ block, RubyModule/*!*/ self) {
-            return RubyUtils.EvaluateInModule(self, block);
+            return RubyUtils.EvaluateInModule(self, block, null);
+        }
+
+        // This method is not available in 1.8 so far, but since the usual workaround is very inefficient it is useful to have it in 1.8 as well.
+        [RubyMethod("module_exec")]
+        [RubyMethod("class_exec")]
+        public static object Execute([NotNull]BlockParam/*!*/ block, RubyModule/*!*/ self, [NotNull]params object[]/*!*/ args) {
+            return RubyUtils.EvaluateInModule(self, block, args);
         }
 
         #endregion
 
-        #region class_variables, class_variable_defined?
+        #region class_variables, class_variable_defined?, class_variable_get, class_variable_set, remove_class_variable
 
         // not thread-safe
-        [RubyMethod("class_variables", RubyMethodAttributes.PublicInstance)]
+        [RubyMethod("class_variables")]
         public static RubyArray/*!*/ ClassVariables(RubyModule/*!*/ self) {
             var visited = new Dictionary<string, bool>();
             var result = new RubyArray();
@@ -735,17 +686,84 @@ namespace IronRuby.Builtins {
             return result;
         }
 
-        // not thread-safe
-        [RubyMethod("class_variable_defined?", RubyMethodAttributes.PublicInstance)]
-        public static bool ClassVariableDefined(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ variableName) {
-            self.Context.CheckClassVariableName(variableName);
+        // not thread-safe:
+        [RubyMethod("class_variable_defined?")]
+        public static bool IsClassVariableDefined(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ variableName) {
             object value;
-            return self.TryResolveClassVariable(variableName, out value) != null;
+            if (self.TryResolveClassVariable(variableName, out value) == null) {
+                self.Context.CheckClassVariableName(variableName);
+                return false;
+            }
+            return true;
+        }
+
+        // not thread-safe:
+        [RubyMethod("class_variable_get", RubyMethodAttributes.PrivateInstance)]
+        public static object GetClassVariable(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ variableName) {
+            object value;
+            if (self.TryResolveClassVariable(variableName, out value) == null) {
+                self.Context.CheckClassVariableName(variableName);
+                throw RubyExceptions.CreateNameError(String.Format("uninitialized class variable {0} in {1}", variableName, self.Name));
+            }
+            return value;
+        }
+
+        // not thread-safe:
+        [RubyMethod("class_variable_set", RubyMethodAttributes.PrivateInstance)]
+        public static object ClassVariableSet(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ variableName, object value) {
+            self.Context.CheckClassVariableName(variableName);
+            self.SetClassVariable(variableName, value);
+            return value;
+        }
+
+        // not thread-safe:
+        [RubyMethod("remove_class_variable", RubyMethodAttributes.PrivateInstance)]
+        public static object RemoveClassVariable(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ variableName) {
+            object value;
+            if (!self.TryGetClassVariable(variableName, out value)) {
+                self.Context.CheckClassVariableName(variableName);
+                throw RubyExceptions.CreateNameError(String.Format("class variable {0} not defined for {1}", variableName, self.Name));
+            }
+            self.RemoveClassVariable(variableName);
+            return value;
         }
 
         #endregion
 
-        #region const_defined?, const_set, const_get, constants, const_missing
+        #region constants, const_defined?, const_set, const_get, remove_const, const_missing
+
+        // thread-safe:
+        [RubyMethod("constants", RubyMethodAttributes.PublicSingleton)]
+        public static RubyArray/*!*/ GetGlobalConstants(RubyModule/*!*/ self) {
+            return GetDefinedConstants(self.Context.ObjectClass);
+        }
+
+        // thread-safe:
+        [RubyMethod("constants")]
+        public static RubyArray/*!*/ GetDefinedConstants(RubyModule/*!*/ self) {
+            var visited = new Dictionary<string, bool>();
+            var result = new RubyArray();
+
+            bool hideGlobalConstants = !ReferenceEquals(self, self.Context.ObjectClass);
+
+            using (self.Context.ClassHierarchyLocker()) {
+                self.ForEachConstant(true, delegate(RubyModule/*!*/ module, string name, object value) {
+                    if (name == null) {
+                        // terminate enumeration when Object is reached
+                        return hideGlobalConstants && ReferenceEquals(module, module.Context.ObjectClass);
+                    }
+
+                    if (!visited.ContainsKey(name)) {
+                        visited.Add(name, true);
+                        // TODO (encoding):
+                        result.Add(MutableString.Create(name, RubyEncoding.UTF8));
+                    }
+                    return false;
+                });
+            }
+
+            return result;
+        }
 
         // thread-safe:
         [RubyMethod("const_defined?")]
@@ -772,35 +790,42 @@ namespace IronRuby.Builtins {
         }
 
         // thread-safe:
-        [RubyMethod("constants")]
-        public static RubyArray/*!*/ GetDefinedConstants(RubyModule/*!*/ self) {
-            var visited = new Dictionary<string, bool>();
-            var result = new RubyArray();
-            
-            bool hideGlobalConstants = !ReferenceEquals(self, self.Context.ObjectClass);
-
-            using (self.Context.ClassHierarchyLocker()) {
-                self.ForEachConstant(true, delegate(RubyModule/*!*/ module, string name, object value) {
-                    if (name == null) {
-                        // terminate enumeration when Object is reached
-                        return hideGlobalConstants && ReferenceEquals(module, module.Context.ObjectClass);
-                    }
-
-                    if (!visited.ContainsKey(name)) {
-                        visited.Add(name, true);
-                        // TODO (encoding):
-                        result.Add(MutableString.Create(name, RubyEncoding.UTF8));
-                    }
-                    return false;
-                });
+        [RubyMethod("remove_const", RubyMethodAttributes.PrivateInstance)]
+        public static object RemoveConstant(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ constantName) {
+            object value;
+            if (!self.TryRemoveConstant(constantName, out value)) {
+                self.Context.CheckConstantName(constantName);
+                throw RubyExceptions.CreateNameError(String.Format("constant {0}::{1} not defined", self.Name, constantName));
             }
-
-            return result;
+            return value;
         }
 
         [RubyMethod("const_missing")]
         public static void ConstantMissing(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ name) {
             throw RubyExceptions.CreateNameError(String.Format("uninitialized constant {0}::{1}", self.Name, name));
+        }
+
+        #endregion
+
+        #region autoload, autoload?
+
+        // thread-safe:
+        [RubyMethod("autoload")]
+        public static void SetAutoloadedConstant(RubyModule/*!*/ self,
+            [DefaultProtocol, NotNull]string/*!*/ constantName, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
+
+            self.Context.CheckConstantName(constantName);
+            if (path.IsEmpty) {
+                throw RubyExceptions.CreateArgumentError("empty file name");
+            }
+
+            self.SetAutoloadedConstant(constantName, path);
+        }
+
+        // thread-safe:
+        [RubyMethod("autoload?")]
+        public static MutableString GetAutoloadedConstantPath(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ constantName) {
+            return self.GetAutoloadedConstantPath(constantName);
         }
 
         #endregion
@@ -920,7 +945,7 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region instance_method
+        #region instance_method, 1.9: public_instance_method
 
         // thread-safe:
         [RubyMethod("instance_method")]
@@ -941,31 +966,7 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        [RubyMethod("freeze")]
-        public static RubyModule/*!*/ Freeze(RubyContext/*!*/ context, RubyModule/*!*/ self) {
-            // TODO:
-            context.FreezeObject(self);
-            return self;            
-        }
-
-        // thread-safe:
-        [RubyMethod("autoload")]
-        public static void SetAutoloadedConstant(RubyModule/*!*/ self,
-            [DefaultProtocol, NotNull]string/*!*/ constantName, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-
-            self.Context.CheckConstantName(constantName);
-            if (path.IsEmpty) {
-                throw RubyExceptions.CreateArgumentError("empty file name");
-            }
-
-            self.SetAutoloadedConstant(constantName, path);
-        }
-
-        // thread-safe:
-        [RubyMethod("autoload?")]
-        public static MutableString GetAutoloadedConstantPath(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ constantName) {
-            return self.GetAutoloadedConstantPath(constantName);
-        }
+        #region to_s, name, freeze
 
         [RubyMethod("to_s")]
         public static MutableString/*!*/ ToS(RubyContext/*!*/ context, RubyModule/*!*/ self) {
@@ -975,6 +976,21 @@ namespace IronRuby.Builtins {
         [RubyMethod("name")]
         public static MutableString/*!*/ GetName(RubyContext/*!*/ context, RubyModule/*!*/ self) {
             return self.GetDisplayName(context, true);
+        }
+
+        [RubyMethod("freeze")]
+        public static RubyModule/*!*/ Freeze(RubyContext/*!*/ context, RubyModule/*!*/ self) {
+            self.Freeze();
+            return self;
+        }
+
+        #endregion
+
+        #region IronRuby: to_clr_type, of, []
+
+        [RubyMethod("to_clr_type")]
+        public static Type ToClrType(RubyModule/*!*/ self) {
+            return self.TypeTracker != null ? self.TypeTracker.Type : null;
         }
 
         [RubyMethod("of")]
@@ -1032,23 +1048,19 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region Singleton Methods
-
-        [RubyMethod("constants", RubyMethodAttributes.PublicSingleton)]
-        public static RubyArray/*!*/ GetGlobalConstants(RubyModule/*!*/ self) {
-            return ModuleOps.GetDefinedConstants(self.Context.ObjectClass);
-        }
+        
+        #region nesting
 
         [RubyMethod("nesting", RubyMethodAttributes.PublicSingleton)]
         public static RubyArray/*!*/ GetLexicalModuleNesting(RubyScope/*!*/ scope, RubyModule/*!*/ self) {
             RubyArray result = new RubyArray();
-            while (scope != null) {
+            do {
                 // Ruby 1.9: the anonymous module doesn't show up
                 if (scope.Module != null) {
                     result.Add(scope.Module);
                 }
                 scope = (RubyScope)scope.Parent;
-            }
+            } while (scope != null);
             return result;
         }
 

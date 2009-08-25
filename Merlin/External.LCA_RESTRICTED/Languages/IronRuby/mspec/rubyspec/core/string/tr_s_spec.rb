@@ -70,10 +70,9 @@ describe "String#tr_s!" do
     s.tr_s!("l", "l").should == "helo"
   end
 
-  it "returns nil iff no chracter maps" do
+  it "returns nil if no modification was made" do
     s = "hello"
     s.tr_s!("za", "yb").should == nil
-    s.tr_s!("h", "h").should == "hello"
     s.tr_s!("", "").should == nil
     s.should == "hello"
   end
@@ -86,10 +85,21 @@ describe "String#tr_s!" do
     s.should == "hello"
   end
 
-  it "raises a TypeError if self is frozen" do
-    s = "hello".freeze
-    lambda { s.tr_s!("el", "ar") }.should raise_error(TypeError)
-    lambda { s.tr_s!("l", "r")   }.should raise_error(TypeError)
-    lambda { s.tr_s!("", "")     }.should raise_error(TypeError)
+  ruby_version_is ""..."1.9" do 
+    it "raises a TypeError if self is frozen" do
+      s = "hello".freeze
+      lambda { s.tr_s!("el", "ar") }.should raise_error(TypeError)
+      lambda { s.tr_s!("l", "r")   }.should raise_error(TypeError)
+      lambda { s.tr_s!("", "")     }.should raise_error(TypeError)
+    end
   end
+
+  ruby_version_is "1.9" do   
+    it "raises a RuntimeError if self is frozen" do
+      s = "hello".freeze
+      lambda { s.tr_s!("el", "ar") }.should raise_error(RuntimeError)
+      lambda { s.tr_s!("l", "r")   }.should raise_error(RuntimeError)
+      lambda { s.tr_s!("", "")     }.should raise_error(RuntimeError)
+    end
+  end    
 end

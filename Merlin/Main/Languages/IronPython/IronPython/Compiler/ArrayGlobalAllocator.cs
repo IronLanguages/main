@@ -53,7 +53,7 @@ namespace IronPython.Compiler.Ast {
             _array = new GlobalArrayConstant();
         }
 
-        public override ScriptCode/*!*/ MakeScriptCode(MSAst.Expression/*!*/ body, CompilerContext/*!*/ context, PythonAst/*!*/ ast) {
+        public override ScriptCode/*!*/ MakeScriptCode(MSAst.Expression/*!*/ body, CompilerContext/*!*/ context, PythonAst/*!*/ ast, Dictionary<int, bool> handlerLocations, Dictionary<int, Dictionary<int, bool>> loopAndFinallyLocations) {
             // create the CodeContext
             PythonGlobal[] globalArray = new PythonGlobal[_globals.Count];
 

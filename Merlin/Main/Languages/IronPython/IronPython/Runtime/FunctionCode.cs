@@ -753,6 +753,11 @@ namespace IronPython.Runtime {
 
         internal Delegate AddRecursionCheck(PythonContext context, Delegate finalTarget) {
             if (context.RecursionLimit != Int32.MaxValue) {
+                if (finalTarget is Func<CodeContext, CodeContext>) {
+                    // no recursion enforcement on classes
+                    return finalTarget;
+                }
+
                 switch (_argNames.Length) {
                     #region Generated Python Recursion Delegate Switch
 
@@ -908,7 +913,7 @@ namespace IronPython.Runtime {
     internal class PythonDebuggingPayload {
         public readonly Dictionary<int, Dictionary<int, bool>> LoopAndFinallyLocations;
         public readonly Dictionary<int, bool> HandlerLocations;
-        public readonly FunctionCode Code;
+        public FunctionCode Code;
 
         public PythonDebuggingPayload(FunctionCode code, Dictionary<int, Dictionary<int, bool>> loopLocations, Dictionary<int, bool> handlerLocations) {
             Code = code;

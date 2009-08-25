@@ -53,7 +53,7 @@ namespace IronPython.Compiler.Ast {
             };
         }
 
-        public override ScriptCode/*!*/ MakeScriptCode(MSAst.Expression/*!*/ body, CompilerContext/*!*/ context, PythonAst/*!*/ ast) {
+        public override ScriptCode/*!*/ MakeScriptCode(MSAst.Expression/*!*/ body, CompilerContext/*!*/ context, PythonAst/*!*/ ast, Dictionary<int, bool> handlerLocations, Dictionary<int, Dictionary<int, bool>> loopAndFinallyLocations) {
             // finally build the funcion that's closed over the array
             var func = Ast.Lambda<Func<CodeContext, FunctionCode, object>>(
                 Ast.Block(

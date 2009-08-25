@@ -1,14 +1,10 @@
 require 'fileutils'
 
 module DirSpecs
-  def DirSpecs.mock_dir
-    unless defined? @mock_dir then
-      @mock_dir = File.expand_path(tmp('mock'))
-    end
-
-    FileUtils.mkdir_p(@mock_dir) unless File.exists?(@mock_dir)
-
-    @mock_dir
+  def DirSpecs.mock_dir(dirs = ['mock'])
+    m = File.expand_path(tmp(File.join(dirs)))
+    FileUtils.mkdir_p(m) unless File.exists?(m)
+    m
   end
 
   def DirSpecs.nonexistent
@@ -89,6 +85,41 @@ module DirSpecs
       FileUtils.touch file
     end
     File.umask umask
+  end
+
+  def self.mock_rmdir(*dirs)
+    mock_dir ['rmdir_dirs'].concat(dirs)
+  end
+
+  def self.rmdir_dirs(create = true)
+    dirs = %w[
+      empty
+      nonempty
+      nonempty/child
+      noperm
+      noperm/child
+    ]
+
+    base_dir = mock_dir ['rmdir_dirs']
+
+    dirs.reverse_each do |d|
+      dir = File.join base_dir, d
+      if File.exists? dir
+        File.chmod 0777, dir
+        FileUtils.rm_rf dir
+      end
+    end
+    FileUtils.rm_rf base_dir
+
+    if create
+      dirs.each do |d|
+        dir = File.join base_dir, d
+        unless File.exists? dir
+          FileUtils.mkdir_p dir
+          File.chmod 0777, dir
+        end
+      end
+    end
   end
 
   def self.expected_paths

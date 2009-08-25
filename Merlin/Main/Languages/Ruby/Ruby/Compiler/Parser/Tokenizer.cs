@@ -3702,6 +3702,13 @@ namespace IronRuby.Compiler {
                 && IsIdentifier(name[name.Length - 1], multiByteIdentifier);
         }
 
+        public static bool IsVariableName(string name, bool allowMultiByteCharacters) {
+            int multiByteIdentifier = AllowMultiByteIdentifier(allowMultiByteCharacters);
+            return !String.IsNullOrEmpty(name)
+                && IsIdentifierInitial(name[0], multiByteIdentifier)
+                && IsVariableName(name, 1, 0, multiByteIdentifier);
+        }
+
         public static bool IsMethodName(string name, bool allowMultiByteCharacters) {
             int multiByteIdentifier = AllowMultiByteIdentifier(allowMultiByteCharacters);
             return !String.IsNullOrEmpty(name)

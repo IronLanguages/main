@@ -5,6 +5,8 @@ fails:Array#pack just ignores unknown format
 fails:Array#pack ignores white spaces
 fails:Array#pack skips everything till the end of line (LF) string with ('#')
 fails:Array#pack returns a tainted string when a pack argument is tainted
+fails:Array#pack with format 'Z' returns the whole argument string with star parameter
+fails:Array#pack with format 'Z' comsumres only one array item per a format
 fails:Array#pack with format 'B' returns packed bit-string descending order
 fails:Array#pack with format 'B' accepts characters other than 0 or 1 for compatibility to perl
 fails:Array#pack with format 'B' conversion edge case: all zeros
@@ -200,7 +202,7 @@ fails:Array#pack with format 'G' accepts the negative infinity
 fails:Array#pack with format 'G' accepts a NaN
 fails:Array#pack with format 'G' keeps order of nonnegative real numbers
 fails:Array#pack with format 'G' reverses order of nonpositive real numbers
-fails:Array#pack with format 'M' enocdes string with Qouted Printable encoding
+fails:Array#pack with format 'M' encodes string with Quoted Printable encoding
 fails:Array#pack with format 'M' doesn't encode new line chars
 fails:Array#pack with format 'M' always appends soft line break at the end of encoded string
 fails:Array#pack with format 'M' appends soft line break after each 72 chars + 1 encoded char in encoded string by default

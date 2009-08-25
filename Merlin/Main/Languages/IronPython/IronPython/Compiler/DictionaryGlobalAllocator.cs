@@ -14,14 +14,13 @@
  * ***************************************************************************/
 
 using System;
+using System.Collections.Generic;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Ast;
-using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime;
-using IronPython.Runtime.Operations;
 
 using MSAst = System.Linq.Expressions;
 
@@ -38,14 +37,9 @@ namespace IronPython.Compiler.Ast {
         public DictionaryGlobalAllocator() {
         }
 
-        public override ScriptCode/*!*/ MakeScriptCode(MSAst.Expression/*!*/ body, CompilerContext/*!*/ context, PythonAst/*!*/ ast) {
+        public override ScriptCode/*!*/ MakeScriptCode(MSAst.Expression/*!*/ body, CompilerContext/*!*/ context, PythonAst/*!*/ ast, Dictionary<int, bool> handlerLocations, Dictionary<int, Dictionary<int, bool>> loopAndFinallyLocations) {
             PythonCompilerOptions pco = ((PythonCompilerOptions)context.Options);
             PythonContext pc = (PythonContext)context.SourceUnit.LanguageContext;
-
-            if (body is MSAst.ConstantExpression) {
-                object value = ((MSAst.ConstantExpression)body).Value;
-                return new PythonScriptCode(context, (codeCtx, functionCode) => value, context.SourceUnit);
-            }
 
             var lambda = Ast.Lambda<Func<CodeContext, FunctionCode, object>>(
                 Utils.Convert(body, typeof(object)),
@@ -53,15 +47,7 @@ namespace IronPython.Compiler.Ast {
                 ArrayGlobalAllocator._arrayFuncParams
             );
 
-            Func<CodeContext, FunctionCode, object> func;
-
-            if (pc.ShouldInterpret(pco, context.SourceUnit)) {
-                func = CompilerHelpers.LightCompile(lambda);
-            } else {
-                func = lambda.Compile(context.SourceUnit.EmitDebugSymbols);
-            }
-
-            return new PythonScriptCode(context, func, context.SourceUnit);
+            return new PythonScriptCode(context, lambda, context.SourceUnit, handlerLocations, loopAndFinallyLocations);
         }
 
         public override MSAst.Expression/*!*/ GlobalContext {

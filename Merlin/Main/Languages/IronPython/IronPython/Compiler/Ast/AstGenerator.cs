@@ -19,6 +19,7 @@ using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Collections.ObjectModel;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
@@ -131,7 +132,7 @@ namespace IronPython.Compiler.Ast {
                 case CompilationMode.Collectable: _globals = new ArrayGlobalAllocator(_pythonContext); break;
                 case CompilationMode.Lookup: _globals = new DictionaryGlobalAllocator(); break;
                 case CompilationMode.ToDisk: _globals = new SavableGlobalAllocator(_pythonContext); break;
-                case CompilationMode.Uncollectable: _globals = new StaticGlobalAllocator(_pythonContext, name); break;
+                case CompilationMode.Uncollectable: _globals = new SharedGlobalAllocator(_pythonContext); break;
             }
 
             PythonOptions po = (_pythonContext.Options as PythonOptions);
@@ -443,7 +444,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal MSAst.Expression/*!*/ MakeAssignment(MSAst.ParameterExpression/*!*/ variable, MSAst.Expression/*!*/ right, SourceSpan span) {
-            return AddDebugInfo(MakeAssignment(variable, right), span);
+            return AddDebugInfoAndVoid(MakeAssignment(variable, right), span);
         }
 
         internal static MSAst.Expression/*!*/ ConvertIfNeeded(MSAst.Expression/*!*/ expression, Type/*!*/ type) {
@@ -526,6 +527,7 @@ namespace IronPython.Compiler.Ast {
                     expression
                 );
             }
+            
             return Utils.AddDebugInfo(expression, _document, start, end);
         }
 
@@ -784,19 +786,20 @@ namespace IronPython.Compiler.Ast {
             return to;
         }
 
-        internal MSAst.Expression[] Transform(Statement/*!*/[]/*!*/ from) {
+        internal ReadOnlyCollection<MSAst.Expression> Transform(Statement/*!*/[]/*!*/ from) {
             Debug.Assert(from != null);
-            MSAst.Expression[] to = new MSAst.Expression[from.Length];
+            var to = new ReadOnlyCollectionBuilder<MSAst.Expression>(from.Length + 1);
 
             SourceLocation start = SourceLocation.Invalid;
 
             for (int i = 0; i < from.Length; i++) {
                 Debug.Assert(from[i] != null);
 
-                to[i] = TransformMaybeSingleLineSuite(from[i], start);
+                to.Add(TransformMaybeSingleLineSuite(from[i], start));
                 start = from[i].Start;
             }
-            return to;
+            to.Add(AstUtils.Empty());
+            return to.ToReadOnlyCollection();
         }
 
         private MSAst.Expression TransformWithLineNumberUpdate(Statement/*!*/ fromStmt) {
@@ -1026,7 +1029,7 @@ namespace IronPython.Compiler.Ast {
             if (_locals.Count > 0) {
                 body = Ast.Block(_locals.ToReadOnlyCollection(), body);
             }
-            return Globals.MakeScriptCode(body, context, ast);
+            return Globals.MakeScriptCode(body, context, ast, _handlerLocations, _loopLocations);
         }
 
         internal MSAst.Expression FuncCodeExpr {

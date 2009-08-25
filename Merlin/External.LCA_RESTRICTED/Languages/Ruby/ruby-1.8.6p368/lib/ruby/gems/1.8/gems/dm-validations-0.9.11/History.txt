@@ -1,0 +1,30 @@
+=== 0.9.11 / 2009-03-29
+
+* 1 bug fix:
+
+  * Updated source file to force binary encoding
+
+=== 0.9.10 / 2009-01-19
+
+* 1 major enhancement:
+
+  * Major spec refactoring
+
+* 2 minor enhancements:
+
+  * Moved all error messages into ValidationErrors.default_error_messages
+  * Added :allow_nil option to validates_within
+
+* 1 bug fix:
+
+  * Fixed error messages and specs for within_validator
+
+=== 0.9.9 / 2009-01-04
+
+* No changes this version
+
+=== 0.9.8 / 2008-12-07
+
+* 1 bug fix:
+
+  * Updated specs to test valididity of RFC2822 email addresses

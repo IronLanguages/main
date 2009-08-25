@@ -82,7 +82,7 @@ namespace IronPython.Compiler.Ast {
                 );
 
                 if (_test.Start.Line != _body.Start.Line) {
-                    res = ag.AddDebugInfo(res, _test.Span);
+                    res = ag.AddDebugInfoAndVoid(res, _test.Span);
                 }
 
                 return res;

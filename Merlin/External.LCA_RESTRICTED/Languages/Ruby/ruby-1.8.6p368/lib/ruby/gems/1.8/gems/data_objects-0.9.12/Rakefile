@@ -1,0 +1,15 @@
+require 'rubygems'
+require 'rake'
+require 'rake/clean'
+
+require 'pathname'
+require 'lib/data_objects/version'
+
+ROOT    = Pathname(__FILE__).dirname.expand_path
+JRUBY   = RUBY_PLATFORM =~ /java/
+WINDOWS = Gem.win_platform?
+SUDO    = (WINDOWS || JRUBY) ? '' : ('sudo' unless ENV['SUDOLESS'])
+
+Dir['tasks/*.rake'].each { |f| import f }
+
+CLEAN.include(%w[ pkg/ **/*.rbc ])

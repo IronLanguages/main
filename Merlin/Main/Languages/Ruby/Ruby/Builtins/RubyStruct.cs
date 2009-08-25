@@ -46,6 +46,11 @@ namespace IronRuby.Builtins {
                 _names = ArrayUtils.Copy(names);
                 _nameIndices = new Dictionary<string, int>(names.Length);
                 for (int i = 0; i < names.Length; i++) {
+                    string name = names[i];
+                    if (!Tokenizer.IsVariableName(name, true)) {
+                        throw RubyExceptions.CreateNameError(String.Format("invalid attribute name `{0}'", name));
+                    }
+
                     // overwrites duplicates:
                     _nameIndices[names[i]] = i;
                 }

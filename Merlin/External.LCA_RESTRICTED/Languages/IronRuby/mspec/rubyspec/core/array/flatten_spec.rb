@@ -11,9 +11,19 @@ describe "Array#flatten" do
       [ 1, 2, [3, [4, 5] ] ].flatten(1).should == [1, 2, 3, [4, 5]]
     end
 
-    it "returns self when the level of recursion is 0" do
-      a = [ 1, 2, [3, [4, 5] ] ]
-      a.flatten(0).should equal(a)
+    ruby_version_is ""..."1.9.2" do
+      it "returns self when the level of recursion is 0" do
+        a = [ 1, 2, [3, [4, 5] ] ]
+        a.flatten(0).should equal(a)
+      end
+    end
+
+    ruby_version_is "1.9.2" do
+      it "returns dup when the level of recursion is 0" do
+        a = [ 1, 2, [3, [4, 5] ] ]
+        a.flatten(0).should == a
+        a.flatten(0).should_not equal(a)
+      end
     end
 
     it "ignores negative levels" do
@@ -108,13 +118,14 @@ describe "Array#flatten!" do
       [ 1, 2, [3, [4, 5] ] ].flatten!(1).should == [1, 2, 3, [4, 5]]
     end
 
-    # NOTE: This is inconsistent behaviour, it should return nil
-    it "returns self when the level of recursion is 0" do
-      a = [ 1, 2, [3, [4, 5] ] ]
-      a.flatten!(0).should equal(a)
+    ruby_bug "redmine #1440", "1.9.1" do
+      it "returns nil when the level of recursion is 0" do
+        a = [ 1, 2, [3, [4, 5] ] ]
+        a.flatten!(0).should == nil
+      end
     end
 
-    it "ignores negative levels" do
+    it "treats negative levels as no arguments" do
       [ 1, 2, [ 3, 4, [5, 6] ] ].flatten!(-1).should == [1, 2, 3, 4, 5, 6]
       [ 1, 2, [ 3, 4, [5, 6] ] ].flatten!(-10).should == [1, 2, 3, 4, 5, 6]
     end
@@ -179,17 +190,20 @@ describe "Array#flatten!" do
       nested_ary.freeze
       lambda { nested_ary.flatten! }.should raise_error(TypeError)
     end
-  end
-
-  ruby_version_is '1.9' do
-    it "raises a RuntimeError on frozen arrays when modification would take place" do
-      nested_ary = [1, 2, []]
-      nested_ary.freeze
-      lambda { nested_ary.flatten! }.should raise_error(RuntimeError)
+  
+    it "does not raise on frozen arrays when no modification would take place" do
+      ArraySpecs.frozen_array.flatten!.should be_nil
     end
   end
 
-  it "does not raise on frozen arrays when no modification would take place" do
-    ArraySpecs.frozen_array.flatten!.should be_nil
+  ruby_version_is '1.9' do
+    ruby_bug "[ruby-core:23663]", "1.9.2" do
+      it "raises a RuntimeError on frozen arrays" do
+        nested_ary = [1, 2, []]
+        nested_ary.freeze
+        lambda { nested_ary.flatten! }.should raise_error(RuntimeError)
+        lambda { ArraySpecs.frozen_array.flatten! }.should raise_error(RuntimeError)
+      end
+    end
   end
 end

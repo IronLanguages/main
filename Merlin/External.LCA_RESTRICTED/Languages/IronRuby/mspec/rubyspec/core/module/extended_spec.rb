@@ -37,4 +37,16 @@ describe "Module#extended" do
       $extended_object = nil
     end
   end
+
+  ruby_version_is ""..."1.9" do
+    it "is private in its default implementation" do
+      Module.new.private_methods.should include("extended")
+    end
+  end
+
+  ruby_version_is "1.9" do
+    it "is private in its default implementation" do
+      Module.new.private_methods.should include(:extended)
+    end
+  end
 end

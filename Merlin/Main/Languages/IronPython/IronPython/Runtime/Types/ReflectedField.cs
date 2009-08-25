@@ -15,26 +15,27 @@
 
 using System;
 using System.Diagnostics;
-using System.Linq.Expressions;
 using System.Dynamic;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
-using Microsoft.Scripting.Runtime;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
 
-using IronPython.Runtime.Operations;
 using IronPython.Runtime.Binding;
+using IronPython.Runtime.Exceptions;
+using IronPython.Runtime.Operations;
 
 using Ast = System.Linq.Expressions.Expression;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Runtime.Types {
     [PythonType("field#")]
     public sealed class ReflectedField : PythonTypeSlot, ICodeFormattable {
         private readonly NameType _nameType;
         internal readonly FieldInfo/*!*/ _info;
+        internal const string UpdateValueTypeFieldWarning = "Setting field {0} on value type {1} may result in updating a copy.  Use {1}.{0}.SetValue(instance, value) if this is safe.  For more information help({1}.{0}.SetValue).";
 
         public ReflectedField(FieldInfo/*!*/ info, NameType nameType) {
             Debug.Assert(info != null);
@@ -68,19 +69,27 @@ namespace IronPython.Runtime.Types {
         }
 
         /// <summary>
-        /// Convenience function for users to call directly
+        /// This function can be used to set a field on a value type without emitting a warning. Otherwise it is provided only to have symmetry with properties which have GetValue/SetValue for supporting explicitly implemented interfaces.
+        /// 
+        /// Setting fields on value types usually warns because it can silently fail to update the value you expect.  For example consider this example where Point is a value type with the public fields X and Y:
+        /// 
+        /// arr = System.Array.CreateInstance(Point, 10)
+        /// arr[0].X = 42
+        /// print arr[0].X
+        /// 
+        /// prints 0.  This is because reading the value from the array creates a copy of the value.  Setting the value then mutates the copy and the array does not get updated.  The same problem exists when accessing members of a class.
         /// </summary>
         public void SetValue(CodeContext context, object instance, object value) {
-            if (!TrySetValue(context, instance, DynamicHelpers.GetPythonType(instance), value)) {
+            if (!TrySetValueWorker(context, instance, DynamicHelpers.GetPythonType(instance), value, true)) {
                 throw new InvalidOperationException("cannot set field");
             }            
         }
 
-        public void __set__(object instance, object value) {
+        public void __set__(CodeContext/*!*/ context, object instance, object value) {
             if (instance == null && _info.IsStatic) {
-                DoSet(null, value);
+                DoSet(context, null, value, false);
             } else if (!_info.IsStatic) {
-                DoSet(instance, value);
+                DoSet(context, instance, value, false);
             } else {
                 throw PythonOps.AttributeErrorForReadonlyAttribute(_info.DeclaringType.Name, SymbolTable.StringToId(_info.Name));
             }
@@ -136,8 +145,12 @@ namespace IronPython.Runtime.Types {
         }
 
         internal override bool TrySetValue(CodeContext context, object instance, PythonType owner, object value) {
+            return TrySetValueWorker(context, instance, owner, value, false);
+        }
+
+        private bool TrySetValueWorker(CodeContext context, object instance, PythonType owner, object value, bool suppressWarning) {
             if (ShouldSetOrDelete(owner)) {
-                DoSet(context, instance, value);
+                DoSet(context, instance, value, suppressWarning);
                 return true;
             }
 
@@ -194,24 +207,15 @@ namespace IronPython.Runtime.Types {
 
         #region Private helpers
 
-        private void DoSet(CodeContext context, object instance, object val) {
+        private void DoSet(CodeContext context, object instance, object val, bool suppressWarning) {
             PerfTrack.NoteEvent(PerfTrack.Categories.Fields, this);
-            if (instance != null && instance.GetType().IsValueType)
-                throw new ArgumentException(String.Format("Attempt to update field '{0}' on value type '{1}'; value type fields cannot be directly modified", _info.Name, _info.DeclaringType.Name));
-            if (_info.IsInitOnly || _info.IsLiteral)
-                throw new MissingFieldException(String.Format("Cannot set field {1} on type {0}", _info.DeclaringType.Name, SymbolTable.StringToId(_info.Name)));
+            if (_info.IsInitOnly || _info.IsLiteral) {
+                throw PythonOps.AttributeErrorForReadonlyAttribute(_info.DeclaringType.Name, SymbolTable.StringToId(_info.Name));
+            } else if (!suppressWarning && instance != null && instance.GetType().IsValueType) {
+                PythonOps.Warn(context, PythonExceptions.RuntimeWarning, UpdateValueTypeFieldWarning, _info.Name, _info.DeclaringType.Name);
+            }
 
             _info.SetValue(instance, context.LanguageContext.Binder.Convert(val, _info.FieldType));
-        }
-
-        private void DoSet(object instance, object val) {
-            PerfTrack.NoteEvent(PerfTrack.Categories.Fields, this);
-            if (instance != null && instance.GetType().IsValueType)
-                throw PythonOps.ValueError("Attempt to update field '{0}' on value type '{1}'; value type fields cannot be directly modified", _info.Name, _info.DeclaringType.Name);
-            if (_info.IsInitOnly || _info.IsLiteral)
-                throw PythonOps.AttributeErrorForReadonlyAttribute(_info.DeclaringType.Name, SymbolTable.StringToId(_info.Name));
-
-            _info.SetValue(instance, Converter.Convert(val, _info.FieldType));
         }
 
         private bool ShouldSetOrDelete(PythonType type) {
