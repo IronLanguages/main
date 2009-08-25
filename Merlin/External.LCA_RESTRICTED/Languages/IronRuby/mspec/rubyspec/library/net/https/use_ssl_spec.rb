@@ -12,7 +12,7 @@ describe "Net::HTTP#use_ssl=" do
   end
   
   it "raises IOError when changed after start" do
-    net = Net::HTTP.start("localhost", 3333)
+    net = Net::HTTP.start("localhost", NetHTTPSpecs::DEFAULT_SERVER_PORT)
     lambda { net.use_ssl = true }.should raise_error(IOError)
   end
 end
