@@ -1,9 +1,9 @@
 $:.unshift File.dirname(__FILE__) + "/Libs"
 
-require 'tutorial'
-
 require File.dirname(__FILE__) + '/wpf'
 include Wpf
+
+require 'tutorial'
 
 module GuiTutorial
 

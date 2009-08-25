@@ -13,10 +13,8 @@
 #
 # ****************************************************************************
 
-SILVERLIGHT, MOONLIGHT = [
-  !System::Type.get_type('System.Windows.Browser.HtmlPage, System.Windows.Browser, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e').nil?,
-  !System::Type.get_type('Mono.MoonException, System.Windows, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e').nil?
-]
+SILVERLIGHT = !System::Type.get_type('System.Windows.Browser.HtmlPage, System.Windows.Browser, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e').nil? unless defined? SILVERLIGHT
+MOONLIGHT   = !System::Type.get_type('Mono.MoonException, System.Windows, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e').nil? unless defined? MOONLIGHT
 
 if not SILVERLIGHT
   # Reference the WPF assemblies
