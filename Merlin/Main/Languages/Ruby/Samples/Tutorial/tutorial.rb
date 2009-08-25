@@ -370,98 +370,112 @@ module Tutorial
         end
       }
     end
-  end
+  end  
 end
 
 class Object
-    def tutorial name
-        raise "Only one tutorial can be under creation at a time" if Thread.current[:tutorial]
-        caller[0] =~ /\A(.*):[0-9]+/
-        tutorial_file = $1
-        t = Tutorial::Tutorial.new name, tutorial_file
-        Thread.current[:tutorial] = t
-        Thread.current[:prev_chapter] = nil
+  def tutorial name
+      raise "Only one tutorial can be under creation at a time" if Thread.current[:tutorial]
+      caller[0] =~ /\A(.*):[0-9]+/
+      tutorial_file = $1
+      t = Tutorial::Tutorial.new name, tutorial_file
+      Thread.current[:tutorial] = t
+      Thread.current[:prev_chapter] = nil
 
-        yield
+      yield
 
-        Tutorial.add_tutorial t
-        Thread.current[:tutorial] = nil
+      Tutorial.add_tutorial t
+      Thread.current[:tutorial] = nil
+  end
+
+  def introduction intro
+      if Thread.current[:chapter]
+          Thread.current[:chapter].introduction = intro
+      elsif Thread.current[:section]
+          Thread.current[:section].introduction = intro
+      elsif Thread.current[:tutorial]
+          Thread.current[:tutorial].introduction = intro
+      else
+          raise "introduction should only be used within a tutorial definition"
+      end
+  end
+  
+  def legal notice
+      raise "legal should only be used within a tutorial definition" unless Thread.current[:tutorial]
+      Thread.current[:tutorial].legal_notice = notice
+  end
+  
+  def summary s
+    s = if s.kind_of?(String)
+        Tutorial::Summary.new nil, s 
+      else
+        opts = {:title => "Section complete!"}.merge(s)
+        Tutorial::Summary.new opts[:title], opts[:body]
+      end
+    if Thread.current[:chapter]
+        Thread.current[:chapter].summary = s
+    elsif Thread.current[:tutorial]
+        Thread.current[:tutorial].summary = s
+    else
+        raise "summary should only be used within a tutorial or chapter definition"
+    end
+  end
+      
+  def section name
+    raise "Only one section can be under creation at a time" if Thread.current[:section]
+    section = Tutorial::Section.new name
+    Thread.current[:section] = section
+    if Thread.current[:prev_chapter]
+      Thread.current[:prev_chapter].next_item = section
+    end
+    Thread.current[:platform_match] = nil
+
+    yield
+
+    if Thread.current[:platform_match] == nil or Thread.current[:platform_match]
+      Thread.current[:tutorial].sections << section
+    end
+    Thread.current[:section] = nil
+  end
+
+  def silverlight(enabled = true)
+    if not Thread.current[:section]
+      raise "platform should only be used within a section definition"
+    end
+    Thread.current[:platform_match] = (SILVERLIGHT == enabled)
+  end
+  
+  def chapter name
+    raise "Only one chapter can be under creation at a time" if Thread.current[:chapter]
+    chapter = Tutorial::Chapter.new name
+    Thread.current[:chapter] = chapter
+    if Thread.current[:prev_chapter]
+        Thread.current[:prev_chapter].next_item = chapter
     end
 
-    def introduction intro
-        if Thread.current[:chapter]
-            Thread.current[:chapter].introduction = intro
-        elsif Thread.current[:section]
-            Thread.current[:section].introduction = intro
-        elsif Thread.current[:tutorial]
-            Thread.current[:tutorial].introduction = intro
-        else
-            raise "introduction should only be used within a tutorial definition"
-        end
-    end
-    
-    def legal notice
-        raise "legal should only be used within a tutorial definition" unless Thread.current[:tutorial]
-        Thread.current[:tutorial].legal_notice = notice
-    end
-    
-    def summary s
-        s = if s.kind_of?(String)
-              Tutorial::Summary.new nil, s 
-            else
-              opts = {:title => "Section complete!"}.merge(s)
-              Tutorial::Summary.new opts[:title], opts[:body]
-            end
-        if Thread.current[:chapter]
-            Thread.current[:chapter].summary = s
-        elsif Thread.current[:tutorial]
-            Thread.current[:tutorial].summary = s
-        else
-            raise "summary should only be used within a tutorial or chapter definition"
-        end
-    end
-        
-    def section name
-        raise "Only one section can be under creation at a time" if Thread.current[:section]
-        section = Tutorial::Section.new name
-        Thread.current[:section] = section
-        if Thread.current[:prev_chapter]
-            Thread.current[:prev_chapter].next_item = section
-        end
+    yield
 
-        yield
+    Thread.current[:section].chapters << chapter
+    Thread.current[:prev_chapter] = chapter
+    Thread.current[:chapter] = nil
+  end
 
-        Thread.current[:tutorial].sections << section
-        Thread.current[:section] = nil
+  def task(options, &success_evaluator)
+    options = {}.merge(options)
+    if options.has_key?(:silverlight) and (options[:silverlight] != SILVERLIGHT)
+      return
     end
 
-    def chapter name
-        raise "Only one chapter can be under creation at a time" if Thread.current[:chapter]
-        chapter = Tutorial::Chapter.new name
-        Thread.current[:chapter] = chapter
-        if Thread.current[:prev_chapter]
-            Thread.current[:prev_chapter].next_item = chapter
-        end
-
-        yield
-
-        Thread.current[:section].chapters << chapter
-        Thread.current[:prev_chapter] = chapter
-        Thread.current[:chapter] = nil
-    end
-
-    def task(options, &success_evaluator)
-        options = {}.merge(options)
-        Thread.current[:chapter].tasks << Tutorial::Task.new(
-          options[:title],
-          options[:body], 
-          options[:run_unless], 
-          options[:setup], 
-          options[:code],
-          options[:source_files], 
-          options[:test_hook],
-          &success_evaluator)
-    end
+    Thread.current[:chapter].tasks << Tutorial::Task.new(
+      options[:title],
+      options[:body], 
+      options[:run_unless], 
+      options[:setup], 
+      options[:code],
+      options[:source_files], 
+      options[:test_hook],
+      &success_evaluator)
+  end
 end
 
 class String

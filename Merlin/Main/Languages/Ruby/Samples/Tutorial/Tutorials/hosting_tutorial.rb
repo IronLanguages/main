@@ -338,6 +338,14 @@ tutorial "IronRuby Hosting tutorial" do
                 ) { |iar| eval('IronPython::Hosting::Python', iar.bind).kind_of? Class }
 
             task(:body => %{
+                    Now let's include the Hosting namespace.
+                 },
+                 :code => [
+                    "load_assembly 'Microsoft.Scripting'",
+                    "include Microsoft::Scripting::Hosting"]
+                ) { |iar| iar.bind.Object.constants.include? "ScriptRuntime" }
+
+            task(:body => %{
                     To be able to host a language, you need to have a config file. This tutorial
                     runs using ir.exe, which normally includes a config file ir.exe.config with
                     a section like this (taken from the IronRuby 0.6 release).
@@ -356,11 +364,23 @@ tutorial "IronRuby Hosting tutorial" do
                     If you do hosting from another application, you will need to use a similar
                     config file.
                  },
+                 :silverlight => false,
                  :code => [
-                    "load_assembly 'Microsoft.Scripting'",
-                    "include Microsoft::Scripting::Hosting",
                     "setup = ScriptRuntimeSetup.read_configuration",
                     "runtime = ScriptRuntime.new setup"]
+                ) { |iar| iar.bind.runtime }
+
+            task(:body => %{
+                    To be able to host a language in Silverlight, you need to include the language assemblies 
+                    in the XAP file and then create a +ScriptRuntime+ configured with information about 
+                    that language.
+                 },
+                :silverlight => true,
+                :code => [
+                    'ls = IronPython::Hosting::Python.create_language_setup nil',
+                    'srs = ScriptRuntimeSetup.new',
+                    'srs.language_setups.add ls',
+                    'runtime = ScriptRuntime.new srs']
                 ) { |iar| iar.bind.runtime }
 
             task(:body => %{

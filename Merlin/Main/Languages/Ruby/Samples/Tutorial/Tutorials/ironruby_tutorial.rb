@@ -203,11 +203,11 @@ tutorial "IronRuby tutorial" do
             task(:body => %{
                      IronRuby comes with several built-in modules. Some are loaded when IronRuby starts up
                      as you saw above. Some need to be explicitly loaded. This is done with the the +require+
-                     function. Let's load the +thread+ module.
+                     function. Let's load the +bigdecimal+ module.
                  },
-                 :setup => lambda { $LOADED_FEATURES.delete "thread.rb" },
-                 :code => "require 'thread'"
-                 ) { $LOADED_FEATURES.include? 'thread.rb' }
+                 :setup => lambda { $LOADED_FEATURES.delete "bigdecimal.rb" },
+                 :code => "require 'bigdecimal'"
+                 ) { $LOADED_FEATURES.include? 'bigdecimal.rb' }
                  
             task :body => %{
                      Now let's see which new classes were loaded. Can you spot the new classes using
@@ -301,40 +301,32 @@ tutorial "IronRuby tutorial" do
                 :code => 'include System::Collections'
 
             task :body => %{
-                    Create instance of the Hashtable class and explore the instance using +instance_methods+.
+                    Create instance of the +BitArray+ class and explore the instance using +instance_methods+.
                 },
-                :code => ['h = Hashtable.new', 'h.class.instance_methods']
+                :code => ['ba = BitArray.new(8)', 'ba.class.instance_methods']
 
             task(:body => %{
-                    Insert a few elements into the hash table
+                    Set a few elements into the bit array. IronRuby supports the C# - style syntax for 
+                    accessing the array elements. The same syntax applies to any indexable object (.NET 
+                    arrays, System::Collections::Generics::List, etc).
                 },
                 :code => [
-                    "h[:a] = 'IronRuby'", 
-                    "h[:b] = 'Tutorial'"]
-                ) { |iar| iar.bind.h.count == 2 }
+                    "ba[1] = true", 
+                    "ba[4] = true"]
+                ) { |iar| iar.bind.ba[1] and iar.bind.ba[4] }
 
             task :body => %{
-                    IronRuby supports the C# - style syntax for accessing the hash table elements. The same 
-                    syntax applies to any indexable object (.NET arrays, System::Collections::ArrayList, etc).
+                    Now we can read from the bit array, again using the indexing syntax.
                 },
-                :code => 'h[:a]'
+                :code => 'ba[1]'
 
             task(:body => %{
-                    Enumerate the contents of the hash table using the +each+ method. The hash table elements 
-                    are instances of the +DictionaryEntry+ class. Print the +Key+ and +Value+ properties of
-                    each entry.
+                    Enumerate the contents of the bit array using the <tt>Enumerable#each_with_index</tt> method.
+                    +BitArray+ implements the <tt>System::Collections::IEnumerable</tt> interface, and IronRuby
+                    makes such objects accessible using the methods of the +Enumerable+ Ruby module.
                 },
-                :code => 'h.each { |e| puts "#{e.Key}=>#{e.Value}" }'
-                ) { |iar| /a=>IronRuby/ =~ iar.output }
-
-            task(:body => %{
-                    You can initialize the collection classes by passing in the Ruby built-in list as
-                    arguments.
-                },
-                :code => [
-                    'l = ArrayList.new([1,2,3])', 
-                    'l.each { |i| puts i }']
-                ) { |iar| /1\n2\n3/ =~ iar.output }
+                :code => 'ba.each_with_index { |elem, idx| puts "#{idx}:#{elem}" }'
+                ) { |iar| /7:false/ =~ iar.output }
         end
 
         chapter "Generics" do
@@ -388,20 +380,25 @@ tutorial "IronRuby tutorial" do
                     To use the <tt>System::Xml</tt> namespace, the System.Xml.dll assembly must first be
                     loaded by IronRuby engine. Note that it is not sufficient for the assembly to have been
                     loaded by .NET into the AppDomain with methods like <tt>System.AppDomain.LoadAssembly</tt>.
-                },
-                :code => ["load_assembly 'System.Xml'", 'include System::Xml']
 
-            task(:body => %{
                     Note that the load_assembly method accepts either a full assembly name or a partial assembly 
                     name (or even a file name - more on that later). It is strongly recommended using the full
                     assembly name in your Ruby script files as using the partial assembly name can cause 
                     problems. However, for interactive exploration, using the partial assembly name is much
-                    more easier. To use the full assembly name, you could have done:
+                    more easier. To use the full assembly name, you can also do:
 
                       load_assembly 'System.Xml, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
+                   
+                   However, since the full name is harder to remember and type, we will use the simple name here.
+                },
+                :code => [
+                    "load_assembly 'System.Xml'", 
+                    'include System::Xml']
 
+            task(:body => %{
                     Now load the XML file 'load.xml' by creating an instance of +XmlDocument+.
                 },
+                :silverlight => false,
                 :source_files => IronRubyTutorial.load_xml_path,
                 :code => [
                     'd = XmlDocument.new', 
@@ -416,9 +413,30 @@ tutorial "IronRuby tutorial" do
                         World
                         North America
                 },
+                :silverlight => false,
                 :code => [
                     "n = d.select_nodes '//Puzzle/SavedGames/Game/@caption'", 
                     'n.each { |e| puts e.value }']
+                ) { |iar| /Seattle/ =~ iar.output }
+                
+            task(:body => %{
+                    Now load the XML file 'load.xml' by creating an instance of +XmlReader+.
+                },
+                :silverlight => true,
+                :source_files => IronRubyTutorial.load_xml_path,
+                :code => "r = XmlReader.create '#{IronRubyTutorial.load_xml_relative_path}'"
+                ) { |iar| iar.bind.r.kind_of? System::Xml::XmlReader }
+
+            task(:body => %{
+                    We can now query the document. Use the statements below to get output like:
+
+                        Seattle (default game)
+                        New York
+                        World
+                        North America
+                },
+                :silverlight => true,
+                :code => "puts r.item('caption') if r.name == 'Game' while r.read"
                 ) { |iar| /Seattle/ =~ iar.output }
         end
 
@@ -435,6 +453,9 @@ tutorial "IronRuby tutorial" do
     end
 
     section "Advanced IronRuby - Events and delegates" do
+
+        silverlight(false) # TODO - Need to find some Silverlight equivalent
+
         introduction %{
             The large part of the beauty of IronRuby lies within the dynamic-style development - modifying
             the live application by adding functioning elements to it. With Windows applications, this often 
@@ -556,6 +577,8 @@ tutorial "IronRuby tutorial" do
 
     section "Advanced IronRuby - Windows Forms" do
 
+        silverlight(false)
+        
         introduction %{
             Note that if you develop Windows applications interactively using <tt>ir.exe</tt> or +iirb+ from
             the <b>Command Prompt</b> console, IronRuby must be initialized specially for that purpose. <tt>ir.exe</tt>
@@ -687,6 +710,9 @@ tutorial "IronRuby tutorial" do
     end
 
     section "Advanced IronRuby - Windows Presentation Foundation" do
+
+        silverlight(false) # TODO - Since Silverlight is a subset of WPF, some form of this section should be enabled for Silverlight
+
         introduction %{
             Windows Presentation Foundation is a new UI framework with rich support for media (3D, video, etc)
             data-binding, and customization.
@@ -842,53 +868,6 @@ tutorial "IronRuby tutorial" do
                 ) { |iar| not iar.bind.w.is_visible }
         end
     end
-
-    section "COM Interoperability - Using Microsoft Word" do
-        introduction %{
-            Coming_soon
-        }
-        
-        chapter "Checking spelling" do
-            introduction %{
-                Coming_soon
-            }
-
-            task :body => %{
-                    Coming_soon
-                },
-                :code => 'coming_soon=true'
-        end
-
-        chapter "Use Windows Form Dialog to Correct Spelling" do
-            introduction %{
-                Coming_soon
-            }
-
-            task :body => %{
-                    Coming_soon
-                },
-                :code => 'coming_soon=true'
-        end
-
-    end
-
-    section "COM Interoperability - Using Microsoft Excel" do
-        introduction %{
-            Coming_soon
-        }
-        
-        chapter "Coming_soon" do
-            introduction %{
-                Coming_soon
-            }
-
-            task :body => %{
-                    Coming_soon
-                },
-                :code => 'coming_soon=true'
-        end
-    end
-
    
     summary %{
         Congratulations! You have completed the IronRuby tutorial. 
