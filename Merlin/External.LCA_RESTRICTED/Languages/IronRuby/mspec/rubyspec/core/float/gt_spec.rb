@@ -6,8 +6,8 @@ describe "Float#>" do
     (1.5 > 1).should == true
     (2.5 > 3).should == false
     (45.91 > bignum_value).should == false
-    (nan > 1.0).should == false
-    (1.0 > nan).should == false
+    (nan_value > 1.0).should == false
+    (1.0 > nan_value).should == false
   end
 
   it "coerces the value if it is not a numeric" do

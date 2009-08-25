@@ -53,7 +53,7 @@ namespace IronPython.Runtime {
         internal static NumberFormatInfo nfi {
             get {
                 if (NumberFormatInfoForThread == null) {
-                    NumberFormatInfo numberFormatInfo = new CultureInfo("en-US").NumberFormat;
+                    NumberFormatInfo numberFormatInfo = ((CultureInfo)CultureInfo.InvariantCulture.Clone()).NumberFormat;
                     // The CLI formats as "Infinity", but CPython formats differently
                     numberFormatInfo.PositiveInfinitySymbol = "inf";
                     numberFormatInfo.NegativeInfinitySymbol = "-inf";

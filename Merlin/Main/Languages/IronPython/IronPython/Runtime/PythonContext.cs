@@ -634,13 +634,7 @@ namespace IronPython.Runtime {
             if ((options.Module & ModuleOptions.ExecOrEvalCode) != 0) {
                 return CompilationMode.Lookup;
             }
-
-            if (ShouldInterpret(options, source)) {
-                // force collectible code for the adaptive compiler.  Technically these should
-                // be orthogonal but 
-                return CompilationMode.Collectable;
-            }
-
+ 
             return ((_options.Optimize || options.Optimized) && !_options.LightweightScopes) ?
                 CompilationMode.Uncollectable :
                 CompilationMode.Collectable;
@@ -1139,6 +1133,8 @@ namespace IronPython.Runtime {
             res = null;
             return false;
         }
+#endif
+#if !SILVERLIGHT && !CLR4 // AssemblyResolve, files, path
 
         internal Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args) {
             AssemblyName an = new AssemblyName(args.Name);

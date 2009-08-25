@@ -1,0 +1,73 @@
+#!/usr/bin/env ruby -w
+
+require 'multiruby'
+
+ENV.delete 'RUBYOPT'
+
+ARGV << "help" if ARGV.empty?
+
+Dir.chdir Multiruby.root_dir
+Multiruby.setup_dirs(false)
+
+ARGV.each do |spec|
+  case spec
+  when "-h", "--help", "help" then
+    Multiruby.help
+    exit 0
+  when "the_usual" then # TODO: update #help
+    ARGV.push(*Multiruby::TAGS.map { |v| "mri:tar:#{v.gsub(/_/, '.')}" })
+    ARGV << "build" << "update:rubygems"
+    system "multigem install --no-ri --no-rdoc rake minitest ZenTest"
+  when "build" then
+    Multiruby.build_and_install
+  when "clean" then
+    Multiruby.clean
+  when "list" then
+    Multiruby.list
+  when /rm:(.*)/ then
+    Multiruby.rm $1
+  when "rubygems:merge" then
+    Multiruby.merge_rubygems
+  when "rubygems:update", "update:rubygems" then
+    Multiruby.update_rubygems
+  when "update" then
+    Multiruby.update
+  when "tags" then
+    p Multiruby.tags
+  when "mri:svn:current" then
+    ARGV << "mri:svn:releases" << "mri:svn:branches" << "build"
+  when "mri:svn:releases" then
+    Multiruby::TAGS.each do |v|
+      latest = Multiruby.mri_latest_tag v
+      abort "Can't find tag #{v}" unless latest
+      ARGV << "mri:svn:tag:#{latest}:mri_rel_#{v}"
+    end
+    ARGV << "build"
+  when /mri:svn:branch:(.*)/ then
+    ver = "branches/ruby_#{$1}" unless ver == "trunk"
+    Multiruby.svn_co "#{Multiruby::MRI_SVN}/#{$1}", "mri_#{$1}"
+    ARGV << "build"
+  when "mri:svn:branches" then
+    Multiruby::BRANCHES.each do |v|
+      ARGV << "mri:svn:branch:#{v}"
+    end
+    ARGV << "build"
+  when /mri:svn:tag:(.*):(.*)/ then
+    Multiruby.svn_co "#{Multiruby::MRI_SVN}/tags/#{$1}", $2
+    ARGV << "build"
+  when /mri:svn:tag:(.*)/ then
+    ARGV << "mri:svn:tag:#{$1}:#{$1}" << "build"
+  when /mri:tar:(.*)/ then
+    Multiruby.fetch_tar $1
+    ARGV << "build"
+  when /rbx:git:current/ then
+    Multiruby.git_clone "#{Multiruby::RBX_GIT}", "rubinius"
+    ARGV << "build"
+  when /rbx:ln:(.*)/ then
+    Multiruby.rbx_ln $1
+    ARGV << "build"
+  else
+    warn "unknown spec #{spec}"
+  end
+end
+

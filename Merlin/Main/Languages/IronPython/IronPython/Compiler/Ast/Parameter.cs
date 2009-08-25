@@ -124,7 +124,7 @@ namespace IronPython.Compiler.Ast {
         private readonly TupleExpression _tuple;
 
         public SublistParameter(int position, TupleExpression tuple)
-            : base(SymbolTable.StringToId("." + position * 2), ParameterKind.Normal) {
+            : base(SymbolTable.StringToId("." + position), ParameterKind.Normal) {
             _tuple = tuple;
         }
 

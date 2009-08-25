@@ -1,1 +1,0 @@
-fails:Module#instance_method returns an UnboundMethod corresponding to the given name from a singleton's superclass, but constrains it to the superclass, not the singleton class (for Class singletons)

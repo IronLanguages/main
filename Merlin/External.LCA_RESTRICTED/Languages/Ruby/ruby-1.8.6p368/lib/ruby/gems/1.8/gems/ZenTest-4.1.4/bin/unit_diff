@@ -1,0 +1,37 @@
+#!/usr/local/bin/ruby -ws
+# 
+# unit_diff - a ruby unit test filter by Ryan Davis <ryand-ruby@zenspider.com>
+#
+# usage:
+#
+#  test.rb | unit_diff [options]
+#    options:
+#    -b ignore whitespace differences
+#    -c contextual diff
+#    -h show usage
+#    -k keep temp diff files around
+#    -u unified diff
+#    -v display version
+
+require 'unit_diff'
+require 'zentest'
+
+############################################################
+
+if defined? $v then
+  puts "#{File.basename $0} v. #{ZenTest::VERSION}"
+  exit 0
+end
+
+if defined? $h then
+  File.open(__FILE__) do |f|
+    begin; end until f.readline =~ /usage:/
+    f.readline
+    while line = f.readline and line.sub!(/^# ?/, '')
+      $stderr.puts line
+    end
+  end
+  exit 0
+end
+
+UnitDiff.unit_diff

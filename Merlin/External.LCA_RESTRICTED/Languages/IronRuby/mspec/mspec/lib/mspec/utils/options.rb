@@ -207,7 +207,7 @@ class MSpecOptions
 
   def targets
     on("-t", "--target", "TARGET",
-       "Implementation to run the specs, where:") do |t|
+       "Implementation to run the specs, where TARGET is:") do |t|
       case t
       when 'r', 'ruby'
         config[:target] = 'ruby'
@@ -221,6 +221,8 @@ class MSpecOptions
         config[:target] = 'jruby'
       when 'i','ironruby'
         config[:target] = 'ir'
+      when 'm','maglev'
+        config[:target] = 'maglev-ruby'
       else
         config[:target] = t
       end
@@ -232,7 +234,9 @@ class MSpecOptions
     doc "     x or rubinius          invokes ./bin/rbx"
     doc "     X or rbx               invokes rbx in PATH"
     doc "     j or jruby             invokes jruby in PATH"
-    doc "     i or ironruby          invokes ir in PATH\n"
+    doc "     i or ironruby          invokes ir in PATH"
+    doc "     m or maglev            invokes maglev-ruby in PATH"
+    doc "     full path to EXE       invokes EXE directly\n"
 
     on("-T", "--target-opt", "OPT",
        "Pass OPT as a flag to the target implementation") do |t|
@@ -438,6 +442,13 @@ class MSpecOptions
     on("--spec-gdb",
        "Invoke Gdb when a spec description matches (see -K, -S)") do
       config[:gdb] = true
+    end
+  end
+
+  def debug
+    on("-d", "--debug",
+       "Set MSpec debugging flag for more verbose output") do
+      $MSPEC_DEBUG = true
     end
   end
 end

@@ -1,8 +1,0 @@
-DataMapper.setup(:default, {
-  :adapter  => 'rest',
-  :format => 'xml',
-  :host => 'localhost',
-  :port => '4000',
-  :username => 'admin',
-  :password => 'secret'
-})

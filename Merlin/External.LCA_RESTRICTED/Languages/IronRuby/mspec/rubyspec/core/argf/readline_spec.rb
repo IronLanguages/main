@@ -16,7 +16,7 @@ describe "ARGF.readline" do
   end
 
   after :each do
-    ARGF.close rescue nil
+    ARGF.close unless ARGF.closed?
   end
 
   it "raises an EOFError when reaching end of files" do

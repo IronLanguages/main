@@ -47,7 +47,7 @@ namespace IronPython.Runtime {
         }
 
         /// <summary>
-        /// True if their is currently a value associated with this global variable.  False if
+        /// True if there is currently a value associated with this global variable.  False if
         /// it is currently unassigned.
         /// </summary>
         public bool HasValue {

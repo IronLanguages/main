@@ -7,7 +7,7 @@ describe "ARGF.to_s" do
   end
 
   after :each do
-    ARGF.close rescue nil
+    ARGF.close unless ARGF.closed?
   end
 
   it "returns 'ARGF'" do

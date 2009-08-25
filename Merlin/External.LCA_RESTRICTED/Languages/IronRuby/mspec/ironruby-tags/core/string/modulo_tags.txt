@@ -2,7 +2,7 @@ fails:String#% raises an ArgumentError for unused arguments when $DEBUG is true
 fails:String#% replaces trailing absolute argument specifier without type with percent sign
 fails:String#% raises an ArgumentError when given invalid argument specifiers
 fails:String#% tries to convert the argument to Array by calling #to_ary
-fails:String#% supports binary formats using %b
+fails:String#% supports binary formats using %b for positive numbers
 fails:String#% supports float formats using %e
 fails:String#% supports float formats using %e, and downcases -Inf, Inf, and NaN
 fails:String#% supports float formats using %E
@@ -19,6 +19,7 @@ fails:String#% supports negative bignums by prefixing the value with dots
 fails:String#% formats zero with prefix using %#x
 fails:String#% formats zero without prefix using %#X
 fails:String#% behaves as if calling Kernel#Integer for %b argument, if it does not respond to #to_ary
+fails:String#% behaves as if calling Kernel#Integer(nil) for format argument, if it does not respond to #to_ary
 fails:String#% behaves as if calling Kernel#Integer for %d argument, if it does not respond to #to_ary
 fails:String#% behaves as if calling Kernel#Integer for %i argument, if it does not respond to #to_ary
 fails:String#% behaves as if calling Kernel#Integer for %o argument, if it does not respond to #to_ary

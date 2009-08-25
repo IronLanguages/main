@@ -1,0 +1,2 @@
+fails:Regexps with encoding modifiers supports /e (EUC encoding)
+fails:Regexps with encoding modifiers supports /u (UTF8 encoding)

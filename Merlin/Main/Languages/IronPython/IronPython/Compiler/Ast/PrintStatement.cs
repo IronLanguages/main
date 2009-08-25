@@ -14,6 +14,7 @@
  * ***************************************************************************/
 
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using MSAst = System.Linq.Expressions;
 
 namespace IronPython.Compiler.Ast {
@@ -63,7 +64,7 @@ namespace IronPython.Compiler.Ast {
                 return ag.AddDebugInfo(result, Span);
             } else {
                 // Create list for the individual statements
-                List<MSAst.Expression> statements = new List<MSAst.Expression>();
+                ReadOnlyCollectionBuilder<MSAst.Expression> statements = new ReadOnlyCollectionBuilder<MSAst.Expression>();
 
                 // Store destination in a temp, if we have one
                 if (destination != null) {
@@ -99,7 +100,7 @@ namespace IronPython.Compiler.Ast {
                 }
 
                 statements.Add(AstUtils.Empty());
-                return ag.AddDebugInfo(Ast.Block(statements.ToArray()), Span);
+                return ag.AddDebugInfo(Ast.Block(statements.ToReadOnlyCollection()), Span);
             }
         }
 

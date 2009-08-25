@@ -1244,15 +1244,17 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static object MakeClass(object body, CodeContext/*!*/ parentContext, string name, object[] bases, string selfNames) {
-            Func<CodeContext, CodeContext> func = GetClassCode(body);
+            Func<CodeContext, CodeContext> func = GetClassCode(parentContext, body);
 
             return MakeClass(parentContext, name, bases, selfNames, func(parentContext).Scope.Dict);
         }
 
-        private static Func<CodeContext, CodeContext> GetClassCode(object body) {
+        private static Func<CodeContext, CodeContext> GetClassCode(CodeContext context, object body) {
             Func<CodeContext, CodeContext> func = body as Func<CodeContext, CodeContext>;
             if (func == null) {
-                func = ((Compiler.LazyCode<Func<CodeContext, CodeContext>>)body).EnsureDelegate();
+                FunctionCode code = (FunctionCode)body;
+                code.UpdateDelegate(context.LanguageContext, true);
+                return (Func<CodeContext, CodeContext>)code.Target;
             }
             return func;
         }
@@ -2947,8 +2949,8 @@ namespace IronPython.Runtime.Operations {
             return ((Func<PythonFunction, object, object>)func.func_code.Target)(func, input);
         }
 
-        public static FunctionCode MakeFunctionCode(CodeContext context, string name, string documentation, string[] argNames, FunctionAttributes flags, SourceSpan span, string path, Delegate code, string[] closureVars) {
-            return new FunctionCode(PythonContext.GetContext(context), code, name, documentation, argNames, flags, span, path, closureVars);
+        public static FunctionCode MakeFunctionCode(CodeContext context, string name, string documentation, string[] argNames, FunctionAttributes flags, SourceSpan span, string path, Delegate code, string[] freeVars, string[] names, string[] cellVars, string[] varNames, int localCount) {
+            return new FunctionCode(PythonContext.GetContext(context), code, name, documentation, argNames, flags, span, path, freeVars, names, cellVars, varNames, localCount);
         }
 
         [NoSideEffects]
@@ -4173,6 +4175,9 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
+        public static byte[] ConvertBufferToByteArray(PythonBuffer buffer) {
+            return buffer.ToString().MakeByteArray();
+        }
     }
 
     public struct FunctionStack {

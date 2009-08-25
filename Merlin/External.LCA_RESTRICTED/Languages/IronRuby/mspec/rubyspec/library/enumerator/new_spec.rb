@@ -1,18 +1,14 @@
 require File.dirname(__FILE__) + '/../../spec_helper'
-require 'enumerator'
 
-describe "Enumerator.new" do
-  it "creates a new custom enumerator with the given object, iterator and arguments" do
-    enum = Enumerable::Enumerator.new(1, :upto, 3)
-    enum.kind_of?(Enumerable::Enumerator).should == true
-  end
+ruby_version_is ""..."1.9" do
+  require 'enumerator'
+  require File.dirname(__FILE__) + '/../../shared/enumerator/new'
 
-  it "creates a new custom enumerator that responds to #each" do
-    enum = Enumerable::Enumerator.new(1, :upto, 3)
-    enum.respond_to?(:each).should == true
-  end
+  describe "Enumerator.new" do
+    it "requires an argument" do
+      lambda {enumerator_class.new}.should raise_error(ArgumentError)
+    end
 
-  it "creates a new custom enumerator that runs correctly" do
-    Enumerable::Enumerator.new(1, :upto, 3).map{|x|x}.should == [1,2,3]
+    it_behaves_like(:enum_new, :new)
   end
 end

@@ -1,1 +1,1 @@
-critical:Resolv#getnames
+fails:Resolv#getnames resolves 127.0.0.1

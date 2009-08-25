@@ -1,5 +1,5 @@
+critical:TCPSocket.new has an address once it has connected to a listening server
+critical:TCPSocket.new allows local_port to be 0 when local_host is not specified 
 fails:TCPSocket.new refuses the connection when there is no server to connect to
 fails:TCPSocket.new connects to a listening server
-critical:TCPSocket.new has an address once it has connected to a listening server
-critical:TCPSocket.new allows local_port to be 0 when local_host is not specified
-critical:TCPSocket.new requires local_port to be 0 when local_host is not specified
+fails:TCPSocket.new requires local_port to be 0 when local_host is not specified

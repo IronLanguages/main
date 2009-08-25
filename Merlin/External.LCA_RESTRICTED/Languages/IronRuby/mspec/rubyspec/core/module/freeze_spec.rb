@@ -2,28 +2,39 @@ require File.dirname(__FILE__) + '/../../spec_helper'
 require File.dirname(__FILE__) + '/fixtures/classes'
 
 describe "Module#freeze" do
-  before(:each) do
-    @frozen_object_modified_error = TypeError  
-    ruby_version_is "1.9" do
-      @frozen_object_modified_error = RuntimeError
+  ruby_version_is ""..."1.9" do
+    it "prevents further modifications to self" do
+      m = Module.new.freeze
+      m.frozen?.should == true
+
+      # Does not raise
+      class << m; end
+
+      lambda {
+        class << m
+          def test() "test" end
+        end
+      }.should raise_error(TypeError)
+
+      lambda { def m.test() "test" end }.should raise_error(TypeError)
     end
   end
-  
-  it "prevents further modifications to self" do
-    m = Module.new.freeze
-    m.frozen?.should == true
 
-    # Does not raise
-    class << m; end
+  ruby_version_is "1.9" do
+    it "prevents further modifications to self" do
+      m = Module.new.freeze
+      m.frozen?.should == true
 
-    lambda { m.module_eval { def f; end; } }.should raise_error(@frozen_object_modified_error)
-    lambda { m.module_eval { include Enumerable } }.should raise_error(@frozen_object_modified_error)
-    lambda { m.send(:define_method, :f) {} }.should raise_error(@frozen_object_modified_error)
-    lambda { m.const_set(:C, 1) }.should raise_error(@frozen_object_modified_error)
-    lambda { m.send :instance_variable_set, :@x, 1 }.should raise_error(@frozen_object_modified_error)
-    lambda { m.send :class_variable_set, :@@x, 1 }.should raise_error(@frozen_object_modified_error)
-    
-    lambda { class << m; def f; end; end }.should raise_error(@frozen_object_modified_error)
-    lambda { class << m; class << self; def f; end; end; end }.should raise_error(@frozen_object_modified_error)
+      # Does not raise
+      class << m; end
+
+      lambda {
+        class << m
+          def test() "test" end
+        end
+      }.should raise_error(RuntimeError)
+
+      lambda { def m.test() "test" end }.should raise_error(RuntimeError)
+    end
   end
 end

@@ -138,6 +138,11 @@ describe "The defined? keyword" do
     ret.should == "constant"
   end
 
+  it "returns 'constant' when defined?(::File) is sent" do
+    ret = defined?(::File)
+    ret.should == "constant"
+  end
+
   it "returns 'constant' when defined?(File::SEPARATOR) is sent" do
     ret = defined?(File::SEPARATOR)
     ret.should == "constant"
@@ -151,6 +156,14 @@ describe "The defined? keyword" do
   it "returns 'expression' when defined?(0) is sent" do
     ret = defined?(0)
     ret.should == "expression"
+  end
+
+  it "returns 'yield' when there is a block to yield to and defined?(yield) is sent" do
+    def y
+      ret = defined?(yield)
+      ret.should == 'yield'
+    end
+    y {|a| true}
   end
 
   deviates_on :rubinius do
