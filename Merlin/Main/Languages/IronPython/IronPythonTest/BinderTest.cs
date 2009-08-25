@@ -960,4 +960,9 @@ namespace IronPythonTest.BinderTest {
         public static object GetObject2() { return new DerivedClassWithInterfaceImpl(); }
     }
 
+    public struct ValueTypeWithFields {
+        public int X;
+        public long Y;
+    }
+
 }

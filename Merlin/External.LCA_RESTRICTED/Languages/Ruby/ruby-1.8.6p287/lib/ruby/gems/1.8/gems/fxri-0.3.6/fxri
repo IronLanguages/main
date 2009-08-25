@@ -1,4 +1,0 @@
-#!/bin/env ruby
-
-#Dir.chdir(File.dirname(File.expand_path(__FILE__)))
-load 'fxri.rb'

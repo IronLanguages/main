@@ -24,13 +24,13 @@ describe "Array#partition" do
 
     array = ArraySpecs.recursive_array
     array.partition { true }.should == [
-      array,
+      [1, 'two', 3.0, array, array, array, array, array],
       []
     ]
     condition = true
     array.partition { condition = !condition }.should == [
-      ['two', [array]],
-      [1, 3.0]
+      ['two', array, array, array],
+      [1, 3.0, array, array]
     ]
   end
 

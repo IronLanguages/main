@@ -10,7 +10,9 @@ if (ENV["THISISSNAP"] || ENV["SILENTASSERT"]) && engine == 'ironruby'
   System::Diagnostics::Debug.Listeners.clear
   System::Diagnostics::Debug.Listeners.add(MyTraceListener.new)
 end
-
+if engine == 'ironruby'
+  $" << "resolv.rb"
+end
 class MSpecScript
   # The default implementation to run the specs.
   set :target, "#{ENV['MERLIN_ROOT']}\\Test\\Scripts\\ir.cmd"

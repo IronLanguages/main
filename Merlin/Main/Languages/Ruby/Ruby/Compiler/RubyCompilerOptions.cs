@@ -44,7 +44,7 @@ namespace IronRuby.Compiler {
         /// Creates a module scope with parent scope passed into the top-level lambda.
         /// Used by module_eval("code")/instance_eval("code").
         /// </summary>
-        Module,
+        ModuleEval,
 
         /// <summary>
         /// File executed via load(false) or require.

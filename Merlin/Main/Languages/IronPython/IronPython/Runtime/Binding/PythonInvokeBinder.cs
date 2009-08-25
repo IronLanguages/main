@@ -175,6 +175,16 @@ namespace IronPython.Runtime.Binding {
             List<Expression> metaArgs;
             Expression test;
             BindingRestrictions restrictions;
+
+#if !SILVERLIGHT
+            // TODO: This should go away long term and instead DispCallable should not be
+            // an IDynamicMetaObjectProvider and should be bound only through the ComBinder.
+            // Until that happens we need this ugly hack.
+            if (target.GetType().Assembly == typeof(ComBinder).Assembly) {
+                args = BindingHelpers.GetComArguments(args);
+            }
+#endif
+
             TranslateArguments(target, args, out callInfo, out metaArgs, out test, out restrictions);
 
             Debug.Assert(metaArgs.Count > 0);

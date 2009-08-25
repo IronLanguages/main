@@ -1,3 +1,2 @@
-critical:Thread.critical= can be mismatched
-critical:Thread.critical= defers exit until Thread.pass
+unstable:Thread.critical= can be mismatched
 fails:Thread.critical= defers exit

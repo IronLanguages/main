@@ -53,7 +53,7 @@ namespace IronPython.Compiler.Ast {
             while (i-- > 0) {
                 IfStatementTest ist = _tests[i];
 
-                result = ag.AddDebugInfo(
+                result = ag.AddDebugInfoAndVoid(
                     Ast.Condition(
                         ag.TransformAndDynamicConvert(ist.Test, typeof(bool)),
                         ag.TransformMaybeSingleLineSuite(ist.Body, ist.Test.Start), 

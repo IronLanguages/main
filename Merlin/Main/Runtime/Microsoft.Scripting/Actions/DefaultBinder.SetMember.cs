@@ -324,11 +324,8 @@ namespace Microsoft.Scripting.Actions {
                 );
             } else if (field.DeclaringType.IsValueType && !field.IsStatic) {
                 memInfo.Body.FinishCondition(
-                    Ast.Throw(
-                        Ast.New(
-                            typeof(ArgumentException).GetConstructor(new Type[] { typeof(string) }),
-                            AstUtils.Constant("cannot assign to value types")
-                        ),
+                    MakeError(
+                        MakeSetValueTypeFieldError(field, instance, target),
                         typeof(object)
                     )
                 );

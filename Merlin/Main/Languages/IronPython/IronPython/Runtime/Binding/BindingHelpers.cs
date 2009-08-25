@@ -409,6 +409,50 @@ namespace IronPython.Runtime.Binding {
         internal static Expression AddPythonBoxing(Expression res) {
             return AstUtils.Convert(res, typeof(object));
         }
+
+
+        /// <summary>
+        /// Converts arguments into a form which can be used for COM interop.
+        /// 
+        /// The argument is only converted if we have an IronPython specific
+        /// conversion when calling COM methods.
+        /// </summary>
+        internal static DynamicMetaObject[] GetComArguments(DynamicMetaObject[] args) {
+            DynamicMetaObject[] res = null;
+            for (int i = 0; i < args.Length; i++) {
+                IComConvertible comConv = args[i] as IComConvertible;
+                if (comConv != null) {
+                    if (res == null) {
+                        res = new DynamicMetaObject[args.Length];
+                        for (int j = 0; j < i; j++) {
+                            res[j] = args[j];
+                        }
+                    }
+
+                    res[i] = comConv.GetComMetaObject();
+                } else if (res != null) {
+                    res[i] = args[i];
+                }
+            }
+
+            return res ?? args;
+        }
+
+        /// <summary>
+        /// Converts a single argument into a form which can be used for COM 
+        /// interop.  
+        /// 
+        /// The argument is only converted if we have an IronPython specific
+        /// conversion when calling COM methods.
+        /// </summary>
+        internal static DynamicMetaObject GetComArgument(DynamicMetaObject arg) {
+            IComConvertible comConv = arg as IComConvertible;
+            if (comConv != null) {
+                return comConv.GetComMetaObject();
+            }
+
+            return arg;
+        }
     }
 
     internal class ValidationInfo {

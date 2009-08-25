@@ -31,11 +31,10 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 namespace IronRuby.Builtins {
-
     [RubyModule("Kernel", Extends = typeof(Kernel))]
     public static class KernelOps {
 
-        #region Private Instance Methods
+        #region initialize_copy, singleton_method_added, singleton_method_removed, singleton_method_undefined
 
         [RubyMethod("initialize_copy", RubyMethodAttributes.PrivateInstance)]
         public static object InitializeCopy(RubyContext/*!*/ context, object self, object source) {
@@ -44,7 +43,7 @@ namespace IronRuby.Builtins {
             if (sourceClass != selfClass) {
                 throw RubyExceptions.CreateTypeError("initialize_copy should take same class object");
             }
-            
+
             if (context.IsObjectFrozen(self)) {
                 throw RubyExceptions.CreateTypeError(String.Format("can't modify frozen {0}", selfClass.Name));
             }
@@ -69,7 +68,7 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region Private Instance & Singleton Methods
+        #region Array, Float, Integer, String, 1.9: Complex, Rational
 
         [RubyMethod("Array", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("Array", RubyMethodAttributes.PublicSingleton)]
@@ -106,7 +105,7 @@ namespace IronRuby.Builtins {
             var str = value.ConvertToString();
             int i = 0;
             object result = Tokenizer.ParseInteger(str, 0, ref i).ToObject();
-            
+
             while (i < str.Length && Tokenizer.IsWhiteSpace(str[i])) {
                 i++;
             }
@@ -131,308 +130,28 @@ namespace IronRuby.Builtins {
             return Protocols.ConvertToString(tosConversion, obj);
         }
 
-        #region `, exec, system
+        // TODO 1.9:
+        // private instance/singleton Complex
+        // private instance/singleton Rational
 
-#if !SILVERLIGHT
-        // Looks for RUBYSHELL and then COMSPEC under Windows
-        internal static ProcessStartInfo/*!*/ GetShell(RubyContext/*!*/ context, MutableString/*!*/ command) {
-            PlatformAdaptationLayer pal = context.DomainManager.Platform;
-            string shell = pal.GetEnvironmentVariable("RUBYSHELL");
-            if (shell == null) {
-                shell = pal.GetEnvironmentVariable("COMSPEC");
-            }
-
-            if (shell == null) {
-                string [] commandParts = command.ConvertToString().Split(new char[] { ' ' }, 2);
-                return new ProcessStartInfo(commandParts[0], commandParts.Length == 2 ? commandParts[1] : null);
-            } else {
-                return new ProcessStartInfo(shell, String.Format("/C \"{0}\"", command.ConvertToString()));
-            }
-        }
-
-        private static MutableString/*!*/ JoinArguments(MutableString/*!*/[]/*!*/ args) {
-            MutableString result = MutableString.CreateMutable(RubyEncoding.Binary);
-
-            for (int i = 0; i < args.Length; i++) {
-                result.Append(args[i]);
-                if (args.Length > 1 && i < args.Length - 1) {
-                    result.Append(' ');
-                }
-            }
-
-            return result;
-        }
-
-        private static Process/*!*/ ExecuteProcessAndWait(ProcessStartInfo/*!*/ psi) {
-            psi.UseShellExecute = false;
-            psi.RedirectStandardError = true;
-            try {
-                Process p = Process.Start(psi);
-                p.WaitForExit();
-                return p;
-            } catch (Exception e) {
-                throw RubyExceptions.CreateENOENT(psi.FileName, e);
-            }
-        }
-
-        internal static Process/*!*/ ExecuteProcessCapturingStandardOutput(ProcessStartInfo/*!*/ psi) {
-            psi.UseShellExecute = false;
-            psi.RedirectStandardError = true;
-            psi.RedirectStandardOutput = true;
-
-            try {
-                return Process.Start(psi);
-            } catch (Exception e) {
-                throw RubyExceptions.CreateENOENT(psi.FileName, e);
-            }
-        }
-
-        // Executes a command in a shell child process
-        private static Process/*!*/ ExecuteCommandInShell(RubyContext/*!*/ context, MutableString/*!*/ command) {
-            return ExecuteProcessAndWait(GetShell(context, command));
-        }
-
-        // Executes a command directly in a child process - command is the name of the executable
-        private static Process/*!*/ ExecuteCommand(MutableString/*!*/ command, MutableString[]/*!*/ args) {
-            return ExecuteProcessAndWait(new ProcessStartInfo(command.ToString(), JoinArguments(args).ToString()));
-        }
-
-        // Backtick always executes the command in a shell child process
-
-        [RubyMethod("`", RubyMethodAttributes.PrivateInstance, BuildConfig = "!SILVERLIGHT")]
-        [RubyMethod("`", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
-        public static MutableString/*!*/ ExecuteCommand(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]MutableString/*!*/ command) {
-            Process p = ExecuteProcessCapturingStandardOutput(GetShell(context, command));
-            string output = p.StandardOutput.ReadToEnd();
-            if (Environment.NewLine != "\n") {
-                output = output.Replace(Environment.NewLine, "\n");
-            }
-            MutableString result = MutableString.Create(output, RubyEncoding.GetRubyEncoding(p.StandardOutput.CurrentEncoding));
-            context.ChildProcessExitStatus = new RubyProcess.Status(p);
-            return result;
-        }
-
-        // Overloads of exec and system will always execute using the Windows shell if there is only the command parameter
-        // If args parameter is passed, it will execute the command directly without going to the shell.
-
-        [RubyMethod("exec", RubyMethodAttributes.PrivateInstance, BuildConfig = "!SILVERLIGHT")]
-        [RubyMethod("exec", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
-        public static void Execute(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]MutableString/*!*/ command) {
-            Process p = ExecuteCommandInShell(context, command);
-            context.ChildProcessExitStatus = new RubyProcess.Status(p);
-            Exit(self, p.ExitCode);
-        }
-
-        [RubyMethod("exec", RubyMethodAttributes.PrivateInstance, BuildConfig = "!SILVERLIGHT")]
-        [RubyMethod("exec", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
-        public static void Execute(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]MutableString/*!*/ command,
-            [DefaultProtocol, NotNull, NotNullItems]params MutableString[]/*!*/ args) {
-            Process p = ExecuteCommand(command, args);
-            context.ChildProcessExitStatus = new RubyProcess.Status(p);
-            Exit(self, p.ExitCode);
-        }
-
-        [RubyMethod("system", RubyMethodAttributes.PrivateInstance, BuildConfig = "!SILVERLIGHT")]
-        [RubyMethod("system", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
-        public static bool System(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]MutableString/*!*/ command) {
-            Process p = ExecuteCommandInShell(context, command);
-            context.ChildProcessExitStatus = new RubyProcess.Status(p);
-            return p.ExitCode == 0;
-        }
-
-        [RubyMethod("system", RubyMethodAttributes.PrivateInstance, BuildConfig = "!SILVERLIGHT")]
-        [RubyMethod("system", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
-        public static bool System(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]MutableString/*!*/ command,
-            [DefaultProtocol, NotNull, NotNullItems]params MutableString/*!*/[]/*!*/ args) {
-            Process p = ExecuteCommand(command, args);
-            context.ChildProcessExitStatus = new RubyProcess.Status(p);
-            return p.ExitCode == 0;
-        }
-#endif
         #endregion
 
-        [RubyMethod("abort", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("abort", RubyMethodAttributes.PublicSingleton)]
-        public static void Abort(object/*!*/ self) {
-            Exit(self, 1);
-        }
-
-        [RubyMethod("abort", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("abort", RubyMethodAttributes.PublicSingleton)]
-        public static void Abort(BinaryOpStorage/*!*/ writeStorage, object/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ message) {
-            var site = writeStorage.GetCallSite("write", 1);
-            site.Target(site, writeStorage.Context.StandardErrorOutput, message);
-
-            Exit(self, 1);
-        }
-
-        [RubyMethod("at_exit", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("at_exit", RubyMethodAttributes.PublicSingleton)]
-        public static Proc/*!*/ AtExit(BlockParam/*!*/ block, object self) {
-            if (block == null) {
-                throw RubyExceptions.CreateArgumentError("called without a block");
-            }
-
-            block.RubyContext.RegisterShutdownHandler(block);
-            return block.Proc;
-        }
-
-        [RubyMethod("autoload", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("autoload", RubyMethodAttributes.PublicSingleton)]
-        public static void SetAutoloadedConstant(RubyScope/*!*/ scope, object self,
-            [DefaultProtocol, NotNull]string/*!*/ constantName, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
-            ModuleOps.SetAutoloadedConstant(scope.GetInnerMostModuleForConstantLookup(), constantName, path);
-        }
-
-        [RubyMethod("autoload?", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("autoload?", RubyMethodAttributes.PublicSingleton)]
-        public static MutableString GetAutoloadedConstantPath(RubyScope/*!*/ scope, object self, [DefaultProtocol, NotNull]string/*!*/ constantName) {
-            return ModuleOps.GetAutoloadedConstantPath(scope.GetInnerMostModuleForConstantLookup(), constantName);
-        }
+        #region binding, block_given?, local_variables, caller, callcc, 1.9: __callee__, __method__
 
         [RubyMethod("binding", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("binding", RubyMethodAttributes.PublicSingleton)]
         public static Binding/*!*/ GetLocalScope(RubyScope/*!*/ scope, object self) {
             return new Binding(scope);
         }
-        
+
         [RubyMethod("block_given?", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("block_given?", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("iterator?", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("iterator?", RubyMethodAttributes.PublicSingleton)]
         public static bool HasBlock(RubyScope/*!*/ scope, object self) {
             var methodScope = scope.GetInnerMostMethodScope();
             return methodScope != null && methodScope.BlockParameter != null;
         }
-
-        //callcc
-
-        [RubyMethod("caller", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("caller", RubyMethodAttributes.PublicSingleton)]
-        [RubyStackTraceHidden]
-        public static RubyArray/*!*/ GetStackTrace(RubyContext/*!*/ context, object self, [DefaultParameterValue(1)]int skipFrames) {
-            if (skipFrames < 0) {
-                return new RubyArray();
-            }
-
-            return RubyExceptionData.CreateBacktrace(context, skipFrames);
-        }
-
-        //chomp
-        //chomp!
-        //chop
-        //chop!
-
-        [RubyMethod("eval", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("eval", RubyMethodAttributes.PublicSingleton)]
-        public static object Evaluate(RubyScope/*!*/ scope, object self, [NotNull]MutableString/*!*/ code, 
-            [Optional]Binding binding, [Optional, NotNull]MutableString file, [DefaultParameterValue(1)]int line) {
-
-            RubyScope targetScope = (binding != null) ? binding.LocalScope : scope;
-            return RubyUtils.Evaluate(code, targetScope, targetScope.SelfObject, null, file, line);
-        }
-
-        [RubyMethod("eval", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("eval", RubyMethodAttributes.PublicSingleton)]
-        public static object Evaluate(RubyScope/*!*/ scope, object self, [NotNull]MutableString/*!*/ code,
-            [NotNull]Proc/*!*/ procBinding, [Optional, NotNull]MutableString file, [DefaultParameterValue(1)]int line) {
-
-            return RubyUtils.Evaluate(code, procBinding.LocalScope, procBinding.LocalScope.SelfObject, null, file, line);
-        }
-
-        [RubyMethod("exit", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("exit", RubyMethodAttributes.PublicSingleton)]
-        public static void Exit(object self) {
-            Exit(self, 1);
-        }
-
-        [RubyMethod("exit", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("exit", RubyMethodAttributes.PublicSingleton)]
-        public static void Exit(object self, bool isSuccessful) {
-            Exit(self, isSuccessful ? 0 : 1);
-        }
-
-        [RubyMethod("exit", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("exit", RubyMethodAttributes.PublicSingleton)]
-        public static void Exit(object self, int exitCode) {
-            throw new SystemExit(exitCode, "exit");
-        }
-
-        [RubyMethod("exit!", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("exit!", RubyMethodAttributes.PublicSingleton)]
-        public static void TerminateExecution(RubyContext/*!*/ context, object self) {
-            TerminateExecution(context, self, 1);
-        }
-
-        [RubyMethod("exit!", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("exit!", RubyMethodAttributes.PublicSingleton)]
-        public static void TerminateExecution(RubyContext/*!*/ context, object self, bool isSuccessful) {
-            TerminateExecution(context, self, isSuccessful ? 0 : 1);
-        }
-
-        [RubyMethod("exit!", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("exit!", RubyMethodAttributes.PublicSingleton)]
-        public static void TerminateExecution(RubyContext/*!*/ context, object self, int exitCode) {
-            context.DomainManager.Platform.TerminateScriptExecution(exitCode);
-        }
-
-        //fork
-        
-        [RubyMethod("global_variables", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("global_variables", RubyMethodAttributes.PublicSingleton)]
-        public static RubyArray/*!*/ GetGlobalVariableNames(RubyContext/*!*/ context, object self) {
-            RubyArray result = new RubyArray();
-            lock (context.GlobalVariablesLock) {
-                foreach (KeyValuePair<string, GlobalVariable> global in context.GlobalVariables) {
-                    if (global.Value.IsEnumerated) {
-                        // TODO: Ruby 1.9 returns symbols:
-                        // TODO (encoding):
-                        result.Add(MutableString.Create(global.Key, RubyEncoding.UTF8));
-                    }
-                }
-            }
-            return result;
-        }
-
-        //gsub
-        //gsub!
-
-        // TODO: in Ruby 1.9, these two methods will do different things so we will likely have to have two
-        // separate implementations of these methods
-        [RubyMethod("lambda", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("lambda", RubyMethodAttributes.PublicSingleton)]
-        [RubyMethod("proc", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("proc", RubyMethodAttributes.PublicSingleton)]
-        public static Proc/*!*/ CreateLambda(BlockParam/*!*/ block, object self) {
-            if (block == null) {
-                throw RubyExceptions.CreateArgumentError("tried to create Proc object without a block");
-            }
-
-            // doesn't preserve the class:
-            return block.Proc.ToLambda();
-        }
-
-        #region load, load_assembly, require
-
-        [RubyMethod("load", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("load", RubyMethodAttributes.PublicSingleton)]
-        public static bool Load(RubyScope/*!*/ scope, object self, [DefaultProtocol, NotNull]MutableString/*!*/ libraryName, [Optional]bool wrap) {
-            return scope.RubyContext.Loader.LoadFile(scope.GlobalScope.Scope, self, libraryName, wrap ? LoadFlags.LoadIsolated : LoadFlags.None);
-        }
-
-        [RubyMethod("load_assembly", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("load_assembly", RubyMethodAttributes.PublicSingleton)]
-        public static bool LoadAssembly(RubyContext/*!*/ context, object self,
-            [DefaultProtocol, NotNull]MutableString/*!*/ assemblyName, [DefaultProtocol, Optional, NotNull]MutableString libraryNamespace) {
-
-            string initializer = libraryNamespace != null ? LibraryInitializer.GetFullTypeName(libraryNamespace.ConvertToString()) : null;
-            return context.Loader.LoadAssembly(assemblyName.ConvertToString(), initializer, true, true) != null;
-        }
-
-        [RubyMethod("require", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("require", RubyMethodAttributes.PublicSingleton)]
-        public static bool Require(RubyScope/*!*/ scope, object self, [DefaultProtocol, NotNull]MutableString/*!*/ libraryName) {
-            return scope.RubyContext.Loader.LoadFile(scope.GlobalScope.Scope, self, libraryName, LoadFlags.LoadOnce | LoadFlags.AppendExtensions);
-        }
-
-        #endregion
 
         [RubyMethod("local_variables", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("local_variables", RubyMethodAttributes.PublicSingleton)]
@@ -447,581 +166,24 @@ namespace IronRuby.Builtins {
             return result;
         }
 
-        [RubyMethod("loop", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("loop", RubyMethodAttributes.PublicSingleton)]
-        public static object Loop(BlockParam/*!*/ block, object self) {
-            if (block == null) {
-                throw RubyExceptions.NoBlockGiven();
-            }
-
-            while (true) {
-                object result;
-                if (block.Yield(out result)) {
-                    return result;
-                }
-            }
-        }
-
-        [RubyMethod("method_missing", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("method_missing", RubyMethodAttributes.PublicSingleton)]
+        [RubyMethod("caller", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("caller", RubyMethodAttributes.PublicSingleton)]
         [RubyStackTraceHidden]
-        public static object MethodMissing(RubyContext/*!*/ context, object/*!*/ self, SymbolId symbol, [NotNull]params object[]/*!*/ args) {
-            string name = SymbolTable.IdToString(symbol);
-            throw RubyExceptions.CreateMethodMissing(context, self, name);            
-        }
-
-        #region open
-
-        // TODO: should call File#initialize
-
-        private static object OpenWithBlock(BlockParam/*!*/ block, RubyIO file) {
-            try {
-                object result;
-                block.Yield(file, out result);
-                return result;
-            } finally {
-                file.Close();
-            }
-        }
-
-        private static void SetPermission(RubyContext/*!*/ context, string/*!*/ fileName, int/*!*/ permission) {
-            bool existingFile = context.DomainManager.Platform.FileExists(fileName);
-
-            if (!existingFile) {
-                RubyFileOps.Chmod(fileName, permission);
-            }
-        }
-
-        [RubyMethod("open", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
-        public static RubyIO/*!*/ Open(
-            RubyContext/*!*/ context, 
-            object self,
-            [DefaultProtocol, NotNull]MutableString/*!*/ path, 
-            [DefaultProtocol, Optional]MutableString mode, 
-            [DefaultProtocol, DefaultParameterValue(RubyFileOps.ReadWriteMode)]int permission) {
-
-            string fileName = path.ConvertToString();
-            if (fileName.Length > 0 && fileName[0] == '|') {
-                throw new NotImplementedError();
+        public static RubyArray/*!*/ GetStackTrace(RubyContext/*!*/ context, object self, [DefaultParameterValue(1)]int skipFrames) {
+            if (skipFrames < 0) {
+                return new RubyArray();
             }
 
-            RubyIO file = new RubyFile(context, fileName, IOModeEnum.Parse(mode));
-
-            SetPermission(context, fileName, permission);
-
-            return file;
+            return RubyExceptionData.CreateBacktrace(context, skipFrames);
         }
 
-        [RubyMethod("open", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
-        public static object Open(
-            RubyContext/*!*/ context, 
-            [NotNull]BlockParam/*!*/ block, 
-            object self,
-            [DefaultProtocol, NotNull]MutableString/*!*/ path, 
-            [DefaultProtocol, Optional]MutableString mode, 
-            [DefaultProtocol, DefaultParameterValue(RubyFileOps.ReadWriteMode)]int permission) {
-
-            RubyIO file = Open(context, self, path, mode, permission);
-            return OpenWithBlock(block, file);
-        }
-
-        [RubyMethod("open", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
-        public static RubyIO/*!*/ Open(
-            RubyContext/*!*/ context, 
-            object self,
-            [DefaultProtocol, NotNull]MutableString/*!*/ path, 
-            int mode,
-            [DefaultProtocol, DefaultParameterValue(RubyFileOps.ReadWriteMode)]int permission) {
-
-            string fileName = path.ConvertToString();
-            if (fileName.Length > 0 && fileName[0] == '|') {
-                throw new NotImplementedError();
-            }
-
-            RubyIO file = new RubyFile(context, fileName, (IOMode)mode);
-
-            SetPermission(context, fileName, permission);
-
-            return file;
-        }
-
-        [RubyMethod("open", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
-        public static object Open(
-            RubyContext/*!*/ context, 
-            [NotNull]BlockParam/*!*/ block, 
-            object self,
-            [DefaultProtocol, NotNull]MutableString/*!*/ path, 
-            int mode,
-            [DefaultProtocol, DefaultParameterValue(RubyFileOps.ReadWriteMode)]int permission) {
-
-            RubyIO file = Open(context, self, path, mode, permission);
-            return OpenWithBlock(block, file);
-        }
+        //callcc
+        // 1.9 private instance/singleton __callee__
+        // 1.9 private instance/singleton __method__
 
         #endregion
 
-        #region p, print, printf, putc, puts, warn, gets, getc
-
-        [RubyMethod("p", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("p", RubyMethodAttributes.PublicSingleton)]
-        public static void PrintInspect(BinaryOpStorage/*!*/ writeStorage, UnaryOpStorage/*!*/ inspectStorage, ConversionStorage<MutableString>/*!*/ tosConversion, 
-            object self, [NotNull]params object[]/*!*/ args) {
-
-            var inspect = inspectStorage.GetCallSite("inspect");
-            var inspectedArgs = new MutableString[args.Length];
-            for (int i = 0; i < args.Length; i++) {
-                inspectedArgs[i] = Protocols.ConvertToString(tosConversion, inspect.Target(inspect, args[i]));
-            }
-            
-            // no dynamic dispatch to "puts":
-            foreach (var arg in inspectedArgs) {
-                PrintOps.Puts(writeStorage, writeStorage.Context.StandardOutput, arg);
-            }
-        }
-
-        [RubyMethod("print", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("print", RubyMethodAttributes.PublicSingleton)]
-        public static void Print(BinaryOpStorage/*!*/ writeStorage, RubyScope/*!*/ scope, object self) {
-            // no dynamic dispatch to "print":
-            PrintOps.Print(writeStorage, scope, scope.RubyContext.StandardOutput);
-        }
-
-        [RubyMethod("print", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("print", RubyMethodAttributes.PublicSingleton)]
-        public static void Print(BinaryOpStorage/*!*/ writeStorage, object self, object val) {
-            // no dynamic dispatch to "print":
-            PrintOps.Print(writeStorage, writeStorage.Context.StandardOutput, val);
-        }
-
-        [RubyMethod("print", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("print", RubyMethodAttributes.PublicSingleton)]
-        public static void Print(BinaryOpStorage/*!*/ writeStorage,  
-            object self, [NotNull]params object[]/*!*/ args) {
-
-            // no dynamic dispatch to "print":
-            PrintOps.Print(writeStorage, writeStorage.Context.StandardOutput, args);
-        }
-
-        // this overload is called only if the first parameter is string:
-        [RubyMethod("printf", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("printf", RubyMethodAttributes.PublicSingleton)]
-        public static void PrintFormatted(
-            StringFormatterSiteStorage/*!*/ storage,
-            ConversionStorage<MutableString>/*!*/ stringCast, 
-            BinaryOpStorage/*!*/ writeStorage,
-            object self, [NotNull]MutableString/*!*/ format, [NotNull]params object[]/*!*/ args) {
-
-            PrintFormatted(storage, stringCast, writeStorage, self, storage.Context.StandardOutput, format, args);
-        }
-
-        [RubyMethod("printf", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("printf", RubyMethodAttributes.PublicSingleton)]
-        public static void PrintFormatted(
-            StringFormatterSiteStorage/*!*/ storage, 
-            ConversionStorage<MutableString>/*!*/ stringCast, 
-            BinaryOpStorage/*!*/ writeStorage,
-            object self, object io, [NotNull]object/*!*/ format, [NotNull]params object[]/*!*/ args) {
-
-            Debug.Assert(!(io is MutableString));
-            
-            // TODO: BindAsObject attribute on format?
-            // format cannot be strongly typed to MutableString due to ambiguity between signatures (MS, object) vs (object, MS)
-            Protocols.Write(writeStorage, io, 
-                Sprintf(storage, self, Protocols.CastToString(stringCast, format), args)
-            );
-        }
-
-        [RubyMethod("putc", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("putc", RubyMethodAttributes.PublicSingleton)]
-        public static MutableString/*!*/ Putc(BinaryOpStorage/*!*/ writeStorage, object self, [NotNull]MutableString/*!*/ arg) {
-            // no dynamic dispatch:
-            return PrintOps.Putc(writeStorage, writeStorage.Context.StandardOutput, arg);
-        }
-
-        [RubyMethod("putc", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("putc", RubyMethodAttributes.PublicSingleton)]
-        public static int Putc(BinaryOpStorage/*!*/ writeStorage, object self, [DefaultProtocol]int arg) {
-            // no dynamic dispatch:
-            return PrintOps.Putc(writeStorage, writeStorage.Context.StandardOutput, arg);
-        }
-
-        [RubyMethod("puts", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("puts", RubyMethodAttributes.PublicSingleton)]
-        public static void PutsEmptyLine(BinaryOpStorage/*!*/ writeStorage, object self) {
-            // call directly, no dynamic dispatch to "self":
-            PrintOps.PutsEmptyLine(writeStorage, writeStorage.Context.StandardOutput);
-        }
-
-        [RubyMethod("puts", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("puts", RubyMethodAttributes.PublicSingleton)]
-        public static void PutString(BinaryOpStorage/*!*/ writeStorage, ConversionStorage<MutableString>/*!*/ tosConversion,
-            ConversionStorage<IList>/*!*/ tryToAry, object self, object arg) {
-
-            // call directly, no dynamic dispatch to "self":
-            PrintOps.Puts(writeStorage, tosConversion, tryToAry, writeStorage.Context.StandardOutput, arg);
-        }
-
-        [RubyMethod("puts", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("puts", RubyMethodAttributes.PublicSingleton)]
-        public static void PutString(BinaryOpStorage/*!*/ writeStorage, object self, [NotNull]MutableString/*!*/ arg) {
-            // call directly, no dynamic dispatch to "self":
-            PrintOps.Puts(writeStorage, writeStorage.Context.StandardOutput, arg);
-        }
-
-        [RubyMethod("puts", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("puts", RubyMethodAttributes.PublicSingleton)]
-        public static void PutString(BinaryOpStorage/*!*/ writeStorage, ConversionStorage<MutableString>/*!*/ tosConversion,
-            ConversionStorage<IList>/*!*/ tryToAry, object self, [NotNull]params object[]/*!*/ args) {
-
-            // call directly, no dynamic dispatch to "self":
-            PrintOps.Puts(writeStorage, tosConversion, tryToAry, writeStorage.Context.StandardOutput, args);
-        }
-
-        [RubyMethod("warn", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("warn", RubyMethodAttributes.PublicSingleton)]
-        public static void ReportWarning(BinaryOpStorage/*!*/ writeStorage, ConversionStorage<MutableString>/*!*/ tosConversion, 
-            object self, object message) {
-
-            PrintOps.ReportWarning(writeStorage, tosConversion, message);
-        }
-
-        // TODO: not supported in Ruby 1.9
-        [RubyMethod("getc", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("getc", RubyMethodAttributes.PublicSingleton)]
-        public static object ReadInputCharacter(UnaryOpStorage/*!*/ getcStorage, object self) {
-            getcStorage.Context.ReportWarning("getc is obsolete; use STDIN.getc instead");
-            var site = getcStorage.GetCallSite("getc", 0);
-            return site.Target(site, getcStorage.Context.StandardInput);
-        }
-
-        [RubyMethod("gets", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("gets", RubyMethodAttributes.PublicSingleton)]
-        public static object ReadInputLine(CallSiteStorage<Func<CallSite, object, MutableString, object>>/*!*/ storage, object self) {
-            return ReadInputLine(storage, self, storage.Context.InputSeparator);
-        }
-
-        [RubyMethod("gets", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("gets", RubyMethodAttributes.PublicSingleton)]
-        public static object ReadInputLine(CallSiteStorage<Func<CallSite, object, MutableString, object>>/*!*/ storage, object self, 
-            [NotNull]MutableString/*!*/ separator) {
-
-            var site = storage.GetCallSite("gets", 1);
-            return site.Target(site, storage.Context.StandardInput, separator);
-        }
-
-        #endregion
-
-        #region raise, fail
-
-        [RubyMethod("raise", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("raise", RubyMethodAttributes.PublicSingleton)]
-        [RubyMethod("fail", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("fail", RubyMethodAttributes.PublicSingleton)]
-        [RubyStackTraceHidden]
-        public static void RaiseException(RubyContext/*!*/ context, object self) {
-            Exception exception = context.CurrentException;
-            if (exception == null) {
-                exception = new RuntimeError();
-            }
-
-#if DEBUG && !SILVERLIGHT
-            if (RubyOptions.UseThreadAbortForSyncRaise) {
-                RubyUtils.RaiseAsyncException(Thread.CurrentThread, exception);
-            }
-#endif
-            // rethrow semantics, preserves the backtrace associated with the exception:
-            throw exception;
-        }
-
-        [RubyMethod("raise", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("raise", RubyMethodAttributes.PublicSingleton)]
-        [RubyMethod("fail", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("fail", RubyMethodAttributes.PublicSingleton)]
-        [RubyStackTraceHidden]
-        public static void RaiseException(object self, [NotNull]MutableString/*!*/ message) {
-            Exception exception = RubyExceptionData.InitializeException(new RuntimeError(message.ToString()), message);
-
-#if DEBUG && !SILVERLIGHT
-            if (RubyOptions.UseThreadAbortForSyncRaise) {
-                RubyUtils.RaiseAsyncException(Thread.CurrentThread, exception);
-            }
-#endif
-            throw exception;
-        }
-
-        [RubyMethod("raise", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("raise", RubyMethodAttributes.PublicSingleton)]
-        [RubyMethod("fail", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("fail", RubyMethodAttributes.PublicSingleton)]
-        [RubyStackTraceHidden]
-        public static void RaiseException(RespondToStorage/*!*/ respondToStorage, UnaryOpStorage/*!*/ storage0, BinaryOpStorage/*!*/ storage1,
-            CallSiteStorage<Action<CallSite, Exception, RubyArray>>/*!*/ setBackTraceStorage, 
-            object self, object/*!*/ obj, [Optional]object arg, [Optional]RubyArray backtrace) {
-
-            Exception exception = CreateExceptionToRaise(respondToStorage, storage0, storage1, setBackTraceStorage, obj, arg, backtrace);
-#if DEBUG && !SILVERLIGHT
-            if (RubyOptions.UseThreadAbortForSyncRaise) {
-                RubyUtils.RaiseAsyncException(Thread.CurrentThread, exception);
-            }
-#endif
-            // rethrow semantics, preserves the backtrace associated with the exception:
-            throw exception;
-        }
-
-        internal static Exception/*!*/ CreateExceptionToRaise(RespondToStorage/*!*/ respondToStorage, UnaryOpStorage/*!*/ storage0, BinaryOpStorage/*!*/ storage1,
-            CallSiteStorage<Action<CallSite, Exception, RubyArray>>/*!*/ setBackTraceStorage, 
-            object/*!*/ obj, object arg, RubyArray backtrace) {
-
-            if (Protocols.RespondTo(respondToStorage, obj, "exception")) {
-                Exception e = null;
-                if (arg != Missing.Value) {
-                    var site = storage1.GetCallSite("exception");
-                    e = site.Target(site, obj, arg) as Exception;
-                } else {
-                    var site = storage0.GetCallSite("exception");
-                    e = site.Target(site, obj) as Exception;
-                }
-
-                if (e != null) {
-                    if (backtrace != null) {
-                        var site = setBackTraceStorage.GetCallSite("set_backtrace", 1);
-                        site.Target(site, e, backtrace);
-                    }
-                    return e;
-                }
-            }
-
-            throw RubyExceptions.CreateTypeError("exception class/object expected");
-        }
-
-        #endregion
-
-        #region rand, srand
-
-        [RubyMethod("srand", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("srand", RubyMethodAttributes.PublicSingleton)]
-        public static object SeedRandomNumberGenerator(RubyContext/*!*/ context, object self, [DefaultProtocol]IntegerValue seed) {
-            object result = context.RandomNumberGeneratorSeed;
-            context.SeedRandomNumberGenerator(seed);
-            return result;
-        }
-
-        [RubyMethod("rand", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("rand", RubyMethodAttributes.PublicSingleton)]
-        public static double Random(RubyContext/*!*/ context, object self) {
-            return context.RandomNumberGenerator.NextDouble();
-        }
-
-        [RubyMethod("rand", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("rand", RubyMethodAttributes.PublicSingleton)]
-        public static object Random(RubyContext/*!*/ context, object self, int limit) {
-            Random generator = context.RandomNumberGenerator;
-            if (limit == Int32.MinValue) {
-                return generator.Random(-(BigInteger)limit);
-            } else {
-                return ScriptingRuntimeHelpers.Int32ToObject(generator.Next(limit));
-            }
-        }
-
-        [RubyMethod("rand", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("rand", RubyMethodAttributes.PublicSingleton)]
-        public static object Random(ConversionStorage<IntegerValue>/*!*/ conversion, RubyContext/*!*/ context, object self, object limit) {
-            IntegerValue intLimit = Protocols.ConvertToInteger(conversion, limit);
-            Random generator = context.RandomNumberGenerator;
-
-            bool isFixnum;
-            int fixnum = 0;
-            BigInteger bignum = null;
-            if (intLimit.IsFixnum) {
-                if (intLimit.Fixnum == Int32.MinValue) {
-                    bignum = -(BigInteger)intLimit.Fixnum;
-                    isFixnum = false;
-                } else {
-                    fixnum = Math.Abs(intLimit.Fixnum);
-                    isFixnum = true;
-                }
-            } else {
-                bignum = intLimit.Bignum.Abs();
-                isFixnum = intLimit.Bignum.AsInt32(out fixnum);
-            }
-
-            if (isFixnum) {
-                if (fixnum == 0) {
-                    return generator.NextDouble();
-                } else {
-                    return ScriptingRuntimeHelpers.Int32ToObject(generator.Next(fixnum));
-                }
-            } else {
-                return generator.Random(bignum);
-            }
-        }
-
-        #endregion
-
-        //readline
-        //readlines
-        //scan
-
-        [RubyMethod("select", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("select", RubyMethodAttributes.PublicSingleton)]
-        public static RubyArray Select(RubyContext/*!*/ context, object self, RubyArray read, [Optional]RubyArray write, [Optional]RubyArray error) {
-            return RubyIOOps.Select(context, null, read, write, error);
-        }
-        
-        [RubyMethod("select", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("select", RubyMethodAttributes.PublicSingleton)]
-        public static RubyArray Select(RubyContext/*!*/ context, object self, RubyArray read, [Optional]RubyArray write, [Optional]RubyArray error, int timeoutInSeconds) {
-            return RubyIOOps.Select(context, null, read, write, error, timeoutInSeconds);
-        }
-
-        [RubyMethod("select", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("select", RubyMethodAttributes.PublicSingleton)]
-        public static RubyArray Select(RubyContext/*!*/ context, object self, RubyArray read, [Optional]RubyArray write, [Optional]RubyArray error, double timeoutInSeconds) {
-            return RubyIOOps.Select(context, null, read, write, error, timeoutInSeconds);
-        }
-
-        [RubyMethod("set_trace_func", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("set_trace_func", RubyMethodAttributes.PublicSingleton)]
-        public static Proc SetTraceListener(RubyContext/*!*/ context, object self, Proc listener) {
-            if (listener != null && !context.RubyOptions.EnableTracing) {
-                throw new NotSupportedException("Tracing is not supported unless -trace option is specified.");
-            }
-            return context.TraceListener = listener;
-        }
-
-        [RubyMethod("sleep", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("sleep", RubyMethodAttributes.PublicSingleton)]
-        public static void Sleep(object self) {
-            ThreadOps.DoSleep();
-        }
-
-        [RubyMethod("sleep", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("sleep", RubyMethodAttributes.PublicSingleton)]
-        public static int Sleep(object self, int seconds) {
-            if (seconds < 0) { 
-                throw RubyExceptions.CreateArgumentError("time interval must be positive");
-            }
-
-            long ms = seconds * 1000;
-            Thread.Sleep(ms > Int32.MaxValue ? Timeout.Infinite : (int)ms);
-            return seconds;
-        }
-
-        [RubyMethod("sleep", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("sleep", RubyMethodAttributes.PublicSingleton)]
-        public static int Sleep(object self, double seconds) {
-            if (seconds < 0) {
-                throw RubyExceptions.CreateArgumentError("time interval must be positive");
-            }
-
-            double ms = seconds * 1000;
-            Thread.Sleep(ms > Int32.MaxValue ? Timeout.Infinite : (int)ms);
-            return (int)seconds;
-        }
-        
-        //split
-
-        [RubyMethod("format", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("format", RubyMethodAttributes.PublicSingleton)]
-        [RubyMethod("sprintf", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("sprintf", RubyMethodAttributes.PublicSingleton)]
-        public static MutableString/*!*/ Sprintf(StringFormatterSiteStorage/*!*/ storage, 
-            object self, [DefaultProtocol, NotNull]MutableString/*!*/ format, [NotNull]params object[] args) {
-
-            return new StringFormatter(storage, format.ConvertToString(), format.Encoding, args).Format();
-        }
-
-        //sub
-        //sub!
-        //syscall
-
-        [RubyMethod("test", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("test", RubyMethodAttributes.PublicSingleton)]
-        public static object Test(
-            RubyContext/*!*/ context, 
-            object self,
-            int cmd, 
-            [DefaultProtocol, NotNull]MutableString/*!*/ file1) {
-            cmd &= 0xFF;
-            switch (cmd) {
-                case 'A': throw new NotImplementedException();
-                case 'b': throw new NotImplementedException();
-                case 'C': throw new NotImplementedException();
-                case 'c': throw new NotImplementedException();
-
-                case 'd': 
-                    return RubyFileOps.DirectoryExists(context, file1.ConvertToString());
-
-                case 'e':
-                case 'f':
-                    return RubyFileOps.FileExists(context, file1.ConvertToString());
-
-                case 'g': throw new NotImplementedException();
-                case 'G': throw new NotImplementedException();
-                case 'k': throw new NotImplementedException();
-                case 'l': throw new NotImplementedException();
-                case 'M': throw new NotImplementedException();
-                case 'O': throw new NotImplementedException();
-                case 'o': throw new NotImplementedException();
-                case 'p': throw new NotImplementedException();
-                case 'r': throw new NotImplementedException();
-                case 'R': throw new NotImplementedException();
-                case 's': throw new NotImplementedException();
-                case 'S': throw new NotImplementedException();
-                case 'u': throw new NotImplementedException();
-                case 'w': throw new NotImplementedException();
-                case 'W': throw new NotImplementedException();
-                case 'x': throw new NotImplementedException();
-                case 'X': throw new NotImplementedException();
-                case 'z': throw new NotImplementedException();
-                default:
-                    throw new ArgumentException(String.Format("unknown command ?{0}", (char)cmd));
-            }
-        }
-
-        [RubyMethod("test", RubyMethodAttributes.PrivateInstance)]
-        [RubyMethod("test", RubyMethodAttributes.PublicSingleton)]
-        public static object Test(
-            RubyContext/*!*/ context,
-            object self,
-            int cmd,
-            [DefaultProtocol, NotNull]MutableString/*!*/ file1,
-            [DefaultProtocol, NotNull]MutableString/*!*/ file2) {
-            cmd &= 0xFF;
-            switch (cmd) {
-                case '-': throw new NotImplementedException();
-                case '=': throw new NotImplementedException();
-                case '<': throw new NotImplementedException();
-                case '>': throw new NotImplementedException();
-                default:
-                    throw new ArgumentException(String.Format("unknown command ?{0}", (char)cmd));
-            }
-        }
-
-        //trace_var
-
-#if !SILVERLIGHT // Signals dont make much sense in Silverlight as cross-process communication is not allowed
-        [RubyMethod("trap", RubyMethodAttributes.PrivateInstance, BuildConfig = "!SILVERLIGHT")]
-        [RubyMethod("trap", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
-        public static object Trap(RubyContext/*!*/ context, object self, object signalId, Proc proc) {
-            return Signal.Trap(context, self, signalId, proc);
-        }
-
-        [RubyMethod("trap", RubyMethodAttributes.PrivateInstance, BuildConfig = "!SILVERLIGHT")]
-        [RubyMethod("trap", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
-        public static object Trap(RubyContext/*!*/ context, [NotNull]BlockParam/*!*/ block, object self, object signalId) {
-            return Signal.Trap(context, block, self, signalId);
-        }
-
-#endif
-
-        //untrace_var
-
-        #region throw, catch 
+        #region throw, catch, loop, proc, lambda
 
         private sealed class ThrowCatchUnwinder : StackUnwinder {
             public readonly string/*!*/ Label;
@@ -1074,13 +236,125 @@ namespace IronRuby.Builtins {
             throw new ThrowCatchUnwinder(label, returnValue);
         }
 
-        #endregion
+        [RubyMethod("loop", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("loop", RubyMethodAttributes.PublicSingleton)]
+        public static object Loop(BlockParam/*!*/ block, object self) {
+            if (block == null) {
+                throw RubyExceptions.NoBlockGiven();
+            }
+
+            while (true) {
+                object result;
+                if (block.Yield(out result)) {
+                    return result;
+                }
+            }
+        }
+
+        // TODO: in Ruby 1.9, these two methods will do different things so we will likely have to have two
+        // separate implementations of these methods
+        [RubyMethod("lambda", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("lambda", RubyMethodAttributes.PublicSingleton)]
+        [RubyMethod("proc", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("proc", RubyMethodAttributes.PublicSingleton)]
+        public static Proc/*!*/ CreateLambda(BlockParam/*!*/ block, object self) {
+            if (block == null) {
+                throw RubyExceptions.CreateArgumentError("tried to create Proc object without a block");
+            }
+
+            // doesn't preserve the class:
+            return block.Proc.ToLambda();
+        }
 
         #endregion
 
-        #region Public Instance Methods
+        #region raise, fail
 
-        #region ==, ===, =~, eql?, equal?, hash, to_s, inspect, to_a
+        [RubyMethod("raise", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("raise", RubyMethodAttributes.PublicSingleton)]
+        [RubyMethod("fail", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("fail", RubyMethodAttributes.PublicSingleton)]
+        [RubyStackTraceHidden]
+        public static void RaiseException(RubyContext/*!*/ context, object self) {
+            Exception exception = context.CurrentException;
+            if (exception == null) {
+                exception = new RuntimeError();
+            }
+
+#if DEBUG && !SILVERLIGHT
+            if (RubyOptions.UseThreadAbortForSyncRaise) {
+                RubyUtils.RaiseAsyncException(Thread.CurrentThread, exception);
+            }
+#endif
+            // rethrow semantics, preserves the backtrace associated with the exception:
+            throw exception;
+        }
+
+        [RubyMethod("raise", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("raise", RubyMethodAttributes.PublicSingleton)]
+        [RubyMethod("fail", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("fail", RubyMethodAttributes.PublicSingleton)]
+        [RubyStackTraceHidden]
+        public static void RaiseException(object self, [NotNull]MutableString/*!*/ message) {
+            Exception exception = RubyExceptionData.InitializeException(new RuntimeError(message.ToString()), message);
+
+#if DEBUG && !SILVERLIGHT
+            if (RubyOptions.UseThreadAbortForSyncRaise) {
+                RubyUtils.RaiseAsyncException(Thread.CurrentThread, exception);
+            }
+#endif
+            throw exception;
+        }
+
+        [RubyMethod("raise", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("raise", RubyMethodAttributes.PublicSingleton)]
+        [RubyMethod("fail", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("fail", RubyMethodAttributes.PublicSingleton)]
+        [RubyStackTraceHidden]
+        public static void RaiseException(RespondToStorage/*!*/ respondToStorage, UnaryOpStorage/*!*/ storage0, BinaryOpStorage/*!*/ storage1,
+            CallSiteStorage<Action<CallSite, Exception, RubyArray>>/*!*/ setBackTraceStorage,
+            object self, object/*!*/ obj, [Optional]object arg, [Optional]RubyArray backtrace) {
+
+            Exception exception = CreateExceptionToRaise(respondToStorage, storage0, storage1, setBackTraceStorage, obj, arg, backtrace);
+#if DEBUG && !SILVERLIGHT
+            if (RubyOptions.UseThreadAbortForSyncRaise) {
+                RubyUtils.RaiseAsyncException(Thread.CurrentThread, exception);
+            }
+#endif
+            // rethrow semantics, preserves the backtrace associated with the exception:
+            throw exception;
+        }
+
+        internal static Exception/*!*/ CreateExceptionToRaise(RespondToStorage/*!*/ respondToStorage, UnaryOpStorage/*!*/ storage0, BinaryOpStorage/*!*/ storage1,
+            CallSiteStorage<Action<CallSite, Exception, RubyArray>>/*!*/ setBackTraceStorage,
+            object/*!*/ obj, object arg, RubyArray backtrace) {
+
+            if (Protocols.RespondTo(respondToStorage, obj, "exception")) {
+                Exception e = null;
+                if (arg != Missing.Value) {
+                    var site = storage1.GetCallSite("exception");
+                    e = site.Target(site, obj, arg) as Exception;
+                } else {
+                    var site = storage0.GetCallSite("exception");
+                    e = site.Target(site, obj) as Exception;
+                }
+
+                if (e != null) {
+                    if (backtrace != null) {
+                        var site = setBackTraceStorage.GetCallSite("set_backtrace", 1);
+                        site.Target(site, e, backtrace);
+                    }
+                    return e;
+                }
+            }
+
+            throw RubyExceptions.CreateTypeError("exception class/object expected");
+        }
+
+        #endregion
+
+
+        #region ==, ===, =~, eql?, equal?, hash, to_s, inspect, to_a, 1.9: !, !=, !~
 
         [RubyMethod("=~")]
         public static bool Match(object self, object other) {
@@ -1168,8 +442,14 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region __id__, id, object_id, class
+        #region nil?, __id__, id, object_id
 
+        // thread-safe:
+        [RubyMethod("nil?")]
+        public static bool IsNil(object self) {
+            return self == null;
+        }
+        
         [RubyMethod("id")]
         public static object GetId(RubyContext/*!*/ context, object self) {
             context.ReportWarning("Object#id will be deprecated; use Object#object_id");
@@ -1180,17 +460,6 @@ namespace IronRuby.Builtins {
         [RubyMethod("object_id")]
         public static object GetObjectId(RubyContext/*!*/ context, object self) {
             return ClrInteger.Narrow(RubyUtils.GetObjectId(context, self));
-        }
-
-        [RubyMethod("type")]
-        public static RubyClass/*!*/ GetClassObsolete(RubyContext/*!*/ context, object self) {
-            context.ReportWarning("Object#type will be deprecated; use Object#class");
-            return context.GetClassOf(self);
-        }
-
-        [RubyMethod("class")]
-        public static RubyClass/*!*/ GetClass(RubyContext/*!*/ context, object self) {
-            return context.GetClassOf(self);
         }
 
         #endregion
@@ -1231,9 +500,32 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        [RubyMethod("display")]
-        public static void Display(RubyContext/*!*/ context, object self) {
-            // TODO:
+        #region class, type, extend, instance_of?, is_a?, kind_of? (thread-safe)
+
+        [RubyMethod("class")]
+        public static RubyClass/*!*/ GetClass(RubyContext/*!*/ context, object self) {
+            return context.GetClassOf(self);
+        }
+
+        [RubyMethod("type")]
+        public static RubyClass/*!*/ GetClassObsolete(RubyContext/*!*/ context, object self) {
+            context.ReportWarning("Object#type will be deprecated; use Object#class");
+            return context.GetClassOf(self);
+        }
+
+        // thread-safe:
+        [RubyMethod("is_a?")]
+        [RubyMethod("kind_of?")]
+        public static bool IsKindOf(object self, RubyModule/*!*/ other) {
+            ContractUtils.RequiresNotNull(other, "other");
+            return other.Context.IsKindOf(self, other);
+        }
+
+        // thread-safe:
+        [RubyMethod("instance_of?")]
+        public static bool IsOfClass(object self, RubyModule/*!*/ other) {
+            ContractUtils.RequiresNotNull(other, "other");
+            return other.Context.GetClassOf(self) == other;
         }
 
         [RubyMethod("extend")]
@@ -1247,7 +539,7 @@ namespace IronRuby.Builtins {
 
             var extendObject = extendObjectStorage.GetCallSite("extend_object", 1);
             var extended = extendedStorage.GetCallSite("extended", 1);
-            
+
             // Kernel#extend_object inserts the module at the beginning of the object's singleton ancestors list;
             // ancestors after extend: [modules[0], modules[1], ..., modules[N-1], self-singleton, ...]
             for (int i = modules.Length - 1; i >= 0; i--) {
@@ -1261,14 +553,15 @@ namespace IronRuby.Builtins {
             return self;
         }
 
+        #endregion
 
-        #region frozen?, freeze, tainted?, taint, untaint
+        #region frozen?, freeze, tainted?, taint, untaint, 1.9: trust, untrust, untrusted?
 
         [RubyMethod("frozen?")]
         public static bool Frozen([NotNull]MutableString/*!*/ self) {
             return self.IsFrozen;
         }
-        
+
         [RubyMethod("frozen?")]
         public static bool Frozen(RubyContext/*!*/ context, object self) {
             if (RubyUtils.IsRubyValueType(self)) {
@@ -1312,7 +605,29 @@ namespace IronRuby.Builtins {
             return self;
         }
 
+        // 1.9 public: trust, untrust, untrusted?
+
         #endregion
+
+
+        #region eval, instance_eval, 1.9: instance_exec
+
+        [RubyMethod("eval", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("eval", RubyMethodAttributes.PublicSingleton)]
+        public static object Evaluate(RubyScope/*!*/ scope, object self, [NotNull]MutableString/*!*/ code,
+            [Optional]Binding binding, [Optional, NotNull]MutableString file, [DefaultParameterValue(1)]int line) {
+
+            RubyScope targetScope = (binding != null) ? binding.LocalScope : scope;
+            return RubyUtils.Evaluate(code, targetScope, targetScope.SelfObject, null, file, line);
+        }
+
+        [RubyMethod("eval", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("eval", RubyMethodAttributes.PublicSingleton)]
+        public static object Evaluate(RubyScope/*!*/ scope, object self, [NotNull]MutableString/*!*/ code,
+            [NotNull]Proc/*!*/ procBinding, [Optional, NotNull]MutableString file, [DefaultParameterValue(1)]int line) {
+
+            return RubyUtils.Evaluate(code, procBinding.LocalScope, procBinding.LocalScope.SelfObject, null, file, line);
+        }
 
         [RubyMethod("instance_eval")]
         public static object Evaluate(RubyScope/*!*/ scope, object self, [NotNull]MutableString/*!*/ code,
@@ -1324,30 +639,13 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("instance_eval")]
         public static object InstanceEval([NotNull]BlockParam/*!*/ block, object self) {
-            return RubyUtils.EvaluateInSingleton(self, block);
+            return RubyUtils.EvaluateInSingleton(self, block, null);
         }
 
-        #region nil?, instance_of?, is_a?, kind_of? (thread-safe)
-
-        // thread-safe:
-        [RubyMethod("nil?")]
-        public static bool IsNil(object self) {
-            return self == null;
-        }
-
-        // thread-safe:
-        [RubyMethod("is_a?")]
-        [RubyMethod("kind_of?")]
-        public static bool IsKindOf(object self, RubyModule/*!*/ other) {
-            ContractUtils.RequiresNotNull(other, "other");
-            return other.Context.IsKindOf(self, other);
-        }
-
-        // thread-safe:
-        [RubyMethod("instance_of?")]
-        public static bool IsOfClass(object self, RubyModule/*!*/ other) {
-            ContractUtils.RequiresNotNull(other, "other");
-            return other.Context.GetClassOf(self) == other;
+        // This method is not available in 1.8 so far, but since the usual workaround is very inefficient it is useful to have it in 1.8 as well.
+        [RubyMethod("instance_exec")]
+        public static object InstanceExec([NotNull]BlockParam/*!*/ block, object self, [NotNull]params object[]/*!*/ args) {
+            return RubyUtils.EvaluateInSingleton(self, block, args);
         }
 
         #endregion
@@ -1411,20 +709,69 @@ namespace IronRuby.Builtins {
 
         #endregion
 
+        #region global_variables
+
+        [RubyMethod("global_variables", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("global_variables", RubyMethodAttributes.PublicSingleton)]
+        public static RubyArray/*!*/ GetGlobalVariableNames(RubyContext/*!*/ context, object self) {
+            RubyArray result = new RubyArray();
+            lock (context.GlobalVariablesLock) {
+                foreach (KeyValuePair<string, GlobalVariable> global in context.GlobalVariables) {
+                    if (global.Value.IsEnumerated) {
+                        // TODO: Ruby 1.9 returns symbols:
+                        // TODO (encoding):
+                        result.Add(MutableString.Create(global.Key, RubyEncoding.UTF8));
+                    }
+                }
+            }
+            return result;
+        }
+
+        #endregion
+
+        #region autoload, autoloaded?
+
+        [RubyMethod("autoload", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("autoload", RubyMethodAttributes.PublicSingleton)]
+        public static void SetAutoloadedConstant(RubyScope/*!*/ scope, object self,
+            [DefaultProtocol, NotNull]string/*!*/ constantName, [DefaultProtocol, NotNull]MutableString/*!*/ path) {
+            ModuleOps.SetAutoloadedConstant(scope.GetInnerMostModuleForConstantLookup(), constantName, path);
+        }
+
+        [RubyMethod("autoload?", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("autoload?", RubyMethodAttributes.PublicSingleton)]
+        public static MutableString GetAutoloadedConstantPath(RubyScope/*!*/ scope, object self, [DefaultProtocol, NotNull]string/*!*/ constantName) {
+            return ModuleOps.GetAutoloadedConstantPath(scope.GetInnerMostModuleForConstantLookup(), constantName);
+        }
+
+        #endregion
+
+        #region respond_to?, method_missing
+
         [RubyMethod("respond_to?")]
-        public static bool RespondTo(RubyContext/*!*/ context, object self, 
+        public static bool RespondTo(RubyContext/*!*/ context, object self,
             [DefaultProtocol, NotNull]string/*!*/ methodName, [Optional]bool includePrivate) {
 
             return context.ResolveMethod(self, methodName, includePrivate).Found;
         }
 
-        #region __send__, send
+        [RubyMethod("method_missing", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("method_missing", RubyMethodAttributes.PublicSingleton)]
+        [RubyStackTraceHidden]
+        public static object MethodMissing(RubyContext/*!*/ context, object/*!*/ self, SymbolId symbol, [NotNull]params object[]/*!*/ args) {
+            string name = SymbolTable.IdToString(symbol);
+            throw RubyExceptions.CreateMethodMissing(context, self, name);
+        }
+
+        #endregion
+
+        #region __send__, send, 1.9: public_send
 
         [RubyMethod("send"), RubyMethod("__send__")]
         public static object SendMessage(RubyScope/*!*/ scope, object self) {
             throw RubyExceptions.CreateArgumentError("no method name given");
         }
-        
+
         // ARGS: 0
         [RubyMethod("send"), RubyMethod("__send__")]
         public static object SendMessage(RubyScope/*!*/ scope, object self, [DefaultProtocol, NotNull]string/*!*/ methodName) {
@@ -1530,7 +877,7 @@ namespace IronRuby.Builtins {
             [NotNull]params object[] args) {
 
             var site = scope.RubyContext.GetOrCreateSendSite<Func<CallSite, RubyScope, object, Proc, RubyArray, object>>(
-                methodName, new RubyCallSignature(1, RubyCallFlags.HasScope | RubyCallFlags.HasImplicitSelf | RubyCallFlags.HasSplattedArgument | 
+                methodName, new RubyCallSignature(1, RubyCallFlags.HasScope | RubyCallFlags.HasImplicitSelf | RubyCallFlags.HasSplattedArgument |
                     RubyCallFlags.HasBlock)
             );
             return site.Target(site, scope, self, block != null ? block.Proc : null, RubyOps.MakeArrayN(args));
@@ -1546,9 +893,11 @@ namespace IronRuby.Builtins {
             }
         }
 
+        // 1.9: public_send
+
         #endregion
 
-        #region clr_member, method, methods, (private|protected|public|singleton)_methods (thread-safe)
+        #region clr_member, method, 1.9: public_method, define_singleton_method
 
         // thread-safe:
         /// <summary>
@@ -1585,6 +934,13 @@ namespace IronRuby.Builtins {
             }
             return new RubyMethod(self, info, name);
         }
+
+        // 1.9: public: public_method
+        // 1.9: public: define_singleton_method
+
+        #endregion
+
+        #region methods, (private|protected|public|singleton)_methods (thread-safe)
 
         // thread-safe:
         [RubyMethod("methods")]
@@ -1637,6 +993,705 @@ namespace IronRuby.Builtins {
         }
 
         #endregion
+
+
+        #region `, exec, system, fork, 1.9: spawn
+
+#if !SILVERLIGHT
+        // Looks for RUBYSHELL and then COMSPEC under Windows
+        internal static ProcessStartInfo/*!*/ GetShell(RubyContext/*!*/ context, MutableString/*!*/ command) {
+            PlatformAdaptationLayer pal = context.DomainManager.Platform;
+            string shell = pal.GetEnvironmentVariable("RUBYSHELL");
+            if (shell == null) {
+                shell = pal.GetEnvironmentVariable("COMSPEC");
+            }
+
+            if (shell == null) {
+                string[] commandParts = command.ConvertToString().Split(new char[] { ' ' }, 2);
+                return new ProcessStartInfo(commandParts[0], commandParts.Length == 2 ? commandParts[1] : null);
+            } else {
+                return new ProcessStartInfo(shell, String.Format("/C \"{0}\"", command.ConvertToString()));
+            }
+        }
+
+        private static MutableString/*!*/ JoinArguments(MutableString/*!*/[]/*!*/ args) {
+            MutableString result = MutableString.CreateMutable(RubyEncoding.Binary);
+
+            for (int i = 0; i < args.Length; i++) {
+                result.Append(args[i]);
+                if (args.Length > 1 && i < args.Length - 1) {
+                    result.Append(' ');
+                }
+            }
+
+            return result;
+        }
+
+        private static Process/*!*/ ExecuteProcessAndWait(ProcessStartInfo/*!*/ psi) {
+            psi.UseShellExecute = false;
+            psi.RedirectStandardError = true;
+            try {
+                Process p = Process.Start(psi);
+                p.WaitForExit();
+                return p;
+            } catch (Exception e) {
+                throw RubyExceptions.CreateENOENT(psi.FileName, e);
+            }
+        }
+
+        internal static Process/*!*/ ExecuteProcessCapturingStandardOutput(ProcessStartInfo/*!*/ psi) {
+            psi.UseShellExecute = false;
+            psi.RedirectStandardError = true;
+            psi.RedirectStandardOutput = true;
+
+            try {
+                return Process.Start(psi);
+            } catch (Exception e) {
+                throw RubyExceptions.CreateENOENT(psi.FileName, e);
+            }
+        }
+
+        // Executes a command in a shell child process
+        private static Process/*!*/ ExecuteCommandInShell(RubyContext/*!*/ context, MutableString/*!*/ command) {
+            return ExecuteProcessAndWait(GetShell(context, command));
+        }
+
+        // Executes a command directly in a child process - command is the name of the executable
+        private static Process/*!*/ ExecuteCommand(MutableString/*!*/ command, MutableString[]/*!*/ args) {
+            return ExecuteProcessAndWait(new ProcessStartInfo(command.ToString(), JoinArguments(args).ToString()));
+        }
+
+        // Backtick always executes the command in a shell child process
+
+        [RubyMethod("`", RubyMethodAttributes.PrivateInstance, BuildConfig = "!SILVERLIGHT")]
+        [RubyMethod("`", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
+        public static MutableString/*!*/ ExecuteCommand(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]MutableString/*!*/ command) {
+            Process p = ExecuteProcessCapturingStandardOutput(GetShell(context, command));
+            string output = p.StandardOutput.ReadToEnd();
+            if (Environment.NewLine != "\n") {
+                output = output.Replace(Environment.NewLine, "\n");
+            }
+            MutableString result = MutableString.Create(output, RubyEncoding.GetRubyEncoding(p.StandardOutput.CurrentEncoding));
+            context.ChildProcessExitStatus = new RubyProcess.Status(p);
+            return result;
+        }
+
+        // Overloads of exec and system will always execute using the Windows shell if there is only the command parameter
+        // If args parameter is passed, it will execute the command directly without going to the shell.
+
+        [RubyMethod("exec", RubyMethodAttributes.PrivateInstance, BuildConfig = "!SILVERLIGHT")]
+        [RubyMethod("exec", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
+        public static void Execute(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]MutableString/*!*/ command) {
+            Process p = ExecuteCommandInShell(context, command);
+            context.ChildProcessExitStatus = new RubyProcess.Status(p);
+            Exit(self, p.ExitCode);
+        }
+
+        [RubyMethod("exec", RubyMethodAttributes.PrivateInstance, BuildConfig = "!SILVERLIGHT")]
+        [RubyMethod("exec", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
+        public static void Execute(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]MutableString/*!*/ command,
+            [DefaultProtocol, NotNull, NotNullItems]params MutableString[]/*!*/ args) {
+            Process p = ExecuteCommand(command, args);
+            context.ChildProcessExitStatus = new RubyProcess.Status(p);
+            Exit(self, p.ExitCode);
+        }
+
+        [RubyMethod("system", RubyMethodAttributes.PrivateInstance, BuildConfig = "!SILVERLIGHT")]
+        [RubyMethod("system", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
+        public static bool System(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]MutableString/*!*/ command) {
+            Process p = ExecuteCommandInShell(context, command);
+            context.ChildProcessExitStatus = new RubyProcess.Status(p);
+            return p.ExitCode == 0;
+        }
+
+        [RubyMethod("system", RubyMethodAttributes.PrivateInstance, BuildConfig = "!SILVERLIGHT")]
+        [RubyMethod("system", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
+        public static bool System(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]MutableString/*!*/ command,
+            [DefaultProtocol, NotNull, NotNullItems]params MutableString/*!*/[]/*!*/ args) {
+            Process p = ExecuteCommand(command, args);
+            context.ChildProcessExitStatus = new RubyProcess.Status(p);
+            return p.ExitCode == 0;
+        }
+
+        //fork
+#endif
+        #endregion
+
+        #region select, sleep
+
+        [RubyMethod("select", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("select", RubyMethodAttributes.PublicSingleton)]
+        public static RubyArray Select(RubyContext/*!*/ context, object self, RubyArray read, [Optional]RubyArray write, [Optional]RubyArray error) {
+            return RubyIOOps.Select(context, null, read, write, error);
+        }
+
+        [RubyMethod("select", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("select", RubyMethodAttributes.PublicSingleton)]
+        public static RubyArray Select(RubyContext/*!*/ context, object self, RubyArray read, [Optional]RubyArray write, [Optional]RubyArray error, int timeoutInSeconds) {
+            return RubyIOOps.Select(context, null, read, write, error, timeoutInSeconds);
+        }
+
+        [RubyMethod("select", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("select", RubyMethodAttributes.PublicSingleton)]
+        public static RubyArray Select(RubyContext/*!*/ context, object self, RubyArray read, [Optional]RubyArray write, [Optional]RubyArray error, double timeoutInSeconds) {
+            return RubyIOOps.Select(context, null, read, write, error, timeoutInSeconds);
+        }
+
+        [RubyMethod("sleep", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("sleep", RubyMethodAttributes.PublicSingleton)]
+        public static void Sleep(object self) {
+            ThreadOps.DoSleep();
+        }
+
+        [RubyMethod("sleep", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("sleep", RubyMethodAttributes.PublicSingleton)]
+        public static int Sleep(object self, int seconds) {
+            if (seconds < 0) {
+                throw RubyExceptions.CreateArgumentError("time interval must be positive");
+            }
+
+            long ms = seconds * 1000;
+            Thread.Sleep(ms > Int32.MaxValue ? Timeout.Infinite : (int)ms);
+            return seconds;
+        }
+
+        [RubyMethod("sleep", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("sleep", RubyMethodAttributes.PublicSingleton)]
+        public static int Sleep(object self, double seconds) {
+            if (seconds < 0) {
+                throw RubyExceptions.CreateArgumentError("time interval must be positive");
+            }
+
+            double ms = seconds * 1000;
+            Thread.Sleep(ms > Int32.MaxValue ? Timeout.Infinite : (int)ms);
+            return (int)seconds;
+        }
+
+        #endregion
+
+        #region test, syscall, trap
+
+        [RubyMethod("test", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("test", RubyMethodAttributes.PublicSingleton)]
+        public static object Test(
+            RubyContext/*!*/ context,
+            object self,
+            int cmd,
+            [DefaultProtocol, NotNull]MutableString/*!*/ file1) {
+            cmd &= 0xFF;
+            switch (cmd) {
+                case 'A': throw new NotImplementedException();
+                case 'b': throw new NotImplementedException();
+                case 'C': throw new NotImplementedException();
+                case 'c': throw new NotImplementedException();
+
+                case 'd':
+                    return RubyFileOps.DirectoryExists(context, file1.ConvertToString());
+
+                case 'e':
+                case 'f':
+                    return RubyFileOps.FileExists(context, file1.ConvertToString());
+
+                case 'g': throw new NotImplementedException();
+                case 'G': throw new NotImplementedException();
+                case 'k': throw new NotImplementedException();
+                case 'l': throw new NotImplementedException();
+                case 'M': throw new NotImplementedException();
+                case 'O': throw new NotImplementedException();
+                case 'o': throw new NotImplementedException();
+                case 'p': throw new NotImplementedException();
+                case 'r': throw new NotImplementedException();
+                case 'R': throw new NotImplementedException();
+                case 's': throw new NotImplementedException();
+                case 'S': throw new NotImplementedException();
+                case 'u': throw new NotImplementedException();
+                case 'w': throw new NotImplementedException();
+                case 'W': throw new NotImplementedException();
+                case 'x': throw new NotImplementedException();
+                case 'X': throw new NotImplementedException();
+                case 'z': throw new NotImplementedException();
+                default:
+                    throw new ArgumentException(String.Format("unknown command ?{0}", (char)cmd));
+            }
+        }
+
+        [RubyMethod("test", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("test", RubyMethodAttributes.PublicSingleton)]
+        public static object Test(
+            RubyContext/*!*/ context,
+            object self,
+            int cmd,
+            [DefaultProtocol, NotNull]MutableString/*!*/ file1,
+            [DefaultProtocol, NotNull]MutableString/*!*/ file2) {
+            cmd &= 0xFF;
+            switch (cmd) {
+                case '-': throw new NotImplementedException();
+                case '=': throw new NotImplementedException();
+                case '<': throw new NotImplementedException();
+                case '>': throw new NotImplementedException();
+                default:
+                    throw new ArgumentException(String.Format("unknown command ?{0}", (char)cmd));
+            }
+        }
+
+        //syscall
+
+#if !SILVERLIGHT // Signals dont make much sense in Silverlight as cross-process communication is not allowed
+        [RubyMethod("trap", RubyMethodAttributes.PrivateInstance, BuildConfig = "!SILVERLIGHT")]
+        [RubyMethod("trap", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
+        public static object Trap(RubyContext/*!*/ context, object self, object signalId, Proc proc) {
+            return Signal.Trap(context, self, signalId, proc);
+        }
+
+        [RubyMethod("trap", RubyMethodAttributes.PrivateInstance, BuildConfig = "!SILVERLIGHT")]
+        [RubyMethod("trap", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
+        public static object Trap(RubyContext/*!*/ context, [NotNull]BlockParam/*!*/ block, object self, object signalId) {
+            return Signal.Trap(context, block, self, signalId);
+        }
+
+#endif
+        #endregion
+
+        #region abort, exit, exit!, at_exit
+
+        [RubyMethod("abort", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("abort", RubyMethodAttributes.PublicSingleton)]
+        public static void Abort(object/*!*/ self) {
+            Exit(self, 1);
+        }
+
+        [RubyMethod("abort", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("abort", RubyMethodAttributes.PublicSingleton)]
+        public static void Abort(BinaryOpStorage/*!*/ writeStorage, object/*!*/ self, [DefaultProtocol, NotNull]MutableString/*!*/ message) {
+            var site = writeStorage.GetCallSite("write", 1);
+            site.Target(site, writeStorage.Context.StandardErrorOutput, message);
+
+            Exit(self, 1);
+        }
+
+        [RubyMethod("exit", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("exit", RubyMethodAttributes.PublicSingleton)]
+        public static void Exit(object self) {
+            Exit(self, 1);
+        }
+
+        [RubyMethod("exit", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("exit", RubyMethodAttributes.PublicSingleton)]
+        public static void Exit(object self, bool isSuccessful) {
+            Exit(self, isSuccessful ? 0 : 1);
+        }
+
+        [RubyMethod("exit", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("exit", RubyMethodAttributes.PublicSingleton)]
+        public static void Exit(object self, int exitCode) {
+            throw new SystemExit(exitCode, "exit");
+        }
+
+        [RubyMethod("exit!", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("exit!", RubyMethodAttributes.PublicSingleton)]
+        public static void TerminateExecution(RubyContext/*!*/ context, object self) {
+            TerminateExecution(context, self, 1);
+        }
+
+        [RubyMethod("exit!", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("exit!", RubyMethodAttributes.PublicSingleton)]
+        public static void TerminateExecution(RubyContext/*!*/ context, object self, bool isSuccessful) {
+            TerminateExecution(context, self, isSuccessful ? 0 : 1);
+        }
+
+        [RubyMethod("exit!", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("exit!", RubyMethodAttributes.PublicSingleton)]
+        public static void TerminateExecution(RubyContext/*!*/ context, object self, int exitCode) {
+            context.DomainManager.Platform.TerminateScriptExecution(exitCode);
+        }
+
+        [RubyMethod("at_exit", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("at_exit", RubyMethodAttributes.PublicSingleton)]
+        public static Proc/*!*/ AtExit(BlockParam/*!*/ block, object self) {
+            if (block == null) {
+                throw RubyExceptions.CreateArgumentError("called without a block");
+            }
+
+            block.RubyContext.RegisterShutdownHandler(block);
+            return block.Proc;
+        }
+
+        #endregion
+
+        #region load, load_assembly, require
+
+        [RubyMethod("load", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("load", RubyMethodAttributes.PublicSingleton)]
+        public static bool Load(RubyScope/*!*/ scope, object self, [DefaultProtocol, NotNull]MutableString/*!*/ libraryName, [Optional]bool wrap) {
+            return scope.RubyContext.Loader.LoadFile(scope.GlobalScope.Scope, self, libraryName, wrap ? LoadFlags.LoadIsolated : LoadFlags.None);
+        }
+
+        [RubyMethod("load_assembly", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("load_assembly", RubyMethodAttributes.PublicSingleton)]
+        public static bool LoadAssembly(RubyContext/*!*/ context, object self,
+            [DefaultProtocol, NotNull]MutableString/*!*/ assemblyName, [DefaultProtocol, Optional, NotNull]MutableString libraryNamespace) {
+
+            string initializer = libraryNamespace != null ? LibraryInitializer.GetFullTypeName(libraryNamespace.ConvertToString()) : null;
+            return context.Loader.LoadAssembly(assemblyName.ConvertToString(), initializer, true, true) != null;
+        }
+
+        [RubyMethod("require", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("require", RubyMethodAttributes.PublicSingleton)]
+        public static bool Require(RubyScope/*!*/ scope, object self, [DefaultProtocol, NotNull]MutableString/*!*/ libraryName) {
+            return scope.RubyContext.Loader.LoadFile(scope.GlobalScope.Scope, self, libraryName, LoadFlags.LoadOnce | LoadFlags.AppendExtensions);
+        }
+
+        #endregion
+
+        #region open
+
+        // TODO: should call File#initialize
+
+        private static object OpenWithBlock(BlockParam/*!*/ block, RubyIO file) {
+            try {
+                object result;
+                block.Yield(file, out result);
+                return result;
+            } finally {
+                file.Close();
+            }
+        }
+
+        private static void SetPermission(RubyContext/*!*/ context, string/*!*/ fileName, int/*!*/ permission) {
+            bool existingFile = context.DomainManager.Platform.FileExists(fileName);
+
+            if (!existingFile) {
+                RubyFileOps.Chmod(fileName, permission);
+            }
+        }
+
+        [RubyMethod("open", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
+        public static RubyIO/*!*/ Open(
+            RubyContext/*!*/ context,
+            object self,
+            [DefaultProtocol, NotNull]MutableString/*!*/ path,
+            [DefaultProtocol, Optional]MutableString mode,
+            [DefaultProtocol, DefaultParameterValue(RubyFileOps.ReadWriteMode)]int permission) {
+
+            string fileName = path.ConvertToString();
+            if (fileName.Length > 0 && fileName[0] == '|') {
+                throw new NotImplementedError();
+            }
+
+            RubyIO file = new RubyFile(context, fileName, IOModeEnum.Parse(mode));
+
+            SetPermission(context, fileName, permission);
+
+            return file;
+        }
+
+        [RubyMethod("open", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
+        public static object Open(
+            RubyContext/*!*/ context,
+            [NotNull]BlockParam/*!*/ block,
+            object self,
+            [DefaultProtocol, NotNull]MutableString/*!*/ path,
+            [DefaultProtocol, Optional]MutableString mode,
+            [DefaultProtocol, DefaultParameterValue(RubyFileOps.ReadWriteMode)]int permission) {
+
+            RubyIO file = Open(context, self, path, mode, permission);
+            return OpenWithBlock(block, file);
+        }
+
+        [RubyMethod("open", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
+        public static RubyIO/*!*/ Open(
+            RubyContext/*!*/ context,
+            object self,
+            [DefaultProtocol, NotNull]MutableString/*!*/ path,
+            int mode,
+            [DefaultProtocol, DefaultParameterValue(RubyFileOps.ReadWriteMode)]int permission) {
+
+            string fileName = path.ConvertToString();
+            if (fileName.Length > 0 && fileName[0] == '|') {
+                throw new NotImplementedError();
+            }
+
+            RubyIO file = new RubyFile(context, fileName, (IOMode)mode);
+
+            SetPermission(context, fileName, permission);
+
+            return file;
+        }
+
+        [RubyMethod("open", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("open", RubyMethodAttributes.PublicSingleton)]
+        public static object Open(
+            RubyContext/*!*/ context,
+            [NotNull]BlockParam/*!*/ block,
+            object self,
+            [DefaultProtocol, NotNull]MutableString/*!*/ path,
+            int mode,
+            [DefaultProtocol, DefaultParameterValue(RubyFileOps.ReadWriteMode)]int permission) {
+
+            RubyIO file = Open(context, self, path, mode, permission);
+            return OpenWithBlock(block, file);
+        }
+
+        #endregion
+
+        #region p, print, printf, putc, puts, display, warn, gets, getc
+
+        [RubyMethod("p", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("p", RubyMethodAttributes.PublicSingleton)]
+        public static void PrintInspect(BinaryOpStorage/*!*/ writeStorage, UnaryOpStorage/*!*/ inspectStorage, ConversionStorage<MutableString>/*!*/ tosConversion,
+            object self, [NotNull]params object[]/*!*/ args) {
+
+            var inspect = inspectStorage.GetCallSite("inspect");
+            var inspectedArgs = new MutableString[args.Length];
+            for (int i = 0; i < args.Length; i++) {
+                inspectedArgs[i] = Protocols.ConvertToString(tosConversion, inspect.Target(inspect, args[i]));
+            }
+
+            // no dynamic dispatch to "puts":
+            foreach (var arg in inspectedArgs) {
+                PrintOps.Puts(writeStorage, writeStorage.Context.StandardOutput, arg);
+            }
+        }
+
+        [RubyMethod("print", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("print", RubyMethodAttributes.PublicSingleton)]
+        public static void Print(BinaryOpStorage/*!*/ writeStorage, RubyScope/*!*/ scope, object self) {
+            // no dynamic dispatch to "print":
+            PrintOps.Print(writeStorage, scope, scope.RubyContext.StandardOutput);
+        }
+
+        [RubyMethod("print", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("print", RubyMethodAttributes.PublicSingleton)]
+        public static void Print(BinaryOpStorage/*!*/ writeStorage, object self, object val) {
+            // no dynamic dispatch to "print":
+            PrintOps.Print(writeStorage, writeStorage.Context.StandardOutput, val);
+        }
+
+        [RubyMethod("print", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("print", RubyMethodAttributes.PublicSingleton)]
+        public static void Print(BinaryOpStorage/*!*/ writeStorage,
+            object self, [NotNull]params object[]/*!*/ args) {
+
+            // no dynamic dispatch to "print":
+            PrintOps.Print(writeStorage, writeStorage.Context.StandardOutput, args);
+        }
+
+        // this overload is called only if the first parameter is string:
+        [RubyMethod("printf", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("printf", RubyMethodAttributes.PublicSingleton)]
+        public static void PrintFormatted(
+            StringFormatterSiteStorage/*!*/ storage,
+            ConversionStorage<MutableString>/*!*/ stringCast,
+            BinaryOpStorage/*!*/ writeStorage,
+            object self, [NotNull]MutableString/*!*/ format, [NotNull]params object[]/*!*/ args) {
+
+            PrintFormatted(storage, stringCast, writeStorage, self, storage.Context.StandardOutput, format, args);
+        }
+
+        [RubyMethod("printf", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("printf", RubyMethodAttributes.PublicSingleton)]
+        public static void PrintFormatted(
+            StringFormatterSiteStorage/*!*/ storage,
+            ConversionStorage<MutableString>/*!*/ stringCast,
+            BinaryOpStorage/*!*/ writeStorage,
+            object self, object io, [NotNull]object/*!*/ format, [NotNull]params object[]/*!*/ args) {
+
+            Debug.Assert(!(io is MutableString));
+
+            // TODO: BindAsObject attribute on format?
+            // format cannot be strongly typed to MutableString due to ambiguity between signatures (MS, object) vs (object, MS)
+            Protocols.Write(writeStorage, io,
+                Sprintf(storage, self, Protocols.CastToString(stringCast, format), args)
+            );
+        }
+
+        [RubyMethod("putc", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("putc", RubyMethodAttributes.PublicSingleton)]
+        public static MutableString/*!*/ Putc(BinaryOpStorage/*!*/ writeStorage, object self, [NotNull]MutableString/*!*/ arg) {
+            // no dynamic dispatch:
+            return PrintOps.Putc(writeStorage, writeStorage.Context.StandardOutput, arg);
+        }
+
+        [RubyMethod("putc", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("putc", RubyMethodAttributes.PublicSingleton)]
+        public static int Putc(BinaryOpStorage/*!*/ writeStorage, object self, [DefaultProtocol]int arg) {
+            // no dynamic dispatch:
+            return PrintOps.Putc(writeStorage, writeStorage.Context.StandardOutput, arg);
+        }
+
+        [RubyMethod("puts", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("puts", RubyMethodAttributes.PublicSingleton)]
+        public static void PutsEmptyLine(BinaryOpStorage/*!*/ writeStorage, object self) {
+            // call directly, no dynamic dispatch to "self":
+            PrintOps.PutsEmptyLine(writeStorage, writeStorage.Context.StandardOutput);
+        }
+
+        [RubyMethod("puts", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("puts", RubyMethodAttributes.PublicSingleton)]
+        public static void PutString(BinaryOpStorage/*!*/ writeStorage, ConversionStorage<MutableString>/*!*/ tosConversion,
+            ConversionStorage<IList>/*!*/ tryToAry, object self, object arg) {
+
+            // call directly, no dynamic dispatch to "self":
+            PrintOps.Puts(writeStorage, tosConversion, tryToAry, writeStorage.Context.StandardOutput, arg);
+        }
+
+        [RubyMethod("puts", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("puts", RubyMethodAttributes.PublicSingleton)]
+        public static void PutString(BinaryOpStorage/*!*/ writeStorage, object self, [NotNull]MutableString/*!*/ arg) {
+            // call directly, no dynamic dispatch to "self":
+            PrintOps.Puts(writeStorage, writeStorage.Context.StandardOutput, arg);
+        }
+
+        [RubyMethod("puts", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("puts", RubyMethodAttributes.PublicSingleton)]
+        public static void PutString(BinaryOpStorage/*!*/ writeStorage, ConversionStorage<MutableString>/*!*/ tosConversion,
+            ConversionStorage<IList>/*!*/ tryToAry, object self, [NotNull]params object[]/*!*/ args) {
+
+            // call directly, no dynamic dispatch to "self":
+            PrintOps.Puts(writeStorage, tosConversion, tryToAry, writeStorage.Context.StandardOutput, args);
+        }
+
+        [RubyMethod("display")]
+        public static void Display(BinaryOpStorage/*!*/ writeStorage, object self) {
+            Protocols.Write(writeStorage, writeStorage.Context.StandardOutput, self);
+        }
+
+        [RubyMethod("warn", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("warn", RubyMethodAttributes.PublicSingleton)]
+        public static void ReportWarning(BinaryOpStorage/*!*/ writeStorage, ConversionStorage<MutableString>/*!*/ tosConversion,
+            object self, object message) {
+
+            PrintOps.ReportWarning(writeStorage, tosConversion, message);
+        }
+
+        // TODO: not supported in Ruby 1.9
+        [RubyMethod("getc", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("getc", RubyMethodAttributes.PublicSingleton)]
+        public static object ReadInputCharacter(UnaryOpStorage/*!*/ getcStorage, object self) {
+            getcStorage.Context.ReportWarning("getc is obsolete; use STDIN.getc instead");
+            var site = getcStorage.GetCallSite("getc", 0);
+            return site.Target(site, getcStorage.Context.StandardInput);
+        }
+
+        [RubyMethod("gets", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("gets", RubyMethodAttributes.PublicSingleton)]
+        public static object ReadInputLine(CallSiteStorage<Func<CallSite, object, MutableString, object>>/*!*/ storage, object self) {
+            return ReadInputLine(storage, self, storage.Context.InputSeparator);
+        }
+
+        [RubyMethod("gets", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("gets", RubyMethodAttributes.PublicSingleton)]
+        public static object ReadInputLine(CallSiteStorage<Func<CallSite, object, MutableString, object>>/*!*/ storage, object self,
+            [NotNull]MutableString/*!*/ separator) {
+
+            var site = storage.GetCallSite("gets", 1);
+            return site.Target(site, storage.Context.StandardInput, separator);
+        }
+
+        #endregion
+
+        #region split, chomp, chop, gsub, sub, format, sprintf
+
+        //split
+        //chomp
+        //chomp!
+        //chop
+        //chop!
+        //gsub
+        //gsub!
+        //sub
+        //sub!
+
+        [RubyMethod("format", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("format", RubyMethodAttributes.PublicSingleton)]
+        [RubyMethod("sprintf", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("sprintf", RubyMethodAttributes.PublicSingleton)]
+        public static MutableString/*!*/ Sprintf(StringFormatterSiteStorage/*!*/ storage,
+            object self, [DefaultProtocol, NotNull]MutableString/*!*/ format, [NotNull]params object[] args) {
+
+            return new StringFormatter(storage, format.ConvertToString(), format.Encoding, args).Format();
+        }
+
+        #endregion
+
+        #region rand, srand
+
+        [RubyMethod("srand", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("srand", RubyMethodAttributes.PublicSingleton)]
+        public static object SeedRandomNumberGenerator(RubyContext/*!*/ context, object self, [DefaultProtocol]IntegerValue seed) {
+            object result = context.RandomNumberGeneratorSeed;
+            context.SeedRandomNumberGenerator(seed);
+            return result;
+        }
+
+        [RubyMethod("rand", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("rand", RubyMethodAttributes.PublicSingleton)]
+        public static double Random(RubyContext/*!*/ context, object self) {
+            return context.RandomNumberGenerator.NextDouble();
+        }
+
+        [RubyMethod("rand", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("rand", RubyMethodAttributes.PublicSingleton)]
+        public static object Random(RubyContext/*!*/ context, object self, int limit) {
+            Random generator = context.RandomNumberGenerator;
+            if (limit == Int32.MinValue) {
+                return generator.Random(-(BigInteger)limit);
+            } else {
+                return ScriptingRuntimeHelpers.Int32ToObject(generator.Next(limit));
+            }
+        }
+
+        [RubyMethod("rand", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("rand", RubyMethodAttributes.PublicSingleton)]
+        public static object Random(ConversionStorage<IntegerValue>/*!*/ conversion, RubyContext/*!*/ context, object self, object limit) {
+            IntegerValue intLimit = Protocols.ConvertToInteger(conversion, limit);
+            Random generator = context.RandomNumberGenerator;
+
+            bool isFixnum;
+            int fixnum = 0;
+            BigInteger bignum = null;
+            if (intLimit.IsFixnum) {
+                if (intLimit.Fixnum == Int32.MinValue) {
+                    bignum = -(BigInteger)intLimit.Fixnum;
+                    isFixnum = false;
+                } else {
+                    fixnum = Math.Abs(intLimit.Fixnum);
+                    isFixnum = true;
+                }
+            } else {
+                bignum = intLimit.Bignum.Abs();
+                isFixnum = intLimit.Bignum.AsInt32(out fixnum);
+            }
+
+            if (isFixnum) {
+                if (fixnum == 0) {
+                    return generator.NextDouble();
+                } else {
+                    return ScriptingRuntimeHelpers.Int32ToObject(generator.Next(fixnum));
+                }
+            } else {
+                return generator.Random(bignum);
+            }
+        }
+
+        #endregion
+
+        #region set_trace_func, trace_var, untrace_var
+
+        [RubyMethod("set_trace_func", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("set_trace_func", RubyMethodAttributes.PublicSingleton)]
+        public static Proc SetTraceListener(RubyContext/*!*/ context, object self, Proc listener) {
+            if (listener != null && !context.RubyOptions.EnableTracing) {
+                throw new NotSupportedException("Tracing is not supported unless -trace option is specified.");
+            }
+            return context.TraceListener = listener;
+        }
+
+        //trace_var
+        //untrace_var
 
         #endregion
     }

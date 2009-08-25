@@ -154,11 +154,11 @@ namespace IronPython.Modules {
                     else if (o is float) WriteFloat((float)o);
                     else if (o is double) WriteFloat((double)o);
                     else if (o is long) WriteLong((long)o);
-                    else if (o is List) WriteList(o);
-                    else if (o is PythonDictionary) WriteDict(o);
-                    else if (o is PythonTuple) WriteTuple(o);
-                    else if (o is SetCollection) WriteSet(o);
-                    else if (o is FrozenSetCollection) WriteFrozenSet(o);
+                    else if (o.GetType() == typeof(List)) WriteList(o);
+                    else if (o.GetType() == typeof(PythonDictionary)) WriteDict(o);
+                    else if (o.GetType() == typeof(PythonTuple)) WriteTuple(o);
+                    else if (o.GetType() == typeof(SetCollection)) WriteSet(o);
+                    else if (o.GetType() == typeof(FrozenSetCollection)) WriteFrozenSet(o);
                     else if (o is BigInteger) WriteInteger((BigInteger)o);
                     else if (o is Complex64) WriteComplex((Complex64)o);
                     else if (o is PythonBuffer) WriteBuffer((PythonBuffer)o);

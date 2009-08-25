@@ -20,18 +20,19 @@ using System.Diagnostics;
 using System.Dynamic;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Threading;
-using IronPython.Runtime.Operations;
-using IronPython.Runtime.Types;
+
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Actions.Calls;
 using Microsoft.Scripting.Generation;
-using Microsoft.Scripting.Hosting;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+
+using IronPython.Runtime.Exceptions;
+using IronPython.Runtime.Operations;
+using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime.Binding {
     using Ast = System.Linq.Expressions.Expression;
@@ -170,6 +171,41 @@ namespace IronPython.Runtime.Binding {
 
         public override Candidate PreferConvert(Type t1, Type t2) {
             return Converter.PreferConvert(t1, t2);
+        }
+
+        public override ErrorInfo MakeSetValueTypeFieldError(FieldTracker field, DynamicMetaObject instance, DynamicMetaObject value) {
+            // allow the set but emit a warning
+            return ErrorInfo.FromValueNoError(
+                Expression.Block(
+                    Expression.Call(
+                        typeof(PythonOps).GetMethod("Warn"),
+                        Expression.Constant(_context.SharedContext),
+                        Expression.Constant(PythonExceptions.RuntimeWarning),
+                        Expression.Constant(ReflectedField.UpdateValueTypeFieldWarning),
+                        Expression.Constant(
+                            new object[] { field.Name, field.DeclaringType.Name }
+                        )
+                    ),
+                    Expression.Assign(
+                        Expression.Field(
+                            AstUtils.Convert(
+                                instance.Expression, 
+                                field.DeclaringType
+                            ), 
+                            field.Field
+                        ),
+                        ConvertExpression(
+                            value.Expression, 
+                            field.FieldType, 
+                            ConversionResultKind.ExplicitCast, 
+                            new PythonOverloadResolverFactory(
+                                this, 
+                                Expression.Constant(_context.SharedContext)
+                            )
+                        )
+                    )
+                )
+            );
         }
 
         public override ErrorInfo MakeConversionError(Type toType, Expression value) {

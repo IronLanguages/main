@@ -1,0 +1,5 @@
+fails:File::Stat#ftype returns 'characterSpecial' when the file is a char
+fails:File::Stat#ftype returns 'blockSpecial' when the file is a block
+fails:File::Stat#ftype returns 'link' when the file is a link
+fails:File::Stat#ftype returns fifo when the file is a fifo
+fails:File::Stat#ftype returns 'socket' when the file is a socket

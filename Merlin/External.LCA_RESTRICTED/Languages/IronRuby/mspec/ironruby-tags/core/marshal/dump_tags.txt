@@ -1,2 +1,4 @@
-fails:Marshal.dump dumps an extended_user_regexp having ivar
-fails:Marshal.dump dumps an extended_user_hash_default
+fails:Marshal.dump raises a TypeError if marshalling a Method instance
+fails:Marshal.dump raises a TypeError if marshalling a Proc
+fails:Marshal.dump raises a TypeError if dumping a IO/File instance
+fails:Marshal.dump raises a TypeError if dumping a MatchData instance

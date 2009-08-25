@@ -40,7 +40,8 @@ namespace IronPython.Compiler.Ast {
         private Dictionary<SymbolId, PythonVariable> _variables;
         private Dictionary<SymbolId, PythonReference> _references;
         private Dictionary<SymbolId, PythonReference> _childReferences;
-
+        private List<SymbolId> _freeVars, _globalVars, _cellVars;
+        
         public ScopeStatement Parent {
             get { return _parent; }
             set { _parent = value; }
@@ -100,6 +101,91 @@ namespace IronPython.Compiler.Ast {
 
         internal virtual bool IsGlobal {
             get { return false; }
+        }
+
+        internal SymbolId AddFreeVariable(SymbolId name) {
+            if (_freeVars == null) {
+                _freeVars = new List<SymbolId>();
+            }
+            if (!_freeVars.Contains(name)) {
+                _freeVars.Add(name);
+            }
+            return name;
+        }
+
+        internal SymbolId AddReferencedGlobal(SymbolId name) {
+            if (_globalVars == null) {
+                _globalVars = new List<SymbolId>();
+            }
+            if (!_globalVars.Contains(name)) {
+                _globalVars.Add(name);
+            }
+            return name;
+        }
+
+        internal SymbolId AddCellVariable(SymbolId name) {
+            if (_cellVars == null) {
+                _cellVars = new List<SymbolId>();
+            }
+            if (!_cellVars.Contains(name)) {
+                _cellVars.Add(name);
+            }
+            return name;
+        }
+
+        internal void UpdateReferencedVariables(SymbolId name, PythonVariable variable, ScopeStatement parent) {
+            if (variable.Kind == VariableKind.Global || variable.Kind == VariableKind.GlobalLocal) {
+                AddReferencedGlobal(name);
+            } else {
+                name = AddFreeVariable(name);
+
+                for (ScopeStatement innerParent = Parent; innerParent != parent; innerParent = innerParent.Parent) {
+                    innerParent.AddFreeVariable(name);
+                }
+            }
+        }
+
+        internal List<SymbolId> AppendVariables(List<SymbolId> res) {
+            if (Variables != null) {
+                foreach (var variable in Variables) {
+                    if (variable.Value.Kind != VariableKind.Local) {
+                        continue;
+                    }
+
+                    if (CellVariables == null || !CellVariables.Contains(variable.Key)) {
+                        res.Add(variable.Key);
+                    }
+                }
+            }
+            return res;
+        }
+
+        /// <summary>
+        /// Variables that are bound in an outer scope - but not a global scope
+        /// </summary>
+        internal IList<SymbolId> FreeVariables {
+            get {
+                return _freeVars;
+            }
+        }
+
+        /// <summary>
+        /// Variables that are bound to the global scope
+        /// </summary>
+        internal IList<SymbolId> GlobalVariables {
+            get {
+                return _globalVars;
+            }
+        }
+
+        /// <summary>
+        /// Variables that are referred to from a nested scope and need to be
+        /// promoted to cells.
+        /// </summary>
+        internal IList<SymbolId> CellVariables {
+            get {
+                return _cellVars;
+            }
         }
 
         internal abstract bool ExposesLocalVariable(PythonVariable variable);

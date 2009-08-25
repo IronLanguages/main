@@ -14,6 +14,7 @@
  * ***************************************************************************/
 
 using System;
+using System.Collections.Generic;
 using System.Threading;
 
 using Microsoft.Scripting;
@@ -30,7 +31,7 @@ using MSAst = System.Linq.Expressions;
 namespace IronPython.Compiler {
     /// <summary>
     /// Represents a script code which can be consumed at runtime as-is.  This code has
-    /// no external dependencies and is closed over it's scope.  
+    /// no external dependencies and is closed over its scope.  
     /// </summary>
     class RuntimeScriptCode : RunnableScriptCode {
         private readonly CompilerContext/*!*/ _context;
@@ -64,7 +65,7 @@ namespace IronPython.Compiler {
         }
 
         private object InvokeTarget(MSAst.LambdaExpression code, Scope scope) {
-            if (scope == _optimizedContext.Scope) {
+            if (scope == _optimizedContext.Scope && !_optimizedContext.LanguageContext.EnableTracing) {
                 EnsureCompiled();
 
                 PushFrame(_optimizedContext, _optimizedTarget);
@@ -78,7 +79,7 @@ namespace IronPython.Compiler {
                 }
             }
 
-            // if we're running different code then re-compile the code under a new scope
+            // if we're running against a different scope or we need tracing then re-compile the code.
             if (_unoptimizedCode == null) {
                 // TODO: Copy instead of mutate
                 ((PythonCompilerOptions)_context.Options).Optimized = false;
@@ -123,7 +124,7 @@ namespace IronPython.Compiler {
             var pc = (PythonContext)SourceUnit.LanguageContext;
             
             if (pc.ShouldInterpret(pco, SourceUnit)) {
-                return CompilerHelpers.LightCompile(_code);
+                return CompilerHelpers.LightCompile(_code, false);
             } else {
                 return _code.Compile(SourceUnit.EmitDebugSymbols);
             }

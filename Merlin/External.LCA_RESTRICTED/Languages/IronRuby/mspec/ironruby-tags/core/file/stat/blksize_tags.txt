@@ -1,0 +1,1 @@
+fails:File::Stat#blksize should be able to determine the blksize on a File::Stat object

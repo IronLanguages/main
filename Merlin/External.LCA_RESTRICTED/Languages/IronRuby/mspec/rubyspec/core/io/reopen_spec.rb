@@ -75,7 +75,7 @@ describe "IO#reopen" do
     @file1.reopen(@file2)
     @file1.pos.should == pos
 
-    # MRI bug: after reopen the buffers are not corrected,
+    # MRI behavior: after reopen the buffers are not corrected,
     # so we need the following line, or next gets wourd return nil.
     @file1.pos = pos
 
@@ -107,7 +107,7 @@ describe "IO#reopen" do
     File.readlines(@name2_w).should == ["line1-F2\n"]
   end
 
-  it "reassociates self with new a new stream after some reads" do
+  it "reassociates self with a new stream after some reads" do
     @file1.reopen(@file2)
     @file1.gets
     @file1.gets

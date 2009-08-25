@@ -1,3 +1,4 @@
+# encoding: utf-8
 require File.dirname(__FILE__) + '/../../spec_helper'
 require File.dirname(__FILE__) + '/fixtures/classes'
 
@@ -87,8 +88,16 @@ describe "IO#read" do
   end
 
   after :each do
-    @io.close
     File.delete(@fname) if File.exists?(@fname)
+  end
+
+  after :all do
+    # We originally closed @io after every example, but on 1.9 that led to a
+    # particularly bizarre bug where #close would raise an Errno::EBADF under
+    # certain conditions. I can't determine what these conditions are,
+    # unfortunately. I believe it's safe to only close @io here because it's
+    # instantiated anew before each example.
+    @io.close
   end
 
   it "can be read from consecutively" do
@@ -99,7 +108,7 @@ describe "IO#read" do
   end
 
   it "can read lots of data" do
-    data = "\xaa" * (8096 * 2 + 1024) # HACK IO::BufferSize
+    data = "*" * (8096 * 2 + 1024) # HACK IO::BufferSize
 
     File.open @fname, 'w' do |io| io.write data end
 
@@ -110,12 +119,12 @@ describe "IO#read" do
     end
 
     actual.length.should == data.length
-    actual.split('').all? { |c| c == "\xaa" }.should == true
+    actual.split('').all? { |c| c == "*" }.should == true
   end
 
   it "can read lots of data with length" do
     read_length = 8096 * 2 + 1024 # HACK IO::BufferSize
-    data = "\xaa" * (read_length + 8096) # HACK same
+    data = "*" * (read_length + 8096) # HACK same
 
     File.open @fname, 'w' do |io| io.write data end
 
@@ -126,7 +135,7 @@ describe "IO#read" do
     end
 
     actual.length.should == read_length
-    actual.split('').all? { |c| c == "\xaa" }.should == true
+    actual.split('').all? { |c| c == "*" }.should == true
   end
 
   it "consumes zero bytes when reading zero bytes" do
@@ -226,5 +235,32 @@ describe "IO#read" do
   it "raises IOError on closed stream" do
     lambda { IOSpecs.closed_file.read }.should raise_error(IOError)
   end
-end
 
+  ruby_version_is "1.9" do
+    # Example derived from test/ruby/test_io_m17n.rb on MRI
+    it "strips the BOM when given 'rb:utf-7-bom' as the mode" do
+      text = "\uFEFFT"
+      %w/UTF-8 UTF-16BE UTF-16LE UTF-32BE UTF-32LE/.each do |name|
+        path = tmp('%s-bom.txt' % name)
+        content = text.encode(name)
+        File.open(path,'w') { |f| f.print content }
+        result = File.read(path, :mode => 'rb:utf-7-bom')
+        content[1].force_encoding("ascii-8bit").should == result.force_encoding("ascii-8bit")
+        File.unlink(path)
+      end
+    end
+  end
+
+  it "ignores unicode encoding" do
+    begin
+      old = $KCODE
+      $KCODE = "UTF-8"
+      File.open(File.dirname(__FILE__) + '/fixtures/readlines.txt', 'r') do |io|
+        io.readline.should == "Voici la ligne une.\n"
+        io.read(5).should == "Qui " + [195].pack("C")
+      end
+    ensure
+      $KCODE = old
+    end
+  end
+end

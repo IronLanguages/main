@@ -45,7 +45,7 @@ namespace IronPython.Compiler.Ast {
 
         #region Customizable APIs
 
-        public abstract ScriptCode MakeScriptCode(MSAst.Expression/*!*/ body, CompilerContext/*!*/ context, PythonAst/*!*/ ast);
+        public abstract ScriptCode MakeScriptCode(MSAst.Expression/*!*/ body, CompilerContext/*!*/ context, PythonAst/*!*/ ast, Dictionary<int, bool> handlerLocations, Dictionary<int, Dictionary<int, bool>> loopAndFinallyLocations);
 
         public abstract MSAst.Expression/*!*/ GlobalContext {
             get;
@@ -90,7 +90,7 @@ namespace IronPython.Compiler.Ast {
             return Ast.Assign(expression, Ast.Field(null, typeof(Uninitialized).GetField("Instance")));
         }
 
-        // TODO: Optimized overloads for various aritys.
+        // TODO: Optimized overloads for various arities.
         public virtual MSAst.Expression/*!*/ Dynamic(DynamicMetaObjectBinder/*!*/ binder, Type/*!*/ retType, MSAst.Expression/*!*/ arg0) {
             return Ast.Dynamic(binder, retType, arg0);
         }

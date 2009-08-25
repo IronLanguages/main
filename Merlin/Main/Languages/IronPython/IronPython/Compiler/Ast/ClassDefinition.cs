@@ -206,15 +206,13 @@ namespace IronPython.Compiler.Ast {
                 classGen.Parameters
             );
             
-            if (funcCodeObj != null) {
-                funcCodeObj.Code = lambda;
-            }
+            funcCodeObj.Code = lambda;
 
             MSAst.Expression classDef = Ast.Call(
                 AstGenerator.GetHelperMethod("MakeClass"),
                 ag.EmitDebugSymbols ? 
                     (MSAst.Expression)lambda : 
-                    (MSAst.Expression)Ast.Constant(new LazyCode<Func<CodeContext, CodeContext>>(lambda, ag.ShouldInterpret), typeof(object)),
+                    Ast.Convert(funcCode, typeof(object)),
                 ag.LocalContext,
                 AstUtils.Constant(SymbolTable.IdToString(_name)),
                 Ast.NewArrayInit(
@@ -226,7 +224,7 @@ namespace IronPython.Compiler.Ast {
 
             classDef = ag.AddDecorators(classDef, _decorators);
 
-            return ag.AddDebugInfo(ag.Globals.Assign(ag.Globals.GetVariable(ag, _variable), classDef), new SourceSpan(Start, Header));
+            return ag.AddDebugInfoAndVoid(ag.Globals.Assign(ag.Globals.GetVariable(ag, _variable), classDef), new SourceSpan(Start, Header));
         }
 
         /// <summary>

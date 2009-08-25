@@ -13,7 +13,7 @@ describe "ENV.reject!" do
     ENV["foo"].should == nil
   end
 
-  it "returns itself ,nil or the value of break" do
+  it "returns itself or nil" do
     ENV.reject! { false }.should == nil
     ENV["foo"] = "bar"
     ENV.reject! { |k, v| k == "foo" }.should == ENV
@@ -29,7 +29,7 @@ describe "ENV.reject!" do
 
   ruby_version_is "1.8.7" do
     it "returns an Enumerator if called without a block" do
-      ENV.reject!.should be_kind_of(Enumerable::Enumerator)
+      ENV.reject!.should be_kind_of(enumerator_class)
     end
   end
 
@@ -73,7 +73,7 @@ describe "ENV.reject" do
 
   ruby_version_is "1.8.7" do
     it "returns an Enumerator if called without a block" do
-      ENV.reject.should be_kind_of(Enumerable::Enumerator)
+      ENV.reject.should be_kind_of(enumerator_class)
     end
   end
 
