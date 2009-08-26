@@ -168,9 +168,6 @@ class System::Windows::Documents::FlowDocument
     require 'rdoc/markup/simple_markup'
     require 'rdoc/markup/simple_markup/inline'
 
-    # TODO - This is a workaround for http://ironruby.codeplex.com/WorkItem/View.aspx?WorkItemId=1301
-    text = "#{$1}dummy\n\n#{text}" if text =~ /\A(\s+)/
-    
     if not @markupParser
       @markupParser = SM::SimpleMarkup.new
       
@@ -279,11 +276,7 @@ module Wpf
 
   def self.create_sta_thread &block
     ts = System::Threading::ThreadStart.new &block
-
-    # Workaround for http://ironruby.codeplex.com/WorkItem/View.aspx?WorkItemId=1306
-    param_types = System::Array[System::Type].new(1) { |i| System::Threading::ThreadStart.to_clr_type }
-    ctor = System::Threading::Thread.to_clr_type.get_constructor param_types    
-    t = ctor.Invoke(System::Array[Object].new(1) { ts })
+    t = Thread.clr_new ts
     t.ApartmentState = System::Threading::ApartmentState.STA
     t.Start
   end

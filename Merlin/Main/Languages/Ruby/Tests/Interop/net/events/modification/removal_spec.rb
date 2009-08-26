@@ -18,24 +18,12 @@ describe "Basic .NET events allow removing" do
     lambda{ @klass.OnEvent.remove @method }.should_not raise_error
   end
 
-  it "method handlers via -=" do
-    lambda{ @klass.on_event -= @method }.should_not raise_error
-  end
-
   it "lambda's via remove" do
     lambda{ @klass.on_event.remove @lambda }.should_not raise_error
   end
 
-  it "lambda's via -=" do
-    lambda{ @klass.on_event -= @lambda }.should_not raise_error
-  end
-
   it "procs via remove" do
     lambda{ @klass.on_event.remove @proc }.should_not raise_error
-  end
-
-  it "procs via -=" do
-    lambda{ @klass.on_event -= @proc }.should_not raise_error
   end
 
   it "multiple items via remove" do
@@ -46,25 +34,10 @@ describe "Basic .NET events allow removing" do
     end.should_not raise_error
   end
 
-  it "multiple items via -=" do
-    lambda do
-      @klass.on_event -= @method
-      @klass.on_event -= @proc
-      @klass.on_event -= @lambda
-    end.should_not raise_error
-  end
-
   it "one item multiple times via remove" do
     lambda do
       @klass.on_event.remove @method
       @klass.on_event.remove @method
-    end.should_not raise_error
-  end
-
-  it "one item multiple times via -=" do
-    lambda do
-      @klass.on_event -= @method
-      @klass.on_event -= @method
     end.should_not raise_error
   end
 
@@ -73,14 +46,6 @@ describe "Basic .NET events allow removing" do
       @klass.on_event.remove @method
       @klass.on_event.remove @method
       @klass.on_event.remove @method
-    end.should_not raise_error
-  end
-
-  it "one item more times than it is in the list via -=" do
-    lambda do
-      @klass.on_event -= @method
-      @klass.on_event -= @method
-      @klass.on_event -= @method
     end.should_not raise_error
   end
 end

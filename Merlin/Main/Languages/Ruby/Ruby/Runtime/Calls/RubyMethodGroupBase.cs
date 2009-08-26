@@ -197,21 +197,8 @@ namespace IronRuby.Runtime.Calls {
             
             // At runtime the BlockParam is created with a new RFC instance that identifies the library method frame as 
             // a proc-converter target of a method unwinder triggered by break from a block.
-            if (args.Signature.HasBlock) {
-                var metaBlock = args.GetMetaBlock();
-                if (metaBlock.Value != null && calleeHasBlockParam) {
-                    Debug.Assert(metaBuilder.BfcVariable != null);
-                    metaBuilder.ControlFlowBuilder = RuleControlFlowBuilder;
-                }
-
-                // Overload resolution might not need to distinguish between nil and non-nil block.
-                // However, we still do since we construct CF only for non-nil blocks.
-                if (metaBlock.Value == null) {
-                    metaBuilder.AddRestriction(Ast.Equal(metaBlock.Expression, AstUtils.Constant(null)));
-                } else {
-                    // don't need to test the exact type of the Proc since the code is subclass agnostic:
-                    metaBuilder.AddRestriction(Ast.NotEqual(metaBlock.Expression, AstUtils.Constant(null)));
-                }
+            if (args.Signature.HasBlock && calleeHasBlockParam) {
+                metaBuilder.ControlFlowBuilder = RuleControlFlowBuilder;
             }
 
             // add restrictions used for overload resolution:
@@ -267,43 +254,37 @@ namespace IronRuby.Runtime.Calls {
                 return;
             }
 
-            Expression expression = metaBuilder.Result;
-            Expression bfcVariable = metaBuilder.BfcVariable;
+            var metaBlock = args.GetMetaBlock();
+            Debug.Assert(metaBlock != null, "RuleControlFlowBuilder should only be used if the signature has a block");
+            
+            // We construct CF only for non-nil blocks thus we need a test for it:
+            if (metaBlock.Value == null) {
+                metaBuilder.AddRestriction(Ast.Equal(metaBlock.Expression, AstUtils.Constant(null)));
+                return;
+            }
 
+            // don't need to test the exact type of the Proc since the code is subclass agnostic:
+            metaBuilder.AddRestriction(Ast.NotEqual(metaBlock.Expression, AstUtils.Constant(null)));
+            Expression bfcVariable = metaBuilder.BfcVariable;
+            Debug.Assert(bfcVariable != null);
+            
             // Method call with proc can invoke control flow that returns an arbitrary value from the call, so we need to type result to Object.
             // Otherwise, the result could only be result of targetExpression unless its return type is void.
-            Type resultType = (bfcVariable != null) ? typeof(object) : expression.Type;
+            Expression resultVariable = metaBuilder.GetTemporary(typeof(object), "#result");
+            ParameterExpression methodUnwinder = metaBuilder.GetTemporary(typeof(MethodUnwinder), "#unwinder");
 
-            Expression resultVariable;
-            if (resultType != typeof(void)) {
-                resultVariable = metaBuilder.GetTemporary(resultType, "#result");
-            } else {
-                resultVariable = AstUtils.Empty();
-            }
-
-            if (expression.Type != typeof(void)) {
-                expression = Ast.Assign(resultVariable, AstUtils.Convert(expression, resultType));
-            }
-
-            // a non-null proc is being passed to the callee:
-            if (bfcVariable != null) {
-                ParameterExpression methodUnwinder = metaBuilder.GetTemporary(typeof(MethodUnwinder), "#unwinder");
-
-                expression = AstFactory.Block(
-                    Ast.Assign(bfcVariable, Methods.CreateBfcForLibraryMethod.OpCall(AstUtils.Convert(args.GetBlockExpression(), typeof(Proc)))),
-                    AstUtils.Try(
-                        expression
-                    ).Filter(methodUnwinder, Methods.IsProcConverterTarget.OpCall(bfcVariable, methodUnwinder),
-                        Ast.Assign(resultVariable, Ast.Field(methodUnwinder, MethodUnwinder.ReturnValueField)),
-                        AstUtils.Default(expression.Type)
-                    ).Finally(
-                        Methods.LeaveProcConverter.OpCall(bfcVariable)
-                    ),
-                    resultVariable
-                );
-            }
-
-            metaBuilder.Result = expression;
+            metaBuilder.Result = AstFactory.Block(
+                Ast.Assign(bfcVariable, Methods.CreateBfcForLibraryMethod.OpCall(AstUtils.Convert(args.GetBlockExpression(), typeof(Proc)))),
+                AstUtils.Try(
+                    Ast.Assign(resultVariable, AstUtils.Convert(metaBuilder.Result, typeof(object)))
+                ).Filter(methodUnwinder, Methods.IsProcConverterTarget.OpCall(bfcVariable, methodUnwinder),
+                    Ast.Assign(resultVariable, Ast.Field(methodUnwinder, MethodUnwinder.ReturnValueField)),
+                    AstUtils.Default(typeof(object))
+                ).Finally(
+                    Methods.LeaveProcConverter.OpCall(bfcVariable)
+                ),
+                resultVariable
+            );
         }
 
         private static bool HasBlockParameter(MethodBase/*!*/ method) {

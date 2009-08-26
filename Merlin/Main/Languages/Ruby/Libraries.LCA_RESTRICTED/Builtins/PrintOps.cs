@@ -27,7 +27,7 @@ namespace IronRuby.Builtins {
     [RubyModule("Print", DefineIn = typeof(IronRubyOps))]
     public static class PrintOps {
         [RubyMethod("<<")]
-        public static object/*!*/ Output(BinaryOpStorage/*!*/ writeStorage, object/*!*/ self, object value) {
+        public static object/*!*/ Output(BinaryOpStorage/*!*/ writeStorage, object self, object value) {
             Protocols.Write(writeStorage, self, value);
             return self;
         }
@@ -45,7 +45,7 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("print")]
-        public static void Print(BinaryOpStorage/*!*/ writeStorage, object/*!*/ self, object value) {
+        public static void Print(BinaryOpStorage/*!*/ writeStorage, object self, object value) {
             Protocols.Write(writeStorage, self, value ?? MutableString.CreateAscii("nil"));
 
             MutableString delimiter = writeStorage.Context.OutputSeparator;
@@ -128,5 +128,16 @@ namespace IronRuby.Builtins {
 
             KernelOps.PrintFormatted(storage, stringCast, writeStorage, null, self, format, args);
         }
+
+        internal static void ReportWarning(BinaryOpStorage/*!*/ writeStorage, ConversionStorage<MutableString>/*!*/ tosConversion, object message) {
+            if (writeStorage.Context.Verbose != null) {
+                var output = writeStorage.Context.StandardErrorOutput;
+                // MRI: unlike Kernel#puts this outputs \n even if the message ends with \n:
+                var site = writeStorage.GetCallSite("write", 1);
+                site.Target(site, output, PrintOps.ToPrintedString(tosConversion, message));
+                PrintOps.PutsEmptyLine(writeStorage, output);
+            }
+        }
+
     }
 }

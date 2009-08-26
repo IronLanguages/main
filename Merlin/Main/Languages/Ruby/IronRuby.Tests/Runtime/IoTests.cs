@@ -29,6 +29,15 @@ namespace IronRuby.Tests {
             Test_Read1();
         }
 
+        public void File2() {
+            TestOutput(@"
+stdout = IO.open(1, 'w', &nil) 
+stdout.puts('hello')
+", @"
+hello
+");
+        }
+
         private class TestStream : MemoryStream {
             private readonly bool _canSeek;
 

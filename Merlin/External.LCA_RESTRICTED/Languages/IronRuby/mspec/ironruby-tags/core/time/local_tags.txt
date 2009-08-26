@@ -4,5 +4,5 @@ fails:Time.local handles string-like second argument
 fails:Time.local handles string arguments
 fails:Time.local handles float arguments
 fails:Time.local should accept various year ranges
-fails:Time.local throws ArgumentError for out of range values
+fails:Time.local raises an ArgumentError for out of range values
 fails:Time.local throws ArgumentError for invalid number of arguments

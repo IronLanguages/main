@@ -14,9 +14,9 @@ Topics covered
   - Using Blend for UI design
   - Creating WPF FlowDocument from RDoc SimpleMarkup text
 - Creating domain-specific-languages (DSLs) in Ruby
-- Using the test-spec gem for testing
 - Creating an application that can be developed incrementally from an
   interactive session with ability to reload modified source files.
+- Using a splash screen at application startup
 
 Running the app
 ---------------

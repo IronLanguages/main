@@ -183,16 +183,7 @@ namespace IronRuby.Runtime {
         }
 
         public bool Yield(object[]/*!*/ args, out object blockResult) {
-            ContractUtils.RequiresNotNull(args, "args");
-            switch (args.Length) {
-                case 0: blockResult = RubyOps.Yield0(Self, this); break;
-                case 1: blockResult = RubyOps.Yield1(args[0], Self, this); break;
-                case 2: blockResult = RubyOps.Yield2(args[0], args[1], Self, this); break;
-                case 3: blockResult = RubyOps.Yield3(args[0], args[1], args[2], Self, this); break;
-                case 4: blockResult = RubyOps.Yield4(args[0], args[1], args[2], args[3], Self, this); break;
-                default: blockResult = RubyOps.YieldN(args, Self, this); break;
-            }
-            return BlockJumped(blockResult);
+            return BlockJumped(blockResult = RubyOps.Yield(args, Self, this));
         }
 
         #endregion

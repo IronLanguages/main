@@ -12,4 +12,15 @@ describe :dir_pwd, :shared => true do
       File.stat(Dir.send(@method)).ino.should == File.stat(File.expand_path(`cd`.chomp)).ino
     end
   end
+
+  platform_is :windows do
+    it "can return short and long file names, with mixed case" do
+      name = tmp("a path/with spaces")
+      short_name = tmp("a pAtH/WiThSp~1")
+      FileUtils.mkdir_p(name) if not File.directory?(name)
+      Dir.chdir(short_name) do
+        Dir.send(@method).should == short_name
+      end
+    end
+  end
 end

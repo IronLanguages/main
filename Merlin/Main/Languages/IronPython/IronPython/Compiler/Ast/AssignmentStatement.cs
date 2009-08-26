@@ -95,7 +95,7 @@ namespace IronPython.Compiler.Ast {
 
             // 4. Create and return the resulting suite
             statements.Add(AstUtils.Empty());
-            return ag.AddDebugInfo(
+            return ag.AddDebugInfoAndVoid(
                 Ast.Block(statements.ToArray()),
                 Span
             );
@@ -144,7 +144,7 @@ namespace IronPython.Compiler.Ast {
 
                 // 4. Create and return the resulting suite
                 body[cnt * 2] = AstUtils.Empty();
-                return ag.AddDebugInfo(Ast.Block(body), Span);
+                return ag.AddDebugInfoAndVoid(Ast.Block(body), Span);
             }
 
             return _left[0].TransformSet(ag, Span, ag.Transform(_right), PythonOperationKind.None);

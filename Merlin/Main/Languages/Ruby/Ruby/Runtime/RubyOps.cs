@@ -116,7 +116,7 @@ namespace IronRuby.Runtime {
         public static RubyModuleScope/*!*/ CreateModuleScope(MutableTuple locals, SymbolId[]/*!*/ variableNames, 
             RubyScope/*!*/ parent, RubyModule/*!*/ module) {
 
-            RubyModuleScope scope = new RubyModuleScope(parent, module, false, module);
+            RubyModuleScope scope = new RubyModuleScope(parent, module, module);
             scope.SetDebugName((module.IsClass ? "class" : "module") + " " + module.Name);
             scope.SetLocals(locals, variableNames);
             return scope;
@@ -357,6 +357,17 @@ namespace IronRuby.Runtime {
             }
 
             return result;
+        }
+
+        internal static object Yield(object[]/*!*/ args, object self, BlockParam/*!*/ blockParam) {
+            switch (args.Length) {
+                case 0: return RubyOps.Yield0(self, blockParam);
+                case 1: return RubyOps.Yield1(args[0], self, blockParam);
+                case 2: return RubyOps.Yield2(args[0], args[1], self, blockParam);
+                case 3: return RubyOps.Yield3(args[0], args[1], args[2], self, blockParam);
+                case 4: return RubyOps.Yield4(args[0], args[1], args[2], args[3], self, blockParam);
+                default: return RubyOps.YieldN(args, self, blockParam); 
+            }
         }
 
         [Emitted] 
@@ -1942,7 +1953,10 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted]
-        public static Delegate/*!*/ CreateDelegateFromProc(Type/*!*/ type, Proc/*!*/ proc) {
+        public static Delegate/*!*/ CreateDelegateFromProc(Type/*!*/ type, Proc proc) {
+            if (proc == null) {
+                throw RubyExceptions.NoBlockGiven();
+            }
             BlockParam bp = CreateBfcForProcCall(proc);
             return proc.LocalScope.RubyContext.GetDelegate(bp, type);
         }

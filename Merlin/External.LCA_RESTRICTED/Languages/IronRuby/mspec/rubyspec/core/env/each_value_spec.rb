@@ -1,6 +1,7 @@
 require File.dirname(__FILE__) + '/../../spec_helper'
 
 describe "ENV.each_value" do
+
   it "returns each value" do
     e = []
     orig = ENV.to_hash
@@ -16,12 +17,6 @@ describe "ENV.each_value" do
     end
   end
 
-  it "returns the value of break and stops execution of the loop if break is in the block" do
-    e = []
-    ENV.each_value {|k| break 1; e << k}.should == 1
-    e.empty?.should == true
-  end
-
   ruby_version_is "" ... "1.8.7" do
     it "raises LocalJumpError if no block given" do
       lambda { ENV.each_value }.should raise_error(LocalJumpError)
@@ -30,8 +25,15 @@ describe "ENV.each_value" do
 
   ruby_version_is "1.8.7" do
     it "returns an Enumerator if called without a block" do
-      ENV.each_value.should be_kind_of(Enumerable::Enumerator)
+      ENV.each_value.should be_kind_of(enumerator_class)
     end
   end
-
+  
+  ruby_version_is "1.9" do
+    it "uses the locale encoding" do
+      ENV.each_value do |value|
+        value.encoding.should == Encoding.find('locale')
+      end
+    end
+  end
 end

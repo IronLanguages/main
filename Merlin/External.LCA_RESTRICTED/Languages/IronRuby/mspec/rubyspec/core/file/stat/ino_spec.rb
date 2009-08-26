@@ -10,9 +10,20 @@ describe "File::Stat#ino" do
     File.delete(@file) if File.exist?(@file)
   end
   
-  it "should be able to determine the ino on a File::Stat object" do
+  it "returns an Integer" do
     st = File.stat(@file)
     st.ino.is_a?(Integer).should == true
-    st.ino.should > 0
+  end
+  
+  platform_is_not :windows do
+    it "should be able to determine the ino on a File::Stat object" do
+      File.stat(@file).ino.should > 0
+    end
+  end
+
+  platform_is :windows do
+    it "should be able to determine the ino on a File::Stat object" do
+      File.stat(@file).ino.should == 0
+    end
   end
 end

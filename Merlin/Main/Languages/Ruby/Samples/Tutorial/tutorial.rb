@@ -15,6 +15,8 @@
 
 require "stringio"
 
+SILVERLIGHT = false unless defined?(SILVERLIGHT)
+
 module Tutorial
 
   class Summary
@@ -42,14 +44,16 @@ module Tutorial
     attr :code
     attr :title
     attr :source_files # Files used by the task. The user might want to browse these files
+    attr :test_hook
 
-    def initialize title, description, run_unless, setup, code, source_files, &success_evaluator	                
+    def initialize title, description, run_unless, setup, code, source_files, test_hook, &success_evaluator	                
       @title = title
       @description = description
       @run_unless = run_unless
       @setup = setup
       @code = code
       @source_files = source_files
+      @test_hook = test_hook
       @success_evaluator = success_evaluator            
     end
 
@@ -436,7 +440,14 @@ class Object
     def task(options, &success_evaluator)
         options = {}.merge(options)
         Thread.current[:chapter].tasks << Tutorial::Task.new(
-          options[:title], options[:body], options[:run_unless], options[:setup], options[:code], options[:source_files], &success_evaluator)
+          options[:title],
+          options[:body], 
+          options[:run_unless], 
+          options[:setup], 
+          options[:code],
+          options[:source_files], 
+          options[:test_hook],
+          &success_evaluator)
     end
 end
 

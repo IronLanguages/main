@@ -146,7 +146,7 @@ namespace IronRuby.Runtime {
             
             if (options.HasSearchPaths) {
                 foreach (string path in options.SearchPaths) {
-                    loadPaths.Add(MutableString.Create(path.Replace('\\', '/'), RubyEncoding.Path));
+                    loadPaths.Add(MutableString.Create(path, RubyEncoding.Path));
                 }
             }
             

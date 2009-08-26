@@ -792,7 +792,17 @@ namespace Microsoft.Scripting.Generation {
         /// <param name="lambda">The lambda to compile.</param>
         /// <returns>A delegate which can interpret the lambda.</returns>
         public static Delegate LightCompile(this LambdaExpression lambda) {
-            return new LightCompiler().CompileTop(lambda).CreateDelegate();
+            return new LightCompiler(true).CompileTop(lambda).CreateDelegate();
+        }
+
+        /// <summary>
+        /// Creates an interpreted delegate for the lambda.
+        /// </summary>
+        /// <param name="lambda">The lambda to compile.</param>
+        /// <param name="compileLoops">true if the presence of loops should result in a compiled delegate</param>
+        /// <returns>A delegate which can interpret the lambda.</returns>
+        public static Delegate LightCompile(this LambdaExpression lambda, bool compileLoops) {
+            return new LightCompiler(compileLoops).CompileTop(lambda).CreateDelegate();
         }
 
         /// <summary>
@@ -805,6 +815,19 @@ namespace Microsoft.Scripting.Generation {
         public static T LightCompile<T>(this Expression<T> lambda) {
             return (T)(object)LightCompile((LambdaExpression)lambda);
         }
+
+        /// <summary>
+        /// Creates an interpreted delegate for the lambda.
+        /// </summary>
+        /// <typeparam name="T">The lambda's delegate type.</typeparam>
+        /// <param name="lambda">The lambda to compile.</param>
+        /// <param name="compileLoops">true if the presence of loops should result in a compiled delegate</param>
+        /// <returns>A delegate which can interpret the lambda.</returns>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters")]
+        public static T LightCompile<T>(this Expression<T> lambda, bool compileLoops) {
+            return (T)(object)LightCompile((LambdaExpression)lambda, compileLoops);
+        }
+
 
         /// <summary>
         /// Compiles the lambda into a method definition.

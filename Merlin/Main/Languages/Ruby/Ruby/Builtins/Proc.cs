@@ -267,24 +267,32 @@ namespace IronRuby.Builtins {
         #region Block helper methods
 
         public static Proc/*!*/ Create(RubyContext/*!*/ context, BlockCallTarget1/*!*/ clrMethod) {
-            return Create(context, clrMethod, 1);
+            return Create(context, 1, BlockDispatcher.MakeAttributes(BlockSignatureAttributes.HasSingleCompoundParameter, -1), clrMethod);
+        }
+
+        public static Proc/*!*/ CreateSimple(RubyContext/*!*/ context, BlockCallTarget1/*!*/ clrMethod) {
+            return Create(context, 1, BlockSignatureAttributes.None, clrMethod);
         }
 
         public static Proc/*!*/ Create(RubyContext/*!*/ context, BlockCallTarget2/*!*/ clrMethod) {
-            return Create(context, clrMethod, 2);
+            return Create(context, 2, BlockSignatureAttributes.None, clrMethod);
         }
 
         public static Proc/*!*/ Create(RubyContext/*!*/ context, BlockCallTarget3/*!*/ clrMethod) {
-            return Create(context, clrMethod, 3);
+            return Create(context, 3, BlockSignatureAttributes.None, clrMethod);
         }
 
-        public static Proc/*!*/ Create(RubyContext/*!*/ context, Delegate/*!*/ clrMethod, int parameterCount) {
+        public static Proc/*!*/ Create(RubyContext/*!*/ context, int parameterCount, BlockSignatureAttributes signatureAttributes, Delegate/*!*/ clrMethod) {
             // scope is used to get to the execution context:
             return new Proc(ProcKind.Block, null, context.EmptyScope,
-                BlockDispatcher.Create(parameterCount, BlockSignatureAttributes.None, null, 0).SetMethod(clrMethod)
+                BlockDispatcher.Create(parameterCount, signatureAttributes, null, 0).SetMethod(clrMethod)
             );
         }
 
         #endregion
+
+        public override string/*!*/ ToString() {
+            return String.Format("{0}: {1}:{2}", _kind, SourcePath ?? "(unknown)", SourceLine);
+        }
     }
 }

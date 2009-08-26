@@ -39,7 +39,6 @@ module ThreadSpecs
   def self.running_thread
     Thread.new do
       begin
-        Thread.current["ready_to_abort"] = true
         loop {}
         ScratchPad.record :woken
       rescue Object => e
@@ -58,7 +57,7 @@ module ThreadSpecs
   
   def self.status_of_running_thread
     t = running_thread
-    Thread.pass while t.alive? && t.status != "run"
+    Thread.pass while t.status and t.status != "run"
     status = Status.new t
     t.kill
     t.join
@@ -73,7 +72,7 @@ module ThreadSpecs
   
   def self.status_of_sleeping_thread
     t = sleeping_thread
-    Thread.pass until t.status == 'sleep'
+    Thread.pass while t.status and t.status != 'sleep'
     status = Status.new t
     t.run
     t.join
@@ -84,7 +83,7 @@ module ThreadSpecs
     m = Mutex.new
     m.lock
     t = Thread.new { m.lock }
-    Thread.pass until t.status == 'sleep'
+    Thread.pass while t.status and t.status != 'sleep'
     status = Status.new t
     m.unlock
     t.join
@@ -92,19 +91,20 @@ module ThreadSpecs
   end
   
   def self.status_of_aborting_thread
-    t = Thread.new { sleep }
+    t = Thread.new { begin; sleep; ensure; Thread.pass; end }
     begin
-      Thread.critical = true
+      Thread.critical = true if Thread.respond_to? :critical
+      Thread.pass while t.status and t.status != 'sleep'
       t.kill
       Status.new t
     ensure
-      Thread.critical = false      
+      Thread.critical = false if Thread.respond_to? :critical
     end
   end
   
   def self.status_of_killed_thread
     t = Thread.new { sleep }
-    Thread.pass until t.status == 'sleep'
+    Thread.pass while t.status and t.status != 'sleep'
     t.kill
     t.join
     Status.new t
@@ -128,7 +128,7 @@ module ThreadSpecs
   
   def self.status_of_dying_sleeping_thread
     t = dying_thread_ensures { Thread.stop; }           
-    Thread.pass until t.status == 'sleep'
+    Thread.pass while t.status and t.status != 'sleep'
     status = Status.new t
     t.wakeup
     t.join
@@ -166,10 +166,10 @@ module ThreadSpecs
   end
   
   def self.wakeup_dying_sleeping_thread(kill_method_name=:kill)
-    thread = ThreadSpecs.dying_thread_ensures(kill_method_name) { yield }
-    Thread.pass until thread.status == "sleep"
-    thread.wakeup
-    thread.join
+    t = ThreadSpecs.dying_thread_ensures(kill_method_name) { yield }
+    Thread.pass while t.status and t.status != 'sleep'
+    t.wakeup
+    t.join
   end
   
   def self.critical_is_reset
@@ -226,7 +226,7 @@ module ThreadSpecs
     critical_thread[:thread_specs] = 101
     if isThreadSleep or isThreadStop
       # Thread#wakeup calls are not queued up. So we need to ensure that the thread is sleeping before calling wakeup
-      Thread.pass while critical_thread.status != "sleep"
+      Thread.pass while critical_thread.status and critical_thread.status != "sleep"
       critical_thread.wakeup
     end
   end
@@ -241,12 +241,12 @@ module ThreadSpecs
     @@after_first_sleep = false
     
     critical_thread = Thread.new do
-      Thread.pass while Thread.main.status != "sleep"
+      Thread.pass while Thread.main.status and Thread.main.status != "sleep"
       critical_thread1()
       Thread.main.wakeup
       yield
       Thread.pass while @@after_first_sleep != true # Need to ensure that the next statement does not see the first sleep itself
-      Thread.pass while Thread.main.status != "sleep"
+      Thread.pass while Thread.main.status and Thread.main.status != "sleep"
       critical_thread2(isThreadStop)
       Thread.main.wakeup
     end

@@ -117,7 +117,7 @@ namespace IronRuby.Builtins {
 
         public Match/*!*/ Match(MutableString/*!*/ input, int start) {
             ContractUtils.RequiresNotNull(input, "input");
-            return Match(input, start, input.Length - start);
+            return Match(input, start, input.GetCharCount() - start);
         }
 
         public Match/*!*/ Match(MutableString/*!*/ input, int start, int count) {

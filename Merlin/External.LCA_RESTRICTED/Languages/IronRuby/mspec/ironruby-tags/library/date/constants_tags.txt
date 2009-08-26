@@ -1,2 +1,0 @@
-fails:Date constants should define JULIAN
-fails:Date constants should define GREGORIAN

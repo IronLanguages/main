@@ -23,7 +23,7 @@ describe "Array#values_at" do
     empty.values_at(0, 1, 2).should == [empty, nil, nil]
 
     array = ArraySpecs.recursive_array
-    array.values_at(0, 1, 2, 3).should == [1, 'two', 3.0, [array]]
+    array.values_at(0, 1, 2, 3).should == [1, 'two', 3.0, array]
   end
 
   it "calls to_int on arguments of ranges when passes ranges" do

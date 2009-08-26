@@ -11,7 +11,7 @@ doskey n2=Notepad2.exe $*
 REM This is required for mspec-run (for VS debugging, etc). It is normally set by mspec
 REM but mspec launches mspec-run as a separate process
 set RUBY_EXE=%MERLIN_ROOT%\bin\Debug\ir.exe
-set RUBY19_EXE=%MERLIN_TFS%\..\External.LCA_RESTRICTED\Languages\Ruby\ruby-1.9.1p0\bin\ruby.exe
+set RUBY19_EXE=%MERLIN_TFS%\..\External.LCA_RESTRICTED\Languages\Ruby\ruby-1.9.1p129\bin\ruby.exe
 
 REM Set GEM_HOME so that "gem install" will install to a different location, and not in source tree
 REM Note that GEM_PATH points to the gems included in the source tree.

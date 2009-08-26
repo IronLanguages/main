@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 
@@ -53,15 +54,17 @@ namespace IronPython.Compiler.Ast {
         private PythonVariable _variable;               // The variable corresponding to the function name or null for lambdas
         internal PythonVariable _nameVariable;          // the variable that refers to the global __name__
 
-        private List<SymbolId> _closureVars;
-
         private static MSAst.ParameterExpression _functionParam = Ast.Parameter(typeof(PythonFunction), "$function");
-
-        public bool IsLambda {
-            get {
-                return _name.IsEmpty;
-            }
-        }
+        private static int _lambdaId;
+        private static readonly MethodInfo _GetParentContextFromFunction = typeof(PythonOps).GetMethod("GetParentContextFromFunction");
+        private static readonly MethodInfo _GetGlobalContext = typeof(PythonOps).GetMethod("GetGlobalContext");
+        private static readonly MethodInfo _MakeFunctionDebug = typeof(PythonOps).GetMethod("MakeFunctionDebug");
+        private static readonly MethodInfo _MakeFunction = typeof(PythonOps).GetMethod("MakeFunction");
+        private static readonly MSAst.Expression _GetClosureTupleFromFunctionCall = MSAst.Expression.Call(
+                null,
+                typeof(PythonOps).GetMethod("GetClosureTupleFromFunction"),
+                _functionParam
+            );
 
         public FunctionDefinition(SymbolId name, Parameter[] parameters, SourceUnit sourceUnit)
             : this(name, parameters, null, sourceUnit) {
@@ -72,6 +75,12 @@ namespace IronPython.Compiler.Ast {
             _parameters = parameters;
             _body = body;
             _sourceUnit = sourceUnit;
+        }
+
+        public bool IsLambda {
+            get {
+                return _name.IsEmpty;
+            }
         }
 
         public Parameter[] Parameters {
@@ -157,7 +166,13 @@ namespace IronPython.Compiler.Ast {
         internal override bool TryBindOuter(SymbolId name, out PythonVariable variable) {
             // Functions expose their locals to direct access
             ContainsNestedFreeVariables = true;
-            return TryGetVariable(name, out variable);
+            if (TryGetVariable(name, out variable)) {
+                if (variable.Kind == VariableKind.Local || variable.Kind == VariableKind.Parameter) {
+                    name = AddCellVariable(name);
+                }
+                return true;
+            }
+            return false;
         }
 
         internal override PythonVariable BindName(PythonNameBinder binder, SymbolId name) {
@@ -165,6 +180,9 @@ namespace IronPython.Compiler.Ast {
 
             // First try variables local to this scope
             if (TryGetVariable(name, out variable)) {
+                if (variable.Kind == VariableKind.GlobalLocal || variable.Kind == VariableKind.Global) {
+                    AddReferencedGlobal(name);
+                }
                 return variable;
             }
 
@@ -173,12 +191,7 @@ namespace IronPython.Compiler.Ast {
                 if (parent.TryBindOuter(name, out variable)) {
                     IsClosure = true;
                     variable.AccessedInNestedScope = true;
-                    if (_closureVars == null) {
-                        _closureVars = new List<SymbolId>();
-                    }
-                    if (!_closureVars.Contains(name)) {
-                        _closureVars.Add(name);
-                    }
+                    UpdateReferencedVariables(name, variable, parent);
                     return variable;
                 }
             }
@@ -192,9 +205,11 @@ namespace IronPython.Compiler.Ast {
                 return null;
             } else {
                 // Create a global variable to bind to.
+                AddReferencedGlobal(name);
                 return GetGlobalScope().EnsureGlobalVariable(binder, name);
             }
         }
+
 
         internal override void Bind(PythonNameBinder binder) {
             base.Bind(binder);
@@ -205,11 +220,7 @@ namespace IronPython.Compiler.Ast {
         /// Pulls the closure tuple from our function/generator which is flowed into each function call.
         /// </summary>
         public override MSAst.Expression/*!*/ GetClosureTuple() {
-            return MSAst.Expression.Call(
-                null,
-                typeof(PythonOps).GetMethod("GetClosureTupleFromFunction"),
-                _functionParam
-            );
+            return _GetClosureTupleFromFunctionCall;
         }
 
         private void Verify(PythonNameBinder binder) {
@@ -259,10 +270,8 @@ namespace IronPython.Compiler.Ast {
             Debug.Assert(_variable != null, "Shouldn't be called by lambda expression");
 
             MSAst.Expression function = TransformToFunctionExpression(ag);
-            return ag.AddDebugInfo(ag.Globals.Assign(ag.Globals.GetVariable(ag, _variable), function), new SourceSpan(Start, Header));
+            return ag.AddDebugInfoAndVoid(ag.Globals.Assign(ag.Globals.GetVariable(ag, _variable), function), new SourceSpan(Start, Header));
         }
-
-        private static int _lambdaId;
 
         private string MakeProfilerName(string name) {
             var sb = new StringBuilder("def ");
@@ -312,11 +321,11 @@ namespace IronPython.Compiler.Ast {
             TransformParameters(ag, bodyGen, defaults, names, needsWrapperMethod, init);
 
             MSAst.Expression parentContext;
-            
-            parentContext = MSAst.Expression.Call(typeof(PythonOps).GetMethod("GetParentContextFromFunction"), _functionParam);
+
+            parentContext = MSAst.Expression.Call(_GetParentContextFromFunction, _functionParam);
 
             bodyGen.AddHiddenVariable(ArrayGlobalAllocator._globalContext);
-            init.Add(Ast.Assign(ArrayGlobalAllocator._globalContext, Ast.Call(typeof(PythonOps).GetMethod("GetGlobalContext"), parentContext)));
+            init.Add(Ast.Assign(ArrayGlobalAllocator._globalContext, Ast.Call(_GetGlobalContext, parentContext)));
             init.AddRange(bodyGen.Globals.PrepareScope(bodyGen));
 
             // Create variables and references. Since references refer to
@@ -328,6 +337,11 @@ namespace IronPython.Compiler.Ast {
             InitializeParameters(bodyGen, init, needsWrapperMethod);
 
             List<MSAst.Expression> statements = new List<MSAst.Expression>();
+            // add beginning sequence point
+            statements.Add(bodyGen.AddDebugInfo(
+                AstUtils.Empty(),
+                new SourceSpan(new SourceLocation(0, Start.Line, Start.Column), new SourceLocation(0, Start.Line, Int32.MaxValue))));
+
 
             // For generators, we need to do a check before the first statement for Generator.Throw() / Generator.Close().
             // The exception traceback needs to come from the generator's method body, and so we must do the check and throw
@@ -354,12 +368,7 @@ namespace IronPython.Compiler.Ast {
                 return null;
             }
 
-            // add beginning sequence point
-            statements.Insert(0, bodyGen.AddDebugInfo(
-                AstUtils.Empty(),
-                new SourceSpan(new SourceLocation(0, Start.Line, Start.Column), new SourceLocation(0, Start.Line, Int32.MaxValue))));
-
-            MSAst.Expression body = Ast.Block(new ReadOnlyCollection<MSAst.Expression>(statements.ToArray()));
+            MSAst.Expression body = Ast.Block(statements);
 
             // If this function can modify sys.exc_info() (_canSetSysExcInfo), then it must restore the result on finish.
             // 
@@ -424,7 +433,7 @@ namespace IronPython.Compiler.Ast {
             );
 
             // create the function code object which all function instances will share
-            MSAst.Expression funcCode = Ast.Constant(
+            MSAst.Expression funcCode = ag.Globals.GetConstant(
                 new FunctionCode(
                     ag.PyContext,
                     ag.EmitDebugSymbols ? null : originalDelegate,
@@ -437,11 +446,16 @@ namespace IronPython.Compiler.Ast {
                     _sourceUnit.Path,
                     ag.EmitDebugSymbols,
                     ag.ShouldInterpret,
-                    _closureVars,
+                    FreeVariables,
+                    GlobalVariables,
+                    CellVariables,
+                    GetVarNames(),
+                    Variables == null ? 0 : Variables.Count,
                     bodyGen.LoopLocationsNoCreate,
                     bodyGen.HandlerLocationsNoCreate
                 )                
             );
+            bodyGen.FuncCodeExpr = funcCode;
 
             MSAst.Expression ret;
             if (ag.EmitDebugSymbols && !ag.PyContext.EnableTracing) {
@@ -449,7 +463,7 @@ namespace IronPython.Compiler.Ast {
                 // in tracing mode we'll still compile things one off though just to keep things simple.  The code will still
                 // be debuggable but naive debuggers like mdbg will have more issues.
                 ret = Ast.Call(
-                    typeof(PythonOps).GetMethod("MakeFunctionDebug"),                                    // method
+                    _MakeFunctionDebug,                                                             // method
                     ag.LocalContext,                                                                // 1. Emit CodeContext
                     funcCode,                                                                       // 2. FunctionCode
                     ((IPythonGlobalExpression)ag.Globals.GetVariable(ag, _nameVariable)).RawValue(),// 3. module name
@@ -462,7 +476,7 @@ namespace IronPython.Compiler.Ast {
                 );
             } else {
                 ret = Ast.Call(
-                    typeof(PythonOps).GetMethod("MakeFunction"),                                    // method
+                    _MakeFunction,                                                                  // method
                     ag.LocalContext,                                                                // 1. Emit CodeContext
                     funcCode,                                                                       // 2. FunctionCode
                     ((IPythonGlobalExpression)ag.Globals.GetVariable(ag, _nameVariable)).RawValue(),// 3. module name
@@ -477,7 +491,18 @@ namespace IronPython.Compiler.Ast {
             return ret;
         }
 
+        private IList<SymbolId> GetVarNames() {
+            List<SymbolId> res = new List<SymbolId>();
 
+            foreach (Parameter p in _parameters) {
+                res.Add(p.Name);
+            }
+
+            AppendVariables(res);
+
+            return res;
+        }
+        
         private void TransformParameters(AstGenerator outer, AstGenerator inner, List<MSAst.Expression> defaults, List<MSAst.Expression> names, bool needsWrapperMethod, List<MSAst.Expression> init) {
             inner.Parameter(_functionParam);
 

@@ -71,6 +71,16 @@ namespace IronRuby.Hosting {
         }
 #endif
 
+        private static string[] GetPaths(string input) {
+            string[] paths = StringUtils.Split(input, new char[] { Path.PathSeparator }, Int32.MaxValue, StringSplitOptions.RemoveEmptyEntries);
+            for (int i = 0; i < paths.Length; i++) {
+                // Trim any occurrances of "
+                string[] parts = StringUtils.Split(paths[i], new char[] { '"' }, Int32.MaxValue, StringSplitOptions.RemoveEmptyEntries);
+                paths[i] = String.Concat(parts);
+            }
+            return paths;
+        }
+
         /// <exception cref="Exception">On error.</exception>
         protected override void ParseArgument(string arg) {
             ContractUtils.RequiresNotNull(arg, "arg");
@@ -110,21 +120,6 @@ namespace IronRuby.Hosting {
                     RuntimeSetup.DebugMode = true;          // $DEBUG = true
                     break;
                 
-                case "-r":
-                    string libPath = PopNextArg();
-                    LanguageSetup.Options["RequiredLibraries"] = libPath;
-                    break;
-
-                case "-e":
-                    LanguageSetup.Options["MainFile"] = "-e";
-                    if (CommonConsoleOptions.Command == null) {
-                        CommonConsoleOptions.Command = String.Empty;
-                    } else {
-                        CommonConsoleOptions.Command += "\n";
-                    }
-                    CommonConsoleOptions.Command += PopNextArg();
-                    break;
-
                 #endregion
 
 #if DEBUG && !SILVERLIGHT
@@ -185,12 +180,45 @@ namespace IronRuby.Hosting {
                     break;
 
                 default:
-                    if (arg.StartsWith("-I")) {
-                        if (arg == "-I") {
-                            _loadPaths.Add(PopNextArg());
+                    if (arg.StartsWith("-e")) {
+                        string command;
+                        if (arg == "-e") {
+                            command = PopNextArg();
                         } else {
-                            _loadPaths.Add(arg.Substring(2));
+                            command = arg.Substring(2);
                         }
+
+                        LanguageSetup.Options["MainFile"] = "-e";
+                        if (CommonConsoleOptions.Command == null) {
+                            CommonConsoleOptions.Command = String.Empty;
+                        } else {
+                              CommonConsoleOptions.Command += "\n";
+                        }
+                        CommonConsoleOptions.Command += command;
+                        break;
+                    }
+
+                    if (arg.StartsWith("-I")) {
+                        string includePaths;
+                        if (arg == "-I") {
+                            includePaths = PopNextArg();
+                        } else {
+                            includePaths = arg.Substring(2);
+                        }
+
+                        _loadPaths.AddRange(GetPaths(includePaths));
+                        break;
+                    }
+
+                    if (arg.StartsWith("-r")) {
+                        string libPath;
+                        if (arg == "-r") {
+                            libPath = PopNextArg();
+                        } else {
+                            libPath = arg.Substring(2);
+                        }
+
+                        LanguageSetup.Options["RequiredLibraries"] = libPath;
                         break;
                     }
 
@@ -234,7 +262,7 @@ namespace IronRuby.Hosting {
             try {
                 string rubylib = Environment.GetEnvironmentVariable("RUBYLIB");
                 if (rubylib != null) {
-                    _loadPaths.AddRange(rubylib.Split(Path.PathSeparator));
+                    _loadPaths.AddRange(GetPaths(rubylib));
                 }
             } catch (SecurityException) {
                 // nop
@@ -283,7 +311,7 @@ namespace IronRuby.Hosting {
                 { "-compileRegexps", "Faster throughput, slower startup" },
 #endif
                 { "-trace",         "Enable support for set_trace_func" },
-                { "-profile",       "Enable support Clr.profile" },
+                { "-profile",       "Enable support for 'pi = IronRuby::Clr.profile { block_to_profile }'" },
                 { "-18",            "Ruby 1.8 mode" },
                 { "-19",            "Ruby 1.9 mode" },
                 { "-20",            "Ruby 2.0 mode" },

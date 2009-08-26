@@ -14,6 +14,7 @@
  * ***************************************************************************/
 
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Microsoft.Scripting;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 using MSAst = System.Linq.Expressions;
@@ -79,7 +80,7 @@ namespace IronPython.Compiler.Ast {
             } else {
                 // from a[.b] import x [as xx], [ y [ as yy] ] [ , ... ]
 
-                List<MSAst.Expression> statements = new List<MSAst.Expression>();
+                ReadOnlyCollectionBuilder<MSAst.Expression> statements = new ReadOnlyCollectionBuilder<MSAst.Expression>();
                 MSAst.ParameterExpression module = ag.GetTemporary("module");
 
                 // Create initializer of the array of names being passed to ImportWithNames
@@ -90,7 +91,7 @@ namespace IronPython.Compiler.Ast {
 
                 // module = PythonOps.ImportWithNames(<context>, _root, make_array(_names))
                 statements.Add(
-                    ag.AddDebugInfo(
+                    ag.AddDebugInfoAndVoid(
                         ag.Globals.Assign(
                             module, 
                             Ast.Call(
@@ -108,7 +109,7 @@ namespace IronPython.Compiler.Ast {
                 // now load all the names being imported and assign the variables
                 for (int i = 0; i < names.Length; i++) {
                     statements.Add(
-                        ag.AddDebugInfo(
+                        ag.AddDebugInfoAndVoid(
                             ag.Globals.Assign(
                                 ag.Globals.GetVariable(ag, _variables[i]), 
                                 Ast.Call(

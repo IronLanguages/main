@@ -1,2 +1,0 @@
-rubyspec: 08851caeb6dfb67eb4ebc25c318af6226c60ab3b
-mspec:  8c740b62d4d75fea07f2f8c1be1a79a668ac32ac

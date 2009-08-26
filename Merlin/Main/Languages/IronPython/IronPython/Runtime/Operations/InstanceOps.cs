@@ -527,7 +527,7 @@ namespace IronPython.Runtime.Operations {
                 bool hasObjectInit = pt.HasObjectInit(context);
                 bool hasObjectNew = pt.HasObjectNew(context);
 
-                if (hasObjectInit && hasObjectNew) {
+                if (hasObjectInit) {
                     throw PythonOps.TypeError(ObjectNewNoParameters);
                 } else if (!hasObjectNew && !hasObjectInit) {
                     PythonOps.Warn(context, PythonExceptions.DeprecationWarning, ObjectNewNoParameters);
@@ -542,8 +542,8 @@ namespace IronPython.Runtime.Operations {
                 bool hasObjectNew = pt.HasObjectNew(context);
 
                 // NoneType seems to get some special treatment (None.__init__('abc') works)
-                if (hasObjectInit && hasObjectNew && self != null) {
-                    throw PythonOps.TypeError("default __init__ does not take parameters");
+                if (hasObjectNew && self != null) {
+                    throw PythonOps.TypeError("object.__init__() takes no parameters");
                 } else if ((!hasObjectNew && !hasObjectInit) || self == null) {
                     PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "object.__init__() takes no parameters for type {0}", PythonTypeOps.GetName(self));
                 }

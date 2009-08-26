@@ -12,12 +12,13 @@ function initialize-merlin {
 
   initialize-vsvars
 
+  set TERM=
   set MERLIN_ROOT="$path\Merlin\Main"
   set MERLIN_EXTERNAL="${env:MERLIN_ROOT}\..\External.LCA_RESTRICTED"
-  set RUBY18_BIN="${env:MERLIN_EXTERNAL}\Languages\Ruby\ruby-1.8.6p287\bin"
+  set RUBY18_BIN="${env:MERLIN_EXTERNAL}\Languages\Ruby\ruby-1.8.6p368\bin"
   set RUBY18_EXE="${env:RUBY18_BIN}\ruby.exe"
   set RUBY19_EXE="${env:MERLIN_EXTERNAL}\Languages\Ruby\1.9.1p0\bin\ruby.exe"
-  set GEM_PATH="${env:MERLIN_EXTERNAL}\Languages\Ruby\ruby-1.8.6p287\lib\ruby\gems\1.8"
+  set GEM_PATH="${env:MERLIN_EXTERNAL}\Languages\Ruby\ruby-1.8.6p368\lib\ruby\gems\1.8"
   $alias = $env:MERLIN_ROOT + '\Scripts\bat\Alias.ps1'
   $alias_internal = $env:MERLIN_ROOT + '\Scripts\bat\AliasInternal.ps1'
   if (test-path $alias) { . $alias }

@@ -20,15 +20,21 @@ module ArraySpecs
   end
 
   def self.frozen_array
-    @frozen_array ||= [1,2,3]
-    @frozen_array.freeze
-    @frozen_array
+    frozen_array = [1,2,3]
+    frozen_array.freeze
+    frozen_array
   end
 
   def self.recursive_array
     a = [1, 'two', 3.0]
-    tmp = [ a ]
-    a << tmp
+    5.times { a << a }
+    a
+  end
+
+  def self.head_recursive_array
+    a =  []
+    5.times { a << a }
+    a << 1 << 'two' << 3.0
     a
   end
 
@@ -77,6 +83,83 @@ module ArraySpecs
   class SubArray < Array
     def initialize(*args)
       ScratchPad.record args
+    end
+  end
+
+  class ArrayConvertable
+    attr_accessor :called
+    def initialize(*values, &block)
+      @values = values;
+    end
+
+    def to_a
+      self.called = :to_a
+      @values
+    end
+
+    def to_ary
+      self.called = :to_ary
+      @values
+    end
+  end
+
+  class ArrayNotReallyConvertable
+    def to_ary
+      raise "Oups"
+    end
+  end
+
+  class SortSame
+    def <=>(other); 0; end
+    def ==(other); true; end
+  end
+
+  class UFOSceptic
+    def <=>(other); raise "N-uh, UFO:s do not exist!"; end
+  end
+
+  class MockForCompared
+    @@count = 0
+    @@compared = false
+    def initialize
+      @@compared = false
+      @order = (@@count += 1)
+    end
+    def <=>(rhs)
+      @@compared = true
+      return rhs.order <=> self.order
+    end
+    def self.compared?
+      @@compared
+    end
+
+    protected
+    attr_accessor :order
+  end
+
+  class ComparableWithFixnum
+    include Comparable
+    def initialize(num)
+      @num = num
+    end
+
+    def <=>(fixnum)
+      @num <=> fixnum
+    end
+  end
+
+  class Uncomparable
+    def <=>(obj)
+      nil
+    end
+  end
+
+  # Useful for shared specs where you pass in an object as the third argument.
+  # @object.new(a,b,c) creates an Array-like object with elements a, b, and c.
+  # This class allows a similar constructor for Array
+  class NewArray
+    def self.new(*args)
+      args
     end
   end
 end

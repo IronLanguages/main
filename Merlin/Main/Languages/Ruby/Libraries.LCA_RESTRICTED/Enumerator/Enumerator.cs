@@ -33,7 +33,7 @@ namespace IronRuby.StandardLibrary.Enumerator {
     public static class EnumerableKernelOps {
         [RubyMethod("to_enum")]
         [RubyMethod("enum_for")]
-        public static Enumerable.Enumerator/*!*/ Create(object self, [DefaultProtocol, Optional]string enumeratorName, 
+        public static Enumerable.Enumerator/*!*/ Create(object self, [DefaultProtocol, NotNull]string/*!*/ enumeratorName, 
             [NotNull]params object[] targetParameters) {
             return new Enumerable.Enumerator(self, enumeratorName, targetParameters);
         }

@@ -27,7 +27,6 @@ core\array\join_tags.txt:0:critical:Array#join does not separates elements when 
 core\array\union_tags.txt:0:critical:Array#| properly handles recursive arrays
 core\array\uniq_tags.txt:0:critical:Array#uniq properly handles recursive arrays
 core\array\uniq_tags.txt:0:critical:Array#uniq! properly handles recursive arrays
-core\kernel\sleep_tags.txt:3:critical:Kernel#sleep pauses execution indefinitely if not given a duration
 core\process\times_tags.txt:0:unstable:Process.times returns current cpu times
 core\string\process\wait_tags.txt:0:critical:Process.wait
 core\string\process\wait2_tags.txt:0:critical:Process.wait2
@@ -62,5 +61,3 @@ library\resolv\get_name_tags.txt:0:critical:Resolv#getname
 library\resolv\get_names_tags.txt:0:critical:Resolv#getnames
 library\scanf\io\block_scanf_tags.txt:0:critical:IO#block_scanf passes each match to the block as an array
 library\scanf\io\scanf_tags.txt:0:critical:IO#scanf with block passes each match to the block as an array
-library\socket\basicsocket\recv_tags.txt:0:critical:BasicSocket#recv receives a specified number of bytes of a message from another socket
-library\socket\basicsocket\recv_tags.txt:0:critical:BasicSocket#recv accepts flags to specify unusual receiving behaviour

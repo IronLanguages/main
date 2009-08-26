@@ -14,15 +14,20 @@
  * ***************************************************************************/
 
 using System;
-using System.Runtime.CompilerServices;
-using Microsoft.Scripting.Runtime;
-using IronPython.Runtime.Operations;
-using IronPython.Runtime.Binding;
 using System.Collections.Generic;
+using System.Dynamic;
+using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
+
+using Microsoft.Scripting.Ast;
+using Microsoft.Scripting.Runtime;
+
+using IronPython.Runtime.Binding;
+using IronPython.Runtime.Operations;
 
 namespace IronPython.Runtime {
-    [PythonType("buffer")]
-    public sealed class PythonBuffer : ICodeFormattable {
+    [PythonType("buffer"), DontMapGetMemberNamesToDir]
+    public sealed class PythonBuffer : ICodeFormattable, IDynamicMetaObjectProvider {
         internal object _object;
         private int _offset;
         private int _size;
@@ -236,6 +241,41 @@ namespace IronPython.Runtime {
         public string/*!*/ __repr__(CodeContext/*!*/ context) {
             return string.Format("<read-only buffer for 0x{0:X16}, size {1}, offset {2} at 0x{3:X16}>",
                 PythonOps.Id(_object), _size, _offset, PythonOps.Id(this));
+        }
+
+        #endregion
+
+        /// <summary>
+        /// A DynamicMetaObject which is just used to support custom conversions to COM.
+        /// </summary>
+        class BufferMeta : DynamicMetaObject, IComConvertible {
+            public BufferMeta(Expression expr, BindingRestrictions restrictions, object value)
+                : base(expr, restrictions, value) {
+            }
+
+            #region IComConvertible Members
+
+            DynamicMetaObject IComConvertible.GetComMetaObject() {
+                Console.WriteLine("Com Convertible!");
+                return new DynamicMetaObject(
+                    Expression.Call(
+                        typeof(PythonOps).GetMethod("ConvertBufferToByteArray"),
+                        Utils.Convert(
+                            Expression,
+                            typeof(PythonBuffer)
+                        )
+                    ),
+                    BindingRestrictions.Empty
+                );
+            }
+
+            #endregion
+        }
+
+        #region IDynamicMetaObjectProvider Members
+
+        DynamicMetaObject IDynamicMetaObjectProvider.GetMetaObject(Expression parameter) {
+            return new BufferMeta(parameter, BindingRestrictions.Empty, this);
         }
 
         #endregion

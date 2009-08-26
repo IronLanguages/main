@@ -1,3 +1,9 @@
+# Configuration file for Ruby 1.8-compatible Ruby implementations.
+#
+# Unless you passed to --config (or -B) to MSpec, MSpec will automatically
+# use this config file if the Ruby interpreter with which MSpec advertises
+# itself with RUBY_VERSION =~ /1.8/
+
 class MSpecScript
   # Language features specs
   set :language, [ 'language' ]
@@ -30,6 +36,20 @@ class MSpecScript
   # An ordered list of the directories containing specs to run
   set :files, get(:language) + get(:core) + get(:library)
 
-  # The default implementation to run the specs.
+  # Optional library specs
+  set :ffi, 'optional/ffi'
+
+  # A list of _all_ optional library specs
+  set :optional, [get(:ffi)]
+
+  # The default implementation to run the specs
   set :target, 'ruby'
+
+  set :tags_patterns, [
+                        [%r(language/),     'tags/1.8/language/'],
+                        [%r(core/),         'tags/1.8/core/'],
+                        [%r(command_line/), 'tags/1.8/command_line/'],
+                        [%r(library/),      'tags/1.8/library/'],
+                        [/_spec.rb$/,       '_tags.txt']
+                      ]
 end

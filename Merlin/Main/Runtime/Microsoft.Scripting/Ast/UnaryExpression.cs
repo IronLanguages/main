@@ -30,7 +30,7 @@ namespace Microsoft.Scripting.Ast {
             if (expression.Type == typeof(void)) {
                 return expression;
             }
-            return Expression.Block(typeof(void), expression);
+            return Expression.Block(expression, Utils.Empty());
         }
 
         public static Expression Convert(Expression expression, Type type) {

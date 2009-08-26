@@ -1,11 +1,8 @@
-require File.dirname(__FILE__) + '/../../spec_helper'
+require File.dirname(__FILE__) + '/shared/chars'
 
-extended_on :rubinius do
+ruby_version_is '1.8.7' do
   describe "String#each_char" do
-    it "passes each char in self to the given block" do
-      a = []
-      "hello".each_char { |c| a << c }
-      a.should == ['h', 'e', 'l', 'l', 'o']
-    end
+    it_behaves_like(:string_chars, :each_char)
   end
 end
+

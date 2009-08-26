@@ -14,6 +14,7 @@
  * ***************************************************************************/
 
 using System;
+using System.Collections.Generic;
 using System.Threading;
 
 using Microsoft.Scripting;
@@ -30,18 +31,18 @@ using MSAst = System.Linq.Expressions;
 namespace IronPython.Compiler {
     /// <summary>
     /// Represents a script code which can be consumed at runtime as-is.  This code has
-    /// no external dependencies and is closed over it's scope.  
+    /// no external dependencies and is closed over its scope.  
     /// </summary>
     class RuntimeScriptCode : RunnableScriptCode {
         private readonly CompilerContext/*!*/ _context;
         private readonly PythonAst/*!*/ _ast;
         private readonly CodeContext/*!*/ _optimizedContext;
-        private readonly MSAst.Expression<Func<object>> _code;
-        private Func<object> _optimizedTarget;
+        private readonly MSAst.Expression<Func<FunctionCode, object>> _code;
+        private Func<FunctionCode, object> _optimizedTarget;
 
         private ScriptCode _unoptimizedCode;
 
-        public RuntimeScriptCode(CompilerContext/*!*/ context, MSAst.Expression<Func<object>>/*!*/ expression, PythonAst/*!*/ ast, CodeContext/*!*/ codeContext)
+        public RuntimeScriptCode(CompilerContext/*!*/ context, MSAst.Expression<Func<FunctionCode, object>>/*!*/ expression, PythonAst/*!*/ ast, CodeContext/*!*/ codeContext)
             : base(context.SourceUnit) {
             _code = expression;
             _ast = ast;
@@ -57,8 +58,14 @@ namespace IronPython.Compiler {
             return InvokeTarget(_code, scope);
         }
 
+        public override FunctionCode GetFunctionCode() {
+            EnsureCompiled();
+
+            return EnsureFunctionCode(_optimizedTarget);
+        }
+
         private object InvokeTarget(MSAst.LambdaExpression code, Scope scope) {
-            if (scope == _optimizedContext.Scope) {
+            if (scope == _optimizedContext.Scope && !_optimizedContext.LanguageContext.EnableTracing) {
                 EnsureCompiled();
 
                 PushFrame(_optimizedContext, _optimizedTarget);
@@ -66,13 +73,13 @@ namespace IronPython.Compiler {
                     if (_context.SourceUnit.Kind == SourceCodeKind.Expression) {
                         return OptimizedEvalWrapper();
                     }
-                    return _optimizedTarget();
+                    return _optimizedTarget(EnsureFunctionCode(_optimizedTarget));
                 } finally {
                     PopFrame();
                 }
             }
 
-            // if we're running different code then re-compile the code under a new scope
+            // if we're running against a different scope or we need tracing then re-compile the code.
             if (_unoptimizedCode == null) {
                 // TODO: Copy instead of mutate
                 ((PythonCompilerOptions)_context.Options).Optimized = false;
@@ -91,9 +98,9 @@ namespace IronPython.Compiler {
         
         private object OptimizedEvalWrapper() {
             try {
-                return _optimizedTarget();
+                return _optimizedTarget(EnsureFunctionCode(_optimizedTarget));
             } catch (Exception) {
-                PythonOps.UpdateStackTrace(_optimizedContext, _optimizedTarget.Method, "<module>", "<string>", 0);
+                PythonOps.UpdateStackTrace(_optimizedContext, Code, _optimizedTarget.Method, "<module>", "<string>", 0);
                 throw;
             }
         }
@@ -108,12 +115,16 @@ namespace IronPython.Compiler {
             }
         }
 
-        private Func<object>/*!*/ Compile() {
+        protected override FunctionAttributes GetCodeAttributes() {
+            return GetCodeAttributes(_context);
+        }
+
+        private Func<FunctionCode, object>/*!*/ Compile() {
             var pco = (PythonCompilerOptions)_context.Options;
             var pc = (PythonContext)SourceUnit.LanguageContext;
             
             if (pc.ShouldInterpret(pco, SourceUnit)) {
-                return CompilerHelpers.LightCompile(_code);
+                return CompilerHelpers.LightCompile(_code, false);
             } else {
                 return _code.Compile(SourceUnit.EmitDebugSymbols);
             }

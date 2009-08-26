@@ -1,19 +1,4 @@
-fails:File.open with a block invokes close on opened file when exiting the block
-fails:File.open with a block propagates non-StandardErrors produced by close
-fails:File.open opens file when call with a block (basic case)
-fails:File.open opens a file with mode string and block
-fails:File.open opens a file with mode num and block
 fails:File.open opens the file when passed mode, num and permissions
 fails:File.open opens the file when passed mode, num, permissions and block
-fails:File.open opens the file when call with fd
-fails:File.open opens a file with a file descriptor d and a block
-fails:File.open opens a file that no exists when use File::TRUNC mode
-fails:File.open opens a file that no exists when use File::CREAT mode
 fails:File.open raises an IOError when read in a block opened with File::RDONLY|File::APPEND mode
-fails:File.open raises an Errorno::EEXIST if the file exists when open with File::CREAT|File::EXCL
-fails:File.open opens a file when use File::WRONLY|File::APPEND mode
 fails:File.open raises an IOError if the file exists when open with File::RDONLY|File::APPEND
-fails:File.open can't write in a block when call open with File::TRUNC mode
-fails:File.open raises an Errorno::EEXIST if the file exists when open with File::RDONLY|File::TRUNC
-fails:File.open raises a TypeError if passed a filename that is not a String or Integer type
-fails:File.open raises a SystemCallError if passed an invalid Integer type

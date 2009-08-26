@@ -79,7 +79,7 @@ namespace IronRuby.Builtins {
             var result = RubyStruct.DefineStruct(self, className, attributeNames);
 
             if (block != null) {
-                return RubyUtils.EvaluateInModule(result, block, result);
+                return RubyUtils.EvaluateInModule(result, block, null, result);
             }
 
             return result;
@@ -258,7 +258,7 @@ namespace IronRuby.Builtins {
         // For some unknown reason Struct defines the method even though it is mixed in from Enumerable
         // Until we discover the difference, delegate to Enumerable#select
         [RubyMethod("select")]
-        public static RubyArray/*!*/ Select(CallSiteStorage<EachSite>/*!*/ each, BlockParam predicate, RubyStruct/*!*/ self) {
+        public static object Select(CallSiteStorage<EachSite>/*!*/ each, BlockParam predicate, RubyStruct/*!*/ self) {
             return Enumerable.Select(each, predicate, self);
         }
 

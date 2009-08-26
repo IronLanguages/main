@@ -14,24 +14,12 @@ describe "Basic .NET events allow adding" do
     lambda{ @klass.OnEvent.add @method }.should_not raise_error
   end
 
-  it "method handlers via +=" do
-    lambda{ @klass.on_event += @method }.should_not raise_error
-  end
-
   it "lambda's via add" do
     lambda{ @klass.on_event.add @lambda }.should_not raise_error
   end
 
-  it "lambda's via +=" do
-    lambda{ @klass.on_event += @lambda }.should_not raise_error
-  end
-
   it "procs via add" do
     lambda{ @klass.on_event.add @proc }.should_not raise_error
-  end
-
-  it "procs via +=" do
-    lambda{ @klass.on_event += @proc }.should_not raise_error
   end
 
   it "multiple items via add" do
@@ -42,25 +30,10 @@ describe "Basic .NET events allow adding" do
     end.should_not raise_error
   end
 
-  it "multiple items via +=" do
-    lambda do
-      @klass.on_event += @method
-      @klass.on_event += @proc
-      @klass.on_event += @lambda
-    end.should_not raise_error
-  end
-
   it "one item multiple times via add" do
     lambda do
       @klass.on_event.add @method
       @klass.on_event.add @method
-    end.should_not raise_error
-  end
-
-  it "one item multiple times via +=" do
-    lambda do
-      @klass.on_event += @method
-      @klass.on_event += @method
     end.should_not raise_error
   end
 end

@@ -1,6 +1,0 @@
-fails:Basic .NET events allow removing method handlers via -=
-fails:Basic .NET events allow removing lambda's via -=
-fails:Basic .NET events allow removing procs via -=
-fails:Basic .NET events allow removing multiple items via -=
-fails:Basic .NET events allow removing one item multiple times via -=
-fails:Basic .NET events allow removing one item more times than it is in the list via -=

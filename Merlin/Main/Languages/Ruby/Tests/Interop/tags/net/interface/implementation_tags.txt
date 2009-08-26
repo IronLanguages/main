@@ -1,0 +1,3 @@
+fails:Implementing interfaces that define events allows empty implementation without TypeLoadException
+fails:Implementing interfaces that define events allows method_missing to be the event managment methods
+fails:Implementing interfaces that define events allows add and remove event definitions

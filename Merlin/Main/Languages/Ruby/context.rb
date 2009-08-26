@@ -284,7 +284,6 @@ class CSProjCompiler
       options = get_compile_path_list(args[:csproj]).join("\n")
       temp.puts options
       temp.close
-  
       cmd << " @" << temp.path
       exec cmd
     end
@@ -336,10 +335,10 @@ class CSProjCompiler
     references = Configuration.get_references(clr)
     refs.each do |ref|
       references << if ref =~ /^\!/
-        resolve_framework_path(ref[1..-1])
-      else
-        (build_path + ref).relative_path_from(working_dir)
-      end
+                      resolve_framework_path(ref[1..-1])
+                    else
+                      (build_path + ref)
+                    end
     end if refs
     references
   end
@@ -368,7 +367,7 @@ class CSProjCompiler
 
   def transform_config_file(configuration, source_path, target_build_path)
     # signing is on for IronRuby in Merlin, off for SVN and Binary
-    layout = {'Merlin' => { :LibraryPaths => '..\..\Languages\Ruby\libs;..\..\..\External.LCA_RESTRICTED\Languages\Ruby\Ruby-1.8.6p287\lib\ruby\site_ruby\1.8;..\..\..\External.LCA_RESTRICTED\Languages\Ruby\Ruby-1.8.6p287\lib\ruby\site_ruby;..\..\..\External.LCA_RESTRICTED\Languages\Ruby\Ruby-1.8.6p287\lib\ruby\1.8' }, 
+    layout = {'Merlin' => { :LibraryPaths => '..\..\Languages\Ruby\libs;..\..\..\External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\site_ruby\1.8;..\..\..\External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\site_ruby;..\..\..\External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.8' }, 
               'Binary' => { :LibraryPaths => '..\lib\IronRuby;..\lib\ruby\site_ruby\1.8;..\lib\ruby\site_ruby;..\lib\ruby\1.8' } }
     
     transform_config source_path, target_build_path, layout[configuration][:LibraryPaths]
