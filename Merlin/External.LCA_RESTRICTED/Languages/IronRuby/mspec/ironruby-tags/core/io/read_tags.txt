@@ -1,0 +1,19 @@
+fails:IO#read can be read from consecutively
+fails:IO#read can read lots of data
+fails:IO#read can read lots of data with length
+fails:IO#read consumes zero bytes when reading zero bytes
+fails:IO#read is at end-of-file when everything has been read
+fails:IO#read reads the contents of a file
+fails:IO#read places the specified number of bytes in the buffer
+fails:IO#read expands the buffer when too small
+fails:IO#read overwrites the buffer
+fails:IO#read truncates the buffer when too big
+fails:IO#read returns the given buffer
+fails:IO#read coerces the second argument to string and uses it as a buffer
+fails:IO#read returns an empty string at end-of-file
+fails:IO#read reads the contents of a file when more bytes are specified
+fails:IO#read returns an empty string when the current pos is bigger than the content size
+fails:IO#read returns nil at end-of-file with a length
+fails:IO#read with length argument returns nil when the current pos is bigger than the content size
+fails:IO#read raises IOError on closed stream
+fails:IO#read ignores unicode encoding

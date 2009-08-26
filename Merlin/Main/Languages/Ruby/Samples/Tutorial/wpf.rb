@@ -13,7 +13,8 @@
 #
 # ****************************************************************************
 
-SILVERLIGHT = begin; System::Windows::Browser; true; rescue; false; end
+SILVERLIGHT = !System::Type.get_type('System.Windows.Browser.HtmlPage, System.Windows.Browser, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e').nil? unless defined? SILVERLIGHT
+MOONLIGHT   = !System::Type.get_type('Mono.MoonException, System.Windows, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e').nil? unless defined? MOONLIGHT
 
 if not SILVERLIGHT
   # Reference the WPF assemblies
@@ -27,9 +28,12 @@ end
 
 class System::Windows::FrameworkElement
   # Monkey-patch FrameworkElement to allow window.ChildName instead of window.FindName("ChildName")
+  # If FindName doesn't yield an object, it tried the Resources collection (for things like Storyboards)
   # TODO - Make window.child_name work as well
   def method_missing name, *args
-    find_name(name.to_s.to_clr_string) || super
+    obj   = find_name(name.to_s.to_clr_string) 
+    obj ||= self.resources[name.to_s.to_clr_string]
+    obj || super
   end
 
   def hide!
@@ -124,7 +128,7 @@ end
 
 class Module
   def delegate_methods(methods, opts = {})
-    raise "methods should be an array" unless methods.kind_of?(Array)
+    raise TypeError, "methods should be an array" unless methods.kind_of?(Array)
     this = self
     opts[:to]      ||= self
     opts[:prepend]   = opts[:prepend] ? "#{opts[:prepend]}_" : ''
@@ -162,7 +166,7 @@ class System::Windows::Documents::FlowDocument
   def self.from_simple_markup text
 
     if SILVERLIGHT
-      return text.split("\n").map{|i| i.strip}.join("\n")
+      return text.split("\n").map{|i| i.strip}.join("\n").strip
     end
 
     require 'rdoc/markup/simple_markup'
@@ -195,7 +199,6 @@ module Wpf
   include System::Windows::Input
   include System::Windows::Markup
   include System::Windows::Media
-
 
   def self.load_xaml_file(filename)
     f = System::IO::FileStream.new filename, System::IO::FileMode.open, System::IO::FileAccess.read

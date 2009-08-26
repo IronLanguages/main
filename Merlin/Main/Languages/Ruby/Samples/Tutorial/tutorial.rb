@@ -13,9 +13,9 @@
 #
 # ****************************************************************************
 
-require "stringio"
+SILVERLIGHT = false unless defined? SILVERLIGHT
 
-SILVERLIGHT = false unless defined?(SILVERLIGHT)
+require "stringio"
 
 module Tutorial
 

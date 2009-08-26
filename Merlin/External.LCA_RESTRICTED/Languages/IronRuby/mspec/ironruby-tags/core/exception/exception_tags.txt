@@ -1,0 +1,1 @@
+fails:Exception#exception returns self when passed self as an argument

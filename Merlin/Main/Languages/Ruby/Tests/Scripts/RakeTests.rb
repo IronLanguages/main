@@ -1,5 +1,6 @@
 require "rubygems"
-require "rake"
+gem "rake", "= 0.8.4"
+require 'rake'
 
 rake_tests_dir = File.expand_path("../External.LCA_RESTRICTED/Languages/IronRuby/RakeTests", ENV["MERLIN_ROOT"])
 all_test_files = Dir.glob("#{rake_tests_dir}/test/test*.rb") + Dir.glob("#{rake_tests_dir}/test/contrib/test*.rb")

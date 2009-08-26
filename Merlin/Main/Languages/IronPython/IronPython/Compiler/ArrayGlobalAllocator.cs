@@ -44,7 +44,7 @@ namespace IronPython.Compiler.Ast {
         private readonly Scope _scope;
         private readonly GlobalArrayConstant _array;
         internal static readonly MSAst.ParameterExpression/*!*/ _globalContext = Ast.Parameter(typeof(CodeContext), "$globalContext");
-        internal static readonly ReadOnlyCollection<MSAst.ParameterExpression> _globalContextList = new ReadOnlyCollectionBuilder<MSAst.ParameterExpression>(new[] { _globalContext }).ToReadOnlyCollection();
+        internal static readonly ReadOnlyCollection<MSAst.ParameterExpression> _arrayFuncParams = new ReadOnlyCollectionBuilder<MSAst.ParameterExpression>(new[] { _globalContext, AstGenerator._functionCode }).ToReadOnlyCollection();
 
         public ArrayGlobalAllocator(PythonContext/*!*/ context) {
             _globalArray = Ast.Parameter(typeof(PythonGlobal[]), "$globalArray");
@@ -53,7 +53,7 @@ namespace IronPython.Compiler.Ast {
             _array = new GlobalArrayConstant();
         }
 
-        public override ScriptCode/*!*/ MakeScriptCode(MSAst.Expression/*!*/ body, CompilerContext/*!*/ context, PythonAst/*!*/ ast) {
+        public override ScriptCode/*!*/ MakeScriptCode(MSAst.Expression/*!*/ body, CompilerContext/*!*/ context, PythonAst/*!*/ ast, Dictionary<int, bool> handlerLocations, Dictionary<int, Dictionary<int, bool>> loopAndFinallyLocations) {
             // create the CodeContext
             PythonGlobal[] globalArray = new PythonGlobal[_globals.Count];
 
@@ -68,7 +68,7 @@ namespace IronPython.Compiler.Ast {
 
             // finally build the funcion that's closed over the array and
             string name = ((PythonCompilerOptions)context.Options).ModuleName ?? "<unnamed>";
-            var func = Ast.Lambda<Func<object>>(
+            var func = Ast.Lambda<Func<FunctionCode, object>>(
                 Ast.Block(
                     new[] { _globalArray, _globalContext },
                     Ast.Assign(_globalArray, Ast.Constant(globalArray)),
@@ -76,7 +76,7 @@ namespace IronPython.Compiler.Ast {
                     Utils.Convert(body, typeof(object))
                 ),
                 name,
-                new MSAst.ParameterExpression[0]
+                new [] { AstGenerator._functionCode }
             );
 
             return new RuntimeScriptCode(context, func, ast, _context);

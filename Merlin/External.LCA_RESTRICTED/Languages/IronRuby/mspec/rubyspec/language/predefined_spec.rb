@@ -372,11 +372,19 @@ describe "Execution variable $:" do
     ($:.length > 0).should == true
   end
 
-  it "includes the current directory" do
-    $:.should include(".")
+  ruby_version_is ""..."1.9" do
+    it "includes the current directory" do
+      $:.should include(".")
+    end
   end
 
-  it "does not include on the taint check level > 1" do
+  ruby_version_is "1.9" do
+    it "does not include the current directory" do
+      $:.should_not include(".")
+    end
+  end
+
+  it "does not include '.' when the taint check level > 1" do
     begin
       orig_opts, ENV['RUBYOPT'] = ENV['RUBYOPT'], '-T'
       `#{RUBY_EXE} -e 'p $:.include?(".")'`.should == "false\n"

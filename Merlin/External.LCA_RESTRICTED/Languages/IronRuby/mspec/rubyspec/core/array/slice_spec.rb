@@ -44,8 +44,8 @@ describe "Array#slice!" do
     empty.slice(0).should == empty
 
     array = ArraySpecs.recursive_array
-    array.slice(3).should == [array]
-    array.slice(0..4).should == [1, 'two', 3.0, [array]]
+    array.slice(4).should == array
+    array.slice(0..3).should == [1, 'two', 3.0, array]
   end
 
   it "calls to_int on start and length arguments" do

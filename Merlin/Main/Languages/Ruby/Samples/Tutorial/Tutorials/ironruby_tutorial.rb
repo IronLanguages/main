@@ -839,7 +839,7 @@ tutorial "IronRuby tutorial" do
             task(:body => %{
                     Let's define an event handler for the buttons.
                 },
-                :setup => lambda { |bind| eval "undef on_click; on_click = '(undefined)'", bind },
+                :setup => lambda { |bind| eval %{ if method(:on_click) then on_click = '(undefined)'; end}, bind },
                 :code => %{
                     def on_click(c, text)
                         if text == 'C' then 

@@ -1363,6 +1363,8 @@ $d = D.new { |foo, bar| $foo = foo; $bar = bar; 777 }
 
             Engine.Execute<Action<int>>(@"System::Action[Fixnum].new { |x| $x = x + 1 }")(10);
             Assert((int)Context.GetGlobalVariable("x") == 11);
+
+            AssertExceptionThrown<LocalJumpError>(() => Engine.Execute(@"System::Action.new(&nil)"));
         }
 
         public void ClrEvents1() {

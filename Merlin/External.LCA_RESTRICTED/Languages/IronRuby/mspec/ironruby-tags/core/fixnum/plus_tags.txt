@@ -1,0 +1,1 @@
+critical:Fixnum#+ calls #method_missing(:coerce) on the passed argument

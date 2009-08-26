@@ -27,7 +27,8 @@ if defined MERLIN_ROOT (
   if not EXIST !CHIRON! (
     set CHIRON="%~dp0..\..\..\..\Bin\Silverlight Debug\Chiron.exe"
     if not EXIST !CHIRON! (
-      echo Could not find Chiron.exe. Please build it using the bsd alias
+      echo Could not find Chiron.exe.
+      echo Do you have a build of Silverlight? If not, type "bsd".
       goto END
     )
   )
@@ -35,5 +36,5 @@ if defined MERLIN_ROOT (
   set QUERY_STRING=?test
 )
 
-%CHIRON% /b:Tutorial/index.html%QUERY_STRING% /d:"%~dp0.."
+%CHIRON% /b:Tutorial/index.html%QUERY_STRING% /d:"%~dp0.." %*
 :END

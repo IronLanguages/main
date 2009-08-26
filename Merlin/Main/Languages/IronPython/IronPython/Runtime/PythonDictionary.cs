@@ -143,6 +143,10 @@ namespace IronPython.Runtime {
 
             return false;
         }
+        
+        internal bool TryGetValueNoMissing(object key, out object value) {
+            return _storage.TryGetValue(key, out value);
+        }
 
         public ICollection<object> Values {
             [PythonHidden]
@@ -564,6 +568,10 @@ namespace IronPython.Runtime {
             if (oth == null) return false;
             if (oth.Count != __len__()) return false;
 
+            PythonDictionary pd = other as PythonDictionary;
+            if (pd != null) {
+                return ValueEqualsPythonDict(pd);
+            }
             // we cannot call Compare here and compare against zero because Python defines
             // value equality as working even if the keys/values are unordered.
             List myKeys = keys();
@@ -571,6 +579,23 @@ namespace IronPython.Runtime {
             foreach (object o in myKeys) {
                 object res;
                 if (!oth.TryGetValue(o, out res)) return false;
+
+                CompareUtil.Push(res);
+                try {
+                    if (!PythonOps.EqualRetBool(res, this[o])) return false;
+                } finally {
+                    CompareUtil.Pop(res);
+                }
+            }
+            return true;
+        }
+
+        private bool ValueEqualsPythonDict(PythonDictionary pd) {
+            List myKeys = keys();
+
+            foreach (object o in myKeys) {
+                object res;
+                if (!pd.TryGetValueNoMissing(o, out res)) return false;
 
                 CompareUtil.Push(res);
                 try {

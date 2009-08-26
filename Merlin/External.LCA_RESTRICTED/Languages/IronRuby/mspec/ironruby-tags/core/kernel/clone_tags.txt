@@ -1,3 +1,0 @@
-fails:Kernel#clone copies singleton methods
-fails:Kernel#clone copies modules included in the singleton class
-fails:Kernel#clone copies constants defined in the singleton class

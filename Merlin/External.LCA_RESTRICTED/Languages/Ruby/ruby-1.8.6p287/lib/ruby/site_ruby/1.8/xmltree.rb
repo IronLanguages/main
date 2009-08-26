@@ -1,1 +1,0 @@
-require 'xml/dom/core'

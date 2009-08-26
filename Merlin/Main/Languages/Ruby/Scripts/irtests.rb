@@ -98,8 +98,11 @@ class IRTest
   def build_sl
     options = ""
     if git?
-      sl_path = "#{ENV['PROGRAM_FILES_32']}\\Microsoft Silverlight\\3.0.40624.0"
-      if File.exist? sl_path
+      program_files = ENV['PROGRAM_FILES_32'] ? ENV['PROGRAM_FILES_32'] : ENV['ProgramFiles']
+      # Patches change the version number
+      sl_path_candidates = ["3.0.40624.0", "3.0.40723.0"].map {|ver| "#{program_files}\\Microsoft Silverlight\\#{ver}" }
+      sl_path = sl_path_candidates.first {|p| File.exist? p }
+      if sl_path
         options = "/p:SilverlightPath=\"#{sl_path}\""
       else
         puts "Skipping Silverlight build since a Silverlight installation was not found at #{sl_path}..."

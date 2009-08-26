@@ -1,4 +1,3 @@
 fails:Thread#kill can be rescued by outer rescue clause when inner ensure clause raises exception
-unstable:Thread#kill killing dying sleeping thread wakes up thread
 unstable:Thread#kill is deferred if ensure clause does Thread.stop
-unstable:Thread#kill does not deadlock when called from within the thread while being joined from without
+unstable:Thread#kill killing dying sleeping thread wakes up thread

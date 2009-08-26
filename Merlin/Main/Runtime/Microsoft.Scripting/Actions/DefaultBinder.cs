@@ -113,7 +113,7 @@ namespace Microsoft.Scripting.Actions {
                 case ErrorInfoKind.Exception:
                     return new DynamicMetaObject(AstUtils.Convert(Expression.Throw(error.Expression), type), restrictions);
                 case ErrorInfoKind.Success:
-                    return new DynamicMetaObject(error.Expression, restrictions);
+                    return new DynamicMetaObject(AstUtils.Convert(error.Expression, type), restrictions);
                 default:
                     throw new InvalidOperationException();
             }

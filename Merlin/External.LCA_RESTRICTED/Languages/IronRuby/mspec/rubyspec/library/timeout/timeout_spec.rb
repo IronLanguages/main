@@ -2,15 +2,23 @@ require File.dirname(__FILE__) + '/../../spec_helper'
 require 'timeout'
 
 describe "Timeout.timeout" do
-  it "raises Timeout::Error when it times out" do
+  it "raises Timeout::Error when it times out with no specified error type" do
     lambda {
       Timeout::timeout(1) do
         sleep 3
       end
     }.should raise_error(Timeout::Error)
   end
+
+  it "raises specified error type when it times out" do
+    lambda do
+      Timeout.timeout(0.1, StandardError) do
+        sleep 1
+      end
+    end.should raise_error(StandardError)
+  end
   
-  it "shouldn't wait too long" do
+  it "does not wait too long" do
     before_time = Time.now
     begin
       Timeout::timeout(1) do
@@ -23,7 +31,7 @@ describe "Timeout.timeout" do
     end
   end
 
-  it "shouldn't return too quickly" do
+  it "does not return too quickly" do
     before_time = Time.now
     begin
       Timeout::timeout(2) do
@@ -36,7 +44,7 @@ describe "Timeout.timeout" do
     end
   end
 
-  it "should return back the last value in the block" do
+  it "returns back the last value in the block" do
     Timeout::timeout(1) do
       42
     end.should == 42

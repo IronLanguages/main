@@ -6,16 +6,8 @@ describe "Array#initialize" do
     ScratchPad.clear
   end
 
-  ruby_version_is "" ... "1.9" do
-    it "is private" do
-      [].private_methods.should include("initialize")
-    end
-  end
-
-  ruby_version_is "1.9" do
-    it "is private" do
-      [].private_methods.should include(:initialize)
-    end
+  it "is private" do
+    Array.should have_private_instance_method("initialize")
   end
 
   it "is called on subclasses" do
@@ -52,7 +44,7 @@ describe "Array#initialize" do
   end
 
   ruby_version_is '1.9' do
-    it "raises a RuntimeError on frozen arrays even if the array would not be modified" do
+    it "raises a RuntimeError on frozen arrays" do
       lambda do
         ArraySpecs.frozen_array.send :initialize
       end.should raise_error(RuntimeError)

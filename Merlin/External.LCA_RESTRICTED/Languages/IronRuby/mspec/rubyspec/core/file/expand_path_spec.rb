@@ -174,5 +174,4 @@ describe "File.expand_path(file_name, dir_string)" do
   it "ignores dir_string if file_name is an absolute path" do
     File.expand_path('/foo', '/bar').should == @rootdir + "foo"
   end
-  
 end

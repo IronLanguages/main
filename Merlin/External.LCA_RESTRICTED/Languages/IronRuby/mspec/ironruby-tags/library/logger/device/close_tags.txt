@@ -1,2 +1,0 @@
-fails:Logger::LogDevice#close closes the LogDevice's stream
-fails:Logger::LogDevice#close raises an error if it's already closed

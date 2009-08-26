@@ -144,7 +144,6 @@ namespace IronRuby.Builtins {
                 targetClass.BuildObjectConstructionNoFlow(metaBuilder, args, name);
 
                 // TODO: initialize yields the block?
-                // TODO: null block check
                 if (args.Signature.HasBlock) {
                     // ignore flow builder set up so far, we need one that creates a BlockParam for library calls:
                     metaBuilder.ControlFlowBuilder = null;
@@ -167,7 +166,7 @@ namespace IronRuby.Builtins {
         }
 
         [Emitted]
-        public static object InvokeOpenBlock(UnaryOpStorage/*!*/ closeStorage, BlockParam/*!*/ block, object obj) {
+        public static object InvokeOpenBlock(UnaryOpStorage/*!*/ closeStorage, BlockParam block, object obj) {
             object result = obj;
             if (!RubyOps.IsRetrySingleton(obj) && block != null) {
                 try {

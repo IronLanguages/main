@@ -1,5 +1,5 @@
 class Object
-  def nan
-    0.0/0
+  def nan_value
+    0/0.0
   end
 end

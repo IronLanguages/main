@@ -1,1 +1,1 @@
-fails:Array#to_s properly handles recursive arrays
+fails:Array#to_s returns '[...]' for an empty array embedded in itself

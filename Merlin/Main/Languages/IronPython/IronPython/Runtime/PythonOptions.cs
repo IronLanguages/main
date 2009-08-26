@@ -48,7 +48,7 @@ namespace IronPython {
         private readonly bool _noSite;
         private readonly bool _ignoreEnvironment;
         private readonly bool _verbose;
-        private readonly bool _frames, _fullFrames;
+        private readonly bool _frames, _fullFrames, _tracing;
         private readonly Version _version;
         private readonly int? _gcStress;
         private bool _enableProfiler;
@@ -177,6 +177,18 @@ namespace IronPython {
             }
         }
 
+        /// <summary>
+        /// Tracing is always available.  Without this option tracing is only enabled when sys.settrace
+        /// is called. This means code that was already running before sys.settrace will not be debuggable.
+        /// 
+        /// With this option pdb.set_trace and pdb.post_mortem will always work properly.
+        /// </summary>
+        public bool Tracing {
+            get {
+                return _tracing;
+            }
+        }
+
         /// <summary> 
         /// Severity of a warning that indentation is formatted inconsistently.
         /// </summary>
@@ -250,6 +262,7 @@ namespace IronPython {
             _fullFrames = GetOption(options, "FullFrames", false);
             _frames = _fullFrames || GetOption(options, "Frames", false);
             _gcStress = GetOption<int?>(options, "GCStress", null);
+            _tracing = GetOption(options, "Tracing", false);
 
             object value;
             if (options != null && options.TryGetValue("PythonVersion", out value)) {

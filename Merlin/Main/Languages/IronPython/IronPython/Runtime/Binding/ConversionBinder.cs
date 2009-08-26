@@ -338,6 +338,9 @@ namespace IronPython.Runtime.Binding {
         public bool BoolConversion(CallSite site, object value) {
             if (value is bool) {
                 return (bool)value;
+            } else if (value == null) {
+                // improve perf of sites just polymorphic on bool & None
+                return false;
             }
 
             return ((CallSite<Func<CallSite, object, bool>>)site).Update(site, value);
@@ -346,6 +349,9 @@ namespace IronPython.Runtime.Binding {
         public bool IntToBoolConversion(CallSite site, object value) {
             if (value is int) {
                 return (int)value != 0;
+            } else if (value == null) {
+                // improve perf of sites just polymorphic on int & None
+                return false;
             }
 
             return ((CallSite<Func<CallSite, object, bool>>)site).Update(site, value);
@@ -354,6 +360,9 @@ namespace IronPython.Runtime.Binding {
         public bool StringToBoolConversion(CallSite site, object value) {
             if (value is string) {
                 return ((string)value).Length > 0;
+            } else if (value == null) {
+                // improve perf of sites just polymorphic on str & None
+                return false;
             }
 
             return ((CallSite<Func<CallSite, object, bool>>)site).Update(site, value);
@@ -370,6 +379,9 @@ namespace IronPython.Runtime.Binding {
         public bool ObjectToBoolConversion(CallSite site, object value) {
             if (value != null && value.GetType() == typeof(Object)) {
                 return true;
+            } else if (value == null) {
+                // improve perf of sites just polymorphic on object & None
+                return false;
             }
 
             return ((CallSite<Func<CallSite, object, bool>>)site).Update(site, value);

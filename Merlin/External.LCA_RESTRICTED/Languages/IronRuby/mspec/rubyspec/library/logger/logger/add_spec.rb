@@ -3,13 +3,14 @@ require File.dirname(__FILE__) + '/../fixtures/common'
 
 describe "Logger#add" do
   before :each do
-    @path = tmp("test_log.log")
+    @path = tmp("test_log1.log")
     @log_file = File.open(@path, "w+")
     @logger = Logger.new(@path)
   end
 
   after :each do
     @log_file.close unless @log_file.closed?
+    @logger.close 
     File.unlink(@path) if File.exists?(@path)
   end
 

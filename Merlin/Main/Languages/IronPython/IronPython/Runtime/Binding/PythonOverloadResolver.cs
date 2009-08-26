@@ -144,7 +144,6 @@ namespace IronPython.Runtime.Binding {
             return Expression.Dynamic(
                 Binder.Context.Convert(type, ConversionResultKind.ExplicitCast), 
                 type, 
-                _context, 
                 value);
         }
 

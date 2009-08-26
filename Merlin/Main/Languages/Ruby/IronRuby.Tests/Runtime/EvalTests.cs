@@ -117,6 +117,62 @@ END
             }, "2");
         }
 
+        public void Eval5() {
+            TestOutput(@"
+class C
+end
+
+z = 1
+instance_eval 'x = z + 1'
+C.class_eval 'y = x + 1; z = 4'
+
+eval('p x,y,z')", @"
+2
+3
+4
+");
+        }
+
+        public void Eval6() {
+            TestOutput(@"
+$b = []
+a = 1
+1.times do
+  b = 2
+  eval <<-end1
+    c = 3
+    1.times do
+      d = 4
+      instance_eval <<-end3
+        e = 5 
+        $b[4] = binding
+      end3
+      $b[3] = binding
+    end
+    $b[2] = binding  
+  end1
+  $b[1] = binding  
+end
+$b[0] = binding 
+
+$b.each do |bin|
+  eval <<-END, bin
+    p [ begin; a; rescue; end,
+        begin; b; rescue; end,
+        begin; c; rescue; end,
+        begin; d; rescue; end,
+        begin; e; rescue; end,
+      ]
+  END
+end", @"
+[1, nil, nil, nil, nil]
+[1, 2, 3, nil, nil]
+[1, 2, 3, nil, nil]
+[1, 2, 3, 4, 5]
+[1, 2, 3, 4, 5]
+");
+        }
+
         public void LocalNames1() {
             AssertOutput(delegate() {
                 CompilerTest(@"

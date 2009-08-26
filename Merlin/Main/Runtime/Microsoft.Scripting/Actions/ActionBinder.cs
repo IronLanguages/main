@@ -252,6 +252,18 @@ namespace Microsoft.Scripting.Actions {
             );
         }
 
+        public virtual ErrorInfo MakeSetValueTypeFieldError(FieldTracker field, DynamicMetaObject instance, DynamicMetaObject value) {
+            return ErrorInfo.FromException(
+                Expression.Throw(
+                    Expression.New(
+                        typeof(ArgumentException).GetConstructor(new Type[] { typeof(string) }),
+                        AstUtils.Constant("cannot assign to value types")
+                    ),
+                    typeof(object)
+                )
+            );
+        }
+
         public virtual ErrorInfo MakeConversionError(Type toType, Expression value) {
             return ErrorInfo.FromException(
                 Expression.Call(

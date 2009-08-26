@@ -7,7 +7,7 @@ describe "ARGF.lineno" do
   end
 
   after :each do
-    ARGF.close rescue nil
+    ARGF.close unless ARGF.closed?
   end
 
   # NOTE: this test assumes that fixtures files have two lines each

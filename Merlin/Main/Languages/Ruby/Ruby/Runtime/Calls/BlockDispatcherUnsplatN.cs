@@ -33,6 +33,7 @@ namespace IronRuby.Runtime.Calls {
         internal BlockDispatcherUnsplatN(int parameterCount, BlockSignatureAttributes attributesAndArity, string sourcePath, int sourceLine) 
             : base(attributesAndArity, sourcePath, sourceLine) {
             Debug.Assert(HasUnsplatParameter);
+            Debug.Assert(!HasSingleCompoundParameter);
 
             _parameterCount = parameterCount;
         }

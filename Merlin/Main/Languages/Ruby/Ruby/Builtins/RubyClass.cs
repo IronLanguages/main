@@ -578,7 +578,7 @@ namespace IronRuby.Builtins {
             // MRI is inconsistent here, it triggers "inherited" event after the body of the method is evaluated.
             // In all other cases the order is event first, body next.
             RubyClass newClass = context.DefineClass(owner, null, superClass ?? context.ObjectClass, null);
-            return (body != null) ? RubyUtils.EvaluateInModule(newClass, body, newClass) : newClass;
+            return (body != null) ? RubyUtils.EvaluateInModule(newClass, body, null, newClass) : newClass;
         }
 
         public override string/*!*/ ToString() {
@@ -1290,7 +1290,9 @@ namespace IronRuby.Builtins {
                     metaBuilder.Result = MarkNewException(metaBuilder.Result);
 
                     // we need to handle break, which unwinds to a proc-converter that could be this method's frame:
-                    metaBuilder.ControlFlowBuilder = RubyMethodGroupInfo.RuleControlFlowBuilder;
+                    if (args.Signature.HasBlock) {
+                        metaBuilder.ControlFlowBuilder = RubyMethodGroupInfo.RuleControlFlowBuilder;
+                    }
                 }
             }
         }

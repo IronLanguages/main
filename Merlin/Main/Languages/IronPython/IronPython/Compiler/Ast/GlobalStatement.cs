@@ -32,7 +32,7 @@ namespace IronPython.Compiler.Ast {
 
         internal override MSAst.Expression Transform(AstGenerator ag) {
             // global statement is Python's specific syntactic sugar.
-            return ag.AddDebugInfo(AstUtils.Empty(), Span);
+            return AstUtils.Empty();
         }
 
         public override void Walk(PythonWalker walker) {

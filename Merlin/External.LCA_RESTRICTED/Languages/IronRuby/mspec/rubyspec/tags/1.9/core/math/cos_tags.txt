@@ -1,2 +1,2 @@
-fails:Math.cos raises an ArgumentError if the argument cannot be coerced with Float()
-fails:Math.cos accepts any argument that can be coerced with Float()
+fails:Math.cos raises a TypeError unless the argument is Numeric and has #to_f
+fails:Math.cos raises a TypeError if the argument is nil
