@@ -1,0 +1,631 @@
+=== 4.1.4 / 2009-08-07
+
+* 2 minor enhancements:
+
+  * Added ability to prepend file mappings in autotest. (irohiroki)
+  * Switched autodiscover to use Gem.find_files.
+
+* 2 bug fixes:
+
+  * Updated doco for API changes. (David Ruan)
+  * Updated git URL for Rubinius. jbarnette
+
+=== 4.1.3 / 2009-06-23
+
+* 1 bug fix:
+
+  * Fixed rakefile to include seattlerb plugin. release was flubbed
+
+=== 4.1.2 / 2009-06-23
+
+* 1 minor enhancement:
+
+  * multiruby configure now passes --enable-shared to support wilson and friends.
+
+* 2 bug fixes:
+
+  * Delete RUBYOPT in multiruby_setup to avoid catastrophe. dbalatero
+  * Fixed version number munging for tarballs.
+
+=== 4.1.1 / 2009-06-03
+
+* 1 bug fix:
+
+  * some calls to Multiruby.run didn't have logging. fixed (jcoglan)
+
+=== 4.1.0 / 2009-06-03
+
+* 1 major enhancement:
+
+  * Removed all plugins I don't want to maintain anymore. (gem inst autotest-rails)
+
+* 4 minor enhancements:
+
+  * Added #blur to focus.rb to nuke all other test classes
+  * Clear RUBYOPT before installs (balatero)
+  * Removed test/unit include in zentest so we can focus on miniunit
+  * sort versions for builds. (Jens Wille)
+
+* 6 bug fixes:
+
+  * Fixed a stupid bug when running on some versions of bash >= 3.2.x and using '&>' in a system call. (Jens Wille)
+  * Fixed inconsistent test commands in autotest. (jbarnette)
+  * Fixed unit_diff's usage generation when installed as gem. (borior)
+  * Fixed zentest to deal with unnamed classes. (Bill Dortch)
+  * Removed buggy/unused -l support in unit_diff. (borior)
+  * make twice to make it more resilient to makefile parallel bugs
+
+=== 4.0.0 / 2009-03-02
+
+* 2 minor enhancements:
+
+  * Deleted autotest/screen - releasing as a separate gem soon.
+  * Deleted test-rails and rails_test_audit.
+
+* 8 minor enhancements:
+
+  * Added "tags" command to multiruby_setup.
+  * Added "the_usual" as a recipe for multiruby_setup. Motivated by Dr. Nic.
+  * Added :died hook to Autotest (yoshuki).
+  * Added focus.rb, helping you ignore extra tests while you focus on something.
+  * Added multigem command line tool!
+  * Cleaned up multiruby to make it easier to tweak.
+  * Parameterized testlib so you can override test/unit in autotest. Thanks JB!
+  * Switched tests and rakefile to minitest. 20% faster!
+
+* 7 bug fixes:
+
+  * Fix Autotest::Screen to distinguish between errors and failures. (khalsah)
+  * Fixed some hook commands from overriding others.
+  * Hopefully fixed growl support on 10.5.x?
+  * Supposedly adding -w to growlnotify will fix autotest/growl.
+  * Updated missing entries in Autotest::ALL_HOOKS.
+  * Updated rubygems download location. (carletti)
+    * Still not automated :(
+  * ruby 1.9.1 fixes.
+
+=== 3.11.1 / 2009-01-20
+
+* 1 minor enhancement:
+
+  * Parameterized test_lib so you can override test/unit. Thanks JB!
+
+* 1 bug fix:
+
+  * Fixed growl autotest plugin hooks to not return true, preempting other plugins.
+
+=== 3.11.0 / 2008-10-22
+
+* 19 minor enhancements:
+
+  * Added :updated hook, gets list of updated files before running tests.
+  * Added autotest/restart.rb - restarts autotest if .autotest updated.
+  * Added better help to multiruby.
+  * Added dummy build command to multiruby_setup.
+  * Added git support.
+  * Added rbx:ln:$dir and rbx:git:current.
+  * Added rubygems:merge as a nice little hack to share rubygems setups.
+  * Added svn tag updating (eg will svn sw from mri 1.8.6 222 to 1.8.6 231).
+  * Autotest hooks now take *args as well as instance of autotest.
+  * Made it possible to have manually specified tags.
+  * Made multiruby a little more self-repairing wrt symlinks and build dirs.
+  * Refactored into mri_latest_tag(v).
+  * Refactored unit_diff to make it a bit easier to use as a library.
+  * Refactored zentest mapping main methods into munge/unmunge.
+  * Removed rubinius specific symlink hacks, now fully supported.
+  * mri:svn:releases figures out all the latest patch levels.
+  * multiruby_setup clean now checks for rakefile first, since rbx has both. :(
+  * multiruby_setup help now exits instead of building.
+  * multiruby_setup list and clean now exit
+
+* 2 bug fixes:
+
+  * ZenTestMapping converts operator prefixes to operators only when an _ follows.
+  * Apparently Tempfile.open doesn't return it's last value. fixed.
+
+* 2 bug fixes:
+
+  * Fixed bug in mri:svn:branch:xxx with svn dir name.
+  * multiruby_setup rm now smarter about tarballs.
+
+=== 3.10.0 / 2008-06-17
+
+* 1 major enhancement:
+
+  * Added multiruby_setup to help manage multiruby installed versions.
+
+* 3 minor enhancements:
+
+  * Added autotest/once plugin to help plugin developers.
+  * Heavily refactored multiruby.
+  * Switched rubinius from shotgun/rubinius to bin/rbx, finally.
+
+* 2 bug fixes:
+
+  * Refactored zentest_mapping test to avoid zentest altogether.
+  * zentest tests bail gracefully for rubinius.
+
+=== 3.9.3 / 2008-06-09
+
+* 12 minor enhancements:
+
+  * Added $RUBY env support to autotest so you can swap what ruby to run.
+  * Added ALL_HOOKS array to autotest for hook devs.
+  * Added EXCLUDED_VERSIONS to multiruby. Integrated with hoe.
+  * Added miniunit compatibility to unit_diff's output.
+  * Multiruby now determines the latest versions 1.8/1.9 automatically.
+  * Removed deprecated :run hook.
+  * Fixed zentest_assertions to be compatible with miniunit. Will phase out.
+  * Minor autotest plugin cleanup / fixes.
+  * Moved assert_callback to test/rails/test_case.rb
+  * Reversed assert_includes' arguments.
+  * Updated requirements info for other ruby impls.
+  * util_capture now returns strings, not iostrings.
+
+* 1 bug fixes:
+
+  * (add|remove)_(mappings|exceptions) now all return nil to help fix autotest hooks.
+
+=== 3.9.2 / 2008-03-20
+
+* 4 minor enhancements:
+
+  * Added compatibility with miniunit differences.
+  * Added email_notify, jabber_notify, and rcov autotest plugins.
+  * Updated rakefile to include examples automatically in example_dot_autotest.
+  * multiruby now outputs each command so you can grab it easily.
+
+* 5 bug fixes:
+
+  * Ensure tests are run after reset.
+  * Fixed all test/rails tests to run in any combo.
+  * Fixed up growl.rb a bit... still buggy (growlnotify, not growl.rb).
+  * Fixes for -f (fast start) and last_mtime in general.
+  * Fixes for 1.9 and rubinius
+
+=== 3.9.1 / 2008-01-31
+
+* 1 bug fix:
+
+  * OMG I'm so dumb... fixed memory leak.
+
+=== 3.9.0 / 2008-01-30
+
+* 15 minor enhancements:
+
+  * Added Wilson's patch to allow unit_diff to work with mspec. Adding rspec next.
+  * Minor overhaul for autotest:
+    * Added -f flag to start up without testing.
+    * Added -q flag to autotest to make it extra quiet. Patch by Aaron Patterson.
+    * Added ability to set test execution order, defaults to :random. EVIL!
+    * Added completed_re and failed_results_re to help subclasses like rspec.
+    * Added deprecation warnings for hooks. Deprecated :run.
+    * Added find_directories accessor, defaults to ['.']
+    * Added sleep accessor, defaults to 1 second.
+    * Changed find_files to order files in the same order as find_directories.
+    * Changed how autodiscover works with $:, added lib to the front.
+    * Cleaned out nearly every @ and use accessor methods instead. You should too.
+    * Made test_mappings ordered.
+    * Removed @files, adding @find_order and @known_files.
+    * Renamed tests_for_file to test_files_for.
+    * test_files_for now only returns known files.
+
+=== 3.8.0 / 2008-01-12
+
+* 10 minor enhancements:
+
+  * Added basic support for rubinius in multiruby.
+  * Changed Dunno! message to only output on -v
+  * Added Getting Started with Autotest by Philippe Hanrigou (with permission)
+  * Updated example_dot_autotest.rb for newer plugins.
+  * Cleaned up rdoc.
+  * Worked with David Chelimsky to make Autotest more uber for subclasses.
+  * Removed exceptions and test_mappings accessors and replaced with add/remove/clear methods. Updating .autotest should be very straightforward.
+  * Moved :initialize hook to beginning of run method
+  * Changed load/customization order to be:
+    * Autotest
+    * AutotestSubClass
+    * ~/.autotest
+    * ./.autotest (yes, both .autotest files).
+  * Moved away from using instance variables to encourage subclasses to use accessors.
+
+=== 3.7.2 / 2008-01-09
+
+* 2 minor enhancements:
+
+  * Extended file map for tests to include subdirs correctly.
+  * Added debugging output on bad maps if -v set.
+
+=== 3.7.1 / 2007-12-27
+
+* 2 minor enhancements:
+
+  * multiruby now downloads 1.8.6 and 1.9 on virgin run.
+  * Improved output for the downloads.
+
+=== 3.7.0 / 2007-12-21
+
+* 8 minor enhancements:
+
+  * Added add_mapping to make file mappings cleaner.
+  * Added assert_callback thanks to Aaron Patterson.
+  * Added autotest/cctray.
+  * Added extra_files and extra_class_map, allowing .autotest files to be awesome.
+  * Added url for lettuce principal thanks to Hugh Sasse.
+  * Added zentest.rb refactorings thanks to Hugh Sasse.
+  * Exceptions are now an array of regexps, built after :initialize hook.
+  * Removed ruby_fork and ruby_fork_client. Eric got a faster laptop. :P
+
+* 6 bug fixes:
+
+  * Fixed all my annoyances with @exceptions.
+  * Fixed crasher in autotest/redgreen for non-matches.
+  * Fixed everything to work with ruby 1.9.
+  * Fixed rubygem requires causing strangeness in tests.
+  * Fixed zentest mapping so ruby2ruby and test_ruby2ruby work.
+  * Removed stupid YAML methods from TrueClass during
+    testing. (Infected by Test::Rails' use of rubygems)
+
+=== 3.6.1 / 2007-07-23
+
+* 4 minor enhancements:
+
+  * Test::Rails::ViewTestCase now uses assert_select.
+    * assert_form and friends now work with blocks like assert_select
+      does.
+  * Allow path_parameters in view tests to be ammended, making working
+    with routes easier.
+  * New version of autotest/notify.rb uses notify-send.
+  * Fixed rdoc formatting on autotest and a couple plugins.
+
+=== 3.6.0 / 2007-05-25
+
+* 4 major enhancements:
+
+  * New auto-discovery mechanism to make rspec and friends work independently!
+  * Moved and restructured camping and rails as plugins.
+  * Removed rspec - now packaged with rspec and/or as plugin.
+  * Changed the way FTM tests are named. Allows multiple matricies.
+
+* 3 minor enhancements:
+
+  * Added :OK special result value to FTM.
+  * Hugh Sasse is awesome. Rdoc happiness.
+  * Parameterized emacs client command.
+
+* 3 bug fixes:
+
+  * Dup load path because I'm dum.
+  * Fixed a lame syntax error in emacs.rb.
+  * autotest now builds command separator with '&' on windoze. ARGH! Why is this the first I've heard of this?!?
+
+=== 3.5.2 / 2007-04-30
+
+* 4 bug fixes:
+
+  * Patch up Rails fixture defaults for Test::Rails::TestCase.
+  * Session now properly hooked up to controllers.
+  * ruby 1.8.6 has a bug on 'raise Interrupt' with no args. Fixed on both sides.
+  * Fixed redgreen to work with new getc/putc-based output. (from Finn Smith)
+
+=== 3.5.1 / 2007-04-17
+
+* 4 bug fixes:
+
+  * Fixed gem name to be camel-case again. Fixed on rubyforge too.
+  * Fixed rdoc for hooks.
+  * Fixed redgreen, results changed to an array.
+  * Patch up Rails fixture defaults, since they're not inheriting properly.
+
+=== 3.5.0 / 2007-04-12
+
+* 4 major enhancements:
+
+  * Now requires RubyGems 0.9.1 or newer.
+  * Autotest and unit_diff are both unbuffered. Results are more live.
+  * Refactored and redesigned how files map to test from Sean Carley. See fixtures plugin as an example.
+  * Generalize how autotest handler is instantiated and invoked, allowing for many more autotest types, including combos.
+
+* 23 minor enhancements:
+
+  * Added all_good hook if initial run was all_good as well.
+  * Added assert_in_epsilon to ZentestAssertions.
+  * Added autotest plugin to auto-update source ala tinderbox/cruisecontrol.
+  * Added autotest plugin to update ichat/adium IM status with code stats.
+  * Added autotest plugin to update the GNU screen statusbar from Yuichi Tateno.
+  * Added autotest syntax error handling from Ryan Platte.
+  * Added autotest/emacs emacs integration plugin!!! YAY!
+  * Added autotest/migrate.rb.
+  * Added camping support from Geoffrey Grossenbach.
+  * Added changed file reporting to autotest via -v flag.
+  * Added informative summary and filtering via ENV['VERSIONS'] to multiruby.
+  * Added libnotify support from Kazuo Saito.
+  * Added lots of rdoc patches from Hugh Sasse.
+  * Added rjs files to view_test_case.
+  * Added rspec_autotest "stolen" from caldersphere.net
+  * Added run_command hook to trigger the start of a test run.
+  * Added tmp to rails' exceptions list.
+  * Added unit_diff command variable to autotest for customizing flags and such.
+  * Added zentest_mapping.rb and test.
+  * Allow session to work in Test::Rails view tests.
+  * Improved autotest/growl.rb output from imajes.
+  * Improved autotest/timestamp output from Josh Susser.
+  * Test::Rails works with Rails 1.2.
+
+* 2 bug fixes:
+
+  * Accelerated Test::Rails unit tests via sensible defaults.
+  * Better assertion messages for ZentestAssertions.
+
+=== 3.4.3 / 2006-12-19
+
+* 2 minor enhancements:
+
+  * Add assert_title and assert_h (for header).
+
+* 2 bug fixes:
+
+  * Rereleased against latest version of hoe to fix load path problems.
+  * Fix case ViewTestCase for case-sensitive file systems.
+
+=== 3.4.2 / 2006-11-09
+
+* 2 minor enhancements:
+
+  * Add TextHelper for pluralize.
+  * Add deny_nil to Test::Rails.
+
+* 7 bug fixes:
+
+  * Fixed test_help's Flash. It's is a module. Oops...
+  * Don't run util_audit_assert_assigned if tests didn't pass, results will be bogus.
+  * Fixed AssertionsTest names to match what autotest expects.
+  * Fixed bug where deny_includes failed for Symbol keys.
+  * Switched autotest to use require instead of load... Why??? I don't know!!
+  * Fixed a minor but annoying whitespace difference in unit_diff.
+  * Switched argument order of assert_includes and deny_includes to match Test::Unit convention.
+
+=== 3.4.1 / 2006-10-13
+
+* 3 minor enhancements:
+
+  * FUNDAMENTALLY changed the way failures map back to tests. This REQUIRES users of autotest to ensure that their tests and impls map 1:1 at every scoping level. I'll blog more details.
+  * Hoe'd rakefile
+  * Added support for render :collection to RenderTree.
+
+* 7 bug fixes:
+
+  * Fixed autotest tests for custom ruby names.
+  * Fixed some documentation errors in ControllerTestCase.
+  * Fixed setup in FunctionalTestCase.
+  * Allowed @assigns_ignored to contain either Symbols or Strings, bug 5233.
+  * Using Object.path2class to look up classes in helper test cases, bug 5493.
+  * Added assert_text_area, bug 5452.
+  * Renamed assert_select to assert_select_tag. Stupid rails. We were here first.
+
+=== 3.4.0 / 2006-09-12
+
+* 13 minor enhancements:
+
+  * Broke out example_dot_autotest into multiple files in lib.
+  * Enhanced hook system so it can return true if event handled.
+  * Sleep is now 1 second by default because life is too short.
+  * Hooked interrupt with new hook system. First handler wins.
+  * Hooked test results before output
+  * Accurate test counts for Test::Rails.
+  * Added snarl autotest plugin, thanks to Patrick Hurley.
+  * Added timestamp autotest plugin, thanks to Joe Goldberg.
+  * Added redgreen, thanks to Pat Eyler, Sean Carley, and Rob Sanheim.
+  * Added kdenotify autotest plugin, thanks to Geir Freysson.
+  * Added markaby support for Test::Rails.
+  * Added hack to display a tree of render calls.
+  * Added hook to perform extra setup for 
+
+* 5 bug fixes:
+
+    - Extended zentest to deal with rails a bit better... ugh.
+    - Fixed @libs for windoze.
+    - Fixed inner class/test identification in autotest.
+    - Namespaced all plugins... eric is anal.
+    - No longer freak out if rubygems tarball not in multiruby/versions.
+
+=== 3.3.0 / 2006-07-28
+
+* 1 major enhancement:
+
+  * autotest has been rewritten to be much cleaner, now has a plugin system.
+
+* 5 minor enhancements:
+
+  * test/rails adds helper tests, "stolen" from Geoff's work, (which was "stolen" from ryan's work. :P)
+  * autotest turnaround is now faster.
+  * Added more prune dirs to autotest.
+  * test/rails rewinds IOs containing captured output. Added assert_empty.
+  * Document that autotest doesn't run the db:test:prepare rake task when in Rails mode.
+  * Added ruby_fork, but haven't fully plugged into autotest yet.
+
+* 7 bug fixes:
+
+  * Add SIGINT handler to unit_diff to give a more graceful exit.
+  * Don't strip <> from tempfiles, parse_diff does it for us.
+  * Fixed autotest problems on windoze. Ugh.
+  * Fixed broken pipe bug and newline bug in unit_diff.
+  * Make request_method in ControllerTestCase a String.
+  * multitest installs rubygems if tarball found in versions dir.
+  * multitest only configures when makefile is missing. Rebuilds much faster now.
+  * ruby_fork exits without backtrace and allows redirection of output.
+
+=== 3.2.0 / 2006-04-10
+
+* 1 major enhancement:
+
+  * Added Test::Rails.
+
+* 1 minor enhancement:
+
+  * Extended autotest for Test::Rails.
+
+* 4 bug fixes:
+
+  * Autotest now detects changes in rhtml.
+  * Improved autotest's file mapping and choice of ruby.
+  * We've got RDoc, yes we do!
+  * Removed redundancies in rakefile. Using gem spec for most stuff now.
+
+=== 3.1.0 / 2006-03-29
+
+* 2 major enhancements:
+
+  * Added multiruby! YAY!
+  * Massive improvements to autotest: speed, reliability, reporting, etc.
+
+* 10 minor enhancements:
+
+  * multiruby builds in a centralized location. YAY!
+  * multiruby now allows reinstalls quickly and easily (can even skip config).
+  * multiruby exits with total sum of exit codes.
+  * autotest file search is muuuuch faster.
+  * autotest automatically detects rails mode.
+  * autotest deals with rails dependencies much better.
+  * autotest reruns a full suite after you go green to ensure full coverage.
+  * autotest always runs with unit_diff -u.
+  * autotest can now run cvs/svn/p4 up periodically to be a mini-tinderbox.
+  * autotest now has real help.
+
+* 4 bug fixes:
+
+  * ZenTest is now zentest. Yay for consistency! (do a rake uninstall to clean)
+  * ZenTest excludes pretty_print methods.
+  * Fixed unary operator issues (they were backwards... oops!) for ZenTest.
+  * unit_diff now runs diff.exe on Windoze. dunno if that will work.
+
+=== 3.0.0 / 2006-03-06
+
+* 2 major enhancements:
+
+  * Added autotest and rails_autotest. YAY for continous testing!
+  * Repackaged and gemified. YAY for gemification!
+
+* 3 minor enhancements:
+
+  * Added non-mappable tests starting with test_integration_.
+  * Lots of code and test refactoring and cleanup.
+  * Massive improvement on unit tests.
+
+* 3 bug fixes:
+
+  * Cleaned up class method inheritence. Esp relevant for rails testing.
+  * Finally fixed the unit_diff parse bug!
+  * Fixed improper counting of errors if a class was missing, should be 1 + missing methods.
+
+=== 2.4.0 / 2005-03-21
+
+* 3 minor enhancements:
+
+  * Able to audit standard class library (so now we can audit rubicon!).
+  * Able to map against class methods (self.blah <=> test_class_blah).
+  * Added -I=rubypath support 
+
+* 4 bug fixes:
+
+  * bug:1151 Fixed stupid problem w/ unit_diff.
+  * bug:1454 code generation correctly matches class/module for nested classes.
+  * bug:1455 Updated method mapping to work on all operators listed in my quickref.
+  * Realized I'm a moron and did NOT release in March like I thought...
+
+=== 2.3.0 / 2004-11-18
+
+* 6 minor enhancements:
+
+  * Massively expanded the method name mappings.
+  * Added -r flag to reverse map names, for Rails style testing.
+  * Added -e to auto eval tests generated.
+  * Added -b & -c flags in unit_diff (passed to diff)
+  * Added install and uninstall rules to Makefile.
+  * Added some more doco to README.txt
+
+* 7 bug fixes:
+
+  * Cleaned up and refactored tests.
+  * Changed the way files are generated, to accomodate new flags.
+  * Added some more tests.
+  * Added $ZENTEST=true
+  * Fixed the one-liner diff bug.
+  * Cleaned up multi-line string diffs by unescaping \n
+  * Cleaned result for flunks.
+
+=== 2.2.0 / 2004-10-18
+
+* 4 minor enhancements:
+
+  * Added LinuxJournalArticle.txt! WOOT!
+  * Added unit_diff.rb - a very cool filter for test output!
+  * Extended ZenTest to work with standard input
+  * Added "ZenTest FULL" to force ZenTest to analyze inherited methods, for subclasses of the standard library.
+
+* 3 bug fixes:
+
+  * Extended makefile to be more dynamic and stop diffing versions. ugh.
+  * Expanded the method rename map to handle <<, *, +, and ==. 
+  * Added more test cases.
+
+=== 2.1.2 / 2004-03-08
+
+* 4 bug fixes:
+
+  * Fixed yet another 1.8ism, results will be the same in 1.8 and 1.6.
+  * Fixed code responsible for method name conversion.
+  * I am a moron... didn't run tests after updating version.
+  * Need to convert my diff-based tests to unit tests.
+
+=== 2.1.1 / 2004-03-06
+
+* 3 bug fixes:
+
+  * Fixed a 1.8ism.
+  * Removed zentestrunner. Older ruby users will just have to suffer.
+  * Updated history to ZenWeb format.
+
+=== 2.1.0 / 2003-01-07
+
+* 3 major enhancements:
+
+  * Output is runnable as-is thanks to zentestrunner.rb.
+  * Wrapped up all running functionality into ZenTest.fix
+  * Added simple statistic output... Thanks Dave & Andy!!!
+
+* 2 minor enhancements:
+
+  * Added zentestrunner.rb until Nathaniel accepts my changes!
+  * Added a clean rule to Makefile
+
+* 3 bug fixes:
+
+  * Removed at_exit override and avoided test/unit altogether.
+  * Extended README.txt to include some of the rules.
+  * Fixed several tests and added assertions for new stats
+
+=== 2.0.0 / 2002-10-29
+
+* 2 major enhancements:
+
+  * Rewrite of ZenTest.rb into actual OO design.
+  * Added unit tests, finally...
+
+=== 1.0.1 / 2002-09-28
+
+* 1 minor enhancement:
+
+  * Only loads when a class is detected, allows some scripts to be skipped.
+
+* 3 bug fixes:
+
+  * Cleaned up output. Verbose when $DEBUG is true.
+  * Added an error count that is output at end.
+  * Better filtering or conversion on some method names.
+
+=== 1.0.0 / 2002-09-24
+
+* 1 major enhancement:
+
+  * Birthday!

@@ -42,12 +42,11 @@ namespace IronRuby.Builtins {
             FileAccess access = mode.ToFileAccess();
 
             FileMode fileMode;
+  
             if ((mode & IOMode.CreateIfNotExists) != 0) {
                 if ((mode & IOMode.ErrorIfExists) != 0) {
                     access |= FileAccess.Write;
                     fileMode = FileMode.CreateNew;
-                } else if (mode.CanWrite()) {
-                    fileMode = FileMode.Create;
                 } else {
                     fileMode = FileMode.OpenOrCreate;
                 }

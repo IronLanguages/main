@@ -21,6 +21,9 @@ namespace IronPython.Runtime {
     /// <summary>
     /// Marks a type so that IronPython will not expose types which have GetMemberNames
     /// as having a __dir__ method.
+    /// 
+    /// Also suppresses __dir__ on something which implements IDynamicMetaObjectProvider
+    /// but is not an IPythonObject.
     /// </summary>
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
     class DontMapGetMemberNamesToDirAttribute : Attribute {

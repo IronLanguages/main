@@ -1,1 +1,1 @@
-fails:Array#== returns true if corresponding elements are #==
+fails:Array#== handles well recursive arrays

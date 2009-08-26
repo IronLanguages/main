@@ -1,4 +1,0 @@
-scope 'merb-gen' do
-  dir = File.join(File.dirname(__FILE__), 'lib', 'generators/')
-  Merb.add_generators dir + 'data_mapper_migration', dir + 'data_mapper_model', dir + 'data_mapper_resource_controller'
-end

@@ -6,16 +6,18 @@ describe "Logger#new" do
   before :each do
     @file_path = tmp("test_log.log")
     @log_file = File.open(@file_path, "w+")
+    @l = nil
   end
 
   after :each do
     @log_file.close unless @log_file.closed?
+    @l.close if @l
     File.unlink(@file_path) if File.exists?(@file_path)
   end
 
    it "creates a new logger object" do
-     l = Logger.new(STDERR)
-     lambda { l.add(Logger::WARN, "Foo") }.should output_to_fd(/Foo/, STDERR)
+     @l = Logger.new(STDERR)
+     lambda { @l.add(Logger::WARN, "Foo") }.should output_to_fd(/Foo/, STDERR)
    end
 
    it "receives a logging device as first argument" do
@@ -40,19 +42,25 @@ describe "Logger#new" do
     # This should create 2 small log files, logfile_test and logfile_test.0
     # in /tmp, each one with a different message.
     path = tmp("logfile_test.log")
+    path0 = path + ".0"
 
     l = Logger.new(path, 2, 5)
     l.add Logger::WARN, "foo"
     l.add Logger::WARN, "bar"
 
     File.exists?(path).should be_true
-    File.exists?(path + ".0").should be_true 
-
+    File.exists?(path0).should be_true 
+    f = File.open(path)
+    f0 = File.open(path0)
     # first line will be a comment so we'll have to skip it.
-    LoggerSpecs::strip_date(File.open(path + ".0").readlines.last).should == "WARN -- : foo\n"
-    LoggerSpecs::strip_date(File.open(path).readlines.last).should == "WARN -- : bar\n"
+    LoggerSpecs::strip_date(f0.readlines.last).should == "WARN -- : foo\n"
+    LoggerSpecs::strip_date(f.readlines.last).should == "WARN -- : bar\n"
+
+    f.close
+    f0.close
+    l.close
 
     File.unlink(path)
-    File.unlink(path + ".0")
+    File.unlink(path0)
   end
 end

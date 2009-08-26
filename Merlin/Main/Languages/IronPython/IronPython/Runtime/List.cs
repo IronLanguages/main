@@ -482,7 +482,17 @@ namespace IronPython.Runtime {
                     // try to assign back to self: make a copy first
                     if (this == value) value = new List(value);
 
-                    slice.DoSliceAssign(this.SliceAssign, _size, value);
+                    if (ValueRequiresNoLocks(value)) {
+                        // we don't need to worry about lock ordering of accesses to the 
+                        // RHS & ourselves.  We can lock once and avoid repeatedly locking/unlocking
+                        // on each assign.
+                        lock (this) {
+                            slice.DoSliceAssign(this.SliceAssignNoLock, _size, value);
+                        }
+                    } else {
+                        slice.DoSliceAssign(this.SliceAssign, _size, value);
+                    }
+
                 } else {
                     int start, stop, step;
                     slice.indices(_size, out start, out stop, out step);
@@ -495,6 +505,10 @@ namespace IronPython.Runtime {
                     }
                 }
             }
+        }
+
+        private static bool ValueRequiresNoLocks(object value) {
+            return value is PythonTuple || value is Array || value is FrozenSetCollection;
         }
 
         private void SliceNoStep(int start, int stop, List other) {
@@ -582,6 +596,10 @@ namespace IronPython.Runtime {
 
         private void SliceAssign(int index, object value) {
             this[index] = value;
+        }
+
+        private void SliceAssignNoLock(int index, object value) {
+            _data[index] = value;
         }
 
         public virtual void __delitem__(int index) {
@@ -1398,7 +1416,7 @@ namespace IronPython.Runtime {
         public bool MoveNext() {
             if (_iterating) {
                 _index++;
-                _iterating = (_index <= _list._size - 1);
+                _iterating = (_index < _list._size);
             }
             return _iterating;
         }

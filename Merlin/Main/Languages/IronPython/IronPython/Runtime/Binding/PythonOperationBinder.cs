@@ -137,25 +137,29 @@ namespace IronPython.Runtime.Binding {
                     }
                     break;
                 case PythonOperationKind.NotRetObject:
-                    if (CompilerHelpers.GetType(args[0]) == typeof(string)) {
+                    if (args[0] == null) {
+                        if (typeof(T) == typeof(Func<CallSite, object, object>)) {
+                            return (T)(object)new Func<CallSite, object, object>(NoneIsFalse);
+                        }
+                    } else if (args[0].GetType() == typeof(string)) {
                         if (typeof(T) == typeof(Func<CallSite, object, object>)) {
                             return (T)(object)new Func<CallSite, object, object>(StringIsFalse);
                         }
-                    } else if (CompilerHelpers.GetType(args[0]) == typeof(bool)) {
+                    } else if (args[0].GetType() == typeof(bool)) {
                         if (typeof(T) == typeof(Func<CallSite, object, object>)) {
                             return (T)(object)new Func<CallSite, object, object>(BoolIsFalse);
                         }
-                    } else if (CompilerHelpers.GetType(args[0]) == typeof(List)) {
+                    } else if (args[0].GetType() == typeof(List)) {
                         if (typeof(T) == typeof(Func<CallSite, object, object>)) {
                             return (T)(object)new Func<CallSite, object, object>(ListIsFalse);
                         }
-                    } else if (CompilerHelpers.GetType(args[0]) == typeof(PythonTuple)) {
+                    } else if (args[0].GetType() == typeof(PythonTuple)) {
                         if (typeof(T) == typeof(Func<CallSite, object, object>)) {
                             return (T)(object)new Func<CallSite, object, object>(TupleIsFalse);
                         }
-                    } else if (args[0] == null) {
+                    } else if (args[0].GetType() == typeof(int)) {
                         if (typeof(T) == typeof(Func<CallSite, object, object>)) {
-                            return (T)(object)new Func<CallSite, object, object>(NoneIsFalse);
+                            return (T)(object)new Func<CallSite, object, object>(IntIsFalse);
                         }
                     }
                     break;
@@ -167,6 +171,9 @@ namespace IronPython.Runtime.Binding {
             string strVal = value as string;
             if (strVal != null) {
                 return strVal.Length == 0 ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+            } else if (value == null) {
+                // improve perf of sites just polymorphic on str & None
+                return true;
             }
 
             return ((CallSite<Func<CallSite, object, object>>)site).Update(site, value);
@@ -175,6 +182,9 @@ namespace IronPython.Runtime.Binding {
         private object ListIsFalse(CallSite site, object value) {
             if (value != null && value.GetType() == typeof(List)) {
                 return ((List)value).Count == 0 ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+            } else if (value == null) {
+                // improve perf of sites just polymorphic on list & None
+                return true;
             }
 
             return ((CallSite<Func<CallSite, object, object>>)site).Update(site, value);
@@ -191,6 +201,9 @@ namespace IronPython.Runtime.Binding {
         private object TupleIsFalse(CallSite site, object value) {
             if (value != null && value.GetType() == typeof(PythonTuple)) {
                 return ((PythonTuple)value).Count == 0 ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+            } else if (value == null) {
+                // improve perf of sites just polymorphic on tuple & None
+                return true;
             }
 
             return ((CallSite<Func<CallSite, object, object>>)site).Update(site, value);
@@ -199,11 +212,24 @@ namespace IronPython.Runtime.Binding {
         private object BoolIsFalse(CallSite site, object value) {
             if (value is bool) {
                 return !(bool)value ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+            } else if (value == null) {
+                // improve perf of sites just polymorphic on bool & None
+                return true;
             }
 
             return ((CallSite<Func<CallSite, object, object>>)site).Update(site, value);
         }
-        
+
+        private object IntIsFalse(CallSite site, object value) {
+            if (value is int) {
+                return (int)value == 0 ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+            } else if (value == null) {
+                // improve perf of sites just polymorphic on int & None
+                return true;
+            }
+
+            return ((CallSite<Func<CallSite, object, object>>)site).Update(site, value);
+        }
         private IEnumerator GetListEnumerator(CallSite site, List value) {
             return new ListIterator(value);
         }
@@ -392,7 +418,7 @@ namespace IronPython.Runtime.Binding {
             public override DynamicMetaObject FallbackSetIndex(DynamicMetaObject target, DynamicMetaObject[] indexes, DynamicMetaObject value, DynamicMetaObject errorSuggestion) {
 #if !SILVERLIGHT
                 DynamicMetaObject com;
-                if (System.Dynamic.ComBinder.TryBindSetIndex(this, target, indexes, value, out com)) {
+                if (System.Dynamic.ComBinder.TryBindSetIndex(this, target, BindingHelpers.GetComArguments(indexes), BindingHelpers.GetComArgument(value), out com)) {
                     return com;
                 }
 #endif
@@ -420,7 +446,7 @@ namespace IronPython.Runtime.Binding {
             public override DynamicMetaObject FallbackGetIndex(DynamicMetaObject target, DynamicMetaObject[] indexes, DynamicMetaObject errorSuggestion) {
 #if !SILVERLIGHT
                 DynamicMetaObject com;
-                if (System.Dynamic.ComBinder.TryBindGetIndex(this, target, indexes, out com)) {
+                if (System.Dynamic.ComBinder.TryBindGetIndex(this, target, BindingHelpers.GetComArguments(indexes), out com)) {
                     return com;
                 }
 #endif

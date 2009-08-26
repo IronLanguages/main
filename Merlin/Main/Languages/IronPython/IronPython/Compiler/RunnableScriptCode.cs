@@ -15,11 +15,14 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Diagnostics;
+using System.Threading;
+
 using Microsoft.Scripting;
-using IronPython.Runtime;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+
+using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 
 namespace IronPython.Compiler {    
@@ -43,25 +46,59 @@ namespace IronPython.Compiler {
             return new CodeContext(scope, (PythonContext)context);
         }
 
-        protected void EnsureFunctionCode(Delegate dlg) {
+        protected FunctionCode EnsureFunctionCode(Delegate/*!*/ dlg) {
+            Debug.Assert(dlg != null);
+
             if (_code == null) {
-                _code = new FunctionCode(
-                    (PythonContext)SourceUnit.LanguageContext,
-                    dlg,
-                    null,
-                    "<module>",
-                    "",
-                    ArrayUtils.EmptyStrings,
-                    FunctionAttributes.None,
-                    SourceSpan.None,
-                    SourceUnit.Path,
-                    false,
-                    true,
-                    new SymbolId[0],
-                    null,
+                Interlocked.CompareExchange(
+                    ref _code,
+                    new FunctionCode(
+                        (PythonContext)SourceUnit.LanguageContext,
+                        dlg,
+                        null,
+                        "<module>",
+                        "",
+                        ArrayUtils.EmptyStrings,
+                        GetCodeAttributes(),
+                        SourceSpan.None,
+                        SourceUnit.Path,
+                        false,
+                        true,
+                        new SymbolId[0],
+                        new SymbolId[0],
+                        new SymbolId[0],
+                        new SymbolId[0],
+                        0,
+                        null,
+                        null
+                    ),
                     null
                 );
             }
+            return _code;
+        }
+
+        public FunctionCode Code {
+            get {
+                return _code;
+            }
+        }
+
+        public abstract FunctionCode GetFunctionCode();
+        
+        protected virtual FunctionAttributes GetCodeAttributes() {            
+            return FunctionAttributes.None;
+        }
+
+        protected static FunctionAttributes GetCodeAttributes(CompilerContext context) {
+            PythonLanguageFeatures features = ((PythonCompilerOptions)context.Options).LanguageFeatures;
+            FunctionAttributes funcAttrs = 0;
+
+            if ((features & PythonLanguageFeatures.TrueDivision) != 0) {
+                funcAttrs |= FunctionAttributes.FutureDivision;
+            }
+
+            return funcAttrs;
         }
 
         protected void PushFrame(CodeContext context, Delegate code) {

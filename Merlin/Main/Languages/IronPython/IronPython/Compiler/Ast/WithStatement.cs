@@ -118,7 +118,7 @@ namespace IronPython.Compiler.Ast {
             //******************************************************************
             MSAst.ParameterExpression value = ag.GetTemporary("with_value");
             statements.Add(
-                ag.AddDebugInfo(
+                ag.AddDebugInfoAndVoid(
                     ag.MakeAssignment(
                         value,
                         ag.Invoke(
@@ -186,7 +186,7 @@ namespace IronPython.Compiler.Ast {
                         TryStatement.GetTracebackHeader(                        
                             ag,
                             exception,
-                            ag.AddDebugInfo(
+                            ag.AddDebugInfoAndVoid(
                                 Ast.Block(
                                     // exc = False
                                     ag.MakeAssignment(
@@ -238,7 +238,7 @@ namespace IronPython.Compiler.Ast {
                 //      exit(None, None, None)
                     AstUtils.IfThen(
                         exc,
-                        ag.AddDebugInfo(
+                        ag.AddDebugInfoAndVoid(
                             Ast.Block(
                                 Ast.Dynamic(
                                     ag.PyContext.Invoke(

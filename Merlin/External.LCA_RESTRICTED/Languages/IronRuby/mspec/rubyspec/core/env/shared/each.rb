@@ -14,12 +14,6 @@ describe :env_each, :shared => true do
     end
   end
 
-  it "returns the value of break and stops execution of the loop if break is in the block" do
-    e = []
-    ENV.send(@method) {|k,v| break 1; e << [k,v]}.should == 1
-    e.empty?.should == true
-  end
-
   ruby_version_is "" ... "1.8.7" do
     it "raises LocalJumpError if no block given" do
       lambda { ENV.send(@method) }.should raise_error(LocalJumpError)
@@ -28,7 +22,16 @@ describe :env_each, :shared => true do
 
   ruby_version_is "1.8.7" do
     it "returns an Enumerator if called without a block" do
-      ENV.send(@method).should be_kind_of(Enumerable::Enumerator)
+      ENV.send(@method).should be_kind_of(enumerator_class)
+    end
+  end
+
+  ruby_version_is "1.9" do
+    it "uses the locale encoding" do
+      ENV.send(@method) do |key, value|
+        key.encoding.should == Encoding.find('locale')
+        value.encoding.should == Encoding.find('locale')
+      end
     end
   end
 end

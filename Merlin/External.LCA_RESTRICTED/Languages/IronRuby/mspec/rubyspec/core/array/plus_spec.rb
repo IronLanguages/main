@@ -25,10 +25,10 @@ describe "Array#+" do
     (empty + empty).should == [empty, empty]
 
     array = ArraySpecs.recursive_array
-    (empty + array).should == [empty, 1, 'two', 3.0, [array]]
+    (empty + array).should == [empty, 1, 'two', 3.0, array, array, array, array, array]
     (array + array).should == [
-      1, 'two', 3.0, [array],
-      1, 'two', 3.0, [array]]
+      1, 'two', 3.0, array, array, array, array, array,
+      1, 'two', 3.0, array, array, array, array, array]
   end
 
   it "does return subclass instances with Array subclasses" do
@@ -41,7 +41,7 @@ describe "Array#+" do
     ([5, 6] + ArraySpecs::ToAryArray[1, 2]).should == [5, 6, 1, 2]
   end
 
-  it "does not infected even if an original array is tainted" do
+  it "does not get infected even if an original array is tainted" do
     ([1, 2] + [3, 4]).tainted?.should be_false
     ([1, 2].taint + [3, 4]).tainted?.should be_false
     ([1, 2] + [3, 4].taint).tainted?.should be_false

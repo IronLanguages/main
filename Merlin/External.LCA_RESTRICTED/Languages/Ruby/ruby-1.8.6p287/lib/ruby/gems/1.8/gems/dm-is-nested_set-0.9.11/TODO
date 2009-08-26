@@ -1,9 +1,0 @@
-TODO
-====
-* Add support for more than one root, and scope/namespacing
-* Write docs throughout the plugin
-* Add support for transactions and tablelocking when reorganizing items
-* Add function for (re)building nested set from ordinary tree
-* Caching the finder-methods
-* Allow options to pass through finders
-* Handle children of destroyed objects

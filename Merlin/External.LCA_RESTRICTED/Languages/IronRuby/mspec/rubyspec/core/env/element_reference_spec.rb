@@ -79,6 +79,10 @@ describe "ENV.[]" do
           ruby_exe("puts puts ENV['HOME'], ENV['HOME'].nil?").chomp.should =~ /^false$/
         end
       end
+      
+      it "uses the locale encoding" do
+        ENV[@variable_name].encoding.should == Encoding.find('locale')
+      end
     end
   end
 end

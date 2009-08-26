@@ -9,7 +9,7 @@ describe :argf_each_char, :shared => true do
   end
 
   after :each do
-    ARGF.close rescue nil
+    ARGF.close unless ARGF.closed?
   end
 
   it "yields each char of all streams to the passed block" do
@@ -20,16 +20,18 @@ describe :argf_each_char, :shared => true do
     end
   end
 
-  it "returns self when passed a block" do
-    argv [@file1_name, @file2_name] do
-      ARGF.send(@method) {}.should equal(ARGF)
+  ruby_bug "#1633", "1.9.2" do
+    it "returns self when passed a block" do
+      argv [@file1_name, @file2_name] do
+        ARGF.send(@method) {}.should equal(ARGF)
+      end
     end
   end
 
-  it "returns an Enumerable::Enumerator when passed no block" do
+  it "returns an Enumerator when passed no block" do
     argv [@file1_name, @file2_name] do
       enum = ARGF.send(@method)
-      enum.should be_an_instance_of(Enumerable::Enumerator)
+      enum.should be_an_instance_of(enumerator_class)
 
       chars = []
       enum.each { |c| chars << c }

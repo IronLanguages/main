@@ -1,4 +1,3 @@
-require 'complex'
 require File.dirname(__FILE__) + '/../fixtures/classes'
 
 describe :complex_math_atanh, :shared => true do
@@ -9,7 +8,7 @@ describe :complex_math_atanh, :shared => true do
     @object.send(:atanh, -0.2).should be_close(-0.202732554054082, TOLERANCE)
   end
 
-  platform_is :darwin, :freebsd, :java, :windows do
+  platform_is :darwin, :freebsd, :java do
     it "returns Infinity for 1.0" do
       @object.send(:atanh, 1.0).infinite?.should == 1
     end
@@ -19,7 +18,7 @@ describe :complex_math_atanh, :shared => true do
     end
   end
 
-  platform_is :linux, :openbsd do
+  platform_is :windows, :linux, :openbsd do
     # jruby is cross-platform and behaves as :darwin above
     not_compliant_on :jruby do
       it "raises an Errno::EDOM if x = 1.0" do
@@ -55,7 +54,7 @@ describe :complex_math_atanh_bang, :shared => true do
     @object.send(:atanh!, -0.2).should be_close(-0.202732554054082, TOLERANCE)
   end
 
-  platform_is :darwin, :freebsd, :java, :windows do
+  platform_is :darwin, :freebsd, :java do
     it "returns Infinity for 1.0" do
       @object.send(:atanh!, 1.0).infinite?.should == 1
     end
@@ -65,7 +64,7 @@ describe :complex_math_atanh_bang, :shared => true do
     end
   end
 
-  platform_is :linux, :openbsd do
+  platform_is :windows, :linux, :openbsd do
     # jruby is cross-platform and behaves as :darwin above
     not_compliant_on :jruby do
       it "raises an Errno::EDOM if x = 1.0" do

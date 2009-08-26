@@ -10,7 +10,7 @@ describe :argf_gets, :shared => true do
   end
 
   after :each do
-    ARGF.close rescue nil
+    ARGF.close unless ARGF.closed?
   end
 
   it "reads one line of a file" do

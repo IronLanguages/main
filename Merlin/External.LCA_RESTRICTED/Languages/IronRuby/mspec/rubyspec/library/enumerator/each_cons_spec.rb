@@ -1,8 +1,12 @@
 require File.dirname(__FILE__) + '/../../spec_helper'
-require File.dirname(__FILE__) + '/fixtures/classes'
+require File.dirname(__FILE__) + '/../../fixtures/enumerator/classes'
 require 'enumerator'
 
 describe "Enumerator#each_cons" do
+  before(:each) do
+    ScratchPad.record []
+  end
+  
   it "iterates the block for each consecutive slice of n elements" do
     a = []
     EnumSpecs::Numerous.new.each_cons(3) { |e| a << e }

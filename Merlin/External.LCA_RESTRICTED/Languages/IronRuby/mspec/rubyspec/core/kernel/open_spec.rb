@@ -114,6 +114,30 @@ describe "Kernel#open" do
     open(@newfile, "w", perm) { }
     File.writable?(@newfile).should be_false
   end
+
+  ruby_version_is "1.9" do
+    it "calls #to_open on argument" do
+      obj = mock('fileish')
+      obj.should_receive(:to_open).and_return(File.open(@file))
+      @file = open(obj)
+      @file.class.should == File
+    end
+    
+    it "raises a TypeError if passed a non-String that does not respond to #to_open" do
+      obj = mock('non-fileish')
+      lambda { open(obj) }.should raise_error(TypeError)
+      lambda { open(nil) }.should raise_error(TypeError)
+      lambda { open(7)   }.should raise_error(TypeError)
+    end 
+  end
+
+  ruby_version_is ""..."1.9" do
+    it "raises a TypeError if not passed a String type" do
+      lambda { open(nil)       }.should raise_error(TypeError)
+      lambda { open(7)         }.should raise_error(TypeError)
+      lambda { open(mock('x')) }.should raise_error(TypeError)
+    end
+  end
 end
 
 describe "Kernel.open" do

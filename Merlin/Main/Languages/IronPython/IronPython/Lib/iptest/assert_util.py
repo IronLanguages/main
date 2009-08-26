@@ -17,6 +17,7 @@
 
 import sys
 import time
+import cStringIO
 
 from iptest.test_env import *
 from iptest import options, l
@@ -569,33 +570,34 @@ def AddReferenceToDlrCore():
     if not is_silverlight:
         clr.AddReference("Microsoft.Dynamic")
 
-    
+
 class stderr_trapper(object):
-    class myfile(object):
-        def __init__(self, messages):
-            self.messages = messages
-        def write(self, *args):
-            self.messages.append(args)
     def __init__(self):
-        self.messages = []
+        self.stderr = cStringIO.StringIO()
     def __enter__(self):
-        self.oldstderr, sys.stderr = sys.stderr, stderr_trapper.myfile(self.messages)
+        self.oldstderr = sys.stderr
+        sys.stderr = self.stderr
         return self
     def __exit__(self, *args):
+        self.stderr.flush()
+        self.stderr.reset()
+        self.messages = self.stderr.readlines()
+        self.messages = [x.rstrip() for x in self.messages]
+        self.stderr.close()
         sys.stderr = self.oldstderr
 
 class stdout_trapper(object):
-    class myfile(object):
-        def __init__(self, messages):
-            self.messages = messages
-        def write(self, *args):
-            self.messages.append(args)
     def __init__(self):
-        self.messages = []
+        self.stdout = cStringIO.StringIO()
     def __enter__(self):
-        self.oldstdout, sys.stdout = sys.stdout, stdout_trapper.myfile(self.messages)
+        self.oldstdout, sys.stdout = sys.stdout, self.stdout
         return self
     def __exit__(self, *args):
+        self.stdout.flush()
+        self.stdout.reset()
+        self.messages = self.stdout.readlines()
+        self.messages = [x.rstrip() for x in self.messages]
+        self.stdout.close()
         sys.stdout = self.oldstdout
 
 

@@ -32,6 +32,7 @@ namespace IronRuby.Runtime.Calls {
             : base(attributesAndArity, sourcePath, sourceLine) {
             Debug.Assert(parameterCount > BlockDispatcher.MaxBlockArity);
             Debug.Assert(!HasUnsplatParameter);
+            Debug.Assert(!HasSingleCompoundParameter);
 
             _parameterCount = parameterCount;
         }

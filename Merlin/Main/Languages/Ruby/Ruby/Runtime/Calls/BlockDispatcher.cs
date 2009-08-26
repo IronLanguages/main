@@ -90,7 +90,7 @@ namespace IronRuby.Runtime.Calls {
             get { return ((int)_attributesAndArity >> 2); }
         }
 
-        internal static BlockSignatureAttributes MakeAttributes(BlockSignatureAttributes attributes, int arity) {
+        public static BlockSignatureAttributes MakeAttributes(BlockSignatureAttributes attributes, int arity) {
             return attributes | (BlockSignatureAttributes)(arity << 2);
         }
 

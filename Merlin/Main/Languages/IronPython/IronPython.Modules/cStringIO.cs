@@ -209,6 +209,7 @@ namespace IronPython.Modules {
             }
 
             public bool isatty() {
+                ThrowIfClosed();
                 return false;
             }
 
@@ -363,6 +364,7 @@ namespace IronPython.Modules {
             }
 
             public bool isatty() {
+                ThrowIfClosed();
                 return false;
             }
 

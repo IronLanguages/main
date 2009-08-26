@@ -19,6 +19,7 @@ using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Collections.ObjectModel;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
@@ -61,6 +62,7 @@ namespace IronPython.Compiler.Ast {
         private Dictionary<PythonVariable, MSAst.Expression> _localLifted; // expressions for how we refer to lifted variables locally
         internal bool _isEmittingFinally;                               // true if we're emitting a finally (used for proper handling of exception tracking during rethrow)
         private readonly bool _isGenerator;                             // true if we're a generator
+        private readonly DelayedFunctionCode _funcCodeExpr;             // expression that refers to the function code for this AstGenerator
         
         internal int _loopOrFinallyId;                                  // unique id used to identify a loop
         private Dictionary<int, bool> _loopIds;                         // hashset of current loopids        
@@ -74,8 +76,12 @@ namespace IronPython.Compiler.Ast {
         internal static readonly MSAst.BlockExpression EmptyBlock = Ast.Block(AstUtils.Empty());
         internal static readonly LabelTarget GeneratorLabel = Ast.Label(typeof(object), "generatorLabel");
         internal static MSAst.ParameterExpression _functionStack = Ast.Variable(typeof(List<FunctionStack>), "funcStack");
+        internal static MSAst.ParameterExpression _functionCode = Ast.Variable(typeof(FunctionCode), "functionCode");
         private const string NameForExec = "module: <exec>";
 
+        /// <summary>
+        /// Provides common initialization between top-level and class/function definition ast generators.
+        /// </summary>
         private AstGenerator(string name, bool generator, string profilerName, bool print) {
             _print = print;
             _isGenerator = generator;
@@ -93,8 +99,12 @@ namespace IronPython.Compiler.Ast {
             } else {
                 _profilerName = profilerName;
             }
+            _funcCodeExpr = new DelayedFunctionCode();
         }
 
+        /// <summary>
+        /// Creates a new AstGenerator for a class or function definition.
+        /// </summary>
         internal AstGenerator(AstGenerator/*!*/ parent, string name, bool generator, string profilerName)
             : this(name, generator, profilerName, false) {
             Assert.NotNull(parent);
@@ -107,18 +117,22 @@ namespace IronPython.Compiler.Ast {
             _globals = parent._globals;
         }
 
+        /// <summary>
+        /// Creates a new AstGenerator for top-level (module) code.
+        /// </summary>
         internal AstGenerator(CompilationMode mode, CompilerContext/*!*/ context, SourceSpan span, string name, bool generator, bool print)
             : this(name, generator, null, print) {
             Assert.NotNull(context);
             _context = context;
             _pythonContext = (PythonContext)context.SourceUnit.LanguageContext;
             _document = _context.SourceUnit.Document ?? Ast.SymbolDocument(name, PyContext.LanguageGuid, PyContext.VendorGuid);
-            
+            _funcCodeExpr.Code = _functionCode;
+
             switch (mode) {
                 case CompilationMode.Collectable: _globals = new ArrayGlobalAllocator(_pythonContext); break;
                 case CompilationMode.Lookup: _globals = new DictionaryGlobalAllocator(); break;
                 case CompilationMode.ToDisk: _globals = new SavableGlobalAllocator(_pythonContext); break;
-                case CompilationMode.Uncollectable: _globals = new StaticGlobalAllocator(_pythonContext, name); break;
+                case CompilationMode.Uncollectable: _globals = new SharedGlobalAllocator(_pythonContext); break;
             }
 
             PythonOptions po = (_pythonContext.Options as PythonOptions);
@@ -430,7 +444,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal MSAst.Expression/*!*/ MakeAssignment(MSAst.ParameterExpression/*!*/ variable, MSAst.Expression/*!*/ right, SourceSpan span) {
-            return AddDebugInfo(MakeAssignment(variable, right), span);
+            return AddDebugInfoAndVoid(MakeAssignment(variable, right), span);
         }
 
         internal static MSAst.Expression/*!*/ ConvertIfNeeded(MSAst.Expression/*!*/ expression, Type/*!*/ type) {
@@ -513,6 +527,7 @@ namespace IronPython.Compiler.Ast {
                     expression
                 );
             }
+            
             return Utils.AddDebugInfo(expression, _document, start, end);
         }
 
@@ -602,6 +617,7 @@ namespace IronPython.Compiler.Ast {
                 return Ast.Call(
                     _UpdateStackTrace,
                     LocalContext,
+                    _funcCodeExpr,
                     _GetCurrentMethod,
                     AstUtils.Constant(Name),
                     AstUtils.Constant(Context.SourceUnit.Path ?? "<string>"),
@@ -633,6 +649,7 @@ namespace IronPython.Compiler.Ast {
                         Ast.Call(
                             _UpdateStackTrace,
                             LocalContext,
+                            _funcCodeExpr,
                             _GetCurrentMethod,
                             AstUtils.Constant(Name),
                             AstUtils.Constant(Context.SourceUnit.Path ?? "<string>"),
@@ -769,19 +786,20 @@ namespace IronPython.Compiler.Ast {
             return to;
         }
 
-        internal MSAst.Expression[] Transform(Statement/*!*/[]/*!*/ from) {
+        internal ReadOnlyCollection<MSAst.Expression> Transform(Statement/*!*/[]/*!*/ from) {
             Debug.Assert(from != null);
-            MSAst.Expression[] to = new MSAst.Expression[from.Length];
+            var to = new ReadOnlyCollectionBuilder<MSAst.Expression>(from.Length + 1);
 
             SourceLocation start = SourceLocation.Invalid;
 
             for (int i = 0; i < from.Length; i++) {
                 Debug.Assert(from[i] != null);
 
-                to[i] = TransformMaybeSingleLineSuite(from[i], start);
+                to.Add(TransformMaybeSingleLineSuite(from[i], start));
                 start = from[i].Start;
             }
-            return to;
+            to.Add(AstUtils.Empty());
+            return to.ToReadOnlyCollection();
         }
 
         private MSAst.Expression TransformWithLineNumberUpdate(Statement/*!*/ fromStmt) {
@@ -1011,7 +1029,71 @@ namespace IronPython.Compiler.Ast {
             if (_locals.Count > 0) {
                 body = Ast.Block(_locals.ToReadOnlyCollection(), body);
             }
-            return Globals.MakeScriptCode(body, context, ast);
+            return Globals.MakeScriptCode(body, context, ast, _handlerLocations, _loopLocations);
+        }
+
+        internal MSAst.Expression FuncCodeExpr {
+            get {
+                return _funcCodeExpr.Code;
+            }
+            set {
+                _funcCodeExpr.Code = value;
+            }
+        }
+
+        /// <summary>
+        /// Provides a place holder for the expression which represents
+        /// a FunctionCode.  For functions/classes this gets updated after
+        /// the AST has been generated because the FunctionCode needs to
+        /// know about the tree which gets generated.  For modules we 
+        /// immediately have the value because it always comes in as a parameter.
+        /// </summary>
+        class DelayedFunctionCode : MSAst.Expression {
+            private MSAst.Expression _funcCode;
+
+            public override bool CanReduce {
+                get {
+                    return true;
+                }
+            }
+
+            public MSAst.Expression Code {
+                get {
+                    return _funcCode;
+                }
+                set {
+                    _funcCode = value;
+                }
+            }
+
+            public override Type Type {
+                get {
+                    return typeof(FunctionCode);
+                }
+            }
+
+            protected override System.Linq.Expressions.Expression VisitChildren(ExpressionVisitor visitor) {
+                if (_funcCode != null) {
+                    MSAst.Expression funcCode = visitor.Visit(_funcCode);
+                    if (funcCode != _funcCode) {
+                        DelayedFunctionCode res = new DelayedFunctionCode();
+                        res._funcCode = funcCode;
+                        return res;
+                    }
+                }
+                return this;
+            }
+
+            public override System.Linq.Expressions.Expression Reduce() {
+                Debug.Assert(_funcCode != null);
+                return _funcCode;
+            }
+
+            public override ExpressionType NodeType {
+                get {
+                    return ExpressionType.Extension;
+                }
+            }
         }
 
         #region Binder Factories

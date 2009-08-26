@@ -38,10 +38,7 @@ namespace IronPython.Compiler.Ast {
                 return AstGenerator.EmptyBlock;
             }
 
-            MSAst.Expression[] stmts = ag.Transform(_statements);
-            if (stmts.Length == 0) {
-                return AstUtils.Empty();
-            }
+            var stmts = ag.Transform(_statements);
 
             foreach (MSAst.Expression stmt in stmts) {
                 if (stmt == null) {
@@ -50,7 +47,7 @@ namespace IronPython.Compiler.Ast {
                     return null;
                 }
             }
-            return AstUtils.Void(Ast.Block(new ReadOnlyCollection<MSAst.Expression>(stmts)));
+            return Ast.Block(stmts);
         }
        
         public override void Walk(PythonWalker walker) {

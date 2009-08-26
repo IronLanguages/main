@@ -81,7 +81,7 @@ namespace IronRuby.Compiler.Ast {
             MSA.ParameterExpression blockParameter;
 
             if (gen.CompilerOptions.FactoryKind == TopScopeFactoryKind.None ||
-                gen.CompilerOptions.FactoryKind == TopScopeFactoryKind.Module) {
+                gen.CompilerOptions.FactoryKind == TopScopeFactoryKind.ModuleEval) {
                 parameters = new MSA.ParameterExpression[4];
 
                 runtimeScopeVariable = parameters[0] = Ast.Parameter(typeof(RubyScope), "#scope");
@@ -143,11 +143,11 @@ namespace IronRuby.Compiler.Ast {
             MSA.Expression prologue;
             switch (gen.CompilerOptions.FactoryKind) {
                 case TopScopeFactoryKind.None:
+                case TopScopeFactoryKind.ModuleEval:
                     prologue = Methods.InitializeScopeNoLocals.OpCall(runtimeScopeVariable, EnterInterpretedFrameExpression.Instance);
                     break;
 
                 case TopScopeFactoryKind.Hosted:
-                case TopScopeFactoryKind.Module:
                 case TopScopeFactoryKind.File:
                 case TopScopeFactoryKind.WrappedFile:
                     prologue = Methods.InitializeScope.OpCall(

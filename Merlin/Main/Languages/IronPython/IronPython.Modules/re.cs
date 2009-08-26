@@ -38,6 +38,8 @@ namespace IronPython.Modules {
     /// Python regular expression module.
     /// </summary>
     public static class PythonRegex {
+        private static CacheDict<PatternKey, RE_Pattern> _cachedPatterns = new CacheDict<PatternKey, RE_Pattern>(100);
+
         [SpecialName]
         public static void PerformModuleReload(PythonContext/*!*/ context, IAttributesCollection/*!*/ dict) {
             context.EnsureModuleException("reerror", dict, "error", "re");
@@ -121,7 +123,7 @@ namespace IronPython.Modules {
         }
 
         public static object findall(CodeContext/*!*/ context, object pattern, string @string, int flags) {
-            RE_Pattern pat = new RE_Pattern(context, ValidatePattern(pattern), flags);
+            RE_Pattern pat = GetPattern(context, ValidatePattern(pattern), flags);
             ValidateString(@string, "string");
 
             MatchCollection mc = pat.FindAllWorker(context, @string, 0, @string.Length);
@@ -172,7 +174,7 @@ namespace IronPython.Modules {
         }
 
         public static object finditer(CodeContext/*!*/ context, object pattern, object @string, int flags) {
-            RE_Pattern pat = new RE_Pattern(context, ValidatePattern(pattern), flags);
+            RE_Pattern pat = GetPattern(context, ValidatePattern(pattern), flags);
 
             string str = ValidateString(@string, "string");
             return MatchIterator(pat.FindAllWorker(context, str, 0, str.Length), pat, str);
@@ -183,7 +185,7 @@ namespace IronPython.Modules {
         }
 
         public static object match(CodeContext/*!*/ context, object pattern, object @string, int flags) {
-            return new RE_Pattern(context, ValidatePattern(pattern), flags).match(ValidateString(@string, "string"));
+            return GetPattern(context, ValidatePattern(pattern), flags).match(ValidateString(@string, "string"));
         }
 
         public static object search(CodeContext/*!*/ context, object pattern, object @string) {
@@ -191,7 +193,7 @@ namespace IronPython.Modules {
         }
 
         public static object search(CodeContext/*!*/ context, object pattern, object @string, int flags) {
-            return new RE_Pattern(context, ValidatePattern(pattern), flags).search(ValidateString(@string, "string"));
+            return GetPattern(context, ValidatePattern(pattern), flags).search(ValidateString(@string, "string"));
         }
 
         public static object split(CodeContext/*!*/ context, object pattern, object @string) {
@@ -199,7 +201,7 @@ namespace IronPython.Modules {
         }
 
         public static object split(CodeContext/*!*/ context, object pattern, object @string, int maxsplit) {
-            return new RE_Pattern(context, ValidatePattern(pattern)).split(ValidateString(@string, "string"),
+            return GetPattern(context, ValidatePattern(pattern), 0).split(ValidateString(@string, "string"),
                 maxsplit);
         }
 
@@ -208,7 +210,7 @@ namespace IronPython.Modules {
         }
 
         public static object sub(CodeContext/*!*/ context, object pattern, object repl, object @string, int count) {
-            return new RE_Pattern(context, ValidatePattern(pattern)).sub(context, repl, ValidateString(@string, "string"), count);
+            return GetPattern(context, ValidatePattern(pattern), 0).sub(context, repl, ValidateString(@string, "string"), count);
         }
 
         public static object subn(CodeContext/*!*/ context, object pattern, object repl, object @string) {
@@ -216,8 +218,12 @@ namespace IronPython.Modules {
         }
 
         public static object subn(CodeContext/*!*/ context, object pattern, object repl, object @string, int count) {
-            return new RE_Pattern(context, ValidatePattern(pattern)).subn(context, repl, ValidateString(@string, "string"), count);
+            return GetPattern(context, ValidatePattern(pattern), 0).subn(context, repl, ValidateString(@string, "string"), count);
 
+        }
+
+        public static void purge() {
+            _cachedPatterns = new CacheDict<PatternKey, RE_Pattern>(100);
         }
 
         #endregion
@@ -487,6 +493,19 @@ namespace IronPython.Modules {
                 get {
                     return _pre.UserPattern;
                 }
+            }
+
+            public override bool Equals(object obj) {
+                RE_Pattern other = obj as RE_Pattern;
+                if (other == null) {
+                    return false;
+                }
+
+                return other.pattern == pattern && other.flags == flags;
+            }
+
+            public override int GetHashCode() {
+                return pattern.GetHashCode() ^ flags;
             }
 
             #region IWeakReferenceable Members
@@ -808,6 +827,21 @@ namespace IronPython.Modules {
         #endregion
 
         #region Private helper functions
+
+        private static RE_Pattern GetPattern(CodeContext/*!*/ context, object pattern, int flags) {
+            string strPattern = ValidatePattern(pattern);
+            PatternKey key = new PatternKey(strPattern, flags);
+            lock (_cachedPatterns) {
+                RE_Pattern res;
+                if (_cachedPatterns.TryGetValue(new PatternKey(strPattern, flags), out res)) {
+                    return res;
+                }
+
+                res = new RE_Pattern(context, strPattern, flags);
+                _cachedPatterns[key] = res;
+                return res;
+            }
+        }
 
         private static IEnumerator MatchIterator(MatchCollection matches, RE_Pattern pattern, string input) {
             for (int i = 0; i < matches.Count; i++) {
@@ -1167,6 +1201,37 @@ namespace IronPython.Modules {
         private static PythonType error(CodeContext/*!*/ context) {
             return (PythonType)PythonContext.GetContext(context).GetModuleState("reerror");
         }
+
+        class PatternKey : IEquatable<PatternKey> {
+            public string Pattern;
+            public int Flags;
+
+            public PatternKey(string pattern, int flags) {
+                Pattern = pattern;
+                Flags = flags;
+            }
+
+            public override bool Equals(object obj) {
+                PatternKey key = obj as PatternKey;
+                if (key != null) {
+                    return Equals(key);
+                }
+                return false;
+            }
+
+            public override int GetHashCode() {
+                return Pattern.GetHashCode() ^ Flags;
+            }
+
+            #region IEquatable<PatternKey> Members
+
+            public bool Equals(PatternKey other) {
+                return other.Pattern == Pattern && other.Flags == Flags;
+            }
+
+            #endregion
+        }
+        
         #endregion
     }
 }

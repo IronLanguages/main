@@ -30,6 +30,22 @@ describe "self in an eigenclass body (class << obj)" do
     cls.should_not equal(Object)
     mock.is_a?(cls).should be_true
   end
+  
+  it "is a Class for classes" do
+    cls = class << ClassSpecs::A;self;end
+    cls.is_a?(Class).should be_true
+  end
+  
+  it "inherits from Class for classes" do
+    temp = []
+    cls = class << Object;self;end
+    sc = cls
+    until sc.nil? || sc.superclass == sc
+      temp << sc
+      sc = sc.superclass
+    end
+    temp.should include(Class)
+  end
 
   ruby_version_is "1.9" do
     it "is a metaclass for classes" do
@@ -148,22 +164,13 @@ describe "A constant on an eigenclass" do
     end.should raise_error(NameError)
   end
 
-  ruby_version_is "" ... "1.9" do
-    it "appears in the eigenclass constant list" do
-      constants = class << @object; constants; end 
-      constants.should include("CONST")
-    end
-  end
-
-  ruby_version_is "1.9" do
-    it "appears in the eigenclass constant list" do
-      constants = class << @object; constants; end 
-      constants.should include(:CONST)
-    end
+  it "appears in the eigenclass constant list" do
+    klass = class << @object; self; end
+    klass.should have_constant(:CONST)
   end
 
   it "does not appear in the object's class constant list" do
-    @object.class.constants.should_not include(:CONST)
+    @object.class.should_not have_constant(:CONST)
   end
 
   it "is not preserved when the object is duped" do

@@ -12,8 +12,29 @@ module NoMethodErrorSpecs
 
   class NoMethodErrorD; end
 end
-  
+
 module ExceptionSpecs
+  class Exceptional < Exception; end
+  
+  class Backtrace
+    def self.backtrace
+      begin
+        raise
+      rescue RuntimeError => e
+        e.backtrace
+      end
+    end
+  end
+
+  class UnExceptional < Exception
+    def backtrace
+      nil
+    end
+    def message
+      nil
+    end
+  end
+
   class InitializedException < Exception
     def initialize
       ScratchPad.record :initialized_exception

@@ -1,0 +1,374 @@
+=== 3.8.3 / 2009-08-07
+
+* 1 minor enhancement:
+
+  * Added Inline::C#add_static to make consts cleaner
+
+=== 3.8.2 / 2009-06-23
+
+* 1 bug fix:
+
+  * ruby 1.9 expands __FILE__ and broke my tests
+
+=== 3.8.1 / 2008-10-24
+
+* 1 minor enhancement
+
+  * Inline registers all classes for hoe's INLINE=1 packaging feature.
+
+=== 3.8.0 / 2008-10-22
+
+* 8 minor enhancements:
+
+  * Inline::C now uses ZenTestMapping to automatically map C functions to ruby
+    names.
+  * Inline::C#map_c_const can now map to a ruby constant name.
+  * Added accessors for members of Data_Wrap_Structs.  See Inline::C#accessor.
+  * Added long long, unsigned long long, off_t types to built-in type map.
+  * Added #alias_type_converter and #remove_type_converter.
+  * Consider MinGW (mingw) as valid Windows platform.
+  * Properly fallback to all the environment options under Windows. #22511.
+  * Properly join path under OS with drive letters. #22292.
+
+* 1 bug fixes:
+
+  * Inline::C now uses rb_define_alloc_func().
+
+=== 3.7.0 / 2008-06-09
+
+* 1 major enhancements:
+
+  * Removed inline_package in favor of hoe's packaging.
+
+* 2 minor enhancements:
+
+  * Switched from warn/exit to abort to fix buffering for error messages.
+  * Improved some error messages.
+
+* 2 bug fixes:
+
+  * Fixes for rubinius.
+  * Fixes for 1.9.
+
+=== 3.6.7 / 2008-03-20
+
+* 3 minor enhancements:
+
+  * Added ability to work entirely without .ruby_inline dir. Thanks Kevin Clark!
+  * Updated history, readme, and rakefile for new hoe abilities.
+  * Cleaned up some really ugly schlock. Man, compiling sucks!
+
+* 2 bug fixes:
+
+  * Fixes for 1.9.
+  * Add -I for platform-specific header dir (for ruby/config.h).
+
+=== 3.6.6 / 2007-12-27
+
+* 1 minor enhancement:
+
+  * Enhanced windows support thanks to Luis Lavena.
+
+=== 3.6.5 / 2007-11-08
+
+* 1 minor enhancement:
+
+  * Quick fix for OSX 10.5 native ruby (should be fixed in 10.5.2).
+
+=== 3.6.4 / 2007-08-20
+
+* 1 minor enhancement:
+
+  * Added ability to include ruby.h last. Thanks to Luc Heinrich.
+
+=== 3.6.3 / 2007-04-27
+
+* 7 minor enhancements:
+
+  * Added map_ruby_const and map_c_const to C builder.
+  * Converted example.rb to a real benchmark setup.
+  * Improved error messages.
+  * Added options hash for all C builder methods.
+  * Options hash can take optional :method_name param to have ruby name diff from c.
+  * Converted to a more traditional setup. Now I can heckle!
+  * Cleaned up ruby.h search.
+
+* 2 bug fixes:
+
+  * Added CCDLFLAGS. _Should_ pick up -fPIC on misconfigured 64 bit machines.
+  * Broke up all warnings so progress report was cleaner.
+
+=== 3.6.2 / 2006-10-12
+
+* 2 bug fixes:
+
+	* comment stripper much more sane to fix problems on certain linux distros
+	* fixed a nit with older C compilers.
+
+=== 3.6.1 / 2006-10-11
+
+* 1 minor enhancement
+
+	* Hoe'd the Rakefile. :P
+
+* 2 bug fixes
+
+	* Removed VALUE from @types because it is now in @@type_map.
+	* Tweak added for mingw32.
+
+=== 3.6.0 / 2005-11-30 (omg I suck: actual release: 2006-09-15)
+
+* 6 minor enhancements
+
+	* C builder can now be used directly for other foreign language glue.
+	* Pretty much all (c) functions are plain argument style, not argc/argv.
+	* Added Nathaniel and Dan's patches for windows support.
+	* Added VALUE as a default known type.
+	* Improved testing under $DEBUG.
+	* Deprecated $INLINE_FLAGS and $INLINE_LIBS are dead.
+
+* 3 bug fixes
+
+	* Fixed a number of issues wrt testing.
+	* Cleaned up and cached certain calculations.
+	* Some windows compiler fixes went in, but MS compiler is a PITA still.
+
+=== 3.5.0 / 2005-10-15
+
+* 4 minor enhancements
+
+	* Switched to install for Makefile.
+	* Lots of minor cleanup.
+	* Added add_to_init to extend init methods. Great hack!
+	* Added 2 demo files used in the rubyconf 2005 presentation.
+
+* 1 bug fix
+
+	* Fixed example in README.txt. OOPS!
+
+=== 3.4.0 / 2005-07-13
+
+* 2 minor enhancement
+
+	* Changed inline to take the language and a hash of options.
+		* Still backwards compatible, for now, and emits a warning.
+	* Options are available via the builder passed to your block.
+
+* 2 bug fixes
+
+	* Modified caller discovery, yet again, due to changes in ruby 1.8.3.
+	* More compatible and clean with non-gems systems.
+
+=== 3.3.2 / 2005-05-19
+
+* 4 bug fixes
+
+	* Fixed a line number issue when using c_raw w/ multi-line signatures.
+	* Inline can now be invoked multiple times per class.
+	* Filled out rdoc.
+	* Fixed some old tests.
+
+=== 3.3.1 / 2005-05-03
+
+* 3 bug fixes
+
+	* Fixed a bug w/ unit tests involving caching of rootdir.
+	* Added a minor tweak to the file discovery when called through eval.
+	* Moved the packaging code into inline.rb in order to get rubygems wrapped scripts to work again (wrapper was breaking due to __FILE__ != $0).
+
+=== 3.3.0 / 2005-04-22
+
+* 2 minor enhancement
+
+	* Added inline_package, which helps you package inlined code into gems.
+	* inline_package also generates a Rakefile for you if you need it.
+	* inline.rb now (only) loads packaged code when present.
+
+=== 3.2.1 / 2005-04-19
+
+* 2 bug fixes
+
+	* Added double to typemap. Thanks Phil Tomson!
+	* Added a minor hack to get cygwin to work right--lemme know pls.
+
+=== 3.2.0 / 2004-11-27
+
+* 8 minor enhancements
+
+	* Gemified
+	* Added #line preprocessor directives to make debugging inside your ruby file practical.
+	* Added uninstall rule to Makefile
+	* Inline::C now generates classes directly instead of included modules.
+	* Better execeptions are thrown on error.
+	* Incorporated a bunch of changes from Jonathan Paisley:
+		* Generation of inline'd class methods. (c_singleton and c_raw_singleton)
+		* Fixed problems with nested module/classes.
+		* Inline can now extend the same class multiple times.
+
+* 2 bug fixes
+
+	* Smarter require/instantiation to accomodate other languages better.
+	* Fixed a logic error where running good code, then bad, then bad again ran the original good code.
+
+=== 3.1.0 / 2004-09-24
+
+* 2 minor enhancement
+
+	* Extended API of Inline::C with prefix(code).
+	* Documented all public API.
+
+* 2 bug fixes
+
+	* Cleaned a lot of code and tests.
+	* Removed nearly all tags.
+
+=== 3.0.1 / 2004-02-24
+
+* 2 bug fixes
+
+	* I let references to ZenTestUnit slip through the release. Removed.
+	* Converted History.txt to ZenWeb format.
+
+=== 3.0.0 / 2003-12-23
+
+* 3 major enhancements
+
+	* Complete rewrite with new design.
+	* Multiple language support, works with C/C++ out of the box.
+	* Multiple functions per compilation unit, now allowing entire classes to be defined and linked in one unit.
+
+* Notes:
+
+	* I still need to write much better/complete documentation.
+
+=== 2.2.0 / 2003-01-25
+
+* 1 minor enhancements
+
+	* Touch all generated files to avoid unnecessary diffs.
+
+* 1 bug fixes
+
+	* Added good profiling example in tutorial/*.
+	* Added profiling strategy in README.txt.
+
+* Notes:
+
+	* Paired with Doug Beaver <snarly@beaver.net>
+
+=== 2.1.1 / 2002-12-27
+
+* 2 bug fixes
+
+	* Fixed a bug in inline.rb where it was comparing against inline.rb, not the caller.
+	* Tweaked example.rb to take the number of iterations as an option.
+
+=== 2.1.0 / 2002-12-17
+
+* 2 minor enhancements
+
+	* Added inline_c_raw to replace Inline.inline.
+	* Removed module Inline as a whole. This gets rid of some
+	* major version incompatibilities, tons of duplicate code, and
+	* just seems to make things happier.
+
+* 4 bug fixes
+
+	* Added a fix from Michael Scholz to fix the use of $0 for file test.
+	* Added private and public declarations since we are invading
+	* class Module.
+	* Fixed tests... oops!
+	* Lots of clean up...
+
+* Notes:
+
+	* Reviewed by Doug Beaver <snarly@beaver.net>
+
+=== 2.0.0 / 2002-12-12
+
+* 2 bug fixes
+
+	* Minor fix to get working on MacOS X (.so vs .bundle).
+	* Downgraded typemap to be compatible with 1.6.x.
+
+* Notes:
+
+	* Paired w/ Doug Beaver <snarly@beaver.net>
+
+=== 2.0.0 beta / 2002-11-22
+
+* 1 major enhancements
+
+	* Added inline_c, a "compile-time" version of inline. Massively enhanced, this version has a limited form of C function parsing.
+
+* 2 minor enhancements
+
+	* Deprecated Inline#inline for Module#inline_c. To be removed by 2.1.0.
+	* Extended example.rb to include a fully written inlined C function.
+
+* 3 bug fixes
+
+	* Updated README.txt and improved some of the documentation.
+	* Added test and clean rules to Makefile.
+	* Removed the copious warnings if running ruby < 1.7.2.
+
+* Notes:
+
+	* Paired w/ Doug Beaver <snarly@beaver.net>
+
+=== 1.1.0 / 2002-11-01
+
+* 2 minor enhancements
+
+	* Aliased methods are now inlined as well. 250x faster.
+	* ONLY on ruby 1.7*. Warns on ruby < 1.7.
+	* Added a makefile to automate running of all different benchmarks.
+
+* 1 bug fixes
+
+	* Improved example to include an aliased method testcase.
+
+=== 1.0.7 / 2002-09-22
+
+* 1 minor enhancements
+
+	* Only compiles the generated code if it was different from the previous version.
+
+* 1 bug fixes
+
+	* Improved security: Checks group and global write on home directory.
+
+=== 1.0.6 / 2002-09-18
+
+* 1 minor enhancements
+
+	* Added a prelude argument for header and datatype declarations.
+
+* 3 bug fixes
+
+	* Only output stuff if invoked verbose (ie 'ruby -v ./example.rb').
+	* Added some compatibility code for windows.
+	* Declared requirement on POSIX system.
+
+=== 1.0.5 / 2002-09-11
+
+* 2 bug fixes
+
+	* Improved security model for UNIX. Still not sure about windoze.
+	* Fixed History.txt to be accurate, gave example in README.
+
+=== 1.0.4 / 2002-09-10
+
+* 1 major enhancements
+
+	* Released to sourceforge!
+
+* 1 bug fixes
+
+	* A number of very minor bug fixes from IRC sessions w/ others.
+
+=== 1.0.0 / 2002-09-05
+
+* 1 major enhancements
+
+	* Birthday!
