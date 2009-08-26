@@ -11,6 +11,7 @@ describe ".NET events" do
   after :all do
     verb, $VERBOSE = $VERBOSE, nil
     IronRuby = Foo
+    Object.send :remove_const, :Foo
     $VERBOSE = verb
   end
   csc <<-EOL

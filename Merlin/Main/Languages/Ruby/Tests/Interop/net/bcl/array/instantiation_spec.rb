@@ -32,8 +32,8 @@ describe "Creating a .NET array" do
     end
 
     it "can be referenced" do
-      @array[1][1].should == 11
-      @array.get_value(1,1).should == 11
+      @array[1, 1].should == 110
+      @array.get_value(1,1).should == 110
     end
   end
 end

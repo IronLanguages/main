@@ -265,7 +265,7 @@ public class ClassWithEvents {
         if (StaticFullEvent != null) StaticFullEvent(new object(), count);
       }
     }
-#line 16 "./events/mapping_spec.rb"
+#line 17 "./events/mapping_spec.rb"
 #pragma warning disable 67
   public delegate void EventHandler(object source, int count);
   public partial class BasicEventClass {
@@ -347,6 +347,22 @@ public interface IExposing {
     event EventHandler<EventArgs> IsExposedChanged;
     bool IsExposed {get; set;}
   }
+
+  public partial class Klass {
+    public object AddEvent(IExposing arg) {
+      arg.IsExposedChanged += EH;
+      return arg;
+    }
+
+    public object RemoveEvent(IExposing arg) {
+      arg.IsExposedChanged -= EH;
+      return arg;
+    }
+
+    public void EH(object sender, EventArgs e) {
+      _foo += 1;
+    }
+  }
 #line 4 "./interface/mapping_spec.rb"
 public interface IEmptyInterface {}
     public interface IInterface { void m();}
@@ -368,7 +384,7 @@ public interface IEmptyInterfaceGroup { }
 
     public interface IInterfaceGroup1<T> {void m1();}
     public interface IInterfaceGroup1<T,V> {void m1();}
-#line 226 "./method/invocation/generic_spec.rb"
+#line 222 "./method/invocation/generic_spec.rb"
 public partial class ClassWithMethods {
         #region private methods
   private string Private1Generic0Arg<T>() {
@@ -497,7 +513,7 @@ public partial class ClassWithMethods {
     }
 
     public partial class SubKlass : Klass {}
-#line 264 "./method/invocation/generic_spec.rb"
+#line 260 "./method/invocation/generic_spec.rb"
 #pragma warning disable 693
     public partial class GenericClassWithMethods<K> {
       #region private methods
@@ -622,7 +638,7 @@ public partial class ClassWithMethods {
 
     }
     #pragma warning restore 693
-#line 291 "./method/invocation/generic_spec.rb"
+#line 287 "./method/invocation/generic_spec.rb"
 #pragma warning disable 693
     public partial class GenericClass2Params<K, J> {
       #region private methods

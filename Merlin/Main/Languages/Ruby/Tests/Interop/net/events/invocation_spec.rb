@@ -48,32 +48,14 @@ describe "Invoking events" do
     @helper[:method].should == 1
   end
 
-  it "works with methods via +=" do
-    @klass.full_event += @method
-    @klass.invoke_full_event(1)
-    @helper[:method].should == 1
-  end
-
   it "works with lambdas via add" do
     @klass.full_event.add @lambda
     @klass.invoke_full_event(1)
     @helper[:lambda].should == 1
   end
 
-  it "works with methods via +=" do
-    @klass.full_event += @lambda
-    @klass.invoke_full_event(1)
-    @helper[:lambda].should == 1
-  end
-
   it "works with procs via add" do
     @klass.full_event.add @proc
-    @klass.invoke_full_event(1)
-    @helper[:proc].should == 1
-  end
-
-  it "works with methods via +=" do
-    @klass.full_event += @proc
     @klass.invoke_full_event(1)
     @helper[:proc].should == 1
   end
@@ -100,26 +82,9 @@ describe "Invoking events" do
     @helper[:lambda].should == 1
   end
   
-  it "works with multiple objects via +=" do
-    @klass.full_event += @method
-    @klass.full_event += @proc
-    @klass.full_event += @lambda
-    @klass.invoke_full_event(1)
-    @helper[:proc].should == 1
-    @helper[:method].should == 1
-    @helper[:lambda].should == 1
-  end
-
   it "works with multiple of one callback via add" do
     @klass.full_event.add @method
     @klass.full_event.add @method
-    @klass.invoke_full_event(1)
-    @helper[:method].should == 2
-  end
-
-  it "works with multiple of one callback via +=" do
-    @klass.full_event += @method
-    @klass.full_event += @method
     @klass.invoke_full_event(1)
     @helper[:method].should == 2
   end
@@ -129,15 +94,6 @@ describe "Invoking events" do
     @klass.full_event.add @method
     @klass.invoke_full_event(1)
     @klass.full_event.remove @method
-    @klass.invoke_full_event(1)
-    @helper[:method].should == 3
-  end
-
-  it "registers adds and removes" do
-    @klass.full_event += @method
-    @klass.full_event += @method
-    @klass.invoke_full_event(1)
-    @klass.full_event -= @method
     @klass.invoke_full_event(1)
     @helper[:method].should == 3
   end

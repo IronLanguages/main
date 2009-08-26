@@ -185,7 +185,7 @@ describe :generic_methods, :shared => true do
   it "has proper errors for constrained generics" do
     lambda { @klass.method(:struct_constraint_method).of(String).call("a")}.should raise_error(ArgumentError)
     lambda { @klass.method(:class_constraint_method).of(Fixnum).call(1)}.should raise_error(ArgumentError)
-    lambda { @klass.method(:constructor_constraint_method).of(ClrString).call}.should raise_error(ArgumentError)
+    lambda { @klass.method(:constructor_constraint_method).of(System::String).call}.should raise_error(ArgumentError)
     lambda { @klass.method(:type_constraint_method).of(String, Klass).call("a")}.should raise_error(ArgumentError)
   end
 
@@ -201,10 +201,6 @@ describe :generic_methods, :shared => true do
     end
     @klass.method(:constructor_constraint_method).of(Foo).call.foo.should == 10
     @klass.method(:type_constraint_method).of(SubFoo, Foo).call(SubFoo.new).foo.should == 10
-  end
-
-  it "has proper error messages for skipping generic" do
-    lambda {@klass.method(:public_1_generic_1_arg).call("a")}.should raise_error(ArgumentError, /generic/i)
   end
 
   it "has proper error messages for incorrect number of arguments" do

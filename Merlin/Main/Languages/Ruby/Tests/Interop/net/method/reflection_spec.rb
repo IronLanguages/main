@@ -154,8 +154,8 @@ describe "Static .NET methods" do
 
   it "don't incorrectly get cached when called on an instance" do
     #might be related to Rubyforge 24104
-    Klass.new.method(:test_method) rescue nil
-    Klass.method(:test_method).should be_kind_of(Method)
+    Klass.new.method(:static_void_method) rescue nil
+    Klass.method(:static_void_method).should be_kind_of(Method)
   end
 end
 

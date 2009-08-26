@@ -160,15 +160,26 @@ describe "Implementing interfaces that define events" do
     event EventHandler<EventArgs> IsExposedChanged;
     bool IsExposed {get; set;}
   }
+
+  public partial class Klass {
+    public object AddEvent(IExposing arg) {
+      arg.IsExposedChanged += EH;
+      return arg;
+    }
+
+    public object RemoveEvent(IExposing arg) {
+      arg.IsExposedChanged -= EH;
+      return arg;
+    }
+
+    public void EH(object sender, EventArgs e) {
+      _foo += 1;
+    }
+  }
   EOL
 
   before(:all) do
-    class RubyExposerDefault
-      include IExposing
-    end
-
-    class RubyExposerMM
-      include IExposing
+    module Events
       attr_reader :handlers
       
       def initialize
@@ -178,7 +189,18 @@ describe "Implementing interfaces that define events" do
       def reset
         @handlers = []
       end
-      
+
+      def trigger
+        @handlers.each {|e| e.invoke(self, nil)}
+      end
+    end
+    class RubyExposerDefault
+      include IExposing
+    end
+
+    class RubyExposerMM
+      include IExposing
+      include Events 
       def method_missing(meth, *args, &blk)
         case meth.to_s
         when /^add_/
@@ -194,15 +216,7 @@ describe "Implementing interfaces that define events" do
     
     class RubyExposer
       include IExposing
-      attr_reader :handlers
-      def initialize
-        reset 
-      end
-
-      def reset
-        @handlers = []
-      end
-      
+      include Events 
       def add_IsExposedChanged(h)
         @handlers << h
         "Ruby add handler"
@@ -215,25 +229,31 @@ describe "Implementing interfaces that define events" do
     end
   end
 
+  before(:each) do
+    @klass = Klass.new
+  end
+
   it "allows empty implementation without TypeLoadException" do
     lambda {RubyExposerDefault.new}.should_not raise_error
   end
 
   it "allows method_missing to be the event managment methods" do 
     exposer = RubyExposerMM.new
-    l = lamdba {|s,e| [s,e]}
-    (exposer.is_exposed_changed.add(l)).should == "Method Missing add"
-    exposer.handlers.should include l
-    (exposer.is_exposed_changed.remove(l)).should == "Method Missing remove"
+    @klass.add_event(exposer)
+    exposer.handlers.size.should == 1
+    exposer.trigger
+    @klass.foo.should == 11
+    @klass.remove_event(exposer)
     exposer.handlers.should be_empty
   end
 
   it "allows add and remove event definitions" do
     exposer = RubyExposer.new
-    l = lamdba {|s,e| [s,e]}
-    (exposer.is_exposed_changed.add(l)).should == "Ruby add handler"
-    exposer.handlers.should include l
-    (exposer.is_exposed_changed.remove(l)).should == "Ruby remove handler"
+    @klass.add_event(exposer)
+    exposer.handlers.size.should == 1
+    exposer.trigger
+    @klass.foo.should == 11
+    @klass.remove_event(exposer)
     exposer.handlers.should be_empty
   end
 end

@@ -1,6 +1,0 @@
-fails:Reference Void delegate instantiation requires a proc-like object
-fails:Reference Reference delegate requires a proc-like object
-fails:Reference Value delegate requires a proc-like object
-fails:Reference Reference array delegate requires a proc-like object
-fails:Reference Value array delegate requires a proc-like object
-fails:Reference Generic delegate requires a proc-like object

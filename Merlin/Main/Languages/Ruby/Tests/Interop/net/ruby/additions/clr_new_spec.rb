@@ -51,8 +51,9 @@ describe "Added method clr_new" do
   end
 
   it "raises a TypeError if called on a pure Ruby type" do
-    class Foo;end
-    lambda { Foo.clr_new }.should raise_error TypeError
+    class Bar;end
+    lambda { Bar.clr_new }.should raise_error TypeError
+    lambda { Class.new.clr_new }.should raise_error TypeError
     lambda { Numeric.clr_new }.should raise_error TypeError
   end
 end

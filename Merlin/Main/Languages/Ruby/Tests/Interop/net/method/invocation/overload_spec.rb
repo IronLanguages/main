@@ -53,7 +53,7 @@ public #{type} #{prefix}SignatureOverload#{suffix}() { #{blk.call "SO void" }; }
             [lambda {|meth| meth.call("a","b","c")}, "SO string params(string[])"],
             [lambda {|meth| meth.call("a",1,1)}, "SO string int int"],
             [lambda {|meth| meth.call(1,2,3)}, "SO params(int[])"]]
-    @out_or_ref_cals = [[lambda {|meth| meth.overload(System::String.GetType.MakeByRefType.to_class).call()}, "SO ref string"]] #this array will hold more once this works.
+    @out_or_ref_calls = [[lambda {|meth| meth.overload(System::String.GetType.MakeByRefType.to_class).call()}, "SO ref string"]] #this array will hold more once this works.
   end
 
   it "is performed" do
