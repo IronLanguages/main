@@ -1,7 +1,6 @@
 require File.dirname(__FILE__) + '/../spec_helper'
 
 describe "Enums" do
-  csc "public enum EnumInt : int { A, B, C}"
   it "map to Ruby classes" do
     EnumInt.should be_kind_of Class
   end

@@ -1,11 +1,6 @@
 require File.dirname(__FILE__) + '/../../spec_helper'
 
 describe "C# decimal numbers" do
-  csc <<-EOL
-  public partial class Klass {
-    public decimal MyDecimal {get; set;}
-  }
-  EOL
   it "should be able to check as equal to Float" do
     #regression test for [#19872] IComparableOps.CompareTo 
     #throws argument error when type is Decimal

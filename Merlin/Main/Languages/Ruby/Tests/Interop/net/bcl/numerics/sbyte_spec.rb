@@ -2,13 +2,6 @@ require File.dirname(__FILE__) + "/../../spec_helper"
 require File.dirname(__FILE__) + "/../../shared/numeric"
 
 describe "System::SByte" do
-  csc <<-EOL
-  public partial class NumericHelper {
-    public static int SizeOfSByte() {
-      return sizeof(SByte);
-    }
-  }
-  EOL
   before(:each) do
     @size = NumericHelper.size_of_s_byte
     @minvalue = -128

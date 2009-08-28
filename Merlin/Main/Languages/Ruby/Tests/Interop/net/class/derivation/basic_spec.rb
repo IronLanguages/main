@@ -1,14 +1,7 @@
 require File.dirname(__FILE__) + '/../../spec_helper'
+require File.dirname(__FILE__) + '/../fixtures/classes'
 
 describe "Basic class derivation" do
-  before(:all) do
-    class TestDerived < Klass
-      def foo
-        m
-      end
-    end
-  end
-
   before(:each) do
     @obj = TestDerived.new
   end

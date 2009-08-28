@@ -2,17 +2,6 @@ require File.dirname(__FILE__) + '/../../spec_helper'
 require File.dirname(__FILE__) + '/../shared/instantiation'
 
 describe "Reference Void delegate instantiation" do
-  csc <<-EOL
-    public partial class DelegateHolder {
-      public delegate string RefVoidDelegate();
-      public delegate string RefRefDelegate(string foo);
-      public delegate string RefValDelegate(int foo);
-      public delegate string RefARefDelegate(string[] foo);
-      public delegate string RefAValDelegate(int[] foo);
-      public delegate string RefGenericDelegate<T>(T foo);
-    }
-  EOL
-  
   it_behaves_like :delegate_instantiation, DelegateHolder::RefVoidDelegate  
 end
 

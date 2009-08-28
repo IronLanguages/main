@@ -1,8 +1,6 @@
+require File.dirname(__FILE__) + "/../fixtures/classes"
+
 describe :delegate_instantiation, :shared => true do
-  class DelegateTester
-    def self.bar
-    end
-  end
   before(:each) do
     @class = @method
   end

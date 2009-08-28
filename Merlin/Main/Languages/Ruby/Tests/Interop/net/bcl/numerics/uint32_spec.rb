@@ -2,13 +2,6 @@ require File.dirname(__FILE__) + '/../../spec_helper'
 require File.dirname(__FILE__) + '/../../shared/numeric'
 
 describe "System::UInt32" do
-  csc <<-EOL
-  public partial class NumericHelper {
-    public static int SizeOfUInt32() {
-      return sizeof(UInt32);
-    }
-  }
-  EOL
   before(:each) do
     @size = NumericHelper.size_of_u_int32
     @minvalue = 0

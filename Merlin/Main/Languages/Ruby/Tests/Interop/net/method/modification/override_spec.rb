@@ -1,13 +1,6 @@
 require File.dirname(__FILE__) + '/../../spec_helper'
 
 describe "Overriding .NET methods" do 
-  csc <<-EOL 
-  public partial class ClassWithMethods {
-    public int SummingMethod(int a, int b){
-      return a+b;
-    }
-  }
-  EOL
   before(:each) do
     @obj = ClassWithMethods.new
   end
@@ -42,17 +35,6 @@ describe "Overriding .NET methods" do
 end
 
 describe "Overriding virtual methods" do
-  csc <<-EOL
-    public class VirtualMethodBaseClass { 
-      public virtual string VirtualMethod() { return "virtual"; } 
-    }
-    public class VirtualMethodOverrideNew : VirtualMethodBaseClass { 
-      new public virtual string VirtualMethod() { return "new"; } 
-    }
-    public class VirtualMethodOverrideOverride : VirtualMethodBaseClass {
-      public override string VirtualMethod() { return "override"; } 
-    }
-  EOL
   before(:each) do
     @meth = VirtualMethodBaseClass.instance_method("virtual_method")
   end

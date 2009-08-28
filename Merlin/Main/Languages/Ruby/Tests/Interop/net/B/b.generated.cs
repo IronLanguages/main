@@ -1,6 +1,6 @@
-#line 108 "./assembly/access/custom_assembly_spec.rb"
+#line 3 "./assembly/fixtures/classes.rb"
 public class B {
-      public static int Main() {
-        return 1;
-      }
+    public static int Main() {
+      return 1;
     }
+  }

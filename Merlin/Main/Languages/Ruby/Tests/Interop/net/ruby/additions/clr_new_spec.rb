@@ -1,27 +1,7 @@
 require File.dirname(__FILE__) + "/../../spec_helper"
+require File.dirname(__FILE__) + "/../fixtures/classes"
 
 describe "Added method clr_new" do
-  csc <<-EOL
-  namespace CLRNew {
-    public class Ctor {
-      public int Tracker {get; set;}
-
-      public Ctor() {
-        Tracker = 1; 
-      }
-    }
-  }
-  EOL
-
-  before(:all) do
-    class CLRNew::Ctor
-      def initialize
-        tracker = 2
-      end
-    end
-  end
-
-
   it "calls the CLR ctor for a CLR type" do
     ctor = CLRNew::Ctor.clr_new
     ctor.should be_kind_of CLRNew::Ctor

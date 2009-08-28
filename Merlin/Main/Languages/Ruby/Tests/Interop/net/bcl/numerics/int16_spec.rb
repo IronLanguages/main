@@ -2,13 +2,6 @@ require File.dirname(__FILE__) + "/../../spec_helper"
 require File.dirname(__FILE__) + "/../../shared/numeric"
 
 describe "System::Int16" do
-  csc <<-EOL
-  public partial class NumericHelper {
-    public static int SizeOfInt16() {
-      return sizeof(Int16);
-    }
-  }
-  EOL
   before(:each) do
     @size = NumericHelper.size_of_int16
     @minvalue = -32768

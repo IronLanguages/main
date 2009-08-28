@@ -14,14 +14,6 @@ describe ".NET events" do
     Object.send :remove_const, :Foo
     $VERBOSE = verb
   end
-  csc <<-EOL
-  #pragma warning disable 67
-  public delegate void EventHandler(object source, int count);
-  public partial class BasicEventClass {
-    public event EventHandler OnEvent;
-  }
-  #pragma warning restore 67
-  EOL
   it "map to a custom class" do
     BasicEventClass.new.on_event.should be_kind_of IronRuby::Builtins::RubyEvent
   end

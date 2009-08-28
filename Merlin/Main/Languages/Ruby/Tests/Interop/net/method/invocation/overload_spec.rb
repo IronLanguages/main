@@ -1,44 +1,6 @@
 require File.dirname(__FILE__) + '/../../spec_helper'
 
 describe "Overload resolution" do
-  def method_block(type, prefix, suffix = "", &blk)
-    val = <<-EOL
-public #{type} #{prefix}SignatureOverload#{suffix}() { #{blk.call "SO void" }; }
-    public #{type} #{prefix}SignatureOverload#{suffix}(string foo) { #{blk.call "SO string"}; }
-    public #{type} #{prefix}SignatureOverload#{suffix}(int foo) { #{blk.call "SO int"}; }
-    public #{type} #{prefix}SignatureOverload#{suffix}(string foo, params int[] bar) { #{blk.call "SO string params(int[])"}; }
-    public #{type} #{prefix}SignatureOverload#{suffix}(string foo, params string[] bar) { #{blk.call "SO string params(string[])"}; }
-    public #{type} #{prefix}SignatureOverload#{suffix}(string foo, int bar, int baz) { #{ blk.call "SO string int int"};}
-    public #{type} #{prefix}SignatureOverload#{suffix}(params int[] args) { #{blk.call "SO params(int[])"};}
-    public #{type} #{prefix}SignatureOverload#{suffix}(ref string foo) { #{blk.call "SO ref string"}; }
-    public #{type} #{prefix}SignatureOverload#{suffix}(out int foo) { foo = 1;#{blk.call "SO out int"}; }
-    public #{type} #{prefix}SignatureOverload#{suffix}(string foo, ref string bar) { #{blk.call "SO string ref"}; }
-    public #{type} #{prefix}SignatureOverload#{suffix}(ref string foo, string bar) { #{blk.call "SO ref string"}; }
-    public #{type} #{prefix}SignatureOverload#{suffix}(out string foo, ref string bar) { foo = "out"; #{blk.call "SO out ref"}; }
-    EOL
-  end
-  
-  csc <<-EOL
-  public partial class ClassWithOverloads {
-    public string Tracker { get; set;}
-
-    public string PublicProtectedOverload(){
-      return "public overload";
-    }
-    
-    protected string PublicProtectedOverload(string str) {
-      return "protected overload";
-    }
-
-    #{method_block("void", "Void") {|el| "Tracker = \"#{el}\""}}
-    #{method_block("string", "Ref") {|el| "return \"#{el}\""} }
-    #{method_block("string[]", "RefArray") {|el| "return new string[]{\"#{el}\"}"} }
-    #{method_block("int", "Val") {|el| "Tracker = \"#{el}\";\nreturn 1"} }
-    #{method_block("int[]", "ValArray") {|el| "Tracker = \"#{el}\";\nreturn new int[]{1}" }}
-    #{method_block("string", "Generic", "<T>") {|el| "return \"#{el}\" "}}
-  }
-  EOL
- 
   before(:each) do
     @klass = ClassWithOverloads.new
     @overloaded_methods = @klass.method(:Overloaded)
