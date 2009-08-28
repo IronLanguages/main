@@ -63,18 +63,24 @@ class System::Windows::FrameworkElement
   end
 end
 
-class System::Windows::Controls::RichTextBox
-  def document=(value)
-    self.Document = value.kind_of?(String) ? FlowDocument.from_simple_markup(value || '') : value
+if not SILVERLIGHT
+  class System::Windows::Controls::RichTextBox
+    def document=(value)
+      smflow = value.kind_of?(Wpf::SimpleMarkupFlow) ? value : Wpf::SimpleMarkupFlow.new(value)
+      self.Document = smflow.flow
+    end
   end
 end
 
 class System::Windows::Controls::TextBox
   def document=(value)
     if SILVERLIGHT
-      self.Text = value.strip.split("\n").map{|i| i.strip}.join("\n")
+      self.Text = ""
+      smflow = value.kind_of?(Wpf::SimpleMarkupFlow) ? value : Wpf::SimpleMarkupFlow.new(value)
+      smflow.flow.each {|i| self.inlines.add i }
+      self.TextWrapping = TextWrapping.Wrap # TODO : Move this to XAML
     else
-      self.Text = value
+      self.Text = value.flow
     end
   end
 end
@@ -82,9 +88,12 @@ end
 class System::Windows::Controls::TextBlock
   def document=(value)
     if SILVERLIGHT
-      self.Text = value.strip.split("\n").map{|i| i.strip}.join("\n")
+      self.Text = ""
+      smflow = value.kind_of?(Wpf::SimpleMarkupFlow) ? value : Wpf::SimpleMarkupFlow.new(value)
+      smflow.flow.each {|i| self.inlines.add i }
+      self.TextWrapping = TextWrapping.Wrap # TODO : Move this to XAML
     else
-      self.Text = value
+      self.Text = value.flow
     end
   end
 end
@@ -152,43 +161,6 @@ class System::Windows::Threading::DispatcherObject
     require "system.core, Version=3.5.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
     dispatch_callback = System::Action[].new block
     self.dispatcher.invoke(System::Windows::Threading::DispatcherPriority.Normal, dispatch_callback)
-  end
-end
-
-class System::Windows::Documents::FlowDocument
-  def <<(text)
-    paragraph = System::Windows::Documents::Paragraph.new
-    paragraph.inlines.add(System::Windows::Documents::Run.new(text))
-    self.blocks.add paragraph
-  end
-  
-  # Converts text in RDoc simple markup format to a WPF FlowDocument object
-  def self.from_simple_markup text
-
-    if SILVERLIGHT
-      return text.split("\n").map{|i| i.strip}.join("\n").strip
-    end
-
-    require 'rdoc/markup/simple_markup'
-    require 'rdoc/markup/simple_markup/inline'
-
-    if not @markupParser
-      @markupParser = SM::SimpleMarkup.new
-      
-      # external hyperlinks
-      @markupParser.add_special(/((link:|https?:|mailto:|ftp:|www\.)\S+\w)/, :HYPERLINK)
-
-      # and links of the form  <text>[<url>]
-      @markupParser.add_special(/(((\{.*?\})|\b\S+?)\[\S+?\.\S+?\])/, :TIDYLINK)
-      # @markupParser.add_special(/\b(\S+?\[\S+?\.\S+?\])/, :TIDYLINK)
-    end
-    
-    begin
-      @markupParser.convert(text, Wpf::ToFlowDocument.new)
-    rescue Exception => e
-      puts "Error while converting:\n#{text}"
-      raise e
-    end
   end
 end
 
@@ -324,10 +296,56 @@ module Wpf
     IronRuby::Ruby.SetCommandDispatcher dispatch_console_command # This is a non-existent method that will need to be implemented
   end
 
-  class ToFlowDocument
+  # Converts text in RDoc simple markup format 
+  class SimpleMarkupFlow
     include System::Windows
     include System::Windows::Documents
+        
+    def initialize(text)
+      require 'rdoc/markup/simple_markup'
+      require 'rdoc/markup/simple_markup/inline'
+  
+      if not @markupParser
+        @markupParser = SM::SimpleMarkup.new
+        
+        # external hyperlinks
+        @markupParser.add_special(/((link:|https?:|mailto:|ftp:|www\.)\S+\w)/, :HYPERLINK)
+  
+        # and links of the form  <text>[<url>]
+        @markupParser.add_special(/(((\{.*?\})|\b\S+?)\[\S+?\.\S+?\])/, :TIDYLINK)
+        # @markupParser.add_special(/\b(\S+?\[\S+?\.\S+?\])/, :TIDYLINK)
+      end
+      
+      begin
+        @markupParser.convert(text, self)
+      rescue Exception => e
+        puts "#{e} while converting: #{text}\n#{e.backtrace.join(%{\n})}"
+        return []
+        #raise e
+      end
+    end
 
+    # Returns an array of Inline object on Silverlight, or a WPF FlowDocument object otherwise
+    attr_accessor :flow
+
+    def add_paragraph(item, bold = true, font_family = nil)
+      inline = item
+      if not item.kind_of? Inline
+        inline = Run.new
+        inline.Text = item
+        inline.font_family = FontFamily.new font_family if font_family 
+        inline.font_weight = FontWeights.Bold if bold
+      end
+
+      if SILVERLIGHT
+        @flow << inline
+        @flow << LineBreak.new
+      else
+        para = Paragraph.new inline
+        @flow.blocks.add para
+      end
+    end
+    
     def start_accepting
       @@bold_mask = SM::Attribute.bitmap_for :BOLD
       @@italics_mask = SM::Attribute.bitmap_for :EM
@@ -335,42 +353,52 @@ module Wpf
       @@hyperlink_mask = SM::Attribute.bitmap_for :HYPERLINK
       @@tidylink_mask = SM::Attribute.bitmap_for :TIDYLINK
 
-      @flowDoc = FlowDocument.new
+      @flow = SILVERLIGHT ? [] : FlowDocument.new
       @attributes = []
     end
     
     def end_accepting
-      @flowDoc
+      @flow
     end
 
     def accept_paragraph(am, fragment)
-      paragraph = convert_flow(am.flow(fragment.txt))
-      @flowDoc.blocks.add paragraph
+      inlines = convert_flow(am.flow(fragment.txt))
+      if SILVERLIGHT
+        @flow += inlines
+        @flow << LineBreak.new
+      else
+        paragraph = Paragraph.new
+        inlines.each {|i| paragraph.inlines.add i }
+        @flow.blocks.add paragraph
+      end
     end
 
     def convert_flow(flow)
-      paragraph = Paragraph.new
+      inlines = []
       active_attribute = nil
 
       flow.each do |item|
         case item
         when String
+        
+          run = Run.new
+          run.Text = item
+          
           case active_attribute
           when @@bold_mask
-            paragraph.inlines.add(Bold.new(Run.new(item)))
+            run.font_weight = FontWeights.Bold
             @attributes.clear
           when @@italics_mask
-            paragraph.inlines.add(Italic.new(Run.new(item)))
+            run.font_style = FontStyles.Italic
           when @@tt_mask
-              run = Run.new(item)
-              run.font_family = FontFamily.new "Consolas"
-              run.font_weight = FontWeights.Bold
-              paragraph.inlines.add(run)
+            run.font_weight = FontWeights.Bold
+            run.font_family = FontFamily.new "Consolas"
           when nil
-            paragraph.inlines.add(Run.new(item))
           else
             raise "unexpected active_attribute: #{active_attribute}"
           end
+          
+          inlines << run
             
         when SM::AttrChanger
           on_mask = item.turn_on
@@ -382,7 +410,7 @@ module Wpf
           end
 
         when SM::Special
-          convert_special(item, paragraph)
+          convert_special(item, inlines)
 
         else
           raise "Unknown flow element: #{item.inspect}"
@@ -391,65 +419,82 @@ module Wpf
     
       raise "mismatch" if active_attribute
       
-      paragraph
+      inlines
     end
 
     def accept_verbatim(am, fragment)
-        paragraph = Paragraph.new
-        paragraph.font_family = FontFamily.new "Consolas"
-        paragraph.font_weight = FontWeights.Bold
-        paragraph.inlines.add(Run.new(fragment.txt))
-        @flowDoc.blocks.add paragraph
+      add_paragraph fragment.txt, true, "Consolas"
     end
 
     def accept_list_start(am, fragment)
-      @list = System::Windows::Documents::List.new
+      @list = System::Windows::Documents::List.new if not SILVERLIGHT
     end
 
-    def accept_list_end(am, fragment)
-      @flowDoc.blocks.add @list
+    def accept_list_end(am, fragment)      
+      @flow.blocks.add @list if not SILVERLIGHT
     end
 
     def accept_list_item(am, fragment)
-      paragraph = convert_flow(am.flow(fragment.txt))
-      list_item = ListItem.new paragraph
-      @list.list_items.add list_item
+      inlines = convert_flow(am.flow(fragment.txt))
+      if SILVERLIGHT
+        @flow += inlines # TODO - Need to add numbers or bullets to the list items
+        @flow << LineBreak.new
+      else
+        paragraph = Paragraph.new
+        inlines.each {|i| paragraph.inlines.add i }
+        list_item = ListItem.new paragraph
+        @list.list_items.add list_item
+      end
     end
 
     def accept_blank_line(am, fragment)
+      @flow << LineBreak.new if SILVERLIGHT
     end
 
     def accept_rule(am, fragment)
       raise NotImplementedError, "accept_rule: #{fragment.to_s}"
     end
     
-    def convert_special(special, paragraph)
+    def convert_special(special, inlines)
       handled = false
       SM::Attribute.each_name_of(special.type) do |name|
         method_name = "handle_special_#{name}"
-        return send(method_name, special, paragraph) if self.respond_to? method_name
+        return send(method_name, special, inlines) if self.respond_to? method_name
       end
       raise "Unhandled special: #{special}"
     end
 
-    def handle_special_HYPERLINK(special, paragraph)
-      paragraph.inlines.add(Hyperlink.new(Run.new(special.text)))
+    def handle_special_HYPERLINK(special, inlines)
+      run = Run.new
+      run.text = special.text
+      if SILVERLIGHT
+        inlines << run
+      else
+        inlines << Hyperlink.new(run)
+      end
     end
 
-    def handle_special_TIDYLINK(special, paragraph)
+    def handle_special_TIDYLINK(special, inlines)
       text = special.text
       # text =~ /(\S+)\[(.*?)\]/
       unless text =~ /\{(.*?)\}\[(.*?)\]/ or text =~ /(\S+)\[(.*?)\]/ 
-        handle_special_HYPERLINK(special, paragraph)
+        handle_special_HYPERLINK(special, inlines)
         return
       end
 
       label = $1
       url   = $2
 
-      hyperlink = Hyperlink.new(Run.new(label))
-      hyperlink.NavigateUri = System::Uri.new url
-      paragraph.inlines.add(hyperlink)
+      run = Run.new
+      if SILVERLIGHT
+        run.Text = "#{label} (#{url})"
+        inlines << run
+      else
+        run.Text = label
+        hyperlink = Hyperlink.new run
+        hyperlink.NavigateUri = System::Uri.new url
+        inlines << hyperlink
+      end
     end
   end
 end

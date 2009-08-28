@@ -149,10 +149,7 @@ tutorial "IronRuby tutorial" do
             task(:body => "And then print the local variable.",
                  :code => "puts x"
                  ) { |iar| iar.output.chomp == "1" }
-        end
-        
-        chapter "Multi-line statements" do
-            introduction "This chapter explains how multi-line statements can be used in the tutorial"
+
             task(
               :body => %{
                 Entering multiple lines in an interactive console can be a bit tricky as it is not an editor.

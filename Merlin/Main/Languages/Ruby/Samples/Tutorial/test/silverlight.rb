@@ -30,10 +30,14 @@ class ReplBufferStream
   end
 end
 
-$LOAD_PATH << "./Libs/minitest-1.3.1/lib"
+# Hack to get minitest to work
+class Signal
+  def self.list() Hash.new end
+end
+
+$LOAD_PATH << "./Libs/minitest-1.4.2/lib"
 $0 = __FILE__ # minitest expects this to be non-nil
 require "minitest/spec"
 MiniTest::Unit.output = ReplBufferStream.new
 require "test/test_console"
 MiniTest::Unit.new.run([])
-
