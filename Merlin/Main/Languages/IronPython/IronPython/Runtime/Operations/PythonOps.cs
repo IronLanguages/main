@@ -1036,8 +1036,8 @@ namespace IronPython.Runtime.Operations {
 
 #if !SILVERLIGHT
 
-            if (o != null && ComOps.IsComObject(o)) {
-                foreach (string name in System.Dynamic.ComBinder.GetDynamicMemberNames(o)) {
+            if (o != null && Microsoft.Scripting.ComInterop.ComBinder.IsComObject(o)) {
+                foreach (string name in Microsoft.Scripting.ComInterop.ComBinder.GetDynamicMemberNames(o)) {
                     if (!res.Contains(name)) {
                         res.AddNoLock(name);
                     }

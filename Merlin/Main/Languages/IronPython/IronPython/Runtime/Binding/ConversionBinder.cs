@@ -126,7 +126,7 @@ namespace IronPython.Runtime.Binding {
 
 #if !SILVERLIGHT
             DynamicMetaObject comConvert;
-            if (ComBinder.TryConvert(new CompatConversionBinder(_context, Type, _kind == ConversionResultKind.ExplicitCast || _kind == ConversionResultKind.ExplicitTry), self, out comConvert)) {
+            if (Microsoft.Scripting.ComInterop.ComBinder.TryConvert(new CompatConversionBinder(_context, Type, _kind == ConversionResultKind.ExplicitCast || _kind == ConversionResultKind.ExplicitTry), self, out comConvert)) {
                 return comConvert;
             }
 #endif

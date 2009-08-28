@@ -99,12 +99,12 @@ namespace IronRuby.Builtins {
         }
 
         public override void Write(byte[]/*!*/ buffer, int offset, int count) {
-            _string.Insert(_position, buffer, offset, count);
+            _string.Write(_position, buffer, offset, count);
             _position += count;
         }
 
         public override void WriteByte(byte value) {
-            _string.Insert(_position, value);
+            _string.Write(_position, value, 1);
             _position++;
         }
     }

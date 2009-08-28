@@ -73,6 +73,7 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("garbage_collect", RubyMethodAttributes.PublicSingleton)]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods")]
         public static void GarbageCollect(RubyModule/*!*/ self) {
             GC.Collect();
         }

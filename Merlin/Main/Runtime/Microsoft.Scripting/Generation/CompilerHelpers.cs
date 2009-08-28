@@ -33,6 +33,7 @@ using System.ComponentModel;
 
 namespace Microsoft.Scripting.Generation {
     // TODO: keep this?
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1045:DoNotPassTypesByReference")]
     public delegate void ActionRef<T0, T1>(ref T0 arg0, ref T1 arg1);
 
     public static class CompilerHelpers {
@@ -688,6 +689,8 @@ namespace Microsoft.Scripting.Generation {
         }
 
 #if !SILVERLIGHT
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters")]
         public static bool TryGetTypeConverter(Type fromType, Type toType, out TypeConverter converter) {
             ContractUtils.RequiresNotNull(fromType, "fromType");
             ContractUtils.RequiresNotNull(toType, "toType");

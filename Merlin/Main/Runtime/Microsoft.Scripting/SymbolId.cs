@@ -102,6 +102,14 @@ namespace Microsoft.Scripting {
             return !a.Equals(b);
         }
 
+        public static bool operator <(SymbolId a, SymbolId b) {
+            return a.CompareTo(b) < 0;
+        }
+
+        public static bool operator >(SymbolId a, SymbolId b) {
+            return a.CompareTo(b) > 0;
+        }
+
         #region IComparable Members
 
         public int CompareTo(object obj) {

@@ -16,9 +16,10 @@
 #if !SILVERLIGHT // ComObject
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
-using System.Linq.Expressions;
 using System.Runtime.InteropServices.ComTypes;
+using System.Threading;
 using ComTypes = System.Runtime.InteropServices.ComTypes;
 
 namespace Microsoft.Scripting.ComInterop {
@@ -27,11 +28,14 @@ namespace Microsoft.Scripting.ComInterop {
         private string _typeName;
         private string _documentation;
         private Guid _guid;
-        private Dictionary<string, ComMethodDesc> _funcs;
-        private Dictionary<string, ComMethodDesc> _puts;
-        private Dictionary<string, ComEventDesc> _events;
+        //Hashtable is threadsafe for multiple readers single writer. 
+        //Enumerating and writing is mutually exclusive so require locking.
+        private Hashtable _funcs;
+        private Hashtable _puts;
+        private Hashtable _putRefs;
         private ComMethodDesc _getItem;
         private ComMethodDesc _setItem;
+        private Dictionary<string, ComEventDesc> _events;
         private readonly ComTypeLibDesc _typeLibDesc;
         private static readonly Dictionary<string, ComEventDesc> _EmptyEventsDict = new Dictionary<string, ComEventDesc>();
 
@@ -42,16 +46,15 @@ namespace Microsoft.Scripting.ComInterop {
             _typeLibDesc = typeLibDesc;
         }
 
-        internal static ComTypeDesc FromITypeInfo(ComTypes.ITypeInfo typeInfo, ComTypeLibDesc typeLibDesc) {
-            ComTypes.TYPEATTR typeAttr;
-            typeAttr = ComRuntimeHelpers.GetTypeAttrForTypeInfo(typeInfo);
+        
+        internal static ComTypeDesc FromITypeInfo(ComTypes.ITypeInfo typeInfo, ComTypes.TYPEATTR typeAttr) {
             if (typeAttr.typekind == ComTypes.TYPEKIND.TKIND_COCLASS) {
-                return new ComTypeClassDesc(typeInfo, typeLibDesc);
+                return new ComTypeClassDesc(typeInfo, null);
             } else if (typeAttr.typekind == ComTypes.TYPEKIND.TKIND_ENUM) {
-                return new ComTypeEnumDesc(typeInfo, typeLibDesc);
+                return new ComTypeEnumDesc(typeInfo, null);
             } else if ((typeAttr.typekind == ComTypes.TYPEKIND.TKIND_DISPATCH) ||
                   (typeAttr.typekind == ComTypes.TYPEKIND.TKIND_INTERFACE)) {
-                ComTypeDesc typeDesc = new ComTypeDesc(typeInfo, ComType.Interface, typeLibDesc);
+                ComTypeDesc typeDesc = new ComTypeDesc(typeInfo, ComType.Interface, null);
                 return typeDesc;
             } else {
                 throw new InvalidOperationException("Attempting to wrap an unsupported enum type.");
@@ -60,7 +63,9 @@ namespace Microsoft.Scripting.ComInterop {
 
         internal static ComTypeDesc CreateEmptyTypeDesc() {
             ComTypeDesc typeDesc = new ComTypeDesc(null, ComType.Interface, null);
-            typeDesc._funcs = new Dictionary<string, ComMethodDesc>();
+            typeDesc._funcs = new Hashtable();
+            typeDesc._puts = new Hashtable();
+            typeDesc._putRefs = new Hashtable();
             typeDesc._events = _EmptyEventsDict;
 
             return typeDesc;
@@ -70,19 +75,120 @@ namespace Microsoft.Scripting.ComInterop {
             get { return _EmptyEventsDict; }
         }
 
-        internal Dictionary<string, ComMethodDesc> Funcs {
+        internal Hashtable Funcs {
             get { return _funcs; }
             set { _funcs = value; }
         }
 
-        internal Dictionary<string, ComMethodDesc> Puts {
+        internal Hashtable Puts {
             get { return _puts; }
             set { _puts = value; }
+        }
+
+        internal Hashtable PutRefs {
+            set { _putRefs = value; }
         }
 
         internal Dictionary<string, ComEventDesc> Events {
             get { return _events; }
             set { _events = value; }
+        }
+
+        internal bool TryGetFunc(string name, out ComMethodDesc method) {
+            name = name.ToUpper(System.Globalization.CultureInfo.InvariantCulture);
+            if (_funcs.ContainsKey(name)) {
+                method = _funcs[name] as ComMethodDesc;
+                return true;
+            }
+            method = null;
+            return false;
+        }
+
+        internal void AddFunc(string name, ComMethodDesc method) {
+            name = name.ToUpper(System.Globalization.CultureInfo.InvariantCulture);
+            lock (_funcs) {
+                _funcs[name] = method;
+            }
+        }
+
+        internal bool TryGetPut(string name, out ComMethodDesc method) {
+            name = name.ToUpper(System.Globalization.CultureInfo.InvariantCulture);
+            if (_puts.ContainsKey(name)) {
+                method = _puts[name] as ComMethodDesc;
+                return true;
+            }
+            method = null;
+            return false;
+        }
+
+        internal void AddPut(string name, ComMethodDesc method) {
+            name = name.ToUpper(System.Globalization.CultureInfo.InvariantCulture);
+            lock (_puts) {
+                _puts[name] = method;
+            }
+        }
+
+        internal bool TryGetPutRef(string name, out ComMethodDesc method) {
+            name = name.ToUpper(System.Globalization.CultureInfo.InvariantCulture);
+            if (_putRefs.ContainsKey(name)) {
+                method = _putRefs[name] as ComMethodDesc;
+                return true;
+            }
+            method = null;
+            return false;
+        }
+        internal void AddPutRef(string name, ComMethodDesc method) {
+            name = name.ToUpper(System.Globalization.CultureInfo.InvariantCulture);
+            lock (_putRefs) {
+                _putRefs[name] = method;
+            }
+        }
+
+        internal bool TryGetEvent(string name, out ComEventDesc @event) {
+            name = name.ToUpper(System.Globalization.CultureInfo.InvariantCulture);
+            return _events.TryGetValue(name, out @event);
+        }
+
+        internal string[] GetMemberNames(bool dataOnly) {
+            var names = new Dictionary<string, object>();
+
+            lock (_funcs) {
+                foreach (ComMethodDesc func in _funcs.Values) {
+                    if (!dataOnly || func.IsDataMember) {
+                        names.Add(func.Name, null);
+                    }
+                }
+            }
+
+            if (!dataOnly) {
+                lock (_puts) {
+                    foreach (ComMethodDesc func in _puts.Values) {
+                        if (!names.ContainsKey(func.Name)) {
+                            names.Add(func.Name, null);
+                        }
+                    }
+                }
+
+                lock (_putRefs) {
+                    foreach (ComMethodDesc func in _putRefs.Values) {
+                        if (!names.ContainsKey(func.Name)) {
+                            names.Add(func.Name, null);
+                        }
+                    }
+                }
+
+                if (_events != null && _events.Count > 0) {
+                    foreach (string name in _events.Keys) {
+                        if (!names.ContainsKey(name)) {
+                            names.Add(name, null);
+                        }
+                    }
+                }
+            }
+
+            string[] result = new string[names.Keys.Count];
+            names.Keys.CopyTo(result, 0);
+            return result;
         }
 
         // this property is public - accessed by an AST
@@ -106,12 +212,18 @@ namespace Microsoft.Scripting.ComInterop {
 
         internal ComMethodDesc GetItem {
             get { return _getItem; }
-            set { _getItem = value; }
+        }
+
+        internal void EnsureGetItem(ComMethodDesc candidate) {
+            Interlocked.CompareExchange(ref _getItem, candidate, null);
         }
 
         internal ComMethodDesc SetItem {
             get { return _setItem; }
-            set { _setItem = value; }
+        }
+
+        internal void EnsureSetItem(ComMethodDesc candidate) {
+            Interlocked.CompareExchange(ref _setItem, candidate, null);
         }
     }
 }

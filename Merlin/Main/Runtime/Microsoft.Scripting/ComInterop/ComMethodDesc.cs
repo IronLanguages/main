@@ -26,12 +26,10 @@ namespace Microsoft.Scripting.ComInterop {
 
     public class ComMethodDesc {
 
-        private readonly bool _hasTypeInfo;
         private readonly int _memid;  // this is the member id extracted from FUNCDESC.memid
         private readonly string _name;
         internal readonly INVOKEKIND InvokeKind;
-        private readonly ComParamDesc _returnValue;
-        private readonly ComParamDesc[] _parameters;
+        private readonly int _paramCnt;
 
         private ComMethodDesc(int dispId) {
             _memid = dispId;
@@ -51,46 +49,19 @@ namespace Microsoft.Scripting.ComInterop {
         internal ComMethodDesc(ITypeInfo typeInfo, FUNCDESC funcDesc)
             : this(funcDesc.memid) {
 
-            _hasTypeInfo = true;
             InvokeKind = funcDesc.invkind;
-
-            ELEMDESC returnValue = funcDesc.elemdescFunc;
-            _returnValue = new ComParamDesc(ref returnValue);
 
             int cNames;
             string[] rgNames = new string[1 + funcDesc.cParams];
             typeInfo.GetNames(_memid, rgNames, rgNames.Length, out cNames);
-            if (IsPropertyPut) {
+            if (IsPropertyPut && rgNames[rgNames.Length - 1] == null) {
                 rgNames[rgNames.Length - 1] = "value";
                 cNames++;
             }
             Debug.Assert(cNames == rgNames.Length);
             _name = rgNames[0];
 
-            _parameters = new ComParamDesc[funcDesc.cParams];
-
-            int offset = 0;
-            for (int i = 0; i < funcDesc.cParams; i++) {
-                ELEMDESC elemDesc = (ELEMDESC)Marshal.PtrToStructure(
-                    new IntPtr(funcDesc.lprgelemdescParam.ToInt64() + offset),
-                    typeof(ELEMDESC));
-
-                _parameters[i] = new ComParamDesc(ref elemDesc, rgNames[1 + i]);
-
-                offset += Marshal.SizeOf(typeof(ELEMDESC));
-            }
-        }
-
-        internal bool HasTypeInfo {
-            get {
-                return _hasTypeInfo;
-            }
-        }
-
-        internal string DispIdString {
-            get {
-                return String.Format(CultureInfo.InvariantCulture, "[DISPID={0}]", _memid);
-            }
+            _paramCnt = funcDesc.cParams;
         }
 
         public string Name {
@@ -110,6 +81,18 @@ namespace Microsoft.Scripting.ComInterop {
             }
         }
 
+        public bool IsDataMember {
+            get {
+                //must be regular get
+                if (!IsPropertyGet || DispId == ComDispIds.DISPID_NEWENUM) {
+                    return false;
+                }
+
+                //must have no parameters
+                return _paramCnt == 0;
+            }
+        }
+
         public bool IsPropertyPut {
             get {
                 return (InvokeKind & (INVOKEKIND.INVOKE_PROPERTYPUT | INVOKEKIND.INVOKE_PROPERTYPUTREF)) != 0;
@@ -121,61 +104,11 @@ namespace Microsoft.Scripting.ComInterop {
                 return (InvokeKind & INVOKEKIND.INVOKE_PROPERTYPUTREF) != 0;
             }
         }
-
-        internal ComParamDesc[] Parameters {
+        
+        internal int ParamCount {
             get {
-                Debug.Assert((_parameters != null) == _hasTypeInfo);
-                return _parameters;  
+                return _paramCnt;
             }
-        }
-
-        public bool HasByrefOrOutParameters {
-            get {
-                if (!_hasTypeInfo) {
-                    // We have just a dispId and not ITypeInfo to get the list of parameters.
-                    // We have to assume that all parameters are In parameters. The user will explicitly have 
-                    // to pass StrongBox objects to represent ref or out parameters.
-                    return false;
-                }
-
-                for (int i = 0; i < _parameters.Length; i++) {
-                    if (_parameters[i].ByReference || _parameters[i].IsOut) {
-                        return true;
-                    }
-                }
-
-                return false;
-            }
-        }
-
-        public string Signature {
-            get {
-                if (!_hasTypeInfo) {
-                    return _name + "(...)";
-                }
-
-                StringBuilder result = new StringBuilder();
-                if (_returnValue.ParameterType == null) {
-                    result.Append("void");
-                } else {
-                    result.Append(_returnValue.ToString());
-                }
-                result.Append(" ");
-                result.Append(_name);
-                result.Append("(");
-                for (int i = 0; i < _parameters.Length; i++) {
-                    result.Append(_parameters[i].ToString());
-                    if (i < (_parameters.Length - 1)) {
-                        result.Append(", ");
-                    }
-                }
-                result.Append(")");
-                return result.ToString();
-            }
-        }
-
-        public override string ToString() {
-            return Signature;
         }
     }
 }

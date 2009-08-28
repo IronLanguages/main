@@ -35,8 +35,6 @@ namespace IronRuby.StandardLibrary.Sockets {
     public abstract class RubyBasicSocket : RubyIO {
         // TODO: do these escape out of the library?
         private static readonly MutableString BROADCAST_STRING = MutableString.CreateAscii("<broadcast>").Freeze();
-        private static readonly MutableString BROADCAST_IP_STRING = MutableString.CreateAscii("255.255.255.255").Freeze();
-        private static readonly MutableString ANY_IP_STRING = MutableString.CreateAscii("0.0.0.0").Freeze();
 
         private readonly Socket/*!*/ _socket;
 

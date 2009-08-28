@@ -62,7 +62,7 @@ namespace IronPython.Runtime {
         private readonly Scope/*!*/ _systemState;
         private readonly Dictionary<string, Type>/*!*/ _builtinsDict;
         private readonly PythonOverloadResolverFactory _sharedOverloadResolverFactory;
-#if !SILVERLIGHT
+#if !SILVERLIGHT && !CLR4
         private readonly AssemblyResolveHolder _resolveHolder;
 #endif
         private Encoding _defaultEncoding = PythonAsciiEncoding.Instance;
@@ -227,7 +227,7 @@ namespace IronPython.Runtime {
             }
 
             List path = new List(_options.SearchPaths);
-#if !SILVERLIGHT
+#if !SILVERLIGHT && !CLR4
             _resolveHolder = new AssemblyResolveHolder(this);
             try {
                 Assembly entryAssembly = Assembly.GetEntryAssembly();
@@ -248,7 +248,7 @@ namespace IronPython.Runtime {
 
             RecursionLimit = _options.RecursionLimit;
 
-#if !SILVERLIGHT
+#if !SILVERLIGHT && !CLR4
             object asmResolve;
             if (options == null ||
                 !options.TryGetValue("NoAssemblyResolveHook", out asmResolve) ||
@@ -1202,7 +1202,7 @@ namespace IronPython.Runtime {
         public override void Shutdown() {
             object callable;
 
-#if !SILVERLIGHT
+#if !SILVERLIGHT && !CLR4
             UnhookAssemblyResolve();
 #endif
 

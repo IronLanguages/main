@@ -45,6 +45,7 @@ namespace Microsoft.Scripting.Actions.Calls {
             get { return 1; }
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1045:DoNotPassTypesByReference")] // TODO
         internal protected virtual Expression ToExpression(ref MethodInfo method, OverloadResolver resolver, RestrictedArguments args, bool[] hasBeenUsed) {
             if (_index == -1) {
                 return AstUtils.Constant(null);
@@ -59,6 +60,7 @@ namespace Microsoft.Scripting.Actions.Calls {
             return resolver.Convert(args.GetObject(_index), args.GetType(_index), null, method.DeclaringType);
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1045:DoNotPassTypesByReference")] // TODO
         internal protected virtual Func<object[], object> ToDelegate(ref MethodInfo method, OverloadResolver resolver, RestrictedArguments args, bool[] hasBeenUsed) {
             if (_index == -1) {
                 return (_) => null;

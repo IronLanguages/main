@@ -160,15 +160,6 @@ describe "Array#pack with ASCII-string format", :shared => true do
     ['abcde'].pack(format(0)).should == ''
   end
 
-  it "returns the whole argument string with star parameter" do
-    ['abcdef'].pack(format('*')).should == 'abcdef'
-  end
-
-  it "comsumres only one array item per a format" do
-    ["abc", "def"].pack(format('*')).should == "abc"
-    ["abc", "def"].pack(format('*')+format('*')).should == "abcdef"
-  end
-
   it "tries to convert the pack argument to a String using #to_str" do
     obj = mock('to_str')
     obj.should_receive(:to_str).and_return("abc")

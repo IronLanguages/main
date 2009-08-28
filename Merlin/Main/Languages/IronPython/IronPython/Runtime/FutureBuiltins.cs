@@ -88,9 +88,9 @@ namespace IronPython.Runtime {
                 if (x == 0) {
                     return "0o0";
                 } else if (x > 0) {
-                    return "0o" + BigInteger.Create(x).ToString(8);
+                    return "0o" + x.ToString(8);
                 } else {
-                    return "-0o" + BigInteger.Create(-x).ToString(8);
+                    return "-0o" + (-x).ToString(8);
                 }
             }
 

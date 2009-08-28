@@ -52,7 +52,7 @@ using IronRuby.Runtime;
 [assembly: InternalsVisibleTo("ClassInitGenerator")]
 #endif
 
-
+[assembly: SecurityTransparent]
 #if CLR4
 [assembly: SecurityRules(SecurityRuleSet.Level1)]
 #endif

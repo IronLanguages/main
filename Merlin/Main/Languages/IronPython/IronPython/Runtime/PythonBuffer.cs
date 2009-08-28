@@ -111,6 +111,8 @@ namespace IronPython.Runtime {
                 return PythonOps.MakeString((ByteArray)res);
             } else if (res is IPythonBufferable) {
                 return PythonOps.MakeString((IList<byte>)GetSelectedRange());
+            } else if (res is byte[]) {
+                return ((byte[])GetSelectedRange()).MakeString();
             }
 
             return res.ToString();
@@ -125,9 +127,11 @@ namespace IronPython.Runtime {
         [PythonHidden]
         public override bool Equals(object obj) {
             PythonBuffer b = obj as PythonBuffer;
-            if (b == null) return false;
+            if (b == null) {
+                return false;
+            }
 
-            return this == b;
+            return __cmp__(b) == 0;
         }
 
         public override int GetHashCode() {
@@ -256,7 +260,6 @@ namespace IronPython.Runtime {
             #region IComConvertible Members
 
             DynamicMetaObject IComConvertible.GetComMetaObject() {
-                Console.WriteLine("Com Convertible!");
                 return new DynamicMetaObject(
                     Expression.Call(
                         typeof(PythonOps).GetMethod("ConvertBufferToByteArray"),

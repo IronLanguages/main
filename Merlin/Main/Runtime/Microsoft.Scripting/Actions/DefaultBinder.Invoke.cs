@@ -43,7 +43,7 @@ namespace Microsoft.Scripting.Actions {
             ContractUtils.RequiresNotNullItems(args, "args");
             ContractUtils.RequiresNotNull(resolverFactory, "resolverFactory");
 
-            TargetInfo targetInfo = GetTargetInfo(signature, target, args);
+            TargetInfo targetInfo = GetTargetInfo(target, args);
 
             if (targetInfo != null) {
                 // we're calling a well-known MethodBase
@@ -95,7 +95,7 @@ namespace Microsoft.Scripting.Actions {
         /// If this object is a BoundMemberTracker we bind to the methods with the bound instance.
         /// If the underlying type has defined an operator Call method we'll bind to that method.
         /// </summary>
-        private TargetInfo GetTargetInfo(CallSignature signature, DynamicMetaObject target, DynamicMetaObject[] args) {
+        private TargetInfo GetTargetInfo(DynamicMetaObject target, DynamicMetaObject[] args) {
             Debug.Assert(target.HasValue);
             object objTarget = target.Value;
 
@@ -104,7 +104,7 @@ namespace Microsoft.Scripting.Actions {
                 TryGetMemberGroupTargets(target, args, objTarget as MemberGroup) ??
                 TryGetMethodGroupTargets(target, args, objTarget as MethodGroup) ??
                 TryGetBoundMemberTargets(target, args, objTarget as BoundMemberTracker) ??
-                TryGetOperatorTargets(target, args, target, signature);
+                TryGetOperatorTargets(target, args, target);
         }
 
         /// <summary>
@@ -206,7 +206,7 @@ namespace Microsoft.Scripting.Actions {
         /// <summary>
         /// Attempts to bind to an operator Call method.
         /// </summary>
-        private TargetInfo TryGetOperatorTargets(DynamicMetaObject self, DynamicMetaObject[] args, object target, CallSignature signature) {
+        private TargetInfo TryGetOperatorTargets(DynamicMetaObject self, DynamicMetaObject[] args, object target) {
             MethodBase[] targets;
 
             Type targetType = CompilerHelpers.GetType(target);

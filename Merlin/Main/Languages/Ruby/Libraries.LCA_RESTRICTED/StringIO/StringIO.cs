@@ -415,12 +415,7 @@ namespace IronRuby.StandardLibrary.StringIO {
             }
 
             try {
-                if (pos >= length) {
-                    content.Append(0, pos - length);
-                    content.Append(value);
-                } else {
-                    content.Replace(pos, Math.Min(bytesWritten, length -  pos), value);
-                }
+                content.WriteBytes(pos, value, 0, bytesWritten);
             } catch (InvalidOperationException) {
                 throw RubyExceptions.CreateIOError("not modifiable string");
             }

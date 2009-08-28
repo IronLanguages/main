@@ -2397,7 +2397,7 @@ namespace IronRuby.Runtime {
             }
 #if !SILVERLIGHT
             if (Utils.IsComObject(obj)) {
-                return new List<string>(System.Dynamic.ComBinder.GetDynamicMemberNames(obj));
+                return new List<string>(Microsoft.Scripting.ComInterop.ComBinder.GetDynamicMemberNames(obj));
             }
 #endif
             return GetMemberNames(obj);

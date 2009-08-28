@@ -36,7 +36,7 @@ namespace Microsoft.Scripting {
     public abstract class ScriptCode {
         private readonly SourceUnit _sourceUnit;
 
-        public ScriptCode(SourceUnit sourceUnit) {
+        protected ScriptCode(SourceUnit sourceUnit) {
             ContractUtils.RequiresNotNull(sourceUnit, "sourceUnit");
 
             _sourceUnit = sourceUnit;

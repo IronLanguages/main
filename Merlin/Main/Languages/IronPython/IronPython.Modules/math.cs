@@ -91,7 +91,7 @@ namespace IronPython.Modules {
             if (v == 0.0 || double.IsInfinity(v)) {
                 return v;
             }
-            return Check(v, v * Math.Pow(2.0, w));
+            return Check(v, v * Math.Pow(2.0, (double)w));
         }
 
         public static double hypot(double v, double w) {
@@ -239,18 +239,6 @@ namespace IronPython.Modules {
             }
         }
 
-        public static double asinh(BigInteger value) {
-            if (value == 0) {
-                return 0;
-            }
-            // rewrote ln(v0 + sqrt(v0**2 + 1)) for precision
-            if (value.Abs() > 1) {
-                return value.Log() + Math.Log(1.0 + Complex64.Hypot(1.0, 1.0 / value));
-            } else {
-                return Math.Log(value + Complex64.Hypot(1.0, value));
-            }
-        }
-
         public static double asinh(object value) {
             // CPython tries float first, then double, so we need
             // an explicit overload which properly matches the order here
@@ -271,15 +259,6 @@ namespace IronPython.Modules {
             // rewrote ln(v0 + sqrt(v0**2 - 1)) for precision
             double c = Math.Sqrt(v0 + 1.0);
             return Math.Log(c) + Math.Log(v0 / c + Math.Sqrt(v0 - 1.0));
-        }
-
-        public static double acosh(BigInteger value) {
-            if (value <= 0) {
-                throw PythonOps.ValueError("math domain error");
-            }
-            // rewrote ln(v0 + sqrt(v0**2 - 1)) for precision
-            double c = Math.Sqrt(value + (BigInteger)1);
-            return Math.Log(c) + Math.Log(value / c + Math.Sqrt(value - (BigInteger)1));
         }
 
         public static double acosh(object value) {
