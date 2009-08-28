@@ -2,6 +2,8 @@ require 'webrick'
 require 'webrick/httpservlet/abstract'
 
 module NetHTTPSpecs
+ DEFAULT_SERVER_PORT = 3333
+ 
  class NullWriter
     def <<(s) end
     def puts(*args) end
@@ -52,7 +54,7 @@ module NetHTTPSpecs
     def start_server
       server_config = {
         :BindAddress => "0.0.0.0",
-        :Port => 3333,
+        :Port => DEFAULT_SERVER_PORT,
         :Logger => WEBrick::Log.new(NullWriter.new),
         :AccessLog => [],
         :ShutdownSocketWithoutClose => true,
