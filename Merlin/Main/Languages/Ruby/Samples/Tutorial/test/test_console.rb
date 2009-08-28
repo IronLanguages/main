@@ -24,6 +24,9 @@ if not SILVERLIGHT
   require 'html_tutorial'
 
   MiniTest::Unit.autorun # tests will run using at_exit
+  
+  # cd to Tutorial folder
+  FileUtils.cd File.expand_path("..", File.dirname(File.expand_path(__FILE__, FileUtils.pwd)))
 end
 
 class MiniTest::Unit::TestCase

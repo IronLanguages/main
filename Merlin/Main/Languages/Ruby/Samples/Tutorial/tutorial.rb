@@ -166,7 +166,22 @@ module Tutorial
   
   @@tutorials = {} unless class_variable_defined? :@@tutorials
   
-  def self.add_tutorial(tutorial)
+  def self.add_tutorial(tutorial)    
+    # Chain the chapters to the next section or chapter
+    prev_chapter = nil
+    tutorial.sections.each do |section|
+      if prev_chapter
+        prev_chapter.next_item = section
+        prev_chapter = nil
+      end
+      section.chapters.each do |chapter|
+        if prev_chapter
+          prev_chapter.next_item = chapter
+        end
+        prev_chapter = chapter
+      end
+    end
+
     @@tutorials[tutorial.file] = tutorial
   end
 
@@ -381,7 +396,6 @@ class Object
       tutorial_file = File.basename(tutorial_file) if SILVERLIGHT # __FILE__ may not be the full required path
       t = Tutorial::Tutorial.new name, tutorial_file
       Thread.current[:tutorial] = t
-      Thread.current[:prev_chapter] = nil
 
       yield
 
@@ -426,9 +440,6 @@ class Object
     raise "Only one section can be under creation at a time" if Thread.current[:section]
     section = Tutorial::Section.new name
     Thread.current[:section] = section
-    if Thread.current[:prev_chapter]
-      Thread.current[:prev_chapter].next_item = section
-    end
     Thread.current[:platform_match] = nil
 
     yield
@@ -450,14 +461,10 @@ class Object
     raise "Only one chapter can be under creation at a time" if Thread.current[:chapter]
     chapter = Tutorial::Chapter.new name
     Thread.current[:chapter] = chapter
-    if Thread.current[:prev_chapter]
-        Thread.current[:prev_chapter].next_item = chapter
-    end
 
     yield
 
     Thread.current[:section].chapters << chapter
-    Thread.current[:prev_chapter] = chapter
     Thread.current[:chapter] = nil
   end
 
