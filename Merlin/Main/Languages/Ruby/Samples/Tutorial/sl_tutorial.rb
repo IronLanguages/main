@@ -14,9 +14,29 @@
 # ****************************************************************************
 
 include Microsoft::Scripting::Silverlight
-$stdout = Repl.current.output_buffer
-$stderr = Repl.current.output_buffer
+if Repl.current
+  $stdout = Repl.current.output_buffer
+  $stderr = Repl.current.output_buffer
+end
+
+def load_assembly_from_path(path)
+  DynamicApplication.current.runtime.host.platform_adaptation_layer.load_assembly_from_path(path)
+end
+
+# From Silverlight 3 SDK
+load_assembly_from_path "System.Windows.Controls.dll"
+require 'System.Windows.Controls'
+
+# From Silverlight 3 Toolkit
+load_assembly_from_path "System.Windows.Controls.Toolkit.dll"
+require 'System.Windows.Controls.Toolkit'
 
 require 'gui_tutorial'
 
 Application.Current.RootVisual = GuiTutorial::Window.current
+
+load_assembly("System.Windows.Browser")
+if System::Windows::Browser::HtmlPage.document.query_string.contains_key "test"
+  require "test/silverlight"
+end
+

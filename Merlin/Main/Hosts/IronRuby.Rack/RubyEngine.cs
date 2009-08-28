@@ -23,11 +23,11 @@ namespace IronRuby.Rack {
         }
 
         public static object Require(string file, string rackVersion) {
-            var command = new MutableString();
+            var command = "";
             if(rackVersion != null) {
-                command.Append(string.Format("gem '{0}', '{1}';", file, rackVersion));
+                command = string.Format("gem '{0}', '{1}';", file, rackVersion);
             }
-            command.Append(string.Format("require '{0}'", file));
+            command += string.Format("require '{0}'", file);
             return Execute(command);
         }
 

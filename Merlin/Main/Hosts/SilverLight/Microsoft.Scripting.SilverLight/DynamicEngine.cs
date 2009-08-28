@@ -36,13 +36,21 @@ namespace Microsoft.Scripting.Silverlight {
             Run(Settings.GetEntryPoint(), Settings.ConsoleEnabled);
         }
 
-        public ScriptRuntimeSetup CreateRuntimeSetup() {
+        public static ScriptRuntimeSetup CreateRuntimeSetup(bool debugMode) {
             ScriptRuntimeSetup setup = TryParseFile();
             if (setup == null) {
-                setup = LoadFromAssemblies(DynamicApplication.Current.AppManifest.Assemblies);
+                setup = LoadFromAssemblies(DynamicApplication.Current != null ?
+                    DynamicApplication.Current.AppManifest.Assemblies :
+                    new DynamicAppManifest().Assemblies);
             }
             setup.HostType = typeof(BrowserScriptHost);
+            setup.Options["SearchPaths"] = new string[] { String.Empty };
+            setup.DebugMode = debugMode;
             return setup;
+        }
+
+        public static ScriptRuntimeSetup CreateRuntimeSetup() {
+            return CreateRuntimeSetup(false);
         }
 
         private void LoadDefaultAssemblies() {
@@ -56,10 +64,7 @@ namespace Microsoft.Scripting.Silverlight {
         }
 
         private void InitializeRuntime(bool debugMode) {
-            RuntimeSetup = CreateRuntimeSetup();
-            RuntimeSetup.DebugMode = debugMode;
-            RuntimeSetup.Options["SearchPaths"] = new string[] { String.Empty };
-
+            RuntimeSetup = CreateRuntimeSetup(debugMode);
             Runtime = new ScriptRuntime(RuntimeSetup);
             LoadDefaultAssemblies();
         }
@@ -106,7 +111,7 @@ namespace Microsoft.Scripting.Silverlight {
             return setup;
         }
 
-        public ScriptRuntimeSetup TryParseFile() {
+        public static ScriptRuntimeSetup TryParseFile() {
             Stream configFile = BrowserPAL.PAL.VirtualFilesystem.GetFile(Settings.LanguagesConfigFile);
             if (configFile == null) return null;
 

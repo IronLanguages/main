@@ -206,5 +206,5 @@ class HtmlTutorial
 end
 
 if $0 == __FILE__
-    HtmlTutorial.new.ensure_generated
+  Tutorial.all.values.each{|t| HtmlTutorial.new(t).ensure_generated }
 end

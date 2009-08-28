@@ -30,10 +30,10 @@ class ConsoleTutorial
         @out.puts "---------------------"
         @out.puts "Starting #{chapter.name}"
         @out.print chapter.introduction
-        prompt = "> "
+        prompt = ">>> "
         chapter.tasks.each do |task|
             @out.puts task.description
-            next if not @task.should_run? @context.bind
+            next if not task.should_run? @context.bind
             task.setup.call(@context.bind) if task.setup
             @out.puts "Enter the following code:"
             @out.puts task.code_string
@@ -45,14 +45,14 @@ class ConsoleTutorial
                 result = @context.interact input
                 @out.puts result.output if not result.output.empty?
                 if result.partial_input?
-                  prompt = "* "
+                  prompt = "... "
                   next
                 elsif result.error
                   @out.puts result.error.to_s
                 else
                   @out.puts "=> #{result.result.inspect}"
                 end
-                prompt = "> "
+                prompt = ">>> "
             end until task.success?(result)
         end
         @out.puts "Chapter completed successfully!"
@@ -65,12 +65,13 @@ class ConsoleTutorial
         @out.puts section.introduction
         loop do
             section.chapters.each_index { |i| @out.puts "#{i + 1}: #{section.chapters[i].name}" }
-            @out.print "Select a chapter number and press enter (0 to return to main menu):"
+            @out.print "Select a chapter number and press enter (0 to return to previous menu):"
             input = @in.gets
             break if input == nil or input.chomp == "0" or input.chomp == ""
             chapter = section.chapters[input.to_i - 1]
             run_chapter chapter
         end
+        @out.puts
     end
     
     def run    
@@ -78,7 +79,7 @@ class ConsoleTutorial
         @out.puts @tutorial.introduction
         loop do
             @tutorial.sections.each_index { |i| @out.puts "#{i + 1}: #{@tutorial.sections[i].name}" }
-            @out.print "Select a section number and press enter (0 to exit):"
+            @out.print "Select a section number and press enter (0 to return to previous menu):"
             input = @in.gets
             break if input == nil or input.chomp == "0" or input.chomp == ""
             section = @tutorial.sections[input.to_i - 1]
@@ -89,5 +90,21 @@ class ConsoleTutorial
 end
 
 if $0 == __FILE__
-    ConsoleTutorial.new.run
+  if ARGV.size > 0
+    tut = Tutorial.get_tutorial(ARGV[0])
+    ConsoleTutorial.new(tut).run
+  else
+    tuts = Tutorial.all.values
+    _in = $stdin
+    _out = $stdout
+    loop do
+      tuts.each_index { |i| _out.puts "#{i + 1}: #{tuts[i].name}" }
+      _out.print "Select a tutorial number and press enter (0 to exit): "
+      input = _in.gets
+      break if input.nil? or input.chomp == '0' or input.chomp == ''
+      tut = tuts[input.to_i - 1]
+      _out.puts
+      ConsoleTutorial.new(tut).run
+    end
+  end
 end

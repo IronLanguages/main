@@ -35,8 +35,8 @@ namespace IronRuby.Rack {
         public RubyArray Call(IDictionary<object, object> env) {
             var envHash = new Hash(RubyEngine.Context);
             foreach (var pair in env) {
-                var value = pair.Value.GetType() == "".GetType() ? MutableString.Create((string)pair.Value) : pair.Value;
-                envHash[MutableString.Create((string)pair.Key)] = value;
+                var value = pair.Value.GetType() == "".GetType() ? MutableString.Create((string)pair.Value, RubyEncoding.Default) : pair.Value;
+                envHash[MutableString.Create((string)pair.Key, RubyEncoding.Default)] = value;
             }
             return RubyEngine.ExecuteMethod<RubyArray>(_app, "call", envHash);
         }

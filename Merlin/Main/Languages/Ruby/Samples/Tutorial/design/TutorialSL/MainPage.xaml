@@ -5,6 +5,9 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
 	xmlns:local="clr-namespace:TutorialSL"
+	xmlns:control="clr-namespace:System.Windows.Controls;assembly=System.Windows.Controls"
+	xmlns:syswin="clr-namespace:System.Windows;assembly=System.Windows.Controls"
+
 	x:Class="TutorialSL.MainPage" Width="Auto" d:DesignWidth="604.333" d:DesignHeight="513.333">
 	<UserControl.Resources>
 		<Storyboard x:Key="tutorial_nav_OnMouseEnter" AutoReverse="False">
@@ -78,11 +81,11 @@
 					</TransformGroup>
 				</Border.RenderTransform>
 				<StackPanel Background="{x:Null}" Orientation="Horizontal" Margin="0" VerticalAlignment="Top" >
-					<TextBlock x:Name="action" Cursor="Hand" Margin="10,0,5,0" Foreground="#FFC1C1C1" Padding="5,3" Text="&lt; back" TextWrapping="Wrap"/>
+					<TextBlock x:Name="action" Cursor="Hand" Margin="10,0,5,0" Foreground="#FFC1C1C1" Padding="5,3" Text="&lt; back" TextWrapping="Wrap" FontFamily="Segoe UI" FontSize="10.667"/>
 				</StackPanel>
 			</Border>
-			<Grid x:Name="body" Margin="0,50,0,0" Background="White">
-				<ScrollViewer x:Name="tutorial_scroll" Margin="0" Padding="0" VerticalScrollBarVisibility="Auto">
+			<Grid x:Name="body" Margin="0,50,0,25" Background="White">
+				<ScrollViewer x:Name="tutorial_scroll" Margin="0,0,25,0" Padding="0" VerticalScrollBarVisibility="Auto">
 					<local:TutorialPage Margin="0" Background="{x:Null}" Padding="0"/>
 				</ScrollViewer>
 				<ScrollViewer x:Name="main_scroll" Margin="0" Padding="8,0,8,16" VerticalScrollBarVisibility="Auto" Visibility="Collapsed">
@@ -95,9 +98,18 @@
 			<Border x:Name="tutorial_nav" HorizontalAlignment="Right" Width="300" Background="White" BorderBrush="#FF7B7B7B" BorderThickness="5,2,0,2" CornerRadius="10,0,0,10" Padding="2,2,0,2" Margin="0,30,0,10" RenderTransformOrigin="0.5,0.5" Canvas.ZIndex="20" Visibility="Collapsed">
 				<Border.Resources>
 					<!-- Chapter TEMPLATE -->
-					<DataTemplate x:Key="ChapterTemplate">
+					<!--<DataTemplate x:Key="ChapterTemplate">
 						<TextBlock Text="{Binding name}" />
-					</DataTemplate>
+					</DataTemplate>-->
+
+					<!-- Section TEMPLATE -->
+					<!--<syswin:HierarchicalDataTemplate 
+						x:Key="SectionTemplate"
+						ItemsSource="{Binding chapters}"
+						ItemTemplate="{StaticResource ChapterTemplate}"
+          >
+						<TextBlock Text="{Binding name}" />
+					</syswin:HierarchicalDataTemplate>-->
 				</Border.Resources>
 				<Border.RenderTransform>
 					<TransformGroup>
@@ -108,7 +120,7 @@
 					</TransformGroup>
 				</Border.RenderTransform>
 				<Grid>
-					<TextBlock Margin="0" Width="130" Height="18" RenderTransformOrigin="0.5,0.5" Text="Jump to another section" HorizontalAlignment="Left" VerticalAlignment="Center" >
+					<TextBlock Margin="0" Width="130" Height="18" RenderTransformOrigin="0.5,0.5" Text="Jump to another section" HorizontalAlignment="Left" VerticalAlignment="Center" FontFamily="Segoe UI" FontSize="12" >
 						<TextBlock.RenderTransform>
 							<TransformGroup>
 								<ScaleTransform/>
@@ -118,7 +130,8 @@
 							</TransformGroup>
 						</TextBlock.RenderTransform>
 					</TextBlock>
-
+					<control:TreeView x:Name="chapters" BorderBrush="{x:Null}" FontSize="13.333" Margin="20,0,0,0" RenderTransformOrigin="0.5,0.5" Padding="0" BorderThickness="0" d:LayoutOverrides="Width" Background="{x:Null}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" MaxWidth="293" FontFamily="Segoe UI">
+					</control:TreeView>
 				</Grid>
 
 				<!--<ListView Margin="0" Background="White" BorderBrush="White" BorderThickness="0" IsSynchronizedWithCurrentItem="True" FontSize="16">
