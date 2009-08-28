@@ -319,9 +319,8 @@ module Wpf
       begin
         @markupParser.convert(text, self)
       rescue Exception => e
-        puts "#{e} while converting: #{text}\n#{e.backtrace.join(%{\n})}"
-        return []
-        #raise e
+        puts "#{e} while converting: #{text[0..50]}"
+        raise e
       end
     end
 
@@ -329,21 +328,35 @@ module Wpf
     attr_accessor :flow
 
     def add_paragraph(item, bold = true, font_family = nil)
-      inline = item
-      if not item.kind_of? Inline
-        inline = Run.new
-        inline.Text = item
-        inline.font_family = FontFamily.new font_family if font_family 
-        inline.font_weight = FontWeights.Bold if bold
+      if item.respond_to? :to_str
+        item = SimpleMarkupFlow.create_run item.to_str, bold, font_family
       end
 
       if SILVERLIGHT
-        @flow << inline
+        if item.respond_to? :to_ary
+          @flow += item
+        else
+          @flow << item
+        end
         @flow << LineBreak.new
       else
-        para = Paragraph.new inline
+        para = Paragraph.new
+        if item.respond_to? :to_ary
+          items.each {|i| para.inlines.add i }
+        else
+          para.inlines.add item
+        end
         @flow.blocks.add para
       end
+    end
+    
+    def self.create_run(text, bold = false, font_family = nil, font_style = nil)
+      run = Run.new
+      run.text = text
+      run.font_family = FontFamily.new font_family if font_family 
+      run.font_weight = FontWeights.Bold if bold
+      run.font_style = font_style if font_style
+      run
     end
     
     def start_accepting
@@ -437,8 +450,9 @@ module Wpf
     def accept_list_item(am, fragment)
       inlines = convert_flow(am.flow(fragment.txt))
       if SILVERLIGHT
-        @flow += inlines # TODO - Need to add numbers or bullets to the list items
-        @flow << LineBreak.new
+        run = SimpleMarkupFlow.create_run "o  ", true
+        inlines.unshift run
+        add_paragraph inlines
       else
         paragraph = Paragraph.new
         inlines.each {|i| paragraph.inlines.add i }
@@ -465,8 +479,7 @@ module Wpf
     end
 
     def handle_special_HYPERLINK(special, inlines)
-      run = Run.new
-      run.text = special.text
+      run = SimpleMarkupFlow.create_run special.text
       if SILVERLIGHT
         inlines << run
       else
@@ -485,12 +498,11 @@ module Wpf
       label = $1
       url   = $2
 
-      run = Run.new
       if SILVERLIGHT
-        run.Text = "#{label} (#{url})"
+        run = SimpleMarkupFlow.create_run "#{label} (#{url})"
         inlines << run
       else
-        run.Text = label
+        run = SimpleMarkupFlow.create_run label
         hyperlink = Hyperlink.new run
         hyperlink.NavigateUri = System::Uri.new url
         inlines << hyperlink

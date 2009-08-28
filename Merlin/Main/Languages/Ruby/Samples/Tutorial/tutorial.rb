@@ -378,6 +378,7 @@ class Object
       raise "Only one tutorial can be under creation at a time" if Thread.current[:tutorial]
       caller[0] =~ /\A(.*):[0-9]+/
       tutorial_file = $1
+      tutorial_file = File.basename(tutorial_file) if SILVERLIGHT # __FILE__ may not be the full required path
       t = Tutorial::Tutorial.new name, tutorial_file
       Thread.current[:tutorial] = t
       Thread.current[:prev_chapter] = nil
