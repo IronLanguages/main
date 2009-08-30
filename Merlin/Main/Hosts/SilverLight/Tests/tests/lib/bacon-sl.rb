@@ -6,29 +6,18 @@ SILVERLIGHT = true
 #
 # 'bacon' is the spec framework used for the tests
 #
-$:.unshift "#{File.dirname(__FILE__)}/eggs/lib/bacon/lib"
 require 'bacon'
 
 # 
 # Helper for running python code from Ruby
 #
-$:.unshift "#{File.dirname(__FILE__)}/eggs"
 begin
   require 'python'
-rescue
+rescue LoadError
   # ignore
 end
 
-#
-# TODO better way to redirect output?
-#
-class IO
-  def write(str)
-    Repl.current.output_buffer.write(str)
-  end
-end
-
-class Eggs
+class BaconSL
   class << self
     def at_exit_blocks
       @at_exit_blocks ||= []
@@ -55,11 +44,15 @@ class Eggs
 
     def run(engine = nil)
       engine ? Repl.show(engine, engine.create_scope) : Repl.show
-      Repl.current.input_buffer.write("Eggs.current.run_tests\n")
+
+      $stdout = Repl.current.output_buffer
+      $stderr = Repl.current.output_buffer
+
+      BaconSL.current.run_tests
     end
 
     def current
-      @instance ||= Eggs.new
+      @instance ||= BaconSL.new
     end
   end
 
@@ -68,7 +61,7 @@ class Eggs
   #
   # TODO need a way to walk all *_test.rb files in tests directory
   def run_tests
-    Eggs.get_config.each do |test_type, test_files|
+    BaconSL.get_config.each do |test_type, test_files|
       test_files.each do |file|
         loaded = false
         ["#{test_type}/#{file}_test.rb", "#{test_type}/test_#{file}.rb"].each do |pth|
@@ -83,30 +76,22 @@ class Eggs
             puts "Warning: #{pth} failed to load"
           end if !loaded
         end
-        raise "#{file} is not a known test (check your Eggs.config call)" unless loaded
+        raise "#{file} is not a known test (check your BaconSL.config call)" unless loaded
       end
     end
-    Eggs.execute_at_exit_blocks
+    BaconSL.execute_at_exit_blocks
   end
 end
 
 #
 # Redefine at_exit to simply collect the blocks passed to it
 #
-Eggs.at_exit_blocks = []
+BaconSL.at_exit_blocks = []
 
 module Kernel
   def at_exit(&block)
-    Eggs.at_exit_blocks.push block
+    BaconSL.at_exit_blocks.push block
   end
 end
 
 Bacon.summary_on_exit
-
-#
-# 'mocha' is the mocking framework used for the tests
-#
-# Commented out since it's not being used
-#$: << "lib/mocha/lib"
-#require 'mocha_standalone'
-

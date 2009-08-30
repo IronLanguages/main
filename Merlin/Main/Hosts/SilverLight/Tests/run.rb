@@ -6,6 +6,16 @@ begin
   ITERATIONS = 50
   TIMEOUT = 0.5
 
+  # make sure dlr.js is present
+  dlrjspath = File.dirname(__FILE__) + '/../Scripts/dlr.js'
+  gendlrjspath = File.dirname(__FILE__) + '/../Scripts/generate_dlrjs.rb'
+  FileUtils.rm dlrjspath if File.exist?(dlrjspath)
+  load gendlrjspath
+  mydlrjspath = File.dirname(__FILE__) + '/dlr.js'
+  require 'fileutils'
+  FileUtils.rm mydlrjspath if File.exist?(mydlrjspath)
+  FileUtils.cp dlrjspath, mydlrjspath
+
   t = Thread.new do
     print 'starting web server '
     system '"..\..\..\Bin\Silverlight Release\Chiron.exe" /w 2>&1>NUL'

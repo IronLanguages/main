@@ -109,6 +109,7 @@
     <Compile Include="DynamicApplication.cs" />
     <Compile Include="DynamicAppManifest.cs" />
     <Compile Include="DynamicEngine.cs" />
+    <Compile Include="DynamicScriptTags.cs" />
     <Compile Include="ErrorFormatter.cs" />
     <Compile Include="ExtensionTypes.cs" />
     <Compile Include="Repl.cs" />

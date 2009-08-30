@@ -2,14 +2,14 @@
 # Test harness for running Microsoft::Scripting::Silverlight tests. 
 #
 
-$: << 'lib/eggs/lib'
-require 'eggs'
+$: << 'lib'
+require 'bacon-sl'
 
 require 'debugger'
 
 require 'helper'
 
-Eggs.config(
+BaconSL.config(
   :unit => %W(
     console
     dynamic_application
@@ -51,4 +51,4 @@ Eggs.config(
   ]
 )
 
-Eggs.run
+BaconSL.run
