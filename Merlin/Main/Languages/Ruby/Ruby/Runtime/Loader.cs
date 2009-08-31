@@ -294,7 +294,7 @@ namespace IronRuby.Runtime {
             return (assembly != null && LoadAssembly(assembly, typeName, throwOnError)) ? assembly : null;
         }
         
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods", MessageId = "System.Reflection.Assembly.LoadWithPartialName")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods")]
         private Assembly GetAssembly(string/*!*/ assemblyName, bool throwOnError, bool tryPartialName) {
 #if SILVERLIGHT
             tryPartialName = false;

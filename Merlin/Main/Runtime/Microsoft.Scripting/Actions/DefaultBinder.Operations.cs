@@ -311,7 +311,7 @@ namespace Microsoft.Scripting.Actions {
                 TryForwardOperator(info, resolverFactory, args) ??
                 TryReverseOperator(info, resolverFactory, args) ??
                 TryPrimitiveOperator(info, args) ??
-                TryMakeDefaultUnaryRule(info, resolverFactory, args) ??
+                TryMakeDefaultUnaryRule(info, args) ??
                 MakeOperatorError(info, args);
         }
 
@@ -370,7 +370,7 @@ namespace Microsoft.Scripting.Actions {
             return null;
         }
 
-        private static DynamicMetaObject TryMakeDefaultUnaryRule(OperatorInfo info, OverloadResolverFactory resolverFactory, DynamicMetaObject[] args) {
+        private static DynamicMetaObject TryMakeDefaultUnaryRule(OperatorInfo info, DynamicMetaObject[] args) {
             if (args.Length == 1) {
                 BindingRestrictions restrictions = BindingRestrictionsHelpers.GetRuntimeTypeRestriction(args[0].Expression, args[0].GetLimitType()).Merge(BindingRestrictions.Combine(args));
                 switch (info.Operator) {

@@ -137,7 +137,7 @@ namespace IronRuby.Tests {
             var metaBuilder = new MetaObjectBuilder(null);
             Context.ObjectClass.SetConstant("X", Context.GetClass(typeof(Overloads1.X)));
 
-            var c = Engine.Execute(@"class C < X; new; end");
+            object c = Engine.Execute(@"class C < X; new; end");
             var sym = SymbolTable.StringToId("x");
             var ms = MutableString.CreateAscii("x");
 

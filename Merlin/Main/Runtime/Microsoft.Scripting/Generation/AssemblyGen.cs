@@ -54,6 +54,8 @@ namespace Microsoft.Scripting.Generation {
             : this(name, outDir, outFileExtension, isDebuggable, PortableExecutableKinds.ILOnly, ImageFileMachine.I386) {
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Portability", "CA1903:UseOnlyApiFromTargetedFramework")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Portability", "CA1903:UseOnlyApiFromTargetedFramework")]
         internal AssemblyGen(AssemblyName name, string outDir, string outFileExtension, bool isDebuggable,
             PortableExecutableKinds peKind, ImageFileMachine machine) {
 

@@ -71,6 +71,16 @@ namespace IronRuby.Builtins {
         }
 
         /// <summary>
+        /// Adds self and other, where other is Bignum or Fixnum
+        /// </summary>
+        /// <returns>self + other</returns>
+        /// <remarks>Normalizes to a Fixnum if necessary</remarks>
+        [RubyMethod("+")]
+        public static object Add(BigInteger/*!*/ self, int other) {
+            return Protocols.Normalize(self + other);
+        }
+
+        /// <summary>
         /// Adds self and other, where other is Float
         /// </summary>
         /// <returns>self + other as Float</returns>
@@ -100,6 +110,16 @@ namespace IronRuby.Builtins {
         /// <remarks>Normalizes to a Fixnum if necessary</remarks>
         [RubyMethod("-")]
         public static object Subtract(BigInteger/*!*/ self, [NotNull]BigInteger/*!*/ other) {
+            return Protocols.Normalize(self - other);
+        }
+
+        /// <summary>
+        /// Subtracts other from self, where other is Bignum or Fixnum
+        /// </summary>
+        /// <returns>self - other</returns>
+        /// <remarks>Normalizes to a Fixnum if necessary</remarks>
+        [RubyMethod("-")]
+        public static object Subtract(BigInteger/*!*/ self, int other) {
             return Protocols.Normalize(self - other);
         }
 
@@ -137,6 +157,16 @@ namespace IronRuby.Builtins {
         }
 
         /// <summary>
+        /// Multiplies self by other, where other is Bignum or Fixnum
+        /// </summary>
+        /// <returns>self * other</returns>
+        /// <remarks>Normalizes to a Fixnum if necessary</remarks>
+        [RubyMethod("*")]
+        public static object Multiply(BigInteger/*!*/ self, int other) {
+            return Protocols.Normalize(self * other);
+        }
+
+        /// <summary>
         /// Multiplies self by other, where other is Float
         /// </summary>
         /// <returns>self * other as Float</returns>
@@ -166,6 +196,16 @@ namespace IronRuby.Builtins {
         /// <remarks>Uses DivMod to do the division (directly).  Normalizes to a Fixnum if necessary</remarks>
         [RubyMethod("/"), RubyMethod("div")]
         public static object Divide(BigInteger/*!*/ self, [NotNull]BigInteger/*!*/ other) {
+            return DivMod(self, other)[0];
+        }
+
+        /// <summary>
+        /// Divides self by other, where other is Bignum or Fixnum
+        /// </summary>
+        /// <returns>self / other</returns>
+        /// <remarks>Uses DivMod to do the division (directly).  Normalizes to a Fixnum if necessary</remarks>
+        [RubyMethod("/"), RubyMethod("div")]
+        public static object Divide(BigInteger/*!*/ self, int other) {
             return DivMod(self, other)[0];
         }
 
@@ -219,6 +259,16 @@ namespace IronRuby.Builtins {
         [RubyMethod("quo")]
         public static object Quotient(BigInteger/*!*/ self, [NotNull]BigInteger/*!*/ other) {
             return Quotient(self, other.ToFloat64());
+        }
+
+        /// <summary>
+        /// Returns the floating point result of dividing self by other, where other is Bignum or Fixnum. 
+        /// </summary>
+        /// <returns>self divided by other as Float</returns>
+        /// <remarks>Converts self and other to Float and then divides.</remarks>
+        [RubyMethod("quo")]
+        public static object Quotient(BigInteger/*!*/ self, int other) {
+            return Quotient(self, (double)other);
         }
 
         /// <summary>
@@ -310,6 +360,17 @@ namespace IronRuby.Builtins {
         }
 
         /// <summary>
+        /// Returns self modulo other, where other is Fixnum or Bignum.
+        /// </summary>
+        /// <returns>self modulo other, as Fixnum or Bignum</returns>
+        /// <remarks>Calls divmod directly to get the modulus.</remarks>
+        [RubyMethod("%"), RubyMethod("modulo")]
+        public static object Modulo(BigInteger/*!*/ self, int other) {
+            RubyArray result = DivMod(self, other);
+            return result[1];
+        }
+
+        /// <summary>
         /// Returns self modulo other, where other is Float.
         /// </summary>
         /// <returns>self modulo other, as Float</returns>
@@ -367,6 +428,19 @@ namespace IronRuby.Builtins {
         }
 
         /// <summary>
+        /// Returns an array containing the quotient and modulus obtained by dividing self by other, where other is Fixnum or Bignum.
+        /// If <code>q, r = x.divmod(y)</code>, then 
+        ///     <code>q = floor(float(x)/float(y))</code>
+        ///     <code>x = q*y + r</code>
+        /// </summary>
+        /// <returns>[self div other, self modulo other] as RubyArray</returns>
+        /// <remarks>Normalizes div and mod to Fixnum as necessary</remarks>
+        [RubyMethod("divmod")]
+        public static RubyArray DivMod(BigInteger/*!*/ self, int other) {
+            return DivMod(self, (BigInteger)other);
+        }
+
+        /// <summary>
         /// Returns an array containing the quotient and modulus obtained by dividing self by other, where other is Float.
         /// If <code>q, r = x.divmod(y)</code>, then 
         ///     <code>q = floor(float(x)/float(y))</code>
@@ -419,6 +493,20 @@ namespace IronRuby.Builtins {
         }
 
         /// <summary>
+        /// Returns the remainder after dividing self by other, where other is Fixnum or Bignum.
+        /// </summary>
+        /// <example>
+        /// -1234567890987654321.remainder(13731)      #=> -6966
+        /// </example>
+        /// <returns>Fixnum or Bignum</returns>
+        [RubyMethod("remainder")]
+        public static object Remainder(BigInteger/*!*/ self, int other) {
+            BigInteger remainder;
+            BigInteger.DivRem(self, other, out remainder);
+            return Protocols.Normalize(remainder);
+        }
+
+        /// <summary>
         /// Returns the remainder after dividing self by other, where other is Float.
         /// </summary>
         /// <example>
@@ -463,6 +551,17 @@ namespace IronRuby.Builtins {
         }
 
         /// <summary>
+        /// Comparison operator, where other is Bignum or Fixnum. This is the basis for the tests in Comparable.
+        /// </summary>
+        /// <returns>
+        /// Returns -1, 0, or +1 depending on whether self is less than, equal to, or greater than other.
+        /// </returns>
+        [RubyMethod("<=>")]
+        public static int Compare(BigInteger/*!*/ self, int other) {
+            return BigInteger.Compare(self, (BigInteger)other);
+        }
+
+        /// <summary>
         /// Comparison operator, where other is Float. This is the basis for the tests in Comparable.
         /// </summary>
         /// <returns>
@@ -502,6 +601,16 @@ namespace IronRuby.Builtins {
         /// <returns>true or false</returns>
         [RubyMethod("==")]
         public static bool Equal(BigInteger/*!*/ self, [NotNull]BigInteger/*!*/ other) {
+            return self == other;
+        }
+
+        /// <summary>
+        /// Returns true if other has the same value as self, where other is Fixnum or Bignum.
+        /// Contrast this with Bignum#eql?, which requires other to be a Bignum.
+        /// </summary>
+        /// <returns>true or false</returns>
+        [RubyMethod("==")]
+        public static bool Equal(BigInteger/*!*/ self, int other) {
             return self == other;
         }
 

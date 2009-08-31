@@ -64,6 +64,7 @@ namespace Microsoft.Scripting.Actions {
             }
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
         public MethodInfo GetCallableAddMethod() {
             if (_addMethod == null) {
                 _addMethod = CompilerHelpers.TryGetCallableMethod(_eventInfo.GetAddMethod(true));
@@ -71,6 +72,7 @@ namespace Microsoft.Scripting.Actions {
             return _addMethod;
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
         public MethodInfo GetCallableRemoveMethod() {
             if (_removeMethod == null) {
                 _removeMethod = CompilerHelpers.TryGetCallableMethod(_eventInfo.GetRemoveMethod(true));
@@ -207,6 +209,7 @@ namespace Microsoft.Scripting.Actions {
         /// any circular references to deal with via weak references which are challenging
         /// in the face of COM.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2201:DoNotRaiseReservedExceptionTypes")]
         private HandlerList GetComHandlerList(object instance) {
             HandlerList hl = (HandlerList)Marshal.GetComObjectData(instance, this);
             if (hl == null) {

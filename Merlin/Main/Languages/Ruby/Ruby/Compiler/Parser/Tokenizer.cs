@@ -117,6 +117,8 @@ namespace IronRuby.Compiler {
         // token positions set during tokenization (TODO: to be replaced by tokenizer buffer):
         private SourceLocation _currentTokenStart;
         private SourceLocation _currentTokenEnd;
+
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1823:AvoidUnusedPrivateFields")]
         private int _currentTokenStartIndex;
 
         // last token span:

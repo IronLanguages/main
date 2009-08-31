@@ -191,8 +191,8 @@ Global
 		{6EE7A428-D803-41BC-8248-1297C3ACE369}.Silverlight Release|Any CPU.ActiveCfg = Release|Any CPU
 		{ED82A346-1CD9-4CB0-9C00-4CDD4CF577CF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{ED82A346-1CD9-4CB0-9C00-4CDD4CF577CF}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{ED82A346-1CD9-4CB0-9C00-4CDD4CF577CF}.FxCop|Any CPU.ActiveCfg = Silverlight Release|Any CPU
-		{ED82A346-1CD9-4CB0-9C00-4CDD4CF577CF}.FxCop|Any CPU.Build.0 = Silverlight Release|Any CPU
+		{ED82A346-1CD9-4CB0-9C00-4CDD4CF577CF}.FxCop|Any CPU.ActiveCfg = Release|Any CPU
+		{ED82A346-1CD9-4CB0-9C00-4CDD4CF577CF}.FxCop|Any CPU.Build.0 = Release|Any CPU
 		{ED82A346-1CD9-4CB0-9C00-4CDD4CF577CF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{ED82A346-1CD9-4CB0-9C00-4CDD4CF577CF}.Release|Any CPU.Build.0 = Release|Any CPU
 		{ED82A346-1CD9-4CB0-9C00-4CDD4CF577CF}.Silverlight Debug|Any CPU.ActiveCfg = Silverlight Debug|Any CPU

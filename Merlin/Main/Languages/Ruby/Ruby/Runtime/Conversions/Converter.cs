@@ -225,10 +225,6 @@ namespace IronRuby.Runtime.Conversions {
         }
 
         internal static Candidate PreferConvert(Type t1, Type t2) {
-            if (t1 == typeof(bool) && t2 == typeof(int)) return Candidate.Two;
-            if (t1 == typeof(Decimal) && t2 == typeof(BigInteger)) return Candidate.Two;
-            //if (t1 == typeof(int) && t2 == typeof(BigInteger)) return Candidate.Two;
-
             switch (Type.GetTypeCode(t1)) {
                 case TypeCode.SByte:
                     switch (Type.GetTypeCode(t2)) {
@@ -267,6 +263,19 @@ namespace IronRuby.Runtime.Conversions {
                         default:
                             return Candidate.Equivalent;
                     }
+
+                case TypeCode.Boolean:
+                    if (t2 == typeof(int)) {
+                        return Candidate.Two;
+                    }
+                    return Candidate.Equivalent;
+
+                case TypeCode.Decimal:
+                case TypeCode.Double:
+                    if (t2 == typeof(BigInteger)) {
+                        return Candidate.Two;
+                    }
+                    return Candidate.Equivalent;
             }
             return Candidate.Equivalent;
         }

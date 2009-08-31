@@ -58,7 +58,7 @@ namespace IronRuby.Rack.Handler {
             //   server.
             // The SCRIPT_NAME, if non-empty, must start with /
             
-            env["SCRIPT_NAME"] = request.OrigionalRequest.Path;
+            env["SCRIPT_NAME"] = request.OrigionalRequest.ApplicationPath;
             if(env["SCRIPT_NAME"].ToString() != string.Empty && !((string)env["SCRIPT_NAME"]).StartsWith("/")) {
                 env["SCRIPT_NAME"] = "/" + env["SCRIPT_NAME"];
             }
@@ -75,8 +75,11 @@ namespace IronRuby.Rack.Handler {
             //   trailing slash. This value may be percent-encoded when I 
             //   originating from a URL.
             // The PATH_INFO, if non-empty, must start with /
-           
-            env["PATH_INFO"] = request.OrigionalRequest.PathInfo;
+
+            env["PATH_INFO"] = request.OrigionalRequest.Path.Substring(
+                request.OrigionalRequest.Path.IndexOf(request.OrigionalRequest.ApplicationPath) +
+                request.OrigionalRequest.ApplicationPath.Length
+            );
             if(env["PATH_INFO"].ToString() != string.Empty && !((string)env["PATH_INFO"]).StartsWith("/")) {
                 env["PATH_INFO"] = "/" + env["PATH_INFO"];
             }

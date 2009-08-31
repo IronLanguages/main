@@ -113,12 +113,13 @@ namespace Microsoft.Scripting.Actions {
 
             getter = CompilerHelpers.TryGetCallableMethod(getter);
 
+            var defaultBinder = (DefaultBinder)binder;
             if (binder.PrivateBinding || CompilerHelpers.IsVisible(getter)) {
-                return ((DefaultBinder)binder).MakeCallExpression(resolverFactory, getter, instance);
+                return defaultBinder.MakeCallExpression(resolverFactory, getter, instance);
             }
 
             // private binding is just a call to the getter method...
-            return DefaultBinder.MakeError(((DefaultBinder)binder).MakeNonPublicMemberGetError(resolverFactory, this, type, instance), BindingRestrictions.Empty, typeof(object));
+            return DefaultBinder.MakeError(defaultBinder.MakeNonPublicMemberGetError(resolverFactory, this, type, instance), BindingRestrictions.Empty, typeof(object));
         }
 
         public override ErrorInfo GetBoundError(ActionBinder binder, DynamicMetaObject instance) {

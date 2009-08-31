@@ -42,8 +42,32 @@ module GuiTutorial
       reset
       Window.show_tutorial
 
-      unless SILVERLIGHT
-        @window.chapters.items_source = @current_tutorial.sections
+      @window.tutorial_nav.mouse_enter do |t, e|
+        @window.tutorial_nav_OnMouseEnter.begin
+      end
+      @window.tutorial_nav.mouse_leave do |t, e|
+        @window.tutorial_nav_OnMouseLeave.begin
+      end
+
+      # Temporary guard for Moonlight since TreeView isn't working as expected
+      unless MOONLIGHT
+        if SILVERLIGHT
+          @window.chapters.items.clear
+          @current_tutorial.sections.each do |section|
+            tv_item = Wpf::TreeViewItem.new
+            tv_item.header = section
+            section.chapters.each do |chapter|
+              tv_item.items.add chapter
+            end
+            @window.chapters.items.add tv_item
+          end
+          @window.chapters.loaded do
+            Wpf::TreeViewExtensions.expand_all @window.chapters
+          end
+        else
+          @window.chapters.items_source = @current_tutorial.sections
+        end
+
         @window.chapters.mouse_left_button_up do |t, e|
           select_section_or_chapter t.selected_item
         end
@@ -62,6 +86,7 @@ module GuiTutorial
       case item
       when ::Tutorial::Section: select_section item
       when ::Tutorial::Chapter: select_chapter item
+      when Wpf::TreeViewItem:   select_section item.header
       else 
         raise "Unknown selection type: #{item}"
       end
@@ -98,25 +123,19 @@ module GuiTutorial
         begin @task = @tasks.shift end until @task.should_run? Window.repl.context.bind
         @window.next_step
         if @task.description
-          fd = FlowDocument.from_simple_markup @task.description
-          fd << "Full path: #{@task.source_files.tr('/', '\\')}" if @task.source_files
+          smflow = Wpf::SimpleMarkupFlow.new @task.description
+          smflow.add_paragraph "Full path: #{@task.source_files.tr('/', '\\')}" if @task.source_files
+          return select_next_task if not @task.should_run? Window.repl.context.bind
           @task.setup.call(Window.repl.context.bind) if @task.setup
           if @task.code
-            unless SILVERLIGHT
-              p = Paragraph.new Run.new(@task.code_string)
-              p.font_family = FontFamily.new "Consolas"
-              p.font_weight = FontWeights.Bold
-              fd.Blocks.Add p
-            else
-              fd += "\n\n#{@task.code_string}"
-            end
+            smflow.add_paragraph @task.code_string, true, "Consolas"
           end
         end
         @window.set_or_collapse(:step_title, @task.title) do |obj, value|
           obj.text = value
         end
 
-        @window.step_description.document = fd
+        @window.step_description.document = smflow
         @window.tutorial_scroll.scroll_to_bottom
       else
         if @chapter.next_item
@@ -130,14 +149,14 @@ module GuiTutorial
             obj.text = value
           end if @chapter.summary
           @window.set_or_collapse(:complete_body, @chapter.summary.body) do |obj, value|
-            obj.document = FlowDocument.from_simple_markup value
+            obj.document = Wpf::SimpleMarkupFlow.new value
           end if @chapter.summary
           @window.next_chapter.focus
         else
           if @current_tutorial.summary && @current_tutorial.summary.body
-            @window.exercise.document = FlowDocument.from_simple_markup(@current_tutorial.summary.body)
+            @window.exercise.document = Wpf::SimpleMarkupFlow.new @current_tutorial.summary.body
           else
-            @window.exercise.document = FlowDocument.from_simple_markup("Tutorial complete!")
+            @window.exercise.document = Wpf::SimpleMarkupFlow.new "Tutorial complete!"
           end
           @window.exercise.show!
           @window.tutorial_body.children.clear
@@ -213,13 +232,19 @@ module GuiTutorial
         win = XamlReader.load xaml do |win|
           win.main.children.clear
 
+          win.header_navigation.mouse_enter do |t, e|
+            win.header_navigation_MouseEnter.begin
+          end
+          win.header_navigation.mouse_leave do |t, e|
+            win.header_navigation_MouseLeave.begin
+          end
+
           GuiTutorial::Tutorial.all.each_with_index do |(path,tutorial), index|
             tutorial_id, tutorial_title_id, tutorial_desc_id = "tutorial_#{index}", "tutorial_title_#{index}", "tutorial_desc_#{index}"
             tutorial_id_OnMouseLeave_BeginStoryboard = "tutorial_#{index}_OnMouseLeave_BeginStoryboard"
             
             XamlReader.erb_load(@tut_xaml, binding) do |obj|
               obj.send(tutorial_title_id).text = tutorial.name
-
               obj.send(tutorial_desc_id).document = tutorial.introduction
               win.main.children.add obj
               
@@ -258,7 +283,7 @@ module GuiTutorial
       def show_tutorial
         current.main_scroll.collapse!
         current.tutorial_scroll.show!
-        current.tutorial_nav.show! unless SILVERLIGHT
+        current.tutorial_nav.show!
         current.complete.collapse!
         current.header_name.text = @tutorial.current_tutorial.name
         current.header_navigation.show!
@@ -287,7 +312,7 @@ module GuiTutorial
 
       private
         def sanitize_xaml(xaml) 
-          {
+          newxaml = {
             /x:Class=".*?"/          => '',
             /xmlns:local=".*?"/      => '',
             /mc:Ignorable=".*?"/     => '',
@@ -297,9 +322,11 @@ module GuiTutorial
             '<TreeView '             => '<TreeView ItemTemplate="{StaticResource SectionTemplate}" ',
             /\357\273\277/           =>  '',
             /d:.*?=".*?"/            =>  ''
-          }.inject(xaml) do |_xaml,(k,v)| 
-            _xaml.gsub(k, v)
+          }.inject(xaml) do |_xaml,(k,v)|
+            _xaml.to_s.gsub(k, v)
           end.gsub(/(\n|\t)/, ' ').squeeze(' ')
+          newxaml = newxaml[newxaml.index('<')..-1]
+          newxaml
         end
     end
   end

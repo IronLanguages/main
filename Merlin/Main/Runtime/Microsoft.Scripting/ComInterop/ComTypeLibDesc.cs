@@ -76,7 +76,7 @@ namespace Microsoft.Scripting.ComInterop {
         public static ComTypeLibInfo CreateFromGuid(Guid typeLibGuid) {
             // passing majorVersion = -1, minorVersion = -1 will always
             // load the latest typelib
-            ComTypes.ITypeLib typeLib = UnsafeNativeMethods.LoadRegTypeLib(ref typeLibGuid, -1, -1, 0);
+            ComTypes.ITypeLib typeLib = UnsafeMethods.LoadRegTypeLib(ref typeLibGuid, -1, -1, 0);
 
             return new ComTypeLibInfo(GetFromTypeLib(typeLib));
         }

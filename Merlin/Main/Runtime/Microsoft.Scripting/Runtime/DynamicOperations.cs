@@ -430,8 +430,8 @@ namespace Microsoft.Scripting.Runtime {
         /// This will either get the site from the cache or create a new site and return it. The cache
         /// may be cleaned if it's gotten too big since the last usage.
         /// </remarks>
-        public CallSite<Func<CallSite, T0, Tret>> GetOrCreateSite<T0, Tret>(CallSiteBinder siteBinder) {
-            return GetOrCreateSite<CallSite<Func<CallSite, T0, Tret>>>(siteBinder, CallSite<Func<CallSite, T0, Tret>>.Create);
+        public CallSite<Func<CallSite, T1, TResult>> GetOrCreateSite<T1, TResult>(CallSiteBinder siteBinder) {
+            return GetOrCreateSite<CallSite<Func<CallSite, T1, TResult>>>(siteBinder, CallSite<Func<CallSite, T1, TResult>>.Create);
         }
 
         /// <summary>
@@ -441,8 +441,8 @@ namespace Microsoft.Scripting.Runtime {
         /// This will either get the site from the cache or create a new site and return it. The cache
         /// may be cleaned if it's gotten too big since the last usage.
         /// </remarks>
-        public CallSite<Action<CallSite, T0>> GetOrCreateActionSite<T0>(CallSiteBinder siteBinder) {
-            return GetOrCreateSite<CallSite<Action<CallSite, T0>>>(siteBinder, CallSite<Action<CallSite, T0>>.Create);
+        public CallSite<Action<CallSite, T1>> GetOrCreateActionSite<T1>(CallSiteBinder siteBinder) {
+            return GetOrCreateSite<CallSite<Action<CallSite, T1>>>(siteBinder, CallSite<Action<CallSite, T1>>.Create);
         }
 
         /// <summary>
@@ -452,8 +452,8 @@ namespace Microsoft.Scripting.Runtime {
         /// This will either get the site from the cache or create a new site and return it. The cache
         /// may be cleaned if it's gotten too big since the last usage.
         /// </remarks>
-        public CallSite<Func<CallSite, T0, T1, Tret>> GetOrCreateSite<T0, T1, Tret>(CallSiteBinder siteBinder) {
-            return GetOrCreateSite<CallSite<Func<CallSite, T0, T1, Tret>>>(siteBinder, CallSite<Func<CallSite, T0, T1, Tret>>.Create);
+        public CallSite<Func<CallSite, T1, T2, TResult>> GetOrCreateSite<T1, T2, TResult>(CallSiteBinder siteBinder) {
+            return GetOrCreateSite<CallSite<Func<CallSite, T1, T2, TResult>>>(siteBinder, CallSite<Func<CallSite, T1, T2, TResult>>.Create);
         }
 
         /// <summary>
@@ -463,8 +463,8 @@ namespace Microsoft.Scripting.Runtime {
         /// This will either get the site from the cache or create a new site and return it. The cache
         /// may be cleaned if it's gotten too big since the last usage.
         /// </remarks>
-        public CallSite<Func<CallSite, T0, T1, T2, Tret>> GetOrCreateSite<T0, T1, T2, Tret>(CallSiteBinder siteBinder) {
-            return GetOrCreateSite<CallSite<Func<CallSite, T0, T1, T2, Tret>>>(siteBinder, CallSite<Func<CallSite, T0, T1, T2, Tret>>.Create);
+        public CallSite<Func<CallSite, T1, T2, T3, TResult>> GetOrCreateSite<T1, T2, T3, TResult>(CallSiteBinder siteBinder) {
+            return GetOrCreateSite<CallSite<Func<CallSite, T1, T2, T3, TResult>>>(siteBinder, CallSite<Func<CallSite, T1, T2, T3, TResult>>.Create);
         }
 
         /// <summary>

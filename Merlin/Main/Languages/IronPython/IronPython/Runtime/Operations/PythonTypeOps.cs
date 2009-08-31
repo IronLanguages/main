@@ -181,9 +181,6 @@ namespace IronPython.Runtime.Operations {
         internal static bool IsRuntimeAssembly(Assembly assembly) {
             if (assembly == typeof(PythonOps).Assembly || // IronPython.dll
                 assembly == typeof(Microsoft.Scripting.Math.BigInteger).Assembly || // Microsoft.Scripting.dll
-#if !SILVERLIGHT
-                assembly == typeof(System.Dynamic.ComBinder).Assembly || // Microsoft.Dynamic.ComInterop.dll
-#endif                
                 assembly == typeof(System.Linq.Expressions.Expression).Assembly) {  // Microsoft.Scripting.Core.dll
                 return true;
             }

@@ -55,7 +55,7 @@ namespace IronRuby.Builtins {
                 return _data.Length > 0 ? _owner._encoding.StrictEncoding.GetBytes(_data) : Utils.EmptyBytes;
             }
 
-            #region GetHashCode, Length, Clone (read-only)
+            #region GetHashCode, Length, Clone (read-only), Count
 
             public override int GetHashCode(out int binarySum) {
                 return _data.GetValueHashCode(out binarySum);
@@ -321,10 +321,18 @@ namespace IronRuby.Builtins {
 
             #endregion
 
-            #region Remove
+            #region Remove, Write
 
             public override void Remove(int start, int count) {
                 SwitchToMutable().Remove(start, count);
+            }
+
+            public override void Write(int offset, byte[]/*!*/ value, int start, int count) {
+                SwitchToBinary().Write(offset, value, start, count);
+            }
+
+            public override void Write(int offset, byte value, int repeatCount) {
+                SwitchToBinary().Write(offset, value, repeatCount);
             }
 
             #endregion

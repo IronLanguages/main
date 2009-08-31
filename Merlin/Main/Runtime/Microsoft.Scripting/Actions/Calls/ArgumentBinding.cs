@@ -19,6 +19,7 @@ using System.Text;
 using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Actions.Calls {
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")] // TODO
     public struct ArgumentBinding {
         private static readonly int[] _EmptyBinding = new int[0];
 

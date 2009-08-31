@@ -13,9 +13,9 @@
 #
 # ****************************************************************************
 
-require "stringio"
+SILVERLIGHT = false unless defined? SILVERLIGHT
 
-SILVERLIGHT = false unless defined?(SILVERLIGHT)
+require "stringio"
 
 module Tutorial
 
@@ -166,18 +166,38 @@ module Tutorial
   
   @@tutorials = {} unless class_variable_defined? :@@tutorials
   
-  def self.add_tutorial(tutorial)
+  def self.add_tutorial(tutorial)    
+    # Chain the chapters to the next section or chapter
+    prev_chapter = nil
+    tutorial.sections.each do |section|
+      if prev_chapter
+        prev_chapter.next_item = section
+        prev_chapter = nil
+      end
+      section.chapters.each do |chapter|
+        if prev_chapter
+          prev_chapter.next_item = chapter
+        end
+        prev_chapter = chapter
+      end
+    end
+
     @@tutorials[tutorial.file] = tutorial
   end
 
   def self.all
-    unless SILVERLIGHT
+    all_files = [
+      'Tutorials/ironruby_tutorial.rb', 
+      'Tutorials/tryruby_tutorial.rb', 
+      'Tutorials/hosting_tutorial.rb']
+      
+    if SILVERLIGHT
+      all_files.each {|f| get_tutorial f }
+    else
       Dir[File.expand_path("Tutorials/*_tutorial.rb", File.dirname(__FILE__))].each do |t|
         self.get_tutorial t unless File.directory?(t)
       end
-    else
-      get_tutorial 'Tutorials/ironruby_tutorial.rb'
-      get_tutorial 'Tutorials/tryruby_tutorial.rb'
+      abort("List of files need to be updated for Silverlight") unless @@tutorials.size == all_files.size or not ENV['MERLIN_ROOT']
     end
 
     @@tutorials
@@ -188,13 +208,21 @@ module Tutorial
       all
       return @@tutorials.values.first
     end
-    path = File.expand_path path unless SILVERLIGHT
-    if not @@tutorials.has_key? path
+    
+    if SILVERLIGHT
+      # TODO - On Silverlight, currently __FILE__ does not include the folders, and File.expand_path does not
+      # work either. As a workaround, we drop all folder names
+      path_key = File.basename(path)
+    else
+      path = File.expand_path path
+      path_key = path
+    end
+    if not @@tutorials.has_key? path_key
       require path
-      raise "#{path} does not contains a tutorial definition" if not @@tutorials.has_key?(SILVERLIGHT ? path.split('/').last : path)
+      raise "#{path} does not contains a tutorial definition" if not @@tutorials.has_key? path_key
     end
     
-    return @@tutorials[path]
+    return @@tutorials[path_key]
   end
   
   class ReplContext
@@ -357,98 +385,105 @@ module Tutorial
         end
       }
     end
-  end
+  end  
 end
 
 class Object
-    def tutorial name
-        raise "Only one tutorial can be under creation at a time" if Thread.current[:tutorial]
-        caller[0] =~ /\A(.*):[0-9]+/
-        tutorial_file = $1
-        t = Tutorial::Tutorial.new name, tutorial_file
-        Thread.current[:tutorial] = t
-        Thread.current[:prev_chapter] = nil
+  def tutorial name
+      raise "Only one tutorial can be under creation at a time" if Thread.current[:tutorial]
+      caller[0] =~ /\A(.*):[0-9]+/
+      tutorial_file = $1
+      tutorial_file = File.basename(tutorial_file) if SILVERLIGHT # __FILE__ may not be the full required path
+      t = Tutorial::Tutorial.new name, tutorial_file
+      Thread.current[:tutorial] = t
 
-        yield
+      yield
 
-        Tutorial.add_tutorial t
-        Thread.current[:tutorial] = nil
+      Tutorial.add_tutorial t
+      Thread.current[:tutorial] = nil
+  end
+
+  def introduction intro
+      if Thread.current[:chapter]
+          Thread.current[:chapter].introduction = intro
+      elsif Thread.current[:section]
+          Thread.current[:section].introduction = intro
+      elsif Thread.current[:tutorial]
+          Thread.current[:tutorial].introduction = intro
+      else
+          raise "introduction should only be used within a tutorial definition"
+      end
+  end
+  
+  def legal notice
+      raise "legal should only be used within a tutorial definition" unless Thread.current[:tutorial]
+      Thread.current[:tutorial].legal_notice = notice
+  end
+  
+  def summary s
+    s = if s.kind_of?(String)
+        Tutorial::Summary.new nil, s 
+      else
+        opts = {:title => "Section complete!"}.merge(s)
+        Tutorial::Summary.new opts[:title], opts[:body]
+      end
+    if Thread.current[:chapter]
+        Thread.current[:chapter].summary = s
+    elsif Thread.current[:tutorial]
+        Thread.current[:tutorial].summary = s
+    else
+        raise "summary should only be used within a tutorial or chapter definition"
+    end
+  end
+      
+  def section name
+    raise "Only one section can be under creation at a time" if Thread.current[:section]
+    section = Tutorial::Section.new name
+    Thread.current[:section] = section
+    Thread.current[:platform_match] = nil
+
+    yield
+
+    if Thread.current[:platform_match] == nil or Thread.current[:platform_match]
+      Thread.current[:tutorial].sections << section
+    end
+    Thread.current[:section] = nil
+  end
+
+  def silverlight(enabled = true)
+    if not Thread.current[:section]
+      raise "platform should only be used within a section definition"
+    end
+    Thread.current[:platform_match] = (SILVERLIGHT == enabled)
+  end
+  
+  def chapter name
+    raise "Only one chapter can be under creation at a time" if Thread.current[:chapter]
+    chapter = Tutorial::Chapter.new name
+    Thread.current[:chapter] = chapter
+
+    yield
+
+    Thread.current[:section].chapters << chapter
+    Thread.current[:chapter] = nil
+  end
+
+  def task(options, &success_evaluator)
+    options = {}.merge(options)
+    if options.has_key?(:silverlight) and (options[:silverlight] != SILVERLIGHT)
+      return
     end
 
-    def introduction intro
-        if Thread.current[:chapter]
-            Thread.current[:chapter].introduction = intro
-        elsif Thread.current[:section]
-            Thread.current[:section].introduction = intro
-        elsif Thread.current[:tutorial]
-            Thread.current[:tutorial].introduction = intro
-        else
-            raise "introduction should only be used within a tutorial definition"
-        end
-    end
-    
-    def legal notice
-        raise "legal should only be used within a tutorial definition" unless Thread.current[:tutorial]
-        Thread.current[:tutorial].legal_notice = notice
-    end
-    
-    def summary s
-        s = if s.kind_of?(String)
-              Tutorial::Summary.new nil, s 
-            else
-              opts = {:title => "Section complete!"}.merge(s)
-              Tutorial::Summary.new opts[:title], opts[:body]
-            end
-        if Thread.current[:chapter]
-            Thread.current[:chapter].summary = s
-        elsif Thread.current[:tutorial]
-            Thread.current[:tutorial].summary = s
-        else
-            raise "summary should only be used within a tutorial or chapter definition"
-        end
-    end
-        
-    def section name
-        raise "Only one section can be under creation at a time" if Thread.current[:section]
-        section = Tutorial::Section.new name
-        Thread.current[:section] = section
-        if Thread.current[:prev_chapter]
-            Thread.current[:prev_chapter].next_item = section
-        end
-
-        yield
-
-        Thread.current[:tutorial].sections << section
-        Thread.current[:section] = nil
-    end
-
-    def chapter name
-        raise "Only one chapter can be under creation at a time" if Thread.current[:chapter]
-        chapter = Tutorial::Chapter.new name
-        Thread.current[:chapter] = chapter
-        if Thread.current[:prev_chapter]
-            Thread.current[:prev_chapter].next_item = chapter
-        end
-
-        yield
-
-        Thread.current[:section].chapters << chapter
-        Thread.current[:prev_chapter] = chapter
-        Thread.current[:chapter] = nil
-    end
-
-    def task(options, &success_evaluator)
-        options = {}.merge(options)
-        Thread.current[:chapter].tasks << Tutorial::Task.new(
-          options[:title],
-          options[:body], 
-          options[:run_unless], 
-          options[:setup], 
-          options[:code],
-          options[:source_files], 
-          options[:test_hook],
-          &success_evaluator)
-    end
+    Thread.current[:chapter].tasks << Tutorial::Task.new(
+      options[:title],
+      options[:body], 
+      options[:run_unless], 
+      options[:setup], 
+      options[:code],
+      options[:source_files], 
+      options[:test_hook],
+      &success_evaluator)
+  end
 end
 
 class String

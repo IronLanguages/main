@@ -36,9 +36,9 @@ using System.Security;
 [assembly: AssemblyVersion(RubyContext.IronRubyVersionString)]
 [assembly: AssemblyFileVersion(RubyContext.IronRubyVersionString)]
 [assembly: AllowPartiallyTrustedCallers]
-[assembly: SecurityTransparent]
 #endif
 
+[assembly: SecurityTransparent]
 #if CLR4
 [assembly: SecurityRules(SecurityRuleSet.Level1)]
 #endif

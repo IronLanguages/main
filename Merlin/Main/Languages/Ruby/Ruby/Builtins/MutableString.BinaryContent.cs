@@ -75,7 +75,7 @@ namespace IronRuby.Builtins {
                 } 
             }
 
-            #region GetHashCode, Length, Clone (read-only)
+            #region GetHashCode, Length, Clone (read-only), Count
 
             public override bool IsBinary {
                 get { return true; }
@@ -92,7 +92,11 @@ namespace IronRuby.Builtins {
             public override int Count {
                 get { return _count; }
                 set {
-                    Utils.Resize(ref _data, value);
+                    if (_data.Length < value) {
+                        Array.Resize(ref _data, Utils.GetExpandedSize(_data, value));
+                    } else {
+                        Utils.Fill(_data, _count, (byte)0, value - _count);
+                    }
                     _count = value;
                 }
             }
@@ -200,12 +204,18 @@ namespace IronRuby.Builtins {
 
             public override char GetChar(int index) {
                 if (_owner.HasByteCharacters) {
+                    if (index >= _count) {
+                        throw new IndexOutOfRangeException();
+                    }
                     return (char)_data[index];
                 }
                 return SwitchToChars().DataGetChar(index);
             }
 
             public override byte GetByte(int index) {
+                if (index >= _count) {
+                    throw new IndexOutOfRangeException();
+                }
                 return _data[index];
             }
 
@@ -347,7 +357,7 @@ namespace IronRuby.Builtins {
 
             public override void SetByte(int index, byte b) {
                 if (index >= _count) {
-                    throw new ArgumentOutOfRangeException("index");
+                    throw new IndexOutOfRangeException();
                 }
                 _data[index] = b;
             }
@@ -364,10 +374,27 @@ namespace IronRuby.Builtins {
 
             #endregion
 
-            #region Remove
+            #region Remove, Write
 
             public override void Remove(int start, int count) {
                 _count = Utils.Remove(ref _data, _count, start, count);
+            }
+
+            public override void Write(int offset, byte[]/*!*/ value, int start, int count) {
+                Utils.Resize(ref _data, offset + count);
+                _count = Math.Max(_count, offset + count);
+                Buffer.BlockCopy(value, start, _data, offset, count);
+            }
+
+            public override void Write(int offset, byte value, int repeatCount) {
+                int end = offset + repeatCount;
+                Utils.Resize(ref _data, end);
+                if (end > _count) {
+                    _count = end;
+                }
+                for (int i = offset; i < end; i++) {
+                    _data[i] = value;
+                }
             }
 
             #endregion

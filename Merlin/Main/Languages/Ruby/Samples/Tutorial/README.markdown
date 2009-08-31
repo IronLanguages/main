@@ -23,7 +23,7 @@ Running the app
 
     ir.exe wpf_tutorial.rb
   
-    ir.exe wpf_tutorial.rb <tutorial_file_path>
+    tutorial-sl.bat
 
 Running the app interactively
 -----------------------------
