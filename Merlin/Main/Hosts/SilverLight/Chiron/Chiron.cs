@@ -41,7 +41,7 @@ namespace Chiron {
         // these properties are lazy loaded so we don't parse the configuration file unless necessary
         static AppManifestTemplate _ManifestTemplate;
         static Dictionary<string, LanguageInfo> _Languages;
-        static string _UrlPrefix, _LocalAssemblyPath, _ExternalUrlPrefix, _LocalApplicationRoot;
+        static string _UrlPrefix, _LocalAssemblyPath, _ExternalUrlPrefix;
         static Dictionary<string, string> _MimeMap;
 
         static int Main(string[] args) {
@@ -282,14 +282,6 @@ Options:
                     _browser = true;
                     _webserver = true;
                     break;
-                case "l": case "localAppRoot":
-                    try {
-                        LocalApplicationRoot = val;
-                    } catch {
-                        _error = string.Format("Invalid localAppRoot '{0}'", val);
-                        return;
-                    }
-                    break;
                 case "e": case "extUrlPrefix":
                     try {
                         ExternalUrlPrefix = val;
@@ -435,28 +427,6 @@ Options:
                     Uri uri = new Uri(_ExternalUrlPrefix, UriKind.RelativeOrAbsolute);                    if (!uri.IsAbsoluteUri) {
                         _ExternalUrlPrefix = null;
                         throw new ConfigurationErrorsException("externalUrlPrefix must be an absolute URI");
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        /// Optional path to look for script files outside the XAP
-        /// </summary>
-        internal static string LocalApplicationRoot {
-            get {
-                if (_LocalApplicationRoot == null)
-                    LocalApplicationRoot = ConfigurationManager.AppSettings["localApplicationRoot"];
-                return _LocalApplicationRoot;
-            }
-            set {
-                _LocalApplicationRoot = value;
-                if (_LocalApplicationRoot != null) {
-                    // validate
-                    Uri uri = new Uri(_LocalApplicationRoot, UriKind.RelativeOrAbsolute);
-                    if (uri.IsAbsoluteUri) {
-                        _LocalApplicationRoot = null;
-                        throw new ConfigurationErrorsException("localApplicationRoot must be a relative URI");
                     }
                 }
             }

@@ -64,14 +64,7 @@ namespace Microsoft.Scripting.Silverlight {
         private static string _entryPoint;
 
         internal static string GetEntryPoint() {
-            try {
-                return Settings.EntryPoint;
-            } catch (ApplicationException e) {
-                if (!Settings.DownloadScripts)
-                    throw e;
-                BrowserPAL.PAL = HttpPAL.PAL;
-                return Settings.EntryPoint;
-            }
+            return Settings.EntryPoint;
         }
 
         /// <summary>
@@ -111,27 +104,6 @@ namespace Microsoft.Scripting.Silverlight {
         /// Indicates whether or not a dynamic console gets added to the HTML page
         /// </summary>
         internal static bool ConsoleEnabled { get; private set; }
-
-        /// <summary>
-        /// Indicates where to look for script files outside of the XAP. 
-        /// If null, it will only look in the XAP.
-        /// </summary>
-        internal static string DownloadScriptsFrom { get; private set; }
-
-        /// <summary>
-        /// Indicates whether or not script files are to be downloaded.
-        /// </summary>
-        internal static bool DownloadScripts {
-            get { return DownloadScriptsFrom != null; }
-            set {
-                if(value) {
-                    if (DownloadScriptsFrom == null)
-                        DownloadScriptsFrom = ".";
-                } else {
-                    DownloadScriptsFrom = null;
-                }
-            }
-        }
 
         /// <summary>
         /// The default entry point name
@@ -189,20 +161,6 @@ namespace Microsoft.Scripting.Silverlight {
             } else {
                 // if reportErrors is unspecified, set to false
                 ReportUnhandledErrors = false;
-            }
-
-            string downloadScriptsStr;
-            bool downloadScripts = false;
-            if (args.TryGetValue("downloadScripts", out downloadScriptsStr)) {
-                if (!bool.TryParse(downloadScriptsStr, out downloadScripts)) {
-                    throw new ArgumentException("You must set 'downloadScripts' to 'true' or 'false', for example: initParams: \"..., downloadScripts=true\"");
-                }
-            }
-            DownloadScripts = downloadScripts;
-
-            string downloadScriptsFrom;
-            if (args.TryGetValue("downloadScriptsFrom", out downloadScriptsFrom)) {
-                DownloadScriptsFrom = downloadScriptsFrom;
             }
         }
     }

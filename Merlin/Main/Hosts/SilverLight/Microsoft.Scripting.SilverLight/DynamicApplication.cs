@@ -141,7 +141,7 @@ namespace Microsoft.Scripting.Silverlight {
         /// <param name="component">The object to load the XAML into</param>
         /// <param name="uri">relative Uri of the XAML file</param>
         public new object LoadComponent(object component, Uri relativeUri) {
-            if (Application.GetResourceStream(relativeUri) == null && Settings.DownloadScripts) {
+            if (Application.GetResourceStream(relativeUri) == null) {
                 var xamlStream = HttpPAL.PAL.VirtualFilesystem.GetFile(relativeUri);
                 if (xamlStream != null) {
                     string xaml;

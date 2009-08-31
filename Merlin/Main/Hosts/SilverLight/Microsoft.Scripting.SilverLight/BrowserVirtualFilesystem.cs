@@ -172,8 +172,6 @@ namespace Microsoft.Scripting.Silverlight {
             var server = uri.GetComponents(UriComponents.SchemeAndServer, UriFormat.Unescaped);
             var path = NormalizePath(Path.GetDirectoryName(uri.LocalPath));
             var defaultBaseUri = new Uri(new Uri(server), path);
-            if (Settings.DownloadScripts)
-                defaultBaseUri = new Uri(NormalizePath(Path.Combine(defaultBaseUri.AbsoluteUri, Settings.DownloadScriptsFrom)));
             return defaultBaseUri;
         }
 
