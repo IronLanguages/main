@@ -120,27 +120,43 @@ namespace Microsoft.Scripting.Silverlight {
                     if (reader.NodeType != XmlNodeType.Element || reader.Name != "Language") {
                         continue;
                     }
-                    string context = null, assembly = null, exts = null;
+                    string context = null, asms = null, exts = null, names = null, external = null;
                     while (reader.MoveToNextAttribute()) {
                         switch (reader.Name) {
+                            case "names":
+                                names = reader.Value;
+                                break;
                             case "languageContext":
                                 context = reader.Value;
                                 break;
-                            case "assembly":
-                                assembly = reader.Value;
+                            case "assemblies":
+                                asms = reader.Value;
                                 break;
                             case "extensions":
                                 exts = reader.Value;
                                 break;
+                            case "external":
+                                external = reader.Value;
+                                break;
                         }
                     }
 
-                    if (context == null || assembly == null || exts == null) {
-                        throw new ConfigFileException("expected 'Language' element to have attributes 'languageContext', 'assembly', 'extensions'", Settings.LanguagesConfigFile);
+                    if (context == null || asms == null || exts == null || names == null || external == null) {
+                        throw new ConfigFileException("expected 'Language' element to have attributes 'languageContext', 'assemblies', 'extensions', 'names', 'external'", Settings.LanguagesConfigFile);
                     }
 
-                    string[] extensions = exts.Split(',');
-                    result.LanguageSetups.Add(new LanguageSetup(context + ", " + assembly, String.Empty, extensions, extensions));
+                    char[] splitChars = new char[] { ' ', '\t', ',', ';', '\r', '\n' };
+                    string[] extensions = exts.Split(splitChars, StringSplitOptions.RemoveEmptyEntries);
+                    string[] assemblies = asms.Split(splitChars, StringSplitOptions.RemoveEmptyEntries);
+                    string[] aryNames = names.Split(splitChars, StringSplitOptions.RemoveEmptyEntries);
+                    string contextAssembly = assemblies[0].Split('.')[0];
+                    foreach(Assembly asm in DynamicApplication.Current.AppManifest.Assemblies) {
+                        if(asm.FullName.Contains(contextAssembly)) {
+                            contextAssembly = asm.FullName;
+                            break;
+                        }
+                    }
+                    result.LanguageSetups.Add(new LanguageSetup(context + ", " + contextAssembly, aryNames[0], aryNames, extensions));
                 }
             } catch (ConfigFileException cfe) {
                 throw cfe;

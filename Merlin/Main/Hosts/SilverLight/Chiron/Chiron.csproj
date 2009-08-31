@@ -107,7 +107,7 @@ xcopy /y /d "$(TargetDir)Microsoft.Scripting.dll" "$(ProjectDir)..\testsuites\se
 xcopy /y /d "$(TargetDir)Microsoft.Dynamic.dll" "$(ProjectDir)..\testsuites\setup\DLR\"
 xcopy /y /d "$(TargetDir)Microsoft.Scripting.Silverlight.dll" "$(ProjectDir)..\testsuites\setup\DLR\"
 :END
-    </PostBuildEvent>
+call $(ProjectDir)..\Scripts\package_slvx.bat $(ConfigurationName)</PostBuildEvent>
     <PreBuildEvent>
     </PreBuildEvent>
   </PropertyGroup>

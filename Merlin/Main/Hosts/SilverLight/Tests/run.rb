@@ -7,6 +7,7 @@ begin
   TIMEOUT = 0.5
 
   # make sure dlr.js is present
+  puts "making sure dlr.js is up-to-date"
   dlrjspath = File.dirname(__FILE__) + '/../Scripts/dlr.js'
   gendlrjspath = File.dirname(__FILE__) + '/../Scripts/generate_dlrjs.rb'
   FileUtils.rm dlrjspath if File.exist?(dlrjspath)
@@ -17,8 +18,28 @@ begin
   FileUtils.cp dlrjspath, mydlrjspath
 
   t = Thread.new do
-    print 'starting web server '
-    system '"..\..\..\Bin\Silverlight Release\Chiron.exe" /w 2>&1>NUL'
+    options = %W(debug release)
+    type = ARGV.first if ARGV.first
+    type = 'debug' unless options.include?(type)
+    get_path = lambda do |type|
+      "#{File.dirname(__FILE__)}/../../../Bin/Silverlight\ #{type.capitalize}/Chiron.exe"
+    end
+    unless File.exist? get_path[type]
+      puts "#{type} configuration not found, looking for more ..."
+      (options - [type]).each do |t|
+        if File.exist? get_path[t]
+          type = t
+          break
+        end
+        type = nil
+      end
+      if type.nil?
+        puts "No valid build configuration found, exiting"
+        exit(1)
+      end
+    end
+    print "starting web server with #{type} configuration "
+    system "\"#{get_path[type]}\" /w /d:\"#{File.dirname(__FILE__)}\" 2>&1>NUL"
   end
 
   ITERATIONS.times do |i|
@@ -75,9 +96,18 @@ begin
     results
   end
 
-
 ensure
   `taskkill /IM Chiron.exe /F`
   @browser.close if @browser
   puts results.inspect if results
+
+  results.each do |browser, res|
+    if res[:failures] > 0 || res[:errors] > 0
+      puts "Failed!"
+      exit(1)
+    end
+  end
+
+  puts "Success!"
+  exit(0)
 end

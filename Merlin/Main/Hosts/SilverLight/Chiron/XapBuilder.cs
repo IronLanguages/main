@@ -211,9 +211,14 @@ namespace Chiron {
                 writer.WriteLine("<Languages>");
 
                 foreach (LanguageInfo lang in langs) {
-                    writer.WriteLine("  <Language languageContext=\"{0}\"", lang.LanguageContext);
-                    writer.WriteLine("            assembly=\"{0}\"", lang.GetContextAssemblyName());
-                    writer.WriteLine("            extensions=\"{0}\" />", lang.GetExtensionsString());
+                    writer.WriteLine("  <Language");
+                    writer.WriteLine("            names=\"{0}\"", lang.GetNames());
+                    writer.WriteLine("            languageContext=\"{0}\"", lang.LanguageContext);
+                    writer.WriteLine("            extensions=\"{0}\"", lang.GetExtensionsString());
+                    writer.WriteLine("            assemblies=\"{0}\"", lang.GetAssemblyNames());
+                    writer.WriteLine("            external=\"{0}\"", lang.External);
+                    writer.WriteLine("  />");
+                    
                 }
 
                 writer.WriteLine("</Languages>");
