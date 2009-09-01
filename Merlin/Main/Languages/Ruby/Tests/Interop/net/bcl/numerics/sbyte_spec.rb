@@ -10,4 +10,5 @@ describe "System::SByte" do
   it_behaves_like "A .NET numeric", System::SByte
   it_behaves_like "A .NET numeric, induceable from Fixnum", System::SByte
   it_behaves_like :numeric_size, System::SByte
+  it_behaves_like :numeric_conversion, System::SByte
 end

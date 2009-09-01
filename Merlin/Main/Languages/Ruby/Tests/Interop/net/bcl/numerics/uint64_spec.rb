@@ -9,4 +9,5 @@ describe "System::UInt64" do
   
   it_behaves_like "A .NET numeric", System::UInt64
   it_behaves_like :numeric_size, System::UInt64
+  it_behaves_like :numeric_conversion, System::UInt64
 end

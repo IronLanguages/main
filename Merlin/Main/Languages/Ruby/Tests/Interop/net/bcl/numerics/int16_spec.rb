@@ -10,4 +10,5 @@ describe "System::Int16" do
   it_behaves_like "A .NET numeric", System::Int16
   it_behaves_like "A .NET numeric, induceable from Fixnum", System::Int16
   it_behaves_like :numeric_size, System::Int16
+  it_behaves_like :numeric_conversion, System::Int16
 end

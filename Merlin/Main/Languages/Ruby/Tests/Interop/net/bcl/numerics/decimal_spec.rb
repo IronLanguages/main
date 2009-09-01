@@ -22,4 +22,5 @@ describe "System::Decimal" do
   it_behaves_like "A .NET numeric", System::Decimal
   it_behaves_like "A .NET numeric, induceable from Fixnum", System::Decimal
   it_behaves_like :numeric_size, System::Decimal
+  it_behaves_like :numeric_conversion, System::Decimal
 end

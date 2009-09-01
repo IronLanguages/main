@@ -10,6 +10,7 @@ describe "System::Int32" do
   it_behaves_like "A .NET numeric", System::Int32
   it_behaves_like "A .NET numeric, induceable from Fixnum", System::Int32
   it_behaves_like :numeric_size, System::Int32
+  it_behaves_like :numeric_conversion, System::Int32
   
   it "is Fixnum" do
     System::Int32.should == Fixnum

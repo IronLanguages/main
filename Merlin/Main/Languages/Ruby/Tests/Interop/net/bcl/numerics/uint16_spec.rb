@@ -10,4 +10,5 @@ describe "System::UInt16" do
   it_behaves_like "A .NET numeric", System::UInt16
   it_behaves_like "A .NET numeric, induceable from Fixnum", System::UInt16
   it_behaves_like :numeric_size, System::UInt16
+  it_behaves_like :numeric_conversion, System::UInt16
 end
