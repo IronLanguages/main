@@ -82,6 +82,9 @@ csc <<-EOL
     public static int SizeOfUInt64() {
       return sizeof(UInt64);
     }
+    public static int SizeOfDecimal() {
+      return sizeof(Decimal);
+    }
   }
 EOL
 
@@ -206,12 +209,12 @@ no_csc do
   end
   
   class NumericHelper
-    def max_of(klass)
-      klass.max_value
+    def self.max_of(klass)
+      klass.MaxValue + 0
     end
 
-    def min_of(klass)
-      klass.min_value
+    def self.min_of(klass)
+      klass.MinValue + 0
     end
   end
 end

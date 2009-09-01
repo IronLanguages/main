@@ -1,6 +1,8 @@
 describe "A .NET numeric", :shared => true do
   before(:each) do
     @class = @method
+    @minvalue = NumericHelper.min_of(@class)
+    @maxvalue = NumericHelper.max_of(@class)
     @bignum = Bignum.Create(0)
   end
 
@@ -40,6 +42,8 @@ describe "A .NET numeric, induceable from Fixnum", :shared => true do
   before(:each) do
     @class = @method
     @bignum = Bignum.Create(0)
+    @minvalue = NumericHelper.min_of(@class)
+    @maxvalue = NumericHelper.max_of(@class)
   end
 
   it "can be induced via an int" do
@@ -61,6 +65,6 @@ describe :numeric_size, :shared => true do
   end
 
   it "has a size" do
-    @class.new(1).size.should == @size
+    @class.Parse("1").size.should == @size
   end
 end

@@ -4,6 +4,8 @@ using System.Runtime.InteropServices;
 using Microsoft.Scripting.Hosting;
 using IronRuby.Runtime;
 using IronRuby.Builtins;
+using Microsoft.Scripting.Math;
+using System.Collections.Generic;
 #line 1 "./bcl/fixtures/classes.rb"
 #line 5 "./bcl/fixtures/classes.rb"
 public partial class Klass {
@@ -84,6 +86,9 @@ public partial class Klass {
     }
     public static int SizeOfUInt64() {
       return sizeof(UInt64);
+    }
+    public static int SizeOfDecimal() {
+      return sizeof(Decimal);
     }
   }
 #line 1 "./class/fixtures/classes.rb"
@@ -212,6 +217,7 @@ public partial class DelegateConversionClass {
   }
 #line 1 "./enum/fixtures/classes.rb"
 public enum EnumInt : int { A, B, C}
+public enum CustomEnum { A, B, C}
 #line 1 "./events/fixtures/classes.rb"
 #pragma warning disable 67
   public delegate void EventHandler(object source, int count);
@@ -340,7 +346,8 @@ public interface IEmptyInterfaceGroup { }
 
   public interface IInterfaceGroup1<T> {void m1();}
   public interface IInterfaceGroup1<T,V> {void m1();}
-#line 140 "./method/fixtures/classes.rb"
+#line 2 "./method/fixtures/classes.rb"
+#line 145 "./method/fixtures/classes.rb"
 public abstract partial class AbstractClassWithMethods {
     public abstract string PublicMethod();
     protected abstract string ProtectedMethod();
@@ -742,11 +749,15 @@ return new int[]{1}; }
   public string GenericSignatureOverload<T>(out string foo, ref string bar) { foo = "out"; return "SO out ref" ; }
 
   }
-  
+  public class DerivedFromImplementsIInterface : ImplementsIInterface {}
   public partial class ClassWithMethods {
-    public string PublicMethod() {return "public";}
-    protected string ProtectedMethod() {return "protected";}
-    private string PrivateMethod() {return "private";}
+    public ClassWithMethods() {
+      Tracker = new ArrayList();
+    }
+    public string PublicMethod() { return "public";}
+    protected string ProtectedMethod() { return "protected";}
+    private string PrivateMethod() { return "private";}
+    public ArrayList Tracker { get; set;}
       #region private methods
   private string Private1Generic0Arg<T>() {
     return "private generic no args";
@@ -859,10 +870,86 @@ return new int[]{1}; }
   }
   #endregion
 
-
+    public void Reset() { Tracker = new ArrayList();}
     public int SummingMethod(int a, int b){
       return a+b;
     }
+
+    // no args
+    public string NoArg() { return "NoArg";}
+
+    //primitive types
+    // 1. Ruby native
+
+    public string Int32Arg(Int32 arg) { Tracker.Add(arg); return "Int32Arg";}                 // Fixnum
+    public string DoubleArg(Double arg) { Tracker.Add(arg); return "DoubleArg";}              // Float
+    public string BigIntegerArg(BigInteger arg) { Tracker.Add(arg); return "BigIntegerArg";}  // Bignum
+    public string StringArg(String arg) { Tracker.Add(arg); return "StringArg";}              // String
+    public string BooleanArg(Boolean arg) { Tracker.Add(arg); return "BooleanArg";}           // TrueClass/FalseClass/NilClass
+    public string ObjectArg(object arg) { Tracker.Add(arg); return "ObjectArg";}              // Object 
+
+    // 2. not Ruby native 
+    // 2.1 -- signed
+    public string SByteArg(SByte arg) { Tracker.Add(arg); return "SByteArg";}
+    public string Int16Arg(Int16 arg) { Tracker.Add(arg); return "Int16Arg";}
+    public string Int64Arg(Int64 arg) { Tracker.Add(arg); return "Int64Arg";}
+    public string SingleArg(Single arg) { Tracker.Add(arg); return "SingleArg";}
+    // 2.2 -- unsigned 
+    public string ByteArg(Byte arg) { Tracker.Add(arg); return "ByteArg";}
+    public string UInt16Arg(UInt16 arg) { Tracker.Add(arg); return "UInt16Arg";}
+    public string UInt32Arg(UInt32 arg) { Tracker.Add(arg); return "UInt32Arg";}
+    public string UInt64Arg(UInt64 arg) { Tracker.Add(arg); return "UInt64Arg";}
+    // 2.3 -- special
+    public string CharArg(Char arg) { Tracker.Add(arg); return "CharArg";}
+    public string DecimalArg(Decimal arg) { Tracker.Add(arg); return "DecimalArg";}
+
+    //
+    // Reference type or value type
+    //
+    public string IInterfaceArg(IInterface arg) { Tracker.Add(arg); return "IInterfaceArg";}
+    public string ImplementsIInterfaceArg(ImplementsIInterface arg) { Tracker.Add(arg); return "ImplementsIInterfaceArg";}
+    public string DerivedFromImplementsIInterfaceArg(DerivedFromImplementsIInterface arg) { Tracker.Add(arg); return "DerivesImplementsIInterfaceArg";}
+    public string StructArg(Struct arg) { Tracker.Add(arg); return "StructArg";}
+
+    public string AbstractClassArg(AbstractClass arg) { Tracker.Add(arg); return "AbstractClassArg";}
+    public string DerivedFromAbstractArg(DerivedFromAbstract arg) { Tracker.Add(arg); return "DerivedFromAbstractArg";}
+
+    public string CustomEnumArg(CustomEnum arg) { Tracker.Add(arg); return "CustomEnumArg";}
+    public string EnumIntArg(EnumInt arg) { Tracker.Add(arg); return "EnumIntArg";}
+
+    // 
+    // array
+    //
+    public string Int32ArrArg(Int32[] arg) { Tracker.Add(arg); return "Int32ArrArg";}
+    public string IInterfaceArrArg(IInterface[] arg) { Tracker.Add(arg); return "IInterfaceArrArg";}
+
+    //
+    // params array 
+    //
+    public string ParamsInt32ArrArg(params Int32[] arg) { Tracker.Add(arg); return "ParamsInt32ArrArg";}
+    public string ParamsIInterfaceArrArg(params IInterface[] arg) { Tracker.Add(arg); return "ParamsIInterfaceArrArg";}
+    public string ParamsStructArrArg(params Struct[] arg) { Tracker.Add(arg); return "ParamsStructArrArg";}
+    public string Int32ArgParamsInt32ArrArg(Int32 arg, params Int32[] arg2) { Tracker.Add(arg); return "Int32ArgParamsInt32ArrArg";}
+    public string IInterfaceArgParamsIInterfaceArrArg(IInterface arg, params IInterface[] arg2) { Tracker.Add(arg); return "IInterfaceArgParamsIInterfaceArrArg";}
+
+    //
+    // collections/generics
+    //
+    public string IListOfIntArg(IList<int> arg) { Tracker.Add(arg); return "IListOfIntArg";} 
+    public string ArrayArg(Array arg) { Tracker.Add(arg); return "ArrayArg";} 
+    public string IEnumerableOfIntArg(IEnumerable<int> arg) { Tracker.Add(arg); return "IEnumerableOfIntArg";}
+    public string IEnumeratorOfIntArg(IEnumerator<int> arg) { Tracker.Add(arg); return "IEnumeratorOfIntArg";}
+
+    // Nullable
+    public string NullableInt32Arg(Int32? arg) { Tracker.Add(arg); return "NullableInt32Arg";}
+
+    // ByRef, Out
+    public string RefInt32Arg(ref Int32 arg) { arg = 1; Tracker.Add(arg); return "RefInt32Arg";}
+    public string OutInt32Arg(out Int32 arg) { arg = 2; Tracker.Add(arg); return "OutInt32Arg";}
+
+    // Default Value
+    public string DefaultInt32Arg([DefaultParameterValue(10)] Int32 arg) { Tracker.Add(arg); return "DefaultInt32Arg";}
+    public string Int32ArgDefaultInt32Arg(Int32 arg, [DefaultParameterValue(10)] Int32 arg2) { Tracker.Add(arg); Tracker.Add(arg2); return "Int32ArgDefualutInt32Arg";}
   }
 
   public class VirtualMethodBaseClass { 

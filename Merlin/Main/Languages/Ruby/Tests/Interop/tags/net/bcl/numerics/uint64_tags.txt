@@ -1,1 +1,2 @@
 fails:System::UInt64 raises a RangeError if out of range for Float
+fails:System::UInt64 can be induced from a Float

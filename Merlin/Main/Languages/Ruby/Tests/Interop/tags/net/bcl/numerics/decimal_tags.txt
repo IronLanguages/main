@@ -1,0 +1,2 @@
+fails:System::Decimal can be induced from a Float
+fails:System::Decimal raises a RangeError if out of range for Float
