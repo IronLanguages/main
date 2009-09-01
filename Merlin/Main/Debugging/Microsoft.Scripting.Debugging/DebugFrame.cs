@@ -75,23 +75,7 @@ namespace Microsoft.Scripting.Debugging {
             get { return _stackDepth; }
             set { _stackDepth = value; }
         }
-
-        /// <summary>
-        /// GetScriptScope
-        /// </summary>
-        internal ScriptScope GetScriptScope(ScriptEngine scriptEngine, ScriptScope parentScope) {
-            ScopeData scopeData = CurrentScopeData;
-            ScriptScope scriptScope = scopeData.ScriptScope;
-            if (scriptScope == null) {
-                scriptScope = HostingHelpers.CreateScriptScope(
-                    scriptEngine, 
-                    GetLocalsScope(parentScope != null ? HostingHelpers.GetScope(parentScope) : null ));
-                scopeData.ScriptScope = scriptScope;
-            }
-
-            return scriptScope;
-        }
-
+        
         /// <summary>
         /// Variables
         /// </summary>
@@ -209,10 +193,10 @@ namespace Microsoft.Scripting.Debugging {
             set {
                 if (_thrownException != null && value == null) {
                     _thrownException = null;
-                    GetLocalsScope().Dict.Remove(_exceptionVariableSymbol);
-                } else if (value != null && !GetLocalsScope().Dict.ContainsKey(_exceptionVariableSymbol)) {
+                    GetLocalsScope().TryRemoveVariable(_exceptionVariableSymbol);
+                } else if (value != null && !GetLocalsScope().ContainsVariable(_exceptionVariableSymbol)) {
                     _thrownException = value;
-                    GetLocalsScope().Dict.Add(_exceptionVariableSymbol, _thrownException);
+                    GetLocalsScope().SetVariable(_exceptionVariableSymbol, _thrownException);
                 }
             }
         }
@@ -296,10 +280,6 @@ namespace Microsoft.Scripting.Debugging {
         }
 
         internal Scope GetLocalsScope() {
-            return GetLocalsScope(null);
-        }
-
-        internal Scope GetLocalsScope(Scope parentScope) {
             ScopeData scopeData = CurrentScopeData;
             Scope scope = scopeData.Scope;
             if (scope == null) {
@@ -326,10 +306,7 @@ namespace Microsoft.Scripting.Debugging {
 
                 IRuntimeVariables scopedLocals = new ScopedRuntimeVariables(visibleLocals, _liftedLocals);
 
-                if (parentScope != null)
-                    scope = new Scope(parentScope, new LocalsDictionary(scopedLocals, visibleSymbols.ToArray()));
-                else
-                    scope = new Scope(new LocalsDictionary(scopedLocals, visibleSymbols.ToArray()));
+                scope = new Scope(new LocalsDictionary(scopedLocals, visibleSymbols.ToArray()));
 
                 scopeData.Scope = scope;
             }
@@ -433,7 +410,6 @@ namespace Microsoft.Scripting.Debugging {
             public VariableInfo[] VarInfos;
             public VariableInfo[] VarInfosWithException;
             public Scope Scope;
-            public ScriptScope ScriptScope;
         }
     }
 }

@@ -1076,8 +1076,8 @@ k = KNew()", SourceCodeKind.Statements);
         public void ScenarioEvaluateInPublishedEngineModule() {
             PythonContext pc = DefaultContext.DefaultPythonContext;
 
-            PythonModule publishedModule = pc.CreateModule();
-            PythonModule otherModule = pc.CreateModule();
+            PythonModule publishedModule = new PythonModule();
+            PythonModule otherModule = new PythonModule();
             pc.PublishModule("published_context_test", publishedModule);
 
             pc.CreateSnippet("x = 0", SourceCodeKind.Statements).Execute(otherModule.Scope);

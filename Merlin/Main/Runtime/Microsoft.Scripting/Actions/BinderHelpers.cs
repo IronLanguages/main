@@ -32,7 +32,7 @@ namespace Microsoft.Scripting.Actions {
         }
 
         public static bool IsParamDictionary(ParameterInfo parameter) {
-            return parameter.IsDefined(typeof(ParamDictionaryAttribute), false);
+            return parameter.IsAttributeDefined(typeof(ParamDictionaryAttribute), false);
         }
 
     }

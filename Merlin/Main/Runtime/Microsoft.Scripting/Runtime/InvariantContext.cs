@@ -25,15 +25,13 @@ namespace Microsoft.Scripting.Runtime {
         // friend: ScriptDomainManager
         internal InvariantContext(ScriptDomainManager manager)
             : base(manager) {
-            // TODO: use InvariantBinder
-            Binder = new DefaultActionBinder(manager, Type.EmptyTypes);
         }
 
         public override bool CanCreateSourceCode {
             get { return false; }
         }
 
-        protected internal override ScriptCode CompileSourceCode(SourceUnit sourceUnit, CompilerOptions options, ErrorSink errorSink) {
+        public override ScriptCode CompileSourceCode(SourceUnit sourceUnit, CompilerOptions options, ErrorSink errorSink) {
             // invariant language doesn't have a grammar:
             throw new NotSupportedException();
         }

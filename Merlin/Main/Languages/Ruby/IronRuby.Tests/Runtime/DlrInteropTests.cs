@@ -774,7 +774,8 @@ class C
 end
 ");
             var classC = Runtime.Globals.GetVariable("C");
-            var c = Engine.Operations.CreateInstance(classC);
+            // TODO: CLR4 bug #772803 - c can't be dynamic:
+            object c = Engine.Operations.CreateInstance(classC);
 
             AssertExceptionThrown<MissingMethodException>(() => MyInvokeMemberBinder.Invoke(c, "private_m"));
             AssertExceptionThrown<MissingMethodException>(() => MyInvokeMemberBinder.Invoke(c, "protected_m"));

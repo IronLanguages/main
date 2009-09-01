@@ -244,6 +244,7 @@
     <Compile Include="Interpreter\InterpretedFrame.cs" />
     <Compile Include="Interpreter\LastFaultingLineExpression.cs" />
     <Compile Include="Runtime\BindingRestrictionsHelpers.cs" />
+    <Compile Include="Runtime\DynamicDelegateCreator.cs" />
     <Compile Include="Runtime\DynamicNull.cs" />
     <Compile Include="Runtime\Generator.cs" />
     <Compile Include="Ast\GeneratorExpression.cs" />
@@ -296,6 +297,7 @@
     <Compile Include="Runtime\MetaObjectExtensions.cs" />
     <Compile Include="Runtime\ParserSink.cs" />
     <Compile Include="Runtime\RestrictedMetaObject.cs" />
+    <Compile Include="Runtime\SavableScriptCode.cs" />
     <Compile Include="Runtime\TokenizerBuffer.cs" />
     <Compile Include="Runtime\TokenizerService.cs" />
     <Compile Include="Generation\MethodSignatureInfo.cs" />

@@ -24,7 +24,7 @@ using System.Reflection.Emit;
 using System.Reflection;
 
 namespace Microsoft.Scripting.Runtime {
-    public class LegacyScriptCode : ScriptCode {
+    public class LegacyScriptCode : SavableScriptCode {
         private DlrMainCallTarget _target;
         private LambdaExpression _code;
 

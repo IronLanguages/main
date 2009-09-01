@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
 using System.IO;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Security;
 using System.Text;
@@ -62,9 +63,12 @@ namespace IronRuby.Runtime {
 
         private RubyOptions/*!*/ _options;
         private MutableString _commandLineProgramPath;
+        private readonly TopNamespaceTracker _nsTracker;
         private readonly Loader/*!*/ _loader;
         private readonly Scope/*!*/ _globalScope;
         private readonly RubyMetaBinderFactory/*!*/ _metaBinderFactory;
+        private readonly RubyBinder _binder;
+        private DynamicDelegateCreator _delegateCreator;
 
         #region Global Variables (thread-safe access)
 
@@ -382,7 +386,7 @@ namespace IronRuby.Runtime {
             _upTime = new Stopwatch();
             _upTime.Start();
             
-            Binder = new RubyBinder(this);
+            _binder = new RubyBinder(this);
 
             _metaBinderFactory = new RubyMetaBinderFactory(this);
             _runtimeErrorSink = new RuntimeErrorSink(this);
@@ -432,8 +436,24 @@ namespace IronRuby.Runtime {
             // needs to run before globals and constants are initialized:
             InitializeFileDescriptors(DomainManager.SharedIO);
 
+            _nsTracker = new TopNamespaceTracker(manager);
+            manager.AssemblyLoaded += new EventHandler<AssemblyLoadedEventArgs>(AssemblyLoaded);
+            foreach (Assembly asm in manager.GetLoadedAssemblyList()) {
+                _nsTracker.LoadAssembly(asm);
+            }
+
             InitializeGlobalConstants();
             InitializeGlobalVariables();
+        }
+
+        public RubyBinder Binder {
+            get {
+                return _binder;
+            }
+        }
+
+        void AssemblyLoaded(object sender, AssemblyLoadedEventArgs e) {
+            _nsTracker.LoadAssembly(e.Assembly);
         }
 
         /// <summary>
@@ -542,7 +562,12 @@ namespace IronRuby.Runtime {
         }
 
         internal bool TryGetGlobalConstant(string/*!*/ name, out object value) {
-            return _globalScope.TryGetVariable(SymbolTable.StringToId(name), out value);
+            if (_globalScope.TryGetVariable(SymbolTable.StringToId(name), out value)) {
+                return true;
+            }
+
+            value = _nsTracker.TryGetPackageAny(name);
+            return value != null;
         }
 
         private void InitializeFileDescriptors(SharedIO/*!*/ io) {
@@ -1871,7 +1896,7 @@ namespace IronRuby.Runtime {
 
         #region Parsing, Compilation (thread-safe)
 
-        protected override ScriptCode CompileSourceCode(SourceUnit/*!*/ sourceUnit, CompilerOptions/*!*/ options, ErrorSink/*!*/ errorSink) {
+        public override ScriptCode CompileSourceCode(SourceUnit/*!*/ sourceUnit, CompilerOptions/*!*/ options, ErrorSink/*!*/ errorSink) {
             ContractUtils.RequiresNotNull(sourceUnit, "sourceUnit");
             ContractUtils.RequiresNotNull(options, "options");
             ContractUtils.RequiresNotNull(errorSink, "errorSink");
@@ -1976,7 +2001,7 @@ namespace IronRuby.Runtime {
             return _runtimeErrorSink;
         }
 
-        protected override ScriptCode/*!*/ LoadCompiledCode(Delegate/*!*/ method, string path, string customData) {
+        public override ScriptCode/*!*/ LoadCompiledCode(Delegate/*!*/ method, string path, string customData) {
             // TODO: we need to save the kind of the scope factory:
             SourceUnit su = new SourceUnit(this, NullTextContentProvider.Null, path, SourceCodeKind.File);
             return new RubyScriptCode((Func<RubyScope, object, object>)method, su, TopScopeFactoryKind.Hosted);
@@ -2347,7 +2372,7 @@ namespace IronRuby.Runtime {
 #endif
         }
 
-        protected override string/*!*/ FormatObject(DynamicOperations/*!*/ operations, object obj) {
+        public override string/*!*/ FormatObject(DynamicOperations/*!*/ operations, object obj) {
             var inspectSite = operations.GetOrCreateSite<object, object>(
                 RubyCallAction.Make(this, "inspect", RubyCallSignature.WithImplicitSelf(1))
             );
@@ -2430,6 +2455,16 @@ namespace IronRuby.Runtime {
                 var newSite = CallSite<TSiteFunc>.Create(RubyCallAction.Make(this, methodName, callSignature));
                 _sendSites.Add(Key.Create(methodName, callSignature), newSite);
                 return newSite;
+            }
+        }
+
+        public DynamicDelegateCreator/*!*/ DelegateCreator {
+            get {
+                if (_delegateCreator == null) {
+                    Interlocked.CompareExchange(ref _delegateCreator, new DynamicDelegateCreator(this), null);
+                }
+
+                return _delegateCreator;
             }
         }
 

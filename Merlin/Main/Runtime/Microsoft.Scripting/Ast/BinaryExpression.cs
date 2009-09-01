@@ -120,5 +120,9 @@ namespace Microsoft.Scripting.Ast {
             builder.AddHiddenVariable(temp);
             return result;
         }
+
+        public static BinaryExpression Update(this BinaryExpression expression, Expression left, Expression right) {
+            return expression.Update(left, expression.Conversion, right);
+        }
     }
 }

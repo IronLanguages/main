@@ -22,7 +22,6 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 
 using Microsoft.Contracts;
-using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Runtime {
@@ -355,25 +354,7 @@ namespace Microsoft.Scripting.Runtime {
             var site = GetOrCreateSite<TTarget, TOther, TResult>(_lc.CreateBinaryOperationBinder(operation));
             return site.Target(site, target, other);
         }
-        
-        /// <summary>
-        /// Performs a generic unary operation on the specified target and returns the result.
-        /// </summary>
-        [Obsolete("Use UnaryOperation or BinaryOperation")]
-        public object DoOperation(string op, object target) {
-            return DoOperation<object, object>(op, target);
-        }
-
-        /// <summary>
-        /// Performs a generic unary operation on the strongly typed target and returns the value as the specified type
-        /// </summary>
-        [Obsolete("Use UnaryOperation or BinaryOperation")]
-        public TResult DoOperation<TTarget, TResult>(string op, TTarget target) {
-            CallSite<Func<CallSite, TTarget, TResult>> site;
-            site = GetOrCreateSite<TTarget, TResult>(_lc.CreateOperationBinder(op));
-            return site.Target(site, target);
-        }
-
+                
         public string GetDocumentation(object o) {
             return _lc.GetDocumentation(o);
         }
@@ -385,26 +366,7 @@ namespace Microsoft.Scripting.Runtime {
         public bool IsCallable(object o) {
             return _lc.IsCallable(o);
         }
-
-        /// <summary>
-        /// Performs the generic binary operation on the specified targets and returns the result.
-        /// </summary>
-        [Obsolete("Use UnaryOperation or BinaryOperation")]
-        public object DoOperation(Operators op, object target, object other) {
-            return DoOperation<object, object, object>(op.ToString(), target, other);
-        }
-
-        /// <summary>
-        /// Peforms the generic binary operation on the specified strongly typed targets and returns
-        /// the strongly typed result.
-        /// </summary>
-        [Obsolete("Use UnaryOperation or BinaryOperation")]
-        public TResult DoOperation<TTarget, TOther, TResult>(string op, TTarget target, TOther other) {
-            CallSite<Func<CallSite, TTarget, TOther, TResult>> site;
-            site = GetOrCreateSite<TTarget, TOther, TResult>(_lc.CreateOperationBinder(op));
-            return site.Target(site, target, other);
-        }
-
+        
         /// <summary>
         /// Returns a list of strings which contain the known members of the object.
         /// </summary>

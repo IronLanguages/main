@@ -69,7 +69,6 @@ namespace IronPython.Runtime {
 
         internal PythonFunction(CodeContext/*!*/ context, FunctionCode funcInfo, object modName, object[] defaults, MutableTuple closure) {
             Assert.NotNull(context, funcInfo);
-            Assert.NotNull(context.Scope);
 
             _context = context;
             _defaults = defaults ?? ArrayUtils.EmptyObjects;
@@ -96,7 +95,7 @@ namespace IronPython.Runtime {
 
         public object func_globals {
             get {
-                return new PythonDictionary(new GlobalScopeDictionaryStorage(_context.Scope));
+                return new PythonDictionary(_context.GlobalDict._storage);
             }
         }
 
@@ -136,7 +135,7 @@ namespace IronPython.Runtime {
 
         public PythonTuple func_closure {
             get {
-                var storage = ((Context.Scope.Dict as PythonDictionary)._storage as RuntimeVariablesDictionaryStorage);
+                var storage = (Context.Dict._storage as RuntimeVariablesDictionaryStorage);
                 if (storage != null) {
                     object[] res = new object[storage.Names.Length];
                     for (int i = 0; i < res.Length; i++) {

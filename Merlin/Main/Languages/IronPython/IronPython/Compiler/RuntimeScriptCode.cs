@@ -14,12 +14,11 @@
  * ***************************************************************************/
 
 using System;
-using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Generation;
-using Microsoft.Scripting.Interpreter;
 using Microsoft.Scripting.Runtime;
 
 using IronPython.Compiler.Ast;
@@ -44,6 +43,8 @@ namespace IronPython.Compiler {
 
         public RuntimeScriptCode(CompilerContext/*!*/ context, MSAst.Expression<Func<FunctionCode, object>>/*!*/ expression, PythonAst/*!*/ ast, CodeContext/*!*/ codeContext)
             : base(context.SourceUnit) {
+            Debug.Assert(codeContext.GlobalScope.GetExtension(codeContext.LanguageContext.ContextId) != null);
+
             _code = expression;
             _ast = ast;
             _context = context;
@@ -65,7 +66,7 @@ namespace IronPython.Compiler {
         }
 
         private object InvokeTarget(MSAst.LambdaExpression code, Scope scope) {
-            if (scope == _optimizedContext.Scope && !_optimizedContext.LanguageContext.EnableTracing) {
+            if (scope == _optimizedContext.GlobalScope && !_optimizedContext.LanguageContext.EnableTracing) {
                 EnsureCompiled();
 
                 PushFrame(_optimizedContext, _optimizedTarget);
@@ -106,7 +107,7 @@ namespace IronPython.Compiler {
         }
 
         public override Scope/*!*/ CreateScope() {
-            return _optimizedContext.Scope;
+            return _optimizedContext.GlobalScope;
         }
 
         private void EnsureCompiled() {

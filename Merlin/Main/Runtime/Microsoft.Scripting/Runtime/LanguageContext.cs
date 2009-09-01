@@ -15,15 +15,14 @@
 
 using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.IO;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Dynamic;
 using System.Text;
-using Microsoft.Scripting.Actions;
+
 using Microsoft.Scripting.Utils;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Runtime {
     /// <summary>
@@ -31,7 +30,6 @@ namespace Microsoft.Scripting.Runtime {
     /// </summary>
     public abstract class LanguageContext {
         private readonly ScriptDomainManager _domainManager;
-        private ActionBinder _binder;
         private readonly ContextId _id;
 
         protected LanguageContext(ScriptDomainManager domainManager) {
@@ -40,16 +38,7 @@ namespace Microsoft.Scripting.Runtime {
             _domainManager = domainManager;
             _id = domainManager.GenerateContextId();
         }
-
-        public ActionBinder Binder {
-            get {
-                return _binder;
-            }
-            protected set {
-                _binder = value;
-            }
-        }
-
+       
         /// <summary>
         /// Provides the ContextId which includes members that should only be shown for this LanguageContext.
         /// 
@@ -144,10 +133,25 @@ namespace Microsoft.Scripting.Runtime {
         /// </summary>
         /// <returns><b>null</b> on failure.</returns>
         /// <remarks>Could also set the code properties and line/file mappings on the source unit.</remarks>
-        internal protected abstract ScriptCode CompileSourceCode(SourceUnit sourceUnit, CompilerOptions options, ErrorSink errorSink);
+        public abstract ScriptCode CompileSourceCode(SourceUnit sourceUnit, CompilerOptions options, ErrorSink errorSink);
 
-        internal protected virtual ScriptCode LoadCompiledCode(Delegate method, string path, string customData) {
+        public virtual ScriptCode LoadCompiledCode(Delegate method, string path, string customData) {
             throw new NotSupportedException();
+        }
+
+        public virtual int ExecuteProgram(SourceUnit program) {
+            ContractUtils.RequiresNotNull(program, "program");
+
+            object returnValue = program.Execute();
+
+            if (returnValue == null) {
+                return 0;
+            }
+
+            CallSite<Func<CallSite, object, int>> site =
+                CallSite<Func<CallSite, object, int>>.Create(CreateConvertBinder(typeof(int), true));
+
+            return site.Target(site, returnValue);
         }
 
         #endregion
@@ -180,7 +184,6 @@ namespace Microsoft.Scripting.Runtime {
             return null;
         }
 
-        //TODO these three properties should become abstract and updated for all implementations
         public virtual Guid LanguageGuid {
             get {
                 return Guid.Empty;
@@ -258,48 +261,17 @@ namespace Microsoft.Scripting.Runtime {
 
             return new SourceUnit(this, contentProvider, path, kind);
         }
-
+        
         #endregion
 
         #endregion
-
-        private static T GetArg<T>(object[] arg, int index, bool optional) {
-            if (!optional && index >= arg.Length) {
-                throw Error.InvalidParamNumForService();
-            }
-
-            if (!(arg[index] is T)) {
-                throw Error.InvalidArgumentType(String.Format("arg[{0}]", index), typeof(T));
-            }
-
-            return (T)arg[index];
-        }
-
+        
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
         public virtual ErrorSink GetCompilerErrorSink() {
             return ErrorSink.Null;
         }
 
-        public virtual void GetExceptionMessage(Exception exception, out string message, out string errorTypeName) {
-            message = exception.Message;
-            errorTypeName = exception.GetType().Name;
-        }
-
-        public virtual int ExecuteProgram(SourceUnit program) {
-            ContractUtils.RequiresNotNull(program, "program");
-
-            object returnValue = program.Execute();
-            
-            if (returnValue == null) {
-                return 0;
-            }
-
-            CallSite<Func<CallSite, object, int>> site =
-                CallSite<Func<CallSite, object, int>>.Create(CreateConvertBinder(typeof(int), true));
-
-            return site.Target(site, returnValue);
-        }
-
+        
         #region Object Operations Support
 
         internal static DynamicMetaObject ErrorMetaObject(Type resultType, DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject errorSuggestion) {
@@ -337,32 +309,16 @@ namespace Microsoft.Scripting.Runtime {
             }
         }
 
-        [Obsolete("Use UnaryOperation or BinaryOperation")]
-        private class DefaultOperationAction : OperationBinder {
-            internal DefaultOperationAction(string operation)
-                : base(operation) {
-            }
-
-            public override DynamicMetaObject FallbackOperation(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject errorSuggestion) {
-                return ErrorMetaObject(ReturnType, target, args, errorSuggestion);
-            }
-        }
-
-        [Obsolete("Use UnaryOperation or BinaryOperation")]
-        public virtual OperationBinder CreateOperationBinder(string operation) {
-            return new DefaultOperationAction(operation);
-        }
-
         private class DefaultConvertAction : ConvertBinder {
             internal DefaultConvertAction(Type type, bool @explicit)
                 : base(type, @explicit) {
             }
 
             public override DynamicMetaObject FallbackConvert(DynamicMetaObject self, DynamicMetaObject errorSuggestion) {
-                if (Type.IsAssignableFrom(self.GetLimitType())) {
+                if (Type.IsAssignableFrom(self.LimitType)) {
                     return new DynamicMetaObject(
-                        AstUtils.Convert(self.Expression, Type),
-                        BindingRestrictionsHelpers.GetRuntimeTypeRestriction(self.Expression, self.GetLimitType())
+                        Expression.Convert(self.Expression, Type),
+                        BindingRestrictions.GetTypeRestriction(self.Expression, self.LimitType)
                     );
                 }
 
@@ -373,11 +329,11 @@ namespace Microsoft.Scripting.Runtime {
                 return new DynamicMetaObject(
                     Expression.Throw(
                         Expression.Constant(
-                            new ArgumentTypeException(string.Format("Expected {0}, got {1}", Type.FullName, self.GetLimitType().FullName))
+                            new ArgumentTypeException(string.Format("Expected {0}, got {1}", Type.FullName, self.LimitType.FullName))
                         ),
                         ReturnType
                     ),
-                    BindingRestrictionsHelpers.GetRuntimeTypeRestriction(self.Expression, self.GetLimitType())
+                    BindingRestrictions.GetTypeRestriction(self.Expression, self.LimitType)
                 );
             }
         }
@@ -496,71 +452,13 @@ namespace Microsoft.Scripting.Runtime {
 
         #endregion
 
-        #region CreateDelegate support
-
-        /// <summary> Table of dynamically generated delegates which are shared based upon method signature. </summary>
-        private Publisher<DelegateSignatureInfo, DelegateInfo> _dynamicDelegateCache = new Publisher<DelegateSignatureInfo, DelegateInfo>();
-
-        public T CreateDelegate<T>(object callable) {
-            return (T)(object)GetDelegate(callable, typeof(T));
-        }
-
-        /// <summary>
-        /// Creates a delegate with a given signature that could be used to invoke this object from non-dynamic code (w/o code context).
-        /// A stub is created that makes appropriate conversions/boxing and calls the object.
-        /// The stub should be executed within a context of this object's language.
-        /// </summary>
-        /// <returns>The delegate or a <c>null</c> reference if the object is not callable.</returns>
-        public Delegate GetDelegate(object callableObject, Type delegateType) {
-            ContractUtils.RequiresNotNull(delegateType, "delegateType");
-
-            Delegate result = callableObject as Delegate;
-            if (result != null) {
-                if (!delegateType.IsAssignableFrom(result.GetType())) {
-                    throw ScriptingRuntimeHelpers.SimpleTypeError(String.Format("Cannot cast {0} to {1}.", result.GetType(), delegateType));
-                }
-
-                return result;
-            }
-
-            IDynamicMetaObjectProvider dynamicObject = callableObject as IDynamicMetaObjectProvider;
-            if (dynamicObject != null) {
-
-                MethodInfo invoke;
-
-                if (!typeof(Delegate).IsAssignableFrom(delegateType) || (invoke = delegateType.GetMethod("Invoke")) == null) {
-                    throw ScriptingRuntimeHelpers.SimpleTypeError("A specific delegate type is required.");
-                }
-
-                ParameterInfo[] parameters = invoke.GetParameters();
-                DelegateSignatureInfo signatureInfo = new DelegateSignatureInfo(
-                    invoke.ReturnType,
-                    parameters
-                );
-
-                DelegateInfo delegateInfo = _dynamicDelegateCache.GetOrCreateValue(signatureInfo,
-                    delegate() {
-                        // creation code
-                        return signatureInfo.GenerateDelegateStub(this);
-                    });
-
-
-                result = delegateInfo.CreateDelegate(delegateType, dynamicObject);
-                if (result != null) {
-                    return result;
-                }
-            }
-
-            throw ScriptingRuntimeHelpers.SimpleTypeError("Object is not callable.");
-        }
-
-        #endregion
+        #region Object Introspection Support
 
         /// <summary>
         /// Gets the member names associated with the object
         /// By default, only returns IDO names
         /// </summary>
-        internal protected virtual IList<string> GetMemberNames(object obj) {
+        public virtual IList<string> GetMemberNames(object obj) {
             var ido = obj as IDynamicMetaObjectProvider;
             if (ido != null) {
                 var mo = ido.GetMetaObject(Expression.Parameter(typeof(object), null));
@@ -585,14 +483,25 @@ namespace Microsoft.Scripting.Runtime {
             return typeof(Delegate).IsAssignableFrom(obj.GetType());
         }
 
+        #endregion
+
+        #region Object formatting
+
         /// <summary>
         /// Returns a string representation of the object in a language specific object display format.
         /// </summary>
         /// <param name="operations">Dynamic sites container that could be used for any dynamic dispatches necessary for formatting.</param>
         /// <param name="obj">Object to format.</param>
         /// <returns>A string representation of object.</returns>
-        internal protected virtual string FormatObject(DynamicOperations operations, object obj) {
+        public virtual string FormatObject(DynamicOperations operations, object obj) {
             return obj == null ? "null" : obj.ToString();
         }
+
+        public virtual void GetExceptionMessage(Exception exception, out string message, out string errorTypeName) {
+            message = exception.Message;
+            errorTypeName = exception.GetType().Name;
+        }
+
+        #endregion
     }
 }

@@ -53,14 +53,14 @@ namespace IronPython.Compiler.Ast {
         private readonly Dictionary<string/*!*/, ConstantInfo/*!*/>/*!*/ _globals = new Dictionary<string/*!*/, ConstantInfo/*!*/>();
         private readonly Dictionary<SymbolId, PythonGlobal/*!*/>/*!*/ _globalVals = new Dictionary<SymbolId, PythonGlobal>();
         private readonly List<SiteInfo/*!*/>/*!*/ _sites = new List<SiteInfo/*!*/>();
-        private readonly Scope _scope;
+        private readonly ModuleContext _modContext;
 
         public SharedGlobalAllocator(PythonContext/*!*/ context) {
             _codeContextInfo = NextContext();
             _codeContext = _codeContextInfo.Expression;
 
-            _scope = new Scope(new PythonDictionary(new GlobalDictionaryStorage(_globalVals)));
-            _context = new CodeContext(_scope, context);
+            _modContext = new ModuleContext(new PythonDictionary(new GlobalDictionaryStorage(_globalVals)), context);
+            _context = _modContext.GlobalContext;
         }
 
         public override ScriptCode/*!*/ MakeScriptCode(MSAst.Expression/*!*/ lambda, CompilerContext/*!*/ compilerContext, PythonAst/*!*/ ast, Dictionary<int, bool> handlerLocations, Dictionary<int, Dictionary<int, bool>> loopAndFinallyLocations) {
