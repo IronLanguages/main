@@ -66,3 +66,21 @@ fails:Method parameter binding passes the correct input (System::CharMaxValue) i
 fails:Method parameter binding passes the correct input (System::CharMaxValue) into method (SingleArg)
 fails:Method parameter binding passes the correct input (System::SingleMaxValue) into method (BigIntegerArg)
 fails:Method parameter binding passes the correct input (System::SingleMinValue) into method (BigIntegerArg)
+fails:Method parameter binding binds 'BooleanArg' for 'System::String''' with 'BooleanArg'
+fails:Method parameter binding passes the correct input (System::String'') into method (BooleanArg)
+fails:Method parameter binding binds 'BooleanArg' for 'System::String'a'' with 'BooleanArg'
+fails:Method parameter binding passes the correct input (System::String'a') into method (BooleanArg)
+fails:Method parameter binding binds 'CharArg' for 'System::String'a'' with 'CharArg'
+fails:Method parameter binding passes the correct input (System::String'a') into method (CharArg)
+fails:Method parameter binding binds 'BooleanArg' for 'System::String'abc'' with 'BooleanArg'
+fails:Method parameter binding passes the correct input (System::String'abc') into method (BooleanArg)
+fails:Method parameter binding binds 'CharArg' for 'System::String'abc'' with 'CharArg'
+fails:Method parameter binding passes the correct input (System::String'abc') into method (CharArg)
+fails:Method parameter binding binds 'CharArg' for 'a' with 'CharArg'
+fails:Method parameter binding passes the correct input (a) into method (CharArg)
+fails:Method parameter binding binds 'NullableInt32Arg' for 'a' with 'NullableInt32Arg'
+fails:Method parameter binding passes the correct input (a) into method (NullableInt32Arg)
+fails:Method parameter binding binds 'CharArg' for 'abc' with 'CharArg'
+fails:Method parameter binding passes the correct input (abc) into method (CharArg)
+fails:Method parameter binding binds 'NullableInt32Arg' for 'abc' with 'NullableInt32Arg'
+fails:Method parameter binding passes the correct input (abc) into method (NullableInt32Arg)

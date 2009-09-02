@@ -375,6 +375,8 @@ no_csc do
         "BigIntegerOne" => Bignum.One, "BigIntegerZero" => Bignum.Zero, 
         "Int32?Null" => System::Nullable[Fixnum].new, "Int32?One" => System::Nullable[Fixnum].new(1), "Int32?MinusOne" => System::Nullable[Fixnum].new(-1),
         "" => "", "a" => "a", "abc" => "abc",
+        "System::String''" => System::String.new(""), "System::String'a'" => System::String.new("a"), "System::String'abc'" => System::String.new("abc"),
+        :a => :a, :abc => :abc,
         "System::CharMaxValue" => System::Char.MaxValue, "System::CharMinValue" => System::Char.MinValue
       }
       other.merge clr_values      

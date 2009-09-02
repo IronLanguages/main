@@ -20,6 +20,29 @@ describe "Method parameter binding" do
           :BooleanArg => "BooleanArg", :SByteArg => TE, :Int16Arg => TE, :Int64Arg => TE, :SingleArg => AE, 
           :ByteArg => TE, :UInt16Arg => TE, :UInt32Arg => TE, :UInt64Arg => TE, :CharArg => "CharArg", :DecimalArg => TE, 
           :ObjectArg => "ObjectArg", :NullableInt32Arg => TE },
+          
+    "System::String''" => {:NoArg => AE, :Int32Arg => TE, :DoubleArg => AE, :BigIntegerArg => TE, :StringArg => "StringArg", 
+          :BooleanArg => "BooleanArg", :SByteArg => TE, :Int16Arg => TE, :Int64Arg => TE, :SingleArg => AE, 
+          :ByteArg => TE, :UInt16Arg => TE, :UInt32Arg => TE, :UInt64Arg => TE, :CharArg => TE, :DecimalArg => TE, 
+          :ObjectArg => "ObjectArg", :NullableInt32Arg => TE },
+    "System::String'a'" => {:NoArg => AE, :Int32Arg => TE, :DoubleArg => AE, :BigIntegerArg => TE, :StringArg => "StringArg", 
+          :BooleanArg => "BooleanArg", :SByteArg => TE, :Int16Arg => TE, :Int64Arg => TE, :SingleArg => AE, 
+          :ByteArg => TE, :UInt16Arg => TE, :UInt32Arg => TE, :UInt64Arg => TE, :CharArg => "CharArg", :DecimalArg => TE, 
+          :ObjectArg => "ObjectArg", :NullableInt32Arg => TE },
+    "System::String'abc'" => {:NoArg => AE, :Int32Arg => TE, :DoubleArg => AE, :BigIntegerArg => TE, :StringArg => "StringArg", 
+          :BooleanArg => "BooleanArg", :SByteArg => TE, :Int16Arg => TE, :Int64Arg => TE, :SingleArg => AE, 
+          :ByteArg => TE, :UInt16Arg => TE, :UInt32Arg => TE, :UInt64Arg => TE, :CharArg => "CharArg", :DecimalArg => TE, 
+          :ObjectArg => "ObjectArg", :NullableInt32Arg => TE },
+
+    
+    :a => {:NoArg => AE, :Int32Arg => "Int32Arg", :DoubleArg => TE, :BigIntegerArg => "BigIntegerArg", :StringArg => "StringArg", 
+          :BooleanArg => "BooleanArg", :SByteArg => RE, :Int16Arg => RE, :Int64Arg => "Int64Arg", :SingleArg => TE, 
+          :ByteArg => RE, :UInt16Arg => RE, :UInt32Arg => "UInt32Arg", :UInt64Arg => "UInt64Arg", :CharArg => "CharArg", :DecimalArg => TE, 
+          :ObjectArg => "ObjectArg", :NullableInt32Arg => "NullableInt32Arg" },
+    :abc => {:NoArg => AE, :Int32Arg => "Int32Arg", :DoubleArg => TE, :BigIntegerArg => "BigIntegerArg", :StringArg => "StringArg", 
+          :BooleanArg => "BooleanArg", :SByteArg => RE, :Int16Arg => RE, :Int64Arg => "Int64Arg", :SingleArg => TE, 
+          :ByteArg => RE, :UInt16Arg => RE, :UInt32Arg => "UInt32Arg", :UInt64Arg => "UInt64Arg", :CharArg => "CharArg", :DecimalArg => TE, 
+          :ObjectArg => "ObjectArg", :NullableInt32Arg => "NullableInt32Arg" },
     
     "false" => {:NoArg => AE, :Int32Arg => TE, :DoubleArg => TE, :BigIntegerArg => TE, :StringArg => TE, 
           :BooleanArg => "BooleanArg", :SByteArg => TE, :Int16Arg => TE, :Int64Arg => TE, :SingleArg => TE, 
@@ -317,7 +340,9 @@ describe "Method parameter binding" do
           @target.send(meth, @values[input]).should == result
         end
       end
+    
       next if result.class == Class && result < Exception
+      
       it "passes the correct input (#{input}) into method (#{meth})" do
         value = @values[input]
         @target.send(meth, value)
@@ -348,6 +373,22 @@ describe "Method parameter binding" do
                      value[0]
                    elsif value.is_a? String
                      value[0..0]
+                   end
+                 when /Int32|BigInteger/
+                   if value.is_a? Symbol
+                     value.to_i
+                   end
+                 when /Int64/
+                   if value.is_a? Symbol
+                     System::Int64.induced_from(value.to_i)
+                   end
+                 when /UInt32/
+                   if value.is_a? Symbol
+                     System::UInt32.induced_from(value.to_i)
+                   end
+                 when /UInt64/
+                   if value.is_a? Symbol
+                     System::UInt64.induced_from(value.to_i)
                    end
                  else
                    value
