@@ -317,6 +317,44 @@ describe "Method parameter binding" do
           @target.send(meth, @values[input]).should == result
         end
       end
+      next if result.class == Class && result < Exception
+      it "passes the correct input (#{input}) into method (#{meth})" do
+        value = @values[input]
+        @target.send(meth, value)
+        #TODO: there has to be a better way
+        result = case meth.to_s
+                 when /Boolean/
+                   value ? true : false
+                 when /Single/
+                   if value.is_a? System::UInt32
+                     System::Single.parse(value.to_s)
+                   elsif value.is_a? System::Int32
+                     System::Single.parse(value.to_s)
+                   elsif value.is_a? System::Char
+                     System::Single.induced_from(System::Convert.to_int32(value))
+                   elsif value.is_a? Float
+                     System::Convert.to_single(value)
+                   end
+                 when /Double/
+                   if value.is_a? System::Char
+                     System::Double.induced_from(System::Convert.to_int32(value))
+                   end
+                 when /Decimal/
+                   if value.is_a? System::Char
+                     System::Decimal.induced_from(System::Convert.to_int32(value))
+                   end
+                 when /Char/
+                   if value.is_a? System::String
+                     value[0]
+                   elsif value.is_a? String
+                     value[0..0]
+                   end
+                 else
+                   value
+                 end
+        result.nil? ? result = value : nil
+        @target.tracker.should == [result]
+      end
     end
   end
 end
