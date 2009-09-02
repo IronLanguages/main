@@ -351,26 +351,22 @@ describe "Method parameter binding" do
                  when /Boolean/
                    value ? true : false
                  when /Single/
-                   if value.is_a? System::UInt32
-                     System::Single.parse(value.to_s)
-                   elsif value.is_a? System::Int32
+                   if value.is_a?(System::UInt32) || value.is_a?(System::Int32)
                      System::Single.parse(value.to_s)
                    elsif value.is_a? System::Char
                      System::Single.induced_from(System::Convert.to_int32(value))
                    elsif value.is_a? Float
                      System::Convert.to_single(value)
                    end
-                 when /Double/
+                 when /(Double|Decimal)/
                    if value.is_a? System::Char
-                     System::Double.induced_from(System::Convert.to_int32(value))
-                   end
-                 when /Decimal/
-                   if value.is_a? System::Char
-                     System::Decimal.induced_from(System::Convert.to_int32(value))
+                     System.const_get($1).induced_from(System::Convert.to_int32(value))
                    end
                  when /Char/
                    if value.is_a? System::String
                      value[0]
+                   elsif value.is_a? Symbol
+                     value.to_s[0..0]
                    elsif value.is_a? String
                      value[0..0]
                    end
@@ -378,17 +374,9 @@ describe "Method parameter binding" do
                    if value.is_a? Symbol
                      value.to_i
                    end
-                 when /Int64/
+                 when /(Int64|UInt32|UInt64)/
                    if value.is_a? Symbol
-                     System::Int64.induced_from(value.to_i)
-                   end
-                 when /UInt32/
-                   if value.is_a? Symbol
-                     System::UInt32.induced_from(value.to_i)
-                   end
-                 when /UInt64/
-                   if value.is_a? Symbol
-                     System::UInt64.induced_from(value.to_i)
+                     System.const_get($1).induced_from(value.to_i)
                    end
                  else
                    value
