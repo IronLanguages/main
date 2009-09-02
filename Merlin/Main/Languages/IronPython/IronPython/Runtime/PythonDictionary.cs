@@ -30,7 +30,7 @@ namespace IronPython.Runtime {
         IDictionary, ICodeFormattable, IAttributesCollection {
         [MultiRuntimeAware]
         private static object DefaultGetItem;   // our cached __getitem__ method
-        internal DictionaryStorage _storage;
+        internal readonly DictionaryStorage _storage;
 
         internal static object MakeDict(CodeContext/*!*/ context, PythonType cls) {
             if (cls == TypeCache.Dict) {
@@ -71,6 +71,14 @@ namespace IronPython.Runtime {
             _storage = new CommonDictionaryStorage();
         }
 
+        internal static PythonDictionary FromIAC(CodeContext context, IAttributesCollection iac) {
+            return iac.GetType() == typeof(PythonDictionary) ? (PythonDictionary)iac : MakeDictFromIAC(context, iac);
+        }
+
+        private static PythonDictionary MakeDictFromIAC(CodeContext context, IAttributesCollection iac) {
+            return new PythonDictionary(new ObjectAttributesAdapter(context, iac));
+        }
+        
         internal static PythonDictionary MakeSymbolDictionary() {
             return new PythonDictionary(new SymbolIdDictionaryStorage());
         }
@@ -126,6 +134,8 @@ namespace IronPython.Runtime {
 
         [PythonHidden]
         public bool TryGetValue(object key, out object value) {
+            Debug.Assert(!(key is SymbolId));
+
             if (_storage.TryGetValue(key, out value)) {
                 return true;
             }

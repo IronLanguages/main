@@ -40,7 +40,9 @@ namespace Microsoft.Scripting.Hosting {
         private readonly ScriptIO _io;
         private readonly ScriptHost _host;
         private readonly ScriptRuntimeSetup _setup;
+        private readonly object _lock = new object();
         private ScriptScope _globals;
+        private Scope _scopeGlobals;
         private ScriptEngine _invariantEngine;
 
         /// <summary>
@@ -330,13 +332,27 @@ namespace Microsoft.Scripting.Hosting {
         /// IAttributesCollection so that your host could late bind names.
         /// </summary>
         public ScriptScope Globals {
-            get { return _globals; }
+            get {
+                Scope scope = _manager.Globals;
+                if (_scopeGlobals == scope) {
+                    return _globals;
+                }
+                lock (_lock) {
+                    if (_scopeGlobals != scope) {
+                        // make sure no one has changed the globals behind our back
+                        _globals = new ScriptScope(InvariantEngine, scope); // TODO: Should get LC from Scope when it's there
+                        _scopeGlobals = scope;
+                    }
+
+                    return _globals;
+                }
+            }
             set {
                 ContractUtils.RequiresNotNull(value, "value");
-
-                // TODO: this is wrong, we ignore other parts of the scope here
-                _globals = value;
-                _manager.SetGlobalsDictionary(_globals.Scope.Dict);
+                lock (_lock) {
+                    _globals = value;
+                    _manager.Globals = value.Scope;
+                }
             }
         }
 

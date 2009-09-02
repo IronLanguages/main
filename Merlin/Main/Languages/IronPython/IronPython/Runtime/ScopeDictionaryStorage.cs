@@ -18,7 +18,10 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime {
-    internal abstract class ScopeDictionaryStorage : DictionaryStorage {
+    /// <summary>
+    /// Provides dictionary based storage which is backed by a Scope object.
+    /// </summary>
+    internal class ScopeDictionaryStorage : DictionaryStorage {
         private Scope/*!*/ _scope;
 
         public ScopeDictionaryStorage(Scope/*!*/ scope) {
@@ -39,48 +42,34 @@ namespace IronPython.Runtime {
         }
 
         public override bool Contains(object key) {
-            foreach (Scope scope in GetVisibleScopes()) {
-                if (ScopeContains(key, scope)) {
-                    return true;
-                }
-            }
-            return false;
+            return ScopeContains(key, Scope);
         }
 
         public override bool Contains(SymbolId key) {
-            foreach (Scope scope in GetVisibleScopes()) {
-                if (scope.ContainsVariable(key)) {
-                    return true;
-                }
-            }
-            return false;
+            return Scope.ContainsVariable(key);
         }
         
         public override bool Remove(object key) {
-            foreach (Scope scope in GetVisibleScopes()) {
-                string strKey = key as string;
-                if (strKey != null) {
-                    if (scope.TryRemoveVariable(SymbolTable.StringToId(strKey))) {
-                        return true;
-                    }
-                } else if (scope.TryRemoveObjectName(key)) {
+            string strKey = key as string;
+            if (strKey != null) {
+                if (Scope.TryRemoveVariable(SymbolTable.StringToId(strKey))) {
                     return true;
                 }
+            } else if (Scope.TryRemoveObjectName(key)) {
+                return true;
             }
 
             return false;
         }
 
         public override bool TryGetValue(object key, out object value) {
-            foreach (Scope scope in GetVisibleScopes()) {
-                string strKey = key as string;
-                if (strKey != null) {
-                    if (scope.TryGetVariable(SymbolTable.StringToId(strKey), out value)) {
-                        return true;
-                    }
-                } else if (scope.TryGetObjectName(key, out value)) {
+            string strKey = key as string;
+            if (strKey != null) {
+                if (Scope.TryGetVariable(SymbolTable.StringToId(strKey), out value)) {
                     return true;
                 }
+            } else if (Scope.TryGetObjectName(key, out value)) {
+                return true;
             }
 
             value = null;
@@ -88,43 +77,28 @@ namespace IronPython.Runtime {
         }
 
         public override bool TryGetValue(SymbolId key, out object value) {
-            foreach (Scope scope in GetVisibleScopes()) {
-                if (scope.TryGetVariable(key, out value)) {
-                    return true;
-                }
-            }
-
-            value = null;
-            return false;
+            return Scope.TryGetVariable(key, out value);
         }
 
         public override int Count {
             get {
-                int count = 0;
-                foreach (Scope scope in GetVisibleScopes()) {
-                    count += scope.Dict.Count;
-                }
-                return count;
+                return Scope.VariableCount;
             }
         }
 
         public override void Clear() {
-            foreach (Scope scope in GetVisibleScopes()) {
-                scope.Clear();
-            }
+            Scope.Clear();
         }
 
         public override List<KeyValuePair<object, object>> GetItems() {
             return new List<KeyValuePair<object, object>>(Scope.GetAllItems());
         }
 
-        protected Scope/*!*/ Scope {
+        internal Scope/*!*/ Scope {
             get {
                 return _scope;
             }
         }
-
-        protected abstract IEnumerable<Scope>/*!*/ GetVisibleScopes();
 
         private static bool ScopeContains(object key, Scope scope) {
             string strKey = key as string;

@@ -48,6 +48,7 @@ namespace IronPython.Runtime {
             if (TryGetLazyValue(strKey, out value)) {
                 // hide the deleted value
                 base.Add(key, Uninitialized.Instance);
+                found = true;
             }
 
             return found;
@@ -198,7 +199,7 @@ namespace IronPython.Runtime {
 
         public override bool TryGetValue(object key, out object value) {
             if (base.TryGetValue(key, out value)) {
-                return true;
+                return value != Uninitialized.Instance;
             }
 
             string strKey = key as string;

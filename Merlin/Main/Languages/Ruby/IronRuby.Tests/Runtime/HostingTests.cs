@@ -24,9 +24,10 @@ using System.Diagnostics;
 using IronRuby.Runtime.Calls;
 
 namespace IronRuby.Tests {
-    public partial class Tests {
+    public partial class Tests { 
         public void RubyHosting_DelegateConversions() {
-            var lambda = Engine.Execute(@"lambda { |a| a + 1 }");
+            // TODO: C# bug - this fails if lambda is typed to dynamic
+            object lambda = Engine.Execute(@"lambda { |a| a + 1 }");
             var result = Engine.Operations.Invoke(lambda, 5);
             Assert((int)result == 6);
 

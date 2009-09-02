@@ -770,7 +770,6 @@ namespace IronPython.Runtime.Binding {
             res[typeof(NamespaceTracker)] = new ExtensionTypeInfo(typeof(NamespaceTrackerOps), "namespace#");
             res[typeof(TypeGroup)] = new ExtensionTypeInfo(typeof(TypeGroupOps), "type-collision");
             res[typeof(TypeTracker)] = new ExtensionTypeInfo(typeof(TypeTrackerOps), "type-collision");
-            res[typeof(Scope)] = new ExtensionTypeInfo(typeof(ScopeOps), "module");
 
             return res;
         }
@@ -843,14 +842,14 @@ namespace IronPython.Runtime.Binding {
             LoadScriptCode(_context, asm);
 
             // load any Python modules
-            _context.LoadBuiltins(_context.Builtins, asm);
+            _context.LoadBuiltins(_context.BuiltinModules, asm);
 
             // load any cached new types
             NewTypeMaker.LoadNewTypes(asm);
         }
 
         private static void LoadScriptCode(PythonContext/*!*/ pc, Assembly/*!*/ asm) {
-            ScriptCode[] codes = ScriptCode.LoadFromAssembly(pc.DomainManager, asm);
+            ScriptCode[] codes = SavableScriptCode.LoadFromAssembly(pc.DomainManager, asm);
 
             foreach (ScriptCode sc in codes) {
                 pc.GetCompiledLoader().AddScriptCode(sc);

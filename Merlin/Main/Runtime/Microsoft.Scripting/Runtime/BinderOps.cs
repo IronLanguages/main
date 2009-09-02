@@ -29,25 +29,6 @@ namespace Microsoft.Scripting.Runtime {
     /// </summary>
     public static class BinderOps {
 
-        #region CreateDelegate support
-
-        [Obsolete("Use LanguageContext.CreateDelegate instead")]
-        public static T CreateDelegate<T>(LanguageContext context, object callable) {
-            return context.CreateDelegate<T>(callable);
-        }
-
-        /// <summary>
-        /// Creates a delegate with a given signature that could be used to invoke this object from non-dynamic code (w/o code context).
-        /// A stub is created that makes appropriate conversions/boxing and calls the object.
-        /// The stub should be executed within a context of this object's language.
-        /// </summary>
-        /// <returns>The delegate or a <c>null</c> reference if the object is not callable.</returns>
-        [Obsolete("Use LanguageContext.GetDelegate instead")]
-        public static Delegate GetDelegate(LanguageContext context, object callableObject, Type delegateType) {
-            return context.GetDelegate(callableObject, delegateType);
-        }
-
-        #endregion
 
         /// <summary>
         /// Helper function to combine an object array with a sequence of additional parameters that has been splatted for a function call.

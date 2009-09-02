@@ -467,7 +467,7 @@ namespace IronPython.Runtime {
 
         public static object ConvertToDelegate(object value, Type to) {
             if (value == null) return null;
-            return DefaultContext.DefaultCLS.LanguageContext.GetDelegate(value, to);
+            return DefaultContext.DefaultCLS.LanguageContext.DelegateCreator.GetDelegate(value, to);
         }
 
 

@@ -245,6 +245,12 @@ namespace Microsoft.Scripting.Interpreter {
             }
 
             Compile(node.Body);
+            
+            // pop the result of the last expression:
+            if (node.Body.Type != typeof(void) && node.ReturnType == typeof(void)) {
+                AddInstruction(PopInstruction.Instance);
+            }
+
             Debug.Assert(_currentStackDepth == (node.ReturnType != typeof(void) ? 1 : 0));
 
             return new LightDelegateCreator(MakeInterpreter(node), node, _closureVariables);
@@ -933,8 +939,8 @@ namespace Microsoft.Scripting.Interpreter {
                 MakeLabel() : ReferenceLabel(node.ContinueLabel);
 
             continueLabel.Mark();
-            this.CompileAsVoid(node.Body);
-            AddBranch(new BranchInstruction(), continueLabel);
+            CompileAsVoid(node.Body);
+            AddBranch(new BranchInstruction(expr.Type != typeof(void), false), continueLabel);
 
             if (node.BreakLabel != null) {
                 ReferenceLabel(node.BreakLabel).Mark();

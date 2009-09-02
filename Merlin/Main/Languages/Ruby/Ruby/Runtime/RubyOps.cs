@@ -1943,7 +1943,7 @@ namespace IronRuby.Runtime {
         /// </summary>
         [Emitted]
         public static Proc/*!*/ HookupEvent(RubyEventInfo/*!*/ eventInfo, object/*!*/ target, Proc/*!*/ proc) {
-            eventInfo.Tracker.AddHandler(target, proc, eventInfo.Context);
+            eventInfo.Tracker.AddHandler(target, proc, eventInfo.Context.DelegateCreator);
             return proc;
         }
 
@@ -1958,12 +1958,12 @@ namespace IronRuby.Runtime {
                 throw RubyExceptions.NoBlockGiven();
             }
             BlockParam bp = CreateBfcForProcCall(proc);
-            return proc.LocalScope.RubyContext.GetDelegate(bp, type);
+            return proc.LocalScope.RubyContext.DelegateCreator.GetDelegate(bp, type);
         }
 
         [Emitted]
         public static Delegate/*!*/ CreateDelegateFromMethod(Type/*!*/ type, RubyMethod/*!*/ method) {
-            return method.Info.Context.GetDelegate(method, type);
+            return method.Info.Context.DelegateCreator.GetDelegate(method, type);
         }
 
         #endregion

@@ -14,40 +14,40 @@
  * ***************************************************************************/
 
 using System;
-using System.Collections.Generic;
-using System.Text;
 using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
+using IronPython.Compiler;
 
 namespace IronPython.Runtime {
     public sealed class ModuleLoader {
-        private readonly ScriptCode _sc;
+        private readonly OnDiskScriptCode _sc;
         private readonly string _parentName, _name;
 
 
-        internal ModuleLoader(ScriptCode sc, string parentName, string name) {
+        internal ModuleLoader(OnDiskScriptCode sc, string parentName, string name) {
             _sc = sc;
             _parentName = parentName;
             _name = name;
         }
 
-        public Scope load_module(CodeContext/*!*/ context, string fullName) {
+        public PythonModule load_module(CodeContext/*!*/ context, string fullName) {
             PythonContext pc = PythonContext.GetContext(context);
 
-            Scope res = pc.CreateModule(_sc.SourceUnit.Path, _sc.CreateScope(), _sc, ModuleOptions.Initialize).Scope;
+            CodeContext newContext = _sc.CreateContext();
+            newContext.ModuleContext.InitializeBuiltins(false);
+            pc.InitializeModule(_sc.SourceUnit.Path, newContext.GlobalScope, _sc, ModuleOptions.Initialize);
 
             if (_parentName != null) {
                 // if we are a module in a package update the parent package w/ our scope.
                 object parent;
                 if (pc.SystemStateModules.TryGetValue(_parentName, out parent)) {
-                    Scope s = parent as Scope;
+                    PythonModule s = parent as PythonModule;
                     if (s != null) {
-                        s.SetVariable(SymbolTable.StringToId(_name), res);
+                        s.__dict__[_name] = newContext.ModuleContext.Module;
                     }
                 }
             }
 
-            return res;
+            return newContext.ModuleContext.Module;
         }
     }
 

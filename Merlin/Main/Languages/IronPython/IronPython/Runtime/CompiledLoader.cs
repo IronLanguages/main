@@ -25,26 +25,26 @@ using IronPython.Runtime.Operations;
 
 namespace IronPython.Runtime {
     public class CompiledLoader {
-        private Dictionary<string, ScriptCode> _codes = new Dictionary<string, ScriptCode>();
+        private Dictionary<string, OnDiskScriptCode> _codes = new Dictionary<string, OnDiskScriptCode>();
 
         internal void AddScriptCode(ScriptCode code) {
             OnDiskScriptCode onDiskCode = code as OnDiskScriptCode;
             if (onDiskCode != null) {
                 if (onDiskCode.ModuleName == "__main__") {
-                    _codes["__main__"] = code;
+                    _codes["__main__"] = onDiskCode;
                 } else {
                     string name = code.SourceUnit.Path;
                     name = name.Replace(Path.DirectorySeparatorChar, '.');
                     if (name.EndsWith("__init__.py")) {
                         name = name.Substring(0, name.Length - ".__init__.py".Length);
                     }
-                    _codes[name] = code;
+                    _codes[name] = onDiskCode;
                 }
             }
         }
 
         public ModuleLoader find_module(CodeContext/*!*/ context, string fullname, List path) {
-            ScriptCode sc;
+            OnDiskScriptCode sc;
             if (_codes.TryGetValue(fullname, out sc)) {
                 int sep = fullname.LastIndexOf('.');
                 string name = fullname;

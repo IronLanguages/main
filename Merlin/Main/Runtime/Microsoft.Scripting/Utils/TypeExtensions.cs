@@ -40,10 +40,6 @@ namespace Microsoft.Scripting.Utils {
             return type.IsSealed || type.IsValueType;
         }
 
-        internal static bool IsParamArray(this ParameterInfo parameter) {
-            return parameter.IsDefined(typeof(ParamArrayAttribute), false);
-        }
-
         /// <summary>
         /// Returns <c>true</c> if the specified parameter is mandatory, i.e. is not optional and doesn't have a default value.
         /// </summary>

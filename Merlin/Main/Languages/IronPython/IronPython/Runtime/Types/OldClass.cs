@@ -78,7 +78,7 @@ namespace IronPython.Runtime.Types {
 
             if (!dict.ContainsKey(Symbols.Module)) {
                 object moduleValue;
-                if (context.GlobalScope.TryGetVariable(Symbols.Name, out moduleValue)) {
+                if (context.TryGetGlobalVariable(Symbols.Name, out moduleValue)) {
                     dict[Symbols.Module] = moduleValue;
                 }
             }

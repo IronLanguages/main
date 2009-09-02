@@ -123,9 +123,9 @@ namespace Microsoft.Scripting.Actions {
             return _eventInfo.ToString();
         }
 
-        public void AddHandler(object target, object handler, LanguageContext language) {
+        public void AddHandler(object target, object handler, DynamicDelegateCreator delegateCreator) {
             ContractUtils.RequiresNotNull(handler, "handler");
-            ContractUtils.RequiresNotNull(language, "language");
+            ContractUtils.RequiresNotNull(delegateCreator, "delegateCreator");
 
             Delegate delegateHandler;
             HandlerList stubs;
@@ -136,7 +136,7 @@ namespace Microsoft.Scripting.Actions {
                 stubs = null;
             } else {
                 // create signature converting stub:
-                delegateHandler = language.GetDelegate(handler, _eventInfo.EventHandlerType);
+                delegateHandler = delegateCreator.GetDelegate(handler, _eventInfo.EventHandlerType);
                 stubs = GetHandlerList(target);
             }
 

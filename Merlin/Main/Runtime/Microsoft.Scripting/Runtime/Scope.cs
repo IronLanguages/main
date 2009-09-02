@@ -20,100 +20,65 @@ using Microsoft.Scripting.Utils;
 using System.Threading;
 
 namespace Microsoft.Scripting.Runtime {
-
     /// <summary>
-    /// Represents a context of execution.  A context of execution has a set of variables
-    /// associated with it (its dictionary) and a parent context.  
+    /// Represents a host-provided variables for executable code.  The variables are
+    /// typically backed by a host-provided dictionary. Languages can also associate per-language
+    /// information with the context by using scope extensions.  This can be used for tracking
+    /// state which is used across multiple executions, for providing custom forms of 
+    /// storage (for example object keyed access), or other language specific semantics.
     /// 
-    /// When looking up a name from a context first the local context is searched.  If the
-    /// name is not found there the name lookup will be done against the parent context.
+    /// Scope objects are thread-safe as long as their underlying storage is thread safe.
     /// 
-    /// Scopes, like IAttrbibuteCollections, support both being indexed by SymbolId for fast
-    /// access as well as being indexed by object.  The preferred access is via SymbolId and
-    /// object access is provided for languages which require additional semantics.  All
-    /// features supported for feature IDs are also supported for objects (e.g. context-sentsitivity
-    /// and attributes) but the object API does not contain all the same sets of overloads provided
-    /// for convenience.
-    /// 
-    /// TODO: Thread safety
+    /// Script hosts can choose to use thread safe or thread unsafe modules but must be sure
+    /// to constrain the code they right to be single-threaded if using thread unsafe
+    /// storage.
     /// </summary>
-    public class Scope {
+    public sealed class Scope {
         private ScopeExtension[] _extensions; // resizable
-        private IAttributesCollection _dict;
-
-        // TODO: remove
-        private readonly Scope _parent;
-        private bool _isVisible;
+        private readonly IAttributesCollection _dict;
 
         /// <summary>
-        /// Creates a new top-level scope with a new empty dictionary.  The scope
-        /// is marked as being visible.
+        /// Creates a new scope with a new empty thread-safe dictionary.  
         /// </summary>
         public Scope()
-            : this(null, null) {
+            : this(null) {
         }
 
         /// <summary>
-        /// Creates a new top-level Scope with the provided dictionary
+        /// Creates a new scope with the provided dictionary.
         /// </summary>
-        public Scope(IAttributesCollection dictionary)
-            : this(null, dictionary) {
-        }
-
-        /// <summary>
-        /// Creates a new Scope with the provided parent and dictionary.
-        /// </summary>
-        public Scope(Scope parent, IAttributesCollection dictionary)
-            : this(parent, dictionary, true) {
-        }
-
-        /// <summary>
-        /// Creates a new Scope with the provided parent, dictionary and visibility.
-        /// </summary>
-        public Scope(Scope parent, IAttributesCollection dictionary, bool isVisible) {
-            _parent = parent;
+        public Scope(IAttributesCollection dictionary) {
             _dict = dictionary ?? new SymbolDictionary();
-            _isVisible = isVisible;
             _extensions = ScopeExtension.EmptyArray;
         }
 
+        /// <summary>
+        /// Gets the ScopeExtension associated with the provided ContextId.
+        /// </summary>
         public ScopeExtension GetExtension(ContextId languageContextId) {
             return (languageContextId.Id < _extensions.Length) ? _extensions[languageContextId.Id] : null;
         }
 
+        /// <summary>
+        /// Sets the ScopeExtension to the provided value for the given ContextId.  
+        /// 
+        /// The extension can only be set once.  The returned value is either the new ScopeExtension
+        /// if no value was previously set or the previous value.
+        /// </summary>
         public ScopeExtension SetExtension(ContextId languageContextId, ScopeExtension extension) {
             ContractUtils.RequiresNotNull(extension, "extension");
 
-            if (languageContextId.Id >= _extensions.Length) {
-                Array.Resize(ref _extensions, languageContextId.Id + 1);
-            }
+            lock (_extensions) {
+                if (languageContextId.Id >= _extensions.Length) {
+                    Array.Resize(ref _extensions, languageContextId.Id + 1);
+                }
 
-            ScopeExtension original = Interlocked.CompareExchange(ref _extensions[languageContextId.Id], extension, null);
-            return original ?? extension;
-        }
-
-        /// <summary>
-        /// Gets the parent of this Scope or null if the Scope has no parent.
-        /// </summary>
-        public Scope Parent {
-            get {
-                return _parent;
+                return _extensions[languageContextId.Id] ?? (_extensions[languageContextId.Id] = extension);
             }
         }
-
+       
         /// <summary>
-        /// Gets if the context is visible at this scope.  Visibility is a per-language feature that enables
-        /// languages to include members in the Scope chain but hide them when directly exposed to the user.
-        /// </summary>
-        public bool IsVisible {
-            get {
-                return _isVisible;
-            }
-        }
-
-        /// <summary>
-        /// Returns the list of keys which are available to all languages.  Keys marked with the
-        /// DontEnumerate flag will not be returned.
+        /// Returns the list of keys which are available to all languages.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1721:PropertyNamesShouldNotMatchGetMethods")] // TODO: fix
         public IEnumerable<SymbolId> Keys {
@@ -128,8 +93,7 @@ namespace Microsoft.Scripting.Runtime {
         }
 
         /// <summary>
-        /// Returns the list of Keys and Items which are available to all languages.  Keys marked
-        /// with the DontEnumerate flag will not be returned.
+        /// Returns the list of Keys and Items which are available to all languages.
         /// </summary>
         public IEnumerable<KeyValuePair<SymbolId, object>> Items {
             get {
@@ -140,13 +104,17 @@ namespace Microsoft.Scripting.Runtime {
         }
 
         /// <summary>
-        /// Trys to lookup the provided name in the current scope.  Search includes
-        /// names that are only visible to the provided LanguageContext.
+        /// Trys to lookup the provided name in the current scope.
         /// </summary>
         public bool TryGetVariable(SymbolId name, out object value) {
             return _dict.TryGetValue(name, out value);
         }
 		
+        /// <summary>
+        /// Gets the name from the Scope.  If the name is not defined a MissingMemberException
+        /// is thrown.
+        /// </summary>
+        /// <exception cref="MissingMemberException">The name is not defined in the scope.</exception>
 		public object GetVariable(SymbolId name) {
             object value;
             if (!TryGetVariable(name, out value)) {
@@ -158,13 +126,19 @@ namespace Microsoft.Scripting.Runtime {
         /// <summary>
         /// Sets the name to the specified value for the current context.
         /// </summary>
-        /// <exception cref="MemberAccessException">The name has already been published and marked as ReadOnly</exception>
         public void SetVariable(SymbolId name, object value) {
             _dict[name] = value;
         }
-		
+
         /// <summary>
-        /// Removes all members from the dictionary and any context-sensitive dictionaries.
+        /// Sets the name to the specified value for the current context.
+        /// </summary>
+        public void SetVariable(string name, object value) {
+            _dict[SymbolTable.StringToId(name)] = value;
+        }
+
+        /// <summary>
+        /// Removes all members from the Scope.
         /// </summary>
         public void Clear() {
             List<object> ids = new List<object>(_dict.Keys);
@@ -173,32 +147,36 @@ namespace Microsoft.Scripting.Runtime {
             }
         }
 
+        /// <summary>
+        /// Returns true if the provided name is defined in the Scope.
+        /// </summary>
         public bool ContainsVariable(SymbolId name) {
             return _dict.ContainsKey(name);
         }
 
         /// <summary>
-        /// Attemps to remove the provided name from this scope removing names visible
-        /// to both the current context and all contexts.
+        /// Returns true if the provided name is defined in the Scope.
         /// </summary>
-        public bool TryRemoveVariable(SymbolId name) {
-            bool fRemoved = false;
-
-            // TODO: Ideally, we could do this without having to do two lookups.
-            object removedObject;
-            if (_dict.TryGetValue(name, out removedObject) && removedObject != Uninitialized.Instance) {
-                fRemoved = _dict.Remove(name) || fRemoved;
-            }
-
-            return fRemoved;
+        public bool ContainsVariable(string name) {
+            return _dict.ContainsKey(SymbolTable.StringToId(name));
         }
 
         /// <summary>
-        /// Default scope dictionary
+        /// Attempts to remove the provided name from this scope.
+        /// 
+        /// Returns true if the name exists and is removed, false if the 
+        /// name is not defined.
         /// </summary>
-        public IAttributesCollection Dict {
+        public bool TryRemoveVariable(SymbolId name) {
+            return _dict.Remove(name);
+        }
+
+        /// <summary>
+        /// Returns the number of variables that are defined in the Scope.
+        /// </summary>
+        public int VariableCount {
             get {
-                return _dict;
+                return _dict.Count;
             }
         }
 

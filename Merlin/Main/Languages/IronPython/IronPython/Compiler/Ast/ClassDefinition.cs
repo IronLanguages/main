@@ -201,7 +201,7 @@ namespace IronPython.Compiler.Ast {
             );
 
             var lambda = Ast.Lambda<Func<CodeContext, CodeContext>>(
-                classGen.MakeBody(_parentContextParam, init.ToArray(), bodyStmt, false),
+                classGen.MakeBody(_parentContextParam, init.ToArray(), bodyStmt),
                 classGen.Name + "$" + _classId++,
                 classGen.Parameters
             );

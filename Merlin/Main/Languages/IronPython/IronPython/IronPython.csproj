@@ -139,7 +139,9 @@
     <Compile Include="Runtime\Exceptions\Win32Exception.cs" />
     <Compile Include="Runtime\FutureBuiltins.cs" />
     <Compile Include="Runtime\Binding\IPythonConvertible.cs" />
+    <Compile Include="Runtime\ModuleContext.cs" />
     <Compile Include="Runtime\ModuleGlobalCache.cs" />
+    <Compile Include="Runtime\ModuleOptions.cs" />
     <Compile Include="Runtime\Profiler.cs" />
     <Compile Include="Compiler\GlobalAllocator.cs" />
     <Compile Include="Compiler\Ast\AugmentedAssignStatement.cs" />
@@ -180,7 +182,7 @@
     <Compile Include="Compiler\Ast\NameExpression.cs" />
     <Compile Include="Compiler\Ast\Node.cs" />
     <Compile Include="Compiler\ReducableDynamicExpression.cs" />
-    <Compile Include="Compiler\SavableScriptCode.cs" />
+    <Compile Include="Compiler\PythonSavableScriptCode.cs" />
     <Compile Include="Compiler\Ast\OrExpression.cs" />
     <Compile Include="Compiler\Ast\Parameter.cs" />
     <Compile Include="Compiler\Ast\ParenthesisExpression.cs" />
@@ -381,7 +383,6 @@
     <Compile Include="Runtime\Enumerate.cs" />
     <Compile Include="Runtime\Exceptions\TraceBack.cs" />
     <Compile Include="Runtime\Generator.cs" />
-    <Compile Include="Runtime\GlobalScopeDictionaryStorage.cs" />
     <Compile Include="Runtime\Importer.cs" />
     <Compile Include="Runtime\Interfaces.cs" />
     <Compile Include="Runtime\List.cs" />
@@ -413,7 +414,7 @@
     <Compile Include="Runtime\PythonBuffer.cs" />
     <Compile Include="Runtime\PythonContext.cs" />
     <Compile Include="Runtime\PythonFile.cs" />
-    <Compile Include="Runtime\PythonModule.cs" />
+    <Compile Include="Runtime\PythonScopeExtension.cs" />
     <Compile Include="Runtime\PythonNarrowing.cs" />
     <Compile Include="Runtime\ScopeDictionaryStorage.cs" />
     <Compile Include="Runtime\Set.cs" />
@@ -446,7 +447,7 @@
     <Compile Include="Runtime\Types\OldInstance.cs" />
     <Compile Include="Runtime\Types\OldInstance.Generated.cs" />
     <Compile Include="Runtime\Types\PythonAssemblyOps.cs" />
-    <Compile Include="Runtime\Operations\ScopeOps.cs" />
+    <Compile Include="Runtime\PythonModule.cs" />
     <Compile Include="Runtime\Types\ReflectedSlotProperty.cs" />
     <Compile Include="Runtime\Types\TypeCache.Generated.cs" />
     <Compile Include="Runtime\Types\TypeInfo.cs" />

@@ -261,7 +261,7 @@ the assembly object.")]
             }
 
             var sourceUnit = manager.GetLanguageByName(language).CreateFileUnit(path);
-            return Importer.ExecuteSourceUnit(sourceUnit);
+            return Importer.ExecuteSourceUnit(context.LanguageContext, sourceUnit);
         }
 
         /// <summary>
@@ -770,7 +770,7 @@ import Namespace.")]
 
             Dictionary<string, string> packageMap = BuildPackageMap(filenames);
 
-            List<ScriptCode> code = new List<ScriptCode>();
+            List<SavableScriptCode> code = new List<SavableScriptCode>();
             foreach (string filename in filenames) {
                 if (!pc.DomainManager.Platform.FileExists(filename)) {
                     throw PythonOps.IOError("Couldn't find file for compilation: {0}", filename);
@@ -815,7 +815,7 @@ import Namespace.")]
 
                 sc = PythonContext.GetContext(context).GetScriptCode(su, modName, ModuleOptions.Initialize, Compiler.CompilationMode.ToDisk);
 
-                code.Add(sc);
+                code.Add((SavableScriptCode)sc);
             }
 
             object mainModule;
@@ -827,11 +827,11 @@ import Namespace.")]
                     }
                     
                     SourceUnit su = pc.CreateFileUnit(strModule, pc.DefaultEncoding, SourceCodeKind.File);
-                    code.Add(PythonContext.GetContext(context).GetScriptCode(su, "__main__", ModuleOptions.Initialize, Compiler.CompilationMode.ToDisk));
+                    code.Add((SavableScriptCode)PythonContext.GetContext(context).GetScriptCode(su, "__main__", ModuleOptions.Initialize, Compiler.CompilationMode.ToDisk));
                 }
             }
 
-            ScriptCode.SaveToAssembly(assemblyName, code.ToArray());
+            SavableScriptCode.SaveToAssembly(assemblyName, code.ToArray());
         }
 
         /// <summary>
