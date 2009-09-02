@@ -70,9 +70,8 @@ namespace IronPython.Runtime {
                 return;
             }
 
-            CodeContext ctx = new CodeContext(new Scope(), _context);
-            if (PythonOps.HasAttr(ctx, Sink, SymbolTable.StringToId("flush"))) {
-                PythonOps.Invoke(ctx, Sink, SymbolTable.StringToId("flush"));
+            if (PythonOps.HasAttr(pf._context.SharedContext, Sink, SymbolTable.StringToId("flush"))) {
+                PythonOps.Invoke(pf._context.SharedContext, Sink, SymbolTable.StringToId("flush"));
             }
         }
     }

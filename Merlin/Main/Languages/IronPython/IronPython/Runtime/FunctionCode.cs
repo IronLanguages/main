@@ -526,7 +526,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        internal object Call(CodeContext/*!*/ context, Scope/*!*/ scope) {
+        internal object Call(CodeContext/*!*/ context) {
             if (_freevars != PythonTuple.EMPTY) {
                 throw PythonOps.TypeError("cannot exec code object that contains free variables: {0}", _freevars.__repr__(context));
             }
@@ -537,12 +537,12 @@ namespace IronPython.Runtime {
 
             Func<CodeContext, CodeContext> classTarget = Target as Func<CodeContext, CodeContext>;
             if (classTarget != null) {
-                return classTarget(new CodeContext(scope, context.LanguageContext));
+                return classTarget(context);
             }
 
             Func<CodeContext, FunctionCode, object> moduleCode = Target as Func<CodeContext, FunctionCode, object>;
             if (moduleCode != null) {
-                return moduleCode(new CodeContext(scope, context.LanguageContext), this);
+                return moduleCode(context, this);
             }
 
             Func<FunctionCode, object> optimizedModuleCode = Target as Func<FunctionCode, object>;
@@ -553,6 +553,17 @@ namespace IronPython.Runtime {
             var func = new PythonFunction(context, this, null, ArrayUtils.EmptyObjects, new MutableTuple<object>());
             CallSite<Func<CallSite, CodeContext, PythonFunction, object>> site = PythonContext.GetContext(context).FunctionCallSite;
             return site.Target(site, context, func);
+        }
+
+        /// <summary>
+        /// Creates a FunctionCode object for exec/eval/execfile'd/compile'd code.
+        /// 
+        /// The code is then executed in a specific CodeContext by calling the .Call method.
+        /// </summary>
+        internal static FunctionCode FromSourceUnit(SourceUnit sourceUnit, PythonCompilerOptions options) {
+            var code = ((PythonContext)sourceUnit.LanguageContext).CompilePythonCode(Compiler.CompilationMode.Lookup, sourceUnit, options, ThrowingErrorSink.Default);
+            
+            return ((RunnableScriptCode)code).GetFunctionCode();
         }
 
         #endregion

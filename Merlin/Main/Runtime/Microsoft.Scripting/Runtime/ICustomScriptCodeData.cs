@@ -32,6 +32,7 @@ namespace Microsoft.Scripting {
     /// Gets custom data to be serialized when saving script codes to disk.
     /// </summary>
     public interface ICustomScriptCodeData {
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
         string GetCustomScriptCodeData();
     }
 }

@@ -420,8 +420,7 @@ namespace IronPython.Compiler.Ast {
             MSAst.Expression bodyStmt = bodyGen.MakeBody(
                 parentContext, 
                 init.ToArray(), 
-                body, 
-                true
+                body
             );
 
             Delegate originalDelegate;

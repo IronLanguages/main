@@ -456,5 +456,13 @@ describe "String#unpack with 'w' directive" do
     '\001\002\003\004'.unpack('w4').should == [92,48,48,49]
     'hello world'.unpack('w*').should == [104,101,108,108,111,32,119,111,114,108,100]
     "\204\314\330\205R".unpack('w').should == [1234567890]
+    
+    200.times do |n| 
+      z = 10**n
+      [z].pack('w').unpack('w')[0].should == z
+    end
+    
+    # invalid data:
+    "\200\200".unpack('w').should == []
   end
 end

@@ -34,7 +34,7 @@ namespace IronPython.Runtime.Operations {
                 }
             }
 
-            return context.LanguageContext.GetDelegate(function, type.UnderlyingSystemType);
+            return context.LanguageContext.DelegateCreator.GetDelegate(function, type.UnderlyingSystemType);
         }
 
         public static Delegate/*!*/ InPlaceAdd(Delegate/*!*/ self, Delegate/*!*/ other) {

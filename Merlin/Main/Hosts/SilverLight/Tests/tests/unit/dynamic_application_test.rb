@@ -43,7 +43,7 @@ end
 describe 'Hosting API' do
   it 'should create a ScriptRuntimeSetup' do
     setup = DynamicApplication.CreateRuntimeSetup
-    setup.host_type.class.to_s.should.equal 'System::RuntimeType'
+    setup.host_type.class.superclass.to_s.should.equal 'System::Type'
     setup.host_type.name.should.equal 'BrowserScriptHost'.to_clr_string
   end
   

@@ -34,13 +34,13 @@ using MSA = System.Linq.Expressions;
 
 namespace IronRuby.Compiler.Ast {
     using Ast = System.Linq.Expressions.Expression;
-    
+
     public static class AstFactory {
 
-        public static readonly MSA.Expression[] EmptyExpressions = new MSA.Expression[0];
-        public static readonly MSA.ParameterExpression[] EmptyParameters = new MSA.ParameterExpression[0];
-        public static readonly MSA.Expression NullOfMutableString = AstUtils.Constant(null, typeof(MutableString));
-        public static readonly MSA.Expression NullOfProc = AstUtils.Constant(null, typeof(Proc));
+        internal static readonly MSA.Expression[] EmptyExpressions = new MSA.Expression[0];
+        internal static readonly MSA.ParameterExpression[] EmptyParameters = new MSA.ParameterExpression[0];
+        internal static readonly MSA.Expression NullOfMutableString = AstUtils.Constant(null, typeof(MutableString));
+        internal static readonly MSA.Expression NullOfProc = AstUtils.Constant(null, typeof(Proc));
         internal static readonly MSA.Expression BlockReturnReasonBreak = AstUtils.Constant(BlockReturnReason.Break);
 
         public static MSA.Expression/*!*/ Infinite(MSA.LabelTarget @break, MSA.LabelTarget @continue, params MSA.Expression[]/*!*/ body) {

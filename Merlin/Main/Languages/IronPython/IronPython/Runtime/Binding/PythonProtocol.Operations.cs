@@ -506,7 +506,7 @@ namespace IronPython.Runtime.Binding {
                 );
 
 #if !SILVERLIGHT
-                if (ComOps.IsComObject(self.Value)) {
+                if (Microsoft.Scripting.ComInterop.ComBinder.IsComObject(self.Value)) {
                     ieres = new DynamicMetaObject(
                         Expression.Convert(
                              self.Expression,

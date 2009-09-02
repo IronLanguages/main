@@ -24,7 +24,11 @@ namespace Microsoft.Scripting.Interpreter {
     public class InterpretedFrame {
         internal readonly Interpreter Interpreter;
         public InterpretedFrame Parent;
+
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly")]
         public readonly object[] Data;
+
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly")]
         public readonly StrongBox<object>[] Closure;
 
         public int StackIndex;

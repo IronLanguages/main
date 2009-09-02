@@ -243,6 +243,7 @@ namespace Microsoft.Scripting.Generation {
                    (_debugAssembly != null && asm == _debugAssembly.AssemblyBuilder);
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Portability", "CA1903:UseOnlyApiFromTargetedFramework")]
         private static DynamicMethod RawCreateDynamicMethod(string name, Type returnType, Type[] parameterTypes) {
 #if SILVERLIGHT // Module-hosted DynamicMethod is not available in SILVERLIGHT
             return new DynamicMethod(name, returnType, parameterTypes);

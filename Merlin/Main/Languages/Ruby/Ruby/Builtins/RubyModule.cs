@@ -1002,7 +1002,7 @@ namespace IronRuby.Builtins {
             Debug.Assert(included || !inherited);
 
             if (autoloadScope != null && autoloadScope.Context != Context) {
-                throw RubyExceptions.CreateTypeError(String.Format("Cannot autoload constatns to a foreign runtime #{0}", autoloadScope.Context.RuntimeId));
+                throw RubyExceptions.CreateTypeError(String.Format("Cannot autoload constants to a foreign runtime #{0}", autoloadScope.Context.RuntimeId));
             }
 
             value = null;

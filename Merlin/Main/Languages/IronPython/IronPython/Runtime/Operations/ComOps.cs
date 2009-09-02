@@ -25,13 +25,6 @@ using System.Runtime.InteropServices;
 
 namespace IronPython.Runtime.Operations {
     public static class ComOps {
-        private static readonly Type ComObjectType = typeof(object).Assembly.GetType("System.__ComObject");
-
-        internal static bool IsComObject(object obj) {
-            // we can't use System.Runtime.InteropServices.Marshal.IsComObject(obj) since it doesn't work in partial trust
-            return obj != null && ComObjectType.IsAssignableFrom(obj.GetType());
-        }
-
         public static string __str__(object/*!*/ self) {
             return self.ToString();
         }

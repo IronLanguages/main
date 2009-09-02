@@ -83,7 +83,7 @@ namespace Microsoft.Scripting.Silverlight {
         }
 
         public virtual string NormalizePath(string path) {
-            return path.Replace(Path.DirectorySeparatorChar, '/');
+            return path.Replace('\\', '/');
         }
 
         protected Stream GetFileInternal(object storageUnit, string relativePath) {

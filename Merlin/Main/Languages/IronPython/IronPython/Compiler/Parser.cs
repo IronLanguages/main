@@ -48,7 +48,7 @@ namespace IronPython.Compiler {
         /// Language features initialized on parser construction and possibly updated during parsing. 
         /// The code can set the language features (e.g. "from __future__ import division").
         /// </summary>
-        private PythonLanguageFeatures _languageFeatures;
+        private ModuleOptions _languageFeatures;
 
         // state:
         private TokenWithSpan _token;
@@ -66,7 +66,7 @@ namespace IronPython.Compiler {
       
         #region Construction
 
-        private Parser(Tokenizer tokenizer, ErrorSink errorSink, ParserSink parserSink, PythonLanguageFeatures languageFeatures) {
+        private Parser(Tokenizer tokenizer, ErrorSink errorSink, ParserSink parserSink, ModuleOptions languageFeatures) {
             ContractUtils.RequiresNotNull(tokenizer, "tokenizer");
             ContractUtils.RequiresNotNull(errorSink, "errorSink");
             ContractUtils.RequiresNotNull(parserSink, "parserSink");
@@ -115,7 +115,7 @@ namespace IronPython.Compiler {
             tokenizer.Initialize(null, reader, context.SourceUnit, SourceLocation.MinValue);
             tokenizer.IndentationInconsistencySeverity = options.IndentationInconsistencySeverity;
 
-            Parser result = new Parser(tokenizer, context.Errors, context.ParserSink, compilerOptions.LanguageFeatures);
+            Parser result = new Parser(tokenizer, context.Errors, context.ParserSink, compilerOptions.Module);
             result._sourceReader = reader;
             return result;
         }
@@ -267,8 +267,8 @@ namespace IronPython.Compiler {
         public int ErrorCode {
             get { return _errorCode; }
         }
-       
-        public void Reset(SourceUnit sourceUnit, PythonLanguageFeatures languageFeatures) {
+
+        public void Reset(SourceUnit sourceUnit, ModuleOptions languageFeatures) {
             ContractUtils.RequiresNotNull(sourceUnit, "sourceUnit");
 
             _sourceUnit = sourceUnit;
@@ -844,17 +844,17 @@ namespace IronPython.Compiler {
                 fromFuture = true;
                 foreach (SymbolId name in names) {
                     if (name == Symbols.Division) {
-                        _languageFeatures |= PythonLanguageFeatures.TrueDivision;
+                        _languageFeatures |= ModuleOptions.TrueDivision;
                     } else if (name == Symbols.WithStmt) {
-                        _languageFeatures |= PythonLanguageFeatures.AllowWithStatement;
+                        _languageFeatures |= ModuleOptions.WithStatement;
                     } else if (name == Symbols.AbsoluteImport) {
-                        _languageFeatures |= PythonLanguageFeatures.AbsoluteImports;
+                        _languageFeatures |= ModuleOptions.AbsoluteImports;
                     } else if (name == Symbols.PrintFunction) {
-                        _languageFeatures |= PythonLanguageFeatures.PrintFunction;
+                        _languageFeatures |= ModuleOptions.PrintFunction;
                         _tokenizer.PrintFunction = true;
                     } else if (name == Symbols.UnicodeLiterals) {
                         _tokenizer.UnicodeLiterals = true;
-                        _languageFeatures |= PythonLanguageFeatures.UnicodeLiterals;
+                        _languageFeatures |= ModuleOptions.UnicodeLiterals;
                     } else if (name == Symbols.NestedScopes) {
                     } else if (name == Symbols.Generators) {
                     } else {
@@ -3004,15 +3004,15 @@ namespace IronPython.Compiler {
         }
 
         private bool TrueDivision {
-            get { return (_languageFeatures & PythonLanguageFeatures.TrueDivision) == PythonLanguageFeatures.TrueDivision; }
+            get { return (_languageFeatures & ModuleOptions.TrueDivision) == ModuleOptions.TrueDivision; }
         }
 
         private bool AbsoluteImports {
-            get { return (_languageFeatures & PythonLanguageFeatures.AbsoluteImports) == PythonLanguageFeatures.AbsoluteImports; }
+            get { return (_languageFeatures & ModuleOptions.AbsoluteImports) == ModuleOptions.AbsoluteImports; }
         }
 
         private bool PrintFunction {
-            get { return (_languageFeatures & PythonLanguageFeatures.PrintFunction) == PythonLanguageFeatures.PrintFunction; }
+            get { return (_languageFeatures & ModuleOptions.PrintFunction) == ModuleOptions.PrintFunction; }
         }
 
         private void StartParsing() {

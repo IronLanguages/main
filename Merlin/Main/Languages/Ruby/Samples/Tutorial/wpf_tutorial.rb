@@ -21,8 +21,8 @@ if $0 == __FILE__
   rescue System::IO::FileNotFoundException => e
     abort %{
       The GUI tutorial requires .NET 3.5 SP1 which can be downloaded from
-      http://go.microsoft.com/fwlink/?LinkId=122089. Please send email to 
-      ironruby-core@rubyforge.org for information on alternate formats of the tutorial.
+      http://go.microsoft.com/fwlink/?LinkId=122089. An online version of
+      the tutorial is available at http://ironruby.net/Tutorial.
       Exception details: #{e}
     }.gsub(/\n/, "").gsub(/\s+/, ' ').strip
   end

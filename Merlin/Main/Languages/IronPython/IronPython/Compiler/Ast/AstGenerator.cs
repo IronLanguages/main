@@ -192,7 +192,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         public PythonBinder/*!*/ Binder {
-            get { return (PythonBinder)_context.SourceUnit.LanguageContext.Binder; }
+            get { return (PythonBinder)((PythonContext)_context.SourceUnit.LanguageContext).Binder; }
         }
 
         public bool PrintExpressions {
@@ -382,7 +382,7 @@ namespace IronPython.Compiler.Ast {
             _localCodeContext = Ast.Parameter(typeof(CodeContext), "$localContext");
         }
 
-        internal MSAst.Expression/*!*/ MakeBody(MSAst.Expression/*!*/ parentContext, MSAst.Expression[] init, MSAst.Expression/*!*/ body, bool isVisible) {
+        internal MSAst.Expression/*!*/ MakeBody(MSAst.Expression/*!*/ parentContext, MSAst.Expression[] init, MSAst.Expression/*!*/ body) {
             // wrap a CodeContext scope if needed
             Debug.Assert(!IsGlobal);
 
@@ -392,7 +392,7 @@ namespace IronPython.Compiler.Ast {
                     init.Length == 0 ? (MSAst.Expression)MSAst.Expression.Empty() : (MSAst.Expression)Ast.Block(init),
                     Ast.Assign(
                         _localCodeContext,
-                        CreateLocalContext(parentContext, isVisible)
+                        CreateLocalContext(parentContext)
                     ),
                     body
                 );
@@ -408,7 +408,7 @@ namespace IronPython.Compiler.Ast {
             return body;
         }
 
-        private MSAst.Expression/*!*/ CreateLocalContext(MSAst.Expression/*!*/ parentContext, bool isVisible) {
+        private MSAst.Expression/*!*/ CreateLocalContext(MSAst.Expression/*!*/ parentContext) {
             return Ast.Call(
                 typeof(PythonOps).GetMethod("CreateLocalContext"),
                 parentContext,
@@ -417,8 +417,7 @@ namespace IronPython.Compiler.Ast {
                     MutableTuple.Create(),
                 _liftedVars != null ?
                 Ast.Constant(ArrayUtils.ConvertAll<ClosureInfo, SymbolId>(_liftedVars.ToArray(), x => (x.IsClosedOver ? x.Name : SymbolId.Empty))) :
-                    Ast.Constant(new SymbolId[0]),
-                Ast.Constant(isVisible)
+                    Ast.Constant(new SymbolId[0])
             );
         }
 

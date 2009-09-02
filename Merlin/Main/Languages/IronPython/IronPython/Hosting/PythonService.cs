@@ -50,7 +50,7 @@ namespace IronPython.Hosting {
             if (_sys == null) {
                 Interlocked.CompareExchange(
                     ref _sys,
-                    HostingHelpers.CreateScriptScope(_engine, _context.SystemState),
+                    HostingHelpers.CreateScriptScope(_engine, _context.SystemState.Scope),
                     null
                 );
             }
@@ -62,7 +62,7 @@ namespace IronPython.Hosting {
             if (_builtins == null) {
                 Interlocked.CompareExchange(
                     ref _builtins,
-                    HostingHelpers.CreateScriptScope(_engine, _context.BuiltinModuleInstance),
+                    HostingHelpers.CreateScriptScope(_engine, _context.BuiltinModuleInstance.Scope),
                     null
                 );
             }
@@ -74,7 +74,7 @@ namespace IronPython.Hosting {
             if (_clr == null) {
                 Interlocked.CompareExchange(
                     ref _clr,
-                    HostingHelpers.CreateScriptScope(_engine, _context.ClrModule),
+                    HostingHelpers.CreateScriptScope(_engine, _context.ClrModule.Scope),
                     null
                 );
             }
@@ -83,9 +83,9 @@ namespace IronPython.Hosting {
         }
 
         public ScriptScope/*!*/ ImportModule(ScriptEngine/*!*/ engine, string/*!*/ name) {
-            Scope scope = Importer.ImportModule(_context.SharedContext, _context.SharedContext.GlobalScope.Dict, name, false, -1) as Scope;
-            if (scope != null) {
-                return HostingHelpers.CreateScriptScope(engine, scope);
+            PythonModule module = Importer.ImportModule(_context.SharedContext, _context.SharedContext.GlobalDict, name, false, -1) as PythonModule;
+            if (module != null) {
+                return HostingHelpers.CreateScriptScope(engine, module.Scope);
             }
 
             throw PythonOps.ImportError("no module named {0}", name);

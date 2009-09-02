@@ -34,10 +34,10 @@ namespace IronPython.Compiler.Ast {
         private readonly Statement _body;
         private readonly bool _isModule;
         private readonly bool _printExpressions;        
-        private readonly PythonLanguageFeatures _languageFeatures;
+        private readonly ModuleOptions _languageFeatures;
         private PythonVariable _docVariable, _nameVariable, _fileVariable;
 
-        public PythonAst(Statement body, bool isModule, PythonLanguageFeatures languageFeatures, bool printExpressions) {
+        public PythonAst(Statement body, bool isModule, ModuleOptions languageFeatures, bool printExpressions) {
             ContractUtils.RequiresNotNull(body, "body");
 
             _body = body;
@@ -50,7 +50,7 @@ namespace IronPython.Compiler.Ast {
         /// True division is enabled in this AST.
         /// </summary>
         public bool TrueDivision {
-            get { return (_languageFeatures & PythonLanguageFeatures.TrueDivision) != 0; }
+            get { return (_languageFeatures & ModuleOptions.TrueDivision) != 0; }
         }
 
         /// <summary>
@@ -58,7 +58,7 @@ namespace IronPython.Compiler.Ast {
         /// </summary>
         public bool AllowWithStatement {
             get {
-                return (_languageFeatures & PythonLanguageFeatures.AllowWithStatement) != 0;
+                return (_languageFeatures & ModuleOptions.WithStatement) != 0;
             }
         }
 
@@ -67,7 +67,7 @@ namespace IronPython.Compiler.Ast {
         /// </summary>
         public bool AbsoluteImports {
             get {
-                return (_languageFeatures & PythonLanguageFeatures.AbsoluteImports) != 0;
+                return (_languageFeatures & ModuleOptions.AbsoluteImports) != 0;
             }
         }
 
@@ -142,7 +142,7 @@ namespace IronPython.Compiler.Ast {
 
             // if we can change the language features or we're a module which needs __builtins__ initialized
             // then we need to make the ModuleStarted call.
-            if (_languageFeatures != PythonLanguageFeatures.Default || _isModule) {
+            if (_languageFeatures != ModuleOptions.None || _isModule) {
                 body = Ast.Block(
                     Ast.Call(
                         AstGenerator.GetHelperMethod("ModuleStarted"),
@@ -208,7 +208,7 @@ namespace IronPython.Compiler.Ast {
             // Create the variables
             CreateVariables(ag, null, block, false, false);
 
-            if (block.Count == 0 && _body is ReturnStatement && _languageFeatures == PythonLanguageFeatures.Default) {
+            if (block.Count == 0 && _body is ReturnStatement && _languageFeatures == ModuleOptions.None) {
                 // for simple eval's we can construct a simple tree which just
                 // leaves the value on the stack.  Return's can't exist in modules
                 // so this is always safe.

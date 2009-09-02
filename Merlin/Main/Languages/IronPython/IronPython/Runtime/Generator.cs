@@ -199,7 +199,7 @@ namespace IronPython.Runtime {
 
         public TraceBackFrame gi_frame {
             get {
-                return new TraceBackFrame(_function.Context, _function.Context.GlobalScope, new PythonDictionary(), gi_code);
+                return new TraceBackFrame(_function.Context, _function.Context.GlobalDict, new PythonDictionary(), gi_code);
             }
         }
 

@@ -74,7 +74,7 @@ namespace IronPython.Compiler.Ast {
 
             PythonCompilerOptions pco = context.Options as PythonCompilerOptions;
 
-            return new SavableScriptCode(func, context.SourceUnit, GetNames(), pco.ModuleName);
+            return new PythonSavableScriptCode(func, context.SourceUnit, GetNames(), pco.ModuleName);
         }
     }
 }

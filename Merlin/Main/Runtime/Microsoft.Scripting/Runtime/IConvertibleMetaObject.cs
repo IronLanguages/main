@@ -20,6 +20,6 @@ namespace Microsoft.Scripting.Runtime {
     /// Indicates that a DynamicMetaObject might be convertible to a CLR type.
     /// </summary>
     public interface IConvertibleMetaObject {
-        bool CanConvertTo(Type type, bool @explicit);
+        bool CanConvertTo(Type type, bool isExplicit);
     }
 }

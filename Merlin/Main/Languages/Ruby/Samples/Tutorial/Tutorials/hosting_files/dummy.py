@@ -13,4 +13,6 @@
 #
 # ****************************************************************************
 
-load_assembly 'IronRuby.Libraries', 'IronRuby.StandardLibrary.StringIO'
+# If there are no .py files present, then Chiron thinks that it is a pure IronRuby application
+# and does not include the IronPython assemblies in the xap file. The only purpose of this
+# file is to indicate to Chiron that the IronPython assemblies should be included

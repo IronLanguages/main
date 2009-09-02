@@ -21,6 +21,7 @@ using System.Reflection;
 using System.Dynamic;
 using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
+using Microsoft.Scripting.Generation;
 
 namespace Microsoft.Scripting.Ast {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1506:AvoidExcessiveClassCoupling")]
@@ -138,7 +139,7 @@ namespace Microsoft.Scripting.Ast {
             ContractUtils.Requires(instance != null ^ method.IsStatic, "instance");
 
             ParameterInfo[] parameters = method.GetParameters();
-            bool hasParamArray = parameters.Length > 0 && parameters[parameters.Length - 1].IsParamArray();
+            bool hasParamArray = parameters.Length > 0 && CompilerHelpers.IsParamArray(parameters[parameters.Length - 1]);
 
             if (instance != null) {
                 instance = Convert(instance, method.DeclaringType);

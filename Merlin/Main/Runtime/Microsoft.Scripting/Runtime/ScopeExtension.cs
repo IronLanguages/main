@@ -32,11 +32,5 @@ namespace Microsoft.Scripting.Runtime {
             ContractUtils.RequiresNotNull(scope, "scope");
             _scope = scope;
         }
-
-        internal protected virtual void ModuleReloading() {
-        }
-
-        internal protected virtual void ModuleReloaded() {
-        }
     }
 }

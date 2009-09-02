@@ -430,7 +430,7 @@ namespace IronRuby.Runtime.Calls {
         private bool HasExplicitProtocolConversion(ParameterWrapper/*!*/ parameter) {
             return
                 parameter.ParameterInfo != null &&
-                parameter.ParameterInfo.IsDefined(typeof(DefaultProtocolAttribute), false) &&
+                parameter.ParameterInfo.IsAttributeDefined(typeof(DefaultProtocolAttribute), false) &&
                 !parameter.IsParamsArray; // default protocol doesn't apply on param-array/dict itself, only on the expanded parameters
         }
 
@@ -495,7 +495,7 @@ namespace IronRuby.Runtime.Calls {
             }
 
             // protocol conversions:
-            if (info != null && info.IsDefined(typeof(DefaultProtocolAttribute), false)) {
+            if (info != null && info.IsAttributeDefined(typeof(DefaultProtocolAttribute), false)) {
                 var action = RubyConversionAction.TryGetDefaultConversionAction(Context, toType);
                 if (action != null) {
                     // TODO: inline implicit conversions:

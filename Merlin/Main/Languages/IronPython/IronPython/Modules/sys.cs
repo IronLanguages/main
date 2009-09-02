@@ -69,7 +69,7 @@ namespace IronPython.Modules {
         public static void displayhook(CodeContext/*!*/ context, object value) {
             if (value != null) {
                 PythonOps.Print(context, PythonOps.Repr(context, value));
-                ScopeOps.SetMember(context, PythonContext.GetContext(context).BuiltinModuleInstance, "_", value);
+                PythonContext.GetContext(context).BuiltinModuleDict["_"] = value;
             }
         }
 
@@ -1055,9 +1055,9 @@ namespace IronPython.Modules {
         }
 
         private static void PublishBuiltinModuleNames(PythonContext/*!*/ context, IAttributesCollection/*!*/ dict) {
-            object[] keys = new object[context.Builtins.Keys.Count];
+            object[] keys = new object[context.BuiltinModules.Keys.Count];
             int index = 0;
-            foreach (object key in context.Builtins.Keys) {
+            foreach (object key in context.BuiltinModules.Keys) {
                 keys[index++] = key;
             }
             dict[SymbolTable.StringToId("builtin_module_names")] = PythonTuple.MakeTuple(keys);

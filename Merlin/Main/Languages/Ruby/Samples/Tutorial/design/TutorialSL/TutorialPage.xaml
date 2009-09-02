@@ -9,8 +9,8 @@
 	d:DesignWidth="624" d:DesignHeight="450" Background="White">
 
 	<StackPanel x:Name="tutorial_page" VerticalAlignment="Top" Margin="0,8,0,0">
-        <TextBlock x:Name="pre_exercise" HorizontalAlignment="Left" FontSize="16" Padding="0,0,0,8" FontFamily="Segoe UI" Text="This section blah blah  blah ..." Margin="8,8,8,0"/>
-        <TextBlock x:Name="exercise" HorizontalAlignment="Left" FontSize="16" Padding="0,0,0,8" Foreground="Black" VerticalAlignment="Top" FontFamily="Segoe UI" Text="This section blah blah  blah ..." Margin="8,8,8,0"/>
+        <TextBlock x:Name="pre_exercise" HorizontalAlignment="Left" FontSize="13.333" Padding="0,0,0,8" FontFamily="Segoe UI" Text="This section blah blah  blah ..." Margin="8,8,8,0"/>
+        <TextBlock x:Name="exercise" HorizontalAlignment="Left" FontSize="13.333" Padding="0,0,0,8" Foreground="Black" VerticalAlignment="Top" FontFamily="Segoe UI" Text="This section blah blah  blah ..." Margin="8,8,8,0"/>
         <StackPanel x:Name="start_tutorial" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="8,0,8,8" Visibility="Collapsed">
         	<Button Content="Start tutorial"/>
         </StackPanel>
