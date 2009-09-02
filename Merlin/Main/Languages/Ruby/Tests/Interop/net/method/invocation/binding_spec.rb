@@ -34,16 +34,28 @@ describe "Method parameter binding" do
           :ByteArg => TE, :UInt16Arg => TE, :UInt32Arg => TE, :UInt64Arg => TE, :CharArg => "CharArg", :DecimalArg => TE, 
           :ObjectArg => "ObjectArg" },
 
-    
+    "MyString''" => {:NoArg => AE, :Int32Arg => TE, :DoubleArg => AE, :BigIntegerArg => TE, :StringArg => "StringArg", 
+          :BooleanArg => "BooleanArg", :SByteArg => TE, :Int16Arg => TE, :Int64Arg => TE, :SingleArg => AE, 
+          :ByteArg => TE, :UInt16Arg => TE, :UInt32Arg => TE, :UInt64Arg => TE, :CharArg => TE, :DecimalArg => TE, 
+          :ObjectArg => "ObjectArg" },
+    "MyString'a'" => {:NoArg => AE, :Int32Arg => TE, :DoubleArg => AE, :BigIntegerArg => TE, :StringArg => "StringArg", 
+          :BooleanArg => "BooleanArg", :SByteArg => TE, :Int16Arg => TE, :Int64Arg => TE, :SingleArg => AE, 
+          :ByteArg => TE, :UInt16Arg => TE, :UInt32Arg => TE, :UInt64Arg => TE, :CharArg => "CharArg", :DecimalArg => TE, 
+          :ObjectArg => "ObjectArg" },
+    "MyString'abc'" => {:NoArg => AE, :Int32Arg => TE, :DoubleArg => AE, :BigIntegerArg => TE, :StringArg => "StringArg", 
+          :BooleanArg => "BooleanArg", :SByteArg => TE, :Int16Arg => TE, :Int64Arg => TE, :SingleArg => AE, 
+          :ByteArg => TE, :UInt16Arg => TE, :UInt32Arg => TE, :UInt64Arg => TE, :CharArg => "CharArg", :DecimalArg => TE, 
+          :ObjectArg => "ObjectArg" },
+          
     :a => {:NoArg => AE, :Int32Arg => "Int32Arg", :DoubleArg => TE, 
           :BigIntegerArg => "BigIntegerArg", :StringArg => "StringArg", :BooleanArg => "BooleanArg",
           :SByteArg => RE, :Int16Arg => RE, :Int64Arg => "Int64Arg", :SingleArg => TE, :ByteArg => RE,
-          :UInt16Arg => RE, :UInt32Arg => "UInt32Arg", :UInt64Arg => "UInt64Arg", :CharArg => "CharArg",
+          :UInt16Arg => RE, :UInt32Arg => "UInt32Arg", :UInt64Arg => "UInt64Arg", :CharArg => TE,
           :DecimalArg => TE, :ObjectArg => "ObjectArg" },
     :abc => {:NoArg => AE, :Int32Arg => "Int32Arg", :DoubleArg => TE, 
           :BigIntegerArg => "BigIntegerArg", :StringArg => "StringArg", :BooleanArg => "BooleanArg", 
           :SByteArg => RE, :Int16Arg => RE, :Int64Arg => "Int64Arg", :SingleArg => TE, :ByteArg => RE, 
-          :UInt16Arg => RE, :UInt32Arg => "UInt32Arg", :UInt64Arg => "UInt64Arg", :CharArg => "CharArg", 
+          :UInt16Arg => RE, :UInt32Arg => "UInt32Arg", :UInt64Arg => "UInt64Arg", :CharArg => TE, 
           :DecimalArg => TE, :ObjectArg => "ObjectArg" },
     
     "false" => {:NoArg => AE, :Int32Arg => TE, :DoubleArg => TE, :BigIntegerArg => TE, :StringArg => TE, 
@@ -93,6 +105,21 @@ describe "Method parameter binding" do
           :BigIntegerArg => "BigIntegerArg", :StringArg => AE, :BooleanArg => "BooleanArg", :SByteArg => OE, 
           :Int16Arg => OE, :Int64Arg => "Int64Arg", :SingleArg => "SingleArg", :ByteArg => OE, :UInt16Arg => OE,
           :UInt32Arg => OE, :UInt64Arg => OE, :CharArg => TE, :DecimalArg => "DecimalArg",
+          :ObjectArg => "ObjectArg" },
+
+    "ConvertToI" => {:NoArg => AE, :Int32Arg => TE, :DoubleArg => TE, :BigIntegerArg => TE, 
+          :StringArg => TE, :BooleanArg => "BooleanArg", :SByteArg => TE, :Int16Arg => TE, :Int64Arg => TE, 
+          :SingleArg => TE, :ByteArg => TE, :UInt16Arg => TE, :UInt32Arg => TE, :UInt64Arg => TE, 
+          :CharArg => TE, :DecimalArg => TE, :ObjectArg => "ObjectArg" },
+    "ConvertToInt" => {:NoArg => AE, :Int32Arg => "Int32Arg", :DoubleArg => "DoubleArg", :BigIntegerArg => "BigIntegerArg", 
+          :StringArg => TE, :BooleanArg => "BooleanArg", :SByteArg => "SByteArg", :Int16Arg => "Int16Arg",
+          :Int64Arg => "Int64Arg", :SingleArg => "SingleArg", :ByteArg => "ByteArg", :UInt16Arg => "UInt16Arg", 
+          :UInt32Arg => "UInt32Arg", :UInt64Arg => "UInt64Arg", :CharArg => TE, :DecimalArg => "DecimalArg", 
+          :ObjectArg => "ObjectArg" },
+    "ConvertToIntToI" => {:NoArg => AE, :Int32Arg => "Int32Arg", :DoubleArg => "DoubleArg", :BigIntegerArg => "BigIntegerArg", 
+          :StringArg => TE, :BooleanArg => "BooleanArg", :SByteArg => "SByteArg", :Int16Arg => "Int16Arg",
+          :Int64Arg => "Int64Arg", :SingleArg => "SingleArg", :ByteArg => "ByteArg", :UInt16Arg => "UInt16Arg", 
+          :UInt32Arg => "UInt32Arg", :UInt64Arg => "UInt64Arg", :CharArg => TE, :DecimalArg => "DecimalArg", 
           :ObjectArg => "ObjectArg" },
     
     "FloatMaxValueMinusOne" => {:NoArg => AE, :Int32Arg => RE, :DoubleArg => "DoubleArg", 
@@ -322,9 +349,11 @@ describe "Method parameter binding" do
           :UInt16Arg => "UInt16Arg", :UInt32Arg => "UInt32Arg", :UInt64Arg => "UInt64Arg", :CharArg => TE, 
           :DecimalArg => "DecimalArg", :ObjectArg => "ObjectArg"},
   }    
+  
   before(:each) do
     @target = ClassWithMethods.new
-    @values = @target.numeric_and_string_args
+    @target2 = RubyClassWithMethods.new
+    @values = Helper.numeric_and_string_args
     nil #extraneous puts statement?
   end
     
@@ -333,7 +362,7 @@ describe "Method parameter binding" do
       results[key] ||= (results[:Int32Arg] == "Int32Arg" ? key.to_s : results[:Int32Arg])
     end
     results.each do |meth, result|
-      it "binds '#{meth}' for '#{input}' with '#{result.to_s}'" do
+      it "binds '#{meth}' for '#{input}' with '#{result.to_s}' (ClassWithMethods)" do
         if result.class == Class && result < Exception
           lambda { @target.send(meth, @values[input])}.should raise_error result
         else 
@@ -342,50 +371,32 @@ describe "Method parameter binding" do
         end
       end
     
+      it "binds '#{meth}' for '#{input}' with '#{result.to_s}' (RubyClassWithMethods)" do
+        if result.class == Class && result < Exception
+          lambda { @target2.send(meth, @values[input])}.should raise_error result
+        else 
+          res, ref = @target2.send(meth, @values[input])
+          res.should == result
+        end
+      end
+    
       next if result.class == Class && result < Exception
       
-      it "passes the correct input (#{input}) into method (#{meth})" do
+      it "passes the correct input (#{input}) into method (#{meth}) (ClassWithMethods)" do
         value = @values[input]
         res, ref = @target.send(meth, value)
-        #TODO: there has to be a better way
-        result = case meth.to_s
-                 when /Boolean/
-                   value ? true : false
-                 when /Single/
-                   if value.is_a?(System::UInt32) || value.is_a?(System::Int32)
-                     System::Single.parse(value.to_s)
-                   elsif value.is_a? System::Char
-                     System::Single.induced_from(System::Convert.to_int32(value))
-                   elsif value.is_a? Float
-                     System::Convert.to_single(value)
-                   end
-                 when /(Double|Decimal)/
-                   if value.is_a? System::Char
-                     System.const_get($1).induced_from(System::Convert.to_int32(value))
-                   end
-                 when /Char/
-                   if value.is_a? System::String
-                     value[0]
-                   elsif value.is_a? Symbol
-                     value.to_s[0..0]
-                   elsif value.is_a? String
-                     value[0..0]
-                   end
-                 when /RefInt32/
-                   1
-                 when /Int32|BigInteger/
-                   if value.is_a? Symbol
-                     value.to_i
-                   end
-                 when /(Int64|UInt32|UInt64)/
-                   if value.is_a? Symbol
-                     System.const_get($1).induced_from(value.to_i)
-                   end
-                 else
-                   value
-                 end
-        result.nil? ? result = value : nil
+        result = Helper.result(meth,value)
         @target.tracker.should == [result]
+        if ref
+          ref.should == result
+        end
+      end
+      
+      it "passes the correct input (#{input}) into method (#{meth}) (RubyClassWithMethods)" do
+        value = @values[input]
+        res, ref = @target2.send(meth, value)
+        result = Helper.result(meth,value)
+        @target2.tracker.should == [result]
         if ref
           ref.should == result
         end

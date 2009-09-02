@@ -317,27 +317,52 @@ csc <<-EOL
 EOL
   
 no_csc do
-  class RubyClassWithMethods < ClassWithMethods
+  class MyString < String
   end
-  
-  class ClassWithMethods
-    def binding_methods
-      %w{NoArg
-        Int32Arg DoubleArg BigIntegerArg StringArg BooleanArg ObjectArg
-        SByteArg Int16Arg Int64Arg SingleArg
-        ByteArg UInt16Arg UInt32Arg UInt64Arg
-        CharArg DecimalArg
-        IInterfaceArg ImplementsIInterfaceArg DerivedFromImplementsIInterfaceArg StructArg
-        AbstractClassArg DerivedFromAbstractArg
-        CustomEnumArg EnumIntArg
-        Int32ArrArg IInterfaceArrArg
-        ParamsInt32ArrArg ParamsIInterfaceArrArg ParamsStructArrArg Int32ArgParamsInt32ArrArg IInterfaceArgParamsIInterfaceArrArg
-        IListOfIntArg ArrayArg IEnumerableOfIntArg IEnumeratorOfIntArg
-        NullableInt32Arg 
-        RefInt32Arg OutInt32Arg
-        DefaultInt32Arg Int32ArgDefaultInt32Arg
-      }.map!{|e| e.chomp}
+
+  class Helper
+    def self.result(meth, value) 
+      #TODO: there has to be a better way
+      result = case meth.to_s
+               when /Boolean/
+                 value ? true : false
+               when /Single/
+                 if value.is_a?(System::UInt32) || value.is_a?(System::Int32)
+                   System::Single.parse(value.to_s)
+                 elsif value.is_a? System::Char
+                   System::Single.induced_from(System::Convert.to_int32(value))
+                 elsif value.is_a? Float
+                   System::Convert.to_single(value)
+                 end
+               when /(Double|Decimal)/
+                 if value.is_a? System::Char
+                   System.const_get($1).induced_from(System::Convert.to_int32(value))
+                 end
+               when /Char/
+                 if value.is_a? System::String
+                   value[0]
+                 elsif value.is_a? Symbol
+                   value.to_s[0..0]
+                 elsif value.is_a? String
+                   value[0..0]
+                 end
+               when /RefInt32/
+                 1
+               when /Int32|BigInteger/
+                 if value.is_a?(Symbol) || value.is_a?(ConvertToInt) || value.is_a?(ConvertToIntToI)
+                   value.to_int
+                 end
+               when /(S?Byte|U?Int16|UInt32|U?Int64)/
+                 if value.is_a?(Symbol) || value.is_a?(ConvertToInt) || value.is_a?(ConvertToIntToI)
+                   System.const_get($1).induced_from(value.to_int)
+                 end
+               else
+                 value
+               end
+      result.nil? ? result = value : nil
+      result
     end
+    # 
     # Creates a hash with the following keys. Values are associated with the key
     # name.
     # TODO: More BigIntegerValues near boundaries
@@ -359,7 +384,7 @@ no_csc do
     #  "System::UInt64MaxValueMinusOne", "System::UInt64MaxValue", "System::UInt64MinValue", "System::UInt64MinValuePlusOne",
     #  ]
 
-    def numeric_and_string_args
+    def self.numeric_and_string_args
       clr_values = {}
       #            Fixnum         Float
       clr_types = [System::Int32, System::Double, System::SByte, System::Int16, System::Int64, System::Single, System::Decimal]
@@ -376,7 +401,9 @@ no_csc do
         "Int32?Null" => System::Nullable[Fixnum].new, "Int32?One" => System::Nullable[Fixnum].new(1), "Int32?MinusOne" => System::Nullable[Fixnum].new(-1),
         "" => "", "a" => "a", "abc" => "abc",
         "System::String''" => System::String.new(""), "System::String'a'" => System::String.new("a"), "System::String'abc'" => System::String.new("abc"),
+        "MyString''" => MyString.new(""), "MyString'a'" => MyString.new("a"), "MyString'abc'" => MyString.new("abc"),
         :a => :a, :abc => :abc,
+        "ConvertToI" => ConvertToI.new, "ConvertToInt" => ConvertToInt.new, "ConvertToIntToI" => ConvertToIntToI.new,
         "System::CharMaxValue" => System::Char.MaxValue, "System::CharMinValue" => System::Char.MinValue
       }
       other.merge clr_values      
@@ -385,8 +412,53 @@ no_csc do
     private
     #returns random number between the given values. Using 0 for min value will
     #give an abnormlly high probability of 0 as the result.
-    def rand_range(klass)
+    def self.rand_range(klass)
       klass.induced_from(rand * (rand> 0.5 ? klass.MinValue : klass.MaxValue))
+    end
+  end
+
+  class ClassWithMethods
+    def binding_methods
+      %w{NoArg
+        Int32Arg DoubleArg BigIntegerArg StringArg BooleanArg ObjectArg
+        SByteArg Int16Arg Int64Arg SingleArg
+        ByteArg UInt16Arg UInt32Arg UInt64Arg
+        CharArg DecimalArg
+        IInterfaceArg ImplementsIInterfaceArg DerivedFromImplementsIInterfaceArg StructArg
+        AbstractClassArg DerivedFromAbstractArg
+        CustomEnumArg EnumIntArg
+        Int32ArrArg IInterfaceArrArg
+        ParamsInt32ArrArg ParamsIInterfaceArrArg ParamsStructArrArg Int32ArgParamsInt32ArrArg IInterfaceArgParamsIInterfaceArrArg
+        IListOfIntArg ArrayArg IEnumerableOfIntArg IEnumeratorOfIntArg
+        NullableInt32Arg 
+        RefInt32Arg OutInt32Arg
+        DefaultInt32Arg Int32ArgDefaultInt32Arg
+      }.map!{|e| e.chomp}
+    end
+  end
+  
+  class RubyClassWithMethods < ClassWithMethods
+  end
+
+  class ConvertToI
+    def to_i
+      1
+    end
+  end
+
+  class ConvertToInt
+    def to_int
+      1
+    end
+  end
+
+  class ConvertToIntToI
+    def to_i
+      1
+    end
+
+    def to_int
+      2
     end
   end
 end
