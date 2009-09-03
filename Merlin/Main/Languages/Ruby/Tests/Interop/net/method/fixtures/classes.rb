@@ -349,11 +349,11 @@ no_csc do
                when /RefInt32/
                  1
                when /Int32|BigInteger/
-                 if value.is_a?(Symbol) || value.is_a?(ConvertToInt) || value.is_a?(ConvertToIntToI)
+                 if value.is_a?(Symbol) || value.is_a?(Convert::ToInt) || value.is_a?(Convert::ToIntToI)
                    value.to_int
                  end
                when /(S?Byte|U?Int16|UInt32|U?Int64)/
-                 if value.is_a?(Symbol) || value.is_a?(ConvertToInt) || value.is_a?(ConvertToIntToI)
+                 if value.is_a?(Symbol) || value.is_a?(Convert::ToInt) || value.is_a?(Convert::ToIntToI)
                    System.const_get($1).induced_from(value.to_int)
                  end
                else
@@ -403,7 +403,8 @@ no_csc do
         "System::String''" => System::String.new(""), "System::String'a'" => System::String.new("a"), "System::String'abc'" => System::String.new("abc"),
         "MyString''" => MyString.new(""), "MyString'a'" => MyString.new("a"), "MyString'abc'" => MyString.new("abc"),
         :a => :a, :abc => :abc,
-        "ConvertToI" => ConvertToI.new, "ConvertToInt" => ConvertToInt.new, "ConvertToIntToI" => ConvertToIntToI.new,
+        "Convert::ToI" => Convert::ToI.new, "Convert::ToInt" => Convert::ToInt.new, "Convert::ToIntToI" => Convert::ToIntToI.new,
+        "Convert::ToS" => Convert::ToS.new, "Convert::ToStr" => Convert::ToStr.new, "Convert::ToStrToS" => Convert::ToStrToS.new,
         "System::CharMaxValue" => System::Char.MaxValue, "System::CharMinValue" => System::Char.MinValue
       }
       other.merge clr_values      
@@ -440,25 +441,35 @@ no_csc do
   class RubyClassWithMethods < ClassWithMethods
   end
 
-  class ConvertToI
-    def to_i
-      1
+  module Convert
+    class ToI
+      def to_i; 1; end
+    end
+
+    class ToInt
+      def to_int; 1; end
+    end
+
+    class ToIntToI
+      def to_i; 1; end
+
+      def to_int; 2; end
+    end
+
+    class ToS
+      def to_s; "to_s" end
+    end
+
+    class ToStr
+      def to_str; "to_str" end
+    end
+
+    class ToStrToS
+      def to_s; "to_s" end
+
+      def to_str; "to_str" end
     end
   end
 
-  class ConvertToInt
-    def to_int
-      1
-    end
-  end
-
-  class ConvertToIntToI
-    def to_i
-      1
-    end
-
-    def to_int
-      2
-    end
-  end
+  
 end
