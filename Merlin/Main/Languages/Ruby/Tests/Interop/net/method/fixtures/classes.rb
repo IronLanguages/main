@@ -214,6 +214,7 @@ csc <<-EOL
     #{method_block("string", "Generic", "<T>") {|el| "return \"#{el}\" "}}
   }
   public class DerivedFromImplementsIInterface : ImplementsIInterface {}
+  public struct StructImplementsIInterface : IInterface { public void m() {}}
   public partial class ClassWithMethods {
     public ClassWithMethods() {
       Tracker = new ArrayList();
@@ -261,8 +262,9 @@ csc <<-EOL
     //
     public string IInterfaceArg(IInterface arg) { Tracker.Add(arg); return "IInterfaceArg";}
     public string ImplementsIInterfaceArg(ImplementsIInterface arg) { Tracker.Add(arg); return "ImplementsIInterfaceArg";}
-    public string DerivedFromImplementsIInterfaceArg(DerivedFromImplementsIInterface arg) { Tracker.Add(arg); return "DerivesImplementsIInterfaceArg";}
-    public string StructArg(Struct arg) { Tracker.Add(arg); return "StructArg";}
+    public string DerivedFromImplementsIInterfaceArg(DerivedFromImplementsIInterface arg) { Tracker.Add(arg); return "DerivedFromImplementsIInterfaceArg";}
+    public string CStructArg(CStruct arg) { Tracker.Add(arg); return "CStructArg";}
+    public string StructImplementsIInterfaceArg(StructImplementsIInterface arg) { Tracker.Add(arg); return "StructImplementsIInterfaceArg";}
 
     public string AbstractClassArg(AbstractClass arg) { Tracker.Add(arg); return "AbstractClassArg";}
     public string DerivedFromAbstractArg(DerivedFromAbstract arg) { Tracker.Add(arg); return "DerivedFromAbstractArg";}
@@ -281,7 +283,7 @@ csc <<-EOL
     //
     public string ParamsInt32ArrArg(params Int32[] arg) { Tracker.Add(arg); return "ParamsInt32ArrArg";}
     public string ParamsIInterfaceArrArg(params IInterface[] arg) { Tracker.Add(arg); return "ParamsIInterfaceArrArg";}
-    public string ParamsStructArrArg(params Struct[] arg) { Tracker.Add(arg); return "ParamsStructArrArg";}
+    public string ParamsCStructArrArg(params CStruct[] arg) { Tracker.Add(arg); return "ParamsCStructArrArg";}
     public string Int32ArgParamsInt32ArrArg(Int32 arg, params Int32[] arg2) { Tracker.Add(arg); return "Int32ArgParamsInt32ArrArg";}
     public string IInterfaceArgParamsIInterfaceArrArg(IInterface arg, params IInterface[] arg2) { Tracker.Add(arg); return "IInterfaceArgParamsIInterfaceArrArg";}
 
@@ -302,7 +304,7 @@ csc <<-EOL
 
     // Default Value
     public string DefaultInt32Arg([DefaultParameterValue(10)] Int32 arg) { Tracker.Add(arg); return "DefaultInt32Arg";}
-    public string Int32ArgDefaultInt32Arg(Int32 arg, [DefaultParameterValue(10)] Int32 arg2) { Tracker.Add(arg); Tracker.Add(arg2); return "Int32ArgDefualutInt32Arg";}
+    public string Int32ArgDefaultInt32Arg(Int32 arg, [DefaultParameterValue(10)] Int32 arg2) { Tracker.Add(arg); Tracker.Add(arg2); return "Int32ArgDefaultInt32Arg";}
   }
 
   public class VirtualMethodBaseClass { 
@@ -317,7 +319,56 @@ csc <<-EOL
 EOL
   
 no_csc do
-  class MyString < String
+  module BindingSpecs
+    class MyString < String; end
+    
+    class RubyImplementsIInterface 
+      include IInterface
+      def m; end
+    end
+
+    class RubyDerivedFromImplementsIInterface < ImplementsIInterface; end
+
+    class RubyDerivedFromDerivedFromImplementsIInterface < DerivedFromImplementsIInterface; end
+    
+    class RubyDerivedFromDerivedFromAbstractAndImplementsIInterface < DerivedFromAbstract 
+      include IInterface
+      def m; end
+    end
+
+    class RubyDerivedFromAbstract < AbstractClass; end
+    
+    class RubyDerivedFromDerivedFromAbstract < DerivedFromAbstract; end
+
+    module Convert
+      class ToI
+        def to_i; 1; end
+      end
+
+      class ToInt
+        def to_int; 1; end
+      end
+
+      class ToIntToI
+        def to_i; 1; end
+
+        def to_int; 2; end
+      end
+
+      class ToS
+        def to_s; "to_s" end
+      end
+
+      class ToStr
+        def to_str; "to_str" end
+      end
+
+      class ToStrToS
+        def to_s; "to_s" end
+
+        def to_str; "to_str" end
+      end
+    end
   end
 
   class Helper
@@ -348,13 +399,23 @@ no_csc do
                  end
                when /RefInt32/
                  1
+               when /Int32ArgDefault/
+                 [Fixnum.induced_from(value.to_int), 10]
                when /Int32|BigInteger/
-                 if value.is_a?(Symbol) || value.is_a?(Convert::ToInt) || value.is_a?(Convert::ToIntToI)
+                 if value.is_a?(Symbol) || value.is_a?(BindingSpecs::Convert::ToInt) || value.is_a?(BindingSpecs::Convert::ToIntToI)
                    value.to_int
                  end
                when /(S?Byte|U?Int16|UInt32|U?Int64)/
-                 if value.is_a?(Symbol) || value.is_a?(Convert::ToInt) || value.is_a?(Convert::ToIntToI)
+                 if value.is_a?(Symbol) || value.is_a?(BindingSpecs::Convert::ToInt) || value.is_a?(BindingSpecs::Convert::ToIntToI)
                    System.const_get($1).induced_from(value.to_int)
+                 end
+               when /EnumIntArg/
+                 if value.is_a?(CustomEnum)
+                   EnumInt.new
+                 end
+               when /CustomEnumArg/
+                 if value.is_a?(EnumInt)
+                   CustomEnum.new
                  end
                else
                  value
@@ -362,28 +423,9 @@ no_csc do
       result.nil? ? result = value : nil
       result
     end
-    # 
-    # Creates a hash with the following keys. Values are associated with the key
-    # name.
+   
     # TODO: More BigIntegerValues near boundaries
     # TODO: More NullableIntegerValues near boundaries
-    # ["", "a", "abc", "false", "nil", "obj", "true",
-    # "BigIntegerOne", "BigIntegerZero", 
-    # "FixnumMaxValueMinusOne", "FixnumMaxValue", "FixnumMinValue", "FixnumMinValuePlusOne", 
-    # "FloatMaxValueMinusOne",  "FloatMaxValue", "FloatMinValue", "FloatMinValuePlusOne",
-    #  "Int32?Null", "Int32?One", "Int32?MinusOne",
-    #  "System::ByteMaxValueMinusOne", "System::ByteMaxValue", "System::ByteMinValue", "System::ByteMinValuePlusOne",
-    #  "System::Char.MinValue", "System::CharMaxValue",
-    #  "System::DecimalMaxValueMinusOne", "System::DecimalMaxValue", "System::DecimalMinValue", "System::DecimalMinValuePlusOne",
-    #  "System::Int16MaxValueMinusOne", "System::Int16MaxValue", "System::Int16MinValue", "System::Int16MinValuePlusOne",
-    #  "System::Int64MaxValueMinusOne", "System::Int64MaxValue", "System::Int64MinValue", "System::Int64MinValuePlusOne",
-    #  "System::SByteMaxValueMinusOne", "System::SByteMaxValue", "System::SByteMinValue", "System::SByteMinValuePlusOne",
-    #  "System::SingleMaxValueMinusOne", "System::SingleMaxValue", "System::SingleMinValue", "System::SingleMinValuePlusOne",
-    #  "System::UInt16MaxValueMinusOne", "System::UInt16MaxValue", "System::UInt16MinValue", "System::UInt16MinValuePlusOne",
-    #  "System::UInt32MaxValueMinusOne", "System::UInt32MaxValue", "System::UInt32MinValue", "System::UInt32MinValuePlusOne",
-    #  "System::UInt64MaxValueMinusOne", "System::UInt64MaxValue", "System::UInt64MinValue", "System::UInt64MinValuePlusOne",
-    #  ]
-
     def self.numeric_and_string_args
       clr_values = {}
       #            Fixnum         Float
@@ -401,13 +443,30 @@ no_csc do
         "Int32?Null" => System::Nullable[Fixnum].new, "Int32?One" => System::Nullable[Fixnum].new(1), "Int32?MinusOne" => System::Nullable[Fixnum].new(-1),
         "" => "", "a" => "a", "abc" => "abc",
         "System::String''" => System::String.new(""), "System::String'a'" => System::String.new("a"), "System::String'abc'" => System::String.new("abc"),
-        "MyString''" => MyString.new(""), "MyString'a'" => MyString.new("a"), "MyString'abc'" => MyString.new("abc"),
+        "MyString''" => BindingSpecs::MyString.new(""), "MyString'a'" => BindingSpecs::MyString.new("a"), "MyString'abc'" => BindingSpecs::MyString.new("abc"),
         :a => :a, :abc => :abc,
-        "Convert::ToI" => Convert::ToI.new, "Convert::ToInt" => Convert::ToInt.new, "Convert::ToIntToI" => Convert::ToIntToI.new,
-        "Convert::ToS" => Convert::ToS.new, "Convert::ToStr" => Convert::ToStr.new, "Convert::ToStrToS" => Convert::ToStrToS.new,
+        "Convert::ToI" => BindingSpecs::Convert::ToI.new, "Convert::ToInt" => BindingSpecs::Convert::ToInt.new, "Convert::ToIntToI" => BindingSpecs::Convert::ToIntToI.new,
+        "Convert::ToS" => BindingSpecs::Convert::ToS.new, "Convert::ToStr" => BindingSpecs::Convert::ToStr.new, "Convert::ToStrToS" => BindingSpecs::Convert::ToStrToS.new,
         "System::CharMaxValue" => System::Char.MaxValue, "System::CharMinValue" => System::Char.MinValue
       }
       other.merge clr_values      
+    end
+
+    def self.classlike_args
+      
+       [BindingSpecs::RubyImplementsIInterface, ImplementsIInterface, BindingSpecs::RubyDerivedFromImplementsIInterface, DerivedFromImplementsIInterface,
+        BindingSpecs::RubyDerivedFromDerivedFromImplementsIInterface, BindingSpecs::RubyDerivedFromDerivedFromAbstractAndImplementsIInterface, DerivedFromAbstract,
+        BindingSpecs::RubyDerivedFromAbstract,BindingSpecs::RubyDerivedFromDerivedFromAbstract, 
+        Class, Object, CStruct, StructImplementsIInterface, EnumInt, CustomEnum].inject({"anonymous class" => Class.new, "anonymous classInstance" => Class.new.new, "metaclass" => Object.new.metaclass, "AbstractClass" => AbstractClass}) do |result, klass|
+          result[klass.name] = klass
+          begin
+            result["#{klass.name}Instance"] = klass.new 
+          rescue Exception => e
+            puts "Exception raised during instantiation of #{klass.name}"
+            puts e
+          end
+          result
+        end
     end
 
     private
@@ -417,59 +476,5 @@ no_csc do
       klass.induced_from(rand * (rand> 0.5 ? klass.MinValue : klass.MaxValue))
     end
   end
-
-  class ClassWithMethods
-    def binding_methods
-      %w{NoArg
-        Int32Arg DoubleArg BigIntegerArg StringArg BooleanArg ObjectArg
-        SByteArg Int16Arg Int64Arg SingleArg
-        ByteArg UInt16Arg UInt32Arg UInt64Arg
-        CharArg DecimalArg
-        IInterfaceArg ImplementsIInterfaceArg DerivedFromImplementsIInterfaceArg StructArg
-        AbstractClassArg DerivedFromAbstractArg
-        CustomEnumArg EnumIntArg
-        Int32ArrArg IInterfaceArrArg
-        ParamsInt32ArrArg ParamsIInterfaceArrArg ParamsStructArrArg Int32ArgParamsInt32ArrArg IInterfaceArgParamsIInterfaceArrArg
-        IListOfIntArg ArrayArg IEnumerableOfIntArg IEnumeratorOfIntArg
-        NullableInt32Arg 
-        RefInt32Arg OutInt32Arg
-        DefaultInt32Arg Int32ArgDefaultInt32Arg
-      }.map!{|e| e.chomp}
-    end
-  end
-  
-  class RubyClassWithMethods < ClassWithMethods
-  end
-
-  module Convert
-    class ToI
-      def to_i; 1; end
-    end
-
-    class ToInt
-      def to_int; 1; end
-    end
-
-    class ToIntToI
-      def to_i; 1; end
-
-      def to_int; 2; end
-    end
-
-    class ToS
-      def to_s; "to_s" end
-    end
-
-    class ToStr
-      def to_str; "to_str" end
-    end
-
-    class ToStrToS
-      def to_s; "to_s" end
-
-      def to_str; "to_str" end
-    end
-  end
-
-  
+  class RubyClassWithMethods < ClassWithMethods; end
 end

@@ -750,6 +750,7 @@ return new int[]{1}; }
 
   }
   public class DerivedFromImplementsIInterface : ImplementsIInterface {}
+  public struct StructImplementsIInterface : IInterface { public void m() {}}
   public partial class ClassWithMethods {
     public ClassWithMethods() {
       Tracker = new ArrayList();
@@ -908,8 +909,9 @@ return new int[]{1}; }
     //
     public string IInterfaceArg(IInterface arg) { Tracker.Add(arg); return "IInterfaceArg";}
     public string ImplementsIInterfaceArg(ImplementsIInterface arg) { Tracker.Add(arg); return "ImplementsIInterfaceArg";}
-    public string DerivedFromImplementsIInterfaceArg(DerivedFromImplementsIInterface arg) { Tracker.Add(arg); return "DerivesImplementsIInterfaceArg";}
-    public string StructArg(Struct arg) { Tracker.Add(arg); return "StructArg";}
+    public string DerivedFromImplementsIInterfaceArg(DerivedFromImplementsIInterface arg) { Tracker.Add(arg); return "DerivedFromImplementsIInterfaceArg";}
+    public string CStructArg(CStruct arg) { Tracker.Add(arg); return "CStructArg";}
+    public string StructImplementsIInterfaceArg(StructImplementsIInterface arg) { Tracker.Add(arg); return "StructImplementsIInterfaceArg";}
 
     public string AbstractClassArg(AbstractClass arg) { Tracker.Add(arg); return "AbstractClassArg";}
     public string DerivedFromAbstractArg(DerivedFromAbstract arg) { Tracker.Add(arg); return "DerivedFromAbstractArg";}
@@ -928,7 +930,7 @@ return new int[]{1}; }
     //
     public string ParamsInt32ArrArg(params Int32[] arg) { Tracker.Add(arg); return "ParamsInt32ArrArg";}
     public string ParamsIInterfaceArrArg(params IInterface[] arg) { Tracker.Add(arg); return "ParamsIInterfaceArrArg";}
-    public string ParamsStructArrArg(params Struct[] arg) { Tracker.Add(arg); return "ParamsStructArrArg";}
+    public string ParamsCStructArrArg(params CStruct[] arg) { Tracker.Add(arg); return "ParamsCStructArrArg";}
     public string Int32ArgParamsInt32ArrArg(Int32 arg, params Int32[] arg2) { Tracker.Add(arg); return "Int32ArgParamsInt32ArrArg";}
     public string IInterfaceArgParamsIInterfaceArrArg(IInterface arg, params IInterface[] arg2) { Tracker.Add(arg); return "IInterfaceArgParamsIInterfaceArrArg";}
 
@@ -949,7 +951,7 @@ return new int[]{1}; }
 
     // Default Value
     public string DefaultInt32Arg([DefaultParameterValue(10)] Int32 arg) { Tracker.Add(arg); return "DefaultInt32Arg";}
-    public string Int32ArgDefaultInt32Arg(Int32 arg, [DefaultParameterValue(10)] Int32 arg2) { Tracker.Add(arg); Tracker.Add(arg2); return "Int32ArgDefualutInt32Arg";}
+    public string Int32ArgDefaultInt32Arg(Int32 arg, [DefaultParameterValue(10)] Int32 arg2) { Tracker.Add(arg); Tracker.Add(arg2); return "Int32ArgDefaultInt32Arg";}
   }
 
   public class VirtualMethodBaseClass { 
@@ -1002,7 +1004,7 @@ namespace CLRNew {
   }
 #line 1 "./struct/fixtures/classes.rb"
 public struct EmptyStruct {}
-  public struct Struct { public int m1() {return 1;}}
+  public struct CStruct { public int m1() {return 1;}}
 #line 1 "./typegroup/fixtures/classes.rb"
 public class StaticMethodTypeGroup {
     public static int Return(int retval) { return retval; }
