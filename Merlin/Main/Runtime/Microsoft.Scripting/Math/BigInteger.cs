@@ -27,7 +27,7 @@ namespace Microsoft.Scripting.Math {
     /// arbitrary precision integers
     /// </summary>
     [Serializable]
-    public class BigInteger : IFormattable, IComparable, IConvertible, IEquatable<BigInteger> {
+    public sealed class BigInteger : IFormattable, IComparable, IConvertible, IEquatable<BigInteger> {
         private const int BitsPerDigit = 32;
         private const ulong Base = 0x100000000;
 
@@ -230,8 +230,7 @@ namespace Microsoft.Scripting.Math {
             return Create(i);
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1065:DoNotRaiseExceptionsInUnexpectedLocations")] // TODO: fix
-        public static implicit operator double(BigInteger i) {
+        public static explicit operator double(BigInteger i) {
             if (object.ReferenceEquals(i, null)) {
                 throw new ArgumentNullException("i");
             }
@@ -368,6 +367,11 @@ namespace Microsoft.Scripting.Math {
             uint[] bits = new uint[mostSignificantNonZeroWord + 1];
             Array.Copy(data, bits, mostSignificantNonZeroWord + 1);
             return bits;
+        }
+
+        [CLSCompliant(false)]
+        public uint GetWord(int index) {
+            return data[index];
         }
 
         /// <summary>
@@ -1285,7 +1289,7 @@ namespace Microsoft.Scripting.Math {
         public BigInteger Power(int exp) {
             if (exp == 0) return One;
             if (exp < 0) {
-                throw new ArgumentOutOfRangeException("power must be >= 0");
+                throw new ArgumentOutOfRangeException("exp", "exp must be >= 0");
             }
             BigInteger factor = this;
             BigInteger result = One;
@@ -1304,7 +1308,7 @@ namespace Microsoft.Scripting.Math {
             }
 
             if (power < 0) {
-                throw new ArgumentOutOfRangeException("power must be >= 0");
+                throw new ArgumentOutOfRangeException("power", "power must be >= 0");
             }
             BigInteger factor = this;
             BigInteger result = One % mod; // Handle special case of power=0, mod=1
@@ -1330,7 +1334,7 @@ namespace Microsoft.Scripting.Math {
             }
 
             if (power < 0) {
-                throw new ArgumentOutOfRangeException("power must be >= 0");
+                throw new ArgumentOutOfRangeException("power", "power must be >= 0");
             }
 
             BigInteger factor = this;

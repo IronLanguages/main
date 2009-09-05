@@ -85,21 +85,26 @@ class ConsoleTutorial
             section = @tutorial.sections[input.to_i - 1]
             run_section section
         end
-        @out.puts
+        @out.puts "Bye!"
      end
 end
 
 if $0 == __FILE__
-  tuts = Tutorial.all.values
-  _in = $stdin
-  _out = $stdout
-  loop do
-    tuts.each_index { |i| _out.puts "#{i + 1}: #{tuts[i].name}" }
-    _out.print "Select a tutorial number and press enter (0 to exit): "
-    input = _in.gets
-    break if input.nil? or input.chomp == '0' or input.chomp == ''
-    tut = tuts[input.to_i - 1]
-    _out.puts
+  if ARGV.size > 0
+    tut = Tutorial.get_tutorial(ARGV[0])
     ConsoleTutorial.new(tut).run
+  else
+    tuts = Tutorial.all.values
+    _in = $stdin
+    _out = $stdout
+    loop do
+      tuts.each_index { |i| _out.puts "#{i + 1}: #{tuts[i].name}" }
+      _out.print "Select a tutorial number and press enter (0 to exit): "
+      input = _in.gets
+      break if input.nil? or input.chomp == '0' or input.chomp == ''
+      tut = tuts[input.to_i - 1]
+      _out.puts
+      ConsoleTutorial.new(tut).run
+    end
   end
 end

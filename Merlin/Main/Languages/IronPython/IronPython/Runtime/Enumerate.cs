@@ -97,8 +97,6 @@ namespace IronPython.Runtime {
         public SentinelIterator(CodeContext/*!*/ context, object target, object sentinel) {
             _target = target;
             _sentinel = sentinel;
-            _current = null;
-            _sinkState = false;
             _context = context;
         }
 

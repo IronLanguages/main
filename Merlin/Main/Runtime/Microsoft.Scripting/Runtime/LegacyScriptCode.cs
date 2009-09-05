@@ -24,7 +24,7 @@ using System.Reflection.Emit;
 using System.Reflection;
 
 namespace Microsoft.Scripting.Runtime {
-    public class LegacyScriptCode : ScriptCode {
+    public class LegacyScriptCode : SavableScriptCode {
         private DlrMainCallTarget _target;
         private LambdaExpression _code;
 
@@ -68,7 +68,7 @@ namespace Microsoft.Scripting.Runtime {
             return _target;
         }
 
-        protected override KeyValuePair<MethodBuilder, Type> CompileForSave(TypeGen typeGen, Dictionary<SymbolId, FieldBuilder> symbolDict) {
+        protected override KeyValuePair<MethodBuilder, Type> CompileForSave(TypeGen typeGen) {
             var lambda = RewriteForSave(typeGen, _code);
 
             MethodBuilder mb = typeGen.TypeBuilder.DefineMethod(lambda.Name ?? "lambda_method", CompilerHelpers.PublicStatic | MethodAttributes.SpecialName);

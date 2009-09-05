@@ -47,7 +47,7 @@ namespace IronPython.Runtime.Binding {
             }
 #if !SILVERLIGHT
             DynamicMetaObject com;
-            if (System.Dynamic.ComBinder.TryBindSetMember(this, self, BindingHelpers.GetComArgument(value), out com)) {
+            if (Microsoft.Scripting.ComInterop.ComBinder.TryBindSetMember(this, self, BindingHelpers.GetComArgument(value), out com)) {
                 return com;
             }
 #endif

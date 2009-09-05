@@ -75,7 +75,7 @@ namespace IronRuby.Builtins {
                 _data[index] = c;
             }
 
-            #region GetHashCode, Length, Clone (read-only)
+            #region GetHashCode, Length, Clone (read-only), Count
 
             public override int GetHashCode(out int binarySum) {
                 return _data.GetValueHashCode(_count, out binarySum);
@@ -96,7 +96,11 @@ namespace IronRuby.Builtins {
             public override int Count {
                 get { return _count; }
                 set {
-                    Utils.Resize(ref _data, value);
+                    if (_data.Length < value) {
+                        Array.Resize(ref _data, Utils.GetExpandedSize(_data, value));
+                    } else {
+                        Utils.Fill(_data, _count, '\0', value - _count);
+                    }
                     _count = value;
                 }
             }
@@ -205,11 +209,17 @@ namespace IronRuby.Builtins {
             #region Slices (read-only)
 
             public override char GetChar(int index) {
+                if (index >= _count) {
+                    throw new IndexOutOfRangeException();
+                }
                 return _data[index];
             }
 
             public override byte GetByte(int index) {
                 if (_owner.HasByteCharacters) {
+                    if (index >= _count) {
+                        throw new IndexOutOfRangeException();
+                    }
                     return (byte)_data[index];
                 }
                 return SwitchToBinary().GetByte(index);
@@ -372,10 +382,18 @@ namespace IronRuby.Builtins {
 
             #endregion
 
-            #region Remove
+            #region Remove, Write
 
             public override void Remove(int start, int count) {
                 _count = Utils.Remove(ref _data, _count, start, count);
+            }
+
+            public override void Write(int offset, byte[]/*!*/ value, int start, int count) {
+                SwitchToBinary().Write(offset, value, start, count);
+            }
+
+            public override void Write(int offset, byte value, int repeatCount) {
+                SwitchToBinary().Write(offset, value, repeatCount);
             }
 
             #endregion

@@ -315,22 +315,11 @@ namespace IronPython.Runtime.Binding {
             private readonly ArgumentValues/*!*/ _argInfo;
             private readonly PythonContext/*!*/ _state;
             private readonly Expression/*!*/ _context;
-            private BindingRestrictions/*!*/ _restrictions;            
 
             public CallAdapter(ArgumentValues/*!*/ ai, PythonContext/*!*/ state, Expression/*!*/ codeContext) {
                 _argInfo = ai;
                 _state = state;
-                _restrictions = BindingRestrictions.Empty;
                 _context = codeContext;
-            }
-
-            public BindingRestrictions/*!*/ Restrictions {
-                get {
-                    return _restrictions;
-                }
-                set {
-                    _restrictions = value;
-                }
             }
 
             protected PythonContext PythonContext {
@@ -697,15 +686,7 @@ namespace IronPython.Runtime.Binding {
         private static BindingRestrictions GetInstanceRestriction(ArgumentValues ai) {
             return BindingRestrictions.GetInstanceRestriction(ai.Self.Expression, ai.Self.Value);
         }
-
-        private Expression/*!*/ GetFinalizerInitialization(DynamicMetaObjectBinder/*!*/ action, ParameterExpression/*!*/ variable) {
-            return Ast.Call(
-                typeof(PythonOps).GetMethod("InitializeForFinalization"),
-                AstUtils.Constant(PythonContext.GetPythonContext(action).SharedContext),
-                AstUtils.Convert(variable, typeof(object))
-            );
-        }
-
+        
         private bool HasFinalizer(DynamicMetaObjectBinder/*!*/ action) {
             // only user types have finalizers...
             if (Value.IsSystemType) return false;

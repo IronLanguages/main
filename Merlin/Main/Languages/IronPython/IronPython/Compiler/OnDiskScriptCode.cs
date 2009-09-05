@@ -30,7 +30,7 @@ namespace IronPython.Compiler {
     /// </summary>
     class OnDiskScriptCode : RunnableScriptCode {
         private readonly Func<CodeContext, FunctionCode, object> _code;
-        private Scope _optimizedScope;
+        private CodeContext _optimizedContext;
         private readonly string _moduleName;
 
         public OnDiskScriptCode(Func<CodeContext, FunctionCode, object> code, SourceUnit sourceUnit, string moduleName) :
@@ -40,7 +40,7 @@ namespace IronPython.Compiler {
         }
 
         public override object Run() {
-            CodeContext ctx = CreateTopLevelCodeContext(CreateScope(), (PythonContext)SourceUnit.LanguageContext);
+            CodeContext ctx = CreateContext();
             try {
                 PushFrame(ctx, _code);
                 return _code(ctx, EnsureFunctionCode(_code));
@@ -68,27 +68,32 @@ namespace IronPython.Compiler {
         }
 
         public override Scope CreateScope() {
-            if (_optimizedScope == null) {
+            return CreateContext().GlobalScope;
+        }
+
+        internal CodeContext CreateContext() {            
+            if (_optimizedContext == null) {
                 CachedOptimizedCodeAttribute[] attrs = (CachedOptimizedCodeAttribute[])_code.Method.GetCustomAttributes(typeof(CachedOptimizedCodeAttribute), false);
 
                 // create the CompilerContext for the ScriptCode
                 CachedOptimizedCodeAttribute optimizedCode = attrs[0];
 
                 // create the storage for the global scope
-                Dictionary<SymbolId, PythonGlobal> globals = new Dictionary<SymbolId, PythonGlobal>();
+                Dictionary<string, PythonGlobal> globals = new Dictionary<string, PythonGlobal>(StringComparer.Ordinal);
                 PythonGlobal[] globalArray = new PythonGlobal[optimizedCode.Names.Length];
-                Scope scope = new Scope(new PythonDictionary(new GlobalDictionaryStorage(globals, globalArray)));
+                var dict = new PythonDictionary(new GlobalDictionaryStorage(globals, globalArray));
 
-                CodeContext res = new CodeContext(scope, (PythonContext)SourceUnit.LanguageContext);
+                ModuleContext mc = new ModuleContext(dict, (PythonContext)SourceUnit.LanguageContext);
+                CodeContext res = mc.GlobalContext;
 
                 for (int i = 0; i < optimizedCode.Names.Length; i++) {
-                    SymbolId name = SymbolTable.StringToId(optimizedCode.Names[i]);
-                    globalArray[i] = globals[name] = new PythonGlobal(res, name);                    
+                    string name = optimizedCode.Names[i];
+                    globalArray[i] = globals[name] = new PythonGlobal(res, name);
                 }
 
-                _optimizedScope = scope;
+                _optimizedContext = CreateTopLevelCodeContext(dict, (PythonContext)SourceUnit.LanguageContext);
             }
-            return _optimizedScope;
+            return _optimizedContext;
         }
     }
 }

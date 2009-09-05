@@ -187,7 +187,7 @@ namespace IronRuby.Runtime {
             Dictionary<string, CompiledFile> result = new Dictionary<string, CompiledFile>();
             Utils.Log("LOADING", "LOADER");
 
-            ScriptCode[] codes = ScriptCode.LoadFromAssembly(_context.DomainManager,
+            ScriptCode[] codes = SavableScriptCode.LoadFromAssembly(_context.DomainManager,
                 Assembly.Load(Path.GetFileName(_context.RubyOptions.MainFile))
             );
 
@@ -213,13 +213,13 @@ namespace IronRuby.Runtime {
                         _compiledFiles = new Dictionary<string, CompiledFile>();
                     }
 
-                    ScriptCode[] codes = new ScriptCode[_compiledFiles.Count];
+                    SavableScriptCode[] codes = new SavableScriptCode[_compiledFiles.Count];
                     int i = 0;
                     foreach (CompiledFile file in _compiledFiles.Values) {
-                        codes[i++] = file.CompiledCode;
+                        codes[i++] = (SavableScriptCode)file.CompiledCode;
                     }
 
-                    ScriptCode.SaveToAssembly(assemblyPath, codes);
+                    SavableScriptCode.SaveToAssembly(assemblyPath, codes);
                 }
             }
         }
@@ -294,7 +294,7 @@ namespace IronRuby.Runtime {
             return (assembly != null && LoadAssembly(assembly, typeName, throwOnError)) ? assembly : null;
         }
         
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods", MessageId = "System.Reflection.Assembly.LoadWithPartialName")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods")]
         private Assembly GetAssembly(string/*!*/ assemblyName, bool throwOnError, bool tryPartialName) {
 #if SILVERLIGHT
             tryPartialName = false;

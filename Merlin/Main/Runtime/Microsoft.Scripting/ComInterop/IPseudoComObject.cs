@@ -1,4 +1,4 @@
-/* ****************************************************************************
+﻿/* ****************************************************************************
  *
  * Copyright (c) Microsoft Corporation. 
  *
@@ -13,18 +13,12 @@
  *
  * ***************************************************************************/
 
-using System.Collections.Generic;
-using Microsoft.Scripting.Runtime;
+using System;
+using System.Dynamic;
+using System.Linq.Expressions;
 
-namespace IronPython.Runtime {
-    internal class GlobalScopeDictionaryStorage : ScopeDictionaryStorage {
-        public GlobalScopeDictionaryStorage(Scope scope)
-            : base(CodeContext.GetModuleScope(scope)) {
-
-        }
-
-        protected override IEnumerable<Scope> GetVisibleScopes() {
-            yield return Scope;
-        }
+namespace Microsoft.Scripting.ComInterop {
+    interface IPseudoComObject {
+        DynamicMetaObject GetMetaObject(Expression expression);
     }
 }

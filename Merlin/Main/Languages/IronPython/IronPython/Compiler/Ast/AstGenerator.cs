@@ -192,7 +192,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         public PythonBinder/*!*/ Binder {
-            get { return (PythonBinder)_context.SourceUnit.LanguageContext.Binder; }
+            get { return (PythonBinder)((PythonContext)_context.SourceUnit.LanguageContext).Binder; }
         }
 
         public bool PrintExpressions {
@@ -382,7 +382,7 @@ namespace IronPython.Compiler.Ast {
             _localCodeContext = Ast.Parameter(typeof(CodeContext), "$localContext");
         }
 
-        internal MSAst.Expression/*!*/ MakeBody(MSAst.Expression/*!*/ parentContext, MSAst.Expression[] init, MSAst.Expression/*!*/ body, bool isVisible) {
+        internal MSAst.Expression/*!*/ MakeBody(MSAst.Expression/*!*/ parentContext, MSAst.Expression[] init, MSAst.Expression/*!*/ body) {
             // wrap a CodeContext scope if needed
             Debug.Assert(!IsGlobal);
 
@@ -392,7 +392,7 @@ namespace IronPython.Compiler.Ast {
                     init.Length == 0 ? (MSAst.Expression)MSAst.Expression.Empty() : (MSAst.Expression)Ast.Block(init),
                     Ast.Assign(
                         _localCodeContext,
-                        CreateLocalContext(parentContext, isVisible)
+                        CreateLocalContext(parentContext)
                     ),
                     body
                 );
@@ -408,7 +408,7 @@ namespace IronPython.Compiler.Ast {
             return body;
         }
 
-        private MSAst.Expression/*!*/ CreateLocalContext(MSAst.Expression/*!*/ parentContext, bool isVisible) {
+        private MSAst.Expression/*!*/ CreateLocalContext(MSAst.Expression/*!*/ parentContext) {
             return Ast.Call(
                 typeof(PythonOps).GetMethod("CreateLocalContext"),
                 parentContext,
@@ -416,9 +416,8 @@ namespace IronPython.Compiler.Ast {
                     MutableTuple.Create(ArrayUtils.ConvertAll<ClosureInfo, MSAst.Expression>(_liftedVars.ToArray(), x => x.GetClosureCellExpression())) :
                     MutableTuple.Create(),
                 _liftedVars != null ?
-                Ast.Constant(ArrayUtils.ConvertAll<ClosureInfo, SymbolId>(_liftedVars.ToArray(), x => (x.IsClosedOver ? x.Name : SymbolId.Empty))) :
-                    Ast.Constant(new SymbolId[0]),
-                Ast.Constant(isVisible)
+                Ast.Constant(ArrayUtils.ConvertAll<ClosureInfo, string>(_liftedVars.ToArray(), x => (x.IsClosedOver ? x.Name : null))) :
+                    Ast.Constant(ArrayUtils.EmptyStrings)
             );
         }
 
@@ -439,7 +438,7 @@ namespace IronPython.Compiler.Ast {
             _temps.Add(temp);
         }
 
-        internal MSAst.Expression/*!*/ MakeAssignment(MSAst.ParameterExpression/*!*/ variable, MSAst.Expression/*!*/ right) {
+        internal static MSAst.Expression/*!*/ MakeAssignment(MSAst.ParameterExpression/*!*/ variable, MSAst.Expression/*!*/ right) {
             return Ast.Assign(variable, AstUtils.Convert(right, variable.Type));
         }
 
@@ -762,24 +761,24 @@ namespace IronPython.Compiler.Ast {
             return res;
         }
 
-        internal MSAst.Expression[] Transform(Expression[] expressions) {
+        internal MSAst.Expression[] Transform(IList<Expression> expressions) {
             return Transform(expressions, typeof(object));
         }
 
-        internal MSAst.Expression[] Transform(Expression[] expressions, Type/*!*/ type) {
+        internal MSAst.Expression[] Transform(IList<Expression> expressions, Type/*!*/ type) {
             Debug.Assert(expressions != null);
-            MSAst.Expression[] to = new MSAst.Expression[expressions.Length];
-            for (int i = 0; i < expressions.Length; i++) {
+            MSAst.Expression[] to = new MSAst.Expression[expressions.Count];
+            for (int i = 0; i < expressions.Count; i++) {
                 Debug.Assert(expressions[i] != null);
                 to[i] = Transform(expressions[i], type);
             }
             return to;
         }
 
-        internal MSAst.Expression[] TransformAndConvert(Expression[] expressions, Type/*!*/ type) {
+        internal MSAst.Expression[] TransformAndConvert(IList<Expression> expressions, Type/*!*/ type) {
             Debug.Assert(expressions != null);
-            MSAst.Expression[] to = new MSAst.Expression[expressions.Length];
-            for (int i = 0; i < expressions.Length; i++) {
+            MSAst.Expression[] to = new MSAst.Expression[expressions.Count];
+            for (int i = 0; i < expressions.Count; i++) {
                 Debug.Assert(expressions[i] != null);
                 to[i] = TransformAndConvert(expressions[i], type);
             }

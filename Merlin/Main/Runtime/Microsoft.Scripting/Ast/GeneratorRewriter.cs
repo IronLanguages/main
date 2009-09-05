@@ -22,6 +22,7 @@ using System.Runtime.CompilerServices;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
+using Microsoft.Scripting.Ast;
 
 namespace Microsoft.Scripting.Ast {
     /// <summary>
@@ -180,19 +181,6 @@ namespace Microsoft.Scripting.Ast {
         }
 
         /// <summary>
-        /// Spills the right side into a temp, and replaces it with its temp.
-        /// Returns the expression that initializes the temp.
-        /// </summary>
-        private Expression ToTemp(ref Expression e) {
-            Debug.Assert(e != null);
-            var temp = Expression.Variable(e.Type, "generatorTemp" + _temps.Count);
-            _temps.Add(temp);
-            var result = MakeAssign(temp, e);
-            e = temp;
-            return result;
-        }
-
-        /// <summary>
         /// Makes an assignment to this variable. Pushes the assignment as far
         /// into the right side as possible, to allow jumps into it.
         /// </summary>
@@ -222,18 +210,6 @@ namespace Microsoft.Scripting.Ast {
         private Expression MakeAssignConditional(ParameterExpression variable, Expression value) {
             var node = (ConditionalExpression)value;
             return Expression.Condition(node.Test, MakeAssign(variable, node.IfTrue), MakeAssign(variable, node.IfFalse));
-        }
-
-        private BlockExpression ToTemp(ref ReadOnlyCollection<Expression> args) {
-            int count = args.Count;
-            var block = new Expression[count];
-            var newArgs = new Expression[count];
-            args.CopyTo(newArgs, 0);
-            for (int i = 0; i < count; i++) {
-                block[i] = ToTemp(ref newArgs[i]);
-            }
-            args = new ReadOnlyCollection<Expression>(newArgs);
-            return Expression.Block(block);
         }
 
         #region VisitTry
@@ -512,7 +488,7 @@ namespace Microsoft.Scripting.Ast {
 
             var value = Visit(node.Value);
 
-            var block = new List<Expression>();
+            var block = new ReadOnlyCollectionBuilder<Expression>();
             if (value == null) {
                 // Yield break
                 block.Add(Expression.Assign(_state, AstUtils.Constant(Finished)));
@@ -563,6 +539,22 @@ namespace Microsoft.Scripting.Ast {
 
         #region goto with value support
 
+        //
+        // The rewriter assigns expressions into temporaries. If the expression is a label with a value the resulting tree would be illegal
+        // since we cannot jump into RHS of an assignment. Hence we need to eliminate labels and gotos with value. We just need to rewrite 
+        // those that are used in MakeAssign but it is easier to rewrite all. 
+        //
+        // var = label[L](value1)
+        // ...
+        // goto[L](value2)
+        //
+        // ->
+        //
+        // { tmp = value1; label[L]: var = tmp }
+        // ...
+        // { tmp = value2; goto[L] }
+        //
+
         protected override Expression VisitLabel(LabelExpression node) {
             if (node.Target.Type == typeof(void)) {
                 return base.VisitLabel(node);
@@ -605,6 +597,115 @@ namespace Microsoft.Scripting.Ast {
 
         #region stack spilling (to permit yield in the middle of an expression)
 
+        /// <summary>
+        /// Returns true if the expression remains constant no matter when it is evaluated.
+        /// </summary>
+        private static bool IsConstant(Expression e) {
+            return e is ConstantExpression;
+        }
+
+        private Expression ToTemp(ReadOnlyCollectionBuilder<Expression> block, Expression e) {
+            Debug.Assert(e != null);
+            if (IsConstant(e)) {
+                return e;
+            }
+
+            var temp = Expression.Variable(e.Type, "generatorTemp" + _temps.Count);
+            _temps.Add(temp);
+            block.Add(MakeAssign(temp, e));
+            return temp;
+        }
+
+        private ReadOnlyCollection<Expression> ToTemp(ReadOnlyCollectionBuilder<Expression> block, ICollection<Expression> args) {
+            var spilledArgs = new ReadOnlyCollectionBuilder<Expression>(args.Count);
+            foreach (var arg in args) {
+                spilledArgs.Add(ToTemp(block, arg));
+            }
+            return spilledArgs.ToReadOnlyCollection();
+        }
+
+        private Expression Rewrite(Expression node, ReadOnlyCollection<Expression> arguments, 
+            Func<ReadOnlyCollection<Expression>, Expression> factory) {
+            return Rewrite(node, null, arguments, (e, args) => factory(args));
+        }
+
+        private Expression Rewrite(Expression node, Expression expr, ReadOnlyCollection<Expression> arguments,
+            Func<Expression, ReadOnlyCollection<Expression>, Expression> factory) {
+
+            int yields = _yields.Count;
+            Expression newExpr = expr != null ? Visit(expr) : null;
+
+            // TODO(opt): If we tracked the last argument that contains yield we wouldn't need to spill the rest of the arguments into locals.
+            ReadOnlyCollection<Expression> newArgs = Visit(arguments);
+
+            if (newExpr == expr && newArgs == arguments) {
+                return node;
+            }
+
+            if (yields == _yields.Count) {
+                return factory(newExpr, newArgs);
+            }
+
+            var block = new ReadOnlyCollectionBuilder<Expression>(newArgs.Count + 1);
+
+            if (newExpr != null) {
+                newExpr = ToTemp(block, newExpr);
+            }
+
+            var spilledArgs = ToTemp(block, newArgs);
+            block.Add(factory(newExpr, spilledArgs));
+
+            return Expression.Block(block);
+        }
+
+        // We need to rewrite unary expressions as well since ETs don't support jumping into unary expressions. 
+        private Expression Rewrite(Expression node, Expression expr, Func<Expression, Expression> factory) {
+            int yields = _yields.Count;
+            Expression newExpr = Visit(expr);
+            if (newExpr == expr) {
+                return node;
+            }
+
+            if (yields == _yields.Count || IsConstant(newExpr)) {
+                return factory(newExpr);
+            }
+
+            var block = new ReadOnlyCollectionBuilder<Expression>(2);
+            newExpr = ToTemp(block, newExpr);
+            block.Add(factory(newExpr));
+            return Expression.Block(block);
+        }
+
+        private Expression Rewrite(Expression node, Expression expr1, Expression expr2, Func<Expression, Expression, Expression> factory) {
+            int yields = _yields.Count;
+            Expression newExpr1 = Visit(expr1);
+            int yields1 = _yields.Count;
+            Expression newExpr2 = Visit(expr2);
+            if (newExpr1 == expr1 && newExpr2 == expr2) {
+                return node;
+            }
+
+            // f({expr}, {expr})
+            if (yields == _yields.Count) {
+                return factory(newExpr1, newExpr2);
+            }
+
+            var block = new ReadOnlyCollectionBuilder<Expression>(3);
+
+            // f({yield}, {expr}) -> { t = {yield}; f(t, {expr}) }
+            // f({const}, yield) -> { t = {yield}; f({const}, t) }
+            // f({expr|yield}, {yield}) -> { t1 = {expr|yeild}, t2 = {yield}; f(t1, t2) }
+
+            newExpr1 = ToTemp(block, newExpr1);
+                
+            if (yields1 != _yields.Count) {
+                newExpr2 = ToTemp(block, newExpr2);
+            }
+
+            block.Add(factory(newExpr1, newExpr2));
+            return Expression.Block(block);
+        }
+
         private Expression VisitAssign(BinaryExpression node) {
             int yields = _yields.Count;
             Expression left = Visit(node.Left);
@@ -616,34 +717,30 @@ namespace Microsoft.Scripting.Ast {
                 return Expression.Assign(left, right);
             }
 
-            var block = new List<Expression>();
+            var block = new ReadOnlyCollectionBuilder<Expression>();
 
-            // If the left hand side did not rewrite itself, we may still need
-            // to rewrite to ensure proper evaluation order. Essentially, we
-            // want all of the left side evaluated first, then the value, then
-            // the assignment
+            // We need to make sure that LHS is evaluated before RHS. For example,
+            //
+            // {expr0}[{expr1},..,{exprN}] = {rhs} 
+            // ->
+            // { l0 = {expr0}; l1 = {expr1}; ..; lN = {exprN}; r = {rhs}; l0[l1,..,lN] = r } 
+            //
             if (left == node.Left) {
                 switch (left.NodeType) {
                     case ExpressionType.MemberAccess:
                         var member = (MemberExpression)node.Left;
-                        Expression e = Visit(member.Expression);
-                        block.Add(ToTemp(ref e));
-                        left = Expression.MakeMemberAccess(e, member.Member);
+                        left = member.Update(ToTemp(block, member.Expression));
                         break;
+
                     case ExpressionType.Index:
                         var index = (IndexExpression)node.Left;
-                        Expression o = Visit(index.Object);
-                        ReadOnlyCollection<Expression> a = Visit(index.Arguments);
-                        if (o == index.Object && a == index.Arguments) {
-                            return index;
-                        }
-                        block.Add(ToTemp(ref o));
-                        block.Add(ToTemp(ref a));
-                        left = Expression.MakeIndex(o, index.Indexer, a);
+                        left = index.Update(ToTemp(block, index.Object), ToTemp(block, index.Arguments));
                         break;
+
                     case ExpressionType.Parameter:
                         // no action needed
                         break;
+
                     default:
                         // Extension should've been reduced by Visit above,
                         // and returned a different node
@@ -652,13 +749,13 @@ namespace Microsoft.Scripting.Ast {
             } else {
                 // Get the last expression of the rewritten left side
                 var leftBlock = (BlockExpression)left;
-                left = leftBlock.Expressions[leftBlock.Expressions.Count - 1];
                 block.AddRange(leftBlock.Expressions);
                 block.RemoveAt(block.Count - 1);
+                left = leftBlock.Expressions[leftBlock.Expressions.Count - 1];
             }
 
             if (right != node.Right) {
-                block.Add(ToTemp(ref right));
+                right = ToTemp(block, right);
             }
 
             block.Add(Expression.Assign(left, right));
@@ -666,128 +763,31 @@ namespace Microsoft.Scripting.Ast {
         }
 
         protected override Expression VisitDynamic(DynamicExpression node) {
-            int yields = _yields.Count;
-            ReadOnlyCollection<Expression> a = Visit(node.Arguments);
-            if (a == node.Arguments) {
-                return node;
-            }
-            if (yields == _yields.Count) {
-                return Expression.MakeDynamic(node.DelegateType, node.Binder, a);
-            }
-            return Expression.Block(
-                ToTemp(ref a),
-                Expression.MakeDynamic(node.DelegateType, node.Binder, a)
-            );
+            return Rewrite(node, node.Arguments, node.Update);
         }
 
         protected override Expression VisitIndex(IndexExpression node) {
-            int yields = _yields.Count;
-            Expression o = Visit(node.Object);
-            ReadOnlyCollection<Expression> a = Visit(node.Arguments);
-            if (o == node.Object && a == node.Arguments) {
-                return node;
-            }
-            if (yields == _yields.Count) {
-                return Expression.MakeIndex(o, node.Indexer, a);
-            }
-            return Expression.Block(
-                ToTemp(ref o),
-                ToTemp(ref a),
-                Expression.MakeIndex(o, node.Indexer, a)
-            );
+            return Rewrite(node, node.Object, node.Arguments, node.Update);
         }
 
         protected override Expression VisitInvocation(InvocationExpression node) {
-            int yields = _yields.Count;
-            Expression e = Visit(node.Expression);
-            ReadOnlyCollection<Expression> a = Visit(node.Arguments);
-            if (e == node.Expression && a == node.Arguments) {
-                return node;
-            }
-            if (yields == _yields.Count) {
-                return Expression.Invoke(e, a);
-            }
-            return Expression.Block(
-                ToTemp(ref e),
-                ToTemp(ref a),
-                Expression.Invoke(e, a)
-            );
+            return Rewrite(node, node.Expression, node.Arguments, node.Update);
         }
 
         protected override Expression VisitMethodCall(MethodCallExpression node) {
-            int yields = _yields.Count;
-            Expression o = Visit(node.Object);
-            ReadOnlyCollection<Expression> a = Visit(node.Arguments);
-            if (o == node.Object && a == node.Arguments) {
-                return node;
-            }
-            if (yields == _yields.Count) {
-                return Expression.Call(o, node.Method, a);
-            }
-            if (o == null) {
-                return Expression.Block(
-                    ToTemp(ref a),
-                    Expression.Call(null, node.Method, a)
-                );
-            }
-            return Expression.Block(
-                ToTemp(ref o),
-                ToTemp(ref a),
-                Expression.Call(o, node.Method, a)
-            );
+            return Rewrite(node, node.Object, node.Arguments, node.Update);
         }
 
         protected override Expression VisitNew(NewExpression node) {
-            int yields = _yields.Count;
-            ReadOnlyCollection<Expression> a = Visit(node.Arguments);
-            if (a == node.Arguments) {
-                return node;
-            }
-            if (yields == _yields.Count) {
-                return (node.Members != null)
-                    ? Expression.New(node.Constructor, a, node.Members)
-                    : Expression.New(node.Constructor, a);
-            }
-            return Expression.Block(
-                ToTemp(ref a),
-                (node.Members != null)
-                    ? Expression.New(node.Constructor, a, node.Members)
-                    : Expression.New(node.Constructor, a)
-            );
+            return Rewrite(node, node.Arguments, node.Update);
         }
 
         protected override Expression VisitNewArray(NewArrayExpression node) {
-            int yields = _yields.Count;
-            ReadOnlyCollection<Expression> e = Visit(node.Expressions);
-            if (e == node.Expressions) {
-                return node;
-            }
-            if (yields == _yields.Count) {
-                return (node.NodeType == ExpressionType.NewArrayInit)
-                    ? Expression.NewArrayInit(node.Type.GetElementType(), e)
-                    : Expression.NewArrayBounds(node.Type.GetElementType(), e);
-            }
-            return Expression.Block(
-                ToTemp(ref e),
-                (node.NodeType == ExpressionType.NewArrayInit)
-                    ? Expression.NewArrayInit(node.Type.GetElementType(), e)
-                    : Expression.NewArrayBounds(node.Type.GetElementType(), e)
-            );
+            return Rewrite(node, node.Expressions, node.Update);
         }
 
         protected override Expression VisitMember(MemberExpression node) {
-            int yields = _yields.Count;
-            Expression e = Visit(node.Expression);
-            if (e == node.Expression) {
-                return node;
-            }
-            if (yields == _yields.Count) {
-                return Expression.MakeMemberAccess(e, node.Member);
-            }
-            return Expression.Block(
-                ToTemp(ref e),
-                Expression.MakeMemberAccess(e, node.Member)
-            );
+            return Rewrite(node, node.Expression, node.Update);
         }
 
         protected override Expression VisitBinary(BinaryExpression node) {
@@ -800,40 +800,11 @@ namespace Microsoft.Scripting.Ast {
                 return Visit(node.Reduce());
             }
 
-            int yields = _yields.Count;
-            Expression left = Visit(node.Left);
-            Expression right = Visit(node.Right);
-            if (left == node.Left && right == node.Right) {
-                return node;
-            }
-            if (yields == _yields.Count) {
-                return Expression.MakeBinary(node.NodeType, left, right, node.IsLiftedToNull, node.Method, node.Conversion);
-            }
-
-            return Expression.Block(
-                ToTemp(ref left),
-                ToTemp(ref right),
-                Expression.MakeBinary(node.NodeType, left, right, node.IsLiftedToNull, node.Method, node.Conversion)
-            );
+            return Rewrite(node, node.Left, node.Right, node.Update);
         }
 
         protected override Expression VisitTypeBinary(TypeBinaryExpression node) {
-            int yields = _yields.Count;
-            Expression e = Visit(node.Expression);
-            if (e == node.Expression) {
-                return node;
-            }
-            if (yields == _yields.Count) {
-                return (node.NodeType == ExpressionType.TypeIs)
-                    ? Expression.TypeIs(e, node.TypeOperand)
-                    : Expression.TypeEqual(e, node.TypeOperand);
-            }
-            return Expression.Block(
-                ToTemp(ref e),
-                (node.NodeType == ExpressionType.TypeIs)
-                    ? Expression.TypeIs(e, node.TypeOperand)
-                    : Expression.TypeEqual(e, node.TypeOperand)
-            );
+            return Rewrite(node, node.Expression, node.Update);
         }
 
         protected override Expression VisitUnary(UnaryExpression node) {
@@ -843,21 +814,7 @@ namespace Microsoft.Scripting.Ast {
                 return Visit(node.Reduce());
             }
 
-            int yields = _yields.Count;
-            Expression o = Visit(node.Operand);
-            if (o == node.Operand) {
-                return node;
-            }
-            // Void convert can be jumped into, no need to spill
-            // TODO: remove when that feature goes away.
-            if (yields == _yields.Count ||
-                (node.NodeType == ExpressionType.Convert && node.Type == typeof(void))) {
-                return Expression.MakeUnary(node.NodeType, o, node.Type, node.Method);
-            }
-            return Expression.Block(
-                ToTemp(ref o),
-                Expression.MakeUnary(node.NodeType, o, node.Type, node.Method)
-            );
+            return Rewrite(node, node.Operand, node.Update);
         }
 
         protected override Expression VisitMemberInit(MemberInitExpression node) {

@@ -108,6 +108,7 @@ namespace IronPython.Runtime {
             }
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         public object this[Slice slice] {
             get {
                 throw PythonOps.TypeError("sequence index must be integer");
@@ -246,7 +247,6 @@ namespace IronPython.Runtime {
         public XRangeIterator(XRange xrange) {
             _xrange = xrange;
             _value = xrange.Start - xrange.Step; // this could cause overflow, fine
-            _position = 0;
         }
 
         public object Current {

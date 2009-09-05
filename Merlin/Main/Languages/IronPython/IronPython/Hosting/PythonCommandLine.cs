@@ -32,8 +32,7 @@ namespace IronPython.Hosting {
     /// <summary>
     /// A simple Python command-line should mimic the standard python.exe
     /// </summary>
-    public class PythonCommandLine : CommandLine {
-
+    public sealed class PythonCommandLine : CommandLine {
         private PythonContext PythonContext {
             get { return (PythonContext)Language; }
         }
@@ -60,7 +59,7 @@ namespace IronPython.Hosting {
                    "\nType \"help\", \"copyright\", \"credits\" or \"license\" for more information.\n";
         }
 
-        private string/*!*/ VersionString {
+        private static string/*!*/ VersionString {
             get {
                 return GetVersionString();                    
             }
@@ -105,13 +104,11 @@ namespace IronPython.Hosting {
                 // This requires the presence of the Python standard library or
                 // an equivalent runpy.py which defines a run_module method.
 
-                CodeContext ctx = new CodeContext(new Scope(), Language);
-
                 // import the runpy module
                 object runpy, runMod;
                 try {
                     runpy = Importer.Import(
-                        new CodeContext(new Scope(), PythonContext),
+                        PythonContext.SharedContext,
                         "runpy",
                         PythonTuple.EMPTY,
                         0
@@ -123,7 +120,7 @@ namespace IronPython.Hosting {
 
                 // get the run_module method
                 try {
-                    runMod = PythonOps.GetBoundAttr(ctx, runpy, SymbolTable.StringToId("run_module"));
+                    runMod = PythonOps.GetBoundAttr(PythonContext.SharedContext, runpy, SymbolTable.StringToId("run_module"));
                 } catch (Exception) {
                     Console.WriteLine("Could not access runpy.run_module", Style.Error);
                     return -1;
@@ -132,7 +129,7 @@ namespace IronPython.Hosting {
                 // call it with the name of the module to run
                 try {
                     PythonOps.CallWithKeywordArgs(
-                        ctx,
+                        PythonContext.SharedContext,
                         runMod,
                         new object[] { Options.ModuleToRun, "__main__", ScriptingRuntimeHelpers.True },
                         new string[] { "run_name", "alter_sys" }
@@ -192,11 +189,15 @@ namespace IronPython.Hosting {
 
         protected override Scope/*!*/ CreateScope() {
             ModuleOptions trueDiv = (PythonContext.PythonOptions.DivisionOptions == PythonDivisionOptions.New) ? ModuleOptions.TrueDivision : ModuleOptions.None;
-            PythonModule module = PythonContext.CreateModule(trueDiv | ModuleOptions.ModuleBuiltins);
-            PythonContext.PublishModule("__main__", module);
-            module.Scope.SetVariable(Symbols.Doc, null);
-            module.Scope.SetVariable(Symbols.Name, "__main__");
-            return module.Scope;
+            var modCtx = new ModuleContext(new PythonDictionary(), PythonContext);
+            modCtx.Features = trueDiv;
+            modCtx.InitializeBuiltins(true);
+
+            PythonContext.PublishModule("__main__", modCtx.Module);
+            modCtx.Globals["__doc__"] = null;
+            modCtx.Globals["__name__"] = "__main__";
+
+            return modCtx.GlobalScope;
         }
         
         private void InitializePath(ref int pathIndex) {
@@ -242,12 +243,10 @@ namespace IronPython.Hosting {
         private void InitializeExtensionDLLs() {
             string dir = Path.Combine(PythonContext.InitialPrefix, "DLLs");
             if (Directory.Exists(dir)) {
-                CodeContext ctx = new CodeContext(Scope, PythonContext);
-
                 foreach (string file in Directory.GetFiles(dir)) {
                     if (file.ToLower().EndsWith(".dll")) {
                         try {
-                            ClrModule.AddReference(ctx, new FileInfo(file).Name);
+                            ClrModule.AddReference(PythonContext.SharedContext, new FileInfo(file).Name);
                         } catch {
                         }
                     }
@@ -260,8 +259,7 @@ namespace IronPython.Hosting {
                 return;
 
             try {
-                CodeContext ctx = new CodeContext(new Scope(), Language);
-                Importer.ImportModule(ctx, null, "site", false, -1);
+                Importer.ImportModule(PythonContext.SharedContext, null, "site", false, -1);
             } catch (Exception e) {
                 Console.Write(Language.FormatException(e), Style.Error);
             }
@@ -497,9 +495,9 @@ namespace IronPython.Hosting {
 
         public override IList<string> GetGlobals(string name) {
             IList<string> res = base.GetGlobals(name);
-            foreach (SymbolId builtinName in PythonContext.BuiltinModuleInstance.Keys) {
-                string strName = SymbolTable.IdToString(builtinName);
-                if (strName.StartsWith(name)) {
+            foreach (object builtinName in PythonContext.BuiltinModuleInstance.__dict__.Keys) {
+                string strName = builtinName as string;
+                if (strName != null && strName.StartsWith(name)) {
                     res.Add(strName);
                 }
             }
@@ -508,7 +506,7 @@ namespace IronPython.Hosting {
         }
 
         protected override void UnhandledException(Exception e) {
-            PythonOps.PrintException(new CodeContext(Scope, Language), e, Console);
+            PythonOps.PrintException(PythonContext.SharedContext, e, Console);
         }
 
         private new PythonContext Language {

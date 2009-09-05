@@ -13,9 +13,11 @@
  *
  * ***************************************************************************/
 
-using System.Diagnostics;
-using System.Dynamic;
+using System;
+using System.Collections.Generic;
+
 using Microsoft.Scripting;
+
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 using MSAst = System.Linq.Expressions;
 
@@ -31,7 +33,7 @@ namespace IronPython.Compiler.Ast {
             _else = else_;
         }
 
-        public IfStatementTest[] Tests {
+        public IList<IfStatementTest> Tests {
             get { return _tests; }
         }
 

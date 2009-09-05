@@ -33,6 +33,7 @@ using System.ComponentModel;
 
 namespace Microsoft.Scripting.Generation {
     // TODO: keep this?
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1045:DoNotPassTypesByReference")]
     public delegate void ActionRef<T0, T1>(ref T0 arg0, ref T1 arg1);
 
     public static class CompilerHelpers {
@@ -40,6 +41,10 @@ namespace Microsoft.Scripting.Generation {
         private static readonly MethodInfo _CreateInstanceMethod = typeof(ScriptingRuntimeHelpers).GetMethod("CreateInstance");
 
         private static int _Counter; // for generating unique names for lambda methods
+
+        public static bool IsDynamicMethod(this MethodInfo method) {
+            return method.GetType() != _CreateInstanceMethod.GetType();
+        }
 
         public static string[] GetArgumentNames(ParameterInfo[] parameterInfos) {
             string[] ret = new string[parameterInfos.Length];
@@ -69,8 +74,19 @@ namespace Microsoft.Scripting.Generation {
             return method.GetParameters().Length + 1;
         }
 
+        public static bool IsAttributeDefined(this ParameterInfo parameter, Type type, bool inherited) {
+#if CLR4
+            // TODO: workaround for CLR4 bug #772820:
+            var method = parameter.Member as MethodInfo;
+            if (method != null && method.IsDynamicMethod()) {
+                return false;
+            }
+#endif
+            return parameter.IsDefined(type, inherited);
+        }
+
         public static bool IsParamArray(ParameterInfo parameter) {
-            return parameter.IsDefined(typeof(ParamArrayAttribute), false);
+            return parameter.IsAttributeDefined(typeof(ParamArrayAttribute), false);
         }
 
         public static bool IsOutParameter(ParameterInfo pi) {
@@ -106,11 +122,11 @@ namespace Microsoft.Scripting.Generation {
         }
 
         public static bool ProhibitsNull(ParameterInfo parameter) {
-            return parameter.IsDefined(typeof(NotNullAttribute), false);
+            return parameter.IsAttributeDefined(typeof(NotNullAttribute), false);
         }
 
         public static bool ProhibitsNullItems(ParameterInfo parameter) {
-            return parameter.IsDefined(typeof(NotNullItemsAttribute), false);
+            return parameter.IsAttributeDefined(typeof(NotNullItemsAttribute), false);
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
@@ -688,6 +704,8 @@ namespace Microsoft.Scripting.Generation {
         }
 
 #if !SILVERLIGHT
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters")]
         public static bool TryGetTypeConverter(Type fromType, Type toType, out TypeConverter converter) {
             ContractUtils.RequiresNotNull(fromType, "fromType");
             ContractUtils.RequiresNotNull(toType, "toType");

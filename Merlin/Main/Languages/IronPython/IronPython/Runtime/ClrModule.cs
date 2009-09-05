@@ -261,7 +261,7 @@ the assembly object.")]
             }
 
             var sourceUnit = manager.GetLanguageByName(language).CreateFileUnit(path);
-            return Importer.ExecuteSourceUnit(sourceUnit);
+            return Importer.ExecuteSourceUnit(context.LanguageContext, sourceUnit);
         }
 
         /// <summary>
@@ -384,7 +384,7 @@ the assembly object.")]
                 base.Add(other);
             }
 
-            [SpecialName]
+            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1002:DoNotExposeGenericLists"), SpecialName]
             public ClrModule.ReferencesList Add(object other) {
                 IEnumerator ie = PythonOps.GetEnumerator(other);
                 while (ie.MoveNext()) {
@@ -606,7 +606,7 @@ import Namespace.")]
 
             #region IFancyCallable Members
             [SpecialName]
-            public object Call(CodeContext context, [ParamDictionary] IAttributesCollection dict, params object[] args) {
+            public object Call(CodeContext context, [ParamDictionary]IDictionary<object, object> dict, params object[] args) {
                 ValidateArgs(args);
 
                 if (_inst != null) {
@@ -709,7 +709,7 @@ import Namespace.")]
 
             #region IFancyCallable Members
             [SpecialName]
-            public object Call(CodeContext context, [ParamDictionary] IAttributesCollection dict, params object[] args) {
+            public object Call(CodeContext context, [ParamDictionary]IDictionary<object, object> dict, params object[] args) {
                 object ret;
                 if (_inst != null) {
                     ret = PythonCalls.CallWithKeywordArgs(context, _func, ArrayUtils.Insert(_inst, args), dict);
@@ -758,7 +758,7 @@ import Namespace.")]
         /// Provides a helper for compiling a group of modules into a single assembly.  The assembly can later be
         /// reloaded using the clr.AddReference API.
         /// </summary>
-        public static void CompileModules(CodeContext/*!*/ context, string/*!*/ assemblyName, [ParamDictionary]IAttributesCollection kwArgs, params string/*!*/[]/*!*/ filenames) {
+        public static void CompileModules(CodeContext/*!*/ context, string/*!*/ assemblyName, [ParamDictionary]IDictionary<string, object> kwArgs, params string/*!*/[]/*!*/ filenames) {
             ContractUtils.RequiresNotNull(assemblyName, "assemblyName");
             ContractUtils.RequiresNotNullItems(filenames, "filenames");
 
@@ -770,7 +770,7 @@ import Namespace.")]
 
             Dictionary<string, string> packageMap = BuildPackageMap(filenames);
 
-            List<ScriptCode> code = new List<ScriptCode>();
+            List<SavableScriptCode> code = new List<SavableScriptCode>();
             foreach (string filename in filenames) {
                 if (!pc.DomainManager.Platform.FileExists(filename)) {
                     throw PythonOps.IOError("Couldn't find file for compilation: {0}", filename);
@@ -815,11 +815,11 @@ import Namespace.")]
 
                 sc = PythonContext.GetContext(context).GetScriptCode(su, modName, ModuleOptions.Initialize, Compiler.CompilationMode.ToDisk);
 
-                code.Add(sc);
+                code.Add((SavableScriptCode)sc);
             }
 
             object mainModule;
-            if (kwArgs != null && kwArgs.TryGetValue(SymbolTable.StringToId("mainModule"), out mainModule)) {
+            if (kwArgs != null && kwArgs.TryGetValue("mainModule", out mainModule)) {
                 string strModule = mainModule as string;
                 if (strModule != null) {
                     if (!pc.DomainManager.Platform.FileExists(strModule)) {
@@ -827,11 +827,11 @@ import Namespace.")]
                     }
                     
                     SourceUnit su = pc.CreateFileUnit(strModule, pc.DefaultEncoding, SourceCodeKind.File);
-                    code.Add(PythonContext.GetContext(context).GetScriptCode(su, "__main__", ModuleOptions.Initialize, Compiler.CompilationMode.ToDisk));
+                    code.Add((SavableScriptCode)PythonContext.GetContext(context).GetScriptCode(su, "__main__", ModuleOptions.Initialize, Compiler.CompilationMode.ToDisk));
                 }
             }
 
-            ScriptCode.SaveToAssembly(assemblyName, code.ToArray());
+            SavableScriptCode.SaveToAssembly(assemblyName, code.ToArray());
         }
 
         /// <summary>
@@ -1119,7 +1119,7 @@ import Namespace.")]
                     default:
                         throw PythonOps.ValueError("unknown serialization format: {0}", serializationFormat);
                 }
-            } else if (data == String.Empty) {
+            } else if (String.IsNullOrEmpty(data)) {
                 return null;
             }
 

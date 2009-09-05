@@ -30,7 +30,7 @@ namespace IronPython.Runtime {
         IDictionary, ICodeFormattable, IAttributesCollection {
         [MultiRuntimeAware]
         private static object DefaultGetItem;   // our cached __getitem__ method
-        internal DictionaryStorage _storage;
+        internal readonly DictionaryStorage _storage;
 
         internal static object MakeDict(CodeContext/*!*/ context, PythonType cls) {
             if (cls == TypeCache.Dict) {
@@ -71,6 +71,14 @@ namespace IronPython.Runtime {
             _storage = new CommonDictionaryStorage();
         }
 
+        internal static PythonDictionary FromIAC(CodeContext context, IAttributesCollection iac) {
+            return iac.GetType() == typeof(PythonDictionary) ? (PythonDictionary)iac : MakeDictFromIAC(context, iac);
+        }
+
+        private static PythonDictionary MakeDictFromIAC(CodeContext context, IAttributesCollection iac) {
+            return new PythonDictionary(new ObjectAttributesAdapter(context, iac));
+        }
+        
         internal static PythonDictionary MakeSymbolDictionary() {
             return new PythonDictionary(new SymbolIdDictionaryStorage());
         }
@@ -79,12 +87,12 @@ namespace IronPython.Runtime {
             return new PythonDictionary(new SymbolIdDictionaryStorage(count));
         }
 
-        public void __init__(CodeContext/*!*/ context, object o, [ParamDictionary] IAttributesCollection kwArgs) {
+        public void __init__(CodeContext/*!*/ context, object o, [ParamDictionary]IDictionary<object, object> kwArgs) {
             update(context, o);
             update(context, kwArgs);
         }
 
-        public void __init__(CodeContext/*!*/ context, [ParamDictionary] IAttributesCollection kwArgs) {
+        public void __init__(CodeContext/*!*/ context, [ParamDictionary]IDictionary<object, object> kwArgs) {
             update(context, kwArgs);
         }
 
@@ -92,6 +100,7 @@ namespace IronPython.Runtime {
             update(context, o);
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         public void __init__() {
         }
 
@@ -126,6 +135,8 @@ namespace IronPython.Runtime {
 
         [PythonHidden]
         public bool TryGetValue(object key, out object value) {
+            Debug.Assert(!(key is SymbolId));
+
             if (_storage.TryGetValue(key, out value)) {
                 return true;
             }
@@ -371,10 +382,11 @@ namespace IronPython.Runtime {
             return new DictionaryValueEnumerator(_storage);
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         public void update() {
         }
 
-        public void update(CodeContext/*!*/ context, [ParamDictionary]IAttributesCollection b) {
+        public void update(CodeContext/*!*/ context, [ParamDictionary]IDictionary<object, object> b) {
             DictionaryOps.update(context, this, b);
         }
 
@@ -382,7 +394,7 @@ namespace IronPython.Runtime {
             DictionaryOps.update(context, this, b);
         }
 
-        public void update(CodeContext/*!*/ context, object b, [ParamDictionary]IAttributesCollection f) {
+        public void update(CodeContext/*!*/ context, object b, [ParamDictionary]IDictionary<object, object> f) {
             DictionaryOps.update(context, this, b);
             DictionaryOps.update(context, this, f);
         }

@@ -14,16 +14,17 @@
  * ***************************************************************************/
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Dynamic;
 using System.Threading;
+
+using Microsoft.Scripting;
+using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
+
 using IronPython.Runtime;
 using IronPython.Runtime.Binding;
 using IronPython.Runtime.Operations;
-using Microsoft.Scripting;
-using Microsoft.Scripting.Generation;
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
 
 [assembly: PythonModule("_functools", typeof(IronPython.Modules.FunctionTools))]
 namespace IronPython.Modules {
@@ -47,9 +48,9 @@ namespace IronPython.Modules {
         public class partial : IWeakReferenceable {
             private object/*!*/ _function;                                                  // the callable function to dispatch to
             private object[]/*!*/ _args;                                                    // the initially provided arguments
-            private IAttributesCollection _keywordArgs;                                     // the initially provided keyword arguments or null
+            private IDictionary<object, object> _keywordArgs;                               // the initially provided keyword arguments or null
             private CodeContext/*!*/ _context;                                              // code context from the caller who created us
-            private CallSite<Func<CallSite, CodeContext, object, object[], IAttributesCollection, object>> _dictSite; // the dictionary call site if ever called w/ keyword args
+            private CallSite<Func<CallSite, CodeContext, object, object[], IDictionary<object, object>, object>> _dictSite; // the dictionary call site if ever called w/ keyword args
             private CallSite<Func<CallSite, CodeContext, object, object[], object>> _splatSite;      // the position only call site
             private IAttributesCollection _dict;                                            // dictionary for storing extra attributes
             private WeakRefTracker _tracker;                                                // tracker so users can use Python weak references
@@ -66,7 +67,7 @@ namespace IronPython.Modules {
             /// <summary>
             /// Creates a new partial object with the provided positional and keyword arguments.
             /// </summary>
-            public partial(CodeContext/*!*/ context, object func, [ParamDictionary]IAttributesCollection keywords, [NotNull]params object[]/*!*/ args) {
+            public partial(CodeContext/*!*/ context, object func, [ParamDictionary]IDictionary<object, object> keywords, [NotNull]params object[]/*!*/ args) {
                 if (!PythonOps.IsCallable(context, func)) {
                     throw PythonOps.TypeError("the first argument must be callable");
                 }
@@ -156,9 +157,9 @@ namespace IronPython.Modules {
             /// Calls func with the previously provided arguments and more positional arguments and keyword arguments.
             /// </summary>
             [SpecialName]
-            public object Call(CodeContext/*!*/ context, [ParamDictionary]IAttributesCollection dict, params object[] args) {
+            public object Call(CodeContext/*!*/ context, [ParamDictionary]IDictionary<object, object> dict, params object[] args) {
 
-                IAttributesCollection finalDict;
+                IDictionary<object, object> finalDict;
                 if (_keywordArgs != null) {
                     PythonDictionary pd = new PythonDictionary();
                     pd.update(context, _keywordArgs);
@@ -231,7 +232,7 @@ namespace IronPython.Modules {
                 if (_dictSite == null) {
                     Interlocked.CompareExchange(
                         ref _dictSite,
-                        CallSite<Func<CallSite, CodeContext, object, object[], IAttributesCollection, object>>.Create(
+                        CallSite<Func<CallSite, CodeContext, object, object[], IDictionary<object, object>, object>>.Create(
                             Binders.InvokeKeywords(PythonContext.GetContext(_context))
                         ),
                         null

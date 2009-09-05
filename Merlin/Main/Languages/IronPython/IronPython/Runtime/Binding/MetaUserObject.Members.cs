@@ -648,7 +648,7 @@ namespace IronPython.Runtime.Binding {
 
                 PythonTypeSlot getattr;
                 Value.PythonType.TryResolveSlot(_context, Symbols.GetBoundAttr, out getattr);
-                return new GetAttributeDelegates(_site, _binder, _binder.Name, _version, foundSlot, getattr);
+                return new GetAttributeDelegates(_binder, _binder.Name, _version, foundSlot, getattr);
             }
 
             protected override void MakeGetAttrAccess(PythonTypeSlot getattr) {
@@ -845,30 +845,28 @@ namespace IronPython.Runtime.Binding {
 
         internal class FastSetBinderHelper<TValue> : SetBinderHelper<SetMemberDelegates<TValue>> {
             private readonly PythonSetMemberBinder _binder;
-            private readonly CallSite<Func<CallSite, object, TValue, object>> _site;
             private readonly int _version;
             private PythonTypeSlot _setattrSlot;
             private ReflectedSlotProperty _slotProp;
             private bool _unsupported, _dictSet;
 
-            public FastSetBinderHelper(CodeContext context, CallSite<Func<CallSite, object, TValue, object>> site, IPythonObject self, object value, PythonSetMemberBinder binder)
+            public FastSetBinderHelper(CodeContext context, IPythonObject self, object value, PythonSetMemberBinder binder)
                 : base(context, self, value) {
                 _binder = binder;
-                _site = site;
                 _version = self.PythonType.Version;
             }
 
             protected override SetMemberDelegates<TValue> Finish() {
                 if (_unsupported) {
-                    return new SetMemberDelegates<TValue>(_context, OptimizedSetKind.None, _site, SymbolTable.StringToId(_binder.Name), _version, _setattrSlot, null);
+                    return new SetMemberDelegates<TValue>(_context, OptimizedSetKind.None, SymbolTable.StringToId(_binder.Name), _version, _setattrSlot, null);
                 } else if (_setattrSlot != null) {
-                    return new SetMemberDelegates<TValue>(_context, OptimizedSetKind.SetAttr, _site, SymbolTable.StringToId(_binder.Name), _version, _setattrSlot, null);
+                    return new SetMemberDelegates<TValue>(_context, OptimizedSetKind.SetAttr, SymbolTable.StringToId(_binder.Name), _version, _setattrSlot, null);
                 } else if (_slotProp != null) {
-                    return new SetMemberDelegates<TValue>(_context, OptimizedSetKind.UserSlot, _site, SymbolTable.StringToId(_binder.Name), _version, null, _slotProp.Setter);
+                    return new SetMemberDelegates<TValue>(_context, OptimizedSetKind.UserSlot, SymbolTable.StringToId(_binder.Name), _version, null, _slotProp.Setter);
                 } else if(_dictSet) {
-                    return new SetMemberDelegates<TValue>(_context, OptimizedSetKind.SetDict, _site, SymbolTable.StringToId(_binder.Name), _version, null, null);
+                    return new SetMemberDelegates<TValue>(_context, OptimizedSetKind.SetDict, SymbolTable.StringToId(_binder.Name), _version, null, null);
                 } else {
-                    return new SetMemberDelegates<TValue>(_context, OptimizedSetKind.Error, _site, SymbolTable.StringToId(_binder.Name), _version, null, null);
+                    return new SetMemberDelegates<TValue>(_context, OptimizedSetKind.Error, SymbolTable.StringToId(_binder.Name), _version, null, null);
                 }                
             }
             

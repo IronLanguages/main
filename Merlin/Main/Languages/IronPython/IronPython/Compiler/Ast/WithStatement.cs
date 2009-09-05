@@ -103,7 +103,7 @@ namespace IronPython.Compiler.Ast {
             //******************************************************************
             MSAst.ParameterExpression exit = ag.GetTemporary("with_exit");
             statements.Add(
-                ag.MakeAssignment(
+                AstGenerator.MakeAssignment(
                     exit,
                     ag.Get(
                         typeof(object),
@@ -119,7 +119,7 @@ namespace IronPython.Compiler.Ast {
             MSAst.ParameterExpression value = ag.GetTemporary("with_value");
             statements.Add(
                 ag.AddDebugInfoAndVoid(
-                    ag.MakeAssignment(
+                    AstGenerator.MakeAssignment(
                         value,
                         ag.Invoke(
                             typeof(object),
@@ -140,7 +140,7 @@ namespace IronPython.Compiler.Ast {
             //******************************************************************
             MSAst.ParameterExpression exc = ag.GetTemporary("with_exc", typeof(bool));
             statements.Add(
-                ag.MakeAssignment(
+                AstGenerator.MakeAssignment(
                     exc,
                     AstUtils.Constant(true)
                 )
@@ -189,7 +189,7 @@ namespace IronPython.Compiler.Ast {
                             ag.AddDebugInfoAndVoid(
                                 Ast.Block(
                                     // exc = False
-                                    ag.MakeAssignment(
+                                    AstGenerator.MakeAssignment(
                                         exc,
                                         AstUtils.Constant(false)
                                     ),
@@ -265,7 +265,7 @@ namespace IronPython.Compiler.Ast {
             return Ast.Block(statements.ToReadOnlyCollection());
         }
 
-        private MSAst.Expression MakeExitCall(AstGenerator ag, MSAst.ParameterExpression exit, MSAst.Expression exception) {
+        private static MSAst.Expression MakeExitCall(AstGenerator ag, MSAst.ParameterExpression exit, MSAst.Expression exception) {
             // The 'with' statement's exceptional clause explicitly does not set the thread's current exception information.
             // So while the pseudo code says:
             //    exit(*sys.exc_info())

@@ -53,6 +53,7 @@ namespace Microsoft.Scripting.Actions {
             return null;
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         public static Operators ExpressionTypeToOperator(ExpressionType et) {
             switch (et) {
                 case ExpressionType.Add: return Operators.Add;
@@ -90,6 +91,7 @@ namespace Microsoft.Scripting.Actions {
         }
 
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         public static ExpressionType? OperatorToExpressionType(Operators op) {
             switch (op) {
                 case Operators.Add: return ExpressionType.Add;

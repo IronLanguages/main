@@ -1295,10 +1295,10 @@ namespace IronRuby.Builtins {
             }
 
             MutableString any = separator;
-            int length = (separator != null) ? (isBinary.Value ? separator.GetByteCount() : separator.GetCharCount()) * (parts.Count - 1) : 0;
+            int length = (separator != null) ? (isBinary.HasValue && isBinary.Value ? separator.GetByteCount() : separator.GetCharCount()) * (parts.Count - 1) : 0;
             foreach (MutableString part in parts) {
                 if (part != null) {
-                    length += (isBinary.Value) ? part.GetByteCount() : part.GetCharCount();
+                    length += (isBinary.HasValue && isBinary.Value) ? part.GetByteCount() : part.GetCharCount();
                     if (any == null) {
                         any = part;
                     }
@@ -1309,7 +1309,7 @@ namespace IronRuby.Builtins {
                 return MutableString.CreateEmpty();
             }
 
-            var result = isBinary.Value ? 
+            var result = isBinary.HasValue && isBinary.Value ? 
                 MutableString.CreateBinary(length, any.Encoding) :
                 MutableString.CreateMutable(length, any.Encoding);
 

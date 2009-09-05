@@ -42,11 +42,11 @@ namespace IronPython.Runtime {
 
         [SpecialName]
         public static void PerformModuleReload(PythonContext context, IAttributesCollection dict) {
-            Scope scope = Importer.ImportModule(context.SharedContext, context.SharedContext.GlobalScope.Dict, "itertools", false, -1) as Scope;
+            PythonModule scope = Importer.ImportModule(context.SharedContext, context.SharedContext.GlobalDict, "itertools", false, -1) as PythonModule;
             if (scope != null) {
-                dict[SymbolTable.StringToId("map")] = scope.GetVariable(SymbolTable.StringToId("imap"));
-                dict[SymbolTable.StringToId("filter")] = scope.GetVariable(SymbolTable.StringToId("ifilter"));
-                dict[SymbolTable.StringToId("zip")] = scope.GetVariable(SymbolTable.StringToId("izip"));
+                dict[SymbolTable.StringToId("map")] = scope.__dict__["imap"];
+                dict[SymbolTable.StringToId("filter")] = scope.__dict__["ifilter"];
+                dict[SymbolTable.StringToId("zip")] = scope.__dict__["izip"];
             }
         }
         
@@ -88,9 +88,9 @@ namespace IronPython.Runtime {
                 if (x == 0) {
                     return "0o0";
                 } else if (x > 0) {
-                    return "0o" + BigInteger.Create(x).ToString(8);
+                    return "0o" + x.ToString(8);
                 } else {
-                    return "-0o" + BigInteger.Create(-x).ToString(8);
+                    return "-0o" + (-x).ToString(8);
                 }
             }
 

@@ -13,10 +13,12 @@
  *
  * ***************************************************************************/
 
-using IronPython.Runtime.Operations;
+using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 using MSAst = System.Linq.Expressions;
-using System.Runtime.CompilerServices;
 
 namespace IronPython.Compiler.Ast {
 
@@ -27,7 +29,7 @@ namespace IronPython.Compiler.Ast {
             _expressions = expressions;
         }
 
-        public Expression[] Expressions {
+        public IList<Expression> Expressions {
             get { return _expressions; }
         }
 

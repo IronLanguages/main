@@ -77,8 +77,7 @@ namespace IronPython.Modules {
         public static object load_module(CodeContext/*!*/ context, string name, PythonFile file, string filename, PythonTuple/*!*/ description) {
             if (description == null) {
                 throw PythonOps.TypeError("load_module() argument 4 must be 3-item sequence, not None");
-            }
-            if (description.__len__() != 3) {
+            } else if (description.__len__() != 3) {
                 throw PythonOps.TypeError("load_module() argument 4 must be sequence of length 3, not {0}", description.__len__());
             }
 
@@ -87,8 +86,8 @@ namespace IronPython.Modules {
             // already loaded? do reload()
             PythonModule module = pythonContext.GetModuleByName(name);
             if (module != null) {
-                Importer.ReloadModule(context, module.Scope);
-                return module.Scope;
+                Importer.ReloadModule(context, module);
+                return module;
             }
 
             int type = PythonContext.GetContext(context).ConvertToInt32(description[2]);
@@ -105,13 +104,14 @@ namespace IronPython.Modules {
         }
 
         [Documentation("new_module(name) -> module\nCreates a new module without adding it to sys.modules.")]
-        public static Scope/*!*/ new_module(CodeContext/*!*/ context, string/*!*/ name) {
+        public static PythonModule/*!*/ new_module(CodeContext/*!*/ context, string/*!*/ name) {
             if (name == null) throw PythonOps.TypeError("new_module() argument 1 must be string, not None");
 
-            Scope res = PythonContext.GetContext(context).CreateModule().Scope;
-            res.SetVariable(Symbols.Name, name);
-            res.SetVariable(Symbols.Doc, null);
-            res.SetVariable(Symbols.Package, null);
+            PythonModule res = new PythonModule();
+            res.__dict__["__name__"] = name;
+            res.__dict__["__doc__"] = null;
+            res.__dict__["__package__"] = null;
+
             return res;
         }
 
@@ -162,7 +162,7 @@ namespace IronPython.Modules {
         public static int is_builtin(CodeContext/*!*/ context, string/*!*/ name) {
             if (name == null) throw PythonOps.TypeError("is_builtin() argument 1 must be string, not None");
             Type ty;
-            if (PythonContext.GetContext(context).Builtins.TryGetValue(name, out ty)) {
+            if (PythonContext.GetContext(context).BuiltinModules.TryGetValue(name, out ty)) {
                 if (ty.Assembly == typeof(PythonContext).Assembly) {
                     // supposedly these can't be re-initialized and return -1 to
                     // indicate that here, but CPython does allow passing them
@@ -201,18 +201,17 @@ namespace IronPython.Modules {
             if (pathname == null) throw PythonOps.TypeError("load_package() argument 2 must be string, not None");
 
             return (Importer.LoadPackageFromSource(context, name, pathname) ??
-                    CreateEmptyPackage(context, name, pathname)).Scope;
+                    CreateEmptyPackage(context, name, pathname));
         }
 
         private static PythonModule/*!*/ CreateEmptyPackage(CodeContext/*!*/ context, string/*!*/ name, string/*!*/ pathname) {
             PythonContext pc = PythonContext.GetContext(context);
 
-            PythonModule mod = pc.CreateModule();
-            Scope scope = mod.Scope;
-            scope.SetVariable(Symbols.Name, name);
-            scope.SetVariable(Symbols.Path, pathname);
+            PythonModule mod = new PythonModule();
+            mod.__dict__["__name__"] = name;
+            mod.__dict__["__path__"] = pathname;
 
-            pc.SystemStateModules[name] = scope;
+            pc.SystemStateModules[name] = mod;
 
             return mod;
         }
@@ -229,7 +228,7 @@ namespace IronPython.Modules {
             }
 
             SourceUnit sourceUnit = pc.CreateFileUnit(pathname, pc.DefaultEncoding, SourceCodeKind.File);
-            return pc.CompileModule(pathname, name, sourceUnit, ModuleOptions.Initialize).Scope;
+            return pc.CompileModule(pathname, name, sourceUnit, ModuleOptions.Initialize);
         }
 
         public static object load_source(CodeContext/*!*/ context, string/*!*/ name, string/*!*/ pathname, PythonFile/*!*/ file) {
@@ -240,7 +239,7 @@ namespace IronPython.Modules {
             return LoadPythonSource(PythonContext.GetContext(context), name, file, pathname);
         }
 
-        public static object reload(CodeContext/*!*/ context, Scope scope) {
+        public static object reload(CodeContext/*!*/ context, PythonModule scope) {
             return Builtin.reload(context, scope);
         }
 
@@ -286,11 +285,11 @@ namespace IronPython.Modules {
         private static PythonTuple FindModuleBuiltinOrPath(CodeContext/*!*/ context, string name, List path) {
             if (name.Equals("sys")) return BuiltinModuleTuple(name);
             if (name.Equals("clr")) {
-                PythonContext.EnsureModule(context).ShowCls = true;
+                context.ShowCls = true;
                 return BuiltinModuleTuple(name);
             }
             Type ty;
-            if (PythonContext.GetContext(context).Builtins.TryGetValue(name, out ty)) {
+            if (PythonContext.GetContext(context).BuiltinModules.TryGetValue(name, out ty)) {
                 return BuiltinModuleTuple(name);
             }
 
@@ -301,16 +300,16 @@ namespace IronPython.Modules {
             return PythonTuple.MakeTuple(null, name, PythonTuple.MakeTuple("", "", CBuiltin));
         }
 
-        private static Scope/*!*/ LoadPythonSource(PythonContext/*!*/ context, string/*!*/ name, PythonFile/*!*/ file, string/*!*/ fileName) {
+        private static PythonModule/*!*/ LoadPythonSource(PythonContext/*!*/ context, string/*!*/ name, PythonFile/*!*/ file, string/*!*/ fileName) {
             SourceUnit sourceUnit = context.CreateSnippet(file.read(), String.IsNullOrEmpty(fileName) ? null : fileName, SourceCodeKind.File);
-            return context.CompileModule(fileName, name, sourceUnit, ModuleOptions.Initialize).Scope;
+            return context.CompileModule(fileName, name, sourceUnit, ModuleOptions.Initialize);
         }
 
-        private static Scope/*!*/ LoadPackageDirectory(PythonContext/*!*/ context, string moduleName, string path) {
+        private static PythonModule/*!*/ LoadPackageDirectory(PythonContext/*!*/ context, string moduleName, string path) {
             string initPath = Path.Combine(path, "__init__.py");
             
             SourceUnit sourceUnit =  context.CreateFileUnit(initPath, context.DefaultEncoding);
-            return context.CompileModule(initPath, moduleName, sourceUnit, ModuleOptions.Initialize).Scope;
+            return context.CompileModule(initPath, moduleName, sourceUnit, ModuleOptions.Initialize);
         }
 
         private static object LoadBuiltinModule(CodeContext/*!*/ context, string/*!*/ name) {
@@ -333,6 +332,7 @@ namespace IronPython.Modules {
             public NullImporter(string path_string) {
             }
 
+            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
             public object find_module(params object[] args) {
                 return null;
             }

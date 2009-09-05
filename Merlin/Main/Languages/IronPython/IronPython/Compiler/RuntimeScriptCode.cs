@@ -14,12 +14,11 @@
  * ***************************************************************************/
 
 using System;
-using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Generation;
-using Microsoft.Scripting.Interpreter;
 using Microsoft.Scripting.Runtime;
 
 using IronPython.Compiler.Ast;
@@ -44,6 +43,8 @@ namespace IronPython.Compiler {
 
         public RuntimeScriptCode(CompilerContext/*!*/ context, MSAst.Expression<Func<FunctionCode, object>>/*!*/ expression, PythonAst/*!*/ ast, CodeContext/*!*/ codeContext)
             : base(context.SourceUnit) {
+            Debug.Assert(codeContext.GlobalScope.GetExtension(codeContext.LanguageContext.ContextId) != null);
+
             _code = expression;
             _ast = ast;
             _context = context;
@@ -51,11 +52,11 @@ namespace IronPython.Compiler {
         }
 
         public override object Run() {
-            return InvokeTarget(_code, CreateScope());
+            return InvokeTarget(CreateScope());
         }
 
         public override object Run(Scope scope) {
-            return InvokeTarget(_code, scope);
+            return InvokeTarget(scope);
         }
 
         public override FunctionCode GetFunctionCode() {
@@ -64,10 +65,11 @@ namespace IronPython.Compiler {
             return EnsureFunctionCode(_optimizedTarget);
         }
 
-        private object InvokeTarget(MSAst.LambdaExpression code, Scope scope) {
-            if (scope == _optimizedContext.Scope && !_optimizedContext.LanguageContext.EnableTracing) {
+        private object InvokeTarget(Scope scope) {
+            if (scope == _optimizedContext.GlobalScope && !_optimizedContext.LanguageContext.EnableTracing) {
                 EnsureCompiled();
 
+                Exception e = PythonOps.SaveCurrentException();
                 PushFrame(_optimizedContext, _optimizedTarget);
                 try {
                     if (_context.SourceUnit.Kind == SourceCodeKind.Expression) {
@@ -75,6 +77,7 @@ namespace IronPython.Compiler {
                     }
                     return _optimizedTarget(EnsureFunctionCode(_optimizedTarget));
                 } finally {
+                    PythonOps.RestoreCurrentException(e);
                     PopFrame();
                 }
             }
@@ -106,7 +109,7 @@ namespace IronPython.Compiler {
         }
 
         public override Scope/*!*/ CreateScope() {
-            return _optimizedContext.Scope;
+            return _optimizedContext.GlobalScope;
         }
 
         private void EnsureCompiled() {

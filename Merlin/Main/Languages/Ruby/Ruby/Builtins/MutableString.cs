@@ -763,11 +763,13 @@ namespace IronRuby.Builtins {
         #region Slices (read-only)
 
         // converts the string representation to text if not already
+        /// <exception cref="IndexOutOfRangeException">Index is out of range.</exception>
         public char GetChar(int index) {
             return _content.GetChar(index);
         }
 
         // converts the string representation to binary if not already
+        /// <exception cref="IndexOutOfRangeException">Index is out of range.</exception>
         public byte GetByte(int index) {
             return _content.GetByte(index);
         }
@@ -1059,12 +1061,12 @@ namespace IronRuby.Builtins {
             return this;
         }
 
-        public MutableString/*!*/ Append(string/*!*/ value, int startIndex, int charCount) {
+        public MutableString/*!*/ Append(string/*!*/ value, int start, int count) {
             ContractUtils.RequiresNotNull(value, "value");
-            ContractUtils.RequiresArrayRange(value, startIndex, charCount, "startIndex", "charCount");
+            ContractUtils.RequiresArrayRange(value, start, count, "start", "count");
             Mutate();
 
-            _content.Append(value, startIndex, charCount);
+            _content.Append(value, start, count);
             return this;
         }
 
@@ -1078,7 +1080,7 @@ namespace IronRuby.Builtins {
 
         public MutableString/*!*/ Append(byte[]/*!*/ value, int start, int count) {
             ContractUtils.RequiresNotNull(value, "value");
-            ContractUtils.RequiresArrayRange(value, start, count, "startIndex", "count");
+            ContractUtils.RequiresArrayRange(value, start, count, "start", "count");
 
             Mutate();
             _content.Append(value, start, count);
@@ -1106,6 +1108,7 @@ namespace IronRuby.Builtins {
             return this;
         }
 
+        // TODO: start, count measured in characters or bytes?
         public MutableString/*!*/ Append(MutableString/*!*/ value, int start, int count) {
             ContractUtils.RequiresNotNull(value, "value");
             //RequiresArrayRange(start, count);
@@ -1241,6 +1244,7 @@ namespace IronRuby.Builtins {
             return this;
         }
 
+        // TODO: start, count measured in characters or bytes?
         public MutableString/*!*/ Insert(int index, MutableString/*!*/ value, int start, int count) {
             //RequiresArrayInsertIndex(index);
             ContractUtils.RequiresNotNull(value, "value");
@@ -1281,7 +1285,7 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region Replace, Remove, Trim, Clear, Translate, TranslateSqueeze, TranslateRemove
+        #region Replace, Write, Remove, Trim, Clear, Translate, TranslateSqueeze, TranslateRemove
 
         public MutableString/*!*/ Replace(int start, int count, MutableString value) {
             //RequiresArrayRange(start, count);
@@ -1289,6 +1293,23 @@ namespace IronRuby.Builtins {
             // TODO:
             Mutate(value);
             return Remove(start, count).Insert(start, value);
+        }
+
+        // TODO: characters
+        public MutableString/*!*/ WriteBytes(int offset, MutableString/*!*/ value, int start, int count) {
+            return Write(offset, value.GetByteArray(), start, count);
+        }
+
+        public MutableString/*!*/ Write(int offset, byte[]/*!*/ value, int start, int count) {
+            Mutate();
+            _content.Write(offset, value, start, count);
+            return this;
+        }
+
+        public MutableString/*!*/ Write(int offset, byte/*!*/ value, int repeatCount) {
+            Mutate();
+            _content.Write(offset, value, repeatCount);
+            return this;
         }
 
         public MutableString/*!*/ Remove(int start) {

@@ -180,7 +180,7 @@ namespace IronPython.Runtime.Types {
 
                 MethodInfo add = _event.Tracker.GetCallableAddMethod();
                 if (CompilerHelpers.IsVisible(add) || context.LanguageContext.DomainManager.Configuration.PrivateBinding) {
-                    _event.Tracker.AddHandler(_instance, func, context.LanguageContext);
+                    _event.Tracker.AddHandler(_instance, func, context.LanguageContext.DelegateCreator);
                 } else {
                     throw new ArgumentTypeException("Cannot add handler to a private event.");
                 }

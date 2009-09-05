@@ -96,7 +96,7 @@ namespace IronPython.Runtime {
         }
 
         [SpecialName]
-        public object Call(CodeContext/*!*/ context, [ParamDictionary]IAttributesCollection kwArgs, params object[] args) {
+        public object Call(CodeContext/*!*/ context, [ParamDictionary]IDictionary<object, object> kwArgs, params object[] args) {
             return PythonContext.GetContext(context).CallWithKeywords(this, args, kwArgs);
         }
 

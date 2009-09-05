@@ -37,10 +37,10 @@ namespace IronPython.Compiler.Ast {
                                                     // due to "exec" or call to dir, locals, eval, vars...
         private bool _hasLateboundVarSets;          // calls code which can assign to variables
         
-        private Dictionary<SymbolId, PythonVariable> _variables;
-        private Dictionary<SymbolId, PythonReference> _references;
-        private Dictionary<SymbolId, PythonReference> _childReferences;
-        private List<SymbolId> _freeVars, _globalVars, _cellVars;
+        private Dictionary<string, PythonVariable> _variables;
+        private Dictionary<string, PythonReference> _references;
+        private Dictionary<string, PythonReference> _childReferences;
+        private List<string> _freeVars, _globalVars, _cellVars;
         
         public ScopeStatement Parent {
             get { return _parent; }
@@ -91,11 +91,11 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-        internal Dictionary<SymbolId, PythonVariable> Variables {
+        internal Dictionary<string, PythonVariable> Variables {
             get { return _variables; }
         }
 
-        internal Dictionary<SymbolId, PythonReference> References {
+        internal Dictionary<string, PythonReference> References {
             get { return _references; }
         }
 
@@ -103,9 +103,9 @@ namespace IronPython.Compiler.Ast {
             get { return false; }
         }
 
-        internal SymbolId AddFreeVariable(SymbolId name) {
+        internal string AddFreeVariable(string name) {
             if (_freeVars == null) {
-                _freeVars = new List<SymbolId>();
+                _freeVars = new List<string>();
             }
             if (!_freeVars.Contains(name)) {
                 _freeVars.Add(name);
@@ -113,9 +113,9 @@ namespace IronPython.Compiler.Ast {
             return name;
         }
 
-        internal SymbolId AddReferencedGlobal(SymbolId name) {
+        internal string AddReferencedGlobal(string name) {
             if (_globalVars == null) {
-                _globalVars = new List<SymbolId>();
+                _globalVars = new List<string>();
             }
             if (!_globalVars.Contains(name)) {
                 _globalVars.Add(name);
@@ -123,9 +123,9 @@ namespace IronPython.Compiler.Ast {
             return name;
         }
 
-        internal SymbolId AddCellVariable(SymbolId name) {
+        internal string AddCellVariable(string name) {
             if (_cellVars == null) {
-                _cellVars = new List<SymbolId>();
+                _cellVars = new List<string>();
             }
             if (!_cellVars.Contains(name)) {
                 _cellVars.Add(name);
@@ -133,7 +133,7 @@ namespace IronPython.Compiler.Ast {
             return name;
         }
 
-        internal void UpdateReferencedVariables(SymbolId name, PythonVariable variable, ScopeStatement parent) {
+        internal void UpdateReferencedVariables(string name, PythonVariable variable, ScopeStatement parent) {
             if (variable.Kind == VariableKind.Global || variable.Kind == VariableKind.GlobalLocal) {
                 AddReferencedGlobal(name);
             } else {
@@ -145,7 +145,7 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-        internal List<SymbolId> AppendVariables(List<SymbolId> res) {
+        internal List<string> AppendVariables(List<string> res) {
             if (Variables != null) {
                 foreach (var variable in Variables) {
                     if (variable.Value.Kind != VariableKind.Local) {
@@ -163,7 +163,7 @@ namespace IronPython.Compiler.Ast {
         /// <summary>
         /// Variables that are bound in an outer scope - but not a global scope
         /// </summary>
-        internal IList<SymbolId> FreeVariables {
+        internal IList<string> FreeVariables {
             get {
                 return _freeVars;
             }
@@ -172,7 +172,7 @@ namespace IronPython.Compiler.Ast {
         /// <summary>
         /// Variables that are bound to the global scope
         /// </summary>
-        internal IList<SymbolId> GlobalVariables {
+        internal IList<string> GlobalVariables {
             get {
                 return _globalVars;
             }
@@ -182,7 +182,7 @@ namespace IronPython.Compiler.Ast {
         /// Variables that are referred to from a nested scope and need to be
         /// promoted to cells.
         /// </summary>
-        internal IList<SymbolId> CellVariables {
+        internal IList<string> CellVariables {
             get {
                 return _cellVars;
             }
@@ -208,7 +208,7 @@ namespace IronPython.Compiler.Ast {
         /// Creates variables which are defined in this scope.
         /// </summary>
         private void CreateLocalVariables(AstGenerator ag, List<MSAst.Expression> init, bool emitDictionary) {
-            foreach (KeyValuePair<SymbolId, PythonVariable> kv in _variables) {
+            foreach (KeyValuePair<string, PythonVariable> kv in _variables) {
                 PythonVariable pv = kv.Value;
                 // Publish variables for this context only (there may be references to the global variables
                 // in the dictionary also that were used for name binding lookups)
@@ -248,7 +248,7 @@ namespace IronPython.Compiler.Ast {
                                 init.Add(((ClosureExpression)var).Create());
                             } else {
                                 init.Add(
-                                    ag.Globals.Assign(
+                                    GlobalAllocator.Assign(
                                         var,
                                         MSAst.Expression.Field(null, typeof(Uninitialized).GetField("Instance"))
                                     )
@@ -265,7 +265,7 @@ namespace IronPython.Compiler.Ast {
         /// </summary>
         private void CreateReferencedVariables(AstGenerator ag, List<MSAst.Expression> init, bool emitDictionary, bool needsLocals) {
             MSAst.Expression localTuple = null;
-            foreach (KeyValuePair<SymbolId, PythonReference> kv in _references) {
+            foreach (KeyValuePair<string, PythonReference> kv in _references) {
                 PythonVariable var = kv.Value.PythonVariable;
 
                 if (var == null || var.Scope == this) {
@@ -285,7 +285,7 @@ namespace IronPython.Compiler.Ast {
                         tuplePath = MSAst.Expression.Property(tuplePath, v);
                     }
 
-                    MSAst.ParameterExpression pe = ag.HiddenVariable(typeof(ClosureCell), SymbolTable.IdToString(var.Name));
+                    MSAst.ParameterExpression pe = ag.HiddenVariable(typeof(ClosureCell), var.Name);
                     init.Add(MSAst.Expression.Assign(pe, tuplePath));
 
                     ag.SetLocalLiftedVariable(var, new ClosureExpression(var, pe, null));
@@ -302,7 +302,7 @@ namespace IronPython.Compiler.Ast {
         /// </summary>
         private void CreateChildReferencedVariables(AstGenerator ag, MSAst.Expression parentContext, List<MSAst.Expression> init) {
             MSAst.Expression localTuple = null;
-            foreach (KeyValuePair<SymbolId, PythonReference> kv in _childReferences) {
+            foreach (KeyValuePair<string, PythonReference> kv in _childReferences) {
                 // a child scope refers to this closure value but we don't refer
                 // to it directly.
                 int index = ag.TupleIndex(kv.Value.PythonVariable);
@@ -351,7 +351,7 @@ namespace IronPython.Compiler.Ast {
             throw new NotSupportedException();
         }
 
-        private bool TryGetAnyVariable(SymbolId name, out PythonVariable variable) {
+        private bool TryGetAnyVariable(string name, out PythonVariable variable) {
             if (_variables != null) {
                 return _variables.TryGetValue(name, out variable);
             } else {
@@ -360,7 +360,7 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-        internal bool TryGetVariable(SymbolId name, out PythonVariable variable) {
+        internal bool TryGetVariable(string name, out PythonVariable variable) {
             if (TryGetAnyVariable(name, out variable) && variable.Kind != VariableKind.HiddenLocal) {
                 return true;
             } else {
@@ -369,17 +369,17 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-        internal virtual bool TryBindOuter(SymbolId name, out PythonVariable variable) {
+        internal virtual bool TryBindOuter(string name, out PythonVariable variable) {
             // Hide scope contents by default (only functions expose their locals)
             variable = null;
             return false;
         }
 
-        internal abstract PythonVariable BindName(PythonNameBinder binder, SymbolId name);
+        internal abstract PythonVariable BindName(PythonNameBinder binder, string name);
 
         internal virtual void Bind(PythonNameBinder binder) {
             if (_references != null) {
-                foreach (KeyValuePair<SymbolId, PythonReference> kv in _references) {
+                foreach (KeyValuePair<string, PythonReference> kv in _references) {
                     PythonVariable variable;
                     kv.Value.PythonVariable = variable = BindName(binder, kv.Key);
 
@@ -394,7 +394,7 @@ namespace IronPython.Compiler.Ast {
                                 String.Format(
                                     System.Globalization.CultureInfo.InvariantCulture,
                                     "can not delete variable '{0}' referenced in nested scope",
-                                    SymbolTable.IdToString(kv.Key)
+                                    kv.Key
                                     ),
                                 this);
                         }
@@ -406,7 +406,7 @@ namespace IronPython.Compiler.Ast {
                             ScopeStatement curScope = Parent;
                             while (curScope != variable.Scope) {
                                 if (curScope._childReferences == null) {
-                                    curScope._childReferences = new Dictionary<SymbolId, PythonReference>();
+                                    curScope._childReferences = new Dictionary<string, PythonReference>(StringComparer.Ordinal);
                                 }
 
                                 curScope._childReferences[kv.Key] = kv.Value;
@@ -420,7 +420,7 @@ namespace IronPython.Compiler.Ast {
 
         private void EnsureVariables() {
             if (_variables == null) {
-                _variables = new Dictionary<SymbolId, PythonVariable>();
+                _variables = new Dictionary<string, PythonVariable>(StringComparer.Ordinal);
             }
         }
 
@@ -429,9 +429,9 @@ namespace IronPython.Compiler.Ast {
             _variables[variable.Name] = variable;
         }
 
-        internal PythonReference Reference(SymbolId name) {
+        internal PythonReference Reference(string name) {
             if (_references == null) {
-                _references = new Dictionary<SymbolId, PythonReference>();
+                _references = new Dictionary<string, PythonReference>(StringComparer.Ordinal);
             }
             PythonReference reference;
             if (!_references.TryGetValue(name, out reference)) {
@@ -440,12 +440,12 @@ namespace IronPython.Compiler.Ast {
             return reference;
         }
 
-        internal bool IsReferenced(SymbolId name) {
+        internal bool IsReferenced(string name) {
             PythonReference reference;
             return _references != null && _references.TryGetValue(name, out reference);
         }
 
-        internal PythonVariable CreateVariable(SymbolId name, VariableKind kind) {
+        internal PythonVariable CreateVariable(string name, VariableKind kind) {
             EnsureVariables();
             Debug.Assert(!_variables.ContainsKey(name));
             PythonVariable variable;
@@ -453,7 +453,7 @@ namespace IronPython.Compiler.Ast {
             return variable;
         }
 
-        internal PythonVariable EnsureVariable(SymbolId name) {
+        internal PythonVariable EnsureVariable(string name) {
             PythonVariable variable;
             if (!TryGetVariable(name, out variable)) {
                 return CreateVariable(name, VariableKind.Local);
@@ -461,7 +461,7 @@ namespace IronPython.Compiler.Ast {
             return variable;
         }
 
-        internal PythonVariable EnsureGlobalVariable(SymbolId name) {
+        internal PythonVariable EnsureGlobalVariable(string name) {
             PythonVariable variable;
             if (!TryGetVariable(name, out variable)) {
                 return CreateVariable(name, VariableKind.Global);
@@ -469,7 +469,7 @@ namespace IronPython.Compiler.Ast {
             return variable;
         }
 
-        internal PythonVariable EnsureUnboundVariable(SymbolId name) {
+        internal PythonVariable EnsureUnboundVariable(string name) {
             PythonVariable variable;
             if (!TryGetVariable(name, out variable)) {
                 return CreateVariable(name, VariableKind.GlobalLocal);
@@ -477,7 +477,7 @@ namespace IronPython.Compiler.Ast {
             return variable;
         }
 
-        internal PythonVariable EnsureHiddenVariable(SymbolId name) {
+        internal PythonVariable EnsureHiddenVariable(string name) {
             PythonVariable variable;
             if (!TryGetAnyVariable(name, out variable)) {
                 variable = CreateVariable(name, VariableKind.HiddenLocal);
@@ -485,7 +485,7 @@ namespace IronPython.Compiler.Ast {
             return variable;
         }
 
-        internal PythonVariable DefineParameter(SymbolId name) {
+        internal PythonVariable DefineParameter(string name) {
             return CreateVariable(name, VariableKind.Parameter);
         }
 

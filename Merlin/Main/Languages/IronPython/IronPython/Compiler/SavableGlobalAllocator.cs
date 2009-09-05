@@ -29,11 +29,8 @@ namespace IronPython.Compiler.Ast {
     using Ast = System.Linq.Expressions.Expression;
 
     class SavableGlobalAllocator : ArrayGlobalAllocator {
-        private readonly List<MSAst.Expression/*!*/>/*!*/ _constants;
-
         public SavableGlobalAllocator(PythonContext/*!*/ context)
             : base(context) {
-            _constants = new List<MSAst.Expression>();
         }
 
         public override System.Linq.Expressions.Expression GetConstant(object value) {
@@ -74,7 +71,7 @@ namespace IronPython.Compiler.Ast {
 
             PythonCompilerOptions pco = context.Options as PythonCompilerOptions;
 
-            return new SavableScriptCode(func, context.SourceUnit, GetNames(), pco.ModuleName);
+            return new PythonSavableScriptCode(func, context.SourceUnit, GetNames(), pco.ModuleName);
         }
     }
 }

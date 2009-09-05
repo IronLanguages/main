@@ -50,6 +50,9 @@ is_orcas = False
 if is_cli:
     is_orcas = len(clr.GetClrType(System.Reflection.Emit.DynamicMethod).GetConstructors()) == 8
 
+is_net40 = False
+if is_cli:
+    is_net40 = System.Environment.Version.Major==4
 
 #--Newlines
 if is_ironpython:
@@ -87,5 +90,9 @@ if not is_silverlight and get_env_var("THISISSTRESS")!=None:
 is_vista = False
 if not is_silverlight and get_env_var("IS_VISTA")=="1":
     is_vista = True
+
+is_win7 = False
+if is_ironpython:  #TODO - what about CPython?
+    is_win7 = System.Environment.OSVersion.Version.Major==6 and System.Environment.OSVersion.Version.Minor==1
 
 #------------------------------------------------------------------------------

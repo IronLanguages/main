@@ -55,7 +55,7 @@ namespace IronRuby.Builtins {
         }
 
         public void Add(object handler) {
-            _info.Tracker.AddHandler(_target, handler, _info.DeclaringModule.Context);
+            _info.Tracker.AddHandler(_target, handler, _info.DeclaringModule.Context.DelegateCreator);
         }
 
         public void Remove(object handler) {

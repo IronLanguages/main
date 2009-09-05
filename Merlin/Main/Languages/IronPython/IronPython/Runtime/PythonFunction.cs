@@ -41,6 +41,7 @@ namespace IronPython.Runtime {
     [PythonType("function"), DontMapGetMemberNamesToDir]
     public sealed partial class PythonFunction : PythonTypeSlot, IWeakReferenceable, IPythonMembersList, IDynamicMetaObjectProvider, ICodeFormattable, Binding.IFastInvokable {
         private readonly CodeContext/*!*/ _context;     // the creating code context of the function
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         [PythonHidden]
         public readonly MutableTuple Closure;
 
@@ -69,7 +70,6 @@ namespace IronPython.Runtime {
 
         internal PythonFunction(CodeContext/*!*/ context, FunctionCode funcInfo, object modName, object[] defaults, MutableTuple closure) {
             Assert.NotNull(context, funcInfo);
-            Assert.NotNull(context.Scope);
 
             _context = context;
             _defaults = defaults ?? ArrayUtils.EmptyObjects;
@@ -96,10 +96,11 @@ namespace IronPython.Runtime {
 
         public object func_globals {
             get {
-                return new PythonDictionary(new GlobalScopeDictionaryStorage(_context.Scope));
+                return new PythonDictionary(_context.GlobalDict._storage);
             }
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public PythonTuple __defaults__ {
             get {
                 return func_defaults;
@@ -109,6 +110,7 @@ namespace IronPython.Runtime {
             }
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public PythonTuple func_defaults {
             get {
                 if (_defaults.Length == 0) return null;
@@ -125,6 +127,7 @@ namespace IronPython.Runtime {
             }
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public PythonTuple __closure__ {
             get {
                 return func_closure;
@@ -134,9 +137,10 @@ namespace IronPython.Runtime {
             }
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public PythonTuple func_closure {
             get {
-                var storage = ((Context.Scope.Dict as PythonDictionary)._storage as RuntimeVariablesDictionaryStorage);
+                var storage = (Context.Dict._storage as RuntimeVariablesDictionaryStorage);
                 if (storage != null) {
                     object[] res = new object[storage.Names.Length];
                     for (int i = 0; i < res.Length; i++) {
@@ -219,7 +223,7 @@ namespace IronPython.Runtime {
             return PythonCalls.Call(context, this, args);
         }
 
-        public object __call__(CodeContext/*!*/ context, [ParamDictionary]IAttributesCollection dict, params object[] args) {
+        public object __call__(CodeContext/*!*/ context, [ParamDictionary]IDictionary<object, object> dict, params object[] args) {
             return PythonCalls.CallWithKeywordArgs(context, this, args, dict);
         }
 

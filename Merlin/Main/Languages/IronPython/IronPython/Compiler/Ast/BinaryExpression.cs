@@ -31,7 +31,7 @@ namespace IronPython.Compiler.Ast {
         public BinaryExpression(PythonOperator op, Expression left, Expression right) {
             ContractUtils.RequiresNotNull(left, "left");
             ContractUtils.RequiresNotNull(right, "right");
-            if (op == PythonOperator.None) throw new ArgumentException("op");
+            if (op == PythonOperator.None) throw new ArgumentException("bad operator");
 
             _op = op;
             _left = left;

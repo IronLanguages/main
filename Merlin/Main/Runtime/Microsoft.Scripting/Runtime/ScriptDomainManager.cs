@@ -25,25 +25,6 @@ using Microsoft.Scripting.Utils;
 using System.Threading;
 
 namespace Microsoft.Scripting.Runtime {
-
-    [Serializable]
-    public class MissingTypeException : Exception {
-        public MissingTypeException() {
-        }
-
-        public MissingTypeException(string name)
-            : this(name, null) {
-        }
-
-        public MissingTypeException(string name, Exception e) :
-            base(Strings.MissingType(name), e) {
-        }
-
-#if !SILVERLIGHT // SerializationInfo
-        protected MissingTypeException(SerializationInfo info, StreamingContext context) : base(info, context) { }
-#endif
-    }
-
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable")] // TODO: fix
     public sealed class ScriptDomainManager {
         private readonly DynamicRuntimeHostingProvider _hostingProvider;
@@ -52,8 +33,8 @@ namespace Microsoft.Scripting.Runtime {
         // last id assigned to a language context:
         private int _lastContextId;
 
-        private ScopeAttributesWrapper _scopeWrapper;
         private Scope _globals;
+        private List<Assembly> _loadedAssemblies = new List<Assembly>();
         private readonly DlrConfiguration _configuration;
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1065:DoNotRaiseExceptionsInUnexpectedLocations")]
@@ -91,8 +72,7 @@ namespace Microsoft.Scripting.Runtime {
             _sharedIO = new SharedIO();
 
             // create the initial default scope
-            _scopeWrapper = new ScopeAttributesWrapper(this);
-            _globals = new Scope(_scopeWrapper);
+            _globals = new Scope();
         }
 
         #region Language Registration
@@ -152,180 +132,42 @@ namespace Microsoft.Scripting.Runtime {
             get {
                 return _globals;
             }
+            set {
+                _globals = value;
+            }
         }
 
-        public void SetGlobalsDictionary(IAttributesCollection dictionary) {
-            ContractUtils.RequiresNotNull(dictionary, "dictionary");
-
-            _scopeWrapper.Dict = dictionary;
-        }
-
+        /// <summary>
+        /// Event for when a host calls LoadAssembly.  After hooking this
+        /// event languages will need to call GetLoadedAssemblyList to
+        /// get any assemblies which were loaded before the language was
+        /// loaded.
+        /// </summary>
         public event EventHandler<AssemblyLoadedEventArgs> AssemblyLoaded;
 
         public bool LoadAssembly(Assembly assembly) {
             ContractUtils.RequiresNotNull(assembly, "assembly");
 
-            if (_scopeWrapper.LoadAssembly(assembly)) {
-                // only deliver the event if we've never added the assembly before
-                EventHandler<AssemblyLoadedEventArgs> assmLoaded = AssemblyLoaded;
-                if (assmLoaded != null) {
-                    assmLoaded(this, new AssemblyLoadedEventArgs(assembly));
+            lock (_loadedAssemblies) {
+                if (_loadedAssemblies.Contains(assembly)) {
+                    // only deliver the event if we've never added the assembly before
+                    return false;
                 }
-
-                return true;
+                _loadedAssemblies.Add(assembly);
             }
 
-            return false;
+            EventHandler<AssemblyLoadedEventArgs> assmLoaded = AssemblyLoaded;
+            if (assmLoaded != null) {
+                assmLoaded(this, new AssemblyLoadedEventArgs(assembly));
+            }
+
+            return true;
         }
-
-        #region ScopeAttributesWrapper
-
-        private class ScopeAttributesWrapper : IAttributesCollection {
-            private IAttributesCollection _dict = new SymbolDictionary();
-            private readonly TopNamespaceTracker _tracker;
-
-            public ScopeAttributesWrapper(ScriptDomainManager manager) {
-                _tracker = new TopNamespaceTracker(manager);
+        
+        public IList<Assembly> GetLoadedAssemblyList() {
+            lock (_loadedAssemblies) {
+                return _loadedAssemblies.ToArray();
             }
-
-            public IAttributesCollection Dict {
-                set {
-                    Assert.NotNull(_dict);
-
-                    _dict = value;
-                }
-            }
-
-            public bool LoadAssembly(Assembly asm) {
-                return _tracker.LoadAssembly(asm);
-            }
-
-            public List<Assembly> GetLoadedAssemblies() {
-                return _tracker._packageAssemblies;
-            }
-
-            #region IAttributesCollection Members
-
-            public void Add(SymbolId name, object value) {
-                _dict[name] = value;
-            }
-
-            public bool TryGetValue(SymbolId name, out object value) {
-                if (_dict.TryGetValue(name, out value)) {
-                    return true;
-                }
-
-                value = _tracker.TryGetPackageAny(name);
-                return value != null;
-            }
-
-            public bool Remove(SymbolId name) {
-                return _dict.Remove(name);
-            }
-
-            public bool ContainsKey(SymbolId name) {
-                return _dict.ContainsKey(name) || _tracker.TryGetPackageAny(name) != null;
-            }
-
-            public object this[SymbolId name] {
-                get {
-                    object value;
-                    if (TryGetValue(name, out value)) {
-                        return value;
-                    }
-
-                    throw new KeyNotFoundException();
-                }
-                set {
-                    Add(name, value);
-                }
-            }
-
-            public IDictionary<SymbolId, object> SymbolAttributes {
-                get { return _dict.SymbolAttributes; }
-            }
-
-            public void AddObjectKey(object name, object value) {
-                _dict.AddObjectKey(name, value);
-            }
-
-            public bool TryGetObjectValue(object name, out object value) {
-                return _dict.TryGetObjectValue(name, out value);
-            }
-
-            public bool RemoveObjectKey(object name) {
-                return _dict.RemoveObjectKey(name);
-            }
-
-            public bool ContainsObjectKey(object name) {
-                return _dict.ContainsObjectKey(name);
-            }
-
-            public IDictionary<object, object> AsObjectKeyedDictionary() {
-                return _dict.AsObjectKeyedDictionary();
-            }
-
-            public int Count {
-                get {
-                    int count = _dict.Count + _tracker.Count;
-                    foreach (object o in _tracker.Keys) {
-                        if (ContainsObjectKey(o)) {
-                            count--;
-                        }
-                    }
-                    return count;
-                }
-            }
-
-            public ICollection<object> Keys {
-                get {
-                    List<object> keys = new List<object>(_dict.Keys);
-                    foreach (object o in _tracker.Keys) {
-                        if (!_dict.ContainsObjectKey(o)) {
-                            keys.Add(o);
-                        }
-                    }
-                    return keys;
-                }
-            }
-
-            #endregion
-
-            #region IEnumerable<KeyValuePair<object,object>> Members
-
-            public IEnumerator<KeyValuePair<object, object>> GetEnumerator() {
-                foreach (KeyValuePair<object, object> kvp in _dict) {
-                    yield return kvp;
-                }
-                foreach (KeyValuePair<object, object> kvp in _tracker) {
-                    if (!_dict.ContainsObjectKey(kvp.Key)) {
-                        yield return kvp;
-                    }
-                }
-            }
-
-            #endregion
-
-            #region IEnumerable Members
-
-            IEnumerator IEnumerable.GetEnumerator() {
-                foreach (KeyValuePair<object, object> kvp in _dict) {
-                    yield return kvp.Key;
-                }
-                foreach (KeyValuePair<object, object> kvp in _tracker) {
-                    if (!_dict.ContainsObjectKey(kvp.Key)) {
-                        yield return kvp.Key;
-                    }
-                }
-            }
-
-            #endregion
         }
-
-        public Assembly[] GetLoadedAssemblyList() {
-            return _scopeWrapper.GetLoadedAssemblies().ToArray();
-        }
-
-        #endregion
     }
 }

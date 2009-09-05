@@ -250,7 +250,7 @@ namespace IronPython.Compiler {
             return Expression.Call(
                 typeof(PythonOps).GetMethod(_isLocal ? "GetLocal" : "GetGlobal"),
                 _codeContextExpr,
-                Utils.Constant(SymbolTable.StringToId(_name))
+                Utils.Constant(_name)
             );
         }
 
@@ -258,7 +258,7 @@ namespace IronPython.Compiler {
             return Expression.Call(
                 typeof(PythonOps).GetMethod(_isLocal ? "SetLocal" : "SetGlobal"),
                 _codeContextExpr,
-                Utils.Constant(SymbolTable.StringToId(_name)),
+                Utils.Constant(_name),
                 value
             );
         }
@@ -267,7 +267,7 @@ namespace IronPython.Compiler {
             return Expression.Call(
                 typeof(PythonOps).GetMethod(_isLocal ? "DeleteLocal" : "DeleteGlobal"),
                 _codeContextExpr,
-                Utils.Constant(SymbolTable.StringToId(_name))
+                Utils.Constant(_name)
             );
         }
 
@@ -282,10 +282,10 @@ namespace IronPython.Compiler {
     }
 
     class LookupGlobalInstruction : Instruction {
-        private readonly SymbolId _name;
+        private readonly string _name;
         private readonly bool _isLocal;
         public LookupGlobalInstruction(string name, bool isLocal) {
-            _name = SymbolTable.StringToId(name);
+            _name = name;
             _isLocal = isLocal;
         }
         public override int ConsumedStack { get { return 1; } }

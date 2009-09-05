@@ -20,38 +20,8 @@ using Microsoft.Scripting;
 using IronPython.Runtime;
 
 namespace IronPython.Compiler {
-    [Flags]
-    public enum PythonLanguageFeatures {
-        Default = 0,
-        /// <summary>
-        /// Enable usage of the with statement
-        /// </summary>
-        AllowWithStatement = 0x001,
-        /// <summary>
-        /// Enable true division (1/2 == .5)
-        /// </summary>
-        TrueDivision       = 0x002,
-        /// <summary>
-        /// Enable absolute imports
-        /// </summary>
-        AbsoluteImports    = 0x004,
-        /// <summary>
-        /// Enable usage of print as a function
-        /// </summary>
-        PrintFunction      = 0x008,
-        /// <summary>
-        /// Include comments in the parse tree
-        /// </summary>
-        Verbatim           = 0x020,
-        /// <summary>
-        /// String Literals should be parsed as Unicode strings
-        /// </summary>
-        UnicodeLiterals    = 0x040,
-    }
-
     [Serializable]
     public sealed class PythonCompilerOptions : CompilerOptions {
-        private PythonLanguageFeatures _languageFeatures;
         private ModuleOptions _module;
         private bool _skipFirstLine, _dontImplyIndent;
         private string _moduleName;
@@ -61,33 +31,25 @@ namespace IronPython.Compiler {
         /// Creates a new PythonCompilerOptions with the default language features enabled.
         /// </summary>
         public PythonCompilerOptions()
-            : this(PythonLanguageFeatures.Default) {
+            : this(ModuleOptions.None) {
         }
 
         /// <summary>
         /// Creates a new PythonCompilerOptions with the specified language features enabled.
         /// </summary>
-        public PythonCompilerOptions(PythonLanguageFeatures features) {
-            _languageFeatures = features;
+        public PythonCompilerOptions(ModuleOptions features) {
+            _module = features;
         }
 
         /// <summary>
         /// Creates a new PythonCompilerOptions and enables or disables true division.
         /// 
         /// This overload is obsolete, instead you should use the overload which takes a
-        /// PythonLanguageFeatures.
+        /// ModuleOptions.
         /// </summary>
-        [Obsolete("Use the overload that takes PythonLanguageFeatures instead")]
+        [Obsolete("Use the overload that takes ModuleOptions instead")]
         public PythonCompilerOptions(bool trueDivision) {
             TrueDivision = trueDivision;
-        }
-
-        /// <summary>
-        /// Gets or sets the language features which will be enabled when compiling.
-        /// </summary>
-        public PythonLanguageFeatures LanguageFeatures {
-            get { return _languageFeatures; }
-            set { _languageFeatures = value; }
         }
 
         public bool DontImplyDedent {
@@ -104,6 +66,7 @@ namespace IronPython.Compiler {
         /// 
         /// If this value is null then no indentation level is specified.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
         public int[] InitialIndent {
             get {
                 return _initialIndentation;
@@ -115,61 +78,61 @@ namespace IronPython.Compiler {
 
         public bool TrueDivision {
             get {
-                return (_languageFeatures & PythonLanguageFeatures.TrueDivision) != 0;
+                return (_module & ModuleOptions.TrueDivision) != 0;
             }
             set {
-                if (value) _languageFeatures |= PythonLanguageFeatures.TrueDivision;
-                else _languageFeatures &= ~PythonLanguageFeatures.TrueDivision;
+                if (value) _module |= ModuleOptions.TrueDivision;
+                else _module &= ~ModuleOptions.TrueDivision;
             }
         }
 
         public bool AllowWithStatement {
             get {
-                return (_languageFeatures & PythonLanguageFeatures.AllowWithStatement) != 0;
+                return (_module & ModuleOptions.WithStatement) != 0;
             }
             set {
-                if (value) _languageFeatures |= PythonLanguageFeatures.AllowWithStatement;
-                else _languageFeatures &= ~PythonLanguageFeatures.AllowWithStatement;
+                if (value) _module |= ModuleOptions.WithStatement;
+                else _module &= ~ModuleOptions.WithStatement;
             }
         }
 
         public bool AbsoluteImports {
             get {
-                return (_languageFeatures & PythonLanguageFeatures.AbsoluteImports) != 0;
+                return (_module & ModuleOptions.AbsoluteImports) != 0;
             }
             set {
-                if (value) _languageFeatures |= PythonLanguageFeatures.AbsoluteImports;
-                else _languageFeatures &= ~PythonLanguageFeatures.AbsoluteImports;
+                if (value) _module |= ModuleOptions.AbsoluteImports;
+                else _module &= ~ModuleOptions.AbsoluteImports;
             }
         }
 
         public bool Verbatim {
             get {
-                return (_languageFeatures & PythonLanguageFeatures.Verbatim) != 0;
+                return (_module & ModuleOptions.Verbatim) != 0;
             }
             set {
-                if (value) _languageFeatures |= PythonLanguageFeatures.Verbatim;
-                else _languageFeatures &= ~PythonLanguageFeatures.Verbatim;
+                if (value) _module |= ModuleOptions.Verbatim;
+                else _module &= ~ModuleOptions.Verbatim;
             }
         }
 
         public bool PrintFunction {
             get {
-                return (_languageFeatures & PythonLanguageFeatures.PrintFunction) != 0;
+                return (_module & ModuleOptions.PrintFunction) != 0;
             }
             set {
-                if (value) _languageFeatures |= PythonLanguageFeatures.PrintFunction;
-                else _languageFeatures &= ~PythonLanguageFeatures.PrintFunction;
+                if (value) _module |= ModuleOptions.PrintFunction;
+                else _module &= ~ModuleOptions.PrintFunction;
             }
         }
 
         public bool UnicodeLiterals {
             get {
-                return (_languageFeatures & PythonLanguageFeatures.UnicodeLiterals) != 0;
+                return (_module & ModuleOptions.UnicodeLiterals) != 0;
             }
             set {
-                if (value) _languageFeatures |= PythonLanguageFeatures.UnicodeLiterals;
-                else _languageFeatures &= ~PythonLanguageFeatures.UnicodeLiterals;
+                if (value) _module |= ModuleOptions.UnicodeLiterals;
+                else _module &= ~ModuleOptions.UnicodeLiterals;
             }
         }
 

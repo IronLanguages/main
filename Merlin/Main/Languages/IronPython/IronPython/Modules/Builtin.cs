@@ -99,7 +99,7 @@ namespace IronPython.Modules {
                 throw PythonOps.ImportError("No module named {0}", name);
             }
 
-            Scope mod = ret as Scope;
+            PythonModule mod = ret as PythonModule;
             if (mod != null && from != null) {
                 string strAttrName;
                 for (int i = 0; i < from.Count; i++) {
@@ -293,8 +293,7 @@ namespace IronPython.Modules {
                     throw PythonOps.ValueError("compile() arg 3 must be 'exec' or 'eval' or 'single'");
             }
 
-            var compiledCode = (RunnableScriptCode)sourceUnit.Compile(opts, ThrowingErrorSink.Default);
-            return compiledCode.GetFunctionCode();
+            return FunctionCode.FromSourceUnit(sourceUnit, opts);
         }
 
         private static string RemoveBom(string source) {
@@ -379,7 +378,7 @@ namespace IronPython.Modules {
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods")]
         public static List dir(CodeContext/*!*/ context) {
-            List res = PythonOps.MakeListFromSequence(context.Scope.Dict.Keys);
+            List res = PythonOps.MakeListFromSequence(context.Dict.Keys);
 
             res.sort(context);
             return res;
@@ -422,15 +421,14 @@ namespace IronPython.Modules {
             Debug.Assert(context != null);
             if (code == null) throw PythonOps.TypeError("eval() argument 1 must be string or code object");
 
-            Scope localScope = GetExecEvalScopeOptional(context, globals, locals, false);
-            return code.Call(context, localScope);
+            return code.Call(GetExecEvalScopeOptional(context, globals, locals, false));
         }
 
         internal static IAttributesCollection GetAttrLocals(CodeContext/*!*/ context, object locals) {
             IAttributesCollection attrLocals = null;
             if (locals == null) {
-                if (context.Scope.Parent != null) {
-                    attrLocals = context.Scope.Dict;
+                if (context.IsTopLevel) {
+                    attrLocals = context.Dict;
                 }
             } else {
                 attrLocals = locals as IAttributesCollection ?? new PythonDictionary(new ObjectAttributesAdapter(context, locals));
@@ -467,9 +465,9 @@ namespace IronPython.Modules {
             // TODO: remove TrimStart
             var sourceUnit = pythonContext.CreateSnippet(expression.TrimStart(' ', '\t'), SourceCodeKind.Expression);
             var compilerOptions = GetRuntimeGeneratedCodeCompilerOptions(context, true, 0);
-            var scriptCode = pythonContext.CompilePythonCode(Compiler.CompilationMode.Lookup, sourceUnit, compilerOptions, ThrowingErrorSink.Default);
+            var code = FunctionCode.FromSourceUnit(sourceUnit, compilerOptions);
 
-            return scriptCode.Run(scope);
+            return code.Call(scope);
         }
 
         public static void execfile(CodeContext/*!*/ context, object/*!*/ filename) {
@@ -499,7 +497,7 @@ namespace IronPython.Modules {
                 l = g;
             }
 
-            Scope execScope = GetExecEvalScopeOptional(context, g, l, true);
+            var execScope = GetExecEvalScopeOptional(context, g, l, true);
             string path = Converter.ConvertToString(filename);
             PythonContext pc = PythonContext.GetContext(context);
             if (!pc.DomainManager.Platform.FileExists(path)) {
@@ -507,20 +505,24 @@ namespace IronPython.Modules {
             }
 
             SourceUnit sourceUnit = pc.CreateFileUnit(path, pc.DefaultEncoding, SourceCodeKind.Statements);
-            ScriptCode code;
+            FunctionCode code;
 
             var options = GetRuntimeGeneratedCodeCompilerOptions(context, true, 0);
             //always generate an unoptimized module since we run these against a dictionary namespace
             options.Module &= ~ModuleOptions.Optimized;
 
             try {
-                code = sourceUnit.Compile(options, ThrowingErrorSink.Default);
+                code = FunctionCode.FromSourceUnit(sourceUnit, options);
             } catch (UnauthorizedAccessException x) {
                 throw PythonOps.IOError(x);
             }
 
             // Do not attempt evaluation mode for execfile
-            code.Run(execScope);
+            code.Call(execScope);
+        }
+
+        private static FunctionCode GetFunctionCode(PythonContext pc, SourceUnit sourceUnit, PythonCompilerOptions options) {
+            return ((RunnableScriptCode)pc.CompilePythonCode(Compiler.CompilationMode.Lookup, sourceUnit, options, ThrowingErrorSink.Default)).GetFunctionCode();
         }
 
         public static PythonType file {
@@ -631,11 +633,7 @@ namespace IronPython.Modules {
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods")]
         public static IAttributesCollection globals(CodeContext/*!*/ context) {
-            Scope scope = context.GlobalScope;
-            if (scope.Dict is PythonDictionary) {
-                return scope.Dict;
-            }
-            return new PythonDictionary(new GlobalScopeDictionaryStorage(context.Scope));
+            return context.ModuleContext.Globals;
         }
 
         public static bool hasattr(CodeContext/*!*/ context, object o, string name) {
@@ -643,7 +641,7 @@ namespace IronPython.Modules {
         }
 
         public static int hash(CodeContext/*!*/ context, object o) {
-            return PythonContext.GetContext(context).Hash(o);
+            return PythonContext.Hash(o);
         }
 
         public static int hash(CodeContext/*!*/ context, [NotNull]PythonTuple o) {
@@ -652,7 +650,7 @@ namespace IronPython.Modules {
 
         // this is necessary because overload resolution selects the int form.
         public static int hash(CodeContext/*!*/ context, char o) {
-            return PythonContext.GetContext(context).Hash(o);
+            return PythonContext.Hash(o);
         }
 
         public static int hash(CodeContext/*!*/ context, int o) {
@@ -714,7 +712,7 @@ namespace IronPython.Modules {
             BuiltinMethodDescriptor methodDesc;
             Method method;
             string strVal;
-            Scope scope;
+            PythonModule pyModule;
             OldClass oldClass;
 
             if (doced.Contains(obj)) return;  // document things only once
@@ -829,12 +827,12 @@ namespace IronPython.Modules {
                 if (!String.IsNullOrEmpty(pfDoc)) {
                     AppendMultiLine(doc, pfDoc, indent);
                 }
-            } else if ((scope = obj as Scope) != null) {
-                foreach (SymbolId name in scope.Keys) {
-                    if (name == Symbols.Class || name == Symbols.Builtins) continue;
+            } else if ((pyModule = obj as PythonModule) != null) {
+                foreach (string name in pyModule.__dict__.Keys) {
+                    if (name == "__class__" || name == "__builtins__") continue;
 
                     object value;
-                    if (scope.TryGetVariable(name, out value)) {
+                    if (pyModule.__dict__.TryGetValue(name, out value)) {
                         help(context, doced, doc, indent + 1, value);
                     }
                 }
@@ -1024,17 +1022,15 @@ namespace IronPython.Modules {
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods")]
         public static object locals(CodeContext/*!*/ context) {
-            PythonDictionary dict = context.Scope.Dict as PythonDictionary;
-            if (dict != null) {
-                ObjectAttributesAdapter adapter = dict._storage as ObjectAttributesAdapter;
-                if (adapter != null) {
-                    // we've wrapped Locals in an IAttributesCollection, give the user back the
-                    // original object.
-                    return adapter.Backing;
-                }                
+            PythonDictionary dict = context.Dict;
+            ObjectAttributesAdapter adapter = dict._storage as ObjectAttributesAdapter;
+            if (adapter != null) {
+                // we've wrapped Locals in an IAttributesCollection, give the user back the
+                // original object.
+                return adapter.Backing;
             }
 
-            return context.Scope.Dict;
+            return context.Dict;
         }
 
         public static PythonType @long {
@@ -1262,7 +1258,7 @@ namespace IronPython.Modules {
 
         }
 
-        public static object max(CodeContext/*!*/ context, object x, [ParamDictionary] IAttributesCollection dict) {
+        public static object max(CodeContext/*!*/ context, object x, [ParamDictionary]IDictionary<object, object> dict) {
             IEnumerator i = PythonOps.GetEnumerator(x);
             if (!i.MoveNext())
                 throw PythonOps.ValueError(" max() arg is an empty sequence");
@@ -1280,13 +1276,13 @@ namespace IronPython.Modules {
             return ret;
         }
 
-        public static object max(CodeContext/*!*/ context, object x, object y, [ParamDictionary] IAttributesCollection dict) {
+        public static object max(CodeContext/*!*/ context, object x, object y, [ParamDictionary] IDictionary<object, object> dict) {
             object method = GetMaxKwArg(dict);
             PythonContext pc = PythonContext.GetContext(context);
             return pc.GreaterThan(PythonCalls.Call(context, method, x), PythonCalls.Call(context, method, y)) ? x : y;
         }
 
-        public static object max(CodeContext/*!*/ context, [ParamDictionary] IAttributesCollection dict, params object[] args) {
+        public static object max(CodeContext/*!*/ context, [ParamDictionary]IDictionary<object, object> dict, params object[] args) {
             if (args.Length > 0) {
                 int retIndex = 0;
                 if (args.Length == 1) {
@@ -1308,7 +1304,7 @@ namespace IronPython.Modules {
             }
         }
 
-        private static object GetMaxKwArg([ParamDictionary] IAttributesCollection dict) {
+        private static object GetMaxKwArg(IDictionary<object, object> dict) {
             if (dict.Count != 1)
                 throw PythonOps.TypeError(" max() should have only 1 keyword argument, but got {0} keyword arguments", dict.Count);
 
@@ -1349,7 +1345,7 @@ namespace IronPython.Modules {
             }
         }
 
-        public static object min(CodeContext/*!*/ context, object x, [ParamDictionary] IAttributesCollection dict) {
+        public static object min(CodeContext/*!*/ context, object x, [ParamDictionary]IDictionary<object, object> dict) {
             IEnumerator i = PythonOps.GetEnumerator(x);
             if (!i.MoveNext())
                 throw PythonOps.ValueError(" min() arg is an empty sequence");
@@ -1368,12 +1364,12 @@ namespace IronPython.Modules {
             return ret;
         }
 
-        public static object min(CodeContext/*!*/ context, object x, object y, [ParamDictionary] IAttributesCollection dict) {
+        public static object min(CodeContext/*!*/ context, object x, object y, [ParamDictionary]IDictionary<object, object> dict) {
             object method = GetMinKwArg(dict);
             return PythonContext.GetContext(context).LessThan(PythonCalls.Call(context, method, x), PythonCalls.Call(context, method, y)) ? x : y;
         }
 
-        public static object min(CodeContext/*!*/ context, [ParamDictionary] IAttributesCollection dict, params object[] args) {
+        public static object min(CodeContext/*!*/ context, [ParamDictionary]IDictionary<object, object> dict, params object[] args) {
             if (args.Length > 0) {
                 int retIndex = 0;
                 if (args.Length == 1) {
@@ -1397,16 +1393,16 @@ namespace IronPython.Modules {
             }
         }
 
-        private static object GetMinKwArg([ParamDictionary] IAttributesCollection dict) {
+        private static object GetMinKwArg([ParamDictionary]IDictionary<object, object> dict) {
             if (dict.Count != 1)
                 throw PythonOps.TypeError(" min() should have only 1 keyword argument, but got {0} keyword arguments", dict.Count);
 
             return VerifyKeys("min", dict);
         }
 
-        private static object VerifyKeys(string name, IAttributesCollection dict) {
+        private static object VerifyKeys(string name, IDictionary<object, object> dict) {
             object value;
-            if (!dict.TryGetValue(SymbolTable.StringToId("key"), out value)) {
+            if (!dict.TryGetValue("key", out value)) {
                 ICollection<object> keys = dict.Keys;
                 IEnumerator<object> en = keys.GetEnumerator();
                 if (en.MoveNext()) {
@@ -1512,7 +1508,7 @@ namespace IronPython.Modules {
             print(context, " ", "\n", null, args);
         }
 
-        public static void print(CodeContext/*!*/ context, [ParamDictionary]IAttributesCollection kwargs, params object[] args) {
+        public static void print(CodeContext/*!*/ context, [ParamDictionary]IDictionary<object, object> kwargs, params object[] args) {
             object sep = AttrCollectionPop(kwargs, "sep", " ");
             if (sep != null && !(sep is string)) {
                 throw PythonOps.TypeError("sep must be None or str, not {0}", PythonTypeOps.GetName(sep));
@@ -1528,17 +1524,17 @@ namespace IronPython.Modules {
             if (kwargs.Count != 0) {
                 throw PythonOps.TypeError(
                     "'{0}' is an invalid keyword argument for this function", 
-                    SymbolTable.IdToString(new List<SymbolId>(kwargs.SymbolAttributes.Keys)[0])
+                    new List<object>(kwargs.Keys)[0]
                 );
             }
 
             print(context, (string)sep ?? " ", (string)end ?? "\n", file, args);
         }
 
-        private static object AttrCollectionPop(IAttributesCollection kwargs, string name, object defaultValue) {
+        private static object AttrCollectionPop(IDictionary<object, object> kwargs, string name, object defaultValue) {
             object res;
-            if (kwargs.TryGetValue(SymbolTable.StringToId(name), out res)) {
-                kwargs.Remove(SymbolTable.StringToId(name));
+            if (kwargs.TryGetValue(name, out res)) {
+                kwargs.Remove(name);
             } else {
                 res = defaultValue;
             }
@@ -1811,26 +1807,26 @@ namespace IronPython.Modules {
         }
 
         [ThreadStatic]
-        private static List<Scope> _reloadStack; 
+        private static List<PythonModule> _reloadStack;
 
-        public static object reload(CodeContext/*!*/ context, Scope/*!*/ scope) {
-            if (scope == null) {
+        public static object reload(CodeContext/*!*/ context, PythonModule/*!*/ module) {
+            if (module == null) {
                 throw PythonOps.TypeError("unexpected type: NoneType");
             }
 
             if (_reloadStack == null) {
-                Interlocked.CompareExchange(ref _reloadStack, new List<Scope>(), null);
+                Interlocked.CompareExchange(ref _reloadStack, new List<PythonModule>(), null);
             }
 
             // if a module attempts to reload it's self while already reloading it's 
             // self we just return the original module.
-            if (_reloadStack.Contains(scope)) {
-                return scope;
+            if (_reloadStack.Contains(module)) {
+                return module;
             }
 
-            _reloadStack.Add(scope);
+            _reloadStack.Add(module);
             try {
-                return Importer.ReloadModule(context, scope);
+                return Importer.ReloadModule(context, module);
             } finally {
                 _reloadStack.RemoveAt(_reloadStack.Count - 1);
             }
@@ -2035,28 +2031,23 @@ namespace IronPython.Modules {
         internal static PythonCompilerOptions GetRuntimeGeneratedCodeCompilerOptions(CodeContext/*!*/ context, bool inheritContext, CompileFlags cflags) {
             PythonCompilerOptions pco;
             if (inheritContext) {
-                PythonModule pm = (PythonModule)context.GlobalScope.GetExtension(context.LanguageContext.ContextId);
-                if (pm != null) {
-                    pco = new PythonCompilerOptions(pm.LanguageFeatures);
-                } else {
-                    pco = new PythonCompilerOptions(PythonLanguageFeatures.Default);
-                }
+                pco = new PythonCompilerOptions(context.ModuleContext.Features);
             } else {
                 pco = DefaultContext.DefaultPythonContext.GetPythonCompilerOptions();
             }
             
             if (((cflags & (CompileFlags.CO_FUTURE_DIVISION | CompileFlags.CO_FUTURE_ABSOLUTE_IMPORT | CompileFlags.CO_FUTURE_WITH_STATEMENT)) != 0)) {
-                PythonLanguageFeatures langFeat = PythonLanguageFeatures.Default;
+                ModuleOptions langFeat = ModuleOptions.None;
                 if ((cflags & CompileFlags.CO_FUTURE_DIVISION) != 0) {
-                    langFeat |= PythonLanguageFeatures.TrueDivision;
+                    langFeat |= ModuleOptions.TrueDivision;
                 }
                 if ((cflags & CompileFlags.CO_FUTURE_WITH_STATEMENT) != 0) {
-                    langFeat |= PythonLanguageFeatures.AllowWithStatement;
+                    langFeat |= ModuleOptions.WithStatement;
                 }
                 if ((cflags & CompileFlags.CO_FUTURE_ABSOLUTE_IMPORT) != 0) {
-                    langFeat |= PythonLanguageFeatures.AbsoluteImports;
+                    langFeat |= ModuleOptions.AbsoluteImports;
                 }
-                pco.LanguageFeatures |= langFeat;
+                pco.Module |= langFeat;
             } 
 
             // The options created this way never creates
@@ -2088,7 +2079,7 @@ namespace IronPython.Modules {
         /// <summary>
         /// Gets a scope used for executing new code in optionally replacing the globals and locals dictionaries.
         /// </summary>
-        private static Scope/*!*/ GetExecEvalScopeOptional(CodeContext/*!*/ context, IAttributesCollection globals, object localsDict, bool copyModule) {
+        private static CodeContext/*!*/ GetExecEvalScopeOptional(CodeContext/*!*/ context, IAttributesCollection globals, object localsDict, bool copyModule) {
             Assert.NotNull(context);
 
             if (globals == null) globals = Builtin.globals(context);
@@ -2097,34 +2088,29 @@ namespace IronPython.Modules {
             return GetExecEvalScope(context, globals, GetAttrLocals(context, localsDict), copyModule, true);
         }
 
-        internal static Scope/*!*/ GetExecEvalScope(CodeContext/*!*/ context, IAttributesCollection/*!*/ globals,
+        internal static CodeContext/*!*/ GetExecEvalScope(CodeContext/*!*/ context, IAttributesCollection/*!*/ globals,
             IAttributesCollection locals, bool copyModule, bool setBuiltinsToModule) {
 
             Assert.NotNull(context, globals);
-
             PythonContext python = PythonContext.GetContext(context);
 
-            Scope globalScope = new Scope(globals);
-
-            // get module associated with the current global scope:
-            PythonModule module = python.GetPythonModule(context.GlobalScope);
-            if (module != null) {
-                if (copyModule) {
-                    module = new PythonModule(globalScope, module);
-                }
-                globalScope.SetExtension(python.ContextId, module);
+            // TODO: Need to worry about propagating changes to MC out?
+            var mc = new ModuleContext(PythonDictionary.FromIAC(context, globals), context.LanguageContext);
+            CodeContext localContext;
+            if (locals == null) {
+                localContext = mc.GlobalContext;
+            } else {
+                localContext = new CodeContext(PythonDictionary.FromIAC(context, locals), mc);
             }
-
-            Scope localScope = locals == null ? globalScope : new Scope(globalScope, locals);
 
             if (!globals.ContainsKey(Symbols.Builtins)) {
                 if (setBuiltinsToModule) {
                     globals[Symbols.Builtins] = python.SystemStateModules["__builtin__"];
                 } else {
-                    globals[Symbols.Builtins] = python.BuiltinModuleInstance.Dict;
+                    globals[Symbols.Builtins] = python.BuiltinModuleDict;
                 }
             }
-            return localScope;
+            return localContext;
         }
 
         [SpecialName]

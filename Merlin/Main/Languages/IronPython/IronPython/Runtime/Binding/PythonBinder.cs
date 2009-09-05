@@ -767,10 +767,10 @@ namespace IronPython.Runtime.Binding {
             res[typeof(DynamicNull)] = new ExtensionTypeInfo(typeof(NoneTypeOps), "NoneType");
             res[typeof(BaseSymbolDictionary)] = new ExtensionTypeInfo(typeof(DictionaryOps), "dict");
             res[typeof(IAttributesCollection)] = new ExtensionTypeInfo(typeof(DictionaryOps), "dict");
+            res[typeof(IDictionary<object, object>)] = new ExtensionTypeInfo(typeof(DictionaryOps), "dict");
             res[typeof(NamespaceTracker)] = new ExtensionTypeInfo(typeof(NamespaceTrackerOps), "namespace#");
             res[typeof(TypeGroup)] = new ExtensionTypeInfo(typeof(TypeGroupOps), "type-collision");
             res[typeof(TypeTracker)] = new ExtensionTypeInfo(typeof(TypeTrackerOps), "type-collision");
-            res[typeof(Scope)] = new ExtensionTypeInfo(typeof(ScopeOps), "module");
 
             return res;
         }
@@ -843,14 +843,14 @@ namespace IronPython.Runtime.Binding {
             LoadScriptCode(_context, asm);
 
             // load any Python modules
-            _context.LoadBuiltins(_context.Builtins, asm);
+            _context.LoadBuiltins(_context.BuiltinModules, asm);
 
             // load any cached new types
             NewTypeMaker.LoadNewTypes(asm);
         }
 
         private static void LoadScriptCode(PythonContext/*!*/ pc, Assembly/*!*/ asm) {
-            ScriptCode[] codes = ScriptCode.LoadFromAssembly(pc.DomainManager, asm);
+            ScriptCode[] codes = SavableScriptCode.LoadFromAssembly(pc.DomainManager, asm);
 
             foreach (ScriptCode sc in codes) {
                 pc.GetCompiledLoader().AddScriptCode(sc);
@@ -1037,13 +1037,7 @@ namespace IronPython.Runtime.Binding {
             private class SlotCacheInfo {
                 public SlotCacheInfo() {
                     Members = new Dictionary<string/*!*/, KeyValuePair<PythonTypeSlot, MemberGroup/*!*/>>();
-                }
-
-                public void Add(string/*!*/ name, PythonTypeSlot slot, MemberGroup/*!*/ group) {
-                    Debug.Assert(name != null); Debug.Assert(group != null);
-
-                    Members[name] = new KeyValuePair<PythonTypeSlot, MemberGroup>(slot, group);
-                }
+                }               
 
                 public bool TryGetSlot(string/*!*/ name, out PythonTypeSlot slot) {
                     Debug.Assert(name != null);

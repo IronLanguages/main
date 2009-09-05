@@ -16,6 +16,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
+using System.Threading;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Generation;
@@ -34,6 +35,7 @@ namespace IronPython.Compiler {
     /// </summary>
     class PythonScriptCode : RunnableScriptCode {
         private readonly CompilerContext/*!*/ _context;
+        private CodeContext _defaultContext;
         private readonly Expression<Func<CodeContext/*!*/, FunctionCode/*!*/, object>> _lambda;
         private readonly Dictionary<int, bool> _handlerLocations;                         // list of exception handler locations for debugging
         private readonly Dictionary<int, Dictionary<int, bool>> _loopAndFinallyLocations; // list of loop and finally locations for debugging
@@ -52,28 +54,31 @@ namespace IronPython.Compiler {
 
         public override object Run() {
             if (SourceUnit.Kind == SourceCodeKind.Expression) {
-                return EvalWrapper(new Scope());
+                return EvalWrapper(DefaultContext);
             }
 
-            return RunWorker(new Scope());
+            return RunWorker(DefaultContext);
         }
 
         public override object Run(Scope scope) {
+            CodeContext ctx = GetContextForScope(scope, SourceUnit);
+            
             if (SourceUnit.Kind == SourceCodeKind.Expression) {
-                return EvalWrapper(scope);
+                return EvalWrapper(ctx);
             }
 
-            return RunWorker(scope);
+            return RunWorker(ctx);
         }
 
-        private object RunWorker(Scope scope) {
+        private object RunWorker(CodeContext ctx) {
             Func<CodeContext/*!*/, FunctionCode/*!*/, object> target = GetTarget();
-            
-            CodeContext ctx = CreateTopLevelCodeContext(scope, SourceUnit.LanguageContext);
+
+            Exception e = PythonOps.SaveCurrentException();
             PushFrame(ctx, target);
             try {
                 return target(ctx, EnsureFunctionCode(target));
             } finally {
+                PythonOps.RestoreCurrentException(e);
                 PopFrame();
             }
         }
@@ -104,11 +109,11 @@ namespace IronPython.Compiler {
         }
 
         // wrapper so we can do minimal code gen for eval code
-        private object EvalWrapper(Scope scope) {
+        private object EvalWrapper(CodeContext ctx) {
             try {
-                return RunWorker(scope);
+                return RunWorker(ctx);
             } catch (Exception) {
-                PythonOps.UpdateStackTrace(new CodeContext(scope, (PythonContext)SourceUnit.LanguageContext), Code, _target != null ? _target.Method : _tracingTarget.Method, "<module>", "<string>", 0);
+                PythonOps.UpdateStackTrace(ctx, Code, _target.Method, "<module>", "<string>", 0);
                 throw;
             }
         }
@@ -137,7 +142,17 @@ namespace IronPython.Compiler {
                 _target = CompileBody(_lambda);
             }
         }
-        
+
+        private CodeContext DefaultContext {
+            get {
+                if (_defaultContext == null) {
+                    _defaultContext = CreateTopLevelCodeContext(new PythonDictionary(),  _context.SourceUnit.LanguageContext);
+                }
+
+                return _defaultContext;
+            }
+        }
+
         private void EnsureTracingTarget() {
             if (_tracingTarget == null) {
                 PythonContext pc = (PythonContext)_context.SourceUnit.LanguageContext;

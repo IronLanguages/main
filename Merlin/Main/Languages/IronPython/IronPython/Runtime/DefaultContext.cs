@@ -54,8 +54,9 @@ namespace IronPython.Runtime {
         }
 
         internal static CodeContext/*!*/ CreateDefaultCLSContext(PythonContext/*!*/ context) {
-            PythonModule globalMod = context.CreateModule(ModuleOptions.ShowClsMethods | ModuleOptions.NoBuiltins);
-            return new CodeContext(globalMod.Scope, context);
+            ModuleContext mc = new ModuleContext(new PythonDictionary(), context);
+            mc.ShowCls = true;
+            return mc.GlobalContext;
         }
 
         internal static void InitializeDefaults(CodeContext defaultContext, CodeContext defaultClsCodeContext) {

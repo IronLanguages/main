@@ -123,42 +123,19 @@ module GuiTutorial
         begin @task = @tasks.shift end until @task.should_run? Window.repl.context.bind
         @window.next_step
         if @task.description
-          fd = FlowDocument.from_simple_markup @task.description
-          fd << "Full path: #{@task.source_files.tr('/', '\\')}" if @task.source_files
+          smflow = Wpf::SimpleMarkupFlow.new @task.description
+          smflow.add_paragraph "Full path: #{@task.source_files.tr('/', '\\')}" if @task.source_files
           return select_next_task if not @task.should_run? Window.repl.context.bind
           @task.setup.call(Window.repl.context.bind) if @task.setup
           if @task.code
-            unless SILVERLIGHT
-              p = Paragraph.new Run.new(@task.code_string)
-              p.font_family = FontFamily.new "Consolas"
-              p.font_weight = FontWeights.Bold
-              fd.Blocks.Add p
-            end
+            smflow.add_paragraph @task.code_string, true, "Consolas"
           end
         end
         @window.set_or_collapse(:step_title, @task.title) do |obj, value|
           obj.text = value
         end
 
-        # TODO move this SL formatting to the code above
-        unless SILVERLIGHT
-          @window.step_description.document = fd
-        else
-          @window.step_description.text = ''
-          r = Run.new
-          r.Text = fd
-          @window.step_description.inlines.add r
-          if @task.code
-            @window.step_description.inlines.add LineBreak.new
-            @window.step_description.inlines.add LineBreak.new
-            r = Run.new
-            r.Text = @task.code_string
-            r.font_family = FontFamily.new "Consolas"
-            r.font_weight = FontWeights.Bold
-            @window.step_description.inlines.add r
-          end
-        end
-
+        @window.step_description.document = smflow
         @window.tutorial_scroll.scroll_to_bottom
       else
         if @chapter.next_item
@@ -172,14 +149,14 @@ module GuiTutorial
             obj.text = value
           end if @chapter.summary
           @window.set_or_collapse(:complete_body, @chapter.summary.body) do |obj, value|
-            obj.document = FlowDocument.from_simple_markup value
+            obj.document = Wpf::SimpleMarkupFlow.new value
           end if @chapter.summary
           @window.next_chapter.focus
         else
           if @current_tutorial.summary && @current_tutorial.summary.body
-            @window.exercise.document = FlowDocument.from_simple_markup(@current_tutorial.summary.body)
+            @window.exercise.document = Wpf::SimpleMarkupFlow.new @current_tutorial.summary.body
           else
-            @window.exercise.document = FlowDocument.from_simple_markup("Tutorial complete!")
+            @window.exercise.document = Wpf::SimpleMarkupFlow.new "Tutorial complete!"
           end
           @window.exercise.show!
           @window.tutorial_body.children.clear

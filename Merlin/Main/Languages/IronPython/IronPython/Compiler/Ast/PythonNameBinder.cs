@@ -169,19 +169,19 @@ namespace IronPython.Compiler.Ast {
             _currentScope = node;
         }
 
-        internal PythonReference Reference(SymbolId name) {
+        internal PythonReference Reference(string name) {
             return _currentScope.Reference(name);
         }
 
-        internal PythonVariable DefineName(SymbolId name) {
+        internal PythonVariable DefineName(string name) {
             return _currentScope.EnsureVariable(name);
         }
 
-        internal PythonVariable DefineParameter(SymbolId name) {
+        internal PythonVariable DefineParameter(string name) {
             return _currentScope.DefineParameter(name);
         }
 
-        internal PythonVariable DefineDeleted(SymbolId name) {
+        internal PythonVariable DefineDeleted(string name) {
             PythonVariable variable = _currentScope.EnsureVariable(name);
             variable.Deleted = true;
             return variable;
@@ -234,13 +234,13 @@ namespace IronPython.Compiler.Ast {
             
             PushScope(node);
 
-            node.ModuleNameVariable = _globalScope.EnsureGlobalVariable(this, Symbols.Name);
+            node.ModuleNameVariable = _globalScope.EnsureGlobalVariable(this, "__name__");
 
             // define the __doc__ and the __module__
             if (node.Body.Documentation != null) {
-                node.DocVariable = DefineName(Symbols.Doc);
+                node.DocVariable = DefineName("__doc__");
             }
-            node.ModVariable = DefineName(Symbols.Module);
+            node.ModVariable = DefineName("__module__");
 
             // Walk the body
             node.Body.Walk(this);
@@ -301,7 +301,7 @@ namespace IronPython.Compiler.Ast {
             if (node.Names != FromImportStatement.Star) {
                 PythonVariable[] variables = new PythonVariable[node.Names.Count];
                 for (int i = 0; i < node.Names.Count; i++) {
-                    SymbolId name = node.AsNames[i] != SymbolId.Empty ? node.AsNames[i] : node.Names[i];
+                    string name = node.AsNames[i] != null ? node.AsNames[i] : node.Names[i];
                     variables[i] = DefineName(name);
                 }
                 node.Variables = variables;
@@ -316,7 +316,7 @@ namespace IronPython.Compiler.Ast {
 
         // FunctionDefinition
         public override bool Walk(FunctionDefinition node) {
-            node._nameVariable = _globalScope.EnsureGlobalVariable(Symbols.Name);            
+            node._nameVariable = _globalScope.EnsureGlobalVariable("__name__");            
             
             // Name is defined in the enclosing context
             if (!node.IsLambda) {
@@ -355,7 +355,7 @@ namespace IronPython.Compiler.Ast {
 
         // GlobalStatement
         public override bool Walk(GlobalStatement node) {
-            foreach (SymbolId n in node.Names) {
+            foreach (string n in node.Names) {
                 PythonVariable conflict;
                 // Check current scope for conflicting variable
                 bool assignedGlobal = false;
@@ -371,7 +371,7 @@ namespace IronPython.Compiler.Ast {
                                 String.Format(
                                     System.Globalization.CultureInfo.InvariantCulture,
                                     "name '{0}' is assigned to before global declaration",
-                                    SymbolTable.IdToString(n)
+                                    n
                                 ),
                                 node
                             );
@@ -382,7 +382,7 @@ namespace IronPython.Compiler.Ast {
                                 String.Format(
                                     System.Globalization.CultureInfo.InvariantCulture,
                                     "Name '{0}' is a function parameter and declared global",
-                                    SymbolTable.IdToString(n)),
+                                    n),
                                 node);
                             break;
                     }
@@ -396,7 +396,7 @@ namespace IronPython.Compiler.Ast {
                         String.Format(
                         System.Globalization.CultureInfo.InvariantCulture,
                         "name '{0}' is used prior to global declaration",
-                        SymbolTable.IdToString(n)),
+                        n),
                     node);
                 }
 
@@ -421,9 +421,14 @@ namespace IronPython.Compiler.Ast {
         // PythonAst
         public override bool Walk(PythonAst node) {
             if (node.Module) {
-                node.NameVariable = DefineName(Symbols.Name);
-                node.FileVariable = DefineName(Symbols.File);
-                node.DocVariable = DefineName(Symbols.Doc);
+                node.NameVariable = DefineName("__name__");
+                node.FileVariable = DefineName("__file__");
+                node.DocVariable = DefineName("__doc__");
+
+                // commonly used module variables that we want defined for optimization purposes
+                DefineName("__path__");
+                DefineName("__builtins__");
+                DefineName("__package__");
             }
             return true;
         }
@@ -440,7 +445,7 @@ namespace IronPython.Compiler.Ast {
         public override bool Walk(ImportStatement node) {
             PythonVariable[] variables = new PythonVariable[node.Names.Count];
             for (int i = 0; i < node.Names.Count; i++) {
-                SymbolId name = node.AsNames[i] != SymbolId.Empty ? node.AsNames[i] : node.Names[i].Names[0];
+                string name = node.AsNames[i] != null ? node.AsNames[i] : node.Names[i].Names[0];
                 variables[i] = DefineName(name);
             }
             node.Variables = variables;

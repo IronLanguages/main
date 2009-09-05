@@ -26,9 +26,9 @@ namespace IronPython.Compiler.Ast {
 
     public class MemberExpression : Expression {
         private readonly Expression _target;
-        private readonly SymbolId _name;
+        private readonly string _name;
 
-        public MemberExpression(Expression target, SymbolId name) {
+        public MemberExpression(Expression target, string name) {
             _target = target;
             _name = name;
         }
@@ -37,18 +37,18 @@ namespace IronPython.Compiler.Ast {
             get { return _target; }
         }
 
-        public SymbolId Name {
+        public string Name {
             get { return _name; }
         }
 
         public override string ToString() {
-            return base.ToString() + ":" + SymbolTable.IdToString(_name);
+            return base.ToString() + ":" + _name;
         }
 
         internal override MSAst.Expression Transform(AstGenerator ag, Type type) {
             return ag.Get(
                 type,
-                SymbolTable.IdToString(_name),
+                _name,
                 ag.Transform(_target)
             );
         }
@@ -58,7 +58,7 @@ namespace IronPython.Compiler.Ast {
                 return ag.AddDebugInfoAndVoid(
                     ag.Set(
                         typeof(object),
-                        SymbolTable.IdToString(_name),
+                        _name,
                         ag.Transform(_target),
                         right
                     ),
@@ -89,14 +89,14 @@ namespace IronPython.Compiler.Ast {
         private MSAst.Expression SetMemberOperator(AstGenerator ag, MSAst.Expression right, PythonOperationKind op, MSAst.ParameterExpression temp) {
             return ag.Set(
                 typeof(object),
-                SymbolTable.IdToString(_name),
+                _name,
                 temp,
                 ag.Operation(
                     typeof(object),
                     op,
                     ag.Get(
                         typeof(object),
-                        SymbolTable.IdToString(_name),
+                        _name,
                         temp
                     ),
                     right
@@ -107,7 +107,7 @@ namespace IronPython.Compiler.Ast {
         internal override MSAst.Expression TransformDelete(AstGenerator ag) {
             return ag.Delete(
                 typeof(void),
-                SymbolTable.IdToString(_name),
+                _name,
                 ag.Transform(_target)
             );
         }

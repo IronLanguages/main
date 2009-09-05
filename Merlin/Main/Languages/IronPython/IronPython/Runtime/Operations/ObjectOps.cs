@@ -80,7 +80,7 @@ namespace IronPython.Runtime.Operations {
         /// <summary>
         /// Initializes the object.  The base class does nothing.
         /// </summary>
-        public static void __init__(CodeContext/*!*/ context, object self, [ParamDictionary] IAttributesCollection kwargs, params object[] args\u00F8) {
+        public static void __init__(CodeContext/*!*/ context, object self, [ParamDictionary]IDictionary<object, object> kwargs, params object[] args\u00F8) {
             InstanceOps.CheckInitArgs(context, kwargs, args\u00F8, self);
         }
 
@@ -114,7 +114,7 @@ namespace IronPython.Runtime.Operations {
         /// Creates a new instance of the type
         /// </summary>
         [StaticExtensionMethod]
-        public static object __new__(CodeContext/*!*/ context, PythonType cls, [ParamDictionary] IAttributesCollection kwargs\u00F8, params object[] args\u00F8) {
+        public static object __new__(CodeContext/*!*/ context, PythonType cls, [ParamDictionary]IDictionary<object, object> kwargs\u00F8, params object[] args\u00F8) {
             if (cls == null) {
                 throw PythonOps.TypeError("__new__ expected type object, got {0}", PythonOps.Repr(context, DynamicHelpers.GetPythonType(cls)));
             }

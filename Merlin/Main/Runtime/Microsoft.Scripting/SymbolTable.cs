@@ -47,7 +47,7 @@ namespace Microsoft.Scripting {
         private static readonly object _lockObj = new object();
 
         private static readonly Dictionary<string, int> _idDict = new Dictionary<string, int>(InitialTableSize);
-        private static readonly Dictionary<string, int> _invariantDict = new Dictionary<string, int>(InitialTableSize, StringComparer.InvariantCultureIgnoreCase);
+        private static readonly Dictionary<string, int> _invariantDict = new Dictionary<string, int>(InitialTableSize, StringComparer.OrdinalIgnoreCase);
 
         private const int InitialTableSize = 256;
         private static readonly Dictionary<int, string> _fieldDict = CreateFieldDictionary();

@@ -42,25 +42,25 @@ namespace IronPython.Compiler.Ast {
     /// </summary>
     partial class SharedGlobalAllocator : GlobalAllocator {
         private static readonly Dictionary<object/*!*/, ConstantInfo/*!*/>/*!*/ _allConstants = new Dictionary<object/*!*/, ConstantInfo/*!*/>();
-        private static readonly Dictionary<SymbolId, ConstantInfo/*!*/>/*!*/ _allSymbols = new Dictionary<SymbolId, ConstantInfo/*!*/>();
         private static readonly Dictionary<Type/*!*/, DelegateCache/*!*/>/*!*/ _delegateCache = new Dictionary<Type/*!*/, DelegateCache/*!*/>();
 
         private readonly MSAst.Expression/*!*/ _codeContext;
         private readonly CodeContext/*!*/ _context;
         private readonly ConstantInfo/*!*/ _codeContextInfo;
         private readonly Dictionary<object/*!*/, ConstantInfo/*!*/>/*!*/ _constants = new Dictionary<object/*!*/, ConstantInfo/*!*/>();
-        private readonly Dictionary<SymbolId, ConstantInfo/*!*/>/*!*/ _symbols = new Dictionary<SymbolId, ConstantInfo/*!*/>();
-        private readonly Dictionary<string/*!*/, ConstantInfo/*!*/>/*!*/ _globals = new Dictionary<string/*!*/, ConstantInfo/*!*/>();
-        private readonly Dictionary<SymbolId, PythonGlobal/*!*/>/*!*/ _globalVals = new Dictionary<SymbolId, PythonGlobal>();
+        private readonly Dictionary<string/*!*/, ConstantInfo/*!*/>/*!*/ _globals = new Dictionary<string/*!*/, ConstantInfo/*!*/>(StringComparer.Ordinal);
+        private readonly Dictionary<string, PythonGlobal/*!*/>/*!*/ _globalVals = new Dictionary<string, PythonGlobal>(StringComparer.Ordinal);
         private readonly List<SiteInfo/*!*/>/*!*/ _sites = new List<SiteInfo/*!*/>();
-        private readonly Scope _scope;
+        private readonly GlobalDictionaryStorage _globalStorage;
+        private readonly ModuleContext _modContext;
 
         public SharedGlobalAllocator(PythonContext/*!*/ context) {
             _codeContextInfo = NextContext();
             _codeContext = _codeContextInfo.Expression;
 
-            _scope = new Scope(new PythonDictionary(new GlobalDictionaryStorage(_globalVals)));
-            _context = new CodeContext(_scope, context);
+            _globalStorage = new GlobalDictionaryStorage(_globalVals);
+            _modContext = new ModuleContext(new PythonDictionary(_globalStorage), context);
+            _context = _modContext.GlobalContext;
         }
 
         public override ScriptCode/*!*/ MakeScriptCode(MSAst.Expression/*!*/ lambda, CompilerContext/*!*/ compilerContext, PythonAst/*!*/ ast, Dictionary<int, bool> handlerLocations, Dictionary<int, Dictionary<int, bool>> loopAndFinallyLocations) {
@@ -72,7 +72,6 @@ namespace IronPython.Compiler.Ast {
 
             // publish the cached constants
             PublishConstants(_constants);
-            PublishSymbols(_symbols);
 
             // publish all of the call site instances
             PublishSites(_sites);
@@ -118,19 +117,10 @@ namespace IronPython.Compiler.Ast {
             return ci.Expression;
         }
 
-        public override MSAst.Expression/*!*/ GetSymbol(SymbolId name) {
-            ConstantInfo ci;
-            if (!_allSymbols.TryGetValue(name, out ci)) {
-                _allSymbols[name] = _symbols[name] = ci = NextSymbol(_symbols.Count);
-            }
-
-            return ci.Expression;
-        }
-
         protected override MSAst.Expression/*!*/ GetGlobal(string/*!*/ name, AstGenerator/*!*/ ag, bool isLocal) {
             Assert.NotNull(name);
 
-            PythonGlobal global = _globalVals[SymbolTable.StringToId(name)] = new PythonGlobal(_context, SymbolTable.StringToId(name));
+            PythonGlobal global = _globalVals[name] = new PythonGlobal(_context, name);
             return new PythonGlobalVariableExpression(GetGlobalInfo(name).Expression, global);
         }
 
@@ -172,10 +162,6 @@ namespace IronPython.Compiler.Ast {
 
         private static ConstantInfo/*!*/ NextConstant(int offset, Type/*!*/ returnType) {
             return new ConstantInfo(new ConstantExpression(offset, returnType), null, offset);
-        }
-
-        private static ConstantInfo/*!*/ NextSymbol(int offset) {
-            return new ConstantInfo(new SymbolExpression(offset), null, offset);
         }
 
         private static ConstantInfo/*!*/ NextGlobal(int offset) {
@@ -260,21 +246,7 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-        private static void PublishSymbols(Dictionary<SymbolId, ConstantInfo/*!*/>/*!*/ symbols) {
-            if (symbols.Count > 0) {
-                lock (StorageData.Symbols) {
-                    int start = StorageData.SymbolCount;
-                    StorageData.SymbolCount += symbols.Count;
-                    StorageData.SymbolStorageType(StorageData.SymbolCount - 1); // resize array once
-
-                    foreach (var symbol in symbols) {
-                        PublishWorker(start, StorageData.SymbolTypes, symbol.Value, symbol.Key, StorageData.Symbols);
-                    }
-                }
-            }
-        }
-
-        private static void PublishGlobals(Dictionary<string/*!*/, ConstantInfo/*!*/>/*!*/ globals, Dictionary<SymbolId, PythonGlobal/*!*/>/*!*/ globalVals) {
+        private static void PublishGlobals(Dictionary<string/*!*/, ConstantInfo/*!*/>/*!*/ globals, Dictionary<string, PythonGlobal/*!*/>/*!*/ globalVals) {
             Assert.Equals(globals.Count, globalVals.Count);
 
             if (globals.Count > 0) {
@@ -284,7 +256,7 @@ namespace IronPython.Compiler.Ast {
                     StorageData.GlobalStorageType(StorageData.GlobalCount - 1); // resize array once
 
                     foreach (var global in globals) {
-                        PublishWorker(start, StorageData.GlobalTypes, global.Value, globalVals[SymbolTable.StringToId(global.Key)], StorageData.Globals);
+                        PublishWorker(start, StorageData.GlobalTypes, global.Value, globalVals[global.Key], StorageData.Globals);
                     }
                 }
             }
@@ -549,26 +521,6 @@ namespace IronPython.Compiler.Ast {
                 } else {
                     return MSAst.Expression.Convert(base.Reduce(), _returnType);
                 }
-            }
-        }
-
-        internal sealed class SymbolExpression : ReducibleExpression {
-            public SymbolExpression(int offset) : base(offset) { }
-
-            public override string/*!*/ Name {
-                get { return "Symbol"; }
-            }
-
-            public override int FieldCount {
-                get { return StorageData.SymbolTypes * StorageData.StaticFields; }
-            }
-
-            protected override Type/*!*/ GetStorageType(int index) {
-                return StorageData.SymbolStorageType(index);
-            }
-
-            public override Type/*!*/ Type {
-                get { return typeof(SymbolId); }
             }
         }
 

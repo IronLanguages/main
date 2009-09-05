@@ -33,7 +33,7 @@ function global:gencache { cmd /C "${env:MERLIN_ROOT}\Languages\Ruby\Ruby\Compil
 # Silverlight Build Commands
 #
 
-function global:bsd { cmd /C "msbuild ${env:MERLIN_ROOT}\Hosts\Silverlight\Silverlight.sln /p:Configuration=Silverlight Debug /p:SilverlightPath=C:\Program Files\Microsoft Silverlight\3.0.40624.0" }
+function global:bsd { cmd /C "msbuild ${env:MERLIN_ROOT}\Hosts\Silverlight\Silverlight.sln /p:Configuration="Silverlight Debug" /p:SilverlightPath=C:\Program Files\Microsoft Silverlight\3.0.40624.0" }
 function global:bsr { cmd /C "msbuild ${env:MERLIN_ROOT}\Hosts\Silverlight\Silverlight.sln /p:Configuration=Silverlight Release /p:SilverlightPath=C:\Program Files\Microsoft Silverlight\3.0.40624.0" }
 
 #=============================================================================

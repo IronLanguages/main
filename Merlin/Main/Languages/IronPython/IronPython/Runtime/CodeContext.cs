@@ -13,98 +13,235 @@
  *
  * ***************************************************************************/
 
-using System.Diagnostics;
-using Microsoft.Scripting.Utils;
-using Microsoft.Scripting.Runtime;
+using System;
+
 using Microsoft.Scripting;
+using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
+
+using IronPython.Compiler;
 
 namespace IronPython.Runtime {
+    
     /// <summary>
-    /// Captures the state of a piece of code.
+    /// Captures and flows the state of executing code from the generated 
+    /// Python code into the IronPython runtime.
     /// </summary>    
     public sealed class CodeContext {
-        private readonly Scope _scope;
-        private readonly PythonContext _languageContext;
-        private readonly CodeContext _parent;
+        private readonly ModuleContext/*!*/ _modContext;
+        private readonly PythonDictionary/*!*/ _dict;
 
-        public CodeContext(Scope scope, PythonContext languageContext)
-            : this(scope, languageContext, null) {
+        /// <summary>
+        /// Creates a new CodeContext which is backed by the specified Python dictionary.
+        /// </summary>
+        public CodeContext(PythonDictionary/*!*/ dict, ModuleContext/*!*/ moduleContext) {
+            ContractUtils.RequiresNotNull(dict, "dict");
+            ContractUtils.RequiresNotNull(moduleContext, "moduleContext");
+            _dict = dict;
+            _modContext = moduleContext;
         }
 
-        public CodeContext(Scope scope, PythonContext languageContext, CodeContext parent) {
-            Assert.NotNull(languageContext);
+        #region Public APIs
 
-            _languageContext = languageContext;
-            _scope = scope;
-            _parent = parent;
-        }
-
-        public CodeContext Parent {
-            get { return _parent; }
-        }
-
-        public Scope Scope {
+        /// <summary>
+        /// Gets the module state for top-level code.
+        /// </summary>   
+        public ModuleContext ModuleContext {
             get {
-                return _scope;
+                return _modContext;
             }
         }
 
+        /// <summary>
+        /// Gets the DLR scope object that corresponds to the global variables of this context.
+        /// </summary>
         public Scope GlobalScope {
             get {
-                Debug.Assert(_scope != null, "Global scope not available");
-                return GetModuleScope(_scope);
+                return _modContext.GlobalScope;
+            }
+        }
+        
+        /// <summary>
+        /// Gets the PythonContext which created the CodeContext.
+        /// </summary>
+        public PythonContext LanguageContext {
+            get {
+                return _modContext.Context;
             }
         }
 
-        public PythonContext LanguageContext {
+        #endregion
+
+        #region Internal Helpers
+
+        /// <summary>
+        /// Gets the dictionary for the global variables from the ModuleContext.
+        /// </summary>
+        internal PythonDictionary GlobalDict {
             get {
-                return _languageContext;
+                return _modContext.Globals;
             }
+        }
+       
+        /// <summary>
+        /// True if this global context should display CLR members on shared types (for example .ToString on int/bool/etc...)
+        /// 
+        /// False if these attributes should be hidden.
+        /// </summary>
+        internal bool ShowCls {
+            get {
+                return ModuleContext.ShowCls;
+            }
+            set {
+                ModuleContext.ShowCls = value;
+            }
+        }
+     
+        /// <summary>
+        /// Attempts to lookup the provided name in this scope or any outer scope.
+        /// </summary>
+        internal bool TryLookupName(SymbolId name, out object value) {
+            string strName = SymbolTable.IdToString(name);
+            if (_dict.TryGetValue(strName, out value)) {
+                return true;
+            }
+
+            return _modContext.Globals.TryGetValue(strName, out value);
         }
 
         /// <summary>
         /// Attempts to lookup the provided name in this scope or any outer scope.
         /// </summary>
-        internal bool TryLookupName(SymbolId name, out object value) {
-            Scope curScope = _scope;
-            do {
-                if (curScope == _scope || curScope.IsVisible) {
-                    if (curScope.TryGetVariable(name, out value)) {
-                        return true;
-                    }
-                }
+        internal bool TryLookupName(string name, out object value) {
+            if (_dict.TryGetValue(name, out value)) {
+                return true;
+            }
 
-                curScope = curScope.Parent;
-            } while (curScope != null);
-
-            value = null;
-            return false;
+            return _modContext.Globals.TryGetValue(name, out value);
         }
 
-        internal bool TryLookupGlobal(SymbolId name, out object value) {
+        /// <summary>
+        /// Looks up a global variable.  If the variable is not defined in the
+        /// global scope then built-ins is consulted.
+        /// </summary>
+        internal bool TryLookupGlobal(string name, out object value) {
             object builtins;
-            if (!GlobalScope.TryGetVariable(Symbols.Builtins, out builtins)) {
+            if (!GlobalDict.TryGetValue("__builtins__", out builtins)) {
                 value = null;
                 return false;
             }
 
-            Scope builtinsScope = builtins as Scope;
-            if (builtinsScope != null && builtinsScope.TryGetVariable(name, out value)) return true;
+            PythonModule builtinsScope = builtins as PythonModule;
+            if (builtinsScope != null && builtinsScope.__dict__.TryGetValue(name, out value)) {
+                return true;
+            }
 
-            IAttributesCollection dict = builtins as IAttributesCollection;
-            if (dict != null && dict.TryGetValue(name, out value)) return true;
+            PythonDictionary dict = builtins as PythonDictionary;
+            if (dict != null && dict.TryGetValue(name, out value)) {
+                return true;
+            }
 
             value = null;
             return false;
         }
 
-        internal static Scope GetModuleScope(Scope scope) {
-            Scope cur = scope;
-            while (cur.Parent != null) {
-                cur = cur.Parent;
+        /// <summary>
+        /// Gets the dictionary used for storage of local variables.
+        /// </summary>
+        internal PythonDictionary Dict {
+            get {
+                return _dict;
             }
-
-            return cur;
         }
+
+        /// <summary>
+        /// Attempts to lookup the variable in the local scope.
+        /// </summary>
+        internal bool TryGetVariable(SymbolId name, out object value) {
+            return Dict.TryGetValue(SymbolTable.IdToString(name), out value);
+        }
+
+        /// <summary>
+        /// Removes a variable from the local scope.
+        /// </summary>
+        internal bool TryRemoveVariable(SymbolId name) {
+            return Dict.Remove(SymbolTable.IdToString(name));
+        }
+
+        /// <summary>
+        /// Removes a variable from the local scope.
+        /// </summary>
+        internal bool TryRemoveVariable(string name) {
+            return Dict.Remove(name);
+        }
+
+        /// <summary>
+        /// Sets a variable in the local scope.
+        /// </summary>
+        internal void SetVariable(SymbolId name, object value) {
+            Dict.Add(SymbolTable.IdToString(name), value);
+        }
+
+        /// <summary>
+        /// Sets a variable in the local scope.
+        /// </summary>
+        internal void SetVariable(string name, object value) {
+            Dict.Add(name, value);
+        }
+
+        /// <summary>
+        /// Gets a variable from the global scope.
+        /// </summary>
+        internal bool TryGetGlobalVariable(SymbolId symbolId, out object res) {
+            return GlobalDict.TryGetValue(SymbolTable.IdToString(symbolId), out res);
+        }
+
+
+        /// <summary>
+        /// Gets a variable from the global scope.
+        /// </summary>
+        internal bool TryGetGlobalVariable(string name, out object res) {
+            return GlobalDict.TryGetValue(name, out res);
+        }
+
+        /// <summary>
+        /// Sets a variable in the global scope.
+        /// </summary>
+        internal void SetGlobalVariable(SymbolId name, object value) {
+            GlobalDict.Add(SymbolTable.IdToString(name), value);
+        }
+
+        /// <summary>
+        /// Sets a variable in the global scope.
+        /// </summary>
+        internal void SetGlobalVariable(string name, object value) {
+            GlobalDict.Add(name, value);
+        }
+
+        /// <summary>
+        /// Removes a variable from the global scope.
+        /// </summary>
+        internal bool TryRemoveGlobalVariable(SymbolId name) {
+            return GlobalDict.Remove(SymbolTable.IdToString(name));
+        }
+
+        /// <summary>
+        /// Removes a variable from the global scope.
+        /// </summary>
+        internal bool TryRemoveGlobalVariable(string name) {
+            return GlobalDict.Remove(name);
+        }
+
+        internal PythonGlobal/*!*/[] GetGlobalArray() {
+            return ((GlobalDictionaryStorage)_dict._storage).Data;
+        }
+
+        internal bool IsTopLevel {
+            get {
+                return Dict != ModuleContext.Globals;
+            }
+        }
+
+        #endregion
     }
 }

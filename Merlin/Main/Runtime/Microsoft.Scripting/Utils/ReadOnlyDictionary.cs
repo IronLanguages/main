@@ -18,9 +18,9 @@ using System.Collections.Generic;
 
 namespace Microsoft.Scripting.Utils {
 
-    // Like ReadOnlyCollection<T>: wraps an IDictionary<K, V> in a read-only wrapper
+    // Like ReadOnlyCollection<T>: wraps an IDictionary<TKey, TValue> in a read-only wrapper
     [Serializable]
-    public sealed class ReadOnlyDictionary<K, V> : IDictionary<K, V> {
+    public sealed class ReadOnlyDictionary<TKey, TValue> : IDictionary<TKey, TValue> {
 
         // For wrapping non-readonly Keys, Values collections
         // Not used for standard dictionaries, which return read-only Keys and Values
@@ -82,59 +82,59 @@ namespace Microsoft.Scripting.Utils {
             #endregion
         }
 
-        private readonly IDictionary<K, V> _dict;
+        private readonly IDictionary<TKey, TValue> _dict;
 
-        public ReadOnlyDictionary(IDictionary<K, V> dict) {
-            ReadOnlyDictionary<K, V> rodict = dict as ReadOnlyDictionary<K, V>;
+        public ReadOnlyDictionary(IDictionary<TKey, TValue> dict) {
+            ReadOnlyDictionary<TKey, TValue> rodict = dict as ReadOnlyDictionary<TKey, TValue>;
             _dict = (rodict != null) ? rodict._dict : dict;
         }
 
         #region IDictionary<K,V> Members
 
-        public bool ContainsKey(K key) {
+        public bool ContainsKey(TKey key) {
             return _dict.ContainsKey(key);
         }
 
-        public ICollection<K> Keys {
+        public ICollection<TKey> Keys {
             get {
-                ICollection<K> keys = _dict.Keys;
+                ICollection<TKey> keys = _dict.Keys;
                 if (!keys.IsReadOnly) {
-                    return new ReadOnlyWrapper<K>(keys);
+                    return new ReadOnlyWrapper<TKey>(keys);
                 }
                 return keys;
             }
         }
 
-        public bool TryGetValue(K key, out V value) {
+        public bool TryGetValue(TKey key, out TValue value) {
             return _dict.TryGetValue(key, out value);
         }
 
-        public ICollection<V> Values {
+        public ICollection<TValue> Values {
             get {
-                ICollection<V> values = _dict.Values;
+                ICollection<TValue> values = _dict.Values;
                 if (!values.IsReadOnly) {
-                    return new ReadOnlyWrapper<V>(values);
+                    return new ReadOnlyWrapper<TValue>(values);
                 }
                 return values;
             }
         }
 
-        public V this[K key] {
+        public TValue this[TKey key] {
             get {
                 return _dict[key];
             }
         }
 
 
-        void IDictionary<K, V>.Add(K key, V value) {
+        void IDictionary<TKey, TValue>.Add(TKey key, TValue value) {
             throw new NotSupportedException("Collection is read-only.");
         }
 
-        bool IDictionary<K, V>.Remove(K key) {
+        bool IDictionary<TKey, TValue>.Remove(TKey key) {
             throw new NotSupportedException("Collection is read-only.");
         }
 
-        V IDictionary<K, V>.this[K key] {
+        TValue IDictionary<TKey, TValue>.this[TKey key] {
             get {
                 return _dict[key];
             }
@@ -147,11 +147,11 @@ namespace Microsoft.Scripting.Utils {
 
         #region ICollection<KeyValuePair<K,V>> Members
 
-        public bool Contains(KeyValuePair<K, V> item) {
+        public bool Contains(KeyValuePair<TKey, TValue> item) {
             return _dict.Contains(item);
         }
 
-        public void CopyTo(KeyValuePair<K, V>[] array, int arrayIndex) {
+        public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex) {
             _dict.CopyTo(array, arrayIndex);
         }
 
@@ -163,15 +163,15 @@ namespace Microsoft.Scripting.Utils {
             get { return true; }
         }
 
-        void ICollection<KeyValuePair<K, V>>.Add(KeyValuePair<K, V> item) {
+        void ICollection<KeyValuePair<TKey, TValue>>.Add(KeyValuePair<TKey, TValue> item) {
             throw new NotSupportedException("Collection is read-only.");
         }
 
-        void ICollection<KeyValuePair<K, V>>.Clear() {
+        void ICollection<KeyValuePair<TKey, TValue>>.Clear() {
             throw new NotSupportedException("Collection is read-only.");
         }
 
-        bool ICollection<KeyValuePair<K,V>>.Remove(KeyValuePair<K, V> item) {
+        bool ICollection<KeyValuePair<TKey,TValue>>.Remove(KeyValuePair<TKey, TValue> item) {
             throw new NotSupportedException("Collection is read-only.");
         }
 
@@ -179,7 +179,7 @@ namespace Microsoft.Scripting.Utils {
 
         #region IEnumerable<KeyValuePair<K,V>> Members
 
-        public IEnumerator<KeyValuePair<K, V>> GetEnumerator() {
+        public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator() {
             return _dict.GetEnumerator();
         }
 

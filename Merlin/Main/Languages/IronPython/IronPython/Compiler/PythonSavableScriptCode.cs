@@ -31,19 +31,19 @@ namespace IronPython.Compiler {
     /// A ScriptCode which can be saved to disk.  We only create this when called via
     /// the clr.CompileModules API.  This ScriptCode does not support running.
     /// </summary>
-    class SavableScriptCode : ScriptCode, ICustomScriptCodeData {
+    class PythonSavableScriptCode : SavableScriptCode, ICustomScriptCodeData {
         private readonly Expression<Func<CodeContext, FunctionCode, object>> _code;
         private readonly string[] _names;
         private readonly string _moduleName;
         
-        public SavableScriptCode(Expression<Func<CodeContext, FunctionCode, object>> code, SourceUnit sourceUnit, string[] names, string moduleName)
+        public PythonSavableScriptCode(Expression<Func<CodeContext, FunctionCode, object>> code, SourceUnit sourceUnit, string[] names, string moduleName)
             : base(sourceUnit) {
             _code = code;
             _names = names;
             _moduleName = moduleName;
         }
 
-        protected override KeyValuePair<MethodBuilder, Type> CompileForSave(TypeGen typeGen, Dictionary<SymbolId, FieldBuilder> symbolDict) {
+        protected override KeyValuePair<MethodBuilder, Type> CompileForSave(TypeGen typeGen) {
             var lambda = RewriteForSave(typeGen, _code);
 
             MethodBuilder mb = typeGen.TypeBuilder.DefineMethod(lambda.Name ?? "lambda_method", CompilerHelpers.PublicStatic | MethodAttributes.SpecialName);

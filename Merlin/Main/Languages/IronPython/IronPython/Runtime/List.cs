@@ -119,7 +119,7 @@ namespace IronPython.Runtime {
             return __new__(context, cls);
         }
 
-        public static object __new__(CodeContext/*!*/ context, PythonType cls, [ParamDictionary]IAttributesCollection kwArgs\u00F8, params object[] args\u00F8) {
+        public static object __new__(CodeContext/*!*/ context, PythonType cls, [ParamDictionary]IDictionary<object, object> kwArgs\u00F8, params object[] args\u00F8) {
             return __new__(context, cls);
         }
 

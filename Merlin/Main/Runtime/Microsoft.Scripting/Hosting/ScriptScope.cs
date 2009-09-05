@@ -24,7 +24,6 @@ using System.Security.Permissions;
 using System.Dynamic;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 #if !CLR4
 using dynamic = System.Object;
@@ -264,16 +263,16 @@ namespace Microsoft.Scripting.Hosting {
                         new ParameterExpression[] { result },
                         Expression.Condition(
                             Expression.Call(
-                                AstUtils.Convert(Expression, typeof(ScriptScope)),
+                                Expression.Convert(Expression, typeof(ScriptScope)),
                                 typeof(ScriptScope).GetMethod("TryGetVariable", new[] { typeof(string), typeof(object).MakeByRefType() }),
-                                AstUtils.Constant(action.Name),
+                                Expression.Constant(action.Name),
                                 result
                             ),
                             result,
-                            AstUtils.Convert(fallback.Expression, typeof(object))
+                            Expression.Convert(fallback.Expression, typeof(object))
                         )
                     ),
-                    BindingRestrictionsHelpers.GetRuntimeTypeRestriction(Expression, typeof(ScriptScope)).Merge(fallback.Restrictions)
+                    BindingRestrictions.GetTypeRestriction(Expression, typeof(ScriptScope)).Merge(fallback.Restrictions)
                 );
             }
 
@@ -282,14 +281,14 @@ namespace Microsoft.Scripting.Hosting {
                 return new DynamicMetaObject(
                     Expression.Block(
                         Expression.Call(
-                            AstUtils.Convert(Expression, typeof(ScriptScope)),
+                            Expression.Convert(Expression, typeof(ScriptScope)),
                             typeof(ScriptScope).GetMethod("SetVariable", new[] { typeof(string), typeof(object) }),
-                            AstUtils.Constant(action.Name),
-                            AstUtils.Convert(value.Expression, typeof(object))
+                            Expression.Constant(action.Name),
+                            Expression.Convert(value.Expression, typeof(object))
                         ),
                         value.Expression
                     ),
-                    Restrictions.Merge(value.Restrictions).Merge(BindingRestrictionsHelpers.GetRuntimeTypeRestriction(Expression, typeof(ScriptScope)))
+                    Restrictions.Merge(value.Restrictions).Merge(BindingRestrictions.GetTypeRestriction(Expression, typeof(ScriptScope)))
                 );
             }
 
@@ -299,14 +298,14 @@ namespace Microsoft.Scripting.Hosting {
                 return new DynamicMetaObject(
                     Expression.IfThenElse(
                         Expression.Call(
-                            AstUtils.Convert(Expression, typeof(ScriptScope)),
+                            Expression.Convert(Expression, typeof(ScriptScope)),
                             typeof(ScriptScope).GetMethod("RemoveVariable"),
-                            AstUtils.Constant(action.Name)
+                            Expression.Constant(action.Name)
                         ),
-                        AstUtils.Empty(),
+                        Expression.Empty(),
                         fallback.Expression
                     ),
-                    Restrictions.Merge(BindingRestrictionsHelpers.GetRuntimeTypeRestriction(Expression, typeof(ScriptScope))).Merge(fallback.Restrictions)
+                    Restrictions.Merge(BindingRestrictions.GetTypeRestriction(Expression, typeof(ScriptScope))).Merge(fallback.Restrictions)
                 );
             }
 
@@ -322,16 +321,16 @@ namespace Microsoft.Scripting.Hosting {
                         new ParameterExpression[] { result },
                         Expression.Condition(
                             Expression.Call(
-                                AstUtils.Convert(Expression, typeof(ScriptScope)),
+                                Expression.Convert(Expression, typeof(ScriptScope)),
                                 typeof(ScriptScope).GetMethod("TryGetVariable", new[] { typeof(string), typeof(object).MakeByRefType() }),
-                                AstUtils.Constant(action.Name),
+                                Expression.Constant(action.Name),
                                 result
                             ),
-                            AstUtils.Convert(fallbackInvoke.Expression, typeof(object)),
-                            AstUtils.Convert(fallback.Expression, typeof(object))
+                            Expression.Convert(fallbackInvoke.Expression, typeof(object)),
+                            Expression.Convert(fallback.Expression, typeof(object))
                         )
                     ),
-                    BindingRestrictions.Combine(args).Merge(BindingRestrictionsHelpers.GetRuntimeTypeRestriction(Expression, typeof(ScriptScope))).Merge(fallback.Restrictions)
+                    BindingRestrictions.Combine(args).Merge(BindingRestrictions.GetTypeRestriction(Expression, typeof(ScriptScope))).Merge(fallback.Restrictions)
                 );
             }
 

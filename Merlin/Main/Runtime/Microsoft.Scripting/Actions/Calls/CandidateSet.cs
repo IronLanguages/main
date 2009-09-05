@@ -32,14 +32,12 @@ namespace Microsoft.Scripting.Actions.Calls {
     /// and a method with 3 parameters would both be a CandidateSet for 3 parameters.
     /// </summary>
     internal sealed class CandidateSet {
-        private readonly OverloadResolver _binder;
         private readonly int _arity;
         private readonly List<MethodCandidate> _candidates;
 
-        internal CandidateSet(OverloadResolver binder, int count) {
+        internal CandidateSet(int count) {
             _arity = count;
             _candidates = new List<MethodCandidate>();
-            _binder = binder;
         }
 
         internal List<MethodCandidate> Candidates {

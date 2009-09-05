@@ -69,7 +69,6 @@ namespace IronPython.Modules {
             private IEnumerator _inner;
 
             internal IEnumerator InnerEnumerator {
-                get { return _inner; }
                 set { _inner = value; }
             }
 
@@ -138,7 +137,7 @@ namespace IronPython.Modules {
             }
 
             public count(int n) {
-                _cur = _start = (n - 1);
+                _cur = _start = checked((n - 1));
             }
 
             public count([NotNull]BigInteger n) {
@@ -269,7 +268,7 @@ namespace IronPython.Modules {
                 if (MoveNextHelper(iter)) {
                     PythonContext pc = PythonContext.GetContext(_context);
                     while (!_fFinished) {
-                        while (pc.Equal(GetKey(iter.Current), curKey)) {
+                        while (PythonContext.Equal(GetKey(iter.Current), curKey)) {
                             if (!MoveNextHelper(iter)) { 
                                 _fFinished = true; 
                                 yield break; 
@@ -283,7 +282,7 @@ namespace IronPython.Modules {
 
             private IEnumerator<object> Grouper(IEnumerator iter, object curKey) {
                 PythonContext pc = PythonContext.GetContext(_context);
-                while (pc.Equal(GetKey(iter.Current), curKey)) {
+                while (PythonContext.Equal(GetKey(iter.Current), curKey)) {
                     yield return iter.Current;
                     if (!MoveNextHelper(iter)) { 
                         _fFinished = true; 
@@ -519,13 +518,13 @@ namespace IronPython.Modules {
                 }
             }
 
-            public izip_longest([ParamDictionary]IAttributesCollection paramDict, params object[] iterables) {
+            public izip_longest([ParamDictionary]IDictionary<object, object> paramDict, params object[] iterables) {
                 object fill;
 
-                if (paramDict.TryGetValue(SymbolTable.StringToId("fillvalue"), out fill)) {
+                if (paramDict.TryGetValue("fillvalue", out fill)) {
                     _fill = fill;
                     if (paramDict.Count != 1) {
-                        paramDict.Remove(SymbolTable.StringToId("fillvalue"));
+                        paramDict.Remove("fillvalue");
                         throw UnexpectedKeywordArgument(paramDict);
                     }
                 } else if (paramDict.Count != 0) {
@@ -581,7 +580,7 @@ namespace IronPython.Modules {
             #endregion
         }
 
-        private static Exception UnexpectedKeywordArgument(IAttributesCollection paramDict) {
+        private static Exception UnexpectedKeywordArgument(IDictionary<object, object> paramDict) {
             foreach (object name in paramDict.Keys) {
                 return PythonOps.TypeError("got unexpected keyword argument {0}", name);
             }
@@ -595,10 +594,10 @@ namespace IronPython.Modules {
                 InnerEnumerator = Yielder(ArrayUtils.ConvertAll(iterables, x => new List(PythonOps.GetEnumerator(x))));
             }
 
-            public product([ParamDictionary]IAttributesCollection paramDict, params object[] iterables) {
+            public product([ParamDictionary]IDictionary<object, object> paramDict, params object[] iterables) {
                 object repeat;
                 int iRepeat = 1;
-                if (paramDict.TryGetValue(SymbolTable.StringToId("repeat"), out repeat)) {
+                if (paramDict.TryGetValue("repeat", out repeat)) {
                     if (repeat is int) {
                         iRepeat = (int)repeat;
                     } else {
@@ -606,7 +605,7 @@ namespace IronPython.Modules {
                     }
 
                     if (paramDict.Count != 1) {
-                        paramDict.Remove(SymbolTable.StringToId("repeat"));
+                        paramDict.Remove("repeat");
                         throw UnexpectedKeywordArgument(paramDict);
                     }
                 } else if (paramDict.Count != 0) {

@@ -14,3 +14,14 @@
 # ****************************************************************************
 
 load_assembly 'IronRuby.Libraries', 'IronRuby.StandardLibrary.OpenSsl'
+
+module OpenSSL
+  module SSL
+    VERIFY_NONE = 0
+    VERIFY_PEER = 1	
+
+    class SSLContext
+      attr_accessor :verify_mode
+    end
+  end
+end
