@@ -50,7 +50,7 @@ namespace IronPython.Hosting {
             // See if the snippet changes our indent level
             string lastLine = snippet.Substring(snippet.LastIndexOf('\n') + 1);
             // If the last line is only whitespace, then we have a new indent level
-            if (lastLine.Trim('\t', ' ') == "") {
+            if (string.IsNullOrEmpty(lastLine.Trim('\t', ' '))) {
                 lastLine = lastLine.Replace("\t", "        ");
                 int indentLen = lastLine.Length;
                 if (indentLen > _indents.Peek()) {

@@ -66,6 +66,7 @@ namespace IronPython.Compiler {
         /// 
         /// If this value is null then no indentation level is specified.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
         public int[] InitialIndent {
             get {
                 return _initialIndentation;

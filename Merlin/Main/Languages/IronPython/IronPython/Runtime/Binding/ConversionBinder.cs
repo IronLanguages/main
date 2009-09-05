@@ -509,7 +509,7 @@ namespace IronPython.Runtime.Binding {
 
         #region Conversion Logic
 
-        private DynamicMetaObject TryToGenericInterfaceConversion(DynamicMetaObject/*!*/ self, Type/*!*/ toType, Type/*!*/ fromType, Type/*!*/ wrapperType) {
+        private static DynamicMetaObject TryToGenericInterfaceConversion(DynamicMetaObject/*!*/ self, Type/*!*/ toType, Type/*!*/ fromType, Type/*!*/ wrapperType) {
             if (fromType.IsAssignableFrom(CompilerHelpers.GetType(self.Value))) {
                 Type making = wrapperType.MakeGenericType(toType.GetGenericArguments());
 
@@ -529,7 +529,7 @@ namespace IronPython.Runtime.Binding {
             return null;
         }
 
-        private DynamicMetaObject/*!*/ MakeToArrayConversion(DynamicMetaObject/*!*/ self, Type/*!*/ toType) {
+        private static DynamicMetaObject/*!*/ MakeToArrayConversion(DynamicMetaObject/*!*/ self, Type/*!*/ toType) {
             self = self.Restrict(typeof(PythonTuple));
 
             return new DynamicMetaObject(

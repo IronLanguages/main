@@ -113,7 +113,7 @@ namespace IronPython.Runtime {
         /// 
         /// the initial delegate provided here should NOT be the actual code.  It should always be a delegate which updates our Target lazily.
         /// </summary>
-        internal FunctionCode(PythonContext context, Delegate initialDelegate, LambdaExpression code, string name, string documentation, string[] argNames, FunctionAttributes flags, SourceSpan span, string path, bool isDebuggable, bool shouldInterpret, IList<SymbolId> freeVars, IList<SymbolId> names, IList<SymbolId> cellVars, IList<SymbolId> varNames, int localCount, Dictionary<int, Dictionary<int, bool>> loopLocations, Dictionary<int, bool> handlerLocations) {
+        internal FunctionCode(PythonContext context, Delegate initialDelegate, LambdaExpression code, string name, string documentation, string[] argNames, FunctionAttributes flags, SourceSpan span, string path, bool isDebuggable, bool shouldInterpret, IList<string> freeVars, IList<string> names, IList<string> cellVars, IList<string> varNames, int localCount, Dictionary<int, Dictionary<int, bool>> loopLocations, Dictionary<int, bool> handlerLocations) {
             _lambda = code;
             _name = name;
             _span = span;
@@ -139,16 +139,20 @@ namespace IronPython.Runtime {
             RegisterFunctionCode(context);
         }
 
-        private static PythonTuple SymbolListToTuple(IList<SymbolId> vars) {
-            if (vars != null) {
-                return PythonTuple.MakeTuple(SymbolTable.IdsToStrings(vars));
+        private static PythonTuple SymbolListToTuple(IList<string> vars) {
+            if (vars != null && vars.Count != 0) {
+                object[] tupleData = new object[vars.Count];
+                for (int i = 0; i < vars.Count; i++) {
+                    tupleData[i] = vars[i];
+                }
+                return PythonTuple.MakeTuple(tupleData);
             } else {
                 return PythonTuple.EMPTY;
             }
         }
 
         private static PythonTuple StringArrayToTuple(string[] closureVars) {
-            if (closureVars != null) {
+            if (closureVars != null && closureVars.Length != 0) {
                 return PythonTuple.MakeTuple((object[])closureVars);
             } else {
                 return PythonTuple.EMPTY;
@@ -401,6 +405,7 @@ namespace IronPython.Runtime {
         /// Returns the byte code.  IronPython does not implement this and always
         /// returns an empty string for byte code.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         public object co_code {
             get {
                 return String.Empty;
@@ -470,6 +475,7 @@ namespace IronPython.Runtime {
         /// Returns a mapping between byte code and line numbers.  IronPython does
         /// not implement this because byte code is not available.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         public object co_lnotab {
             get {
                 throw PythonOps.NotImplementedError("");
@@ -507,6 +513,7 @@ namespace IronPython.Runtime {
         /// Returns the stack size.  IronPython does not implement this
         /// because byte code is not supported.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         public object co_stacksize {
             get {
                 throw PythonOps.NotImplementedError("");
@@ -892,7 +899,7 @@ namespace IronPython.Runtime {
             );
         }
 
-        private Expression TupleToStringArray(PythonTuple tuple) {
+        private static Expression TupleToStringArray(PythonTuple tuple) {
             return tuple.Count > 0 ?
                 (Expression)Expression.NewArrayInit(
                     typeof(string),

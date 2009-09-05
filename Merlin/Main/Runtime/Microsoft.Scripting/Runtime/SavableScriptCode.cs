@@ -76,7 +76,6 @@ namespace Microsoft.Scripting {
             AssemblyGen ag = new AssemblyGen(new AssemblyName(name), dir, ext, /*emitSymbols*/false);
             TypeBuilder tb = ag.DefinePublicType("DLRCachedCode", typeof(object), true);
             TypeGen tg = new TypeGen(ag, tb);
-            var symbolDict = new Dictionary<SymbolId, FieldBuilder>();
             // then compile all of the code
 
             Dictionary<Type, List<CodeInfo>> langCtxBuilders = new Dictionary<Type, List<CodeInfo>>();
@@ -86,7 +85,7 @@ namespace Microsoft.Scripting {
                     langCtxBuilders[sc.LanguageContext.GetType()] = builders = new List<CodeInfo>();
                 }
 
-                KeyValuePair<MethodBuilder, Type> compInfo = sc.CompileForSave(tg, symbolDict);
+                KeyValuePair<MethodBuilder, Type> compInfo = sc.CompileForSave(tg);
 
                 builders.Add(new CodeInfo(compInfo.Key, sc, compInfo.Value));
             }
@@ -209,7 +208,7 @@ namespace Microsoft.Scripting {
             return diskRewriter.RewriteLambda(code);
         }
 
-        protected virtual KeyValuePair<MethodBuilder, Type> CompileForSave(TypeGen typeGen, Dictionary<SymbolId, FieldBuilder> symbolDict) {
+        protected virtual KeyValuePair<MethodBuilder, Type> CompileForSave(TypeGen typeGen) {
             throw new NotSupportedException();
         }
 

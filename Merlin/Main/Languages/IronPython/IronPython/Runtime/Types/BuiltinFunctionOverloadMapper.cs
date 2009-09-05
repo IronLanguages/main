@@ -75,7 +75,7 @@ namespace IronPython.Runtime.Types {
             }
         }
 
-        private MethodBase[] FindMatchingTargets(Type[] sig, IList<MethodBase> targets) {
+        private static MethodBase[] FindMatchingTargets(Type[] sig, IList<MethodBase> targets) {
             int args = sig.Length;
 
             List<MethodBase> res = new List<MethodBase>();

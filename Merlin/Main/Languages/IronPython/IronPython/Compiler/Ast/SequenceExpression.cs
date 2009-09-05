@@ -36,7 +36,7 @@ namespace IronPython.Compiler.Ast {
             _items = items;
         }
 
-        public Expression[] Items {
+        public IList<Expression> Items {
             get { return _items; }
         }
 
@@ -73,7 +73,7 @@ namespace IronPython.Compiler.Ast {
             MSAst.ParameterExpression right_temp = ag.GetTemporary("unpacking");
 
             // 2. Add the assignment "right_temp = right" into the suite/block
-            MSAst.Expression assignStmt1 = ag.MakeAssignment(right_temp, right);
+            MSAst.Expression assignStmt1 = AstGenerator.MakeAssignment(right_temp, right);
 
             // 3. Call GetEnumeratorValues on the right side (stored in temp)
             MSAst.Expression enumeratorValues = Ast.Call(

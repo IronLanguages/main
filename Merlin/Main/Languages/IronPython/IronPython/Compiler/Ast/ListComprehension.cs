@@ -14,6 +14,8 @@
  * ***************************************************************************/
 
 using System;
+using System.Collections.Generic;
+
 using IronPython.Runtime;
 
 using AstUtils = Microsoft.Scripting.Ast.Utils;
@@ -39,7 +41,7 @@ namespace IronPython.Compiler.Ast {
             get { return _item; }
         }
 
-        public ListComprehensionIterator[] Iterators {
+        public IList<ListComprehensionIterator> Iterators {
             get { return _iterators; }
         }
 

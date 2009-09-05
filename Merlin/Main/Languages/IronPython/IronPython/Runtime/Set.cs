@@ -239,7 +239,7 @@ namespace IronPython.Runtime {
             return __new__(context, cls);
         }
 
-        public static object __new__(CodeContext/*!*/ context, PythonType cls, [ParamDictionary]IAttributesCollection kwArgs, params object[] args\u00F8) {
+        public static object __new__(CodeContext/*!*/ context, PythonType cls, [ParamDictionary]IDictionary<object, object> kwArgs, params object[] args\u00F8) {
             return __new__(context, cls);
         }
 
@@ -544,11 +544,12 @@ namespace IronPython.Runtime {
             return this;
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "o"), SpecialName]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "o"), SpecialName]
         public int Compare(object o) {
             throw PythonOps.TypeError("cannot compare sets using cmp()");
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         public int __cmp__(object o) {
             throw PythonOps.TypeError("cannot compare sets using cmp()");
         }
@@ -967,17 +968,18 @@ namespace IronPython.Runtime {
             return (set);
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "o")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "o")]
         public void __init__(params object[] o) {
             // nop
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "o")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "o")]
         [SpecialName]
         public int Compare(object o) {
             throw PythonOps.TypeError("cannot compare sets using cmp()");
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         public int __cmp__(object o) {
             throw PythonOps.TypeError("cannot compare sets using cmp()");
         }

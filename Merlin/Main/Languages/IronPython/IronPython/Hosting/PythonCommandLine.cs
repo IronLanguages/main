@@ -32,7 +32,7 @@ namespace IronPython.Hosting {
     /// <summary>
     /// A simple Python command-line should mimic the standard python.exe
     /// </summary>
-    public class PythonCommandLine : CommandLine {
+    public sealed class PythonCommandLine : CommandLine {
         private PythonContext PythonContext {
             get { return (PythonContext)Language; }
         }
@@ -59,7 +59,7 @@ namespace IronPython.Hosting {
                    "\nType \"help\", \"copyright\", \"credits\" or \"license\" for more information.\n";
         }
 
-        private string/*!*/ VersionString {
+        private static string/*!*/ VersionString {
             get {
                 return GetVersionString();                    
             }

@@ -14,14 +14,17 @@
  * ***************************************************************************/
 
 using System;
+using System.Collections.Generic;
+using System.Dynamic;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
-using System.Dynamic;
-using IronPython.Runtime.Binding;
-using IronPython.Runtime.Operations;
+
 using Microsoft.Scripting;
 using Microsoft.Scripting.Generation;
-using Microsoft.Scripting.Runtime;
+
+using IronPython.Runtime.Binding;
+using IronPython.Runtime.Operations;
+
 using Ast = System.Linq.Expressions.Expression;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
@@ -125,7 +128,7 @@ namespace IronPython.Runtime.Types {
             }
         }
 
-        public object __call__(CodeContext context, SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object, object[], IAttributesCollection, object>>> storage, [ParamDictionary]IAttributesCollection dictArgs, params object[] args) {
+        public object __call__(CodeContext context, SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object, object[], IDictionary<object, object>, object>>> storage, [ParamDictionary]IDictionary<object, object> dictArgs, params object[] args) {
             return _template.__call__(context, storage, dictArgs, args);
         }
 

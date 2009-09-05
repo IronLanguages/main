@@ -18,14 +18,18 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Dynamic;
 using System.Linq.Expressions;
 using System.Runtime.Serialization;
-using System.Dynamic;
-using IronPython.Runtime.Operations;
+using System.Security.Permissions;
+
 using Microsoft.Scripting;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+
+using IronPython.Runtime.Operations;
+
 using SpecialNameAttribute = System.Runtime.CompilerServices.SpecialNameAttribute;
 
 namespace IronPython.Runtime.Types {
@@ -48,7 +52,7 @@ namespace IronPython.Runtime.Types {
         internal OldClass _class;
         private WeakRefTracker _weakRef;       // initialized if user defines finalizer on class or instance
 
-        private PythonDictionary MakeDictionary(OldClass oldClass) {
+        private static PythonDictionary MakeDictionary(OldClass oldClass) {
             //if (oldClass.OptimizedInstanceNames.Length == 0) {
             //    return new CustomOldClassDictionar();
             //}
@@ -370,7 +374,7 @@ namespace IronPython.Runtime.Types {
         }
 
         [SpecialName]
-        public object Call(CodeContext context, [ParamDictionary]IAttributesCollection dict, params object[] args) {
+        public object Call(CodeContext context, [ParamDictionary]IDictionary<object, object> dict, params object[] args) {
             try {
                 PythonOps.FunctionPushFrame(PythonContext.GetContext(context));
 
@@ -836,7 +840,7 @@ namespace IronPython.Runtime.Types {
 
         #region ISerializable Members
 #if !SILVERLIGHT // SerializationInfo
-
+        [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.SerializationFormatter)]
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context) {
             info.AddValue("__class__", _class);
             info.AddValue("__dict__", _dict);

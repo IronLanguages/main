@@ -641,7 +641,7 @@ namespace IronPython.Modules {
         }
 
         public static int hash(CodeContext/*!*/ context, object o) {
-            return PythonContext.GetContext(context).Hash(o);
+            return PythonContext.Hash(o);
         }
 
         public static int hash(CodeContext/*!*/ context, [NotNull]PythonTuple o) {
@@ -650,7 +650,7 @@ namespace IronPython.Modules {
 
         // this is necessary because overload resolution selects the int form.
         public static int hash(CodeContext/*!*/ context, char o) {
-            return PythonContext.GetContext(context).Hash(o);
+            return PythonContext.Hash(o);
         }
 
         public static int hash(CodeContext/*!*/ context, int o) {
@@ -1258,7 +1258,7 @@ namespace IronPython.Modules {
 
         }
 
-        public static object max(CodeContext/*!*/ context, object x, [ParamDictionary] IAttributesCollection dict) {
+        public static object max(CodeContext/*!*/ context, object x, [ParamDictionary]IDictionary<object, object> dict) {
             IEnumerator i = PythonOps.GetEnumerator(x);
             if (!i.MoveNext())
                 throw PythonOps.ValueError(" max() arg is an empty sequence");
@@ -1276,13 +1276,13 @@ namespace IronPython.Modules {
             return ret;
         }
 
-        public static object max(CodeContext/*!*/ context, object x, object y, [ParamDictionary] IAttributesCollection dict) {
+        public static object max(CodeContext/*!*/ context, object x, object y, [ParamDictionary] IDictionary<object, object> dict) {
             object method = GetMaxKwArg(dict);
             PythonContext pc = PythonContext.GetContext(context);
             return pc.GreaterThan(PythonCalls.Call(context, method, x), PythonCalls.Call(context, method, y)) ? x : y;
         }
 
-        public static object max(CodeContext/*!*/ context, [ParamDictionary] IAttributesCollection dict, params object[] args) {
+        public static object max(CodeContext/*!*/ context, [ParamDictionary]IDictionary<object, object> dict, params object[] args) {
             if (args.Length > 0) {
                 int retIndex = 0;
                 if (args.Length == 1) {
@@ -1304,7 +1304,7 @@ namespace IronPython.Modules {
             }
         }
 
-        private static object GetMaxKwArg([ParamDictionary] IAttributesCollection dict) {
+        private static object GetMaxKwArg(IDictionary<object, object> dict) {
             if (dict.Count != 1)
                 throw PythonOps.TypeError(" max() should have only 1 keyword argument, but got {0} keyword arguments", dict.Count);
 
@@ -1345,7 +1345,7 @@ namespace IronPython.Modules {
             }
         }
 
-        public static object min(CodeContext/*!*/ context, object x, [ParamDictionary] IAttributesCollection dict) {
+        public static object min(CodeContext/*!*/ context, object x, [ParamDictionary]IDictionary<object, object> dict) {
             IEnumerator i = PythonOps.GetEnumerator(x);
             if (!i.MoveNext())
                 throw PythonOps.ValueError(" min() arg is an empty sequence");
@@ -1364,12 +1364,12 @@ namespace IronPython.Modules {
             return ret;
         }
 
-        public static object min(CodeContext/*!*/ context, object x, object y, [ParamDictionary] IAttributesCollection dict) {
+        public static object min(CodeContext/*!*/ context, object x, object y, [ParamDictionary]IDictionary<object, object> dict) {
             object method = GetMinKwArg(dict);
             return PythonContext.GetContext(context).LessThan(PythonCalls.Call(context, method, x), PythonCalls.Call(context, method, y)) ? x : y;
         }
 
-        public static object min(CodeContext/*!*/ context, [ParamDictionary] IAttributesCollection dict, params object[] args) {
+        public static object min(CodeContext/*!*/ context, [ParamDictionary]IDictionary<object, object> dict, params object[] args) {
             if (args.Length > 0) {
                 int retIndex = 0;
                 if (args.Length == 1) {
@@ -1393,16 +1393,16 @@ namespace IronPython.Modules {
             }
         }
 
-        private static object GetMinKwArg([ParamDictionary] IAttributesCollection dict) {
+        private static object GetMinKwArg([ParamDictionary]IDictionary<object, object> dict) {
             if (dict.Count != 1)
                 throw PythonOps.TypeError(" min() should have only 1 keyword argument, but got {0} keyword arguments", dict.Count);
 
             return VerifyKeys("min", dict);
         }
 
-        private static object VerifyKeys(string name, IAttributesCollection dict) {
+        private static object VerifyKeys(string name, IDictionary<object, object> dict) {
             object value;
-            if (!dict.TryGetValue(SymbolTable.StringToId("key"), out value)) {
+            if (!dict.TryGetValue("key", out value)) {
                 ICollection<object> keys = dict.Keys;
                 IEnumerator<object> en = keys.GetEnumerator();
                 if (en.MoveNext()) {
@@ -1508,7 +1508,7 @@ namespace IronPython.Modules {
             print(context, " ", "\n", null, args);
         }
 
-        public static void print(CodeContext/*!*/ context, [ParamDictionary]IAttributesCollection kwargs, params object[] args) {
+        public static void print(CodeContext/*!*/ context, [ParamDictionary]IDictionary<object, object> kwargs, params object[] args) {
             object sep = AttrCollectionPop(kwargs, "sep", " ");
             if (sep != null && !(sep is string)) {
                 throw PythonOps.TypeError("sep must be None or str, not {0}", PythonTypeOps.GetName(sep));
@@ -1524,17 +1524,17 @@ namespace IronPython.Modules {
             if (kwargs.Count != 0) {
                 throw PythonOps.TypeError(
                     "'{0}' is an invalid keyword argument for this function", 
-                    SymbolTable.IdToString(new List<SymbolId>(kwargs.SymbolAttributes.Keys)[0])
+                    new List<object>(kwargs.Keys)[0]
                 );
             }
 
             print(context, (string)sep ?? " ", (string)end ?? "\n", file, args);
         }
 
-        private static object AttrCollectionPop(IAttributesCollection kwargs, string name, object defaultValue) {
+        private static object AttrCollectionPop(IDictionary<object, object> kwargs, string name, object defaultValue) {
             object res;
-            if (kwargs.TryGetValue(SymbolTable.StringToId(name), out res)) {
-                kwargs.Remove(SymbolTable.StringToId(name));
+            if (kwargs.TryGetValue(name, out res)) {
+                kwargs.Remove(name);
             } else {
                 res = defaultValue;
             }

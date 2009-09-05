@@ -19,14 +19,26 @@ using System.Text;
 
 namespace IronPython.Runtime.Types {
     public class CachedNewTypeInfo {
-        public readonly Type Type;
-        public readonly Dictionary<string, string[]> SpecialNames;
-        public readonly Type[] InterfaceTypes;
+        private readonly Type _type;
+        private readonly Dictionary<string, string[]> _specialNames;
+        private readonly Type[] _interfaceTypes;
 
         public CachedNewTypeInfo(Type type, Dictionary<string, string[]> specialNames, Type[] interfaceTypes) {
-            Type = type;
-            SpecialNames = specialNames;
-            InterfaceTypes = interfaceTypes ?? Type.EmptyTypes;
+            _type = type;
+            _specialNames = specialNames;
+            _interfaceTypes = interfaceTypes ?? Type.EmptyTypes;
+        }
+
+        public IList<Type> InterfaceTypes {
+            get { return _interfaceTypes; }
+        }
+
+        public Type Type {
+            get { return _type; }
+        }
+
+        public Dictionary<string, string[]> SpecialNames {
+            get { return _specialNames; }
         }
     }
 

@@ -56,6 +56,7 @@ namespace IronPython.Modules {
         public static readonly int altzone;
         public static readonly int daylight;
         public static readonly int timezone;
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         public static readonly PythonTuple tzname;
         public const bool accept2dyear = true;
 

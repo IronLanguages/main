@@ -78,7 +78,7 @@ namespace IronPython.Compiler.Ast {
 
             // 2. right_temp = right
             statements.Add(
-                ag.MakeAssignment(right_temp, right)
+                AstGenerator.MakeAssignment(right_temp, right)
                 );
 
             // Do left to right assignment
@@ -107,8 +107,8 @@ namespace IronPython.Compiler.Ast {
             SequenceExpression seLeft = _left[0] as SequenceExpression;
             SequenceExpression seRight = _right as SequenceExpression;
 
-            if (seLeft != null && seRight != null && seLeft.Items.Length == seRight.Items.Length) {
-                int cnt = seLeft.Items.Length;
+            if (seLeft != null && seRight != null && seLeft.Items.Count == seRight.Items.Count) {
+                int cnt = seLeft.Items.Count;
 
                 // a, b = 1, 2, or [a,b] = 1,2 - not something like a, b = range(2)
                 // we can do a fast parallel assignment

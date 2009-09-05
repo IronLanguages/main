@@ -993,7 +993,11 @@ namespace IronPython.Modules {
                                         case '<': break; // positive look behind assertion
                                         case '!': break; // negative look ahead assertion
                                         case '#': break; // inline comment
-                                        case '(':  // yes/no if group exists, we don't support this
+                                        case '(':
+                                            // conditional match alternation (?(id/name)yes-pattern|no-pattern)
+                                            // move past ?( so we don't preparse the name.
+                                            nameIndex++;
+                                            break;
                                         default: throw PythonExceptions.CreateThrowable(error(context), "Unrecognized extension " + pattern[nameIndex]);
                                     }
                                     break;

@@ -54,6 +54,16 @@
     <DefineConstants>TRACE;IRONPYTHON_WINDOW;$(SignedSym)</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
   </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FxCop|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\..\..\Bin\FxCop\</OutputPath>
+    <DefineConstants>TRACE;$(SignedSym);CODE_ANALYSIS</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <RunCodeAnalysis>true</RunCodeAnalysis>
+    <CodeAnalysisRules>-Microsoft.Design#CA2210</CodeAnalysisRules>
+  </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'V4 Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
@@ -81,7 +91,7 @@
     <Reference Include="System.Windows.Forms" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\..\ndp\fx\src\Core\Microsoft\Scripting\Microsoft.Scripting.Core.csproj" Condition="'$(TargetFrameworkVersion)' != 'v4.0'" >
+    <ProjectReference Include="..\..\..\..\..\ndp\fx\src\Core\Microsoft\Scripting\Microsoft.Scripting.Core.csproj" Condition="'$(TargetFrameworkVersion)' != 'v4.0'">
       <Project>{2AE75F5A-CD1F-4925-9647-AF4D1C282FB4}</Project>
       <Name>Microsoft.Scripting.Core</Name>
     </ProjectReference>

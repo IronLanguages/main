@@ -330,7 +330,7 @@ namespace IronPython.Runtime.Types {
             /// <summary>
             /// Removes Object.Equals methods as we never return these for PythonOperationKind.
             /// </summary>
-            private MemberGroup/*!*/ FilterObjectEquality(MemberGroup/*!*/ group) {
+            private static MemberGroup/*!*/ FilterObjectEquality(MemberGroup/*!*/ group) {
                 List<MemberTracker> res = null;
 
                 for (int i = 0; i < group.Count; i++) {

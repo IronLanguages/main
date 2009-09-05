@@ -14,6 +14,7 @@
  * ***************************************************************************/
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -101,7 +102,7 @@ namespace IronPython.Runtime {
         }
 
         public PythonProperty(
-            [ParamDictionary]IAttributesCollection dict, params object[] args) {
+            [ParamDictionary]IDictionary<object, object> dict, params object[] args) {
         }
 
         public void __init__([DefaultParameterValue(null)]object fget,

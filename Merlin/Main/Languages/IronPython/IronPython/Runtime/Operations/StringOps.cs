@@ -716,7 +716,7 @@ namespace IronPython.Runtime.Operations {
 
                 AppendJoin(sequence._data[0], 0, ret);
                 for (int i = 1; i < sequence._size; i++) {
-                    if (self != String.Empty) {
+                    if (!String.IsNullOrEmpty(self)) {
                         ret.Append(self);
                     }
                     AppendJoin(sequence._data[i], i, ret);
@@ -1141,7 +1141,7 @@ namespace IronPython.Runtime.Operations {
             );
         }
 
-        public static string/*!*/ format(CodeContext/*!*/ context, string format_string, [ParamDictionary]IAttributesCollection kwargs, params object[] args) {
+        public static string/*!*/ format(CodeContext/*!*/ context, string format_string, [ParamDictionary]IDictionary<object, object> kwargs, params object[] args) {
             return NewStringFormatter.FormatString(
                 PythonContext.GetContext(context),
                 format_string,
@@ -1693,7 +1693,7 @@ namespace IronPython.Runtime.Operations {
         }
 
 #if !SILVERLIGHT
-        class CodecsInfo {
+        static class CodecsInfo {
             public static readonly Dictionary<string, EncodingInfoWrapper> Codecs = MakeCodecsDict();
 
             private static Dictionary<string, EncodingInfoWrapper> MakeCodecsDict() {
@@ -1876,7 +1876,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         private static List SplitInternal(string self, char[] seps, int maxsplit) {
-            if (self == String.Empty) {
+            if (String.IsNullOrEmpty(self)) {
                 return SplitEmptyString(seps != null);
             } else {
                 string[] r = null;
@@ -1893,7 +1893,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         private static List SplitInternal(string self, string separator, int maxsplit) {
-            if (self == String.Empty) {
+            if (String.IsNullOrEmpty(self)) {
                 return SplitEmptyString(separator != null);
             } else {
                 string[] r = StringUtils.Split(self, separator, (maxsplit < 0) ? Int32.MaxValue : maxsplit + 1, StringSplitOptions.None);

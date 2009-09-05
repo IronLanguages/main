@@ -12,11 +12,11 @@
  *
  *
  * ***************************************************************************/
+using System;
 using System.Reflection;
-using System.Runtime.CompilerServices;
+using System.Resources;
 using System.Runtime.InteropServices;
 using System.Security;
-using System;
 
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
@@ -48,6 +48,7 @@ using System;
 // You can specify all the values or you can default the Revision and Build Numbers 
 // by using the '*' as shown below:
 
+[assembly: NeutralResourcesLanguage("en-US")]
 #if !SILVERLIGHT
 [assembly: AssemblyFileVersion("2.6.0.00")]
 [assembly: AssemblyInformationalVersion("2.6")]

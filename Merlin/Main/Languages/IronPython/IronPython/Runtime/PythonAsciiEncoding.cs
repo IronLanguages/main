@@ -289,7 +289,9 @@ namespace IronPython.Runtime {
         }
     }
 #endif
-
+#if !SILVERLIGHT
+    [Serializable]
+#endif
     internal class BadSourceException : Exception {
         internal byte _badByte;
         public BadSourceException(byte b) {
@@ -304,7 +306,7 @@ namespace IronPython.Runtime {
             : base(message, innerException) {
         }
 #if !SILVERLIGHT // SerializationInfo
-        private BadSourceException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+        protected BadSourceException(SerializationInfo info, StreamingContext context) : base(info, context) { }
 #endif
 
     }

@@ -177,14 +177,14 @@ namespace IronPython.Compiler {
     }
 
     public class NameToken : Token {
-        private readonly SymbolId _name;
+        private readonly string _name;
 
-        public NameToken(SymbolId name)
+        public NameToken(string name)
             : base(TokenKind.Name) {
             _name = name;
         }
 
-        public SymbolId Name {
+        public string Name {
             get { return this._name; }
         }
 
@@ -194,7 +194,7 @@ namespace IronPython.Compiler {
 
         public override String Image {
             get {
-                return SymbolTable.IdToString(_name);
+                return _name;
             }
         }
     }

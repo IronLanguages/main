@@ -332,6 +332,7 @@ namespace IronPython.Modules {
             public NullImporter(string path_string) {
             }
 
+            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
             public object find_module(params object[] args) {
                 return null;
             }
