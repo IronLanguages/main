@@ -75,12 +75,17 @@ namespace Chiron {
             char[] splitChars = new char[] { ' ', '\t', ',', ';', '\r', '\n' };
 
             foreach (XmlElement elem in ((XmlElement)section).GetElementsByTagName("Language")) {
+                var external = elem.GetAttribute("external");
+                if (Chiron.ExternalUrlPrefix != null) {
+                    external = string.Format("{0}{1}", Chiron.ExternalUrlPrefix, external);
+                }
+
                 LanguageInfo info = new LanguageInfo(
                     elem.GetAttribute("extensions").Split(splitChars, StringSplitOptions.RemoveEmptyEntries),
                     elem.GetAttribute("assemblies").Split(splitChars, StringSplitOptions.RemoveEmptyEntries),
                     elem.GetAttribute("languageContext"),
                     elem.GetAttribute("names").Split(splitChars, StringSplitOptions.RemoveEmptyEntries),
-                    elem.GetAttribute("external")
+                    external
                 );
 
                 foreach (string ext in info.Extensions) {
@@ -88,6 +93,8 @@ namespace Chiron {
                     if(!_ext.StartsWith(".")) _ext = "." + _ext.ToLower();
                     languages[_ext] = info;
                 }
+
+
             }
 
             return languages;

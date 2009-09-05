@@ -335,11 +335,10 @@ Options:
             string[] paths = pathString.Split(';');
             foreach (string path in paths) {
                 var fullPath = path;
-                if (!Path.IsPathRooted(path)) 
-                    fullPath = Path.Combine(ChironPath(), path);
-                if (Directory.Exists(fullPath)) {
+                if (!Path.IsPathRooted(path))
+                    fullPath = Path.Combine(_dir, path);
+                if (Directory.Exists(fullPath))
                     __path.Add(fullPath);
-                }
             }
             _localPath = __path.ToArray();
         }
@@ -424,9 +423,10 @@ Options:
                 if (_ExternalUrlPrefix != null) {
                     if (!_ExternalUrlPrefix.EndsWith("/")) _ExternalUrlPrefix += '/';
                     // validate
-                    Uri uri = new Uri(_ExternalUrlPrefix, UriKind.RelativeOrAbsolute);                    if (!uri.IsAbsoluteUri) {
+                    Uri uri = new Uri(_ExternalUrlPrefix, UriKind.RelativeOrAbsolute);
+                    if (!uri.IsAbsoluteUri && !_ExternalUrlPrefix.StartsWith("/")) {
                         _ExternalUrlPrefix = null;
-                        throw new ConfigurationErrorsException("externalUrlPrefix must be an absolute URI");
+                        throw new ConfigurationErrorsException("externalUrlPrefix must be an absolute URI or start with a /");
                     }
                 }
             }

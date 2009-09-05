@@ -186,17 +186,16 @@ namespace Microsoft.Scripting.Silverlight {
         
         private static readonly object _lock = new object();
 
-        internal void DownloadAndCache(List<Uri> uris, Action onComplete) {
-            if(uris.Count == 0) {
+        internal void DownloadAndCache(Dictionary<string, Uri> externalCode, Action onComplete) {
+            if(externalCode.Count == 0) {
                 onComplete.Invoke();
             }
-            var downloadQueue = new List<Uri>(uris);
+            var downloadQueue = new List<Uri>(externalCode.Values);
             foreach (var uri in downloadQueue) {
                 WebClient wc = new WebClient();
                 wc.OpenReadCompleted += (sender, e) => {
                     // Make sure two handlers never step on eachother (could this even happen?)
                     lock (_lock) {
-                        HtmlPage.Window.Alert("downloaded!");
                         var content = "";
                         using(var s = new StreamReader(e.Result)) {
                             content = s.ReadToEnd();

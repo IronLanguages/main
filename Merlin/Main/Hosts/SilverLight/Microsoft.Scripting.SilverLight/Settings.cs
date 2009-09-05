@@ -24,48 +24,21 @@ namespace Microsoft.Scripting.Silverlight {
     internal static class Settings {
         #region Properties
         /// <summary>
-        /// Returns the entry point file. If it is null, look for a file with
-        /// the default entry point name and a valid language extension.
+        /// Returns the entry point file path.
         /// </summary>
         internal static string EntryPoint {
             get {
-                Stream stream = null;
-                if (_entryPoint == null) {
-                    if (DynamicApplication.Current.Engine == null || DynamicApplication.Current.Engine.Runtime == null)
-                        throw new ApplicationException("Can not discover entry point before the DLR is initialized");
-                    foreach (var ext in DynamicApplication.Current.Engine.LanguageExtensions()) {
-                        var file = Settings.DefaultEntryPoint + ext;
-                        var tempStream = BrowserPAL.PAL.VirtualFilesystem.GetFile(file);
-                        if (tempStream != null) {
-                            if (_entryPoint != null)
-                                throw new ApplicationException(string.Format("Application can only have one entry point, but found two: {0}, {1}", _entryPoint, file));
-                            _entryPoint = file;
-                            stream = tempStream;
-                        }
-                    }
-                    if (_entryPoint == null && DynamicApplication.Current.ScriptTags.InlineCode.Count == 0)
-                        throw new ApplicationException(string.Format(
-@"Application must either:
-(1) At least one <script type='application/*'></script> tag, where * is a valid language name, or
-(2) Have a script in the XAP file called {0}.*, where * is the language's extension."
-                            , DefaultEntryPoint));
-                }
-                if (_entryPoint != null && stream == null) {
-                    stream = BrowserPAL.PAL.VirtualFilesystem.GetFile(_entryPoint);
-                    if (stream == null)
-                        throw new ApplicationException(string.Format("Application expected to have an entry point called {0}, but was not found (check the {1})", _entryPoint, BrowserPAL.PAL.VirtualFilesystem.Name()));
-                }
                 return _entryPoint;
             }
             private set {
-                _entryPoint = value;
+                _entryPoint = GetAndValidateEntryPoint(
+                    value,
+                    DynamicApplication.Current.LanguagesConfig,
+                    DynamicApplication.Current.ScriptTags
+                );
             }
         }
         private static string _entryPoint;
-
-        internal static string GetEntryPoint() {
-            return Settings.EntryPoint;
-        }
 
         /// <summary>
         /// Determines if we emit optimized code, and whether turn on debugging features
@@ -123,9 +96,17 @@ namespace Microsoft.Scripting.Silverlight {
             // (Otherwise, we would silently fail if the initParams has an error)
             ReportUnhandledErrors = true;
 
-            string entryPoint;
-            args.TryGetValue("start", out entryPoint);
-            EntryPoint = entryPoint;
+            // Keep reportErrors on until the end, then set it to this value:
+            bool setReportErrorsWhenDone = false;
+
+            string reportErrorsDiv;
+            if (args.TryGetValue("reportErrors", out reportErrorsDiv)) {
+                ErrorTargetID = reportErrorsDiv;
+                setReportErrorsWhenDone = true;
+            } else {
+                // if reportErrors is unspecified, set to false
+                setReportErrorsWhenDone = false;
+            }
 
             string consoleEnabledStr;
             bool consoleEnabled = false;
@@ -154,14 +135,88 @@ namespace Microsoft.Scripting.Silverlight {
             }
             ExceptionDetail = exceptionDetail;
 
-            string reportErrorsDiv;
-            if (args.TryGetValue("reportErrors", out reportErrorsDiv)) {
-                ErrorTargetID = reportErrorsDiv;
-                ReportUnhandledErrors = true;
+            string entryPoint;
+            args.TryGetValue("start", out entryPoint);
+            EntryPoint = entryPoint;
+
+            ReportUnhandledErrors = setReportErrorsWhenDone;
+        }
+
+        /// <summary>
+        /// Gets and validates the entry-point.
+        /// Pre-conditions:  entryPoint is the path to validate
+        ///                  langConfig is the list of languages used to detect
+        ///                  the entry point. scriptTags track the <script> 
+        ///                  blocks on the HTML page.
+        /// Post-conditions: returns the name of the validated entry-point. The
+        ///                  return value can be null if no valid entry-point 
+        ///                  exists while there exists a inline script-tag.
+        ///                  The language of the entry-point is marked as "used"
+        ///                  in langConfig.
+        /// </summary>
+        private static string GetAndValidateEntryPoint
+        (string entryPoint, DynamicLanguageConfig langConfig, DynamicScriptTags scriptTags) {
+            if (entryPoint == null) {
+                entryPoint = FindEntryPoint(langConfig);
+                if (entryPoint == null && scriptTags.InlineCode.Count == 0) {
+                    throw new ApplicationException(string.Format(
+@"Application must have either:
+(1) At least one <script type='application/*'></script> tag, where * is a valid language name, or
+(2) Have a script in the XAP file called {0}.*, where * is the language's extension.",
+                        BrowserPAL.PAL.VirtualFilesystem.Name(),
+                        DefaultEntryPoint
+                    ));
+                }
             } else {
-                // if reportErrors is unspecified, set to false
-                ReportUnhandledErrors = false;
+                var vfs = BrowserPAL.PAL.VirtualFilesystem;
+                var stream = vfs.GetFile(entryPoint);
+                if (stream == null) {
+                    throw new ApplicationException(
+                      string.Format(
+"Application expected to have an entry point called {0}, but was not found (check the {1})", 
+                        entryPoint, BrowserPAL.PAL.VirtualFilesystem.Name()));
+                }
             }
+            if(entryPoint != null) {
+                var entryPointExt = Path.GetExtension(entryPoint);
+                foreach (var lang in langConfig.Languages) {
+                    foreach (var ext in lang.Extensions) {
+                        if (entryPointExt == ext) {
+                            langConfig.LanguagesUsed[lang.Names[0].ToLower()] = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            return entryPoint;
+        }
+
+        /// <summary>
+        /// Pre-conditions:  langConfig is the set of languages used to detect 
+        ///                  the entry point.
+        /// Post-conditions: Returns the entryPoint's path as a string.
+        ///                  It may still be null if the entry-point was not 
+        ///                  found. An exception is thrown if multiple entry 
+        ///                  points are found.
+        /// </summary>
+        private static string FindEntryPoint(DynamicLanguageConfig langConfig) {
+            string entryPoint = null;
+            foreach (var lang in langConfig.Languages) {
+                foreach (var ext in lang.Extensions) {
+                    var file = Settings.DefaultEntryPoint + ext;
+                    var tempStream = BrowserPAL.PAL.VirtualFilesystem.GetFile(file);
+                    if (tempStream != null) {
+                        if (entryPoint != null) {
+                            throw new ApplicationException(string.Format(
+"Application can only have one entry point, but found two: {0}, {1}", 
+                              _entryPoint, file
+                            ));
+                        }
+                        entryPoint = file;
+                    }
+                }
+            }
+            return entryPoint;
         }
     }
 }

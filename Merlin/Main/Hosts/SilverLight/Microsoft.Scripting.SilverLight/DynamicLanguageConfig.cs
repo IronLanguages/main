@@ -1,0 +1,265 @@
+﻿/* ****************************************************************************
+ *
+ * Copyright (c) Microsoft Corporation. 
+ *
+ * This source code is subject to terms and conditions of the Microsoft Public License. A 
+ * copy of the license can be found in the License.html file at the root of this distribution. If 
+ * you cannot locate the  Microsoft Public License, please send an email to 
+ * dlr@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
+ * by the terms of the Microsoft Public License.
+ *
+ * You must not remove this notice, or any other, from this software.
+ *
+ *
+ * ***************************************************************************/
+
+using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Reflection;
+using Microsoft.Scripting.Hosting;
+using Microsoft.Scripting.Runtime;
+using System.Xml;
+using System.IO;
+using System.Net;
+using System.Windows.Resources;
+
+namespace Microsoft.Scripting.Silverlight {
+    public class DynamicLanguageConfig {
+
+        public List<DynamicLanguageInfo> Languages { get; private set; }
+        internal Dictionary<string, bool> LanguagesUsed { get; set; }
+        internal ScriptRuntime Runtime { get; set; }
+
+        public DynamicLanguageConfig() {
+            Languages = new List<DynamicLanguageInfo>();
+            LanguagesUsed = new Dictionary<string, bool>();
+        }
+
+        private DynamicLanguageInfo GetLanguageByName(string name) {
+            foreach (var lang in Languages)
+                foreach (var n in lang.Names)
+                    if (n.ToLower() == name.ToLower())
+                        return lang;
+            return null;
+        }
+
+        public ScriptEngine GetEngine(string name) {
+            var lang = GetLanguageByName(name);
+            if(lang != null) {
+                if (lang.Engine == null) {
+                    foreach (var n in lang.Names) {
+                        foreach (var used in LanguagesUsed) {
+                            if (used.Value && n.ToLower() == used.Key) {
+                                return lang.Engine = Runtime.GetEngine(n);
+                            }
+                        }
+                    }
+                }
+                return lang.Engine;
+            }
+            return null;
+        }
+
+        private static readonly object _lock = new object();
+
+        public void DownloadLanguages(DynamicAppManifest appManifest, Action onComplete) {
+            var downloadQueue = new List<DynamicLanguageInfo>();
+            foreach(var used in LanguagesUsed) {
+                var lang = GetLanguageByName(used.Key);
+                if (used.Value && lang != null) {
+                    downloadQueue.Add(lang);
+                }
+            }
+            if (downloadQueue.Count == 0) {
+                onComplete.Invoke();
+                return;
+            }
+            foreach (var lang in downloadQueue) {
+                var xapvfs = (XapVirtualFilesystem)XapPAL.PAL.VirtualFilesystem;
+                bool inXAP = true;
+                foreach(var assembly in lang.Assemblies) {
+                    if(xapvfs.GetFile(assembly) != null) {
+                        BrowserPAL.PAL.LoadAssemblyFromPath(assembly);
+                    } else {
+                        inXAP = false;
+                        break;
+                    }
+                }
+                if(inXAP) {
+                    onComplete.Invoke();
+                } else {
+                    WebClient wc = new WebClient();
+                    var uri = new Uri(lang.External, UriKind.RelativeOrAbsolute);
+                    wc.OpenReadCompleted += (sender, e) => {
+                        // Make sure two handlers never step on eachother (could this even happen?)
+                        lock (_lock) {
+                            var sri = new StreamResourceInfo(e.Result, null);
+                            var alang = ((DynamicLanguageInfo) e.UserState);
+                            bool first = true;
+                            foreach (var assembly in alang.Assemblies) {
+                                if (xapvfs.GetFile(sri, assembly) != null) {
+                                    xapvfs.UsingStorageUnit(sri, () => {
+                                        var asm = BrowserPAL.PAL.LoadAssemblyFromPath(assembly);
+                                        if (first) {
+                                            GetLanguageByName(alang.Names[0].ToLower()).LanguageContext = 
+                                                alang.LanguageContext.Split(',')[0] + ", " + asm.FullName;
+                                            first = false;
+                                        }
+                                        appManifest.Assemblies.Add(asm);
+                                    });
+                                }
+                            }
+                            downloadQueue.Remove(alang);
+                            if (downloadQueue.Count == 0) {
+                                onComplete.Invoke();
+                            }
+                        }
+                    };
+                    wc.OpenReadAsync(uri, lang);
+                }
+            }
+        }
+
+        public IEnumerable<string> Extensions() {
+            foreach (var language in Languages) {
+                foreach (var ext in language.Extensions) {
+                    yield return ext;
+                }
+            }
+        }
+
+        public ScriptRuntimeSetup CreateRuntimeSetup() {
+            var setup = new ScriptRuntimeSetup();
+            foreach (var language in Languages) {
+                setup.LanguageSetups.Add(new LanguageSetup(
+                    language.LanguageContext,
+                    language.Names[0],
+                    language.Names,
+                    language.Extensions
+                ));
+            }
+            return setup;
+        }
+
+        public static DynamicLanguageConfig Create(IEnumerable<Assembly> assemblies) {
+            var dl = LoadFromConfiguration();
+            if (dl == null) {
+                dl = LoadFromAssemblies(assemblies);
+            }
+            return dl;
+        }
+
+        public static DynamicLanguageConfig LoadFromAssemblies(IEnumerable<Assembly> assemblies) {
+            var dl = new DynamicLanguageConfig();
+            foreach (var assembly in assemblies) {
+                foreach (DynamicLanguageProviderAttribute attribute in assembly.GetCustomAttributes(typeof(DynamicLanguageProviderAttribute), false)) {
+                    dl.Languages.Add(new DynamicLanguageInfo(
+                        attribute.Names,
+                        attribute.LanguageContextType.AssemblyQualifiedName,
+                        new string[] { assembly.FullName },
+                        attribute.FileExtensions,
+                        null
+                    ));
+                }
+            }
+            return dl;
+        }
+
+        public static DynamicLanguageConfig LoadFromConfiguration() {
+            Stream configFile = BrowserPAL.PAL.VirtualFilesystem.GetFile(Settings.LanguagesConfigFile);
+            if (configFile == null) return null;
+
+            var dl = new DynamicLanguageConfig();
+            try {
+                XmlReader reader = XmlReader.Create(configFile);
+                reader.MoveToContent();
+                if (!reader.IsStartElement("Languages")) {
+                    throw new ConfigFileException("expected 'Configuration' root element", Settings.LanguagesConfigFile);
+                }
+
+                while (reader.Read()) {
+                    if (reader.NodeType != XmlNodeType.Element || reader.Name != "Language") {
+                        continue;
+                    }
+                    string context = null, asms = null, exts = null, names = null, external = null;
+                    while (reader.MoveToNextAttribute()) {
+                        switch (reader.Name) {
+                            case "names":
+                                names = reader.Value;
+                                break;
+                            case "languageContext":
+                                context = reader.Value;
+                                break;
+                            case "assemblies":
+                                asms = reader.Value;
+                                break;
+                            case "extensions":
+                                exts = reader.Value;
+                                break;
+                            case "external":
+                                external = reader.Value;
+                                break;
+                        }
+                    }
+
+                    if (context == null || asms == null || exts == null || names == null || external == null) {
+                        throw new ConfigFileException("expected 'Language' element to have attributes 'languageContext', 'assemblies', 'extensions', 'names', 'external'", Settings.LanguagesConfigFile);
+                    }
+
+                    char[] splitChars = new char[] { ' ', '\t', ',', ';', '\r', '\n' };
+                    string[] assemblies = asms.Split(splitChars, StringSplitOptions.RemoveEmptyEntries);
+                    string[] splitNames = names.Split(splitChars, StringSplitOptions.RemoveEmptyEntries);
+                    string contextAssembly = assemblies[0].Split('.')[0];
+                    foreach (Assembly asm in DynamicApplication.Current.AppManifest.Assemblies) {
+                        if (asm.FullName.Contains(contextAssembly)) {
+                            contextAssembly = asm.FullName;
+                            break;
+                        }
+                    }
+                    dl.Languages.Add(new DynamicLanguageInfo(
+                        splitNames,
+                        context + ", " + contextAssembly,
+                        assemblies,
+                        exts.Split(splitChars, StringSplitOptions.RemoveEmptyEntries),
+                        external
+                    ));
+                }
+            } catch (ConfigFileException cfe) {
+                throw cfe;
+            } catch (Exception ex) {
+                throw new ConfigFileException(ex.Message, Settings.LanguagesConfigFile, ex);
+            }
+
+            return dl;
+        }
+    }
+
+    public class DynamicLanguageInfo {
+        public string[] Names { get; private set; }
+        public string LanguageContext { get; internal set; }
+        public string[] Assemblies { get; private set; }
+        public string[] Extensions { get; private set; }
+        public string External { get; private set; }
+        public ScriptEngine Engine { get; internal set; }
+
+        public DynamicLanguageInfo(string[] names, string languageContext,
+            string[] assemblies, string[] extensions, string external) {
+            Names = names;
+            LanguageContext = languageContext;
+            Assemblies = assemblies;
+            Extensions = extensions;
+            External = external;
+        }
+    }
+
+    // an exception parsing the host configuration file
+    public class ConfigFileException : Exception {
+        public ConfigFileException(string msg, string configFile)
+            : this(msg, configFile, null) {
+        }
+        public ConfigFileException(string msg, string configFile, Exception inner)
+            : base("Invalid configuration file " + configFile + ": " + msg, inner) {
+        }
+    }
+}

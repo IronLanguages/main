@@ -84,12 +84,11 @@ namespace Microsoft.Scripting.Silverlight {
             }
             _displayedError = true;
 
-            Window.Show(targetElementId);
-
             if (DynamicApplication.Current.Engine != null) {
                 _runtime = DynamicApplication.Current.Engine.Runtime;
-                Repl.Show();
             }
+
+            Window.Show(targetElementId);
 
             string result;
             try {

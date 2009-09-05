@@ -7,13 +7,17 @@
 if(!window.DLR)
   window.DLR = {}
 
-if(!DLR.loaded) {
+if(!DLR.__loaded) {
 
   Object.merge = function(dest, src) {
-    for(var prop in src) {
-      dest[prop] = src[prop]
+    var temp = {}
+    for(var prop in dest) {
+      temp[prop] = dest[prop]
     }
-    return dest
+    for(var prop in src) {
+      temp[prop] = src[prop]
+    }
+    return temp
   }
 
   DLR.parseSettings = function(defaults, settings) {
@@ -21,7 +25,7 @@ if(!DLR.loaded) {
     var raw_settings = Object.merge(defaults, settings);
 
     // pull out the DLR-specific configuration options
-    var dlr_keys = ['autoAdd', 'debug', 'console', 'start', 'exceptionDetail', 'reportErrors'];
+    var dlr_keys = ['debug', 'console', 'start', 'exceptionDetail', 'reportErrors'];
     var dlr_options = {};
     for(d in dlr_keys) {
       key = dlr_keys[d]
@@ -30,11 +34,7 @@ if(!DLR.loaded) {
         delete raw_settings[key];
       }
     }
-
-    // autoAdd is a special DLR-specific settings; put it on the DLR object
-    DLR.autoAdd = dlr_options['autoAdd'];
-    delete dlr_options['autoAdd'];
-    
+ 
     // generate settings.initParams from the rest of the DLR-specific options
     var initParams = "";
     for(opt in dlr_options) {
@@ -46,14 +46,30 @@ if(!DLR.loaded) {
     return raw_settings;
   }
 
-  DLR.startup = function() {
-    DLR.loaded = true;
+  DLR.__startup = function() {
+    DLR.__loaded = true;
     if(DLR.autoAdd && Silverlight.isInstalled(null)) {
-      var spantag = document.createElement("span");
-      document.body.appendChild(spantag);
-      slHtml = Silverlight.buildHTML(DLR.settings);
-      spantag.innerHTML = slHtml;
+      DLR.createObject(DLR.settings);
     }
+  }
+
+  DLR.__defaultObjectId = "silverlightDLRObject"
+
+  DLR.__objectCount = 0
+
+  DLR.createObject = function(settings) {
+    settings = DLR.parseSettings(
+      DLR.defaultSettings, 
+      typeof(settings) == 'undefined' ? {} : settings
+    )
+    var spantag = document.createElement("span");
+    document.body.appendChild(spantag);
+    if(settings.id == DLR.defaultSettings.id && DLR.__objectCount > 0) {
+      settings.id = DLR.__defaultObjectId + DLR.__objectCount
+    }
+    slHtml = Silverlight.buildHTML(settings);
+    spantag.innerHTML = slHtml;
+    DLR.__objectCount++;
   }
 
   DLR.defaultSettings = {
@@ -63,18 +79,29 @@ if(!DLR.loaded) {
     onerror: 'Silverlight.default_error_handler',
     reportErrors: 'errorLocation',
     source: 'dlr.xap',
+    id: 'silverlightDlrObject_DOMOnly'
   }
 
-  if(!DLR.settings) {
-    DLR.settings = DLR.defaultSettings;
-  } else {
-    var defaults = DLR.defaultSettings;
-    DLR.settings = DLR.parseSettings(defaults, DLR.settings);
-  }
+  DLR.settings = DLR.parseSettings(
+      DLR.defaultSettings, 
+      !DLR.settings ? {} : DLR.settings
+  );
 
-  if(window.addEventListener) {
-    window.addEventListener('load', DLR.startup, false);
-  } else {
-    window.attachEvent('onload', DLR.startup);
-  }
+  // autoAdd is a special DLR-specific settings; put it on the DLR object
+  DLR.autoAdd = DLR.settings.autoAdd;
+  delete DLR.settings.autoAdd;
+
+  //if(!window.__pageloaded) {
+
+    if(window.addEventListener) {
+      window.addEventListener('load', DLR.__startup, false);
+    } else {
+      window.attachEvent('onload', DLR.__startup);
+    }
+
+  // if the page has already loaded, depend on a "pageloaded" 
+  // variable to detect that ... 
+  //} else {
+  //  DLR.startup();
+  //}
 };

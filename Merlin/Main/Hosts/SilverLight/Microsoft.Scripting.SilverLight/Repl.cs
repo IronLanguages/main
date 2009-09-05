@@ -19,6 +19,7 @@ using System.Text;
 using System.Windows.Browser;
 using System.IO;
 using Microsoft.Scripting.Hosting;
+using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Silverlight {
     public class Repl {
@@ -39,10 +40,21 @@ namespace Microsoft.Scripting.Silverlight {
         // 2 - run form id
         // 3 - code input id
         // 4 - run id
-        private static string _replHtmlTemplate = string.Format(@"
-  <div id=""{0}""></div> 
-  <span id=""{1}"" class=""{1}""></span><form id=""{2}"" action=""javascript:void(0)""><input type=""text"" id=""{3}"" autocomplete=""off"" /><input type=""submit"" id=""{4}"" value=""Run"" /></form>
-", _sdlrResult, _sdlrPrompt, _sdlrRunForm, _sdlrCode, _sdlrRun);
+        private static Func<string> _replHtmlTemplate = delegate() {
+            return string.Format(@"
+<div id=""{1}"" class=""{0}""></div>
+<span id=""{3}"" class=""{2}""></span><form id=""{5}"" class=""{4}"" action=""javascript:void(0)""><input type=""text"" id=""{7}"" class=""{6}"" autocomplete=""off"" /><input type=""submit"" id=""{9}"" class=""{8}"" value=""Run"" /></form>",
+                _sdlrResult,  GetId(_sdlrResult),
+                _sdlrPrompt,  GetId(_sdlrPrompt),
+                _sdlrRunForm, GetId(_sdlrRunForm),
+                _sdlrCode,    GetId(_sdlrCode),
+                _sdlrRun,     GetId(_sdlrRun)
+            );
+        };
+
+        private static string GetId(string id) {
+            return id + _count;
+        }
         #endregion
 
         #region Private fields
@@ -60,6 +72,7 @@ namespace Microsoft.Scripting.Silverlight {
         private HtmlElement         _silverlightDlrReplPrompt;
         private ScriptEngine        _engine;
         private ScriptScope         _currentScope;
+        private static int          _count;
         #endregion
 
         #region Public properties
@@ -88,23 +101,26 @@ namespace Microsoft.Scripting.Silverlight {
             if (DynamicApplication.Current == null) {
                 throw new Exception("Need to give Show() an engine, since this is not a dynamic application");
             }
-            var dynEngine = DynamicApplication.Current.Engine;
-            Show(dynEngine.Engine, dynEngine.EntryPointScope);
+            var engine = DynamicApplication.Current.LanguagesConfig.GetEngine(
+                DynamicApplication.Current.LanguagesConfig.Languages[0].Names[0]);
+            Show(engine, DynamicApplication.Current.Engine.EntryPointScope);
         }
 
         public static void Show(ScriptEngine engine, ScriptScope scope) {
-            if (_current == null) {
-                if (DynamicApplication.Current == null) {
-                    Window.Show();
-                } else {
-                    Window.Show(Settings.ErrorTargetID);
-                }
-                if (engine != null) {
-                    Window.Current.AddPanel(engine.Setup.Names[0] + " Console", Create(engine, scope));
-                    Window.Current.Initialize();
-                    Repl.Current.Start();
-                }
+            ContractUtils.RequiresNotNull(engine, "engine");
+            ContractUtils.RequiresNotNull(scope, "scope");
+
+            _count++;
+
+            if (DynamicApplication.Current == null) {
+                Window.Show();
+            } else {
+                Window.Show(Settings.ErrorTargetID);
             }
+
+            Window.Current.AddPanel(engine.Setup.Names[0] + " Console", Create(engine, scope));
+            Window.Current.Initialize();
+            Repl.Current.Start();
         }
 
         public static HtmlElement Create() {
@@ -116,8 +132,9 @@ namespace Microsoft.Scripting.Silverlight {
             HtmlElement replDiv = null;
             if (_current == null) {
                 replDiv = HtmlPage.Document.CreateElement("div");
-                replDiv.Id = _sdlr;
-                replDiv.SetProperty("innerHTML", _replHtmlTemplate);
+                replDiv.Id = GetId(_sdlr);
+                replDiv.CssClass += _sdlr;
+                replDiv.SetProperty("innerHTML", _replHtmlTemplate.Invoke());
                 _current = new Repl(engine, scope);
             }
             return replDiv;
@@ -129,9 +146,9 @@ namespace Microsoft.Scripting.Silverlight {
         }
 
         public void Start() {
-            _silverlightDlrReplCode = HtmlPage.Document.GetElementById(_sdlrCode);
-            _silverlightDlrReplResult = HtmlPage.Document.GetElementById(_sdlrResult);
-            _silverlightDlrReplPrompt = HtmlPage.Document.GetElementById(_sdlrPrompt);
+            _silverlightDlrReplCode = HtmlPage.Document.GetElementById(GetId(_sdlrCode));
+            _silverlightDlrReplResult = HtmlPage.Document.GetElementById(GetId(_sdlrResult));
+            _silverlightDlrReplPrompt = HtmlPage.Document.GetElementById(GetId(_sdlrPrompt));
             _inputBuffer = new ReplInputBuffer(_current);
             _outputBuffer = new ReplOutputBuffer(_silverlightDlrReplResult, _sdlrOutput);
             ShowDefaults();
@@ -346,8 +363,8 @@ namespace Microsoft.Scripting.Silverlight {
 
         #region Code input
         public void AppendCode(string str) {
-            string toPrepend = HtmlPage.Document.GetElementById(_sdlrCode).GetProperty("value").ToString();
-            HtmlPage.Document.GetElementById(_sdlrCode).SetProperty("value", toPrepend + str);
+            string toPrepend = HtmlPage.Document.GetElementById(GetId(_sdlrCode)).GetProperty("value").ToString();
+            HtmlPage.Document.GetElementById(GetId(_sdlrCode)).SetProperty("value", toPrepend + str);
         }
         #endregion
 

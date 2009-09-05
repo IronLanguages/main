@@ -22,8 +22,6 @@ using System.Windows;
 using System.Windows.Resources;
 using System.Xml;
 using Microsoft.Scripting.Hosting;
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
 using System.Net;
 using System.Text.RegularExpressions;
 using System.Windows.Markup;
@@ -70,6 +68,8 @@ namespace Microsoft.Scripting.Silverlight {
         public DynamicAppManifest AppManifest { get; private set; }
 
         internal DynamicScriptTags ScriptTags { get; private set; }
+
+        internal DynamicLanguageConfig LanguagesConfig { get; private set; }
 
         internal static bool InUIThread {
             get { return _UIThreadId == Thread.CurrentThread.ManagedThreadId; }
@@ -165,8 +165,9 @@ namespace Microsoft.Scripting.Silverlight {
         /// <param name="relativeUri">Any Uri</param>
         /// <returns>A Uri relative to the "start" source file</returns>
         public Uri MakeUri(string relativeUri) {
-            // Get the source file location so we can make the URI relative to the executing source file
-            string baseUri = Path.GetDirectoryName(Settings.EntryPoint);
+            string baseUri = ScriptTags.InlineCode.Count == 0 && Settings.EntryPoint != null ?
+                Path.GetDirectoryName(Settings.EntryPoint) :
+                "";
             if (baseUri != "") baseUri += "/";
             return new Uri(baseUri + relativeUri, UriKind.Relative);
         }
@@ -185,21 +186,24 @@ namespace Microsoft.Scripting.Silverlight {
             _Current = this;
             _UIThreadId = Thread.CurrentThread.ManagedThreadId;
 
+            Settings.ReportUnhandledErrors = true;
+
+            AppManifest = new DynamicAppManifest();
+            LanguagesConfig = DynamicLanguageConfig.Create(AppManifest.Assemblies);
+            ScriptTags = new DynamicScriptTags(LanguagesConfig);
+
             Startup += new StartupEventHandler(DynamicApplication_Startup);
         }
 
         void DynamicApplication_Startup(object sender, StartupEventArgs e) {
             Settings.Parse(InitParams = NormalizeInitParams(e.InitParams));
-            AppManifest = new DynamicAppManifest();
-            AppManifest.LoadAssemblies(() => {
-                Engine = new DynamicEngine();
-                ScriptTags = new DynamicScriptTags();
-                ScriptTags.GetScriptTags(() => {
-                    ScriptTags.Run(Engine);
+            LanguagesConfig.DownloadLanguages(AppManifest, () => {
+                ScriptTags.DownloadExternalCode(() => {
+                    Engine = new DynamicEngine();
                     if (Settings.ConsoleEnabled)
                         Repl.Show();
-                    if (Settings.EntryPoint != null)
-                        Engine.Run(Settings.EntryPoint);
+                    ScriptTags.Run(Engine);
+                    Engine.Run(Settings.EntryPoint);
                 });
             });
         }

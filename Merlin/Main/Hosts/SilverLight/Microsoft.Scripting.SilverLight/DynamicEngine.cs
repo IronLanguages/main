@@ -27,22 +27,33 @@ using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Silverlight {
     public class DynamicEngine {
+        public DynamicLanguageConfig LangConfig { get; private set; }
         public ScriptRuntime Runtime { get; private set; }
         public ScriptRuntimeSetup RuntimeSetup { get; private set; }
         public ScriptEngine Engine { get; private set; }
         public ScriptScope EntryPointScope { get; private set; }
 
         public DynamicEngine() {
+            if (DynamicApplication.Current == null) {
+                LangConfig = CreateLangConfig();
+            } else {
+                LangConfig = DynamicApplication.Current.LanguagesConfig;
+            }
             InitializeRuntime(Settings.Debug);
+            EntryPointScope = Runtime.CreateScope();
+        }
+
+        public DynamicEngine(DynamicLanguageConfig langConfig) {
+            LangConfig = langConfig;
         }
 
         public static ScriptRuntimeSetup CreateRuntimeSetup(bool debugMode) {
-            ScriptRuntimeSetup setup = TryParseFile();
-            if (setup == null) {
-                setup = LoadFromAssemblies(DynamicApplication.Current != null ?
-                    DynamicApplication.Current.AppManifest.Assemblies :
-                    new DynamicAppManifest().Assemblies);
-            }
+            DynamicLanguageConfig langConfig = CreateLangConfig();
+            return CreateRuntimeSetup(debugMode, langConfig);
+        }
+
+        public static ScriptRuntimeSetup CreateRuntimeSetup(bool debugMode, DynamicLanguageConfig langConfig) {
+            var setup = langConfig.CreateRuntimeSetup();
             setup.HostType = typeof(BrowserScriptHost);
             setup.Options["SearchPaths"] = new string[] { String.Empty };
             setup.DebugMode = debugMode;
@@ -51,6 +62,10 @@ namespace Microsoft.Scripting.Silverlight {
 
         public static ScriptRuntimeSetup CreateRuntimeSetup() {
             return CreateRuntimeSetup(false);
+        }
+
+        private static DynamicLanguageConfig CreateLangConfig() {
+            return DynamicLanguageConfig.Create(new DynamicAppManifest().Assemblies);
         }
 
         private void LoadDefaultAssemblies() {
@@ -64,116 +79,20 @@ namespace Microsoft.Scripting.Silverlight {
         }
 
         private void InitializeRuntime(bool debugMode) {
-            RuntimeSetup = CreateRuntimeSetup(debugMode);
+            RuntimeSetup = CreateRuntimeSetup(debugMode, LangConfig);
             Runtime = new ScriptRuntime(RuntimeSetup);
+            LangConfig.Runtime = Runtime;
             LoadDefaultAssemblies();
         }
 
-
         public void Run(string entryPoint) {
-            ContractUtils.RequiresNotNull(entryPoint, "entryPoint");
-            
-            string code = ((BrowserPAL)Runtime.Host.PlatformAdaptationLayer).VirtualFilesystem.GetFileContents(entryPoint);
-            Engine = Runtime.GetEngineByFileExtension(Path.GetExtension(entryPoint));
-            EntryPointScope = Engine.CreateScope();
+            if (Settings.EntryPoint != null) {
+                var vfs = ((BrowserPAL) Runtime.Host.PlatformAdaptationLayer).VirtualFilesystem;
+                string code = vfs.GetFileContents(entryPoint);
+                Engine = Runtime.GetEngineByFileExtension(Path.GetExtension(Settings.EntryPoint));
 
-            ScriptSource sourceCode = Engine.CreateScriptSourceFromString(code, entryPoint, SourceCodeKind.File);
-            sourceCode.Compile(new ErrorFormatter.Sink()).Execute(EntryPointScope);
-        }   
-
-        internal IEnumerable<string> LanguageExtensions() {
-            foreach (var language in Runtime.Setup.LanguageSetups) {
-                foreach (var ext in language.FileExtensions) {
-                    yield return ext;
-                }
-            }
-        }
-
-        public static ScriptRuntimeSetup LoadFromAssemblies(IEnumerable<Assembly> assemblies) {
-            var setup = new ScriptRuntimeSetup();
-            foreach (var assembly in assemblies) {
-                foreach (DynamicLanguageProviderAttribute attribute in assembly.GetCustomAttributes(typeof(DynamicLanguageProviderAttribute), false)) {
-                    setup.LanguageSetups.Add(new LanguageSetup(
-                        attribute.LanguageContextType.AssemblyQualifiedName,
-                        attribute.DisplayName,
-                        attribute.Names,
-                        attribute.FileExtensions
-                    ));
-                }
-            }
-            return setup;
-        }
-
-        public static ScriptRuntimeSetup TryParseFile() {
-            Stream configFile = BrowserPAL.PAL.VirtualFilesystem.GetFile(Settings.LanguagesConfigFile);
-            if (configFile == null) return null;
-
-            var result = new ScriptRuntimeSetup();
-            try {
-                XmlReader reader = XmlReader.Create(configFile);
-                reader.MoveToContent();
-                if (!reader.IsStartElement("Languages")) {
-                    throw new ConfigFileException("expected 'Configuration' root element", Settings.LanguagesConfigFile);
-                }
-
-                while (reader.Read()) {
-                    if (reader.NodeType != XmlNodeType.Element || reader.Name != "Language") {
-                        continue;
-                    }
-                    string context = null, asms = null, exts = null, names = null, external = null;
-                    while (reader.MoveToNextAttribute()) {
-                        switch (reader.Name) {
-                            case "names":
-                                names = reader.Value;
-                                break;
-                            case "languageContext":
-                                context = reader.Value;
-                                break;
-                            case "assemblies":
-                                asms = reader.Value;
-                                break;
-                            case "extensions":
-                                exts = reader.Value;
-                                break;
-                            case "external":
-                                external = reader.Value;
-                                break;
-                        }
-                    }
-
-                    if (context == null || asms == null || exts == null || names == null || external == null) {
-                        throw new ConfigFileException("expected 'Language' element to have attributes 'languageContext', 'assemblies', 'extensions', 'names', 'external'", Settings.LanguagesConfigFile);
-                    }
-
-                    char[] splitChars = new char[] { ' ', '\t', ',', ';', '\r', '\n' };
-                    string[] extensions = exts.Split(splitChars, StringSplitOptions.RemoveEmptyEntries);
-                    string[] assemblies = asms.Split(splitChars, StringSplitOptions.RemoveEmptyEntries);
-                    string[] aryNames = names.Split(splitChars, StringSplitOptions.RemoveEmptyEntries);
-                    string contextAssembly = assemblies[0].Split('.')[0];
-                    foreach(Assembly asm in DynamicApplication.Current.AppManifest.Assemblies) {
-                        if(asm.FullName.Contains(contextAssembly)) {
-                            contextAssembly = asm.FullName;
-                            break;
-                        }
-                    }
-                    result.LanguageSetups.Add(new LanguageSetup(context + ", " + contextAssembly, aryNames[0], aryNames, extensions));
-                }
-            } catch (ConfigFileException cfe) {
-                throw cfe;
-            } catch (Exception ex) {
-                throw new ConfigFileException(ex.Message, Settings.LanguagesConfigFile, ex);
-            }
-
-            return result;
-        }
-
-        // an exception parsing the host configuration file
-        public class ConfigFileException : Exception {
-            public ConfigFileException(string msg, string configFile)
-                : this(msg, configFile, null) {
-            }
-            public ConfigFileException(string msg, string configFile, Exception inner)
-                : base("Invalid configuration file " + configFile + ": " + msg, inner) {
+                ScriptSource sourceCode = Engine.CreateScriptSourceFromString(code, entryPoint, SourceCodeKind.File);
+                sourceCode.Compile(new ErrorFormatter.Sink()).Execute(EntryPointScope);
             }
         }
     }

@@ -64,7 +64,7 @@ class BaconSL
     BaconSL.get_config.each do |test_type, test_files|
       test_files.each do |file|
         loaded = false
-        ["#{test_type}/#{file}_test.rb", "#{test_type}/test_#{file}.rb"].each do |pth|
+        ["#{test_type}/test_#{file}.rb", "#{test_type}/#{file}_test.rb"].each do |pth|
           prepend = File.dirname(DynamicApplication.current ? 
               DynamicApplication.current.entry_point.to_s :
               '')
@@ -72,9 +72,12 @@ class BaconSL
           begin
             load pth
             loaded = true
+            next
           rescue LoadError
-            puts "Warning: #{pth} failed to load"
-          end if !loaded
+          end 
+        end
+        if !loaded
+          puts "Warning: #{test_type} -- #{file} was not found"
         end
         raise "#{file} is not a known test (check your BaconSL.config call)" unless loaded
       end
