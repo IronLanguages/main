@@ -32,39 +32,29 @@ module IronRubyTutorial
     files_path + '/load.xml'
   end
 
-  def self.load_prime_dll_path
+  def self.prime_dll_path
     files_path + '/TutorialSamples.dll'
   end
-
-  def self.load_prime_dll_relative_path
-    unless SILVERLIGHT
-      require 'pathname'
-      Pathname.new(load_prime_dll_path).relative_path_from(Pathname.new(Dir.pwd))
-    else
-      load_prime_dll_path
-    end
-  end
   
-  def self.load_prime_source_path
+  def self.prime_source_path
     files_path + '/Prime.cs'
   end
 
-  def self.load_prime_source_relative_path
-    unless SILVERLIGHT
+  def self.load_relative_path load_path
+	unless SILVERLIGHT
       require 'pathname'
-      Pathname.new(load_prime_source_path).relative_path_from(Pathname.new(Dir.pwd))
+      Pathname.new(load_path).relative_path_from(Pathname.new(Dir.pwd))
     else
-      load_prime_source_path
+      load_path
     end
   end
   
+  def self.load_prime_dll_relative_path
+    load_relative_path prime_dll_path
+  end
+  
   def self.load_xml_relative_path
-    unless SILVERLIGHT
-      require 'pathname'
-      Pathname.new(load_xml_path).relative_path_from(Pathname.new(Dir.pwd))
-    else
-      load_xml_path
-    end
+    load_relative_path load_xml_path
   end
   
   def self.calc_xaml_path
@@ -72,12 +62,7 @@ module IronRubyTutorial
   end
   
   def self.calc_xaml_relative_path
-    unless SILVERLIGHT
-      require 'pathname'
-      Pathname.new(calc_xaml_path).relative_path_from(Pathname.new(Dir.pwd))
-    else
-      calc_xaml_path
-    end
+    load_relative_path calc_xaml_path
   end
   
   def self.wpf_path
@@ -468,22 +453,21 @@ tutorial "IronRuby tutorial" do
 		Loading .NET libraries from a given path
             }
 
-            task :body => %{
-                    We can load .net libraries from a given path into the IronRuby Engine. 
-					Here we will load in a custom class library into IronRuby, to help us determine if a given number is a prime number or not.
-					The source code of this class library is located at +load_prime_source_relative_path+.
-                },
-                :code => ["require '#{IronRubyTutorial.load_prime_dll_relative_path}'",
-			  'include TutorialSamples']
-      
+            task( :body => %{
+                    We can load .net libraries from a given path into the IronRuby Engine. Here we will load in a custom class library into IronRuby, to help us determine if a given number is a prime number or not.
+                     },
+			     :source_files => IronRubyTutorial.prime_source_path,
+                 :code => ["require '#{IronRubyTutorial.load_prime_dll_relative_path}'",
+               				     'include TutorialSamples'] 
+                 ) 
+				
             task(:body => %{
                     Now with the loaded assmebly, we can now create an instance of Prime, and call the methods in Ruby code.
                 },
-                :source_files => IronRubyTutorial.load_xml_path,
+				
                 :code => [
-                    'd = Prime.new', 
-                    "d.IsPrime 13",
-					"d.IsPrime 40"]
+					"Prime.IsPrime 13",
+                    "Prime.IsPrime 40"]
                 ) 				
         end
     end

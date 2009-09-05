@@ -6,8 +6,7 @@
     /// </summary>
     public class Prime
     {
-        public bool IsPrime(int num)
-        {
+        public static bool IsPrime(int num){
             if (num == 0)
             {
                 return false;
