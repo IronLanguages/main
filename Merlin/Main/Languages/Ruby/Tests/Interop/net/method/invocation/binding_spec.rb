@@ -4,19 +4,21 @@ require File.dirname(__FILE__) + "/../fixtures/classes"
 def run_matrix(results, input)
   results.each do |meth, result|
     it "binds '#{meth}' for '#{input}' with '#{result.to_s}' (ClassWithMethods)" do
+      meth_call = (input == "NoArg" ? lambda { @target.send(meth)} : lambda {@target.send(meth, @values[input])})
       if result.class == Class && result < Exception
-        lambda { @target.send(meth, @values[input])}.should raise_error result
+        meth_call.should raise_error result
       else 
-        res, ref = @target.send(meth, @values[input])
+        res, ref = meth_call.call
         res.should == result
       end
     end
   
     it "binds '#{meth}' for '#{input}' with '#{result.to_s}' (RubyClassWithMethods)" do
+      meth_call = (input == "NoArg" ? lambda { @target2.send(meth)} : lambda {@target2.send(meth, @values[input])})
       if result.class == Class && result < Exception
-        lambda { @target2.send(meth, @values[input])}.should raise_error result
+        meth_call.should raise_error result
       else 
-        res, ref = @target2.send(meth, @values[input])
+        res, ref = meth_call.call
         res.should == result
       end
     end
@@ -25,22 +27,48 @@ def run_matrix(results, input)
     
     it "passes the correct input (#{input}) into method (#{meth}) (ClassWithMethods)" do
       value = @values[input]
-      res, ref = @target.send(meth, value)
-      result = Helper.result(meth,value)
-      @target.tracker.should == [*result]
-      if ref
-        ref.should == result
+      meth_call = (input == "NoArg" ? lambda { @target.send(meth)} : lambda {@target.send(meth, value)})
+      res, ref = meth_call.call
+      if input != "NoArg"
+        result = Helper.result(meth,value)
+        @target.tracker.should == [*result]
+      else
+        result = case meth.to_s
+                 when /ParamsInt32ArrArg/
+                  [[]]
+                 when /DefaultInt32Arg/
+                   [10]
+                 when /NoArg/
+                   []
+                 else
+                   nil
+                 end
+        @target.tracker.should == result
       end
+      ref.should == result if ref
     end
     
     it "passes the correct input (#{input}) into method (#{meth}) (RubyClassWithMethods)" do
       value = @values[input]
-      res, ref = @target2.send(meth, value)
-      result = Helper.result(meth,value)
-      @target2.tracker.should == [*result]
-      if ref
-        ref.should == result
+      meth_call = (input == "NoArg" ? lambda { @target2.send(meth)} : lambda {@target2.send(meth, value)})
+      res, ref = meth_call.call
+      if input != "NoArg"
+        result = Helper.result(meth,value)
+        @target2.tracker.should == [*result]
+      else
+        result = case meth.to_s
+                 when /ParamsInt32ArrArg/
+                  [[]]
+                 when /DefaultInt32Arg/
+                   [10]
+                 when /NoArg/
+                   []
+                 else
+                   nil
+                 end
+        @target2.tracker.should == result
       end
+      ref.should == result if ref
     end
   end
 end
@@ -405,6 +433,12 @@ describe "Method parameter binding" do
           :Int16Arg => "Int16Arg", :Int64Arg => "Int64Arg", :SingleArg => "SingleArg", :ByteArg => "ByteArg", 
           :UInt16Arg => "UInt16Arg", :UInt32Arg => "UInt32Arg", :UInt64Arg => "UInt64Arg", :CharArg => TE, 
           :DecimalArg => "DecimalArg", :ObjectArg => "ObjectArg"},
+
+    "NoArg" => {:NoArg => "NoArg", :Int32Arg => AE, :DoubleArg => AE, 
+          :BigIntegerArg => AE, :StringArg => AE, :BooleanArg => AE, :SByteArg => AE, 
+          :Int16Arg => AE, :Int64Arg => AE, :SingleArg => AE, :ByteArg => AE, 
+          :UInt16Arg => AE, :UInt32Arg => AE, :UInt64Arg => AE, :CharArg => AE, 
+          :DecimalArg => AE, :ObjectArg => AE, :DefaultInt32Arg => "DefaultInt32Arg", :ParamsInt32ArrArg => "ParamsInt32ArrArg"},
   }    
   
   before(:each) do
@@ -415,7 +449,7 @@ describe "Method parameter binding" do
   end
     
   @matrix.each do |input, results|
-    [:RefInt32Arg, :DefaultInt32Arg, :ParamsInt32ArrArg, :Int32ArgParamsInt32ArrArg, :NullableInt32Arg, :DefaultInt32Arg, :Int32ArgDefaultInt32Arg].each do |key|
+    [:RefInt32Arg, :ParamsInt32ArrArg, :Int32ArgParamsInt32ArrArg, :NullableInt32Arg, :DefaultInt32Arg, :Int32ArgDefaultInt32Arg].each do |key|
       results[key] ||= (results[:Int32Arg] == "Int32Arg" ? key.to_s : results[:Int32Arg])
     end
     run_matrix(results, input)
@@ -475,6 +509,8 @@ describe "Method parameter binding with Class-like parameters" do
     
     "CustomEnum" => {:IInterfaceArg => TE, :ImplementsIInterfaceArg => TE, :DerivedFromImplementsIInterfaceArg => TE, :CStructArg => TE, :StructImplementsIInterfaceArg => TE, :AbstractClassArg => TE, :DerivedFromAbstractArg => TE, :CustomEnumArg => TE, :EnumIntArg => TE, :ObjectArg => "ObjectArg", :NoArg => AE, :BooleanArg => "BooleanArg"}, 
     "CustomEnumInstance" => {:IInterfaceArg => TE, :ImplementsIInterfaceArg => TE, :DerivedFromImplementsIInterfaceArg => TE, :CStructArg => TE, :StructImplementsIInterfaceArg => TE, :AbstractClassArg => TE, :DerivedFromAbstractArg => TE, :CustomEnumArg => "CustomEnumArg", :EnumIntArg => "EnumIntArg", :ObjectArg => "ObjectArg", :NoArg => AE, :BooleanArg => "BooleanArg"}, 
+    
+    "NoArg" => {:IInterfaceArg => AE, :ImplementsIInterfaceArg => AE, :DerivedFromImplementsIInterfaceArg => AE, :CStructArg => AE, :StructImplementsIInterfaceArg => AE, :AbstractClassArg => AE, :DerivedFromAbstractArg => AE, :CustomEnumArg => AE, :EnumIntArg => AE, :ObjectArg => AE, :NoArg => "NoArg", :BooleanArg => AE}, 
   }
   before(:each) do
     @target = ClassWithMethods.new
