@@ -63,7 +63,6 @@ module IronRubyTutorial
   end
     
   def self.snoop_add_handler name, obj
-  puts caller if not obj
     Tutorial.snoop_add_handler self, name, obj
   end
 end
@@ -626,7 +625,8 @@ tutorial "IronRuby tutorial" do
                     # TODO - Position the form so that it is not hidden behind the current window
                 },
                 :code => "f.text = 'Hello'",
-                :test_hook => lambda { |type, bind| bind.f.close if type == :cleanup }
+                # Minimize open windows during the test run, and also ensure next chapter starts with a clean slate
+                :test_hook => lambda { |type, spec, bind| bind.f.close if type == :after }
                 ) { |iar| /hello/i =~ iar.bind.f.text }
         end
         
@@ -779,7 +779,8 @@ tutorial "IronRuby tutorial" do
                     next chapter.
                 },
                 :code => 'w.content = nil',
-                :test_hook => lambda { |type, bind| bind.w.close if type == :cleanup }
+                # Minimize open windows during the test run, and also ensure next chapter starts with a clean slate
+                :test_hook => lambda { |type, spec, bind| bind.w.close if type == :after }
                 ) { |iar| not iar.bind.w.content }
         end
 

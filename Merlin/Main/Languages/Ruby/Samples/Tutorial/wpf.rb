@@ -48,8 +48,15 @@ class System::Windows::FrameworkElement
     self.visibility = System::Windows::Visibility.visible
   end
 
-  def set_or_collapse(property, value)
-    obj = send(property)
+  # * Makes the element with a name of "element_name" as visible if "value" is not nil (or false)
+  #   and invokes the given block
+  # * Makes the element as collapsed if "value" is nil (or false)
+  # 
+  # Example:
+  #   my_window.set_or_collapse(:label, some_message) { |element, value| element.text = value }
+  #
+  def set_or_collapse(element_name, value)
+    obj = send(element_name)
     if obj && value
       yield obj, value
       obj.show!
@@ -136,6 +143,23 @@ class System::Windows::Markup::XamlReader
 end
 
 class Module
+  # methods - array of method names to redirect to another method with a varying method name.
+  # This is useful when a window has a varying array of sub-controls. A single method name
+  # can be used to invoke a function on, say, the last sub-control in the array, without
+  # having to know the exact current size of the array.
+  #
+  # Example:
+  #  class Example
+  #    attr_accessor :idx
+  #    def current_text() @idx.to_s end
+  #    def show_text_1() @textbox1.show! end
+  #    def show_text_2() @textbox2.show! end
+  #    delegate_methods [:show_text], :append => :current_text
+  #  end
+  #
+  #  c = Example.new
+  #  c.idx = 2
+  #  c.show_text # => calls show_text_2
   def delegate_methods(methods, opts = {})
     raise TypeError, "methods should be an array" unless methods.kind_of?(Array)
     this = self
@@ -156,11 +180,21 @@ class Module
   end
 end
 
-class System::Windows::Threading::DispatcherObject
-  def invoke &block
-    require "system.core, Version=3.5.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
-    dispatch_callback = System::Action[].new block
-    self.dispatcher.invoke(System::Windows::Threading::DispatcherPriority.Normal, dispatch_callback)
+if SILVERLIGHT
+  class System::Windows::DependencyObject
+    def begin_invoke &block
+      require 'System.Core, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e'
+      dispatch_callback = System::Action[0].new block
+      self.dispatcher.begin_invoke dispatch_callback
+    end
+  end
+else
+  class System::Windows::Threading::DispatcherObject
+    def begin_invoke &block
+      require "system.core, Version=3.5.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+      dispatch_callback = System::Action[0].new block
+      self.dispatcher.begin_invoke System::Windows::Threading::DispatcherPriority.Normal, dispatch_callback
+    end
   end
 end
 

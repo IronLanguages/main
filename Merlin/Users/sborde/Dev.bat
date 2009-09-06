@@ -1,9 +1,9 @@
 color 47
 
-set MERLIN_TFS=c:\vsl\Merlin\Main
+set MERLIN_TFS=c:\vs_langs01_s\Merlin\Main
 path=%path%;%MERLIN_TFS%\External\Tools
 path=%path%;%ProgramFiles%\Windows Resource Kits\Tools
-path=%path%;%MERLIN_TFS%\..\External.LCA_RESTRICTED\languages\ruby\ruby-1.8.6p287\bin
+path=%path%;%MERLIN_TFS%\..\External.LCA_RESTRICTED\languages\ruby\ruby-1.8.6p368\bin
 path=%path%;%MERLIN_TFS%\..\External.LCA_RESTRICTED\languages\ruby\jruby-1.1.6\bin
 
 doskey n2=Notepad2.exe $*
