@@ -103,7 +103,7 @@ namespace IronPython.Compiler {
             }
         }
 
-        public SymbolId Name {
+        public string Name {
             get {
                 return _variable.Name;
             }

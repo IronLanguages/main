@@ -23,16 +23,16 @@ namespace IronPython.Compiler.Ast {
     using Ast = System.Linq.Expressions.Expression;
 
     public class FromImportStatement : Statement {
-        private static readonly SymbolId[] _star = new SymbolId[1];
+        private static readonly string[] _star = new[] { "*" };
         private readonly ModuleName _root;
-        private readonly SymbolId[] _names;
-        private readonly SymbolId[] _asNames;
+        private readonly string[] _names;
+        private readonly string[] _asNames;
         private readonly bool _fromFuture;
         private readonly bool _forceAbsolute;
 
         private PythonVariable[] _variables;
 
-        public static SymbolId[] Star {
+        public static IList<string> Star {
             get { return FromImportStatement._star; }
         }
 
@@ -44,11 +44,11 @@ namespace IronPython.Compiler.Ast {
             get { return _fromFuture; }
         }
 
-        public IList<SymbolId> Names {
+        public IList<string> Names {
             get { return _names; }
         }
 
-        public IList<SymbolId> AsNames {
+        public IList<string> AsNames {
             get { return _asNames; }
         }
 
@@ -57,7 +57,7 @@ namespace IronPython.Compiler.Ast {
             set { _variables = value; }
         }
 
-        public FromImportStatement(ModuleName root, SymbolId[] names, SymbolId[] asNames, bool fromFuture, bool forceAbsolute) {
+        public FromImportStatement(ModuleName root, string[] names, string[] asNames, bool fromFuture, bool forceAbsolute) {
             _root = root;
             _names = names;
             _asNames = asNames;
@@ -86,13 +86,13 @@ namespace IronPython.Compiler.Ast {
                 // Create initializer of the array of names being passed to ImportWithNames
                 MSAst.Expression[] names = new MSAst.Expression[_names.Length];
                 for (int i = 0; i < names.Length; i++) {
-                    names[i] = AstUtils.Constant(SymbolTable.IdToString(_names[i]));
+                    names[i] = AstUtils.Constant(_names[i]);
                 }
 
                 // module = PythonOps.ImportWithNames(<context>, _root, make_array(_names))
                 statements.Add(
                     ag.AddDebugInfoAndVoid(
-                        ag.Globals.Assign(
+                        GlobalAllocator.Assign(
                             module, 
                             Ast.Call(
                                 AstGenerator.GetHelperMethod("ImportWithNames"),
@@ -110,7 +110,7 @@ namespace IronPython.Compiler.Ast {
                 for (int i = 0; i < names.Length; i++) {
                     statements.Add(
                         ag.AddDebugInfoAndVoid(
-                            ag.Globals.Assign(
+                            GlobalAllocator.Assign(
                                 ag.Globals.GetVariable(ag, _variables[i]), 
                                 Ast.Call(
                                     AstGenerator.GetHelperMethod("ImportFrom"),

@@ -210,7 +210,7 @@ namespace IronPython.Runtime {
             return false;
         }
 
-        public void Reload() {
+        public virtual void Reload() {
             foreach (KeyValuePair<object, object> kvp in base.GetItems()) {
                 if (kvp.Value == Uninitialized.Instance) {
                     // hiding a member

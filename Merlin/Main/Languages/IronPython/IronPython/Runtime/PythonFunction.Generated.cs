@@ -61,7 +61,7 @@ namespace IronPython.Runtime {
 
                 switch (args.Length) {
                     case 0:
-                        if (baseName != "") {
+                        if (!String.IsNullOrEmpty(baseName)) {
                             fc = new FunctionCaller(funcCompat);
                             mi = typeof(FunctionCaller).GetMethod(baseName + "Call0");
                             Debug.Assert(mi != null);
@@ -200,7 +200,7 @@ namespace IronPython.Runtime {
                 (Flags & (FunctionAttributes.ArgumentList | FunctionAttributes.KeywordDictionary)) == 0;
         }
 
-        private FunctionCaller/*!*/ GetFunctionCaller(Type/*!*/ callerType, int funcCompat) {
+        private static FunctionCaller/*!*/ GetFunctionCaller(Type/*!*/ callerType, int funcCompat) {
             FunctionCaller res;
             lock (_functionCallers) {
                 var key = new FunctionCallerKey(callerType, funcCompat);

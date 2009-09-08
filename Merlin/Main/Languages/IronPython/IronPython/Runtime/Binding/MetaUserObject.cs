@@ -310,7 +310,7 @@ namespace IronPython.Runtime.Binding {
             return callExpr;
         }
 
-        private ConversionResultKind GetResultKind(DynamicMetaObjectBinder convertToAction) {
+        private static ConversionResultKind GetResultKind(DynamicMetaObjectBinder convertToAction) {
             PythonConversionBinder cb = convertToAction as PythonConversionBinder;
             if (cb != null) {
                 return cb.ResultKind;
@@ -355,7 +355,7 @@ namespace IronPython.Runtime.Binding {
         /// <summary>
         ///  Various helpers related to calling Python __*__ conversion methods 
         /// </summary>
-        private DynamicMetaObject/*!*/ GetConversionFailedReturnValue(PythonConversionBinder/*!*/ convertToAction, DynamicMetaObject/*!*/ self) {
+        private static DynamicMetaObject/*!*/ GetConversionFailedReturnValue(PythonConversionBinder/*!*/ convertToAction, DynamicMetaObject/*!*/ self) {
             switch (convertToAction.ResultKind) {
                 case ConversionResultKind.ImplicitTry:
                 case ConversionResultKind.ExplicitTry:

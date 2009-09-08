@@ -98,7 +98,7 @@ namespace IronPython.Runtime.Binding {
         /// 
         /// TODO: This should be specialized for each callable object
         /// </summary>
-        protected DynamicMetaObject/*!*/ MakeDelegateTarget(DynamicMetaObjectBinder/*!*/ action, Type/*!*/ toType, DynamicMetaObject/*!*/ arg) {
+        protected static DynamicMetaObject/*!*/ MakeDelegateTarget(DynamicMetaObjectBinder/*!*/ action, Type/*!*/ toType, DynamicMetaObject/*!*/ arg) {
             Debug.Assert(arg != null);
 
             PythonContext state = PythonContext.GetPythonContext(action);

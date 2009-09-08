@@ -102,6 +102,41 @@ namespace IronPython.Runtime {
                 into.Add(kvp.Key, kvp.Value);
             }
         }
+
+        /// <summary>
+        /// Provides fast access to the __path__ attribute if the dictionary storage supports caching it.
+        /// </summary>
+        public virtual bool TryGetPath(out object value) {
+            return TryGetValue("__path__", out value);
+        }
+
+        /// <summary>
+        /// Provides fast access to the __package__ attribute if the dictionary storage supports caching it.
+        /// </summary>
+        public virtual bool TryGetPackage(out object value) {
+            return TryGetValue("__package__", out value);
+        }
+
+        /// <summary>
+        /// Provides fast access to the __builtins__ attribute if the dictionary storage supports caching it.
+        /// </summary>
+        public virtual bool TryGetBuiltins(out object value) {
+            return TryGetValue("__builtins__", out value);
+        }
+
+        /// <summary>
+        /// Provides fast access to the __name__ attribute if the dictionary storage supports caching it.
+        /// </summary>
+        public virtual bool TryGetName(out object value) {
+            return TryGetValue("__name__", out value);
+        }
+
+        /// <summary>
+        /// Provides fast access to the __import__ attribute if the dictionary storage supports caching it.
+        /// </summary>
+        public virtual bool TryGetImport(out object value) {
+            return TryGetValue("__import__", out value);
+        }
     }
 
 }

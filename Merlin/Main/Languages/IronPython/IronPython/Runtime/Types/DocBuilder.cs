@@ -553,13 +553,6 @@ namespace IronPython.Runtime.Types {
         /// <summary>
         /// Gets the Xml documentation for the specified Field.
         /// </summary>
-        private static void GetXmlDoc(PropertyInfo prop, out string summary, out string returns) {
-            GetXmlDocForProperty(prop.DeclaringType, prop.Name, out summary, out returns);
-        }
-
-        /// <summary>
-        /// Gets the Xml documentation for the specified Field.
-        /// </summary>
         private static void GetXmlDocForProperty(Type declaringType, string propertyName, out string summary, out string returns) {
             summary = null;
             returns = null;

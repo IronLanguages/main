@@ -60,6 +60,7 @@ rbr     =%MERLIN_ROOT%\Bin\Release\ir.exe $*
 rbd     =%MERLIN_ROOT%\Bin\Debug\ir.exe -D $*
 irb19 =%MERLIN_ROOT%\..\External.LCA_RESTRICTED\Languages\Ruby\ruby-1.9.1p129\bin\irb.bat $*
 ruby19 =%MERLIN_ROOT%\..\External.LCA_RESTRICTED\Languages\Ruby\ruby-1.9.1p129\bin\ruby.exe $*
+msir    =%windir%\system32\WindowsPowerShell\v1.0\powershell.exe measure-command { %MERLIN_ROOT%\Bin\Release\ir.exe $* }
 
 ;==============================================================================
 ;= Chiron aliases

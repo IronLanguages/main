@@ -111,7 +111,7 @@ namespace IronPython.Runtime.Exceptions {
                 return Activator.CreateInstance(cls.UnderlyingSystemType, cls);
             }
 
-            public static object __new__(PythonType/*!*/ cls, [ParamDictionary] IAttributesCollection kwArgs, params object[] args) {
+            public static object __new__(PythonType/*!*/ cls, [ParamDictionary]IDictionary<object, object> kwArgs, params object[] args) {
                 return Activator.CreateInstance(cls.UnderlyingSystemType, cls);
             }
 

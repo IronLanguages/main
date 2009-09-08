@@ -109,7 +109,7 @@ namespace IronPython.Runtime.Operations {
             return type\u00F8.CreateInstance(context);
         }
 
-        public static object DefaultNewClsKW(CodeContext context, PythonType type\u00F8, [ParamDictionary] IAttributesCollection kwargs\u00F8, params object[] args\u00F8) {
+        public static object DefaultNewClsKW(CodeContext context, PythonType type\u00F8, [ParamDictionary]IDictionary<object, object> kwargs\u00F8, params object[] args\u00F8) {
             object res = DefaultNew(context, type\u00F8, args\u00F8);
 
             if (kwargs\u00F8.Count > 0) {
@@ -129,13 +129,13 @@ namespace IronPython.Runtime.Operations {
             return overloads\u00F8.Call(context, storage, null, args\u00F8);
         }
 
-        public static object OverloadedNewKW(CodeContext context, BuiltinFunction overloads\u00F8, PythonType type\u00F8, [ParamDictionary] IAttributesCollection kwargs\u00F8) {
+        public static object OverloadedNewKW(CodeContext context, BuiltinFunction overloads\u00F8, PythonType type\u00F8, [ParamDictionary]IDictionary<object, object> kwargs\u00F8) {
             if (type\u00F8 == null) throw PythonOps.TypeError("__new__ expected type object, got {0}", PythonOps.Repr(context, DynamicHelpers.GetPythonType(type\u00F8)));
             
             return overloads\u00F8.Call(context, null, null, ArrayUtils.EmptyObjects, kwargs\u00F8);
         }
 
-        public static object OverloadedNewClsKW(CodeContext context, BuiltinFunction overloads\u00F8, PythonType type\u00F8, [ParamDictionary] IAttributesCollection kwargs\u00F8, params object[] args\u00F8) {
+        public static object OverloadedNewClsKW(CodeContext context, BuiltinFunction overloads\u00F8, PythonType type\u00F8, [ParamDictionary]IDictionary<object, object> kwargs\u00F8, params object[] args\u00F8) {
             if (type\u00F8 == null) throw PythonOps.TypeError("__new__ expected type object, got {0}", PythonOps.Repr(context, DynamicHelpers.GetPythonType(type\u00F8)));
             if (args\u00F8 == null) args\u00F8 = new object[1];
 
@@ -147,7 +147,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "self"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "kwargs\u00F8"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "context"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "args\u00F8")]
-        public static void DefaultInitKW(CodeContext context, object self, [ParamDictionary] IAttributesCollection kwargs\u00F8, params object[] args\u00F8) {
+        public static void DefaultInitKW(CodeContext context, object self, [ParamDictionary]IDictionary<object, object> kwargs\u00F8, params object[] args\u00F8) {
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "context")]
@@ -160,7 +160,7 @@ namespace IronPython.Runtime.Operations {
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "context")]
         [StaticExtensionMethod]
-        public static object NonDefaultNewKW(CodeContext context, PythonType type\u00F8, [ParamDictionary] IAttributesCollection kwargs\u00F8, params object[] args\u00F8) {
+        public static object NonDefaultNewKW(CodeContext context, PythonType type\u00F8, [ParamDictionary]IDictionary<object, object> kwargs\u00F8, params object[] args\u00F8) {
             if (type\u00F8 == null) throw PythonOps.TypeError("__new__ expected type object, got {0}", PythonOps.Repr(context, DynamicHelpers.GetPythonType(type\u00F8)));
             if (args\u00F8 == null) args\u00F8 = new object[1];
 
@@ -171,7 +171,7 @@ namespace IronPython.Runtime.Operations {
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "context")]
         [StaticExtensionMethod]
-        public static object NonDefaultNewKWNoParams(CodeContext context, PythonType type\u00F8, [ParamDictionary] IAttributesCollection kwargs\u00F8) {
+        public static object NonDefaultNewKWNoParams(CodeContext context, PythonType type\u00F8, [ParamDictionary]IDictionary<object, object> kwargs\u00F8) {
             if (type\u00F8 == null) throw PythonOps.TypeError("__new__ expected type object, got {0}", PythonOps.Repr(context, DynamicHelpers.GetPythonType(type\u00F8)));
 
             string[] names;
@@ -522,7 +522,7 @@ namespace IronPython.Runtime.Operations {
         internal const string ObjectNewNoParameters = "object.__new__() takes no parameters";
 
 
-        internal static void CheckNewArgs(CodeContext context, IAttributesCollection dict, object[] args, PythonType pt) {
+        internal static void CheckNewArgs(CodeContext context, IDictionary<object, object> dict, object[] args, PythonType pt) {
             if (((args != null && args.Length > 0) || (dict != null && dict.Count > 0))) {
                 bool hasObjectInit = pt.HasObjectInit(context);
                 bool hasObjectNew = pt.HasObjectNew(context);
@@ -535,7 +535,7 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        internal static void CheckInitArgs(CodeContext context, IAttributesCollection dict, object[] args, object self) {
+        internal static void CheckInitArgs(CodeContext context, IDictionary<object, object> dict, object[] args, object self) {
             if (((args != null && args.Length > 0) || (dict != null && dict.Count > 0))) {
                 PythonType pt = DynamicHelpers.GetPythonType(self);
                 bool hasObjectInit = pt.HasObjectInit(context);
@@ -566,12 +566,12 @@ namespace IronPython.Runtime.Operations {
             return BuiltinFunction.MakeFunction(name, methods, typeof(object));
         }
 
-        private static void GetKeywordArgs(IAttributesCollection dict, object[] args, out object[] finalArgs, out string[] names) {
+        private static void GetKeywordArgs(IDictionary<object, object> dict, object[] args, out object[] finalArgs, out string[] names) {
             finalArgs = new object[args.Length + dict.Count];
             Array.Copy(args, finalArgs, args.Length);
             names = new string[dict.Count];
             int i = 0;
-            foreach (KeyValuePair<object, object> kvp in (IDictionary<object, object>)dict) {
+            foreach (KeyValuePair<object, object> kvp in dict) {
                 names[i] = (string)kvp.Key;
                 finalArgs[i + args.Length] = kvp.Value;
                 i++;

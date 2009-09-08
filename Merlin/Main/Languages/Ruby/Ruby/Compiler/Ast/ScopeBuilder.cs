@@ -162,6 +162,10 @@ namespace IronRuby.Compiler.Ast {
         }
 
         public MSA.Expression/*!*/ GetVariableNamesExpression() {
+            if (LiftedVisibleVariableCount == 0) {
+                return Ast.Constant(null, typeof(SymbolId[]));
+            }
+
             SymbolId[] symbols = new SymbolId[LiftedVisibleVariableCount];
 
             foreach (var var in _lexicalScope) {

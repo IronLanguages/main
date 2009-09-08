@@ -94,14 +94,14 @@ namespace IronPython.Modules {
         public class methodcaller {
             private readonly SymbolId _name;
             private readonly object[] _args;
-            private readonly IAttributesCollection _dict;
+            private readonly IDictionary<object, object> _dict;
 
             public methodcaller(string name, params object[] args) {
                 _name = SymbolTable.StringToId(name);
                 _args = args;
             }
 
-            public methodcaller(string name, [ParamDictionary]IAttributesCollection kwargs, params object[] args) {
+            public methodcaller(string name, [ParamDictionary]IDictionary<object, object> kwargs, params object[] args) {
                 _name = SymbolTable.StringToId(name);
                 _args = args;
                 _dict = kwargs;

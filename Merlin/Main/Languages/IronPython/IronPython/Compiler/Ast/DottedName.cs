@@ -20,24 +20,23 @@ using System.Text;
 
 namespace IronPython.Compiler.Ast {
     public class DottedName : Node {
-        // TODO: Make string[] 
-        private readonly SymbolId[] _names;
+        private readonly string[] _names;
 
-        public DottedName(SymbolId[] names) {
+        public DottedName(string[] names) {
             _names = names;
         }
 
-        public IList<SymbolId> Names {
+        public IList<string> Names {
             get { return _names; }
         }
 
         public string MakeString() {
             if (_names.Length == 0) return String.Empty;
 
-            StringBuilder ret = new StringBuilder(SymbolTable.IdToString(_names[0]));
+            StringBuilder ret = new StringBuilder(_names[0]);
             for (int i = 1; i < _names.Length; i++) {
                 ret.Append('.');
-                ret.Append(SymbolTable.IdToString(_names[i]));
+                ret.Append(_names[i]);
             }
             return ret.ToString();
         }

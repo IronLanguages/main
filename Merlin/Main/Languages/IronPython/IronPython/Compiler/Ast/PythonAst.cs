@@ -102,7 +102,7 @@ namespace IronPython.Compiler.Ast {
             return true;
         }
 
-        internal PythonVariable EnsureGlobalVariable(PythonNameBinder binder, SymbolId name) {
+        internal PythonVariable EnsureGlobalVariable(PythonNameBinder binder, string name) {
             PythonVariable variable;
             if (TryGetVariable(name, out variable)) {
                 // use the current one if it is global only
@@ -114,7 +114,7 @@ namespace IronPython.Compiler.Ast {
             return EnsureUnboundVariable(name);
         }
 
-        internal override PythonVariable BindName(PythonNameBinder binder, SymbolId name) {
+        internal override PythonVariable BindName(PythonNameBinder binder, string name) {
             return EnsureVariable(name);
         }
 
@@ -174,8 +174,8 @@ namespace IronPython.Compiler.Ast {
                 Debug.Assert(moduleName != null);
 
                 body = Ast.Block(
-                    ag.Globals.Assign(ag.Globals.GetVariable(ag, _fileVariable), Ast.Constant(name)),
-                    ag.Globals.Assign(ag.Globals.GetVariable(ag, _nameVariable), Ast.Constant(moduleName)),
+                    GlobalAllocator.Assign(ag.Globals.GetVariable(ag, _fileVariable), Ast.Constant(name)),
+                    GlobalAllocator.Assign(ag.Globals.GetVariable(ag, _nameVariable), Ast.Constant(moduleName)),
                     body // already typed to void
                 );
 
@@ -222,7 +222,7 @@ namespace IronPython.Compiler.Ast {
             string doc = ag.GetDocumentation(_body);
 
             if (_isModule) {
-                block.Add(ag.Globals.Assign(
+                block.Add(GlobalAllocator.Assign(
                     ag.Globals.GetVariable(ag, _docVariable),
                     Ast.Constant(doc)
                 ));

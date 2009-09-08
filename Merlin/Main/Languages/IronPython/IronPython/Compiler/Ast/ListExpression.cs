@@ -27,7 +27,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal override MSAst.Expression Transform(AstGenerator ag, Type type) {
-            if (Items.Length == 0) {
+            if (Items.Count == 0) {
                 return Ast.Call(
                     AstGenerator.GetHelperMethod("MakeEmptyListFromCode"),
                     AstGenerator.EmptyExpression

@@ -25,31 +25,32 @@ using IronPython.Compiler;
 
 namespace IronPython.Runtime {
     class GlobalDictionaryStorage : CustomDictionaryStorage {
-        private readonly Dictionary<SymbolId, PythonGlobal/*!*/>/*!*/ _globals;
-        private readonly PythonGlobal/*!*/[] _data;
+        private readonly Dictionary<string, PythonGlobal/*!*/>/*!*/ _globals;
+        private readonly PythonGlobal[] _data;
+        private PythonGlobal _path, _package, _builtins, _name;
 
-        public GlobalDictionaryStorage(Dictionary<SymbolId, PythonGlobal/*!*/>/*!*/ globals) {
+        public GlobalDictionaryStorage(Dictionary<string, PythonGlobal/*!*/>/*!*/ globals) {
             Assert.NotNull(globals);
-            
+
             _globals = globals;
         }
 
-        public GlobalDictionaryStorage(Dictionary<SymbolId, PythonGlobal/*!*/>/*!*/ globals, PythonGlobal/*!*/[]/*!*/ data) {
+        public GlobalDictionaryStorage(Dictionary<string, PythonGlobal/*!*/>/*!*/ globals, PythonGlobal/*!*/[]/*!*/ data) {
             Assert.NotNull(globals, data);
 
             _globals = globals;
             _data = data;
         }
 
-        protected override IEnumerable<KeyValuePair<SymbolId, object>> GetExtraItems() {
-            foreach (KeyValuePair<SymbolId, PythonGlobal> global in _globals) {
+        protected override IEnumerable<KeyValuePair<string, object>> GetExtraItems() {
+            foreach (KeyValuePair<string, PythonGlobal> global in _globals) {
                 if (global.Value.RawValue != Uninitialized.Instance) {
-                    yield return new KeyValuePair<SymbolId, object>(global.Key, global.Value.RawValue);
+                    yield return new KeyValuePair<string, object>(global.Key, global.Value.RawValue);
                 }
             }
         }
 
-        protected override bool? TryRemoveExtraValue(SymbolId key) {
+        protected override bool? TryRemoveExtraValue(string key) {
             PythonGlobal global;
             if (_globals.TryGetValue(key, out global)) {
                 if (global.RawValue != Uninitialized.Instance) {
@@ -62,7 +63,7 @@ namespace IronPython.Runtime {
             return null;
         }
 
-        protected override bool TrySetExtraValue(Microsoft.Scripting.SymbolId key, object value) {
+        protected override bool TrySetExtraValue(string key, object value) {
             PythonGlobal global;
             if (_globals.TryGetValue(key, out global)) {
                 global.CurrentValue = value;
@@ -71,9 +72,9 @@ namespace IronPython.Runtime {
             return false;
         }
 
-        protected override bool TryGetExtraValue(Microsoft.Scripting.SymbolId key, out object value) {
+        protected override bool TryGetExtraValue(string key, out object value) {
             PythonGlobal global;
-            if (_globals.TryGetValue(key, out global) && global.RawValue != Uninitialized.Instance) {
+            if (_globals.TryGetValue(key, out global)) {
                 value = global.RawValue;
                 return true;
             }
@@ -82,7 +83,34 @@ namespace IronPython.Runtime {
             return false;
         }
 
-        public PythonGlobal/*!*/[] Data {
+        public override bool TryGetBuiltins(out object value) {
+            return TryGetCachedValue(ref _builtins, "__builtins__", out value);
+        }
+
+        public override bool TryGetPath(out object value) {
+            return TryGetCachedValue(ref _path, "__path__", out value);
+        }
+
+        public override bool TryGetPackage(out object value) {
+            return TryGetCachedValue(ref _package, "__package__", out value);
+        }
+
+        public override bool TryGetName(out object value) {
+            return TryGetCachedValue(ref _name, "__name__", out value);
+        }
+
+        private bool TryGetCachedValue(ref PythonGlobal storage, string name, out object value) {
+            if (storage == null) {
+                if (!_globals.TryGetValue(name, out storage)) {
+                    return TryGetValue(name, out value);
+                }
+            }
+
+            value = storage.RawValue;
+            return value != Uninitialized.Instance;
+        }
+
+        public PythonGlobal[] Data {
             get {
                 return _data;
             }

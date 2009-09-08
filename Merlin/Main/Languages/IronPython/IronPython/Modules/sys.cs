@@ -43,7 +43,8 @@ namespace IronPython.Modules {
         // builtin_module_names is set by PythonContext and updated on reload
         public const string copyright = "Copyright (c) Microsoft Corporation. All rights reserved.";
 
-        static SysModule() {
+        private static string GetPrefix() {
+            string prefix;
 #if SILVERLIGHT
             prefix = String.Empty;
 #else
@@ -53,6 +54,7 @@ namespace IronPython.Modules {
                 prefix = String.Empty;
             }
 #endif
+            return prefix;
         }
 
         /// <summary>
@@ -216,7 +218,7 @@ namespace IronPython.Modules {
         public const string platform = "cli";
 #endif
 
-        public static readonly string prefix;
+        public static readonly string prefix = GetPrefix();
 
         // ps1 and ps2 are set by PythonContext and only on the initial load
 

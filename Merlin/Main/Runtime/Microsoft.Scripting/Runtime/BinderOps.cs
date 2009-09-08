@@ -17,8 +17,10 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Diagnostics;
 using System.Dynamic;
 using System.Text;
+
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Utils;
@@ -71,6 +73,19 @@ namespace Microsoft.Scripting.Runtime {
             for (int i = 0; i < names.Length; i++) {
                 ((IAttributesCollection)res)[SymbolTable.StringToId(names[i])] = values[i];
             }
+            return res;
+        }
+
+        public static Dictionary<TKey, TValue> MakeDictionary<TKey, TValue>(string[] names, object[] values) {
+            Debug.Assert(typeof(TKey) == typeof(string) || typeof(TKey) == typeof(object));
+
+            Dictionary<TKey, TValue> res = new Dictionary<TKey, TValue>();
+            IDictionary id = (IDictionary)res;
+            
+            for (int i = 0; i < names.Length; i++) {
+                id[names[i]] = values[i];
+            }
+
             return res;
         }
         

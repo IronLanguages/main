@@ -74,10 +74,9 @@ namespace IronPython.Compiler.Ast {
             get { return _finally; }
         }
 
-        public TryStatementHandler[] Handlers {
+        public IList<TryStatementHandler> Handlers {
             get { return _handlers; }
         }
-
 
         internal override MSAst.Expression Transform(AstGenerator ag) {
             // allocated all variables here so they won't be shared w/ other 

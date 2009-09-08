@@ -297,6 +297,7 @@ namespace IronPython.Modules {
 
             #region Public API
 
+            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
             public IDictionary memo {
                 get { return _memo; }
                 set { _memo = value; }
@@ -935,8 +936,10 @@ namespace IronPython.Modules {
             private void WriteStringPair(CodeContext/*!*/ context, object value1, object value2) {
                 Debug.Assert(DynamicHelpers.GetPythonType(value1).Equals(TypeCache.String));
                 Debug.Assert(DynamicHelpers.GetPythonType(value2).Equals(TypeCache.String));
+#if DEBUG
                 Debug.Assert(IsPrintableAscii(value1));
                 Debug.Assert(IsPrintableAscii(value2));
+#endif
                 Write(context, (string)value1);
                 Write(context, Newline);
                 Write(context, (string)value2);
@@ -974,6 +977,7 @@ namespace IronPython.Modules {
                 return pc.LessThanOrEqual(Int32.MinValue, value) && pc.LessThanOrEqual(value, Int32.MaxValue);
             }
 
+#if DEBUG
             /// <summary>
             /// Return true if value is a string where each value is in the range of printable ASCII characters.
             /// </summary>
@@ -985,6 +989,7 @@ namespace IronPython.Modules {
                 }
                 return true;
             }
+#endif
 
             #endregion
 
@@ -1380,6 +1385,7 @@ namespace IronPython.Modules {
                 return PythonExceptions.CreateThrowable(UnpicklingError(context), String.Format(format, args));
             }
 
+            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
             public IDictionary<object, object> memo {
                 get { return _memo; }
                 set { _memo = value; }

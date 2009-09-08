@@ -574,7 +574,7 @@ namespace IronPython.Runtime.Binding {
             );
         }
 
-        private Expression FallbackGet(DynamicMetaObjectBinder member, DynamicMetaObject[] args) {
+        private static Expression FallbackGet(DynamicMetaObjectBinder member, DynamicMetaObject[] args) {
             GetMemberBinder sa = member as GetMemberBinder;
             if (sa != null) {
                 return sa.FallbackGetMember(args[0]).Expression;

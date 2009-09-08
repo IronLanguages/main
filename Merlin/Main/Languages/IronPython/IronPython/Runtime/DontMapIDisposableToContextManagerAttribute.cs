@@ -23,6 +23,6 @@ namespace IronPython.Runtime {
     /// __enter__ and __exit__ methods of a context manager.
     /// </summary>
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
-    class DontMapIDisposableToContextManagerAttribute : Attribute {
+    sealed class DontMapIDisposableToContextManagerAttribute : Attribute {
     }
 }

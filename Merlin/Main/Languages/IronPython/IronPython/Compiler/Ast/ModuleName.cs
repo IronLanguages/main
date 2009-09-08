@@ -17,7 +17,7 @@ using Microsoft.Scripting;
 
 namespace IronPython.Compiler.Ast {
     public class ModuleName : DottedName {
-        public ModuleName(SymbolId[] names)
+        public ModuleName(string[] names)
             : base(names) {
         }
     }

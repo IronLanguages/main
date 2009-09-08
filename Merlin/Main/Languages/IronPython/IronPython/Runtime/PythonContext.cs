@@ -56,7 +56,7 @@ namespace IronPython.Runtime {
 
         // fields used during startup
         private readonly IDictionary<object, object>/*!*/ _modulesDict = new PythonDictionary();
-        private readonly Dictionary<SymbolId, ModuleGlobalCache>/*!*/ _builtinCache = new Dictionary<SymbolId, ModuleGlobalCache>();
+        private readonly Dictionary<string, ModuleGlobalCache>/*!*/ _builtinCache = new Dictionary<string, ModuleGlobalCache>(StringComparer.Ordinal);
         private readonly Dictionary<Type, string>/*!*/ _builtinModuleNames = new Dictionary<Type, string>();
         private readonly PythonOptions/*!*/ _options;
         private readonly PythonModule/*!*/ _systemState;
@@ -105,7 +105,7 @@ namespace IronPython.Runtime {
         private CallSite<Func<CallSite, CodeContext, object, object>> _callSite0;
         private CallSite<Func<CallSite, CodeContext, object, object, object>> _callSite1;
         private CallSite<Func<CallSite, CodeContext, object, object, object, object>> _callSite2;
-        private CallSite<Func<CallSite, CodeContext, object, object[], IAttributesCollection, object>> _callDictSite;
+        private CallSite<Func<CallSite, CodeContext, object, object[], IDictionary<object, object>, object>> _callDictSite;
         private CallSite<Func<CallSite, CodeContext, object, string, IAttributesCollection, IAttributesCollection, PythonTuple, int, object>> _importSite;
         private CallSite<Func<CallSite, CodeContext, object, string, IAttributesCollection, IAttributesCollection, PythonTuple, object>> _oldImportSite;
         private CallSite<Func<CallSite, object, bool>> _isCallableSite;
@@ -349,7 +349,7 @@ namespace IronPython.Runtime {
             }
 
             int IEqualityComparer<object>.GetHashCode(object obj) {
-                return _context.Hash(obj);
+                return PythonContext.Hash(obj);
             }
         }
 
@@ -1043,7 +1043,7 @@ namespace IronPython.Runtime {
             Assert.NotNull(module);
 
             object name;
-            if (!module.__dict__.TryGetValue("__name__", out name) || !(name is string)) {
+            if (!module.__dict__._storage.TryGetName(out name) || !(name is string)) {
                 throw PythonOps.SystemError("nameless module");
             }
 
@@ -1079,7 +1079,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        internal ModuleGlobalCache GetModuleGlobalCache(SymbolId name) {
+        internal ModuleGlobalCache GetModuleGlobalCache(string name) {
             ModuleGlobalCache res;
             if (!TryGetModuleGlobalCache(name, out res)) {
                 res = ModuleGlobalCache.NoCache;
@@ -1113,7 +1113,8 @@ namespace IronPython.Runtime {
         }
 
 #if !SILVERLIGHT // AssemblyResolve, files, path
-        private bool TryLoadAssemblyFromFileWithPath(string path, out Assembly res) {
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods", MessageId = "System.Reflection.Assembly.LoadFile")]
+        private static bool TryLoadAssemblyFromFileWithPath(string path, out Assembly res) {
             if (File.Exists(path) && Path.IsPathRooted(path)) {
                 try {
                     res = Assembly.LoadFile(path);
@@ -1423,7 +1424,7 @@ namespace IronPython.Runtime {
             return result;
         }
 
-        private string FrameToString(DynamicStackFrame frame) {
+        private static string FrameToString(DynamicStackFrame frame) {
             string methodName = frame.GetMethodName();
             int lineNumber = frame.GetFileLineNumber();
 
@@ -1647,13 +1648,13 @@ namespace IronPython.Runtime {
             }
         }
 
-        internal bool TryGetModuleGlobalCache(SymbolId name, out ModuleGlobalCache cache) {
+        internal bool TryGetModuleGlobalCache(string name, out ModuleGlobalCache cache) {
             lock (_builtinCache) {
                 if (!_builtinCache.TryGetValue(name, out cache)) {
                     // only cache values currently in built-ins, everything else will have
                     // no caching policy and will fall back to the LanguageContext.
                     object value;
-                    if (BuiltinModuleInstance.__dict__.TryGetValue(SymbolTable.IdToString(name), out value)) {
+                    if (BuiltinModuleInstance.__dict__.TryGetValue(name, out value)) {
                         _builtinCache[name] = cache = new ModuleGlobalCache(value);
                     }
                 }
@@ -1686,7 +1687,7 @@ namespace IronPython.Runtime {
             SetVersionVariables(dict, 2, 6, 0, "release", _initialVersionString);
         }
 
-        private void SetVersionVariables(IAttributesCollection dict, byte major, byte minor, byte build, string level, string versionString) {
+        private static void SetVersionVariables(IAttributesCollection dict, byte major, byte minor, byte build, string level, string versionString) {
             dict[SymbolTable.StringToId("hexversion")] = ((int)major << 24) + ((int)minor << 16) + ((int)build << 8);
             dict[SymbolTable.StringToId("version_info")] = PythonTuple.MakeTuple((int)major, (int)minor, (int)build, level, 0);
             dict[SymbolTable.StringToId("version")] = String.Format("{0}.{1}.{2} ({3})", major, minor, build, versionString);
@@ -1835,8 +1836,8 @@ namespace IronPython.Runtime {
             return GetGenericSiteStorage<CallSite<Func<CallSite, CodeContext, object, object>>>();
         }
 
-        internal SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object, object[], IAttributesCollection, object>>> GetGenericKeywordCallSiteStorage() {
-            return GetGenericSiteStorage<CallSite<Func<CallSite, CodeContext, object, object[], IAttributesCollection, object>>>();
+        internal SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object, object[], IDictionary<object, object>, object>>> GetGenericKeywordCallSiteStorage() {
+            return GetGenericSiteStorage<CallSite<Func<CallSite, CodeContext, object, object[], IDictionary<object, object>, object>>>();
 
         }
 
@@ -1933,7 +1934,7 @@ namespace IronPython.Runtime {
                 case UnaryOperators.Length: symbol = Symbols.Length; break;
                 case UnaryOperators.Hash: symbol = Symbols.Hash; break;
                 case UnaryOperators.String: symbol = Symbols.String; break;
-                default: throw new ArgumentException();
+                default: throw new ArgumentException("unknown unary symbol");
             }
             return symbol;
         }
@@ -1982,7 +1983,7 @@ namespace IronPython.Runtime {
             switch (oper) {
                 case TernaryOperators.SetDescriptor: symbol = Symbols.SetDescriptor; break;
                 case TernaryOperators.GetDescriptor: symbol = Symbols.GetDescriptor; break;
-                default: throw new ArgumentException();
+                default: throw new ArgumentException("unknown ternary operator");
             }
             return symbol;
         }
@@ -2234,16 +2235,10 @@ namespace IronPython.Runtime {
         class AttrKey : IEquatable<AttrKey> {
             private Type _type;
             private SymbolId _name;
-            private bool _showCls;
 
             public AttrKey(Type type, SymbolId name) {
                 _type = type;
                 _name = name;
-            }
-
-            public AttrKey(Type type, SymbolId name, bool showCls)
-                : this(type, name) {
-                _showCls = showCls;
             }
 
             #region IEquatable<AttrKey> Members
@@ -2251,7 +2246,7 @@ namespace IronPython.Runtime {
             public bool Equals(AttrKey other) {
                 if (other == null) return false;
 
-                return _type == other._type && _name == other._name && _showCls == other._showCls;
+                return _type == other._type && _name == other._name;
             }
 
             #endregion
@@ -2261,7 +2256,7 @@ namespace IronPython.Runtime {
             }
 
             public override int GetHashCode() {
-                return _type.GetHashCode() ^ _name.GetHashCode() ^ (_showCls ? 1 : 0);
+                return _type.GetHashCode() ^ _name.GetHashCode();
             }
         }
 
@@ -2443,11 +2438,11 @@ namespace IronPython.Runtime {
             return Comparison(self, other, PythonOperationKind.Contains, ref _containsSite);
         }
 
-        internal bool Equal(object self, object other) {
+        internal static bool Equal(object self, object other) {
             return DynamicHelpers.GetPythonType(self).EqualRetBool(self, other);
         }
 
-        internal bool NotEqual(object self, object other) {
+        internal static bool NotEqual(object self, object other) {
             return !Equal(self, other);
         }
 
@@ -2567,7 +2562,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        internal object CallWithKeywords(object func, object[] args, IAttributesCollection dict) {
+        internal object CallWithKeywords(object func, object[] args, IDictionary<object, object> dict) {
             if (_callDictSite == null) {
                 Interlocked.CompareExchange(
                     ref _callDictSite,
@@ -2579,8 +2574,8 @@ namespace IronPython.Runtime {
             return _callDictSite.Target(_callDictSite, SharedContext, func, args, dict);
         }
 
-        internal CallSite<Func<CallSite, CodeContext, object, object[], IAttributesCollection, object>> MakeKeywordSplatSite() {
-            return CallSite<Func<CallSite, CodeContext, object, object[], IAttributesCollection, object>>.Create(Binders.InvokeKeywords(this));
+        internal CallSite<Func<CallSite, CodeContext, object, object[], IDictionary<object, object>, object>> MakeKeywordSplatSite() {
+            return CallSite<Func<CallSite, CodeContext, object, object[], IDictionary<object, object>, object>>.Create(Binders.InvokeKeywords(this));
         }
 
         internal CallSite<Func<CallSite, CodeContext, object, string, IAttributesCollection, IAttributesCollection, PythonTuple, int, object>> ImportSite {
@@ -2635,7 +2630,7 @@ namespace IronPython.Runtime {
             return _isCallableSite.Target(_isCallableSite, obj);
         }
 
-        internal int Hash(object o) {
+        internal static int Hash(object o) {
             if (o != null) {
                 switch (Type.GetTypeCode(o.GetType())) {
                     case TypeCode.Int32: return Int32Ops.__hash__((int)o);
@@ -3049,7 +3044,7 @@ namespace IronPython.Runtime {
             return CreateComparisonSite(ExpressionType.Equal);
         }
 
-        internal CallSite<Func<CallSite, object, int>> GetHashSite(PythonType/*!*/ type) {
+        internal static CallSite<Func<CallSite, object, int>> GetHashSite(PythonType/*!*/ type) {
             return type.HashSite;
         }
 
@@ -3078,6 +3073,7 @@ namespace IronPython.Runtime {
         /// Performs a GC collection including the possibility of freeing weak data structures held onto by the Python runtime.
         /// </summary>
         /// <param name="generation"></param>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods", MessageId = "System.GC.Collect")]
         internal int Collect(int generation) {
             if (generation > GC.MaxGeneration || generation < 0) {
                 throw PythonOps.ValueError("invalid generation {0}", generation);
