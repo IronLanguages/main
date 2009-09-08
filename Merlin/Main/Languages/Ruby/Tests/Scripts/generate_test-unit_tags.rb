@@ -7,8 +7,13 @@
 require 'test/unit/ui/console/testrunner'
 
 def test_method_name(fault)
-  match = /(test_\w+)\((\w+)\)/.match(fault.test_name)
-  raise "could not parse method name" if match.size != 3
+  match = 
+    / (test_[\w?!]+) # method name
+      \(
+      (\w+) # testcase class name
+      \)
+    /x.match(fault.test_name)
+  raise "could not parse fault.test_name: #{fault.test_name}" if not match or match.size != 3
   [match[1], match[2]]
 end
 
@@ -44,8 +49,8 @@ if $0 == __FILE__
   # Dummy example for testing
   require 'test/unit'  
   class ExampleTest < Test::Unit::TestCase
-    def test_1() assert(false) end   
-    def test_2() raise "hi\nthere\nyou" end
+    def test_1!() assert(false) end   
+    def test_2?() raise "hi\nthere\nyou" end
     def test_3() assert(true) end
   end  
 end
