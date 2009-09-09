@@ -14,13 +14,15 @@
  * ***************************************************************************/
 
 using System;
-using IronPython.Runtime;
-using MSAst = System.Linq.Expressions;
+using System.Collections.Generic;
+
+using IronPython.Runtime.Operations;
+
 using AstUtils = Microsoft.Scripting.Ast.Utils;
+using MSAst = System.Linq.Expressions;
 
 namespace IronPython.Compiler.Ast {
     using Ast = System.Linq.Expressions.Expression;
-    using IronPython.Runtime.Operations;
 
     public class DictionaryExpression : Expression {
         private readonly SliceExpression[] _items;
@@ -29,7 +31,7 @@ namespace IronPython.Compiler.Ast {
             _items = items;
         }
 
-        public SliceExpression[] Items {
+        public IList<SliceExpression> Items {
             get { return _items; }
         }
 

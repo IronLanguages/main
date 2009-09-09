@@ -13,10 +13,12 @@
  *
  * ***************************************************************************/
 
-using System.Collections.ObjectModel;
+using System;
+using System.Collections.Generic;
+
 using Microsoft.Scripting.Utils;
+
 using MSAst = System.Linq.Expressions;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Compiler.Ast {
     using Ast = System.Linq.Expressions.Expression;
@@ -29,7 +31,7 @@ namespace IronPython.Compiler.Ast {
             _statements = statements;
         }
 
-        public Statement[] Statements {
+        public IList<Statement> Statements {
             get { return _statements; }
         } 
 

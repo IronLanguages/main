@@ -35,10 +35,10 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal override string CheckAssign() {
-            if (Items.Length == 0) {
+            if (Items.Count == 0) {
                 return "can't assign to ()";
             }
-            for (int i = 0; i < Items.Length; i++) {
+            for (int i = 0; i < Items.Count; i++) {
                 Expression e = Items[i];
                 if (e.CheckAssign() != null) {
                     // we don't return the same message here as CPython doesn't seem to either, 
@@ -58,7 +58,7 @@ namespace IronPython.Compiler.Ast {
                 );
             }
 
-            if (Items.Length == 0) {
+            if (Items.Count == 0) {
                 return Ast.Field(
                     null,
                     typeof(PythonOps).GetField("EmptyTuple")

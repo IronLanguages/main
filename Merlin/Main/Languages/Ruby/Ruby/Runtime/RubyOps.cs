@@ -83,11 +83,11 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted]
-        public static void InitializeScope(RubyScope/*!*/ scope, MutableTuple locals, SymbolId[]/*!*/ variableNames, 
+        public static void InitializeScope(RubyScope/*!*/ scope, MutableTuple locals, SymbolId[] variableNames, 
             InterpretedFrame interpretedFrame) {
 
             if (!scope.LocalsInitialized) {
-                scope.SetLocals(locals, variableNames);
+                scope.SetLocals(locals, variableNames ?? SymbolId.EmptySymbols);
             }
             scope.InterpretedFrame = interpretedFrame;
         }
@@ -113,32 +113,32 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted]
-        public static RubyModuleScope/*!*/ CreateModuleScope(MutableTuple locals, SymbolId[]/*!*/ variableNames, 
+        public static RubyModuleScope/*!*/ CreateModuleScope(MutableTuple locals, SymbolId[] variableNames, 
             RubyScope/*!*/ parent, RubyModule/*!*/ module) {
 
             RubyModuleScope scope = new RubyModuleScope(parent, module, module);
             scope.SetDebugName((module.IsClass ? "class" : "module") + " " + module.Name);
-            scope.SetLocals(locals, variableNames);
+            scope.SetLocals(locals, variableNames ?? SymbolId.EmptySymbols);
             return scope;
         }
 
         [Emitted]
-        public static RubyMethodScope/*!*/ CreateMethodScope(MutableTuple locals, SymbolId[]/*!*/ variableNames, 
+        public static RubyMethodScope/*!*/ CreateMethodScope(MutableTuple locals, SymbolId[] variableNames, 
             RubyScope/*!*/ parentScope, RubyModule/*!*/ declaringModule, string/*!*/ definitionName,
             object selfObject, Proc blockParameter, InterpretedFrame interpretedFrame) {
 
             return new RubyMethodScope(
-                locals, variableNames,
+                locals, variableNames ?? SymbolId.EmptySymbols,
                 parentScope, declaringModule, definitionName, selfObject, blockParameter,
                 interpretedFrame
             );            
         }
 
         [Emitted]
-        public static RubyBlockScope/*!*/ CreateBlockScope(MutableTuple locals, SymbolId[]/*!*/ variableNames, 
+        public static RubyBlockScope/*!*/ CreateBlockScope(MutableTuple locals, SymbolId[] variableNames, 
             BlockParam/*!*/ blockParam, object selfObject, InterpretedFrame interpretedFrame) {
 
-            return new RubyBlockScope(locals, variableNames, blockParam, selfObject, interpretedFrame);
+            return new RubyBlockScope(locals, variableNames ?? SymbolId.EmptySymbols, blockParam, selfObject, interpretedFrame);
         }
 
         [Emitted]

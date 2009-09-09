@@ -80,7 +80,7 @@ namespace IronPython.Modules {
             }
 
             [Documentation("creates a new uninitialized struct object - all arguments are ignored")]
-            public Struct([ParamDictionary]IAttributesCollection kwArgs, params object[] args) {
+            public Struct([ParamDictionary]IDictionary<object, object> kwArgs, params object[] args) {
             }
 
             [Documentation("initializes or re-initializes the compiled struct object with a new format")]

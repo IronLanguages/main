@@ -956,7 +956,7 @@ namespace IronPython.Runtime {
                 throw PythonOps.TypeError("mode must be string, not None");
             }
 
-            if (mode == string.Empty) {
+            if (String.IsNullOrEmpty(mode)) {
                 throw PythonOps.ValueError("empty mode string");
             }
 
@@ -1353,7 +1353,7 @@ namespace IronPython.Runtime {
             string line;
             for (; ; ) {
                 line = readline();
-                if (line == "") break;
+                if (String.IsNullOrEmpty(line)) break;
                 ret.AddNoLock(line);
             }
             return ret;
@@ -1363,7 +1363,7 @@ namespace IronPython.Runtime {
             List ret = new List();
             for (; ; ) {
                 string line = readline();
-                if (line == "") break;
+                if (String.IsNullOrEmpty(line)) break;
                 ret.AddNoLock(line);
                 if (line.Length >= sizehint) break;
                 sizehint -= line.Length;
@@ -1641,7 +1641,7 @@ namespace IronPython.Runtime {
 
         public object next() {
             string line = readline();
-            if (line == "") {
+            if (String.IsNullOrEmpty(line)) {
                 throw PythonOps.StopIteration();
             }
             return line;

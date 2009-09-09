@@ -176,7 +176,7 @@ namespace IronPython.Runtime.Types {
             }
         }
 
-        private MethodInfo[] RemoveNullEntries(MethodInfo[] mis) {
+        private static MethodInfo[] RemoveNullEntries(MethodInfo[] mis) {
             List<MethodInfo> res = null;
             for (int i = 0; i < mis.Length; i++) {
                 if (mis[i] == null) {

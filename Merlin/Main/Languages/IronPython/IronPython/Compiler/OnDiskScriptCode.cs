@@ -79,7 +79,7 @@ namespace IronPython.Compiler {
                 CachedOptimizedCodeAttribute optimizedCode = attrs[0];
 
                 // create the storage for the global scope
-                Dictionary<SymbolId, PythonGlobal> globals = new Dictionary<SymbolId, PythonGlobal>();
+                Dictionary<string, PythonGlobal> globals = new Dictionary<string, PythonGlobal>(StringComparer.Ordinal);
                 PythonGlobal[] globalArray = new PythonGlobal[optimizedCode.Names.Length];
                 var dict = new PythonDictionary(new GlobalDictionaryStorage(globals, globalArray));
 
@@ -87,7 +87,7 @@ namespace IronPython.Compiler {
                 CodeContext res = mc.GlobalContext;
 
                 for (int i = 0; i < optimizedCode.Names.Length; i++) {
-                    SymbolId name = SymbolTable.StringToId(optimizedCode.Names[i]);
+                    string name = optimizedCode.Names[i];
                     globalArray[i] = globals[name] = new PythonGlobal(res, name);
                 }
 

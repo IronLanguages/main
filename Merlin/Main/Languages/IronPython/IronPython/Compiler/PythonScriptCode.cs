@@ -72,11 +72,13 @@ namespace IronPython.Compiler {
 
         private object RunWorker(CodeContext ctx) {
             Func<CodeContext/*!*/, FunctionCode/*!*/, object> target = GetTarget();
-            
+
+            Exception e = PythonOps.SaveCurrentException();
             PushFrame(ctx, target);
             try {
                 return target(ctx, EnsureFunctionCode(target));
             } finally {
+                PythonOps.RestoreCurrentException(e);
                 PopFrame();
             }
         }

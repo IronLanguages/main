@@ -310,7 +310,7 @@ namespace IronPython.Runtime.Types {
         }
 
         [SpecialName]
-        public object Call(CodeContext context, [ParamDictionary] IAttributesCollection dict\u00F8, [NotNull]params object[] args\u00F8) {
+        public object Call(CodeContext context, [ParamDictionary]IDictionary<object, object> dict\u00F8, [NotNull]params object[] args\u00F8) {
             OldInstance inst = new OldInstance(context, this);
             object meth;
             if (PythonOps.TryGetBoundAttr(inst, Symbols.Init, out meth)) {
@@ -510,7 +510,7 @@ namespace IronPython.Runtime.Types {
             return false;
         }
 
-        internal object MakeCallError() {
+        internal static object MakeCallError() {
             // Normally, if we have an __init__ method, the method binder detects signature mismatches.
             // This can happen when a class does not define __init__ and therefore does not take any arguments.
             // Beware that calls like F(*(), **{}) have 2 arguments but they're empty and so it should still

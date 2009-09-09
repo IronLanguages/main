@@ -36,7 +36,7 @@ namespace IronPython.Compiler.Ast {
             get { return _dest; }
         }
 
-        public Expression[] Expressions {
+        public IList<Expression> Expressions {
             get { return _expressions; }
         }
 
@@ -71,7 +71,7 @@ namespace IronPython.Compiler.Ast {
                     MSAst.ParameterExpression temp = ag.GetTemporary("destination");
 
                     statements.Add(
-                        ag.MakeAssignment(temp, destination)
+                        AstGenerator.MakeAssignment(temp, destination)
                     );
 
                     destination = temp;

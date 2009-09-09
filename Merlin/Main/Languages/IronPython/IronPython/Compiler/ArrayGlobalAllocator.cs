@@ -38,7 +38,7 @@ namespace IronPython.Compiler.Ast {
     /// </summary>
     class ArrayGlobalAllocator : GlobalAllocator {
         private readonly Dictionary<string, GlobalInfo> _globals = new Dictionary<string, GlobalInfo>();
-        private readonly Dictionary<SymbolId, PythonGlobal> _globalVals = new Dictionary<SymbolId, PythonGlobal>();
+        private readonly Dictionary<string, PythonGlobal> _globalVals = new Dictionary<string, PythonGlobal>(StringComparer.Ordinal);
         private readonly MSAst.ParameterExpression/*!*/ _globalArray;
         private readonly CodeContext _context;
         private readonly ModuleContext _modContext;
@@ -59,9 +59,7 @@ namespace IronPython.Compiler.Ast {
 
             // now fill in the dictionary and create the array
             foreach (var global in _globals) {
-                SymbolId globalName = SymbolTable.StringToId(global.Key);
-                
-                globalArray[global.Value.Index] = _globalVals[globalName];
+                globalArray[global.Value.Index] = _globalVals[global.Key];
             }
             
             _array.Array = globalArray;
@@ -128,8 +126,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         protected override MSAst.Expression/*!*/ GetGlobal(string/*!*/ name, AstGenerator/*!*/ ag, bool isLocal) {
-            SymbolId idname = SymbolTable.StringToId(name);
-            PythonGlobal global = _globalVals[idname] = new PythonGlobal(_context, idname);
+            PythonGlobal global = _globalVals[name] = new PythonGlobal(_context, name);
             return new PythonGlobalVariableExpression(GetGlobalInfo(name).Expression, global);
         }
 

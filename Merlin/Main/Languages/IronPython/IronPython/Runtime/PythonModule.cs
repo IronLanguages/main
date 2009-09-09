@@ -158,8 +158,12 @@ namespace IronPython.Runtime {
 
         public string/*!*/ __str__() {
             object fileObj, nameObj;
-            _dict.TryGetValue("__file__", out fileObj);
-            _dict.TryGetValue("__name__", out nameObj);
+            if (!_dict.TryGetValue("__file__", out fileObj)) {
+                fileObj = null;
+            }
+            if (!_dict._storage.TryGetName(out nameObj)) {
+                nameObj = null;
+            }
             
             string file = fileObj as string;
             string name = nameObj as string ?? "?";
@@ -333,7 +337,7 @@ namespace IronPython.Runtime {
 
         internal string GetName() {
             object res;
-            if (_dict.TryGetValue("__name__", out res)) {
+            if (_dict._storage.TryGetName(out res)) {
                 return res as string;
             }
             return null;

@@ -110,10 +110,21 @@ namespace IronPython.Runtime {
         }
 
         /// <summary>
+        /// Attempts to lookup the provided name in this scope or any outer scope.
+        /// </summary>
+        internal bool TryLookupName(string name, out object value) {
+            if (_dict.TryGetValue(name, out value)) {
+                return true;
+            }
+
+            return _modContext.Globals.TryGetValue(name, out value);
+        }
+
+        /// <summary>
         /// Looks up a global variable.  If the variable is not defined in the
         /// global scope then built-ins is consulted.
         /// </summary>
-        internal bool TryLookupGlobal(SymbolId name, out object value) {
+        internal bool TryLookupGlobal(string name, out object value) {
             object builtins;
             if (!GlobalDict.TryGetValue("__builtins__", out builtins)) {
                 value = null;
@@ -121,11 +132,11 @@ namespace IronPython.Runtime {
             }
 
             PythonModule builtinsScope = builtins as PythonModule;
-            if (builtinsScope != null && builtinsScope.__dict__.TryGetValue(SymbolTable.IdToString(name), out value)) {
+            if (builtinsScope != null && builtinsScope.__dict__.TryGetValue(name, out value)) {
                 return true;
             }
 
-            IAttributesCollection dict = builtins as IAttributesCollection;
+            PythonDictionary dict = builtins as PythonDictionary;
             if (dict != null && dict.TryGetValue(name, out value)) {
                 return true;
             }
@@ -158,6 +169,13 @@ namespace IronPython.Runtime {
         }
 
         /// <summary>
+        /// Removes a variable from the local scope.
+        /// </summary>
+        internal bool TryRemoveVariable(string name) {
+            return Dict.Remove(name);
+        }
+
+        /// <summary>
         /// Sets a variable in the local scope.
         /// </summary>
         internal void SetVariable(SymbolId name, object value) {
@@ -178,6 +196,14 @@ namespace IronPython.Runtime {
             return GlobalDict.TryGetValue(SymbolTable.IdToString(symbolId), out res);
         }
 
+
+        /// <summary>
+        /// Gets a variable from the global scope.
+        /// </summary>
+        internal bool TryGetGlobalVariable(string name, out object res) {
+            return GlobalDict.TryGetValue(name, out res);
+        }
+
         /// <summary>
         /// Sets a variable in the global scope.
         /// </summary>
@@ -186,10 +212,24 @@ namespace IronPython.Runtime {
         }
 
         /// <summary>
+        /// Sets a variable in the global scope.
+        /// </summary>
+        internal void SetGlobalVariable(string name, object value) {
+            GlobalDict.Add(name, value);
+        }
+
+        /// <summary>
         /// Removes a variable from the global scope.
         /// </summary>
         internal bool TryRemoveGlobalVariable(SymbolId name) {
             return GlobalDict.Remove(SymbolTable.IdToString(name));
+        }
+
+        /// <summary>
+        /// Removes a variable from the global scope.
+        /// </summary>
+        internal bool TryRemoveGlobalVariable(string name) {
+            return GlobalDict.Remove(name);
         }
 
         internal PythonGlobal/*!*/[] GetGlobalArray() {

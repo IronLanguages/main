@@ -183,6 +183,27 @@ namespace Microsoft.Scripting.Generation {
                  );
             }
 
+            var strings = node.Value as string[];
+            if (strings != null) {
+                if (strings.Length == 0) {
+                    return Expression.Field(null, typeof(ArrayUtils).GetField("EmptyStrings"));
+                }
+
+                _constants.Add(
+                    Expression.NewArrayInit(
+                         typeof(string),
+                         new ReadOnlyCollection<Expression>(
+                             strings.Map(s => Expression.Constant(s, typeof(string)))
+                         )
+                     )
+                 );
+
+                return AstUtils.Convert(
+                    Expression.ArrayAccess(_constantPool, AstUtils.Constant(_constants.Count - 1)),
+                    typeof(string[])
+                );
+            }
+
             return base.VisitConstant(node);
         }
 

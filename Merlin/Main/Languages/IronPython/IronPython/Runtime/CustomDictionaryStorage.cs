@@ -17,22 +17,23 @@ using System;
 using System.Collections.Generic;
 
 using Microsoft.Scripting;
+using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime {
     abstract class CustomDictionaryStorage : DictionaryStorage {
         private readonly CommonDictionaryStorage/*!*/ _storage = new CommonDictionaryStorage();
 
         public override void Add(object key, object value) {
-            if (key is string) {
-                Add(SymbolTable.StringToId((string)key), value);
+            if (key is string && TrySetExtraValue((string)key, value)) {
                 return;
             }
             _storage.Add(key, value);
         }
 
         public override bool Contains(object key) {
-            if (key is string) {
-                return Contains(SymbolTable.StringToId((string)key));
+            object dummy;
+            if (key is string && TryGetExtraValue((string)key, out dummy)) {
+                return dummy != Uninitialized.Instance;
             }
 
             return _storage.Contains(key);
@@ -40,17 +41,15 @@ namespace IronPython.Runtime {
 
         public override bool Remove(object key) {
             if (key is string) {
-                SymbolId id = SymbolTable.StringToId((string)key);
-
-                return TryRemoveExtraValue(id) ?? _storage.Remove(key);
+                return TryRemoveExtraValue((string)key) ?? _storage.Remove(key);
 
             }
             return _storage.Remove(key);
         }
 
         public override bool TryGetValue(object key, out object value) {
-            if (key is string) {
-                return TryGetValue(SymbolTable.StringToId((string)key), out value);
+            if (key is string && TryGetExtraValue((string)key, out value)) {
+                return value != Uninitialized.Instance;
             }
 
             return _storage.TryGetValue(key, out value);
@@ -71,58 +70,33 @@ namespace IronPython.Runtime {
             List<KeyValuePair<object, object>> res = _storage.GetItems();
 
             foreach (var item in GetExtraItems()) {
-                res.Add(new KeyValuePair<object, object>(SymbolTable.IdToString(item.Key), item.Value));
+                res.Add(new KeyValuePair<object, object>(item.Key, item.Value));
             }
 
             return res;
         }
 
-        public override void Add(SymbolId key, object value) {
-            if (TrySetExtraValue(key, value)) {
-                return;
-            }
-
-            _storage.Add(key, value);
-        }
-
-        public override bool TryGetValue(SymbolId key, out object value) {
-            if (TryGetExtraValue(key, out value)) {
-                return true;
-            }
-
-            return _storage.TryGetValue(key, out value);
-        }
-
-        public override bool Contains(SymbolId key) {
-            object dummy;
-            if (TryGetExtraValue(key, out dummy)) {
-                return true;
-            }
-
-            return _storage.Contains(key);
-        }
-
         /// <summary>
         /// Gets all of the extra names and values stored in the dictionary.
         /// </summary>
-        protected abstract IEnumerable<KeyValuePair<SymbolId, object>> GetExtraItems();
+        protected abstract IEnumerable<KeyValuePair<string, object>> GetExtraItems();
 
         /// <summary>
         /// Attemps to sets a value in the extra keys.  Returns true if the value is set, false if 
         /// the value is not an extra key.
         /// </summary>
-        protected abstract bool TrySetExtraValue(SymbolId key, object value);
+        protected abstract bool TrySetExtraValue(string key, object value);
 
         /// <summary>
         /// Attempts to get a value from the extra keys.  Returns true if the value is an extra
         /// key and has a value.  False if it is not an extra key or doesn't have a value.
         /// </summary>
-        protected abstract bool TryGetExtraValue(SymbolId key, out object value);
+        protected abstract bool TryGetExtraValue(string key, out object value);
 
         /// <summary>
         /// Attempts to remove the key.  Returns true if the key is removed, false
         /// if the key was not removed, or null if the key is not an extra key.
         /// </summary>
-        protected abstract bool? TryRemoveExtraValue(SymbolId key);
+        protected abstract bool? TryRemoveExtraValue(string key);
     }
 }

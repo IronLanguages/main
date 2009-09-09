@@ -767,6 +767,7 @@ namespace IronPython.Runtime.Binding {
             res[typeof(DynamicNull)] = new ExtensionTypeInfo(typeof(NoneTypeOps), "NoneType");
             res[typeof(BaseSymbolDictionary)] = new ExtensionTypeInfo(typeof(DictionaryOps), "dict");
             res[typeof(IAttributesCollection)] = new ExtensionTypeInfo(typeof(DictionaryOps), "dict");
+            res[typeof(IDictionary<object, object>)] = new ExtensionTypeInfo(typeof(DictionaryOps), "dict");
             res[typeof(NamespaceTracker)] = new ExtensionTypeInfo(typeof(NamespaceTrackerOps), "namespace#");
             res[typeof(TypeGroup)] = new ExtensionTypeInfo(typeof(TypeGroupOps), "type-collision");
             res[typeof(TypeTracker)] = new ExtensionTypeInfo(typeof(TypeTrackerOps), "type-collision");
@@ -1036,13 +1037,7 @@ namespace IronPython.Runtime.Binding {
             private class SlotCacheInfo {
                 public SlotCacheInfo() {
                     Members = new Dictionary<string/*!*/, KeyValuePair<PythonTypeSlot, MemberGroup/*!*/>>();
-                }
-
-                public void Add(string/*!*/ name, PythonTypeSlot slot, MemberGroup/*!*/ group) {
-                    Debug.Assert(name != null); Debug.Assert(group != null);
-
-                    Members[name] = new KeyValuePair<PythonTypeSlot, MemberGroup>(slot, group);
-                }
+                }               
 
                 public bool TryGetSlot(string/*!*/ name, out PythonTypeSlot slot) {
                     Debug.Assert(name != null);

@@ -87,12 +87,12 @@ namespace IronPython.Runtime {
             return new PythonDictionary(new SymbolIdDictionaryStorage(count));
         }
 
-        public void __init__(CodeContext/*!*/ context, object o, [ParamDictionary] IAttributesCollection kwArgs) {
+        public void __init__(CodeContext/*!*/ context, object o, [ParamDictionary]IDictionary<object, object> kwArgs) {
             update(context, o);
             update(context, kwArgs);
         }
 
-        public void __init__(CodeContext/*!*/ context, [ParamDictionary] IAttributesCollection kwArgs) {
+        public void __init__(CodeContext/*!*/ context, [ParamDictionary]IDictionary<object, object> kwArgs) {
             update(context, kwArgs);
         }
 
@@ -100,6 +100,7 @@ namespace IronPython.Runtime {
             update(context, o);
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         public void __init__() {
         }
 
@@ -381,10 +382,11 @@ namespace IronPython.Runtime {
             return new DictionaryValueEnumerator(_storage);
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         public void update() {
         }
 
-        public void update(CodeContext/*!*/ context, [ParamDictionary]IAttributesCollection b) {
+        public void update(CodeContext/*!*/ context, [ParamDictionary]IDictionary<object, object> b) {
             DictionaryOps.update(context, this, b);
         }
 
@@ -392,7 +394,7 @@ namespace IronPython.Runtime {
             DictionaryOps.update(context, this, b);
         }
 
-        public void update(CodeContext/*!*/ context, object b, [ParamDictionary]IAttributesCollection f) {
+        public void update(CodeContext/*!*/ context, object b, [ParamDictionary]IDictionary<object, object> f) {
             DictionaryOps.update(context, this, b);
             DictionaryOps.update(context, this, f);
         }

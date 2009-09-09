@@ -29,7 +29,8 @@ using IronPython.Runtime.Types;
 // This generated code is updated by the generate_exceptions.py script.
 namespace IronPython.Runtime.Exceptions {
     public static partial class PythonExceptions {
-        
+        private static object _pythonExceptionsLock = new object();
+
         #region Generated Python New-Style Exceptions
 
         // *** BEGIN GENERATED CODE ***
@@ -40,7 +41,7 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType GeneratorExit {
             get {
                 if (GeneratorExitStorage == null) {
-                    lock (typeof(PythonExceptions)) {
+                    lock (_pythonExceptionsLock) {
                         GeneratorExitStorage = CreateSubType(DynamicHelpers.GetPythonTypeFromType(typeof(BaseException)), "GeneratorExit");
                     }
                 }
@@ -53,7 +54,7 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType SystemExit {
             get {
                 if (SystemExitStorage == null) {
-                    lock (typeof(PythonExceptions)) {
+                    lock (_pythonExceptionsLock) {
                         SystemExitStorage = CreateSubType(DynamicHelpers.GetPythonTypeFromType(typeof(BaseException)), typeof(_SystemExit));
                     }
                 }
@@ -84,7 +85,7 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType KeyboardInterrupt {
             get {
                 if (KeyboardInterruptStorage == null) {
-                    lock (typeof(PythonExceptions)) {
+                    lock (_pythonExceptionsLock) {
                         KeyboardInterruptStorage = CreateSubType(DynamicHelpers.GetPythonTypeFromType(typeof(BaseException)), "KeyboardInterrupt");
                     }
                 }
@@ -97,7 +98,7 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType Exception {
             get {
                 if (ExceptionStorage == null) {
-                    lock (typeof(PythonExceptions)) {
+                    lock (_pythonExceptionsLock) {
                         ExceptionStorage = CreateSubType(DynamicHelpers.GetPythonTypeFromType(typeof(BaseException)), "Exception");
                     }
                 }
@@ -110,7 +111,7 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType StopIteration {
             get {
                 if (StopIterationStorage == null) {
-                    lock (typeof(PythonExceptions)) {
+                    lock (_pythonExceptionsLock) {
                         StopIterationStorage = CreateSubType(Exception, "StopIteration");
                     }
                 }
@@ -123,7 +124,7 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType StandardError {
             get {
                 if (StandardErrorStorage == null) {
-                    lock (typeof(PythonExceptions)) {
+                    lock (_pythonExceptionsLock) {
                         StandardErrorStorage = CreateSubType(Exception, "StandardError");
                     }
                 }
@@ -136,7 +137,7 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType BufferError {
             get {
                 if (BufferErrorStorage == null) {
-                    lock (typeof(PythonExceptions)) {
+                    lock (_pythonExceptionsLock) {
                         BufferErrorStorage = CreateSubType(StandardError, "BufferError");
                     }
                 }
@@ -149,7 +150,7 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType ArithmeticError {
             get {
                 if (ArithmeticErrorStorage == null) {
-                    lock (typeof(PythonExceptions)) {
+                    lock (_pythonExceptionsLock) {
                         ArithmeticErrorStorage = CreateSubType(StandardError, "ArithmeticError");
                     }
                 }
@@ -162,7 +163,7 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType FloatingPointError {
             get {
                 if (FloatingPointErrorStorage == null) {
-                    lock (typeof(PythonExceptions)) {
+                    lock (_pythonExceptionsLock) {
                         FloatingPointErrorStorage = CreateSubType(ArithmeticError, "FloatingPointError");
                     }
                 }
@@ -175,7 +176,7 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType OverflowError {
             get {
                 if (OverflowErrorStorage == null) {
-                    lock (typeof(PythonExceptions)) {
+                    lock (_pythonExceptionsLock) {
                         OverflowErrorStorage = CreateSubType(ArithmeticError, "OverflowError");
                     }
                 }
@@ -188,7 +189,7 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType ZeroDivisionError {
             get {
                 if (ZeroDivisionErrorStorage == null) {
-                    lock (typeof(PythonExceptions)) {
+                    lock (_pythonExceptionsLock) {
                         ZeroDivisionErrorStorage = CreateSubType(ArithmeticError, "ZeroDivisionError");
                     }
                 }
@@ -201,7 +202,7 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType AssertionError {
             get {
                 if (AssertionErrorStorage == null) {
-                    lock (typeof(PythonExceptions)) {
+                    lock (_pythonExceptionsLock) {
                         AssertionErrorStorage = CreateSubType(StandardError, "AssertionError");
                     }
                 }
@@ -214,7 +215,7 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType AttributeError {
             get {
                 if (AttributeErrorStorage == null) {
-                    lock (typeof(PythonExceptions)) {
+                    lock (_pythonExceptionsLock) {
                         AttributeErrorStorage = CreateSubType(StandardError, "AttributeError");
                     }
                 }
@@ -227,7 +228,7 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType EnvironmentError {
             get {
                 if (EnvironmentErrorStorage == null) {
-                    lock (typeof(PythonExceptions)) {
+                    lock (_pythonExceptionsLock) {
                         EnvironmentErrorStorage = CreateSubType(StandardError, typeof(_EnvironmentError));
                     }
                 }
@@ -270,7 +271,7 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType IOError {
             get {
                 if (IOErrorStorage == null) {
-                    lock (typeof(PythonExceptions)) {
+                    lock (_pythonExceptionsLock) {
                         IOErrorStorage = CreateSubType(EnvironmentError, "IOError");
                     }
                 }
@@ -283,7 +284,7 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType OSError {
             get {
                 if (OSErrorStorage == null) {
-                    lock (typeof(PythonExceptions)) {
+                    lock (_pythonExceptionsLock) {
                         OSErrorStorage = CreateSubType(EnvironmentError, "OSError");
                     }
                 }
@@ -296,7 +297,7 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType WindowsError {
             get {
                 if (WindowsErrorStorage == null) {
-                    lock (typeof(PythonExceptions)) {
+                    lock (_pythonExceptionsLock) {
                         WindowsErrorStorage = CreateSubType(OSError, typeof(_WindowsError));
                     }
                 }
@@ -327,7 +328,7 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType EOFError {
             get {
                 if (EOFErrorStorage == null) {
-                    lock (typeof(PythonExceptions)) {
+                    lock (_pythonExceptionsLock) {
                         EOFErrorStorage = CreateSubType(StandardError, "EOFError");
                     }
                 }
@@ -340,7 +341,7 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType ImportError {
             get {
                 if (ImportErrorStorage == null) {
-                    lock (typeof(PythonExceptions)) {
+                    lock (_pythonExceptionsLock) {
                         ImportErrorStorage = CreateSubType(StandardError, "ImportError");
                     }
                 }
@@ -353,7 +354,7 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType LookupError {
             get {
                 if (LookupErrorStorage == null) {
-                    lock (typeof(PythonExceptions)) {
+                    lock (_pythonExceptionsLock) {
                         LookupErrorStorage = CreateSubType(StandardError, "LookupError");
                     }
                 }
@@ -366,7 +367,7 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType IndexError {
             get {
                 if (IndexErrorStorage == null) {
-                    lock (typeof(PythonExceptions)) {
+                    lock (_pythonExceptionsLock) {
                         IndexErrorStorage = CreateSubType(LookupError, "IndexError");
                     }
                 }
@@ -379,7 +380,7 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType KeyError {
             get {
                 if (KeyErrorStorage == null) {
-                    lock (typeof(PythonExceptions)) {
+                    lock (_pythonExceptionsLock) {
                         KeyErrorStorage = CreateSubType(LookupError, "KeyError");
                     }
                 }
@@ -392,7 +393,7 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType MemoryError {
             get {
                 if (MemoryErrorStorage == null) {
-                    lock (typeof(PythonExceptions)) {
+                    lock (_pythonExceptionsLock) {
                         MemoryErrorStorage = CreateSubType(StandardError, "MemoryError");
                     }
                 }
@@ -405,7 +406,7 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType NameError {
             get {
                 if (NameErrorStorage == null) {
-                    lock (typeof(PythonExceptions)) {
+                    lock (_pythonExceptionsLock) {
                         NameErrorStorage = CreateSubType(StandardError, "NameError");
                     }
                 }
@@ -418,7 +419,7 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType UnboundLocalError {
             get {
                 if (UnboundLocalErrorStorage == null) {
-                    lock (typeof(PythonExceptions)) {
+                    lock (_pythonExceptionsLock) {
                         UnboundLocalErrorStorage = CreateSubType(NameError, "UnboundLocalError");
                     }
                 }
@@ -431,7 +432,7 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType ReferenceError {
             get {
                 if (ReferenceErrorStorage == null) {
-                    lock (typeof(PythonExceptions)) {
+                    lock (_pythonExceptionsLock) {
                         ReferenceErrorStorage = CreateSubType(StandardError, "ReferenceError");
                     }
                 }
@@ -444,7 +445,7 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType RuntimeError {
             get {
                 if (RuntimeErrorStorage == null) {
-                    lock (typeof(PythonExceptions)) {
+                    lock (_pythonExceptionsLock) {
                         RuntimeErrorStorage = CreateSubType(StandardError, "RuntimeError");
                     }
                 }
@@ -457,7 +458,7 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType NotImplementedError {
             get {
                 if (NotImplementedErrorStorage == null) {
-                    lock (typeof(PythonExceptions)) {
+                    lock (_pythonExceptionsLock) {
                         NotImplementedErrorStorage = CreateSubType(RuntimeError, "NotImplementedError");
                     }
                 }
@@ -470,7 +471,7 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType SyntaxError {
             get {
                 if (SyntaxErrorStorage == null) {
-                    lock (typeof(PythonExceptions)) {
+                    lock (_pythonExceptionsLock) {
                         SyntaxErrorStorage = CreateSubType(StandardError, typeof(_SyntaxError));
                     }
                 }
@@ -531,7 +532,7 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType IndentationError {
             get {
                 if (IndentationErrorStorage == null) {
-                    lock (typeof(PythonExceptions)) {
+                    lock (_pythonExceptionsLock) {
                         IndentationErrorStorage = CreateSubType(SyntaxError, "IndentationError");
                     }
                 }
@@ -544,7 +545,7 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType TabError {
             get {
                 if (TabErrorStorage == null) {
-                    lock (typeof(PythonExceptions)) {
+                    lock (_pythonExceptionsLock) {
                         TabErrorStorage = CreateSubType(IndentationError, "TabError");
                     }
                 }
@@ -557,7 +558,7 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType SystemError {
             get {
                 if (SystemErrorStorage == null) {
-                    lock (typeof(PythonExceptions)) {
+                    lock (_pythonExceptionsLock) {
                         SystemErrorStorage = CreateSubType(StandardError, "SystemError");
                     }
                 }
@@ -570,7 +571,7 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType TypeError {
             get {
                 if (TypeErrorStorage == null) {
-                    lock (typeof(PythonExceptions)) {
+                    lock (_pythonExceptionsLock) {
                         TypeErrorStorage = CreateSubType(StandardError, "TypeError");
                     }
                 }
@@ -583,7 +584,7 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType ValueError {
             get {
                 if (ValueErrorStorage == null) {
-                    lock (typeof(PythonExceptions)) {
+                    lock (_pythonExceptionsLock) {
                         ValueErrorStorage = CreateSubType(StandardError, "ValueError");
                     }
                 }
@@ -596,7 +597,7 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType UnicodeError {
             get {
                 if (UnicodeErrorStorage == null) {
-                    lock (typeof(PythonExceptions)) {
+                    lock (_pythonExceptionsLock) {
                         UnicodeErrorStorage = CreateSubType(ValueError, "UnicodeError");
                     }
                 }
@@ -611,7 +612,7 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType UnicodeDecodeError {
             get {
                 if (UnicodeDecodeErrorStorage == null) {
-                    lock (typeof(PythonExceptions)) {
+                    lock (_pythonExceptionsLock) {
                         UnicodeDecodeErrorStorage = CreateSubType(UnicodeError, typeof(_UnicodeDecodeError));
                     }
                 }
@@ -686,7 +687,7 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType UnicodeEncodeError {
             get {
                 if (UnicodeEncodeErrorStorage == null) {
-                    lock (typeof(PythonExceptions)) {
+                    lock (_pythonExceptionsLock) {
                         UnicodeEncodeErrorStorage = CreateSubType(UnicodeError, typeof(_UnicodeEncodeError));
                     }
                 }
@@ -759,7 +760,7 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType UnicodeTranslateError {
             get {
                 if (UnicodeTranslateErrorStorage == null) {
-                    lock (typeof(PythonExceptions)) {
+                    lock (_pythonExceptionsLock) {
                         UnicodeTranslateErrorStorage = CreateSubType(UnicodeError, typeof(_UnicodeTranslateError));
                     }
                 }
@@ -814,7 +815,7 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType Warning {
             get {
                 if (WarningStorage == null) {
-                    lock (typeof(PythonExceptions)) {
+                    lock (_pythonExceptionsLock) {
                         WarningStorage = CreateSubType(Exception, "Warning");
                     }
                 }
@@ -827,7 +828,7 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType DeprecationWarning {
             get {
                 if (DeprecationWarningStorage == null) {
-                    lock (typeof(PythonExceptions)) {
+                    lock (_pythonExceptionsLock) {
                         DeprecationWarningStorage = CreateSubType(Warning, "DeprecationWarning");
                     }
                 }
@@ -840,7 +841,7 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType PendingDeprecationWarning {
             get {
                 if (PendingDeprecationWarningStorage == null) {
-                    lock (typeof(PythonExceptions)) {
+                    lock (_pythonExceptionsLock) {
                         PendingDeprecationWarningStorage = CreateSubType(Warning, "PendingDeprecationWarning");
                     }
                 }
@@ -853,7 +854,7 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType RuntimeWarning {
             get {
                 if (RuntimeWarningStorage == null) {
-                    lock (typeof(PythonExceptions)) {
+                    lock (_pythonExceptionsLock) {
                         RuntimeWarningStorage = CreateSubType(Warning, "RuntimeWarning");
                     }
                 }
@@ -866,7 +867,7 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType SyntaxWarning {
             get {
                 if (SyntaxWarningStorage == null) {
-                    lock (typeof(PythonExceptions)) {
+                    lock (_pythonExceptionsLock) {
                         SyntaxWarningStorage = CreateSubType(Warning, "SyntaxWarning");
                     }
                 }
@@ -879,7 +880,7 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType UserWarning {
             get {
                 if (UserWarningStorage == null) {
-                    lock (typeof(PythonExceptions)) {
+                    lock (_pythonExceptionsLock) {
                         UserWarningStorage = CreateSubType(Warning, "UserWarning");
                     }
                 }
@@ -892,7 +893,7 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType FutureWarning {
             get {
                 if (FutureWarningStorage == null) {
-                    lock (typeof(PythonExceptions)) {
+                    lock (_pythonExceptionsLock) {
                         FutureWarningStorage = CreateSubType(Warning, "FutureWarning");
                     }
                 }
@@ -905,7 +906,7 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType ImportWarning {
             get {
                 if (ImportWarningStorage == null) {
-                    lock (typeof(PythonExceptions)) {
+                    lock (_pythonExceptionsLock) {
                         ImportWarningStorage = CreateSubType(Warning, "ImportWarning");
                     }
                 }
@@ -918,7 +919,7 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType UnicodeWarning {
             get {
                 if (UnicodeWarningStorage == null) {
-                    lock (typeof(PythonExceptions)) {
+                    lock (_pythonExceptionsLock) {
                         UnicodeWarningStorage = CreateSubType(Warning, "UnicodeWarning");
                     }
                 }
@@ -931,7 +932,7 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType BytesWarning {
             get {
                 if (BytesWarningStorage == null) {
-                    lock (typeof(PythonExceptions)) {
+                    lock (_pythonExceptionsLock) {
                         BytesWarningStorage = CreateSubType(Warning, "BytesWarning");
                     }
                 }

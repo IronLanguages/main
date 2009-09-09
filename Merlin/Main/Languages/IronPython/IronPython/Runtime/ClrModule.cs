@@ -384,7 +384,7 @@ the assembly object.")]
                 base.Add(other);
             }
 
-            [SpecialName]
+            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1002:DoNotExposeGenericLists"), SpecialName]
             public ClrModule.ReferencesList Add(object other) {
                 IEnumerator ie = PythonOps.GetEnumerator(other);
                 while (ie.MoveNext()) {
@@ -606,7 +606,7 @@ import Namespace.")]
 
             #region IFancyCallable Members
             [SpecialName]
-            public object Call(CodeContext context, [ParamDictionary] IAttributesCollection dict, params object[] args) {
+            public object Call(CodeContext context, [ParamDictionary]IDictionary<object, object> dict, params object[] args) {
                 ValidateArgs(args);
 
                 if (_inst != null) {
@@ -709,7 +709,7 @@ import Namespace.")]
 
             #region IFancyCallable Members
             [SpecialName]
-            public object Call(CodeContext context, [ParamDictionary] IAttributesCollection dict, params object[] args) {
+            public object Call(CodeContext context, [ParamDictionary]IDictionary<object, object> dict, params object[] args) {
                 object ret;
                 if (_inst != null) {
                     ret = PythonCalls.CallWithKeywordArgs(context, _func, ArrayUtils.Insert(_inst, args), dict);
@@ -758,7 +758,7 @@ import Namespace.")]
         /// Provides a helper for compiling a group of modules into a single assembly.  The assembly can later be
         /// reloaded using the clr.AddReference API.
         /// </summary>
-        public static void CompileModules(CodeContext/*!*/ context, string/*!*/ assemblyName, [ParamDictionary]IAttributesCollection kwArgs, params string/*!*/[]/*!*/ filenames) {
+        public static void CompileModules(CodeContext/*!*/ context, string/*!*/ assemblyName, [ParamDictionary]IDictionary<string, object> kwArgs, params string/*!*/[]/*!*/ filenames) {
             ContractUtils.RequiresNotNull(assemblyName, "assemblyName");
             ContractUtils.RequiresNotNullItems(filenames, "filenames");
 
@@ -819,7 +819,7 @@ import Namespace.")]
             }
 
             object mainModule;
-            if (kwArgs != null && kwArgs.TryGetValue(SymbolTable.StringToId("mainModule"), out mainModule)) {
+            if (kwArgs != null && kwArgs.TryGetValue("mainModule", out mainModule)) {
                 string strModule = mainModule as string;
                 if (strModule != null) {
                     if (!pc.DomainManager.Platform.FileExists(strModule)) {
@@ -1119,7 +1119,7 @@ import Namespace.")]
                     default:
                         throw PythonOps.ValueError("unknown serialization format: {0}", serializationFormat);
                 }
-            } else if (data == String.Empty) {
+            } else if (String.IsNullOrEmpty(data)) {
                 return null;
             }
 

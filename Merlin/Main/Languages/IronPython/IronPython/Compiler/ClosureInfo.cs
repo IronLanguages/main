@@ -47,7 +47,7 @@ namespace IronPython.Compiler {
         public abstract PythonVariable/*!*/ PythonVariable {
             get;
         }
-        public abstract SymbolId/*!*/ Name {
+        public abstract string/*!*/ Name {
             get;
         }
     }
@@ -76,7 +76,7 @@ namespace IronPython.Compiler {
             }
         }
 
-        public override SymbolId/*!*/ Name {
+        public override string/*!*/ Name {
             get {
                 return Variable.Name;
             }
@@ -114,7 +114,7 @@ namespace IronPython.Compiler {
             }
         }
 
-        public override SymbolId Name {
+        public override string Name {
             get { return Variable.Name; }
         }
     }

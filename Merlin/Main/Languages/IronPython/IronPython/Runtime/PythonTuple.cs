@@ -453,7 +453,7 @@ namespace IronPython.Runtime {
         #region IValueEquality Members
 
         private delegate int HashDelegate(object o, ref HashDelegate dlg);
-        private static HashDelegate _strHasher = StringHasher, _intHasher = IntHasher, _genericHasher = GenericHasher, _initialHasher = InitialHasher, _doubleHasher = DoubleHasher;
+        private static HashDelegate _strHasher = StringHasher, _intHasher = IntHasher, _initialHasher = InitialHasher, _doubleHasher = DoubleHasher;
 
         private static int InitialHasher(object o, ref HashDelegate dlg) {
             if (o == null) {
