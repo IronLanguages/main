@@ -62,28 +62,31 @@ module ArbitraryModuleSoConsoleDoesNotConflict
         should.equal 'this/is/a/path/to/foo.txt'.to_clr_string
     end
   
-    it 'should get manifest assemblies' do
-      parts = %W( 
-        Microsoft.Scripting.ExtensionAttribute
-        Microsoft.Scripting.Core
-        Microsoft.Scripting
-        Microsoft.Scripting.Silverlight
-        IronRuby
-        IronRuby.Libraries
-        IronPython
-        IronPython.Modules
-      )[3..-5].sort
-  
-      assemblies = Package.get_manifest_assemblies.collect do |a|
-        a.to_string.to_s.split(",").first
-      end.sort
-  
-      parts.size.should.equal assemblies.size
-  
-      i = 0
-      while i < assemblies.size
-        parts[i].should.equal assemblies[i]
-        i += 1
+    # bogus test, needs to not rely on DLR assemblies
+    if false
+      it 'should get manifest assemblies' do
+        parts = %W( 
+          Microsoft.Scripting.ExtensionAttribute
+          Microsoft.Scripting.Core
+          Microsoft.Scripting
+          Microsoft.Scripting.Silverlight
+          IronRuby
+          IronRuby.Libraries
+          IronPython
+          IronPython.Modules
+        )[3..-5].sort
+    
+        assemblies = Package.get_manifest_assemblies.collect do |a|
+          a.to_string.to_s.split(",").first
+        end.sort
+    
+        parts.size.should.equal assemblies.size
+    
+        i = 0
+        while i < assemblies.size
+          parts[i].should.equal assemblies[i]
+          i += 1
+        end
       end
     end
   

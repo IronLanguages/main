@@ -50,7 +50,7 @@ namespace Microsoft.Scripting.Silverlight {
         protected static BrowserPAL _PAL;
         internal static BrowserPAL PAL {
             get {
-                if (_PAL == null) PAL = XapPAL.PAL;
+                if (_PAL == null) PAL = HttpPAL.PAL;
                 return _PAL;
             }
             set { _PAL = value; }

@@ -46,16 +46,12 @@ namespace Microsoft.Scripting.Silverlight {
 
         public ScriptEngine GetEngine(string name) {
             var lang = GetLanguageByName(name);
-            if(lang != null) {
-                if (lang.Engine == null) {
-                    foreach (var n in lang.Names) {
-                        foreach (var used in LanguagesUsed) {
-                            if (used.Value && n.ToLower() == used.Key) {
+            if (lang != null) {
+                if (lang.Engine == null)
+                    foreach (var n in lang.Names)
+                        foreach (var used in LanguagesUsed)
+                            if (used.Value && n.ToLower() == used.Key)
                                 return lang.Engine = Runtime.GetEngine(n);
-                            }
-                        }
-                    }
-                }
                 return lang.Engine;
             }
             return null;
@@ -122,11 +118,9 @@ namespace Microsoft.Scripting.Silverlight {
         }
 
         public IEnumerable<string> Extensions() {
-            foreach (var language in Languages) {
-                foreach (var ext in language.Extensions) {
+            foreach (var language in Languages)
+                foreach (var ext in language.Extensions)
                     yield return ext;
-                }
-            }
         }
 
         public ScriptRuntimeSetup CreateRuntimeSetup() {
@@ -144,9 +138,7 @@ namespace Microsoft.Scripting.Silverlight {
 
         public static DynamicLanguageConfig Create(IEnumerable<Assembly> assemblies) {
             var dl = LoadFromConfiguration();
-            if (dl == null) {
-                dl = LoadFromAssemblies(assemblies);
-            }
+            if (dl == null) dl = LoadFromAssemblies(assemblies);
             return dl;
         }
 

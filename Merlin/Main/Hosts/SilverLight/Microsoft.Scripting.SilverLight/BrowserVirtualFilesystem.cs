@@ -112,6 +112,7 @@ namespace Microsoft.Scripting.Silverlight {
         }
 
         protected override Stream GetFileInternal(object xap, Uri relativeUri) {
+            relativeUri = new Uri(NormalizePath(relativeUri.ToString()), UriKind.Relative);
             StreamResourceInfo sri = null;
             if (xap == null) {
                 sri = Application.GetResourceStream(relativeUri);
@@ -143,32 +144,31 @@ namespace Microsoft.Scripting.Silverlight {
         private Dictionary<Uri, string> _cache = new Dictionary<Uri, string>();
 
         protected override Stream GetFileInternal(object baseUri, Uri relativeUri) {
-            baseUri = baseUri ?? DefaultBaseUri();
-            var fullUri = new Uri(NormalizePath(((Uri)baseUri).AbsoluteUri) + relativeUri.ToString(), UriKind.Absolute);
-            string content;
 
-            if (_cache.ContainsKey(fullUri)) {
-                content = _cache[fullUri];
-                if (content == null) return null;
-                return new MemoryStream(System.Text.Encoding.UTF8.GetBytes(content));
+            // check in the XAP first
+            // FIX: have this check happen further up the stack
+            if (!relativeUri.IsAbsoluteUri) {
+                var stream = XapPAL.PAL.VirtualFilesystem.GetFile(relativeUri);
+                if (stream != null) return stream;
             }
 
-            var request = HtmlPage.Window.CreateInstance("XMLHttpRequest");
-            request.Invoke("open", "GET", fullUri.AbsoluteUri, false);
-            request.Invoke("send", "");
+            Uri fullUri;
+            if (relativeUri.IsAbsoluteUri) {
+                fullUri = relativeUri;
+            } else {
+                baseUri = baseUri ?? DefaultBaseUri();
+                fullUri = new Uri(NormalizePath(((Uri)baseUri).AbsoluteUri) + relativeUri.ToString(), UriKind.Absolute);
+            }
 
-            if (request.GetProperty("status").ToString() != "200") {
-                _cache[fullUri] = null;
+            if (_cache.ContainsKey(fullUri) && _cache[fullUri] != null) {
+                return new MemoryStream(System.Text.Encoding.UTF8.GetBytes(_cache[fullUri]));
+            } else {
                 return null;
             }
-
-            content = request.GetProperty("responseText").ToString();
-            _cache[fullUri] = content;
-            return new MemoryStream(System.Text.Encoding.UTF8.GetBytes(content));
         }
 
         private Uri DefaultBaseUri() {
-            var uri = Application.Current.Host.Source;
+            var uri = HtmlPage.Document.DocumentUri;
             var server = uri.GetComponents(UriComponents.SchemeAndServer, UriFormat.Unescaped);
             var path = NormalizePath(Path.GetDirectoryName(uri.LocalPath));
             var defaultBaseUri = new Uri(new Uri(server), path);
@@ -181,16 +181,18 @@ namespace Microsoft.Scripting.Silverlight {
         }
 
         internal void AddToCache(Uri uri, string code) {
-            _cache.Add(uri, code);
+            if (!_cache.ContainsKey(uri)) {
+                _cache.Add(uri, code);
+            }
         }
         
         private static readonly object _lock = new object();
 
-        internal void DownloadAndCache(Dictionary<string, Uri> externalCode, Action onComplete) {
-            if(externalCode.Count == 0) {
+        internal void DownloadAndCache(List<Uri> externalUris, Action onComplete) {
+            if (externalUris.Count == 0) {
                 onComplete.Invoke();
             }
-            var downloadQueue = new List<Uri>(externalCode.Values);
+            var downloadQueue = new List<Uri>(externalUris);
             foreach (var uri in downloadQueue) {
                 WebClient wc = new WebClient();
                 wc.OpenReadCompleted += (sender, e) => {
@@ -200,8 +202,9 @@ namespace Microsoft.Scripting.Silverlight {
                         using(var s = new StreamReader(e.Result)) {
                             content = s.ReadToEnd();
                         }
-                        _cache.Add((Uri)e.UserState, content);
-                        downloadQueue.Remove((Uri)e.UserState);
+                        var key = (Uri)e.UserState;
+                        AddToCache(key, content);
+                        downloadQueue.Remove(key);
                         if (downloadQueue.Count == 0) {
                             onComplete.Invoke();
                         }

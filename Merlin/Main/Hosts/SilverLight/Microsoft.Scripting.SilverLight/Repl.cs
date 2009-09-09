@@ -103,6 +103,11 @@ namespace Microsoft.Scripting.Silverlight {
             }
             var engine = DynamicApplication.Current.LanguagesConfig.GetEngine(
                 DynamicApplication.Current.LanguagesConfig.Languages[0].Names[0]);
+
+            if (engine == null) {
+                throw new Exception("Use the Show(engine, scope) overload; a default engine was not found");
+            }
+
             Show(engine, DynamicApplication.Current.Engine.EntryPointScope);
         }
 

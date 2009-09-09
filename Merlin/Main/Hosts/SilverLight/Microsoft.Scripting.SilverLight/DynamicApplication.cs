@@ -165,7 +165,7 @@ namespace Microsoft.Scripting.Silverlight {
         /// <param name="relativeUri">Any Uri</param>
         /// <returns>A Uri relative to the "start" source file</returns>
         public Uri MakeUri(string relativeUri) {
-            string baseUri = ScriptTags.InlineCode.Count == 0 && Settings.EntryPoint != null ?
+            string baseUri = ScriptTags.HasScriptTags && Settings.EntryPoint != null ?
                 Path.GetDirectoryName(Settings.EntryPoint) :
                 "";
             if (baseUri != "") baseUri += "/";

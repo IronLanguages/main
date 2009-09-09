@@ -1,0 +1,79 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" >
+<head>
+
+  <title>DLR Silverlight tests - script tags</title>
+
+  <!--
+  <link rel="stylesheet" href="qunit/testsuite.css" type="text/css" media="screen" />
+  -->
+
+  <script type="text/javascript">
+    if(!window.DLR)
+      window.DLR = {}
+    DLR.settings = { source: 'script-tags.xap' }
+  </script>
+  <script type="text/javascript" src="dlr.js"></script>
+
+  <script type="application/ruby">
+    $script_tags_run ||= {}
+    $script_tags_run['inline-ruby'] = {:inline => true, :defer => false}
+  </script>
+
+  <script type="application/ruby" defer="true" id="deferredInline">
+    $script_tags_run ||= {}
+    $script_tags_run['inline-ruby-deferred'] = {:inline => true, :defer => true}
+  </script>
+
+  <script type="application/ruby" src="fixtures/ext-defer.rb"></script>
+ 
+  <script type="application/ruby" src="fixtures/ext-nodefer.rb" defer="false"></script>
+
+  <script type="application/x-ruby">
+    $script_tags_run ||= {}
+    $script_tags_run['inline-xruby'] = {:inline => true, :defer => false}
+  </script>
+
+  <script type="text/ruby">
+    $script_tags_run ||= {}
+    $script_tags_run['inline-text-ruby'] = {:inline => true, :defer => false}
+  </script>
+
+  <script type="application/ruby">
+    require 'fixtures/ext-defer.rb'
+  </script>
+
+  <!--
+  <script src="jquery.js"></script>
+  <script src="util.js"></script>
+  <script src="test_script-tags.js"></script>
+  -->
+
+  <script type="application/ruby" src="test_script-tags.rb"></script>
+
+</head>
+<body>
+
+  <!--
+  <h1>DLR Silverlight tests - script tags</h1>
+  <h2 id="banner"></h2>
+  <h2 id="userAgent"></h2>
+  <ol id="tests"></ol>
+  <div id="main"></div>
+
+  <script type="text/javascript" src="qunit/testrunner.js"></script>
+  -->
+  <script type="text/ruby" src="lib/bacon-sl.rb"></script>
+  <script type="text/ruby" src="lib/bacon.rb"></script>
+  <script type="text/ruby" src="lib/python.rb"></script>
+  <script type="text/ruby">
+    $: << 'lib'
+    require 'bacon-sl'
+    BaconSL.config([
+      "test_script-tags"
+    ])
+    BaconSL.run
+  </script>
+
+</body>
+</html>

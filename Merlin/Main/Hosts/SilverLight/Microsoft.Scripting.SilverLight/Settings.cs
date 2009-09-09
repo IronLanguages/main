@@ -158,7 +158,7 @@ namespace Microsoft.Scripting.Silverlight {
         (string entryPoint, DynamicLanguageConfig langConfig, DynamicScriptTags scriptTags) {
             if (entryPoint == null) {
                 entryPoint = FindEntryPoint(langConfig);
-                if (entryPoint == null && scriptTags.InlineCode.Count == 0) {
+                if (entryPoint == null && !scriptTags.HasScriptTags) {
                     throw new ApplicationException(string.Format(
 @"Application must have either:
 (1) At least one <script type='application/*'></script> tag, where * is a valid language name, or

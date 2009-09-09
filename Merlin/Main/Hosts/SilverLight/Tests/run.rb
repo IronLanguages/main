@@ -1,12 +1,18 @@
 begin
+  start_time = Time.now
+  puts "Start time: #{start_time}"
+
   ITERATIONS = 50
   TIMEOUT = 0.5
 
   # make sure dlr.js is present
-  puts "making sure dlr.js is up-to-date"
+  puts
+  puts "Updating dlr.js"
+  puts "---------------"
   load 'gen_dlrjs.rb'
 
   t = Thread.new do
+    puts
     options = %W(debug release)
     type = ARGV.first if ARGV.first
     type = 'debug' unless options.include?(type)
@@ -14,32 +20,35 @@ begin
       "#{File.dirname(__FILE__)}/../../../Bin/Silverlight\ #{type.capitalize}/Chiron.exe"
     end
     unless File.exist? get_path[type]
-      puts "#{type} configuration not found, looking for more ..."
+      print "\"#{type}\" configuration not found, looking for more "
       (options - [type]).each do |t|
         if File.exist? get_path[t]
           type = t
+          puts "[FOUND \"#{type}\"]"
           break
         end
         type = nil
       end
       if type.nil?
-        puts "No valid build configuration found, exiting"
+        $stderr.puts "[ERROR]"
+        $stderr.puts "[ERROR] no valid build configuration found!"
+        $stderr.puts "        Run \"bsd\" from a Dev.bat command prompt"
         exit(1)
       end
     end
-    print "starting web server with #{type} configuration "
-    system "\"#{get_path[type]}\" /w /d:\"#{File.dirname(__FILE__)}\" 2>&1>NUL"
+    print "Starting web server with \"#{type}\" configuration "
+    system "\"#{get_path[type]}\" /p:\"lib\" /w /d:\"#{File.dirname(__FILE__)}\" 2>&1>NUL"
   end
 
   ITERATIONS.times do |i|
     sleep TIMEOUT
     if `tasklist` =~ /Chiron/
-      puts
+      puts "[DONE]"
       break
     end
     if i == (ITERATIONS - 1)
-      puts 'timeout!'
-      $stderr.puts "webserver startup timed out"
+      puts '[TIMEOUT]'
+      $stderr.puts "[ERROR] web server startup timed out"
       exit(1)
     end
     print '.'
@@ -62,7 +71,8 @@ begin
   end
 
   def bacon_pass?(results)
-    results[:failures] > 0 || results[:errors] > 0
+    results.has_key?(:failures) && results.has_key?(:errors) && 
+    results[:failures] == 0 && results[:errors] == 0
   end
 
   def check_qunit_test_results
@@ -78,68 +88,122 @@ begin
   end
 
   def qunit_pass?(results)
-    results[:all] > results[:pass]
+    results[:all] == results[:pass]
   end
 
   def get_browser_name_from_constant(constant)
     constant.to_s.split('::').last.downcase
   end
 
-  $tests = {'index' => 'bacon', 'test_dlrjs' => 'qunit'}
+  print "Loading dependencies "
+
+  $tests = {'index' => 'bacon', 'test_dlrjs' => 'qunit', 'test_script-tags' => 'bacon'}
 
   results = {}
-  $tests.each do |test, test_fx|
-    require 'rubygems'
-    require 'watir'
-    require 'firewatir'
-    [FireWatir::Firefox, Watir::IE].each do |browser_type|
-      @browser = browser_type.start("http://localhost:2060/#{test}.html")
-      print "waiting for test results from #{test}.html in #{get_browser_name_from_constant(browser_type)} "
+
+  require 'rubygems'
+  print '.'
+  require 'watir'
+  print '.'
+  require 'firewatir'
+  puts '[DONE]'
+
+  [FireWatir::Firefox, Watir::IE].each do |browser_type|
+  
+    puts
+    browser_name = get_browser_name_from_constant(browser_type)
+    print "Opening #{browser_name} "
+    @browser = browser_type.new
+    puts '[DONE]'
+    puts '-' * (8 + browser_name.size + 7)
+
+    $tests.each do |test, test_fx|
+
+      print "> Running #{test}.html "
+
+      @browser.goto("http://localhost:2060/#{test}.html")
 
       test_results = nil
       ITERATIONS.times do |i|
         sleep TIMEOUT
         test_results = eval("check_#{test_fx}_test_results")
         unless test_results.keys.empty?
-          puts
-          @browser.close
+          puts '[DONE]'
           break
         end
         if i == (ITERATIONS - 1)
-          puts 'timeout!'
+          puts '[TIMEOUT]'
           @browser.close
-          $stderr.puts "waiting for results timed out"
+          $stderr.puts "[ERROR]"
+          $stderr.puts "[ERROR] waiting for results timed out"
         end
         print '.'
       end
       results[test] ||= {}
       results[test][get_browser_name_from_constant(browser_type)] = test_results
     end
+
+    puts '-' * (8 + browser_name.size + 7)
+    print "Closing #{browser_name} "
+    @browser.close
+    @browser = nil
+    puts '[DONE]'
   end
 
 rescue => e
-
-  puts e.inspect
+  
+  $stderr.puts
+  $stderr.puts
+  $stderr.puts "Exception raised"
+  $stderr.puts "----------------"
+  $stderr.puts e.inspect
+  $stderr.puts e.backtrace
   exit(1)
 
 ensure
+  puts
+  print "Stopping web server "
   `taskkill /IM Chiron.exe /F`
-  @browser.close if @browser
-  if results
-    puts results.inspect
-    results.each do |test, browsers|
-      browsers.each do |browser, res|
-        if send("#{$tests[test]}_pass?", res)
-          puts "Failed!"
-          exit(1)
-        end
-      end
-    end
-  else
-    puts "Failed!"
-    exit(1)
+  puts "[DONE]"
+
+  if @browser
+    print "Closing browser "
+    @browser.close
+    @browser = nil
+    puts '[DONE]'
   end
 
-  puts "Success!"
-  exit(0)
+  def pass?(results)
+    if results
+      puts
+      puts "Raw results"
+      puts "-----------"
+      puts results.inspect
+      puts "-----------"
+      results.each do |test, browsers|
+        browsers.each do |browser, res|
+          return false unless send("#{$tests[test]}_pass?", res)
+        end
+      end
+    else
+      return false
+    end
+    return true
+  end
+
+  puts
+  puts "-" * 40
+  end_time = Time.now
+  puts "End time: #{end_time}"
+  puts "Elapsed time: #{end_time - start_time} second(s)"
+  puts "-" * 40
+
+  unless pass?(results)
+    puts
+    puts "Failed!"
+    exit(1)
+  else
+    puts
+    puts "Success!"
+  end
 end

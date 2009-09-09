@@ -43,7 +43,8 @@ class BaconSL
     end
 
     def run(engine = nil)
-      engine ? Repl.show(engine, engine.create_scope) : Repl.show
+      engine = DynamicApplication.current.engine.runtime.get_engine("ruby")
+      Repl.show(engine, engine.create_scope)
 
       $stdout = Repl.current.output_buffer
       $stderr = Repl.current.output_buffer
@@ -61,25 +62,36 @@ class BaconSL
   #
   # TODO need a way to walk all *_test.rb files in tests directory
   def run_tests
-    BaconSL.get_config.each do |test_type, test_files|
-      test_files.each do |file|
-        loaded = false
-        ["#{test_type}/test_#{file}.rb", "#{test_type}/#{file}_test.rb"].each do |pth|
-          prepend = File.dirname(DynamicApplication.current ? 
-              DynamicApplication.current.entry_point.to_s :
-              '')
-          pth = "#{prepend}/#{pth}" if prepend != '.'
-          begin
-            load pth
-            loaded = true
-            next
-          rescue LoadError
-          end 
+    BaconSL.get_config.each do |tests|
+      if tests.kind_of?(String)
+        begin
+          load "#{tests}.rb"
+          loaded = true
+        rescue LoadError
         end
         if !loaded
-          puts "Warning: #{test_type} -- #{file} was not found"
+          puts "Warning: #{tests} was not found -- skipping"
         end
-        raise "#{file} is not a known test (check your BaconSL.config call)" unless loaded
+      else
+        test_type = tests.first
+        tests.last.each do |file|
+          loaded = false
+          ["#{test_type}/test_#{file}.rb", "#{test_type}/#{file}_test.rb"].each do |pth|
+            prepend = File.dirname(DynamicApplication.current ? 
+                DynamicApplication.current.entry_point.to_s :
+                '')
+            pth = "#{prepend}/#{pth}" if prepend != '.'
+            begin
+              load pth
+              loaded = true
+              next
+            rescue LoadError
+            end 
+          end
+          if !loaded
+            puts "Warning: #{test_type} -- #{file} was not found -- skipping"
+          end
+        end
       end
     end
     BaconSL.execute_at_exit_blocks
