@@ -2,10 +2,6 @@ require File.dirname(__FILE__) + "/../../spec_helper"
 require File.dirname(__FILE__) + "/../fixtures/classes"
 
 describe "Method parameter binding" do
-  TE = TypeError
-  AE = ArgumentError
-  OE = System::OverflowException
-  RE = RangeError 
   @matrix = {
     #      NoArg Int32Arg DoubleArg BigIntegerArg StringArg BooleanArg SByteArg Int16Arg Int64Arg SingleArg ByteArg UInt16Arg UInt32Arg UInt64Arg CharArg DecimalArg ObjectArg NullableInt32Arg
     "" => {:NoArg => AE, :Int32Arg => TE, :DoubleArg => AE, :BigIntegerArg => TE, :StringArg => "StringArg", 
@@ -366,7 +362,7 @@ describe "Method parameter binding" do
           :BigIntegerArg => AE, :StringArg => AE, :BooleanArg => AE, :SByteArg => AE, 
           :Int16Arg => AE, :Int64Arg => AE, :SingleArg => AE, :ByteArg => AE, 
           :UInt16Arg => AE, :UInt32Arg => AE, :UInt64Arg => AE, :CharArg => AE, 
-          :DecimalArg => AE, :ObjectArg => AE, :DefaultInt32Arg => "DefaultInt32Arg", :ParamsInt32ArrArg => "ParamsInt32ArrArg"},
+          :DecimalArg => AE, :ObjectArg => AE, :DefaultInt32Arg => "DefaultInt32Arg", :ParamsInt32ArrArg => "ParamsInt32ArrArg", :OutInt32Arg => "OutInt32Arg"},
   }    
   
   before(:each) do

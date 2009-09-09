@@ -319,6 +319,10 @@ csc <<-EOL
 EOL
   
 no_csc do
+  TE = TypeError
+  AE = ArgumentError
+  OE = System::OverflowException
+  RE = RangeError 
   module BindingSpecs
     class MyString < String; end
     
@@ -373,6 +377,7 @@ no_csc do
 
   class Helper
     def self.run_matrix(results, input)
+      results[:OutInt32Arg] ||= TE
       results.each do |meth, result|
         it "binds '#{meth}' for '#{input}' with '#{result.to_s}' (ClassWithMethods)" do
           meth_call = (input == "NoArg" ? lambda { @target.send(meth)} : lambda {@target.send(meth, @values[input])})
@@ -411,6 +416,8 @@ no_csc do
                        [10]
                      when /NoArg/
                        []
+                     when /OutInt32Arg/
+                       [2]
                      else
                        nil
                      end
@@ -434,6 +441,8 @@ no_csc do
                        [10]
                      when /NoArg/
                        []
+                     when /OutInt32Arg/
+                       [2]
                      else
                        nil
                      end

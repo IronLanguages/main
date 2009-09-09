@@ -2,8 +2,6 @@ require File.dirname(__FILE__) + "/../../spec_helper"
 require File.dirname(__FILE__) + "/../fixtures/classes"
 
 describe "Method parameter binding with Class-like parameters" do
-  TE = TypeError
-  AE = ArgumentError
   #IInterfaceArg ImplementsIInterfaceArg DerivedFromImplementsIInterfaceArg CStructArg StructImplementsIInterfaceArg AbstractClassArg DerivedFromAbstractArg CustomEnumArg EnumIntArg
   @matrix = {
     "anonymous class" => {:IInterfaceArg => TE, :ImplementsIInterfaceArg => TE, :DerivedFromImplementsIInterfaceArg => TE, :CStructArg => TE, :StructImplementsIInterfaceArg => TE, :AbstractClassArg => TE, :DerivedFromAbstractArg => TE, :CustomEnumArg => TE, :EnumIntArg => TE, :ObjectArg => "ObjectArg", :NoArg => AE, :BooleanArg => "BooleanArg" },
@@ -57,7 +55,7 @@ describe "Method parameter binding with Class-like parameters" do
     "CustomEnum" => {:IInterfaceArg => TE, :ImplementsIInterfaceArg => TE, :DerivedFromImplementsIInterfaceArg => TE, :CStructArg => TE, :StructImplementsIInterfaceArg => TE, :AbstractClassArg => TE, :DerivedFromAbstractArg => TE, :CustomEnumArg => TE, :EnumIntArg => TE, :ObjectArg => "ObjectArg", :NoArg => AE, :BooleanArg => "BooleanArg"}, 
     "CustomEnumInstance" => {:IInterfaceArg => TE, :ImplementsIInterfaceArg => TE, :DerivedFromImplementsIInterfaceArg => TE, :CStructArg => TE, :StructImplementsIInterfaceArg => TE, :AbstractClassArg => TE, :DerivedFromAbstractArg => TE, :CustomEnumArg => "CustomEnumArg", :EnumIntArg => "EnumIntArg", :ObjectArg => "ObjectArg", :NoArg => AE, :BooleanArg => "BooleanArg"}, 
     
-    "NoArg" => {:IInterfaceArg => AE, :ImplementsIInterfaceArg => AE, :DerivedFromImplementsIInterfaceArg => AE, :CStructArg => AE, :StructImplementsIInterfaceArg => AE, :AbstractClassArg => AE, :DerivedFromAbstractArg => AE, :CustomEnumArg => AE, :EnumIntArg => AE, :ObjectArg => AE, :NoArg => "NoArg", :BooleanArg => AE}, 
+    "NoArg" => {:IInterfaceArg => AE, :ImplementsIInterfaceArg => AE, :DerivedFromImplementsIInterfaceArg => AE, :CStructArg => AE, :StructImplementsIInterfaceArg => AE, :AbstractClassArg => AE, :DerivedFromAbstractArg => AE, :CustomEnumArg => AE, :EnumIntArg => AE, :ObjectArg => AE, :NoArg => "NoArg", :BooleanArg => AE, :OutInt32Arg => "OutInt32Arg"}, 
   }
   before(:each) do
     @target = ClassWithMethods.new
