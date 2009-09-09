@@ -372,6 +372,78 @@ no_csc do
   end
 
   class Helper
+    def self.run_matrix(results, input)
+      results.each do |meth, result|
+        it "binds '#{meth}' for '#{input}' with '#{result.to_s}' (ClassWithMethods)" do
+          meth_call = (input == "NoArg" ? lambda { @target.send(meth)} : lambda {@target.send(meth, @values[input])})
+          if result.class == Class && result < Exception
+            meth_call.should raise_error result
+          else 
+            res, ref = meth_call.call
+            res.should == result
+          end
+        end
+      
+        it "binds '#{meth}' for '#{input}' with '#{result.to_s}' (RubyClassWithMethods)" do
+          meth_call = (input == "NoArg" ? lambda { @target2.send(meth)} : lambda {@target2.send(meth, @values[input])})
+          if result.class == Class && result < Exception
+            meth_call.should raise_error result
+          else 
+            res, ref = meth_call.call
+            res.should == result
+          end
+        end
+      
+        next if result.class == Class && result < Exception
+        
+        it "passes the correct input (#{input}) into method (#{meth}) (ClassWithMethods)" do
+          value = @values[input]
+          meth_call = (input == "NoArg" ? lambda { @target.send(meth)} : lambda {@target.send(meth, value)})
+          res, ref = meth_call.call
+          if input != "NoArg"
+            result = Helper.result(meth,value)
+            @target.tracker.should == [*result]
+          else
+            result = case meth.to_s
+                     when /ParamsInt32ArrArg/
+                      [[]]
+                     when /DefaultInt32Arg/
+                       [10]
+                     when /NoArg/
+                       []
+                     else
+                       nil
+                     end
+            @target.tracker.should == result
+          end
+          ref.should == result if ref
+        end
+        
+        it "passes the correct input (#{input}) into method (#{meth}) (RubyClassWithMethods)" do
+          value = @values[input]
+          meth_call = (input == "NoArg" ? lambda { @target2.send(meth)} : lambda {@target2.send(meth, value)})
+          res, ref = meth_call.call
+          if input != "NoArg"
+            result = Helper.result(meth,value)
+            @target2.tracker.should == [*result]
+          else
+            result = case meth.to_s
+                     when /ParamsInt32ArrArg/
+                      [[]]
+                     when /DefaultInt32Arg/
+                       [10]
+                     when /NoArg/
+                       []
+                     else
+                       nil
+                     end
+            @target2.tracker.should == result
+          end
+          ref.should == result if ref
+        end
+      end
+    end
+        
     def self.result(meth, value) 
       #TODO: there has to be a better way
       result = case meth.to_s
