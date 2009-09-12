@@ -64,7 +64,6 @@ namespace Microsoft.Scripting.Silverlight {
         private bool                _multiLineComplete;
         private List<string>        _history;
         private int                 _currentCommand = -1;
-        private static Repl         _current;
         private ReplOutputBuffer    _outputBuffer;
         private ReplInputBuffer     _inputBuffer;
         private HtmlElement         _silverlightDlrReplCode;
@@ -84,10 +83,6 @@ namespace Microsoft.Scripting.Silverlight {
             get { return _outputBuffer; }
         }
 
-        public static Repl Current {
-            get { return _current; }
-        }
-
         public ScriptEngine Engine {
             get { return _engine; }
         }
@@ -97,7 +92,7 @@ namespace Microsoft.Scripting.Silverlight {
         /// <summary>
         /// Creates a console and inserts it into the page.
         /// </summary>
-        public static void Show() {
+        public static Repl Show() {
             if (DynamicApplication.Current == null) {
                 throw new Exception("Need to give Show() an engine, since this is not a dynamic application");
             }
@@ -108,10 +103,15 @@ namespace Microsoft.Scripting.Silverlight {
                 throw new Exception("Use the Show(engine, scope) overload; a default engine was not found");
             }
 
-            Show(engine, DynamicApplication.Current.Engine.EntryPointScope);
+            return Show(engine, DynamicApplication.Current.Engine.EntryPointScope);
         }
 
-        public static void Show(ScriptEngine engine, ScriptScope scope) {
+        public static Repl Show(string language) {
+            var engine = DynamicApplication.Current.LanguagesConfig.GetEngine(language);
+            return Show(engine, DynamicApplication.Current.Engine.EntryPointScope);
+        }
+
+        public static Repl Show(ScriptEngine engine, ScriptScope scope) {
             ContractUtils.RequiresNotNull(engine, "engine");
             ContractUtils.RequiresNotNull(scope, "scope");
 
@@ -123,26 +123,27 @@ namespace Microsoft.Scripting.Silverlight {
                 Window.Show(Settings.ErrorTargetID);
             }
 
-            Window.Current.AddPanel(engine.Setup.Names[0] + " Console", Create(engine, scope));
-            Window.Current.Initialize();
-            Repl.Current.Start();
-        }
-
-        public static HtmlElement Create() {
-            var dynEngine = DynamicApplication.Current.Engine;
-            return Create(dynEngine.Engine, dynEngine.EntryPointScope);
-        }
-
-        public static HtmlElement Create(ScriptEngine engine, ScriptScope scope) {
             HtmlElement replDiv = null;
-            if (_current == null) {
-                replDiv = HtmlPage.Document.CreateElement("div");
-                replDiv.Id = GetId(_sdlr);
-                replDiv.CssClass += _sdlr;
-                replDiv.SetProperty("innerHTML", _replHtmlTemplate.Invoke());
-                _current = new Repl(engine, scope);
-            }
-            return replDiv;
+            var repl = Create(engine, scope, out replDiv);
+
+            Window.Current.AddPanel(engine.Setup.Names[0] + " Console", replDiv);
+            Window.Current.Initialize();
+            
+            repl.Start();
+            return repl;
+        }
+
+        public static Repl Create(out HtmlElement element) {
+            var dynEngine = DynamicApplication.Current.Engine;
+            return Create(dynEngine.Engine, dynEngine.EntryPointScope, out element);
+        }
+
+        public static Repl Create(ScriptEngine engine, ScriptScope scope, out HtmlElement replDiv) {
+            replDiv = HtmlPage.Document.CreateElement("div");
+            replDiv.Id = GetId(_sdlr);
+            replDiv.CssClass += _sdlr;
+            replDiv.SetProperty("innerHTML", _replHtmlTemplate.Invoke());
+            return new Repl(engine, scope);
         }
 
         private Repl(ScriptEngine engine, ScriptScope scope) {
@@ -154,7 +155,7 @@ namespace Microsoft.Scripting.Silverlight {
             _silverlightDlrReplCode = HtmlPage.Document.GetElementById(GetId(_sdlrCode));
             _silverlightDlrReplResult = HtmlPage.Document.GetElementById(GetId(_sdlrResult));
             _silverlightDlrReplPrompt = HtmlPage.Document.GetElementById(GetId(_sdlrPrompt));
-            _inputBuffer = new ReplInputBuffer(_current);
+            _inputBuffer = new ReplInputBuffer(this);
             _outputBuffer = new ReplOutputBuffer(_silverlightDlrReplResult, _sdlrOutput);
             ShowDefaults();
             ShowPrompt();

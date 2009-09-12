@@ -1,23 +1,34 @@
-# TODO should this depend on Microsoft::Scripting::Silverlight at all?
+begin
+  include Microsoft::Scripting::Silverlight
+  SILVERLIGHT = true
+rescue LoadError
+  SILVERLIGHT = false
+end
 
-include Microsoft::Scripting::Silverlight
-SILVERLIGHT = true
+$: << 'rblib'
 
-#
-# 'bacon' is the spec framework used for the tests
-#
+if SILVERLIGHT
+  include System::Windows
+  include System::Windows::Controls
+
+  engine = DynamicApplication.current.engine.runtime.get_engine("ruby")
+  repl = Repl.show(engine, engine.create_scope)
+
+  $stdout = repl.output_buffer
+  $stderr = repl.output_buffer
+
+  Application.current.root_visual = UserControl.new  
+end
+
 require 'bacon'
 
-# 
-# Helper for running python code from Ruby
-#
 begin
   require 'python'
 rescue LoadError
   # ignore
 end
 
-class BaconSL
+class BaconRunner
   class << self
     def at_exit_blocks
       @at_exit_blocks ||= []
@@ -42,18 +53,13 @@ class BaconSL
       @config
     end
 
-    def run(engine = nil)
-      engine = DynamicApplication.current.engine.runtime.get_engine("ruby")
-      Repl.show(engine, engine.create_scope)
-
-      $stdout = Repl.current.output_buffer
-      $stderr = Repl.current.output_buffer
-
-      BaconSL.current.run_tests
+    def run(cfg)
+      config cfg
+      current.run_tests
     end
 
     def current
-      @instance ||= BaconSL.new
+      @instance ||= BaconRunner.new
     end
   end
 
@@ -62,7 +68,7 @@ class BaconSL
   #
   # TODO need a way to walk all *_test.rb files in tests directory
   def run_tests
-    BaconSL.get_config.each do |tests|
+    BaconRunner.get_config.each do |tests|
       if tests.kind_of?(String)
         begin
           load "#{tests}.rb"
@@ -94,18 +100,18 @@ class BaconSL
         end
       end
     end
-    BaconSL.execute_at_exit_blocks
+    BaconRunner.execute_at_exit_blocks
   end
 end
 
 #
 # Redefine at_exit to simply collect the blocks passed to it
 #
-BaconSL.at_exit_blocks = []
+BaconRunner.at_exit_blocks = []
 
 module Kernel
   def at_exit(&block)
-    BaconSL.at_exit_blocks.push block
+    BaconRunner.at_exit_blocks.push block
   end
 end
 

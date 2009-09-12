@@ -280,9 +280,6 @@ namespace Microsoft.Scripting.Silverlight {
                     } catch (ArgumentException) {
                         engine = DynamicApplication.Current.Engine.Engine;
                     }
-                } else if (Repl.Current != null && Repl.Current.Engine != null) {
-                    // running at an interactive prompt, so get the prompt's engine
-                    engine = Repl.Current.Engine;
                 }
 
                 if (_sourceFileName != null && engine != null) {

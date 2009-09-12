@@ -9,7 +9,7 @@ begin
   puts
   puts "Updating dlr.js"
   puts "---------------"
-  load 'gen_dlrjs.rb'
+  load File.dirname(__FILE__) + '/gen_dlrjs.rb'
 
   t = Thread.new do
     puts
@@ -17,7 +17,7 @@ begin
     type = ARGV.first if ARGV.first
     type = 'debug' unless options.include?(type)
     get_path = lambda do |type|
-      "#{File.dirname(__FILE__)}/../../../Bin/Silverlight\ #{type.capitalize}/Chiron.exe"
+      "#{File.dirname(__FILE__)}/../../../../Bin/Silverlight\ #{type.capitalize}/Chiron.exe"
     end
     unless File.exist? get_path[type]
       print "\"#{type}\" configuration not found, looking for more "
@@ -37,7 +37,7 @@ begin
       end
     end
     print "Starting web server with \"#{type}\" configuration "
-    system "\"#{get_path[type]}\" /p:\"lib\" /w /d:\"#{File.dirname(__FILE__)}\" 2>&1>NUL"
+    system "\"#{get_path[type]}\" /p:\"lib\" /w /d:\"#{File.dirname(__FILE__)}\\..\" 2>&1>NUL"
   end
 
   ITERATIONS.times do |i|
@@ -97,7 +97,7 @@ begin
 
   print "Loading dependencies "
 
-  $tests = {'index' => 'bacon', 'test_dlrjs' => 'qunit', 'test_script-tags' => 'bacon'}
+  $tests = {'tests' => 'bacon', 'test_dlrjs' => 'qunit', 'test_script_tags' => 'bacon'}
 
   results = {}
 

@@ -137,9 +137,106 @@ namespace Microsoft.Scripting.Silverlight {
                 } else {
                     var innerHtml = (string)e.GetProperty("innerHTML");
                     if(innerHtml != null)
-                        Code[type][defer].Inline.Add(innerHtml);
+                        Code[type][defer].Inline.Add(RemoveMargin(innerHtml));
                 }
             }
+        }
+
+        public static string RemoveMargin(string text) {
+            return RemoveMargin(text, -1, true);
+        }
+
+        /// <summary>
+        /// Removes as much of a margin as possible from "text".
+        /// </summary>
+        /// <param name="text">The "text" to remove a common margin from</param>
+        /// <param name="doRemoveMargin">
+        /// If "false", margins are not removed, but line endings are still 
+        /// processed.
+        /// </param>
+        /// <returns>"text" without a margin</returns>
+        private static string RemoveMargin(string text, int firstLineMargin, bool firstLine) {
+            var reader = new StringReader(text);
+            var writer = new StringWriter();
+            string line;
+            var processedWriter = new StringWriter();
+            while ((line = reader.ReadLine()) != null) {
+                if (firstLine) {
+                    // skips all blank lines at the beginning of the string
+                    if(line == string.Empty)
+                        continue;
+
+                    // get the first real line's margin as a reference
+                    if(firstLineMargin == -1)
+                        firstLineMargin = GetMarginSize(line);
+                    firstLine = false;
+                }
+
+                // make sure a blank line that is also last is empty
+                if (line.Trim().Length == 0 && reader.Peek() == -1) {
+                    continue;
+                }
+
+                // if any line does not have any margin spaces to
+                // remove, stop removing margins and reprocess previously
+                // processed lines without removing margins as well; if any
+                // line's margins are less than , then there is no
+                // margin.
+                var currentLineMargin = GetMarginSize(line);
+                if (currentLineMargin < firstLineMargin) {
+                    var processedText = RemoveMargin(processedWriter.ToString(), currentLineMargin, true);
+                    writer.Close();
+                    writer = null;
+                    writer = new StringWriter(new StringBuilder(processedText));
+                    firstLineMargin = currentLineMargin;
+                }
+
+                var newLine = line;
+                newLine = RemoveSpacesFromStart(firstLineMargin, line);
+
+                writer.Write(newLine + "\n");
+                processedWriter.Write(line + "\n");
+            }
+
+            string result = writer.ToString();
+            reader.Close();
+            writer.Close();
+            return result;
+        }
+
+        /// <summary>
+        /// returns the number of spaces in the beginning of "line"
+        /// </summary>
+        /// <param name="line">a string to find the number of spaces in</param>
+        /// <returns>the number of spaces at the beginning of "line"</returns>
+        private static int GetMarginSize(string line) {
+            var count = 0;
+            foreach(char c in line) {
+                if(c == ' ') {
+                    count++;
+                } else {
+                    return count;
+                }
+            }
+            return count;
+        }
+
+        /// <summary>
+        /// Removes "n" spaces from the start of "line". If not all those chars
+        /// spaces, then "line" is returned in it's entirety.
+        /// </summary>
+        /// <param name="n">Number of spaces to remove from "line"</param>
+        /// <param name="line">The string to remove spaces from</param>
+        /// <returns>
+        /// A string with "n" spaces removed, or a copy of "line" if there exists
+        /// a non-space character in the first "n" spaces.
+        /// </returns>
+        private static string RemoveSpacesFromStart(int n, string line) {
+            n = line.Length < n ? line.Length : n;
+            for (int i = 0; i < n; i++)
+                if (line[i] != ' ')
+                    return line;
+            return line.Remove(0, n);
         }
 
         private Uri MakeUriAbsolute(Uri uri) {
@@ -164,6 +261,7 @@ namespace Microsoft.Scripting.Silverlight {
         }
 
         public bool LanguageFound(string languageName) {
+            if (languageName == null) return false;
             bool languageNameFound = false;
             foreach (var l in _LangConfig.Languages) {
                 foreach (var n in l.Names) {
@@ -179,6 +277,9 @@ namespace Microsoft.Scripting.Silverlight {
         }
 
         public string GetLanguageNameFrom(string type) {
+            if (!type.StartsWith("application/x-") && 
+                !type.StartsWith("text/") && 
+                !type.StartsWith("application/")) return null;
             string lang = type.Substring(type.LastIndexOf('/') + 1);
             if (lang.StartsWith("x-")) {
                 lang = lang.Substring(2);

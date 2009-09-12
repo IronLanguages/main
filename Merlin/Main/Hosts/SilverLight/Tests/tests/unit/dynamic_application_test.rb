@@ -40,6 +40,8 @@ describe 'Parsing init parameters' do
   end
 end
 
+load_assembly 'Microsoft.Scripting'
+
 describe 'Hosting API' do
   it 'should create a ScriptRuntimeSetup' do
     setup = DynamicApplication.CreateRuntimeSetup
