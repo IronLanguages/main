@@ -22,6 +22,7 @@ using System.Windows;
 using System.Reflection;
 using System.IO;
 using System.Text.RegularExpressions;
+using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Silverlight {
     public class DynamicAppManifest {

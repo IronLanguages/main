@@ -44,13 +44,13 @@ namespace IronPython.Modules {
             internal readonly SimpleTypeKind _type;
             private readonly char _charType;
 
-            public SimpleType(CodeContext/*!*/ context, string name, PythonTuple bases, IAttributesCollection dict)
+            public SimpleType(CodeContext/*!*/ context, string name, PythonTuple bases, PythonDictionary dict)
                 : base(context, name, bases, dict) {
                 object val;
                 string sVal;
 
                 const string allowedTypes = "?cbBghHiIlLdfuzZqQPXOv";
-                if (!TryGetBoundCustomMember(context, SymbolTable.StringToId("_type_"), out val) ||
+                if (!TryGetBoundCustomMember(context, "_type_", out val) ||
                     (sVal = StringOps.AsString(val)) == null ||
                     sVal.Length != 1 ||
                     allowedTypes.IndexOf(sVal[0]) == -1) {

@@ -19,10 +19,14 @@ using IronRuby.Compiler.Generation;
 namespace IronRuby.Runtime.Calls {
     public sealed class VersionHandle {
         [Emitted]
-        public int Value;
+        public int Method;
 
-        internal VersionHandle(int value) {
-            Value = value;
+        [Emitted]
+        public int Constant;
+
+        internal VersionHandle(int method, int constant) {
+            Method = method;
+            Constant = constant;
         }
 
 #if DEBUG

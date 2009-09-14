@@ -13,6 +13,12 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -24,9 +30,10 @@ using IronRuby.Runtime.Calls;
 using IronRuby.Runtime.Conversions;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
-using Ast = System.Linq.Expressions.Expression;
+using Microsoft.Scripting.Utils;
 
 namespace IronRuby.Builtins {
+    using Ast = Expression;
 
     /// <summary>
     /// Implementation of IO builtin class. 

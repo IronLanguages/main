@@ -103,8 +103,8 @@ namespace IronPython.Modules {
             return PythonTuple.MakeTuple(
                 DynamicHelpers.GetPythonTypeFromType(typeof(Complex64)),
                 PythonTuple.MakeTuple(
-                    PythonOps.GetBoundAttr(context, complex, Symbols.RealPart),
-                    PythonOps.GetBoundAttr(context, complex, Symbols.ImaginaryPart)
+                    PythonOps.GetBoundAttr(context, complex, "real"),
+                    PythonOps.GetBoundAttr(context, complex, "imag")
                 )
             );
         }
@@ -166,7 +166,7 @@ namespace IronPython.Modules {
             object[] newArgs = new object[1 + args.Length];
             newArgs[0] = cls;
             for (int i = 0; i < args.Length; i++) newArgs[i + 1] = args[i];
-            return PythonOps.Invoke(context, cls, Symbols.NewInst, newArgs);
+            return PythonOps.Invoke(context, cls, "__new__", newArgs);
         }
 
         [Documentation("_reconstructor(basetype, objtype, basestate) -> object\n\n"
@@ -175,8 +175,8 @@ namespace IronPython.Modules {
             + "protocols 0 or 1\" for details."
             )]
         public static object _reconstructor(CodeContext/*!*/ context, object objType, object baseType, object baseState) {
-            object obj = PythonOps.Invoke(context, baseType, Symbols.NewInst, objType, baseState);
-            PythonOps.Invoke(context, baseType, Symbols.Init, obj, baseState);
+            object obj = PythonOps.Invoke(context, baseType, "__new__", objType, baseState);
+            PythonOps.Invoke(context, baseType, "__init__", obj, baseState);
             return obj;
         }
 
@@ -207,17 +207,17 @@ namespace IronPython.Modules {
         }
 
         [SpecialName]
-        public static void PerformModuleReload(PythonContext/*!*/ context, IAttributesCollection/*!*/ dict) {
-            context.NewObject = (BuiltinFunction)dict[SymbolTable.StringToId("__newobj__")];
-            context.PythonReconstructor = (BuiltinFunction)dict[SymbolTable.StringToId("_reconstructor")];
+        public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
+            context.NewObject = (BuiltinFunction)dict["__newobj__"];
+            context.PythonReconstructor = (BuiltinFunction)dict["_reconstructor"];
 
             PythonDictionary dispatchTable = new PythonDictionary();
-            dispatchTable[TypeCache.Complex64] = dict[SymbolTable.StringToId("pickle_complex")];
+            dispatchTable[TypeCache.Complex64] = dict["pickle_complex"];
 
-            context.SetModuleState(_dispatchTableKey, dict[SymbolTable.StringToId("dispatch_table")] = dispatchTable);
-            context.SetModuleState(_extensionRegistryKey, dict[SymbolTable.StringToId("_extension_registry")] = new PythonDictionary());
-            context.SetModuleState(_invertedRegistryKey, dict[SymbolTable.StringToId("_inverted_registry")] = new PythonDictionary());
-            context.SetModuleState(_extensionCacheKey, dict[SymbolTable.StringToId("_extension_cache")] = new PythonDictionary());
+            context.SetModuleState(_dispatchTableKey, dict["dispatch_table"] = dispatchTable);
+            context.SetModuleState(_extensionRegistryKey, dict["_extension_registry"] = new PythonDictionary());
+            context.SetModuleState(_invertedRegistryKey, dict["_inverted_registry"] = new PythonDictionary());
+            context.SetModuleState(_extensionCacheKey, dict["_extension_cache"] = new PythonDictionary());
         }
     }
 }

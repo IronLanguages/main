@@ -465,7 +465,7 @@ namespace IronPython.Runtime {
                         argValue = PythonOps.GetBoundAttr(
                             _context.SharedContext,
                             argValue,
-                            SymbolTable.StringToId(accessor.AttributeName)
+                            accessor.AttributeName
                         );
                     } else if (Int32.TryParse(accessor.AttributeName, out intVal)) {
                         argValue = PythonOps.GetIndex(

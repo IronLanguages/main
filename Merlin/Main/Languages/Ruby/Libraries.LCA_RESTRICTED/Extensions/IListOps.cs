@@ -28,9 +28,8 @@ using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
 using IronRuby.Runtime.Conversions;
 
-using EachSite = System.Func<System.Runtime.CompilerServices.CallSite, object, IronRuby.Builtins.Proc, object>;
-
 namespace IronRuby.Builtins {
+    using EachSite = Func<CallSite, object, Proc, object>;
 
     [RubyModule(Extends = typeof(IList), Restrictions = ModuleRestrictions.None)]
     [Includes(typeof(Enumerable))]

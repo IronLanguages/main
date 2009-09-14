@@ -567,8 +567,6 @@ def AddReferenceToDlrCore():
         clr.AddReference("System.Core")
     else:
         clr.AddReference("Microsoft.Scripting.Core")
-    if not is_silverlight:
-        clr.AddReference("Microsoft.Dynamic")
 
 
 class stderr_trapper(object):

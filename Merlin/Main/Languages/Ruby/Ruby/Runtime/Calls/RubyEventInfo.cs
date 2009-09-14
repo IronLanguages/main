@@ -13,10 +13,15 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Linq.Expressions;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Actions;
@@ -25,7 +30,7 @@ using IronRuby.Builtins;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Runtime.Calls {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = Expression;
     
     public sealed class RubyEventInfo : RubyMemberInfo {
         private readonly EventTracker/*!*/ _tracker;

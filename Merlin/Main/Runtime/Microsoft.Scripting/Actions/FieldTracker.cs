@@ -13,6 +13,12 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Diagnostics;
 using System.Dynamic;
@@ -25,7 +31,7 @@ using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Actions {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = Expression;
 
     public class FieldTracker : MemberTracker {
         private readonly FieldInfo _field;

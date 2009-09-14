@@ -21,6 +21,7 @@ using System.Runtime.Serialization;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Generation;
+using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;

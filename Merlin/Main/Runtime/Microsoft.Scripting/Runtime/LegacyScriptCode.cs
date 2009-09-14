@@ -13,10 +13,15 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Text;
-using System.Linq.Expressions;
 using Microsoft.Scripting.Utils;
 using System.Threading;
 using Microsoft.Scripting.Generation;

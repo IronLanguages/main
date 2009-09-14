@@ -118,8 +118,8 @@ namespace IronPython.Runtime.Types {
             public static readonly FieldInfo/*!*/ Value = typeof(OperationFailed).GetField("Value");
         }
 
-        public static class _IAttributesCollection {
-            public static readonly MethodInfo/*!*/ TryGetvalue = typeof(IAttributesCollection).GetMethod("TryGetValue");
+        public static class _PythonDictionary {
+            public static readonly MethodInfo/*!*/ TryGetvalue = typeof(PythonDictionary).GetMethod("TryGetValue");
         }
 
         public static class _PythonGenerator {
@@ -372,8 +372,8 @@ namespace IronPython.Runtime.Types {
             protected override IEnumerable<string/*!*/>/*!*/ GetCandidateNames(MemberBinder/*!*/ binder, MemberRequestKind/*!*/ action, Type/*!*/ type) {
                 EnsureOperatorTable();
 
-                foreach (SymbolId si in _pythonOperatorTable.Keys) {
-                    yield return SymbolTable.IdToString(si);
+                foreach (string si in _pythonOperatorTable.Keys) {
+                    yield return si;
                 }
 
                 yield return "__call__";
@@ -947,10 +947,10 @@ namespace IronPython.Runtime.Types {
                     if (obj != null) {
                         name = obj.PythonType.Name;
                     }
-                    throw PythonOps.AttributeErrorForReadonlyAttribute(name, Symbols.Doc);
+                    throw PythonOps.AttributeErrorForReadonlyAttribute(name, "__doc__");
                 }
 
-                UserTypeOps.GetDictionary(obj)[Symbols.Doc] = value;
+                UserTypeOps.GetDictionary(obj)["__doc__"] = value;
                 return true;
             }
         }

@@ -29,7 +29,7 @@
     <Optimize>false</Optimize>
     <OutputPath>..\..\..\Bin\Debug\</OutputPath>
     <DocumentationFile>..\..\..\Bin\Debug\IronPython.XML</DocumentationFile>
-    <DefineConstants>DEBUG;TRACE;$(SignedSym)</DefineConstants>
+    <DefineConstants>DEBUG;TRACE;$(SignedSym);CLR2</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <RunCodeAnalysis>false</RunCodeAnalysis>
@@ -40,7 +40,7 @@
     <Optimize>true</Optimize>
     <OutputPath>..\..\..\Bin\Release\</OutputPath>
     <DocumentationFile>..\..\..\Bin\Release\IronPython.XML</DocumentationFile>
-    <DefineConstants>TRACE;$(SignedSym)</DefineConstants>
+    <DefineConstants>TRACE;$(SignedSym);CLR2</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <RunCodeAnalysis>false</RunCodeAnalysis>
@@ -50,7 +50,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>..\..\..\Bin\FxCop\</OutputPath>
-    <DefineConstants>TRACE;$(SignedSym);CODE_ANALYSIS</DefineConstants>
+    <DefineConstants>TRACE;$(SignedSym);CODE_ANALYSIS;CLR2</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <RunCodeAnalysis>true</RunCodeAnalysis>
@@ -59,7 +59,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <OutputPath>..\..\..\Bin\Silverlight Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;SILVERLIGHT;$(SignedSym)</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;SILVERLIGHT;$(SignedSym);CLR2</DefineConstants>
     <DebugType>full</DebugType>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
@@ -69,7 +69,7 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight Release|AnyCPU' ">
     <OutputPath>..\..\..\Bin\Silverlight Release\</OutputPath>
-    <DefineConstants>TRACE;SILVERLIGHT;$(SignedSym)</DefineConstants>
+    <DefineConstants>TRACE;SILVERLIGHT;$(SignedSym);CLR2</DefineConstants>
     <NoWarn>618</NoWarn>
     <NoStdLib>true</NoStdLib>
     <DebugType>pdbonly</DebugType>
@@ -103,9 +103,6 @@
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="..\..\..\Hosts\SilverLight\SilverlightVersion.cs" Condition=" '$(SilverlightBuild)' == 'true' ">
-      <Link>Properties\SilverlightVersion.cs</Link>
-    </Compile>
     <Compile Include="Compiler\Ast\AndExpression.cs" />
     <Compile Include="Compiler\Ast\Arg.cs" />
     <Compile Include="Compiler\ArrayGlobalAllocator.cs" />
@@ -116,6 +113,7 @@
     <Compile Include="Compiler\SharedGlobalAllocator.Generated.cs" />
     <Compile Include="Compiler\RunnableScriptCode.cs" />
     <Compile Include="Modules\imp.cs" />
+    <Compile Include="Runtime\AttributesDictionaryStorage.cs" />
     <Compile Include="Runtime\Binding\IComConvertible.cs" />
     <Compile Include="Runtime\CodeContext.cs" />
     <Compile Include="Runtime\DontMapIEnumerableToIterAttribute.cs" />
@@ -357,7 +355,7 @@
     <Compile Include="Runtime\Operations\DBNullOps.cs" />
     <Compile Include="Runtime\Operations\DictionaryOfTOps.cs" />
     <Compile Include="Runtime\Operations\ListOfTOps.cs" />
-    <Compile Include="Runtime\SymbolIdDictionaryStorage.cs" />
+    <Compile Include="Runtime\StringDictionaryStorage.cs" />
     <Compile Include="Runtime\NameType.cs" />
     <Compile Include="Runtime\Operations\ComOps.cs" />
     <Compile Include="Runtime\Operations\PythonTypeOps.cs" />
@@ -420,7 +418,6 @@
     <Compile Include="Runtime\Slice.cs" />
     <Compile Include="Runtime\StringFormatter.cs" />
     <Compile Include="Runtime\Super.cs" />
-    <Compile Include="Runtime\Symbols.cs" />
     <Compile Include="Runtime\Symbols.Generated.cs" />
     <Compile Include="Runtime\PythonTuple.cs" />
     <Compile Include="Modules\sys.cs" />

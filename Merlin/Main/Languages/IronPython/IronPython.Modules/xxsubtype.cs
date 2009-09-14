@@ -99,7 +99,7 @@ namespace IronPython.Modules {
             double start = PythonTime.clock();
 
             for (int i = 0; i < 1001; i++) {
-                PythonOps.GetBoundAttr(context, x, SymbolTable.StringToId(name));
+                PythonOps.GetBoundAttr(context, x, name);
             }
 
             return PythonTime.clock() - start;

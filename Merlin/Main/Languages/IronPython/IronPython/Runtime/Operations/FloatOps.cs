@@ -46,7 +46,7 @@ namespace IronPython.Runtime.Operations {
                     return ParseFloat((string)x);
                 } else if (x is Extensible<string>) {
                     object res;
-                    if (PythonTypeOps.TryInvokeUnaryOperator(context, x, Symbols.ConvertToFloat, out res)) {
+                    if (PythonTypeOps.TryInvokeUnaryOperator(context, x, "__float__", out res)) {
                         return res;
                     }
                     return ParseFloat(((Extensible<string>)x).Value);
@@ -59,7 +59,7 @@ namespace IronPython.Runtime.Operations {
 
                 if (x is Complex64) throw PythonOps.TypeError("can't convert complex to float; use abs(z)");
 
-                object d = PythonOps.CallWithContext(context, PythonOps.GetBoundAttr(context, x, Symbols.ConvertToFloat));
+                object d = PythonOps.CallWithContext(context, PythonOps.GetBoundAttr(context, x, "__float__"));
                 if (d is double) return d;
                 throw PythonOps.TypeError("__float__ returned non-float (type %s)", DynamicHelpers.GetPythonType(d));
             } else {
@@ -73,7 +73,7 @@ namespace IronPython.Runtime.Operations {
                 object value;
                 IPythonObject po = s as IPythonObject;
                 if (po != null &&
-                    PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, po, Symbols.ConvertToFloat, out value)) {
+                    PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, po, "__float__", out value)) {
                     return value;
                 }
 
@@ -1033,7 +1033,7 @@ namespace IronPython.Runtime.Operations {
 
             if (x is Complex64) throw PythonOps.TypeError("can't convert complex to Single; use abs(z)");
 
-            object d = PythonOps.CallWithContext(context, PythonOps.GetBoundAttr(context, x, Symbols.ConvertToFloat));
+            object d = PythonOps.CallWithContext(context, PythonOps.GetBoundAttr(context, x, "__float__"));
             if (d is double) return (float)(double)d;
             throw PythonOps.TypeError("__float__ returned non-float (type %s)", DynamicHelpers.GetPythonType(d));
         }
@@ -1047,7 +1047,7 @@ namespace IronPython.Runtime.Operations {
             object value;
             IPythonObject po = s as IPythonObject;
             if (po != null &&
-                PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, po, Symbols.ConvertToFloat, out value)) {
+                PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, po, "__float__", out value)) {
                 if (value is double) return (float)(double)value;
                 return value;
             }

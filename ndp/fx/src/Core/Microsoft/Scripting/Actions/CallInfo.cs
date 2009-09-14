@@ -13,14 +13,18 @@
  *
  * ***************************************************************************/
 
+#if CLR2
+using Microsoft.Scripting.Ast;
+#else
+using System.Linq.Expressions;
+#endif
+#if SILVERLIGHT
+using System.Core;
+#endif
+
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Dynamic.Utils;
-using System.Linq.Expressions;
-
-#if SILVERLIGHT
-using System.Core;
-#endif //SILVERLIGHT
 
 namespace System.Dynamic {
 

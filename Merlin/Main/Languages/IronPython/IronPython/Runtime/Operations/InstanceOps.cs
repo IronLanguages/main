@@ -13,12 +13,17 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
@@ -116,7 +121,7 @@ namespace IronPython.Runtime.Operations {
                 foreach (KeyValuePair<object, object> kvp in (IDictionary<object, object>)kwargs\u00F8) {
                     PythonOps.SetAttr(context,
                         res,
-                        SymbolTable.StringToId(kvp.Key.ToString()),
+                        kvp.Key.ToString(),
                         kvp.Value);
                 }
             }
@@ -387,7 +392,7 @@ namespace IronPython.Runtime.Operations {
             List names = new List();
             foreach (string name in pt.GetMemberNames(context)) {
                 object res;
-                if (IsStaticTypeMemberInAll(context, pt, SymbolTable.StringToId(name), out res)) {
+                if (IsStaticTypeMemberInAll(context, pt, name, out res)) {
                     names.AddNoLock(name);
                 }
             }
@@ -398,11 +403,11 @@ namespace IronPython.Runtime.Operations {
         /// <summary>
         /// Determines if a type member can be imported.  This is used to treat static types like modules.
         /// </summary>
-        private static bool IsStaticTypeMemberInAll(CodeContext/*!*/ context, PythonType/*!*/ pt, SymbolId name, out object res) {
+        private static bool IsStaticTypeMemberInAll(CodeContext/*!*/ context, PythonType/*!*/ pt, string name, out object res) {
             PythonTypeSlot pts;
             res = null;
             if (pt.TryResolveSlot(context, name, out pts)) {
-                if (name == Symbols.Doc || name == Symbols.Class) {
+                if (name == "__doc__" || name == "__class__") {
                     // these exist but we don't want to clobber __doc__ on import * or bring in __class__
                     return false;
                 } else if (pts is ReflectedGetterSetter) {
@@ -552,7 +557,7 @@ namespace IronPython.Runtime.Operations {
 
         private static BuiltinMethodDescriptor GetInitMethod() {
             PythonTypeSlot pts;
-            TypeCache.Object.TryResolveSlot(DefaultContext.Default, Symbols.Init, out pts);
+            TypeCache.Object.TryResolveSlot(DefaultContext.Default, "__init__", out pts);
 
             Debug.Assert(pts != null);
             return (BuiltinMethodDescriptor)pts;

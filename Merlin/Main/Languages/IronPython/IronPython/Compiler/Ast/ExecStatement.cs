@@ -13,13 +13,19 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using MSAst = System.Linq.Expressions;
+#else
+using MSAst = Microsoft.Scripting.Ast;
+#endif
+
 using System.Diagnostics;
 using Microsoft.Scripting;
+using IronPython.Runtime;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
-using MSAst = System.Linq.Expressions;
 
 namespace IronPython.Compiler.Ast {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = MSAst.Expression;
 
     public class ExecStatement : Statement {
         private readonly Expression _code, _locals, _globals;
@@ -64,7 +70,7 @@ namespace IronPython.Compiler.Ast {
                     AstGenerator.GetHelperMethod("QualifiedExec"),
                     ag.LocalContext, 
                     ag.TransformAsObject(_code), 
-                    ag.TransformAndDynamicConvert(_globals, typeof(IAttributesCollection)), 
+                    ag.TransformAndDynamicConvert(_globals, typeof(PythonDictionary)), 
                     ag.TransformOrConstantNull(_locals, typeof(object))
                 );
             }

@@ -13,9 +13,14 @@
  *
  * ***************************************************************************/
 
+using System;
 using System.Dynamic.Utils;
 
+#if CLR2
+namespace Microsoft.Scripting.Ast {
+#else
 namespace System.Linq.Expressions {
+#endif
     /// <summary>
     /// Stores information needed to emit debugging symbol information for a
     /// source file, in particular the file name and unique language identifier.

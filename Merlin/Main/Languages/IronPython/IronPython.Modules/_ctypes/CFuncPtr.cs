@@ -12,11 +12,13 @@
  *
  *
  * ***************************************************************************/
+#if !CLR2
+using System.Linq.Expressions;
+#endif
 
 using System;
 using System.Collections.Generic;
 using System.Dynamic;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
@@ -208,7 +210,7 @@ namespace IronPython.Modules {
                         }
                         foreach (object o in argValues) {
                             if (!(o is INativeType)) {
-                                if (!PythonOps.HasAttr(DefaultContext.Default, o, SymbolTable.StringToId("from_param"))) {
+                                if (!PythonOps.HasAttr(DefaultContext.Default, o, "from_param")) {
                                     throw PythonOps.TypeErrorForTypeMismatch("ctype or object with from_param", o);
                                 }
                             }
@@ -332,7 +334,7 @@ namespace IronPython.Modules {
                         object checkRetVal = null;
                         if (nativeResType == null) {
                             checkRetVal = resType;
-                        } else if (!PythonOps.TryGetBoundAttr(context, nativeResType, SymbolTable.StringToId("_check_retval_"), out checkRetVal)) {
+                        } else if (!PythonOps.TryGetBoundAttr(context, nativeResType, "_check_retval_", out checkRetVal)) {
                             // we just wanted to try and get the value, don't need to do anything here.
                             checkRetVal = null;
                         }
@@ -465,7 +467,7 @@ namespace IronPython.Modules {
                     }
 
                     object val;
-                    if (PythonOps.TryGetBoundAttr(value, SymbolTable.StringToId("_as_parameter_"), out val)) {
+                    if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out val)) {
                         throw new NotImplementedException("_as_parameter");
                         //return new UserDefinedMarshaller(GetMarshaller(..., value, index));                    
                     }

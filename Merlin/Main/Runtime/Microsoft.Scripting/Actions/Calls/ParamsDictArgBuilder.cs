@@ -12,11 +12,15 @@
  *
  *
  * ***************************************************************************/
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
 
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq.Expressions;
 using System.Reflection;
 
 using Microsoft.Scripting.Runtime;
@@ -25,7 +29,7 @@ using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Actions.Calls {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = Expression;
 
     /// <summary>
     /// Builds the parameter for a params dictionary argument - this collects all the extra name/value

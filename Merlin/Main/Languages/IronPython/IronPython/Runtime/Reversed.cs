@@ -40,7 +40,7 @@ namespace IronPython.Runtime {
 
         public static object __new__(CodeContext context, PythonType type, object o) {
             object reversed;
-            if (PythonOps.TryGetBoundAttr(context, o, Symbols.Reversed, out reversed)) {
+            if (PythonOps.TryGetBoundAttr(context, o, "__reversed__", out reversed)) {
                 return PythonCalls.Call(context, reversed);
             }
 
@@ -48,7 +48,7 @@ namespace IronPython.Runtime {
 
             PythonTypeSlot getitem;
             PythonType pt = DynamicHelpers.GetPythonType(o);
-            if(!pt.TryResolveSlot(context, Symbols.GetItem, out getitem) ||
+            if(!pt.TryResolveSlot(context, "__getitem__", out getitem) ||
                 !getitem.TryGetValue(context, o, pt, out boundFunc)
                 || o is PythonDictionary) {
                 throw PythonOps.TypeError("argument to reversed() must be a sequence");

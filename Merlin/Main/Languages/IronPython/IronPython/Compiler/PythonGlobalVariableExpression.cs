@@ -13,9 +13,12 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#endif
+
 using System;
 using System.Diagnostics;
-using System.Linq.Expressions;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Ast;
@@ -242,7 +245,7 @@ namespace IronPython.Compiler {
             return Expression.Call(
                 typeof(PythonOps).GetMethod(_isLocal ? "RawGetLocal" : "RawGetGlobal"),
                 _codeContextExpr,
-                Utils.Constant(SymbolTable.StringToId(_name))
+                Utils.Constant(_name)
             );
         }
 

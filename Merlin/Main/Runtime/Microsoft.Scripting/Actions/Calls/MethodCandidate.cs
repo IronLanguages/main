@@ -13,12 +13,17 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Dynamic;
-using System.Linq.Expressions;
 using System.Reflection;
 using Microsoft.Contracts;
 using Microsoft.Scripting.Generation;
@@ -27,7 +32,7 @@ using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Actions.Calls {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = Expression;
 
     /// <summary>
     /// MethodCandidate represents the different possible ways of calling a method or a set of method overloads.

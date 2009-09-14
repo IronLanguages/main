@@ -13,8 +13,13 @@
  *
  * ***************************************************************************/
 
-using Microsoft.Scripting;
+#if !CLR2
 using MSAst = System.Linq.Expressions;
+#else
+using MSAst = Microsoft.Scripting.Ast;
+#endif
+
+using Microsoft.Scripting;
 
 namespace IronPython.Compiler.Ast {
     class PythonReference {

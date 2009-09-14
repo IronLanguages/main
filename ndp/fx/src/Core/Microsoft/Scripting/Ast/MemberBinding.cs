@@ -13,9 +13,14 @@
  *
  * ***************************************************************************/
 
+using System;
 using System.Reflection;
 
+#if CLR2
+namespace Microsoft.Scripting.Ast {
+#else
 namespace System.Linq.Expressions {
+#endif
     /// <summary>
     /// Describes the binding types that are used in MemberInitExpression objects.
     /// </summary>

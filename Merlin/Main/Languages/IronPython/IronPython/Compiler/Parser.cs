@@ -303,7 +303,7 @@ namespace IronPython.Compiler {
             SourceLocation start = span.Start;
             SourceLocation end = span.End;
 
-            if (allowIncomplete && (t.Kind == TokenKind.EndOfFile || (_tokenizer.IsEndOfFile && t.Kind == TokenKind.Dedent))) {
+            if (allowIncomplete && (t.Kind == TokenKind.EndOfFile || (_tokenizer.IsEndOfFile && (t.Kind == TokenKind.Dedent || t.Kind == TokenKind.NLToken)))) {
                 errorCode |= ErrorCodes.IncompleteStatement;
             }
 

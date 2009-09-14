@@ -13,6 +13,12 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using MSA = System.Linq.Expressions;
+#else
+using MSA = Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -26,11 +32,10 @@ using IronRuby.Builtins;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
 using IronRuby.Runtime.Conversions;
-using MSA = System.Linq.Expressions;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Compiler.Ast {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = MSA.Expression;
 
     public partial class SourceUnitTree : Node {
 

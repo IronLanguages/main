@@ -14,6 +14,7 @@
  * ***************************************************************************/
 
 using Microsoft.Scripting;
+using Microsoft.Scripting.Utils;
 using System;
 
 namespace IronRuby.Tests {

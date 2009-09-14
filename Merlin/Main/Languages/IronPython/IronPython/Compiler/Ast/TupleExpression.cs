@@ -20,10 +20,15 @@ using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime.Binding;
 
+#if !CLR2
 using MSAst = System.Linq.Expressions;
+#else
+using MSAst = Microsoft.Scripting.Ast;
+#endif
+
 
 namespace IronPython.Compiler.Ast {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = MSAst.Expression;
     using IronPython.Runtime.Operations;
 
     public class TupleExpression : SequenceExpression {

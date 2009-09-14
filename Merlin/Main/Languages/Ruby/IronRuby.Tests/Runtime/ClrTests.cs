@@ -23,6 +23,7 @@ using IronRuby.Builtins;
 using IronRuby.Runtime;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 namespace InteropTests.Generics1 {
     public class C {
@@ -46,8 +47,18 @@ namespace InteropTests.Generics1 {
     }
 }
 
+namespace InteropTests.Namespaces2 {
+    public class C { }
+    namespace N {
+        public class D { }
+    }
+}
+
 namespace IronRuby.Tests {
     public partial class Tests {
+        public readonly string FuncFullName = typeof(Func<>).FullName.Split('`')[0].Replace(".", "::");
+        public readonly string ActionFullName = typeof(Action).FullName.Split('`')[0].Replace(".", "::");
+
         #region Members: Fields, Methods, Properties, Indexers
 
 #pragma warning disable 169 // private field not used
@@ -279,7 +290,7 @@ p c[0, 1]
             // TODO:
             // protected int Fld;
             // protected static int Fld;
-            // protected event System.Func<object> Evnt;
+            // protected event Func<object> Evnt;
         }
 
         public void ClrVisibility1() {
@@ -1196,6 +1207,7 @@ NoMethodError
 puts defined? System::Collections
 
 module System
+  puts defined? Collections
   remove_const(:Collections)
 end
 
@@ -1206,8 +1218,43 @@ class System::Collections
 end
 ", @"
 constant
+constant
 nil
 System::Collections
+");
+        }
+
+        public void ClrNamespaces2() {
+            Runtime.LoadAssembly(typeof(InteropTests.Namespaces2.C).Assembly);
+            AssertOutput(() => CompilerTest(@"
+module InteropTests::Namespaces2
+  X = 1
+  N = 2
+
+  puts defined? C, defined? N, defined? X, constants.sort
+
+  remove_const :C
+  remove_const :N
+  remove_const :X
+  remove_const :C rescue p $!
+  remove_const :N rescue p $!
+  remove_const :X rescue p $!
+
+  puts defined? C, defined? N, defined? X, constants.sort
+end
+", 0, 1), @"
+constant
+constant
+constant
+C
+N
+X
+#<NameError: constant InteropTests::Namespaces2::C not defined>
+#<NameError: constant InteropTests::Namespaces2::N not defined>
+#<NameError: constant InteropTests::Namespaces2::X not defined>
+nil
+nil
+nil
 ");
         }
 
@@ -1353,18 +1400,17 @@ $d = D.new { |foo, bar| $foo = foo; $bar = bar; 777 }
         
         public void ClrDelegates2() {
             Runtime.LoadAssembly(typeof(Func<>).Assembly);
-            Runtime.LoadAssembly(typeof(Action).Assembly);
 
-            var f = Engine.Execute<Func<int, int>>(@"System::Func.of(Fixnum, Fixnum).new { |a| a + 1 }");
+            var f = Engine.Execute<Func<int, int>>(FuncFullName + @".of(Fixnum, Fixnum).new { |a| a + 1 }");
             Assert(f(1) == 2);
 
-            Engine.Execute<Action>(@"System::Action.new { $x = 1 }")();
+            Engine.Execute<Action>(ActionFullName + @".new { $x = 1 }")();
             Assert((int)Context.GetGlobalVariable("x") == 1);
 
-            Engine.Execute<Action<int>>(@"System::Action[Fixnum].new { |x| $x = x + 1 }")(10);
+            Engine.Execute<Action<int, int>>(ActionFullName + @"[Fixnum, Fixnum].new { |x,y| $x = x + y }")(10, 1);
             Assert((int)Context.GetGlobalVariable("x") == 11);
 
-            AssertExceptionThrown<LocalJumpError>(() => Engine.Execute(@"System::Action.new(&nil)"));
+            AssertExceptionThrown<LocalJumpError>(() => Engine.Execute(ActionFullName + @".new(&nil)"));
         }
 
         public void ClrEvents1() {
@@ -1476,7 +1522,7 @@ false
                 return OnEvent(arg);
             }
         }
-
+        
         public void ClrEventImpl1() {
             // TODO: fix
             if (_driver.PartialTrust) return;
@@ -1501,19 +1547,21 @@ F.new
 ");
             var handler = new Func<int, int>((i) => i + 1);
 
-            AssertOutput(() => f.OnEvent += handler, @"add System.Func`2[System.Int32,System.Int32]");
+            string func = typeof(Func<,>).FullName;
+
+            AssertOutput(() => f.OnEvent += handler, @"add "+ func + "[System.Int32,System.Int32]");
             var r = f.Fire(10);
             Assert(r == 11);
-            AssertOutput(() => f.OnEvent -= handler, @"remove System.Func`2[System.Int32,System.Int32]");
+            AssertOutput(() => f.OnEvent -= handler, @"remove " + func + "[System.Int32,System.Int32]");
 
             TestOutput(@"
 f = F.new
 f.on_event { |x| x * 2 }
 puts f.fire(10)
-", @"
-add System.Func`2[System.Int32,System.Int32]
+", String.Format(@"
+add {0}[System.Int32,System.Int32]
 20
-");
+", func));
         }
 
         #endregion
@@ -2137,7 +2185,7 @@ no size method
         }
 
         public void ClrArrays1() {
-            Context.SetGlobalConstant("A2", Context.GetClass(typeof(int[,])));
+            Runtime.Globals.SetVariable("A2", Context.GetClass(typeof(int[,])));
             TestOutput(@"
 # multi-dim array:
 a2 = A2.new(2,4)
@@ -2423,8 +2471,8 @@ false
         }
 
         public void ClrConversions1() {
-            Context.SetGlobalConstant("Inst", new Conversions1());
-            Context.SetGlobalConstant("Conv", new Convertible1());
+            Runtime.Globals.SetVariable("Inst", new Conversions1());
+            Runtime.Globals.SetVariable("Conv", new Convertible1());
 
             // Nullable<T>
             TestOutput(@"

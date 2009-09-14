@@ -13,8 +13,13 @@
  *
  * ***************************************************************************/
 
-using System.Dynamic;
+#if !CLR2
 using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
+using System.Dynamic;
 
 namespace Microsoft.Scripting.Utils {
     public static class DynamicUtils {

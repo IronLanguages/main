@@ -13,9 +13,14 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Dynamic;
-using System.Linq.Expressions;
 using System.Reflection;
 
 using Microsoft.Scripting.Actions;
@@ -26,7 +31,7 @@ using IronPython.Runtime.Operations;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Runtime.Binding {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = Expression;
 
     public sealed partial class PythonBinder : DefaultBinder {
         public DynamicMetaObject Create(CallSignature signature, DynamicMetaObject target, DynamicMetaObject[] args, Expression contextExpression) {

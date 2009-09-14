@@ -28,7 +28,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <DefineConstants>TRACE;DEBUG;$(SignedSym)</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;$(SignedSym);CLR2</DefineConstants>
     <OutputPath>..\..\..\Bin\Debug\</OutputPath>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -39,7 +39,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>..\..\..\Bin\Release\</OutputPath>
-    <DefineConstants>TRACE;$(SignedSym)</DefineConstants>
+    <DefineConstants>TRACE;$(SignedSym);CLR2</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
@@ -49,7 +49,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>..\..\..\Bin\FxCop\</OutputPath>
-    <DefineConstants>TRACE;$(SignedSym);CODE_ANALYSIS</DefineConstants>
+    <DefineConstants>TRACE;$(SignedSym);CODE_ANALYSIS;CLR2</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <RunCodeAnalysis>true</RunCodeAnalysis>

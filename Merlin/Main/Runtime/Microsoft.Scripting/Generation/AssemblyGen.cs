@@ -91,7 +91,7 @@ namespace Microsoft.Scripting.Generation {
             };
 
             if (outDir != null) {
-#if CLR4
+#if !CLR2
                 _myAssembly = AppDomain.CurrentDomain.DefineDynamicAssembly(name, AssemblyBuilderAccess.RunAndSave, outDir, false, attributes);
 #else
                 //The API DefineDynamicAssembly is obsolete in Dev10.

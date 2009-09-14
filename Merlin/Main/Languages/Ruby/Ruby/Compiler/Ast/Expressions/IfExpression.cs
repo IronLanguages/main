@@ -13,14 +13,19 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using MSA = System.Linq.Expressions;
+#else
+using MSA = Microsoft.Scripting.Ast;
+#endif
+
 using System.Collections.Generic;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Utils;
-using MSA = System.Linq.Expressions;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Compiler.Ast {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = Expression;
 
     public partial class IfExpression : Expression {
         private Expression/*!*/ _condition;

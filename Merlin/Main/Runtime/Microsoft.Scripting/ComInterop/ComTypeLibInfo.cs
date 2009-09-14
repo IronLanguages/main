@@ -15,8 +15,13 @@
 
 #if !SILVERLIGHT // ComObject
 
-using System;
+#if !CLR2
 using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
+using System;
 using System.Dynamic;
 
 namespace Microsoft.Scripting.ComInterop {

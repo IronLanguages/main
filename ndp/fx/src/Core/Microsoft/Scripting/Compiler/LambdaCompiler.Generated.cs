@@ -16,7 +16,11 @@
 using System.Diagnostics;
 using System.Dynamic.Utils;
 
+#if CLR2
+namespace Microsoft.Scripting.Ast.Compiler {
+#else
 namespace System.Linq.Expressions.Compiler {
+#endif
     partial class LambdaCompiler {
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1505:AvoidUnmaintainableCode"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]

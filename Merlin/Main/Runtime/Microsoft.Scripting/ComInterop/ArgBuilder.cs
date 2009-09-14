@@ -15,7 +15,11 @@
 
 #if !SILVERLIGHT
 
+#if !CLR2
 using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
 
 namespace Microsoft.Scripting.ComInterop {
     /// <summary>

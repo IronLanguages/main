@@ -13,18 +13,24 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
-using System.Linq.Expressions;
 using System.Reflection;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Utils;
-using Ast = System.Linq.Expressions.Expression;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Actions.Calls {
+    using Ast = Expression;
+    
     public class InstanceBuilder {
         // Index of actual argument expression or -1 if the instance is null.
         private readonly int _index;

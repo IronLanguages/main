@@ -23,11 +23,16 @@ using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime.Binding;
 
-using AstUtils = Microsoft.Scripting.Ast.Utils;
+#if !CLR2
 using MSAst = System.Linq.Expressions;
+#else
+using MSAst = Microsoft.Scripting.Ast;
+#endif
+
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Compiler.Ast {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = MSAst.Expression;
 
     public class WithStatement : Statement {
         private SourceLocation _header;

@@ -13,20 +13,25 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
-using System.Linq.Expressions;
 using Microsoft.Scripting.Utils;
 using IronRuby.Builtins;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Actions;
-using Ast = System.Linq.Expressions.Expression;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 using IronRuby.Compiler;
 using Microsoft.Scripting;
 
 namespace IronRuby.Runtime.Calls {
+    using Ast = Expression;
 
     /// <summary>
     /// Wraps the arguments of a dynamic call site

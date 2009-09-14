@@ -33,83 +33,6 @@ namespace IronPython.Runtime {
                 return _backing;
             }
         }
-#if FALSE
-        #region IAttributesCollection Members
-
-        public object this[SymbolId name] {
-            get {
-                object res;
-                if (TryGetValue(name, out res)) return res;
-
-                throw PythonOps.NameError(name);
-            }
-            set {
-                Add(name, value);
-            }
-        }
-
-        public IDictionary<SymbolId, object> SymbolAttributes {
-            get { throw new Exception("The method or operation is not implemented."); }
-        }
-
-        public void AddObjectKey(object name, object value) {
-            PythonOps.SetIndex(_backing, name, value);
-        }
-
-        public bool TryGetObjectValue(object name, out object value) {
-            try {
-                value = PythonOps.GetIndex(_backing, name);
-                return true;
-            } catch (KeyNotFoundException) {
-                // return false
-            }
-            value = null;
-            return false;
-        }
-
-        public bool RemoveObjectKey(object name) {
-            try {
-                PythonOps.DelIndex(_backing, name);
-                return true;
-            } catch (KeyNotFoundException) {
-                return false;
-            }
-        }
-
-        public bool ContainsObjectKey(object name) {
-            throw new Exception("The method or operation is not implemented.");
-        }
-
-        public IDictionary<object, object> AsObjectKeyedDictionary() {
-            throw new Exception("The method or operation is not implemented.");
-        }
-
-        public int Count {
-            get { return PythonOps.Length(_backing); }
-        }
-
-        public ICollection<object> Keys {
-            get { return (ICollection<object>)Converter.Convert(PythonOps.Invoke(_backing, Symbols.Keys), typeof(ICollection<object>)); }
-        }
-
-        #endregion
-
-        #region IEnumerable<KeyValuePair<object,object>> Members
-
-        public IEnumerator<KeyValuePair<object, object>> GetEnumerator() {
-            throw new Exception("The method or operation is not implemented.");
-        }
-
-        #endregion
-
-        #region IEnumerable Members
-
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() {
-            throw new Exception("The method or operation is not implemented.");
-        }
-
-        #endregion
-#endif
 
         public override void Add(object key, object value) {
             PythonContext.GetContext(_context).SetIndex(_backing, key, value);
@@ -145,7 +68,7 @@ namespace IronPython.Runtime {
         }
 
         public override void Clear() {
-            PythonOps.Invoke(_context, _backing, SymbolTable.StringToId("clear"));
+            PythonOps.Invoke(_context, _backing, "clear");
         }
 
         public override List<KeyValuePair<object, object>> GetItems() {
@@ -160,7 +83,7 @@ namespace IronPython.Runtime {
         }
 
         private ICollection<object> Keys {
-            get { return (ICollection<object>)Converter.Convert(PythonOps.Invoke(_context, _backing, Symbols.Keys), typeof(ICollection<object>)); }
+            get { return (ICollection<object>)Converter.Convert(PythonOps.Invoke(_context, _backing, "keys"), typeof(ICollection<object>)); }
         }
     }
 }

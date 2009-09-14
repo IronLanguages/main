@@ -13,6 +13,7 @@
  *
  * ***************************************************************************/
 
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -25,7 +26,11 @@ using System.Text;
 using System.Core;
 #endif
 
+#if CLR2
+namespace Microsoft.Scripting.Ast {
+#else
 namespace System.Linq.Expressions {
+#endif
     /// <summary>
     /// Represents indexing a property or array.
     /// </summary>

@@ -23,6 +23,7 @@ using System.Runtime.InteropServices;
 using Microsoft.Scripting;
 using System.Runtime.CompilerServices;
 using IronRuby.Runtime.Calls;
+using Microsoft.Scripting.Utils;
 
 namespace IronRuby.Builtins {
 

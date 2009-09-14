@@ -13,22 +13,27 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq.Expressions;
 using System.Reflection;
 using IronRuby.Builtins;
 using IronRuby.Compiler;
 using Microsoft.Scripting.Actions.Calls;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Utils;
-using Ast = System.Linq.Expressions.Expression;
 using AstFactory = IronRuby.Compiler.Ast.AstFactory;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Runtime.Calls {
+    using Ast = Expression;
 
     public enum SelfCallConvention {
         SelfIsInstance,

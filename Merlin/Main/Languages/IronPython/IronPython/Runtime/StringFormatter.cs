@@ -329,8 +329,8 @@ namespace IronPython.Runtime {
         private object GetKey(string key) {
             IDictionary<object, object> map = _data as IDictionary<object, object>;
             if (map == null) {
-                IAttributesCollection iac = _data as IAttributesCollection;
-                if (iac == null) {
+                PythonDictionary dict = _data as PythonDictionary;
+                if (dict == null) {
                     if (PythonOps.IsMappingType(DefaultContext.Default, _data) == ScriptingRuntimeHelpers.True) {
                         return PythonOps.GetIndex(_context, _data, key);
                     }
@@ -339,7 +339,7 @@ namespace IronPython.Runtime {
                 }
 
                 object res;
-                if (iac.TryGetValue(SymbolTable.StringToId(key), out res)) return res;
+                if (dict.TryGetValue(key, out res)) return res;
             } else {
                 object res;
                 if (map.TryGetValue(key, out res)) {

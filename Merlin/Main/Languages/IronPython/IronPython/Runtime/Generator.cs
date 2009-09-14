@@ -21,6 +21,7 @@ using System.Threading;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 using IronPython.Compiler;
 using IronPython.Runtime.Exceptions;

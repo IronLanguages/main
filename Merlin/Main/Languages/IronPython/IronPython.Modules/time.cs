@@ -68,7 +68,7 @@ namespace IronPython.Modules {
         public const string __doc__ = "This module provides various functions to manipulate time values.";
 
         [SpecialName]
-        public static void PerformModuleReload(PythonContext/*!*/ context, IAttributesCollection/*!*/ dict) {
+        public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
             // we depend on locale, it needs to be initialized
             PythonLocale.EnsureLocaleInitialized(context);
         }
@@ -116,7 +116,8 @@ namespace IronPython.Modules {
         public static string asctime(CodeContext/*!*/ context, object time) {
             DateTime dt;
             if (time is PythonTuple) {
-                dt = GetDateTimeFromTuple(context, time as PythonTuple);
+                // docs say locale information is not used by asctime, so ignore DST here
+                dt = GetDateTimeFromTupleNoDst(context, (PythonTuple)time);
             } else if (time == null) {
                 dt = DateTime.Now;
             } else {

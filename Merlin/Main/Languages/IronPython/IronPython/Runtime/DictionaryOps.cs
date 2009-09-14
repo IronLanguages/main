@@ -170,7 +170,7 @@ namespace IronPython.Runtime {
                 while (e.MoveNext()) {
                     self._storage.Add(e.Key, e.Value);
                 }
-            } else if (PythonOps.TryGetBoundAttr(b, Symbols.Keys, out keysFunc)) {
+            } else if (PythonOps.TryGetBoundAttr(b, "keys", out keysFunc)) {
                 // user defined dictionary
                 IEnumerator i = PythonOps.GetEnumerator(PythonCalls.Call(context, keysFunc));
                 while (i.MoveNext()) {
@@ -204,13 +204,13 @@ namespace IronPython.Runtime {
 
                 if (DefaultGetItem == null) {
                     // lazy init our cached DefaultGetItem
-                    TypeCache.Dict.TryLookupSlot(context, Symbols.GetItem, out dts);
+                    TypeCache.Dict.TryLookupSlot(context, "__getitem__", out dts);
                     bool res = dts.TryGetValue(context, self, TypeCache.Dict, out DefaultGetItem);
                     Debug.Assert(res);
                 }
 
                 // check and see if it's overridden
-                if (myType.TryLookupSlot(context, Symbols.GetItem, out dts)) {
+                if (myType.TryLookupSlot(context, "__getitem__", out dts)) {
                     dts.TryGetValue(context, self, myType, out ret);
 
                     if (ret != DefaultGetItem) {

@@ -14,13 +14,16 @@
  * ***************************************************************************/
 
 using System.Collections.Generic;
-using System.Linq.Expressions;
 
 #if SILVERLIGHT
 using System.Core;
 #endif
 
+#if CLR2
+namespace Microsoft.Scripting.Ast.Compiler {
+#else
 namespace System.Linq.Expressions.Compiler {
+#endif
     
     /// <summary>
     /// A simple dictionary of queues, keyed off a particular type

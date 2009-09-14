@@ -13,12 +13,18 @@
  *
  * ***************************************************************************/
 
+#if CLR2
+using Microsoft.Scripting.Ast;
+using Microsoft.Scripting.Ast.Compiler;
+#else
+using System.Linq.Expressions;
+using System.Linq.Expressions.Compiler;
+#endif
+
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Dynamic.Utils;
-using System.Linq.Expressions;
-using System.Linq.Expressions.Compiler;
 
 namespace System.Runtime.CompilerServices {
     public partial class RuntimeOps {

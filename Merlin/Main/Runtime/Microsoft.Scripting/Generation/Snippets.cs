@@ -13,6 +13,12 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.IO;
 using System.Reflection;
@@ -99,8 +105,8 @@ namespace Microsoft.Scripting.Generation {
 
         public static void SetSaveAssemblies(bool enable, string directory) {
             //Set SaveAssemblies on for inner ring by calling SetSaveAssemblies via Reflection.
-            Assembly core = typeof(System.Linq.Expressions.Expression).Assembly;
-            Type assemblyGen = core.GetType("System.Linq.Expressions.Compiler.AssemblyGen");
+            Assembly core = typeof(Expression).Assembly;
+            Type assemblyGen = core.GetType(typeof(Expression).Namespace + ".Compiler.AssemblyGen");
             //The type may not exist.
             if (assemblyGen != null) {
                 MethodInfo configSaveAssemblies = assemblyGen.GetMethod("SetSaveAssemblies", BindingFlags.NonPublic | BindingFlags.Static);
@@ -131,8 +137,8 @@ namespace Microsoft.Scripting.Generation {
             //    inner ring assemblies have dependency on outer ring assemlies via generated IL.
             // 3) Verify inner ring assemblies.
             // 4) Verify outer ring assemblies.
-            Assembly core = typeof(System.Linq.Expressions.Expression).Assembly;
-            Type assemblyGen = core.GetType("System.Linq.Expressions.Compiler.AssemblyGen");
+            Assembly core = typeof(Expression).Assembly;
+            Type assemblyGen = core.GetType(typeof(Expression).Namespace + ".Compiler.AssemblyGen");
             //The type may not exist.
             string[] coreAssemblyLocations = null;
             if (assemblyGen != null) {

@@ -13,6 +13,12 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using MSA = System.Linq.Expressions;
+#else
+using MSA = Microsoft.Scripting.Ast;
+#endif
+
 using IronRuby.Builtins;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
@@ -20,7 +26,6 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
-using MSA = System.Linq.Expressions;
 using System;
 using Microsoft.Scripting.Actions;
 using System.Collections.ObjectModel;
@@ -28,7 +33,7 @@ using System.Diagnostics;
 using Microsoft.Scripting.Interpreter;
     
 namespace IronRuby.Compiler.Ast {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = MSA.Expression;
     
     public partial class MethodDeclaration : DeclarationExpression {
         // self, block

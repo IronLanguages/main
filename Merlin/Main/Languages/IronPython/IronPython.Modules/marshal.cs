@@ -198,45 +198,28 @@ namespace IronPython.Modules {
             }
 
             private void WriteInteger(BigInteger val) {
-                if (val == BigInteger.Zero) {
-                    _bytes.Add((byte)'l');
-                    for(int i = 0; i<4; i++) _bytes.Add(0);
-                    return;
-                }
-
-                BigInteger mask = BigInteger.Create(short.MaxValue);
-                uint startLen = (uint)val.Length;
-                val = new BigInteger(val);
-
                 _bytes.Add((byte)'l');
-                uint byteLen = ((startLen * 32) + 14) / 15; // len is in 32-bit multiples, we want 15-bit multiples
-                bool fNeg = false;
-                if (val < 0) {
-                    fNeg = true;
+                int bitCount = 0, dir;
+                if (val < BigInteger.Zero) {
                     val *= -1;
-                }
-
-                if (val <= short.MaxValue)
-                    byteLen = 1;
-                else if (val < (1 << 30)) {
-                    byteLen = 2;
-                }
-
-                // write out length
-                if (fNeg) {
-                    WriteUInt32(uint.MaxValue - byteLen + 1);
+                    dir = -1;
                 } else {
-                    WriteUInt32(byteLen);
+                    dir = 1;
                 }
 
-                // write out value (15 bits at a time)
-                while (val != 0) {
-                    BigInteger res = (val & mask);
-                    uint writeVal = res.ToUInt32();
-                    _bytes.Add((byte)((writeVal) & 0xff));
-                    _bytes.Add((byte)((writeVal >> 8) & 0xff));
+                List<byte> bytes = new List<byte>();
+                while (val != BigInteger.Zero) {
+                    int word = (int)(val & 0x7FFF);
                     val = val >> 15;
+
+                    bytes.Add((byte)(word & 0xFF));
+                    bytes.Add((byte)((word >> 8) & 0xFF));
+                    bitCount += dir;
                 }
+
+                WriteInt32(bitCount);
+
+                _bytes.AddRange(bytes);
             }
 
             private void WriteBuffer(PythonBuffer b) {
@@ -285,14 +268,6 @@ namespace IronPython.Modules {
             }
 
             private void WriteInt32(int val) {
-                BitConverter.GetBytes(val);
-                _bytes.Add((byte)(val & 0xff));
-                _bytes.Add((byte)((val >> 8) & 0xff));
-                _bytes.Add((byte)((val >> 16) & 0xff));
-                _bytes.Add((byte)((val >> 24) & 0xff));
-            }
-
-            private void WriteUInt32(uint val) {
                 _bytes.Add((byte)(val & 0xff));
                 _bytes.Add((byte)((val >> 8) & 0xff));
                 _bytes.Add((byte)((val >> 16) & 0xff));

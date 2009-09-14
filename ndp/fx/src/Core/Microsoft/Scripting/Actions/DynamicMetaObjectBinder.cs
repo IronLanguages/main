@@ -13,18 +13,24 @@
  *
  * ***************************************************************************/
 
-using System.Collections.ObjectModel;
-using System.Diagnostics;
-using System.Dynamic.Utils;
+#if CLR2
+using Microsoft.Scripting.Ast;
+using Microsoft.Scripting.Ast.Compiler;
+#else
 using System.Linq.Expressions;
 using System.Linq.Expressions.Compiler;
-using System.Runtime.CompilerServices;
+#endif
 
 #if SILVERLIGHT
 using System.Core;
 #else
 using System.Runtime.Remoting;
 #endif
+
+using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.Dynamic.Utils;
+using System.Runtime.CompilerServices;
 
 namespace System.Dynamic {
     /// <summary>

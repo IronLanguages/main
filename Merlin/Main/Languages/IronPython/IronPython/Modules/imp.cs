@@ -44,7 +44,7 @@ namespace IronPython.Modules {
         private static readonly object _lockCountKey = new object();
 
         [SpecialName]
-        public static void PerformModuleReload(PythonContext/*!*/ context, IAttributesCollection/*!*/ dict) {
+        public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
             // set the lock count to zero on the 1st load, don't reset the lock count on reloads
             if (!context.HasModuleState(_lockCountKey)) {
                 context.SetModuleState(_lockCountKey, 0L);

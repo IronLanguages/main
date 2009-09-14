@@ -13,10 +13,15 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Diagnostics;
 using System.Dynamic;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
@@ -29,12 +34,12 @@ using Microsoft.Scripting.Utils;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
-using Ast = System.Linq.Expressions.Expression;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
 using System.Threading;
 using System.Collections.Generic;
 
 namespace IronPython.Runtime.Binding {
+    using Ast = Expression;
+    using AstUtils = Microsoft.Scripting.Ast.Utils;
 
     partial class MetaUserObject : MetaPythonObject, IPythonGetable {
         #region IPythonGetable Members
@@ -128,7 +133,7 @@ namespace IronPython.Runtime.Binding {
                     // fall back to __getattr__ if it's defined.
                     // TODO: For InvokeMember we should probably do a fallback w/ an error suggestion
                     PythonTypeSlot getattr;
-                    if (Value.PythonType.TryResolveSlot(context, Symbols.GetBoundAttr, out getattr)) {
+                    if (Value.PythonType.TryResolveSlot(context, "__getattr__", out getattr)) {
                         MakeGetAttrAccess(getattr);
                     }
 
@@ -215,7 +220,7 @@ namespace IronPython.Runtime.Binding {
                 // otherwise generate code into a helper function.  This will do the slot lookup and exception
                 // handling for both __getattribute__ as well as __getattr__ if it exists.
                 PythonTypeSlot getattr;
-                obj.PythonType.TryResolveSlot(context, Symbols.GetBoundAttr, out getattr);
+                obj.PythonType.TryResolveSlot(context, "__getattr__", out getattr);
                 DynamicMetaObject self = _target.Restrict(Value.GetType());
                 string methodName = BindingHelpers.IsNoThrow(info.Action) ? "GetAttributeNoThrow" : "GetAttribute";
 
@@ -314,17 +319,16 @@ namespace IronPython.Runtime.Binding {
             private Expression/*!*/ MaybeMakeNoThrow(GetBindingInfo/*!*/ info, Expression/*!*/ expr) {
                 if (BindingHelpers.IsNoThrow(info.Action)) {
                     DynamicMetaObject fallback = FallbackError();
-                    Type t = BindingHelpers.GetCompatibleType(expr.Type, fallback.Expression.Type);
-                    ParameterExpression tmp = Ast.Variable(t, "getAttrRes");
+                    ParameterExpression tmp = Ast.Variable(typeof(object), "getAttrRes");
 
                     expr = Ast.Block(
                         new ParameterExpression[] { tmp },
                         Ast.Block(
                             AstUtils.Try(
-                                Ast.Assign(tmp, AstUtils.Convert(expr, t))
+                                Ast.Assign(tmp, AstUtils.Convert(expr, typeof(object)))
                             ).Catch(
                                 typeof(MissingMemberException),
-                                Ast.Assign(tmp, AstUtils.Convert(FallbackError().Expression, t))
+                                Ast.Assign(tmp, AstUtils.Convert(FallbackError().Expression, typeof(object)))
                             ),
                             tmp
                         )
@@ -469,8 +473,8 @@ namespace IronPython.Runtime.Binding {
                         ),
                         Ast.Call(
                             dict,
-                            TypeInfo._IAttributesCollection.TryGetvalue,
-                            AstUtils.Constant(SymbolTable.StringToId(GetGetMemberName(_bindingInfo.Action))),
+                            TypeInfo._PythonDictionary.TryGetvalue,
+                            AstUtils.Constant(GetGetMemberName(_bindingInfo.Action)),
                             _bindingInfo.Result
                         )
                     ),
@@ -490,7 +494,7 @@ namespace IronPython.Runtime.Binding {
                         typeof(UserTypeOps).GetMethod("TryGetMixedNewStyleOldStyleSlot"),
                         Ast.Constant(PythonContext.GetPythonContext(_bindingInfo.Action).SharedContext),
                         AstUtils.Convert(_bindingInfo.Self, typeof(object)),
-                        AstUtils.Constant(SymbolTable.StringToId(GetGetMemberName(_bindingInfo.Action))),
+                        AstUtils.Constant(GetGetMemberName(_bindingInfo.Action)),
                         _bindingInfo.Result
                     ),
                     Invoke(_bindingInfo.Result)
@@ -532,7 +536,7 @@ namespace IronPython.Runtime.Binding {
 
             protected override void MakeSlotAccess(PythonTypeSlot foundSlot, bool systemTypeResolution) {
                 if (systemTypeResolution) {
-                    if (!_binder.Context.Binder.TryResolveSlot(_context, this.Value.PythonType, this.Value.PythonType, SymbolTable.StringToId(_binder.Name), out foundSlot)) {
+                    if (!_binder.Context.Binder.TryResolveSlot(_context, this.Value.PythonType, this.Value.PythonType, _binder.Name, out foundSlot)) {
                         Debug.Assert(false);
                     }
 
@@ -598,18 +602,18 @@ namespace IronPython.Runtime.Binding {
                 ReflectedSlotProperty rsp = _slot as ReflectedSlotProperty;
                 if (rsp != null) {
                     Debug.Assert(!_dictAccess); // properties for __slots__ are get/set descriptors so we should never access the dictionary.
-                    func = new GetMemberDelegates(OptimizedGetKind.PropertySlot, _binder, SymbolTable.StringToId(_binder.Name), _version, _slot, _getattrSlot, rsp.Getter, FallbackError());
+                    func = new GetMemberDelegates(OptimizedGetKind.PropertySlot, _binder, _binder.Name, _version, _slot, _getattrSlot, rsp.Getter, FallbackError());
                 } else if (_dictAccess) {
                     if (_slot is PythonTypeUserDescriptorSlot) {
-                        func = new GetMemberDelegates(OptimizedGetKind.UserSlotDict, _binder, SymbolTable.StringToId(_binder.Name), _version, _slot, _getattrSlot, null, FallbackError());
+                        func = new GetMemberDelegates(OptimizedGetKind.UserSlotDict, _binder, _binder.Name, _version, _slot, _getattrSlot, null, FallbackError());
                     } else {
-                        func = new GetMemberDelegates(OptimizedGetKind.SlotDict, _binder, SymbolTable.StringToId(_binder.Name), _version, _slot, _getattrSlot, null, FallbackError());
+                        func = new GetMemberDelegates(OptimizedGetKind.SlotDict, _binder, _binder.Name, _version, _slot, _getattrSlot, null, FallbackError());
                     }
                 } else {
                     if (_slot is PythonTypeUserDescriptorSlot) {
-                        func = new GetMemberDelegates(OptimizedGetKind.UserSlotOnly, _binder, SymbolTable.StringToId(_binder.Name), _version, _slot, _getattrSlot, null, FallbackError());
+                        func = new GetMemberDelegates(OptimizedGetKind.UserSlotOnly, _binder, _binder.Name, _version, _slot, _getattrSlot, null, FallbackError());
                     } else {
-                        func = new GetMemberDelegates(OptimizedGetKind.SlotOnly, _binder, SymbolTable.StringToId(_binder.Name), _version, _slot, _getattrSlot, null, FallbackError());
+                        func = new GetMemberDelegates(OptimizedGetKind.SlotOnly, _binder, _binder.Name, _version, _slot, _getattrSlot, null, FallbackError());
                     }
                 }
                 return func;
@@ -625,7 +629,7 @@ namespace IronPython.Runtime.Binding {
                     return (site, self, context) => OperationFailed.Value;
                 }
 
-                SymbolId name = SymbolTable.StringToId(_binder.Name);
+                string name = _binder.Name;
                 return (site, self, context) => { throw PythonOps.AttributeErrorForMissingAttribute(((IPythonObject)self).PythonType.Name, name); };
             }
 
@@ -647,7 +651,7 @@ namespace IronPython.Runtime.Binding {
                 }
 
                 PythonTypeSlot getattr;
-                Value.PythonType.TryResolveSlot(_context, Symbols.GetBoundAttr, out getattr);
+                Value.PythonType.TryResolveSlot(_context, "__getattr__", out getattr);
                 return new GetAttributeDelegates(_binder, _binder.Name, _version, foundSlot, getattr);
             }
 
@@ -717,7 +721,7 @@ namespace IronPython.Runtime.Binding {
         /// this.
         /// </summary>
         private static bool TryGetGetAttribute(CodeContext/*!*/ context, PythonType/*!*/ type, out PythonTypeSlot dts) {
-            if (type.TryResolveSlot(context, Symbols.GetAttribute, out dts)) {
+            if (type.TryResolveSlot(context, "__getattribute__", out dts)) {
                 BuiltinMethodDescriptor bmd = dts as BuiltinMethodDescriptor;
 
                 if (bmd == null || bmd.DeclaringType != typeof(object) ||
@@ -756,9 +760,9 @@ namespace IronPython.Runtime.Binding {
         private static Expression/*!*/ MakeTypeError(string/*!*/ name, PythonType/*!*/ type) {
             return Ast.Throw(
                 Ast.Call(
-                    typeof(PythonOps).GetMethod("AttributeErrorForMissingAttribute", new Type[] { typeof(string), typeof(SymbolId) }),
+                    typeof(PythonOps).GetMethod("AttributeErrorForMissingAttribute", new Type[] { typeof(string), typeof(string) }),
                     AstUtils.Constant(type.Name),
-                    AstUtils.Constant(SymbolTable.StringToId(name))
+                    AstUtils.Constant(name)
                 ),
                 typeof(object)
             );
@@ -786,7 +790,7 @@ namespace IronPython.Runtime.Binding {
 
                 // call __setattr__ if it exists
                 PythonTypeSlot dts;
-                if (_instance.PythonType.TryResolveSlot(_context, Symbols.SetAttr, out dts) && !IsStandardObjectMethod(dts)) {
+                if (_instance.PythonType.TryResolveSlot(_context, "__setattr__", out dts) && !IsStandardObjectMethod(dts)) {
                     // skip the fake __setattr__ on mixed new-style/old-style types
                     if (dts != null) {
                         MakeSetAttrTarget(dts);
@@ -858,15 +862,15 @@ namespace IronPython.Runtime.Binding {
 
             protected override SetMemberDelegates<TValue> Finish() {
                 if (_unsupported) {
-                    return new SetMemberDelegates<TValue>(_context, OptimizedSetKind.None, SymbolTable.StringToId(_binder.Name), _version, _setattrSlot, null);
+                    return new SetMemberDelegates<TValue>(_context, OptimizedSetKind.None, _binder.Name, _version, _setattrSlot, null);
                 } else if (_setattrSlot != null) {
-                    return new SetMemberDelegates<TValue>(_context, OptimizedSetKind.SetAttr, SymbolTable.StringToId(_binder.Name), _version, _setattrSlot, null);
+                    return new SetMemberDelegates<TValue>(_context, OptimizedSetKind.SetAttr, _binder.Name, _version, _setattrSlot, null);
                 } else if (_slotProp != null) {
-                    return new SetMemberDelegates<TValue>(_context, OptimizedSetKind.UserSlot, SymbolTable.StringToId(_binder.Name), _version, null, _slotProp.Setter);
+                    return new SetMemberDelegates<TValue>(_context, OptimizedSetKind.UserSlot, _binder.Name, _version, null, _slotProp.Setter);
                 } else if(_dictSet) {
-                    return new SetMemberDelegates<TValue>(_context, OptimizedSetKind.SetDict, SymbolTable.StringToId(_binder.Name), _version, null, null);
+                    return new SetMemberDelegates<TValue>(_context, OptimizedSetKind.SetDict, _binder.Name, _version, null, null);
                 } else {
-                    return new SetMemberDelegates<TValue>(_context, OptimizedSetKind.Error, SymbolTable.StringToId(_binder.Name), _version, null, null);
+                    return new SetMemberDelegates<TValue>(_context, OptimizedSetKind.Error, _binder.Name, _version, null, null);
                 }                
             }
             
@@ -1020,7 +1024,7 @@ namespace IronPython.Runtime.Binding {
                                 Ast.Convert(_info.Args[0].Expression, _info.Args[0].LimitType),
                                 fi
                             ),
-                            AstUtils.Constant(SymbolTable.StringToId(_info.Action.Name)),
+                            AstUtils.Constant(_info.Action.Name),
                             AstUtils.Convert(_info.Args[1].Expression, typeof(object))
                         )
                     );
@@ -1030,7 +1034,7 @@ namespace IronPython.Runtime.Binding {
                         Ast.Call(
                             typeof(UserTypeOps).GetMethod("SetDictionaryValue"),
                             Ast.Convert(_info.Args[0].Expression, typeof(IPythonObject)),
-                            AstUtils.Constant(SymbolTable.StringToId(_info.Action.Name)),
+                            AstUtils.Constant(_info.Action.Name),
                             AstUtils.Convert(_info.Args[1].Expression, typeof(object))
                         )
                     );
@@ -1205,12 +1209,12 @@ namespace IronPython.Runtime.Binding {
 
             // call __delattr__ if it exists
             PythonTypeSlot dts;
-            if (sdo.PythonType.TryResolveSlot(context, Symbols.DelAttr, out dts) && !IsStandardObjectMethod(dts)) {
+            if (sdo.PythonType.TryResolveSlot(context, "__delattr__", out dts) && !IsStandardObjectMethod(dts)) {
                 MakeDeleteAttrTarget(info, sdo, dts);
             }
 
             // then see if we have a delete descriptor
-            sdo.PythonType.TryResolveSlot(context, SymbolTable.StringToId(info.Action.Name), out dts);
+            sdo.PythonType.TryResolveSlot(context, info.Action.Name, out dts);
             ReflectedSlotProperty rsp = dts as ReflectedSlotProperty;
             if (rsp != null) {
                 MakeSlotsDeleteTarget(info, rsp);
@@ -1334,7 +1338,7 @@ namespace IronPython.Runtime.Binding {
                 Ast.Call(
                     typeof(UserTypeOps).GetMethod("RemoveDictionaryValue"),
                     Ast.Convert(info.Args[0].Expression, typeof(IPythonObject)),
-                    AstUtils.Constant(SymbolTable.StringToId(info.Action.Name))
+                    AstUtils.Constant(info.Action.Name)
                 )
             );
         }
@@ -1352,14 +1356,12 @@ namespace IronPython.Runtime.Binding {
             isOldStyle = false;                // if we're mixed new-style/old-style we have to do a slower check
             systemTypeResolution = false;      // if we pick up the property from a System type we fallback
 
-            SymbolId lookingFor = SymbolTable.StringToId(name);
-
             foreach (PythonType pt in sdo.PythonType.ResolutionOrder) {
                 if (pt.IsOldClass) {
                     isOldStyle = true;
                 }
 
-                if (pt.TryLookupSlot(context, lookingFor, out foundSlot)) {
+                if (pt.TryLookupSlot(context, name, out foundSlot)) {
                     // use our built-in binding for ClassMethodDescriptors rather than falling back
                     if (!(foundSlot is ClassMethodDescriptor)) {
                         systemTypeResolution = pt.IsSystemType;

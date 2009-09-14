@@ -41,7 +41,7 @@ namespace IronPython.Modules {
         private static readonly object _threadholdKey = new object();
 
         [SpecialName]
-        public static void PerformModuleReload(PythonContext/*!*/ context, IAttributesCollection/*!*/ dict) {            
+        public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {            
             context.SetModuleState(_threadholdKey, PythonTuple.MakeTuple(64 * 1024, 256 * 1024, 1024 * 1024));
         }
 

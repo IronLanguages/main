@@ -28,7 +28,7 @@
     <Optimize>false</Optimize>
     <OutputPath>..\..\..\Bin\Debug\</OutputPath>
     <DocumentationFile>..\..\..\Bin\Debug\IronPython.Modules.XML</DocumentationFile>
-    <DefineConstants>DEBUG;TRACE;$(SignedSym)</DefineConstants>
+    <DefineConstants>DEBUG;TRACE;$(SignedSym);CLR2</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <NoWarn>1591</NoWarn>
@@ -39,7 +39,7 @@
     <Optimize>true</Optimize>
     <OutputPath>..\..\..\Bin\Release\</OutputPath>
     <DocumentationFile>..\..\..\Bin\Release\IronPython.Modules.XML</DocumentationFile>
-    <DefineConstants>TRACE;$(SignedSym)</DefineConstants>
+    <DefineConstants>TRACE;$(SignedSym);CLR2</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <NoWarn>1591</NoWarn>
@@ -48,7 +48,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>..\..\..\Bin\FxCop\</OutputPath>
-    <DefineConstants>TRACE;CODE_ANALYSIS;$(SignedSym)</DefineConstants>
+    <DefineConstants>TRACE;CODE_ANALYSIS;$(SignedSym);CLR2</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <RunCodeAnalysis>true</RunCodeAnalysis>
     <WarningLevel>4</WarningLevel>
@@ -58,7 +58,7 @@
   <PropertyGroup Condition=" '$(Configuration)' == 'Silverlight Debug' ">
     <DebugSymbols>true</DebugSymbols>
     <OutputPath>..\..\..\Bin\Silverlight Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;SILVERLIGHT</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;SILVERLIGHT;CLR2</DefineConstants>
     <DebugType>full</DebugType>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
@@ -68,7 +68,7 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Silverlight Release' ">
     <OutputPath>..\..\..\Bin\Silverlight Release</OutputPath>
-    <DefineConstants>TRACE;SILVERLIGHT</DefineConstants>
+    <DefineConstants>TRACE;SILVERLIGHT;CLR2</DefineConstants>
     <NoStdLib>true</NoStdLib>
     <DebugType>pdbonly</DebugType>
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -101,9 +101,6 @@
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="..\..\..\Hosts\Silverlight\SilverlightVersion.cs" Condition=" '$(SilverlightBuild)' == 'true' ">
-      <Link>Properties\SilverlightVersion.cs</Link>
-    </Compile>
     <Compile Include="array.cs" />
     <Compile Include="binascii.cs" />
     <Compile Include="cmath.cs" />

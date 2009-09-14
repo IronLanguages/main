@@ -13,16 +13,20 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using MSAst = System.Linq.Expressions;
+#else
+using MSAst = Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections.Generic;
-
+using IronPython.Runtime;
 using IronPython.Runtime.Operations;
-
 using AstUtils = Microsoft.Scripting.Ast.Utils;
-using MSAst = System.Linq.Expressions;
 
 namespace IronPython.Compiler.Ast {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = MSAst.Expression;
 
     public class DictionaryExpression : Expression {
         private readonly SliceExpression[] _items;
@@ -53,7 +57,7 @@ namespace IronPython.Compiler.Ast {
                     MSAst.Expression key = parts[index * 2 + 1] = ag.TransformOrConstantNull(slice.SliceStart, typeof(object));
 
                     Type newType;
-                    if (key.NodeType == System.Linq.Expressions.ExpressionType.Convert) {
+                    if (key.NodeType == MSAst.ExpressionType.Convert) {
                         newType = ((MSAst.UnaryExpression)key).Operand.Type;
                     } else {
                         newType = key.Type;

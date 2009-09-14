@@ -19,9 +19,6 @@ using System.Diagnostics;
 using System.Dynamic;
 using System.Threading;
 
-[assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1020:AvoidNamespacesWithFewTypes", Scope = "namespace", Target = "Microsoft.Scripting.Utils")]
-
-
 namespace Microsoft.Scripting.Utils {
     /// <summary>
     /// Thread safe dictionary that allows lazy-creation where readers will block for

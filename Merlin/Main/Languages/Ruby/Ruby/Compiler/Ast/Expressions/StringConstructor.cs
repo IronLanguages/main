@@ -13,6 +13,12 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using MSA = System.Linq.Expressions;
+#else
+using MSA = Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -27,9 +33,8 @@ using IronRuby.Runtime.Conversions;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Compiler.Ast {
-    using Ast = System.Linq.Expressions.Expression;
-    using MSA = System.Linq.Expressions;
-
+    using Ast = MSA.Expression;
+    
     public enum StringKind {
         Mutable,
         Immutable,

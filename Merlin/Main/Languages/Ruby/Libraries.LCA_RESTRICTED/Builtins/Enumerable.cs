@@ -22,11 +22,12 @@ using System.Runtime.InteropServices;
 using IronRuby.Runtime;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 using IronRuby.Runtime.Calls;
 
-using EachSite = System.Func<System.Runtime.CompilerServices.CallSite, object, IronRuby.Builtins.Proc, object>;
-
 namespace IronRuby.Builtins {
+    using EachSite = Func<CallSite, object, Proc, object>;
+
     [RubyModule("Enumerable")]
     public static class Enumerable {
         internal static object Each(CallSiteStorage<EachSite>/*!*/ each, object self, Proc/*!*/ block) {

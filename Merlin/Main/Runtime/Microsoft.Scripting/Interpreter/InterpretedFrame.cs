@@ -13,8 +13,13 @@
  *
  * ***************************************************************************/
 
-using System.Collections.Generic;
+#if !CLR2
 using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
+using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Microsoft.Scripting.Utils;

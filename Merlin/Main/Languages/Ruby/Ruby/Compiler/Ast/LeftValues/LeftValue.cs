@@ -13,9 +13,14 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using MSA = System.Linq.Expressions;
+#else
+using MSA = Microsoft.Scripting.Ast;
+#endif
+
 using System.Collections.Generic;
 using Microsoft.Scripting;
-using MSA = System.Linq.Expressions;
 
 namespace IronRuby.Compiler.Ast {
 

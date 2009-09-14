@@ -19,6 +19,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Types;

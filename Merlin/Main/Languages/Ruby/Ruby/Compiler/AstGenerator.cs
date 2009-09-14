@@ -13,11 +13,18 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using MSA = System.Linq.Expressions;
+#else
+using MSA = Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Threading;
+using System.Runtime.CompilerServices;
 using IronRuby.Builtins;
 using IronRuby.Compiler.Generation;
 using IronRuby.Runtime;
@@ -25,11 +32,9 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
-using MSA = System.Linq.Expressions;
-
+    
 namespace IronRuby.Compiler.Ast {
-    using Ast = System.Linq.Expressions.Expression;
-    using System.Runtime.CompilerServices;
+    using Ast = MSA.Expression;
     
     internal sealed class AstGenerator {
         private static int _UniqueId;

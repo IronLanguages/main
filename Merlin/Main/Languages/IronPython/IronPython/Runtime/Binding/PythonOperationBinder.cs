@@ -13,11 +13,16 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Dynamic;
-using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 
 using Microsoft.Scripting.Generation;
@@ -30,7 +35,7 @@ using IronPython.Runtime.Types;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Runtime.Binding {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = Expression;
 
     class PythonOperationBinder : DynamicMetaObjectBinder, IPythonSite, IExpressionSerializable {
         private readonly PythonContext/*!*/ _context;

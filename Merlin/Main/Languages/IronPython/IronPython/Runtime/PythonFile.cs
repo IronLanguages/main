@@ -998,7 +998,7 @@ namespace IronPython.Runtime {
 
         internal static void AddFilename(CodeContext context, string name, Exception ioe) {
             var pyExcep = PythonExceptions.ToPython(ioe);
-            PythonOps.SetAttr(context, pyExcep, SymbolTable.StringToId("filename"), name);
+            PythonOps.SetAttr(context, pyExcep, "filename", name);
         }
 
         internal static void ValidateMode(string mode) {

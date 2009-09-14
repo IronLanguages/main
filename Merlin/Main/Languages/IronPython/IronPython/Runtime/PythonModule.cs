@@ -13,11 +13,14 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
-using System.Linq.Expressions;
 using System.Threading;
 
 using Microsoft.Scripting;
@@ -26,6 +29,7 @@ using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+using IronPython.Runtime.Binding;
 
 namespace IronPython.Runtime {
     /// <summary>
@@ -38,7 +42,7 @@ namespace IronPython.Runtime {
     public class PythonModule : IDynamicMetaObjectProvider, IPythonMembersList {
         private readonly PythonDictionary _dict;
         private Scope _scope;
-        
+
         public PythonModule() {
             _dict = new PythonDictionary();
         }
@@ -46,8 +50,8 @@ namespace IronPython.Runtime {
         /// <summary>
         /// Creates a new module backed by a Scope.  Used for creating modules for foreign Scope's.
         /// </summary>
-        internal PythonModule(Scope scope) {
-            _dict = new PythonDictionary(new ScopeDictionaryStorage(scope));
+        internal PythonModule(PythonContext context, Scope scope) {
+            _dict = new PythonDictionary(new ScopeDictionaryStorage(context, scope));
             _scope = scope;
         }
 
@@ -148,7 +152,7 @@ namespace IronPython.Runtime {
 
             object value;
             if (!_dict.TryRemoveValue(name, out value)) {
-                throw PythonOps.AttributeErrorForMissingAttribute("module", SymbolTable.StringToId(name));
+                throw PythonOps.AttributeErrorForMissingAttribute("module", name);
             }
         }
 
@@ -164,7 +168,7 @@ namespace IronPython.Runtime {
             if (!_dict._storage.TryGetName(out nameObj)) {
                 nameObj = null;
             }
-            
+
             string file = fileObj as string;
             string name = nameObj as string ?? "?";
 
@@ -189,7 +193,7 @@ namespace IronPython.Runtime {
                 return _scope;
             }
         }
-        
+
         #region IDynamicMetaObjectProvider Members
 
         [PythonHidden] // needs to be public so that we can override it.
@@ -199,13 +203,27 @@ namespace IronPython.Runtime {
 
         #endregion
 
-        class MetaModule : DynamicMetaObject {
+        class MetaModule : MetaPythonObject, IPythonGetable {
             public MetaModule(PythonModule module, Expression self)
                 : base(self, BindingRestrictions.Empty, module) {
             }
 
             public override DynamicMetaObject BindGetMember(GetMemberBinder binder) {
-                if (binder.Name == "__dict__") {
+                return GetMemberWorker(binder, PythonContext.GetCodeContextMO(binder));
+            }
+
+            #region IPythonGetable Members
+
+            public DynamicMetaObject GetMember(PythonGetMemberBinder member, DynamicMetaObject codeContext) {
+                return GetMemberWorker(member, codeContext);
+            }
+
+            #endregion
+
+            private DynamicMetaObject GetMemberWorker(DynamicMetaObjectBinder binder, DynamicMetaObject codeContext) {
+                string name = GetGetMemberName(binder);
+
+                if (name == "__dict__") {
                     return new DynamicMetaObject(
                         Expression.Property(
                             Utils.Convert(Expression, typeof(PythonModule)),
@@ -217,7 +235,7 @@ namespace IronPython.Runtime {
                 }
 
                 var tmp = Expression.Variable(typeof(object), "res");
-                
+
                 return new DynamicMetaObject(
                     Expression.Block(
                         new[] { tmp },
@@ -225,16 +243,17 @@ namespace IronPython.Runtime {
                             Expression.Call(
                                 typeof(PythonOps).GetMethod("ModuleGetMember"),
                                 Utils.Convert(Expression, typeof(PythonModule)),
-                                Expression.Constant(binder.Name),
+                                Expression.Constant(name),
                                 tmp
                             ),
                             tmp,
-                            binder.FallbackGetMember(this).Expression
+                            Expression.Convert(GetMemberFallback(this, binder, codeContext).Expression, typeof(object))
                         )
                     ),
                     BindingRestrictions.GetTypeRestriction(Expression, Value.GetType())
                 );
             }
+
 
             public override DynamicMetaObject BindSetMember(SetMemberBinder binder, DynamicMetaObject value) {
                 Debug.Assert(value.Value != Uninitialized.Instance);
@@ -310,7 +329,7 @@ namespace IronPython.Runtime {
                             Utils.Convert(Expression, typeof(PythonModule)),
                             Expression.Constant(binder.Name)
                         ),
-                        Expression.Default(typeof(object)),
+                        Expression.Default(binder.ReturnType),
                         binder.FallbackDeleteMember(this).Expression
                     ),
                     BindingRestrictions.GetTypeRestriction(Expression, Value.GetType())

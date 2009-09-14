@@ -13,11 +13,16 @@
  *
  * ***************************************************************************/
 
-using System;
+#if !CLR2
 using MSAst = System.Linq.Expressions;
+#else
+using MSAst = Microsoft.Scripting.Ast;
+#endif
+
+using System;
 
 namespace IronPython.Compiler.Ast {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = MSAst.Expression;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
 
     public class ConditionalExpression : Expression {

@@ -70,7 +70,7 @@ namespace IronRuby.Tests {
 
     public class TestHelpers {
         public static int GetClassVersion([NotNull]RubyClass/*!*/ cls) {
-            return cls.Version.Value;
+            return cls.Version.Method;
         }
     }
 

@@ -1,4 +1,4 @@
-/* ****************************************************************************
+﻿/* ****************************************************************************
  *
  * Copyright (c) Microsoft Corporation. 
  *
@@ -27,10 +27,15 @@ using Microsoft.Scripting.Utils;
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 
+#if !CLR2
 using MSAst = System.Linq.Expressions;
+#else
+using MSAst = Microsoft.Scripting.Ast;
+#endif
+
 
 namespace IronPython.Compiler.Ast {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = MSAst.Expression;
     
     /// <summary>
     /// Implements globals which are backed by a static type, followed by an array if the static types' slots become full.  The global
@@ -207,7 +212,7 @@ namespace IronPython.Compiler.Ast {
             );
         }
 
-        private static Type/*!*/ GetDelegateType(Type/*!*/ retType, System.Linq.Expressions.Expression/*!*/[]/*!*/ args) {
+        private static Type/*!*/ GetDelegateType(Type/*!*/ retType, MSAst.Expression/*!*/[]/*!*/ args) {
             Assert.NotNull(retType);
             Assert.NotNull(args);
 

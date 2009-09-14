@@ -13,12 +13,15 @@
  *
  * ***************************************************************************/
 
+#if CLR2
+using Microsoft.Scripting.Utils;
+#else
+using System.Diagnostics.Contracts;
+#endif
+
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-#if !MICROSOFT_SCRIPTING_CORE
-using System.Diagnostics.Contracts;
-#endif
 using System.Runtime.CompilerServices;
 
 namespace System.Dynamic.Utils {
@@ -30,7 +33,7 @@ namespace System.Dynamic.Utils {
         /// changed after creation. The exception is if the enumerable is
         /// already a ReadOnlyCollection{T}, in which case we just return it.
         /// </summary>
-#if !MICROSOFT_SCRIPTING_CORE
+#if !CLR2
         [Pure]
 #endif
         internal static ReadOnlyCollection<T> ToReadOnly<T>(this IEnumerable<T> enumerable) {
@@ -74,7 +77,7 @@ namespace System.Dynamic.Utils {
             return h;
         }
 
-#if !MICROSOFT_SCRIPTING_CORE
+#if !CLR2
         [Pure]
 #endif
         internal static bool ListEquals<T>(this ICollection<T> first, ICollection<T> second) {

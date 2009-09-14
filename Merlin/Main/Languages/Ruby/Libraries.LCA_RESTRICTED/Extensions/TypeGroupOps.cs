@@ -13,6 +13,12 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Dynamic;
 using Microsoft.Scripting.Runtime;
@@ -20,13 +26,14 @@ using Microsoft.Scripting.Actions;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
 using IronRuby.Compiler.Generation;
-using Ast = System.Linq.Expressions.Expression;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
 using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 using Microsoft.Scripting.Utils;
 
 namespace IronRuby.Builtins {
+    using Ast = Expression;
+    using AstUtils = Microsoft.Scripting.Ast.Utils;
+
     [RubyClass(Extends = typeof(TypeGroup), Restrictions = ModuleRestrictions.None)]
     [Includes(typeof(Enumerable))]
     public class TypeGroupOps {

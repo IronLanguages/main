@@ -13,11 +13,16 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Dynamic;
 
@@ -31,7 +36,7 @@ using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime.Binding {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = Expression;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
 
     class MetaPythonFunction : MetaPythonObject, IPythonInvokable, IPythonOperable, IPythonConvertible, IInferableInvokable, IConvertibleMetaObject, IPythonGetable {
@@ -82,7 +87,7 @@ namespace IronPython.Runtime.Binding {
                                             Expression,
                                             typeof(PythonFunction)
                                         ),
-                                        Expression.Constant(SymbolTable.StringToId(action.Name))
+                                        Expression.Constant(action.Name)
                                     )
                                 ),
                                 Ast.Constant(OperationFailed.Value)
@@ -155,7 +160,7 @@ namespace IronPython.Runtime.Binding {
                                             Expression,
                                             typeof(PythonFunction)
                                         ),
-                                        Expression.Constant(SymbolTable.StringToId(name))
+                                        Expression.Constant(name)
                                     )
                                 ),
                                 Ast.Constant(OperationFailed.Value)
@@ -196,7 +201,7 @@ namespace IronPython.Runtime.Binding {
                             Expression,
                             typeof(PythonFunction)
                         ),
-                        Expression.Constant(SymbolTable.StringToId(binder.Name)),
+                        Expression.Constant(binder.Name),
                         AstUtils.Convert(
                             value.Expression,
                             typeof(object)
@@ -250,7 +255,7 @@ namespace IronPython.Runtime.Binding {
                                 Expression,
                                 typeof(PythonFunction)
                             ),
-                            Expression.Constant(SymbolTable.StringToId(binder.Name))
+                            Expression.Constant(binder.Name)
                         ),
                         Expression.Default(typeof(void)),       // we deleted the member
                         AstUtils.Convert(
@@ -611,7 +616,7 @@ namespace IronPython.Runtime.Binding {
                         AstUtils.Convert(GetFunctionParam(), typeof(PythonFunction)),
                         AstUtils.Constant(kvp.Key),
                         AstUtils.Convert(kvp.Value, typeof(object)),
-                        AstUtils.Convert(_dict, typeof(IAttributesCollection))
+                        AstUtils.Convert(_dict, typeof(PythonDictionary))
                     )
                 );
             }
@@ -729,7 +734,7 @@ namespace IronPython.Runtime.Binding {
                         AstUtils.Convert(GetFunctionParam(), typeof(PythonFunction)),        // function
                         AstUtils.Constant(name, typeof(string)),                                   // name
                         AstUtils.Constant(Signature.ArgumentCount),                               // arg count
-                        AstUtils.Convert(_dict, typeof(IAttributesCollection))               // dictionary
+                        AstUtils.Convert(_dict, typeof(PythonDictionary))               // dictionary
                     );
             }
 

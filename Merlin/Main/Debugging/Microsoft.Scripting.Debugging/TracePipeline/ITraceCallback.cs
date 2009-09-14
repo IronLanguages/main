@@ -15,6 +15,7 @@
 
 using System;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Debugging {
     public interface ITraceCallback {
@@ -23,7 +24,7 @@ namespace Microsoft.Scripting.Debugging {
             string name,
             string sourceFileName,
             SourceSpan sourceSpan,
-            Func<Scope> scopeCallback,
+            Func<IAttributesCollection> scopeCallback,
             object payload,
             object customPayload
         );

@@ -13,15 +13,20 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections.Generic;
-using System.Linq.Expressions;
 using System.Dynamic;
 using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Actions {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = Expression;
 
     /// <summary>
     /// Builds up a series of conditionals when the False clause isn't yet known.  We can

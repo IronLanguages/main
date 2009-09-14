@@ -23,6 +23,7 @@ using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using System.Runtime.InteropServices;
 using Microsoft.Scripting.Generation;
+using Microsoft.Scripting.Utils;
 using System.Collections.Generic;
 using System.Globalization;
 

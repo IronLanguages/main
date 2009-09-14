@@ -13,7 +13,12 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
 using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System.Reflection;
 using Microsoft.Scripting.Utils;
 

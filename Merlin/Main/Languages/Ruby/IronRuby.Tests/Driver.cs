@@ -22,6 +22,7 @@ using System.Security.Permissions;
 using System.Security.Policy;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Hosting;
+using Microsoft.Scripting.Utils;
 using IronRuby.Runtime;
 using Microsoft.Scripting;
 using System.Diagnostics;

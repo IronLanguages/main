@@ -1,4 +1,4 @@
-/* ****************************************************************************
+﻿/* ****************************************************************************
  *
  * Copyright (c) Microsoft Corporation. 
  *
@@ -13,10 +13,15 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Dynamic;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
@@ -115,8 +120,8 @@ namespace IronPython.Runtime.Types {
                 int version = _type.Version;
 
                 PythonTypeSlot init, newInst;
-                _type.TryResolveSlot(_context, Symbols.NewInst, out newInst);
-                _type.TryResolveSlot(_context, Symbols.Init, out init);
+                _type.TryResolveSlot(_context, "__new__", out newInst);
+                _type.TryResolveSlot(_context, "__init__", out init);
 
                 Delegate newDlg;
                 
@@ -593,7 +598,7 @@ namespace IronPython.Runtime.Types {
 
                 // resolve __init__
                 PythonTypeSlot init;
-                instType.TryResolveSlot(context, Symbols.Init, out init);
+                instType.TryResolveSlot(context, "__init__", out init);
 
                 if (instType.IsMixedNewStyleOldStyle()) {
                     // mixed new-style/old-style class, we need to look up __init__ every time
@@ -605,7 +610,7 @@ namespace IronPython.Runtime.Types {
                             codeContext.Expression,
                             Expression.Convert(AstUtils.WeakConstant(instType), typeof(PythonType)),
                             AstUtils.Convert(target.Expression, typeof(object)),
-                            AstUtils.Constant(Symbols.Init)
+                            AstUtils.Constant("__init__")
                         ),
                         codeContext.Expression
                     );
@@ -672,7 +677,7 @@ namespace IronPython.Runtime.Types {
 
             // check for __del__
             PythonTypeSlot delSlot;
-            if (instType.TryResolveSlot(context, Symbols.Unassign, out delSlot)) {
+            if (instType.TryResolveSlot(context, "__del__", out delSlot)) {
                 res = Expression.Block(
                     res,
                     Expression.Call(
@@ -717,14 +722,14 @@ namespace IronPython.Runtime.Types {
                 PythonTypeSlot delSlot;
                 PythonFunction initFunc = null;
                 string callTarget = null;
-                if (!instType.TryResolveSlot(context, Symbols.Unassign, out delSlot)        // we don't have fast code for classes w/ finalizers
+                if (!instType.TryResolveSlot(context, "__del__", out delSlot)        // we don't have fast code for classes w/ finalizers
                     && !instType.IsMixedNewStyleOldStyle()) {                               // we also don't have fast code for mixed new-style/old-style classes
 
                     if (IronPython.Modules.Builtin.isinstance(inst, _newType) &&
                         NeedsInitCall((CodeContext)context, instType, args.Length)) {
 
                         PythonTypeSlot init;
-                        instType.TryResolveSlot(context, Symbols.Init, out init);
+                        instType.TryResolveSlot(context, "__init__", out init);
 
                         if (init is PythonFunction) {
                             // we can do a fast bind                        

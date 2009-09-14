@@ -588,7 +588,7 @@ namespace IronPython.Modules {
                     if (!(GetType() == typeof(date) && other.GetType() == typeof(datetime) ||
                         GetType() == typeof(datetime) & other.GetType() == typeof(date))) {
 
-                        if (PythonOps.HasAttr(DefaultContext.Default, other, SymbolTable.StringToId("timetuple"))) {
+                        if (PythonOps.HasAttr(DefaultContext.Default, other, "timetuple")) {
                             return false;
                         }
                     }

@@ -30,14 +30,14 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>..\..\..\bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;$(SignedSym)</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;$(SignedSym);CLR2</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>..\..\..\bin\Release\</OutputPath>
-    <DefineConstants>TRACE;$(SignedSym)</DefineConstants>
+    <DefineConstants>TRACE;$(SignedSym);CLR2</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'V4 Release|AnyCPU' ">
