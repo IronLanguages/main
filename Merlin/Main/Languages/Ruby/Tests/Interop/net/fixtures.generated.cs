@@ -346,8 +346,8 @@ public interface IEmptyInterfaceGroup { }
 
   public interface IInterfaceGroup1<T> {void m1();}
   public interface IInterfaceGroup1<T,V> {void m1();}
-#line 2 "./method/fixtures/classes.rb"
-#line 145 "./method/fixtures/classes.rb"
+#line 3 "./method/fixtures/classes.rb"
+#line 146 "./method/fixtures/classes.rb"
 public abstract partial class AbstractClassWithMethods {
     public abstract string PublicMethod();
     protected abstract string ProtectedMethod();
@@ -923,6 +923,7 @@ return new int[]{1}; }
     // array
     //
     public string Int32ArrArg(Int32[] arg) { Tracker.Add(arg); return "Int32ArrArg";}
+    public string ObjectArrArg(object[] arg) { Tracker.Add(arg); return "ObjectArrArg";}
     public string IInterfaceArrArg(IInterface[] arg) { Tracker.Add(arg); return "IInterfaceArrArg";}
 
     //
@@ -938,9 +939,17 @@ return new int[]{1}; }
     // collections/generics
     //
     public string IListOfIntArg(IList<int> arg) { Tracker.Add(arg); return "IListOfIntArg";} 
+    public string IListOfObjArg(IList<object> arg) { Tracker.Add(arg); return "IListOfObjArg";} 
     public string ArrayArg(Array arg) { Tracker.Add(arg); return "ArrayArg";} 
     public string IEnumerableOfIntArg(IEnumerable<int> arg) { Tracker.Add(arg); return "IEnumerableOfIntArg";}
     public string IEnumeratorOfIntArg(IEnumerator<int> arg) { Tracker.Add(arg); return "IEnumeratorOfIntArg";}
+    public string IEnumerableArg(IEnumerable arg) { Tracker.Add(arg); return "IEnumerableArg";}
+    public string IEnumeratorArg(IEnumerator arg) { Tracker.Add(arg); return "IEnumeratorArg";}
+    public string ArrayListArg(ArrayList arg) { Tracker.Add(arg); return "ArrayListArg";}
+    public string IDictionaryOfObjectObjectArg(IDictionary<object, object> arg) { Tracker.Add(arg); return "IDictionaryOfObjectObjectArg";}
+    public string IDictionaryOfIntStringArg(IDictionary<int, string> arg) { Tracker.Add(arg); return "IDictionaryOfIntStringArg";}
+    public string DictionaryOfObjectObjectArg(Dictionary<object, object> arg) { Tracker.Add(arg); return "DictionaryOfObjectObjectArg";}
+    public string DictionaryOfIntStringArg(Dictionary<int, string> arg) { Tracker.Add(arg); return "DictionaryOfIntStringArg";}
 
     // Nullable
     public string NullableInt32Arg(Int32? arg) { Tracker.Add(arg); return "NullableInt32Arg";}

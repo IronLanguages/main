@@ -1,3 +1,4 @@
+require File.dirname(__FILE__) + "/../../bcl/fixtures/classes"
 reference "System.dll"
 csc <<-EOL
 using Microsoft.Scripting.Math;
@@ -276,6 +277,7 @@ csc <<-EOL
     // array
     //
     public string Int32ArrArg(Int32[] arg) { Tracker.Add(arg); return "Int32ArrArg";}
+    public string ObjectArrArg(object[] arg) { Tracker.Add(arg); return "ObjectArrArg";}
     public string IInterfaceArrArg(IInterface[] arg) { Tracker.Add(arg); return "IInterfaceArrArg";}
 
     //
@@ -291,9 +293,17 @@ csc <<-EOL
     // collections/generics
     //
     public string IListOfIntArg(IList<int> arg) { Tracker.Add(arg); return "IListOfIntArg";} 
+    public string IListOfObjArg(IList<object> arg) { Tracker.Add(arg); return "IListOfObjArg";} 
     public string ArrayArg(Array arg) { Tracker.Add(arg); return "ArrayArg";} 
     public string IEnumerableOfIntArg(IEnumerable<int> arg) { Tracker.Add(arg); return "IEnumerableOfIntArg";}
     public string IEnumeratorOfIntArg(IEnumerator<int> arg) { Tracker.Add(arg); return "IEnumeratorOfIntArg";}
+    public string IEnumerableArg(IEnumerable arg) { Tracker.Add(arg); return "IEnumerableArg";}
+    public string IEnumeratorArg(IEnumerator arg) { Tracker.Add(arg); return "IEnumeratorArg";}
+    public string ArrayListArg(ArrayList arg) { Tracker.Add(arg); return "ArrayListArg";}
+    public string IDictionaryOfObjectObjectArg(IDictionary<object, object> arg) { Tracker.Add(arg); return "IDictionaryOfObjectObjectArg";}
+    public string IDictionaryOfIntStringArg(IDictionary<int, string> arg) { Tracker.Add(arg); return "IDictionaryOfIntStringArg";}
+    public string DictionaryOfObjectObjectArg(Dictionary<object, object> arg) { Tracker.Add(arg); return "DictionaryOfObjectObjectArg";}
+    public string DictionaryOfIntStringArg(Dictionary<int, string> arg) { Tracker.Add(arg); return "DictionaryOfIntStringArg";}
 
     // Nullable
     public string NullableInt32Arg(Int32? arg) { Tracker.Add(arg); return "NullableInt32Arg";}
@@ -323,7 +333,27 @@ no_csc do
   AE = ArgumentError
   OE = System::OverflowException
   RE = RangeError 
+  SAF = System::Array[Fixnum]
+  SAO = System::Array[Object]
+  SAI = System::Array[IInterface]
+  SAC = System::Array[CStruct]
+  DObjObj = System::Collections::Generic::Dictionary[Object, Object]
+  DIntStr = System::Collections::Generic::Dictionary[Fixnum, System::String]
   module BindingSpecs
+    class ImplementsEnumerable
+      include Enumerable
+      def initialize
+        @store = [1,2,3]
+      end
+
+      def reset
+        @store = [1,2,3]
+      end
+
+      def each
+        @store.each {|i| yield i}
+      end
+    end
     class MyString < String; end
     
     class RubyImplementsIInterface 
@@ -410,7 +440,7 @@ no_csc do
             @target.tracker.should == [*result]
           else
             result = case meth.to_s
-                     when /ParamsInt32ArrArg/
+                     when /Params(?:Int32|CStruct|IInterface)ArrArg/
                       [[]]
                      when /DefaultInt32Arg/
                        [10]
@@ -435,7 +465,7 @@ no_csc do
             @target2.tracker.should == [*result]
           else
             result = case meth.to_s
-                     when /ParamsInt32ArrArg/
+                     when /Params(?:Int32|CStruct|IInterface)ArrArg/
                       [[]]
                      when /DefaultInt32Arg/
                        [10]
@@ -478,6 +508,12 @@ no_csc do
                  elsif value.is_a? String
                    value[0..0]
                  end
+               when /IEnumerable|IList|Array|^Int32ArrArg|ParamsInt32ArrArg|ParamsCStructArrArg/
+                 if value.is_a?(Symbol) || value.is_a?(BindingSpecs::Convert::ToInt) || value.is_a?(BindingSpecs::Convert::ToIntToI)
+                   value.to_int
+                 else
+                   [value]
+                 end
                when /RefInt32/
                  1
                when /Int32ArgDefault/
@@ -504,7 +540,52 @@ no_csc do
       result.nil? ? result = value : nil
       result
     end
-   
+    
+    def self.collection_args
+      #RubyArray , RubyHash , RubyClassWithEnumerable, IO, String, System::Array[int], System::Array[Object], IList, IEnumerable, IEnumerator, monkeypatched object
+      obj = Object.new
+      class << obj
+        include Enumerable
+        def each
+          [1,2,3].each {|i| yield i}
+        end
+
+        def m;1;end
+      end
+
+      dobj = DObjObj.new
+      dobj[1] = 1
+      dobj[2] = 2
+      dint = DIntStr.new
+      dint[1] = "1".to_clr_string
+      dint[2] = "2".to_clr_string
+      tl1 = TestList.new
+      tl2 = TestList.new << 1 << 2 << 3
+      {"monkeypatched" => obj, 
+      "ArrayInstanceEmpty" => [], "ArrayInstance" => [1,2,3], 
+      "HashInstanceEmpty" => {}, "HashInstance" => {1=>2,3=>4,5=>6}, 
+      "ImplementsEnumerableInstance" => BindingSpecs::ImplementsEnumerable.new, 
+      "StringInstanceEmpty" => "", "StringInstance" => "abc", 
+      #[]                                                       [2,2]
+      "System::Array[Fixnum]InstanceEmpty" => SAF.new(0), "System::Array[Fixnum]Instance" => SAF.new(2,2), 
+      #[]                                                       [Object.new,Object.new]
+      "System::Array[Object]InstanceEmpty" => SAO.new(0), "System::Array[Object]Instance" => SAO.new(2,Object.new), 
+      "System::Array[IInterface]InstanceEmpty" => SAI.new(0), "System::Array[IInterface]Instance" => SAI.new(2, BindingSpecs::RubyImplementsIInterface.new),
+      "System::Array[CStruct]InstanceEmpty" => SAC.new(0), "System::Array[CStruct]Instance" => SAC.new(2, CStruct.new),
+      "ArrayListInstanceEmpty" => System::Collections::ArrayList.new, "ArrayListInstance" => (System::Collections::ArrayList.new << 1 << 2 << 3),
+      #{}                                                       {1=>1,2=>2}
+      "Dictionary[Object,Object]InstanceEmpty" => DObjObj.new, "Dictionary[Object,Object]Instance" => dobj,
+      #{}                                                       {1=>"1",2=>"2"}
+      "Dictionary[Fixnum,String]InstanceEmpty" => DIntStr.new, "Dictionary[Fixnum,String]Instance" => dint,
+      "TestListInstanceEmpty" => tl1, "TestListInstance" => tl2,
+      "TestListEnumeratorInstanceEmpty" => tl1.get_enumerator, "TestListEnumeratorInstance" => tl2.get_enumerator, 
+      "CStructInstance" => CStruct.new,
+      "Int32Instance" => 1,
+      "IInterfaceInstance" => BindingSpecs::RubyImplementsIInterface.new,
+      "System::Collections::Generic::List[Fixnum]InstanceEmpty" => System::Collections::Generic::List[Fixnum].new, "System::Collections::Generic::List[Fixnum]Instance" => ( System::Collections::Generic::List[Fixnum].new << 1 << 2 << 3 ),
+      "System::Collections::Generic::List[Object]InstanceEmpty" => System::Collections::Generic::List[Object].new, "System::Collections::Generic::List[Object]Instance" => ( System::Collections::Generic::List[Object].new << Object.new << Object.new << Object.new ),
+      }
+    end
     # TODO: More BigIntegerValues near boundaries
     # TODO: More NullableIntegerValues near boundaries
     def self.numeric_and_string_args

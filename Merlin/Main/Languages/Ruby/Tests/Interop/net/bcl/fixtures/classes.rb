@@ -172,6 +172,7 @@ no_csc do
 
     def <<(val)
       @store << val
+      self
     end
 
     class TestListEnumerator
