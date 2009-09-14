@@ -142,3 +142,7 @@ fails:Method parameter binding with Class-like parameters binds 'EnumIntArg' for
 fails:Method parameter binding with Class-like parameters binds 'EnumIntArg' for 'CustomEnum' with 'TypeError' (RubyClassWithMethods)
 fails:Method parameter binding with Class-like parameters binds 'OutInt32Arg' for 'anonymous classInstance' with 'TypeError' (ClassWithMethods)
 fails:Method parameter binding with Class-like parameters binds 'OutInt32Arg' for 'anonymous classInstance' with 'TypeError' (RubyClassWithMethods)
+fails:Method parameter binding with Class-like parameters binds 'CustomEnumArg' for 'nil' with 'TypeError' (ClassWithMethods)
+fails:Method parameter binding with Class-like parameters binds 'CustomEnumArg' for 'nil' with 'TypeError' (RubyClassWithMethods)
+fails:Method parameter binding with Class-like parameters binds 'EnumIntArg' for 'nil' with 'TypeError' (ClassWithMethods)
+fails:Method parameter binding with Class-like parameters binds 'EnumIntArg' for 'nil' with 'TypeError' (RubyClassWithMethods)

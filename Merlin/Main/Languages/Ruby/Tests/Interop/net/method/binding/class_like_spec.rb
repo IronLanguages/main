@@ -56,6 +56,9 @@ describe "Method parameter binding with Class-like parameters" do
     "CustomEnumInstance" => {:IInterfaceArg => TE, :ImplementsIInterfaceArg => TE, :DerivedFromImplementsIInterfaceArg => TE, :CStructArg => TE, :StructImplementsIInterfaceArg => TE, :AbstractClassArg => TE, :DerivedFromAbstractArg => TE, :CustomEnumArg => "CustomEnumArg", :EnumIntArg => "EnumIntArg", :ObjectArg => "ObjectArg", :NoArg => AE, :BooleanArg => "BooleanArg"}, 
     
     "NoArg" => {:IInterfaceArg => AE, :ImplementsIInterfaceArg => AE, :DerivedFromImplementsIInterfaceArg => AE, :CStructArg => AE, :StructImplementsIInterfaceArg => AE, :AbstractClassArg => AE, :DerivedFromAbstractArg => AE, :CustomEnumArg => AE, :EnumIntArg => AE, :ObjectArg => AE, :NoArg => "NoArg", :BooleanArg => AE, :OutInt32Arg => "OutInt32Arg"}, 
+    
+    "nil" => {:IInterfaceArg => "IInterfaceArg", :ImplementsIInterfaceArg => "ImplementsIInterfaceArg", :DerivedFromImplementsIInterfaceArg => "DerivedFromImplementsIInterfaceArg", :CStructArg => TE, :StructImplementsIInterfaceArg => TE, :AbstractClassArg => "AbstractClassArg", :DerivedFromAbstractArg => "DerivedFromAbstractArg", :CustomEnumArg => TE, :EnumIntArg => TE, :ObjectArg => "ObjectArg", :NoArg => AE, :BooleanArg => "BooleanArg", :OutInt32Arg => TE}, 
+    
   }
   before(:each) do
     @target = ClassWithMethods.new
