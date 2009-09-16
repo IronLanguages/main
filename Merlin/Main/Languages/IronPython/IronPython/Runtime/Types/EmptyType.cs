@@ -40,6 +40,7 @@ namespace IronPython.Runtime.Types {
             return "Ellipsis";
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         public int __hash__() {
             return 0x1e1a6208;
         }
@@ -68,6 +69,7 @@ namespace IronPython.Runtime.Types {
             return "NotImplemented";
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         public int __hash__() {
             return 0x1e1a1e98;
         }

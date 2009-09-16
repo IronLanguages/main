@@ -13,12 +13,17 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading;
 
@@ -35,7 +40,7 @@ using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime.Binding {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = Expression;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
 
     public sealed partial class PythonBinder : DefaultBinder {
@@ -43,6 +48,7 @@ namespace IronPython.Runtime.Binding {
         private SlotCache/*!*/ _typeMembers = new SlotCache();
         private SlotCache/*!*/ _resolvedMembers = new SlotCache();
         private Dictionary<Type/*!*/, IList<Type/*!*/>/*!*/>/*!*/ _dlrExtensionTypes = MakeExtensionTypes();
+        private bool _registeredInterfaceExtensions;    // true if someone has registered extensions for interfaces
 
         [MultiRuntimeAware]
         private static readonly Dictionary<Type/*!*/, ExtensionTypeInfo/*!*/>/*!*/ _sysTypes = MakeSystemTypes();
@@ -394,7 +400,7 @@ namespace IronPython.Runtime.Binding {
 
             return list;
         }
-
+        
         private void AddExtensionTypes(Type t, List<Type> list) {
             ExtensionTypeInfo extType;
             if (_sysTypes.TryGetValue(t, out extType)) {
@@ -405,6 +411,15 @@ namespace IronPython.Runtime.Binding {
             lock (_dlrExtensionTypes) {
                 if (_dlrExtensionTypes.TryGetValue(t, out userExtensions)) {
                     list.AddRange(userExtensions);
+                }
+
+                if (_registeredInterfaceExtensions) {
+                    foreach (Type ifaceType in t.GetInterfaces()) {
+                        IList<Type> extTypes;
+                        if (_dlrExtensionTypes.TryGetValue(ifaceType, out extTypes)) {
+                            list.AddRange(extTypes);
+                        }
+                    }
                 }
 
                 if (t.IsGenericType) {
@@ -489,7 +504,7 @@ namespace IronPython.Runtime.Binding {
         /// includes any extension members.  Base classes and their extension members are 
         /// not searched.
         /// </summary>
-        public bool TryLookupSlot(CodeContext/*!*/ context, PythonType/*!*/ type, SymbolId name, out PythonTypeSlot slot) {
+        public bool TryLookupSlot(CodeContext/*!*/ context, PythonType/*!*/ type, string name, out PythonTypeSlot slot) {
             Debug.Assert(type.IsSystemType);
 
             return TryLookupProtectedSlot(context, type, name, out slot);
@@ -503,20 +518,19 @@ namespace IronPython.Runtime.Binding {
         /// This version allows PythonType's for protected member resolution.  It shouldn't
         /// be called externally for other purposes.
         /// </summary>
-        internal bool TryLookupProtectedSlot(CodeContext/*!*/ context, PythonType/*!*/ type, SymbolId name, out PythonTypeSlot slot) {
-            string strName = SymbolTable.IdToString(name);
+        internal bool TryLookupProtectedSlot(CodeContext/*!*/ context, PythonType/*!*/ type, string name, out PythonTypeSlot slot) {
             Type curType = type.UnderlyingSystemType;
 
-            if (!_typeMembers.TryGetCachedSlot(curType, true, strName, out slot)) {
+            if (!_typeMembers.TryGetCachedSlot(curType, true, name, out slot)) {
                 MemberGroup mg = TypeInfo.GetMember(
                     this,
                     MemberRequestKind.Get,
                     curType,
-                    strName);
+                    name);
 
-                slot = PythonTypeOps.GetSlot(mg, SymbolTable.IdToString(name), PrivateBinding);
+                slot = PythonTypeOps.GetSlot(mg, name, PrivateBinding);
 
-                _typeMembers.CacheSlot(curType, true, strName, slot, mg);
+                _typeMembers.CacheSlot(curType, true, name, slot, mg);
             }
 
             if (slot != null && (slot.IsAlwaysVisible || PythonOps.IsClsVisible(context))) {
@@ -531,20 +545,19 @@ namespace IronPython.Runtime.Binding {
         /// Performs .NET member resolution.  This looks the type and any base types
         /// for members.  It also searches for extension members in the type and any base types.
         /// </summary>
-        public bool TryResolveSlot(CodeContext/*!*/ context, PythonType/*!*/ type, PythonType/*!*/ owner, SymbolId name, out PythonTypeSlot slot) {
-            string strName = SymbolTable.IdToString(name);
+        public bool TryResolveSlot(CodeContext/*!*/ context, PythonType/*!*/ type, PythonType/*!*/ owner, string name, out PythonTypeSlot slot) {
             Type curType = type.UnderlyingSystemType;
 
-            if (!_resolvedMembers.TryGetCachedSlot(curType, true, strName, out slot)) {
+            if (!_resolvedMembers.TryGetCachedSlot(curType, true, name, out slot)) {
                 MemberGroup mg = TypeInfo.GetMemberAll(
                     this,
                     MemberRequestKind.Get,
                     curType,
-                    strName);
+                    name);
 
-                slot = PythonTypeOps.GetSlot(mg, SymbolTable.IdToString(name), PrivateBinding);
+                slot = PythonTypeOps.GetSlot(mg, name, PrivateBinding);
 
-                _resolvedMembers.CacheSlot(curType, true, strName, slot, mg);
+                _resolvedMembers.CacheSlot(curType, true, name, slot, mg);
             }
 
             if (slot != null && (slot.IsAlwaysVisible || PythonOps.IsClsVisible(context))) {
@@ -560,7 +573,7 @@ namespace IronPython.Runtime.Binding {
         /// 
         /// This search does not include members in any subtypes or their extension members.
         /// </summary>
-        public void LookupMembers(CodeContext/*!*/ context, PythonType/*!*/ type, IAttributesCollection/*!*/ memberNames) {
+        public void LookupMembers(CodeContext/*!*/ context, PythonType/*!*/ type, PythonDictionary/*!*/ memberNames) {
             if (!_typeMembers.IsFullyCached(type.UnderlyingSystemType, true)) {
                 Dictionary<string, KeyValuePair<PythonTypeSlot, MemberGroup>> members = new Dictionary<string, KeyValuePair<PythonTypeSlot, MemberGroup>>();
 
@@ -585,7 +598,7 @@ namespace IronPython.Runtime.Binding {
                 string name = kvp.Key;
 
                 if (slot.IsAlwaysVisible || PythonOps.IsClsVisible(context)) {
-                    memberNames[SymbolTable.StringToId(name)] = slot;
+                    memberNames[name] = slot;
                 }
             }
         }
@@ -767,6 +780,7 @@ namespace IronPython.Runtime.Binding {
             res[typeof(DynamicNull)] = new ExtensionTypeInfo(typeof(NoneTypeOps), "NoneType");
             res[typeof(BaseSymbolDictionary)] = new ExtensionTypeInfo(typeof(DictionaryOps), "dict");
             res[typeof(IAttributesCollection)] = new ExtensionTypeInfo(typeof(DictionaryOps), "dict");
+            res[typeof(IDictionary<object, object>)] = new ExtensionTypeInfo(typeof(DictionaryOps), "dict");
             res[typeof(NamespaceTracker)] = new ExtensionTypeInfo(typeof(NamespaceTrackerOps), "namespace#");
             res[typeof(TypeGroup)] = new ExtensionTypeInfo(typeof(TypeGroupOps), "type-collision");
             res[typeof(TypeTracker)] = new ExtensionTypeInfo(typeof(TypeTrackerOps), "type-collision");
@@ -814,6 +828,10 @@ namespace IronPython.Runtime.Binding {
             if (attrs.Length > 0) {
                 lock (_dlrExtensionTypes) {
                     foreach (ExtensionTypeAttribute attr in attrs) {
+                        if (attr.Extends.IsInterface) {
+                            _registeredInterfaceExtensions = true;
+                        }
+
                         IList<Type> typeList;
                         if (!_dlrExtensionTypes.TryGetValue(attr.Extends, out typeList)) {
                             _dlrExtensionTypes[attr.Extends] = typeList = new List<Type>();
@@ -1035,14 +1053,8 @@ namespace IronPython.Runtime.Binding {
 
             private class SlotCacheInfo {
                 public SlotCacheInfo() {
-                    Members = new Dictionary<string/*!*/, KeyValuePair<PythonTypeSlot, MemberGroup/*!*/>>();
-                }
-
-                public void Add(string/*!*/ name, PythonTypeSlot slot, MemberGroup/*!*/ group) {
-                    Debug.Assert(name != null); Debug.Assert(group != null);
-
-                    Members[name] = new KeyValuePair<PythonTypeSlot, MemberGroup>(slot, group);
-                }
+                    Members = new Dictionary<string/*!*/, KeyValuePair<PythonTypeSlot, MemberGroup/*!*/>>(StringComparer.Ordinal);
+                }               
 
                 public bool TryGetSlot(string/*!*/ name, out PythonTypeSlot slot) {
                     Debug.Assert(name != null);

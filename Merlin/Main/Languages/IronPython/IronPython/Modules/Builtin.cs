@@ -132,7 +132,7 @@ namespace IronPython.Modules {
             if (o is Complex64) return ComplexOps.Abs((Complex64)o);
 
             object value;
-            if (PythonTypeOps.TryInvokeUnaryOperator(context, o, Symbols.AbsoluteValue, out value)) {
+            if (PythonTypeOps.TryInvokeUnaryOperator(context, o, "__abs__", out value)) {
                 return value;
             }
 
@@ -233,7 +233,7 @@ namespace IronPython.Modules {
             PythonTypeSlot pts;
             PythonType xType = DynamicHelpers.GetPythonType(x);
 
-            if (xType.TryResolveSlot(context, Symbols.Coerce, out pts)) {
+            if (xType.TryResolveSlot(context, "__coerce__", out pts)) {
                 object callable;
                 if (pts.TryGetValue(context, x, xType, out callable)) {
                     return PythonCalls.Call(context, callable, y);
@@ -367,7 +367,7 @@ namespace IronPython.Modules {
         }
 
         public static void delattr(CodeContext/*!*/ context, object o, string name) {
-            PythonOps.DeleteAttr(context, o, SymbolTable.StringToId(name));
+            PythonOps.DeleteAttr(context, o, name);
         }
 
         public static PythonType dict {
@@ -410,28 +410,28 @@ namespace IronPython.Modules {
             return eval(context, code, null);
         }
 
-        public static object eval(CodeContext/*!*/ context, FunctionCode code, IAttributesCollection globals) {
+        public static object eval(CodeContext/*!*/ context, FunctionCode code, PythonDictionary globals) {
             Debug.Assert(context != null);
             if (code == null) throw PythonOps.TypeError("eval() argument 1 must be string or code object");
 
             return eval(context, code, globals, globals);
         }
 
-        public static object eval(CodeContext/*!*/ context, FunctionCode code, IAttributesCollection globals, object locals) {
+        public static object eval(CodeContext/*!*/ context, FunctionCode code, PythonDictionary globals, object locals) {
             Debug.Assert(context != null);
             if (code == null) throw PythonOps.TypeError("eval() argument 1 must be string or code object");
 
             return code.Call(GetExecEvalScopeOptional(context, globals, locals, false));
         }
 
-        internal static IAttributesCollection GetAttrLocals(CodeContext/*!*/ context, object locals) {
-            IAttributesCollection attrLocals = null;
+        internal static PythonDictionary GetAttrLocals(CodeContext/*!*/ context, object locals) {
+            PythonDictionary attrLocals = null;
             if (locals == null) {
                 if (context.IsTopLevel) {
                     attrLocals = context.Dict;
                 }
             } else {
-                attrLocals = locals as IAttributesCollection ?? new PythonDictionary(new ObjectAttributesAdapter(context, locals));
+                attrLocals = locals as PythonDictionary ?? new PythonDictionary(new ObjectAttributesAdapter(context, locals));
             }
             return attrLocals;
         }
@@ -443,14 +443,14 @@ namespace IronPython.Modules {
             return eval(context, expression, globals(context), locals(context));
         }
 
-        public static object eval(CodeContext/*!*/ context, string expression, IAttributesCollection globals) {
+        public static object eval(CodeContext/*!*/ context, string expression, PythonDictionary globals) {
             Debug.Assert(context != null);
             if (expression == null) throw PythonOps.TypeError("eval() argument 1 must be string or code object");
 
             return eval(context, expression, globals, globals);
         }
 
-        public static object eval(CodeContext/*!*/ context, string expression, IAttributesCollection globals, object locals) {
+        public static object eval(CodeContext/*!*/ context, string expression, PythonDictionary globals, object locals) {
             Debug.Assert(context != null);
             if (expression == null) throw PythonOps.TypeError("eval() argument 1 must be string or code object");
 
@@ -483,12 +483,12 @@ namespace IronPython.Modules {
                 throw PythonOps.TypeError("execfile() argument 1 must be string, not None");
             }
             
-            IAttributesCollection g = globals as IAttributesCollection;
+            PythonDictionary g = globals as PythonDictionary;
             if (g == null && globals != null) {
                 throw PythonOps.TypeError("execfile() arg 2 must be dictionary");
             }
 
-            IAttributesCollection l = locals as IAttributesCollection;
+            PythonDictionary l = locals as PythonDictionary;
             if (l == null && locals != null) {
                 throw PythonOps.TypeError("execfile() arg 3 must be dictionary");
             }
@@ -601,7 +601,7 @@ namespace IronPython.Modules {
         public static string format(CodeContext/*!*/ context, object argValue, [DefaultParameterValue("")]string formatSpec) {
             object res, formatMethod;
             OldInstance oi = argValue as OldInstance;
-            if (oi != null && oi.TryGetBoundCustomMember(context, SymbolTable.StringToId("__format__"), out formatMethod)) {
+            if (oi != null && oi.TryGetBoundCustomMember(context, "__format__", out formatMethod)) {
                 res = PythonOps.CallWithContext(context, formatMethod, formatSpec);
             } else {
                 // call __format__ with the format spec (__format__ is defined on object, so this always succeeds)
@@ -609,7 +609,7 @@ namespace IronPython.Modules {
                     context,
                     argValue,
                     formatSpec,
-                    SymbolTable.StringToId("__format__"),
+                    "__format__",
                     out res);
             }
 
@@ -622,26 +622,26 @@ namespace IronPython.Modules {
         }
 
         public static object getattr(CodeContext/*!*/ context, object o, string name) {
-            return PythonOps.GetBoundAttr(context, o, SymbolTable.StringToId(name));
+            return PythonOps.GetBoundAttr(context, o, name);
         }
 
         public static object getattr(CodeContext/*!*/ context, object o, string name, object def) {
             object ret;
-            if (PythonOps.TryGetBoundAttr(context, o, SymbolTable.StringToId(name), out ret)) return ret;
+            if (PythonOps.TryGetBoundAttr(context, o, name, out ret)) return ret;
             else return def;
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods")]
-        public static IAttributesCollection globals(CodeContext/*!*/ context) {
+        public static PythonDictionary globals(CodeContext/*!*/ context) {
             return context.ModuleContext.Globals;
         }
 
         public static bool hasattr(CodeContext/*!*/ context, object o, string name) {
-            return PythonOps.HasAttr(context, o, SymbolTable.StringToId(name));
+            return PythonOps.HasAttr(context, o, name);
         }
 
         public static int hash(CodeContext/*!*/ context, object o) {
-            return PythonContext.GetContext(context).Hash(o);
+            return PythonContext.Hash(o);
         }
 
         public static int hash(CodeContext/*!*/ context, [NotNull]PythonTuple o) {
@@ -650,7 +650,7 @@ namespace IronPython.Modules {
 
         // this is necessary because overload resolution selects the int form.
         public static int hash(CodeContext/*!*/ context, char o) {
-            return PythonContext.GetContext(context).Hash(o);
+            return PythonContext.Hash(o);
         }
 
         public static int hash(CodeContext/*!*/ context, int o) {
@@ -729,7 +729,7 @@ namespace IronPython.Modules {
                     foreach (string s in attrs) {
                         if (s == strVal) {
                             object modVal;
-                            if (!PythonOps.TryGetBoundAttr(context, module, SymbolTable.StringToId(strVal), out modVal))
+                            if (!PythonOps.TryGetBoundAttr(context, module, strVal, out modVal))
                                 continue;
 
                             candidates.append(modVal);
@@ -761,11 +761,11 @@ namespace IronPython.Modules {
                 // find all the functions, and display their 
                 // documentation                
                 if (indent == 0) {
-                    doc.AppendFormat("Help on {0} in module {1}\n\n", type.Name, PythonOps.GetBoundAttr(context, type, Symbols.Module));
+                    doc.AppendFormat("Help on {0} in module {1}\n\n", type.Name, PythonOps.GetBoundAttr(context, type, "__module__"));
                 }
 
                 PythonTypeSlot dts;
-                if (type.TryResolveSlot(context, Symbols.Doc, out dts)) {
+                if (type.TryResolveSlot(context, "__doc__", out dts)) {
                     object docText;
                     if (dts.TryGetValue(context, null, type, out docText) && docText != null)
                         AppendMultiLine(doc, docText.ToString() + Environment.NewLine, indent);
@@ -783,7 +783,7 @@ namespace IronPython.Modules {
 
                     PythonTypeSlot value;
                     object val;
-                    if (type.TryLookupSlot(context, SymbolTable.StringToId(name), out value) &&
+                    if (type.TryLookupSlot(context, name, out value) &&
                         value.TryGetValue(context, null, type, out val)) {
                         help(context, doced, doc, indent + 1, val);
                     }
@@ -838,11 +838,11 @@ namespace IronPython.Modules {
                 }
             } else if ((oldClass = obj as OldClass) != null) {
                 if (indent == 0) {
-                    doc.AppendFormat("Help on {0} in module {1}\n\n", oldClass.Name, PythonOps.GetBoundAttr(context, oldClass, Symbols.Module));
+                    doc.AppendFormat("Help on {0} in module {1}\n\n", oldClass.Name, PythonOps.GetBoundAttr(context, oldClass, "__module__"));
                 }
 
                 object docText;
-                if (oldClass.TryLookupSlot(Symbols.Doc, out docText) && docText != null) {
+                if (oldClass.TryLookupSlot("__doc__", out docText) && docText != null) {
                     AppendMultiLine(doc, docText.ToString() + Environment.NewLine, indent);
                     AppendIndent(doc, indent);
                     doc.AppendLine("Data and other attributes defined here:");
@@ -859,7 +859,7 @@ namespace IronPython.Modules {
 
                     object value;
 
-                    if (oldClass.TryLookupSlot(SymbolTable.StringToId(name), out value))
+                    if (oldClass.TryLookupSlot(name, out value))
                         help(context, doced, doc, indent + 1, value);
                 }
             }
@@ -958,7 +958,7 @@ namespace IronPython.Modules {
             object bases;
             PythonTuple tupleBases;
 
-            if (!PythonOps.TryGetBoundAttr(o, Symbols.Bases, out bases) || (tupleBases = bases as PythonTuple) == null) {
+            if (!PythonOps.TryGetBoundAttr(o, "__bases__", out bases) || (tupleBases = bases as PythonTuple) == null) {
                 throw PythonOps.TypeError("issubclass() arg 1 must be a class");
             }
 
@@ -1025,7 +1025,7 @@ namespace IronPython.Modules {
             PythonDictionary dict = context.Dict;
             ObjectAttributesAdapter adapter = dict._storage as ObjectAttributesAdapter;
             if (adapter != null) {
-                // we've wrapped Locals in an IAttributesCollection, give the user back the
+                // we've wrapped Locals in an PythonDictionary, give the user back the
                 // original object.
                 return adapter.Backing;
             }
@@ -1258,7 +1258,7 @@ namespace IronPython.Modules {
 
         }
 
-        public static object max(CodeContext/*!*/ context, object x, [ParamDictionary] IAttributesCollection dict) {
+        public static object max(CodeContext/*!*/ context, object x, [ParamDictionary]IDictionary<object, object> dict) {
             IEnumerator i = PythonOps.GetEnumerator(x);
             if (!i.MoveNext())
                 throw PythonOps.ValueError(" max() arg is an empty sequence");
@@ -1276,13 +1276,13 @@ namespace IronPython.Modules {
             return ret;
         }
 
-        public static object max(CodeContext/*!*/ context, object x, object y, [ParamDictionary] IAttributesCollection dict) {
+        public static object max(CodeContext/*!*/ context, object x, object y, [ParamDictionary] IDictionary<object, object> dict) {
             object method = GetMaxKwArg(dict);
             PythonContext pc = PythonContext.GetContext(context);
             return pc.GreaterThan(PythonCalls.Call(context, method, x), PythonCalls.Call(context, method, y)) ? x : y;
         }
 
-        public static object max(CodeContext/*!*/ context, [ParamDictionary] IAttributesCollection dict, params object[] args) {
+        public static object max(CodeContext/*!*/ context, [ParamDictionary]IDictionary<object, object> dict, params object[] args) {
             if (args.Length > 0) {
                 int retIndex = 0;
                 if (args.Length == 1) {
@@ -1304,7 +1304,7 @@ namespace IronPython.Modules {
             }
         }
 
-        private static object GetMaxKwArg([ParamDictionary] IAttributesCollection dict) {
+        private static object GetMaxKwArg(IDictionary<object, object> dict) {
             if (dict.Count != 1)
                 throw PythonOps.TypeError(" max() should have only 1 keyword argument, but got {0} keyword arguments", dict.Count);
 
@@ -1345,7 +1345,7 @@ namespace IronPython.Modules {
             }
         }
 
-        public static object min(CodeContext/*!*/ context, object x, [ParamDictionary] IAttributesCollection dict) {
+        public static object min(CodeContext/*!*/ context, object x, [ParamDictionary]IDictionary<object, object> dict) {
             IEnumerator i = PythonOps.GetEnumerator(x);
             if (!i.MoveNext())
                 throw PythonOps.ValueError(" min() arg is an empty sequence");
@@ -1364,12 +1364,12 @@ namespace IronPython.Modules {
             return ret;
         }
 
-        public static object min(CodeContext/*!*/ context, object x, object y, [ParamDictionary] IAttributesCollection dict) {
+        public static object min(CodeContext/*!*/ context, object x, object y, [ParamDictionary]IDictionary<object, object> dict) {
             object method = GetMinKwArg(dict);
             return PythonContext.GetContext(context).LessThan(PythonCalls.Call(context, method, x), PythonCalls.Call(context, method, y)) ? x : y;
         }
 
-        public static object min(CodeContext/*!*/ context, [ParamDictionary] IAttributesCollection dict, params object[] args) {
+        public static object min(CodeContext/*!*/ context, [ParamDictionary]IDictionary<object, object> dict, params object[] args) {
             if (args.Length > 0) {
                 int retIndex = 0;
                 if (args.Length == 1) {
@@ -1393,16 +1393,16 @@ namespace IronPython.Modules {
             }
         }
 
-        private static object GetMinKwArg([ParamDictionary] IAttributesCollection dict) {
+        private static object GetMinKwArg([ParamDictionary]IDictionary<object, object> dict) {
             if (dict.Count != 1)
                 throw PythonOps.TypeError(" min() should have only 1 keyword argument, but got {0} keyword arguments", dict.Count);
 
             return VerifyKeys("min", dict);
         }
 
-        private static object VerifyKeys(string name, IAttributesCollection dict) {
+        private static object VerifyKeys(string name, IDictionary<object, object> dict) {
             object value;
-            if (!dict.TryGetValue(SymbolTable.StringToId("key"), out value)) {
+            if (!dict.TryGetValue("key", out value)) {
                 ICollection<object> keys = dict.Keys;
                 IEnumerator<object> en = keys.GetEnumerator();
                 if (en.MoveNext()) {
@@ -1508,7 +1508,7 @@ namespace IronPython.Modules {
             print(context, " ", "\n", null, args);
         }
 
-        public static void print(CodeContext/*!*/ context, [ParamDictionary]IAttributesCollection kwargs, params object[] args) {
+        public static void print(CodeContext/*!*/ context, [ParamDictionary]IDictionary<object, object> kwargs, params object[] args) {
             object sep = AttrCollectionPop(kwargs, "sep", " ");
             if (sep != null && !(sep is string)) {
                 throw PythonOps.TypeError("sep must be None or str, not {0}", PythonTypeOps.GetName(sep));
@@ -1524,17 +1524,17 @@ namespace IronPython.Modules {
             if (kwargs.Count != 0) {
                 throw PythonOps.TypeError(
                     "'{0}' is an invalid keyword argument for this function", 
-                    SymbolTable.IdToString(new List<SymbolId>(kwargs.SymbolAttributes.Keys)[0])
+                    new List<object>(kwargs.Keys)[0]
                 );
             }
 
             print(context, (string)sep ?? " ", (string)end ?? "\n", file, args);
         }
 
-        private static object AttrCollectionPop(IAttributesCollection kwargs, string name, object defaultValue) {
+        private static object AttrCollectionPop(IDictionary<object, object> kwargs, string name, object defaultValue) {
             object res;
-            if (kwargs.TryGetValue(SymbolTable.StringToId(name), out res)) {
-                kwargs.Remove(SymbolTable.StringToId(name));
+            if (kwargs.TryGetValue(name, out res)) {
+                kwargs.Remove(name);
             } else {
                 res = defaultValue;
             }
@@ -1567,7 +1567,7 @@ namespace IronPython.Modules {
                     pc.WriteCallSite.Target(
                         pc.WriteCallSite,
                         context,
-                        PythonOps.GetBoundAttr(context, file, Symbols.ConsoleWrite),
+                        PythonOps.GetBoundAttr(context, file, "write"),
                         text
                     );
                 }
@@ -1579,7 +1579,7 @@ namespace IronPython.Modules {
                         pc.WriteCallSite.Target(
                             pc.WriteCallSite,
                             context,
-                            PythonOps.GetBoundAttr(context, file, Symbols.ConsoleWrite),
+                            PythonOps.GetBoundAttr(context, file, "write"),
                             sep
                         );
                     }
@@ -1592,7 +1592,7 @@ namespace IronPython.Modules {
                 pc.WriteCallSite.Target(
                     pc.WriteCallSite,
                     context,
-                    PythonOps.GetBoundAttr(context, file, Symbols.ConsoleWrite),
+                    PythonOps.GetBoundAttr(context, file, "write"),
                     end
                 );
             }
@@ -1857,7 +1857,7 @@ namespace IronPython.Modules {
         }
 
         public static void setattr(CodeContext/*!*/ context, object o, string name, object val) {
-            PythonOps.SetAttr(context, o, SymbolTable.StringToId(name), val);
+            PythonOps.SetAttr(context, o, name, val);
         }
 
         public static PythonType slice {
@@ -1964,7 +1964,7 @@ namespace IronPython.Modules {
 
         public static object vars(CodeContext/*!*/ context, object @object) {
             object value;
-            if (!PythonOps.TryGetBoundAttr(@object, Symbols.Dict, out value)) {
+            if (!PythonOps.TryGetBoundAttr(@object, "__dict__", out value)) {
                 throw PythonOps.TypeError("vars() argument must have __dict__ attribute");
             }
             return value;
@@ -2079,7 +2079,7 @@ namespace IronPython.Modules {
         /// <summary>
         /// Gets a scope used for executing new code in optionally replacing the globals and locals dictionaries.
         /// </summary>
-        private static CodeContext/*!*/ GetExecEvalScopeOptional(CodeContext/*!*/ context, IAttributesCollection globals, object localsDict, bool copyModule) {
+        private static CodeContext/*!*/ GetExecEvalScopeOptional(CodeContext/*!*/ context, PythonDictionary globals, object localsDict, bool copyModule) {
             Assert.NotNull(context);
 
             if (globals == null) globals = Builtin.globals(context);
@@ -2088,8 +2088,8 @@ namespace IronPython.Modules {
             return GetExecEvalScope(context, globals, GetAttrLocals(context, localsDict), copyModule, true);
         }
 
-        internal static CodeContext/*!*/ GetExecEvalScope(CodeContext/*!*/ context, IAttributesCollection/*!*/ globals,
-            IAttributesCollection locals, bool copyModule, bool setBuiltinsToModule) {
+        internal static CodeContext/*!*/ GetExecEvalScope(CodeContext/*!*/ context, PythonDictionary/*!*/ globals,
+            PythonDictionary locals, bool copyModule, bool setBuiltinsToModule) {
 
             Assert.NotNull(context, globals);
             PythonContext python = PythonContext.GetContext(context);
@@ -2103,19 +2103,19 @@ namespace IronPython.Modules {
                 localContext = new CodeContext(PythonDictionary.FromIAC(context, locals), mc);
             }
 
-            if (!globals.ContainsKey(Symbols.Builtins)) {
+            if (!globals.ContainsKey("__builtins__")) {
                 if (setBuiltinsToModule) {
-                    globals[Symbols.Builtins] = python.SystemStateModules["__builtin__"];
+                    globals["__builtins__"] = python.SystemStateModules["__builtin__"];
                 } else {
-                    globals[Symbols.Builtins] = python.BuiltinModuleDict;
+                    globals["__builtins__"] = python.BuiltinModuleDict;
                 }
             }
             return localContext;
         }
 
         [SpecialName]
-        public static void PerformModuleReload(PythonContext context, IAttributesCollection dict) {
-            dict[SymbolTable.StringToId("__debug__")] = ScriptingRuntimeHelpers.BooleanToObject(!context.PythonOptions.Optimize);
+        public static void PerformModuleReload(PythonContext context, PythonDictionary dict) {
+            dict["__debug__"] = ScriptingRuntimeHelpers.BooleanToObject(!context.PythonOptions.Optimize);
         }
     }
 }

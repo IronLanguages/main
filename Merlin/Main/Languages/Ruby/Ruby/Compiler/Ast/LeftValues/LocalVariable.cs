@@ -13,15 +13,20 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using MSA = System.Linq.Expressions;
+#else
+using MSA = Microsoft.Scripting.Ast;
+#endif
+
 using System.Diagnostics;
 using System.Dynamic;
 using Microsoft.Scripting;
-using MSA = System.Linq.Expressions;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 using IronRuby.Builtins;
 
 namespace IronRuby.Compiler.Ast {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = MSA.Expression;
 
     public partial class LocalVariable : Variable {
         // -1: the variable is defined in the outer runtime scope

@@ -13,17 +13,24 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Text;
-using Ast = System.Linq.Expressions.Expression;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
 using Microsoft.Scripting.Generation;
-using System.Linq.Expressions;
+using Microsoft.Scripting.Utils;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace IronRuby.Tests {
+    using Ast = Expression;
+    using AstUtils = Microsoft.Scripting.Ast.Utils;
+
     public partial class Tests {
         public void Interpreter1() {
             var m_AddValue = new Action<StrongBox<int>, int>(Interpreter1_AddValue).Method;

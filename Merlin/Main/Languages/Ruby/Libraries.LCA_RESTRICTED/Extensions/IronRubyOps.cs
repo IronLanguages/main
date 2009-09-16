@@ -25,7 +25,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 
 namespace IronRuby.Builtins {
-    [RubyModule("IronRuby", Extends = typeof(Ruby), Restrictions = ModuleRestrictions.None)]
+    [RubyModule("IronRuby", Extends = typeof(Ruby), Restrictions = ModuleRestrictions.NotPublished)]
     public static class IronRubyOps {
 
         [RubyMethod("configuration", RubyMethodAttributes.PublicSingleton)]

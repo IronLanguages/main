@@ -13,11 +13,16 @@
  *
  * ***************************************************************************/
 
-using System;
+#if !CLR2
 using MSAst = System.Linq.Expressions;
+#else
+using MSAst = Microsoft.Scripting.Ast;
+#endif
+
+using System;
 
 namespace IronPython.Compiler.Ast {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = MSAst.Expression;
 
     public class ListExpression : SequenceExpression {
         
@@ -27,7 +32,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal override MSAst.Expression Transform(AstGenerator ag, Type type) {
-            if (Items.Length == 0) {
+            if (Items.Count == 0) {
                 return Ast.Call(
                     AstGenerator.GetHelperMethod("MakeEmptyListFromCode"),
                     AstGenerator.EmptyExpression

@@ -95,7 +95,7 @@ namespace IronPython.Runtime.Operations {
             if (es != null) {
                 // __int__ takes precedence, call it if it's available...
                 object value;
-                if (PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, es, Symbols.ConvertToInt, out value)) {
+                if (PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, es, "__int__", out value)) {
                     return value;
                 }
 
@@ -106,7 +106,7 @@ namespace IronPython.Runtime.Operations {
             object result;
             int intRes;
             BigInteger bigintRes;
-            if (PythonTypeOps.TryInvokeUnaryOperator(context, o, Symbols.ConvertToInt, out result) &&
+            if (PythonTypeOps.TryInvokeUnaryOperator(context, o, "__int__", out result) &&
                 !Object.ReferenceEquals(result, NotImplementedType.Value)) {
                 if (result is int || result is BigInteger ||
                     result is Extensible<int> || result is Extensible<BigInteger>) {
@@ -114,7 +114,7 @@ namespace IronPython.Runtime.Operations {
                 } else {
                     throw PythonOps.TypeError("__int__ returned non-Integral (type {0})", PythonTypeOps.GetOldName(result));
                 }
-            } else if (PythonOps.TryGetBoundAttr(context, o, Symbols.Truncate, out result)) {
+            } else if (PythonOps.TryGetBoundAttr(context, o, "__trunc__", out result)) {
                 result = PythonOps.CallWithContext(context, result);
                 if (result is int || result is BigInteger ||
                     result is Extensible<int> || result is Extensible<BigInteger>) {
@@ -144,7 +144,7 @@ namespace IronPython.Runtime.Operations {
         public static object __new__(CodeContext context, PythonType cls, Extensible<double> o) {
             object value;
             // always succeeds as float defines __int__
-            PythonTypeOps.TryInvokeUnaryOperator(context, o, Symbols.ConvertToInt, out value);
+            PythonTypeOps.TryInvokeUnaryOperator(context, o, "__int__", out value);
             if (cls == TypeCache.Int32) {
                 return (int)value;
             } else {
@@ -176,7 +176,7 @@ namespace IronPython.Runtime.Operations {
                 object value;
                 IPythonObject po = s as IPythonObject;
                 if (po != null &&
-                    PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, po, Symbols.ConvertToInt, out value)) {
+                    PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, po, "__int__", out value)) {
                     return value;
                 }
 

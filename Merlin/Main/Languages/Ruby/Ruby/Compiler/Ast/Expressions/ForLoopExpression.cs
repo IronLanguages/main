@@ -20,11 +20,16 @@ using Microsoft.Scripting.Utils;
 using IronRuby.Runtime.Calls;
 using IronRuby.Builtins;
 
+#if !CLR2
 using MSA = System.Linq.Expressions;
+#else
+using MSA = Microsoft.Scripting.Ast;
+#endif
+
 using AstUtils = Microsoft.Scripting.Ast.Utils;
     
 namespace IronRuby.Compiler.Ast {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = Expression;
 
     public partial class ForLoopExpression : Expression {
         //	for variables in list 

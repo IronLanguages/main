@@ -59,7 +59,7 @@ namespace IronPython.Runtime.Types {
         }
 
         internal override bool TryDeleteValue(CodeContext context, object instance, PythonType owner) {
-            throw PythonOps.AttributeErrorForReadonlyAttribute(PythonTypeOps.GetName(instance), Symbols.Class);
+            throw PythonOps.AttributeErrorForReadonlyAttribute(PythonTypeOps.GetName(instance), "__class__");
         }
     }
 }

@@ -13,10 +13,15 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Text;
-using System.Linq.Expressions;
 using Microsoft.Scripting.Utils;
 using System.Threading;
 using Microsoft.Scripting.Generation;
@@ -68,7 +73,7 @@ namespace Microsoft.Scripting.Runtime {
             return _target;
         }
 
-        protected override KeyValuePair<MethodBuilder, Type> CompileForSave(TypeGen typeGen, Dictionary<SymbolId, FieldBuilder> symbolDict) {
+        protected override KeyValuePair<MethodBuilder, Type> CompileForSave(TypeGen typeGen) {
             var lambda = RewriteForSave(typeGen, _code);
 
             MethodBuilder mb = typeGen.TypeBuilder.DefineMethod(lambda.Name ?? "lambda_method", CompilerHelpers.PublicStatic | MethodAttributes.SpecialName);

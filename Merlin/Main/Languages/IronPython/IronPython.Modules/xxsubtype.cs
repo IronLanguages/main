@@ -14,9 +14,9 @@
  * ***************************************************************************/
 
 using System;
+using System.Collections.Generic;
 
 using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
@@ -61,12 +61,12 @@ namespace IronPython.Modules {
                 state = value;
             }
 
-            public static object staticmeth([ParamDictionary]IAttributesCollection dict, params object[] args) {
+            public static object staticmeth([ParamDictionary]IDictionary<object, object> dict, params object[] args) {
                 return PythonTuple.MakeTuple(null, PythonTuple.MakeTuple(args), dict);
             }
 
             [ClassMethod]
-            public static object classmeth(PythonType cls, [ParamDictionary]IAttributesCollection dict, params object[] args) {
+            public static object classmeth(PythonType cls, [ParamDictionary]IDictionary<object, object> dict, params object[] args) {
                 return PythonTuple.MakeTuple(cls, PythonTuple.MakeTuple(args), dict);
             }
         }
@@ -99,7 +99,7 @@ namespace IronPython.Modules {
             double start = PythonTime.clock();
 
             for (int i = 0; i < 1001; i++) {
-                PythonOps.GetBoundAttr(context, x, SymbolTable.StringToId(name));
+                PythonOps.GetBoundAttr(context, x, name);
             }
 
             return PythonTime.clock() - start;

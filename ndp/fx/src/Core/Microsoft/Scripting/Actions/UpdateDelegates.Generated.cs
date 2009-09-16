@@ -12,6 +12,9 @@
  *
  *
  * ***************************************************************************/
+#if CLR2
+using Microsoft.Scripting.Utils;
+#endif
 
 using System.Runtime.CompilerServices;
 using System.Threading;

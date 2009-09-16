@@ -13,6 +13,7 @@
  *
  * ***************************************************************************/
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
@@ -22,9 +23,13 @@ using System.Diagnostics.SymbolStore;
 // Not needed in CLR 4 builds because we have the
 // ILGenerator.ILOffset property.
 
-#if MICROSOFT_SCRIPTING_CORE || SILVERLIGHT
+#if CLR2 || SILVERLIGHT
 
+#if CLR2
+namespace Microsoft.Scripting.Ast.Compiler {
+#else
 namespace System.Linq.Expressions.Compiler {
+#endif
     /// <summary>
     /// Wraps ILGenerator with code that tracks the current IL offset as instructions are emitted into the IL stream.
     /// </summary>

@@ -13,9 +13,14 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections.Generic;
-using System.Linq.Expressions;
 using System.Threading;
 
 using Microsoft.Scripting;
@@ -72,11 +77,13 @@ namespace IronPython.Compiler {
 
         private object RunWorker(CodeContext ctx) {
             Func<CodeContext/*!*/, FunctionCode/*!*/, object> target = GetTarget();
-            
+
+            Exception e = PythonOps.SaveCurrentException();
             PushFrame(ctx, target);
             try {
                 return target(ctx, EnsureFunctionCode(target));
             } finally {
+                PythonOps.RestoreCurrentException(e);
                 PopFrame();
             }
         }

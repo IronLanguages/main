@@ -13,16 +13,22 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Diagnostics;
 using System.Dynamic;
-using System.Linq.Expressions;
 using IronRuby.Compiler;
 using IronRuby.Compiler.Generation;
-using Ast = System.Linq.Expressions.Expression;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Runtime.Calls {
+    using Ast = Expression;
+
     public enum RubyCallFlags {
         None = 0,
         HasScope = 1,

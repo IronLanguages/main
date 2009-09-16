@@ -36,7 +36,7 @@ using IronPython.Runtime.Binding;
 namespace IronPython.Modules {
     public static class PythonStruct {
         [SpecialName]
-        public static void PerformModuleReload(PythonContext/*!*/ context, IAttributesCollection/*!*/ dict) {
+        public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
             context.EnsureModuleException("structerror", dict, "error", "struct");
         }
 
@@ -80,7 +80,7 @@ namespace IronPython.Modules {
             }
 
             [Documentation("creates a new uninitialized struct object - all arguments are ignored")]
-            public Struct([ParamDictionary]IAttributesCollection kwArgs, params object[] args) {
+            public Struct([ParamDictionary]IDictionary<object, object> kwArgs, params object[] args) {
             }
 
             [Documentation("initializes or re-initializes the compiled struct object with a new format")]

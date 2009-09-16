@@ -14,11 +14,16 @@
  * ***************************************************************************/
 
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -27,21 +32,21 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
-using Ast = System.Linq.Expressions.Expression;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
-
 namespace IronPython.Runtime.Binding {
+    using Ast = Expression;
+    using AstUtils = Microsoft.Scripting.Ast.Utils;
 
     partial class MetaPythonType : MetaPythonObject, IPythonGetable {
 
         #region MetaObject Overrides
 
         public override DynamicMetaObject/*!*/ BindGetMember(GetMemberBinder/*!*/ member) {
-            return GetMemberWorker(member, PythonContext.GetCodeContext(member));            
+            return GetMemberWorker(member, PythonContext.GetCodeContext(member));
         }
 
         private ValidationInfo GetTypeTest() {
@@ -140,7 +145,7 @@ namespace IronPython.Runtime.Binding {
 
             return new MetaGetBinderHelper(this, member, codeContext, GetTypeTest(), MakeMetaTypeTest(Restrict(this.GetRuntimeType()).Expression)).MakeTypeGetMember();
         }
-        
+
         private ValidationInfo MakeMetaTypeTest(Expression self) {
 
             PythonType metaType = DynamicHelpers.GetPythonType(Value);
@@ -158,7 +163,7 @@ namespace IronPython.Runtime.Binding {
 
             return ValidationInfo.Empty;
         }
-        
+
         /// <summary>
         /// Base class for performing member binding.  Derived classes override Add methods
         /// to produce the actual final result based upon what the GetBinderHelper resolves.
@@ -183,11 +188,11 @@ namespace IronPython.Runtime.Binding {
 
             protected abstract void AddMetaGetAttribute(PythonType metaType, PythonTypeSlot pts);
 
-            protected abstract void AddMetaSlotAccess(PythonType pt, PythonTypeSlot pts);
+            protected abstract bool AddMetaSlotAccess(PythonType pt, PythonTypeSlot pts);
 
             protected abstract void AddMetaOldClassAccess();
 
-            protected abstract void AddSlotAccess(PythonType pt, PythonTypeSlot pts);
+            protected abstract bool AddSlotAccess(PythonType pt, PythonTypeSlot pts);
 
             protected abstract void AddOldClassAccess(PythonType pt);
 
@@ -197,16 +202,15 @@ namespace IronPython.Runtime.Binding {
 
             public TResult MakeTypeGetMember() {
                 PythonTypeSlot pts;
-                SymbolId name = SymbolTable.StringToId(_name);
+
                 bool isFinal = false, metaOnly = false;
                 CodeContext lookupContext = PythonContext.GetContext(_context).SharedClsContext;
 
                 // first look in the meta-class to see if we have a get/set descriptor
                 PythonType metaType = DynamicHelpers.GetPythonType(Value);
                 foreach (PythonType pt in metaType.ResolutionOrder) {
-                    if (pt.TryLookupSlot(lookupContext, name, out pts) && pts.IsSetDescriptor(lookupContext, metaType)) {
-                        AddMetaSlotAccess(metaType, pts);
-                        if (pts.GetAlwaysSucceeds) {
+                    if (pt.TryLookupSlot(lookupContext, _name, out pts) && pts.IsSetDescriptor(lookupContext, metaType)) {
+                        if (AddMetaSlotAccess(metaType, pts)) {
                             metaOnly = isFinal = true;
                             break;
                         }
@@ -219,10 +223,8 @@ namespace IronPython.Runtime.Binding {
                         if (pt.IsOldClass) {
                             // mixed new-style/old-style class, search the one slot in it's MRO for the member
                             AddOldClassAccess(pt);
-                        } else if (pt.TryLookupSlot(lookupContext, name, out pts)) {
-                            AddSlotAccess(pt, pts);
-
-                            if (pts.GetAlwaysSucceeds && pts.IsAlwaysVisible) {
+                        } else if (pt.TryLookupSlot(lookupContext, _name, out pts)) {
+                            if (AddSlotAccess(pt, pts)) {
                                 isFinal = true;
                                 break;
                             }
@@ -239,9 +241,8 @@ namespace IronPython.Runtime.Binding {
                             AddMetaOldClassAccess();
                             isFinal = true;
                             break;
-                        } else if (pt.TryLookupSlot(lookupContext, name, out pts)) {
-                            AddMetaSlotAccess(metaType, pts);
-                            if (pts.GetAlwaysSucceeds) {
+                        } else if (pt.TryLookupSlot(lookupContext, _name, out pts)) {
+                            if (AddMetaSlotAccess(metaType, pts)) {
                                 isFinal = true;
                                 break;
                             }
@@ -252,9 +253,9 @@ namespace IronPython.Runtime.Binding {
                 if (!isFinal) {
                     // the member doesn't exist anywhere in the type hierarchy, see if
                     // we define __getattr__ on our meta type.
-                    if (metaType.TryResolveSlot(_context, Symbols.GetBoundAttr, out pts) && 
+                    if (metaType.TryResolveSlot(_context, "__getattr__", out pts) && 
                         !pts.IsSetDescriptor(lookupContext, metaType)) { // we tried get/set descriptors initially
-                        
+
                         AddMetaGetAttribute(metaType, pts);
                         isFinal = pts.GetAlwaysSucceeds;
                     }
@@ -266,7 +267,7 @@ namespace IronPython.Runtime.Binding {
 
                 return Finish(metaOnly);
             }
-            
+
             #endregion
 
             protected PythonType Value {
@@ -285,7 +286,7 @@ namespace IronPython.Runtime.Binding {
             private readonly Expression _codeContext;
             private readonly DynamicMetaObject _restrictedSelf;
             private readonly ConditionalBuilder _cb;
-            private readonly SymbolId _symName;
+            private readonly string _symName;
             private readonly PythonContext _state;
             private readonly ValidationInfo _valInfo, _metaValInfo;
             private ParameterExpression _tmp;
@@ -296,7 +297,7 @@ namespace IronPython.Runtime.Binding {
                 _codeContext = codeContext;
                 _type = type;
                 _cb = new ConditionalBuilder(member);
-                _symName = SymbolTable.StringToId(GetGetMemberName(member));
+                _symName = GetGetMemberName(member);
                 _restrictedSelf = new DynamicMetaObject(
                     AstUtils.Convert(Expression, Value.GetType()),
                     Restrictions.Merge(BindingRestrictions.GetInstanceRestriction(Expression, Value)),
@@ -328,11 +329,11 @@ namespace IronPython.Runtime.Binding {
                 }
             }
 
-            protected override void AddSlotAccess(PythonType pt, PythonTypeSlot pts) {
+            protected override bool AddSlotAccess(PythonType pt, PythonTypeSlot pts) {
                 pts.MakeGetExpression(
                         _state.Binder,
                         _codeContext,
-                        null,                        
+                        null,
                         new DynamicMetaObject(
                             AstUtils.Convert(AstUtils.WeakConstant(Value), typeof(PythonType)),
                             BindingRestrictions.Empty,
@@ -343,7 +344,10 @@ namespace IronPython.Runtime.Binding {
 
                 if (!pts.IsAlwaysVisible) {
                     _cb.AddCondition(Ast.Call(typeof(PythonOps).GetMethod("IsClsVisible"), _codeContext));
+                    return false;
                 }
+
+                return pts.GetAlwaysSucceeds;
             }
 
             protected override void AddMetaOldClassAccess() {
@@ -389,7 +393,7 @@ namespace IronPython.Runtime.Binding {
                 );
             }
 
-            protected override void AddMetaSlotAccess(PythonType metaType, PythonTypeSlot pts) {
+            protected override bool AddMetaSlotAccess(PythonType metaType, PythonTypeSlot pts) {
                 ParameterExpression tmp = Ast.Variable(typeof(object), "slotRes");
                 pts.MakeGetExpression(
                     _state.Binder,
@@ -405,10 +409,13 @@ namespace IronPython.Runtime.Binding {
 
                 if (!pts.IsAlwaysVisible) {
                     _cb.AddCondition(Ast.Call(typeof(PythonOps).GetMethod("IsClsVisible"), _codeContext));
+                    return false;
                 }
+
+                return pts.GetAlwaysSucceeds;
             }
 
-           
+
             protected override DynamicMetaObject/*!*/ Finish(bool metaOnly) {
                 DynamicMetaObject res = _cb.GetMetaObject(_restrictedSelf);
 
@@ -420,7 +427,7 @@ namespace IronPython.Runtime.Binding {
                         _metaValInfo
                     );
                 } else if (!Value.IsSystemType) {
-                    res =  BindingHelpers.AddDynamicTestAndDefer(
+                    res = BindingHelpers.AddDynamicTestAndDefer(
                         _member,
                         res,
                         new DynamicMetaObject[] { _type },
@@ -446,10 +453,10 @@ namespace IronPython.Runtime.Binding {
                                 Ast.Call(
                                     typeof(PythonOps).GetMethod(
                                         "AttributeErrorForMissingAttribute",
-                                        new Type[] { typeof(string), typeof(SymbolId) }
+                                        new Type[] { typeof(string), typeof(string) }
                                     ),
                                     AstUtils.Constant(DynamicHelpers.GetPythonType(Value).Name),
-                                    AstUtils.Constant(SymbolTable.StringToId(pb.Name))
+                                    AstUtils.Constant(pb.Name)
                                 ),
                                 typeof(object)
                             ),
@@ -485,7 +492,7 @@ namespace IronPython.Runtime.Binding {
             private readonly int _version;
             private readonly int _metaVersion;
             private bool _canOptimize;
-            private List<FastGetDelegate> _gets=  new List<FastGetDelegate>();
+            private List<FastGetDelegate> _gets = new List<FastGetDelegate>();
 
             public FastGetBinderHelper(PythonType type, CodeContext context, PythonGetMemberBinder binder)
                 : base(type, context, binder.Name) {
@@ -494,12 +501,12 @@ namespace IronPython.Runtime.Binding {
                 _metaVersion = DynamicHelpers.GetPythonType(type).Version;
                 _binder = binder;
             }
-            
+
             public Func<CallSite, object, CodeContext, object> GetBinding() {
                 Dictionary<string, TypeGetBase> cachedGets = GetCachedGets();
 
                 TypeGetBase dlg;
-                lock (cachedGets) {                    
+                lock (cachedGets) {
                     if (!cachedGets.TryGetValue(_binder.Name, out dlg) || !dlg.IsValid(Value)) {
                         var binding = MakeTypeGetMember();
                         if (binding != null) {
@@ -508,7 +515,7 @@ namespace IronPython.Runtime.Binding {
                     }
                 }
 
-                if (dlg != null && dlg.ShouldUseNonOptimizedSite) {                    
+                if (dlg != null && dlg.ShouldUseNonOptimizedSite) {
                     return dlg._func;
                 }
                 return null;
@@ -541,14 +548,14 @@ namespace IronPython.Runtime.Binding {
             }
 
             protected override void AddOldClassAccess(PythonType pt) {
-                _gets.Add(new OldClassDelegate(pt, SymbolTable.StringToId(_binder.Name)).Target);
+                _gets.Add(new OldClassDelegate(pt, _binder.Name).Target);
             }
 
             class OldClassDelegate {
                 private readonly WeakReference _type;
-                private readonly SymbolId _name;
+                private readonly string _name;
 
-                public OldClassDelegate(PythonType oldClass, SymbolId name) {
+                public OldClassDelegate(PythonType oldClass, string name) {
                     _type = oldClass.GetSharedWeakReference();
                     _name = name;
                 }
@@ -558,15 +565,17 @@ namespace IronPython.Runtime.Binding {
                 }
             }
 
-            protected override void AddSlotAccess(PythonType pt, PythonTypeSlot pts) {
+            protected override bool AddSlotAccess(PythonType pt, PythonTypeSlot pts) {
                 if (pts.CanOptimizeGets) {
                     _canOptimize = true;
                 }
 
                 if (pts.IsAlwaysVisible) {
                     _gets.Add(new SlotAccessDelegate(pts, Value).Target);
+                    return pts.GetAlwaysSucceeds;
                 } else {
                     _gets.Add(new SlotAccessDelegate(pts, Value).TargetCheckCls);
+                    return false;
                 }
             }
 
@@ -575,7 +584,7 @@ namespace IronPython.Runtime.Binding {
                 private readonly PythonType _owner;
                 private readonly WeakReference _weakOwner;
                 private readonly WeakReference _weakSlot;
-                
+
                 public SlotAccessDelegate(PythonTypeSlot slot, PythonType owner) {
                     if (owner.IsSystemType) {
                         _owner = owner;
@@ -594,7 +603,7 @@ namespace IronPython.Runtime.Binding {
                     result = null;
                     return false;
                 }
-                
+
                 public bool Target(CodeContext context, object self, out object result) {
                     return Slot.TryGetValue(context, null, Type, out result);
                 }
@@ -701,15 +710,17 @@ namespace IronPython.Runtime.Binding {
                 }
             }
 
-            protected override void AddMetaSlotAccess(PythonType metaType, PythonTypeSlot pts) {
+            protected override bool AddMetaSlotAccess(PythonType metaType, PythonTypeSlot pts) {
                 if (pts.CanOptimizeGets) {
                     _canOptimize = true;
                 }
 
                 if (pts.IsAlwaysVisible) {
                     _gets.Add(new SlotAccessDelegate(pts, metaType).MetaTarget);
+                    return pts.GetAlwaysSucceeds;
                 } else {
                     _gets.Add(new SlotAccessDelegate(pts, metaType).MetaTargetCheckCls);
+                    return false;
                 }
             }
 
@@ -744,11 +755,11 @@ namespace IronPython.Runtime.Binding {
                 public bool Target(CodeContext context, object self, out object result) {
                     throw PythonOps.AttributeErrorForMissingAttribute(
                         DynamicHelpers.GetPythonType(self).Name,
-                        SymbolTable.StringToId(_name));
+                        _name);
                 }
             }
         }
-        
+
         #endregion
 
         #region Sets
@@ -762,9 +773,9 @@ namespace IronPython.Runtime.Binding {
                 // but we can have a built-in subtype that's not a user type.
                 PythonTypeSlot pts;
                 if (Value.TryGetCustomSetAttr(state.SharedContext, out pts)) {
-                    
+
                     Debug.Assert(pts.GetAlwaysSucceeds);
-                    
+
                     ParameterExpression tmp = Ast.Variable(typeof(object), "boundVal");
 
                     return BindingHelpers.AddDynamicTestAndDefer(
@@ -806,7 +817,7 @@ namespace IronPython.Runtime.Binding {
                         typeof(PythonOps).GetMethod("PythonTypeSetCustomMember"),
                         AstUtils.Constant(PythonContext.GetPythonContext(member).SharedContext),
                         self.Expression,
-                        AstUtils.Constant(SymbolTable.StringToId(member.Name)),
+                        AstUtils.Constant(member.Name),
                         AstUtils.Convert(
                             value.Expression,
                             typeof(object)
@@ -819,7 +830,7 @@ namespace IronPython.Runtime.Binding {
             );
         }
 
-        private bool IsProtectedSetter(MemberTracker mt) {
+        private static bool IsProtectedSetter(MemberTracker mt) {
             PropertyTracker pt = mt as PropertyTracker;
             if (pt != null) {
                 MethodInfo mi = pt.GetSetMethod(true);
@@ -849,7 +860,7 @@ namespace IronPython.Runtime.Binding {
                         typeof(PythonOps).GetMethod("PythonTypeDeleteCustomMember"),
                         AstUtils.Constant(PythonContext.GetPythonContext(member).SharedContext),
                         self.Expression,
-                        AstUtils.Constant(SymbolTable.StringToId(member.Name))
+                        AstUtils.Constant(member.Name)
                     ),
                     self.Restrictions
                 ),

@@ -50,7 +50,7 @@ namespace IronPython.Runtime.Operations {
                 object value;
                 IPythonObject po = s as IPythonObject;
                 if (po != null &&
-                    PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, po, Symbols.ConvertToLong, out value)) {
+                    PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, po, "__long__", out value)) {
                     return value;
                 }
 
@@ -76,7 +76,7 @@ namespace IronPython.Runtime.Operations {
                 return ReturnObject(context, cls, ParseBigIntegerSign((string)x, 10));
             } else if ((es = x as Extensible<string>) != null) {
                 object value;
-                if (PythonTypeOps.TryInvokeUnaryOperator(context, x, Symbols.ConvertToLong, out value)) {
+                if (PythonTypeOps.TryInvokeUnaryOperator(context, x, "__long__", out value)) {
                     return ReturnObject(context, cls, (BigInteger)value);
                 }
 
@@ -95,10 +95,10 @@ namespace IronPython.Runtime.Operations {
             object result;
             int intRes;
             BigInteger bigintRes;
-            if (PythonTypeOps.TryInvokeUnaryOperator(context, x, Symbols.ConvertToLong, out result) &&
+            if (PythonTypeOps.TryInvokeUnaryOperator(context, x, "__long__", out result) &&
                 !Object.ReferenceEquals(result, NotImplementedType.Value) ||
                 x is OldInstance &&
-                PythonTypeOps.TryInvokeUnaryOperator(context, x, Symbols.ConvertToInt, out result) &&
+                PythonTypeOps.TryInvokeUnaryOperator(context, x, "__int__", out result) &&
                 !Object.ReferenceEquals(result, NotImplementedType.Value)) {
                 if (result is int || result is BigInteger ||
                     result is Extensible<int> || result is Extensible<BigInteger>) {
@@ -106,7 +106,7 @@ namespace IronPython.Runtime.Operations {
                 } else {
                     throw PythonOps.TypeError("__long__ returned non-long (type {0})", PythonTypeOps.GetOldName(result));
                 }
-            } else if (PythonOps.TryGetBoundAttr(context, x, Symbols.Truncate, out result)) {
+            } else if (PythonOps.TryGetBoundAttr(context, x, "__trunc__", out result)) {
                 result = PythonOps.CallWithContext(context, result);
                 if (Converter.TryConvertToInt32(result, out intRes)) {
                     return ReturnObject(context, cls, (BigInteger)intRes);

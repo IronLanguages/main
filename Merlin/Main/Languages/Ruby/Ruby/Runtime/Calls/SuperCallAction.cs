@@ -13,9 +13,14 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Diagnostics;
-using System.Linq.Expressions;
 using System.Dynamic;
 
 using Microsoft.Scripting.Utils;
@@ -25,9 +30,9 @@ using IronRuby.Builtins;
 using IronRuby.Compiler;
 using IronRuby.Compiler.Generation;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
-using Ast = System.Linq.Expressions.Expression;
 
 namespace IronRuby.Runtime.Calls {
+    using Ast = Expression;
 
     public sealed class SuperCallAction : RubyMetaBinder {
         private readonly RubyCallSignature _signature;

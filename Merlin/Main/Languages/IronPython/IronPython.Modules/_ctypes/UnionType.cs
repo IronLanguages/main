@@ -40,11 +40,11 @@ namespace IronPython.Modules {
             internal Field[] _fields;
             private int _size, _alignment;
 
-            public UnionType(CodeContext/*!*/ context, string name, PythonTuple bases, IAttributesCollection members)
+            public UnionType(CodeContext/*!*/ context, string name, PythonTuple bases, PythonDictionary members)
                 : base(context, name, bases, members) {
 
                 object fields;
-                if (members.TryGetValue(SymbolTable.StringToId("_fields_"), out fields)) {
+                if (members.TryGetValue("_fields_", out fields)) {
                     SetFields(fields);
                 }
             }
@@ -157,7 +157,7 @@ namespace IronPython.Modules {
 
                         Field newField = new Field(fieldName, cdata, 0, allFields.Count);
                         allFields.Add(newField);
-                        AddSlot(SymbolTable.StringToId(fieldName), newField);
+                        AddSlot(fieldName, newField);
 
                         if (anonFields != null && anonFields.Contains(fieldName)) {
                             StructType.AddAnonymousFields(this, allFields, cdata, newField);

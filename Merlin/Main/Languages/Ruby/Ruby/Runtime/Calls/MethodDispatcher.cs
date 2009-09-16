@@ -13,6 +13,12 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -20,13 +26,15 @@ using IronRuby.Builtins;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
 using Microsoft.Scripting.Utils;
-using System.Linq.Expressions;
 using Microsoft.Scripting.Generation;
 using System.Collections.ObjectModel;
 using Microsoft.Scripting.Interpreter;
 using Microsoft.Scripting;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
+using IronRuby.Compiler;
 
 namespace IronRuby.Runtime.Calls {
+    using Ast = Expression;
     
     public abstract partial class MethodDispatcher {
         internal int Version;
@@ -126,7 +134,7 @@ namespace IronRuby.Runtime.Calls {
         internal Delegate _compiled;
 
         internal T/*!*/ CreateDelegate<T>(Expression/*!*/ binding) where T : class {
-            Delegate d = CompilerHelpers.LightCompile(Stitch<T>(binding));
+            Delegate d = Stitch<T>(binding).LightCompile(false);
             T result = (T)(object)d;
 
             LightLambda lambda = d.Target as LightLambda;
@@ -152,19 +160,12 @@ namespace IronRuby.Runtime.Calls {
                 updLabel,
                 Expression.Label(
                     ReturnLabel,
-                    Expression.Condition(
-                        Expression.Call(
-                            typeof(CallSiteOps).GetMethod("SetNotMatched"),
-                            @params[0]
+                    Expression.Invoke(
+                        Expression.Property(
+                            Ast.Convert(site, typeof(CallSite<T>)),
+                            typeof(CallSite<T>).GetProperty("Update")
                         ),
-                        Expression.Default(ReturnLabel.Type),
-                        Expression.Invoke(
-                            Expression.Property(
-                                Expression.Convert(site, typeof(CallSite<T>)),
-                                typeof(CallSite<T>).GetProperty("Update")
-                            ),
-                            @params
-                        )
+                        @params
                     )
                 )
             );

@@ -13,9 +13,14 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections.Generic;
-using System.Linq.Expressions;
 using System.Dynamic;
 
 using Microsoft.Scripting;
@@ -26,10 +31,9 @@ using Microsoft.Scripting.Utils;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
-using AstUtils = Microsoft.Scripting.Ast.Utils;
-
 namespace IronPython.Runtime.Binding {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = Expression;
+    using AstUtils = Microsoft.Scripting.Ast.Utils;
 
     class MetaOldClass : MetaPythonObject, IPythonInvokable, IPythonGetable, IPythonOperable, IPythonConvertible {
         public MetaOldClass(Expression/*!*/ expression, BindingRestrictions/*!*/ restrictions, OldClass/*!*/ value)
@@ -158,7 +162,7 @@ namespace IronPython.Runtime.Binding {
             );
         }
 
-        private Expression NoInitCheckNoArgs(CallSignature signature, DynamicMetaObject self, DynamicMetaObject[] args) {
+        private static Expression NoInitCheckNoArgs(CallSignature signature, DynamicMetaObject self, DynamicMetaObject[] args) {
             int unusedCount = args.Length;
 
             Expression dictExpr = GetArgumentExpression(signature, ArgumentType.Dictionary, ref unusedCount, args);
@@ -183,7 +187,7 @@ namespace IronPython.Runtime.Binding {
             );
         }
 
-        private Expression GetArgumentExpression(CallSignature signature, ArgumentType kind, ref int unusedCount, DynamicMetaObject/*!*/[]/*!*/ args) {
+        private static Expression GetArgumentExpression(CallSignature signature, ArgumentType kind, ref int unusedCount, DynamicMetaObject/*!*/[]/*!*/ args) {
             int index = signature.IndexOf(kind);
             if (index != -1) {
                 unusedCount--;
@@ -193,7 +197,7 @@ namespace IronPython.Runtime.Binding {
             return AstUtils.Constant(null);
         }
 
-        public object MakeCallError() {
+        public static object MakeCallError() {
             // Normally, if we have an __init__ method, the method binder detects signature mismatches.
             // This can happen when a class does not define __init__ and therefore does not take any arguments.
             // Beware that calls like F(*(), **{}) have 2 arguments but they're empty and so it should still
@@ -237,7 +241,7 @@ namespace IronPython.Runtime.Binding {
                     call = Ast.Call(
                         typeof(PythonOps).GetMethod("OldClassSetNameHelper"),
                         self.Expression,
-                        AstUtils.Constant(SymbolTable.StringToId(name)),
+                        AstUtils.Constant(name),
                         valueExpr
                     );
                     break;
@@ -259,7 +263,7 @@ namespace IronPython.Runtime.Binding {
                     typeof(PythonOps).GetMethod("OldClassDeleteMember"),
                     AstUtils.Constant(PythonContext.GetPythonContext(member).SharedContext),
                     self.Expression,
-                    AstUtils.Constant(SymbolTable.StringToId(member.Name))
+                    AstUtils.Constant(member.Name)
                 ),
                 self.Restrictions
             );
@@ -307,7 +311,7 @@ namespace IronPython.Runtime.Binding {
                                     typeof(PythonOps).GetMethod("OldClassTryLookupValue"),
                                     AstUtils.Constant(PythonContext.GetPythonContext(member).SharedContext),
                                     self.Expression,
-                                    AstUtils.Constant(SymbolTable.StringToId(memberName)),
+                                    AstUtils.Constant(memberName),
                                     tmp
                                 ),
                                 tmp,

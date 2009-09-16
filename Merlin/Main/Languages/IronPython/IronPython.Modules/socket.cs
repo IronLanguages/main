@@ -48,7 +48,7 @@ namespace IronPython.Modules {
         private const int DefaultBufferSize = 8192;
 
         [SpecialName]
-        public static void PerformModuleReload(PythonContext/*!*/ context, IAttributesCollection/*!*/ dict) {
+        public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
             if (!context.HasModuleState(_defaultTimeoutKey)) {
                 context.SetModuleState(_defaultTimeoutKey, null);
             }
@@ -1555,6 +1555,7 @@ namespace IronPython.Modules {
         public const int SO_USELOOPBACK = (int)SocketOptionName.UseLoopback;
         public const int TCP_NODELAY = (int)SocketOptionName.NoDelay;
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         public static readonly BigInteger SIO_RCVALL = (long)IOControlCode.ReceiveAll;
         public const int RCVALL_ON = 1;
         public const int RCVALL_OFF = 0;
@@ -1843,7 +1844,7 @@ namespace IronPython.Modules {
                     foreach (string s in _data) {
                         res.Append(s);
                     }
-                    DefaultContext.DefaultPythonContext.CallSplat(PythonOps.GetBoundAttr(DefaultContext.Default, _userSocket, SymbolTable.StringToId("sendall")), res.ToString());
+                    DefaultContext.DefaultPythonContext.CallSplat(PythonOps.GetBoundAttr(DefaultContext.Default, _userSocket, "sendall"), res.ToString());
                     _data.Clear();
                 }
             }
@@ -1862,7 +1863,7 @@ namespace IronPython.Modules {
             }
 
             public override int Read(byte[] buffer, int offset, int count) {
-                object received = DefaultContext.DefaultPythonContext.CallSplat(PythonOps.GetBoundAttr(DefaultContext.Default, _userSocket, SymbolTable.StringToId("recv")), count);
+                object received = DefaultContext.DefaultPythonContext.CallSplat(PythonOps.GetBoundAttr(DefaultContext.Default, _userSocket, "recv"), count);
                 string data = Converter.ConvertToString(received);
 
                 return PythonAsciiEncoding.Instance.GetBytes(data, 0, data.Length, buffer, offset);
@@ -1883,12 +1884,6 @@ namespace IronPython.Modules {
                 if (_dataSize > _bufSize) {
                     Flush();
                 }                               
-            }
-
-            public object _sock {
-                get {
-                    return _userSocket;
-                }
             }
 
             protected override void Dispose(bool disposing) {
@@ -1925,7 +1920,7 @@ namespace IronPython.Modules {
             public void __init__(params object[] args) {
             }
 
-            public void __init__([ParamDictionary]IAttributesCollection kwargs, params object[] args) {
+            public void __init__([ParamDictionary]IDictionary<object, object> kwargs, params object[] args) {
             }
 
             public void __del__() {

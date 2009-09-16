@@ -14,10 +14,14 @@
  * ***************************************************************************/
 
 #if !SILVERLIGHT // ComObject
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
 
 using System;
 using System.Diagnostics;
-using System.Linq.Expressions;
 using System.Dynamic;
 using Microsoft.Scripting.Utils;
 

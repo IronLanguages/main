@@ -13,20 +13,21 @@
  *
  * ***************************************************************************/
 
+#if CLR2
+using dynamic = System.Object;
+#endif
+
 using System;
 using System.CodeDom;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Dynamic;
 using System.Runtime.Remoting;
 using System.Security.Permissions;
 using System.Text;
 using System.Threading;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-
-#if !CLR4
-using dynamic = System.Object;
-#endif
 
 namespace Microsoft.Scripting.Hosting {
 
@@ -194,6 +195,17 @@ namespace Microsoft.Scripting.Hosting {
         public ScriptScope CreateScope(IAttributesCollection dictionary) {
             ContractUtils.RequiresNotNull(dictionary, "dictionary");
             return new ScriptScope(this, new Scope(dictionary));
+        }
+
+        /// <summary>
+        /// Creates a new ScriptScope whose storage is an arbitrary object.
+        /// 
+        /// Accesses to the ScriptScope will turn into get, set, and delete members against the object.
+        /// </summary>
+        public ScriptScope CreateScope(IDynamicMetaObjectProvider storage) {
+            ContractUtils.RequiresNotNull(storage, "storage");
+
+            return new ScriptScope(this, new Scope(storage));
         }
 
         /// <summary>
@@ -456,7 +468,7 @@ namespace Microsoft.Scripting.Hosting {
             ContractUtils.RequiresNotNull(scope, "scope");
             ContractUtils.RequiresNotNull(name, "name");
 
-            return scope.Scope.GetVariable(SymbolTable.StringToId(name));
+            return scope.GetVariable(name);
         }
 
         /// <summary>
@@ -474,7 +486,7 @@ namespace Microsoft.Scripting.Hosting {
             ContractUtils.RequiresNotNull(scope, "scope");
             ContractUtils.RequiresNotNull(name, "name");
 
-            return scope.Scope.TryRemoveVariable(SymbolTable.StringToId(name));
+            return scope.RemoveVariable(name);
         }
 
         /// <summary>
@@ -490,7 +502,7 @@ namespace Microsoft.Scripting.Hosting {
             ContractUtils.RequiresNotNull(scope, "scope");
             ContractUtils.RequiresNotNull(name, "name");
 
-            scope.Scope.SetVariable(SymbolTable.StringToId(name), value);
+            scope.SetVariable(name, value);
         }
 
         /// <summary>
@@ -509,7 +521,7 @@ namespace Microsoft.Scripting.Hosting {
             ContractUtils.RequiresNotNull(scope, "scope");
             ContractUtils.RequiresNotNull(name, "name");
 
-            return scope.Scope.TryGetVariable(SymbolTable.StringToId(name), out value);
+            return scope.TryGetVariable(name, out value);
         }
 
         /// <summary>

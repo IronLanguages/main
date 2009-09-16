@@ -13,6 +13,7 @@
  *
  * ***************************************************************************/
 
+using System;
 using System.Collections.Generic;
 using System.Dynamic.Utils;
 using System.IO;
@@ -22,13 +23,17 @@ using System.Security;
 using System.Text;
 using System.Threading;
 
+#if CLR2
+namespace Microsoft.Scripting.Ast.Compiler {
+#else
 namespace System.Linq.Expressions.Compiler {
+#endif
     internal sealed class AssemblyGen {
         private static AssemblyGen _assembly;
 
-        // Testing options. Only ever set in MICROSOFT_SCRIPTING_CORE build
+        // Testing options. Only ever set in CLR2 build
         // configurations, see SetSaveAssemblies
-#if MICROSOFT_SCRIPTING_CORE
+#if CLR2
         private static string _saveAssembliesPath;
         private static bool _saveAssemblies;
 #endif
@@ -36,7 +41,7 @@ namespace System.Linq.Expressions.Compiler {
         private readonly AssemblyBuilder _myAssembly;
         private readonly ModuleBuilder _myModule;
 
-#if MICROSOFT_SCRIPTING_CORE && !SILVERLIGHT
+#if CLR2 && !SILVERLIGHT
         private readonly string _outFileName;       // can be null iff !SaveAndReloadAssemblies
         private readonly string _outDir;            // null means the current directory
 #endif
@@ -64,7 +69,7 @@ namespace System.Linq.Expressions.Compiler {
                 new CustomAttributeBuilder(typeof(SecurityTransparentAttribute).GetConstructor(Type.EmptyTypes), new object[0])
             };
 
-#if MICROSOFT_SCRIPTING_CORE
+#if CLR2
             if (_saveAssemblies) {
                 string outDir = _saveAssembliesPath ?? Directory.GetCurrentDirectory();
                 try {
@@ -123,7 +128,7 @@ namespace System.Linq.Expressions.Compiler {
             );
         }
 
-#if MICROSOFT_SCRIPTING_CORE
+#if CLR2
         //Return the location of the saved assembly file.
         //The file location is used by PE verification in Microsoft.Scripting.
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]

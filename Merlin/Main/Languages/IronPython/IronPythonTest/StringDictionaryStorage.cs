@@ -142,12 +142,12 @@ namespace IronPythonTest {
                 } else 
 #endif
                 {
-                    dict = new Dictionary<string, object>(_dict);
+                    dict = new Dictionary<string, object>(_dict, StringComparer.Ordinal);
                 }
 
                 Dictionary<object, object> objDict = null;
                 if (_objDict != null) {
-                    objDict = new Dictionary<object, object>(_objDict);
+                    objDict = new Dictionary<object, object>(_objDict, DefaultContext.DefaultPythonContext.EqualityComparer);
                 }
 
                 return new StringDictionaryStorage(dict, objDict);
@@ -156,7 +156,7 @@ namespace IronPythonTest {
 
         private void EnsureObjectDictionary() {
             if (_objDict == null) {
-                Interlocked.CompareExchange<Dictionary<object, object>>(ref _objDict, new Dictionary<object, object>(), null);
+                Interlocked.CompareExchange<Dictionary<object, object>>(ref _objDict, new Dictionary<object, object>(DefaultContext.DefaultPythonContext.EqualityComparer), null);
             }            
         }
     }

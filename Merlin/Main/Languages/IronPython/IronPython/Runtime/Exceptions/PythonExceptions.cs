@@ -13,12 +13,17 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
 using System.IO;
-using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using System.Security;
 using System.Text;
@@ -95,7 +100,7 @@ namespace IronPython.Runtime.Exceptions {
             private PythonType/*!*/ _type;          // the actual Python type of the Exception object
             private object _message = String.Empty; // the message object, cached at __init__ time, not updated on args assignment
             private PythonTuple _args;              // the tuple of args provided at creation time
-            private IAttributesCollection _dict;    // the dictionary for extra values, created on demand
+            private PythonDictionary _dict;    // the dictionary for extra values, created on demand
             private System.Exception _clrException; // the cached CLR exception that is thrown
             private object[] _slots;                // slots, only used for storage of our weak reference.
 
@@ -111,7 +116,7 @@ namespace IronPython.Runtime.Exceptions {
                 return Activator.CreateInstance(cls.UnderlyingSystemType, cls);
             }
 
-            public static object __new__(PythonType/*!*/ cls, [ParamDictionary] IAttributesCollection kwArgs, params object[] args) {
+            public static object __new__(PythonType/*!*/ cls, [ParamDictionary]IDictionary<object, object> kwArgs, params object[] args) {
                 return Activator.CreateInstance(cls.UnderlyingSystemType, cls);
             }
 
@@ -181,7 +186,8 @@ namespace IronPython.Runtime.Exceptions {
             /// Gets or sets the dictionary which is used for storing members not declared to have space reserved
             /// within the exception object.
             /// </summary>
-            public IAttributesCollection/*!*/ __dict__ {
+            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+            public PythonDictionary/*!*/ __dict__ {
                 get {
                     EnsureDict();
 
@@ -199,9 +205,9 @@ namespace IronPython.Runtime.Exceptions {
             /// <summary>
             /// Updates the exception's state (dictionary) with the new values
             /// </summary>
-            public void __setstate__(IAttributesCollection state) {
+            public void __setstate__(PythonDictionary state) {
                 foreach (KeyValuePair<object, object> pair in state) {
-                    __dict__.AddObjectKey(pair.Key, pair.Value);
+                    __dict__[pair.Key] =  pair.Value;
                 }
             }
 
@@ -253,7 +259,7 @@ namespace IronPython.Runtime.Exceptions {
             public object GetBoundMember(string name) {
                 if (_dict != null) {
                     object res;
-                    if (_dict.TryGetValue(SymbolTable.StringToId(name), out res)) {
+                    if (_dict.TryGetValue(name, out res)) {
                         return res;
                     }
                 }
@@ -268,7 +274,7 @@ namespace IronPython.Runtime.Exceptions {
             public void SetMemberAfter(string name, object value) {
                 EnsureDict();
 
-                _dict[SymbolTable.StringToId(name)] = value;
+                _dict[name] = value;
             }
 
             /// <summary>
@@ -284,12 +290,12 @@ namespace IronPython.Runtime.Exceptions {
 
                 if (_dict == null) return false;
 
-                return _dict.Remove(SymbolTable.StringToId(name));
+                return _dict.Remove(name);
             }
 
             private void EnsureDict() {
                 if (_dict == null) {
-                    Interlocked.CompareExchange<IAttributesCollection>(ref _dict, PythonDictionary.MakeSymbolDictionary(), null);
+                    Interlocked.CompareExchange<PythonDictionary>(ref _dict, PythonDictionary.MakeSymbolDictionary(), null);
                 }
             }
 
@@ -309,17 +315,17 @@ namespace IronPython.Runtime.Exceptions {
 
             #region IPythonObject Members
 
-            IAttributesCollection IPythonObject.Dict {
+            PythonDictionary IPythonObject.Dict {
                 get { return _dict; }
             }
 
-            IAttributesCollection IPythonObject.SetDict(IAttributesCollection dict) {
-                Interlocked.CompareExchange<IAttributesCollection>(ref _dict, dict, null);
+            PythonDictionary IPythonObject.SetDict(PythonDictionary dict) {
+                Interlocked.CompareExchange<PythonDictionary>(ref _dict, dict, null);
                 return _dict;
             }
 
-            bool IPythonObject.ReplaceDict(IAttributesCollection dict) {
-                return Interlocked.CompareExchange<IAttributesCollection>(ref _dict, dict, null) == null;
+            bool IPythonObject.ReplaceDict(PythonDictionary dict) {
+                return Interlocked.CompareExchange<PythonDictionary>(ref _dict, dict, null) == null;
             }
 
             PythonType IPythonObject.PythonType {
@@ -1105,7 +1111,7 @@ for k, v in toError.iteritems():
         [PythonHidden]
         public static PythonType CreateSubType(PythonContext/*!*/ context, PythonType baseType, string name, string module, string documentation) {
             PythonType res = new PythonType(context, baseType, name, module, documentation);
-            res.SetCustomMember(context.SharedContext, Symbols.WeakRef, new PythonTypeWeakRefSlot(res));
+            res.SetCustomMember(context.SharedContext, "__weakref__", new PythonTypeWeakRefSlot(res));
             res.IsWeakReferencable = true;
             return res;
         }

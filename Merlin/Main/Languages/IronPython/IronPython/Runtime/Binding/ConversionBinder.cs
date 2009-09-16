@@ -13,10 +13,15 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using System.Dynamic;
 using IronPython.Runtime.Operations;
@@ -26,13 +31,13 @@ using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
-using Ast = System.Linq.Expressions.Expression;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
 using Microsoft.Scripting;
 using System.Reflection;
 using System.Diagnostics;
 
 namespace IronPython.Runtime.Binding {
+    using Ast = Expression;
+    using AstUtils = Microsoft.Scripting.Ast.Utils;
 
     class PythonConversionBinder : DynamicMetaObjectBinder, IPythonSite, IExpressionSerializable {
         private readonly PythonContext/*!*/ _context;
@@ -509,7 +514,7 @@ namespace IronPython.Runtime.Binding {
 
         #region Conversion Logic
 
-        private DynamicMetaObject TryToGenericInterfaceConversion(DynamicMetaObject/*!*/ self, Type/*!*/ toType, Type/*!*/ fromType, Type/*!*/ wrapperType) {
+        private static DynamicMetaObject TryToGenericInterfaceConversion(DynamicMetaObject/*!*/ self, Type/*!*/ toType, Type/*!*/ fromType, Type/*!*/ wrapperType) {
             if (fromType.IsAssignableFrom(CompilerHelpers.GetType(self.Value))) {
                 Type making = wrapperType.MakeGenericType(toType.GetGenericArguments());
 
@@ -529,7 +534,7 @@ namespace IronPython.Runtime.Binding {
             return null;
         }
 
-        private DynamicMetaObject/*!*/ MakeToArrayConversion(DynamicMetaObject/*!*/ self, Type/*!*/ toType) {
+        private static DynamicMetaObject/*!*/ MakeToArrayConversion(DynamicMetaObject/*!*/ self, Type/*!*/ toType) {
             self = self.Restrict(typeof(PythonTuple));
 
             return new DynamicMetaObject(
@@ -687,9 +692,9 @@ namespace IronPython.Runtime.Binding {
             CodeContext context = pyContext.SharedContext;
             PythonTypeSlot pts;
 
-            if (pt.TryResolveSlot(context, Symbols.Iterator, out pts)) {
+            if (pt.TryResolveSlot(context, "__iter__", out pts)) {
                 return MakeIterRule(metaUserObject, "CreatePythonEnumerable");
-            } else if (pt.TryResolveSlot(context, Symbols.GetItem, out pts)) {
+            } else if (pt.TryResolveSlot(context, "__getitem__", out pts)) {
                 return MakeGetItemIterable(metaUserObject, pyContext, pts, "CreateItemEnumerable");
             }
 
@@ -703,7 +708,7 @@ namespace IronPython.Runtime.Binding {
             PythonTypeSlot pts;
 
 
-            if (pt.TryResolveSlot(context, Symbols.Iterator, out pts)) {
+            if (pt.TryResolveSlot(context, "__iter__", out pts)) {
                 ParameterExpression tmp = Ast.Parameter(typeof(object), "iterVal");
 
                 return new DynamicMetaObject(
@@ -732,7 +737,7 @@ namespace IronPython.Runtime.Binding {
                     ),
                     metaUserObject.Restrictions
                 );
-            } else if (pt.TryResolveSlot(context, Symbols.GetItem, out pts)) {
+            } else if (pt.TryResolveSlot(context, "__getitem__", out pts)) {
                 return MakeGetItemIterable(metaUserObject, state, pts, "CreateItemEnumerator");
             }
 

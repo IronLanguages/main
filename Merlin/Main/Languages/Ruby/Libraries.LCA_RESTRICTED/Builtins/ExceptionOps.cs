@@ -13,6 +13,12 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -26,12 +32,10 @@ using System.Reflection;
 using IronRuby.Compiler;
 using IronRuby.Compiler.Generation;
 
-using Ast = System.Linq.Expressions.Expression;
-using AstFactory = IronRuby.Compiler.Ast.AstFactory;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
-using System.Linq.Expressions;
-
 namespace IronRuby.Builtins {
+    using Ast = Expression;
+    using AstFactory = IronRuby.Compiler.Ast.AstFactory;
+    using AstUtils = Microsoft.Scripting.Ast.Utils;
 
     // Exception
     // -- fatal

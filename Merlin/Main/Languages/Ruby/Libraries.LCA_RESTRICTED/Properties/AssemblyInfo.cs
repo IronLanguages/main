@@ -39,6 +39,6 @@ using System.Security;
 #endif
 
 [assembly: SecurityTransparent]
-#if CLR4
+#if !CLR2
 [assembly: SecurityRules(SecurityRuleSet.Level1)]
 #endif

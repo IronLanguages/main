@@ -71,28 +71,28 @@ namespace IronPython.Runtime {
             _storage = new CommonDictionaryStorage();
         }
 
-        internal static PythonDictionary FromIAC(CodeContext context, IAttributesCollection iac) {
+        internal static PythonDictionary FromIAC(CodeContext context, PythonDictionary iac) {
             return iac.GetType() == typeof(PythonDictionary) ? (PythonDictionary)iac : MakeDictFromIAC(context, iac);
         }
 
-        private static PythonDictionary MakeDictFromIAC(CodeContext context, IAttributesCollection iac) {
+        private static PythonDictionary MakeDictFromIAC(CodeContext context, PythonDictionary iac) {
             return new PythonDictionary(new ObjectAttributesAdapter(context, iac));
         }
         
         internal static PythonDictionary MakeSymbolDictionary() {
-            return new PythonDictionary(new SymbolIdDictionaryStorage());
+            return new PythonDictionary(new StringDictionaryStorage());
         }
 
         internal static PythonDictionary MakeSymbolDictionary(int count) {
-            return new PythonDictionary(new SymbolIdDictionaryStorage(count));
+            return new PythonDictionary(new StringDictionaryStorage(count));
         }
 
-        public void __init__(CodeContext/*!*/ context, object o, [ParamDictionary] IAttributesCollection kwArgs) {
+        public void __init__(CodeContext/*!*/ context, object o, [ParamDictionary]IDictionary<object, object> kwArgs) {
             update(context, o);
             update(context, kwArgs);
         }
 
-        public void __init__(CodeContext/*!*/ context, [ParamDictionary] IAttributesCollection kwArgs) {
+        public void __init__(CodeContext/*!*/ context, [ParamDictionary]IDictionary<object, object> kwArgs) {
             update(context, kwArgs);
         }
 
@@ -100,6 +100,7 @@ namespace IronPython.Runtime {
             update(context, o);
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         public void __init__() {
         }
 
@@ -134,8 +135,6 @@ namespace IronPython.Runtime {
 
         [PythonHidden]
         public bool TryGetValue(object key, out object value) {
-            Debug.Assert(!(key is SymbolId));
-
             if (_storage.TryGetValue(key, out value)) {
                 return true;
             }
@@ -146,7 +145,7 @@ namespace IronPython.Runtime {
                 PythonTypeOps.TryInvokeBinaryOperator(DefaultContext.Default,
                 this,
                 key,
-                Symbols.Missing,
+                "__missing__",
                 out value)) {
                 return true;
             }
@@ -272,14 +271,10 @@ namespace IronPython.Runtime {
         }
 
         private void SetItem(object key, object value) {
-            Debug.Assert(!(key is SymbolId));
-
             _storage.Add(key, value);
         }
 
         private object GetItem(object key) {
-            Debug.Assert(!(key is SymbolId));
-
             object ret;
             if (TryGetValue(key, out ret)) {
                 return ret;
@@ -381,10 +376,11 @@ namespace IronPython.Runtime {
             return new DictionaryValueEnumerator(_storage);
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         public void update() {
         }
 
-        public void update(CodeContext/*!*/ context, [ParamDictionary]IAttributesCollection b) {
+        public void update(CodeContext/*!*/ context, [ParamDictionary]IDictionary<object, object> b) {
             DictionaryOps.update(context, this, b);
         }
 
@@ -392,7 +388,7 @@ namespace IronPython.Runtime {
             DictionaryOps.update(context, this, b);
         }
 
-        public void update(CodeContext/*!*/ context, object b, [ParamDictionary]IAttributesCollection f) {
+        public void update(CodeContext/*!*/ context, object b, [ParamDictionary]IDictionary<object, object> f) {
             DictionaryOps.update(context, this, b);
             DictionaryOps.update(context, this, f);
         }
@@ -507,8 +503,8 @@ namespace IronPython.Runtime {
             // CompareTo is allowed to throw (string, int, etc... all do it if they don't get a matching type)
             if (oth == null) {
                 object len, iteritems;
-                if (!PythonOps.TryGetBoundAttr(context, other, Symbols.Length, out len) ||
-                    !PythonOps.TryGetBoundAttr(context, other, SymbolTable.StringToId("iteritems"), out iteritems)) {
+                if (!PythonOps.TryGetBoundAttr(context, other, "__len__", out len) ||
+                    !PythonOps.TryGetBoundAttr(context, other, "iteritems", out iteritems)) {
                     return NotImplementedType.Value;
                 }
 
@@ -772,17 +768,17 @@ namespace IronPython.Runtime {
             }
 
             // call Dict.TryGetValue to get the real value.
-            return _storage.TryGetValue(name, out value);
+            return _storage.TryGetValue(SymbolTable.IdToString(name), out value);
         }
 
         object IAttributesCollection.this[SymbolId name] {
             get {
-                return this[SymbolTable.IdToString(name)];
+                return this[name];
             }
             set {
                 if (GetType() == typeof(PythonDictionary)) {
                     // no need to call virtual version
-                    _storage.Add(name, value);
+                    _storage.Add(SymbolTable.IdToString(name), value);
                 } else {
                     this[SymbolTable.IdToString(name)] = value;
                 }

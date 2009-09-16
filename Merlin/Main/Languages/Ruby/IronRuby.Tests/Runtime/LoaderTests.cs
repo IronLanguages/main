@@ -20,6 +20,7 @@ using System.Dynamic;
 using IronRuby.Builtins;
 using IronRuby.Runtime;
 using Microsoft.Scripting.Actions;
+using Microsoft.Scripting.Utils;
 
 namespace IronRuby.Tests {
     public partial class Tests {

@@ -19,7 +19,7 @@ namespace IronPython.Compiler.Ast {
     public class RelativeModuleName : ModuleName {
         private readonly int _dotCount;
 
-        public RelativeModuleName(SymbolId[] names, int dotCount)
+        public RelativeModuleName(string[] names, int dotCount)
             : base(names) {
             _dotCount = dotCount;
         }

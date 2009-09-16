@@ -14,13 +14,20 @@
  * ***************************************************************************/
 
 using System;
+using System.Collections.Generic;
+
 using IronPython.Runtime;
 
-using AstUtils = Microsoft.Scripting.Ast.Utils;
+#if !CLR2
 using MSAst = System.Linq.Expressions;
+#else
+using MSAst = Microsoft.Scripting.Ast;
+#endif
+
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Compiler.Ast {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = MSAst.Expression;
 
     public abstract class ListComprehensionIterator : Node {
         internal abstract MSAst.Expression Transform(AstGenerator ag, MSAst.Expression body);
@@ -39,7 +46,7 @@ namespace IronPython.Compiler.Ast {
             get { return _item; }
         }
 
-        public ListComprehensionIterator[] Iterators {
+        public IList<ListComprehensionIterator> Iterators {
             get { return _iterators; }
         }
 

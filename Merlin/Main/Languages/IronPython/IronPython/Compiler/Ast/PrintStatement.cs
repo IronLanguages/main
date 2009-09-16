@@ -13,12 +13,17 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using MSAst = System.Linq.Expressions;
+#else
+using MSAst = Microsoft.Scripting.Ast;
+#endif
+
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using MSAst = System.Linq.Expressions;
 
 namespace IronPython.Compiler.Ast {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = MSAst.Expression;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
 
     public class PrintStatement : Statement {
@@ -36,7 +41,7 @@ namespace IronPython.Compiler.Ast {
             get { return _dest; }
         }
 
-        public Expression[] Expressions {
+        public IList<Expression> Expressions {
             get { return _expressions; }
         }
 
@@ -71,7 +76,7 @@ namespace IronPython.Compiler.Ast {
                     MSAst.ParameterExpression temp = ag.GetTemporary("destination");
 
                     statements.Add(
-                        ag.MakeAssignment(temp, destination)
+                        AstGenerator.MakeAssignment(temp, destination)
                     );
 
                     destination = temp;

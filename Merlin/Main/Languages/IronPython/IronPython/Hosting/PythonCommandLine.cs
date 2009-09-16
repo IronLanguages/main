@@ -26,13 +26,14 @@ using IronPython.Runtime.Operations;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Hosting.Shell;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 namespace IronPython.Hosting {
 #if !SILVERLIGHT
     /// <summary>
     /// A simple Python command-line should mimic the standard python.exe
     /// </summary>
-    public class PythonCommandLine : CommandLine {
+    public sealed class PythonCommandLine : CommandLine {
         private PythonContext PythonContext {
             get { return (PythonContext)Language; }
         }
@@ -59,7 +60,7 @@ namespace IronPython.Hosting {
                    "\nType \"help\", \"copyright\", \"credits\" or \"license\" for more information.\n";
         }
 
-        private string/*!*/ VersionString {
+        private static string/*!*/ VersionString {
             get {
                 return GetVersionString();                    
             }
@@ -120,7 +121,7 @@ namespace IronPython.Hosting {
 
                 // get the run_module method
                 try {
-                    runMod = PythonOps.GetBoundAttr(PythonContext.SharedContext, runpy, SymbolTable.StringToId("run_module"));
+                    runMod = PythonOps.GetBoundAttr(PythonContext.SharedContext, runpy, "run_module");
                 } catch (Exception) {
                     Console.WriteLine("Could not access runpy.run_module", Style.Error);
                     return -1;

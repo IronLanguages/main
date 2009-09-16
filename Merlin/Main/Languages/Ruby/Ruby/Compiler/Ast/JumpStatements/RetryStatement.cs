@@ -13,13 +13,17 @@
  *
  * ***************************************************************************/
 
-using Microsoft.Scripting;
+#if !CLR2
 using MSA = System.Linq.Expressions;
+#else
+using MSA = Microsoft.Scripting.Ast;
+#endif
+
+using Microsoft.Scripting;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Compiler.Ast {
-    using Ast = System.Linq.Expressions.Expression;
-
+    using Ast = MSA.Expression;
 
     public partial class RetryStatement : JumpStatement {
         public RetryStatement(SourceSpan location)

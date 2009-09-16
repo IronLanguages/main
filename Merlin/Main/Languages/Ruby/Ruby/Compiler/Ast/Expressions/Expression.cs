@@ -13,14 +13,19 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using MSA = System.Linq.Expressions;
+#else
+using MSA = Microsoft.Scripting.Ast;
+#endif
+
 using System.Collections.Generic;
 using System.Diagnostics;
 using Microsoft.Scripting;
-using MSA = System.Linq.Expressions;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Compiler.Ast {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = MSA.Expression;
 
     /// <summary>
     /// Represents expressions. Statements are considered special cases of expressions in AST class hierarchy.

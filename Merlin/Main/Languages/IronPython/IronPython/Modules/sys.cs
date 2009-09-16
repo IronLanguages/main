@@ -43,7 +43,8 @@ namespace IronPython.Modules {
         // builtin_module_names is set by PythonContext and updated on reload
         public const string copyright = "Copyright (c) Microsoft Corporation. All rights reserved.";
 
-        static SysModule() {
+        private static string GetPrefix() {
+            string prefix;
 #if SILVERLIGHT
             prefix = String.Empty;
 #else
@@ -53,6 +54,7 @@ namespace IronPython.Modules {
                 prefix = String.Empty;
             }
 #endif
+            return prefix;
         }
 
         /// <summary>
@@ -216,7 +218,7 @@ namespace IronPython.Modules {
         public const string platform = "cli";
 #endif
 
-        public static readonly string prefix;
+        public static readonly string prefix = GetPrefix();
 
         // ps1 and ps2 are set by PythonContext and only on the initial load
 
@@ -1037,30 +1039,30 @@ namespace IronPython.Modules {
         }
 
         [SpecialName]
-        public static void PerformModuleReload(PythonContext/*!*/ context, IAttributesCollection/*!*/ dict) {
-            dict[SymbolTable.StringToId("stdin")] = dict[SymbolTable.StringToId("__stdin__")];
-            dict[SymbolTable.StringToId("stdout")] = dict[SymbolTable.StringToId("__stdout__")];
-            dict[SymbolTable.StringToId("stderr")] = dict[SymbolTable.StringToId("__stderr__")];
+        public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
+            dict["stdin"] = dict["__stdin__"];
+            dict["stdout"] = dict["__stdout__"];
+            dict["stderr"] = dict["__stderr__"];
 
             // !!! These fields do need to be reset on "reload(sys)". However, the initial value is specified by the 
             // engine elsewhere. For now, we initialize them just once to some default value
-            dict[SymbolTable.StringToId("warnoptions")] = new List(0);
+            dict["warnoptions"] = new List(0);
 
             PublishBuiltinModuleNames(context, dict);
             context.SetHostVariables(dict);
 
-            dict[SymbolTable.StringToId("meta_path")] = new List(0);
-            dict[SymbolTable.StringToId("path_hooks")] = new List(0);
-            dict[SymbolTable.StringToId("path_importer_cache")] = new PythonDictionary();
+            dict["meta_path"] = new List(0);
+            dict["path_hooks"] = new List(0);
+            dict["path_importer_cache"] = new PythonDictionary();
         }
 
-        private static void PublishBuiltinModuleNames(PythonContext/*!*/ context, IAttributesCollection/*!*/ dict) {
+        private static void PublishBuiltinModuleNames(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
             object[] keys = new object[context.BuiltinModules.Keys.Count];
             int index = 0;
             foreach (object key in context.BuiltinModules.Keys) {
                 keys[index++] = key;
             }
-            dict[SymbolTable.StringToId("builtin_module_names")] = PythonTuple.MakeTuple(keys);
+            dict["builtin_module_names"] = PythonTuple.MakeTuple(keys);
         }
 
     }

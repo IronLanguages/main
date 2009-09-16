@@ -15,8 +15,13 @@
 
 #if !SILVERLIGHT
 
-using System.Diagnostics;
+#if !MICROSOFT_DYNAMIC
 using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Dynamic.Utils;
 

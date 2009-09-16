@@ -367,7 +367,7 @@ namespace IronPython.Modules {
 
         public static object trunc(CodeContext/*!*/ context, object value) {
             object func;
-            if (PythonOps.TryGetBoundAttr(value, Symbols.Truncate, out func)) {
+            if (PythonOps.TryGetBoundAttr(value, "__trunc__", out func)) {
                 return PythonOps.CallWithContext(context, func);
             } else {
                 throw PythonOps.AttributeError("__trunc__");

@@ -20,7 +20,12 @@ using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime.Binding;
 
+#if !CLR2
 using MSAst = System.Linq.Expressions;
+#else
+using MSAst = Microsoft.Scripting.Ast;
+#endif
+
 
 namespace IronPython.Compiler.Ast {
 
@@ -37,17 +42,17 @@ namespace IronPython.Compiler.Ast {
         /// <summary>
         /// Position of the parameter: 0-based index
         /// </summary>
-        private readonly SymbolId _name;
+        private readonly string _name;
         protected readonly ParameterKind _kind;
         protected Expression _defaultValue;
 
         private PythonVariable _variable;
 
-        public Parameter(SymbolId name)
+        public Parameter(string name)
             : this(name, ParameterKind.Normal) {
         }
 
-        public Parameter(SymbolId name, ParameterKind kind) {
+        public Parameter(string name, ParameterKind kind) {
             _name = name;
             _kind = kind;
         }
@@ -55,7 +60,7 @@ namespace IronPython.Compiler.Ast {
         /// <summary>
         /// Parameter name
         /// </summary>
-        public SymbolId Name {
+        public string Name {
             get { return _name; }
         }
 
@@ -82,7 +87,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal MSAst.Expression Transform(AstGenerator inner, bool needsWrapperMethod, bool needsLocalsDictionary, List<MSAst.Expression> init) {
-            string name = SymbolTable.IdToString(Name);
+            string name = Name;
             if (_variable.AccessedInNestedScope || needsLocalsDictionary) {
                 ClosureExpression closureVar;
                 if (needsWrapperMethod) {
@@ -124,7 +129,7 @@ namespace IronPython.Compiler.Ast {
         private readonly TupleExpression _tuple;
 
         public SublistParameter(int position, TupleExpression tuple)
-            : base(SymbolTable.StringToId("." + position), ParameterKind.Normal) {
+            : base("." + position, ParameterKind.Normal) {
             _tuple = tuple;
         }
 

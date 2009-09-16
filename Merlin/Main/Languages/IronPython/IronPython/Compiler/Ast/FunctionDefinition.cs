@@ -28,18 +28,23 @@ using Microsoft.Scripting.Utils;
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 
-using AstUtils = Microsoft.Scripting.Ast.Utils;
+#if !CLR2
 using MSAst = System.Linq.Expressions;
+#else
+using MSAst = Microsoft.Scripting.Ast;
+#endif
+
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 using Debugging = Microsoft.Scripting.Debugging;
 
 namespace IronPython.Compiler.Ast {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = MSAst.Expression;
 
     public class FunctionDefinition : ScopeStatement {
         protected Statement _body;
         private SourceLocation _header;
-        private readonly SymbolId _name;
+        private readonly string _name;
         private readonly Parameter[] _parameters;
         private IList<Expression> _decorators;
         private SourceUnit _sourceUnit;
@@ -66,11 +71,11 @@ namespace IronPython.Compiler.Ast {
                 _functionParam
             );
 
-        public FunctionDefinition(SymbolId name, Parameter[] parameters, SourceUnit sourceUnit)
+        public FunctionDefinition(string name, Parameter[] parameters, SourceUnit sourceUnit)
             : this(name, parameters, null, sourceUnit) {
         }
 
-        public FunctionDefinition(SymbolId name, Parameter[] parameters, Statement body, SourceUnit sourceUnit) {
+        public FunctionDefinition(string name, Parameter[] parameters, Statement body, SourceUnit sourceUnit) {
             _name = name;
             _parameters = parameters;
             _body = body;
@@ -79,11 +84,11 @@ namespace IronPython.Compiler.Ast {
 
         public bool IsLambda {
             get {
-                return _name.IsEmpty;
+                return String.IsNullOrEmpty(_name);
             }
         }
 
-        public Parameter[] Parameters {
+        public IList<Parameter> Parameters {
             get { return _parameters; }
         }
 
@@ -97,13 +102,13 @@ namespace IronPython.Compiler.Ast {
             set { _header = value; }
         }
 
-        public SymbolId Name {
+        public string Name {
             get { return _name; }
         }
 
         public IList<Expression> Decorators {
             get { return _decorators; }
-            set { _decorators = value; }
+            internal set { _decorators = value; }
         }
 
         public bool IsGenerator {
@@ -163,7 +168,7 @@ namespace IronPython.Compiler.Ast {
             return fa;
         }
 
-        internal override bool TryBindOuter(SymbolId name, out PythonVariable variable) {
+        internal override bool TryBindOuter(string name, out PythonVariable variable) {
             // Functions expose their locals to direct access
             ContainsNestedFreeVariables = true;
             if (TryGetVariable(name, out variable)) {
@@ -175,7 +180,7 @@ namespace IronPython.Compiler.Ast {
             return false;
         }
 
-        internal override PythonVariable BindName(PythonNameBinder binder, SymbolId name) {
+        internal override PythonVariable BindName(PythonNameBinder binder, string name) {
             PythonVariable variable;
 
             // First try variables local to this scope
@@ -229,7 +234,7 @@ namespace IronPython.Compiler.Ast {
                     String.Format(
                         System.Globalization.CultureInfo.InvariantCulture,
                         "import * is not allowed in function '{0}' because it is a nested function",
-                        SymbolTable.IdToString(Name)),
+                        Name),
                     this);
             }
             if (ContainsImportStar && Parent is FunctionDefinition) {
@@ -237,7 +242,7 @@ namespace IronPython.Compiler.Ast {
                     String.Format(
                         System.Globalization.CultureInfo.InvariantCulture,
                         "import * is not allowed in function '{0}' because it is a nested function",
-                        SymbolTable.IdToString(Name)),
+                        Name),
                     this);
             }
             if (ContainsImportStar && ContainsNestedFreeVariables) {
@@ -245,7 +250,7 @@ namespace IronPython.Compiler.Ast {
                     String.Format(
                         System.Globalization.CultureInfo.InvariantCulture,
                         "import * is not allowed in function '{0}' because it contains a nested function with free variables",
-                        SymbolTable.IdToString(Name)),
+                        Name),
                     this);
             }
             if (ContainsUnqualifiedExec && ContainsNestedFreeVariables) {
@@ -253,7 +258,7 @@ namespace IronPython.Compiler.Ast {
                     String.Format(
                         System.Globalization.CultureInfo.InvariantCulture,
                         "unqualified exec is not allowed in function '{0}' because it contains a nested function with free variables",
-                        SymbolTable.IdToString(Name)),
+                        Name),
                     this);
             }
             if (ContainsUnqualifiedExec && IsClosure) {
@@ -261,7 +266,7 @@ namespace IronPython.Compiler.Ast {
                     String.Format(
                         System.Globalization.CultureInfo.InvariantCulture,
                         "unqualified exec is not allowed in function '{0}' because it is a nested function",
-                        SymbolTable.IdToString(Name)),
+                        Name),
                     this);
             }
         }
@@ -270,7 +275,7 @@ namespace IronPython.Compiler.Ast {
             Debug.Assert(_variable != null, "Shouldn't be called by lambda expression");
 
             MSAst.Expression function = TransformToFunctionExpression(ag);
-            return ag.AddDebugInfoAndVoid(ag.Globals.Assign(ag.Globals.GetVariable(ag, _variable), function), new SourceSpan(Start, Header));
+            return ag.AddDebugInfoAndVoid(GlobalAllocator.Assign(ag.Globals.GetVariable(ag, _variable), function), new SourceSpan(Start, Header));
         }
 
         private string MakeProfilerName(string name) {
@@ -296,7 +301,7 @@ namespace IronPython.Compiler.Ast {
             if (IsLambda) {
                 name = "<lambda$" + Interlocked.Increment(ref _lambdaId) + ">";
             } else {
-                name = SymbolTable.IdToString(_name);
+                name = _name;
             }
 
             if (ag.PyContext.PythonOptions.FullFrames) {
@@ -439,7 +444,7 @@ namespace IronPython.Compiler.Ast {
                     code,
                     name,
                     ag.GetDocumentation(_body),
-                    ArrayUtils.ConvertAll(_parameters, (val) => SymbolTable.IdToString(val.Name)),
+                    ArrayUtils.ConvertAll(_parameters, (val) => val.Name),
                     flags,
                     Span,
                     _sourceUnit.Path,
@@ -490,8 +495,8 @@ namespace IronPython.Compiler.Ast {
             return ret;
         }
 
-        private IList<SymbolId> GetVarNames() {
-            List<SymbolId> res = new List<SymbolId>();
+        private IList<string> GetVarNames() {
+            List<string> res = new List<string>();
 
             foreach (Parameter p in _parameters) {
                 res.Add(p.Name);
@@ -524,7 +529,7 @@ namespace IronPython.Compiler.Ast {
 
                 names.Add(
                     AstUtils.Constant(
-                        SymbolTable.IdToString(p.Name)
+                        p.Name
                     )
                 );
             }
@@ -537,7 +542,7 @@ namespace IronPython.Compiler.Ast {
                     // if our method signature is object[] we need to first unpack the argument
                     // from the incoming array.
                     init.Add(
-                        ag.Globals.Assign(
+                        GlobalAllocator.Assign(
                             ag.Globals.GetVariable(ag, p.Variable),
                             Ast.ArrayIndex(
                                 ag.Parameters[1],

@@ -41,9 +41,9 @@ namespace IronPython.Modules {
         private static CacheDict<PatternKey, RE_Pattern> _cachedPatterns = new CacheDict<PatternKey, RE_Pattern>(100);
 
         [SpecialName]
-        public static void PerformModuleReload(PythonContext/*!*/ context, IAttributesCollection/*!*/ dict) {
+        public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
             context.EnsureModuleException("reerror", dict, "error", "re");
-            PythonCopyReg.GetDispatchTable(context.SharedContext)[DynamicHelpers.GetPythonTypeFromType(typeof(RE_Pattern))] = dict[SymbolTable.StringToId("_pickle")];
+            PythonCopyReg.GetDispatchTable(context.SharedContext)[DynamicHelpers.GetPythonTypeFromType(typeof(RE_Pattern))] = dict["_pickle"];
         }
         
         private static readonly Random r = new Random(DateTime.Now.Millisecond);
@@ -993,7 +993,11 @@ namespace IronPython.Modules {
                                         case '<': break; // positive look behind assertion
                                         case '!': break; // negative look ahead assertion
                                         case '#': break; // inline comment
-                                        case '(':  // yes/no if group exists, we don't support this
+                                        case '(':
+                                            // conditional match alternation (?(id/name)yes-pattern|no-pattern)
+                                            // move past ?( so we don't preparse the name.
+                                            nameIndex++;
+                                            break;
                                         default: throw PythonExceptions.CreateThrowable(error(context), "Unrecognized extension " + pattern[nameIndex]);
                                     }
                                     break;

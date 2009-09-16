@@ -14,6 +14,7 @@
  * ***************************************************************************/
 
 using System;
+using Microsoft.Scripting.Utils;
 
 namespace IronRuby.Tests {    
     public partial class Tests {
@@ -163,7 +164,7 @@ namespace IronRuby.Tests {
                 Constants4,
                 UnqualifiedConstants1,
                 LoadAndGlobalConstants,
-                GlobalConstantsInterop,
+                GlobalConstants1,
                 
                 Scenario_ClassVariables1,
                 Scenario_ClassVariables2,
@@ -336,6 +337,7 @@ namespace IronRuby.Tests {
                 RubyHosting1D,
                 RubyHosting2,
                 RubyHosting3,
+                RubyHosting4,
                 CrossRuntime1,
                 CrossRuntime2,
 
@@ -363,6 +365,7 @@ namespace IronRuby.Tests {
                 ClrFields1,
                 ClrTypes1,
                 ClrNamespaces1,
+                ClrNamespaces2,
                 ClrGenerics1,
                 ClrGenerics2,
                 ClrMethods1,

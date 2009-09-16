@@ -13,7 +13,12 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
 using MSAst = System.Linq.Expressions;
+#else
+using MSAst = Microsoft.Scripting.Ast;
+#endif
+
 
 namespace IronPython.Compiler.Ast {
     public abstract class Statement : Node {

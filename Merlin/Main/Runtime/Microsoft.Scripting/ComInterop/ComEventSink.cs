@@ -12,7 +12,6 @@
  *
  *
  * ***************************************************************************/
-
 #if !SILVERLIGHT // ComObject
 
 using System;
@@ -23,6 +22,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security;
 using ComTypes = System.Runtime.InteropServices.ComTypes;
+using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.ComInterop {
     /// <summary>

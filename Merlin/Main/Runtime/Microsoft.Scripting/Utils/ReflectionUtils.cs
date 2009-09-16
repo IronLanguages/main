@@ -40,12 +40,17 @@ namespace Microsoft.Scripting.Utils {
 #endif
 
         public static StringBuilder FormatSignature(StringBuilder result, MethodBase method) {
+            return FormatSignature(result, method, (t) => t.FullName);
+        }
+
+        public static StringBuilder FormatSignature(StringBuilder result, MethodBase method, Func<Type, string> nameDispenser) {
             ContractUtils.RequiresNotNull(result, "result");
             ContractUtils.RequiresNotNull(method, "method");
+            ContractUtils.RequiresNotNull(nameDispenser, "nameDispenser");
 
             MethodInfo methodInfo = method as MethodInfo;
             if (methodInfo != null) {
-                FormatTypeName(result, methodInfo.ReturnType);
+                FormatTypeName(result, methodInfo.ReturnType, nameDispenser);
                 result.Append(' ');
             }
 
@@ -61,12 +66,12 @@ namespace Microsoft.Scripting.Utils {
                 return result;
             }
 
-            FormatTypeName(result, method.DeclaringType);
+            FormatTypeName(result, method.DeclaringType, nameDispenser);
             result.Append("::");
             result.Append(method.Name);
 
             if (!method.IsConstructor) {
-                FormatTypeArgs(result, method.GetGenericArguments());
+                FormatTypeArgs(result, method.GetGenericArguments(), nameDispenser);
             }
 
             result.Append("(");
@@ -75,7 +80,7 @@ namespace Microsoft.Scripting.Utils {
                 ParameterInfo[] ps = method.GetParameters();
                 for (int i = 0; i < ps.Length; i++) {
                     if (i > 0) result.Append(", ");
-                    FormatTypeName(result, ps[i].ParameterType);
+                    FormatTypeName(result, ps[i].ParameterType, nameDispenser);
                     if (!System.String.IsNullOrEmpty(ps[i].Name)) {
                         result.Append(" ");
                         result.Append(ps[i].Name);
@@ -90,10 +95,17 @@ namespace Microsoft.Scripting.Utils {
         }
 
         public static StringBuilder FormatTypeName(StringBuilder result, Type type) {
-            Assert.NotNull(result, type);
+            return FormatTypeName(result, type, (t) => t.FullName);
+        }
 
+        public static StringBuilder FormatTypeName(StringBuilder result, Type type, Func<Type, string> nameDispenser) {
+            ContractUtils.RequiresNotNull(result, "result");
+            ContractUtils.RequiresNotNull(type, "type");
+            ContractUtils.RequiresNotNull(nameDispenser, "nameDispenser");
+            
             if (type.IsGenericType) {
-                string genericName = type.GetGenericTypeDefinition().FullName.Replace('+', '.');
+                Type genType = type.GetGenericTypeDefinition();
+                string genericName = nameDispenser(genType).Replace('+', '.');
                 int tickIndex = genericName.IndexOf('`');
                 result.Append(tickIndex != -1 ? genericName.Substring(0, tickIndex) : genericName);
 
@@ -103,24 +115,33 @@ namespace Microsoft.Scripting.Utils {
                     result.Append(',', typeArgs.Length - 1);
                     result.Append('>');
                 } else {
-                    FormatTypeArgs(result, typeArgs);
+                    FormatTypeArgs(result, typeArgs, nameDispenser);
                 }
             } else if (type.IsGenericParameter) {
                 result.Append(type.Name);
             } else {
-                result.Append(type.FullName.Replace('+', '.'));
+                string name = type.FullName;
+                // cut namespace off:
+                result.Append(nameDispenser(type).Replace('+', '.'));
             }
             return result;
         }
 
         public static StringBuilder FormatTypeArgs(StringBuilder result, Type[] types) {
-            Assert.NotNull(result, types);
+            return FormatTypeArgs(result, types, (t) => t.FullName);
+        }
+
+        public static StringBuilder FormatTypeArgs(StringBuilder result, Type[] types, Func<Type, string> nameDispenser) {
+            ContractUtils.RequiresNotNull(result, "result");
+            ContractUtils.RequiresNotNullItems(types, "types");
+            ContractUtils.RequiresNotNull(nameDispenser, "nameDispenser");
+            
             if (types.Length > 0) {
                 result.Append("<");
 
                 for (int i = 0; i < types.Length; i++) {
                     if (i > 0) result.Append(", ");
-                    FormatTypeName(result, types[i]);
+                    FormatTypeName(result, types[i], nameDispenser);
                 }
 
                 result.Append(">");

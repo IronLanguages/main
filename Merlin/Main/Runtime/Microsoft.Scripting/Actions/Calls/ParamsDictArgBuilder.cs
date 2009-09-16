@@ -12,18 +12,24 @@
  *
  *
  * ***************************************************************************/
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
-using System.Dynamic;
-using System.Linq.Expressions;
 using System.Reflection;
+
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
+
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Actions.Calls {
-    using Ast = System.Linq.Expressions.Expression;
-    using Microsoft.Scripting.Utils;
+    using Ast = Expression;
 
     /// <summary>
     /// Builds the parameter for a params dictionary argument - this collects all the extra name/value
@@ -52,13 +58,17 @@ namespace Microsoft.Scripting.Actions.Calls {
         }
 
         internal protected override Expression ToExpression(OverloadResolver resolver, RestrictedArguments args, bool[] hasBeenUsed) {
-            Expression res = Ast.Call(
-                typeof(BinderOps).GetMethod("MakeSymbolDictionary"),
+            Type dictType = ParameterInfo.ParameterType;
+
+            return Ast.Call(
+                GetCreationDelegate(dictType).Method,
                 Ast.NewArrayInit(typeof(string), ConstantNames()),
                 AstUtils.NewArrayHelper(typeof(object), GetParameters(args, hasBeenUsed))
             );
+        }
 
-            return res;
+        private static InvalidOperationException BadDictionaryType(Type dictType) {
+            return new InvalidOperationException(String.Format("Unsupported param dictionary type: {0}", dictType.FullName));
         }
 
         public override Type Type {
@@ -103,13 +113,44 @@ namespace Microsoft.Scripting.Actions.Calls {
             string[] names = _names;
             int[] indexes = GetParameters(hasBeenUsed);
 
+            Type dictType = ParameterInfo.ParameterType;
+
+            Func<string[], object[], object> func = GetCreationDelegate(dictType);
+
             return (actualArgs) => {
                 object[] values = new object[indexes.Length];
                 for (int i = 0; i < indexes.Length; i++) {
                     values[i] = actualArgs[indexes[i] + 1];
                 }
-                return BinderOps.MakeSymbolDictionary(names, values);
+                return func(names, values);
             };
+        }
+
+        private Func<string[], object[], object> GetCreationDelegate(Type dictType) {
+            Func<string[], object[], object> func = null;
+
+            if (dictType == typeof(IDictionary)) {
+                func = BinderOps.MakeDictionary<object, object>;
+            } else if (dictType == typeof(IAttributesCollection)) {
+                func = BinderOps.MakeSymbolDictionary;
+            } else if (dictType.IsGenericType) {
+                Type[] genArgs = dictType.GetGenericArguments();
+                if (dictType.GetGenericTypeDefinition() == typeof(IDictionary<,>) ||
+                    dictType.GetGenericTypeDefinition() == typeof(Dictionary<,>)) {
+
+                    if (genArgs[0] == typeof(string) || genArgs[0] == typeof(object)) {
+                        MethodInfo target = typeof(BinderOps).GetMethod("MakeDictionary").MakeGenericMethod(genArgs);
+
+                        func = (Func<string[], object[], object>)Delegate.CreateDelegate(typeof(Func<string[], object[], object>), target);
+                    }
+                }
+            }
+
+            if (func == null) {
+                throw BadDictionaryType(dictType);
+            }
+
+            return func;
         }
     }
 }

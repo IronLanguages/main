@@ -26,6 +26,7 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 using SpecialNameAttribute = System.Runtime.CompilerServices.SpecialNameAttribute;
 
 [assembly: PythonModule("_collections", typeof(IronPython.Modules.PythonCollections))]
@@ -59,7 +60,7 @@ namespace IronPython.Modules {
                 : this() {
             }
 
-            public deque([ParamDictionary]IAttributesCollection dict, params object[] args)
+            public deque([ParamDictionary]IDictionary<object, object> dict, params object[] args)
                 : this() {
             }
 
@@ -74,7 +75,7 @@ namespace IronPython.Modules {
                 clear();
             }
 
-            public void __init__([ParamDictionary] IAttributesCollection dict) {
+            public void __init__([ParamDictionary]IDictionary<object, object> dict) {
                 _maxLen = VerifyMaxLen(dict);
                 clear();
             }
@@ -92,7 +93,7 @@ namespace IronPython.Modules {
                 extend(iterable);
             }
 
-            public void __init__(object iterable, [ParamDictionary] IAttributesCollection dict) {
+            public void __init__(object iterable, [ParamDictionary]IDictionary<object, object> dict) {
                 if (VerifyMaxLen(dict) < 0) {
                     __init__(iterable);
                 } else {
@@ -100,13 +101,13 @@ namespace IronPython.Modules {
                 }
             }
 
-            private static int VerifyMaxLen(IAttributesCollection dict) {
+            private static int VerifyMaxLen(IDictionary<object, object> dict) {
                 if (dict.Count != 1) {
                     throw PythonOps.TypeError("deque() takes at most 1 keyword argument ({0} given)", dict.Count);
                 }
                 
                 object value;
-                if (!dict.TryGetValue(SymbolTable.StringToId("maxlen"), out value)) {
+                if (!dict.TryGetValue("maxlen", out value)) {
                     IEnumerator<object> e = dict.Keys.GetEnumerator();
                     if (e.MoveNext()) {
                         throw PythonOps.TypeError("deque(): '{0}' is an invalid keyword argument", e.Current);
@@ -837,11 +838,11 @@ namespace IronPython.Modules {
                 }
             }
 
-            public void __init__(CodeContext/*!*/ context, object default_factory, [ParamDictionary]IAttributesCollection dict, params object[] args) {
+            public void __init__(CodeContext/*!*/ context, object default_factory, [ParamDictionary]IDictionary<object, object> dict, params object[] args) {
                 __init__(context, default_factory, args);
 
-                foreach (KeyValuePair<SymbolId, object> kvp in dict.SymbolAttributes) {
-                    this[SymbolTable.IdToString(kvp.Key)] = kvp.Value;
+                foreach (KeyValuePair<object , object> kvp in dict) {
+                    this[kvp.Key] = kvp.Value;
                 }
             }
 

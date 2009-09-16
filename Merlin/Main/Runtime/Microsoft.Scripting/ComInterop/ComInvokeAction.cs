@@ -15,11 +15,16 @@
 
 #if !SILVERLIGHT
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Dynamic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 
 namespace Microsoft.Scripting.ComInterop {
@@ -40,6 +45,11 @@ namespace Microsoft.Scripting.ComInterop {
         }
 
         public override DynamicMetaObject FallbackInvoke(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject errorSuggestion) {
+            DynamicMetaObject res;
+            if (ComBinder.TryBindInvoke(this, target, args, out res)) {
+                return res;
+            }
+
             return errorSuggestion ?? new DynamicMetaObject(
                 Expression.Throw(
                     Expression.New(

@@ -14,10 +14,14 @@
  * ***************************************************************************/
 
 #if !SILVERLIGHT
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
 
 using System.Collections.Generic;
 using System.Dynamic;
-using System.Linq.Expressions;
 using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 

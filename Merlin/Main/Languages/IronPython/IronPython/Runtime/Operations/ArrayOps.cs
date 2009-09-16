@@ -65,7 +65,7 @@ namespace IronPython.Runtime.Operations {
             Type type = pythonType.UnderlyingSystemType.GetElementType();
 
             object lenFunc;
-            if (!PythonOps.TryGetBoundAttr(items, Symbols.Length, out lenFunc))
+            if (!PythonOps.TryGetBoundAttr(items, "__len__", out lenFunc))
                 throw PythonOps.TypeErrorForBadInstance("expected object with __len__ function, got {0}", items);
 
             int len = PythonContext.GetContext(context).ConvertToInt32(PythonOps.CallWithContext(context, lenFunc));

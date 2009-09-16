@@ -33,6 +33,7 @@ namespace IronPython.Modules {
         private delegate IntPtr MoveMemoryDelegate(IntPtr dest, IntPtr src, IntPtr length);
 
         [DllImport("kernel32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool FreeLibrary(IntPtr hModule);
 
         [DllImport("kernel32.dll")]
@@ -45,7 +46,7 @@ namespace IronPython.Modules {
         public static extern IntPtr GetProcAddress(IntPtr module, string lpFileName);
 
         [DllImport("kernel32.dll")]
-        public static extern IntPtr GetProcAddress(IntPtr module, int ordinal);
+        public static extern IntPtr GetProcAddress(IntPtr module, IntPtr ordinal);
 
         [DllImport("kernel32.dll")]
         public static extern void CopyMemory(IntPtr destination, IntPtr source, IntPtr Length);

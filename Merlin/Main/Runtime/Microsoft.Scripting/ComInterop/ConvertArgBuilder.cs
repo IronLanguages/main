@@ -15,8 +15,13 @@
 
 #if !SILVERLIGHT
 
-using System;
+#if !CLR2
 using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
+using System;
 
 namespace Microsoft.Scripting.ComInterop {
     internal class ConvertArgBuilder : SimpleArgBuilder {

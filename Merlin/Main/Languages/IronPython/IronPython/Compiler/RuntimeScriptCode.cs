@@ -13,6 +13,12 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using MSAst = System.Linq.Expressions;
+#else
+using MSAst = Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Diagnostics;
 using System.Threading;
@@ -20,12 +26,11 @@ using System.Threading;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 using IronPython.Compiler.Ast;
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
-
-using MSAst = System.Linq.Expressions;
 
 namespace IronPython.Compiler {
     /// <summary>
@@ -52,11 +57,11 @@ namespace IronPython.Compiler {
         }
 
         public override object Run() {
-            return InvokeTarget(_code, CreateScope());
+            return InvokeTarget(CreateScope());
         }
 
         public override object Run(Scope scope) {
-            return InvokeTarget(_code, scope);
+            return InvokeTarget(scope);
         }
 
         public override FunctionCode GetFunctionCode() {
@@ -65,10 +70,11 @@ namespace IronPython.Compiler {
             return EnsureFunctionCode(_optimizedTarget);
         }
 
-        private object InvokeTarget(MSAst.LambdaExpression code, Scope scope) {
+        private object InvokeTarget(Scope scope) {
             if (scope == _optimizedContext.GlobalScope && !_optimizedContext.LanguageContext.EnableTracing) {
                 EnsureCompiled();
 
+                Exception e = PythonOps.SaveCurrentException();
                 PushFrame(_optimizedContext, _optimizedTarget);
                 try {
                     if (_context.SourceUnit.Kind == SourceCodeKind.Expression) {
@@ -76,6 +82,7 @@ namespace IronPython.Compiler {
                     }
                     return _optimizedTarget(EnsureFunctionCode(_optimizedTarget));
                 } finally {
+                    PythonOps.RestoreCurrentException(e);
                     PopFrame();
                 }
             }

@@ -17,7 +17,12 @@ using Microsoft.Scripting;
 
 namespace IronRuby.Compiler.Ast {
     using Microsoft.Scripting.Utils;
-    using MSA = System.Linq.Expressions;
+    #if !CLR2
+using MSA = System.Linq.Expressions;
+#else
+using MSA = Microsoft.Scripting.Ast;
+#endif
+
     
     // x = expression rescue jump_statement
     // x = expression rescue expression

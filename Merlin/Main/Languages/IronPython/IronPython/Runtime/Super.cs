@@ -93,7 +93,6 @@ namespace IronPython.Runtime {
             // first find where we are in the mro...
             PythonType mroType = _selfClass as PythonType;
 
-            SymbolId symbol = SymbolTable.StringToId(name);
             object value;
             if (mroType != null) { // can be null if the user does super.__new__
                 IList<PythonType> mro = mroType.ResolutionOrder;
@@ -123,14 +122,14 @@ namespace IronPython.Runtime {
                 lookupType++;
                 while (lookupType < mro.Count) {
                     
-                    if (TryLookupInBase(context, mro[lookupType], symbol, self, out value))
+                    if (TryLookupInBase(context, mro[lookupType], name, self, out value))
                         return value;
 
                     lookupType++;
                 }
             }
 
-            if (PythonType.TryGetBoundMember(context, this, symbol, out value)) {
+            if (PythonType.TryGetBoundMember(context, this, name, out value)) {
                 return value;
             }
 
@@ -139,15 +138,15 @@ namespace IronPython.Runtime {
 
         [SpecialName]
         public void SetMember(CodeContext context, string name, object value) {
-            PythonType.SetMember(context, this, SymbolTable.StringToId(name), value);
+            PythonType.SetMember(context, this, name, value);
         }
 
         [SpecialName]
         public void DeleteCustomMember(CodeContext context, string name) {
-            PythonType.DeleteMember(context, this, SymbolTable.StringToId(name));
+            PythonType.DeleteMember(context, this, name);
         }
 
-        private bool TryLookupInBase(CodeContext context, PythonType pt, SymbolId name, object self, out object value) {
+        private bool TryLookupInBase(CodeContext context, PythonType pt, string name, object self, out object value) {
             PythonTypeSlot dts;
 
             if (pt.OldClass == null) {

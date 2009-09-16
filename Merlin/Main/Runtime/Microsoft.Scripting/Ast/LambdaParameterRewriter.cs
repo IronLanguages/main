@@ -13,8 +13,13 @@
  *
  * ***************************************************************************/
 
-using System.Collections.Generic;
+#if !CLR2
 using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
+using System.Collections.Generic;
 
 namespace Microsoft.Scripting.Ast {
     internal sealed class LambdaParameterRewriter : ExpressionVisitor {

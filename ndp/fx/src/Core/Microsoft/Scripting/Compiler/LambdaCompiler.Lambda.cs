@@ -13,6 +13,7 @@
  *
  * ***************************************************************************/
 
+using System;
 using System.Diagnostics;
 using System.Dynamic.Utils;
 using System.Reflection;
@@ -20,7 +21,11 @@ using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
+#if CLR2
+namespace Microsoft.Scripting.Ast.Compiler {
+#else
 namespace System.Linq.Expressions.Compiler {
+#endif
 
     /// <summary>
     /// Dynamic Language Runtime Compiler.

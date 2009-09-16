@@ -13,8 +13,13 @@
  *
  * ***************************************************************************/
 
-using System;
+#if !CLR2
 using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
+using System;
 using System.Reflection;
 using System.Dynamic;
 using Microsoft.Scripting.Generation;
@@ -239,7 +244,7 @@ namespace Microsoft.Scripting.Utils {
 
         // keep in sync with System.Core version
         internal static bool AreEquivalent(Type t1, Type t2) {
-#if !CLR4
+#if CLR2
             return t1 == t2;
 #else
             return t1 == t2 || t1.IsEquivalentTo(t2);

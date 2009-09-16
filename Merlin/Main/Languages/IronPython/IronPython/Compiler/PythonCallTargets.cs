@@ -15,6 +15,7 @@
 
 using System;
 using System.Collections;
+using Microsoft.Scripting.Utils;
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 

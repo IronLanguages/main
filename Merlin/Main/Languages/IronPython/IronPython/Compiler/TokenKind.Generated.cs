@@ -13,6 +13,7 @@
  *
  * ***************************************************************************/
 
+using System;
 using System.Collections.Generic;
 using Microsoft.Scripting;
 
@@ -122,16 +123,24 @@ namespace IronPython.Compiler {
     }
 
     public static class Tokens {
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         public static readonly Token EndOfFileToken = new SymbolToken(TokenKind.EndOfFile, "<eof>");
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         public static readonly Token NewLineToken = new SymbolToken(TokenKind.NewLine, "<newline>");
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         public static readonly Token NLToken = new SymbolToken(TokenKind.NLToken, "<NL>");  // virtual token used for error reporting
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         public static readonly Token IndentToken = new SymbolToken(TokenKind.Indent, "<indent>");
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Dedent")]
         public static readonly Token DedentToken = new SymbolToken(TokenKind.Dedent, "<dedent>");
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         public static readonly Token CommentToken = new SymbolToken(TokenKind.Comment, "<comment>");
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         public static readonly Token NoneToken = new ConstantValueToken(null);
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         public static readonly Token DotToken = new SymbolToken(TokenKind.Dot, ".");
 
         #region Generated Tokens
@@ -518,43 +527,44 @@ namespace IronPython.Compiler {
         }
 
 
-        private static readonly Dictionary<SymbolId, Token> kws = new Dictionary<SymbolId, Token>();
+        private static readonly Dictionary<string, Token> kws = new Dictionary<string, Token>(StringComparer.Ordinal);
 
-        public static IDictionary<SymbolId, Token> Keywords {
+        public static IDictionary<string, Token> Keywords {
             get { return kws; }
         }
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1810:InitializeReferenceTypeStaticFieldsInline")]
         static Tokens() {
-            Keywords[SymbolTable.StringToId("and")] = kwAndToken;
-            Keywords[SymbolTable.StringToId("as")] = kwAsToken;
-            Keywords[SymbolTable.StringToId("assert")] = kwAssertToken;
-            Keywords[SymbolTable.StringToId("break")] = kwBreakToken;
-            Keywords[SymbolTable.StringToId("class")] = kwClassToken;
-            Keywords[SymbolTable.StringToId("continue")] = kwContinueToken;
-            Keywords[SymbolTable.StringToId("def")] = kwDefToken;
-            Keywords[SymbolTable.StringToId("del")] = kwDelToken;
-            Keywords[SymbolTable.StringToId("elif")] = kwElseIfToken;
-            Keywords[SymbolTable.StringToId("else")] = kwElseToken;
-            Keywords[SymbolTable.StringToId("except")] = kwExceptToken;
-            Keywords[SymbolTable.StringToId("exec")] = kwExecToken;
-            Keywords[SymbolTable.StringToId("finally")] = kwFinallyToken;
-            Keywords[SymbolTable.StringToId("for")] = kwForToken;
-            Keywords[SymbolTable.StringToId("from")] = kwFromToken;
-            Keywords[SymbolTable.StringToId("global")] = kwGlobalToken;
-            Keywords[SymbolTable.StringToId("if")] = kwIfToken;
-            Keywords[SymbolTable.StringToId("import")] = kwImportToken;
-            Keywords[SymbolTable.StringToId("in")] = kwInToken;
-            Keywords[SymbolTable.StringToId("is")] = kwIsToken;
-            Keywords[SymbolTable.StringToId("lambda")] = kwLambdaToken;
-            Keywords[SymbolTable.StringToId("not")] = kwNotToken;
-            Keywords[SymbolTable.StringToId("or")] = kwOrToken;
-            Keywords[SymbolTable.StringToId("pass")] = kwPassToken;
-            Keywords[SymbolTable.StringToId("print")] = kwPrintToken;
-            Keywords[SymbolTable.StringToId("raise")] = kwRaiseToken;
-            Keywords[SymbolTable.StringToId("return")] = kwReturnToken;
-            Keywords[SymbolTable.StringToId("try")] = kwTryToken;
-            Keywords[SymbolTable.StringToId("while")] = kwWhileToken;
-            Keywords[SymbolTable.StringToId("with")] = kwWithToken;
-            Keywords[SymbolTable.StringToId("yield")] = kwYieldToken;
+            Keywords["and"] = kwAndToken;
+            Keywords["as"] = kwAsToken;
+            Keywords["assert"] = kwAssertToken;
+            Keywords["break"] = kwBreakToken;
+            Keywords["class"] = kwClassToken;
+            Keywords["continue"] = kwContinueToken;
+            Keywords["def"] = kwDefToken;
+            Keywords["del"] = kwDelToken;
+            Keywords["elif"] = kwElseIfToken;
+            Keywords["else"] = kwElseToken;
+            Keywords["except"] = kwExceptToken;
+            Keywords["exec"] = kwExecToken;
+            Keywords["finally"] = kwFinallyToken;
+            Keywords["for"] = kwForToken;
+            Keywords["from"] = kwFromToken;
+            Keywords["global"] = kwGlobalToken;
+            Keywords["if"] = kwIfToken;
+            Keywords["import"] = kwImportToken;
+            Keywords["in"] = kwInToken;
+            Keywords["is"] = kwIsToken;
+            Keywords["lambda"] = kwLambdaToken;
+            Keywords["not"] = kwNotToken;
+            Keywords["or"] = kwOrToken;
+            Keywords["pass"] = kwPassToken;
+            Keywords["print"] = kwPrintToken;
+            Keywords["raise"] = kwRaiseToken;
+            Keywords["return"] = kwReturnToken;
+            Keywords["try"] = kwTryToken;
+            Keywords["while"] = kwWhileToken;
+            Keywords["with"] = kwWithToken;
+            Keywords["yield"] = kwYieldToken;
         }
 
         // *** END GENERATED CODE ***

@@ -38,11 +38,11 @@ namespace IronPython.Modules {
         private static readonly string _keyOnceRegistry = "once_registry";
 
         [SpecialName]
-        public static void PerformModuleReload(PythonContext/*!*/ context, IAttributesCollection/*!*/ dict) {
+        public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
             context.GetOrCreateModuleState(_keyFields, () => {
-                dict.Add(SymbolTable.StringToId(_keyDefaultAction), "default");
-                dict.Add(SymbolTable.StringToId(_keyOnceRegistry), new PythonDictionary());
-                dict.Add(SymbolTable.StringToId(_keyFilters), new List() {
+                dict.Add(_keyDefaultAction, "default");
+                dict.Add(_keyOnceRegistry, new PythonDictionary());
+                dict.Add(_keyFilters, new List() {
                     // Default filters
                     PythonTuple.MakeTuple("ignore", null, PythonExceptions.PendingDeprecationWarning, null, 0),
                     PythonTuple.MakeTuple("ignore", null, PythonExceptions.ImportWarning, null, 0),
@@ -193,7 +193,7 @@ namespace IronPython.Modules {
             if (warnings != null) {
                 PythonCalls.Call(
                     context,
-                    PythonOps.GetBoundAttr(context, warnings, SymbolTable.StringToId("showwarning")),
+                    PythonOps.GetBoundAttr(context, warnings, "showwarning"),
                     msg, category, filename, lineno, null, null);
             } else {
                 showwarning(context, msg, category, filename, lineno, null, null);

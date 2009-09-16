@@ -54,7 +54,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [SpecialName, PropertyMethod]
-        public static IAttributesCollection Get__dict__(CodeContext context, NamespaceTracker self) {
+        public static PythonDictionary Get__dict__(CodeContext context, NamespaceTracker self) {
             PythonDictionary res = new PythonDictionary();
             foreach (KeyValuePair<object, object> kvp in self) {
                 if (kvp.Value is TypeGroup || kvp.Value is NamespaceTracker) {
@@ -87,23 +87,6 @@ namespace IronPython.Runtime.Operations {
                 }
 
                 PythonTypeSlot pts = PythonTypeOps.GetSlot(new MemberGroup(mt), name, PythonContext.GetContext(context).Binder.PrivateBinding);
-                object value;
-                if (pts != null && pts.TryGetValue(context, null, TypeCache.PythonType, out value)) {
-                    return value;
-                }
-            }
-
-            return OperationFailed.Value;
-        }
-
-        internal static object GetCustomMember(CodeContext/*!*/ context, NamespaceTracker/*!*/ self, SymbolId name) {
-            MemberTracker mt;
-            if (self.TryGetValue(name, out mt)) {
-                if (mt.MemberType == TrackerTypes.Namespace || mt.MemberType == TrackerTypes.TypeGroup) {
-                    return mt;
-                }
-
-                PythonTypeSlot pts = PythonTypeOps.GetSlot(new MemberGroup(mt), SymbolTable.IdToString(name), PythonContext.GetContext(context).Binder.PrivateBinding);
                 object value;
                 if (pts != null && pts.TryGetValue(context, null, TypeCache.PythonType, out value)) {
                     return value;

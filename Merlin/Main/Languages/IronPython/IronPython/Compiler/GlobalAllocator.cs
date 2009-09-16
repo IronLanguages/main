@@ -13,23 +13,26 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using MSAst = System.Linq.Expressions;
+#else
+using MSAst = Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
-using System.Linq.Expressions;
 
 using Microsoft.Scripting;
-using Microsoft.Scripting.Ast;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime;
 
-using MSAst = System.Linq.Expressions;
-
 namespace IronPython.Compiler.Ast {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = MSAst.Expression;
+    using AstUtils = Microsoft.Scripting.Ast.Utils;
 
     /// <summary>
     /// Provides specific behaviors for different compilation modes.  For example pre-compiled
@@ -57,10 +60,6 @@ namespace IronPython.Compiler.Ast {
             return Ast.Constant(value);
         }
 
-        public virtual MSAst.Expression/*!*/ GetSymbol(SymbolId name) {
-            return Utils.Constant(name);
-        }
-
         /// <summary>
         /// Generates any preparation code for a new class def or function def scope.
         /// </summary>
@@ -72,7 +71,7 @@ namespace IronPython.Compiler.Ast {
 
         #region Fixed Public API Surface
 
-        public MSAst.Expression/*!*/ Assign(MSAst.Expression/*!*/ expression, MSAst.Expression value) {
+        public static MSAst.Expression/*!*/ Assign(MSAst.Expression/*!*/ expression, MSAst.Expression value) {
             IPythonVariableExpression pyGlobal = expression as IPythonVariableExpression;
             if(pyGlobal != null) {
                 return pyGlobal.Assign(value);
@@ -81,7 +80,7 @@ namespace IronPython.Compiler.Ast {
             return Ast.Assign(expression, value);
         }
 
-        public MSAst.Expression/*!*/ Delete(MSAst.Expression/*!*/ expression) {
+        public static MSAst.Expression/*!*/ Delete(MSAst.Expression/*!*/ expression) {
             IPythonVariableExpression pyGlobal = expression as IPythonVariableExpression;
             if (pyGlobal != null) {
                 return pyGlobal.Delete();
@@ -120,7 +119,7 @@ namespace IronPython.Compiler.Ast {
 
             Debug.Assert(variable.Kind != VariableKind.Parameter);
             
-            string name = SymbolTable.IdToString(variable.Name);
+            string name = variable.Name;
             switch (variable.Kind) {
                 case VariableKind.Global:
                 case VariableKind.GlobalLocal:

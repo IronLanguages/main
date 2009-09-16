@@ -13,10 +13,10 @@
  *
  * ***************************************************************************/
 
-using System;
+
+using System.Collections.Generic;
 
 using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
@@ -64,14 +64,14 @@ namespace IronPython.Modules {
                 st.SetValueInternal(_memHolder, 0, args);
             }
 
-            public void __init__(CodeContext/*!*/ context, [ParamDictionary]IAttributesCollection kwargs) {
+            public void __init__(CodeContext/*!*/ context, [ParamDictionary]IDictionary<string, object> kwargs) {
                 CheckAbstract();
 
                 INativeType nativeType = NativeType;
 
                 StructType st = (StructType)nativeType;
 
-                foreach (var x in kwargs.SymbolAttributes) {
+                foreach (var x in kwargs) {
                     PythonOps.SetAttr(context, this, x.Key, x.Value);
                 }
             }
@@ -80,7 +80,7 @@ namespace IronPython.Modules {
                 object abstractCls;
                 if (((PythonType)NativeType).TryGetBoundAttr(((PythonType)NativeType).Context.SharedContext,
                     this,
-                    SymbolTable.StringToId("_abstract_"),
+                    "_abstract_",
                     out abstractCls)) {
                     throw PythonOps.TypeError("abstract class");
                 }

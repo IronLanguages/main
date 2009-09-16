@@ -13,6 +13,12 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using MSAst = System.Linq.Expressions;
+#else
+using MSAst = Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -21,13 +27,12 @@ using System.Runtime.CompilerServices;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Ast;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime;
 
-using MSAst = System.Linq.Expressions;
-
 namespace IronPython.Compiler.Ast {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = MSAst.Expression;
 
     /// <summary>
     /// A global allocator that puts all of the globals into an array access.  The array is an
@@ -38,7 +43,7 @@ namespace IronPython.Compiler.Ast {
     /// </summary>
     class ArrayGlobalAllocator : GlobalAllocator {
         private readonly Dictionary<string, GlobalInfo> _globals = new Dictionary<string, GlobalInfo>();
-        private readonly Dictionary<SymbolId, PythonGlobal> _globalVals = new Dictionary<SymbolId, PythonGlobal>();
+        private readonly Dictionary<string, PythonGlobal> _globalVals = new Dictionary<string, PythonGlobal>(StringComparer.Ordinal);
         private readonly MSAst.ParameterExpression/*!*/ _globalArray;
         private readonly CodeContext _context;
         private readonly ModuleContext _modContext;
@@ -59,9 +64,7 @@ namespace IronPython.Compiler.Ast {
 
             // now fill in the dictionary and create the array
             foreach (var global in _globals) {
-                SymbolId globalName = SymbolTable.StringToId(global.Key);
-                
-                globalArray[global.Value.Index] = _globalVals[globalName];
+                globalArray[global.Value.Index] = _globalVals[global.Key];
             }
             
             _array.Array = globalArray;
@@ -113,7 +116,7 @@ namespace IronPython.Compiler.Ast {
                 get { return typeof(PythonGlobal[]); }
             }
 
-            public override System.Linq.Expressions.Expression Reduce() {
+            public override MSAst.Expression Reduce() {
                 // type specified for a better debugging experience (otherwise it ends up null)
                 return MSAst.Expression.Constant(Array, typeof(PythonGlobal[]));
             }
@@ -128,8 +131,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         protected override MSAst.Expression/*!*/ GetGlobal(string/*!*/ name, AstGenerator/*!*/ ag, bool isLocal) {
-            SymbolId idname = SymbolTable.StringToId(name);
-            PythonGlobal global = _globalVals[idname] = new PythonGlobal(_context, idname);
+            PythonGlobal global = _globalVals[name] = new PythonGlobal(_context, name);
             return new PythonGlobalVariableExpression(GetGlobalInfo(name).Expression, global);
         }
 

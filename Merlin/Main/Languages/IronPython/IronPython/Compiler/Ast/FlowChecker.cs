@@ -147,7 +147,7 @@ namespace IronPython.Compiler.Ast {
     class FlowChecker : PythonWalker {
         private BitArray _bits;
         private Stack<BitArray> _loops;
-        private Dictionary<SymbolId, PythonVariable> _variables;
+        private Dictionary<string, PythonVariable> _variables;
 
         private readonly ScopeStatement _scope;
         private readonly FlowDefiner _fdef;
@@ -157,7 +157,7 @@ namespace IronPython.Compiler.Ast {
             _variables = scope.Variables;
             _bits = new BitArray(_variables.Count * 2);
             int index = 0;
-            foreach (KeyValuePair<SymbolId, PythonVariable> binding in _variables) {
+            foreach (var binding in _variables) {
                 binding.Value.Index = index++;
             }
             _scope = scope;
@@ -168,16 +168,16 @@ namespace IronPython.Compiler.Ast {
         [Conditional("DEBUG")]
         public void Dump(BitArray bits) {
             System.Text.StringBuilder sb = new System.Text.StringBuilder();
-            sb.AppendFormat("FlowChecker ({0})", _scope is FunctionDefinition ? SymbolTable.IdToString(((FunctionDefinition)_scope).Name) :
-                                                 _scope is ClassDefinition ? SymbolTable.IdToString(((ClassDefinition)_scope).Name) : "");
+            sb.AppendFormat("FlowChecker ({0})", _scope is FunctionDefinition ? ((FunctionDefinition)_scope).Name :
+                                                 _scope is ClassDefinition ? ((ClassDefinition)_scope).Name : "");
             sb.Append('{');
             bool comma = false;
-            foreach (KeyValuePair<SymbolId, PythonVariable> binding in _variables) {
+            foreach (var binding in _variables) {
                 if (comma) sb.Append(", ");
                 else comma = true;
                 int index = 2 * binding.Value.Index;
                 sb.AppendFormat("{0}:{1}{2}",
-                    SymbolTable.IdToString(binding.Key),
+                    binding.Key,
                     bits.Get(index) ? "*" : "-",
                     bits.Get(index + 1) ? "-" : "*");
                 if (binding.Value.ReadBeforeInitialized)
@@ -209,7 +209,7 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-        public void Define(SymbolId name) {
+        public void Define(string name) {
             PythonVariable binding;
             if (_variables.TryGetValue(name, out binding)) {
                 SetAssigned(binding, true);
@@ -217,7 +217,7 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-        public void Delete(SymbolId name) {
+        public void Delete(string name) {
             PythonVariable binding;
             if (_variables.TryGetValue(name, out binding)) {
                 SetAssigned(binding, false);
@@ -358,7 +358,7 @@ namespace IronPython.Compiler.Ast {
         public override bool Walk(FromImportStatement node) {
             if (node.Names != FromImportStatement.Star) {
                 for (int i = 0; i < node.Names.Count; i++) {
-                    Define(node.AsNames[i] != SymbolId.Empty ? node.AsNames[i] : node.Names[i]);
+                    Define(node.AsNames[i] != null ? node.AsNames[i] : node.Names[i]);
                 }
             }
             return true;
@@ -427,7 +427,7 @@ namespace IronPython.Compiler.Ast {
         // ImportStmt
         public override bool Walk(ImportStatement node) {
             for (int i = 0; i < node.Names.Count; i++) {
-                Define(node.AsNames[i] != SymbolId.Empty ? node.AsNames[i] : node.Names[i].Names[0]);
+                Define(node.AsNames[i] !=  null ? node.AsNames[i] : node.Names[i].Names[0]);
             }
             return true;
         }

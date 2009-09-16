@@ -23,6 +23,7 @@ using IronPython.Modules;
 namespace IronPython.Runtime {
     class BuiltinsDictionaryStorage : ModuleDictionaryStorage {
         private readonly EventHandler<ModuleChangeEventArgs/*!*/>/*!*/ _change;
+        private object _import;
 
         public BuiltinsDictionaryStorage(EventHandler<ModuleChangeEventArgs/*!*/>/*!*/ change)
             : base(typeof(Builtin)) {
@@ -30,26 +31,52 @@ namespace IronPython.Runtime {
         }
 
         public override void Add(object key, object value) {
-            if (key is string) { 
-                _change(this, new ModuleChangeEventArgs(SymbolTable.StringToId((string)key), ModuleChangeType.Set, value));
+            string strkey = key as string;
+            if (strkey != null) {
+                if (strkey == "__import__") {
+                    _import = value;
+                }
+                _change(this, new ModuleChangeEventArgs(strkey, ModuleChangeType.Set, value));
             }
             base.Add(key, value);
         }
-
+        
         protected override void LazyAdd(object name, object value) {
             base.Add(name, value);
         }
 
-        public override void Add(SymbolId key, object value) {
-            _change(this, new ModuleChangeEventArgs(key, ModuleChangeType.Set, value));
-            base.Add(key, value);
-        }
-
         public override bool Remove(object key) {
-            if (key is string) {
-                _change(this, new ModuleChangeEventArgs(SymbolTable.StringToId((string)key), ModuleChangeType.Delete));
+            string strkey = key as string;
+            if (strkey != null) {
+                if (strkey == "__import__") {
+                    _import = null;
+                }
+                _change(this, new ModuleChangeEventArgs(strkey, ModuleChangeType.Delete));
             }
             return base.Remove(key);
-        }        
+        }
+
+        public override void Clear() {
+            _import = null;
+            base.Clear();
+        }
+
+        public override bool TryGetImport(out object value) {
+            if (_import == null) {
+                if (base.TryGetImport(out value)) {
+                    _import = value;
+                    return true;
+                }
+                return false;
+            }
+
+            value = _import;
+            return true;
+        }
+
+        public override void Reload() {
+            _import = null;
+            base.Reload();
+        }
     }
 }

@@ -329,8 +329,8 @@ namespace IronPython.Runtime {
         private object GetKey(string key) {
             IDictionary<object, object> map = _data as IDictionary<object, object>;
             if (map == null) {
-                IAttributesCollection iac = _data as IAttributesCollection;
-                if (iac == null) {
+                PythonDictionary dict = _data as PythonDictionary;
+                if (dict == null) {
                     if (PythonOps.IsMappingType(DefaultContext.Default, _data) == ScriptingRuntimeHelpers.True) {
                         return PythonOps.GetIndex(_context, _data, key);
                     }
@@ -339,7 +339,7 @@ namespace IronPython.Runtime {
                 }
 
                 object res;
-                if (iac.TryGetValue(SymbolTable.StringToId(key), out res)) return res;
+                if (dict.TryGetValue(key, out res)) return res;
             } else {
                 object res;
                 if (map.TryGetValue(key, out res)) {
@@ -660,7 +660,7 @@ namespace IronPython.Runtime {
         //  format string "e16" ==> "2.9522485325887698e+023", but we want "e+23", not "e+023"
         //  format string "0.0000000000000000e+00" ==> "9.3126672485384600e+23", which is a precision error
         //  so, we have to format with "e16" and strip the zero manually
-        private string removeExponentePaddingZero(string val) {
+        private static string removeExponentePaddingZero(string val) {
             if (val[val.Length - 3] == '0' && (
                 (val[val.Length - 5] == 'e' || val[val.Length - 5] == 'E') &&
                 (val[val.Length - 4] == '+' || val[val.Length - 4] == '-') ||

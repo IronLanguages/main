@@ -13,19 +13,27 @@
  *
  * ***************************************************************************/
 
-using System;
+#if !CLR2
 using System.Linq.Expressions;
-using System.Runtime.CompilerServices;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
+using System;
+using System.Collections.Generic;
 using System.Dynamic;
-using IronPython.Runtime.Binding;
-using IronPython.Runtime.Operations;
+using System.Runtime.CompilerServices;
+
 using Microsoft.Scripting;
 using Microsoft.Scripting.Generation;
-using Microsoft.Scripting.Runtime;
-using Ast = System.Linq.Expressions.Expression;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
+using Microsoft.Scripting.Utils;
+
+using IronPython.Runtime.Binding;
+using IronPython.Runtime.Operations;
 
 namespace IronPython.Runtime.Types {
+    using Ast = Expression;
+    using AstUtils = Microsoft.Scripting.Ast.Utils;
 
     [PythonType("method_descriptor"), DontMapGetMemberNamesToDir]
     public sealed class BuiltinMethodDescriptor : PythonTypeSlot, IDynamicMetaObjectProvider, ICodeFormattable {
@@ -125,7 +133,7 @@ namespace IronPython.Runtime.Types {
             }
         }
 
-        public object __call__(CodeContext context, SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object, object[], IAttributesCollection, object>>> storage, [ParamDictionary]IAttributesCollection dictArgs, params object[] args) {
+        public object __call__(CodeContext context, SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object, object[], IDictionary<object, object>, object>>> storage, [ParamDictionary]IDictionary<object, object> dictArgs, params object[] args) {
             return _template.__call__(context, storage, dictArgs, args);
         }
 

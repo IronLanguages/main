@@ -13,11 +13,16 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
-using System.Linq.Expressions;
 using System.Reflection;
 
 using Microsoft.Scripting;
@@ -29,10 +34,9 @@ using Microsoft.Scripting.Utils;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
-using AstUtils = Microsoft.Scripting.Ast.Utils;
-
 namespace IronPython.Runtime.Binding {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = Expression;
+    using AstUtils = Microsoft.Scripting.Ast.Utils;
 
     partial class MetaPythonType : MetaPythonObject, IPythonInvokable {
 
@@ -57,7 +61,7 @@ namespace IronPython.Runtime.Binding {
                 if (pt.IsSystemType) {
                     return action.FallbackInvokeMember(this, args);
                 } else if (
-                    pt.TryResolveSlot(DefaultContext.DefaultCLS, SymbolTable.StringToId(action.Name), out dummy) ||
+                    pt.TryResolveSlot(DefaultContext.DefaultCLS, action.Name, out dummy) ||
                     pt.IsOldClass) {
                     break;
                 }
@@ -270,8 +274,8 @@ namespace IronPython.Runtime.Binding {
         private void GetAdapters(ArgumentValues/*!*/ ai, DynamicMetaObjectBinder/*!*/ call, Expression/*!*/ codeContext, out NewAdapter/*!*/ newAdapter, out InitAdapter/*!*/ initAdapter) {
             PythonTypeSlot newInst, init;
 
-            Value.TryResolveSlot(PythonContext.GetPythonContext(call).SharedContext, Symbols.NewInst, out newInst);
-            Value.TryResolveSlot(PythonContext.GetPythonContext(call).SharedContext, Symbols.Init, out init);
+            Value.TryResolveSlot(PythonContext.GetPythonContext(call).SharedContext, "__new__", out newInst);
+            Value.TryResolveSlot(PythonContext.GetPythonContext(call).SharedContext, "__init__", out init);
 
             // these are never null because we always resolve to __new__ or __init__ somewhere.
             Assert.NotNull(newInst, init);
@@ -315,22 +319,11 @@ namespace IronPython.Runtime.Binding {
             private readonly ArgumentValues/*!*/ _argInfo;
             private readonly PythonContext/*!*/ _state;
             private readonly Expression/*!*/ _context;
-            private BindingRestrictions/*!*/ _restrictions;            
 
             public CallAdapter(ArgumentValues/*!*/ ai, PythonContext/*!*/ state, Expression/*!*/ codeContext) {
                 _argInfo = ai;
                 _state = state;
-                _restrictions = BindingRestrictions.Empty;
                 _context = codeContext;
-            }
-
-            public BindingRestrictions/*!*/ Restrictions {
-                get {
-                    return _restrictions;
-                }
-                set {
-                    _restrictions = value;
-                }
             }
 
             protected PythonContext PythonContext {
@@ -379,7 +372,7 @@ namespace IronPython.Runtime.Binding {
                         CodeContext,
                         AstUtils.Convert(Arguments.Self.Expression, typeof(PythonType)),
                         AstUtils.Constant(null),
-                        AstUtils.Constant(Symbols.NewInst)
+                        AstUtils.Constant("__new__")
                     )
                 );
             }
@@ -512,7 +505,7 @@ namespace IronPython.Runtime.Binding {
                         CodeContext,
                         Arguments.Self.Expression,
                         AstUtils.Constant(null),
-                        AstUtils.Constant(Symbols.NewInst)
+                        AstUtils.Constant("__new__")
                     )
                 );
             }
@@ -619,7 +612,7 @@ namespace IronPython.Runtime.Binding {
                     CodeContext,
                     Ast.Convert(Arguments.Self.Expression, typeof(PythonType)),
                     AstUtils.Convert(createExpr.Expression, typeof(object)),
-                    AstUtils.Constant(Symbols.Init)
+                    AstUtils.Constant("__init__")
                 );
 
                 return MakeDefaultInit(binder, createExpr, init);
@@ -697,33 +690,25 @@ namespace IronPython.Runtime.Binding {
         private static BindingRestrictions GetInstanceRestriction(ArgumentValues ai) {
             return BindingRestrictions.GetInstanceRestriction(ai.Self.Expression, ai.Self.Value);
         }
-
-        private Expression/*!*/ GetFinalizerInitialization(DynamicMetaObjectBinder/*!*/ action, ParameterExpression/*!*/ variable) {
-            return Ast.Call(
-                typeof(PythonOps).GetMethod("InitializeForFinalization"),
-                AstUtils.Constant(PythonContext.GetPythonContext(action).SharedContext),
-                AstUtils.Convert(variable, typeof(object))
-            );
-        }
-
+        
         private bool HasFinalizer(DynamicMetaObjectBinder/*!*/ action) {
             // only user types have finalizers...
             if (Value.IsSystemType) return false;
 
             PythonTypeSlot del;
-            bool hasDel = Value.TryResolveSlot(PythonContext.GetPythonContext(action).SharedContext, Symbols.Unassign, out del);
+            bool hasDel = Value.TryResolveSlot(PythonContext.GetPythonContext(action).SharedContext, "__del__", out del);
             return hasDel;
         }
 
         private bool HasDefaultNew(DynamicMetaObjectBinder/*!*/ action) {
             PythonTypeSlot newInst;
-            Value.TryResolveSlot(PythonContext.GetPythonContext(action).SharedContext, Symbols.NewInst, out newInst);
+            Value.TryResolveSlot(PythonContext.GetPythonContext(action).SharedContext, "__new__", out newInst);
             return newInst == InstanceOps.New;
         }
 
         private bool HasDefaultInit(DynamicMetaObjectBinder/*!*/ action) {
             PythonTypeSlot init;
-            Value.TryResolveSlot(PythonContext.GetPythonContext(action).SharedContext, Symbols.Init, out init);
+            Value.TryResolveSlot(PythonContext.GetPythonContext(action).SharedContext, "__init__", out init);
             return init == InstanceOps.Init;
         }
 

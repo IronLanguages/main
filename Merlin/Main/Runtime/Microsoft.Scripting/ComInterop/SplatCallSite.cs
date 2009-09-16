@@ -13,10 +13,16 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Diagnostics;
-using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
+using Microsoft.Scripting.Utils;
 
 #if !SILVERLIGHT
 namespace Microsoft.Scripting.ComInterop {

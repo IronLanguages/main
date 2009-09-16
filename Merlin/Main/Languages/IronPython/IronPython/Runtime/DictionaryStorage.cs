@@ -39,22 +39,10 @@ namespace IronPython.Runtime {
             Add(key, value);
         }
 
-        public virtual void Add(SymbolId key, object value) {
-            Add(SymbolTable.IdToString(key), value);
-        }
-
         public abstract bool Contains(object key);
         
-        public virtual bool Contains(SymbolId key) {
-            return Contains(SymbolTable.IdToString(key));
-        }
-
         public abstract bool Remove(object key);
         public abstract bool TryGetValue(object key, out object value);
-
-        public virtual bool TryGetValue(SymbolId key, out object value) {
-            return TryGetValue(SymbolTable.IdToString(key), out value);
-        }
 
         public virtual bool TryRemoveValue(object key, out object value) {
             if (TryGetValue(key, out value)) {
@@ -101,6 +89,41 @@ namespace IronPython.Runtime {
             foreach (KeyValuePair<object, object> kvp in GetItems()) {
                 into.Add(kvp.Key, kvp.Value);
             }
+        }
+
+        /// <summary>
+        /// Provides fast access to the __path__ attribute if the dictionary storage supports caching it.
+        /// </summary>
+        public virtual bool TryGetPath(out object value) {
+            return TryGetValue("__path__", out value);
+        }
+
+        /// <summary>
+        /// Provides fast access to the __package__ attribute if the dictionary storage supports caching it.
+        /// </summary>
+        public virtual bool TryGetPackage(out object value) {
+            return TryGetValue("__package__", out value);
+        }
+
+        /// <summary>
+        /// Provides fast access to the __builtins__ attribute if the dictionary storage supports caching it.
+        /// </summary>
+        public virtual bool TryGetBuiltins(out object value) {
+            return TryGetValue("__builtins__", out value);
+        }
+
+        /// <summary>
+        /// Provides fast access to the __name__ attribute if the dictionary storage supports caching it.
+        /// </summary>
+        public virtual bool TryGetName(out object value) {
+            return TryGetValue("__name__", out value);
+        }
+
+        /// <summary>
+        /// Provides fast access to the __import__ attribute if the dictionary storage supports caching it.
+        /// </summary>
+        public virtual bool TryGetImport(out object value) {
+            return TryGetValue("__import__", out value);
         }
     }
 

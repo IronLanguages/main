@@ -17,7 +17,8 @@ using IronRuby.Runtime;
 
 namespace IronRuby.Builtins {
 
-    [RubyClass("Object", Extends = typeof(object), Restrictions = ModuleRestrictions.NoNameMangling), Includes(typeof(Kernel))]
+    [RubyClass("Object", Extends = typeof(object), Restrictions = ModuleRestrictions.NoNameMangling | ModuleRestrictions.NotPublished)]
+    [Includes(typeof(Kernel))]
     public static class ObjectOps {
         [RubyMethod("initialize", RubyMethodAttributes.PrivateInstance | RubyMethodAttributes.Empty)]
         public static void Reinitialize(object self) {

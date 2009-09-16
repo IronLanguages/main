@@ -13,10 +13,15 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq.Expressions;
 using System.Reflection.Emit;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -98,6 +103,7 @@ namespace IronPython.Runtime {
         }
 
         // necessary to avoid bad conversion of List -> IList<Byte>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         public ByteArray/*!*/ center(int width, List fillchar) {
             throw PythonOps.TypeError("center() argument 2 must be byte, not list");
         }
@@ -117,14 +123,17 @@ namespace IronPython.Runtime {
         }
 
         // overloads to avoid automatic generic conversion
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         public int count(List/*!*/ sub) {
             throw PythonOps.TypeError("expected bytes or bytearray, got list");
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         public int count(List/*!*/ sub, int start) {
             throw PythonOps.TypeError("expected bytes or bytearray, got list");
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         public int count(List/*!*/ ssub, int start, int end) {
             throw PythonOps.TypeError("expected bytes or bytearray, got list");
         }
@@ -146,14 +155,17 @@ namespace IronPython.Runtime {
         }
 
         // overloads to avoid automatic generic conversion
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         public bool endswith(List/*!*/ suffix) {
             throw PythonOps.TypeError("expected bytes or bytearray, got list");
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         public bool endswith(List/*!*/ suffix, int start) {
             throw PythonOps.TypeError("expected bytes or bytearray, got list");
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         public bool endswith(List/*!*/ suffix, int start, int end) {
             throw PythonOps.TypeError("expected bytes or bytearray, got list");
         }

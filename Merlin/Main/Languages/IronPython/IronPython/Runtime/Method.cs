@@ -13,9 +13,14 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections.Generic;
-using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using System.Dynamic;
 
@@ -50,12 +55,12 @@ namespace IronPython.Runtime {
         }
 
         internal string Name {
-            get { return (string)PythonOps.GetBoundAttr(DefaultContext.Default, _func, Symbols.Name); }
+            get { return (string)PythonOps.GetBoundAttr(DefaultContext.Default, _func, "__name__"); }
         }
 
         public string __doc__ {
             get {
-                return PythonOps.GetBoundAttr(DefaultContext.Default, _func, Symbols.Doc) as string;
+                return PythonOps.GetBoundAttr(DefaultContext.Default, _func, "__doc__") as string;
             }
         }
 
@@ -96,7 +101,7 @@ namespace IronPython.Runtime {
         }
 
         [SpecialName]
-        public object Call(CodeContext/*!*/ context, [ParamDictionary]IAttributesCollection kwArgs, params object[] args) {
+        public object Call(CodeContext/*!*/ context, [ParamDictionary]IDictionary<object, object> kwArgs, params object[] args) {
             return PythonContext.GetContext(context).CallWithKeywords(this, args, kwArgs);
         }
 
@@ -180,12 +185,12 @@ namespace IronPython.Runtime {
                 // no __module__ attribute and this value can be gotten via a call to method.__getattribute__ 
                 // there as well.
                 case "__module__":
-                    return PythonOps.GetBoundAttr(context, _func, Symbols.Module);
+                    return PythonOps.GetBoundAttr(context, _func, "__module__");
                 case "__name__":
-                    return PythonOps.GetBoundAttr(DefaultContext.Default, _func, Symbols.Name);
+                    return PythonOps.GetBoundAttr(DefaultContext.Default, _func, "__name__");
                 default:
                     object value;
-                    SymbolId symbol = SymbolTable.StringToId(name);
+                    string symbol = name;
                     if (TypeCache.Method.TryGetBoundMember(context, this, symbol, out value) ||       // look on method
                         PythonOps.TryGetBoundAttr(context, _func, symbol, out value)) {               // Forward to the func
                         return value;
@@ -196,12 +201,12 @@ namespace IronPython.Runtime {
 
         [SpecialName]
         public void SetMemberAfter(CodeContext context, string name, object value) {
-            TypeCache.Method.SetMember(context, this, SymbolTable.StringToId(name), value);
+            TypeCache.Method.SetMember(context, this, name, value);
         }
 
         [SpecialName]
         public void DeleteMember(CodeContext context, string name) {
-            TypeCache.Method.DeleteMember(context, this, SymbolTable.StringToId(name));
+            TypeCache.Method.DeleteMember(context, this, name);
         }
 
         IList<string> IMembersList.GetMemberNames() {
@@ -211,11 +216,11 @@ namespace IronPython.Runtime {
         IList<object> IPythonMembersList.GetMemberNames(CodeContext/*!*/ context) {
             List ret = TypeCache.Method.GetMemberNames(context);
 
-            ret.AddNoLockNoDups(SymbolTable.IdToString(Symbols.Module));
+            ret.AddNoLockNoDups("__module__");
 
             PythonFunction pf = _func as PythonFunction;
             if (pf != null) {
-                IAttributesCollection dict = pf.func_dict;
+                PythonDictionary dict = pf.func_dict;
                 
                 // Check the func
                 foreach (KeyValuePair<object, object> kvp in dict) {
@@ -253,7 +258,7 @@ namespace IronPython.Runtime {
 
         public string/*!*/ __repr__(CodeContext/*!*/ context) {
             object name;
-            if (!PythonOps.TryGetBoundAttr(context, _func, Symbols.Name, out name)) {
+            if (!PythonOps.TryGetBoundAttr(context, _func, "__name__", out name)) {
                 name = "?";
             }
 

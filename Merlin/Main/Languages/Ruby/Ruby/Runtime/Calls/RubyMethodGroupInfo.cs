@@ -13,6 +13,12 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using MSA = System.Linq.Expressions;
+#else
+using MSA = Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -22,11 +28,12 @@ using IronRuby.Builtins;
 using IronRuby.Compiler;
 using IronRuby.Compiler.Generation;
 using Microsoft.Scripting.Utils;
-using Ast = System.Linq.Expressions.Expression;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Generation;
 
 namespace IronRuby.Runtime.Calls {
+    using Ast = MSA.Expression;
+
     /// <summary>
     /// A group of CLR methods that are treated as a single Ruby method.
     /// </summary>

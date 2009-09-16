@@ -21,19 +21,17 @@ using System.Threading;
 
 namespace IronPython.Runtime {
     [Serializable]
-    internal class SymbolIdDictionaryStorage : DictionaryStorage {
-        private Dictionary<SymbolId, object> _data;
+    internal class StringDictionaryStorage : DictionaryStorage {
+        private Dictionary<string, object> _data;
 
-        public SymbolIdDictionaryStorage() {
+        public StringDictionaryStorage() {
         }
 
-        public SymbolIdDictionaryStorage(int count) {
-            _data = new Dictionary<SymbolId, object>(count);
+        public StringDictionaryStorage(int count) {
+            _data = new Dictionary<string, object>(count, StringComparer.Ordinal);
         }
 
         public override void Add(object key, object value) {
-            Debug.Assert(!(key is SymbolId));
-
             lock (this) {
                 AddNoLock(key, value);
             }
@@ -44,17 +42,9 @@ namespace IronPython.Runtime {
 
             string strKey = key as string;
             if (strKey != null) {
-                _data[SymbolTable.StringToId(strKey)] = value;
+                _data[strKey] = value;
             } else {
                 GetObjectDictionary()[key] = value;
-            }
-        }
-
-        public override void Add(SymbolId key, object value) {
-            lock (this) {
-                EnsureData();
-
-                _data[key] = value;
             }
         }
 
@@ -64,7 +54,7 @@ namespace IronPython.Runtime {
             lock (this) {
                 string strKey = key as string;
                 if (strKey != null) {
-                    return _data.ContainsKey(SymbolTable.StringToId(strKey));
+                    return _data.ContainsKey(strKey);
                 } else {
                     Dictionary<object, object> dict = TryGetObjectDictionary();
                     if (dict != null) {
@@ -76,21 +66,13 @@ namespace IronPython.Runtime {
             }
         }
 
-        public override bool Contains(SymbolId key) {
-            if (_data == null) return false;
-
-            lock (this) {
-                return _data.ContainsKey(key);
-            }
-        }
-
         public override bool Remove(object key) {
             if (_data == null) return false;
 
             lock (this) {
                 string strKey = key as string;
                 if (strKey != null) {
-                    return _data.Remove(SymbolTable.StringToId(strKey));
+                    return _data.Remove(strKey);
                 } else {
                     Dictionary<object, object> dict = TryGetObjectDictionary();
                     if (dict != null) {
@@ -107,7 +89,7 @@ namespace IronPython.Runtime {
                 lock (this) {
                     string strKey = key as string;
                     if (strKey != null) {
-                        return _data.TryGetValue(SymbolTable.StringToId(strKey), out value);
+                        return _data.TryGetValue(strKey, out value);
                     }
 
                     Dictionary<object, object> dict = TryGetObjectDictionary();
@@ -120,17 +102,6 @@ namespace IronPython.Runtime {
 
             value = null;
             return false;
-        }
-
-        public override bool TryGetValue(SymbolId key, out object value) {
-            if (_data == null) {
-                value = null;
-                return false;
-            }
-
-            lock (this) {
-                return _data.TryGetValue(key, out value);
-            }
         }
 
         public override int Count {
@@ -160,10 +131,10 @@ namespace IronPython.Runtime {
 
             if (_data != null) {
                 lock (this) {
-                    foreach (KeyValuePair<SymbolId, object> kvp in _data) {
-                        if (kvp.Key == SymbolId.Empty) continue;
+                    foreach (KeyValuePair<string, object> kvp in _data) {
+                        if (String.IsNullOrEmpty(kvp.Key)) continue;
 
-                        res.Add(new KeyValuePair<object, object>(SymbolTable.IdToString(kvp.Key), kvp.Value));
+                        res.Add(new KeyValuePair<object, object>(kvp.Key, kvp.Value));
                     }
 
                     Dictionary<object, object> dataDict = TryGetObjectDictionary();
@@ -193,7 +164,7 @@ namespace IronPython.Runtime {
         private Dictionary<object, object> TryGetObjectDictionary() {
             if (_data != null) {
                 object dict;
-                if (_data.TryGetValue(SymbolId.Empty, out dict)) {
+                if (_data.TryGetValue(string.Empty, out dict)) {
                     return (Dictionary<object, object>)dict;
                 }
             }
@@ -206,12 +177,12 @@ namespace IronPython.Runtime {
                 EnsureData();
 
                 object dict;
-                if (_data.TryGetValue(SymbolId.Empty, out dict)) {
+                if (_data.TryGetValue(string.Empty, out dict)) {
                     return (Dictionary<object, object>)dict;
                 }
 
                 Dictionary<object, object> res = new Dictionary<object, object>();
-                _data[SymbolId.Empty] = res;
+                _data[string.Empty] = res;
 
                 return res;
             }
@@ -219,7 +190,7 @@ namespace IronPython.Runtime {
 
         private void EnsureData() {
             if (_data == null) {
-                _data = new Dictionary<SymbolId, object>();
+                _data = new Dictionary<string, object>();
             }
         }
     }

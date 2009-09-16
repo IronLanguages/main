@@ -13,6 +13,12 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -237,8 +243,7 @@ namespace Microsoft.Scripting.Runtime {
                 } 
 
                 if (parentType != null) {
-                    string typeName = parentType.FullName;
-                    if (typeName == "System.Linq.Expressions.LambdaExpression" && method.Name == "DoExecute") {
+                    if (parentType == typeof(LambdaExpression) && method.Name == "DoExecute") {
                         // Evaluated frame -- Replace with dynamic frame
                         Debug.Assert(dynamicFrames.Count > 0);
                         //if (dynamicFrames.Count == 0) continue;

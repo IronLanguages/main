@@ -15,6 +15,10 @@
 
 #define DEBUG
 
+#if MICROSOFT_DYNAMIC
+using Microsoft.Scripting.Utils;
+#endif
+
 using System.Collections.Generic;
 using System.Diagnostics;
 

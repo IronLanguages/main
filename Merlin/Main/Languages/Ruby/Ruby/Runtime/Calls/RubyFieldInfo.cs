@@ -13,9 +13,14 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Reflection;
-using System.Linq.Expressions;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
@@ -25,7 +30,7 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 using IronRuby.Runtime.Conversions;
 
 namespace IronRuby.Runtime.Calls {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = Expression;
 
     internal class RubyFieldInfo : RubyMemberInfo {
         private readonly FieldInfo/*!*/ _fieldInfo;

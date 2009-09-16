@@ -303,7 +303,7 @@ namespace IronPython.Compiler {
             SourceLocation start = span.Start;
             SourceLocation end = span.End;
 
-            if (allowIncomplete && (t.Kind == TokenKind.EndOfFile || (_tokenizer.IsEndOfFile && t.Kind == TokenKind.Dedent))) {
+            if (allowIncomplete && (t.Kind == TokenKind.EndOfFile || (_tokenizer.IsEndOfFile && (t.Kind == TokenKind.Dedent || t.Kind == TokenKind.NLToken)))) {
                 errorCode |= ErrorCodes.IncompleteStatement;
             }
 
@@ -345,42 +345,41 @@ namespace IronPython.Compiler {
 
         #region LL(1) Parsing
 
-        private static bool IsPrivateName(SymbolId name) {
-            string s = SymbolTable.IdToString(name);
-            return s.StartsWith("__") && !s.EndsWith("__");
+        private static bool IsPrivateName(string name) {
+            return name.StartsWith("__") && !name.EndsWith("__");
         }
 
-        private SymbolId FixName(SymbolId name) {
+        private string FixName(string name) {
             if (_privatePrefix != null && IsPrivateName(name)) {
-                name = SymbolTable.StringToId(string.Format("_{0}{1}", _privatePrefix, SymbolTable.IdToString(name)));
+                name = string.Format("_{0}{1}", _privatePrefix, name);
             }
 
             return name;
         }
 
-        private SymbolId ReadNameMaybeNone() {
+        private string ReadNameMaybeNone() {
             // peek for better error recovery
             Token t = PeekToken();
             if (t == Tokens.NoneToken) {
                 NextToken();
-                return Symbols.None;
+                return "None";
             }
 
             NameToken n = t as NameToken;
             if (n == null) {
                 ReportSyntaxError("syntax error");
-                return SymbolId.Empty;
+                return null;
             }
 
             NextToken();
             return FixName(n.Name);
         }
 
-        private SymbolId ReadName() {
+        private string ReadName() {
             NameToken n = PeekToken() as NameToken;
             if (n == null) {
                 ReportSyntaxError(_lookahead);
-                return SymbolId.Empty;
+                return null;
             }
             NextToken();
             return FixName(n.Name);
@@ -737,7 +736,7 @@ namespace IronPython.Compiler {
             SourceLocation start = GetStart();
 
             List<ModuleName> l = new List<ModuleName>();
-            List<SymbolId> las = new List<SymbolId>();
+            List<string> las = new List<string>();
             l.Add(ParseModuleName());
             las.Add(MaybeParseAsName());
             while (MaybeEat(TokenKind.Comma)) {
@@ -745,7 +744,7 @@ namespace IronPython.Compiler {
                 las.Add(MaybeParseAsName());
             }
             ModuleName[] names = l.ToArray();
-            SymbolId[] asNames = las.ToArray();
+            var asNames = las.ToArray();
 
             ImportStatement ret = new ImportStatement(names, asNames, AbsoluteImports);
             ret.SetLoc(start, GetEnd());
@@ -769,7 +768,7 @@ namespace IronPython.Compiler {
                 dotCount++;
             }
 
-            SymbolId[] names = SymbolId.EmptySymbols;
+            string[] names = ArrayUtils.EmptyStrings;
             if (PeekToken() is NameToken) {
                 names = ReadNames();
             }
@@ -788,14 +787,13 @@ namespace IronPython.Compiler {
             return ret;
         }
 
-        private SymbolId[] ReadNames() {
-            List<SymbolId> l = new List<SymbolId>();
+        private string[] ReadNames() {
+            List<string> l = new List<string>();
             l.Add(ReadName());
             while (MaybeEat(TokenKind.Dot)) {
                 l.Add(ReadName());
             }
-            SymbolId[] names = l.ToArray();
-            return names;
+            return l.ToArray();
         }
 
 
@@ -811,16 +809,16 @@ namespace IronPython.Compiler {
 
             bool ateParen = MaybeEat(TokenKind.LeftParenthesis);
 
-            SymbolId[] names;
-            SymbolId[] asNames;
+            IList<string> names;
+            string[] asNames;
             bool fromFuture = false;
 
             if (MaybeEat(TokenKind.Multiply)) {
                 names = FromImportStatement.Star;
                 asNames = null;
             } else {
-                List<SymbolId> l = new List<SymbolId>();
-                List<SymbolId> las = new List<SymbolId>();
+                List<string> l = new List<string>();
+                List<string> las = new List<string>();
 
                 if (MaybeEat(TokenKind.LeftParenthesis)) {
                     ParseAsNameList(l, las);
@@ -834,7 +832,7 @@ namespace IronPython.Compiler {
 
             // Process from __future__ statement
 
-            if (dname.Names.Count == 1 && dname.Names[0] == Symbols.Future) {
+            if (dname.Names.Count == 1 && dname.Names[0] == "__future__") {
                 if (!_fromFutureAllowed) {
                     ReportSyntaxError(IronPython.Resources.MisplacedFuture);
                 }
@@ -842,23 +840,23 @@ namespace IronPython.Compiler {
                     ReportSyntaxError(IronPython.Resources.NoFutureStar);
                 }
                 fromFuture = true;
-                foreach (SymbolId name in names) {
-                    if (name == Symbols.Division) {
+                foreach (string name in names) {
+                    if (name == "division") {
                         _languageFeatures |= ModuleOptions.TrueDivision;
-                    } else if (name == Symbols.WithStmt) {
+                    } else if (name == "with_statement") {
                         _languageFeatures |= ModuleOptions.WithStatement;
-                    } else if (name == Symbols.AbsoluteImport) {
+                    } else if (name == "absolute_import") {
                         _languageFeatures |= ModuleOptions.AbsoluteImports;
-                    } else if (name == Symbols.PrintFunction) {
+                    } else if (name == "print_function") {
                         _languageFeatures |= ModuleOptions.PrintFunction;
                         _tokenizer.PrintFunction = true;
-                    } else if (name == Symbols.UnicodeLiterals) {
+                    } else if (name == "unicode_literals") {
                         _tokenizer.UnicodeLiterals = true;
                         _languageFeatures |= ModuleOptions.UnicodeLiterals;
-                    } else if (name == Symbols.NestedScopes) {
-                    } else if (name == Symbols.Generators) {
+                    } else if (name == "nested_scopes") {
+                    } else if (name == "generators") {
                     } else {
-                        string strName = SymbolTable.IdToString(name);
+                        string strName = name;
                         fromFuture = false;
 
                         if (strName != "braces") {
@@ -875,13 +873,13 @@ namespace IronPython.Compiler {
                 Eat(TokenKind.RightParenthesis);
             }
 
-            FromImportStatement ret = new FromImportStatement(dname, names, asNames, fromFuture, AbsoluteImports);
+            FromImportStatement ret = new FromImportStatement(dname, (string[])names, asNames, fromFuture, AbsoluteImports);
             ret.SetLoc(start, GetEnd());
             return ret;
         }
 
         // import_as_name (',' import_as_name)*
-        private void ParseAsNameList(List<SymbolId> l, List<SymbolId> las) {
+        private void ParseAsNameList(List<string> l, List<string> las) {
             l.Add(ReadName());
             las.Add(MaybeParseAsName());
             while (MaybeEat(TokenKind.Comma)) {
@@ -893,11 +891,11 @@ namespace IronPython.Compiler {
 
         //import_as_name: NAME [NAME NAME]
         //dotted_as_name: dotted_name [NAME NAME]
-        private SymbolId MaybeParseAsName() {
+        private string MaybeParseAsName() {
             if (MaybeEat(TokenKind.KeywordAs)) {
                 return ReadName();
             }
-            return SymbolId.Empty;
+            return null;
         }
 
         //exec_stmt: 'exec' expr ['in' expression [',' expression]]
@@ -921,12 +919,12 @@ namespace IronPython.Compiler {
         private GlobalStatement ParseGlobalStmt() {
             Eat(TokenKind.KeywordGlobal);
             SourceLocation start = GetStart();
-            List<SymbolId> l = new List<SymbolId>();
+            List<string> l = new List<string>();
             l.Add(ReadName());
             while (MaybeEat(TokenKind.Comma)) {
                 l.Add(ReadName());
             }
-            SymbolId[] names = l.ToArray();
+            string[] names = l.ToArray();
             GlobalStatement ret = new GlobalStatement(names);
             ret.SetLoc(start, GetEnd());
             return ret;
@@ -996,12 +994,12 @@ namespace IronPython.Compiler {
             return ret;
         }
 
-        public string SetPrivatePrefix(SymbolId name) {
+        public string SetPrivatePrefix(string name) {
             // Remove any leading underscores before saving the prefix
             string oldPrefix = _privatePrefix;
 
-            if (name != SymbolId.Empty) {
-                string prefixString = SymbolTable.IdToString(name);
+            if (name != null) {
+                string prefixString = name;
                 for (int i = 0; i < prefixString.Length; i++) {
                     if (prefixString[i] != '_') {
                         _privatePrefix = prefixString.Substring(i);
@@ -1019,10 +1017,10 @@ namespace IronPython.Compiler {
             Eat(TokenKind.KeywordClass);
 
             SourceLocation start = GetStart();
-            SymbolId name = ReadName();
-            if (name == SymbolId.Empty) {
+            string name = ReadName();
+            if (name == null) {
                 // no name, assume there's no class.
-                return new ClassDefinition(SymbolId.Empty, new Expression[0], new ExpressionStatement(new ErrorExpression()));
+                return new ClassDefinition(null, new Expression[0], new ExpressionStatement(new ErrorExpression()));
             }
 
             Expression[] bases = new Expression[0];
@@ -1066,7 +1064,7 @@ namespace IronPython.Compiler {
                 Expression decorator = new NameExpression(ReadName());
                 decorator.SetLoc(start, GetEnd());
                 while (MaybeEat(TokenKind.Dot)) {
-                    SymbolId name = ReadNameMaybeNone();
+                    string name = ReadNameMaybeNone();
                     decorator = new MemberExpression(decorator, name);
                     decorator.SetLoc(GetStart(), GetEnd());
                 }
@@ -1117,7 +1115,7 @@ namespace IronPython.Compiler {
         private FunctionDefinition ParseFuncDef() {
             Eat(TokenKind.KeywordDef);
             SourceLocation start = GetStart();
-            SymbolId name = ReadName();
+            string name = ReadName();
 
             Eat(TokenKind.LeftParenthesis);
 
@@ -1150,9 +1148,9 @@ namespace IronPython.Compiler {
             return ret;
         }
 
-        private Parameter ParseParameterName(Dictionary<SymbolId, object> names, ParameterKind kind) {
-            SymbolId name = ReadName();
-            if (name != SymbolId.Empty) {
+        private Parameter ParseParameterName(Dictionary<string, object> names, ParameterKind kind) {
+            string name = ReadName();
+            if (name != null) {
                 CheckUniqueParameter(names, name);
             } else {
                 return null;
@@ -1162,12 +1160,12 @@ namespace IronPython.Compiler {
             return parameter;
         }
 
-        private void CheckUniqueParameter(Dictionary<SymbolId, object> names, SymbolId name) {
+        private void CheckUniqueParameter(Dictionary<string, object> names, string name) {
             if (names.ContainsKey(name)) {
                 ReportSyntaxError(String.Format(
                     System.Globalization.CultureInfo.InvariantCulture,
                     Resources.DuplicateArgumentInFuncDef,
-                    SymbolTable.IdToString(name)));
+                    name));
             }
             names[name] = null;
         }
@@ -1178,7 +1176,7 @@ namespace IronPython.Compiler {
         private Parameter[] ParseVarArgsList(TokenKind terminator) {
             // parameters not doing * or ** today
             List<Parameter> pl = new List<Parameter>();
-            Dictionary<SymbolId, object> names = new Dictionary<SymbolId, object>();
+            Dictionary<string, object> names = new Dictionary<string, object>(StringComparer.Ordinal);
             bool needDefault = false;
             for (int position = 0; ; position++) {
                 if (MaybeEat(terminator)) break;
@@ -1243,7 +1241,7 @@ namespace IronPython.Compiler {
 
         //  parameter ::=
         //      identifier | "(" sublist ")"
-        Parameter ParseParameter(int position, Dictionary<SymbolId, object> names) {
+        Parameter ParseParameter(int position, Dictionary<string, object> names) {
             Token t = PeekToken();
             Parameter parameter = null;
 
@@ -1270,7 +1268,7 @@ namespace IronPython.Compiler {
 
                 case TokenKind.Name:  // identifier
                     NextToken();
-                    SymbolId name = FixName((SymbolId)t.Value);
+                    string name = FixName((string)t.Value);
                     parameter = new Parameter(name);
                     CompleteParameterName(parameter, name, names);
                     break;
@@ -1283,16 +1281,16 @@ namespace IronPython.Compiler {
             return parameter;
         }
 
-        private void CompleteParameterName(Node node, SymbolId name, Dictionary<SymbolId, object> names) {
+        private void CompleteParameterName(Node node, string name, Dictionary<string, object> names) {
             SourceSpan span = GetSpan();
-            _sink.StartName(span, SymbolTable.IdToString(name));
+            _sink.StartName(span, name);
             CheckUniqueParameter(names, name);
             node.SetLoc(span);
         }
 
         //  parameter ::=
         //      identifier | "(" sublist ")"
-        Expression ParseSublistParameter(Dictionary<SymbolId, object> names) {
+        Expression ParseSublistParameter(Dictionary<string, object> names) {
             Token t = NextToken();
             Expression ret = null;
             switch (t.Kind) {
@@ -1301,7 +1299,7 @@ namespace IronPython.Compiler {
                     Eat(TokenKind.RightParenthesis);
                     break;
                 case TokenKind.Name:  // identifier
-                    SymbolId name = FixName((SymbolId)t.Value);
+                    string name = FixName((string)t.Value);
                     NameExpression ne = new NameExpression(name);
                     CompleteParameterName(ne, name, names);
                     return ne;
@@ -1316,7 +1314,7 @@ namespace IronPython.Compiler {
 
         //  sublist ::=
         //      parameter ("," parameter)* [","]
-        Expression ParseSublist(Dictionary<SymbolId, object> names) {
+        Expression ParseSublist(Dictionary<string, object> names) {
             bool trailingComma;
             List<Expression> list = new List<Expression>();
             for (; ; ) {
@@ -1342,14 +1340,14 @@ namespace IronPython.Compiler {
 
         //Python2.5 -> old_lambdef: 'lambda' [varargslist] ':' old_expression
         private Expression FinishOldLambdef() {
-            FunctionDefinition func = ParseLambdaHelperStart(SymbolId.Empty);
+            FunctionDefinition func = ParseLambdaHelperStart(null);
             Expression expr = ParseOldExpression();
             return ParseLambdaHelperEnd(func, expr);
         }
 
         //lambdef: 'lambda' [varargslist] ':' expression
         private Expression FinishLambdef() {
-            FunctionDefinition func = ParseLambdaHelperStart(SymbolId.Empty);
+            FunctionDefinition func = ParseLambdaHelperStart(null);
             Expression expr = ParseExpression();
             return ParseLambdaHelperEnd(func, expr);
         }
@@ -1357,10 +1355,10 @@ namespace IronPython.Compiler {
 
         // Helpers for parsing lambda expressions. 
         // Usage
-        //   FunctionDefinition f = ParseLambdaHelperStart(symbolId);
+        //   FunctionDefinition f = ParseLambdaHelperStart(string);
         //   Expression expr = ParseXYZ();
         //   return ParseLambdaHelperEnd(f, expr);
-        FunctionDefinition ParseLambdaHelperStart(SymbolId name) {
+        FunctionDefinition ParseLambdaHelperStart(string name) {
             SourceLocation start = GetStart();
             Parameter[] parameters;
             parameters = ParseVarArgsList(TokenKind.Colon);
@@ -1923,8 +1921,8 @@ namespace IronPython.Compiler {
                 case TokenKind.Name:            // identifier
                     NextToken();
                     SourceSpan span = GetSpan();
-                    SymbolId name = (SymbolId)t.Value;
-                    _sink.StartName(span, SymbolTable.IdToString(name));
+                    string name = (string)t.Value;
+                    _sink.StartName(span, name);
                     ret = new NameExpression(FixName(name));
                     ret.SetLoc(GetStart(), GetEnd());
                     return ret;
@@ -1976,7 +1974,6 @@ namespace IronPython.Compiler {
 
         private Bytes FinishBytesPlus(Bytes s) {
             Token t = PeekToken();
-            List<byte> res = new List<byte>(s);
             while (true) {
                 if (t is ConstantValueToken) {
                     Bytes cvs;
@@ -2027,7 +2024,7 @@ namespace IronPython.Compiler {
                             break;
                         case TokenKind.Dot:
                             NextToken();
-                            SymbolId name = ReadNameMaybeNone();
+                            string name = ReadNameMaybeNone();
                             MemberExpression fe = new MemberExpression(ret, name);
                             fe.SetLoc(ret.Start, GetEnd());
                             ret = fe;
@@ -2206,7 +2203,7 @@ namespace IronPython.Compiler {
                 return arg;
             } else {
                 Expression val = ParseExpression();
-                Arg arg = new Arg(SymbolTable.IdToString(n.Name), val);
+                Arg arg = new Arg(n.Name, val);
                 arg.SetLoc(n.Start, val.End);
                 return arg;
             }
@@ -2481,8 +2478,8 @@ namespace IronPython.Compiler {
 
             // We pass the outermost iterable in as a parameter because Python semantics
             // say that this one piece is computed at definition time rather than iteration time
-            SymbolId fname = SymbolTable.StringToId("__generator_");
-            Parameter parameter = new Parameter(Symbols.GeneratorParmName, 0);
+            const string fname = "__generator_";
+            Parameter parameter = new Parameter("__gen_$_parm__", 0);
             FunctionDefinition func = new FunctionDefinition(fname, new Parameter[] { parameter }, root, _sourceUnit);
             func.IsGenerator = true;
             func.SetLoc(root.Start, GetEnd());
@@ -2490,7 +2487,7 @@ namespace IronPython.Compiler {
 
             //  Transform the root "for" statement
             Expression outermost = root.List;
-            NameExpression ne = new NameExpression(Symbols.GeneratorParmName);
+            NameExpression ne = new NameExpression("__gen_$_parm__");
             ne.SetLoc(outermost.Span);
             root.List = ne;
 
@@ -3011,10 +3008,6 @@ namespace IronPython.Compiler {
             get { return (_languageFeatures & ModuleOptions.AbsoluteImports) == ModuleOptions.AbsoluteImports; }
         }
 
-        private bool PrintFunction {
-            get { return (_languageFeatures & ModuleOptions.PrintFunction) == ModuleOptions.PrintFunction; }
-        }
-
         private void StartParsing() {
             if (_parsingStarted)
                 throw new InvalidOperationException("Parsing already started. Use Restart to start again.");
@@ -3060,14 +3053,7 @@ namespace IronPython.Compiler {
 
         private bool PeekToken(Token check) {
             return PeekToken() == check;
-        }
-
-        private bool PeekName(SymbolId id) {
-            NameToken t = PeekToken() as NameToken;
-            if (t != null && t.Name == id)
-                return true;
-            return false;
-        }
+        }       
 
         private bool Eat(TokenKind kind) {
             Token next = PeekToken();
@@ -3097,20 +3083,6 @@ namespace IronPython.Compiler {
             } else {
                 return false;
             }
-        }
-
-        private bool MaybeEat(SymbolId id) {
-            if (PeekName(id)) {
-                NextToken();
-                return true;
-            } else {
-                return false;
-            }
-        }
-
-        private void SkipName(SymbolId id) {
-            Debug.Assert(PeekName(id));
-            NextToken();
         }
 
         private class TokenizerErrorSink : ErrorSink {

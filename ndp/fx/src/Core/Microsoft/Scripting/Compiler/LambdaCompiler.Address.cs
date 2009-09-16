@@ -13,13 +13,18 @@
  *
  * ***************************************************************************/
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic.Utils;
 using System.Reflection;
 using System.Reflection.Emit;
 
+#if CLR2
+namespace Microsoft.Scripting.Ast.Compiler {
+#else
 namespace System.Linq.Expressions.Compiler {
+#endif
     partial class LambdaCompiler {
         private void EmitAddress(Expression node, Type type) {
             EmitAddress(node, type, CompilationFlags.EmitExpressionStart);

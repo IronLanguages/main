@@ -13,6 +13,12 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using MSA = System.Linq.Expressions;
+#else
+using MSA = Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -33,7 +39,6 @@ using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using IronRuby.Compiler.Ast;
-using MSA = System.Linq.Expressions;
 using IronRuby.Runtime.Conversions;
 
 namespace IronRuby.Runtime {
@@ -83,11 +88,11 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted]
-        public static void InitializeScope(RubyScope/*!*/ scope, MutableTuple locals, SymbolId[]/*!*/ variableNames, 
+        public static void InitializeScope(RubyScope/*!*/ scope, MutableTuple locals, SymbolId[] variableNames, 
             InterpretedFrame interpretedFrame) {
 
             if (!scope.LocalsInitialized) {
-                scope.SetLocals(locals, variableNames);
+                scope.SetLocals(locals, variableNames ?? SymbolId.EmptySymbols);
             }
             scope.InterpretedFrame = interpretedFrame;
         }
@@ -113,32 +118,32 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted]
-        public static RubyModuleScope/*!*/ CreateModuleScope(MutableTuple locals, SymbolId[]/*!*/ variableNames, 
+        public static RubyModuleScope/*!*/ CreateModuleScope(MutableTuple locals, SymbolId[] variableNames, 
             RubyScope/*!*/ parent, RubyModule/*!*/ module) {
 
-            RubyModuleScope scope = new RubyModuleScope(parent, module, module);
+            RubyModuleScope scope = new RubyModuleScope(parent, module);
             scope.SetDebugName((module.IsClass ? "class" : "module") + " " + module.Name);
-            scope.SetLocals(locals, variableNames);
+            scope.SetLocals(locals, variableNames ?? SymbolId.EmptySymbols);
             return scope;
         }
 
         [Emitted]
-        public static RubyMethodScope/*!*/ CreateMethodScope(MutableTuple locals, SymbolId[]/*!*/ variableNames, 
+        public static RubyMethodScope/*!*/ CreateMethodScope(MutableTuple locals, SymbolId[] variableNames, 
             RubyScope/*!*/ parentScope, RubyModule/*!*/ declaringModule, string/*!*/ definitionName,
             object selfObject, Proc blockParameter, InterpretedFrame interpretedFrame) {
 
             return new RubyMethodScope(
-                locals, variableNames,
+                locals, variableNames ?? SymbolId.EmptySymbols,
                 parentScope, declaringModule, definitionName, selfObject, blockParameter,
                 interpretedFrame
             );            
         }
 
         [Emitted]
-        public static RubyBlockScope/*!*/ CreateBlockScope(MutableTuple locals, SymbolId[]/*!*/ variableNames, 
+        public static RubyBlockScope/*!*/ CreateBlockScope(MutableTuple locals, SymbolId[] variableNames, 
             BlockParam/*!*/ blockParam, object selfObject, InterpretedFrame interpretedFrame) {
 
-            return new RubyBlockScope(locals, variableNames, blockParam, selfObject, interpretedFrame);
+            return new RubyBlockScope(locals, variableNames ?? SymbolId.EmptySymbols, blockParam, selfObject, interpretedFrame);
         }
 
         [Emitted]
@@ -549,8 +554,9 @@ namespace IronRuby.Runtime {
 
             // expose RubyMethod in the scope (the method is bound to the main singleton instance):
             if (owner.GlobalScope != null) {
-                owner.GlobalScope.Scope.SetVariable(
-                    SymbolTable.StringToId(method.DefinitionName),
+                RubyOps.ScopeSetMember(
+                    owner.GlobalScope.Scope,
+                    method.DefinitionName,
                     new RubyMethod(owner.GlobalScope.MainObject, method, method.DefinitionName)
                 );
             }
@@ -584,18 +590,34 @@ namespace IronRuby.Runtime {
 
         [Emitted]
         public static RubyModule/*!*/ DefineGlobalModule(RubyScope/*!*/ scope, string/*!*/ name) {
-            return RubyUtils.DefineModule(scope.GlobalScope, scope.Top.TopModuleOrObject, name);
+            return DefineModule(scope, scope.Top.TopModuleOrObject, name);
         }
 
         [Emitted]
         public static RubyModule/*!*/ DefineNestedModule(RubyScope/*!*/ scope, string/*!*/ name) {
-            return RubyUtils.DefineModule(scope.GlobalScope, scope.GetInnerMostModuleForConstantLookup(), name);
+            return DefineModule(scope, scope.GetInnerMostModuleForConstantLookup(), name);
         }
 
         [Emitted]
         public static RubyModule/*!*/ DefineModule(RubyScope/*!*/ scope, object target, string/*!*/ name) {
-            Assert.NotNull(scope);
-            return RubyUtils.DefineModule(scope.GlobalScope, RubyUtils.GetModuleFromObject(scope.RubyContext, target), name);
+            return DefineModule(scope, RubyUtils.GetModuleFromObject(scope.RubyContext, target), name);
+        }
+
+        // thread-safe:
+        private static RubyModule/*!*/ DefineModule(RubyScope/*!*/ scope, RubyModule/*!*/ owner, string/*!*/ name) {
+            Assert.NotNull(scope, owner);
+
+            object existing;
+            if (owner.TryGetConstant(scope.GlobalScope, name, out existing)) {
+                RubyModule module = existing as RubyModule;
+                if (module == null || module.IsClass) {
+                    throw RubyExceptions.CreateTypeError(String.Format("{0} is not a module", name));
+                }
+                return module;
+            } else {
+                // create class/module object:
+                return owner.Context.DefineModule(owner, name);
+            }
         }
 
         #endregion
@@ -612,17 +634,58 @@ namespace IronRuby.Runtime {
 
         [Emitted] 
         public static RubyModule/*!*/ DefineGlobalClass(RubyScope/*!*/ scope, string/*!*/ name, object superClassObject) {
-            return RubyUtils.DefineClass(scope.GlobalScope, scope.Top.TopModuleOrObject, name, superClassObject);
+            return DefineClass(scope, scope.Top.TopModuleOrObject, name, superClassObject);
         }
 
         [Emitted]
         public static RubyModule/*!*/ DefineNestedClass(RubyScope/*!*/ scope, string/*!*/ name, object superClassObject) {
-            return RubyUtils.DefineClass(scope.GlobalScope, scope.GetInnerMostModuleForConstantLookup(), name, superClassObject);
+            return DefineClass(scope, scope.GetInnerMostModuleForConstantLookup(), name, superClassObject);
         }
 
         [Emitted]
         public static RubyModule/*!*/ DefineClass(RubyScope/*!*/ scope, object target, string/*!*/ name, object superClassObject) {
-            return RubyUtils.DefineClass(scope.GlobalScope, RubyUtils.GetModuleFromObject(scope.RubyContext, target), name, superClassObject);
+            return DefineClass(scope, RubyUtils.GetModuleFromObject(scope.RubyContext, target), name, superClassObject);
+        }
+
+        // thread-safe:
+        private static RubyClass/*!*/ DefineClass(RubyScope/*!*/ scope, RubyModule/*!*/ owner, string/*!*/ name, object superClassObject) {
+            Assert.NotNull(owner);
+            RubyClass superClass = ToSuperClass(owner.Context, superClassObject);
+
+            object existing;
+            if (owner.IsObjectClass
+                ? owner.TryResolveConstant(scope.GlobalScope, name, out existing)
+                : owner.TryGetConstant(scope.GlobalScope, name, out existing)) {
+
+                RubyClass cls = existing as RubyClass;
+                if (cls == null || !cls.IsClass) {
+                    throw RubyExceptions.CreateTypeError(String.Format("{0} is not a class", name));
+                }
+
+                if (superClassObject != null && !ReferenceEquals(cls.SuperClass, superClass)) {
+                    throw RubyExceptions.CreateTypeError(String.Format("superclass mismatch for class {0}", name));
+                }
+                return cls;
+            } else {
+                return owner.Context.DefineClass(owner, name, superClass, null);
+            }
+        }
+
+        private static RubyClass/*!*/ ToSuperClass(RubyContext/*!*/ ec, object superClassObject) {
+            if (superClassObject != null) {
+                RubyClass superClass = superClassObject as RubyClass;
+                if (superClass == null) {
+                    throw RubyExceptions.CreateTypeError(String.Format("superclass must be a Class ({0} given)", ec.GetClassOf(superClassObject).Name));
+                }
+
+                if (superClass.IsSingletonClass) {
+                    throw RubyExceptions.CreateTypeError("can't make subclass of virtual class");
+                }
+
+                return superClass;
+            } else {
+                return ec.ObjectClass;
+            }
         }
 
         #endregion
@@ -952,6 +1015,75 @@ namespace IronRuby.Runtime {
         [Emitted]
         public static void AliasGlobalVariable(RubyScope/*!*/ scope, string/*!*/ newName, string/*!*/ oldName) {
             scope.RubyContext.AliasGlobalVariable(newName, oldName);
+        }
+
+        #endregion
+
+        #region DLR Scopes
+
+        internal static bool TryGetGlobalScopeMethod(RubyContext/*!*/ context, Scope/*!*/ scope, string/*!*/ name, out object value) {
+            string unmangled;
+            ScopeStorage scopeStorage = scope.Storage as ScopeStorage;
+            if (scopeStorage != null) {
+                return scopeStorage.TryGetValue(name, false, out value)
+                    || (unmangled = RubyUtils.TryUnmangleName(name)) != null && scopeStorage.TryGetValue(unmangled, false, out value);
+            } else {
+                return context.Operations.TryGetMember(scope, name, out value)
+                    || (unmangled = RubyUtils.TryUnmangleName(name)) != null && context.Operations.TryGetMember(scope, unmangled, out value);
+            }
+        }
+
+        internal static bool TryGetGlobalScopeConstant(RubyContext/*!*/ context, Scope/*!*/ scope, string/*!*/ name, out object value) {
+            string mangled;
+            ScopeStorage scopeStorage = scope.Storage as ScopeStorage;
+            if (scopeStorage != null) {
+                return scopeStorage.TryGetValue(name, false, out value)
+                    || (mangled = RubyUtils.TryMangleName(name)) != null && scopeStorage.TryGetValue(mangled, false, out value);
+            } else {
+                return context.Operations.TryGetMember(scope, name, out value)
+                    || (mangled = RubyUtils.TryMangleName(name)) != null && context.Operations.TryGetMember(scope, mangled, out value);
+            }
+        }
+
+        // TODO:
+        internal static void ScopeSetMember(Scope scope, string name, object value) {
+            ScopeStorage scopeStorage = scope.Storage as ScopeStorage;
+            if (scopeStorage != null) {
+                scopeStorage.SetValue(name, false, value);
+                return;
+            }
+
+            throw new NotImplementedException();
+        }
+
+        // TODO:
+        internal static bool ScopeContainsMember(Scope scope, string name) {
+            ScopeStorage scopeStorage = scope.Storage as ScopeStorage;
+            if (scopeStorage != null) {
+                return scopeStorage.HasValue(name, false);
+            }
+
+            throw new NotImplementedException();
+        }
+
+        // TODO:
+        internal static bool ScopeDeleteMember(Scope scope, string name) {
+            ScopeStorage scopeStorage = scope.Storage as ScopeStorage;
+            if (scopeStorage != null) {
+                return scopeStorage.DeleteValue(name, false);
+            }
+
+            throw new NotImplementedException();
+        }
+
+        // TODO:
+        internal static IList<KeyValuePair<string, object>> ScopeGetItems(Scope scope) {
+            ScopeStorage scopeStorage = scope.Storage as ScopeStorage;
+            if (scopeStorage != null) {
+                return scopeStorage.GetItems();
+            }
+
+            throw new NotImplementedException();
         }
 
         #endregion
@@ -1505,7 +1637,7 @@ namespace IronRuby.Runtime {
 
             // TODO: optimize this (we can have a hashtable of singletons per class: Weak(object) => Struct { ImmediateClass, InstanceVariables, Flags }):
             return context.TryGetClrTypeInstanceData(target, out data) && (immediate = data.ImmediateClass) != null && immediate.IsSingletonClass
-                && immediate.Version.Value == expectedVersion;
+                && immediate.Version.Method == expectedVersion;
         }
 
         [Emitted]
@@ -1513,7 +1645,7 @@ namespace IronRuby.Runtime {
             RubyInstanceData data;
             RubyClass immediate;
 
-            return versionHandle.Value == expectedVersion
+            return versionHandle.Method == expectedVersion
                 // TODO: optimize this (we can have a hashtable of singletons per class: Weak(object) => Struct { ImmediateClass, InstanceVariables, Flags }):
                 && !(context.TryGetClrTypeInstanceData(target, out data) && (immediate = data.ImmediateClass) != null && immediate.IsSingletonClass);
         }

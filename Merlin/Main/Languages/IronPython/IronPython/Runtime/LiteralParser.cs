@@ -132,7 +132,7 @@ namespace IronPython.Runtime {
             return buf.ToString();
         }
 
-        public static List<byte> ParseBytes(string text, bool isRaw, bool complete) {
+        internal static List<byte> ParseBytes(string text, bool isRaw, bool complete) {
             Debug.Assert(text != null);
 
             //PERFORMANCE-ISSUE ??? maybe optimize for the 0-escapes case
@@ -530,7 +530,7 @@ namespace IronPython.Runtime {
         public static Complex64 ParseComplex64(string s) {
             // remove no-meaning spaces and convert to lowercase
             string text = s.Trim().ToLower();
-            if (text == string.Empty) {
+            if (String.IsNullOrEmpty(text)) {
                 throw PythonOps.ValueError("complex() arg is an empty string");
             }
             if (text.IndexOf(' ') != -1) {
@@ -590,7 +590,7 @@ namespace IronPython.Runtime {
                     }
                 }
 
-                return new Complex64((real == "") ? 0 : ParseFloatNoCatch(real), ParseFloatNoCatch(imag));
+                return new Complex64(String.IsNullOrEmpty(real) ? 0 : ParseFloatNoCatch(real), ParseFloatNoCatch(imag));
             } catch (OverflowException) {
                 throw PythonOps.ValueError("complex() literal too large to convert");
             } catch {

@@ -14,16 +14,17 @@
  * ***************************************************************************/
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Dynamic;
 using System.Threading;
+
+using Microsoft.Scripting;
+using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
+
 using IronPython.Runtime;
 using IronPython.Runtime.Binding;
 using IronPython.Runtime.Operations;
-using Microsoft.Scripting;
-using Microsoft.Scripting.Generation;
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
 
 [assembly: PythonModule("_functools", typeof(IronPython.Modules.FunctionTools))]
 namespace IronPython.Modules {
@@ -47,11 +48,11 @@ namespace IronPython.Modules {
         public class partial : IWeakReferenceable {
             private object/*!*/ _function;                                                  // the callable function to dispatch to
             private object[]/*!*/ _args;                                                    // the initially provided arguments
-            private IAttributesCollection _keywordArgs;                                     // the initially provided keyword arguments or null
+            private IDictionary<object, object> _keywordArgs;                               // the initially provided keyword arguments or null
             private CodeContext/*!*/ _context;                                              // code context from the caller who created us
-            private CallSite<Func<CallSite, CodeContext, object, object[], IAttributesCollection, object>> _dictSite; // the dictionary call site if ever called w/ keyword args
+            private CallSite<Func<CallSite, CodeContext, object, object[], IDictionary<object, object>, object>> _dictSite; // the dictionary call site if ever called w/ keyword args
             private CallSite<Func<CallSite, CodeContext, object, object[], object>> _splatSite;      // the position only call site
-            private IAttributesCollection _dict;                                            // dictionary for storing extra attributes
+            private PythonDictionary _dict;                                            // dictionary for storing extra attributes
             private WeakRefTracker _tracker;                                                // tracker so users can use Python weak references
 
             #region Constructors
@@ -66,7 +67,7 @@ namespace IronPython.Modules {
             /// <summary>
             /// Creates a new partial object with the provided positional and keyword arguments.
             /// </summary>
-            public partial(CodeContext/*!*/ context, object func, [ParamDictionary]IAttributesCollection keywords, [NotNull]params object[]/*!*/ args) {
+            public partial(CodeContext/*!*/ context, object func, [ParamDictionary]IDictionary<object, object> keywords, [NotNull]params object[]/*!*/ args) {
                 if (!PythonOps.IsCallable(context, func)) {
                     throw PythonOps.TypeError("the first argument must be callable");
                 }
@@ -111,7 +112,8 @@ namespace IronPython.Modules {
             /// <summary>
             /// Gets or sets the dictionary used for storing extra attributes on the partial object.
             /// </summary>
-            public IAttributesCollection __dict__ {
+            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+            public PythonDictionary __dict__ {
                 get {
                     return EnsureDict();
                 }
@@ -130,7 +132,7 @@ namespace IronPython.Modules {
                 if (name == "__dict__") Delete__dict__();
 
                 if (_dict != null) {
-                    _dict.Remove(SymbolTable.StringToId(name));
+                    _dict.Remove(name);
                 }
             }
 
@@ -156,9 +158,9 @@ namespace IronPython.Modules {
             /// Calls func with the previously provided arguments and more positional arguments and keyword arguments.
             /// </summary>
             [SpecialName]
-            public object Call(CodeContext/*!*/ context, [ParamDictionary]IAttributesCollection dict, params object[] args) {
+            public object Call(CodeContext/*!*/ context, [ParamDictionary]IDictionary<object, object> dict, params object[] args) {
 
-                IAttributesCollection finalDict;
+                IDictionary<object, object> finalDict;
                 if (_keywordArgs != null) {
                     PythonDictionary pd = new PythonDictionary();
                     pd.update(context, _keywordArgs);
@@ -180,7 +182,7 @@ namespace IronPython.Modules {
             public void SetMemberAfter(CodeContext/*!*/ context, string name, object value) {
                 EnsureDict();
 
-                _dict[SymbolTable.StringToId(name)] = value;
+                _dict[name] = value;
             }
 
             /// <summary>
@@ -189,7 +191,7 @@ namespace IronPython.Modules {
             [SpecialName]
             public object GetBoundMember(CodeContext/*!*/ context, string name) {
                 object value;
-                if (_dict != null && _dict.TryGetValue(SymbolTable.StringToId(name), out value)) {
+                if (_dict != null && _dict.TryGetValue(name, out value)) {
                     return value;
                 }
                 return OperationFailed.Value;
@@ -208,7 +210,7 @@ namespace IronPython.Modules {
 
                 if (_dict == null) return false;
 
-                return _dict.Remove(SymbolTable.StringToId(name));
+                return _dict.Remove(name);
             }
 
             #endregion
@@ -231,7 +233,7 @@ namespace IronPython.Modules {
                 if (_dictSite == null) {
                     Interlocked.CompareExchange(
                         ref _dictSite,
-                        CallSite<Func<CallSite, CodeContext, object, object[], IAttributesCollection, object>>.Create(
+                        CallSite<Func<CallSite, CodeContext, object, object[], IDictionary<object, object>, object>>.Create(
                             Binders.InvokeKeywords(PythonContext.GetContext(_context))
                         ),
                         null
@@ -239,7 +241,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            private IAttributesCollection EnsureDict() {
+            private PythonDictionary EnsureDict() {
                 if (_dict == null) {
                     _dict = PythonDictionary.MakeSymbolDictionary();
                 }

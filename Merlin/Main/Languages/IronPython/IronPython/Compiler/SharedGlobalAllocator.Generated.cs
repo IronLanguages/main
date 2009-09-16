@@ -1,4 +1,4 @@
-/* ****************************************************************************
+﻿/* ****************************************************************************
  *
  * Copyright (c) Microsoft Corporation. 
  *
@@ -27,10 +27,15 @@ using Microsoft.Scripting.Utils;
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 
+#if !CLR2
 using MSAst = System.Linq.Expressions;
+#else
+using MSAst = Microsoft.Scripting.Ast;
+#endif
+
 
 namespace IronPython.Compiler.Ast {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = MSAst.Expression;
     
     /// <summary>
     /// Implements globals which are backed by a static type, followed by an array if the static types' slots become full.  The global
@@ -207,7 +212,7 @@ namespace IronPython.Compiler.Ast {
             );
         }
 
-        private static Type/*!*/ GetDelegateType(Type/*!*/ retType, System.Linq.Expressions.Expression/*!*/[]/*!*/ args) {
+        private static Type/*!*/ GetDelegateType(Type/*!*/ retType, MSAst.Expression/*!*/[]/*!*/ args) {
             Assert.NotNull(retType);
             Assert.NotNull(args);
 
@@ -310,10 +315,10 @@ namespace IronPython.Compiler.Ast {
 
     public static class StorageData {
         // Amount of data currently allocated
-        internal static int ContextCount = 0;
-        internal static int ConstantCount = 0;
-        internal static int SymbolCount = 0;
-        internal static int GlobalCount = 0;
+        internal static int ContextCount;
+        internal static int ConstantCount;
+        internal static int SymbolCount;
+        internal static int GlobalCount;
 
         // Number of static fields per storage type
         public const int StaticFields = 50;
@@ -328,7 +333,6 @@ namespace IronPython.Compiler.Ast {
         // Fallback array storage and locking objects
         public static CodeContext[] Contexts = new CodeContext[64];
         public static object[] Constants = new object[64];
-        public static SymbolId[] Symbols = new SymbolId[64];
         public static PythonGlobal[] Globals = new PythonGlobal[64];
 
         // Locking object for site storage
@@ -369,7 +373,7 @@ namespace IronPython.Compiler.Ast {
                 case 004: return typeof(ConstantStorage004);
 
                 default:
-                    int len = index - StaticFields * ConstantTypes + 1;
+                    int len = checked(index - StaticFields * ConstantTypes + 1);
                     if (Constants.Length < len) {
                         int newLen = Constants.Length;
                         while (newLen < len) {
@@ -380,34 +384,7 @@ namespace IronPython.Compiler.Ast {
                     return typeof(StorageData);
             }
         }
-
-        /// <summary>Ensures the underlying array is long enough to accomodate the given index</summary>
-        /// <returns>The symbol storage type corresponding to the given index</returns>
-        public static Type/*!*/ SymbolStorageType(int index) {
-            Debug.Assert(index >= 0);
-
-            switch (index / StaticFields) {
-                case 000: return typeof(SymbolStorage000);
-                case 001: return typeof(SymbolStorage001);
-                case 002: return typeof(SymbolStorage002);
-                case 003: return typeof(SymbolStorage003);
-                case 004: return typeof(SymbolStorage004);
-                case 005: return typeof(SymbolStorage005);
-                case 006: return typeof(SymbolStorage006);
-
-                default:
-                    int len = index - StaticFields * SymbolTypes + 1;
-                    if (Symbols.Length < len) {
-                        int newLen = Symbols.Length;
-                        while (newLen < len) {
-                            newLen *= 2;
-                        }
-                        Array.Resize(ref Symbols, newLen);
-                    }
-                    return typeof(StorageData);
-            }
-        }
-
+        
         /// <summary>Ensures the underlying array is long enough to accomodate the given index</summary>
         /// <returns>The global storage type corresponding to the given index</returns>
         public static Type/*!*/ GlobalStorageType(int index) {
@@ -436,7 +413,7 @@ namespace IronPython.Compiler.Ast {
                 case 019: return typeof(GlobalStorage019);
 
                 default:
-                    int len = index - StaticFields * GlobalTypes + 1;
+                    int len = checked(index - StaticFields * GlobalTypes + 1);
                     if (Globals.Length < len) {
                         int newLen = Globals.Length;
                         while (newLen < len) {
@@ -761,371 +738,6 @@ namespace IronPython.Compiler.Ast {
         public static object Constant047;
         public static object Constant048;
         public static object Constant049;
-    }
-
-    public static class SymbolStorage000 {
-        public static SymbolId Symbol000;
-        public static SymbolId Symbol001;
-        public static SymbolId Symbol002;
-        public static SymbolId Symbol003;
-        public static SymbolId Symbol004;
-        public static SymbolId Symbol005;
-        public static SymbolId Symbol006;
-        public static SymbolId Symbol007;
-        public static SymbolId Symbol008;
-        public static SymbolId Symbol009;
-        public static SymbolId Symbol010;
-        public static SymbolId Symbol011;
-        public static SymbolId Symbol012;
-        public static SymbolId Symbol013;
-        public static SymbolId Symbol014;
-        public static SymbolId Symbol015;
-        public static SymbolId Symbol016;
-        public static SymbolId Symbol017;
-        public static SymbolId Symbol018;
-        public static SymbolId Symbol019;
-        public static SymbolId Symbol020;
-        public static SymbolId Symbol021;
-        public static SymbolId Symbol022;
-        public static SymbolId Symbol023;
-        public static SymbolId Symbol024;
-        public static SymbolId Symbol025;
-        public static SymbolId Symbol026;
-        public static SymbolId Symbol027;
-        public static SymbolId Symbol028;
-        public static SymbolId Symbol029;
-        public static SymbolId Symbol030;
-        public static SymbolId Symbol031;
-        public static SymbolId Symbol032;
-        public static SymbolId Symbol033;
-        public static SymbolId Symbol034;
-        public static SymbolId Symbol035;
-        public static SymbolId Symbol036;
-        public static SymbolId Symbol037;
-        public static SymbolId Symbol038;
-        public static SymbolId Symbol039;
-        public static SymbolId Symbol040;
-        public static SymbolId Symbol041;
-        public static SymbolId Symbol042;
-        public static SymbolId Symbol043;
-        public static SymbolId Symbol044;
-        public static SymbolId Symbol045;
-        public static SymbolId Symbol046;
-        public static SymbolId Symbol047;
-        public static SymbolId Symbol048;
-        public static SymbolId Symbol049;
-    }
-    public static class SymbolStorage001 {
-        public static SymbolId Symbol000;
-        public static SymbolId Symbol001;
-        public static SymbolId Symbol002;
-        public static SymbolId Symbol003;
-        public static SymbolId Symbol004;
-        public static SymbolId Symbol005;
-        public static SymbolId Symbol006;
-        public static SymbolId Symbol007;
-        public static SymbolId Symbol008;
-        public static SymbolId Symbol009;
-        public static SymbolId Symbol010;
-        public static SymbolId Symbol011;
-        public static SymbolId Symbol012;
-        public static SymbolId Symbol013;
-        public static SymbolId Symbol014;
-        public static SymbolId Symbol015;
-        public static SymbolId Symbol016;
-        public static SymbolId Symbol017;
-        public static SymbolId Symbol018;
-        public static SymbolId Symbol019;
-        public static SymbolId Symbol020;
-        public static SymbolId Symbol021;
-        public static SymbolId Symbol022;
-        public static SymbolId Symbol023;
-        public static SymbolId Symbol024;
-        public static SymbolId Symbol025;
-        public static SymbolId Symbol026;
-        public static SymbolId Symbol027;
-        public static SymbolId Symbol028;
-        public static SymbolId Symbol029;
-        public static SymbolId Symbol030;
-        public static SymbolId Symbol031;
-        public static SymbolId Symbol032;
-        public static SymbolId Symbol033;
-        public static SymbolId Symbol034;
-        public static SymbolId Symbol035;
-        public static SymbolId Symbol036;
-        public static SymbolId Symbol037;
-        public static SymbolId Symbol038;
-        public static SymbolId Symbol039;
-        public static SymbolId Symbol040;
-        public static SymbolId Symbol041;
-        public static SymbolId Symbol042;
-        public static SymbolId Symbol043;
-        public static SymbolId Symbol044;
-        public static SymbolId Symbol045;
-        public static SymbolId Symbol046;
-        public static SymbolId Symbol047;
-        public static SymbolId Symbol048;
-        public static SymbolId Symbol049;
-    }
-    public static class SymbolStorage002 {
-        public static SymbolId Symbol000;
-        public static SymbolId Symbol001;
-        public static SymbolId Symbol002;
-        public static SymbolId Symbol003;
-        public static SymbolId Symbol004;
-        public static SymbolId Symbol005;
-        public static SymbolId Symbol006;
-        public static SymbolId Symbol007;
-        public static SymbolId Symbol008;
-        public static SymbolId Symbol009;
-        public static SymbolId Symbol010;
-        public static SymbolId Symbol011;
-        public static SymbolId Symbol012;
-        public static SymbolId Symbol013;
-        public static SymbolId Symbol014;
-        public static SymbolId Symbol015;
-        public static SymbolId Symbol016;
-        public static SymbolId Symbol017;
-        public static SymbolId Symbol018;
-        public static SymbolId Symbol019;
-        public static SymbolId Symbol020;
-        public static SymbolId Symbol021;
-        public static SymbolId Symbol022;
-        public static SymbolId Symbol023;
-        public static SymbolId Symbol024;
-        public static SymbolId Symbol025;
-        public static SymbolId Symbol026;
-        public static SymbolId Symbol027;
-        public static SymbolId Symbol028;
-        public static SymbolId Symbol029;
-        public static SymbolId Symbol030;
-        public static SymbolId Symbol031;
-        public static SymbolId Symbol032;
-        public static SymbolId Symbol033;
-        public static SymbolId Symbol034;
-        public static SymbolId Symbol035;
-        public static SymbolId Symbol036;
-        public static SymbolId Symbol037;
-        public static SymbolId Symbol038;
-        public static SymbolId Symbol039;
-        public static SymbolId Symbol040;
-        public static SymbolId Symbol041;
-        public static SymbolId Symbol042;
-        public static SymbolId Symbol043;
-        public static SymbolId Symbol044;
-        public static SymbolId Symbol045;
-        public static SymbolId Symbol046;
-        public static SymbolId Symbol047;
-        public static SymbolId Symbol048;
-        public static SymbolId Symbol049;
-    }
-    public static class SymbolStorage003 {
-        public static SymbolId Symbol000;
-        public static SymbolId Symbol001;
-        public static SymbolId Symbol002;
-        public static SymbolId Symbol003;
-        public static SymbolId Symbol004;
-        public static SymbolId Symbol005;
-        public static SymbolId Symbol006;
-        public static SymbolId Symbol007;
-        public static SymbolId Symbol008;
-        public static SymbolId Symbol009;
-        public static SymbolId Symbol010;
-        public static SymbolId Symbol011;
-        public static SymbolId Symbol012;
-        public static SymbolId Symbol013;
-        public static SymbolId Symbol014;
-        public static SymbolId Symbol015;
-        public static SymbolId Symbol016;
-        public static SymbolId Symbol017;
-        public static SymbolId Symbol018;
-        public static SymbolId Symbol019;
-        public static SymbolId Symbol020;
-        public static SymbolId Symbol021;
-        public static SymbolId Symbol022;
-        public static SymbolId Symbol023;
-        public static SymbolId Symbol024;
-        public static SymbolId Symbol025;
-        public static SymbolId Symbol026;
-        public static SymbolId Symbol027;
-        public static SymbolId Symbol028;
-        public static SymbolId Symbol029;
-        public static SymbolId Symbol030;
-        public static SymbolId Symbol031;
-        public static SymbolId Symbol032;
-        public static SymbolId Symbol033;
-        public static SymbolId Symbol034;
-        public static SymbolId Symbol035;
-        public static SymbolId Symbol036;
-        public static SymbolId Symbol037;
-        public static SymbolId Symbol038;
-        public static SymbolId Symbol039;
-        public static SymbolId Symbol040;
-        public static SymbolId Symbol041;
-        public static SymbolId Symbol042;
-        public static SymbolId Symbol043;
-        public static SymbolId Symbol044;
-        public static SymbolId Symbol045;
-        public static SymbolId Symbol046;
-        public static SymbolId Symbol047;
-        public static SymbolId Symbol048;
-        public static SymbolId Symbol049;
-    }
-    public static class SymbolStorage004 {
-        public static SymbolId Symbol000;
-        public static SymbolId Symbol001;
-        public static SymbolId Symbol002;
-        public static SymbolId Symbol003;
-        public static SymbolId Symbol004;
-        public static SymbolId Symbol005;
-        public static SymbolId Symbol006;
-        public static SymbolId Symbol007;
-        public static SymbolId Symbol008;
-        public static SymbolId Symbol009;
-        public static SymbolId Symbol010;
-        public static SymbolId Symbol011;
-        public static SymbolId Symbol012;
-        public static SymbolId Symbol013;
-        public static SymbolId Symbol014;
-        public static SymbolId Symbol015;
-        public static SymbolId Symbol016;
-        public static SymbolId Symbol017;
-        public static SymbolId Symbol018;
-        public static SymbolId Symbol019;
-        public static SymbolId Symbol020;
-        public static SymbolId Symbol021;
-        public static SymbolId Symbol022;
-        public static SymbolId Symbol023;
-        public static SymbolId Symbol024;
-        public static SymbolId Symbol025;
-        public static SymbolId Symbol026;
-        public static SymbolId Symbol027;
-        public static SymbolId Symbol028;
-        public static SymbolId Symbol029;
-        public static SymbolId Symbol030;
-        public static SymbolId Symbol031;
-        public static SymbolId Symbol032;
-        public static SymbolId Symbol033;
-        public static SymbolId Symbol034;
-        public static SymbolId Symbol035;
-        public static SymbolId Symbol036;
-        public static SymbolId Symbol037;
-        public static SymbolId Symbol038;
-        public static SymbolId Symbol039;
-        public static SymbolId Symbol040;
-        public static SymbolId Symbol041;
-        public static SymbolId Symbol042;
-        public static SymbolId Symbol043;
-        public static SymbolId Symbol044;
-        public static SymbolId Symbol045;
-        public static SymbolId Symbol046;
-        public static SymbolId Symbol047;
-        public static SymbolId Symbol048;
-        public static SymbolId Symbol049;
-    }
-    public static class SymbolStorage005 {
-        public static SymbolId Symbol000;
-        public static SymbolId Symbol001;
-        public static SymbolId Symbol002;
-        public static SymbolId Symbol003;
-        public static SymbolId Symbol004;
-        public static SymbolId Symbol005;
-        public static SymbolId Symbol006;
-        public static SymbolId Symbol007;
-        public static SymbolId Symbol008;
-        public static SymbolId Symbol009;
-        public static SymbolId Symbol010;
-        public static SymbolId Symbol011;
-        public static SymbolId Symbol012;
-        public static SymbolId Symbol013;
-        public static SymbolId Symbol014;
-        public static SymbolId Symbol015;
-        public static SymbolId Symbol016;
-        public static SymbolId Symbol017;
-        public static SymbolId Symbol018;
-        public static SymbolId Symbol019;
-        public static SymbolId Symbol020;
-        public static SymbolId Symbol021;
-        public static SymbolId Symbol022;
-        public static SymbolId Symbol023;
-        public static SymbolId Symbol024;
-        public static SymbolId Symbol025;
-        public static SymbolId Symbol026;
-        public static SymbolId Symbol027;
-        public static SymbolId Symbol028;
-        public static SymbolId Symbol029;
-        public static SymbolId Symbol030;
-        public static SymbolId Symbol031;
-        public static SymbolId Symbol032;
-        public static SymbolId Symbol033;
-        public static SymbolId Symbol034;
-        public static SymbolId Symbol035;
-        public static SymbolId Symbol036;
-        public static SymbolId Symbol037;
-        public static SymbolId Symbol038;
-        public static SymbolId Symbol039;
-        public static SymbolId Symbol040;
-        public static SymbolId Symbol041;
-        public static SymbolId Symbol042;
-        public static SymbolId Symbol043;
-        public static SymbolId Symbol044;
-        public static SymbolId Symbol045;
-        public static SymbolId Symbol046;
-        public static SymbolId Symbol047;
-        public static SymbolId Symbol048;
-        public static SymbolId Symbol049;
-    }
-    public static class SymbolStorage006 {
-        public static SymbolId Symbol000;
-        public static SymbolId Symbol001;
-        public static SymbolId Symbol002;
-        public static SymbolId Symbol003;
-        public static SymbolId Symbol004;
-        public static SymbolId Symbol005;
-        public static SymbolId Symbol006;
-        public static SymbolId Symbol007;
-        public static SymbolId Symbol008;
-        public static SymbolId Symbol009;
-        public static SymbolId Symbol010;
-        public static SymbolId Symbol011;
-        public static SymbolId Symbol012;
-        public static SymbolId Symbol013;
-        public static SymbolId Symbol014;
-        public static SymbolId Symbol015;
-        public static SymbolId Symbol016;
-        public static SymbolId Symbol017;
-        public static SymbolId Symbol018;
-        public static SymbolId Symbol019;
-        public static SymbolId Symbol020;
-        public static SymbolId Symbol021;
-        public static SymbolId Symbol022;
-        public static SymbolId Symbol023;
-        public static SymbolId Symbol024;
-        public static SymbolId Symbol025;
-        public static SymbolId Symbol026;
-        public static SymbolId Symbol027;
-        public static SymbolId Symbol028;
-        public static SymbolId Symbol029;
-        public static SymbolId Symbol030;
-        public static SymbolId Symbol031;
-        public static SymbolId Symbol032;
-        public static SymbolId Symbol033;
-        public static SymbolId Symbol034;
-        public static SymbolId Symbol035;
-        public static SymbolId Symbol036;
-        public static SymbolId Symbol037;
-        public static SymbolId Symbol038;
-        public static SymbolId Symbol039;
-        public static SymbolId Symbol040;
-        public static SymbolId Symbol041;
-        public static SymbolId Symbol042;
-        public static SymbolId Symbol043;
-        public static SymbolId Symbol044;
-        public static SymbolId Symbol045;
-        public static SymbolId Symbol046;
-        public static SymbolId Symbol047;
-        public static SymbolId Symbol048;
-        public static SymbolId Symbol049;
     }
 
     public static class GlobalStorage000 {
@@ -2179,7 +1791,7 @@ namespace IronPython.Compiler.Ast {
     // generated by function: gen_site_storage from: generate_SharedGlobalAllocator.py
 
     public static class SiteStorage<T> where T : class {
-        public static int SiteCount = 0;
+        public static int SiteCount;
 
         public static CallSite<T>[] Sites = new CallSite<T>[64];
 
@@ -2221,7 +1833,7 @@ namespace IronPython.Compiler.Ast {
                 case 029: return typeof(SiteStorage029<T>);
 
                 default:
-                    int len = index - StorageData.StaticFields * StorageData.SiteTypes + 1;
+                    int len = checked(index - StorageData.StaticFields * StorageData.SiteTypes + 1);
                     if (Sites.Length < len) {
                         int newLen = Sites.Length;
                         while (newLen < len) {

@@ -16,13 +16,14 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.Scripting;
+using Microsoft.Scripting.Actions;
 
 namespace IronPython.Runtime {
     [Serializable]
     internal class WrapperDictionaryStorage : DictionaryStorage {
-        private IAttributesCollection/*!*/ _data;
+        private TopNamespaceTracker/*!*/ _data;
 
-        public WrapperDictionaryStorage(IAttributesCollection/*!*/ data) {
+        public WrapperDictionaryStorage(TopNamespaceTracker/*!*/ data) {
             _data = data;
         }
       
@@ -35,10 +36,6 @@ namespace IronPython.Runtime {
             }
         }
 
-        public override void Add(SymbolId key, object value) {
-            _data[key] = value;
-        }
-
         public override bool Contains(object key) {
             string strKey = key as string;
             if (strKey != null) {
@@ -46,10 +43,6 @@ namespace IronPython.Runtime {
             } else {
                 return _data.ContainsObjectKey(key);
             }
-        }
-
-        public override bool Contains(SymbolId key) {
-            return _data.ContainsKey(key);
         }
 
         public override bool Remove(object key) {
@@ -68,10 +61,6 @@ namespace IronPython.Runtime {
             } else {
                 return _data.TryGetObjectValue(key, out value);
             }
-        }
-
-        public override bool TryGetValue(SymbolId key, out object value) {
-            return _data.TryGetValue(key, out value);
         }
 
         public override int Count {

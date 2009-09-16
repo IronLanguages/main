@@ -21,6 +21,7 @@ using System.Runtime.Serialization;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Generation;
+using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
@@ -192,7 +193,7 @@ namespace IronPython.Runtime {
                 } else {
                     // random type, but still homogeneous... get a shared site for this type.
                     PythonType pt = DynamicHelpers.GetPythonType(key);
-                    var hashSite = DefaultContext.DefaultPythonContext.GetHashSite(pt);
+                    var hashSite = PythonContext.GetHashSite(pt);
                     var equalSite = DefaultContext.DefaultPythonContext.GetEqualSite(pt);
 
                     AssignSiteDelegates(hashSite, equalSite);

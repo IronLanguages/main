@@ -60,14 +60,6 @@ namespace IronPython.Modules {
             }
         }
 
-        public int Read() {
-            if (_position < _data.Length) {
-                return _data[_position++];
-            } else {
-                return -1;
-            }
-        }
-
         public string Read(int i) {
             if (_position + i > _data.Length) {
                 i = _data.Length - _position;

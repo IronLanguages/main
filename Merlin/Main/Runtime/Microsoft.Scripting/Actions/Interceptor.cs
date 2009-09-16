@@ -13,8 +13,13 @@
  *
  * ***************************************************************************/
 
-using System.Collections.ObjectModel;
+#if !CLR2
 using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
+using System.Collections.ObjectModel;
 using System.Runtime.CompilerServices;
 
 namespace Microsoft.Scripting.Actions {

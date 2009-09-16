@@ -13,20 +13,26 @@
  *
  * ***************************************************************************/
 
-using Microsoft.Scripting;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
+#if !CLR2
 using MSAst = System.Linq.Expressions;
+#else
+using MSAst = Microsoft.Scripting.Ast;
+#endif
+
+using Microsoft.Scripting;
+using System.Collections.Generic;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Compiler.Ast {
 
     public class GlobalStatement : Statement {
-        private readonly SymbolId[] _names;
+        private readonly string[] _names;
 
-        public GlobalStatement(SymbolId[] names) {
+        public GlobalStatement(string[] names) {
             _names = names;
         }
 
-        public SymbolId[] Names {
+        public IList<string> Names {
             get { return _names; }
         }
 

@@ -20,10 +20,15 @@ using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime.Binding;
 
+#if !CLR2
 using MSAst = System.Linq.Expressions;
+#else
+using MSAst = Microsoft.Scripting.Ast;
+#endif
+
 
 namespace IronPython.Compiler.Ast {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = MSAst.Expression;
     using IronPython.Runtime.Operations;
 
     public class TupleExpression : SequenceExpression {
@@ -35,10 +40,10 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal override string CheckAssign() {
-            if (Items.Length == 0) {
+            if (Items.Count == 0) {
                 return "can't assign to ()";
             }
-            for (int i = 0; i < Items.Length; i++) {
+            for (int i = 0; i < Items.Count; i++) {
                 Expression e = Items[i];
                 if (e.CheckAssign() != null) {
                     // we don't return the same message here as CPython doesn't seem to either, 
@@ -58,7 +63,7 @@ namespace IronPython.Compiler.Ast {
                 );
             }
 
-            if (Items.Length == 0) {
+            if (Items.Count == 0) {
                 return Ast.Field(
                     null,
                     typeof(PythonOps).GetField("EmptyTuple")

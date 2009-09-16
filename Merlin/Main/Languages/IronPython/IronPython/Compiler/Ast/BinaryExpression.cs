@@ -13,16 +13,21 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using MSAst = System.Linq.Expressions;
+#else
+using MSAst = Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Diagnostics;
 using IronPython.Runtime.Binding;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
-using MSAst = System.Linq.Expressions;
 
 namespace IronPython.Compiler.Ast {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = MSAst.Expression;
 
     public partial class BinaryExpression : Expression {
         private readonly Expression _left, _right;
@@ -31,7 +36,7 @@ namespace IronPython.Compiler.Ast {
         public BinaryExpression(PythonOperator op, Expression left, Expression right) {
             ContractUtils.RequiresNotNull(left, "left");
             ContractUtils.RequiresNotNull(right, "right");
-            if (op == PythonOperator.None) throw new ArgumentException("op");
+            if (op == PythonOperator.None) throw new ArgumentException("bad operator");
 
             _op = op;
             _left = left;

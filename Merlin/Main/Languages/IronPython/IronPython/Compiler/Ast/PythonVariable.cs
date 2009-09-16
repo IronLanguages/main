@@ -13,16 +13,21 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using MSAst = System.Linq.Expressions;
+#else
+using MSAst = Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Diagnostics;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Ast;
 using Microsoft.Scripting.Utils;
-using MSAst = System.Linq.Expressions;
 
 namespace IronPython.Compiler.Ast {
     internal class PythonVariable {
-        private readonly SymbolId _name;
+        private readonly string _name;
         private readonly ScopeStatement/*!*/ _scope;
         private VariableKind _kind;    // the type of variable, 
 
@@ -32,14 +37,14 @@ namespace IronPython.Compiler.Ast {
         private bool _accessedInNestedScope;    // the variable is accessed in a nested scope and therefore needs to be a closure var
         private int _index;                     // Index used for tracking in the flow checker
 
-        public PythonVariable(SymbolId name, VariableKind kind, ScopeStatement/*!*/ scope) {
+        public PythonVariable(string name, VariableKind kind, ScopeStatement/*!*/ scope) {
             Assert.NotNull(scope);
             _name = name;
             _kind = kind;
             _scope = scope;
         }
 
-        public SymbolId Name {
+        public string Name {
             get { return _name; }
         }
 

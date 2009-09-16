@@ -13,16 +13,21 @@
  *
  * ***************************************************************************/
 
-using System.Collections.Generic;
-using System.Dynamic.Utils;
+#if CLR2
+using Microsoft.Scripting.Ast;
+#else
 using System.Linq.Expressions;
-using System.Reflection;
+#endif
 
 #if SILVERLIGHT
 using System.Core;
 #else
 using System.Runtime.Remoting;
 #endif
+
+using System.Collections.Generic;
+using System.Dynamic.Utils;
+using System.Reflection;
 
 namespace System.Dynamic {
     /// <summary>

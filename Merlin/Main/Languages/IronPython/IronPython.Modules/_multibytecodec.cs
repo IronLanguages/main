@@ -84,15 +84,15 @@ namespace IronPython.Modules {
             }
 
             public string read(CodeContext context) {
-                return (string)_codec.encode(context, (string)PythonOps.Invoke(context, _stream, SymbolTable.StringToId("read")), _errors)[0];
+                return (string)_codec.encode(context, (string)PythonOps.Invoke(context, _stream, "read"), _errors)[0];
             }
 
             public string read(CodeContext context, int size) {
-                return (string)_codec.encode(context, (string)PythonOps.Invoke(context, _stream, SymbolTable.StringToId("read"), size), _errors)[0];
+                return (string)_codec.encode(context, (string)PythonOps.Invoke(context, _stream, "read", size), _errors)[0];
             }
 
             public string readline(CodeContext context) {
-                return (string)_codec.encode(context, (string)PythonOps.Invoke(context, _stream, SymbolTable.StringToId("readline")), _errors)[0];
+                return (string)_codec.encode(context, (string)PythonOps.Invoke(context, _stream, "readline"), _errors)[0];
             }
 
             public void readlines() {
@@ -127,7 +127,7 @@ namespace IronPython.Modules {
             }
 
             public void write(CodeContext context, string @string) {
-                PythonOps.Invoke(context, _stream, SymbolTable.StringToId("read"), _codec.decode(context, @string, _errors)[0]);
+                PythonOps.Invoke(context, _stream, "read", _codec.decode(context, @string, _errors)[0]);
             }
 
             public void writelines() {
@@ -150,7 +150,7 @@ namespace IronPython.Modules {
         }
 
         private static MultibyteCodec GetCodec(object self, CodeContext context) {
-            MultibyteCodec codec = PythonOps.GetBoundAttr(context, self, SymbolTable.StringToId("codec")) as MultibyteCodec;
+            MultibyteCodec codec = PythonOps.GetBoundAttr(context, self, "codec") as MultibyteCodec;
             if (codec == null) {
                 throw PythonOps.TypeError("codec is unexpected type");
             }

@@ -13,10 +13,15 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq.Expressions;
 using System.Runtime.Serialization;
 using System.Dynamic;
 using System.Threading;
@@ -69,17 +74,21 @@ namespace IronPython.Runtime.Types {
         [MultiRuntimeAware]
         private static int _namesVersion;
         private int _optimizedInstanceNamesVersion;
-        private SymbolId[] _optimizedInstanceNames;
+        private string[] _optimizedInstanceNames;
 
         public static string __doc__ = "classobj(name, bases, dict)";
 
-        public static object __new__(CodeContext/*!*/ context, [NotNull]PythonType cls, string name, PythonTuple bases, IAttributesCollection dict) {
-            if (cls != TypeCache.OldClass) throw PythonOps.TypeError("{0} is not a subtype of classobj", cls.Name);
+        public static object __new__(CodeContext/*!*/ context, [NotNull]PythonType cls, string name, PythonTuple bases, PythonDictionary/*!*/ dict) {
+            if (dict == null) {
+                throw PythonOps.TypeError("dict must be a dictionary");
+            } else if (cls != TypeCache.OldClass) {
+                throw PythonOps.TypeError("{0} is not a subtype of classobj", cls.Name);
+            }
 
-            if (!dict.ContainsKey(Symbols.Module)) {
+            if (!dict.ContainsKey("__module__")) {
                 object moduleValue;
-                if (context.TryGetGlobalVariable(Symbols.Name, out moduleValue)) {
-                    dict[Symbols.Module] = moduleValue;
+                if (context.TryGetGlobalVariable("__name__", out moduleValue)) {
+                    dict["__module__"] = moduleValue;
                 }
             }
 
@@ -92,37 +101,37 @@ namespace IronPython.Runtime.Types {
             return new OldClass(name, bases, dict, String.Empty);
         }
 
-        internal OldClass(string name, PythonTuple bases, IAttributesCollection dict, string instanceNames) {
+        internal OldClass(string name, PythonTuple bases, PythonDictionary/*!*/ dict, string instanceNames) {
             _bases = ValidateBases(bases);
 
             Init(name, dict, instanceNames);
         }
 
-        private void Init(string name, IAttributesCollection dict, string instanceNames) {
+        private void Init(string name, PythonDictionary/*!*/ dict, string instanceNames) {
             _name = name;
 
             InitializeInstanceNames(instanceNames);
 
-            _dict = dict as PythonDictionary ?? new PythonDictionary(new WrapperDictionaryStorage(dict));
+            _dict = dict;
 
             
-            if (!_dict._storage.Contains(Symbols.Doc)) {
-                _dict._storage.Add(Symbols.Doc, null);
+            if (!_dict._storage.Contains("__doc__")) {
+                _dict._storage.Add("__doc__", null);
             }
 
             CheckSpecialMethods(_dict);
         }
 
         private void CheckSpecialMethods(PythonDictionary dict) {
-            if (dict._storage.Contains(Symbols.Unassign)) {
+            if (dict._storage.Contains("__del__")) {
                 HasFinalizer = true;
             }
 
-            if (dict._storage.Contains(Symbols.SetAttr)) {
+            if (dict._storage.Contains("__setattr__")) {
                 HasSetAttr = true;
             }
 
-            if (dict._storage.Contains(Symbols.DelAttr)) {
+            if (dict._storage.Contains("__delattr__")) {
                 HasDelAttr = true;
             }
 
@@ -179,20 +188,20 @@ namespace IronPython.Runtime.Types {
 
         private void InitializeInstanceNames(string instanceNames) {
             if (instanceNames.Length == 0) {
-                _optimizedInstanceNames = SymbolId.EmptySymbols;
+                _optimizedInstanceNames = ArrayUtils.EmptyStrings;
                 _optimizedInstanceNamesVersion = 0;
                 return;
             }
 
             string[] names = instanceNames.Split(',');
-            _optimizedInstanceNames = new SymbolId[names.Length];
+            _optimizedInstanceNames = new string[names.Length];
             for (int i = 0; i < names.Length; i++) {
-                _optimizedInstanceNames[i] = SymbolTable.StringToId(names[i]);
+                _optimizedInstanceNames[i] = names[i];
             }
             _optimizedInstanceNamesVersion = Interlocked.Increment(ref _namesVersion);
         }
 
-        internal SymbolId[] OptimizedInstanceNames {
+        internal string[] OptimizedInstanceNames {
             get { return _optimizedInstanceNames; }
         }
 
@@ -205,7 +214,7 @@ namespace IronPython.Runtime.Types {
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate")]
-        internal bool TryLookupSlot(SymbolId name, out object ret) {
+        internal bool TryLookupSlot(string name, out object ret) {
             if (_dict._storage.TryGetValue(name, out ret)) {
                 return true;
             }
@@ -220,7 +229,7 @@ namespace IronPython.Runtime.Types {
             return false;
         }
 
-        internal bool TryLookupOneSlot(SymbolId name, out object ret) {
+        internal bool TryLookupOneSlot(string name, out object ret) {
             return _dict._storage.TryGetValue(name, out ret);
         }
 
@@ -301,7 +310,7 @@ namespace IronPython.Runtime.Types {
             object value;
             // lookup the slot directly - we don't go through __getattr__
             // until after the instance is created.
-            if (TryLookupSlot(Symbols.Init, out value)) {
+            if (TryLookupSlot("__init__", out value)) {
                 PythonOps.CallWithContext(context, GetOldStyleDescriptor(context, value, inst, this), args\u00F8);
             } else if (args\u00F8.Length > 0) {
                 MakeCallError();
@@ -310,10 +319,10 @@ namespace IronPython.Runtime.Types {
         }
 
         [SpecialName]
-        public object Call(CodeContext context, [ParamDictionary] IAttributesCollection dict\u00F8, [NotNull]params object[] args\u00F8) {
+        public object Call(CodeContext context, [ParamDictionary]IDictionary<object, object> dict\u00F8, [NotNull]params object[] args\u00F8) {
             OldInstance inst = new OldInstance(context, this);
             object meth;
-            if (PythonOps.TryGetBoundAttr(inst, Symbols.Init, out meth)) {
+            if (PythonOps.TryGetBoundAttr(inst, "__init__", out meth)) {
                 PythonCalls.CallWithKeywordArgs(context, meth, args\u00F8, dict\u00F8);
             } else if (dict\u00F8.Count > 0 || args\u00F8.Length > 0) {
                 MakeCallError();
@@ -350,20 +359,20 @@ namespace IronPython.Runtime.Types {
             return res;
         }
 
-        internal object GetMember(CodeContext context, SymbolId name) {
+        internal object GetMember(CodeContext context, string name) {
             object value;
 
             if (!TryGetBoundCustomMember(context, name, out value)) {
-                throw PythonOps.AttributeError("type object '{0}' has no attribute '{1}'", Name, SymbolTable.IdToString(name));
+                throw PythonOps.AttributeError("type object '{0}' has no attribute '{1}'", Name, name);
             }
 
             return value;
         }
 
-        internal bool TryGetBoundCustomMember(CodeContext context, SymbolId name, out object value) {
-            if (name == Symbols.Bases) { value = PythonTuple.Make(_bases); return true; }
-            if (name == Symbols.Name) { value = _name; return true; }
-            if (name == Symbols.Dict) {
+        internal bool TryGetBoundCustomMember(CodeContext context, string name, out object value) {
+            if (name == "__bases__") { value = PythonTuple.Make(_bases); return true; }
+            if (name == "__name__") { value = _name; return true; }
+            if (name == "__dict__") {
                 //!!! user code can modify __del__ property of __dict__ behind our back
                 HasDelAttr = HasSetAttr = true;  // pessimisticlly assume the user is setting __setattr__ in the dict
                 value = _dict; return true;
@@ -376,18 +385,18 @@ namespace IronPython.Runtime.Types {
             return false;
         }
 
-        internal bool DeleteCustomMember(CodeContext context, SymbolId name) {
-            if (!_dict._storage.Remove(SymbolTable.IdToString(name))) {
-                throw PythonOps.AttributeError("{0} is not a valid attribute", SymbolTable.IdToString(name));
+        internal bool DeleteCustomMember(CodeContext context, string name) {
+            if (!_dict._storage.Remove(name)) {
+                throw PythonOps.AttributeError("{0} is not a valid attribute", name);
             }
 
-            if (name == Symbols.Unassign) {
+            if (name == "__del__") {
                 HasFinalizer = false;
             }
-            if (name == Symbols.SetAttr) {
+            if (name == "__setattr__") {
                 HasSetAttr = false;
             }
-            if (name == Symbols.DelAttr) {
+            if (name == "__delattr__") {
                 HasDelAttr = false;
             }
 
@@ -502,7 +511,7 @@ namespace IronPython.Runtime.Types {
         #region Internal Member Accessors
 
         internal bool TryLookupInit(object inst, out object ret) {
-            if (TryLookupSlot(Symbols.Init, out ret)) {
+            if (TryLookupSlot("__init__", out ret)) {
                 ret = GetOldStyleDescriptor(DefaultContext.Default, ret, inst, this);
                 return true;
             }
@@ -510,7 +519,7 @@ namespace IronPython.Runtime.Types {
             return false;
         }
 
-        internal object MakeCallError() {
+        internal static object MakeCallError() {
             // Normally, if we have an __init__ method, the method binder detects signature mismatches.
             // This can happen when a class does not define __init__ and therefore does not take any arguments.
             // Beware that calls like F(*(), **{}) have 2 arguments but they're empty and so it should still
@@ -534,19 +543,19 @@ namespace IronPython.Runtime.Types {
             _dict = d;
         }
 
-        internal void SetNameHelper(SymbolId name, object value) {
+        internal void SetNameHelper(string name, object value) {
             _dict._storage.Add(name, value);
 
-            if (name == Symbols.Unassign) {
+            if (name == "__del__") {
                 HasFinalizer = true;
-            } else if (name == Symbols.SetAttr) {
+            } else if (name == "__setattr__") {
                 HasSetAttr = true;
-            } else if (name == Symbols.DelAttr) {
+            } else if (name == "__delattr__") {
                 HasDelAttr = true;
             }
         }
 
-        internal object LookupValue(CodeContext context, SymbolId name) {
+        internal object LookupValue(CodeContext context, string name) {
             object value;
             if (TryLookupValue(context, name, out value)) {
                 return value;
@@ -555,7 +564,7 @@ namespace IronPython.Runtime.Types {
             throw PythonOps.AttributeErrorForMissingAttribute(this, name);
         }
 
-        internal bool TryLookupValue(CodeContext context, SymbolId name, out object value) {
+        internal bool TryLookupValue(CodeContext context, string name, out object value) {
             if (TryLookupSlot(name, out value)) {
                 value = GetOldStyleDescriptor(context, value, null, this);
                 return true;

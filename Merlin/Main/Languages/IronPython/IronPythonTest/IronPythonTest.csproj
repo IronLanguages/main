@@ -28,19 +28,19 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>..\..\..\Bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;$(SignedSym)</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;$(SignedSym);CLR2</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugSymbols>false</DebugSymbols>
     <Optimize>true</Optimize>
     <OutputPath>..\..\..\Bin\Release\</OutputPath>
-    <DefineConstants>TRACE;$(SignedSym)</DefineConstants>
+    <DefineConstants>TRACE;$(SignedSym);CLR2</DefineConstants>
     <WarningsNotAsErrors>618,1685</WarningsNotAsErrors>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Silverlight Debug' ">
     <DebugSymbols>true</DebugSymbols>
     <OutputPath>..\..\..\Bin\Silverlight Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;SILVERLIGHT;$(SignedSym)</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;SILVERLIGHT;$(SignedSym);CLR2</DefineConstants>
     <DebugType>full</DebugType>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <NoStdLib>true</NoStdLib>
@@ -49,7 +49,7 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Silverlight Release' ">
     <OutputPath>..\..\..\Bin\Silverlight Release\</OutputPath>
-    <DefineConstants>TRACE;SILVERLIGHT;$(SignedSym)</DefineConstants>
+    <DefineConstants>TRACE;SILVERLIGHT;$(SignedSym);CLR2</DefineConstants>
     <NoWarn>618</NoWarn>
     <NoStdLib>true</NoStdLib>
     <DebugType>pdbonly</DebugType>
