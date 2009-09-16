@@ -210,8 +210,8 @@ csc <<-EOL
     #{method_block("void", "Void") {|el| "Tracker = \"#{el}\""}}
     #{method_block("string", "Ref") {|el| "return \"#{el}\""} }
     #{method_block("string[]", "RefArray") {|el| "return new string[]{\"#{el}\"}"} }
-    #{method_block("int", "Val") {|el| "Tracker = \"#{el}\";\nreturn 1"} }
-    #{method_block("int[]", "ValArray") {|el| "Tracker = \"#{el}\";\nreturn new int[]{1}" }}
+    #{method_block("int", "Val") {|el| "Tracker = \"#{el}\";return 1"} }
+    #{method_block("int[]", "ValArray") {|el| "Tracker = \"#{el}\";return new int[]{1}" }}
     #{method_block("string", "Generic", "<T>") {|el| "return \"#{el}\" "}}
   }
   public class DerivedFromImplementsIInterface : ImplementsIInterface {}
@@ -483,60 +483,110 @@ no_csc do
       end
     end
         
+    class ResultHelper
+      class << self
+        def test_BooleanArg(v)
+          !!v
+        end
+
+        def test_SingleArg(v)
+          case v
+          when System::UInt32, System::Int32
+            System::Single.parse(v.to_s)
+          when System::Char
+            System::Single.induced_from(int32(v))
+          when Float
+            System::Convert.to_single(v)
+          end
+        end
+
+        def test_DoubleArg(v)
+          System::Double.induced_from(int32(v)) if v.is_a? System::Char
+        end
+        
+        def test_DecimalArg(v)
+          System::Decimal.induced_from(int32(v)) if v.is_a? System::Char
+        end
+
+        def test_CharArg(v)
+          case v
+          when System::String
+            v[0]
+          when Symbol
+            v.to_s[0..0]
+          when String
+            v[0..0]
+          end
+        end
+
+        def test_IEnumerableArg(v)
+          if test_value(v)
+            v.to_int
+          else
+            [v]
+          end
+        end
+        alias_method :test_IListArg, :test_IEnumerableArg
+        alias_method :test_IListOfObjArg, :test_IEnumerableArg
+        alias_method :test_IListOfIntArg, :test_IEnumerableArg
+        alias_method :test_IEnumerableOfIntArg, :test_IEnumerableArg
+        alias_method :test_ArrayArg, :test_IEnumerableArg
+        alias_method :test_ArrayListArg, :test_IEnumerableArg
+        alias_method :test_Int32ArrArg, :test_IEnumerableArg
+        alias_method :test_ParamsInt32ArrArg, :test_IEnumerableArg
+        alias_method :test_ParamsCStructArrArg, :test_IEnumerableArg
+        
+        def test_RefInt32Arg(v)
+          1
+        end
+
+        def test_Int32ArgDefaultInt32Arg(v)
+          [Fixnum.induced_from(v.to_int), 10]
+        end
+
+        def test_Int32Arg(v)
+          if test_value(v)
+            v.to_int
+          end
+        end
+        alias_method :test_BigIntegerArg, :test_Int32Arg
+        alias_method :test_DefaultInt32Arg, :test_Int32Arg
+        alias_method :test_Int32ArgParamsInt32ArrArg, :test_Int32Arg
+
+        def test_EnumIntArg(v)
+          if v.is_a?(CustomEnum)
+            EnumInt.new
+          end
+        end
+        
+        def test_CustomEnumArg(v)
+          if v.is_a?(EnumInt)
+            CustomEnum.new
+          end
+        end
+
+        [System::Byte, System::SByte, System::Int16, System::UInt16, System::UInt32, System::Int64, System::UInt64].each do |val|
+          define_method("test_#{val.name.gsub("System::","")}Arg") {|v| val.induced_from(v.to_int) if test_value(v)}
+        end
+
+        def method_missing(meth, *args, &blk)
+          if meth =~ /test_.*?Arg/
+            value
+          end
+        end
+        
+        private
+        def int32(v)
+          System::Convert.to_int32(v)
+        end
+
+        def test_value(value)
+          value.is_a?(Symbol) || value.is_a?(BindingSpecs::Convert::ToInt) || value.is_a?(BindingSpecs::Convert::ToIntToI)
+        end
+      end
+    end
     def self.result(meth, value) 
-      #TODO: there has to be a better way
-      result = case meth.to_s
-               when /Boolean/
-                 value ? true : false
-               when /Single/
-                 if value.is_a?(System::UInt32) || value.is_a?(System::Int32)
-                   System::Single.parse(value.to_s)
-                 elsif value.is_a? System::Char
-                   System::Single.induced_from(System::Convert.to_int32(value))
-                 elsif value.is_a? Float
-                   System::Convert.to_single(value)
-                 end
-               when /(Double|Decimal)/
-                 if value.is_a? System::Char
-                   System.const_get($1).induced_from(System::Convert.to_int32(value))
-                 end
-               when /Char/
-                 if value.is_a? System::String
-                   value[0]
-                 elsif value.is_a? Symbol
-                   value.to_s[0..0]
-                 elsif value.is_a? String
-                   value[0..0]
-                 end
-               when /IEnumerable|IList|Array|^Int32ArrArg|ParamsInt32ArrArg|ParamsCStructArrArg/
-                 if value.is_a?(Symbol) || value.is_a?(BindingSpecs::Convert::ToInt) || value.is_a?(BindingSpecs::Convert::ToIntToI)
-                   value.to_int
-                 else
-                   [value]
-                 end
-               when /RefInt32/
-                 1
-               when /Int32ArgDefault/
-                 [Fixnum.induced_from(value.to_int), 10]
-               when /Int32|BigInteger/
-                 if value.is_a?(Symbol) || value.is_a?(BindingSpecs::Convert::ToInt) || value.is_a?(BindingSpecs::Convert::ToIntToI)
-                   value.to_int
-                 end
-               when /(S?Byte|U?Int16|UInt32|U?Int64)/
-                 if value.is_a?(Symbol) || value.is_a?(BindingSpecs::Convert::ToInt) || value.is_a?(BindingSpecs::Convert::ToIntToI)
-                   System.const_get($1).induced_from(value.to_int)
-                 end
-               when /EnumIntArg/
-                 if value.is_a?(CustomEnum)
-                   EnumInt.new
-                 end
-               when /CustomEnumArg/
-                 if value.is_a?(EnumInt)
-                   CustomEnum.new
-                 end
-               else
-                 value
-               end
+      result = ResultHelper.send("test_#{meth}", value)
       result.nil? ? result = value : nil
       result
     end
