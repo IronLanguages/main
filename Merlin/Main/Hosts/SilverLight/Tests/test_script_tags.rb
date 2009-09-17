@@ -83,7 +83,7 @@ end
 
 dst = Microsoft::Scripting::Silverlight::DynamicScriptTags
 
-describe 'DynamicScriptTags.RemoveMargin' doa
+describe 'DynamicScriptTags.RemoveMargin' do
 
   it 'should not remove any spaces' do
     test = "a = 1\nb = 2\n"
@@ -123,6 +123,12 @@ describe 'DynamicScriptTags.RemoveMargin' doa
   it 'should remove any spaces from a last-spaces-only line' do
     test = "\n    a = 1\n    b = 1\n    def foo\n      puts 'hi'\n  "
     result = "a = 1\nb = 1\ndef foo\n  puts 'hi'\n"
+    dst.RemoveMargin(test).should == result
+  end
+
+  it 'should not take blank lines into account in margin' do
+    test = "\n    a = 1\n\n    b = 1\n"
+    result = "a = 1\n\nb = 1\n"
     dst.RemoveMargin(test).should == result
   end
 

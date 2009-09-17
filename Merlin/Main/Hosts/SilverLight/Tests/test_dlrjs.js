@@ -9,19 +9,24 @@ $(document).ready(function() {
     ok(window.DLR, "DLR is defined")
     ok(window.Silverlight, "Silverlight is defined")
     ok(Object.merge, "merge function exists")
-    ok(DLR.parseSettings, "DLR.parseSettings exists")
-    ok(DLR.defaultSettings, "DLR.defaultSettings exists")
-    ok(DLR.settings, "DLR.settings exists")
+    ok(DLR.parseSettings, "DLR.parseSettings function exists")
+    ok(DLR.defaultSettings, "DLR.defaultSettings function exists")
+    ok(DLR.settings, "DLR.settings object exists")
+  });
+
+  test("default options", function() {
+    equals(DLR.autoAdd, true);
+    equals(DLR.path, null); 
   });
 
   test("default settings", function() {
-    equals(DLR.defaultSettings.autoAdd, true)
-    equals(DLR.defaultSettings.width, 1)
-    equals(DLR.defaultSettings.height, 1)
-    equals(DLR.defaultSettings.reportErrors, 'errorLocation')
-    equals(DLR.defaultSettings.source, 'dlr.xap')
-    equals(DLR.defaultSettings.onerror, 'Silverlight.default_error_handler')
-    equals(DLR.defaultSettings.id, 'silverlightDlrObject_DOMOnly')
+    ds = DLR.defaultSettings()
+    equals(ds.width, 1)
+    equals(ds.height, 1)
+    equals(ds.reportErrors, 'errorLocation')
+    equals(ds.source, 'dlr.xap')
+    equals(ds.onError, 'Silverlight.default_error_handler')
+    equals(ds.id, 'silverlightDlrObject_DOMOnly')
   });
 
   module("merging objects")
@@ -56,35 +61,52 @@ $(document).ready(function() {
       equals(c.b, b.b)
       equals(c.c, a.c)
     });
+  
+  var temppath = null;
+  module("options", {
+    setup: function() {
+      temppath = DLR.path
+    },
+    teardown: function() {
+      DLR.path = temppath;
+      temppath = null;
+    }
+  })
+
+    test('DLR.path changes defaultSettings.source', function() {
+      equals(DLR.path, null);
+      equals(DLR.defaultSettings().source, 'dlr.xap');
+      DLR.path = ".."
+      equals(DLR.defaultSettings().source, "../dlr.xap");
+    });
 
   module("parsing settings")
 
     test('no customization', function() {
-      settings = DLR.parseSettings(DLR.defaultSettings, {})
-      equals(settings.autoAdd, true)
-      equals(DLR.autoAdd, DLR.defaultSettings.autoAdd)
-      equals(settings.initParams, "reportErrors=" + DLR.defaultSettings.reportErrors)
+      ds = DLR.defaultSettings()
+      settings = DLR.parseSettings(ds, {})
+      equals(settings.initParams, "reportErrors=" + ds.reportErrors)
       equals(settings.reportErrors, undefined)
-      equals(settings.width, DLR.defaultSettings.width)
-      equals(settings.height, DLR.defaultSettings.height)
-      equals(settings.onerror, DLR.defaultSettings.onerror)
-      equals(settings.source, DLR.defaultSettings.source)
-      equals(settings.id, DLR.defaultSettings.id)
+      equals(settings.width, ds.width)
+      equals(settings.height, ds.height)
+      equals(settings.onerror, ds.onerror)
+      equals(settings.source, ds.source)
+      equals(settings.id, ds.id)
     });
 
     test('new DLR setting', function() {
-      settings = DLR.parseSettings(DLR.defaultSettings, {console: true})
+      settings = DLR.parseSettings(DLR.defaultSettings(), {console: true})
       equals(settings.console, undefined)
       ok(/console=true/.test(settings.initParams), "console=true is in initParams")
     });
 
     test('new SL setting', function() {
-      settings = DLR.parseSettings(DLR.defaultSettings, {windowless: true})
+      settings = DLR.parseSettings(DLR.defaultSettings(), {windowless: true})
       equals(settings.windowless, true)
     });
 
     test('merging settings', function() {
-       settings = DLR.parseSettings(DLR.defaultSettings, {height: '100%', width: '100%', source: 'tests.xap'})
+       settings = DLR.parseSettings(DLR.defaultSettings(), {height: '100%', width: '100%', source: 'tests.xap'})
        equals(settings.height, '100%')
        equals(settings.width, '100%')
        equals(settings.source, 'tests.xap')
@@ -92,11 +114,9 @@ $(document).ready(function() {
 
     test("DLR settings make their way into initParams", function() {
       news = {
-        autoAdd: false, debug: true, console: true, start: 'foo.py', exceptionDetail: true, reportErrors: 'errorLocation'
+        debug: true, console: true, start: 'foo.py', exceptionDetail: true, reportErrors: 'errorLocation', xamlid: 'foo'
       };
-      settings = DLR.parseSettings(DLR.defaultSettings, news);
-      equals(settings.autoAdd, false)
-      delete news.autoAdd
+      settings = DLR.parseSettings(DLR.defaultSettings(), news);
 
       for(d in news) {
         equals(settings[d], undefined, d + " is undefined in settings")
@@ -107,8 +127,11 @@ $(document).ready(function() {
   module("Silverlight control loading")
 
     test("Silverlight control with default settings is added to the page automatically", function() {
-      name = 'object#' + DLR.defaultSettings.id 
-      waitForElement(name,
+      name = 'object#silverlightDlrObject_DOMOnly'
+      waitForTrue(
+        function() {
+          return $(name).length > 0
+        },
         function() {
           object = $(name)
           equals(object.length, 1)
@@ -118,28 +141,51 @@ $(document).ready(function() {
           equals(object.attr('type'), "application/x-silverlight")
         }, 
         function() {
-          ok(false, "element not found")
+          ok(false, name + " not found")
         }
       );
     });
 
-    test("Manually adding a control", function() {
+    test("Manually adding controls", function() {
       DLR.createObject();
-      name1 = 'object#silverlightDLRObject1'
-      name2 = 'object#silverlightDLRObject2'
-      waitForElement(name1, 
-        function() {
-          equals($(name1).length, 1)
-        }, 
-        function() { ok(false, name1 + " not found") }
-      );
+      equals($('object#silverlightDLRObject1').length, 1)
       DLR.createObject();
-      waitForElement(name2, 
-        function() {
-          equals($(name2).length, 1)
-        }, 
-        function() { ok(false, name2 + " not found") }
-      );
+      equals($('object#silverlightDLRObject2').length, 1)
     });
-   
+
+  var old_createObject = null;
+  module('XAML script tags', {
+    setup: function() {
+      old_createObject = DLR.createObject
+    },
+    teardown: function() {
+      DLR.createObject = old_createObject
+    }
+  })
+
+    test('with ID produces a SL control with matching xamlid', function() {
+      $(document.body).append("<script type=\"application/xml+xaml\" width=\"100\" height=\"150\" id=\"foo\"></script>")
+      equals(DLR.__loaded, true)
+      DLR.createObject = function(settings) {
+        equals(settings.width, '100')
+        equals(settings.height, '150')
+        equals(settings.xamlid, 'foo')
+      }
+      DLR.__startup()
+      $('script#foo').remove()
+    })
+
+    test('without ID produces a SL control with autogenerated xamlid and id', function() {
+      $(document.body).append("<script type=\"application/xml+xaml\" width=\"200\" height=\"250\"></script>")
+      equals(DLR.__loaded, true)
+      id = DLR.__defaultXAMLId + DLR.__objectCount
+      DLR.createObject = function(settings) {
+        equals(settings.width, '200')
+        equals(settings.height, '250')
+        equals(settings.xamlid, id)
+      }
+      DLR.__startup()
+      $('script#' + id).remove()
+    });
+
 });

@@ -21,8 +21,15 @@ using Microsoft.Scripting.Hosting;
 using System.IO;
 
 namespace Microsoft.Scripting.Silverlight {
+
+    /// <summary>
+    /// Manages script tags that hold DLR-based code.
+    /// </summary>
     public class DynamicScriptTags {
 
+        /// <summary>
+        /// Inline strings and external URIs for a unique language/defer-status combination.
+        /// </summary>
         public class ScriptCode {
             public string Language { get; private set; }
             public bool Defer { get; private set; }
@@ -37,54 +44,76 @@ namespace Microsoft.Scripting.Silverlight {
             }
         }
 
+        /// <summary>
+        /// Dictionary of language-name(string) => (Dictionary of defer-status(bool) => ScriptCode)
+        /// </summary>
         public Dictionary<string, Dictionary<bool, ScriptCode>> Code { get; private set; }
 
+        /// <summary>
+        /// Holds onto the language config
+        /// </summary>
         private DynamicLanguageConfig _LangConfig;
 
+        /// <summary>
+        /// Given a language config it processes the script-tags on the HTML
+        /// page (see "GetScriptTags").
+        /// </summary>
         public DynamicScriptTags(DynamicLanguageConfig langConfig) {
             _LangConfig = langConfig;
             Code = new Dictionary<string, Dictionary<bool, ScriptCode>>();
             GetScriptTags();
         }
 
-        public void Run(DynamicEngine engine) {
-            ScriptEngine scriptTagEngine = null;
-            ScriptScope scriptTagScope = null;
-            foreach (var pair in Code) {
-                var lang = pair.Key;
-                scriptTagEngine = _LangConfig.GetEngine(GetLanguageNameFrom(pair.Key));
-                if (scriptTagEngine != null) {
-                    scriptTagScope = engine.EntryPointScope;
-                    foreach (var pair2 in pair.Value) {
-                        var defer = pair2.Key;
-                        var scripts = pair2.Value;
-                        if (!defer) {
-                            foreach (var uri in scripts.External) {
-                                var code = BrowserPAL.PAL.VirtualFilesystem.GetFileContents(uri);
-                                if (code == null) continue;
-                                ScriptSource externalSourceCode =
-                                    scriptTagEngine.CreateScriptSourceFromString(
-                                        code,
-                                        HtmlPage.Document.DocumentUri.LocalPath.Remove(0, 1),
-                                        SourceCodeKind.File
-                                    );
-                                externalSourceCode.Compile(new ErrorFormatter.Sink()).Execute(scriptTagScope);
-                            }
-                            foreach (var code in scripts.Inline) {
-                                ScriptSource inlineSourceCode =
-                                    scriptTagEngine.CreateScriptSourceFromString(
-                                        code,
-                                        HtmlPage.Document.DocumentUri.LocalPath.Remove(0, 1),
-                                        SourceCodeKind.File
-                                    );
-                                inlineSourceCode.Compile(new ErrorFormatter.Sink()).Execute(scriptTagScope);
-                            }
-                        }
-                    }
+        /// <summary>
+        /// Scrapes the HTML page and populates the "Code" structure.
+        /// </summary>
+        public void GetScriptTags() {
+            var scriptTags = HtmlPage.Document.GetElementsByTagName("script");
+            foreach (ScriptObject scriptTag in scriptTags) {
+                var e = (HtmlElement)scriptTag;
+                var type = (string)e.GetAttribute("type");
+
+                if (type == null || !LanguageFound(GetLanguageNameFrom(type)))
+                    continue;
+
+                if (DynamicApplication.Current.InitParams.ContainsKey("xamlid")) {
+                    if (e.CssClass == null || !e.CssClass.Contains(DynamicApplication.Current.InitParams["xamlid"]))
+                        continue;
+                } else if (e.CssClass != string.Empty)
+                    continue;
+
+                var src = (string)e.GetAttribute("src");
+                bool defer = (bool)e.GetProperty("defer");
+                bool deferDefault = src != null;
+                defer = defer ^ deferDefault;
+
+                string language = GetLanguageNameFrom(type).ToLower();
+
+                _LangConfig.LanguagesUsed[language] = true;
+
+                if (!Code.ContainsKey(type) || Code[type] == null) {
+                    Code[type] = new Dictionary<bool, ScriptCode>();
+                }
+                if (!Code[type].ContainsKey(defer) || Code[type][defer] == null) {
+                    var sc = new ScriptCode(language, defer);
+                    Code[type][defer] = sc;
+                }
+
+                if (src != null) {
+                    Code[type][defer].External.Add(MakeUriAbsolute(new Uri(src, UriKind.RelativeOrAbsolute)));
+                } else {
+                    var innerHtml = (string)e.GetProperty("innerHTML");
+                    if (innerHtml != null)
+                        Code[type][defer].Inline.Add(RemoveMargin(innerHtml));
                 }
             }
         }
 
+        /// <summary>
+        /// Gathers the set of external script URIs, and asks the 
+        /// HttpVirtualFilesystem to download and cache the URIs. Calls the
+        /// delegate when all downloads are complete.
+        /// </summary>
         public void DownloadExternalCode(Action onComplete) {
             var externalUris = new List<Uri>();
             foreach (var pair1 in Code)
@@ -94,6 +123,9 @@ namespace Microsoft.Scripting.Silverlight {
                 DownloadAndCache(externalUris, onComplete);
         }
 
+        /// <summary>
+        /// Are there any registered script tags?
+        /// </summary>
         public bool HasScriptTags {
             get {
                 foreach (var i in Code) {
@@ -107,54 +139,59 @@ namespace Microsoft.Scripting.Silverlight {
             }
         }
 
-        public void GetScriptTags() {
-            var scriptTags = HtmlPage.Document.GetElementsByTagName("script");
-            foreach(ScriptObject scriptTag in scriptTags) {
-                var e = (HtmlElement) scriptTag;
-                var type = (string) e.GetAttribute("type");
-
-                if (type == null || !LanguageFound(GetLanguageNameFrom(type)))
-                    continue;
-
-                _LangConfig.LanguagesUsed[GetLanguageNameFrom(type).ToLower()] = true;
-
-                var src = (string) e.GetAttribute("src");
-
-                bool defer = (bool) e.GetProperty("defer");
-                bool deferDefault = src != null;
-                defer = defer ^ deferDefault;
-
-                if (!Code.ContainsKey(type) || Code[type] == null) {
-                    Code[type] = new Dictionary<bool, ScriptCode>();
-                }
-                if (!Code[type].ContainsKey(defer) || Code[type][defer] == null) {
-                    var sc = new ScriptCode(GetLanguageNameFrom(type).ToLower(), defer);
-                    Code[type][defer] = sc;
-                }
-
-                if (src != null) {
-                    Code[type][defer].External.Add(MakeUriAbsolute(new Uri(src, UriKind.RelativeOrAbsolute)));
-                } else {
-                    var innerHtml = (string)e.GetProperty("innerHTML");
-                    if(innerHtml != null)
-                        Code[type][defer].Inline.Add(RemoveMargin(innerHtml));
+        /// <summary>
+        /// Runs the registered script tags against the DynamicEngine.
+        /// </summary>
+        public void Run(DynamicEngine engine) {
+            foreach (var pair in Code) {
+                var lang = pair.Key;
+                engine.Engine = _LangConfig.GetEngine(GetLanguageNameFrom(pair.Key));
+                if (engine.Engine != null) {
+                    foreach (var pair2 in pair.Value) {
+                        var defer = pair2.Key;
+                        var scripts = pair2.Value;
+                        if (!defer) {
+                            foreach (var uri in scripts.External) {
+                                var code = BrowserPAL.PAL.VirtualFilesystem.GetFileContents(uri);
+                                if (code == null) continue;
+                                ScriptSource externalSourceCode =
+                                    engine.Engine.CreateScriptSourceFromString(
+                                        code,
+                                        uri.AbsoluteUri,
+                                        SourceCodeKind.File
+                                    );
+                                externalSourceCode.Compile(new ErrorFormatter.Sink()).Execute(engine.EntryPointScope);
+                            }
+                            foreach (var code in scripts.Inline) {
+                                ScriptSource inlineSourceCode =
+                                    engine.Engine.CreateScriptSourceFromString(
+                                        code,
+                                        HtmlPage.Document.DocumentUri.LocalPath.Remove(0, 1),
+                                        SourceCodeKind.File
+                                    );
+                                inlineSourceCode.Compile(new ErrorFormatter.Sink()).Execute(engine.EntryPointScope);
+                            }
+                        }
+                    }
                 }
             }
-        }
-
-        public static string RemoveMargin(string text) {
-            return RemoveMargin(text, -1, true);
         }
 
         /// <summary>
         /// Removes as much of a margin as possible from "text".
         /// </summary>
-        /// <param name="text">The "text" to remove a common margin from</param>
-        /// <param name="doRemoveMargin">
-        /// If "false", margins are not removed, but line endings are still 
-        /// processed.
-        /// </param>
-        /// <returns>"text" without a margin</returns>
+        public static string RemoveMargin(string text) {
+            return RemoveMargin(text, -1, true);
+        }
+
+        
+        /// <summary>
+        /// Removes as much of a margin as possible from "text".
+        /// </summary>
+        /// <param name="text">"text" to remove margin from</param>
+        /// <param name="firstLineMargin">What is the first line's margin. Set to "-1" to assume no margin.</param>
+        /// <param name="firstLine">has the "firstLine" already been processed?</param>
+        /// <returns>the de-margined text</returns>
         private static string RemoveMargin(string text, int firstLineMargin, bool firstLine) {
             var reader = new StringReader(text);
             var writer = new StringWriter();
@@ -172,23 +209,23 @@ namespace Microsoft.Scripting.Silverlight {
                     firstLine = false;
                 }
 
-                // make sure a blank line that is also last is empty
-                if (line.Trim().Length == 0 && reader.Peek() == -1) {
+                if (line.Trim().Length != 0) {
+                    // if any line does not have any margin spaces to
+                    // remove, stop removing margins and reprocess previously
+                    // processed lines without removing margins as well; if any
+                    // line's margins are less than , then there is no
+                    // margin.
+                    var currentLineMargin = GetMarginSize(line);
+                    if (currentLineMargin < firstLineMargin) {
+                        var processedText = RemoveMargin(processedWriter.ToString(), currentLineMargin, true);
+                        writer.Close();
+                        writer = null;
+                        writer = new StringWriter(new StringBuilder(processedText));
+                        firstLineMargin = currentLineMargin;
+                    }
+                } else if (reader.Peek() == -1) {
+                    // skip if it's the last line
                     continue;
-                }
-
-                // if any line does not have any margin spaces to
-                // remove, stop removing margins and reprocess previously
-                // processed lines without removing margins as well; if any
-                // line's margins are less than , then there is no
-                // margin.
-                var currentLineMargin = GetMarginSize(line);
-                if (currentLineMargin < firstLineMargin) {
-                    var processedText = RemoveMargin(processedWriter.ToString(), currentLineMargin, true);
-                    writer.Close();
-                    writer = null;
-                    writer = new StringWriter(new StringBuilder(processedText));
-                    firstLineMargin = currentLineMargin;
                 }
 
                 var newLine = line;
@@ -239,6 +276,9 @@ namespace Microsoft.Scripting.Silverlight {
             return line.Remove(0, n);
         }
 
+        /// <summary>
+        /// Makes the URI absolute (if it isn't already) against the HTML page.
+        /// </summary>
         private Uri MakeUriAbsolute(Uri uri) {
             Uri referenceUri = HtmlPage.Document.DocumentUri;
             if (!uri.IsAbsoluteUri) {
@@ -260,6 +300,9 @@ namespace Microsoft.Scripting.Silverlight {
             }
         }
 
+        /// <summary>
+        /// Is the given "languageName" represented by a avaliable language?
+        /// </summary>
         public bool LanguageFound(string languageName) {
             if (languageName == null) return false;
             bool languageNameFound = false;
@@ -276,6 +319,9 @@ namespace Microsoft.Scripting.Silverlight {
             return languageNameFound;
         }
 
+        /// <summary>
+        /// Given a mime-type, return the language name
+        /// </summary>
         public string GetLanguageNameFrom(string type) {
             if (!type.StartsWith("application/x-") && 
                 !type.StartsWith("text/") && 

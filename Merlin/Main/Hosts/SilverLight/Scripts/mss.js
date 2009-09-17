@@ -4,8 +4,17 @@
 // HTML page.
 ///////////////////////////////////////////////////////////////////////////////
 
-if(!window.DLR)
+if(!window.DLR) {
   window.DLR = {}
+}
+
+if(!DLR.autoAdd) {
+  DLR.autoAdd = true
+}
+
+if(!DLR.path) {
+  DLR.path = null 
+}
 
 if(!DLR.__loaded) {
 
@@ -25,7 +34,7 @@ if(!DLR.__loaded) {
     var raw_settings = Object.merge(defaults, settings);
 
     // pull out the DLR-specific configuration options
-    var dlr_keys = ['debug', 'console', 'start', 'exceptionDetail', 'reportErrors'];
+    var dlr_keys = ['debug', 'console', 'start', 'exceptionDetail', 'reportErrors', 'xamlid'];
     var dlr_options = {};
     for(d in dlr_keys) {
       key = dlr_keys[d]
@@ -47,11 +56,28 @@ if(!DLR.__loaded) {
   }
 
   DLR.__startup = function() {
-    DLR.__loaded = true;
-    if(DLR.autoAdd && Silverlight.isInstalled(null)) {
+    if(!DLR.__loaded && DLR.autoAdd && Silverlight.isInstalled(null)) {
       DLR.createObject(DLR.settings);
+      DLR.__loaded = true;
+    }
+
+    elements = document.getElementsByTagName("script");
+    for(var i = 0; i < elements.length; i++) {
+      var element = elements[i];
+      if(element.type == 'application/xml+xaml' && !element.defer) {
+        settings = {
+          width: element.getAttribute('width'),
+          height: element.getAttribute('height')
+        };
+        if(element.id == '')
+          element.id = DLR.__defaultXAMLId + DLR.__objectCount;
+        settings.xamlid = element.id;
+        DLR.createObject(settings);
+      }
     }
   }
+
+  DLR.__defaultXAMLId = "silverlightDLRXAML"
 
   DLR.__defaultObjectId = "silverlightDLRObject"
 
@@ -59,12 +85,12 @@ if(!DLR.__loaded) {
 
   DLR.createObject = function(settings) {
     settings = DLR.parseSettings(
-      DLR.defaultSettings, 
+      DLR.defaultSettings(),
       typeof(settings) == 'undefined' ? {} : settings
     )
     var spantag = document.createElement("span");
     document.body.appendChild(spantag);
-    if(settings.id == DLR.defaultSettings.id && DLR.__objectCount > 0) {
+    if(settings.id == DLR.defaultSettings().id && DLR.__objectCount > 0) {
       settings.id = DLR.__defaultObjectId + DLR.__objectCount
     }
     slHtml = Silverlight.buildHTML(settings);
@@ -72,36 +98,25 @@ if(!DLR.__loaded) {
     DLR.__objectCount++;
   }
 
-  DLR.defaultSettings = {
-    autoAdd: true,
-    width: 1,
-    height: 1,
-    onerror: 'Silverlight.default_error_handler',
-    reportErrors: 'errorLocation',
-    source: 'dlr.xap',
-    id: 'silverlightDlrObject_DOMOnly'
+  DLR.defaultSettings = function() {
+    return {
+      width: 1,
+      height: 1,
+      onError: 'Silverlight.default_error_handler',
+      reportErrors: 'errorLocation',
+      source: DLR.path != null ? DLR.path + '/dlr.xap' : 'dlr.xap',
+      id: 'silverlightDlrObject_DOMOnly'
+    };
   }
 
   DLR.settings = DLR.parseSettings(
-      DLR.defaultSettings, 
+      DLR.defaultSettings(),
       !DLR.settings ? {} : DLR.settings
   );
 
-  // autoAdd is a special DLR-specific settings; put it on the DLR object
-  DLR.autoAdd = DLR.settings.autoAdd;
-  delete DLR.settings.autoAdd;
-
-  //if(!window.__pageloaded) {
-
-    if(window.addEventListener) {
-      window.addEventListener('load', DLR.__startup, false);
-    } else {
-      window.attachEvent('onload', DLR.__startup);
-    }
-
-  // if the page has already loaded, depend on a "pageloaded" 
-  // variable to detect that ... 
-  //} else {
-  //  DLR.startup();
-  //}
+  if(window.addEventListener) {
+    window.addEventListener('load', DLR.__startup, false);
+  } else {
+    window.attachEvent('onload', DLR.__startup);
+  }
 };

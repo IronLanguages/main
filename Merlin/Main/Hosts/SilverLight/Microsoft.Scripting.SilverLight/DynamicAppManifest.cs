@@ -26,7 +26,9 @@ namespace Microsoft.Scripting.Silverlight {
     public class DynamicAppManifest {
 
 #if SILVERLIGHT_3
-        // List of valid assemblies to be inside Microsoft.Scripting.slvx
+        /// <summary>
+        /// List of valid assemblies to be inside Microsoft.Scripting.slvx
+        /// </summary>
         private static List<string> _assemblyNames = new List<string>() {
             "Microsoft.Scripting.ExtensionAttribute",
             "Microsoft.Scripting.Core",
@@ -44,10 +46,14 @@ namespace Microsoft.Scripting.Silverlight {
         /// </summary>
         public List<Assembly> Assemblies { get; private set; }
 
+        /// <summary>
+        /// List of all dynamic language extensions found in the AppManifest.
+        /// </summary>
         public List<Uri> Extensions { get; private set; }
 
         /// <summary>
-        /// "Initializes "Assemblies" with any AssemblyParts
+        /// "Initializes "Assemblies" with any AssemblyParts, and "Extensions"
+        /// with any ExtensionParts
         /// </summary>
         public DynamicAppManifest() {
             Assemblies = AssemblyParts();
@@ -58,7 +64,9 @@ namespace Microsoft.Scripting.Silverlight {
 #endif
         }
 
-        // Get all AssemblyParts from the AppManifest, as loaded Assembly instances.
+        /// <summary>
+        /// Get all AssemblyParts from the AppManifest, as loaded Assembly instances.
+        /// </summary>
         public List<Assembly> AssemblyParts() {
             var result = new List<Assembly>();
             foreach (var part in Deployment.Current.Parts) {
@@ -66,14 +74,19 @@ namespace Microsoft.Scripting.Silverlight {
                     result.Add(XapPAL.PAL.LoadAssembly(Path.GetFileNameWithoutExtension(part.Source)));
                 } catch (Exception) {
                     // skip
+                    // TODO this shouldn't catch all exceptions ... just any 
+                    // exceptions that can be thrown the try block ...
                 }
             }
             return result;
         }
 
 #if SILVERLIGHT_3
-
-        // Get all DLR/language-specific ExtensionParts.
+        /// <summary>
+        /// Get all DLR/language-specific ExtensionParts, which is just the
+        /// extension containing the Microsoft.* assemblies.
+        /// </summary>
+        /// <returns></returns>
         private List<Uri> DLRExtensionParts() {
             var dlrExtensions = new List<Uri>();
             if (Type.GetType("System.Windows.ExtensionPart, System.Windows, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e") != null) {

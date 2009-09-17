@@ -25,17 +25,37 @@ using System.Net;
 using System.Windows.Resources;
 
 namespace Microsoft.Scripting.Silverlight {
+
+    /// <summary>
+    /// Manages configuration information for languages
+    /// </summary>
     public class DynamicLanguageConfig {
 
+        /// <summary>
+        /// List of avaliable languages
+        /// </summary>
         public List<DynamicLanguageInfo> Languages { get; private set; }
+
+        /// <summary>
+        /// Keeps track of the language's that have been used
+        /// </summary>
         internal Dictionary<string, bool> LanguagesUsed { get; set; }
+
+        /// <summary>
+        /// Holds onto the ScriptRuntime
+        /// </summary>
         internal ScriptRuntime Runtime { get; set; }
 
-        public DynamicLanguageConfig() {
+        private DynamicLanguageConfig() {
             Languages = new List<DynamicLanguageInfo>();
             LanguagesUsed = new Dictionary<string, bool>();
         }
 
+        /// <summary>
+        /// Finds the language by name from the loaded languages.
+        /// </summary>
+        /// <param name="name">name of the language</param>
+        /// <returns>configuration information for the language</returns>
         private DynamicLanguageInfo GetLanguageByName(string name) {
             foreach (var lang in Languages)
                 foreach (var n in lang.Names)
@@ -44,6 +64,13 @@ namespace Microsoft.Scripting.Silverlight {
             return null;
         }
 
+        /// <summary>
+        /// Gets the ScriptEngine from used languages. If the used language is
+        /// found, it creates the engine and stores it on the configuration
+        /// information.
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
         public ScriptEngine GetEngine(string name) {
             var lang = GetLanguageByName(name);
             if (lang != null) {
@@ -59,6 +86,13 @@ namespace Microsoft.Scripting.Silverlight {
 
         private static readonly object _lock = new object();
 
+        /// <summary>
+        /// Downloads languages. If there is a missing language assembly in the
+        /// XAP, then download the language's external package and load the
+        /// package's assemblies, updating the AppManifest.Assemblies list. 
+        /// Calls the provided delegate when the downloadQueue is empty or if 
+        /// the language assemblies are all in the XAP.
+        /// </summary>
         public void DownloadLanguages(DynamicAppManifest appManifest, Action onComplete) {
             var downloadQueue = new List<DynamicLanguageInfo>();
             foreach(var used in LanguagesUsed) {
@@ -117,12 +151,17 @@ namespace Microsoft.Scripting.Silverlight {
             }
         }
 
+        /// <returns>IEumerable for each language file extension</returns>
         public IEnumerable<string> Extensions() {
             foreach (var language in Languages)
                 foreach (var ext in language.Extensions)
                     yield return ext;
         }
 
+        /// <summary>
+        /// Creates a ScriptRuntimeSetup from the language configuration
+        /// information.
+        /// </summary>
         public ScriptRuntimeSetup CreateRuntimeSetup() {
             var setup = new ScriptRuntimeSetup();
             foreach (var language in Languages) {
@@ -136,12 +175,20 @@ namespace Microsoft.Scripting.Silverlight {
             return setup;
         }
 
+        /// <summary>
+        /// Creats a DynamicLanguageConfig by first trying to load it from a
+        /// configuration file. If that fails, try to load from a list of 
+        /// assemblies.
+        /// </summary>
         public static DynamicLanguageConfig Create(IEnumerable<Assembly> assemblies) {
             var dl = LoadFromConfiguration();
             if (dl == null) dl = LoadFromAssemblies(assemblies);
             return dl;
         }
 
+        /// <summary>
+        /// Loads the configuration from a list of assemblies
+        /// </summary>
         public static DynamicLanguageConfig LoadFromAssemblies(IEnumerable<Assembly> assemblies) {
             var dl = new DynamicLanguageConfig();
             foreach (var assembly in assemblies) {
@@ -158,6 +205,9 @@ namespace Microsoft.Scripting.Silverlight {
             return dl;
         }
 
+        /// <summary>
+        /// Loads the configuration from the languages config file.
+        /// </summary>
         public static DynamicLanguageConfig LoadFromConfiguration() {
             Stream configFile = BrowserPAL.PAL.VirtualFilesystem.GetFile(Settings.LanguagesConfigFile);
             if (configFile == null) return null;
@@ -227,12 +277,40 @@ namespace Microsoft.Scripting.Silverlight {
         }
     }
 
+    /// <summary>
+    /// Holds onto language configuration info
+    /// </summary>
     public class DynamicLanguageInfo {
+
+        /// <summary>
+        /// Names the language has.
+        /// </summary>
         public string[] Names { get; private set; }
+
+        /// <summary>
+        /// LanguageContext type.
+        /// </summary>
         public string LanguageContext { get; internal set; }
+
+        /// <summary>
+        /// List of assemblies that makes up the language.
+        /// </summary>
         public string[] Assemblies { get; private set; }
+
+        /// <summary>
+        /// File extensions that are valid for the language.
+        /// </summary>
         public string[] Extensions { get; private set; }
+
+        /// <summary>
+        /// Uri of the external package (slvx) file containing all the 
+        /// language's assemblies.
+        /// </summary>
         public string External { get; private set; }
+
+        /// <summary>
+        /// ScriptEngine for the language
+        /// </summary>
         public ScriptEngine Engine { get; internal set; }
 
         public DynamicLanguageInfo(string[] names, string languageContext,
@@ -245,11 +323,14 @@ namespace Microsoft.Scripting.Silverlight {
         }
     }
 
-    // an exception parsing the host configuration file
+    /// <summary>
+    /// An exception parsing the host configuration file
+    /// </summary>
     public class ConfigFileException : Exception {
         public ConfigFileException(string msg, string configFile)
             : this(msg, configFile, null) {
         }
+
         public ConfigFileException(string msg, string configFile, Exception inner)
             : base("Invalid configuration file " + configFile + ": " + msg, inner) {
         }

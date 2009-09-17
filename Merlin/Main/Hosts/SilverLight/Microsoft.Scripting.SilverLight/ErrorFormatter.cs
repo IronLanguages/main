@@ -77,6 +77,11 @@ namespace Microsoft.Scripting.Silverlight {
         static volatile bool _displayedError = false;
         static ScriptRuntime _runtime;
 
+        /// <summary>
+        /// Displays an error
+        /// </summary>
+        /// <param name="targetElementId">HTML id to put error information into</param>
+        /// <param name="e">Exception to get error info out of</param>
         internal static void DisplayError(string targetElementId, Exception e) {
             // we only support displaying one error
             if (_displayedError) {
@@ -84,12 +89,15 @@ namespace Microsoft.Scripting.Silverlight {
             }
             _displayedError = true;
 
+            // keep track of the runtime if it exists
             if (DynamicApplication.Current.Engine != null) {
                 _runtime = DynamicApplication.Current.Engine.Runtime;
             }
 
+            // show the window in the targetElementId
             Window.Show(targetElementId);
 
+            // format the Exception
             string result;
             try {
                 result = FormatErrorAsHtml(e);
@@ -97,14 +105,22 @@ namespace Microsoft.Scripting.Silverlight {
                 result = EscapeHtml(ex.ToString());
             }
 
+            // Create a "div" with class/id set as the _errorReportId, and put
+            // formatted exception into it.
             var report = HtmlPage.Document.CreateElement("div");
             report.Id = report.CssClass = _errorReportId;
             report.SetProperty("innerHTML", result);
+
+            // Adds a new panel to the "Window", initialize it, and force the panel to be shown.
             Window.Current.AddPanel("Error Report (" + EscapeHtml(new DynamicExceptionInfo(e).ErrorTypeName) + ")", report);
             Window.Current.Initialize();
             Window.Current.ShowPanel(report.Id);
         }
 
+        /// <summary>
+        /// Get the dynamic exception info from the CLR exception, and format
+        /// it with the _errorHtmlTemplate.
+        /// </summary>
         internal static string FormatErrorAsHtml(Exception e) {
 
             // Get information about this exception object
@@ -128,7 +144,9 @@ namespace Microsoft.Scripting.Silverlight {
             );
         }
 
-        // Print the line with the error plus some context lines
+        /// <summary>
+        /// Render the line with the error plus some context lines
+        /// </summary>
         private static string FormatSourceCode(DynamicExceptionInfo err) {
             var sourceFile = err.SourceFileName;
             int line = err.SourceLine;
@@ -176,7 +194,9 @@ namespace Microsoft.Scripting.Silverlight {
             return text.ToString();
         }
 
-        // Gets the stack trace using whatever information we have available
+        /// <summary>
+        /// Gets the stack trace using whatever information we have available
+        /// </summary>
         private static string FormatStackTrace(DynamicExceptionInfo err) {
             Exception ex = err.Exception;
 
@@ -211,10 +231,16 @@ namespace Microsoft.Scripting.Silverlight {
             return EscapeHtml(ex.StackTrace != null ? ex.StackTrace : ex.ToString());
         }
 
+        /// <summary>
+        /// HtmlEncode, and escape spaces and newlines.
+        /// </summary>
         public static string EscapeHtml(string str) {
             return HttpUtility.HtmlEncode(str).Replace(" ", "&nbsp;").Replace("\n", "<br />");
         }
 
+        /// <summary>
+        /// Class used to handle syntax errors and throw the proper exception.
+        /// </summary>
         public class Sink : ErrorListener {
             public override void ErrorReported(ScriptSource source, string message, SourceSpan span, int errorCode, Severity severity) {
                 throw new SyntaxErrorException(message, HostingHelpers.GetSourceUnit(source), span, errorCode, severity);

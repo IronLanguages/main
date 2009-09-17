@@ -200,10 +200,10 @@ ensure
 
   unless pass?(results)
     puts
-    puts "Failed!"
+    puts "Fail!"
     exit(1)
   else
     puts
-    puts "Success!"
+    puts "Pass!"
   end
 end

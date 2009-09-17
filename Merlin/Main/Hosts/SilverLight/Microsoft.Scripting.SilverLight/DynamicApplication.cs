@@ -41,7 +41,6 @@ namespace Microsoft.Scripting.Silverlight {
     public class DynamicApplication : Application {
 
         #region Properties
-
         /// <summary>
         /// Returns the "initParams" argument passed to the Silverlight control
         /// (otherwise would be inaccessible because the DLR host consumes them)
@@ -67,14 +66,15 @@ namespace Microsoft.Scripting.Silverlight {
         /// </summary>
         public DynamicAppManifest AppManifest { get; private set; }
 
+        /// <summary>
+        /// The script tags defined on the HTML page
+        /// </summary>
         internal DynamicScriptTags ScriptTags { get; private set; }
 
+        /// <summary>
+        /// Avaliable languages
+        /// </summary>
         internal DynamicLanguageConfig LanguagesConfig { get; private set; }
-
-        internal static bool InUIThread {
-            get { return _UIThreadId == Thread.CurrentThread.ManagedThreadId; }
-        }
-        private static int _UIThreadId;
         #endregion
 
         #region Depricated Properties
@@ -97,6 +97,12 @@ namespace Microsoft.Scripting.Silverlight {
         public static ScriptRuntimeSetup CreateRuntimeSetup() {
             return DynamicEngine.CreateRuntimeSetup();
         }
+
+        // not really used anymore ...
+        internal static bool InUIThread {
+            get { return _UIThreadId == Thread.CurrentThread.ManagedThreadId; }
+        }
+        private static int _UIThreadId;
         #endregion
 
         #region Public API
@@ -108,7 +114,7 @@ namespace Microsoft.Scripting.Silverlight {
         /// </summary>
         /// <param name="root">UIElement to load the XAML into</param>
         /// <param name="uri">Uri to a XAML file</param>
-        /// <returns></returns>
+        /// <returns>the RootVisual</returns>
         public DependencyObject LoadRootVisual(UIElement root, Uri uri) {
             root = (UIElement) LoadComponent(root, uri);
             RootVisual = root;
@@ -121,9 +127,27 @@ namespace Microsoft.Scripting.Silverlight {
         /// </summary>
         /// <param name="root">UIElement to load the XAML into</param>
         /// <param name="uri">string representing the relative Uri of the XAML file</param>
-        /// <returns></returns>
-        public DependencyObject LoadRootVisual(UIElement root, string uri) {
-            return LoadRootVisual(root, MakeUri(uri));
+        /// <returns>the RootVisual</returns>
+        public DependencyObject LoadRootVisual(UIElement root, string xamlUri) {
+            return LoadRootVisual(root, xamlUri, true);
+        }
+
+        /// <summary>
+        /// Either loads a XAML file URI, or the XAML itself, represented by a string,
+        /// and sets the RootVisual of the application.
+        /// </summary>
+        /// <param name="root">element to load XAML into</param>
+        /// <param name="xamlOrUri">string representing a URI of a XAML file, or the XAML content itself</param>
+        /// <param name="uri">set this to "true" if "xamlOrUri" is a URI, and "false" if it is XAML content</param>
+        /// <returns>the RootVisual</returns>
+        public DependencyObject LoadRootVisual(UIElement root, string xamlOrUri, bool uri) {
+            if (uri) {
+                return LoadRootVisual(root, MakeUri(xamlOrUri));
+            } else {
+                root = (UIElement)LoadComponent(root, xamlOrUri, false);
+                RootVisual = root;
+                return root;
+            }
         }
 
         /// <summary>
@@ -131,8 +155,24 @@ namespace Microsoft.Scripting.Silverlight {
         /// </summary>
         /// <param name="component">The object to load the XAML into</param>
         /// <param name="uri">string representing the relative Uri of the XAML file</param>
-        public object LoadComponent(object component, string uri) {
-            return LoadComponent(component, MakeUri(uri));
+        public object LoadComponent(object component, string xamlUri) {
+            return LoadComponent(component, xamlUri, true);
+        }
+
+        /// <summary>
+        /// Loads a XAML file or XAML content into an object.
+        /// </summary>
+        /// <param name="component">The object to load XAML into</param>
+        /// <param name="xamlOrUri">either the URI of a XAML file, or the actual XAML content</param>
+        /// <param name="uri">set this to "true" if "xamlOrUri" is a URI, and "false" if it is XAML content</param>
+        /// <returns>The loaded XAML</returns>
+        public object LoadComponent(object component, string xamlOrUri, bool uri) {
+            if (uri) {
+                return LoadComponent(component, MakeUri(xamlOrUri));
+            } else {
+                component = XamlReader.Load(Regex.Replace(xamlOrUri, "x:Class=\".*?\"", ""));
+                return component;
+            }
         }
 
         /// <summary>
@@ -148,8 +188,7 @@ namespace Microsoft.Scripting.Silverlight {
                     using (StreamReader sr = new StreamReader(xamlStream)) {
                         xaml = sr.ReadToEnd();
                     }
-                    component = XamlReader.Load(Regex.Replace(xaml, "x:Class=\".*?\"", ""));
-                    return component;
+                    return LoadComponent(component, xaml, false);
                 }
             } else {
                 Application.LoadComponent(component, relativeUri);
@@ -162,7 +201,7 @@ namespace Microsoft.Scripting.Silverlight {
         /// <summary>
         /// Makes a Uri object that is relative to the location of the "start" source file.
         /// </summary>
-        /// <param name="relativeUri">Any Uri</param>
+        /// <param name="relativeUri">Any relative uri</param>
         /// <returns>A Uri relative to the "start" source file</returns>
         public Uri MakeUri(string relativeUri) {
             string baseUri = ScriptTags.HasScriptTags && Settings.EntryPoint != null ?
@@ -190,13 +229,17 @@ namespace Microsoft.Scripting.Silverlight {
 
             AppManifest = new DynamicAppManifest();
             LanguagesConfig = DynamicLanguageConfig.Create(AppManifest.Assemblies);
-            ScriptTags = new DynamicScriptTags(LanguagesConfig);
 
             Startup += new StartupEventHandler(DynamicApplication_Startup);
         }
 
+        /// <summary>
+        /// Starts the dynamic application
+        /// </summary>
         void DynamicApplication_Startup(object sender, StartupEventArgs e) {
             Settings.Parse(InitParams = NormalizeInitParams(e.InitParams));
+            ScriptTags = new DynamicScriptTags(LanguagesConfig);
+            XamlScriptTags.Load();
             LanguagesConfig.DownloadLanguages(AppManifest, () => {
                 ScriptTags.DownloadExternalCode(() => {
                     Engine = new DynamicEngine();
@@ -208,8 +251,12 @@ namespace Microsoft.Scripting.Silverlight {
             });
         }
 
+        /// <summary>
+        /// normalize initParams because otherwise it preserves whitespace, which is not very useful
+        /// </summary>
+        /// <param name="initParams">InitParams from Silverlight</param>
+        /// <returns>Normalized InitParams</returns>
         private IDictionary<string, string> NormalizeInitParams(IDictionary<string, string> initParams) {
-            // normalize initParams because otherwise it preserves whitespace, which is not very useful
             var result = new Dictionary<string, string>(initParams);
             foreach (KeyValuePair<string, string> pair in initParams) {
                 result[pair.Key.Trim()] = pair.Value.Trim();
@@ -217,6 +264,11 @@ namespace Microsoft.Scripting.Silverlight {
             return result;
         }
 
+        /// <summary>
+        /// Any unhandled exceptions in the Silverlight application will be
+        /// handled here, which displays the error to the HTML page hosting the
+        /// Silverlight control.
+        /// </summary>
         internal void OnUnhandledException(object sender, ApplicationUnhandledExceptionEventArgs args) {
             args.Handled = true;
             ErrorFormatter.DisplayError(Settings.ErrorTargetID, args.ExceptionObject);

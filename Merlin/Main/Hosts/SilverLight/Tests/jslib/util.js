@@ -1,6 +1,6 @@
 var waitForTrue = function(condition, onTrue, onFalse) {
   stop()
-  iterations = 10
+  iterations = 20
   count = 0
   timeout = 10
   var doo = function() {
@@ -18,8 +18,4 @@ var waitForTrue = function(condition, onTrue, onFalse) {
     }
   }
   setTimeout(doo, timeout)
-}
-
-var waitForElement = function(element, onFound, notFound) {
-  waitForTrue(function() { return $(element).length > 0 }, onFound, notFound);
 }

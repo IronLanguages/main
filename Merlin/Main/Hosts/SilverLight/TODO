@@ -1,6 +1,0 @@
-Integration:
-- Update eggs from http://github.com/jschementi/eggs
-
-Tests:
-- Finish porting all tests from TestSuites (if needed)
-- Get IronRuby and IronPython tests running in SL
