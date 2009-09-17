@@ -36,7 +36,7 @@ namespace Microsoft.Scripting.Runtime {
     /// when exposed directly to user code).  When indexed by objects null is a valid value for the
     /// key.
     /// </summary>
-    public abstract class BaseSymbolDictionary : IValueEquality {
+    abstract class BaseSymbolDictionary {
         private static readonly object _nullObject = new object();
         private const int ObjectKeysId = -2;
         internal static readonly SymbolId ObjectKeys = new SymbolId(ObjectKeysId);
@@ -48,42 +48,6 @@ namespace Microsoft.Scripting.Runtime {
         protected BaseSymbolDictionary() {
         }
 
-        #region IValueEquality Members
-
-        public int GetValueHashCode() {
-            throw Error.DictionaryNotHashable(); 
-        }
-
-        public virtual bool ValueEquals(object other) {
-            if (Object.ReferenceEquals(this, other)) return true;
-
-            IAttributesCollection oth = other as IAttributesCollection;
-            IAttributesCollection ths = this as IAttributesCollection;
-            if (oth == null) return false;
-
-            if (oth.Count != ths.Count) return false;
-
-            foreach (KeyValuePair<object, object> o in ths) {
-                object res;
-                if (!oth.TryGetObjectValue(o.Key, out res))  
-                    return false;
-
-                IValueEquality ve = res as IValueEquality;
-                if(ve != null) {
-                    if(!ve.ValueEquals(o.Value)) return false;
-                } else if ((ve = (o.Value as IValueEquality))!= null) {
-                    if(!ve.Equals(res)) return false;
-                } else if(res != null) {
-                    if(!res.Equals(o.Value)) return false;
-                } else if(o.Value != null) {
-                    if(!o.Value.Equals(res)) return false;
-                } // else both null and are equal
-            }
-            return true;
-        }
-
-        #endregion          
-      
         public static object NullToObj(object o) {
             if (o == null) return _nullObject;
             return o;

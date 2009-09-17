@@ -13,6 +13,12 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -24,6 +30,7 @@ using System.Text;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Utils;
+
 
 namespace Microsoft.Scripting.Runtime {
     /// <summary>
@@ -89,7 +96,7 @@ namespace Microsoft.Scripting.Runtime {
             return res;
         }
         
-        public static ArgumentTypeException BadArgumentsForOperation(Operators op, params object[] args) {
+        public static ArgumentTypeException BadArgumentsForOperation(ExpressionType op, params object[] args) {
             StringBuilder message = new StringBuilder("unsupported operand type(s) for operation ");
             message.Append(op.ToString());
             message.Append(": ");

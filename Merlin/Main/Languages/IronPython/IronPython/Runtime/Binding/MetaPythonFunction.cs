@@ -451,6 +451,16 @@ namespace IronPython.Runtime.Binding {
                                 if (_func.Value.ArgNames[j] == Signature.GetArgumentName(i)) {
                                     if (exprArgs[j] != null) {
                                         // kw-argument provided for already provided normal argument.
+                                        if (_error == null) {
+                                            _error = Expression.Throw(
+                                                Expression.Call(
+                                                    typeof(PythonOps).GetMethod("MultipleKeywordArgumentError"),
+                                                    GetFunctionParam(),
+                                                    Expression.Constant(_func.Value.ArgNames[j])
+                                                ),
+                                                typeof(object)
+                                            );
+                                        }
                                         return null;
                                     }
 

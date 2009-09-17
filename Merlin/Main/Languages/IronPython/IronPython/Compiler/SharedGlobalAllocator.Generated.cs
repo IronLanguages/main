@@ -1,4 +1,4 @@
-﻿/* ****************************************************************************
+/* ****************************************************************************
  *
  * Copyright (c) Microsoft Corporation. 
  *
@@ -348,7 +348,7 @@ namespace IronPython.Compiler.Ast {
             if (index < StaticFields) {
                 return typeof(ContextStorage000);
             } else {
-                int len = index - StaticFields * ContextTypes + 1;
+                int len = checked(index - StaticFields * ContextTypes + 1);
                 if (Contexts.Length < len) {
                     int newLen = Contexts.Length;
                     while (newLen < len) {
@@ -384,7 +384,7 @@ namespace IronPython.Compiler.Ast {
                     return typeof(StorageData);
             }
         }
-        
+
         /// <summary>Ensures the underlying array is long enough to accomodate the given index</summary>
         /// <returns>The global storage type corresponding to the given index</returns>
         public static Type/*!*/ GlobalStorageType(int index) {

@@ -149,21 +149,17 @@ namespace IronRuby.Runtime.Calls {
 
             int listLength;
             ParameterExpression listVariable;
-            if (metaBuilder.AddSplattedArgumentTest(arg.Value, arg.Expression, out listLength, out listVariable)) {
-                if (listLength > 0) {
-                    for (int i = 0; i < listLength; i++) {
-                        Add(
-                            Ast.Call(
-                                listVariable,
-                                typeof(IList).GetMethod("get_Item"),
-                                AstUtils.Constant(i)
-                            )
-                        );
-                    }
+            metaBuilder.AddSplattedArgumentTest((IList)arg.Value, arg.Expression, out listLength, out listVariable);
+            if (listLength > 0) {
+                for (int i = 0; i < listLength; i++) {
+                    Add(
+                        Ast.Call(
+                            listVariable,
+                            typeof(IList).GetMethod("get_Item"),
+                            AstUtils.Constant(i)
+                        )
+                    );
                 }
-            } else {
-                // argument is not an array => add the argument itself:
-                Add(arg.Expression);
             }
         }
 

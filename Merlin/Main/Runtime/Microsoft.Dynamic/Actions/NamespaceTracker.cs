@@ -31,19 +31,6 @@ using Microsoft.Scripting.Runtime;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Actions {
-    public class AssemblyLoadedEventArgs : EventArgs {
-        private Assembly _assembly;
-
-        public AssemblyLoadedEventArgs(Assembly assembly) {
-            _assembly = assembly;
-        }
-
-        public Assembly Assembly {
-            get {
-                return _assembly;
-            }
-        }
-    }
 
     /// <summary>
     /// NamespaceTracker represent a CLS namespace.

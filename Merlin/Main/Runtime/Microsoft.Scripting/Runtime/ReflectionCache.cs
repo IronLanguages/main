@@ -119,48 +119,27 @@ namespace Microsoft.Scripting.Runtime {
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1034:NestedTypesShouldNotBeVisible")] // TODO: fix
         public class MethodBaseCache {
-            private readonly MethodBase[] _members;
-            private readonly string _name;
+            private MethodBase[] _members;
+            private string _name;
 
             public MethodBaseCache(string name, MethodBase[] members) {
-                // sort by module ID / token so that the Equals / GetHashCode doesn't have
+                // sort by token so that the Equals / GetHashCode doesn't have
                 // to line up members if reflection returns them in different orders.
-                Array.Sort(members, CompareMethods);
+                Array.Sort<MethodBase>(members, delegate(MethodBase x, MethodBase y) {
+                    long res = x.MethodHandle.Value.ToInt64() - y.MethodHandle.Value.ToInt64();
+                    if (res == 0) return 0;
+                    if (res < 0) return -1;
+                    return 1;
+                });
                 _name = name;
                 _members = members;
-            }
-
-            private static int CompareMethods(MethodBase x, MethodBase y) {
-                if (x.Module == y.Module) {
-                    return x.MetadataToken - y.MetadataToken;
-                }
-
-#if SILVERLIGHT
-                int xHash = x.Module.GetHashCode();
-                int yHash = y.Module.GetHashCode();
-                if (xHash != yHash) {
-                    return xHash - yHash;
-                } else {
-                    long diff = IdDispenser.GetId(x.Module) - IdDispenser.GetId(y.Module);
-                    if (diff > 0) {
-                        return 1;
-                    } else if (diff < 0) {
-                        return -1;
-                    } else {
-                        return 0;
-                    }
-                }
-#else
-                return x.Module.ModuleVersionId.CompareTo(y.Module.ModuleVersionId);
-#endif
             }
 
             [Confined]
             public override bool Equals(object obj) {
                 MethodBaseCache other = obj as MethodBaseCache;
-                if (other == null || _members.Length != other._members.Length || other._name != _name) {
-                    return false;
-                }
+                if (other == null || _members.Length != other._members.Length) return false;
+                if (other._name != _name) return false;
 
                 for (int i = 0; i < _members.Length; i++) {
                     if (_members[i].DeclaringType != other._members[i].DeclaringType ||
@@ -178,9 +157,7 @@ namespace Microsoft.Scripting.Runtime {
                         }
 
                         for (int j = 0; j < args.Length; j++) {
-                            if (args[j] != otherArgs[j]) {
-                                return false;
-                            }
+                            if (args[j] != otherArgs[j]) return false;
                         }
                     }
                 }

@@ -102,6 +102,7 @@ namespace IronRuby.Builtins {
         private CallSite<Func<CallSite, object, object, object>> _eqlSite;
         private CallSite<Func<CallSite, object, object>> _hashSite;
         private CallSite<Func<CallSite, object, object>> _toStringSite;
+        private CallSite<Func<CallSite, object, object>> _toArraySplatSite;
         private CallSite<Func<CallSite, object, object, object>> _newSite;
 
         public CallSite<Func<CallSite, object, object>>/*!*/ InspectSite { 
@@ -110,6 +111,10 @@ namespace IronRuby.Builtins {
 
         public CallSite<Func<CallSite, object, object, object>>/*!*/ NewSite {
             get { return RubyUtils.GetCallSite(ref _newSite, Context, "new", 1); }
+        }
+
+        internal CallSite<Func<CallSite, object, object>>/*!*/ ToArraySplatSite {
+            get { return RubyUtils.GetCallSite(ref _toArraySplatSite, ConvertToArraySplatAction.Make(Context)); }
         }
         
         public CallSite<Func<CallSite, object, MutableString>>/*!*/ InspectResultConversionSite {

@@ -119,6 +119,7 @@ namespace Chiron {
             assemblies.Add(GetAssemblyUri("Microsoft.Scripting.ExtensionAttribute.dll"));
             assemblies.Add(GetAssemblyUri("Microsoft.Scripting.Core.dll"));
             assemblies.Add(GetAssemblyUri("Microsoft.Scripting.dll"));
+            assemblies.Add(GetAssemblyUri("Microsoft.Dynamic.dll"));
             foreach (LanguageInfo lang in langs) {
                 foreach (string asm in lang.Assemblies) {
                     assemblies.Add(GetAssemblyUri(asm));

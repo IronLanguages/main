@@ -809,12 +809,12 @@ namespace IronPython.Compiler {
 
             bool ateParen = MaybeEat(TokenKind.LeftParenthesis);
 
-            IList<string> names;
+            string[] names;
             string[] asNames;
             bool fromFuture = false;
 
             if (MaybeEat(TokenKind.Multiply)) {
-                names = FromImportStatement.Star;
+                names = (string[])FromImportStatement.Star;
                 asNames = null;
             } else {
                 List<string> l = new List<string>();

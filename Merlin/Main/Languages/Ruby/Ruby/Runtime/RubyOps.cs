@@ -375,8 +375,8 @@ namespace IronRuby.Runtime {
             }
         }
 
-        [Emitted] 
-        public static object YieldSplat0(object splattee, object self, BlockParam/*!*/ blockParam) {
+        [Emitted]
+        public static object YieldSplat0(IList/*!*/ splattee, object self, BlockParam/*!*/ blockParam) {
             object result;
             var proc = blockParam.Proc;
             try {
@@ -389,7 +389,7 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted] 
-        public static object YieldSplat1(object arg1, object splattee, object self, BlockParam/*!*/ blockParam) {
+        public static object YieldSplat1(object arg1, IList/*!*/ splattee, object self, BlockParam/*!*/ blockParam) {
             object result;
             var proc = blockParam.Proc;
             try {
@@ -401,8 +401,8 @@ namespace IronRuby.Runtime {
             return result;
         }
 
-        [Emitted] 
-        public static object YieldSplat2(object arg1, object arg2, object splattee, object self, BlockParam/*!*/ blockParam) {
+        [Emitted]
+        public static object YieldSplat2(object arg1, object arg2, IList/*!*/ splattee, object self, BlockParam/*!*/ blockParam) {
             object result;
             var proc = blockParam.Proc;
             try {
@@ -414,8 +414,8 @@ namespace IronRuby.Runtime {
             return result;
         }
 
-        [Emitted] 
-        public static object YieldSplat3(object arg1, object arg2, object arg3, object splattee, object self, BlockParam/*!*/ blockParam) {
+        [Emitted]
+        public static object YieldSplat3(object arg1, object arg2, object arg3, IList/*!*/ splattee, object self, BlockParam/*!*/ blockParam) {
             object result;
             var proc = blockParam.Proc;
             try {
@@ -427,8 +427,8 @@ namespace IronRuby.Runtime {
             return result;
         }
 
-        [Emitted] 
-        public static object YieldSplat4(object arg1, object arg2, object arg3, object arg4, object splattee, object self, BlockParam/*!*/ blockParam) {
+        [Emitted]
+        public static object YieldSplat4(object arg1, object arg2, object arg3, object arg4, IList/*!*/ splattee, object self, BlockParam/*!*/ blockParam) {
             object result;
             var proc = blockParam.Proc;
             try {
@@ -440,8 +440,8 @@ namespace IronRuby.Runtime {
             return result;
         }
 
-        [Emitted] 
-        public static object YieldSplatN(object[]/*!*/ args, object splattee, object self, BlockParam/*!*/ blockParam) {
+        [Emitted]
+        public static object YieldSplatN(object[]/*!*/ args, IList/*!*/ splattee, object self, BlockParam/*!*/ blockParam) {
             object result;
             var proc = blockParam.Proc;
             try {
@@ -453,8 +453,8 @@ namespace IronRuby.Runtime {
             return result;
         }
 
-        [Emitted] 
-        public static object YieldSplatNRhs(object[]/*!*/ args, object splattee, object rhs, object self, BlockParam/*!*/ blockParam) {
+        [Emitted]
+        public static object YieldSplatNRhs(object[]/*!*/ args, IList/*!*/ splattee, object rhs, object self, BlockParam/*!*/ blockParam) {
             object result;
             var proc = blockParam.Proc;
             try {
@@ -831,24 +831,13 @@ namespace IronRuby.Runtime {
         #region Array
 
         [Emitted]
-        public static IList/*!*/ SplatAppend(IList/*!*/ array, object splattee) {
-            IList list;
-
-            if ((list = splattee as IList) != null) {
-                Utils.AddRange(array, list);
-            } else {
-                array.Add(splattee);
-            }
+        public static IList/*!*/ SplatAppend(IList/*!*/ array, IList/*!*/ list) {
+            Utils.AddRange(array, list);
             return array;
         }
 
         [Emitted]
-        public static object Splat(object/*!*/ value) {
-            var list = value as IList;
-            if (list == null) {
-                return value;
-            }
-
+        public static object Splat(IList/*!*/ list) {
             if (list.Count <= 1) {
                 return (list.Count > 0) ? list[0] : null;
             }
@@ -857,24 +846,19 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted]
-        public static object SplatPair(object value, object array) {
-            var list = array as IList;
-            if (list != null) {
-                if (list.Count == 0) {
-                    return value;
-                }
-
-                RubyArray result = new RubyArray(list.Count + 1);
-                result.Add(value);
-                result.AddRange(list);
-                return result;
+        public static object SplatPair(object value, IList/*!*/ list) {
+            if (list.Count == 0) {
+                return value;
             }
 
-            return MakeArray2(value, array);
+            RubyArray result = new RubyArray(list.Count + 1);
+            result.Add(value);
+            result.AddRange(list);
+            return result;
         }
 
         [Emitted]
-        public static IList/*!*/ Unsplat(object/*!*/ splattee) {
+        public static IList/*!*/ Unsplat(object splattee) {
             var list = splattee as IList;
             if (list == null) {
                 list = new RubyArray(1);
@@ -888,8 +872,8 @@ namespace IronRuby.Runtime {
         public static bool ExistsUnsplat(CallSite<Func<CallSite, object, object, object>>/*!*/ comparisonSite, object splattee, object value) {
             var list = splattee as IList;
             if (list != null) {
-                foreach (var item in list) {
-                    if (IsTrue(comparisonSite.Target(comparisonSite, item, value))) {
+                for (int i = 0; i < list.Count; i++) {
+                    if (IsTrue(comparisonSite.Target(comparisonSite, list[i], value))) {
                         return true;
                     }
                 }
@@ -1444,18 +1428,13 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted] //RescueClause:
-        public static bool CompareSplattedExceptions(BinaryOpStorage/*!*/ comparisonStorage, RubyScope/*!*/ scope, object classObjects) {
-            var list = classObjects as IList;
-            if (list != null) {
-                for (int i = 0; i < list.Count; i++) {
-                    if (CompareException(comparisonStorage, scope, list[i])) {
-                        return true;
-                    }
+        public static bool CompareSplattedExceptions(BinaryOpStorage/*!*/ comparisonStorage, RubyScope/*!*/ scope, IList/*!*/ classObjects) {
+            for (int i = 0; i < classObjects.Count; i++) {
+                if (CompareException(comparisonStorage, scope, classObjects[i])) {
+                    return true;
                 }
-                return false;
-            } else {
-                return CompareException(comparisonStorage, scope, classObjects);
             }
+            return false;
         }
 
         [Emitted] //RescueClause:

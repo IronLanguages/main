@@ -188,6 +188,7 @@ namespace IronRuby.Builtins {
                         )
                 ),
                 Ast.Assign(resultVariable, AstFactory.YieldExpression(
+                    args.RubyContext,
                     args.GetSimpleArgumentExpressions(),
                     args.GetSplattedArgumentExpression(),
                     args.GetRhsArgumentExpression(),

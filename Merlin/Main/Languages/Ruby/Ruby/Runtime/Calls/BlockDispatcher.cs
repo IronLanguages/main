@@ -116,14 +116,14 @@ namespace IronRuby.Runtime.Calls {
         public abstract object Invoke(BlockParam/*!*/ param, object self, object arg1, object arg2, object arg3, object arg4);
         public abstract object Invoke(BlockParam/*!*/ param, object self, object[]/*!*/ args);
 
-        public abstract object InvokeSplat(BlockParam/*!*/ param, object self, object splattee);
-        public abstract object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object splattee);
-        public abstract object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, object splattee);
-        public abstract object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, object arg3, object splattee);
-        public abstract object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, object arg3, object arg4, object splattee);
-        public abstract object InvokeSplat(BlockParam/*!*/ param, object self, object[]/*!*/ args, object splattee);
+        public abstract object InvokeSplat(BlockParam/*!*/ param, object self, IList/*!*/ splattee);
+        public abstract object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, IList/*!*/ splattee);
+        public abstract object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, IList/*!*/ splattee);
+        public abstract object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, object arg3, IList/*!*/ splattee);
+        public abstract object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, object arg3, object arg4, IList/*!*/ splattee);
+        public abstract object InvokeSplat(BlockParam/*!*/ param, object self, object[]/*!*/ args, IList/*!*/ splattee);
 
-        public abstract object InvokeSplatRhs(BlockParam/*!*/ param, object self, object[]/*!*/ args, object splattee, object rhs);
+        public abstract object InvokeSplatRhs(BlockParam/*!*/ param, object self, object[]/*!*/ args, IList/*!*/ splattee, object rhs);
 
         internal const int MaxBlockArity = 4;
         internal const int HiddenParameterCount = 2;
@@ -164,34 +164,28 @@ namespace IronRuby.Runtime.Calls {
             return Ast.Lambda<BlockCallTargetUnsplatN>(body, name, parameters);
         }
 
-        private static void CopyArgumentsFromSplattee(object[]/*!*/ args, int initializedArgCount, int parameterCount, 
-            out int nextArg, out int nextItem, object splattee) {
+        private static void CopyArgumentsFromSplattee(object[]/*!*/ args, int initializedArgCount, int parameterCount,
+            out int nextArg, out int nextItem, IList/*!*/ splattee) {
 
             int i = Math.Min(initializedArgCount, parameterCount);
             int j = 0;
-            var list = splattee as IList;
-            if (list != null) {
-                while (i < parameterCount && j < list.Count) {
-                    args[i++] = list[j++];
-                }
-            } else if (i < parameterCount) {
-                args[i++] = splattee;
-                j++;
+            while (i < parameterCount && j < splattee.Count) {
+                args[i++] = splattee[j++];
             }
-
+        
             nextArg = i;
             nextItem = j;
         }
 
         // Expects first "initializeArgCount" slots of "args" array initialized with actual argument values 
         // and fills the rest by splatting "splattee". The size of the array "args" is the number of formal parameters the block takes.
-        internal static object[]/*!*/ CopyArgumentsFromSplattee(object[]/*!*/ args, int initializedArgCount, object splattee) {
+        internal static object[]/*!*/ CopyArgumentsFromSplattee(object[]/*!*/ args, int initializedArgCount, IList/*!*/ splattee) {
             int nextArg, nextItem;
             CopyArgumentsFromSplattee(args, initializedArgCount, args.Length, out nextArg, out nextItem, splattee);
             return args;
         }
 
-        internal static void CreateArgumentsFromSplattee(int parameterCount, out int nextArg, out int nextItem, ref object[]/*!*/ args, object splattee) {
+        internal static void CreateArgumentsFromSplattee(int parameterCount, out int nextArg, out int nextItem, ref object[]/*!*/ args, IList/*!*/ splattee) {
             // the args array is passed to the block, we need at least space for all explicit parameters:
             int originalLength = args.Length;
             if (args.Length < parameterCount) {
@@ -201,7 +195,7 @@ namespace IronRuby.Runtime.Calls {
             CopyArgumentsFromSplattee(args, originalLength, parameterCount, out nextArg, out nextItem, splattee);
         }
 
-        internal static object[]/*!*/ CreateArgumentsFromSplatteeAndRhs(int parameterCount, object[]/*!*/ args, object splattee, object rhs) {
+        internal static object[]/*!*/ CreateArgumentsFromSplatteeAndRhs(int parameterCount, object[]/*!*/ args, IList/*!*/ splattee, object rhs) {
             int nextArg, nextItem;
 
             // the args array is passed to the block, we need at least space for all explicit parameters:

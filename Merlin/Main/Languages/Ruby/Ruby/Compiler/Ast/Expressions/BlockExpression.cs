@@ -53,5 +53,10 @@ namespace IronRuby.Compiler.Ast {
         internal override MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen) {
             return gen.TransformStatementsToExpression(_statements);
         }
+
+        internal override MSA.Expression/*!*/ Transform(AstGenerator/*!*/ gen) {
+            // do not mark a sequence point wrapping the entire block:
+            return TransformRead(gen);
+        }
     }
 }

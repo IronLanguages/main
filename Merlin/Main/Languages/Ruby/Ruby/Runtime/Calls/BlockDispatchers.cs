@@ -75,37 +75,37 @@ namespace IronRuby.Runtime.Calls {
         }
 
         // R(0, *)
-        public override object InvokeSplat(BlockParam/*!*/ param, object self, object splattee) {
+        public override object InvokeSplat(BlockParam/*!*/ param, object self, IList/*!*/ splattee) {
             return _block(param, self);
         }
 
         // R(1, *)
-        public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object splattee) {
+        public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, IList/*!*/ splattee) {
             return _block(param, self);
         }
 
         // R(2, *)
-        public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, object splattee) {
+        public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, IList/*!*/ splattee) {
             return _block(param, self);
         }
 
         // R(3, *)
-        public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, object arg3, object splattee) {
+        public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, object arg3, IList/*!*/ splattee) {
             return _block(param, self);
         }
 
         // R(4, *)
-        public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, object arg3, object arg4, object splattee) {
+        public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, object arg3, object arg4, IList/*!*/ splattee) {
             return _block(param, self);
         }
 
         // R(N, *)
-        public override object InvokeSplat(BlockParam/*!*/ param, object self, object[]/*!*/ args, object splattee) {
+        public override object InvokeSplat(BlockParam/*!*/ param, object self, object[]/*!*/ args, IList/*!*/ splattee) {
             return _block(param, self);
         }
 
         // R(N, *, =)
-        public override object InvokeSplatRhs(BlockParam/*!*/ param, object self, object[]/*!*/ args, object splattee, object rhs) {
+        public override object InvokeSplatRhs(BlockParam/*!*/ param, object self, object[]/*!*/ args, IList/*!*/ splattee, object rhs) {
             return _block(param, self);
         }
     }
@@ -177,45 +177,37 @@ namespace IronRuby.Runtime.Calls {
         }
 
         // R(0, *)
-        public override object InvokeSplat(BlockParam/*!*/ param, object self, object splattee) {
-            var list = splattee as IList;
-            if (list != null) {
-                switch (list.Count) {
-                    case 0:
-                        if (!HasSingleCompoundParameter) {
-                            param.MultipleValuesForBlockParameterWarning(list.Count);
-                        }
-                        splattee = null; 
-                        break;
+        public override object InvokeSplat(BlockParam/*!*/ param, object self, IList/*!*/ splattee) {
+            object item;
+            switch (splattee.Count) {
+                case 0:
+                    if (!HasSingleCompoundParameter) {
+                        param.MultipleValuesForBlockParameterWarning(splattee.Count);
+                    }
+                    item = null; 
+                    break;
 
-                    case 1: 
-                        splattee = list[0]; 
-                        break;
+                case 1:
+                    item = splattee[0]; 
+                    break;
 
-                    default:
-                        if (!HasSingleCompoundParameter) {
-                            param.MultipleValuesForBlockParameterWarning(list.Count);
-                        }
-                        splattee = new RubyArray(list);
-                        break;
-                }
+                default:
+                    if (!HasSingleCompoundParameter) {
+                        param.MultipleValuesForBlockParameterWarning(splattee.Count);
+                    }
+                    item = new RubyArray(splattee);
+                    break;
             }
 
-            return _block(param, self, splattee);
+            return _block(param, self, item);
         }
         
         // R(1, *)
-        public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object splattee) {
-            var list = splattee as IList;
-            if (list == null) {
-                if (!HasSingleCompoundParameter) {
-                    param.MultipleValuesForBlockParameterWarning(2);
-                }
-
-                arg1 = RubyOps.MakeArray2(arg1, splattee);
-            } else if (list.Count > 0) {
-                var array = RubyOps.MakeArray1(arg1);
-                array.AddRange(list);
+        public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, IList/*!*/ splattee) {
+            if (splattee.Count > 0) {
+                var array = new RubyArray(1 + splattee.Count);
+                array.Add(arg1);
+                array.AddRange(splattee);
                 arg1 = array;
 
                 if (!HasSingleCompoundParameter) {
@@ -226,7 +218,7 @@ namespace IronRuby.Runtime.Calls {
             return _block(param, self, arg1);
         }
 
-        private object InvokeSplatInternal(BlockParam/*!*/ param, object self, RubyArray/*!*/ array, object splattee) {
+        private object InvokeSplatInternal(BlockParam/*!*/ param, object self, RubyArray/*!*/ array, IList/*!*/ splattee) {
             Debug.Assert(array.Count >= 2);
 
             RubyOps.SplatAppend(array, splattee);
@@ -239,28 +231,28 @@ namespace IronRuby.Runtime.Calls {
         }
 
         // R(2, *)
-        public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, object splattee) {
+        public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, IList/*!*/ splattee) {
             return InvokeSplatInternal(param, self, RubyOps.MakeArray2(arg1, arg2), splattee);
         }
 
         // R(3, *)
-        public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, object arg3, object splattee) {
+        public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, object arg3, IList/*!*/ splattee) {
             return InvokeSplatInternal(param, self, RubyOps.MakeArray3(arg1, arg2, arg3), splattee);
         }
 
         // R(4, *)
-        public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, object arg3, object arg4, object splattee) {
+        public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, object arg3, object arg4, IList/*!*/ splattee) {
             return InvokeSplatInternal(param, self, RubyOps.MakeArray4(arg1, arg2, arg3, arg4), splattee);
         }
         
         // R(N, *)
-        public override object InvokeSplat(BlockParam/*!*/ param, object self, object[]/*!*/ args, object splattee) {
+        public override object InvokeSplat(BlockParam/*!*/ param, object self, object[]/*!*/ args, IList/*!*/ splattee) {
             Debug.Assert(args.Length > MaxBlockArity);
             return InvokeSplatInternal(param, self, RubyOps.MakeArrayN(args), splattee);
         }
 
         // R(N, *, =)
-        public override object InvokeSplatRhs(BlockParam/*!*/ param, object self, object[]/*!*/ args, object splattee, object rhs) {
+        public override object InvokeSplatRhs(BlockParam/*!*/ param, object self, object[]/*!*/ args, IList/*!*/ splattee, object rhs) {
             var array = new RubyArray(args);
             RubyOps.SplatAppend(array, splattee);
             array.Add(rhs);
@@ -296,7 +288,13 @@ namespace IronRuby.Runtime.Calls {
 
         // R(1, -)
         public override object Invoke(BlockParam/*!*/ param, object self, object arg1) {
-            return InvokeSplatInternal(param, self, arg1);
+            // MRI calls to_ary, but not to_a (contrary to real *splatting)
+            IList list = arg1 as IList ?? Protocols.ConvertToArraySplat(param.RubyContext, arg1);
+            if (list != null) {
+                return InvokeSplatInternal(param, self, list);
+            } else {
+                return _block(param, self, arg1, null);
+            }
         }
 
         // R(1, -)
@@ -326,59 +324,49 @@ namespace IronRuby.Runtime.Calls {
         }
 
         // R(0, *)
-        public override object InvokeSplat(BlockParam/*!*/ param, object self, object splattee) {
+        public override object InvokeSplat(BlockParam/*!*/ param, object self, IList/*!*/ splattee) {
             return InvokeSplatInternal(param, self, splattee);
         }
 
-        private object InvokeSplatInternal(BlockParam/*!*/ param, object self, object splattee) {
-            var list = splattee as IList;
-            if (list != null) {
-                switch (list.Count) {
-                    case 0: return _block(param, self, null, null);
-                    case 1: return _block(param, self, list[0], null);
-                    default: return _block(param, self, list[0], list[1]);
-                }
+        private object InvokeSplatInternal(BlockParam/*!*/ param, object self, IList/*!*/ splattee) {
+            switch (splattee.Count) {
+                case 0: return _block(param, self, null, null);
+                case 1: return _block(param, self, splattee[0], null);
+                default: return _block(param, self, splattee[0], splattee[1]);
             }
-
-            return _block(param, self, splattee, null);
         }
 
         // R(1, *)
-        public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object splattee) {
-            var list = splattee as IList;
-            if (list != null) {
-                switch (list.Count) {
-                    case 0: return _block(param, self, arg1, null);
-                    default: return _block(param, self, arg1, list[0]);
-                }
+        public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, IList/*!*/ splattee) {
+            switch (splattee.Count) {
+                case 0: return _block(param, self, arg1, null);
+                default: return _block(param, self, arg1, splattee[0]);
             }
-
-            return _block(param, self, arg1, splattee);
         }
 
         // R(2, *)
-        public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, object splattee) {
+        public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, IList/*!*/ splattee) {
             return _block(param, self, arg1, arg2);
         }
 
         // R(3, *)
-        public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, object arg3, object splattee) {
+        public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, object arg3, IList/*!*/ splattee) {
             return _block(param, self, arg1, arg2);
         }
 
         // R(4, *)
-        public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, object arg3, object arg4, object splattee) {
+        public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, object arg3, object arg4, IList/*!*/ splattee) {
             return _block(param, self, arg1, arg2);
         }
 
         // R(N, *)
-        public override object InvokeSplat(BlockParam/*!*/ param, object self, object[]/*!*/ args, object splattee) {
+        public override object InvokeSplat(BlockParam/*!*/ param, object self, object[]/*!*/ args, IList/*!*/ splattee) {
             Debug.Assert(args.Length > MaxBlockArity);
             return _block(param, self, args[0], args[1]);
         }
 
         // R(N, *, =)
-        public override object InvokeSplatRhs(BlockParam/*!*/ param, object self, object[]/*!*/ args, object splattee, object rhs) {
+        public override object InvokeSplatRhs(BlockParam/*!*/ param, object self, object[]/*!*/ args, IList/*!*/ splattee, object rhs) {
             args = CreateArgumentsFromSplatteeAndRhs(2, args, splattee, rhs);
             return _block(param, self, args[0], args[1]);
         }
@@ -401,7 +389,13 @@ namespace IronRuby.Runtime.Calls {
 
         // R(1, -)
         public override object Invoke(BlockParam/*!*/ param, object self, object arg1) {
-            return InvokeSplatInternal(param, self, arg1);
+            // MRI calls to_ary, but not to_a (contrary to real *splatting)
+            IList splattee = arg1 as IList ?? Protocols.ConvertToArraySplat(param.RubyContext, arg1);
+            if (splattee != null) {
+                return InvokeSplatInternal(param, self, splattee);
+            } else {
+                return _block(param, self, arg1, null, null);
+            }
         }
 
         // R(1, -)
@@ -431,69 +425,54 @@ namespace IronRuby.Runtime.Calls {
         }
 
         // R(0, *)
-        public override object InvokeSplat(BlockParam/*!*/ param, object self, object splattee) {
+        public override object InvokeSplat(BlockParam/*!*/ param, object self, IList/*!*/ splattee) {
             return InvokeSplatInternal(param, self, splattee);
         }
 
-        private object InvokeSplatInternal(BlockParam/*!*/ param, object self, object splattee) {
-            var list = splattee as IList;
-            if (list != null) {
-                switch (list.Count) {
-                    case 0: return _block(param, self, null, null, null);
-                    case 1: return _block(param, self, list[0], null, null);
-                    case 2: return _block(param, self, list[0], list[1], null);
-                    default: return _block(param, self, list[0], list[1], list[2]);
-                }
+        private object InvokeSplatInternal(BlockParam/*!*/ param, object self, IList/*!*/ splattee) {
+            switch (splattee.Count) {
+                case 0: return _block(param, self, null, null, null);
+                case 1: return _block(param, self, splattee[0], null, null);
+                case 2: return _block(param, self, splattee[0], splattee[1], null);
+                default: return _block(param, self, splattee[0], splattee[1], splattee[2]);
             }
-
-            return _block(param, self, splattee, null, null);
         }
 
         // R(1, *)
-        public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object splattee) {
-            var list = splattee as IList;
-            if (list != null) {
-                switch (list.Count) {
-                    case 0: return _block(param, self, arg1, null, null);
-                    case 1: return _block(param, self, arg1, list[0], null);
-                    default: return _block(param, self, arg1, list[0], list[1]);
-                }
+        public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, IList/*!*/ splattee) {
+            switch (splattee.Count) {
+                case 0: return _block(param, self, arg1, null, null);
+                case 1: return _block(param, self, arg1, splattee[0], null);
+                default: return _block(param, self, arg1, splattee[0], splattee[1]);
             }
-
-            return _block(param, self, arg1, splattee, null);
         }
 
         // R(2, *)
-        public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, object splattee) {
-            var list = splattee as IList;
-            if (list != null) {
-                switch (list.Count) {
-                    case 0: return _block(param, self, arg1, arg2, null);
-                    default: return _block(param, self, arg1, arg2, list[0]);
-                }
+        public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, IList/*!*/ splattee) {
+            switch (splattee.Count) {
+                case 0: return _block(param, self, arg1, arg2, null);
+                default: return _block(param, self, arg1, arg2, splattee[0]);
             }
-
-            return _block(param, self, arg1, arg2, splattee);
         }
 
         // R(3, *)
-        public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, object arg3, object splattee) {
+        public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, object arg3, IList/*!*/ splattee) {
             return _block(param, self, arg1, arg2, arg3);
         }
 
         // R(4, *)
-        public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, object arg3, object arg4, object splattee) {
+        public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, object arg3, object arg4, IList/*!*/ splattee) {
             return _block(param, self, arg1, arg2, arg3);
         }
 
         // R(N, *)
-        public override object InvokeSplat(BlockParam/*!*/ param, object self, object[]/*!*/ args, object splattee) {
+        public override object InvokeSplat(BlockParam/*!*/ param, object self, object[]/*!*/ args, IList/*!*/ splattee) {
             Debug.Assert(args.Length > MaxBlockArity);
             return _block(param, self, args[0], args[1], args[2]);
         }
 
         // R(N, *, =)
-        public override object InvokeSplatRhs(BlockParam/*!*/ param, object self, object[]/*!*/ args, object splattee, object rhs) {
+        public override object InvokeSplatRhs(BlockParam/*!*/ param, object self, object[]/*!*/ args, IList/*!*/ splattee, object rhs) {
             args = CreateArgumentsFromSplatteeAndRhs(3, args, splattee, rhs);
             return _block(param, self, args[0], args[1], args[2]);
         }
@@ -521,7 +500,13 @@ namespace IronRuby.Runtime.Calls {
 
         // R(1, -)
         public override object Invoke(BlockParam/*!*/ param, object self, object arg1) {
-            return InvokeSplatInternal(param, self, arg1);
+            // MRI calls to_ary, but not to_a (contrary to real *splatting)
+            IList list = arg1 as IList ?? Protocols.ConvertToArraySplat(param.RubyContext, arg1);
+            if (list != null) {
+                return InvokeSplatInternal(param, self, list);
+            } else {
+                return _block(param, self, arg1, null, null, null);
+            }
         }
 
         // R(2, -)
@@ -546,80 +531,60 @@ namespace IronRuby.Runtime.Calls {
         }
 
         // R(0, *)
-        public override object InvokeSplat(BlockParam/*!*/ param, object self, object splattee) {
+        public override object InvokeSplat(BlockParam/*!*/ param, object self, IList/*!*/ splattee) {
             return InvokeSplatInternal(param, self, splattee);
         }
 
-        private object InvokeSplatInternal(BlockParam/*!*/ param, object self, object splattee) {
-            var list = splattee as IList;
-            if (list != null) {
-                switch (list.Count) {
-                    case 0: return _block(param, self, null, null, null, null);
-                    case 1: return _block(param, self, list[0], null, null, null);
-                    case 2: return _block(param, self, list[0], list[1], null, null);
-                    case 3: return _block(param, self, list[0], list[1], list[2], null);
-                    default: return _block(param, self, list[0], list[1], list[2], list[3]);
-                }
+        private object InvokeSplatInternal(BlockParam/*!*/ param, object self, IList/*!*/ splattee) {
+            switch (splattee.Count) {
+                case 0: return _block(param, self, null, null, null, null);
+                case 1: return _block(param, self, splattee[0], null, null, null);
+                case 2: return _block(param, self, splattee[0], splattee[1], null, null);
+                case 3: return _block(param, self, splattee[0], splattee[1], splattee[2], null);
+                default: return _block(param, self, splattee[0], splattee[1], splattee[2], splattee[3]);
             }
-
-            return _block(param, self, splattee, null, null, null);
         }
 
         // R(1, *)
-        public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object splattee) {
-            var list = splattee as IList;
-            if (list != null) {
-                switch (list.Count) {
-                    case 0: return _block(param, self, arg1, null, null, null);
-                    case 1: return _block(param, self, arg1, list[0], null, null);
-                    case 2: return _block(param, self, arg1, list[0], list[1], null);
-                    default: return _block(param, self, arg1, list[0], list[1], list[2]);
-                }
+        public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, IList/*!*/ splattee) {
+            switch (splattee.Count) {
+                case 0: return _block(param, self, arg1, null, null, null);
+                case 1: return _block(param, self, arg1, splattee[0], null, null);
+                case 2: return _block(param, self, arg1, splattee[0], splattee[1], null);
+                default: return _block(param, self, arg1, splattee[0], splattee[1], splattee[2]);
             }
-
-            return _block(param, self, arg1, splattee, null, null);
         }
 
         // R(2, *)
-        public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, object splattee) {
-            var list = splattee as IList;
-            if (list != null) {
-                switch (list.Count) {
-                    case 0: return _block(param, self, arg1, arg2, null, null);
-                    case 1: return _block(param, self, arg1, arg2, list[0], null);
-                    default: return _block(param, self, arg1, arg2, list[0], list[1]);
-                }
+        public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, IList/*!*/ splattee) {
+            switch (splattee.Count) {
+                case 0: return _block(param, self, arg1, arg2, null, null);
+                case 1: return _block(param, self, arg1, arg2, splattee[0], null);
+                default: return _block(param, self, arg1, arg2, splattee[0], splattee[1]);
             }
-
-            return _block(param, self, arg1, arg2, splattee, null);
         }
 
         // R(3, *)
-        public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, object arg3, object splattee) {
-            var list = splattee as IList;
-            if (list != null) {
-                switch (list.Count) {
-                    case 0: return _block(param, self, arg1, arg2, arg3, null);
-                    default: return _block(param, self, arg1, arg2, arg3, list[0]);
-                }
+        public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, object arg3, IList/*!*/ splattee) {
+            switch (splattee.Count) {
+                case 0: return _block(param, self, arg1, arg2, arg3, null);
+                default: return _block(param, self, arg1, arg2, arg3, splattee[0]);
             }
-
-            return _block(param, self, arg1, arg2, arg3, splattee);
         }
 
         // R(4, *)
-        public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, object arg3, object arg4, object splattee) {
+        public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, object arg3, object arg4, IList/*!*/ splattee) {
             return _block(param, self, arg1, arg2, arg3, arg4);
         }
 
         // R(N, *)
-        public override object InvokeSplat(BlockParam/*!*/ param, object self, object[]/*!*/ args, object splattee) {
+        public override object InvokeSplat(BlockParam/*!*/ param, object self, object[]/*!*/ args, IList/*!*/ splattee) {
             Debug.Assert(args.Length > MaxBlockArity);
             return _block(param, self, args[0], args[1], args[2], args[3]);
         }
 
         // R(N, *, =)
-        public override object InvokeSplatRhs(BlockParam/*!*/ param, object self, object[]/*!*/ args, object splattee, object rhs) {
+        public override object InvokeSplatRhs(BlockParam/*!*/ param, object self, object[]/*!*/ args, IList/*!*/ splattee, object rhs) {
             args = CreateArgumentsFromSplatteeAndRhs(4, args, splattee, rhs);
             return _block(param, self, args[0], args[1], args[2], args[3]);
         }

@@ -19,17 +19,19 @@ using MSA = System.Linq.Expressions;
 using MSA = Microsoft.Scripting.Ast;
 #endif
 
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Utils;
 using IronRuby.Runtime;
+using IronRuby.Runtime.Conversions;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
-
-namespace IronRuby.Compiler.Ast {
-    using Ast = Expression;
 	
+namespace IronRuby.Compiler.Ast {
+    using Ast = MSA.Expression;
+    
     public partial class Arguments : Node {
         internal static readonly Arguments Empty = new Arguments(SourceSpan.None);
 
@@ -103,7 +105,8 @@ namespace IronRuby.Compiler.Ast {
             }
 
             if (_array != null) {
-                callBuilder.SplattedArgument = _array.TransformRead(gen);
+                callBuilder.SplattedArgument = 
+                    Ast.Dynamic(SplatAction.Make(gen.Context), typeof(IList), _array.TransformRead(gen));
             }
         }
 
@@ -119,6 +122,7 @@ namespace IronRuby.Compiler.Ast {
             }
 
             return AstFactory.YieldExpression(
+                gen.Context,
                 args,
                 (_array != null) ? _array.TransformRead(gen) : null,         // splatted argument
                 null,                                                        // rhs argument
@@ -157,14 +161,17 @@ namespace IronRuby.Compiler.Ast {
             bool rightOneNone = rightValues.Count == 1 && splattedValue == null;
 
             if (rightNoneSplat) {
-                result = (doSplat ? Methods.Splat : Methods.Unsplat).OpCall(AstFactory.Box(splattedValue));
+                result = Ast.Dynamic(SplatAction.Make(gen.Context), typeof(IList), splattedValue);
+                if (doSplat) {
+                    result = Methods.Splat.OpCall(result);
+                }
             } else if (rightOneNone && doSplat) {
                 result = rightValues[0];
             } else {
                 result = Methods.MakeArrayOpCall(rightValues);
 
                 if (splattedValue != null) {
-                    result = Methods.SplatAppend.OpCall(result, AstFactory.Box(splattedValue));
+                    result = Methods.SplatAppend.OpCall(result, Ast.Dynamic(SplatAction.Make(gen.Context), typeof(IList), splattedValue));
                 }
             }
             return result;

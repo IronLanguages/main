@@ -24,9 +24,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Text;
-using IronRuby.Runtime.Calls;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Utils;
+using IronRuby.Runtime.Calls;
+using IronRuby.Runtime.Conversions;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Compiler.Ast {
@@ -127,7 +128,10 @@ namespace IronRuby.Compiler.Ast {
 
                 if (rightOneSplat) {
                     // R(1,*)
-                    resultExpression = Methods.SplatPair.OpCall(AstFactory.Box(rightValues[0]), AstFactory.Box(splattedValue));
+                    resultExpression = Methods.SplatPair.OpCall(
+                        AstFactory.Box(rightValues[0]), 
+                        Ast.Dynamic(SplatAction.Make(gen.Context), typeof(IList), splattedValue)
+                    );
                 } else {
                     // case 1: R(1,-)
                     // case 2: R(0,*) 
@@ -142,7 +146,9 @@ namespace IronRuby.Compiler.Ast {
 
             if (rightOneNone && !leftNoneSplat) {
                 // R(1,-) && !L(0,*)
-                resultExpression = Methods.Unsplat.OpCall(AstFactory.Box(rightValues[0]));
+                resultExpression = Methods.Unsplat.OpCall(
+                    Ast.Dynamic(ConvertToArraySplatAction.Make(gen.Context), typeof(object), rightValues[0])
+                );
                 optimizeReads = false;
             } else {
                 // case 1: R(0,*) = L

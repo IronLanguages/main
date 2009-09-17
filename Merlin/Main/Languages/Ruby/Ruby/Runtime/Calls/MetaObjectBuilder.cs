@@ -369,29 +369,18 @@ namespace IronRuby.Runtime.Calls {
             AddCondition(Ast.Equal(Ast.Field(AstUtils.Constant(cls.Version), Fields.VersionHandle_Method), AstUtils.Constant(cls.Version.Method)));
         }
 
-        internal bool AddSplattedArgumentTest(object value, Expression/*!*/ expression, out int listLength, out ParameterExpression/*!*/ listVariable) {
-            if (value == null) {
-                AddRestriction(Ast.Equal(expression, AstUtils.Constant(null)));
+        internal void AddSplattedArgumentTest(IList/*!*/ value, Expression/*!*/ expression, out int listLength, out ParameterExpression/*!*/ listVariable) {
+            Expression assignment;
+            listVariable = expression as ParameterExpression;
+            if (listVariable != null && typeof(IList).IsAssignableFrom(expression.Type)) {
+                assignment = expression;
             } else {
-                // test exact type:
-                AddTypeRestriction(value.GetType(), expression);
-
-                IList list = value as IList;
-                if (list != null) {
-                    Type type = typeof(IList);
-                    listLength = list.Count;
-                    listVariable = GetTemporary(type, "#list");
-                    AddCondition(Ast.Equal(
-                        Ast.Property(Ast.Assign(listVariable, Ast.Convert(expression, type)), typeof(ICollection).GetProperty("Count")),
-                        AstUtils.Constant(list.Count))
-                    );
-                    return true;
-                }
+                listVariable = GetTemporary(typeof(IList), "#list");
+                assignment = Ast.Assign(listVariable, AstUtils.Convert(expression, typeof(IList)));
             }
-
-            listLength = -1;
-            listVariable = null;
-            return false;
+            
+            listLength = value.Count;
+            AddCondition(Ast.Equal(Ast.Property(assignment, typeof(ICollection).GetProperty("Count")), AstUtils.Constant(value.Count)));
         }
 
         #endregion

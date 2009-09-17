@@ -381,6 +381,15 @@ namespace IronPython.Modules {
             return double.IsNaN(num.Real) || double.IsNaN(num.Imag);
         }
 
+        /// <summary>
+        /// For reasons unknown, allowing the Imag property on Complex64 to be optimized seems to mangle
+        /// positive vs. negative values of zero. Calling this method avoids that.
+        /// </summary>
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoOptimization)]
+        private static double GetImag(Complex64 num) {
+            return num.Imag;
+        }
+
         private static double GetAngle(Complex64 num) {
             if (IsNaN(num)) {
                 return double.NaN;
@@ -410,7 +419,7 @@ namespace IronPython.Modules {
                 if (num.Imag != 0.0) {
                     return Math.PI * 0.5 * Math.Sign(num.Imag);
                 } else {
-                    return (DoubleOps.IsPositiveZero(num.Real) ? 0.0 : Math.PI) * DoubleOps.Sign(num.Imag);
+                    return (DoubleOps.IsPositiveZero(num.Real) ? 0.0 : Math.PI) * DoubleOps.Sign(GetImag(num));
                 }
             }
 

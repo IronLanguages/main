@@ -122,7 +122,7 @@ namespace IronRuby.Runtime {
 
         #endregion
 
-        #region CastToArray, TryCastToArray, TryConvertToArray
+        #region CastToArray, TryCastToArray, TryConvertToArray, Splat
 
         public static IList/*!*/ CastToArray(ConversionStorage<IList>/*!*/ arrayCast, object obj) {
             var site = arrayCast.GetSite(ConvertToArrayAction.Make(arrayCast.Context));
@@ -137,6 +137,11 @@ namespace IronRuby.Runtime {
         public static IList TryConvertToArray(ConversionStorage<IList>/*!*/ tryToA, object obj) {
             var site = tryToA.GetSite(TryConvertToAAction.Make(tryToA.Context));
             return site.Target(site, obj);
+        }
+
+        internal static IList ConvertToArraySplat(RubyContext/*!*/ context, object splattee) {
+            var site = context.GetClassOf(splattee).ToArraySplatSite;
+            return site.Target(site, splattee) as IList;
         }
 
         #endregion

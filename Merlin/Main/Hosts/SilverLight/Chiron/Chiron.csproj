@@ -104,6 +104,7 @@ xcopy /y /d "$(TargetDir)IronRuby.Libraries.dll" "$(ProjectDir)..\testsuites\set
 xcopy /y /d "$(TargetDir)Microsoft.Scripting.ExtensionAttribute.dll" "$(ProjectDir)..\testsuites\setup\DLR\"
 xcopy /y /d "$(TargetDir)Microsoft.Scripting.Core.dll" "$(ProjectDir)..\testsuites\setup\DLR\"
 xcopy /y /d "$(TargetDir)Microsoft.Scripting.dll" "$(ProjectDir)..\testsuites\setup\DLR\"
+xcopy /y /d "$(TargetDir)Microsoft.Dynamic.dll" "$(ProjectDir)..\testsuites\setup\DLR\"
 xcopy /y /d "$(TargetDir)Microsoft.Scripting.Silverlight.dll" "$(ProjectDir)..\testsuites\setup\DLR\"
 :END
     </PostBuildEvent>

@@ -13,17 +13,20 @@
  *
  * ***************************************************************************/
 
-using System.Collections;
-using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
-
-using IronPython.Runtime.Binding;
-
 #if !CLR2
 using MSAst = System.Linq.Expressions;
 #else
 using MSAst = Microsoft.Scripting.Ast;
 #endif
+
+using System;
+using System.Collections;
+using System.Collections.Generic;
+
+using Microsoft.Scripting;
+
+using IronPython.Runtime.Binding;
+using IronPython.Runtime.Operations;
 
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
@@ -68,7 +71,7 @@ namespace IronPython.Compiler.Ast {
 
         internal override MSAst.Expression Transform(AstGenerator ag) {
             // Temporary variable for the IEnumerator object
-            MSAst.ParameterExpression enumerator = ag.GetTemporary("foreach_enumerator", typeof(IEnumerator));
+            MSAst.ParameterExpression enumerator = ag.GetTemporary("foreach_enumerator", typeof(KeyValuePair<IEnumerator, IDisposable>));
 
             // Only the body is "in the loop" for the purposes of break/continue
             // The "else" clause is outside
@@ -105,9 +108,9 @@ namespace IronPython.Compiler.Ast {
                                                     MSAst.LabelTarget breakLabel, MSAst.LabelTarget continueLabel) {
             // enumerator = PythonOps.GetEnumeratorForIteration(list)
             MSAst.Expression init = Ast.Assign(
-                    enumerator, 
+                    enumerator,
                     ag.Operation(
-                        typeof(IEnumerator),
+                        typeof(KeyValuePair<IEnumerator, IDisposable>),
                         PythonOperationKind.GetEnumeratorForIteration,
                         ag.TransformAsObject(list)
                     )
@@ -119,17 +122,26 @@ namespace IronPython.Compiler.Ast {
             // else:
             //    else
             MSAst.Expression ls = AstUtils.Loop(
-                    ag.AddDebugInfo(Ast.Call(
-                        enumerator,
-                        typeof(IEnumerator).GetMethod("MoveNext")
-                    ), left.Span),
+                    ag.AddDebugInfo(
+                        Ast.Call(
+                            Ast.Property(
+                                enumerator,
+                                typeof(KeyValuePair<IEnumerator, IDisposable>).GetProperty("Key")
+                            ),
+                            typeof(IEnumerator).GetMethod("MoveNext")
+                        ),
+                        left.Span
+                    ),
                     null,
                     Ast.Block(
                         left.TransformSet(
                             ag,
                             SourceSpan.None,
                             Ast.Call(
-                                enumerator,
+                                Ast.Property(
+                                    enumerator,
+                                    typeof(KeyValuePair<IEnumerator, IDisposable>).GetProperty("Key")
+                                ),
                                 typeof(IEnumerator).GetProperty("Current").GetGetMethod()
                             ),
                             PythonOperationKind.None
@@ -137,16 +149,18 @@ namespace IronPython.Compiler.Ast {
                         body,
                         ag.UpdateLineNumber(list.Start.Line),
                         AstUtils.Empty()
-                    ), 
+                    ),
                     ag.Transform(else_),
-                    breakLabel, 
+                    breakLabel,
                     continueLabel
             );
 
             return Ast.Block(
                 init,
-                ls,
-                AstUtils.Empty()
+                Ast.TryFinally(
+                    ls,
+                    Ast.Call(typeof(PythonOps).GetMethod("ForLoopDispose"), enumerator)
+                )
             );
         }
 

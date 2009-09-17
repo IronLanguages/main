@@ -486,7 +486,7 @@ namespace Microsoft.Scripting.Hosting {
         /// <summary>
         /// Performs a generic unary operation on the specified target and returns the result.
         /// </summary>
-        [Obsolete("Use method that implements the operation")]
+        [Obsolete("Use the ExpressionType overload instead")]
         public object DoOperation(Operators op, object target) {
             ExpressionType newOp = GetLinqOp(op);
 
@@ -566,7 +566,7 @@ namespace Microsoft.Scripting.Hosting {
         /// Peforms the generic binary operation on the specified strongly typed targets and returns
         /// the strongly typed result.
         /// </summary>
-        [Obsolete("Use method that implements the operation")]
+        [Obsolete("Use the ExpressionType overload instead")]
         public TResult DoOperation<TTarget, TOther, TResult>(Operators op, TTarget target, TOther other) {
             return _ops.DoOperation<TTarget, TOther, TResult>(GetLinqBinaryOp(op), target, other);
         }

@@ -28,6 +28,7 @@ namespace Microsoft.Scripting.Runtime {
     /// </summary>
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1717:OnlyFlagsEnumsShouldHavePluralNames")] // TODO: fix
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2217:DoNotMarkEnumsWithFlags")]
+    [Obsolete("Use ExpressionType instead")]
     public enum Operators {
         None,
         /// <summary>

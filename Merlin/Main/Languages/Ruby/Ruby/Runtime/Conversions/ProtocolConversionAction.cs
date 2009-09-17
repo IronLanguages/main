@@ -482,9 +482,11 @@ namespace IronRuby.Runtime.Conversions {
     public sealed class ConvertToArraySplatAction : ConvertToReferenceTypeAction<ConvertToArraySplatAction, IList> {
         protected override string/*!*/ ToMethodName { get { return Symbols.ToAry; } }
         protected override string/*!*/ TargetTypeName { get { return "Array"; } }
+        protected override MethodInfo ConversionResultValidator { get { return Methods.ToArrayValidator; } }
 
-        // no validation of to_ary result:
-        protected override MethodInfo ConversionResultValidator { get { return null; } }
+        public override Type/*!*/ ReturnType {
+            get { return typeof(object); }
+        }
 
         // return the target object on error:
         protected override Expression/*!*/ MakeErrorExpression(CallArguments/*!*/ args, Expression/*!*/ targetClassNameConstant, Type/*!*/ resultType) {
@@ -494,6 +496,53 @@ namespace IronRuby.Runtime.Conversions {
         // return the target object on error:
         protected override void SetError(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, Expression/*!*/ targetClassNameConstant, Type/*!*/ resultType) {
             metaBuilder.Result = AstFactory.Box(args.TargetExpression);
+        }
+    }
+
+    public sealed class SplatAction : ProtocolConversionAction<SplatAction> {
+        protected override string/*!*/ ToMethodName { get { return Symbols.ToAry; } }
+        protected override string/*!*/ TargetTypeName { get { return "Array"; } }
+        protected override MethodInfo ConversionResultValidator { get { return Methods.ToArrayValidator; } }
+
+        protected internal override bool TryImplicitConversion(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args) {
+            // *nil -> [nil]
+            if (args.Target == null) {
+                metaBuilder.Result = Methods.MakeArray1.OpCall(AstUtils.Constant(null));
+                return true;
+            }
+
+            var convertedTarget = args.Target as IList;
+            if (convertedTarget != null) {
+                metaBuilder.Result = AstUtils.Convert(args.TargetExpression, typeof(IList));
+                return true;
+            }
+            return false;
+        }
+
+        // return the target object on error:
+        protected override Expression/*!*/ MakeErrorExpression(CallArguments/*!*/ args, Expression/*!*/ targetClassNameConstant, Type/*!*/ resultType) {
+            return ToA(args, targetClassNameConstant);
+        }
+
+        // return the target object on error:
+        protected override void SetError(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, Expression/*!*/ targetClassNameConstant, Type/*!*/ resultType) {
+            metaBuilder.Result = ToA(args, targetClassNameConstant);
+        }
+
+        private Expression/*!*/ ToA(CallArguments/*!*/ args, Expression/*!*/ targetClassNameConstant) {
+            return
+                // TODO(opt): We could optimize this a bit by merging the to_a call with the conversion.
+                // We could also check if to_a is implemented on Kernel. If so it only wraps the item into an array 
+                // that the subsequent splatting operation unwraps. However this only applies when unpslatting non-splattable objects 
+                // that don't implement to_ary - probably a rare case.
+                Methods.ToArrayValidator.OpCall(
+                    targetClassNameConstant,
+                    Ast.Dynamic(
+                        RubyCallAction.Make(args.RubyContext, "to_a", RubyCallSignature.WithImplicitSelf(0)),
+                        typeof(object),
+                        args.TargetExpression
+                    )
+                );
         }
     }
 

@@ -41,6 +41,7 @@ enabling package-less development of dynamic language applications.
     AppManifest.xaml
     IronRuby.dll
     IronRuby.Libraries.dll
+    Microsoft.Dynamic.dll
     Microsoft.Scripting.dll
     Microsoft.Scripting.Silverlight.dll
 

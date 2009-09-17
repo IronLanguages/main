@@ -572,16 +572,16 @@ namespace IronPython.Runtime.Operations {
         internal const double NegativeZero = -0.0;
 
         internal static bool IsPositiveZero(double value) {
-            return (value == 0.0) && (1.0 / value == double.PositiveInfinity);
+            return (value == 0.0) && double.IsPositiveInfinity(1.0 / value);
         }
 
         internal static bool IsNegativeZero(double value) {
-            return (value == 0.0) && (1.0 / value == double.NegativeInfinity);
+            return (value == 0.0) && double.IsNegativeInfinity(1.0 / value);
         }
 
         internal static int Sign(double value) {
             if (value == 0.0) {
-                return 1.0 / value == double.PositiveInfinity ? 1 : -1;
+                return double.IsPositiveInfinity(1.0 / value) ? 1 : -1;
             } else {
                 // note: NaN intentionally shows up as negative
                 return value > 0 ? 1 : -1;

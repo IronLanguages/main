@@ -234,6 +234,7 @@ namespace IronRuby.Tests {
                 Scenario_RubyBlockArgs8,
                 Scenario_RubyBlockArgs9,
                 Scenario_RubyBlockArgs10,
+                Scenario_RubyBlockArgs11,
                 Proc_RhsAndBlockArguments1,
 
                 RubyProcs1,
@@ -466,6 +467,7 @@ namespace IronRuby.Tests {
                 RescueSplat1,
                 RescueSplat2,
                 RescueSplat3,
+                RescueSplat4,
                 ExceptionMapping1,
                 ExceptionMapping2,
                 ExceptionMapping3,

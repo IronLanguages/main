@@ -45,6 +45,7 @@ namespace Microsoft.Scripting.Silverlight {
             "IronPython.Modules",
             "Microsoft.Scripting.Core",
             "Microsoft.Scripting",
+            "Microsoft.Dynamic",
             "Microsoft.Scripting.ExtensionAttribute",
             "Microsoft.Scripting.Silverlight"
         };

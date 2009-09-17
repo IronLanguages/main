@@ -50,7 +50,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
                 if (_scope == null) {
                     return null;
                 }
-                return _scope.Scope; 
+                return HostingHelpers.GetScope(_scope); 
             }
             set {
                 _scope = new ScriptScope(_engine, value);
