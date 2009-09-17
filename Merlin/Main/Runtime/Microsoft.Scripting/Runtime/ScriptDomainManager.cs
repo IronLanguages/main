@@ -20,7 +20,6 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.Serialization;
 using System.Dynamic;
-using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Utils;
 using System.Threading;
 
@@ -29,12 +28,12 @@ namespace Microsoft.Scripting.Runtime {
     public sealed class ScriptDomainManager {
         private readonly DynamicRuntimeHostingProvider _hostingProvider;
         private readonly SharedIO _sharedIO;
+        private List<Assembly> _loadedAssemblies = new List<Assembly>();
 
         // last id assigned to a language context:
         private int _lastContextId;
 
         private Scope _globals;
-        private List<Assembly> _loadedAssemblies = new List<Assembly>();
         private readonly DlrConfiguration _configuration;
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1065:DoNotRaiseExceptionsInUnexpectedLocations")]

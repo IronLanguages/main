@@ -52,22 +52,22 @@ namespace IronPython.Modules {
             private static Dictionary<DelegateCacheKey, Type> _reverseDelegates = new Dictionary<DelegateCacheKey, Type>();
 
             //from_buffer_copy,  from_param, from_address, from_buffer, __doc__ __mul__ __rmul__ in_dll __new__ 
-            public CFuncPtrType(CodeContext/*!*/ context, string name, PythonTuple bases, IAttributesCollection members)
+            public CFuncPtrType(CodeContext/*!*/ context, string name, PythonTuple bases, PythonDictionary members)
                 : base(context, name, bases, members) {
 
                 object flags;
-                if (!members.TryGetValue(SymbolTable.StringToId("_flags_"), out flags) || !(flags is int)) {
+                if (!members.TryGetValue("_flags_", out flags) || !(flags is int)) {
                     throw PythonOps.TypeError("class must define _flags_ which must be an integer");
                 }
                 _flags = (int)flags;
 
                 object restype;
-                if (members.TryGetValue(SymbolTable.StringToId("_restype_"), out restype) && (restype is PythonType)) {
+                if (members.TryGetValue("_restype_", out restype) && (restype is PythonType)) {
                     _restype = (PythonType)restype;
                 }
 
                 object argtypes;
-                if (members.TryGetValue(SymbolTable.StringToId("_argtypes_"), out argtypes) && (argtypes is PythonTuple)) {
+                if (members.TryGetValue("_argtypes_", out argtypes) && (argtypes is PythonTuple)) {
                     PythonTuple pt = argtypes as PythonTuple;
                     _argtypes = new INativeType[pt.Count];
                     for (int i = 0; i < pt.Count; i++) {

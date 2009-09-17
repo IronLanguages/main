@@ -18,7 +18,11 @@ using System.Collections.ObjectModel;
 using System.Runtime.CompilerServices;
 using System.Dynamic.Utils;
 
+#if CLR2
+namespace Microsoft.Scripting.Ast.Compiler {
+#else
 namespace System.Linq.Expressions.Compiler {
+#endif
 
     // Suppose we have something like:
     //

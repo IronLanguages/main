@@ -13,14 +13,18 @@
  *
  * ***************************************************************************/
 
-using System.Collections.Generic;
-using System.Diagnostics;
+#if CLR2
+using Microsoft.Scripting.Ast;
+#else
 using System.Linq.Expressions;
-using System.Reflection;
-
+#endif
 #if SILVERLIGHT
 using System.Core;
 #endif
+
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Reflection;
 
 namespace System.Dynamic.Utils {
 
@@ -145,7 +149,7 @@ namespace System.Dynamic.Utils {
 
         internal static bool AreEquivalent(Type t1, Type t2)
         {
-#if MICROSOFT_SCRIPTING_CORE || SILVERLIGHT
+#if CLR2 || SILVERLIGHT
             return t1 == t2;
 #else
             return t1 == t2 || t1.IsEquivalentTo(t2);

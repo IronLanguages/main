@@ -13,16 +13,20 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using MSA = System.Linq.Expressions;
+#else
+using MSA = Microsoft.Scripting.Ast;
+#endif
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Utils;
 using IronRuby.Runtime;
 
 namespace IronRuby.Compiler.Ast {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = Expression;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
-    using MSA = System.Linq.Expressions;
-
+    
     public partial class OrExpression : Expression {
         private readonly Expression/*!*/ _left;
         private readonly Expression/*!*/ _right;

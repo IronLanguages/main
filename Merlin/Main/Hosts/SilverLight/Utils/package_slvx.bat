@@ -13,6 +13,7 @@ copy /Y IronRuby.Libraries.dll __IronRuby.slvx
 copy /Y IronPython.dll __IronPython.slvx
 copy /Y IronPython.Modules.dll __IronPython.slvx
 copy /Y Microsoft.Scripting.dll __Microsoft.Scripting.slvx
+copy /Y Microsoft.Dynamic.dll __Microsoft.Scripting.slvx
 copy /Y Microsoft.Scripting.Core.dll __Microsoft.Scripting.slvx
 copy /Y Microsoft.Scripting.ExtensionAttribute.dll __Microsoft.Scripting.slvx
 copy /Y Microsoft.Scripting.Silverlight.dll __Microsoft.Scripting.slvx

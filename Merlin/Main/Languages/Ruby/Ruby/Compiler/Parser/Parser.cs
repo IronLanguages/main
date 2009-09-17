@@ -492,6 +492,14 @@ namespace IronRuby.Compiler {
             yyval.Block = block;
         }
 
+        private void SetBlock(CallExpression/*!*/ expression, BlockDefinition/*!*/ block) {
+            if (expression.Block != null) {
+                ReportSyntaxError(Errors.BothBlockDefAndBlockRefGiven);
+            } else {
+                expression.Block = block;
+            }
+        }
+
         private void SetWhenClauseArguments(int argumentCount, Expression/*!*/ splat) {
             yyval.ArgumentCount = argumentCount;
             yyval.Expression = splat;

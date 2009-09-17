@@ -13,11 +13,16 @@
  *
  * ***************************************************************************/
 
+using System;
 using System.Dynamic.Utils;
 using System.Reflection;
 using System.Reflection.Emit;
 
+#if CLR2
+namespace Microsoft.Scripting.Ast.Compiler {
+#else
 namespace System.Linq.Expressions.Compiler {
+#endif
     internal static partial class DelegateHelpers {
         private const MethodAttributes CtorAttributes = MethodAttributes.RTSpecialName | MethodAttributes.HideBySig | MethodAttributes.Public;
         private const MethodImplAttributes ImplAttributes = MethodImplAttributes.Runtime | MethodImplAttributes.Managed;

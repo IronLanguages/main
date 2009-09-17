@@ -236,12 +236,12 @@ namespace IronPython.Modules {
             /// </summary>
             private static bool RefEquals(CodeContext context, object x, object y) {
                 object ret;
-                if (PythonTypeOps.TryInvokeBinaryOperator(context, x, y, Symbols.OperatorEquals, out ret) &&
+                if (PythonTypeOps.TryInvokeBinaryOperator(context, x, y, "__eq__", out ret) &&
                     ret != NotImplementedType.Value) {
                     return (bool)ret;
                 }
 
-                if (PythonTypeOps.TryInvokeBinaryOperator(context, y, x, Symbols.OperatorEquals, out ret) &&
+                if (PythonTypeOps.TryInvokeBinaryOperator(context, y, x, "__eq__", out ret) &&
                     ret != NotImplementedType.Value) {
                     return (bool)ret;
                 }
@@ -330,7 +330,7 @@ namespace IronPython.Modules {
 
             #region IPythonObject Members
 
-            IAttributesCollection IPythonObject.Dict {
+            PythonDictionary IPythonObject.Dict {
                 get {
                     IPythonObject sdo = GetObject() as IPythonObject;
                     if (sdo != null) {
@@ -341,11 +341,11 @@ namespace IronPython.Modules {
                 }
             }
 
-            IAttributesCollection IPythonObject.SetDict(IAttributesCollection dict) {
+            PythonDictionary IPythonObject.SetDict(PythonDictionary dict) {
                 return (GetObject() as IPythonObject).SetDict(dict);
             }
 
-            bool IPythonObject.ReplaceDict(IAttributesCollection dict) {
+            bool IPythonObject.ReplaceDict(PythonDictionary dict) {
                 return (GetObject() as IPythonObject).ReplaceDict(dict);
             }
 
@@ -390,7 +390,7 @@ namespace IronPython.Modules {
             [SpecialName]
             public object GetCustomMember(CodeContext/*!*/ context, string name) {
                 object value, o = GetObject();
-                if (PythonOps.TryGetBoundAttr(context, o, SymbolTable.StringToId(name), out value)) {
+                if (PythonOps.TryGetBoundAttr(context, o, name, out value)) {
                     return value;
                 }
 
@@ -400,13 +400,13 @@ namespace IronPython.Modules {
             [SpecialName]
             public void SetMember(CodeContext/*!*/ context, string name, object value) {
                 object o = GetObject();
-                PythonOps.SetAttr(context, o, SymbolTable.StringToId(name), value);
+                PythonOps.SetAttr(context, o, name, value);
             }
 
             [SpecialName]
             public void DeleteMember(CodeContext/*!*/ context, string name) {
                 object o = GetObject();
-                PythonOps.DeleteAttr(context, o, SymbolTable.StringToId(name));
+                PythonOps.DeleteAttr(context, o, name);
             }
 
             IList<string> IMembersList.GetMemberNames() {
@@ -548,17 +548,17 @@ namespace IronPython.Modules {
 
             #region IPythonObject Members
 
-            IAttributesCollection IPythonObject.Dict {
+            PythonDictionary IPythonObject.Dict {
                 get {
                     return (GetObject() as IPythonObject).Dict;
                 }
             }
 
-            IAttributesCollection IPythonObject.SetDict(IAttributesCollection dict) {
+            PythonDictionary IPythonObject.SetDict(PythonDictionary dict) {
                 return (GetObject() as IPythonObject).SetDict(dict);
             }
 
-            bool IPythonObject.ReplaceDict(IAttributesCollection dict) {
+            bool IPythonObject.ReplaceDict(PythonDictionary dict) {
                 return (GetObject() as IPythonObject).ReplaceDict(dict);
             }
 
@@ -614,7 +614,7 @@ namespace IronPython.Modules {
             public object GetCustomMember(CodeContext/*!*/ context, string name) {
                 object o = GetObject();
                 object value;
-                if (PythonOps.TryGetBoundAttr(context, o, SymbolTable.StringToId(name), out value)) {
+                if (PythonOps.TryGetBoundAttr(context, o, name, out value)) {
                     return value;
                 }
                 return OperationFailed.Value;
@@ -623,13 +623,13 @@ namespace IronPython.Modules {
             [SpecialName]
             public void SetMember(CodeContext/*!*/ context, string name, object value) {
                 object o = GetObject();
-                PythonOps.SetAttr(context, o, SymbolTable.StringToId(name), value);
+                PythonOps.SetAttr(context, o, name, value);
             }
 
             [SpecialName]
             public void DeleteMember(CodeContext/*!*/ context, string name) {
                 object o = GetObject();
-                PythonOps.DeleteAttr(context, o, SymbolTable.StringToId(name));
+                PythonOps.DeleteAttr(context, o, name);
             }
 
             IList<string> IMembersList.GetMemberNames() {
@@ -694,10 +694,10 @@ namespace IronPython.Modules {
 
     [PythonType("wrapper_descriptor")]
     class SlotWrapper : PythonTypeSlot, ICodeFormattable {
-        private readonly SymbolId _name;
+        private readonly string _name;
         private readonly PythonType _type;
 
-        public SlotWrapper(SymbolId slotName, PythonType targetType) {
+        public SlotWrapper(string slotName, PythonType targetType) {
             _name = slotName;
             _type = targetType;
         }
@@ -706,7 +706,7 @@ namespace IronPython.Modules {
 
         public virtual string/*!*/ __repr__(CodeContext/*!*/ context) {
             return String.Format("<slot wrapper {0} of {1} objects>",
-                PythonOps.Repr(context, SymbolTable.IdToString(_name)),
+                PythonOps.Repr(context, _name),
                 PythonOps.Repr(context, _type.Name));
         }
 
@@ -739,10 +739,10 @@ namespace IronPython.Modules {
 
     [PythonType("method-wrapper")]
     public class GenericMethodWrapper {
-        SymbolId name;
+        string name;
         IProxyObject target;
 
-        public GenericMethodWrapper(SymbolId methodName, IProxyObject proxyTarget) {
+        public GenericMethodWrapper(string methodName, IProxyObject proxyTarget) {
             name = methodName;
             target = proxyTarget;
         }
@@ -759,7 +759,7 @@ namespace IronPython.Modules {
             if (!DynamicHelpers.GetPythonType(target.Target).TryGetBoundMember(context, target.Target, name, out targetMethod))
                 throw PythonOps.AttributeError("type {0} has no attribute {1}",
                     DynamicHelpers.GetPythonType(target.Target),
-                    SymbolTable.IdToString(name));
+                    name);
 
             return PythonCalls.CallWithKeywordArgs(context, targetMethod, args, dict);
         }

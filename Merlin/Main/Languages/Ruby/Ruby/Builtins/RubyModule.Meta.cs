@@ -13,7 +13,12 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
 using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System.Dynamic;
 using Microsoft.Scripting.Utils;
 using IronRuby.Runtime.Calls;

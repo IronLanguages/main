@@ -744,13 +744,13 @@ namespace IronRuby.Builtins {
             var visited = new Dictionary<string, bool>();
             var result = new RubyArray();
 
-            bool hideGlobalConstants = !ReferenceEquals(self, self.Context.ObjectClass);
+            bool hideGlobalConstants = !self.IsObjectClass;
 
             using (self.Context.ClassHierarchyLocker()) {
                 self.ForEachConstant(true, delegate(RubyModule/*!*/ module, string name, object value) {
                     if (name == null) {
                         // terminate enumeration when Object is reached
-                        return hideGlobalConstants && ReferenceEquals(module, module.Context.ObjectClass);
+                        return hideGlobalConstants && module.IsObjectClass;
                     }
 
                     if (!visited.ContainsKey(name)) {
@@ -801,8 +801,8 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("const_missing")]
-        public static void ConstantMissing(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ name) {
-            throw RubyExceptions.CreateNameError(String.Format("uninitialized constant {0}::{1}", self.Name, name));
+        public static object ConstantMissing(RubyModule/*!*/ self, [DefaultProtocol, NotNull]string/*!*/ name) {
+            return self.Context.ResolveMissingConstant(self, name);
         }
 
         #endregion

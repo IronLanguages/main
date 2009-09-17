@@ -17,6 +17,7 @@ using System;
 using IronPython.Runtime.Types;
 using Microsoft.Scripting;
 using IronPython.Runtime.Exceptions;
+using IronPython.Runtime;
 
 
 namespace IronPythonTest.interop.net.type.clrtype {
@@ -38,7 +39,7 @@ namespace IronPythonTest.interop.net.type.clrtype {
     #region sanity
     public class Sanity : IPythonObject {
         private PythonType _pythonType;
-        private IAttributesCollection _dict;
+        private PythonDictionary _dict;
 
 
         public Sanity(PythonType param) {
@@ -47,16 +48,16 @@ namespace IronPythonTest.interop.net.type.clrtype {
 
         #region IPythonObject Members
 
-        IAttributesCollection IPythonObject.Dict {
+        PythonDictionary IPythonObject.Dict {
             get { return _dict; }
         }
 
-        IAttributesCollection IPythonObject.SetDict(IAttributesCollection dict) {
-            System.Threading.Interlocked.CompareExchange<IAttributesCollection>(ref _dict, dict, null);
+        PythonDictionary IPythonObject.SetDict(PythonDictionary dict) {
+            System.Threading.Interlocked.CompareExchange<PythonDictionary>(ref _dict, dict, null);
             return _dict;
         }
 
-        bool IPythonObject.ReplaceDict(IAttributesCollection dict) {
+        bool IPythonObject.ReplaceDict(PythonDictionary dict) {
             return false;
         }
 
@@ -78,22 +79,22 @@ namespace IronPythonTest.interop.net.type.clrtype {
     #region sanity non-standard constructor
     public class SanityUniqueConstructor : IPythonObject {
         private PythonType _pythonType;
-        private IAttributesCollection _dict;
+        private PythonDictionary _dict;
 
         public SanityUniqueConstructor(PythonType param, Int32 param2) { }
 
         #region IPythonObject Members
 
-        IAttributesCollection IPythonObject.Dict {
+        PythonDictionary IPythonObject.Dict {
             get { return _dict; }
         }
 
-        IAttributesCollection IPythonObject.SetDict(IAttributesCollection dict) {
-            System.Threading.Interlocked.CompareExchange<IAttributesCollection>(ref _dict, dict, null);
+        PythonDictionary IPythonObject.SetDict(PythonDictionary dict) {
+            System.Threading.Interlocked.CompareExchange<PythonDictionary>(ref _dict, dict, null);
             return _dict;
         }
 
-        bool IPythonObject.ReplaceDict(IAttributesCollection dict) {
+        bool IPythonObject.ReplaceDict(PythonDictionary dict) {
             return false;
         }
 
@@ -115,7 +116,7 @@ namespace IronPythonTest.interop.net.type.clrtype {
     #region sanity constructor overloads
     public class SanityConstructorOverloads : IPythonObject {
         private PythonType _pythonType;
-        private IAttributesCollection _dict;
+        private PythonDictionary _dict;
         public Object MyField;
 
 
@@ -131,16 +132,16 @@ namespace IronPythonTest.interop.net.type.clrtype {
 
         #region IPythonObject Members
 
-        IAttributesCollection IPythonObject.Dict {
+        PythonDictionary IPythonObject.Dict {
             get { return _dict; }
         }
 
-        IAttributesCollection IPythonObject.SetDict(IAttributesCollection dict) {
-            System.Threading.Interlocked.CompareExchange<IAttributesCollection>(ref _dict, dict, null);
+        PythonDictionary IPythonObject.SetDict(PythonDictionary dict) {
+            System.Threading.Interlocked.CompareExchange<PythonDictionary>(ref _dict, dict, null);
             return _dict;
         }
 
-        bool IPythonObject.ReplaceDict(IAttributesCollection dict) {
+        bool IPythonObject.ReplaceDict(PythonDictionary dict) {
             return false;
         }
 
@@ -162,7 +163,7 @@ namespace IronPythonTest.interop.net.type.clrtype {
     #region sanity generic
     public class SanityGeneric<T> : IPythonObject {
         private PythonType _pythonType;
-        private IAttributesCollection _dict;
+        private PythonDictionary _dict;
 
 
         public SanityGeneric(PythonType param) {
@@ -171,16 +172,16 @@ namespace IronPythonTest.interop.net.type.clrtype {
 
         #region IPythonObject Members
 
-        IAttributesCollection IPythonObject.Dict {
+        PythonDictionary IPythonObject.Dict {
             get { return _dict; }
         }
 
-        IAttributesCollection IPythonObject.SetDict(IAttributesCollection dict) {
-            System.Threading.Interlocked.CompareExchange<IAttributesCollection>(ref _dict, dict, null);
+        PythonDictionary IPythonObject.SetDict(PythonDictionary dict) {
+            System.Threading.Interlocked.CompareExchange<PythonDictionary>(ref _dict, dict, null);
             return _dict;
         }
 
-        bool IPythonObject.ReplaceDict(IAttributesCollection dict) {
+        bool IPythonObject.ReplaceDict(PythonDictionary dict) {
             return false;
         }
 
@@ -202,7 +203,7 @@ namespace IronPythonTest.interop.net.type.clrtype {
     #region sanity generic constructor
     public class SanityGenericConstructor<T> : IPythonObject {
         private PythonType _pythonType;
-        private IAttributesCollection _dict;
+        private PythonDictionary _dict;
 
 
         public SanityGenericConstructor(T param) {
@@ -211,16 +212,16 @@ namespace IronPythonTest.interop.net.type.clrtype {
 
         #region IPythonObject Members
 
-        IAttributesCollection IPythonObject.Dict {
+        PythonDictionary IPythonObject.Dict {
             get { return _dict; }
         }
 
-        IAttributesCollection IPythonObject.SetDict(IAttributesCollection dict) {
-            System.Threading.Interlocked.CompareExchange<IAttributesCollection>(ref _dict, dict, null);
+        PythonDictionary IPythonObject.SetDict(PythonDictionary dict) {
+            System.Threading.Interlocked.CompareExchange<PythonDictionary>(ref _dict, dict, null);
             return _dict;
         }
 
-        bool IPythonObject.ReplaceDict(IAttributesCollection dict) {
+        bool IPythonObject.ReplaceDict(PythonDictionary dict) {
             return false;
         }
 
@@ -250,7 +251,7 @@ namespace IronPythonTest.interop.net.type.clrtype {
     public class SanityParameterlessConstructor : IPythonObject {
         private static PythonType _PythonType;
         public static int WhichConstructor;
-        private IAttributesCollection _dict;
+        private PythonDictionary _dict;
 
 
         public SanityParameterlessConstructor(PythonType param) {
@@ -264,16 +265,16 @@ namespace IronPythonTest.interop.net.type.clrtype {
 
         #region IPythonObject Members
 
-        IAttributesCollection IPythonObject.Dict {
+        PythonDictionary IPythonObject.Dict {
             get { return _dict; }
         }
 
-        IAttributesCollection IPythonObject.SetDict(IAttributesCollection dict) {
-            System.Threading.Interlocked.CompareExchange<IAttributesCollection>(ref _dict, dict, null);
+        PythonDictionary IPythonObject.SetDict(PythonDictionary dict) {
+            System.Threading.Interlocked.CompareExchange<PythonDictionary>(ref _dict, dict, null);
             return _dict;
         }
 
-        bool IPythonObject.ReplaceDict(IAttributesCollection dict) {
+        bool IPythonObject.ReplaceDict(PythonDictionary dict) {
             return false;
         }
 
@@ -303,15 +304,15 @@ namespace IronPythonTest.interop.net.type.clrtype {
     public class NegativeNoConstructor : IPythonObject {
         #region IPythonObject Members
 
-        public Microsoft.Scripting.IAttributesCollection Dict {
+        public PythonDictionary Dict {
             get { throw new NotImplementedException(); }
         }
 
-        public Microsoft.Scripting.IAttributesCollection SetDict(Microsoft.Scripting.IAttributesCollection dict) {
+        public PythonDictionary SetDict(PythonDictionary dict) {
             throw new NotImplementedException();
         }
 
-        public bool ReplaceDict(Microsoft.Scripting.IAttributesCollection dict) {
+        public bool ReplaceDict(PythonDictionary dict) {
             throw new NotImplementedException();
         }
 

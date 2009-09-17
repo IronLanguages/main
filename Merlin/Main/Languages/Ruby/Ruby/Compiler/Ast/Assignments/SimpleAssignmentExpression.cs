@@ -13,14 +13,19 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using MSA = System.Linq.Expressions;
+#else
+using MSA = Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Dynamic;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Utils;
-using MSA = System.Linq.Expressions;
 
 namespace IronRuby.Compiler.Ast {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = MSA.Expression;
 
     /// <summary>
     /// lhs = rhs

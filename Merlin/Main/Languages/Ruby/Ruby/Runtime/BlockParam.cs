@@ -13,6 +13,12 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using MSA = System.Linq.Expressions;
+#else
+using MSA = Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Diagnostics;
 using System.Reflection;
@@ -22,14 +28,13 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using IronRuby.Builtins;
 using IronRuby.Runtime.Calls;
-using MSA = System.Linq.Expressions;
-using Ast = System.Linq.Expressions.Expression;
 using AstFactory = IronRuby.Compiler.Ast.AstFactory;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 using IronRuby.Compiler.Generation;
 using System.Dynamic;
 
 namespace IronRuby.Runtime {
+    using Ast = MSA.Expression;
     
     public enum BlockReturnReason {
         Undefined = 0,
@@ -203,6 +208,7 @@ namespace IronRuby.Runtime {
             metaBuilder.AddTypeRestriction(args.Target.GetType(), args.TargetExpression);
 
             metaBuilder.Result = AstFactory.YieldExpression(
+                args.RubyContext,
                 args.GetSimpleArgumentExpressions(),
                 args.GetSplattedArgumentExpression(),
                 args.GetRhsArgumentExpression(),

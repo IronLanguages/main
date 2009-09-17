@@ -59,7 +59,7 @@ class IRTest
 
   def git?
     git = File.exists? @root + "\\..\\..\\.git" # exists only for github.com
-    tfs = File.exists? @root + "\\..\\External.LCA_RESTRICTED\\Languages\\IronPython" # exists only in TFS
+    tfs = File.exists? @root + "\\Support\\Rowan.sln" # exists only in TFS
     abort("Could not determine if this is a GIT repo or not") if git == tfs
     git
   end

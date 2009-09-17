@@ -13,15 +13,20 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using MSAst = System.Linq.Expressions;
+#else
+using MSAst = Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Diagnostics;
 using Microsoft.Scripting.Runtime;
-using MSAst = System.Linq.Expressions;
 
 using IronPython.Runtime.Binding;
 
 namespace IronPython.Compiler.Ast {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = MSAst.Expression;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
 
     public class UnaryExpression : Expression {

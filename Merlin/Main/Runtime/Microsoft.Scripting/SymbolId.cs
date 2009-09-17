@@ -28,7 +28,7 @@ namespace Microsoft.Scripting {
     /// a normal SymbolId for a given string and then accessing the CaseInsensitiveIdentifier property.  Using
     /// the case insensitive identifier during a lookup will cause the lookup to be case insensitive.
     /// </summary>
-    [Serializable]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1036:OverrideMethodsOnComparableTypes"), Serializable]
     public struct SymbolId : ISerializable, IComparable, IComparable<SymbolId>, IEquatable<SymbolId> {
         private readonly int _id;
 

@@ -13,6 +13,7 @@
  *
  * ***************************************************************************/
 
+using IronRuby.Builtins;
 namespace IronRuby.Tests {
 
     public partial class Tests {
@@ -260,13 +261,22 @@ uninitialized constant M::W
         }
 
         /// <summary>
-        /// Global constants are visible in Runtime.Globals.
+        /// The default interop constant_missing looks to scope only if called on Object.
         /// </summary>
-        public void GlobalConstantsInterop() {
-            CompilerTest("C = 1");
-            object value;
-            Runtime.Globals.TryGetVariable("C", out value);
-            AssertEquals(value, 1);
+        public void GlobalConstants1() {
+            TestOutput(@"
+class Bar
+end
+
+module Foo
+end
+
+p defined?(Foo::Bar)
+Foo::Bar rescue p $!
+", @"
+nil
+#<NameError: uninitialized constant Foo::Bar>
+");
         }
     }
 }

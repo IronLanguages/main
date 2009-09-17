@@ -13,11 +13,16 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
-using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
@@ -30,10 +35,9 @@ using IronPython.Compiler;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
-using SpecialNameAttribute = System.Runtime.CompilerServices.SpecialNameAttribute;
-using Ast = System.Linq.Expressions.Expression;
-
 namespace IronPython.Runtime {
+    using Ast = Expression;
+    using SpecialNameAttribute = System.Runtime.CompilerServices.SpecialNameAttribute;
 
     /// <summary>
     /// Created for a user-defined function.  
@@ -46,7 +50,7 @@ namespace IronPython.Runtime {
         public readonly MutableTuple Closure;
 
         private object[]/*!*/ _defaults;                // the default parameters of the method
-        internal IAttributesCollection _dict;           // a dictionary to story arbitrary members on the function object
+        internal PythonDictionary _dict;           // a dictionary to story arbitrary members on the function object
         private object _module;                         // the module name
 
         private int _id, _compat;                       // ID/Compat flags used for testing in rules
@@ -64,7 +68,7 @@ namespace IronPython.Runtime {
         /// 
         /// y = func(x.__code__, globals(), 'foo', None, (a, ))
         /// </summary>
-        public PythonFunction(CodeContext context, FunctionCode code, IAttributesCollection globals, string name, PythonTuple defaults, PythonTuple closure) {
+        public PythonFunction(CodeContext context, FunctionCode code, PythonDictionary globals, string name, PythonTuple defaults, PythonTuple closure) {
             throw new NotImplementedException();
         }
 
@@ -96,7 +100,7 @@ namespace IronPython.Runtime {
 
         public object func_globals {
             get {
-                return new PythonDictionary(_context.GlobalDict._storage);
+                return _context.GlobalDict;
             }
         }
 
@@ -171,12 +175,14 @@ namespace IronPython.Runtime {
             }
         }
 
-        public IAttributesCollection __dict__ {
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public PythonDictionary __dict__ {
             get { return func_dict; }
             set { func_dict = value; }
         }
 
-        public IAttributesCollection/*!*/ func_dict {
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public PythonDictionary/*!*/ func_dict {
             get { return EnsureDict(); }
             set {
                 if (value == null) throw PythonOps.TypeError("setting function's dictionary to non-dict");
@@ -418,7 +424,7 @@ namespace IronPython.Runtime {
             } else {
                 list = PythonOps.MakeListFromSequence(_dict);
             }
-            list.AddNoLock(SymbolTable.IdToString(Symbols.Module));
+            list.AddNoLock("__module__");
 
             list.extend(TypeCache.Function.GetMemberNames(context, this));
             return list;
@@ -431,7 +437,7 @@ namespace IronPython.Runtime {
         WeakRefTracker IWeakReferenceable.GetWeakRef() {
             if (_dict != null) {
                 object weakRef;
-                if (_dict.TryGetValue(Symbols.WeakRef, out weakRef)) {
+                if (_dict.TryGetValue("__weakref__", out weakRef)) {
                     return weakRef as WeakRefTracker;
                 }
             }
@@ -440,7 +446,7 @@ namespace IronPython.Runtime {
 
         bool IWeakReferenceable.SetWeakRef(WeakRefTracker value) {
             EnsureDict();
-            _dict[Symbols.WeakRef] = value;
+            _dict["__weakref__"] = value;
             return true;
         }
 
@@ -452,9 +458,9 @@ namespace IronPython.Runtime {
 
         #region Private APIs
 
-        internal IAttributesCollection EnsureDict() {
+        internal PythonDictionary EnsureDict() {
             if (_dict == null) {
-                Interlocked.CompareExchange(ref _dict, (IAttributesCollection)PythonDictionary.MakeSymbolDictionary(), null);
+                Interlocked.CompareExchange(ref _dict, PythonDictionary.MakeSymbolDictionary(), null);
             }
             return _dict;
         }

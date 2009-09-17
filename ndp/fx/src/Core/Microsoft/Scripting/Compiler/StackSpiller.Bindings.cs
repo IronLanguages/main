@@ -21,7 +21,11 @@ using System.Runtime.CompilerServices;
 using System.Core;
 #endif
 
+#if CLR2
+namespace Microsoft.Scripting.Ast.Compiler {
+#else
 namespace System.Linq.Expressions.Compiler {
+#endif
 
     internal partial class StackSpiller {
 

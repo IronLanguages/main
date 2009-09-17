@@ -14,8 +14,11 @@
  * ***************************************************************************/
 
 #if !SILVERLIGHT
-
+#if !MICROSOFT_DYNAMIC
 using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
 
 namespace System.Dynamic {
     /// <summary>

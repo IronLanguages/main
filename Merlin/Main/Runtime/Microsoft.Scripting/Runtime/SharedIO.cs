@@ -13,9 +13,14 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.IO;
-using System.Linq.Expressions;
 using System.Text;
 using System.Threading;
 using Microsoft.Scripting.Utils;

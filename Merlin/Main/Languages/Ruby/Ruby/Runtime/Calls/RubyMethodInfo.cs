@@ -13,20 +13,26 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using MSA = System.Linq.Expressions;
+#else
+using MSA = Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Reflection;
 using IronRuby.Builtins;
 using IronRuby.Compiler;
 using IronRuby.Compiler.Ast;
 using Microsoft.Scripting.Utils;
-using Ast = System.Linq.Expressions.Expression;
 using AstFactory = IronRuby.Compiler.Ast.AstFactory;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 using MethodDeclaration = IronRuby.Compiler.Ast.MethodDeclaration;
-using MSA = System.Linq.Expressions;
 using System.Diagnostics;
 
 namespace IronRuby.Runtime.Calls {
+    using Ast = MSA.Expression;
+
     public sealed class RubyMethodInfo : RubyMemberInfo {
         // Delegate type for methods with many parameters.
         internal static readonly Type ParamsArrayDelegateType = typeof(Func<object, Proc, object[], object>);

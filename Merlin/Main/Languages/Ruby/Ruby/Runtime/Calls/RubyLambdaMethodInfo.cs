@@ -13,6 +13,12 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Diagnostics;
 using System.Reflection;
@@ -24,7 +30,7 @@ using IronRuby.Builtins;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Runtime.Calls {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = Expression;
 
     public class RubyLambdaMethodInfo : RubyMemberInfo {
         private readonly Proc/*!*/ _lambda;

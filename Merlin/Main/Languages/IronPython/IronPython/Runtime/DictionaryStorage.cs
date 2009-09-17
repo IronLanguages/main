@@ -39,22 +39,10 @@ namespace IronPython.Runtime {
             Add(key, value);
         }
 
-        public virtual void Add(SymbolId key, object value) {
-            Add(SymbolTable.IdToString(key), value);
-        }
-
         public abstract bool Contains(object key);
         
-        public virtual bool Contains(SymbolId key) {
-            return Contains(SymbolTable.IdToString(key));
-        }
-
         public abstract bool Remove(object key);
         public abstract bool TryGetValue(object key, out object value);
-
-        public virtual bool TryGetValue(SymbolId key, out object value) {
-            return TryGetValue(SymbolTable.IdToString(key), out value);
-        }
 
         public virtual bool TryRemoveValue(object key, out object value) {
             if (TryGetValue(key, out value)) {

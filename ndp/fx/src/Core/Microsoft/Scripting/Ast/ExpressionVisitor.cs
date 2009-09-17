@@ -13,6 +13,7 @@
  *
  * ***************************************************************************/
 
+using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Dynamic.Utils;
@@ -22,7 +23,12 @@ using System.Runtime.CompilerServices;
 using System.Core;
 #endif
 
+#if CLR2
+namespace Microsoft.Scripting.Ast {
+    using Microsoft.Scripting.Utils;
+#else
 namespace System.Linq.Expressions {
+#endif
 
     /// <summary>
     /// Represents a visitor or rewriter for expression trees.

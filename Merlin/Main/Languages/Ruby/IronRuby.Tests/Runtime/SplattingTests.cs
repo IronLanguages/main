@@ -154,7 +154,7 @@ p [has_value, value]
         public void Scenario_RubyArgSplatting6() {
 
             var c = Context.GetClass(typeof(MethodsWithParamArrays));
-            Context.SetGlobalConstant("C", new MethodsWithParamArrays());
+            Runtime.Globals.SetVariable("C", new MethodsWithParamArrays());
 
             // The post-param-array arguments might decide which overload to call:
             c.SetLibraryMethod("bar", new RubyMethodGroupInfo(new[] { 

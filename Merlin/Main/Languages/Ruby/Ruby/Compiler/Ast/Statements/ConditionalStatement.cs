@@ -13,13 +13,18 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using MSA = System.Linq.Expressions;
+#else
+using MSA = Microsoft.Scripting.Ast;
+#endif
+
 using Microsoft.Scripting;
 using Microsoft.Scripting.Utils;
-using MSA = System.Linq.Expressions;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Compiler.Ast {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = MSA.Expression;
 
     /// <summary>
     /// Represents if- and unless- statements.
@@ -59,12 +64,14 @@ namespace IronRuby.Compiler.Ast {
         }
 
         private MSA.Expression/*!*/ TransformCondition(AstGenerator/*!*/ gen) {
-            var transformedCondition = _condition.TransformRead(gen);
+            var transformedCondition = _condition.TransformReadStep(gen);
             return (_negateCondition) ? AstFactory.IsFalse(transformedCondition) : AstFactory.IsTrue(transformedCondition);
         }
 
         internal override MSA.Expression/*!*/ Transform(AstGenerator/*!*/ gen) {
-            return AstUtils.IfThenElse(TransformCondition(gen), _body.Transform(gen),
+            return AstUtils.IfThenElse(
+                TransformCondition(gen), 
+                _body.Transform(gen),
                 _elseStatement != null ? _elseStatement.Transform(gen) : AstUtils.Empty()
             );
         }

@@ -784,8 +784,6 @@ y { |(x,y,*),*a| p x,y,a }
 ");
         }
 
-        
-
         /// <summary>
         /// L(M,*) := R(N,*,=) where M is less then N.
         /// </summary>
@@ -933,6 +931,39 @@ c = C.new
 c[1,2,*[3,4]] = 5
 ");
             }, @"1,2,3,4,5");
+        }
+
+        public void Scenario_RubyBlockArgs11() {
+            TestOutput(@"
+class C
+  def to_a
+    [1,2]
+  end
+end
+
+def baz
+  yield C.new
+end
+baz { |a,b| p b }
+
+class C
+  def to_ary
+    1
+  end
+end
+baz { |a,b| p b } rescue p $!
+
+class C
+  def to_ary
+    [3,4]
+  end
+end
+baz { |a,b| p b }
+", @"
+nil
+#<TypeError: C#to_ary should return Array>
+4
+");
         }
         
         public void RubyProcs1() {

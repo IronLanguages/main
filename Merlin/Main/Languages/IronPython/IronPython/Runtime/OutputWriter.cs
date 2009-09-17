@@ -70,8 +70,8 @@ namespace IronPython.Runtime {
                 return;
             }
 
-            if (PythonOps.HasAttr(pf._context.SharedContext, Sink, SymbolTable.StringToId("flush"))) {
-                PythonOps.Invoke(pf._context.SharedContext, Sink, SymbolTable.StringToId("flush"));
+            if (PythonOps.HasAttr(pf._context.SharedContext, Sink, "flush")) {
+                PythonOps.Invoke(pf._context.SharedContext, Sink, "flush");
             }
         }
     }

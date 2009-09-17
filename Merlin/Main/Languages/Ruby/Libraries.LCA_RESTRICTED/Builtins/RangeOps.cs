@@ -13,8 +13,6 @@
  *
  * ***************************************************************************/
 
-using BinaryOpSite = System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, object, object, object>>;
-
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
@@ -22,10 +20,13 @@ using System.Reflection;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Generation;
+using Microsoft.Scripting.Utils;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
 
 namespace IronRuby.Builtins {
+    using BinaryOpSite = CallSite<Func<CallSite, object, object, object>>;
+
     /// <summary>
     /// A Range represents an interval—a set of values with a start and an end.
     /// Ranges may be constructed using the s..e and s…e literals, or with Range::new.

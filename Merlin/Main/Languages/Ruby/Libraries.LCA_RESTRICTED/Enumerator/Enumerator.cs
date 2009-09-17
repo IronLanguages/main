@@ -13,9 +13,6 @@
  *
  * ***************************************************************************/
 
-using EachSite = System.Func<System.Runtime.CompilerServices.CallSite, object, IronRuby.Builtins.Proc, object>;
-using EnumerableModule = IronRuby.Builtins.Enumerable;
-
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -28,6 +25,8 @@ using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Runtime;
 
 namespace IronRuby.StandardLibrary.Enumerator {
+    using EachSite = Func<CallSite, object, Proc, object>;
+    using EnumerableModule = IronRuby.Builtins.Enumerable;
 
     [RubyModule(Extends = typeof(Kernel))]
     public static class EnumerableKernelOps {

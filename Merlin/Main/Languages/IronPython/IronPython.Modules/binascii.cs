@@ -41,7 +41,7 @@ namespace IronPython.Modules {
         }
 
         [SpecialName]
-        public static void PerformModuleReload(PythonContext/*!*/ context, IAttributesCollection/*!*/ dict) {
+        public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
             context.EnsureModuleException(_ErrorKey, dict, "Error", "binascii");
             context.EnsureModuleException(_IncompleteKey, dict, "Incomplete", "binascii");
         }

@@ -13,8 +13,14 @@
  *
  * ***************************************************************************/
 
-using System.Diagnostics;
+#if !MICROSOFT_DYNAMIC
 using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+using Microsoft.Scripting.Utils;
+#endif
+
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace System.Dynamic {

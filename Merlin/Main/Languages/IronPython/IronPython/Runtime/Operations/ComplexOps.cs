@@ -166,8 +166,8 @@ namespace IronPython.Runtime.Operations {
         public static object __getnewargs__(CodeContext context, Complex64 self) {
             if (!Object.ReferenceEquals(self, null)) {
                 return PythonTuple.MakeTuple(
-                    PythonOps.GetBoundAttr(context, self, Symbols.RealPart),
-                    PythonOps.GetBoundAttr(context, self, Symbols.ImaginaryPart)
+                    PythonOps.GetBoundAttr(context, self, "real"),
+                    PythonOps.GetBoundAttr(context, self, "imag")
                 );
             }
             throw PythonOps.TypeErrorForBadInstance("__getnewargs__ requires a 'complex' object but received a '{0}'", self);

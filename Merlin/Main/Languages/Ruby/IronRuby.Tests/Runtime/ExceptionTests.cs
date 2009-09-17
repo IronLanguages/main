@@ -613,16 +613,20 @@ end
         }
 
         public void RescueSplat3() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
+            TestOutput(@"
 class C
   def respond_to? name
     puts '?' + name.to_s
-    true
+    false
   end
 
   def to_ary
     puts 'to_ary'
+    [Exception]
+  end
+
+  def to_a
+    puts 'to_a'
     [SyntaxError, IOError]
   end
 end
@@ -632,11 +636,40 @@ begin
 rescue *C.new
   puts 'ok'
 end
+", @"
+?to_ary
+to_a
+ok
 ");
-            }, @"
+        }
+
+        public void RescueSplat4() {
+            TestOutput(@"
+class C
+  def respond_to? name
+    puts '?' + name.to_s
+    true
+  end
+
+  def to_ary
+    puts 'to_ary'
+    1
+  end
+end
+
+begin
+  begin
+    raise IOError
+  rescue *C.new
+    puts 'ok'
+  end
+rescue
+  p $!
+end
+", @"
 ?to_ary
 to_ary
-ok
+#<TypeError: C#to_ary should return Array>
 ");
         }
 

@@ -56,7 +56,7 @@ namespace IronPython.Modules {
         private delegate IntPtr StringAtDelegate(IntPtr addr, int length);
 
         [SpecialName]
-        public static void PerformModuleReload(PythonContext/*!*/ context, IAttributesCollection/*!*/ dict) {
+        public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
 
             context.EnsureModuleException("ArgumentError", dict, "ArgumentError", "_ctypes");
             context.EnsureModuleException("COMError", dict, "COMError", "_ctypes");
@@ -64,7 +64,7 @@ namespace IronPython.Modules {
             // TODO: Provide an implementation which is coordinated with our _refCountTable
             context.SystemState.__dict__["getrefcount"] = null;
             PythonDictionary pointerTypeCache = new PythonDictionary();
-            dict[SymbolTable.StringToId("_pointer_type_cache")] = pointerTypeCache;
+            dict["_pointer_type_cache"] = pointerTypeCache;
             context.SetModuleState(_pointerTypeCacheKey, pointerTypeCache);
 
             if (Environment.OSVersion.Platform == PlatformID.Win32NT ||
@@ -183,12 +183,17 @@ namespace IronPython.Modules {
         }
 
         public static object LoadLibrary(string library, [DefaultParameterValue(0)]int mode) {
-            IntPtr res = NativeFunctions.LoadLibrary(library);
+            IntPtr res = NativeFunctions.LoadDLL(library, mode);
             if (res == IntPtr.Zero) {
                 throw PythonOps.OSError("cannot load library {0}", library);
             }
 
             return res.ToPython();
+        }
+
+        // Provided for Posix compat.
+        public static object dlopen(string library, [DefaultParameterValue(0)]int mode) {
+            return LoadLibrary(library, mode);
         }
 
         /// <summary>
@@ -652,7 +657,7 @@ namespace IronPython.Modules {
 
         private static IntPtr GetHandleFromObject(object dll, string errorMsg) {
             IntPtr intPtrHandle;
-            object dllHandle = PythonOps.GetBoundAttr(DefaultContext.Default, dll, SymbolTable.StringToId("_handle"));
+            object dllHandle = PythonOps.GetBoundAttr(DefaultContext.Default, dll, "_handle");
 
             BigInteger intHandle;
             if (!Converter.TryConvertToBigInteger(dllHandle, out intHandle)) {

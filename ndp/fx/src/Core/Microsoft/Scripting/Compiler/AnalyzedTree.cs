@@ -19,7 +19,11 @@ using System.Diagnostics.SymbolStore;
 using System.Dynamic.Utils;
 using System.Runtime.CompilerServices;
 
+#if CLR2
+namespace Microsoft.Scripting.Ast.Compiler {
+#else
 namespace System.Linq.Expressions.Compiler {
+#endif
     internal sealed class AnalyzedTree {
         internal readonly Dictionary<object, CompilerScope> Scopes = new Dictionary<object, CompilerScope>();
         internal readonly Dictionary<LambdaExpression, BoundConstants> Constants = new Dictionary<LambdaExpression, BoundConstants>();

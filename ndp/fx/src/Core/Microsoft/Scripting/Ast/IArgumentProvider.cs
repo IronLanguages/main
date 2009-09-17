@@ -17,7 +17,12 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
+#if CLR2
+namespace Microsoft.Scripting.Ast {
+    using Microsoft.Scripting.Utils;
+#else
 namespace System.Linq.Expressions {
+#endif
     /// <summary>
     /// Provides an internal interface for accessing the arguments that multiple tree
     /// nodes (DynamicExpression, ElementInit, MethodCallExpression, InvocationExpression, NewExpression,

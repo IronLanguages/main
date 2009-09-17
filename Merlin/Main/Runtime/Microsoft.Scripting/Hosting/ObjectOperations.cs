@@ -13,6 +13,13 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using dynamic = System.Object;
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -20,12 +27,7 @@ using System.Runtime.Remoting;
 using System.Security.Permissions;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-using System.Linq.Expressions;
 using System.Dynamic;
-
-#if !CLR4
-using dynamic = System.Object;
-#endif
 
 namespace Microsoft.Scripting.Hosting {
 
@@ -484,7 +486,7 @@ namespace Microsoft.Scripting.Hosting {
         /// <summary>
         /// Performs a generic unary operation on the specified target and returns the result.
         /// </summary>
-        [Obsolete("Use method that implements the operation")]
+        [Obsolete("Use the ExpressionType overload instead")]
         public object DoOperation(Operators op, object target) {
             ExpressionType newOp = GetLinqOp(op);
 
@@ -564,7 +566,7 @@ namespace Microsoft.Scripting.Hosting {
         /// Peforms the generic binary operation on the specified strongly typed targets and returns
         /// the strongly typed result.
         /// </summary>
-        [Obsolete("Use method that implements the operation")]
+        [Obsolete("Use the ExpressionType overload instead")]
         public TResult DoOperation<TTarget, TOther, TResult>(Operators op, TTarget target, TOther other) {
             return _ops.DoOperation<TTarget, TOther, TResult>(GetLinqBinaryOp(op), target, other);
         }

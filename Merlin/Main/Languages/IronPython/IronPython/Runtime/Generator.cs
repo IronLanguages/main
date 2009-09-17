@@ -21,6 +21,7 @@ using System.Threading;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 using IronPython.Compiler;
 using IronPython.Runtime.Exceptions;
@@ -29,7 +30,7 @@ using IronPython.Runtime.Operations;
 namespace IronPython.Runtime {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix"), PythonType("generator")]
     [DontMapIDisposableToContextManager, DontMapIEnumerableToContains]
-    public sealed class PythonGenerator : IEnumerator, IEnumerator<object>, IEnumerable, IEnumerable<object>, ICodeFormattable {
+    public sealed class PythonGenerator : IEnumerator, IEnumerator<object>, ICodeFormattable {
         private readonly Func<MutableTuple, object>/*!*/ _next;     // The delegate which contains the user code to perform the iteration.
         private readonly PythonFunction _function;                  // the function which created the generator
         private readonly MutableTuple _data;                        // the closure data we need to pass into each iteration.  Item000 is the index, Item001 is the current value
@@ -210,22 +211,6 @@ namespace IronPython.Runtime {
             get {
                 return _function.__name__;
             }
-        }
-
-        #endregion
-
-        #region IEnumerable Members
-
-        IEnumerator IEnumerable.GetEnumerator() {
-            return this;
-        }
-
-        #endregion
-
-        #region IEnumerable<object> Members
-
-        IEnumerator<object> IEnumerable<object>.GetEnumerator() {
-            return this;
         }
 
         #endregion

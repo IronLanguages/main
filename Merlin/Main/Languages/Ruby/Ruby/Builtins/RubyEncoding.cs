@@ -13,6 +13,12 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -22,7 +28,6 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Utils;
 using IronRuby.Runtime;
 using Microsoft.Scripting.Runtime;
-using System.Linq.Expressions;
 using IronRuby.Compiler;
 
 namespace IronRuby.Builtins {

@@ -339,7 +339,7 @@ namespace IronPython.Runtime {
             int? res = ConvertToSliceIndexHelper(value, throwOverflowError);
             if (!res.HasValue) {
                 object callable;
-                if (PythonOps.TryGetBoundAttr(value, Symbols.Index, out callable)) {
+                if (PythonOps.TryGetBoundAttr(value, "__index__", out callable)) {
                     res = ConvertToSliceIndexHelper(PythonCalls.Call(callable), throwOverflowError);
                 }
             }
@@ -355,7 +355,7 @@ namespace IronPython.Runtime {
             }
 
             object callable;
-            if (PythonOps.TryGetBoundAttr(value, Symbols.Index, out callable)) {
+            if (PythonOps.TryGetBoundAttr(value, "__index__", out callable)) {
                 object index = PythonCalls.Call(callable);
                 res = ConvertToSliceIndexHelper(index, false);
                 if (res.HasValue) {
@@ -792,9 +792,9 @@ namespace IronPython.Runtime {
             if (allowNarrowing == PythonNarrowing.All) {
                 //__int__, __float__, __long__
                 if (IsNumeric(fromType) && IsNumeric(toType)) return true;
-                if (toType == Int32Type && HasPythonProtocol(fromType, Symbols.ConvertToInt)) return true;
-                if (toType == DoubleType && HasPythonProtocol(fromType, Symbols.ConvertToFloat)) return true;
-                if (toType == BigIntegerType && HasPythonProtocol(fromType, Symbols.ConvertToLong)) return true;
+                if (toType == Int32Type && HasPythonProtocol(fromType, "__int__")) return true;
+                if (toType == DoubleType && HasPythonProtocol(fromType, "__float__")) return true;
+                if (toType == BigIntegerType && HasPythonProtocol(fromType, "__long__")) return true;
             }
 
             if (toType.IsGenericType) {
@@ -858,7 +858,7 @@ namespace IronPython.Runtime {
 
             if (!(o is double) && !(o is float) && !(o is Extensible<double>)) {
                 object objres;
-                if (PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, o, Symbols.ConvertToInt, out objres)) {
+                if (PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, o, "__int__", out objres)) {
                     if (objres is int) {
                         return (int)objres;
                     }
@@ -890,7 +890,7 @@ namespace IronPython.Runtime {
             return t.FullName.StartsWith("IronPython."); //!!! this and the check below are hacks
         }
 
-        private static bool HasPythonProtocol(Type t, SymbolId name) {
+        private static bool HasPythonProtocol(Type t, string name) {
             if (t.FullName.StartsWith(NewTypeMaker.TypePrefix)) return true;
             if (t == typeof(OldInstance)) return true;
             PythonType dt = DynamicHelpers.GetPythonTypeFromType(t);

@@ -53,9 +53,7 @@ namespace IronPython.Runtime.Types {
         private FieldInfo _slotsField;
         private FieldInfo _explicitMO;
         private IList<Type> _interfaceTypes;
-        private Dictionary<SymbolId, FieldBuilder> _symbolFields = new Dictionary<SymbolId, FieldBuilder>();
         private ILGen _cctor;
-        private LocalBuilder _cctorSymbolIdTemp;
         private int _site;
 
         public const string VtableNamesField = "#VTableNames#";
@@ -500,15 +498,6 @@ namespace IronPython.Runtime.Types {
             return _cctor;
         }
 
-        LocalBuilder GetCCtorSymbolIdTemp() {
-            ILGen cctor = GetCCtor();
-            if (_cctorSymbolIdTemp == null) {
-                _cctorSymbolIdTemp = cctor.DeclareLocal(typeof(SymbolId));
-            }
-            return _cctorSymbolIdTemp;
-        }
-
-
 #if !SILVERLIGHT // ICustomTypeDescriptor
         private void ImplementCustomTypeDescriptor() {
             ImplementInterface(typeof(ICustomTypeDescriptor));
@@ -656,7 +645,7 @@ namespace IronPython.Runtime.Types {
 
             if (NeedsPythonObject) {
                 _typeField = _tg.DefineField(ClassFieldName, typeof(PythonType), FieldAttributes.Public);
-                _dictField = _tg.DefineField(DictFieldName, typeof(IAttributesCollection), FieldAttributes.Public);
+                _dictField = _tg.DefineField(DictFieldName, typeof(PythonDictionary), FieldAttributes.Public);
 
                 ImplementInterface(typeof(IPythonObject));
 
@@ -1098,7 +1087,7 @@ namespace IronPython.Runtime.Types {
 
             // first lookup under the property name
             il.EmitLoadArg(0);
-            EmitSymbolId(il, name);
+            il.EmitString(name);
             il.Emit(OpCodes.Ldloca, callTarget);
             il.EmitCall(typeof(UserTypeOps), "TryGetNonInheritedValueHelper");
             il.Emit(OpCodes.Brtrue, instanceCall);
@@ -1130,7 +1119,7 @@ namespace IronPython.Runtime.Types {
 
             il.Emit(OpCodes.Ldloc, callTarget);
             il.EmitLoadArg(0);
-            EmitSymbolId(il, name);
+            il.EmitString(name);
             il.EmitCall(typeof(UserTypeOps), "GetPropertyHelper");
 
             if (!il.TryEmitImplicitCast(typeof(object), mi.ReturnType)) {
@@ -1186,7 +1175,7 @@ namespace IronPython.Runtime.Types {
             il.EmitLoadArg(0);                      // instance
             il.EmitLoadArg(1);
             il.EmitBoxing(mi.GetParameters()[0].ParameterType);    // newValue
-            EmitSymbolId(il, name);    // name
+            il.EmitString(name);    // name
             il.EmitCall(typeof(UserTypeOps), "SetPropertyHelper");
             il.Emit(OpCodes.Ret);
             _tg.DefineMethodOverride(impl, mi);
@@ -1204,7 +1193,7 @@ namespace IronPython.Runtime.Types {
             il.EmitLoadArg(0);
             il.EmitLoadArg(1);
             il.EmitBoxing(mi.GetParameters()[0].ParameterType);
-            EmitSymbolId(il, name);
+            il.EmitString(name);
             il.EmitCall(typeof(UserTypeOps), "AddRemoveEventHelper");
             il.Emit(OpCodes.Ret);
             _tg.DefineMethodOverride(impl, mi);
@@ -1221,12 +1210,12 @@ namespace IronPython.Runtime.Types {
         ///     def SomeVirtualFunction(self, ...):
         /// 
         /// </summary>
-        private LocalBuilder EmitBaseClassCallCheckForEvents(ILGen il, MethodInfo baseMethod, string name) {
+        private static LocalBuilder EmitBaseClassCallCheckForEvents(ILGen il, MethodInfo baseMethod, string name) {
             Label instanceCall = il.DefineLabel();
             LocalBuilder callTarget = il.DeclareLocal(typeof(object));
 
             il.EmitLoadArg(0);
-            EmitSymbolId(il, name);
+            il.EmitString(name);
             il.Emit(OpCodes.Ldloca, callTarget);
             il.EmitCall(typeof(UserTypeOps), "TryGetNonInheritedValueHelper");
 
@@ -1298,7 +1287,7 @@ namespace IronPython.Runtime.Types {
             }
 
             il.EmitLoadArg(0);
-            EmitSymbolId(il, name);
+            il.EmitString(name);
             il.Emit(OpCodes.Ldloca, callTarget);
             il.EmitCall(typeof(UserTypeOps), "TryGetNonInheritedMethodHelper");
             return callTarget;
@@ -1335,30 +1324,6 @@ namespace IronPython.Runtime.Types {
 
             EmitBaseMethodDispatch(mi, new ILGen(method.GetILGenerator()));
             return method;
-        }
-
-        private void EmitSymbolId(ILGen il, string name) {
-            Debug.Assert(name != null);
-            SymbolId id = SymbolTable.StringToId(name);
-
-            FieldBuilder fb;
-            if (!_symbolFields.TryGetValue(id, out fb)) {
-                fb = _tg.DefineField("symbol_" + name, typeof(int), FieldAttributes.Private | FieldAttributes.Static);
-                ILGen cctor = GetCCtor();
-                LocalBuilder localTmp = GetCCtorSymbolIdTemp();
-                cctor.EmitString(name);
-                cctor.EmitCall(typeof(SymbolTable), "StringToId");
-                cctor.Emit(OpCodes.Stloc, localTmp);
-                cctor.Emit(OpCodes.Ldloca, localTmp);
-                cctor.EmitPropertyGet(typeof(SymbolId), "Id");
-                cctor.EmitFieldSet(fb);
-
-                _symbolFields[id] = fb;
-            }
-
-            il.EmitFieldGet(fb);
-            // TODO: Cache the signature type!!!
-            il.EmitNew(typeof(SymbolId), new Type[] { typeof(int) });
         }
 
         private KeyValuePair<Type, Dictionary<string, string[]>> SaveType(AssemblyGen ag, string name) {

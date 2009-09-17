@@ -13,15 +13,19 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Text;
 using Microsoft.Scripting;
-using System.Linq.Expressions;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Generation;
 using System.Threading;
-using System.Linq.Expressions.Compiler;
 using System.Reflection;
 using Microsoft.Scripting.Utils;
 using System.Runtime.CompilerServices;
@@ -133,7 +137,7 @@ namespace IronRuby.Runtime {
                 Debug.Assert(!(result.Target is Closure) || ((Closure)result.Target).Locals == null);
                 return result;
             } else {
-                return lambda.LightCompile();
+                return lambda.LightCompile(false);
             }
         }
     }

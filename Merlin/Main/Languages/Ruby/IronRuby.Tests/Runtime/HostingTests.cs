@@ -14,13 +14,16 @@
  * ***************************************************************************/
 
 using System;
-using Microsoft.Scripting;
-using Microsoft.Scripting.Hosting;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
-using IronRuby.Builtins;
 using System.Diagnostics;
+
+using Microsoft.Scripting;
+using Microsoft.Scripting.Hosting;
+using Microsoft.Scripting.Utils;
+
+using IronRuby.Builtins;
 using IronRuby.Runtime.Calls;
 
 namespace IronRuby.Tests {
@@ -85,7 +88,7 @@ py_add
         }
 
         public void RubyHosting1B() {
-            ScriptScope scope = Engine.Runtime.CreateScope();
+            ScriptScope scope = Engine.CreateScope();
             scope.SetVariable("SomeValue", 1);
             scope.SetVariable("other_value", 2);
 
@@ -177,18 +180,60 @@ bar
         }
 
         public void RubyHosting3() {
-            var searchPaths = Engine.GetSearchPaths();
-            Assert(new List<string>(searchPaths)[searchPaths.Count - 1] == ".");
+            object value;
+            Engine.Execute("C = 1");
+
+            // non-module values are not published:
+            Assert(!Runtime.Globals.TryGetVariable("C", out value));
+
+            // built-ins are not published:
+            Assert(!Runtime.Globals.TryGetVariable("Object", out value));
+            Assert(!Runtime.Globals.TryGetVariable("String", out value));
+
+            // global modules and classes are published:
+            Engine.Execute("class D; end");
+            Assert(Runtime.Globals.TryGetVariable("D", out value));
+            Assert(((RubyClass)value).Name == "D");
+            
+            // assignment to a constant on Object class also publishes modules and classes:
+            Engine.Execute("E = Module.new");
+            Assert(Runtime.Globals.TryGetVariable("E", out value));
+            Assert(((RubyModule)value).Name == "E");
 
             // TODO:
             // the library paths are incorrect (not combined with location of .exe file) in partial trust:
             if (_driver.PartialTrust) return;
 
+            var searchPaths = Engine.GetSearchPaths();
+            Assert(new List<string>(searchPaths)[searchPaths.Count - 1] == ".");
+
             bool result = Engine.RequireRubyFile("fcntl");
             Assert(result == true);
 
+            // built-in class:
+            Assert(Context.ObjectClass.TryGetConstant(null, "String", out value) 
+                && ((RubyModule)value).Restrictions == ModuleRestrictions.Builtin);
+
+            // IronRuby specific built-in class:
+            Assert(Context.ObjectClass.TryGetConstant(null, "IronRuby", out value)
+                && ((RubyModule)value).Restrictions == ModuleRestrictions.NotPublished);
+
+            // a class from standard library:
+            Assert(Context.ObjectClass.TryGetConstant(null, "Fcntl", out value)
+                && ((RubyModule)value).Restrictions == ModuleRestrictions.None);
+
+            // standard library classes are also published (whether implemented in C# or not):
             var module = Runtime.Globals.GetVariable("Fcntl");
             Assert(module is RubyModule && ((RubyModule)module).Name == "Fcntl");
+        }
+
+        public void RubyHosting4() {
+            Runtime.Globals.SetVariable("foo_bar", 1);
+            Engine.Execute(@"
+IronRuby.globals.x = 2
+IronRuby.globals.z = IronRuby.globals.x + FooBar
+");
+            Assert(Runtime.Globals.GetVariable<int>("z") == 3);
         }
 
         public void Scenario_RubyEngine1() {
@@ -253,8 +298,15 @@ Fixnum@*
         }
         
         public void CrossRuntime2() {
-            var engine2 = Ruby.CreateEngine();
-            Engine.Runtime.Globals.SetVariable("C", engine2.Execute("class C; def bar; end; self; end"));
+            Engine.Execute(@"
+C = IronRuby.create_engine.execute <<end
+  class C
+    def bar
+    end
+  end
+  C
+end
+");
             AssertExceptionThrown<InvalidOperationException>(() => Engine.Execute("class C; def foo; end; end"));
             
             // alias operates in the runtime of the class within which scope it is used:

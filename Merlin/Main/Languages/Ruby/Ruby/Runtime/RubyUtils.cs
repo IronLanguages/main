@@ -13,11 +13,16 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
@@ -389,10 +394,15 @@ namespace IronRuby.Runtime {
                 owner.Context.ReportWarning(String.Format("already initialized constant {0}", name));
             }
 
-            // Initializes anonymous module's name:
+            // Initializes anonymous module's name, publishes the module:
             RubyModule module = value as RubyModule;
-            if (module != null && module.Name == null) {
-                module.Name = owner.MakeNestedModuleName(name);
+            if (module != null) {
+                if (module.Name == null) {
+                    module.Name = owner.MakeNestedModuleName(name);
+                }
+                if (owner.IsObjectClass) {
+                    module.Publish(name);
+                }
             }
         }
 
@@ -504,64 +514,7 @@ namespace IronRuby.Runtime {
         #endregion
 
         #region Modules, Classes
-
-        internal static RubyModule/*!*/ DefineModule(RubyGlobalScope/*!*/ autoloadScope, RubyModule/*!*/ owner, string/*!*/ name) {
-            Assert.NotNull(autoloadScope, owner);
-
-            object existing;
-            if (owner.TryGetConstant(autoloadScope, name, out existing)) {
-                RubyModule module = existing as RubyModule;
-                if (module == null || module.IsClass) {
-                    throw RubyExceptions.CreateTypeError(String.Format("{0} is not a module", name));
-                }
-                return module;
-            } else {
-                // create class/module object:
-                return owner.Context.DefineModule(owner, name);
-            }
-        }
-
-        // thread-safe:
-        internal static RubyClass/*!*/ DefineClass(RubyGlobalScope/*!*/ autoloadScope, RubyModule/*!*/ owner, string/*!*/ name, object superClassObject) {
-            Assert.NotNull(owner);
-            RubyClass superClass = ToSuperClass(owner.Context, superClassObject);
-
-            object existing;
-            if (ReferenceEquals(owner, owner.Context.ObjectClass)
-                ? owner.TryResolveConstant(autoloadScope, name, out existing)
-                : owner.TryGetConstant(autoloadScope, name, out existing)) {
-
-                RubyClass cls = existing as RubyClass;
-                if (cls == null || !cls.IsClass) {
-                    throw RubyExceptions.CreateTypeError(String.Format("{0} is not a class", name));
-                }
-
-                if (superClassObject != null && !ReferenceEquals(cls.SuperClass, superClass)) {
-                    throw RubyExceptions.CreateTypeError(String.Format("superclass mismatch for class {0}", name));
-                }
-                return cls;
-            } else {
-                return owner.Context.DefineClass(owner, name, superClass, null);
-            }
-        }
-
-        private static RubyClass/*!*/ ToSuperClass(RubyContext/*!*/ ec, object superClassObject) {
-            if (superClassObject != null) {
-                RubyClass superClass = superClassObject as RubyClass;
-                if (superClass == null) {
-                    throw RubyExceptions.CreateTypeError(String.Format("superclass must be a Class ({0} given)", ec.GetClassOf(superClassObject).Name));
-                }
-
-                if (superClass.IsSingletonClass) {
-                    throw RubyExceptions.CreateTypeError("can't make subclass of virtual class");
-                }
-
-                return superClass;
-            } else {
-                return ec.ObjectClass;
-            }
-        }
-
+        
         internal static RubyModule/*!*/ GetModuleFromObject(RubyContext/*!*/ context, object obj) {
             Assert.NotNull(context);
             RubyModule module = obj as RubyModule;
@@ -695,8 +648,9 @@ namespace IronRuby.Runtime {
 
         #region Evals
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1823:AvoidUnusedPrivateFields")]
+#if DEBUG
         private static int _stringEvalCounter;
+#endif
 
         public static RubyCompilerOptions/*!*/ CreateCompilerOptionsForEval(RubyScope/*!*/ targetScope, int line) {
             return CreateCompilerOptionsForEval(targetScope, targetScope.GetInnerMostMethodScope(), false, line);
@@ -725,7 +679,9 @@ namespace IronRuby.Runtime {
             RubyContext context = targetScope.RubyContext;
             RubyMethodScope methodScope = targetScope.GetInnerMostMethodScope();
 
-            Utils.Log(Interlocked.Increment(ref _stringEvalCounter).ToString(), "EVAL");
+#if DEBUG
+            Utils.Log(Interlocked.Increment(ref _stringEvalCounter).ToString() + ": " + (file != null ? file.ToString() : "?") + " : " + line, "EVAL");
+#endif
 
             // we want to create a new top-level local scope:
             var options = CreateCompilerOptionsForEval(targetScope, methodScope, module != null, line);
@@ -758,6 +714,10 @@ namespace IronRuby.Runtime {
 
         private static RubyScope/*!*/ CreateModuleEvalScope(RubyScope/*!*/ parent, object self, RubyModule module) {
             var scope = new RubyModuleEvalScope(parent, module, self);
+
+            // module-eval defines a nested module scope that affects constant lookup:
+            parent.GetInnerMostModuleForConstantLookup().AddNestedModule(module);
+            
             scope.SetDebugName("instance/module-eval");
             return scope;
         }

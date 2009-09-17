@@ -21,6 +21,7 @@ using IronPython.Runtime.Operations;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 namespace IronPython.Runtime.Types {
     /// <summary>
@@ -90,7 +91,7 @@ namespace IronPython.Runtime.Types {
             }
             set {
                 if (!SetValue(DefaultContext.Default, storage, key, value)) {
-                    throw PythonOps.AttributeErrorForReadonlyAttribute(DeclaringType.Name, SymbolTable.StringToId(__name__));
+                    throw PythonOps.AttributeErrorForReadonlyAttribute(DeclaringType.Name, __name__);
                 }
             }
         }

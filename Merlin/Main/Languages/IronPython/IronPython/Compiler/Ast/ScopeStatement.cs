@@ -23,7 +23,12 @@ using Microsoft.Scripting.Runtime;
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 
+#if !CLR2
 using MSAst = System.Linq.Expressions;
+#else
+using MSAst = Microsoft.Scripting.Ast;
+#endif
+
 
 namespace IronPython.Compiler.Ast {
 
@@ -329,7 +334,7 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-        private MSAst.Expression EnsureLocalTuple(AstGenerator ag, List<System.Linq.Expressions.Expression> init, MSAst.Expression localTuple, Type tupleType) {
+        private MSAst.Expression EnsureLocalTuple(AstGenerator ag, List<MSAst.Expression> init, MSAst.Expression localTuple, Type tupleType) {
             if (localTuple == null) {
                 // pull the tuple from the context once
                 localTuple = ag.HiddenVariable(tupleType, "$closureTuple");

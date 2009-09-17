@@ -67,7 +67,7 @@ namespace IronPython.Runtime.Types {
             PythonType pt = DynamicHelpers.GetPythonType(_value);
             if (!pt.IsSystemType) {
                 _descVersion = pt.Version;
-                if (!pt.TryResolveSlot(pt.Context.SharedClsContext, Symbols.GetDescriptor, out _desc)) {
+                if (!pt.TryResolveSlot(pt.Context.SharedClsContext, "__get__", out _desc)) {
                     _descVersion = UserDescriptorFalse;
                 }
             } else {
@@ -85,7 +85,7 @@ namespace IronPython.Runtime.Types {
 
         internal override bool IsSetDescriptor(CodeContext context, PythonType owner) {
             object dummy;
-            return PythonOps.TryGetBoundAttr(context, Value, Symbols.SetDescriptor, out dummy);
+            return PythonOps.TryGetBoundAttr(context, Value, "__set__", out dummy);
         }
 
         internal object Value {

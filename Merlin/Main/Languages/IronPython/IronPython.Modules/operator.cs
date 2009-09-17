@@ -61,7 +61,7 @@ namespace IronPython.Modules {
                     object nextParam = GetOneAttr(context, param, s.Substring(0, dotPos));
                     return GetOneAttr(context, nextParam, s.Substring(dotPos + 1, s.Length - dotPos - 1));
                 }
-                return PythonOps.GetBoundAttr(context, param, SymbolTable.StringToId(s));
+                return PythonOps.GetBoundAttr(context, param, s);
             }
         }
 
@@ -92,17 +92,17 @@ namespace IronPython.Modules {
 
         [PythonType]
         public class methodcaller {
-            private readonly SymbolId _name;
+            private readonly string _name;
             private readonly object[] _args;
             private readonly IDictionary<object, object> _dict;
 
             public methodcaller(string name, params object[] args) {
-                _name = SymbolTable.StringToId(name);
+                _name = name;
                 _args = args;
             }
 
             public methodcaller(string name, [ParamDictionary]IDictionary<object, object> kwargs, params object[] args) {
-                _name = SymbolTable.StringToId(name);
+                _name = name;
                 _args = args;
                 _dict = kwargs;
             }
@@ -479,7 +479,7 @@ namespace IronPython.Modules {
                    o is System.Collections.IEnumerable ||
                    o is System.Collections.IEnumerator ||
                    o is System.Collections.IList ||
-                   PythonOps.HasAttr(DefaultContext.Default, o, Symbols.GetItem));
+                   PythonOps.HasAttr(DefaultContext.Default, o, "__getitem__"));
         }
 
         private static int SliceToInt(object o) {

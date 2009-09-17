@@ -92,7 +92,7 @@ namespace IronPython.Runtime {
 
         #region ITraceCallback Members
 
-        public void OnTraceEvent(Debugging.TraceEventKind kind, string name, string sourceFileName, SourceSpan sourceSpan, Func<Scope> scopeCallback, object payload, object customPayload) {
+        public void OnTraceEvent(Debugging.TraceEventKind kind, string name, string sourceFileName, SourceSpan sourceSpan, Func<IAttributesCollection> scopeCallback, object payload, object customPayload) {
             if (kind == Debugging.TraceEventKind.ThreadExit ||                  // We don't care about thread-exit events
 #if PROFILER_SUPPORT
                 (_profile && kind == Debugging.TraceEventKind.TracePoint) ||    // Ignore code execute tracebacks when in profile mode

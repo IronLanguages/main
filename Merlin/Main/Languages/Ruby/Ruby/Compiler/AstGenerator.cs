@@ -13,11 +13,18 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using MSA = System.Linq.Expressions;
+#else
+using MSA = Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Threading;
+using System.Runtime.CompilerServices;
 using IronRuby.Builtins;
 using IronRuby.Compiler.Generation;
 using IronRuby.Runtime;
@@ -25,11 +32,9 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
-using MSA = System.Linq.Expressions;
-
+    
 namespace IronRuby.Compiler.Ast {
-    using Ast = System.Linq.Expressions.Expression;
-    using System.Runtime.CompilerServices;
+    using Ast = MSA.Expression;
     
     internal sealed class AstGenerator {
         private static int _UniqueId;
@@ -37,6 +42,7 @@ namespace IronRuby.Compiler.Ast {
         private readonly RubyContext/*!*/ _context;
         private readonly RubyCompilerOptions/*!*/ _compilerOptions;
         private readonly MSA.SymbolDocumentInfo _document;
+        private readonly MSA.Expression _sequencePointClearance;
         private readonly RubyEncoding/*!*/ _encoding;
         private readonly Profiler _profiler;
         private readonly bool _printInteractiveResult;
@@ -57,6 +63,7 @@ namespace IronRuby.Compiler.Ast {
             _debugMode = context.DomainManager.Configuration.DebugMode;
             _traceEnabled = context.RubyOptions.EnableTracing;
             _document = document;
+            _sequencePointClearance = (document != null) ? Ast.ClearDebugInfo(document) : null;
             _encoding = encoding;
             _profiler = context.RubyOptions.Profile ? Profiler.Instance : null;
             _savingToDisk = context.RubyOptions.SavePath != null;
@@ -713,7 +720,7 @@ namespace IronRuby.Compiler.Ast {
             }
 
             if (statements.Count == 1) {
-                return statements.First.TransformRead(this);
+                return statements.First.TransformReadStep(this);
             }
 
             var result = new MSA.Expression[statements.Count];
@@ -721,7 +728,7 @@ namespace IronRuby.Compiler.Ast {
             foreach (var statement in statements.AllButLast) {
                 result[i++] = statement.Transform(this);
             }
-            result[result.Length - 1] = statements.Last.TransformRead(this);
+            result[result.Length - 1] = statements.Last.TransformReadStep(this);
 
             return Ast.Block(new ReadOnlyCollection<MSA.Expression>(result));
         }
@@ -776,9 +783,16 @@ namespace IronRuby.Compiler.Ast {
             return Ast.Return(returnLabel, expression);
         }
 
+        internal MSA.Expression ClearDebugInfo() {
+            return _sequencePointClearance;
+        }
+
         internal MSA.Expression/*!*/ AddDebugInfo(MSA.Expression/*!*/ expression, SourceSpan location) {
             if (_document != null) {
-                return AstUtils.AddDebugInfo(expression, _document, location.Start, location.End);
+                // TODO: should we add clearance for non-goto expressions?
+                // return AstUtils.AddDebugInfo(expression, _document, location.Start, location.End);
+                var sequencePoint = Ast.DebugInfo(_document, location.Start.Line, location.Start.Column, location.End.Line, location.End.Column);
+                return Ast.Block(sequencePoint, expression);
             } else {
                 return expression;
             }

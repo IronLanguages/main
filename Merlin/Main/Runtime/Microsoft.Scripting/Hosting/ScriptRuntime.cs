@@ -118,7 +118,7 @@ namespace Microsoft.Scripting.Hosting {
         /// </summary>
         public static ScriptRuntime CreateRemote(AppDomain domain, ScriptRuntimeSetup setup) {
             ContractUtils.RequiresNotNull(domain, "domain");
-#if CLR4
+#if !CLR2
             return (ScriptRuntime)domain.CreateInstanceAndUnwrap(
                 typeof(ScriptRuntime).Assembly.FullName, 
                 typeof(ScriptRuntime).FullName, 

@@ -40,7 +40,7 @@ namespace IronPython.Modules {
         /// </summary>
         [PythonType("_BytesIO")]
         [DontMapIDisposableToContextManager]
-        public class _BytesIO : IEnumerable, IEnumerator, IDisposable {
+        public class _BytesIO : IEnumerator, IDisposable {
             #region Fields and constructors
 
             private static readonly int DEFAULT_BUF_SIZE = 20;
@@ -410,14 +410,6 @@ namespace IronPython.Modules {
 
             void IDisposable.Dispose() {
                 close();
-            }
-
-            #endregion
-            
-            #region IEnumerable methods
-
-            IEnumerator IEnumerable.GetEnumerator() {
-                return this;
             }
 
             #endregion

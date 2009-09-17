@@ -21,6 +21,7 @@ using System.Reflection;
 using System.Windows.Resources;
 using System.Windows;
 using System.Windows.Browser;
+using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Silverlight {
 

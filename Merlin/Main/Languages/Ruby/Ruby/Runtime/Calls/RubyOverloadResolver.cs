@@ -13,12 +13,17 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 using IronRuby.Builtins;
@@ -28,10 +33,11 @@ using Microsoft.Scripting.Actions.Calls;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-using Ast = System.Linq.Expressions.Expression;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Runtime.Calls {
+    using Ast = Expression;
+
     internal sealed class RubyOverloadResolver : OverloadResolver {
         private readonly CallArguments/*!*/ _args;
         private readonly MetaObjectBuilder/*!*/ _metaBuilder;
@@ -325,35 +331,25 @@ namespace IronRuby.Runtime.Calls {
 
                 int listLength;
                 var splatted = args.GetSplattedMetaArgument();
-                if (metaBuilder.AddSplattedArgumentTest(splatted.Value, splatted.Expression, out listLength, out listVariable)) {
+                list = (IList)splatted.Value;
+                metaBuilder.AddSplattedArgumentTest(list, splatted.Expression, out listLength, out listVariable);
 
-                    // AddTestForListArg only returns 'true' if the argument is a List<object>
-                    list = (IList)splatted.Value;
-
-                    int i = 0;
-                    while (i < Math.Min(listLength, preSplatLimit - firstSplattedArg)) {
-                        normalized.Add(MakeSplattedItem(list, listVariable, i));
-                        i++;
-                    }
-
-                    // skip items that are not needed for overload resolution
-                    splatIndex = normalized.Count;
-
-                    i = Math.Max(i, listLength - (postSplatLimit - (args.Signature.HasRhsArgument ? 1 : 0)));
-                    while (i < listLength) {
-                        normalized.Add(MakeSplattedItem(list, listVariable, i));
-                        i++;
-                    }
-
-                    collapsedArgCount = listLength - (normalized.Count - firstSplattedArg);
-                } else {
-                    // argument is not an array => add the argument itself:
-                    normalized.Add(splatted);
-                    listLength = 1;
-                    splatIndex = -1;
-                    collapsedArgCount = 0;
+                int i = 0;
+                while (i < Math.Min(listLength, preSplatLimit - firstSplattedArg)) {
+                    normalized.Add(MakeSplattedItem(list, listVariable, i));
+                    i++;
                 }
 
+                // skip items that are not needed for overload resolution
+                splatIndex = normalized.Count;
+
+                i = Math.Max(i, listLength - (postSplatLimit - (args.Signature.HasRhsArgument ? 1 : 0)));
+                while (i < listLength) {
+                    normalized.Add(MakeSplattedItem(list, listVariable, i));
+                    i++;
+                }
+
+                collapsedArgCount = listLength - (normalized.Count - firstSplattedArg);
                 lastSplattedArg = normalized.Count - 1;
             } else {
                 splatIndex = firstSplattedArg = lastSplattedArg = -1;

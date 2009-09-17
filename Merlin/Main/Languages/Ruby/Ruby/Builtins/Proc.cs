@@ -13,10 +13,15 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Diagnostics;
 using System.Dynamic;
-using System.Linq.Expressions;
 using System.Reflection;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
@@ -24,11 +29,12 @@ using IronRuby.Compiler;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
 
-using Ast = System.Linq.Expressions.Expression;
 using AstFactory = IronRuby.Compiler.Ast.AstFactory;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Builtins {
+    using Ast = Expression;
+
     using BlockCallTarget0 = Func<BlockParam, object, object>;
     using BlockCallTarget1 = Func<BlockParam, object, object, object>;
     using BlockCallTarget2 = Func<BlockParam, object, object, object, object>;
@@ -182,6 +188,7 @@ namespace IronRuby.Builtins {
                         )
                 ),
                 Ast.Assign(resultVariable, AstFactory.YieldExpression(
+                    args.RubyContext,
                     args.GetSimpleArgumentExpressions(),
                     args.GetSplattedArgumentExpression(),
                     args.GetRhsArgumentExpression(),

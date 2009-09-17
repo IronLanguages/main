@@ -13,20 +13,27 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Diagnostics;
 using System.Dynamic;
-using System.Linq.Expressions;
 using System.Reflection;
 using IronRuby.Builtins;
 using IronRuby.Compiler;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-using Ast = System.Linq.Expressions.Expression;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 using IronRuby.Runtime.Conversions;
+using Microsoft.Scripting.Generation;
 
 namespace IronRuby.Runtime.Calls {
+    using Ast = Expression;
+
     internal interface IInteropBinder {
         RubyContext Context { get; }
     }
@@ -291,7 +298,17 @@ namespace IronRuby.Runtime.Calls {
                     return result;
                 }
 #endif
-                throw new NotImplementedException("TODO");
+                
+                return errorSuggestion ?? new DynamicMetaObject(
+                    Expression.Throw(
+                        Expression.New(
+                            typeof(MissingMemberException).GetConstructor(new[] { typeof(string) }),
+                            Expression.Constant(String.Format("unknown member: {0}", Name))
+                        ),
+                        typeof(object)
+                    ),
+                    target.Restrict(CompilerHelpers.GetType(target.Value)).Restrictions
+                );
             }
 
             #endregion
@@ -322,13 +339,26 @@ namespace IronRuby.Runtime.Calls {
             }
         }
 
-        internal sealed class SetMember : SetMemberBinder, IInteropBinder {
+        internal sealed class SetMember : DynamicMetaObjectBinder, IInteropBinder {
             private readonly RubyContext/*!*/ _context;
+            private readonly ContainsMember/*!*/ _contains;
+            private readonly RealSetMember/*!*/ _setMember;
+            private readonly string/*!*/ _name;
+            private readonly RealSetMember _setMemberUnmangled;
+            private readonly ContainsMember/*!*/ _containsUnmangled;
 
-            internal SetMember(RubyContext/*!*/ context, string/*!*/ name)
-                : base(name, false) {
-                Assert.NotNull(context);
+            internal SetMember(RubyContext/*!*/ context, string/*!*/ name) {
+                Assert.NotNull(context, name);
+
+                _name = name;
                 _context = context;
+                _contains = new ContainsMember(context, name);
+                _setMember = new RealSetMember(name);
+                string unmanagled = RubyUtils.TryUnmangleName(name);
+                if (unmanagled != null) {
+                    _setMemberUnmangled = new RealSetMember(unmanagled);
+                    _containsUnmangled = new ContainsMember(context, unmanagled);
+                }
             }
 
             public RubyContext Context {
@@ -337,16 +367,37 @@ namespace IronRuby.Runtime.Calls {
 
             #region Ruby -> DLR
 
-            public override DynamicMetaObject/*!*/ FallbackSetMember(DynamicMetaObject/*!*/ target, DynamicMetaObject/*!*/ value, 
-                DynamicMetaObject errorSuggestion) {
-
-#if !SILVERLIGHT
-                DynamicMetaObject result;
-                if (Microsoft.Scripting.ComInterop.ComBinder.TryBindSetMember(this, target, value, out result)) {
-                    return result;
+            public override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args) {
+                if (_setMemberUnmangled == null) {
+                    // no unmangled name, just do the set member binding
+                    return _setMember.Bind(target, args);
                 }
-#endif
-                throw new NotImplementedException("TODO");
+
+                //
+                // Consider this case:
+                // x = {"Foo" -> 1}.
+                // x.foo += 1
+                // Without name mangling this would result to x being {"Foo" -> 1, "foo" -> 2} while the expected result is {"Foo" -> 2}.
+                //
+                // Hence if the object doesn't contain the member but contains an unmangled member we set the unmangled one:
+                //
+                return new DynamicMetaObject(
+                    Expression.Condition(
+                        Expression.AndAlso(
+                            Expression.Equal(
+                                Expression.Dynamic(_contains, typeof(object), target.Expression),
+                                Expression.Constant(OperationFailed.Value)
+                            ),
+                            Expression.NotEqual(
+                                Expression.Dynamic(_containsUnmangled, typeof(object), target.Expression),
+                                Expression.Constant(OperationFailed.Value)
+                            )
+                        ),
+                        Expression.Dynamic(_setMemberUnmangled, typeof(object), target.Expression, args[0].Expression),
+                        Expression.Dynamic(_setMember, typeof(object), target.Expression, args[0].Expression)
+                    ),
+                    target.Restrict(CompilerHelpers.GetType(target.Value)).Restrictions
+                );
             }
 
             #endregion
@@ -372,9 +423,85 @@ namespace IronRuby.Runtime.Calls {
 
             public override string/*!*/ ToString() {
                 return String.Format("Interop.SetMember({0}){1}",
-                    Name,
+                    _name,
                     (_context != null ? " @" + Context.RuntimeId.ToString() : null)
                 );
+            }
+            
+            /// <summary>
+            /// Checks to see if a member is defined - fallback is defined to return OperationFailed.Value
+            /// which we check for.
+            /// </summary>
+            internal sealed class ContainsMember : GetMemberBinder, IInteropBinder {
+                private readonly RubyContext/*!*/ _context;
+
+                internal ContainsMember(RubyContext/*!*/ context, string/*!*/ name)
+                    : base(name, false) {
+                    Assert.NotNull(context);
+                    _context = context;
+                }
+
+                public RubyContext Context {
+                    get { return _context; }
+                }
+
+                #region Ruby -> DLR
+
+                public override DynamicMetaObject/*!*/ FallbackGetMember(DynamicMetaObject/*!*/ target, DynamicMetaObject errorSuggestion) {
+#if !SILVERLIGHT
+                    DynamicMetaObject result;
+                    if (Microsoft.Scripting.ComInterop.ComBinder.TryBindGetMember(this, target, out result)) {
+                        return result;
+                    }
+#endif
+
+                    return errorSuggestion ?? 
+                        new DynamicMetaObject(
+                            Expression.Constant(OperationFailed.Value, typeof(object)), 
+                            target.Restrict(CompilerHelpers.GetType(target.Value)).Restrictions
+                        );
+                }
+
+                #endregion
+
+                
+                public override string/*!*/ ToString() {
+                    return String.Format("Interop.GetMember({0}){1}",
+                        Name,
+                        (_context != null ? " @" + Context.RuntimeId.ToString() : null)
+                    );
+                }
+            }
+
+            /// <summary>
+            /// A standard SetMember binder which gets used for the normal and mangled names.
+            /// </summary>
+            sealed class RealSetMember : SetMemberBinder {
+                internal RealSetMember(string/*!*/ name) : base(name, false){
+                }
+
+                public override DynamicMetaObject/*!*/ FallbackSetMember(DynamicMetaObject/*!*/ target, DynamicMetaObject/*!*/ value,
+                    DynamicMetaObject errorSuggestion) {
+
+#if !SILVERLIGHT
+                    DynamicMetaObject result;
+                    if (Microsoft.Scripting.ComInterop.ComBinder.TryBindSetMember(this, target, value, out result)) {
+                        return result;
+                    }
+#endif
+
+                    return errorSuggestion ?? new DynamicMetaObject(
+                        Expression.Throw(
+                            Expression.New(
+                                typeof(MissingMemberException).GetConstructor(new[] { typeof(string) }),
+                                Expression.Constant(String.Format("unknown member: {0}", Name))
+                            ),
+                            typeof(object)
+                        ),
+                        target.Restrict(CompilerHelpers.GetType(target.Value)).Restrictions
+                    );
+                }
+
             }
         }
 

@@ -169,9 +169,10 @@ namespace IronPython.Modules {
 
         public const string __doc__ = "Provides file like objects for reading and writing to strings.";
 
-        [PythonType, PythonHidden, DontMapIEnumerableToContains]
-        public class StringI : IEnumerable<string>, IEnumerable {
+        [PythonType, PythonHidden]
+        public class StringI : IEnumerator<string>, IEnumerator {
             private StringStream _sr;
+            private string _enumValue;
 
             internal StringI(string data) {
                 _sr = new StringStream(data);
@@ -299,31 +300,48 @@ namespace IronPython.Modules {
                 }
             }
 
-            #region IEnumerable Members
+            #region IEnumerator Members
 
-            IEnumerator IEnumerable.GetEnumerator() {
-                while (!_sr.EOF) {
-                    yield return readline();
+            object IEnumerator.Current {
+                get { return _enumValue; }
+            }
+
+            bool IEnumerator.MoveNext() {
+                if (!_sr.EOF) {
+                    _enumValue = readline();
+                    return true;
                 }
+                _enumValue = null;
+                return false;
+            }
+
+            void IEnumerator.Reset() {
+                throw new NotImplementedException();
             }
 
             #endregion
 
-            #region IEnumerable<string> Members
+            #region IEnumerator<string> Members
 
-            IEnumerator<string> IEnumerable<string>.GetEnumerator() {
-                while (!_sr.EOF) {
-                    yield return readline();
-                }
+            string IEnumerator<string>.Current {
+                get { return _enumValue; }
+            }
+
+            #endregion
+
+            #region IDisposable Members
+
+            void IDisposable.Dispose() {
             }
 
             #endregion
         }
 
         [PythonType, PythonHidden, DontMapIEnumerableToContains]
-        public class StringO : IEnumerable<string>, IEnumerable {
+        public class StringO : IEnumerator<string>, IEnumerator {
             private StringStream _sr = new StringStream("");
             private int _softspace;
+            private string _enumValue;
 
             internal StringO() {
             }
@@ -479,22 +497,38 @@ namespace IronPython.Modules {
                 }
             }
 
-            #region IEnumerable Members
+            #region IEnumerator Members
 
-            IEnumerator IEnumerable.GetEnumerator() {
-                while (!_sr.EOF) {
-                    yield return readline();
+            object IEnumerator.Current {
+                get { return _enumValue; }
+            }
+
+            bool IEnumerator.MoveNext() {
+                if (!_sr.EOF) {
+                    _enumValue = readline();
+                    return true;
                 }
+                _enumValue = null;
+                return false;
+            }
+
+            void IEnumerator.Reset() {
+                throw new NotImplementedException();
             }
 
             #endregion
 
-            #region IEnumerable<string> Members
+            #region IEnumerator<string> Members
 
-            IEnumerator<string> IEnumerable<string>.GetEnumerator() {
-                while (!_sr.EOF) {
-                    yield return readline();
-                }
+            string IEnumerator<string>.Current {
+                get { return _enumValue; }
+            }
+
+            #endregion
+
+            #region IDisposable Members
+
+            void IDisposable.Dispose() {
             }
 
             #endregion

@@ -1,2 +1,0 @@
-fails:Calling a method fails with both lambda and block argument
-fails:Calling a method with splat operator * and non-Array value attempts to coerce it to Array if the object respond_to?(:to_ary)

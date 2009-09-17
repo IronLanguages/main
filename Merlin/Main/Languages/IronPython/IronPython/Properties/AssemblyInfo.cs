@@ -1,4 +1,4 @@
-/* ****************************************************************************
+ï»¿/* ****************************************************************************
  *
  * Copyright (c) Microsoft Corporation. 
  *
@@ -26,7 +26,7 @@ using System.Security;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Microsoft")]
 [assembly: AssemblyProduct("IronPython")]
-[assembly: AssemblyCopyright("© Microsoft Corporation.  All rights reserved.")]
+[assembly: AssemblyCopyright("ï¿½ Microsoft Corporation.  All rights reserved.")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -49,12 +49,9 @@ using System.Security;
 // by using the '*' as shown below:
 
 [assembly: NeutralResourcesLanguage("en-US")]
-#if !SILVERLIGHT
-[assembly: AssemblyFileVersion("2.6.0.00")]
-[assembly: AssemblyInformationalVersion("2.6")]
-#endif
+
 [assembly: SecurityTransparent]
 [assembly: CLSCompliant(false)]
-#if CLR4
+#if !CLR2
 [assembly: SecurityRules(SecurityRuleSet.Level1)]
 #endif

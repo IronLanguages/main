@@ -13,10 +13,15 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Dynamic;
@@ -32,9 +37,9 @@ using IronRuby.Compiler;
 
 using AstFactory = IronRuby.Compiler.Ast.AstFactory;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
-using Ast = System.Linq.Expressions.Expression;
 
 namespace IronRuby.Runtime.Calls {
+    using Ast = Expression;
     
     /// <summary>
     /// Performs method binding for calling CLR methods.

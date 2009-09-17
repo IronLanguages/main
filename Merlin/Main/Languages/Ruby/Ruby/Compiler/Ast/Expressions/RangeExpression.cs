@@ -13,6 +13,12 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using MSA = System.Linq.Expressions;
+#else
+using MSA = Microsoft.Scripting.Ast;
+#endif
+
 using Microsoft.Scripting;
 using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Generation;
@@ -23,8 +29,7 @@ using IronRuby.Runtime;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Compiler.Ast {
-    using MSA = System.Linq.Expressions;
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = MSA.Expression;
     
     public partial class RangeExpression : Expression {
         private readonly Expression/*!*/ _begin;

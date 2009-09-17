@@ -13,6 +13,7 @@
  *
  * ***************************************************************************/
 
+using System;
 using System.Diagnostics;
 using System.Dynamic.Utils;
 
@@ -20,7 +21,11 @@ using System.Dynamic.Utils;
 using System.Core;
 #endif
 
+#if CLR2
+namespace Microsoft.Scripting.Ast {
+#else
 namespace System.Linq.Expressions {
+#endif
     /// <summary>
     /// Represents an operation between an expression and a type. 
     /// </summary>

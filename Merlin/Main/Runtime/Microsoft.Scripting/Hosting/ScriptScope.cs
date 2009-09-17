@@ -13,21 +13,23 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using dynamic = System.Object;
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Linq.Expressions;
 using System.Runtime.Remoting;
 using System.Runtime.Serialization;
 using System.Security.Permissions;
 using System.Dynamic;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-
-#if !CLR4
-using dynamic = System.Object;
-#endif
 
 namespace Microsoft.Scripting.Hosting {
     /// <summary>
@@ -49,9 +51,9 @@ namespace Microsoft.Scripting.Hosting {
         private readonly Scope _scope;
         private readonly ScriptEngine _engine;
 
-        internal ScriptScope(ScriptEngine engine, Scope scope) {
-            Assert.NotNull(engine);
-            Assert.NotNull(scope);
+        public ScriptScope(ScriptEngine engine, Scope scope) {
+            ContractUtils.RequiresNotNull(engine, "engine");
+            ContractUtils.RequiresNotNull(scope, "scope");
 
             _scope = scope;
             _engine = engine;
@@ -67,12 +69,6 @@ namespace Microsoft.Scripting.Hosting {
         /// </summary>
         public ScriptEngine Engine {
             get {
-                // InvariantContext should not have an engine
-                // TODO: If _engine itself could be set to null, we wouldn't
-                // need this check
-                if (_engine.LanguageContext is InvariantContext) {
-                    return null;
-                }
                 return _engine;
             }
         }
@@ -83,7 +79,7 @@ namespace Microsoft.Scripting.Hosting {
         /// <exception cref="MissingMemberException">The specified name is not defined in the scope.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="name"/> is a <c>null</c> reference.</exception>
         public dynamic GetVariable(string name) {
-            return _scope.GetVariable(SymbolTable.StringToId(name));
+            return Engine.Operations.GetMember(Scope, name);
         }
 
         /// <summary>
@@ -102,7 +98,7 @@ namespace Microsoft.Scripting.Hosting {
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="name"/> is a <c>null</c> reference.</exception>
         public bool TryGetVariable(string name, out dynamic value) {
-            return _scope.TryGetVariable(SymbolTable.StringToId(name), out value);
+            return Engine.Operations.TryGetMember(Scope, name, out value);
         }
 
         /// <summary>
@@ -113,7 +109,7 @@ namespace Microsoft.Scripting.Hosting {
         /// <exception cref="ArgumentNullException"><paramref name="name"/> is a <c>null</c> reference.</exception>
         public bool TryGetVariable<T>(string name, out T value) {
             object result;
-            if (_scope.TryGetVariable(SymbolTable.StringToId(name), out result)) {
+            if (Engine.Operations.TryGetMember(Scope, name, out result)) {
                 value = _engine.Operations.ConvertTo<T>(result);
                 return true;
             }
@@ -126,7 +122,7 @@ namespace Microsoft.Scripting.Hosting {
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="name"/> is a <c>null</c> reference.</exception>
         public void SetVariable(string name, object value) {
-            _scope.SetVariable(SymbolTable.StringToId(name), value);
+            Engine.Operations.SetMember(Scope, name, value);
         }
 
 #if !SILVERLIGHT
@@ -173,7 +169,8 @@ namespace Microsoft.Scripting.Hosting {
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="name"/> is a <c>null</c> reference.</exception>
         public bool ContainsVariable(string name) {
-            return _scope.ContainsVariable(SymbolTable.StringToId(name));
+            object dummy;
+            return TryGetVariable(name, out dummy);
         }
 
         /// <summary>
@@ -182,7 +179,12 @@ namespace Microsoft.Scripting.Hosting {
         /// <returns><c>true</c> if the value existed in the scope before it has been removed.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="name"/> is a <c>null</c> reference.</exception>
         public bool RemoveVariable(string name) {
-            return _scope.TryRemoveVariable(SymbolTable.StringToId(name));
+            if (Engine.Operations.ContainsMember(_scope, name)) {
+                Engine.Operations.RemoveMember(_scope, name);
+                return true;
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -191,13 +193,7 @@ namespace Microsoft.Scripting.Hosting {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
         public IEnumerable<string> GetVariableNames() {
             // Remoting: we eagerly enumerate all variables to avoid cross domain calls for each item.
-
-            var result = new List<string>();
-            foreach (var entry in _scope.Items) {
-                result.Add(SymbolTable.IdToString(entry.Key));
-            }
-            result.TrimExcess();
-            return result;
+            return Engine.Operations.GetMemberNames(_scope.Storage);
         }
 
         /// <summary>
@@ -206,11 +202,12 @@ namespace Microsoft.Scripting.Hosting {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
         public IEnumerable<KeyValuePair<string, object>> GetItems() {
             // Remoting: we eagerly enumerate all variables to avoid cross domain calls for each item.
-
             var result = new List<KeyValuePair<string, object>>();
-            foreach (var entry in _scope.Items) {
-                result.Add(new KeyValuePair<string, object>(SymbolTable.IdToString(entry.Key), entry.Value));
+            
+            foreach (string name in GetVariableNames()) {
+                result.Add(new KeyValuePair<string, object>(name, Engine.Operations.GetMember(_scope.Storage, name)));
             }
+
             result.TrimExcess();
             return result;
         }

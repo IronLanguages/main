@@ -34,7 +34,7 @@ namespace IronPython.Modules {
     public static class PythonSelect {
         public const string __doc__ = "Provides support for asynchronous socket operations.";
         [SpecialName]
-        public static void PerformModuleReload(PythonContext/*!*/ context, IAttributesCollection/*!*/ dict) {
+        public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
             context.EnsureModuleException("selecterror", dict, "error", "select");
         }
 
@@ -142,7 +142,7 @@ namespace IronPython.Modules {
             Int64 handle;
             if (!Converter.TryConvertToInt64(obj, out handle)) {
                 object userSocket = obj;
-                object filenoCallable = PythonOps.GetBoundAttr(context, userSocket, SymbolTable.StringToId("fileno"));
+                object filenoCallable = PythonOps.GetBoundAttr(context, userSocket, "fileno");
                 object fileno = PythonCalls.Call(context, filenoCallable);
                 handle = Converter.ConvertToInt64(fileno);
             }

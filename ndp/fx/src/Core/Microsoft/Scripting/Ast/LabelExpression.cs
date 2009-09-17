@@ -13,9 +13,14 @@
  *
  * ***************************************************************************/
 
+using System;
 using System.Diagnostics;
 
+#if CLR2
+namespace Microsoft.Scripting.Ast {
+#else
 namespace System.Linq.Expressions {
+#endif
     /// <summary>
     /// Represents a label, which can be placed in any <see cref="Expression"/> context. If
     /// it is jumped to, it will get the value provided by the corresponding

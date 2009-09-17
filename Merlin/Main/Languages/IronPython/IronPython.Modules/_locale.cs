@@ -32,7 +32,7 @@ namespace IronPython.Modules {
         private static readonly object _localeKey = new object();
 
         [SpecialName]
-        public static void PerformModuleReload(PythonContext/*!*/ context, IAttributesCollection/*!*/ dict) {
+        public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
             EnsureLocaleInitialized(context);
             context.EnsureModuleException("_localeerror", dict, "Error", "_locale");
         }

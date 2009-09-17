@@ -13,6 +13,7 @@
  *
  * ***************************************************************************/
 
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -23,7 +24,11 @@ using System.Threading;
 using System.Core;
 #endif
 
+#if CLR2
+namespace Microsoft.Scripting.Ast {
+#else
 namespace System.Linq.Expressions {
+#endif
     /// <summary>
     /// Represents a block that contains a sequence of expressions where variables can be defined.
     /// </summary>
