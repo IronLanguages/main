@@ -20,7 +20,7 @@ using Microsoft.Scripting.Utils;
 using System.Security.Permissions;
 using System.Threading;
 
-#if !CLR4
+#if CLR2
 using dynamic = System.Object;
 #endif
 

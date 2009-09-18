@@ -13,6 +13,12 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using MSA = System.Linq.Expressions;
+#else
+using MSA = Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -33,7 +39,6 @@ using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using IronRuby.Compiler.Ast;
-using MSA = System.Linq.Expressions;
 using IronRuby.Runtime.Conversions;
 
 namespace IronRuby.Runtime {
@@ -116,7 +121,7 @@ namespace IronRuby.Runtime {
         public static RubyModuleScope/*!*/ CreateModuleScope(MutableTuple locals, SymbolId[] variableNames, 
             RubyScope/*!*/ parent, RubyModule/*!*/ module) {
 
-            RubyModuleScope scope = new RubyModuleScope(parent, module, module);
+            RubyModuleScope scope = new RubyModuleScope(parent, module);
             scope.SetDebugName((module.IsClass ? "class" : "module") + " " + module.Name);
             scope.SetLocals(locals, variableNames ?? SymbolId.EmptySymbols);
             return scope;
@@ -370,8 +375,8 @@ namespace IronRuby.Runtime {
             }
         }
 
-        [Emitted] 
-        public static object YieldSplat0(object splattee, object self, BlockParam/*!*/ blockParam) {
+        [Emitted]
+        public static object YieldSplat0(IList/*!*/ splattee, object self, BlockParam/*!*/ blockParam) {
             object result;
             var proc = blockParam.Proc;
             try {
@@ -384,7 +389,7 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted] 
-        public static object YieldSplat1(object arg1, object splattee, object self, BlockParam/*!*/ blockParam) {
+        public static object YieldSplat1(object arg1, IList/*!*/ splattee, object self, BlockParam/*!*/ blockParam) {
             object result;
             var proc = blockParam.Proc;
             try {
@@ -396,8 +401,8 @@ namespace IronRuby.Runtime {
             return result;
         }
 
-        [Emitted] 
-        public static object YieldSplat2(object arg1, object arg2, object splattee, object self, BlockParam/*!*/ blockParam) {
+        [Emitted]
+        public static object YieldSplat2(object arg1, object arg2, IList/*!*/ splattee, object self, BlockParam/*!*/ blockParam) {
             object result;
             var proc = blockParam.Proc;
             try {
@@ -409,8 +414,8 @@ namespace IronRuby.Runtime {
             return result;
         }
 
-        [Emitted] 
-        public static object YieldSplat3(object arg1, object arg2, object arg3, object splattee, object self, BlockParam/*!*/ blockParam) {
+        [Emitted]
+        public static object YieldSplat3(object arg1, object arg2, object arg3, IList/*!*/ splattee, object self, BlockParam/*!*/ blockParam) {
             object result;
             var proc = blockParam.Proc;
             try {
@@ -422,8 +427,8 @@ namespace IronRuby.Runtime {
             return result;
         }
 
-        [Emitted] 
-        public static object YieldSplat4(object arg1, object arg2, object arg3, object arg4, object splattee, object self, BlockParam/*!*/ blockParam) {
+        [Emitted]
+        public static object YieldSplat4(object arg1, object arg2, object arg3, object arg4, IList/*!*/ splattee, object self, BlockParam/*!*/ blockParam) {
             object result;
             var proc = blockParam.Proc;
             try {
@@ -435,8 +440,8 @@ namespace IronRuby.Runtime {
             return result;
         }
 
-        [Emitted] 
-        public static object YieldSplatN(object[]/*!*/ args, object splattee, object self, BlockParam/*!*/ blockParam) {
+        [Emitted]
+        public static object YieldSplatN(object[]/*!*/ args, IList/*!*/ splattee, object self, BlockParam/*!*/ blockParam) {
             object result;
             var proc = blockParam.Proc;
             try {
@@ -448,8 +453,8 @@ namespace IronRuby.Runtime {
             return result;
         }
 
-        [Emitted] 
-        public static object YieldSplatNRhs(object[]/*!*/ args, object splattee, object rhs, object self, BlockParam/*!*/ blockParam) {
+        [Emitted]
+        public static object YieldSplatNRhs(object[]/*!*/ args, IList/*!*/ splattee, object rhs, object self, BlockParam/*!*/ blockParam) {
             object result;
             var proc = blockParam.Proc;
             try {
@@ -549,8 +554,9 @@ namespace IronRuby.Runtime {
 
             // expose RubyMethod in the scope (the method is bound to the main singleton instance):
             if (owner.GlobalScope != null) {
-                owner.GlobalScope.Scope.SetVariable(
-                    SymbolTable.StringToId(method.DefinitionName),
+                RubyOps.ScopeSetMember(
+                    owner.GlobalScope.Scope,
+                    method.DefinitionName,
                     new RubyMethod(owner.GlobalScope.MainObject, method, method.DefinitionName)
                 );
             }
@@ -584,18 +590,34 @@ namespace IronRuby.Runtime {
 
         [Emitted]
         public static RubyModule/*!*/ DefineGlobalModule(RubyScope/*!*/ scope, string/*!*/ name) {
-            return RubyUtils.DefineModule(scope.GlobalScope, scope.Top.TopModuleOrObject, name);
+            return DefineModule(scope, scope.Top.TopModuleOrObject, name);
         }
 
         [Emitted]
         public static RubyModule/*!*/ DefineNestedModule(RubyScope/*!*/ scope, string/*!*/ name) {
-            return RubyUtils.DefineModule(scope.GlobalScope, scope.GetInnerMostModuleForConstantLookup(), name);
+            return DefineModule(scope, scope.GetInnerMostModuleForConstantLookup(), name);
         }
 
         [Emitted]
         public static RubyModule/*!*/ DefineModule(RubyScope/*!*/ scope, object target, string/*!*/ name) {
-            Assert.NotNull(scope);
-            return RubyUtils.DefineModule(scope.GlobalScope, RubyUtils.GetModuleFromObject(scope.RubyContext, target), name);
+            return DefineModule(scope, RubyUtils.GetModuleFromObject(scope.RubyContext, target), name);
+        }
+
+        // thread-safe:
+        private static RubyModule/*!*/ DefineModule(RubyScope/*!*/ scope, RubyModule/*!*/ owner, string/*!*/ name) {
+            Assert.NotNull(scope, owner);
+
+            object existing;
+            if (owner.TryGetConstant(scope.GlobalScope, name, out existing)) {
+                RubyModule module = existing as RubyModule;
+                if (module == null || module.IsClass) {
+                    throw RubyExceptions.CreateTypeError(String.Format("{0} is not a module", name));
+                }
+                return module;
+            } else {
+                // create class/module object:
+                return owner.Context.DefineModule(owner, name);
+            }
         }
 
         #endregion
@@ -612,17 +634,58 @@ namespace IronRuby.Runtime {
 
         [Emitted] 
         public static RubyModule/*!*/ DefineGlobalClass(RubyScope/*!*/ scope, string/*!*/ name, object superClassObject) {
-            return RubyUtils.DefineClass(scope.GlobalScope, scope.Top.TopModuleOrObject, name, superClassObject);
+            return DefineClass(scope, scope.Top.TopModuleOrObject, name, superClassObject);
         }
 
         [Emitted]
         public static RubyModule/*!*/ DefineNestedClass(RubyScope/*!*/ scope, string/*!*/ name, object superClassObject) {
-            return RubyUtils.DefineClass(scope.GlobalScope, scope.GetInnerMostModuleForConstantLookup(), name, superClassObject);
+            return DefineClass(scope, scope.GetInnerMostModuleForConstantLookup(), name, superClassObject);
         }
 
         [Emitted]
         public static RubyModule/*!*/ DefineClass(RubyScope/*!*/ scope, object target, string/*!*/ name, object superClassObject) {
-            return RubyUtils.DefineClass(scope.GlobalScope, RubyUtils.GetModuleFromObject(scope.RubyContext, target), name, superClassObject);
+            return DefineClass(scope, RubyUtils.GetModuleFromObject(scope.RubyContext, target), name, superClassObject);
+        }
+
+        // thread-safe:
+        private static RubyClass/*!*/ DefineClass(RubyScope/*!*/ scope, RubyModule/*!*/ owner, string/*!*/ name, object superClassObject) {
+            Assert.NotNull(owner);
+            RubyClass superClass = ToSuperClass(owner.Context, superClassObject);
+
+            object existing;
+            if (owner.IsObjectClass
+                ? owner.TryResolveConstant(scope.GlobalScope, name, out existing)
+                : owner.TryGetConstant(scope.GlobalScope, name, out existing)) {
+
+                RubyClass cls = existing as RubyClass;
+                if (cls == null || !cls.IsClass) {
+                    throw RubyExceptions.CreateTypeError(String.Format("{0} is not a class", name));
+                }
+
+                if (superClassObject != null && !ReferenceEquals(cls.SuperClass, superClass)) {
+                    throw RubyExceptions.CreateTypeError(String.Format("superclass mismatch for class {0}", name));
+                }
+                return cls;
+            } else {
+                return owner.Context.DefineClass(owner, name, superClass, null);
+            }
+        }
+
+        private static RubyClass/*!*/ ToSuperClass(RubyContext/*!*/ ec, object superClassObject) {
+            if (superClassObject != null) {
+                RubyClass superClass = superClassObject as RubyClass;
+                if (superClass == null) {
+                    throw RubyExceptions.CreateTypeError(String.Format("superclass must be a Class ({0} given)", ec.GetClassOf(superClassObject).Name));
+                }
+
+                if (superClass.IsSingletonClass) {
+                    throw RubyExceptions.CreateTypeError("can't make subclass of virtual class");
+                }
+
+                return superClass;
+            } else {
+                return ec.ObjectClass;
+            }
         }
 
         #endregion
@@ -768,24 +831,13 @@ namespace IronRuby.Runtime {
         #region Array
 
         [Emitted]
-        public static IList/*!*/ SplatAppend(IList/*!*/ array, object splattee) {
-            IList list;
-
-            if ((list = splattee as IList) != null) {
-                Utils.AddRange(array, list);
-            } else {
-                array.Add(splattee);
-            }
+        public static IList/*!*/ SplatAppend(IList/*!*/ array, IList/*!*/ list) {
+            Utils.AddRange(array, list);
             return array;
         }
 
         [Emitted]
-        public static object Splat(object/*!*/ value) {
-            var list = value as IList;
-            if (list == null) {
-                return value;
-            }
-
+        public static object Splat(IList/*!*/ list) {
             if (list.Count <= 1) {
                 return (list.Count > 0) ? list[0] : null;
             }
@@ -794,24 +846,19 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted]
-        public static object SplatPair(object value, object array) {
-            var list = array as IList;
-            if (list != null) {
-                if (list.Count == 0) {
-                    return value;
-                }
-
-                RubyArray result = new RubyArray(list.Count + 1);
-                result.Add(value);
-                result.AddRange(list);
-                return result;
+        public static object SplatPair(object value, IList/*!*/ list) {
+            if (list.Count == 0) {
+                return value;
             }
 
-            return MakeArray2(value, array);
+            RubyArray result = new RubyArray(list.Count + 1);
+            result.Add(value);
+            result.AddRange(list);
+            return result;
         }
 
         [Emitted]
-        public static IList/*!*/ Unsplat(object/*!*/ splattee) {
+        public static IList/*!*/ Unsplat(object splattee) {
             var list = splattee as IList;
             if (list == null) {
                 list = new RubyArray(1);
@@ -825,8 +872,8 @@ namespace IronRuby.Runtime {
         public static bool ExistsUnsplat(CallSite<Func<CallSite, object, object, object>>/*!*/ comparisonSite, object splattee, object value) {
             var list = splattee as IList;
             if (list != null) {
-                foreach (var item in list) {
-                    if (IsTrue(comparisonSite.Target(comparisonSite, item, value))) {
+                for (int i = 0; i < list.Count; i++) {
+                    if (IsTrue(comparisonSite.Target(comparisonSite, list[i], value))) {
                         return true;
                     }
                 }
@@ -952,6 +999,75 @@ namespace IronRuby.Runtime {
         [Emitted]
         public static void AliasGlobalVariable(RubyScope/*!*/ scope, string/*!*/ newName, string/*!*/ oldName) {
             scope.RubyContext.AliasGlobalVariable(newName, oldName);
+        }
+
+        #endregion
+
+        #region DLR Scopes
+
+        internal static bool TryGetGlobalScopeMethod(RubyContext/*!*/ context, Scope/*!*/ scope, string/*!*/ name, out object value) {
+            string unmangled;
+            ScopeStorage scopeStorage = scope.Storage as ScopeStorage;
+            if (scopeStorage != null) {
+                return scopeStorage.TryGetValue(name, false, out value)
+                    || (unmangled = RubyUtils.TryUnmangleName(name)) != null && scopeStorage.TryGetValue(unmangled, false, out value);
+            } else {
+                return context.Operations.TryGetMember(scope, name, out value)
+                    || (unmangled = RubyUtils.TryUnmangleName(name)) != null && context.Operations.TryGetMember(scope, unmangled, out value);
+            }
+        }
+
+        internal static bool TryGetGlobalScopeConstant(RubyContext/*!*/ context, Scope/*!*/ scope, string/*!*/ name, out object value) {
+            string mangled;
+            ScopeStorage scopeStorage = scope.Storage as ScopeStorage;
+            if (scopeStorage != null) {
+                return scopeStorage.TryGetValue(name, false, out value)
+                    || (mangled = RubyUtils.TryMangleName(name)) != null && scopeStorage.TryGetValue(mangled, false, out value);
+            } else {
+                return context.Operations.TryGetMember(scope, name, out value)
+                    || (mangled = RubyUtils.TryMangleName(name)) != null && context.Operations.TryGetMember(scope, mangled, out value);
+            }
+        }
+
+        // TODO:
+        internal static void ScopeSetMember(Scope scope, string name, object value) {
+            ScopeStorage scopeStorage = scope.Storage as ScopeStorage;
+            if (scopeStorage != null) {
+                scopeStorage.SetValue(name, false, value);
+                return;
+            }
+
+            throw new NotImplementedException();
+        }
+
+        // TODO:
+        internal static bool ScopeContainsMember(Scope scope, string name) {
+            ScopeStorage scopeStorage = scope.Storage as ScopeStorage;
+            if (scopeStorage != null) {
+                return scopeStorage.HasValue(name, false);
+            }
+
+            throw new NotImplementedException();
+        }
+
+        // TODO:
+        internal static bool ScopeDeleteMember(Scope scope, string name) {
+            ScopeStorage scopeStorage = scope.Storage as ScopeStorage;
+            if (scopeStorage != null) {
+                return scopeStorage.DeleteValue(name, false);
+            }
+
+            throw new NotImplementedException();
+        }
+
+        // TODO:
+        internal static IList<KeyValuePair<string, object>> ScopeGetItems(Scope scope) {
+            ScopeStorage scopeStorage = scope.Storage as ScopeStorage;
+            if (scopeStorage != null) {
+                return scopeStorage.GetItems();
+            }
+
+            throw new NotImplementedException();
         }
 
         #endregion
@@ -1312,18 +1428,13 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted] //RescueClause:
-        public static bool CompareSplattedExceptions(BinaryOpStorage/*!*/ comparisonStorage, RubyScope/*!*/ scope, object classObjects) {
-            var list = classObjects as IList;
-            if (list != null) {
-                for (int i = 0; i < list.Count; i++) {
-                    if (CompareException(comparisonStorage, scope, list[i])) {
-                        return true;
-                    }
+        public static bool CompareSplattedExceptions(BinaryOpStorage/*!*/ comparisonStorage, RubyScope/*!*/ scope, IList/*!*/ classObjects) {
+            for (int i = 0; i < classObjects.Count; i++) {
+                if (CompareException(comparisonStorage, scope, classObjects[i])) {
+                    return true;
                 }
-                return false;
-            } else {
-                return CompareException(comparisonStorage, scope, classObjects);
             }
+            return false;
         }
 
         [Emitted] //RescueClause:
@@ -1505,7 +1616,7 @@ namespace IronRuby.Runtime {
 
             // TODO: optimize this (we can have a hashtable of singletons per class: Weak(object) => Struct { ImmediateClass, InstanceVariables, Flags }):
             return context.TryGetClrTypeInstanceData(target, out data) && (immediate = data.ImmediateClass) != null && immediate.IsSingletonClass
-                && immediate.Version.Value == expectedVersion;
+                && immediate.Version.Method == expectedVersion;
         }
 
         [Emitted]
@@ -1513,7 +1624,7 @@ namespace IronRuby.Runtime {
             RubyInstanceData data;
             RubyClass immediate;
 
-            return versionHandle.Value == expectedVersion
+            return versionHandle.Method == expectedVersion
                 // TODO: optimize this (we can have a hashtable of singletons per class: Weak(object) => Struct { ImmediateClass, InstanceVariables, Flags }):
                 && !(context.TryGetClrTypeInstanceData(target, out data) && (immediate = data.ImmediateClass) != null && immediate.IsSingletonClass);
         }

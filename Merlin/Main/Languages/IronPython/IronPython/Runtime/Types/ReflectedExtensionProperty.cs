@@ -85,7 +85,7 @@ namespace IronPython.Runtime.Types {
 
         public void __delete__(CodeContext/*!*/ context, object instance) {
             if (!TryDeleteValue(context, instance, DynamicHelpers.GetPythonType(instance))) {
-                throw PythonOps.AttributeErrorForMissingAttribute(DynamicHelpers.GetPythonType(instance).Name, Symbols.DeleteDescriptor);
+                throw PythonOps.AttributeErrorForMissingAttribute(DynamicHelpers.GetPythonType(instance).Name, "__delete__");
             }
         }
 

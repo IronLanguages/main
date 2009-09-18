@@ -13,6 +13,12 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using MSAst = System.Linq.Expressions;
+#else
+using MSAst = Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -26,11 +32,9 @@ using Microsoft.Scripting.Actions.Calls;
 
 using IronPython.Compiler;
 
-using Ast = System.Linq.Expressions.Expression;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
-using MSAst = System.Linq.Expressions;
-
 namespace IronPython.Runtime {
+    using Ast = MSAst.Expression;
+    using AstUtils = Microsoft.Scripting.Ast.Utils;
 
     /// <summary>
     /// Manages the acquisition of profiling data for a single ScriptRuntime
@@ -317,7 +321,7 @@ namespace IronPython.Runtime {
                 return base.VisitExtension(node);
             }
 
-            protected override System.Linq.Expressions.Expression VisitMethodCall(MSAst.MethodCallExpression node) {
+            protected override MSAst.Expression VisitMethodCall(MSAst.MethodCallExpression node) {
                 var result = base.VisitMethodCall(node);
                 if (IgnoreMethod(node.Method)) {
                     // To ignore the called method, we need to prevent its time from being added to the current method's total
@@ -326,7 +330,7 @@ namespace IronPython.Runtime {
                 return result;
             }
 
-            protected override System.Linq.Expressions.Expression VisitLambda<T>(MSAst.Expression<T> node) {
+            protected override MSAst.Expression VisitLambda<T>(MSAst.Expression<T> node) {
                 // Don't trace into embedded function
                 return node;
             }

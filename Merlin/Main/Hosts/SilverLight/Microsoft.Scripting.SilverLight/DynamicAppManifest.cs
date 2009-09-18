@@ -22,6 +22,7 @@ using System.Windows;
 using System.Reflection;
 using System.IO;
 using System.Text.RegularExpressions;
+using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Silverlight {
     public class DynamicAppManifest {
@@ -44,6 +45,7 @@ namespace Microsoft.Scripting.Silverlight {
             "IronPython.Modules",
             "Microsoft.Scripting.Core",
             "Microsoft.Scripting",
+            "Microsoft.Dynamic",
             "Microsoft.Scripting.ExtensionAttribute",
             "Microsoft.Scripting.Silverlight"
         };

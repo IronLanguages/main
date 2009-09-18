@@ -16,6 +16,7 @@
 using System.IO;
 using Microsoft.Scripting.Utils;
 using System.Text;
+using System;
 
 namespace Microsoft.Scripting {
 
@@ -60,7 +61,29 @@ namespace Microsoft.Scripting {
         /// Returns <c>true</c> if the line is found, <b>false</b> otherwise.
         /// </returns>
         public virtual bool SeekLine(int line) {
-            return IOUtils.SeekLine(_textReader, line);
+            if (line < 1) throw new ArgumentOutOfRangeException("line");
+            if (line == 1) return true;
+
+            int current_line = 1;
+
+            for (; ; ) {
+                int c = _textReader.Read();
+
+                if (c == '\r') {
+                    if (_textReader.Peek() == '\n') {
+                        _textReader.Read();
+                    }
+
+                    current_line++;
+                    if (current_line == line) return true;
+
+                } else if (c == '\n') {
+                    current_line++;
+                    if (current_line == line) return true;
+                } else if (c == -1) {
+                    return false;
+                }
+            }
         }
 
         public override string ReadToEnd() {

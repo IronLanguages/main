@@ -50,6 +50,7 @@ if not is_silverlight:
     ironpython_dlls = [
         "Microsoft.Scripting.Core.dll",
         "Microsoft.Scripting.dll",
+        "Microsoft.Dynamic.dll",
         "Microsoft.Scripting.Internal.dll",
         "IronPython.Modules.dll",
         "IronPython.dll",
@@ -293,6 +294,7 @@ if is_silverlight:
 
         AddReferenceToDlrCore()
         clr.AddReference("Microsoft.Scripting")
+        clr.AddReference("Microsoft.Dynamic, Version=2.0.5.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL")
         clr.AddReference("IronPython")
 
         ipt_fullname = "IronPythonTest, Version=1.0.0.0, PublicKeyToken=31bf3856ad364e35"
@@ -315,6 +317,7 @@ else:
 
         AddReferenceToDlrCore()
         clr.AddReference("Microsoft.Scripting")
+        clr.AddReference("Microsoft.Dynamic")
         clr.AddReference("IronPython")
 
         if args: 
@@ -567,8 +570,6 @@ def AddReferenceToDlrCore():
         clr.AddReference("System.Core")
     else:
         clr.AddReference("Microsoft.Scripting.Core")
-    if not is_silverlight:
-        clr.AddReference("Microsoft.Dynamic")
 
 
 class stderr_trapper(object):

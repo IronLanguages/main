@@ -15,9 +15,14 @@
 
 #if !SILVERLIGHT // ComObject
 
+#if !MICROSOFT_DYNAMIC
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security;

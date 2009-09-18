@@ -14,9 +14,14 @@
  * ***************************************************************************/
 
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Dynamic;
-using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 
 using Microsoft.Scripting.Actions;
@@ -27,7 +32,7 @@ using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime.Binding {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = Expression;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
 
     /// <summary>
@@ -53,7 +58,7 @@ namespace IronPython.Runtime.Binding {
 
             SlotOrFunction sf = SlotOrFunction.GetSlotOrFunction(
                 PythonContext.GetPythonContext(conversion),
-                Symbols.NonZero,
+                "__nonzero__",
                 self);
 
             if (sf.Success) {
@@ -72,7 +77,7 @@ namespace IronPython.Runtime.Binding {
 
             sf = SlotOrFunction.GetSlotOrFunction(
                 PythonContext.GetPythonContext(conversion),
-                Symbols.Length,
+                "__len__",
                 self);
 
             if (sf.Success) {
@@ -138,7 +143,7 @@ namespace IronPython.Runtime.Binding {
             // default binder
             PythonTypeSlot callSlot;
             if (!typeof(Delegate).IsAssignableFrom(target.GetLimitType()) &&
-                pt.TryResolveSlot(pyContext.SharedContext, Symbols.Call, out callSlot)) {
+                pt.TryResolveSlot(pyContext.SharedContext, "__call__", out callSlot)) {
                 ConditionalBuilder cb = new ConditionalBuilder(call);
                 Expression body;
 

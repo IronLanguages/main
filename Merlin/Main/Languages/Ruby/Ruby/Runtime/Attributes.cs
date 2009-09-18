@@ -139,6 +139,9 @@ namespace IronRuby.Runtime {
 
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface, AllowMultiple = false)]
     public class RubyModuleAttribute : RubyAttribute {
+        private readonly string _name;
+        private ModuleRestrictions? _restrictions; 
+
         /// <summary>
         /// If an extension type doesn't specify Ruby name its name is inferred from the CLR 
         /// non-generic qualified name of the type being extended. No constant is added to the Object class.
@@ -202,21 +205,25 @@ namespace IronRuby.Runtime {
         public string Name {
             get { return _name; }
         }
-        private readonly string _name;
         
         public bool HideClrMembers { get; set; }
         public Type Extends { get; set; }
         public Type DefineIn { get; set; }
-        public ModuleRestrictions Restrictions { get; set; }
+
+        public ModuleRestrictions Restrictions {
+            get { return _restrictions ?? ModuleRestrictions.None; }
+            set { _restrictions = value; }
+        }
+
+        public ModuleRestrictions GetRestrictions(bool builtin) {
+            return _restrictions ?? (builtin ? ModuleRestrictions.Builtin : ModuleRestrictions.None);
+        }
 
         public RubyModuleAttribute() {
-            Restrictions = ModuleRestrictions.Builtin;
-            _name = null;
         }
 
         public RubyModuleAttribute(string/*!*/ name) {
             ContractUtils.RequiresNotEmpty(name, "name");
-            Restrictions = ModuleRestrictions.Builtin;
             _name = name;
         }
     }

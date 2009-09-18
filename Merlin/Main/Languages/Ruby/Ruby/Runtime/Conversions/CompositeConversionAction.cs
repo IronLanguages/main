@@ -13,20 +13,26 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections;
-using System.Linq.Expressions;
 using IronRuby.Builtins;
 using IronRuby.Compiler;
 using IronRuby.Compiler.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-using Ast = System.Linq.Expressions.Expression;
 using System.Diagnostics;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 using IronRuby.Runtime.Calls;
 
 namespace IronRuby.Runtime.Conversions {
+    using Ast = Expression;
+
     public enum CompositeConversion {
         ToFixnumToStr,
         ToStrToFixnum,

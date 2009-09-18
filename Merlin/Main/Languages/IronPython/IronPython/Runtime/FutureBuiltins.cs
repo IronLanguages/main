@@ -41,12 +41,12 @@ namespace IronPython.Runtime {
         public const string __doc__ = "Provides access to built-ins which will be defined differently in Python 3.0.";
 
         [SpecialName]
-        public static void PerformModuleReload(PythonContext context, IAttributesCollection dict) {
+        public static void PerformModuleReload(PythonContext context, PythonDictionary dict) {
             PythonModule scope = Importer.ImportModule(context.SharedContext, context.SharedContext.GlobalDict, "itertools", false, -1) as PythonModule;
             if (scope != null) {
-                dict[SymbolTable.StringToId("map")] = scope.__dict__["imap"];
-                dict[SymbolTable.StringToId("filter")] = scope.__dict__["ifilter"];
-                dict[SymbolTable.StringToId("zip")] = scope.__dict__["izip"];
+                dict["map"] = scope.__dict__["imap"];
+                dict["filter"] = scope.__dict__["ifilter"];
+                dict["zip"] = scope.__dict__["izip"];
             }
         }
         
@@ -69,7 +69,7 @@ namespace IronPython.Runtime {
             object value;
             if (PythonTypeOps.TryInvokeUnaryOperator(context,
                 number,
-                Symbols.Index,
+                "__index__",
                 out value)) {
                 if (!(value is int) && !(value is BigInteger))
                     throw PythonOps.TypeError("index returned non-(int, long), got '{0}'", PythonTypeOps.GetName(value));
@@ -97,7 +97,7 @@ namespace IronPython.Runtime {
             object value;
             if (PythonTypeOps.TryInvokeUnaryOperator(context,
                 number,
-                Symbols.Index,
+                "__index__",
                 out value)) {
                 if (!(value is int) && !(value is BigInteger))
                     throw PythonOps.TypeError("index returned non-(int, long), got '{0}'", PythonTypeOps.GetName(value));

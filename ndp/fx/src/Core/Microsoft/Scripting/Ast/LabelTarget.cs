@@ -13,9 +13,14 @@
  *
  * ***************************************************************************/
 
+using System;
 using System.Dynamic.Utils;
 
+#if CLR2
+namespace Microsoft.Scripting.Ast {
+#else
 namespace System.Linq.Expressions {
+#endif
 
     /// <summary>
     /// Used to denote the target of a <see cref="GotoExpression"/>.

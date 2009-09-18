@@ -13,6 +13,12 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using MSAst = System.Linq.Expressions;
+#else
+using MSAst = Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -21,13 +27,12 @@ using System.Runtime.CompilerServices;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Ast;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime;
 
-using MSAst = System.Linq.Expressions;
-
 namespace IronPython.Compiler.Ast {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = MSAst.Expression;
 
     /// <summary>
     /// A global allocator that puts all of the globals into an array access.  The array is an
@@ -111,7 +116,7 @@ namespace IronPython.Compiler.Ast {
                 get { return typeof(PythonGlobal[]); }
             }
 
-            public override System.Linq.Expressions.Expression Reduce() {
+            public override MSAst.Expression Reduce() {
                 // type specified for a better debugging experience (otherwise it ends up null)
                 return MSAst.Expression.Constant(Array, typeof(PythonGlobal[]));
             }

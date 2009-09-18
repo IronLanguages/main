@@ -97,7 +97,10 @@ namespace IronPython.Runtime.Binding {
         NotRetObject,
 
         /// <summary>
-        /// Get enumerator for iteration binder
+        /// Get enumerator for iteration binder.  Returns a KeyValuePair&lt;IEnumerator, IDisposable&gt;
+        /// 
+        /// The IEnumerator is used for iteration.  The IDisposable is provided if the object was an
+        /// IEnumerable or IEnumerable&lt;T&gt; and is a disposable object.
         /// </summary>
         GetEnumeratorForIteration,
 

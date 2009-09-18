@@ -14,6 +14,7 @@
  * ***************************************************************************/
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using Microsoft.Scripting.Utils;
@@ -80,7 +81,9 @@ namespace IronRuby.Runtime.Calls {
         
         // R(1, -)
         public override object Invoke(BlockParam/*!*/ param, object self, object arg1) {
-            return _block(param, self, CopyArgumentsFromSplattee(new object[_parameterCount], 0, arg1));
+            // MRI calls to_ary, but not to_a (contrary to real *splatting)
+            IList list = arg1 as IList ?? Protocols.ConvertToArraySplat(param.RubyContext, arg1) ?? new object[] { arg1 };                
+            return _block(param, self, CopyArgumentsFromSplattee(new object[_parameterCount], 0, list));
         }
 
         // R(2, -)
@@ -111,32 +114,32 @@ namespace IronRuby.Runtime.Calls {
         }
 
         // R(0, *)
-        public override object InvokeSplat(BlockParam/*!*/ param, object self, object splattee) {
+        public override object InvokeSplat(BlockParam/*!*/ param, object self, IList/*!*/ splattee) {
             return _block(param, self, CopyArgumentsFromSplattee(new object[_parameterCount], 0, splattee));
         }
 
         // R(1, *)
-        public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object splattee) {
+        public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, IList/*!*/ splattee) {
             return _block(param, self, CopyArgumentsFromSplattee(MakeArray(arg1), 1, splattee));
         }
 
         // R(2, *)
-        public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, object splattee) {
+        public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, IList/*!*/ splattee) {
             return _block(param, self, CopyArgumentsFromSplattee(MakeArray(arg1, arg2), 2, splattee));
         }
 
         // R(3, *)
-        public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, object arg3, object splattee) {
+        public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, object arg3, IList/*!*/ splattee) {
             return _block(param, self, CopyArgumentsFromSplattee(MakeArray(arg1, arg2, arg3), 3, splattee));
         }
 
         // R(4, *)
-        public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, object arg3, object arg4, object splattee) {
+        public override object InvokeSplat(BlockParam/*!*/ param, object self, object arg1, object arg2, object arg3, object arg4, IList/*!*/ splattee) {
             return _block(param, self, CopyArgumentsFromSplattee(MakeArray(arg1, arg2, arg3, arg4), 4, splattee));
         }
 
         // R(N, *)
-        public override object InvokeSplat(BlockParam/*!*/ param, object self, object[]/*!*/ args, object splattee) {
+        public override object InvokeSplat(BlockParam/*!*/ param, object self, object[]/*!*/ args, IList/*!*/ splattee) {
             Debug.Assert(args.Length > MaxBlockArity);
             int i, j;
             CreateArgumentsFromSplattee(_parameterCount, out i, out j, ref args, splattee);
@@ -144,7 +147,7 @@ namespace IronRuby.Runtime.Calls {
         }
 
         // R(N, *, =)
-        public override object InvokeSplatRhs(BlockParam/*!*/ param, object self, object[]/*!*/ args, object splattee, object rhs) {
+        public override object InvokeSplatRhs(BlockParam/*!*/ param, object self, object[]/*!*/ args, IList/*!*/ splattee, object rhs) {
             return _block(param, self, CreateArgumentsFromSplatteeAndRhs(_parameterCount, args, splattee, rhs));
         }
     }

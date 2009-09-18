@@ -277,7 +277,7 @@ namespace IronRuby.Compiler.Ast {
                     node.Value.Walk(this);
                 }
 
-                VisitList(node.WhenClauses);
+                VisitOptionalList(node.WhenClauses);
                 VisitOptionalList(node.ElseStatements);
             }
             Exit(node);

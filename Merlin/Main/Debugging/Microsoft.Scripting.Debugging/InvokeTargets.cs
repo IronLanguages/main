@@ -13,12 +13,18 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using MSAst = System.Linq.Expressions;
+#else
+using MSAst = Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
 
 namespace Microsoft.Scripting.Debugging {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = MSAst.Expression;
 
     internal static class InvokeTargets {
         internal static Type GetGeneratorFactoryTarget(Type[] parameterTypes) {

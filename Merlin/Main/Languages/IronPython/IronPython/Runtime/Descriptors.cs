@@ -112,12 +112,12 @@ namespace IronPython.Runtime {
             _fget = fget; _fset = fset; _fdel = fdel; _doc = doc;
             if (GetType() != typeof(PythonProperty) && _fget is PythonFunction) {
                 // http://bugs.python.org/issue5890
-                IAttributesCollection dict = UserTypeOps.GetDictionary((IPythonObject)this);
+                PythonDictionary dict = UserTypeOps.GetDictionary((IPythonObject)this);
                 if (dict == null) {
                     throw PythonOps.AttributeError("{0} object has no __doc__ attribute", PythonTypeOps.GetName(this));
                 }
 
-                dict[Symbols.Doc] = ((PythonFunction)_fget).__doc__;
+                dict["__doc__"] = ((PythonFunction)_fget).__doc__;
             }
         }
 
@@ -150,8 +150,8 @@ namespace IronPython.Runtime {
 
         [SpecialName, PropertyMethod, WrapperDescriptor]
         public static object Get__doc__(CodeContext context, PythonProperty self) {
-            if (self._doc == null && PythonOps.HasAttr(context, self._fget, (SymbolId)"__doc__")) {
-                return PythonOps.GetBoundAttr(context, self._fget, (SymbolId)"__doc__");
+            if (self._doc == null && PythonOps.HasAttr(context, self._fget, "__doc__")) {
+                return PythonOps.GetBoundAttr(context, self._fget, "__doc__");
             } else if (self._doc == null) {
                 System.Console.WriteLine("No attribute __doc__");
             }

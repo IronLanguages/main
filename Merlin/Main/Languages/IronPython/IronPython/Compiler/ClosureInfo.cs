@@ -19,7 +19,12 @@ using Microsoft.Scripting;
 
 using IronPython.Compiler.Ast;
 
+#if !CLR2
 using MSAst = System.Linq.Expressions;
+#else
+using MSAst = Microsoft.Scripting.Ast;
+#endif
+
 using Microsoft.Scripting.Utils;
 
 namespace IronPython.Compiler {

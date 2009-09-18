@@ -13,9 +13,14 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections.Generic;
-using System.Linq.Expressions;
 using System.Dynamic;
 
 using Microsoft.Scripting;
@@ -26,10 +31,9 @@ using Microsoft.Scripting.Utils;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
-using AstUtils = Microsoft.Scripting.Ast.Utils;
-
 namespace IronPython.Runtime.Binding {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = Expression;
+    using AstUtils = Microsoft.Scripting.Ast.Utils;
 
     class MetaOldClass : MetaPythonObject, IPythonInvokable, IPythonGetable, IPythonOperable, IPythonConvertible {
         public MetaOldClass(Expression/*!*/ expression, BindingRestrictions/*!*/ restrictions, OldClass/*!*/ value)
@@ -237,7 +241,7 @@ namespace IronPython.Runtime.Binding {
                     call = Ast.Call(
                         typeof(PythonOps).GetMethod("OldClassSetNameHelper"),
                         self.Expression,
-                        AstUtils.Constant(SymbolTable.StringToId(name)),
+                        AstUtils.Constant(name),
                         valueExpr
                     );
                     break;
@@ -259,7 +263,7 @@ namespace IronPython.Runtime.Binding {
                     typeof(PythonOps).GetMethod("OldClassDeleteMember"),
                     AstUtils.Constant(PythonContext.GetPythonContext(member).SharedContext),
                     self.Expression,
-                    AstUtils.Constant(SymbolTable.StringToId(member.Name))
+                    AstUtils.Constant(member.Name)
                 ),
                 self.Restrictions
             );
@@ -307,7 +311,7 @@ namespace IronPython.Runtime.Binding {
                                     typeof(PythonOps).GetMethod("OldClassTryLookupValue"),
                                     AstUtils.Constant(PythonContext.GetPythonContext(member).SharedContext),
                                     self.Expression,
-                                    AstUtils.Constant(SymbolTable.StringToId(memberName)),
+                                    AstUtils.Constant(memberName),
                                     tmp
                                 ),
                                 tmp,

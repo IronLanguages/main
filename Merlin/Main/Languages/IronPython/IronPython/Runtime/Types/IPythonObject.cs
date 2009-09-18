@@ -22,7 +22,7 @@ namespace IronPython.Runtime.Types {
     /// is not intended for consumption from user programs.
     /// </summary>
     public interface IPythonObject {
-        IAttributesCollection Dict {
+        PythonDictionary Dict {
             get;
         }
 
@@ -32,13 +32,13 @@ namespace IronPython.Runtime.Types {
         /// </summary>
         /// <param name="dict"></param>
         /// <returns></returns>
-        IAttributesCollection SetDict(IAttributesCollection dict);
+        PythonDictionary SetDict(PythonDictionary dict);
         /// <summary>
         /// Dictionary replacement.  Returns true if replaced, false if the dictionary set isn't supported.
         /// </summary>
         /// <param name="dict"></param>
         /// <returns></returns>
-        bool ReplaceDict(IAttributesCollection dict);
+        bool ReplaceDict(PythonDictionary dict);
 
         PythonType PythonType {
             get;

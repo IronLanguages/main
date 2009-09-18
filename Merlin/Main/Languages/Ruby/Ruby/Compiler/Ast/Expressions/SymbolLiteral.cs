@@ -22,8 +22,13 @@ using Microsoft.Scripting;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Compiler.Ast {
-    using Ast = System.Linq.Expressions.Expression;
-    using MSA = System.Linq.Expressions;
+    using Ast = Expression;
+    #if !CLR2
+using MSA = System.Linq.Expressions;
+#else
+using MSA = Microsoft.Scripting.Ast;
+#endif
+
     
     public partial class SymbolLiteral : StringLiteral {
         internal SymbolLiteral(object/*!*/ value, SourceSpan location) 

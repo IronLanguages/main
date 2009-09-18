@@ -45,7 +45,7 @@ namespace IronPython.Runtime.Operations {
         /// Removes an attribute from the provided member
         /// </summary>
         public static void __delattr__(CodeContext/*!*/ context, object self, string name) {
-            PythonOps.ObjectDeleteAttribute(context, self, SymbolTable.StringToId(name));
+            PythonOps.ObjectDeleteAttribute(context, self, name);
         }
 
         /// <summary>
@@ -61,7 +61,7 @@ namespace IronPython.Runtime.Operations {
         /// (__getattr__ and __getattribute__)
         /// </summary>
         public static object __getattribute__(CodeContext/*!*/ context, object self, string name) {
-            return PythonOps.ObjectGetAttribute(context, self, SymbolTable.StringToId(name));
+            return PythonOps.ObjectGetAttribute(context, self, name);
         }
 
         /// <summary>
@@ -142,9 +142,9 @@ namespace IronPython.Runtime.Operations {
         /// Runs the pickle protocol
         /// </summary>
         public static object __reduce_ex__(CodeContext/*!*/ context, object self, object protocol) {
-            object objectReduce = PythonOps.GetBoundAttr(context, DynamicHelpers.GetPythonTypeFromType(typeof(object)), Symbols.Reduce);
+            object objectReduce = PythonOps.GetBoundAttr(context, DynamicHelpers.GetPythonTypeFromType(typeof(object)), "__reduce__");
             object myReduce;
-            if (PythonOps.TryGetBoundAttr(context, DynamicHelpers.GetPythonType(self), Symbols.Reduce, out myReduce)) {
+            if (PythonOps.TryGetBoundAttr(context, DynamicHelpers.GetPythonType(self), "__reduce__", out myReduce)) {
                 if (!PythonOps.IsRetBool(myReduce, objectReduce)) {
                     // A derived class overrode __reduce__ but not __reduce_ex__, so call
                     // specialized __reduce__ instead of generic __reduce_ex__.
@@ -174,7 +174,7 @@ namespace IronPython.Runtime.Operations {
         /// Sets an attribute on the object without running any custom object defined behavior.
         /// </summary>
         public static void __setattr__(CodeContext/*!*/ context, object self, string name, object value) {
-            PythonOps.ObjectSetAttribute(context, self, SymbolTable.StringToId(name), value);
+            PythonOps.ObjectSetAttribute(context, self, name, value);
         }
 
         private static int AdjustPointerSize(int size) {
@@ -301,13 +301,13 @@ namespace IronPython.Runtime.Operations {
             object slots;
             object slotValue;
             foreach (object type in mro) {
-                if (PythonOps.TryGetBoundAttr(type, Symbols.Slots, out slots)) {
+                if (PythonOps.TryGetBoundAttr(type, "__slots__", out slots)) {
                     List<string> slotNames = PythonType.SlotsToList(slots);
                     foreach (string slotName in slotNames) {
                         if (slotName == "__dict__") continue;
                         // don't reassign same-named slots from types earlier in the MRO
                         if (initializedSlotValues.__contains__(slotName)) continue;
-                        if (PythonOps.TryGetBoundAttr(obj, SymbolTable.StringToId(slotName), out slotValue)) {
+                        if (PythonOps.TryGetBoundAttr(obj, slotName, out slotValue)) {
                             initializedSlotValues[slotName] = slotValue;
                         }
                     }
@@ -327,10 +327,10 @@ namespace IronPython.Runtime.Operations {
             ThrowIfNativelyPickable(myType);
 
             object getState;
-            bool hasGetState = PythonOps.TryGetBoundAttr(context, self, Symbols.GetState, out getState);
+            bool hasGetState = PythonOps.TryGetBoundAttr(context, self, "__getstate__", out getState);
 
             object slots;
-            if (PythonOps.TryGetBoundAttr(context, myType, Symbols.Slots, out slots) && PythonOps.Length(slots) > 0 && !hasGetState) {
+            if (PythonOps.TryGetBoundAttr(context, myType, "__slots__", out slots) && PythonOps.Length(slots) > 0 && !hasGetState) {
                 // ??? does this work with superclass slots?
                 throw PythonOps.TypeError("a class that defines __slots__ without defining __getstate__ cannot be pickled with protocols 0 or 1");
             }
@@ -349,7 +349,7 @@ namespace IronPython.Runtime.Operations {
             if (hasGetState) {
                 state = PythonOps.CallWithContext(context, getState);
             } else {
-                if (!PythonOps.TryGetBoundAttr(context, self, Symbols.Dict, out state)) {
+                if (!PythonOps.TryGetBoundAttr(context, self, "__dict__", out state)) {
                     state = null;
                 }
             }
@@ -388,7 +388,7 @@ namespace IronPython.Runtime.Operations {
             func = PythonContext.GetContext(context).NewObject;
 
             object getNewArgsCallable;
-            if (PythonOps.TryGetBoundAttr(context, myType, Symbols.GetNewArgs, out getNewArgsCallable)) {
+            if (PythonOps.TryGetBoundAttr(context, myType, "__getnewargs__", out getNewArgsCallable)) {
                 // TypeError will bubble up if __getnewargs__ isn't callable
                 PythonTuple newArgs = PythonOps.CallWithContext(context, getNewArgsCallable, self) as PythonTuple;
                 if (newArgs == null) {
@@ -403,10 +403,10 @@ namespace IronPython.Runtime.Operations {
 
             if (!PythonTypeOps.TryInvokeUnaryOperator(context,
                     self,
-                    Symbols.GetState,
+                    "__getstate__",
                     out state)) {
                 object dict;
-                if (!PythonOps.TryGetBoundAttr(context, self, Symbols.Dict, out dict)) {
+                if (!PythonOps.TryGetBoundAttr(context, self, "__dict__", out dict)) {
                     dict = null;
                 }
 
@@ -427,8 +427,8 @@ namespace IronPython.Runtime.Operations {
             }
 
             dictIterator = null;
-            if (self is PythonDictionary || self is IAttributesCollection) {
-                dictIterator = PythonOps.Invoke(context, self, Symbols.IterItems, ArrayUtils.EmptyObjects);
+            if (self is PythonDictionary || self is PythonDictionary) {
+                dictIterator = PythonOps.Invoke(context, self, "iteritems", ArrayUtils.EmptyObjects);
             }
 
             return PythonTuple.MakeTuple(func, PythonTuple.MakeTuple(funcArgs), state, listIterator, dictIterator);

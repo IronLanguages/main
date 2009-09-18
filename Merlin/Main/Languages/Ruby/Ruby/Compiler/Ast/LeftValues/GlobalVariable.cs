@@ -13,10 +13,15 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using MSA = System.Linq.Expressions;
+#else
+using MSA = Microsoft.Scripting.Ast;
+#endif
+
 using System.Diagnostics;
 using System.Dynamic;
 using Microsoft.Scripting;
-using MSA = System.Linq.Expressions;
 
 namespace IronRuby.Compiler.Ast {
     public partial class GlobalVariable : Variable {

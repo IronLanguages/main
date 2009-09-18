@@ -303,7 +303,7 @@ namespace IronPython.Compiler {
             SourceLocation start = span.Start;
             SourceLocation end = span.End;
 
-            if (allowIncomplete && (t.Kind == TokenKind.EndOfFile || (_tokenizer.IsEndOfFile && t.Kind == TokenKind.Dedent))) {
+            if (allowIncomplete && (t.Kind == TokenKind.EndOfFile || (_tokenizer.IsEndOfFile && (t.Kind == TokenKind.Dedent || t.Kind == TokenKind.NLToken)))) {
                 errorCode |= ErrorCodes.IncompleteStatement;
             }
 
@@ -809,12 +809,12 @@ namespace IronPython.Compiler {
 
             bool ateParen = MaybeEat(TokenKind.LeftParenthesis);
 
-            IList<string> names;
+            string[] names;
             string[] asNames;
             bool fromFuture = false;
 
             if (MaybeEat(TokenKind.Multiply)) {
-                names = FromImportStatement.Star;
+                names = (string[])FromImportStatement.Star;
                 asNames = null;
             } else {
                 List<string> l = new List<string>();

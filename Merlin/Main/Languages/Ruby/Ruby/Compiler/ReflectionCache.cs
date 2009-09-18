@@ -25,9 +25,14 @@ using IronRuby.Runtime;
 using IronRuby.Builtins;
 using Microsoft.Scripting.Utils;
 
+#if !CLR2
+using MSA = System.Linq.Expressions;
+#else
+using MSA = Microsoft.Scripting.Ast;
+#endif
+
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 using AstFactory = IronRuby.Compiler.Ast.AstFactory;
-using MSA = System.Linq.Expressions;
 using IronRuby.Runtime.Calls;
 using System.Collections.ObjectModel;
 using Microsoft.Scripting.Runtime;
@@ -35,11 +40,12 @@ using System.Runtime.CompilerServices;
 
 namespace IronRuby.Compiler {
     internal static class Fields {
-        private static FieldInfo _RubyOps_DefaultArgumentField, _RubyOps_ForwardToBase, _VersionHandle_Value, _RubyClass_Version, _StrongBox_Value;
+        private static FieldInfo _RubyOps_DefaultArgumentField, _RubyOps_ForwardToBase, _VersionHandle_Method, _VersionHandle_Constant, _RubyModule_Version, _StrongBox_Value;
         public static FieldInfo RubyOps_DefaultArgumentField { get { return _RubyOps_DefaultArgumentField ?? (_RubyOps_DefaultArgumentField = GetField(typeof(RubyOps), "DefaultArgument")); } }
         public static FieldInfo RubyOps_ForwardToBase { get { return _RubyOps_ForwardToBase ?? (_RubyOps_ForwardToBase = GetField(typeof(RubyOps), "ForwardToBase")); } }
-        public static FieldInfo VersionHandle_Value { get { return _VersionHandle_Value ?? (_VersionHandle_Value = GetField(typeof(VersionHandle), "Value")); } }
-        public static FieldInfo RubyClass_Version { get { return _RubyClass_Version ?? (_RubyClass_Version = GetField(typeof(RubyClass), "Version")); } }
+        public static FieldInfo VersionHandle_Method { get { return _VersionHandle_Method ?? (_VersionHandle_Method = GetField(typeof(VersionHandle), "Method")); } }
+        public static FieldInfo VersionHandle_Constant { get { return _VersionHandle_Constant ?? (_VersionHandle_Constant = GetField(typeof(VersionHandle), "Constant")); } }
+        public static FieldInfo RubyModule_Version { get { return _RubyModule_Version ?? (_RubyModule_Version = GetField(typeof(RubyModule), "Version")); } }
         public static FieldInfo StrongBox_Value { get { return _StrongBox_Value ?? (_StrongBox_Value = GetField(typeof(StrongBox<object>), "Value")); } }
 
         internal static FieldInfo/*!*/ GetField(Type/*!*/ type, string/*!*/ name) {

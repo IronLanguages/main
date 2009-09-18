@@ -14,6 +14,7 @@
  *
  * ***************************************************************************/
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic.Utils;
@@ -23,7 +24,11 @@ using System.Reflection;
 using System.Core;
 #endif
 
+#if CLR2
+namespace Microsoft.Scripting.Ast {
+#else
 namespace System.Linq.Expressions {
+#endif
 
     /// <summary>
     /// Represents an expression that has a binary operator.

@@ -13,8 +13,12 @@
  *
  * ***************************************************************************/
 
-#if MICROSOFT_SCRIPTING_CORE || SILVERLIGHT
-using ILGenerator = System.Linq.Expressions.Compiler.OffsetTrackingILGenerator;
+#if CLR2
+using Microsoft.Scripting.Ast;
+using Microsoft.Scripting.Ast.Compiler;
+#else
+using System.Linq.Expressions;
+using System.Linq.Expressions.Compiler;
 #endif
 
 using System;
@@ -24,9 +28,12 @@ using System.Reflection.Emit;
 using System.Diagnostics;
 using System.Diagnostics.SymbolStore;
 using System.Reflection;
-using System.Linq.Expressions;
 
 namespace System.Runtime.CompilerServices {
+#if CLR2 || SILVERLIGHT
+    using ILGenerator = OffsetTrackingILGenerator;
+#endif
+
     /// <summary>
     /// Generates debug information for lambdas in an expression tree.
     /// </summary>

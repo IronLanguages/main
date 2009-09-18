@@ -47,16 +47,16 @@ namespace IronPython.Modules {
             private int _length;
             private INativeType _type;
 
-            public ArrayType(CodeContext/*!*/ context, string name, PythonTuple bases, IAttributesCollection dict)
+            public ArrayType(CodeContext/*!*/ context, string name, PythonTuple bases, PythonDictionary dict)
                 : base(context, name, bases, dict) {
                 object len;
                 int iLen;
-                if (!dict.TryGetValue(SymbolTable.StringToId("_length_"), out len) || !(len is int) || (iLen = (int)len) < 0) {
+                if (!dict.TryGetValue("_length_", out len) || !(len is int) || (iLen = (int)len) < 0) {
                     throw PythonOps.AttributeError("arrays must have _length_ attribute and it must be a positive integer");
                 }
 
                 object type;
-                if (!dict.TryGetValue(SymbolTable.StringToId("_type_"), out type)) {
+                if (!dict.TryGetValue("_type_", out type)) {
                     throw PythonOps.AttributeError("class must define a '_type_' attribute");
                 }
 
@@ -68,7 +68,7 @@ namespace IronPython.Modules {
                     if (st._type == SimpleTypeKind.Char) {
                         // TODO: (c_int * 2).value isn't working
                         SetCustomMember(context,
-                            SymbolTable.StringToId("value"),
+                            "value",
                             new ReflectedExtensionProperty(
                                 new ExtensionPropertyInfo(this, typeof(CTypes).GetMethod("GetCharArrayValue")),
                                 NameType.Property | NameType.Python
@@ -76,7 +76,7 @@ namespace IronPython.Modules {
                         );
 
                         SetCustomMember(context,
-                            SymbolTable.StringToId("raw"),
+                            "raw",
                             new ReflectedExtensionProperty(
                                 new ExtensionPropertyInfo(this, typeof(CTypes).GetMethod("GetWCharArrayRaw")),
                                 NameType.Property | NameType.Python
@@ -84,7 +84,7 @@ namespace IronPython.Modules {
                         );
                     } else if (st._type == SimpleTypeKind.WChar) {
                         SetCustomMember(context,
-                            SymbolTable.StringToId("value"),
+                            "value",
                             new ReflectedExtensionProperty(
                                 new ExtensionPropertyInfo(this, typeof(CTypes).GetMethod("GetWCharArrayValue")),
                                 NameType.Property | NameType.Python
@@ -92,7 +92,7 @@ namespace IronPython.Modules {
                         );
 
                         SetCustomMember(context,
-                            SymbolTable.StringToId("raw"),
+                            "raw",
                             new ReflectedExtensionProperty(
                                 new ExtensionPropertyInfo(this, typeof(CTypes).GetMethod("GetWCharArrayRaw")),
                                 NameType.Property | NameType.Python

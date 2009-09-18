@@ -13,6 +13,12 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Dynamic;
@@ -24,9 +30,10 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Actions.Calls;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
-using Ast = System.Linq.Expressions.Expression;
+using Microsoft.Scripting.Utils;
 
 namespace IronRuby.Tests {
+    using Ast = Expression;
     using BlockCallTarget0 = Func<BlockParam, object, object>;
 
     public partial class Tests {
@@ -247,7 +254,7 @@ namespace IronRuby.Tests {
         }
 
         public void AmbiguousMatch1() {
-            Context.SetGlobalConstant("C", Context.GetClass(typeof(AmbiguousOverloads)));
+            Runtime.Globals.SetVariable("C", Context.GetClass(typeof(AmbiguousOverloads)));
             AssertOutput(() => CompilerTest(@"
 [1, nil, 'foo'].each do |x| 
   puts C.f(x) rescue p $!.class

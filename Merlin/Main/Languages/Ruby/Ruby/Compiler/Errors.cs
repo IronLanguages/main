@@ -84,6 +84,7 @@ namespace IronRuby.Compiler {
         public static readonly ErrorInfo FileFinalizerInMethod = new ErrorInfo(Tokenizer + 61, "END in method; use at_exit");    
         public static readonly ErrorInfo ModuleNameNotConstant = new ErrorInfo(Tokenizer + 66, "Class/module name must be a constant");
         public static readonly ErrorInfo ConstantReassigned = new ErrorInfo(Tokenizer + 67, "Constant re-assignment");
+        public static readonly ErrorInfo BothBlockDefAndBlockRefGiven = new ErrorInfo(Tokenizer + 68, "both block arg and actual block given");
 
         // level 1 warnings:
         private const int WarningLevel1 = 0x2000;

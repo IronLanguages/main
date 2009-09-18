@@ -13,10 +13,15 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Diagnostics;
 using System.Dynamic;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
@@ -27,10 +32,10 @@ using IronPython.Runtime.Binding;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 
-using Ast = System.Linq.Expressions.Expression;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
-
 namespace IronPython.Runtime.Types {
+    using Ast = Expression;
+    using AstUtils = Microsoft.Scripting.Ast.Utils;
+
     [PythonType("field#")]
     public sealed class ReflectedField : PythonTypeSlot, ICodeFormattable {
         private readonly NameType _nameType;
@@ -91,13 +96,13 @@ namespace IronPython.Runtime.Types {
             } else if (!_info.IsStatic) {
                 DoSet(context, instance, value, false);
             } else {
-                throw PythonOps.AttributeErrorForReadonlyAttribute(_info.DeclaringType.Name, SymbolTable.StringToId(_info.Name));
+                throw PythonOps.AttributeErrorForReadonlyAttribute(_info.DeclaringType.Name, _info.Name);
             }
         }
 
         [SpecialName]
         public void __delete__(object instance) {
-            throw PythonOps.AttributeErrorForBuiltinAttributeDeletion(_info.DeclaringType.Name, SymbolTable.StringToId(_info.Name));
+            throw PythonOps.AttributeErrorForBuiltinAttributeDeletion(_info.DeclaringType.Name, _info.Name);
         }
 
         public string __doc__ {
@@ -164,7 +169,7 @@ namespace IronPython.Runtime.Types {
 
         internal override bool TryDeleteValue(CodeContext context, object instance, PythonType owner) {
             if (ShouldSetOrDelete(owner)) {
-                throw PythonOps.AttributeErrorForBuiltinAttributeDeletion(_info.DeclaringType.Name, SymbolTable.StringToId(_info.Name));
+                throw PythonOps.AttributeErrorForBuiltinAttributeDeletion(_info.DeclaringType.Name, _info.Name);
             }
             return false;
         }
@@ -210,7 +215,7 @@ namespace IronPython.Runtime.Types {
         private void DoSet(CodeContext context, object instance, object val, bool suppressWarning) {
             PerfTrack.NoteEvent(PerfTrack.Categories.Fields, this);
             if (_info.IsInitOnly || _info.IsLiteral) {
-                throw PythonOps.AttributeErrorForReadonlyAttribute(_info.DeclaringType.Name, SymbolTable.StringToId(_info.Name));
+                throw PythonOps.AttributeErrorForReadonlyAttribute(_info.DeclaringType.Name, _info.Name);
             } else if (!suppressWarning && instance != null && instance.GetType().IsValueType) {
                 PythonOps.Warn(context, PythonExceptions.RuntimeWarning, UpdateValueTypeFieldWarning, _info.Name, _info.DeclaringType.Name);
             }

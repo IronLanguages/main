@@ -16,7 +16,11 @@
 using System.Diagnostics;
 using System.Dynamic.Utils;
 
+#if CLR2
+namespace Microsoft.Scripting.Ast.Compiler {
+#else
 namespace System.Linq.Expressions.Compiler {
+#endif
 
     // The part of the LambdaCompiler dealing with low level control flow
     // break, contiue, return, exceptions, etc

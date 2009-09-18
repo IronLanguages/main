@@ -20,6 +20,7 @@ using System.Dynamic;
 using System.Windows;
 using System.Windows.Resources;
 using Microsoft.Scripting.Hosting;
+using Microsoft.Scripting.Utils;
 using System.Collections.Generic;
 
 namespace Microsoft.Scripting.Silverlight {

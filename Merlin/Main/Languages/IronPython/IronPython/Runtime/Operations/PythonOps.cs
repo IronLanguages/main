@@ -13,13 +13,18 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
 using System.IO;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
@@ -250,7 +255,7 @@ namespace IronPython.Runtime.Operations {
             else if (o is float) return o;
             else if (o is bool) return ScriptingRuntimeHelpers.Int32ToObject((bool)o ? 1 : 0);
 
-            if (PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, o, Symbols.Positive, out ret) &&
+            if (PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, o, "__pos__", out ret) &&
                 ret != NotImplementedType.Value) {
                 return ret;
             }
@@ -268,7 +273,7 @@ namespace IronPython.Runtime.Operations {
             else if (o is bool) return ScriptingRuntimeHelpers.Int32ToObject((bool)o ? -1 : 0);
 
             object ret;
-            if (PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, o, Symbols.OperatorNegate, out ret) &&
+            if (PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, o, "__neg__", out ret) &&
                 ret != NotImplementedType.Value) {
                 return ret;
             }
@@ -320,7 +325,7 @@ namespace IronPython.Runtime.Operations {
             object bases;
             PythonType dt = typeinfo as PythonType;
             if (dt == null) {
-                if (!PythonOps.TryGetBoundAttr(typeinfo, Symbols.Bases, out bases)) {
+                if (!PythonOps.TryGetBoundAttr(typeinfo, "__bases__", out bases)) {
                     //!!! deal with classes w/ just __bases__ defined.
                     throw PythonOps.TypeErrorForBadInstance("issubclass(): {0} is not a class nor a tuple of classes", typeinfo);
                 }
@@ -409,7 +414,7 @@ namespace IronPython.Runtime.Operations {
         private static bool IsInstanceDynamic(object o, object typeinfo, PythonType odt) {
             if (o is IPythonObject || o is OldInstance) {
                 object cls;
-                if (PythonOps.TryGetBoundAttr(o, Symbols.Class, out cls) &&
+                if (PythonOps.TryGetBoundAttr(o, "__class__", out cls) &&
                     (!object.ReferenceEquals(odt, cls))) {
                     return IsSubclassSlow(cls, typeinfo);
                 }
@@ -428,7 +433,7 @@ namespace IronPython.Runtime.Operations {
 
             // Get bases
             object bases;
-            if (!PythonOps.TryGetBoundAttr(cls, Symbols.Bases, out bases)) {
+            if (!PythonOps.TryGetBoundAttr(cls, "__bases__", out bases)) {
                 return false;   // no bases, cannot be subclass
             }
             PythonTuple tbases = bases as PythonTuple;
@@ -450,7 +455,7 @@ namespace IronPython.Runtime.Operations {
             if (o is bool) return ScriptingRuntimeHelpers.Int32ToObject((bool)o ? -2 : -1);
 
             object ret;
-            if (PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, o, Symbols.OperatorOnesComplement, out ret) &&
+            if (PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, o, "__invert__", out ret) &&
                 ret != NotImplementedType.Value)
                 return ret;
 
@@ -493,7 +498,7 @@ namespace IronPython.Runtime.Operations {
         internal static object MultiplySequence<T>(MultiplySequenceWorker<T> multiplier, T sequence, Index count, bool isForward) {
             if (isForward && count != null) {
                 object ret;
-                if (PythonTypeOps.TryInvokeBinaryOperator(DefaultContext.Default, count.Value, sequence, Symbols.OperatorReverseMultiply, out ret)) {
+                if (PythonTypeOps.TryInvokeBinaryOperator(DefaultContext.Default, count.Value, sequence, "__rmul__", out ret)) {
                     if (ret != NotImplementedType.Value) return ret;
                 }
             }
@@ -732,7 +737,7 @@ namespace IronPython.Runtime.Operations {
                 throw PythonOps.ValueError("complex modulo");
             }
 
-            if (PythonTypeOps.TryInvokeTernaryOperator(context, x, y, z, Symbols.OperatorPower, out ret)) {
+            if (PythonTypeOps.TryInvokeTernaryOperator(context, x, y, z, "__pow__", out ret)) {
                 if (ret != NotImplementedType.Value) {
                     return ret;
                 } else if (!IsNumericObject(y) || !IsNumericObject(z)) {
@@ -777,7 +782,7 @@ namespace IronPython.Runtime.Operations {
             object hex;
             if (PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default,
                 o,
-                Symbols.ConvertToHex,
+                "__hex__",
                 out hex)) {
                 if (!(hex is string) && !(hex is ExtensibleString))
                     throw PythonOps.TypeError("hex expected string type as return, got '{0}'", PythonTypeOps.GetName(hex));
@@ -798,7 +803,7 @@ namespace IronPython.Runtime.Operations {
 
             if (PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default,
                 o,
-                Symbols.ConvertToOctal,
+                "__oct__",
                 out octal)) {
                 if (!(octal is string) && !(octal is ExtensibleString))
                     throw PythonOps.TypeError("hex expected string type as return, got '{0}'", PythonTypeOps.GetName(octal));
@@ -936,23 +941,23 @@ namespace IronPython.Runtime.Operations {
             return pc.GetIndexSite.Target(pc.GetIndexSite, o, index);
         }
 
-        public static bool TryGetBoundAttr(object o, SymbolId name, out object ret) {
+        public static bool TryGetBoundAttr(object o, string name, out object ret) {
             return TryGetBoundAttr(DefaultContext.Default, o, name, out ret);
         }
 
-        public static void SetAttr(CodeContext/*!*/ context, object o, SymbolId name, object value) {
+        public static void SetAttr(CodeContext/*!*/ context, object o, string name, object value) {
             PythonContext.GetContext(context).SetAttr(context, o, name, value);
         }
 
-        public static bool TryGetBoundAttr(CodeContext/*!*/ context, object o, SymbolId name, out object ret) {
+        public static bool TryGetBoundAttr(CodeContext/*!*/ context, object o, string name, out object ret) {
             return DynamicHelpers.GetPythonType(o).TryGetBoundAttr(context, o, name, out ret);
         }
 
-        public static void DeleteAttr(CodeContext/*!*/ context, object o, SymbolId name) {
+        public static void DeleteAttr(CodeContext/*!*/ context, object o, string name) {
             PythonContext.GetContext(context).DeleteAttr(context, o, name);
         }
 
-        public static bool HasAttr(CodeContext/*!*/ context, object o, SymbolId name) {
+        public static bool HasAttr(CodeContext/*!*/ context, object o, string name) {
             object dummy;
             try {
                 return TryGetBoundAttr(context, o, name, out dummy);
@@ -967,33 +972,33 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        public static object GetBoundAttr(CodeContext/*!*/ context, object o, SymbolId name) {
+        public static object GetBoundAttr(CodeContext/*!*/ context, object o, string name) {
             object ret;
             if (!DynamicHelpers.GetPythonType(o).TryGetBoundAttr(context, o, name, out ret)) {
                 if (o is OldClass) {
                     throw PythonOps.AttributeError("type object '{0}' has no attribute '{1}'",
-                        ((OldClass)o).Name, SymbolTable.IdToString(name));
+                        ((OldClass)o).Name, name);
                 } else {
-                    throw PythonOps.AttributeError("'{0}' object has no attribute '{1}'", PythonTypeOps.GetName(o), SymbolTable.IdToString(name));
+                    throw PythonOps.AttributeError("'{0}' object has no attribute '{1}'", PythonTypeOps.GetName(o), name);
                 }
             }
 
             return ret;
         }
 
-        public static void ObjectSetAttribute(CodeContext/*!*/ context, object o, SymbolId name, object value) {
+        public static void ObjectSetAttribute(CodeContext/*!*/ context, object o, string name, object value) {
             if (!DynamicHelpers.GetPythonType(o).TrySetNonCustomMember(context, o, name, value))
                 throw AttributeErrorForMissingOrReadonly(context, DynamicHelpers.GetPythonType(o), name);
         }
 
-        public static void ObjectDeleteAttribute(CodeContext/*!*/ context, object o, SymbolId name) {
+        public static void ObjectDeleteAttribute(CodeContext/*!*/ context, object o, string name) {
             object dummy;
-            if (!PythonTypeOps.TryInvokeBinaryOperator(context, o, name, Symbols.DeleteDescriptor, out dummy)) {
+            if (!PythonTypeOps.TryInvokeBinaryOperator(context, o, name, "__delete__", out dummy)) {
                 throw AttributeErrorForMissingOrReadonly(context, DynamicHelpers.GetPythonType(o), name);
             }
         }
 
-        public static object ObjectGetAttribute(CodeContext/*!*/ context, object o, SymbolId name) {
+        public static object ObjectGetAttribute(CodeContext/*!*/ context, object o, string name) {
             OldClass oc = o as OldClass;
             if (oc != null) {
                 return oc.GetMember(context, name);
@@ -1115,11 +1120,11 @@ namespace IronPython.Runtime.Operations {
             return PythonTypeOps.TryInvokeBinaryOperator(DefaultContext.Default,
                 o,
                 instance,
-                Symbols.DeleteDescriptor,
+                "__delete__",
                 out dummy);
         }
 
-        public static object Invoke(CodeContext/*!*/ context, object target, SymbolId name, params object[] args) {
+        public static object Invoke(CodeContext/*!*/ context, object target, string name, params object[] args) {
             return PythonCalls.Call(context, PythonOps.GetBoundAttr(context, target, name), args);
         }
 
@@ -1139,11 +1144,11 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static object IsMappingType(CodeContext/*!*/ context, object o) {
-            if (o is IDictionary || o is PythonDictionary || o is IDictionary<object, object> || o is IAttributesCollection) {
+            if (o is IDictionary || o is PythonDictionary || o is IDictionary<object, object> || o is PythonDictionary) {
                 return ScriptingRuntimeHelpers.True;
             }
             object getitem;
-            if ((o is IPythonObject || o is OldInstance) && PythonOps.TryGetBoundAttr(context, o, Symbols.GetItem, out getitem)) {
+            if ((o is IPythonObject || o is OldInstance) && PythonOps.TryGetBoundAttr(context, o, "__getitem__", out getitem)) {
                 if (!PythonOps.IsClsVisible(context)) {
                     // in standard Python methods aren't mapping types, therefore
                     // if the user hasn't broken out of that box yet don't treat 
@@ -1225,10 +1230,10 @@ namespace IronPython.Runtime.Operations {
             iwr.SetFinalizer(new WeakRefTracker(nif, nif));
         }
 
-        private static object FindMetaclass(CodeContext/*!*/ context, PythonTuple bases, IAttributesCollection dict) {
+        private static object FindMetaclass(CodeContext/*!*/ context, PythonTuple bases, PythonDictionary dict) {
             // If dict['__metaclass__'] exists, it is used. 
             object ret;
-            if (dict.TryGetValue(Symbols.MetaClass, out ret) && ret != null) return ret;
+            if (dict.TryGetValue("__metaclass__", out ret) && ret != null) return ret;
 
             // Otherwise, if there is at least one base class, its metaclass is used
             for (int i = 0; i < bases.__len__(); i++) {
@@ -1236,7 +1241,7 @@ namespace IronPython.Runtime.Operations {
             }
 
             // Otherwise, if there's a global variable named __metaclass__, it is used.
-            if (context.TryGetGlobalVariable(Symbols.MetaClass, out ret) && ret != null) {
+            if (context.TryGetGlobalVariable("__metaclass__", out ret) && ret != null) {
                 return ret;
             }
 
@@ -1260,7 +1265,7 @@ namespace IronPython.Runtime.Operations {
             return func;
         }
 
-        internal static object MakeClass(CodeContext context, string name, object[] bases, string selfNames, IAttributesCollection vars) {
+        internal static object MakeClass(CodeContext context, string name, object[] bases, string selfNames, PythonDictionary vars) {
             foreach (object dt in bases) {
                 if (dt is TypeGroup) {
                     object[] newBases = new object[bases.Length];
@@ -1469,14 +1474,14 @@ namespace IronPython.Runtime.Operations {
             pc.WriteCallSite.Target(
                 pc.WriteCallSite,
                 context,
-                GetBoundAttr(context, f, Symbols.ConsoleWrite),
+                GetBoundAttr(context, f, "write"),
                 text
             );
         }
 
         private static object ReadLine(CodeContext/*!*/ context, object f) {
             if (f == null || f == Uninitialized.Instance) throw PythonOps.RuntimeError("lost sys.std_in");
-            return PythonOps.Invoke(context, f, Symbols.ConsoleReadLine);
+            return PythonOps.Invoke(context, f, "readline");
         }
 
         public static void WriteSoftspace(CodeContext/*!*/ context, object f) {
@@ -1487,7 +1492,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static void SetSoftspace(object f, object value) {
-            PythonOps.SetAttr(DefaultContext.Default, f, Symbols.Softspace, value);
+            PythonOps.SetAttr(DefaultContext.Default, f, "softspace", value);
         }
 
         public static bool CheckSoftspace(object f) {
@@ -1498,7 +1503,7 @@ namespace IronPython.Runtime.Operations {
             }
 
             object result;
-            if (PythonOps.TryGetBoundAttr(f, Symbols.Softspace, out result)) {
+            if (PythonOps.TryGetBoundAttr(f, "softspace", out result)) {
                 return PythonOps.IsTrue(result);
             }
 
@@ -1627,7 +1632,7 @@ namespace IronPython.Runtime.Operations {
                 string[] parts = fullName.Split('.');
 
                 for (int i = 1; i < parts.Length; i++) {
-                    module = PythonOps.GetBoundAttr(context, module, SymbolTable.StringToId(parts[i]));
+                    module = PythonOps.GetBoundAttr(context, module, parts[i]);
                 }
             }
             return module;
@@ -1681,7 +1686,7 @@ namespace IronPython.Runtime.Operations {
 
             // look for __all__, if it's defined then use that to get the attribute names,
             // otherwise get all the names and filter out members starting w/ _'s.
-            if (PythonOps.TryGetBoundAttr(context, newmod, Symbols.All, out all)) {
+            if (PythonOps.TryGetBoundAttr(context, newmod, "__all__", out all)) {
                 exports = PythonOps.GetEnumerator(all);
             } else {
                 exports = PythonOps.GetAttrNames(context, newmod).GetEnumerator();
@@ -1697,8 +1702,6 @@ namespace IronPython.Runtime.Operations {
                     continue;
                 }
 
-                SymbolId fieldId = SymbolTable.StringToId(name);
-
                 // we special case several types to avoid one-off code gen of dynamic sites                
                 if (scope != null) {
                     context.SetVariable(name, scope.__dict__[name]);
@@ -1710,13 +1713,13 @@ namespace IronPython.Runtime.Operations {
                 } else if (pt != null) {
                     PythonTypeSlot pts;
                     object value;
-                    if (pt.TryResolveSlot(context, fieldId, out pts) &&
+                    if (pt.TryResolveSlot(context, name, out pts) &&
                         pts.TryGetValue(context, null, pt, out value)) {
                         context.SetVariable(name, value);
                     }
                 } else {
                     // not a known type, we'll do use a site to do the get...
-                    context.SetVariable(name, PythonOps.GetBoundAttr(context, newmod, fieldId));
+                    context.SetVariable(name, PythonOps.GetBoundAttr(context, newmod, name));
                 }
             }
         }
@@ -1733,8 +1736,8 @@ namespace IronPython.Runtime.Operations {
         /// </summary>
         [ProfilerTreatsAsExternal]
         public static void UnqualifiedExec(CodeContext/*!*/ context, object code) {
-            IAttributesCollection locals = null;
-            IAttributesCollection globals = null;
+            PythonDictionary locals = null;
+            PythonDictionary globals = null;
 
             // if the user passes us a tuple we'll extract the 3 values out of it            
             PythonTuple codeTuple = code as PythonTuple;
@@ -1742,12 +1745,12 @@ namespace IronPython.Runtime.Operations {
                 code = codeTuple[0];
 
                 if (codeTuple.__len__() > 1 && codeTuple[1] != null) {
-                    globals = codeTuple[1] as IAttributesCollection;
+                    globals = codeTuple[1] as PythonDictionary;
                     if (globals == null) throw PythonOps.TypeError("globals must be dictionary or none");
                 }
 
                 if (codeTuple.__len__() > 2 && codeTuple[2] != null) {
-                    locals = codeTuple[2] as IAttributesCollection;
+                    locals = codeTuple[2] as PythonDictionary;
                     if (locals == null) throw PythonOps.TypeError("locals must be dictionary or none");
                 } else {
                     locals = globals;
@@ -1764,7 +1767,7 @@ namespace IronPython.Runtime.Operations {
         /// exec code in globals [, locals ]
         /// </summary>
         [ProfilerTreatsAsExternal]
-        public static void QualifiedExec(CodeContext/*!*/ context, object code, IAttributesCollection globals, object locals) {
+        public static void QualifiedExec(CodeContext/*!*/ context, object code, PythonDictionary globals, object locals) {
             PythonFile pf;
             Stream cs;
 
@@ -1861,7 +1864,7 @@ namespace IronPython.Runtime.Operations {
         // wrapping it. This is the proper behavior for Builtin.iter().
         public static object GetEnumeratorObject(CodeContext/*!*/ context, object o) {
             object iterFunc;
-            if (PythonOps.TryGetBoundAttr(context, o, Symbols.Iterator, out iterFunc) &&
+            if (PythonOps.TryGetBoundAttr(context, o, "__iter__", out iterFunc) &&
                 !Object.ReferenceEquals(iterFunc, NotImplementedType.Value)) {
                 return PythonOps.CallWithContext(context, iterFunc);
             }
@@ -1878,16 +1881,7 @@ namespace IronPython.Runtime.Operations {
             return enumerator;
         }
 
-        public static IEnumerator GetEnumeratorForIteration(CodeContext/*!*/ context, object enumerable) {
-            IEnumerator enumerator;
-            if (!TryGetEnumerator(context, enumerable, out enumerator)) {
-                return ThrowTypeErrorForBadIteration(context, enumerable);
-            }
-
-            return enumerator;
-        }
-
-        public static IEnumerator ThrowTypeErrorForBadIteration(CodeContext context, object enumerable) {
+        public static KeyValuePair<IEnumerator, IDisposable> ThrowTypeErrorForBadIteration(CodeContext context, object enumerable) {
             throw PythonOps.TypeError("iteration over non-sequence of type {0}", PythonTypeOps.GetName(enumerable));
         }
 
@@ -1902,16 +1896,27 @@ namespace IronPython.Runtime.Operations {
             return false;
         }
 
-        public static IEnumerator<string> StringEnumerator(string str) {
-            return StringOps.StringEnumerator(str);
+        public static void ForLoopDispose(KeyValuePair<IEnumerator, IDisposable> iteratorInfo) {
+            if (iteratorInfo.Value != null) {
+                iteratorInfo.Value.Dispose();
+            }
         }
 
-        public static IEnumerator<Bytes> BytesEnumerator(IList<byte> bytes) {
-            return IListOfByteOps.BytesEnumerator(bytes);
+        public static KeyValuePair<IEnumerator, IDisposable> StringEnumerator(string str) {
+            return new KeyValuePair<IEnumerator, IDisposable>(StringOps.StringEnumerator(str), null);
         }
 
-        public static IEnumerator<int> BytesIntEnumerator(IList<byte> bytes) {
-            return IListOfByteOps.BytesIntEnumerator(bytes);
+        public static KeyValuePair<IEnumerator, IDisposable> BytesEnumerator(IList<byte> bytes) {
+            return new KeyValuePair<IEnumerator, IDisposable>(IListOfByteOps.BytesEnumerator(bytes), null);
+        }
+
+        public static KeyValuePair<IEnumerator, IDisposable> BytesIntEnumerator(IList<byte> bytes) {
+            return new KeyValuePair<IEnumerator, IDisposable>(IListOfByteOps.BytesIntEnumerator(bytes), null);
+        }
+
+        public static KeyValuePair<IEnumerator, IDisposable> GetEnumeratorFromEnumerable(IEnumerable enumerable) {
+            IEnumerator enumerator = enumerable.GetEnumerator();
+            return new KeyValuePair<IEnumerator, IDisposable>(enumerator, enumerator as IDisposable);
         }
 
         public static IEnumerable StringEnumerable(string str) {
@@ -2100,7 +2105,7 @@ namespace IronPython.Runtime.Operations {
             TraceBack tb = CreateTraceBack(pc, ex);
             pc.SystemExceptionTraceBack = tb;
 
-            object excType = PythonOps.GetBoundAttr(context, pyExcep, Symbols.Class);
+            object excType = PythonOps.GetBoundAttr(context, pyExcep, "__class__");
             pc.SystemExceptionType = excType;
             pc.SystemExceptionValue = pyExcep;
 
@@ -2223,7 +2228,7 @@ namespace IronPython.Runtime.Operations {
         public static PythonDictionary UserMappingToPythonDictionary(CodeContext context, object dict, string funcName) {
             // call dict.keys()
             object keys;
-            if (!PythonTypeOps.TryInvokeUnaryOperator(context, dict, Symbols.Keys, out keys)) {
+            if (!PythonTypeOps.TryInvokeUnaryOperator(context, dict, "keys", out keys)) {
                 throw PythonOps.TypeError("{0}() argument after ** must be a mapping, not {1}",
                     funcName,
                     PythonTypeOps.GetName(dict));
@@ -2261,10 +2266,10 @@ namespace IronPython.Runtime.Operations {
             return new PythonDictionary(dict);
         }
 
-        public static object ExtractDictionaryArgument(PythonFunction function, string name, int argCnt, IAttributesCollection dict) {
+        public static object ExtractDictionaryArgument(PythonFunction function, string name, int argCnt, PythonDictionary dict) {
             object val;
-            if (dict.TryGetObjectValue(name, out val)) {
-                dict.RemoveObjectKey(name);
+            if (dict.TryGetValue(name, out val)) {
+                dict.Remove(name);
                 return val;
             }
 
@@ -2274,12 +2279,12 @@ namespace IronPython.Runtime.Operations {
                 argCnt);
         }
 
-        public static void AddDictionaryArgument(PythonFunction function, string name, object value, IAttributesCollection dict) {
-            if (dict.ContainsObjectKey(name)) {
+        public static void AddDictionaryArgument(PythonFunction function, string name, object value, PythonDictionary dict) {
+            if (dict.ContainsKey(name)) {
                 throw MultipleKeywordArgumentError(function, name);
             }
 
-            dict.AddObjectKey(name, value);
+            dict[name] = value;
         }
 
         public static void VerifyUnduplicatedByPosition(PythonFunction function, string name, int position, int listlen) {
@@ -2404,13 +2409,13 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        public static bool CheckDictionaryMembers(IAttributesCollection dict, string[] names) {
+        public static bool CheckDictionaryMembers(PythonDictionary dict, string[] names) {
             if (dict.Count != names.Length) {
                 return false;
             }
 
             foreach (string name in names) {
-                if (!dict.ContainsKey(SymbolTable.StringToId(name))) {
+                if (!dict.ContainsKey(name)) {
                     return false;
                 }
             }
@@ -2418,7 +2423,7 @@ namespace IronPython.Runtime.Operations {
             return true;
         }
 
-        public static object PythonFunctionGetMember(PythonFunction function, SymbolId name) {
+        public static object PythonFunctionGetMember(PythonFunction function, string name) {
             object res;
             if (function._dict != null && function._dict.TryGetValue(name, out res)) {
                 return res;
@@ -2427,7 +2432,7 @@ namespace IronPython.Runtime.Operations {
             return OperationFailed.Value;
         }
 
-        public static object PythonFunctionSetMember(PythonFunction function, SymbolId name, object value) {
+        public static object PythonFunctionSetMember(PythonFunction function, string name, object value) {
             return function.__dict__[name] = value;
         }
 
@@ -2443,7 +2448,7 @@ namespace IronPython.Runtime.Operations {
             function.__defaults__ = null;
         }
 
-        public static bool PythonFunctionDeleteMember(PythonFunction function, SymbolId name) {
+        public static bool PythonFunctionDeleteMember(PythonFunction function, string name) {
             if (function._dict == null) return false;
 
             return function._dict.Remove(name);
@@ -2474,7 +2479,7 @@ namespace IronPython.Runtime.Operations {
 
         public static object GetInitMember(CodeContext/*!*/ context, PythonType type, object instance) {
             object value;
-            bool res = type.TryGetNonCustomBoundMember(context, instance, Symbols.Init, out value);
+            bool res = type.TryGetNonCustomBoundMember(context, instance, "__init__", out value);
             Debug.Assert(res);
 
             return value;
@@ -2489,7 +2494,7 @@ namespace IronPython.Runtime.Operations {
             return value;
         }
 
-        public static object GetMixedMember(CodeContext/*!*/ context, PythonType type, object instance, SymbolId name) {
+        public static object GetMixedMember(CodeContext/*!*/ context, PythonType type, object instance, string name) {
             foreach (PythonType t in type.ResolutionOrder) {
                 if (t.IsOldClass) {
                     OldClass oc = (OldClass)ToPythonType(t);
@@ -2619,9 +2624,9 @@ namespace IronPython.Runtime.Operations {
 
         public static IEnumerable OldInstanceConvertToIEnumerableNonThrowing(CodeContext/*!*/ context, OldInstance/*!*/ self) {
             object callable;
-            if (self.TryGetBoundCustomMember(context, Symbols.Iterator, out callable)) {
+            if (self.TryGetBoundCustomMember(context, "__iter__", out callable)) {
                 return CreatePythonEnumerable(self);
-            } else if (self.TryGetBoundCustomMember(context, Symbols.GetItem, out callable)) {
+            } else if (self.TryGetBoundCustomMember(context, "__getitem__", out callable)) {
                 return CreateItemEnumerable(callable, PythonContext.GetContext(context).GetItemCallSite);
             }
 
@@ -2639,9 +2644,9 @@ namespace IronPython.Runtime.Operations {
 
         public static IEnumerable<T> OldInstanceConvertToIEnumerableOfTNonThrowing<T>(CodeContext/*!*/ context, OldInstance/*!*/ self) {
             object callable;
-            if (self.TryGetBoundCustomMember(context, Symbols.Iterator, out callable)) {
+            if (self.TryGetBoundCustomMember(context, "__iter__", out callable)) {
                 return new IEnumerableOfTWrapper<T>(CreatePythonEnumerable(self));
-            } else if (self.TryGetBoundCustomMember(context, Symbols.GetItem, out callable)) {
+            } else if (self.TryGetBoundCustomMember(context, "__getitem__", out callable)) {
                 return new IEnumerableOfTWrapper<T>(CreateItemEnumerable(callable, PythonContext.GetContext(context).GetItemCallSite));
             }
 
@@ -2659,9 +2664,9 @@ namespace IronPython.Runtime.Operations {
 
         public static IEnumerator OldInstanceConvertToIEnumeratorNonThrowing(CodeContext/*!*/ context, OldInstance/*!*/ self) {
             object callable;
-            if (self.TryGetBoundCustomMember(context, Symbols.Iterator, out callable)) {
+            if (self.TryGetBoundCustomMember(context, "__iter__", out callable)) {
                 return CreatePythonEnumerator(self);
-            } else if (self.TryGetBoundCustomMember(context, Symbols.GetItem, out callable)) {
+            } else if (self.TryGetBoundCustomMember(context, "__getitem__", out callable)) {
                 return CreateItemEnumerator(callable, PythonContext.GetContext(context).GetItemCallSite);
             }
 
@@ -2679,14 +2684,14 @@ namespace IronPython.Runtime.Operations {
 
         public static bool? OldInstanceConvertToBoolNonThrowing(CodeContext/*!*/ context, OldInstance/*!*/ oi) {
             object value;
-            if (oi.TryGetBoundCustomMember(context, Symbols.NonZero, out value)) {
+            if (oi.TryGetBoundCustomMember(context, "__nonzero__", out value)) {
                 object res = NonThrowingConvertToNonZero(PythonCalls.Call(context, value));
                 if (res is int) {
                     return ((int)res) != 0;
                 } else if (res is bool) {
                     return (bool)res;
                 }
-            } else if (oi.TryGetBoundCustomMember(context, Symbols.Length, out value)) {
+            } else if (oi.TryGetBoundCustomMember(context, "__len__", out value)) {
                 int res;
                 if (Converter.TryConvertToInt32(PythonCalls.Call(context, value), out res)) {
                     return res != 0;
@@ -2698,33 +2703,33 @@ namespace IronPython.Runtime.Operations {
 
         public static object OldInstanceConvertToBoolThrowing(CodeContext/*!*/ context, OldInstance/*!*/ oi) {
             object value;
-            if (oi.TryGetBoundCustomMember(context, Symbols.NonZero, out value)) {
+            if (oi.TryGetBoundCustomMember(context, "__nonzero__", out value)) {
                 return ThrowingConvertToNonZero(PythonCalls.Call(context, value));
-            } else if (oi.TryGetBoundCustomMember(context, Symbols.Length, out value)) {
+            } else if (oi.TryGetBoundCustomMember(context, "__len__", out value)) {
                 return PythonContext.GetContext(context).ConvertToInt32(PythonCalls.Call(context, value)) != 0;
             }
 
             return null;
         }
 
-        public static object OldInstanceConvertNonThrowing(CodeContext/*!*/ context, OldInstance/*!*/ oi, SymbolId conversion) {
+        public static object OldInstanceConvertNonThrowing(CodeContext/*!*/ context, OldInstance/*!*/ oi, string conversion) {
             object value;
             if (oi.TryGetBoundCustomMember(context, conversion, out value)) {
-                if (conversion == Symbols.ConvertToInt) {
+                if (conversion == "__int__") {
                     return NonThrowingConvertToInt(PythonCalls.Call(context, value));
-                } else if (conversion == Symbols.ConvertToLong) {
+                } else if (conversion == "__long__") {
                     return NonThrowingConvertToLong(PythonCalls.Call(context, value));
-                } else if (conversion == Symbols.ConvertToFloat) {
+                } else if (conversion == "__float__") {
                     return NonThrowingConvertToFloat(PythonCalls.Call(context, value));
-                } else if (conversion == Symbols.ConvertToComplex) {
+                } else if (conversion == "__complex__") {
                     return NonThrowingConvertToComplex(PythonCalls.Call(context, value));
-                } else if (conversion == Symbols.String) {
+                } else if (conversion == "__str__") {
                     return NonThrowingConvertToString(PythonCalls.Call(context, value));
                 } else {
                     Debug.Assert(false);
                 }
-            } else if (conversion == Symbols.ConvertToComplex) {
-                object res = OldInstanceConvertNonThrowing(context, oi, Symbols.ConvertToFloat);
+            } else if (conversion == "__complex__") {
+                object res = OldInstanceConvertNonThrowing(context, oi, "__float__");
                 if (res == null) {
                     return null;
                 }
@@ -2735,24 +2740,24 @@ namespace IronPython.Runtime.Operations {
             return null;
         }
 
-        public static object OldInstanceConvertThrowing(CodeContext/*!*/ context, OldInstance/*!*/ oi, SymbolId conversion) {
+        public static object OldInstanceConvertThrowing(CodeContext/*!*/ context, OldInstance/*!*/ oi, string conversion) {
             object value;
             if (oi.TryGetBoundCustomMember(context, conversion, out value)) {
-                if (conversion == Symbols.ConvertToInt) {
+                if (conversion == "__int__") {
                     return ThrowingConvertToInt(PythonCalls.Call(context, value));
-                } else if (conversion == Symbols.ConvertToLong) {
+                } else if (conversion == "__long__") {
                     return ThrowingConvertToLong(PythonCalls.Call(context, value));
-                } else if (conversion == Symbols.ConvertToFloat) {
+                } else if (conversion == "__float__") {
                     return ThrowingConvertToFloat(PythonCalls.Call(context, value));
-                } else if (conversion == Symbols.ConvertToComplex) {
+                } else if (conversion == "__complex__") {
                     return ThrowingConvertToComplex(PythonCalls.Call(context, value));
-                } else if (conversion == Symbols.String) {
+                } else if (conversion == "__str__") {
                     return ThrowingConvertToString(PythonCalls.Call(context, value));
                 } else {
                     Debug.Assert(false);
                 }
-            } else if (conversion == Symbols.ConvertToComplex) {
-                return OldInstanceConvertThrowing(context, oi, Symbols.ConvertToFloat);
+            } else if (conversion == "__complex__") {
+                return OldInstanceConvertThrowing(context, oi, "__float__");
             }
 
             return null;
@@ -2917,7 +2922,7 @@ namespace IronPython.Runtime.Operations {
             return type.Version;
         }
 
-        public static bool TryResolveTypeSlot(CodeContext/*!*/ context, PythonType type, SymbolId name, out PythonTypeSlot slot) {
+        public static bool TryResolveTypeSlot(CodeContext/*!*/ context, PythonType type, string name, out PythonTypeSlot slot) {
             return type.TryResolveSlot(context, name, out slot);
         }
 
@@ -3112,7 +3117,7 @@ namespace IronPython.Runtime.Operations {
             return false;
         }
 
-        public static object PythonTypeGetMember(CodeContext/*!*/ context, PythonType type, object instance, SymbolId name) {
+        public static object PythonTypeGetMember(CodeContext/*!*/ context, PythonType type, object instance, string name) {
             return type.GetMember(context, instance, name);
         }
 
@@ -3136,7 +3141,7 @@ namespace IronPython.Runtime.Operations {
 
         public static bool OldInstanceIsCallable(CodeContext/*!*/ context, OldInstance/*!*/ self) {
             object dummy;
-            return self.TryGetBoundCustomMember(context, Symbols.Call, out dummy);
+            return self.TryGetBoundCustomMember(context, "__call__", out dummy);
         }
 
         public static object OldClassCheckCallError(OldClass/*!*/ self, object dictionary, object list) {
@@ -3163,7 +3168,7 @@ namespace IronPython.Runtime.Operations {
             return value;
         }
 
-        public static object OldClassSetNameHelper(OldClass oc, SymbolId name, object value) {
+        public static object OldClassSetNameHelper(OldClass oc, string name, object value) {
             oc.SetNameHelper(name, value);
             return value;
         }
@@ -3184,11 +3189,11 @@ namespace IronPython.Runtime.Operations {
             oc.DictionaryIsPublic();
         }
 
-        public static bool OldClassTryLookupValue(CodeContext context, OldClass oc, SymbolId name, out object value) {
+        public static bool OldClassTryLookupValue(CodeContext context, OldClass oc, string name, out object value) {
             return oc.TryLookupValue(context, name, out value);
         }
 
-        public static object OldClassLookupValue(CodeContext context, OldClass oc, SymbolId name) {
+        public static object OldClassLookupValue(CodeContext context, OldClass oc, string name) {
             return oc.LookupValue(context, name);
         }
 
@@ -3209,7 +3214,7 @@ namespace IronPython.Runtime.Operations {
             return ((CustomOldClassDictionaryStorage)dict).TryGetValueHelper(index, oldInstance, out res);
         }
 
-        public static object OldInstanceGetBoundMember(CodeContext context, OldInstance instance, SymbolId name) {
+        public static object OldInstanceGetBoundMember(CodeContext context, OldInstance instance, string name) {
             return instance.GetBoundMember(context, name);
         }
 
@@ -3218,37 +3223,37 @@ namespace IronPython.Runtime.Operations {
             return value;
         }
 
-        public static object OldClassDeleteMember(CodeContext context, OldClass self, SymbolId name) {
+        public static object OldClassDeleteMember(CodeContext context, OldClass self, string name) {
             self.DeleteCustomMember(context, name);
             return null;
         }
 
-        public static bool OldClassTryLookupOneSlot(OldClass self, SymbolId name, out object value) {
+        public static bool OldClassTryLookupOneSlot(OldClass self, string name, out object value) {
             return self.TryLookupOneSlot(name, out value);
         }
 
-        public static bool OldInstanceTryGetBoundCustomMember(CodeContext context, OldInstance self, SymbolId name, out object value) {
+        public static bool OldInstanceTryGetBoundCustomMember(CodeContext context, OldInstance self, string name, out object value) {
             return self.TryGetBoundCustomMember(context, name, out value);
         }
 
-        public static object OldInstanceSetCustomMember(CodeContext context, OldInstance self, SymbolId name, object value) {
+        public static object OldInstanceSetCustomMember(CodeContext context, OldInstance self, string name, object value) {
             self.SetCustomMember(context, name, value);
             return value;
         }
 
-        public static object OldInstanceDeleteCustomMember(CodeContext context, OldInstance self, SymbolId name) {
+        public static object OldInstanceDeleteCustomMember(CodeContext context, OldInstance self, string name) {
             self.DeleteCustomMember(context, name);
             return null;
         }
 
         #endregion
 
-        public static object PythonTypeSetCustomMember(CodeContext context, PythonType self, SymbolId name, object value) {
+        public static object PythonTypeSetCustomMember(CodeContext context, PythonType self, string name, object value) {
             self.SetCustomMember(context, name, value);
             return value;
         }
 
-        public static object PythonTypeDeleteCustomMember(CodeContext context, PythonType self, SymbolId name) {
+        public static object PythonTypeDeleteCustomMember(CodeContext context, PythonType self, string name) {
             self.DeleteCustomMember(context, name);
             return null;
         }
@@ -3298,7 +3303,7 @@ namespace IronPython.Runtime.Operations {
             object warnings = pc.GetWarningsModule(), warn = null;
 
             if (warnings != null) {
-                warn = PythonOps.GetBoundAttr(context, warnings, SymbolTable.StringToId("warn"));
+                warn = PythonOps.GetBoundAttr(context, warnings, "warn");
             }
 
             message = FormatWarning(message, args);
@@ -3315,7 +3320,7 @@ namespace IronPython.Runtime.Operations {
             object warnings = pc.GetWarningsModule(), warn = null;
 
             if (warnings != null) {
-                warn = PythonOps.GetBoundAttr(context, warnings, SymbolTable.StringToId("showwarning"));
+                warn = PythonOps.GetBoundAttr(context, warnings, "showwarning");
             }
 
             if (warn == null) {
@@ -3381,7 +3386,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static DynamicMetaObjectBinder MakeCompatGetAction(CodeContext/*!*/ context, string name) {
-            return PythonContext.GetContext(context).CompatGetMember(name);
+            return PythonContext.GetContext(context).CompatGetMember(name, false);
         }
 
         public static DynamicMetaObjectBinder MakeCompatInvokeAction(CodeContext/*!*/ context, CallInfo callInfo) {
@@ -3689,17 +3694,9 @@ namespace IronPython.Runtime.Operations {
                 }
             }
 
-            object builtins;
-            if (context.TryGetGlobalVariable(Symbols.Builtins, out builtins)) {
-                PythonModule builtinsScope = builtins as PythonModule;
-                if (builtinsScope != null && builtinsScope.__dict__.TryGetValue(name, out res)) {
-                    return res;
-                }
-
-                PythonDictionary dict = builtins as PythonDictionary;
-                if (dict != null && dict.TryGetValue(name, out res)) {
-                    return res;
-                }
+            PythonDictionary builtins = context.GetBuiltinsDict();
+            if (builtins != null && builtins.TryGetValue(name, out res)) {
+                return res;
             }
 
             if (isGlobal) {
@@ -3708,7 +3705,7 @@ namespace IronPython.Runtime.Operations {
             throw NameError(name);
         }
 
-        public static object RawGetGlobal(CodeContext/*!*/ context, SymbolId name) {
+        public static object RawGetGlobal(CodeContext/*!*/ context, string name) {
             object res;
             if (context.TryGetGlobalVariable(name, out res)) {
                 return res;
@@ -3717,7 +3714,7 @@ namespace IronPython.Runtime.Operations {
             return Uninitialized.Instance;
         }
 
-        public static object RawGetLocal(CodeContext/*!*/ context, SymbolId name) {
+        public static object RawGetLocal(CodeContext/*!*/ context, string name) {
             object res;
             if (context.TryLookupName(name, out res)) {
                 return res;
@@ -3758,7 +3755,7 @@ namespace IronPython.Runtime.Operations {
 
         #region Exception Factories
 
-        private static Exception MultipleKeywordArgumentError(PythonFunction function, string name) {
+        public static Exception MultipleKeywordArgumentError(PythonFunction function, string name) {
             return TypeError("{0}() got multiple values for keyword argument '{1}'", function.__name__, name);
         }
 
@@ -3792,7 +3789,7 @@ namespace IronPython.Runtime.Operations {
             return func.BadKeywordArgumentError(count);
         }
 
-        public static Exception AttributeErrorForMissingOrReadonly(CodeContext/*!*/ context, PythonType dt, SymbolId name) {
+        public static Exception AttributeErrorForMissingOrReadonly(CodeContext/*!*/ context, PythonType dt, string name) {
             PythonTypeSlot dts;
             if (dt.TryResolveSlot(context, name, out dts)) {
                 throw PythonOps.AttributeErrorForReadonlyAttribute(dt.Name, name);
@@ -3801,7 +3798,7 @@ namespace IronPython.Runtime.Operations {
             throw PythonOps.AttributeErrorForMissingAttribute(dt.Name, name);
         }
 
-        public static Exception AttributeErrorForMissingAttribute(object o, SymbolId name) {
+        public static Exception AttributeErrorForMissingAttribute(object o, string name) {
             PythonType dt = o as PythonType;
             if (dt != null)
                 return PythonOps.AttributeErrorForMissingAttribute(dt.Name, name);
@@ -4040,16 +4037,16 @@ namespace IronPython.Runtime.Operations {
             return PythonOps.TypeError(message);
         }
 
-        public static Exception AttributeErrorForReadonlyAttribute(string typeName, SymbolId attributeName) {
+        public static Exception AttributeErrorForReadonlyAttribute(string typeName, string attributeName) {
             // CPython uses AttributeError for all attributes except "__class__"
-            if (attributeName == Symbols.Class)
+            if (attributeName == "__class__")
                 return PythonOps.TypeError("can't delete __class__ attribute");
 
-            return PythonOps.AttributeError("attribute '{0}' of '{1}' object is read-only", SymbolTable.IdToString(attributeName), typeName);
+            return PythonOps.AttributeError("attribute '{0}' of '{1}' object is read-only", attributeName, typeName);
         }
 
-        public static Exception AttributeErrorForBuiltinAttributeDeletion(string typeName, SymbolId attributeName) {
-            return PythonOps.AttributeError("cannot delete attribute '{0}' of builtin type '{1}'", SymbolTable.IdToString(attributeName), typeName);
+        public static Exception AttributeErrorForBuiltinAttributeDeletion(string typeName, string attributeName) {
+            return PythonOps.AttributeError("cannot delete attribute '{0}' of builtin type '{1}'", attributeName, typeName);
         }
 
         public static Exception MissingInvokeMethodException(object o, string name) {
@@ -4070,8 +4067,8 @@ namespace IronPython.Runtime.Operations {
             return PythonOps.TypeError("exceptions must be classes or instances, not {0}", PythonTypeOps.GetName(type));
         }
 
-        public static Exception AttributeErrorForMissingAttribute(string typeName, SymbolId attributeName) {
-            return PythonOps.AttributeError("'{0}' object has no attribute '{1}'", typeName, SymbolTable.IdToString(attributeName));
+        public static Exception AttributeErrorForMissingAttribute(string typeName, string attributeName) {
+            return PythonOps.AttributeError("'{0}' object has no attribute '{1}'", typeName, attributeName);
         }
 
         public static Exception UncallableError(object func) {
@@ -4177,7 +4174,76 @@ namespace IronPython.Runtime.Operations {
             return module.__dict__.Remove(name);
         }
 
-        
+        internal static void ScopeSetMember(CodeContext context, Scope scope, string name, object value) {
+            ScopeStorage scopeStorage = scope.Storage as ScopeStorage;
+            if (scopeStorage != null) {
+                scopeStorage.SetValue(name, false, value);
+                return;
+            }
+
+            PythonOps.SetAttr(context, scope, name, value);
+        }
+
+        internal static object ScopeGetMember(CodeContext context, Scope scope, string name) {
+            ScopeStorage scopeStorage = scope.Storage as ScopeStorage;
+            if (scopeStorage != null) {
+                return scopeStorage.GetValue(name, false);
+            }
+
+            return PythonOps.GetBoundAttr(context, scope, name);
+        }
+
+        internal static bool ScopeTryGetMember(CodeContext context, Scope scope, string name, out object value) {
+            ScopeStorage scopeStorage = scope.Storage as ScopeStorage;
+            if (scopeStorage != null) {
+                return scopeStorage.TryGetValue(name, false, out value);
+            }
+
+            return PythonOps.TryGetBoundAttr(context, scope, name, out value);
+        }
+
+        internal static bool ScopeContainsMember(CodeContext context, Scope scope, string name) {
+            ScopeStorage scopeStorage = scope.Storage as ScopeStorage;
+            if (scopeStorage != null) {
+                return scopeStorage.HasValue(name, false);
+            }
+
+            return PythonOps.HasAttr(context, scope, name);
+        }
+
+        internal static bool ScopeDeleteMember(CodeContext context, Scope scope, string name) {
+            ScopeStorage scopeStorage = scope.Storage as ScopeStorage;
+            if (scopeStorage != null) {
+                return scopeStorage.DeleteValue(name, false);
+            }
+
+            bool res = PythonOps.HasAttr(context, scope, name);
+            PythonOps.DeleteAttr(context, scope, name);
+            return res;
+        }
+
+        internal static IList<object> ScopeGetMemberNames(CodeContext context, Scope scope) {
+            ScopeStorage scopeStorage = scope.Storage as ScopeStorage;
+            if (scopeStorage != null) {
+                List<object> res = new List<object>();
+
+                foreach (string name in scopeStorage.GetMemberNames()) {
+                    res.Add(name);
+                }
+
+                var objKeys = ((PythonScopeExtension)context.LanguageContext.EnsureScopeExtension(scope)).ObjectKeys;
+                if (objKeys != null) {
+                    foreach (object o in objKeys.Keys) {
+                        res.Add(o);
+                    }
+                }
+
+                return res;
+            }
+
+            return PythonOps.GetAttrNames(context, scope);
+        }
+
     }
 
     public struct FunctionStack {

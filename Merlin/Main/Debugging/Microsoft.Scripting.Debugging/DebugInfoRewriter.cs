@@ -13,6 +13,12 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using MSAst = System.Linq.Expressions;
+#else
+using MSAst = Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -20,10 +26,9 @@ using System.Diagnostics;
 using System.Globalization;
 using Microsoft.Scripting.Debugging.CompilerServices;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
-using MSAst = System.Linq.Expressions;
 
 namespace Microsoft.Scripting.Debugging {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = MSAst.Expression;
     
     /// <summary>
     /// Used to rewrite expressions containing DebugInfoExpressions.

@@ -757,7 +757,7 @@ namespace IronRuby.Tests {
             str = sjisEngine.CreateScriptSource(new BinaryContentProvider(bytes), null, sjisEncoding.Encoding).Execute<MutableString>();
             Assert(str.Encoding == sjisEncoding && str.ToString() == "ﾎ");
         }
-
+        
         private void KCode2() {
             if (_driver.PartialTrust) return;
 
@@ -771,9 +771,10 @@ namespace IronRuby.Tests {
             var tmpPath = Path.GetTempFileName();
             try {
                 Runtime.Globals.SetVariable("TempFileName", MS(tmpPath));
-                File.WriteAllBytes(tmpPath, sjisEncoding.Encoding.GetBytes("Cﾎ = 'ﾎ'"));
+                File.WriteAllBytes(tmpPath, sjisEncoding.Encoding.GetBytes("class Cﾎ; $ﾎ = 'ﾎ'; end"));
                 Engine.Execute(@"load(TempFileName)");
-                var str = Runtime.Globals.GetVariable<MutableString>("Cﾎ");
+                Assert(Runtime.Globals.GetVariable("Cﾎ") is RubyClass);
+                var str = (MutableString)Context.GetGlobalVariable("ﾎ");
                 Assert(str.Encoding == sjisEncoding && str.ToString() == "ﾎ");
             } finally {
                 File.Delete(tmpPath);

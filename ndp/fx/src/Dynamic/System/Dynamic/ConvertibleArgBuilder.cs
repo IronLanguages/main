@@ -15,8 +15,13 @@
 
 #if !SILVERLIGHT
 
-using System.Globalization;
+#if !MICROSOFT_DYNAMIC
 using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
+using System.Globalization;
 using System.Dynamic.Utils;
 
 namespace System.Dynamic {

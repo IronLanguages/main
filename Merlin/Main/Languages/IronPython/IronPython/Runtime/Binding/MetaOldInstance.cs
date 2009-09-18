@@ -13,10 +13,13 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#endif
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq.Expressions;
 using System.Dynamic;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
@@ -29,7 +32,7 @@ using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Runtime.Binding {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = Expression;
 
     /// <summary>
     /// Provides a MetaObject for instances of Python's old-style classes.
@@ -121,16 +124,16 @@ namespace IronPython.Runtime.Binding {
                     case TypeCode.Boolean:
                         return MakeConvertToBool(binder);
                     case TypeCode.Int32:
-                        return MakeConvertToCommon(binder, type, retType, Symbols.ConvertToInt);
+                        return MakeConvertToCommon(binder, type, retType, "__int__");
                     case TypeCode.Double:
-                        return MakeConvertToCommon(binder, type, retType, Symbols.ConvertToFloat);
+                        return MakeConvertToCommon(binder, type, retType, "__float__");
                     case TypeCode.String:
-                        return MakeConvertToCommon(binder, type, retType, Symbols.String);
+                        return MakeConvertToCommon(binder, type, retType, "__str__");
                     case TypeCode.Object:
                         if (type == typeof(BigInteger)) {
-                            return MakeConvertToCommon(binder, type, retType, Symbols.ConvertToLong);
+                            return MakeConvertToCommon(binder, type, retType, "__long__");
                         } else if (type == typeof(Complex64)) {
-                            return MakeConvertToCommon(binder, type, retType, Symbols.ConvertToComplex);
+                            return MakeConvertToCommon(binder, type, retType, "__complex__");
                         } else if (type == typeof(IEnumerable)) {
                             return MakeConvertToIEnumerable(binder);
                         } else if (type == typeof(IEnumerator)) {
@@ -188,7 +191,7 @@ namespace IronPython.Runtime.Binding {
                             typeof(PythonOps).GetMethod("OldInstanceTryGetBoundCustomMember"),
                             codeContext,
                             self.Expression,
-                            AstUtils.Constant(Symbols.Call),
+                            AstUtils.Constant("__call__"),
                             tmp
                         ),
                         Ast.Block(
@@ -322,7 +325,7 @@ namespace IronPython.Runtime.Binding {
             );                       
         }
 
-        private DynamicMetaObject/*!*/ MakeConvertToCommon(DynamicMetaObjectBinder/*!*/ conversion, Type toType, Type retType, SymbolId symbolId) {
+        private DynamicMetaObject/*!*/ MakeConvertToCommon(DynamicMetaObjectBinder/*!*/ conversion, Type toType, Type retType, string name) {
             // TODO: support trys
             ParameterExpression tmp = Ast.Variable(typeof(object), "convertResult");
             DynamicMetaObject self = Restrict(typeof(OldInstance));
@@ -330,7 +333,7 @@ namespace IronPython.Runtime.Binding {
                 Ast.Block(
                     new ParameterExpression[] { tmp },
                     Ast.Condition(
-                        MakeOneConvert(conversion, self, symbolId, tmp),
+                        MakeOneConvert(conversion, self, name, tmp),
                         Expression.Convert(
                             tmp,
                             retType
@@ -342,7 +345,7 @@ namespace IronPython.Runtime.Binding {
             );
         }
 
-        private static BinaryExpression/*!*/ MakeOneConvert(DynamicMetaObjectBinder/*!*/ conversion, DynamicMetaObject/*!*/ self, SymbolId symbolId, ParameterExpression/*!*/ tmp) {
+        private static BinaryExpression/*!*/ MakeOneConvert(DynamicMetaObjectBinder/*!*/ conversion, DynamicMetaObject/*!*/ self, string name, ParameterExpression/*!*/ tmp) {
             return Ast.NotEqual(
                 Ast.Assign(
                     tmp,
@@ -350,7 +353,7 @@ namespace IronPython.Runtime.Binding {
                         typeof(PythonOps).GetMethod("OldInstanceConvertNonThrowing"),
                         AstUtils.Constant(PythonContext.GetPythonContext(conversion).SharedContext),
                         self.Expression,
-                        AstUtils.Constant(symbolId)
+                        AstUtils.Constant(name)
                     )
                 ),
                 AstUtils.Constant(null)
@@ -465,7 +468,7 @@ namespace IronPython.Runtime.Binding {
                         typeof(PythonOps).GetMethod("OldInstanceDeleteCustomMember"),
                         AstUtils.Constant(PythonContext.GetPythonContext(member).SharedContext),
                         AstUtils.Convert(Expression, typeof(OldInstance)),
-                        AstUtils.Constant(SymbolTable.StringToId(name))
+                        AstUtils.Constant(name)
                     );
                     break;
                 default:
@@ -503,7 +506,6 @@ namespace IronPython.Runtime.Binding {
         private DynamicMetaObject/*!*/ MakeDynamicMemberAccess(DynamicMetaObjectBinder/*!*/ member, string/*!*/ name, MemberAccess access, DynamicMetaObject/*!*/[]/*!*/ args) {
             DynamicMetaObject self = Restrict(typeof(OldInstance));
             Expression target;
-            SymbolId symName = SymbolTable.StringToId(name);
 
             ParameterExpression tmp = Ast.Variable(typeof(object), "result");
 
@@ -517,7 +519,7 @@ namespace IronPython.Runtime.Binding {
                                 typeof(PythonOps).GetMethod("OldInstanceTryGetBoundCustomMember"),
                                 Ast.Constant(PythonContext.GetPythonContext(member).SharedContext),
                                 self.Expression,
-                                AstUtils.Constant(symName),
+                                AstUtils.Constant(name),
                                 tmp
                             ),
                             ((InvokeMemberBinder)member).FallbackInvoke(new DynamicMetaObject(tmp, BindingRestrictions.Empty), args, null).Expression,
@@ -536,7 +538,7 @@ namespace IronPython.Runtime.Binding {
                                 typeof(PythonOps).GetMethod("OldInstanceTryGetBoundCustomMember"),
                                 AstUtils.Constant(PythonContext.GetPythonContext(member).SharedContext),
                                 self.Expression,
-                                AstUtils.Constant(symName),
+                                AstUtils.Constant(name),
                                 tmp
                             ),
                             tmp,
@@ -552,7 +554,7 @@ namespace IronPython.Runtime.Binding {
                         typeof(PythonOps).GetMethod("OldInstanceSetCustomMember"),
                         AstUtils.Constant(PythonContext.GetPythonContext(member).SharedContext),
                         self.Expression,
-                        AstUtils.Constant(symName),
+                        AstUtils.Constant(name),
                         AstUtils.Convert(args[1].Expression, typeof(object))
                     );
                     break;
@@ -561,7 +563,7 @@ namespace IronPython.Runtime.Binding {
                         typeof(PythonOps).GetMethod("OldInstanceDeleteCustomMember"),
                         AstUtils.Constant(PythonContext.GetPythonContext(member).SharedContext),
                         self.Expression,
-                        AstUtils.Constant(symName)
+                        AstUtils.Constant(name)
                     );
                     break;
                 default:

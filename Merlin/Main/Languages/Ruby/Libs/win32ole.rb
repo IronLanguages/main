@@ -58,7 +58,7 @@ class WIN32OLE
     # Reflection on COM objects does not show IEnumerable as a supported interface, but
     # casting to IEnumerable works (if the COM object supports enumeration). Hence,
     # we create a wrapper object which does the cast
-    load_assembly "Microsoft.Scripting"
+    load_assembly "Microsoft.Dynamic"
     strongly_typed_enumerable = Microsoft::Scripting::Utils::EnumerableWrapper.new(@com_object)
     result = strongly_typed_enumerable.each &b
     (result == strongly_typed_enumerable) ? self : result
@@ -85,7 +85,7 @@ class WIN32OLE
   def self.const_load(ole_object, mod = WIN32OLE)
     raise NotImplementedError, "type library name not supported" if ole_object.respond_to? :to_str
     
-    load_assembly "Microsoft.Scripting"
+    load_assembly "Microsoft.Dynamic"
     tlb = Microsoft::Scripting::ComInterop::ComTypeLibDesc.CreateFromObject(ole_object.com_object)
     constants = Hash.new
     tlb.TypeLibDesc.GetMemberNames.each do |tlb_entry_name|

@@ -13,10 +13,7 @@
  *
  * ***************************************************************************/
 
-#if MICROSOFT_SCRIPTING_CORE || SILVERLIGHT
-using ILGenerator = System.Linq.Expressions.Compiler.OffsetTrackingILGenerator;
-#endif
-
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic.Utils;
@@ -26,7 +23,14 @@ using System.Reflection.Emit;
 using System.Core;
 #endif
 
+#if CLR2
+namespace Microsoft.Scripting.Ast.Compiler {
+#else
 namespace System.Linq.Expressions.Compiler {
+#endif
+#if CLR2 || SILVERLIGHT
+    using ILGenerator = OffsetTrackingILGenerator;
+#endif
 
     /// <summary>
     /// Contains compiler state corresponding to a LabelTarget

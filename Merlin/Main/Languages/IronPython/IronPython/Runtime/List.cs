@@ -86,7 +86,7 @@ namespace IronPython.Runtime {
         public void __init__(CodeContext context, object sequence) {
             try {
                 object len;
-                if (PythonTypeOps.TryInvokeUnaryOperator(context, sequence, Symbols.Length, out len)) {
+                if (PythonTypeOps.TryInvokeUnaryOperator(context, sequence, "__len__", out len)) {
                     int ilen = PythonContext.GetContext(context).ConvertToInt32(len);
                     _data = new object[ilen];
                     _size = 0;
@@ -170,7 +170,7 @@ namespace IronPython.Runtime {
                 _size = i;
             } else if (PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default,
                 sequence,
-                Symbols.Length,
+                "__len__",
                 out len)) { 
                 int ilen = Converter.ConvertToInt32(len);
                 _data = new object[ilen];

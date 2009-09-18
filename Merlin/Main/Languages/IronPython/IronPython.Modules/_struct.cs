@@ -36,7 +36,7 @@ using IronPython.Runtime.Binding;
 namespace IronPython.Modules {
     public static class PythonStruct {
         [SpecialName]
-        public static void PerformModuleReload(PythonContext/*!*/ context, IAttributesCollection/*!*/ dict) {
+        public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
             context.EnsureModuleException("structerror", dict, "error", "struct");
         }
 

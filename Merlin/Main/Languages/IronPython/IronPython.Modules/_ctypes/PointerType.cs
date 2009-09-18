@@ -40,11 +40,11 @@ namespace IronPython.Modules {
         public class PointerType : PythonType, INativeType {
             internal INativeType _type;
 
-            public PointerType(CodeContext/*!*/ context, string name, PythonTuple bases, IAttributesCollection members)
+            public PointerType(CodeContext/*!*/ context, string name, PythonTuple bases, PythonDictionary members)
                 : base(context, name, bases, members) {
 
                 object type;
-                if (members.TryGetValue(SymbolTable.StringToId("_type_"), out type) && !(type is INativeType)) {
+                if (members.TryGetValue("_type_", out type) && !(type is INativeType)) {
                     throw PythonOps.TypeError("_type_ must be a type");
                 }
                 _type = (INativeType)type;

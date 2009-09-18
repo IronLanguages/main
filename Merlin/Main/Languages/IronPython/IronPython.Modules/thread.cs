@@ -34,7 +34,7 @@ namespace IronPython.Modules {
         private static readonly object _stackSizeKey = new object();
 
         [SpecialName]
-        public static void PerformModuleReload(PythonContext/*!*/ context, IAttributesCollection/*!*/ dict) {
+        public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
             context.SetModuleState(_stackSizeKey, 0);
             context.EnsureModuleException("threaderror", dict, "error", "thread");
         }

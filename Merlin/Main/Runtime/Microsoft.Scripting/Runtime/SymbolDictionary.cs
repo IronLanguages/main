@@ -27,7 +27,7 @@ namespace Microsoft.Scripting.Runtime {
     /// Like all SymbolDictionaries this supports both indexing using SymbolId's (IAttributesCollection)
     /// and via object keys (IDictionary&lt;object, object&gt;).
     /// </summary>
-    public sealed class SymbolDictionary : BaseSymbolDictionary, IDictionary, IDictionary<object, object>, IAttributesCollection {
+    sealed class SymbolDictionary : BaseSymbolDictionary, IDictionary, IDictionary<object, object>, IAttributesCollection {
         private Dictionary<SymbolId, object> _data = new Dictionary<SymbolId, object>();
 
         public SymbolDictionary() {

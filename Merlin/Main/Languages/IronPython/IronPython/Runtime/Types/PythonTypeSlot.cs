@@ -13,17 +13,23 @@
  *
  * ***************************************************************************/
 
-using System.Dynamic;
+#if !CLR2
 using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
+using System.Dynamic;
 using System.Runtime.InteropServices;
 
 using IronPython.Runtime.Binding;
 using IronPython.Runtime.Operations;
 
-using Ast = System.Linq.Expressions.Expression;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Runtime.Types {
+    using Ast = Expression;
+
     /// <summary>
     /// A TypeSlot is an item that gets stored in a type's dictionary.  Slots provide an 
     /// opportunity to customize access at runtime when a value is get or set from a dictionary.
@@ -122,7 +128,7 @@ namespace IronPython.Runtime.Types {
             if (TryGetValue(context, instance, dt, out res))
                 return res;
 
-            throw PythonOps.AttributeErrorForMissingAttribute(dt == null ? "?" : dt.Name, Symbols.GetDescriptor);
+            throw PythonOps.AttributeErrorForMissingAttribute(dt == null ? "?" : dt.Name, "__get__");
         }
     }
 }

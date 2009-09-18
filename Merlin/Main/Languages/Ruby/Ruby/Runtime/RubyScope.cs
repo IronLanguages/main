@@ -748,7 +748,7 @@ var closureScope = scope as RubyClosureScope;
 
         public override RubyModule Module { get { return _module; } }
 
-        internal RubyModuleScope(RubyScope/*!*/ parent, RubyModule module, object selfObject) {
+        internal RubyModuleScope(RubyScope/*!*/ parent, RubyModule module) {
             Assert.NotNull(parent);
 
             // RuntimeFlowControl:
@@ -757,7 +757,7 @@ var closureScope = scope as RubyClosureScope;
             // RubyScope:
             _parent = parent;
             _top = parent.Top;
-            _selfObject = selfObject;
+            _selfObject = module;
             _methodAttributes = RubyMethodAttributes.PrivateInstance;
 
             // RubyModuleScope:
@@ -765,9 +765,26 @@ var closureScope = scope as RubyClosureScope;
             InLoop = parent.InLoop;
             InRescue = parent.InRescue;
             MethodAttributes = RubyMethodAttributes.PublicInstance;
+
+            parent.GetInnerMostModuleForConstantLookup().AddNestedModule(module);
         }
     }
 
+    /// <summary>
+    /// String based module_eval injects a module scope (represented by this class) into the lexical scope chain.
+    /// </summary>
+    /// <remarks>
+    /// Note that block-based module_eval is different:
+    /// 
+    /// <code>
+    /// class A
+    ///   X = 1
+    /// end
+    /// 
+    /// A.module_eval { p X }  # error
+    /// A.module_eval "p X"    # 1
+    /// </code>
+    /// </remarks>
     public sealed class RubyModuleEvalScope : RubyClosureScope {
         private readonly RubyModule _module;
 
@@ -794,6 +811,7 @@ var closureScope = scope as RubyClosureScope;
             InRescue = parent.InRescue;
             MethodAttributes = RubyMethodAttributes.PublicInstance;
 
+            parent.GetInnerMostModuleForConstantLookup().AddNestedModule(module);
             SetEmptyLocals();
         }
 
@@ -970,17 +988,16 @@ var closureScope = scope as RubyClosureScope;
                 // Without name mangling this would result to {"Foo" -> 1, "foo" -> 2} while the expected result is {"Foo" -> 2}.
 
                 str = str.Substring(0, str.Length - 1);
-                name = SymbolTable.StringToId(str);
 
-                if (!globalScope.ContainsVariable(name)) {
-                    var unmangled = SymbolTable.StringToId(RubyUtils.TryUnmangleName(str));
-                    if (!unmangled.IsEmpty && globalScope.ContainsVariable(unmangled)) {
-                        name = unmangled;
+                if (!RubyOps.ScopeContainsMember(globalScope, str)) {
+                    var unmangled = RubyUtils.TryUnmangleName(str);
+                    if (unmangled != null && RubyOps.ScopeContainsMember(globalScope, unmangled)) {
+                        str = unmangled;
                     }
                 }
 
                 var value = args[0];
-                globalScope.SetVariable(name, value);
+                RubyOps.ScopeSetMember(globalScope, str, value);
                 return value;
             } else {
                 if (args.Length != 0) {
@@ -988,12 +1005,7 @@ var closureScope = scope as RubyClosureScope;
                 }
 
                 object value;
-                if (globalScope.TryGetVariable(name, out value)) {
-                    return value;
-                }
-
-                string unmangled = RubyUtils.TryUnmangleName(str);
-                if (unmangled != null && globalScope.TryGetVariable(SymbolTable.StringToId(unmangled), out value)) {
+                if (RubyOps.TryGetGlobalScopeMethod(context, globalScope, str, out value)) {
                     return value;
                 }
 

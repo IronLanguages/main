@@ -72,7 +72,7 @@ namespace IronPython.Modules {
                 StructType st = (StructType)nativeType;
 
                 foreach (var x in kwargs) {
-                    PythonOps.SetAttr(context, this, SymbolTable.StringToId(x.Key), x.Value);
+                    PythonOps.SetAttr(context, this, x.Key, x.Value);
                 }
             }
 
@@ -80,7 +80,7 @@ namespace IronPython.Modules {
                 object abstractCls;
                 if (((PythonType)NativeType).TryGetBoundAttr(((PythonType)NativeType).Context.SharedContext,
                     this,
-                    SymbolTable.StringToId("_abstract_"),
+                    "_abstract_",
                     out abstractCls)) {
                     throw PythonOps.TypeError("abstract class");
                 }

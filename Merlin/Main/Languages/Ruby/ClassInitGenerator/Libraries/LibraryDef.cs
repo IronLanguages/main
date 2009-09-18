@@ -36,10 +36,8 @@ internal class LibraryDef {
 
     private bool Builtins { get { return _namespace == typeof(RubyClass).Namespace; } }
 
-    public static readonly string/*!*/ TypeAction0 = TypeName(typeof(Action));
-    public static readonly string/*!*/ TypeAction1 = GenericTypeName(typeof(Action<>));
-    public static readonly string/*!*/ TypeActionN = GenericTypeName(typeof(Action<,>));
-    public static readonly string/*!*/ TypeFunction = GenericTypeName(typeof(Func<>));
+    public static readonly string/*!*/ TypeAction = "Action";
+    public static readonly string/*!*/ TypeFunction = "Func";
     public static readonly string/*!*/ TypeDelegate = TypeName(typeof(Delegate));
     public static readonly string/*!*/ TypeRubyModule = TypeName(typeof(RubyModule));
     public static readonly string/*!*/ TypeRubyClass = TypeName(typeof(RubyClass));
@@ -377,7 +375,7 @@ internal class LibraryDef {
                 def.DefineIn = module.DefineIn;
                 def.BuildConfig = module.BuildConfig;
                 def.Compatibility = module.Compatibility;
-                def.Restrictions = module.Restrictions;
+                def.Restrictions = module.GetRestrictions(Builtins);
 
                 def.Super = null;
                 if (cls != null && def.Extends != typeof(object) && !def.Extends.IsInterface) {
@@ -850,6 +848,9 @@ internal class LibraryDef {
 
         _output.WriteLine("namespace {0} {{", _namespace);
         _output.Indent++;
+        _output.WriteLine("using System;");
+        _output.WriteLine("using Microsoft.Scripting.Utils;");
+        _output.WriteLine();
 
         _output.WriteLine("public sealed class {0} : {1} {{", _initializerName, TypeLibraryInitializer);
         _output.Indent++;
@@ -1276,7 +1277,7 @@ internal class LibraryDef {
         Debug.Assert(moduleDef.IsException);
         _output.Write("new {0}{1}({2}.{3}{4})",
             TypeFunction,
-            ReflectionUtils.FormatTypeArgs(new StringBuilder(), new[] { typeof(RubyClass), typeof(object), typeof(Exception) }),
+            TypeArgs(typeof(RubyClass), typeof(object), typeof(Exception)),
             _initializerName,
             ExceptionFactoryPrefix,
             moduleDef.Id
@@ -1333,17 +1334,13 @@ internal class LibraryDef {
         if (method.ReturnType != typeof(void)) {
             delegateType = TypeFunction;
             paramTypes = ArrayUtils.Append(paramTypes, method.ReturnType);
-        } else if (paramTypes.Length == 0) {
-            delegateType = TypeAction0;
-        } else if (paramTypes.Length == 1) {
-            delegateType = TypeAction1;
         } else {
-            delegateType = TypeActionN;
+            delegateType = TypeAction;
         }
 
         _output.Write("new {0}{1}({2}.{3})",
             delegateType,
-            ReflectionUtils.FormatTypeArgs(new StringBuilder(), paramTypes),
+            TypeArgs(paramTypes),
             TypeName(method.DeclaringType),
             method.Name
         );
@@ -1353,8 +1350,19 @@ internal class LibraryDef {
 
     #region Helpers
 
+    private static string/*!*/ TypeNameDispenser(Type/*!*/ type) {
+        return
+            type.FullName.StartsWith(typeof(Action<>).Namespace + ".Action`") ||
+            type.FullName.StartsWith(typeof(Func<>).Namespace + ".Func`") ?
+            type.Name : type.FullName;
+    }
+
     private static string/*!*/ TypeName(Type/*!*/ type) {
-        return ReflectionUtils.FormatTypeName(new StringBuilder(), type).ToString();
+        return ReflectionUtils.FormatTypeName(new StringBuilder(), type, TypeNameDispenser).ToString();
+    }
+
+    private static string/*!*/ TypeArgs(params Type/*!*/[]/*!*/ types) {
+        return ReflectionUtils.FormatTypeArgs(new StringBuilder(), types, TypeNameDispenser).ToString();
     }
 
     private static string/*!*/ GenericTypeName(Type/*!*/ type) {

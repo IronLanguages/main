@@ -13,9 +13,14 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using MSA = System.Linq.Expressions;
+#else
+using MSA = Microsoft.Scripting.Ast;
+#endif
+
 using Microsoft.Scripting;
 using Microsoft.Scripting.Utils;
-using MSA = System.Linq.Expressions;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -47,6 +52,11 @@ namespace IronRuby.Compiler.Ast {
 
         internal override MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen) {
             return gen.TransformStatementsToExpression(_statements);
+        }
+
+        internal override MSA.Expression/*!*/ Transform(AstGenerator/*!*/ gen) {
+            // do not mark a sequence point wrapping the entire block:
+            return TransformRead(gen);
         }
     }
 }

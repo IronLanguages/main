@@ -13,6 +13,12 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -26,10 +32,10 @@ using Microsoft.Scripting.Actions.Calls;
 using IronPython.Runtime.Binding;
 using IronPython.Runtime.Operations;
 
-using Ast = System.Linq.Expressions.Expression;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
-
 namespace IronPython.Runtime.Types {
+    using Ast = Expression;
+    using AstUtils = Microsoft.Scripting.Ast.Utils;
+
     public abstract class PythonCustomTracker : CustomTracker {
         public abstract PythonTypeSlot/*!*/ GetSlot();
 

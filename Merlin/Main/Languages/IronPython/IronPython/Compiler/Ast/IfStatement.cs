@@ -13,16 +13,20 @@
  *
  * ***************************************************************************/
 
-using System;
+#if !CLR2
+using MSAst = System.Linq.Expressions;
+#else
+using MSAst = Microsoft.Scripting.Ast;
+#endif
+
+using System.Diagnostics;
 using System.Collections.Generic;
 
 using Microsoft.Scripting;
-
 using AstUtils = Microsoft.Scripting.Ast.Utils;
-using MSAst = System.Linq.Expressions;
 
 namespace IronPython.Compiler.Ast {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = MSAst.Expression;
 
     public class IfStatement : Statement {
         private readonly IfStatementTest[] _tests;

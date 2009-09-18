@@ -20,6 +20,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
@@ -182,7 +183,7 @@ namespace IronPython.Runtime {
             }
 
             object iter;
-            if (PythonOps.TryGetBoundAttr(baseObject, Symbols.Iterator, out iter)) {
+            if (PythonOps.TryGetBoundAttr(baseObject, "__iter__", out iter)) {
                 object iterator = PythonCalls.Call(iter);
                 // don't re-wrap if we don't need to (common case is PythonGenerator).
                 if (TryCastIEnumer(iterator, out enumerator)) {
@@ -225,7 +226,7 @@ namespace IronPython.Runtime {
 
         public bool MoveNext() {
             if (_nextMethod == null) {
-                if (!PythonOps.TryGetBoundAttr(_baseObject, Symbols.GeneratorNext, out _nextMethod) || _nextMethod == null) {
+                if (!PythonOps.TryGetBoundAttr(_baseObject, "next", out _nextMethod) || _nextMethod == null) {
                     throw PythonOps.TypeError("instance has no next() method");
                 }
             }
@@ -253,7 +254,7 @@ namespace IronPython.Runtime {
             Debug.Assert(!(baseEnumerator is IEnumerable) || baseEnumerator is IPythonObject);   // we shouldn't re-wrap things that don't need it
             object iter;
 
-            if (PythonOps.TryGetBoundAttr(baseEnumerator, Symbols.Iterator, out iter)) {
+            if (PythonOps.TryGetBoundAttr(baseEnumerator, "__iter__", out iter)) {
                 object iterator = PythonCalls.Call(iter);
                 if (iterator is IEnumerable) {
                     enumerator = (IEnumerable)iterator;

@@ -13,11 +13,16 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Diagnostics;
 using System.Dynamic;
 using System.Dynamic.Utils;
-using System.Linq.Expressions;
 using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Runtime;
 using IronRuby.Runtime;
@@ -27,7 +32,7 @@ using IronRuby.Compiler;
 using System.Reflection;
 
 namespace IronRuby.Builtins {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = Expression;
 
     public partial class RubyEvent : IRubyDynamicMetaObjectProvider {
         public DynamicMetaObject/*!*/ GetMetaObject(Expression/*!*/ parameter) {

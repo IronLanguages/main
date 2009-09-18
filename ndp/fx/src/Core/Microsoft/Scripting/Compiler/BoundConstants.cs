@@ -13,6 +13,7 @@
  *
  * ***************************************************************************/
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection.Emit;
@@ -23,7 +24,11 @@ using System.Dynamic.Utils;
 using System.Core;
 #endif
 
+#if CLR2
+namespace Microsoft.Scripting.Ast.Compiler {
+#else
 namespace System.Linq.Expressions.Compiler {
+#endif
     /// <summary>
     /// This type tracks "runtime" constants--live objects that appear in
     /// ConstantExpression nodes and must be bound to the delegate.

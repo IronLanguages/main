@@ -13,6 +13,12 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using MSA = System.Linq.Expressions;
+#else
+using MSA = Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -33,7 +39,6 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-using MSA = System.Linq.Expressions;
 
 namespace IronRuby.Runtime {
     /// <summary>
@@ -63,10 +68,11 @@ namespace IronRuby.Runtime {
 
         private RubyOptions/*!*/ _options;
         private MutableString _commandLineProgramPath;
-        private readonly TopNamespaceTracker _nsTracker;
+        private readonly TopNamespaceTracker _namespaces;
         private readonly Loader/*!*/ _loader;
         private readonly Scope/*!*/ _globalScope;
         private readonly RubyMetaBinderFactory/*!*/ _metaBinderFactory;
+        private DynamicOperations _operations;
         private readonly RubyBinder _binder;
         private DynamicDelegateCreator _delegateCreator;
 
@@ -373,6 +379,10 @@ namespace IronRuby.Runtime {
             get { return _runtimeId; }
         }
 
+        internal TopNamespaceTracker/*!*/ Namespaces {
+            get { return _namespaces; }
+        }
+
         #endregion
 
         #region Initialization
@@ -425,6 +435,12 @@ namespace IronRuby.Runtime {
                 Verbose = ScriptingRuntimeHelpers.True;
             }
 
+            _namespaces = new TopNamespaceTracker(manager);
+            manager.AssemblyLoaded += new EventHandler<AssemblyLoadedEventArgs>(AssemblyLoaded);
+            foreach (Assembly asm in manager.GetLoadedAssemblyList()) {
+                _namespaces.LoadAssembly(asm);
+            }
+
             // TODO:
             Interlocked.CompareExchange(ref _Default, this, null);
 
@@ -432,15 +448,9 @@ namespace IronRuby.Runtime {
             Debug.Assert(_exceptionClass != null && _standardErrorClass != null && _nilClass != null);
 
             Debug.Assert(_classClass != null && _moduleClass != null);
-
+            
             // needs to run before globals and constants are initialized:
             InitializeFileDescriptors(DomainManager.SharedIO);
-
-            _nsTracker = new TopNamespaceTracker(manager);
-            manager.AssemblyLoaded += new EventHandler<AssemblyLoadedEventArgs>(AssemblyLoaded);
-            foreach (Assembly asm in manager.GetLoadedAssemblyList()) {
-                _nsTracker.LoadAssembly(asm);
-            }
 
             InitializeGlobalConstants();
             InitializeGlobalVariables();
@@ -450,10 +460,6 @@ namespace IronRuby.Runtime {
             get {
                 return _binder;
             }
-        }
-
-        void AssemblyLoaded(object sender, AssemblyLoadedEventArgs e) {
-            _nsTracker.LoadAssembly(e.Assembly);
         }
 
         /// <summary>
@@ -530,44 +536,35 @@ namespace IronRuby.Runtime {
             MutableString releaseDate = MutableString.CreateAscii(RubyContext.MriReleaseDate);
             MutableString rubyEngine = MutableString.CreateAscii("ironruby");
 
-            SetGlobalConstant("RUBY_ENGINE", rubyEngine);
-            SetGlobalConstant("RUBY_VERSION", version);
-            SetGlobalConstant("RUBY_PATCHLEVEL", 0);
-            SetGlobalConstant("RUBY_PLATFORM", platform);
-            SetGlobalConstant("RUBY_RELEASE_DATE", releaseDate);
+            using (ClassHierarchyLocker()) {
+                RubyClass obj = _objectClass;
 
-            SetGlobalConstant("VERSION", version);
-            SetGlobalConstant("PLATFORM", platform);
-            SetGlobalConstant("RELEASE_DATE", releaseDate);
+                obj.SetConstantNoMutateNoLock("RUBY_ENGINE", rubyEngine);
+                obj.SetConstantNoMutateNoLock("RUBY_VERSION", version);
+                obj.SetConstantNoMutateNoLock("RUBY_PATCHLEVEL", 0);
+                obj.SetConstantNoMutateNoLock("RUBY_PLATFORM", platform);
+                obj.SetConstantNoMutateNoLock("RUBY_RELEASE_DATE", releaseDate);
 
-            SetGlobalConstant("IRONRUBY_VERSION", MutableString.CreateAscii(RubyContext.IronRubyVersionString));
+                obj.SetConstantNoMutateNoLock("VERSION", version);
+                obj.SetConstantNoMutateNoLock("PLATFORM", platform);
+                obj.SetConstantNoMutateNoLock("RELEASE_DATE", releaseDate);
 
-            SetGlobalConstant("STDIN", StandardInput);
-            SetGlobalConstant("STDOUT", StandardOutput);
-            SetGlobalConstant("STDERR", StandardErrorOutput);
+                obj.SetConstantNoMutateNoLock("IRONRUBY_VERSION", MutableString.CreateAscii(RubyContext.IronRubyVersionString));
 
-            object ARGF;
-            if (TryGetGlobalConstant("ARGF", out ARGF)) {
-                _inputProvider.Singleton = ARGF;
+                obj.SetConstantNoMutateNoLock("STDIN", StandardInput);
+                obj.SetConstantNoMutateNoLock("STDOUT", StandardOutput);
+                obj.SetConstantNoMutateNoLock("STDERR", StandardErrorOutput);
+
+                object ARGF;
+                if (obj.TryGetConstantNoAutoloadCheck("ARGF", out ARGF)) {
+                    _inputProvider.Singleton = ARGF;
+                }
+
+                obj.SetConstantNoMutateNoLock("ARGV", _inputProvider.CommandLineArguments);
+
+                // Hash
+                // SCRIPT_LINES__
             }
-
-            SetGlobalConstant("ARGV", _inputProvider.CommandLineArguments);
-
-            // Hash
-            // SCRIPT_LINES__
-        }
-
-        internal void SetGlobalConstant(string/*!*/ name, object value) {
-            _globalScope.SetVariable(SymbolTable.StringToId(name), value);
-        }
-
-        internal bool TryGetGlobalConstant(string/*!*/ name, out object value) {
-            if (_globalScope.TryGetVariable(SymbolTable.StringToId(name), out value)) {
-                return true;
-            }
-
-            value = _nsTracker.TryGetPackageAny(name);
-            return value != null;
         }
 
         private void InitializeFileDescriptors(SharedIO/*!*/ io) {
@@ -645,6 +642,11 @@ namespace IronRuby.Runtime {
                 _objectClass.InitializeDummySingletonClass(_classClass, objectClassTrait);
                 _moduleClass.InitializeDummySingletonClass(_objectClass.SingletonClass, moduleClassTrait);
                 _classClass.InitializeDummySingletonClass(_moduleClass.SingletonClass, classClassTrait);
+
+                _objectClass.SetConstantNoMutateNoLock(_moduleClass.Name, _moduleClass);
+                _objectClass.SetConstantNoMutateNoLock(_classClass.Name, _classClass);
+                _objectClass.SetConstantNoMutateNoLock(_objectClass.Name, _objectClass);
+                _objectClass.SetConstantNoMutateNoLock(_kernelModule.Name, _kernelModule);
             }
 
             AddModuleToCacheNoLock(typeof(Kernel), _kernelModule);
@@ -652,16 +654,15 @@ namespace IronRuby.Runtime {
             AddModuleToCacheNoLock(typeof(RubyObject), _objectClass);
             AddModuleToCacheNoLock(_moduleClass.GetUnderlyingSystemType(), _moduleClass);
             AddModuleToCacheNoLock(_classClass.GetUnderlyingSystemType(), _classClass);
-
-            SetGlobalConstant(_moduleClass.Name, _moduleClass);
-            SetGlobalConstant(_classClass.Name, _classClass);
-            SetGlobalConstant(_objectClass.Name, _objectClass);
-            SetGlobalConstant(_kernelModule.Name, _kernelModule);
         }
 
         #endregion
 
-        #region CLR Type and Namespaces caching
+        #region CLR Types and Namespaces
+
+        private void AssemblyLoaded(object sender, AssemblyLoadedEventArgs e) {
+            _namespaces.LoadAssembly(e.Assembly);
+        }
 
         internal void AddModuleToCacheNoLock(Type/*!*/ type, RubyModule/*!*/ module) {
             Assert.NotNull(type, module);
@@ -927,18 +928,25 @@ namespace IronRuby.Runtime {
             return result;
         }
 
-        public RubyModule/*!*/ DefineModule(RubyModule/*!*/ owner, string name) {
-            ContractUtils.RequiresNotNull(owner, "owner");
-
+        /// <summary>
+        /// Defines a new module nested in the given owner.
+        /// The module is published into the global scope if the owner is Object.
+        /// 
+        /// Thread safe.
+        /// </summary>
+        internal RubyModule/*!*/ DefineModule(RubyModule/*!*/ owner, string/*!*/ name) {
             RubyModule result = CreateModule(owner.MakeNestedModuleName(name), null, null, null, null, null, null, ModuleRestrictions.None);
-            if (name != null) {
-                owner.SetConstant(name, result);
-            }
+            PublishModule(name, owner, result);
             return result;
         }
 
-        // thread-safe:
-        // triggers "inherited" event:
+        /// <summary>
+        /// Defines a new class nested in the given owner.
+        /// The module is published into the global scope it if is not anonymous and the owner is Object.
+        /// 
+        /// Thread safe.
+        /// Triggers "inherited" event.
+        /// </summary>
         internal RubyClass/*!*/ DefineClass(RubyModule/*!*/ owner, string name, RubyClass/*!*/ superClass, RubyStruct.Info structInfo) {
             Assert.NotNull(owner, superClass);
 
@@ -953,14 +961,19 @@ namespace IronRuby.Runtime {
             RubyClass result = CreateClass(
                 qualifiedName, null, null, null, null, null, null, superClass, null, null, structInfo, true, false, ModuleRestrictions.None
             );
-
-            if (name != null) {
-                owner.SetConstant(name, result);
-            }
-
+            PublishModule(name, owner, result);
             superClass.ClassInheritedEvent(result);
 
             return result;
+        }
+
+        private static void PublishModule(string name, RubyModule/*!*/ owner, RubyModule/*!*/ module) {
+            if (name != null) {
+                owner.SetConstant(name, module);
+                if (owner.IsObjectClass) {
+                    module.Publish(name);
+                }
+            }
         }
 
         #endregion
@@ -1323,6 +1336,44 @@ namespace IronRuby.Runtime {
             }
         }
 
+        // thread-safe:
+        public object ResolveMissingConstant(RubyModule/*!*/ owner, string/*!*/ name) {
+            if (owner.IsObjectClass) {
+                object value;
+                if (RubyOps.TryGetGlobalScopeConstant(this, _globalScope, name, out value)) {
+                    return value;
+                }
+
+                if ((value = _namespaces.TryGetPackageAny(name)) != null) {
+                    return TrackerToModule(value);
+                }
+            }
+
+            throw RubyExceptions.CreateNameError(String.Format("uninitialized constant {0}::{1}", owner.Name, name));
+        }
+
+        // thread-safe:
+        internal object TrackerToModule(object value) {
+            TypeGroup typeGroup = value as TypeGroup;
+            if (typeGroup != null) {
+                return value;
+            }
+
+            // TypeTracker retrieved from namespace tracker should behave like a RubyClass/RubyModule:
+            TypeTracker typeTracker = value as TypeTracker;
+            if (typeTracker != null) {
+                return GetModule(typeTracker.Type);
+            }
+
+            // NamespaceTracker retrieved from namespace tracker should behave like a RubyModule:
+            NamespaceTracker namespaceTracker = value as NamespaceTracker;
+            if (namespaceTracker != null) {
+                return GetModule(namespaceTracker);
+            }
+
+            return value;
+        }
+
         #endregion
 
         #region Object Operations: InstanceData access (thread-safe)
@@ -1384,6 +1435,16 @@ namespace IronRuby.Runtime {
             }
             
             return result;
+        }
+
+        internal DynamicOperations Operations {
+            get {
+                if (_operations == null) {
+                    Interlocked.CompareExchange(ref _operations, new DynamicOperations(this), null);
+                }
+
+                return _operations;
+            }
         }
 
         #endregion
@@ -2174,7 +2235,6 @@ namespace IronRuby.Runtime {
                 }
             }
 
-
             if (Options.PerfStats) {
                 using (TextWriter output = File.CreateText("perfstats.log")) {
                     output.WriteLine(String.Format(@"
@@ -2225,6 +2285,7 @@ namespace IronRuby.Runtime {
 
                     output.WriteLine();
 #endif
+                    DumpNestedModules(output);
                     PerfTrack.DumpStats(output);
                 }
             }
@@ -2234,6 +2295,18 @@ namespace IronRuby.Runtime {
             ExecuteShutdownHandlers();
         }
 
+        private void DumpNestedModules(TextWriter/*!*/ output) {
+            using (ClassHierarchyLocker()) {
+                _objectClass.ForEachRecursivelyNestedModule(
+                    (nested, level) => {
+                        output.Write(new String(' ', 2 * level));
+                        output.WriteLine(nested);
+                        return false;
+                    }
+                );
+            }
+        }
+        
         #endregion
 
         #region Exceptions (thread-safe)

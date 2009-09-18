@@ -13,11 +13,16 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Dynamic;
 using System.IO;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -264,6 +269,7 @@ namespace Microsoft.Scripting.Runtime {
         
         #endregion
 
+        
         #endregion
         
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
@@ -348,7 +354,18 @@ namespace Microsoft.Scripting.Runtime {
             }
 
             public override DynamicMetaObject FallbackGetMember(DynamicMetaObject self, DynamicMetaObject errorSuggestion) {
-                return ErrorMetaObject(ReturnType, self, DynamicMetaObject.EmptyMetaObjects, errorSuggestion);
+                return errorSuggestion ?? new DynamicMetaObject(
+                    Expression.Throw(
+                        Expression.New(
+                            typeof(MissingMemberException).GetConstructor(new[] { typeof(string) }),
+                            Expression.Constant(String.Format("unknown member: {0}", Name))
+                        ),
+                        typeof(object)
+                    ),
+                    self.Value == null ?
+                        BindingRestrictions.GetExpressionRestriction(Expression.Equal(self.Expression, Expression.Constant(null))) :
+                        BindingRestrictions.GetTypeRestriction(self.Expression, self.Value.GetType())
+                );
             }
         }
 

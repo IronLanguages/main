@@ -13,11 +13,16 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
@@ -59,7 +64,7 @@ namespace Microsoft.Scripting.Runtime {
         /// <summary> the number of sites we should clear after if we can't make progress cleaning up otherwise </summary>
         private const int ClearThreshold = 50;
 
-        internal DynamicOperations(LanguageContext lc) {
+        public DynamicOperations(LanguageContext lc) {
             ContractUtils.RequiresNotNull(lc, "lc");
             _lc = lc;
         }
@@ -354,7 +359,7 @@ namespace Microsoft.Scripting.Runtime {
             var site = GetOrCreateSite<TTarget, TOther, TResult>(_lc.CreateBinaryOperationBinder(operation));
             return site.Target(site, target, other);
         }
-                
+        
         public string GetDocumentation(object o) {
             return _lc.GetDocumentation(o);
         }

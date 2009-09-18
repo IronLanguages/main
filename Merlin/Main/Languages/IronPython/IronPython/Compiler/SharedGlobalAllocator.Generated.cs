@@ -27,10 +27,15 @@ using Microsoft.Scripting.Utils;
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 
+#if !CLR2
 using MSAst = System.Linq.Expressions;
+#else
+using MSAst = Microsoft.Scripting.Ast;
+#endif
+
 
 namespace IronPython.Compiler.Ast {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = MSAst.Expression;
     
     /// <summary>
     /// Implements globals which are backed by a static type, followed by an array if the static types' slots become full.  The global
@@ -207,7 +212,7 @@ namespace IronPython.Compiler.Ast {
             );
         }
 
-        private static Type/*!*/ GetDelegateType(Type/*!*/ retType, System.Linq.Expressions.Expression/*!*/[]/*!*/ args) {
+        private static Type/*!*/ GetDelegateType(Type/*!*/ retType, MSAst.Expression/*!*/[]/*!*/ args) {
             Assert.NotNull(retType);
             Assert.NotNull(args);
 
@@ -343,7 +348,7 @@ namespace IronPython.Compiler.Ast {
             if (index < StaticFields) {
                 return typeof(ContextStorage000);
             } else {
-                int len = index - StaticFields * ContextTypes + 1;
+                int len = checked(index - StaticFields * ContextTypes + 1);
                 if (Contexts.Length < len) {
                     int newLen = Contexts.Length;
                     while (newLen < len) {
@@ -379,7 +384,7 @@ namespace IronPython.Compiler.Ast {
                     return typeof(StorageData);
             }
         }
-        
+
         /// <summary>Ensures the underlying array is long enough to accomodate the given index</summary>
         /// <returns>The global storage type corresponding to the given index</returns>
         public static Type/*!*/ GlobalStorageType(int index) {

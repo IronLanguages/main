@@ -44,7 +44,7 @@ namespace IronPython.Modules {
             internal Field[] _fields;
             private int? _size, _alignment, _pack;
 
-            public StructType(CodeContext/*!*/ context, string name, PythonTuple bases, IAttributesCollection members)
+            public StructType(CodeContext/*!*/ context, string name, PythonTuple bases, PythonDictionary members)
                 : base(context, name, bases, members) {
 
                 foreach (PythonType pt in ResolutionOrder) {
@@ -60,7 +60,7 @@ namespace IronPython.Modules {
                 }
 
                 object pack;
-                if (members.TryGetValue(SymbolTable.StringToId("_pack_"), out pack)) {
+                if (members.TryGetValue("_pack_", out pack)) {
                     if (!(pack is int) || ((int)pack < 0)) {
                         throw PythonOps.ValueError("pack must be a non-negative integer");
                     }
@@ -68,7 +68,7 @@ namespace IronPython.Modules {
                 }
 
                 object fields;
-                if (members.TryGetValue(SymbolTable.StringToId("_fields_"), out fields)) {
+                if (members.TryGetValue("_fields_", out fields)) {
                     SetFields(fields);
                 }
 
@@ -272,7 +272,7 @@ namespace IronPython.Modules {
 
                         Field newField = new Field(fieldName, cdata, prevSize, allFields.Count, bitCount, curBitCount - bitCount);
                         allFields.Add(newField);
-                        AddSlot(SymbolTable.StringToId(fieldName), newField);
+                        AddSlot(fieldName, newField);
 
                         if (anonFields != null && anonFields.Contains(fieldName)) {
                             AddAnonymousFields(this, allFields, cdata, newField);
@@ -314,7 +314,7 @@ namespace IronPython.Modules {
             internal static IList<object> GetAnonymousFields(PythonType type) {
                 object anonymous;
                 IList<object> anonFields = null;
-                if (type.TryGetBoundAttr(type.Context.SharedContext, type, SymbolTable.StringToId("_anonymous_"), out anonymous)) {
+                if (type.TryGetBoundAttr(type.Context.SharedContext, type, "_anonymous_", out anonymous)) {
                     anonFields = anonymous as IList<object>;
                     if (anonFields == null) {
                         throw PythonOps.TypeError("_anonymous_ must be a sequence");
@@ -341,7 +341,7 @@ namespace IronPython.Modules {
                         allFields.Count
                     );
 
-                    type.AddSlot(SymbolTable.StringToId(existingField.FieldName), anonField);
+                    type.AddSlot(existingField.FieldName, anonField);
                     allFields.Add(anonField);
                 }
             }

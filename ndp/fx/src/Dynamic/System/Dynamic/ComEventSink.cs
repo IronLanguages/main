@@ -13,6 +13,10 @@
  *
  * ***************************************************************************/
 
+#if MICROSOFT_DYNAMIC
+using Microsoft.Scripting.Utils;
+#endif
+
 #if !SILVERLIGHT // ComObject
 
 using System.Collections.Generic;

@@ -13,19 +13,24 @@
 *
 * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using Microsoft.Scripting;
 using System.Dynamic;
-using System.Linq.Expressions;
 using Microsoft.Scripting.Runtime;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 using IronPython.Runtime.Binding;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime.Binding {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = Expression;
+    using AstUtils = Microsoft.Scripting.Ast.Utils;
 
     class PythonDeleteMemberBinder : DeleteMemberBinder, IPythonSite, IExpressionSerializable {
         private readonly PythonContext/*!*/ _context;

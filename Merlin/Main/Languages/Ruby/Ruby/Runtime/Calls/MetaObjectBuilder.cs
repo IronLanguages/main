@@ -13,23 +13,29 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading;
 using IronRuby.Builtins;
 using IronRuby.Compiler;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Utils;
-using Ast = System.Linq.Expressions.Expression;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 using System.Collections;
 using Microsoft.Scripting.Generation;
 
 namespace IronRuby.Runtime.Calls {
+    using Ast = Expression;
+
     public sealed class MetaObjectBuilder {
         // RubyContext the site binder is bound to or null if it is unbound.
         private readonly RubyContext _siteContext;
@@ -269,16 +275,16 @@ namespace IronRuby.Runtime.Calls {
                 MethodInfo classGetter = type.GetMethod(Methods.IRubyObject_get_ImmediateClass.Name, BindingFlags.Public | BindingFlags.Instance);
                 if (type.IsVisible && classGetter != null && classGetter.ReturnType == typeof(RubyClass)) {
                     AddCondition(
-                        // (#{type})target.ImmediateClass.Version.Value == #{immediateClass.Version}
+                        // (#{type})target.ImmediateClass.Version.Method == #{immediateClass.Version.Method}
                         Ast.Equal(
                             Ast.Field(
                                 Ast.Field(
                                     Ast.Call(Ast.Convert(targetParameter, type), classGetter), 
-                                    Fields.RubyClass_Version
+                                    Fields.RubyModule_Version
                                 ),
-                                Fields.VersionHandle_Value
+                                Fields.VersionHandle_Method
                             ),
-                            AstUtils.Constant(targetClass.Version.Value)
+                            AstUtils.Constant(targetClass.Version.Method)
                         )
                     );
                     return;
@@ -328,7 +334,7 @@ namespace IronRuby.Runtime.Calls {
                 AddCondition(Methods.IsClrSingletonRuleValid.OpCall(
                     metaContext.Expression,
                     targetParameter,
-                    AstUtils.Constant(targetClass.Version.Value)
+                    AstUtils.Constant(targetClass.Version.Method)
                 ));
 
             } else {
@@ -339,7 +345,7 @@ namespace IronRuby.Runtime.Calls {
                     metaContext.Expression, 
                     targetParameter,
                     Ast.Constant(targetClass.Version),
-                    AstUtils.Constant(targetClass.Version.Value)
+                    AstUtils.Constant(targetClass.Version.Method)
                 ));
             }
         }
@@ -360,32 +366,21 @@ namespace IronRuby.Runtime.Calls {
             cls.Context.RequiresClassHierarchyLock();
 
             // check for module version (do not burn a module reference to the rule):
-            AddCondition(Ast.Equal(Ast.Field(AstUtils.Constant(cls.Version), Fields.VersionHandle_Value), AstUtils.Constant(cls.Version.Value)));
+            AddCondition(Ast.Equal(Ast.Field(AstUtils.Constant(cls.Version), Fields.VersionHandle_Method), AstUtils.Constant(cls.Version.Method)));
         }
 
-        internal bool AddSplattedArgumentTest(object value, Expression/*!*/ expression, out int listLength, out ParameterExpression/*!*/ listVariable) {
-            if (value == null) {
-                AddRestriction(Ast.Equal(expression, AstUtils.Constant(null)));
+        internal void AddSplattedArgumentTest(IList/*!*/ value, Expression/*!*/ expression, out int listLength, out ParameterExpression/*!*/ listVariable) {
+            Expression assignment;
+            listVariable = expression as ParameterExpression;
+            if (listVariable != null && typeof(IList).IsAssignableFrom(expression.Type)) {
+                assignment = expression;
             } else {
-                // test exact type:
-                AddTypeRestriction(value.GetType(), expression);
-
-                IList list = value as IList;
-                if (list != null) {
-                    Type type = typeof(IList);
-                    listLength = list.Count;
-                    listVariable = GetTemporary(type, "#list");
-                    AddCondition(Ast.Equal(
-                        Ast.Property(Ast.Assign(listVariable, Ast.Convert(expression, type)), typeof(ICollection).GetProperty("Count")),
-                        AstUtils.Constant(list.Count))
-                    );
-                    return true;
-                }
+                listVariable = GetTemporary(typeof(IList), "#list");
+                assignment = Ast.Assign(listVariable, AstUtils.Convert(expression, typeof(IList)));
             }
-
-            listLength = -1;
-            listVariable = null;
-            return false;
+            
+            listLength = value.Count;
+            AddCondition(Ast.Equal(Ast.Property(assignment, typeof(ICollection).GetProperty("Count")), AstUtils.Constant(value.Count)));
         }
 
         #endregion

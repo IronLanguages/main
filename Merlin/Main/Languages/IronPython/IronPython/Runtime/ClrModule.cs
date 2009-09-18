@@ -45,9 +45,9 @@ namespace IronPython.Runtime {
     /// </summary>
     public static class ClrModule {
         [SpecialName]
-        public static void PerformModuleReload(PythonContext/*!*/ context, IAttributesCollection/*!*/ dict) {
-            if (!dict.ContainsKey(SymbolTable.StringToId("References"))) {
-                dict[SymbolTable.StringToId("References")] = context.ReferencedAssemblies;
+        public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
+            if (!dict.ContainsKey("References")) {
+                dict["References"] = context.ReferencedAssemblies;
             }
         }
 
@@ -359,8 +359,7 @@ the assembly object.")]
         }
 
         private static void PublishTypeLibDesc(CodeContext context, ComTypeLibDesc typeLibDesc) {
-            SymbolId symbol = SymbolTable.StringToId(typeLibDesc.Name);
-            context.LanguageContext.DomainManager.Globals.SetVariable(symbol, typeLibDesc);
+            PythonOps.ScopeSetMember(context, context.LanguageContext.DomainManager.Globals, typeLibDesc.Name, typeLibDesc);
         }
 #endif
         private static void AddReferenceByName(CodeContext/*!*/ context, string name) {
