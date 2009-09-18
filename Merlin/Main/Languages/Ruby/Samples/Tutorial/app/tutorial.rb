@@ -214,9 +214,10 @@ module Tutorial
       # work either. As a workaround, we drop all folder names
       path_key = File.basename(path)
     else
-      path = File.expand_path path
+      path = File.expand_path path, File.dirname(__FILE__)
       path_key = path
     end
+
     if not @@tutorials.has_key? path_key
       require path
       raise "#{path} does not contains a tutorial definition" if not @@tutorials.has_key? path_key

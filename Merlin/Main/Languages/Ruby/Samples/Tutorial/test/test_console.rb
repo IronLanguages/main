@@ -14,7 +14,13 @@
 # ****************************************************************************
 
 require 'stringio'
-require 'tutorial.rb'
+
+if !defined?(SILVERLIGHT) || !SILVERLIGHT
+  $: << File.expand_path(File.dirname(__FILE__) + '/..')
+  $: << File.expand_path(File.dirname(__FILE__) + '/../app')
+end
+
+require 'tutorial'
 require 'console_tutorial'
 
 if not SILVERLIGHT

@@ -21,8 +21,12 @@ Topics covered
 Running the app
 ---------------
 
+On the desktop:
+
     ir.exe wpf_tutorial.rb
-  
+
+On Silverlight:
+
     tutorial-sl.bat
 
 Running the app interactively
@@ -40,4 +44,15 @@ Launch ir.exe:
 Running the tests
 -----------------
 
-    ir.exe test\test_console.rb
+Both desktop and Silverlight:
+
+    tests.bat
+
+Just desktop:
+
+    ir.exe test/test_console.rb
+
+Just Silverlight:
+
+    ruby %MERLIN_ROOT%Hosts\Silverlight\Scripts\run_tests.rb
+

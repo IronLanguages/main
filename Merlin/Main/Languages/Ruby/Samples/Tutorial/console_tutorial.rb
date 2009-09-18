@@ -14,7 +14,8 @@
 # ****************************************************************************
 
 require "stringio"
-require File.dirname(__FILE__) + "/tutorial"
+$: << File.dirname(__FILE__) + "/app"
+require "tutorial"
 
 class ConsoleTutorial
     attr :tutorial

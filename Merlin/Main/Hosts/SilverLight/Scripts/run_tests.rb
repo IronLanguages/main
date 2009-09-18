@@ -2,22 +2,40 @@ begin
   start_time = Time.now
   puts "Start time: #{start_time}"
 
-  ITERATIONS = 50
+  ITERATIONS = 10
   TIMEOUT = 0.5
 
-  # make sure dlr.js is present
-  puts
-  puts "Updating dlr.js"
-  puts "---------------"
-  load File.dirname(__FILE__) + '/gen_dlrjs.rb'
+  # hack: only use the implementation's gems
+  ENV['GEM_PATH'] = nil
+  ENV['GEM_HOME'] = nil
 
-  t = Thread.new do
+  begin
+    load 'test.config'
+  rescue LoadError
+    $stderr.puts
+    $stderr.puts "[ERROR] no test.config found!"
+    $stderr.puts "        Create a test.config file in the current directory"
+    $stderr.puts "        this script is running out of, using this format:"
+    $stderr.puts
+    $stderr.puts "        $tests_dir = File.dirname(__FILE__) # directory where test files are located"
+    $stderr.puts "        $tests = {"
+    $stderr.puts "          'test1.html' => 'bacon', # test html file which runs bacon tests"
+    $stderr.puts "          'test2.html' => 'qunit', # test html file which runs qunit tests"
+    $stderr.puts "          # etc ..."
+    $stderr.puts "        }"
+    exit(1)
+  end
+
+  require 'uri'
+  $uri = URI.parse("http://localhost:8000")
+
+  def start_webserver
     puts
     options = %W(debug release)
     type = ARGV.first if ARGV.first
     type = 'debug' unless options.include?(type)
     get_path = lambda do |type|
-      "#{File.dirname(__FILE__)}/../../../../Bin/Silverlight\ #{type.capitalize}/Chiron.exe"
+      "#{File.dirname(__FILE__)}/../../../Bin/Silverlight\ #{type.capitalize}/Chiron.exe"
     end
     unless File.exist? get_path[type]
       print "\"#{type}\" configuration not found, looking for more "
@@ -37,32 +55,75 @@ begin
       end
     end
     print "Starting web server with \"#{type}\" configuration "
-    system "\"#{get_path[type]}\" /p:\"lib\" /w /d:\"#{File.dirname(__FILE__)}\\..\" 2>&1>NUL"
+    chiron = "\"#{get_path[type]}\" /d:#{$tests_dir} /w:#{$uri.port}"
+    require 'rubygems'
+    require 'win32/process'
+    require 'tempfile'
+    f = File.open('./chiron.log', 'w')
+    $p = Process.create 'app_name' => chiron, 'startup_info' => {'stdout' => f}
+  end
+
+  def is_webserver_running?
+    # make sure process is running
+    require 'rubygems'
+    require 'win32/process'
+    return false unless $p
+    begin
+      pid = Process.kill(0, $p.process_id).first
+      return false if $p.process_id != pid
+    rescue Process::Error
+      return false
+    end
+
+    # and make sure a request works
+    require 'net/http'
+    begin
+      req = Net::HTTP.start($uri.host, $uri.port){|http| http.get('/')}
+      return false if req.code.to_i != 200
+    rescue Errno::ECONNREFUSED
+      return false
+    end
+
+    return true
+  end
+
+  def stop_webserver
+    print "Stopping web server "
+    if $p
+      Process.kill(1, $p.process_id)
+      Process.waitpid($p.process_id)
+      puts "[DONE]"
+    else
+      puts "[WARNING] webserver not running"
+    end
   end
 
   ITERATIONS.times do |i|
-    sleep TIMEOUT
-    if `tasklist` =~ /Chiron/
-      puts "[DONE]"
+    start_webserver
+    sleep 5
+    if is_webserver_running?
+      puts '[SUCCESS]'
       break
-    end
-    if i == (ITERATIONS - 1)
-      puts '[TIMEOUT]'
-      $stderr.puts "[ERROR] web server startup timed out"
+    elsif i == (ITERATIONS - 1)
+      puts '[FAIL]'
+      $stderr.puts '[FAIL] tried on many ports, aborting'
       exit(1)
+    else
+      puts '[TIMEOUT]'
+      puts 'Trying on another port'
+      $uri.port += 1
     end
-    print '.'
   end
 
-  def check_bacon_test_results
+  def check_rspecstyle_test_results
     require 'nokogiri'
     doc = Nokogiri::HTML(@browser.html)
-    
+ 
     results_html = doc.css('#silverlightDlrReplResult1 span')[-2]
     return {} if results_html.nil?
     results_str = results_html.inner_html.gsub('&nbsp;', ' ')
-    
-    %W(specifications requirements failures errors).inject({}) do |results, type|
+
+    %W(tests assertions skips specifications requirements failures errors).inject({}) do |results, type|
       results_str.scan(/(.*?) #{type}/) do |m|
         results[type.to_sym] = m.first.split(/[ (]/).last.to_i
       end
@@ -70,20 +131,20 @@ begin
     end
   end
 
-  def bacon_pass?(results)
-    results.has_key?(:failures) && results.has_key?(:errors) && 
+  def rspecstyle_pass?(results)
+    results.has_key?(:failures) && results.has_key?(:errors) &&
     results[:failures] == 0 && results[:errors] == 0
   end
 
   def check_qunit_test_results
     require 'nokogiri'
     doc = Nokogiri::HTML(@browser.html)
-    
+
     pass = doc.css('#testresult > .bad')
     all = doc.css('#testresult > .all')
 
     return {} if pass.nil? || all.nil?
-    
+
     {:pass => pass.inner_html.to_i, :all => all.inner_html.to_i}
   end
 
@@ -91,13 +152,27 @@ begin
     results[:all] == results[:pass]
   end
 
+  def check_minitest_test_results
+    check_rspecstyle_test_results
+  end
+
+  def minitest_pass?(results)
+    rspecstyle_pass? results
+  end
+
+  def check_bacon_test_results
+    check_rspecstyle_test_results
+  end
+
+  def bacon_pass?(results)
+    rspecstyle_pass? results
+  end
+
   def get_browser_name_from_constant(constant)
     constant.to_s.split('::').last.downcase
   end
 
   print "Loading dependencies "
-
-  $tests = {'tests' => 'bacon', 'test_dlrjs' => 'qunit', 'test_script_tags' => 'bacon'}
 
   results = {}
 
@@ -109,7 +184,7 @@ begin
   puts '[DONE]'
 
   [FireWatir::Firefox, Watir::IE].each do |browser_type|
-  
+ 
     puts
     browser_name = get_browser_name_from_constant(browser_type)
     print "Opening #{browser_name} "
@@ -119,9 +194,9 @@ begin
 
     $tests.each do |test, test_fx|
 
-      print "> Running #{test}.html "
+      print "> Running #{test} "
 
-      @browser.goto("http://localhost:2060/#{test}.html")
+      @browser.goto "#{$uri}/#{test}"
 
       test_results = nil
       ITERATIONS.times do |i|
@@ -133,7 +208,6 @@ begin
         end
         if i == (ITERATIONS - 1)
           puts '[TIMEOUT]'
-          @browser.close
           $stderr.puts "[ERROR]"
           $stderr.puts "[ERROR] waiting for results timed out"
         end
@@ -150,8 +224,8 @@ begin
     puts '[DONE]'
   end
 
-rescue => e
-  
+rescue Exception => e
+
   $stderr.puts
   $stderr.puts
   $stderr.puts "Exception raised"
@@ -162,9 +236,7 @@ rescue => e
 
 ensure
   puts
-  print "Stopping web server "
-  `taskkill /IM Chiron.exe /F`
-  puts "[DONE]"
+  stop_webserver
 
   if @browser
     print "Closing browser "

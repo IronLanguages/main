@@ -13,11 +13,13 @@
 #
 # ****************************************************************************
 
+
+
 class ReplBufferStream
   def write_to_repl(str)
-    Microsoft::Scripting::Silverlight::Repl.current.output_buffer.write str
+    $repl.output_buffer.write str
   end
-  
+
   def puts(*args)
     args.each do |arg| 
       write_to_repl arg.to_s
