@@ -20,10 +20,10 @@ xcopy /Y /Q IronRuby.Libraries.dll __IronRuby.slvx
 xcopy /Y /Q IronPython.dll __IronPython.slvx
 xcopy /Y /Q IronPython.Modules.dll __IronPython.slvx
 xcopy /Y /Q Microsoft.Scripting.dll __Microsoft.Scripting.slvx
+xcopy /Y /Q Microsoft.Dynamic.dll __Microsoft.Scripting.slvx
 xcopy /Y /Q Microsoft.Scripting.Core.dll __Microsoft.Scripting.slvx
 xcopy /Y /Q Microsoft.Scripting.ExtensionAttribute.dll __Microsoft.Scripting.slvx
 xcopy /Y /Q Microsoft.Scripting.Silverlight.dll __Microsoft.Scripting.slvx
-REM copy /Y System.Xml.Linq.dll __Microsoft.Scripting.slvx
 
 echo DLR slvx files being created ...
 

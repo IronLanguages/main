@@ -22,6 +22,7 @@ using Microsoft.Scripting.Runtime;
 using System.Xml;
 using System.IO;
 using System.Net;
+using Microsoft.Scripting.Utils;
 using System.Windows.Resources;
 
 namespace Microsoft.Scripting.Silverlight {

@@ -6,6 +6,7 @@ using System.Windows.Controls;
 using System.Xml;
 using System.IO;
 using System.Windows;
+using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Silverlight {
 

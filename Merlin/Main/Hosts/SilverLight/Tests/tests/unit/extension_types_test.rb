@@ -1,5 +1,7 @@
 include Helpers
 
+load_assembly "Microsoft.Dynamic.dll"
+
 describe 'Html document extension' do
   before do
     @div ||= tag('div', :id => 'foo')
