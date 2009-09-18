@@ -26,6 +26,7 @@ using IronPython.Runtime.Operations;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Hosting.Shell;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 namespace IronPython.Hosting {
 #if !SILVERLIGHT
@@ -120,7 +121,7 @@ namespace IronPython.Hosting {
 
                 // get the run_module method
                 try {
-                    runMod = PythonOps.GetBoundAttr(PythonContext.SharedContext, runpy, SymbolTable.StringToId("run_module"));
+                    runMod = PythonOps.GetBoundAttr(PythonContext.SharedContext, runpy, "run_module");
                 } catch (Exception) {
                     Console.WriteLine("Could not access runpy.run_module", Style.Error);
                     return -1;

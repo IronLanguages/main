@@ -13,6 +13,12 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using MSA = System.Linq.Expressions;
+#else
+using MSA = Microsoft.Scripting.Ast;
+#endif
+
 using System.Diagnostics;
 using System.Dynamic;
 using Microsoft.Scripting;
@@ -23,9 +29,8 @@ using IronRuby.Runtime;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Compiler.Ast {
-    using Ast = System.Linq.Expressions.Expression;
-    using MSA = System.Linq.Expressions;
-
+    using Ast = MSA.Expression;
+    
     /// <summary>
     /// target.method_id(args)
     /// </summary>

@@ -13,10 +13,16 @@
  *
  * ***************************************************************************/
 
+using System;
 using System.Diagnostics;
 using System.Dynamic.Utils;
 
+#if CLR2
+namespace Microsoft.Scripting.Ast {
+#else
 namespace System.Linq.Expressions {
+#endif
+
     internal enum AnalyzeTypeIsResult {
         KnownFalse,
         KnownTrue,

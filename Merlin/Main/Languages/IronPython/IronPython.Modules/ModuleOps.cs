@@ -82,7 +82,7 @@ namespace IronPython.Modules {
         public static CTypes.CData CheckSimpleCDataType(object o, object type) {
             CTypes.SimpleCData res = o as CTypes.SimpleCData;
             object asParam;
-            if (res == null && PythonOps.TryGetBoundAttr(o, SymbolTable.StringToId("_as_parameter_"), out asParam)) {
+            if (res == null && PythonOps.TryGetBoundAttr(o, "_as_parameter_", out asParam)) {
                 res = asParam as CTypes.SimpleCData;
             }
 
@@ -96,7 +96,7 @@ namespace IronPython.Modules {
         public static CTypes.CData/*!*/ CheckCDataType(object o, object type) {
             CTypes.CData res = o as CTypes.CData;
             object asParam;
-            if (res == null && PythonOps.TryGetBoundAttr(o, SymbolTable.StringToId("_as_parameter_"), out asParam)) {
+            if (res == null && PythonOps.TryGetBoundAttr(o, "_as_parameter_", out asParam)) {
                 res = asParam as CTypes.CData;
             }
 
@@ -110,7 +110,7 @@ namespace IronPython.Modules {
         public static IntPtr/*!*/ GetFunctionPointerValue(object o, object type) {
             CTypes._CFuncPtr res = o as CTypes._CFuncPtr;
             object asParam;
-            if (res == null && PythonOps.TryGetBoundAttr(o, SymbolTable.StringToId("_as_parameter_"), out asParam)) {
+            if (res == null && PythonOps.TryGetBoundAttr(o, "_as_parameter_", out asParam)) {
                 res = asParam as CTypes._CFuncPtr;
             }
             
@@ -124,7 +124,7 @@ namespace IronPython.Modules {
         public static CTypes.CData TryCheckCDataPointerType(object o, object type) {
             CTypes.CData res = o as CTypes.CData;
             object asParam;
-            if (res == null && PythonOps.TryGetBoundAttr(o, SymbolTable.StringToId("_as_parameter_"), out asParam)) {
+            if (res == null && PythonOps.TryGetBoundAttr(o, "_as_parameter_", out asParam)) {
                 res = asParam as CTypes.CData;
             }
             if (res != null && res.NativeType != ((CTypes.PointerType)type)._type) {
@@ -241,7 +241,7 @@ namespace IronPython.Modules {
             }
 
             object asParam;
-            if (PythonOps.TryGetBoundAttr(value, SymbolTable.StringToId("_as_parameter_"), out asParam)) {
+            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out asParam)) {
                 return GetWCharPointer(asParam);
             }
 
@@ -259,7 +259,7 @@ namespace IronPython.Modules {
             }
 
             object asParam;
-            if (PythonOps.TryGetBoundAttr(value, SymbolTable.StringToId("_as_parameter_"), out asParam)) {
+            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out asParam)) {
                 return GetCharPointer(asParam);
             }
 
@@ -284,7 +284,7 @@ namespace IronPython.Modules {
             }
 
             object asParam;
-            if (PythonOps.TryGetBoundAttr(value, SymbolTable.StringToId("_as_parameter_"), out asParam)) {
+            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out asParam)) {
                 return GetPointer(asParam);
             }
 
@@ -325,7 +325,7 @@ namespace IronPython.Modules {
             }
 
             object asParam;
-            if (PythonOps.TryGetBoundAttr(value, SymbolTable.StringToId("_as_parameter_"), out asParam)) {
+            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out asParam)) {
                 return GetSignedLongLong(asParam, type);
             }
 
@@ -344,7 +344,7 @@ namespace IronPython.Modules {
             }
 
             object asParam;
-            if (PythonOps.TryGetBoundAttr(value, SymbolTable.StringToId("_as_parameter_"), out asParam)) {
+            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out asParam)) {
                 return GetUnsignedLongLong(asParam, type);
             }
 
@@ -363,7 +363,7 @@ namespace IronPython.Modules {
             }
 
             object asParam;
-            if (PythonOps.TryGetBoundAttr(value, SymbolTable.StringToId("_as_parameter_"), out asParam)) {
+            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out asParam)) {
                 return GetDouble(asParam, type);
             }
 
@@ -382,7 +382,7 @@ namespace IronPython.Modules {
             }
 
             object asParam;
-            if (PythonOps.TryGetBoundAttr(value, SymbolTable.StringToId("_as_parameter_"), out asParam)) {
+            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out asParam)) {
                 return GetSingle(asParam, type);
             }
 
@@ -401,7 +401,7 @@ namespace IronPython.Modules {
             }
 
             object asParam;
-            if (PythonOps.TryGetBoundAttr(value, SymbolTable.StringToId("_as_parameter_"), out asParam)) {
+            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out asParam)) {
                 return GetDoubleBits(asParam);
             }
 
@@ -420,7 +420,7 @@ namespace IronPython.Modules {
             }
 
             object asParam;
-            if (PythonOps.TryGetBoundAttr(value, SymbolTable.StringToId("_as_parameter_"), out asParam)) {
+            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out asParam)) {
                 return GetSingleBits(asParam);
             }
 
@@ -438,7 +438,7 @@ namespace IronPython.Modules {
             }
 
             object asParam;
-            if (PythonOps.TryGetBoundAttr(value, SymbolTable.StringToId("_as_parameter_"), out asParam)) {
+            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out asParam)) {
                 return GetSignedLong(asParam, type);
             }
 
@@ -459,7 +459,7 @@ namespace IronPython.Modules {
             }
 
             object asParam;
-            if (PythonOps.TryGetBoundAttr(value, SymbolTable.StringToId("_as_parameter_"), out asParam)) {
+            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out asParam)) {
                 return GetUnsignedLong(asParam, type);
             }
 
@@ -473,7 +473,7 @@ namespace IronPython.Modules {
             }
 
             object asParam;
-            if (PythonOps.TryGetBoundAttr(value, SymbolTable.StringToId("_as_parameter_"), out asParam)) {
+            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out asParam)) {
                 return GetUnsignedInt(type, asParam);
             }
 
@@ -486,7 +486,7 @@ namespace IronPython.Modules {
                 return res.Value;
             }
             object asParam;
-            if (PythonOps.TryGetBoundAttr(value, SymbolTable.StringToId("_as_parameter_"), out asParam)) {
+            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out asParam)) {
                 return GetSignedInt(asParam, type);
             }
 
@@ -502,7 +502,7 @@ namespace IronPython.Modules {
                 }
             }
             object asParam;
-            if (PythonOps.TryGetBoundAttr(value, SymbolTable.StringToId("_as_parameter_"), out asParam)) {
+            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out asParam)) {
                 return GetUnsignedShort(asParam, type);
             }
 
@@ -518,7 +518,7 @@ namespace IronPython.Modules {
                 }
             }
             object asParam;
-            if (PythonOps.TryGetBoundAttr(value, SymbolTable.StringToId("_as_parameter_"), out asParam)) {
+            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out asParam)) {
                 return GetSignedShort(asParam, type);
             }
 
@@ -532,7 +532,7 @@ namespace IronPython.Modules {
             }
 
             object asParam;
-            if (PythonOps.TryGetBoundAttr(value, SymbolTable.StringToId("_as_parameter_"), out asParam)) {
+            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out asParam)) {
                 return GetUnsignedByte(asParam, type);
             }
 
@@ -548,7 +548,7 @@ namespace IronPython.Modules {
                 }
             }
             object asParam;
-            if (PythonOps.TryGetBoundAttr(value, SymbolTable.StringToId("_as_parameter_"), out asParam)) {
+            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out asParam)) {
                 return GetSignedByte(asParam, type);
             }
 
@@ -564,7 +564,7 @@ namespace IronPython.Modules {
             }
 
             object asParam;
-            if (PythonOps.TryGetBoundAttr(value, SymbolTable.StringToId("_as_parameter_"), out asParam)) {
+            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out asParam)) {
                 return GetBoolean(asParam, type);
             }
 
@@ -578,7 +578,7 @@ namespace IronPython.Modules {
             }
 
             object asParam;
-            if (PythonOps.TryGetBoundAttr(value, SymbolTable.StringToId("_as_parameter_"), out asParam)) {
+            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out asParam)) {
                 return GetChar(asParam, type);
             }
 
@@ -592,7 +592,7 @@ namespace IronPython.Modules {
             }
 
             object asParam;
-            if (PythonOps.TryGetBoundAttr(value, SymbolTable.StringToId("_as_parameter_"), out asParam)) {
+            if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out asParam)) {
                 return GetWChar(asParam, type);
             }
 

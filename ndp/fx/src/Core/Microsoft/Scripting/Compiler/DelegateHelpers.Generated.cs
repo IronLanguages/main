@@ -13,6 +13,7 @@
  *
  * ***************************************************************************/
 
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -20,7 +21,12 @@ using System.Dynamic;
 using System.Dynamic.Utils;
 using System.Runtime.CompilerServices;
 
+#if CLR2
+namespace Microsoft.Scripting.Ast.Compiler {
+    using Microsoft.Scripting.Utils;
+#else
 namespace System.Linq.Expressions.Compiler {
+#endif
     internal static partial class DelegateHelpers {
         private static TypeInfo _DelegateCache = new TypeInfo();
 

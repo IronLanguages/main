@@ -157,10 +157,10 @@ namespace IronPython.Modules {
 
         private static bool IsLessThan(CodeContext/*!*/ context, object x, object y) {
             object ret;
-            if (PythonTypeOps.TryInvokeBinaryOperator(context, x, y, Symbols.OperatorToSymbol(PythonOperationKind.LessThan), out ret) &&
+            if (PythonTypeOps.TryInvokeBinaryOperator(context, x, y, "__lt__", out ret) &&
                 !Object.ReferenceEquals(ret, NotImplementedType.Value)) {
                 return Converter.ConvertToBoolean(ret);
-            } else if (PythonTypeOps.TryInvokeBinaryOperator(context, y, x, Symbols.OperatorToSymbol(PythonOperationKind.LessThanOrEqual), out ret) &&
+            } else if (PythonTypeOps.TryInvokeBinaryOperator(context, y, x, "__le__", out ret) &&
                 !Object.ReferenceEquals(ret, NotImplementedType.Value)) {
                 return !Converter.ConvertToBoolean(ret);
             } else {

@@ -69,9 +69,9 @@ namespace IronPython.Runtime.Types {
                     PythonType dt = bea.Owner as PythonType;
                     if (dt != null) {
                         if (bea.Instance == null) {
-                            throw new MissingMemberException(String.Format("attribute '{1}' of '{0}' object is read-only", dt.Name, SymbolTable.StringToId(_tracker.Name)));
+                            throw new MissingMemberException(String.Format("attribute '{1}' of '{0}' object is read-only", dt.Name, _tracker.Name));
                         } else {
-                            throw new MissingMemberException(String.Format("'{0}' object has no attribute '{1}'", dt.Name, SymbolTable.StringToId(_tracker.Name)));
+                            throw new MissingMemberException(String.Format("'{0}' object has no attribute '{1}'", dt.Name, _tracker.Name));
                         }
                     }
                 }
@@ -240,7 +240,7 @@ namespace IronPython.Runtime.Types {
 
         private MissingMemberException/*!*/ ReadOnlyException(PythonType/*!*/ dt) {
             Assert.NotNull(dt);
-            return new MissingMemberException(String.Format("attribute '{1}' of '{0}' object is read-only", dt.Name, SymbolTable.StringToId(_tracker.Name)));
+            return new MissingMemberException(String.Format("attribute '{1}' of '{0}' object is read-only", dt.Name, _tracker.Name));
         }
 
         #endregion

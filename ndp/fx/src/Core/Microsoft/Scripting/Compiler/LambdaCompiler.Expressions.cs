@@ -13,6 +13,7 @@
  *
  * ***************************************************************************/
 
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -25,7 +26,11 @@ using System.Runtime.CompilerServices;
 using System.Core;
 #endif
 
+#if CLR2
+namespace Microsoft.Scripting.Ast.Compiler {
+#else
 namespace System.Linq.Expressions.Compiler {
+#endif
     partial class LambdaCompiler {
         [Flags]
         internal enum CompilationFlags {
@@ -489,7 +494,7 @@ namespace System.Linq.Expressions.Compiler {
 
             // Emit the temp as type CallSite so we get more reuse
             _ilg.Emit(OpCodes.Dup);
-#if MICROSOFT_SCRIPTING_CORE
+#if CLR2
             // For 3.5, emit the temp as CallSite<T> to work around a Jit32
             // verifier issue (fixed in 3.5 sp1)
             var siteTemp = GetLocal(siteType);

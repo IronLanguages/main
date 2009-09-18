@@ -100,24 +100,13 @@ namespace IronPython.Runtime {
         /// <summary>
         /// Attempts to lookup the provided name in this scope or any outer scope.
         /// </summary>
-        internal bool TryLookupName(SymbolId name, out object value) {
-            string strName = SymbolTable.IdToString(name);
+        internal bool TryLookupName(string name, out object value) {
+            string strName = name;
             if (_dict.TryGetValue(strName, out value)) {
                 return true;
             }
 
             return _modContext.Globals.TryGetValue(strName, out value);
-        }
-
-        /// <summary>
-        /// Attempts to lookup the provided name in this scope or any outer scope.
-        /// </summary>
-        internal bool TryLookupName(string name, out object value) {
-            if (_dict.TryGetValue(name, out value)) {
-                return true;
-            }
-
-            return _modContext.Globals.TryGetValue(name, out value);
         }
 
         /// <summary>
@@ -157,15 +146,8 @@ namespace IronPython.Runtime {
         /// <summary>
         /// Attempts to lookup the variable in the local scope.
         /// </summary>
-        internal bool TryGetVariable(SymbolId name, out object value) {
-            return Dict.TryGetValue(SymbolTable.IdToString(name), out value);
-        }
-
-        /// <summary>
-        /// Removes a variable from the local scope.
-        /// </summary>
-        internal bool TryRemoveVariable(SymbolId name) {
-            return Dict.Remove(SymbolTable.IdToString(name));
+        internal bool TryGetVariable(string name, out object value) {
+            return Dict.TryGetValue(name, out value);
         }
 
         /// <summary>
@@ -178,24 +160,9 @@ namespace IronPython.Runtime {
         /// <summary>
         /// Sets a variable in the local scope.
         /// </summary>
-        internal void SetVariable(SymbolId name, object value) {
-            Dict.Add(SymbolTable.IdToString(name), value);
-        }
-
-        /// <summary>
-        /// Sets a variable in the local scope.
-        /// </summary>
         internal void SetVariable(string name, object value) {
             Dict.Add(name, value);
         }
-
-        /// <summary>
-        /// Gets a variable from the global scope.
-        /// </summary>
-        internal bool TryGetGlobalVariable(SymbolId symbolId, out object res) {
-            return GlobalDict.TryGetValue(SymbolTable.IdToString(symbolId), out res);
-        }
-
 
         /// <summary>
         /// Gets a variable from the global scope.
@@ -204,25 +171,12 @@ namespace IronPython.Runtime {
             return GlobalDict.TryGetValue(name, out res);
         }
 
-        /// <summary>
-        /// Sets a variable in the global scope.
-        /// </summary>
-        internal void SetGlobalVariable(SymbolId name, object value) {
-            GlobalDict.Add(SymbolTable.IdToString(name), value);
-        }
 
         /// <summary>
         /// Sets a variable in the global scope.
         /// </summary>
         internal void SetGlobalVariable(string name, object value) {
             GlobalDict.Add(name, value);
-        }
-
-        /// <summary>
-        /// Removes a variable from the global scope.
-        /// </summary>
-        internal bool TryRemoveGlobalVariable(SymbolId name) {
-            return GlobalDict.Remove(SymbolTable.IdToString(name));
         }
 
         /// <summary>
@@ -240,6 +194,25 @@ namespace IronPython.Runtime {
             get {
                 return Dict != ModuleContext.Globals;
             }
+        }
+
+        /// <summary>
+        /// Returns the dictionary associated with __builtins__ if one is
+        /// set or null if it's not available.  If __builtins__ is a module
+        /// the module's dictionary is returned.
+        /// </summary>
+        internal PythonDictionary GetBuiltinsDict() {
+            object builtins;
+            if (GlobalDict._storage.TryGetBuiltins(out builtins)) {
+                PythonModule builtinsScope = builtins as PythonModule;
+                if (builtinsScope != null) {
+                    return builtinsScope.__dict__;
+                }
+
+                return builtins as PythonDictionary;
+            }
+
+            return null;
         }
 
         #endregion

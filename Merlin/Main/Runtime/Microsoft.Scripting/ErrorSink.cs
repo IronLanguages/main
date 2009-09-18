@@ -15,7 +15,6 @@
 
 using System;
 using System.Dynamic;
-using Microsoft.Scripting.Generation;
 using System.Security.Permissions;
 using System.Threading;
 using Microsoft.Scripting.Utils;

@@ -13,16 +13,21 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using MSAst = System.Linq.Expressions;
+#else
+using MSAst = Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Dynamic;
 using IronPython.Runtime.Binding;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
-using MSAst = System.Linq.Expressions;
 
 namespace IronPython.Compiler.Ast {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = MSAst.Expression;
 
     public class MemberExpression : Expression {
         private readonly Expression _target;

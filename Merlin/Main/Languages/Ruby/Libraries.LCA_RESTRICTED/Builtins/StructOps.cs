@@ -13,23 +13,23 @@
  *
  * ***************************************************************************/
 
-using EachSite = System.Func<System.Runtime.CompilerServices.CallSite, object, IronRuby.Builtins.Proc, object>;
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
 
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Microsoft.Scripting;
-using System.Dynamic;
-using System.Linq.Expressions;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-using Microsoft.Scripting.Actions;
 using IronRuby.Runtime;
-using IronRuby.Runtime.Calls;
-using System.Runtime.InteropServices;
-using Ast = System.Linq.Expressions.Expression;
+using System.Runtime.CompilerServices;
 
 namespace IronRuby.Builtins {
+    using EachSite = Func<CallSite, object, Proc, object>;
 
     [RubyClass("Struct", Extends = typeof(RubyStruct), Inherits = typeof(object)), Includes(typeof(Enumerable))]
     public static partial class RubyStructOps {

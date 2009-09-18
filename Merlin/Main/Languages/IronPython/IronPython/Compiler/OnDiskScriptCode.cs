@@ -18,8 +18,9 @@ using System.Collections.Generic;
 using System.Text;
 using System.Reflection;
 
-using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting;
+using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
@@ -71,7 +72,7 @@ namespace IronPython.Compiler {
             return CreateContext().GlobalScope;
         }
 
-        internal CodeContext CreateContext() {            
+        internal CodeContext CreateContext() {
             if (_optimizedContext == null) {
                 CachedOptimizedCodeAttribute[] attrs = (CachedOptimizedCodeAttribute[])_code.Method.GetCustomAttributes(typeof(CachedOptimizedCodeAttribute), false);
 

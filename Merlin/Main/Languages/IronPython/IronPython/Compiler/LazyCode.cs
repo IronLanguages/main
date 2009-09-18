@@ -21,9 +21,14 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
-using System.Linq.Expressions;
 using System.Threading;
 
 namespace IronPython.Compiler {
@@ -70,7 +75,7 @@ namespace IronPython.Compiler {
 
         #region IExpressionSerializable Members
 
-        public System.Linq.Expressions.Expression CreateExpression() {
+        public Expression CreateExpression() {
             return Code;
         }
 

@@ -304,7 +304,7 @@ namespace IronPython.Runtime.Types {
             string strIndex = index as string;
             if (strIndex != null) {
                 PythonTypeSlot dts;
-                if (_dt.TryLookupSlot(context, SymbolTable.StringToId(strIndex), out dts)) {
+                if (_dt.TryLookupSlot(context, strIndex, out dts)) {
                     PythonTypeUserDescriptorSlot uds = dts as PythonTypeUserDescriptorSlot;
                     if (uds != null) {
                         return uds.Value;
@@ -321,7 +321,7 @@ namespace IronPython.Runtime.Types {
             string strIndex = key as string;
             if (strIndex != null) {
                 PythonTypeSlot dts;
-                if (_dt.TryLookupSlot(context, SymbolTable.StringToId(strIndex), out dts)) {
+                if (_dt.TryLookupSlot(context, strIndex, out dts)) {
                     PythonTypeUserDescriptorSlot uds = dts as PythonTypeUserDescriptorSlot;
                     if (uds != null) {
                         value = uds.Value;

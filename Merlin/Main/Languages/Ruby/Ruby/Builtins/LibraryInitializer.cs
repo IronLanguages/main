@@ -40,6 +40,13 @@ namespace IronRuby.Builtins {
 
         #region Class/Module definitions/extensions
 
+        private void PublishModule(string/*!*/ name, RubyModule/*!*/ module) {
+            _context.ObjectClass.SetConstant(name, module);
+            if ((module.Restrictions & ModuleRestrictions.NotPublished) == 0) {
+                module.Publish(name);
+            }
+        }
+
         protected RubyClass/*!*/ DefineGlobalClass(string/*!*/ name, Type/*!*/ type, int attributes, RubyClass/*!*/ super,
             Action<RubyModule> instanceTrait, Action<RubyModule> classTrait, Action<RubyModule> constantsInitializer,
             RubyModule/*!*/[]/*!*/ mixins, Delegate/*!*/ factory) {
@@ -52,7 +59,7 @@ namespace IronRuby.Builtins {
             RubyModule/*!*/[]/*!*/ mixins, params Delegate[] factories) {
 
             RubyClass result = _context.DefineLibraryClass(name, type, instanceTrait, classTrait, constantsInitializer, super, mixins, factories, (RubyModuleAttributes)attributes, _builtin);
-            _context.ObjectClass.SetConstant(result.Name, result);
+            PublishModule(name, result);
             return result;
         }
 
@@ -74,9 +81,9 @@ namespace IronRuby.Builtins {
             Action<RubyModule> instanceTrait, Action<RubyModule> classTrait, Action<RubyModule> constantsInitializer,
             RubyModule/*!*/[]/*!*/ mixins) {
 
-            RubyModule module = _context.DefineLibraryModule(name, type, instanceTrait, classTrait, constantsInitializer, mixins, (RubyModuleAttributes)attributes, _builtin);
-            _context.ObjectClass.SetConstant(module.Name, module);
-            return module;
+            RubyModule result = _context.DefineLibraryModule(name, type, instanceTrait, classTrait, constantsInitializer, mixins, (RubyModuleAttributes)attributes, _builtin);
+            PublishModule(name, result);
+            return result;
         }
 
         //

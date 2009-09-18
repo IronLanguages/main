@@ -13,10 +13,15 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Diagnostics;
 using System.Dynamic;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -30,10 +35,9 @@ using Microsoft.Scripting.Utils;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
-using Ast = System.Linq.Expressions.Expression;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
-
 namespace IronPython.Runtime.Binding {
+    using Ast = Expression;
+    using AstUtils = Microsoft.Scripting.Ast.Utils;
 
     class PythonGetMemberBinder : DynamicMetaObjectBinder, IPythonSite, IExpressionSerializable {
         private readonly PythonContext/*!*/ _context;
@@ -177,7 +181,7 @@ namespace IronPython.Runtime.Binding {
 
             public object GetError(CallSite site, TSelfType target, CodeContext context) {
                 if (target != null && target.GetType() == _type) {
-                    throw PythonOps.AttributeErrorForMissingAttribute(DynamicHelpers.GetPythonType(target).Name, SymbolTable.StringToId(_name));
+                    throw PythonOps.AttributeErrorForMissingAttribute(DynamicHelpers.GetPythonType(target).Name, _name);
                 }
 
                 return ((CallSite<Func<CallSite, TSelfType, CodeContext, object>>)site).Update(site, target, context);
@@ -457,10 +461,10 @@ namespace IronPython.Runtime.Binding {
         }
 
         class NamespaceTrackerDelegate : FastGetBase {
-            private readonly SymbolId _name;
+            private readonly string _name;
 
             public NamespaceTrackerDelegate(string name) {
-                _name = SymbolTable.StringToId(name);
+                _name = name;
             }
 
             public object Target(CallSite site, object self, CodeContext context) {
@@ -508,7 +512,7 @@ namespace IronPython.Runtime.Binding {
         private DynamicMetaObject GetForeignObject(DynamicMetaObject self) {
             return new DynamicMetaObject(
                 Expression.Dynamic(
-                    _context.CompatGetMember(Name),
+                    _context.CompatGetMember(Name, IsNoThrow),
                     typeof(object),
                     self.Expression
                 ),
@@ -667,15 +671,17 @@ namespace IronPython.Runtime.Binding {
 
     class CompatibilityGetMember : GetMemberBinder, IPythonSite {
         private readonly PythonContext/*!*/ _context;
+        private readonly bool _isNoThrow;
 
         public CompatibilityGetMember(PythonContext/*!*/ context, string/*!*/ name)
             : base(name, false) {
             _context = context;
         }
 
-        public CompatibilityGetMember(PythonContext/*!*/ context, string/*!*/ name, bool ignoreCase)
-            : base(name, ignoreCase) {
+        public CompatibilityGetMember(PythonContext/*!*/ context, string/*!*/ name, bool isNoThrow)
+            : base(name, false) {
             _context = context;
+            _isNoThrow = isNoThrow;
         }
 
         public override DynamicMetaObject FallbackGetMember(DynamicMetaObject self, DynamicMetaObject errorSuggestion) {
@@ -685,7 +691,7 @@ namespace IronPython.Runtime.Binding {
                 return com;
             }
 #endif
-            return PythonGetMemberBinder.FallbackWorker(_context, self, PythonContext.GetCodeContextMOCls(this), Name, GetMemberOptions.None, this, errorSuggestion);
+            return PythonGetMemberBinder.FallbackWorker(_context, self, PythonContext.GetCodeContextMOCls(this), Name, _isNoThrow ? GetMemberOptions.IsNoThrow : GetMemberOptions.None, this, errorSuggestion);
         }
 
         #region IPythonSite Members

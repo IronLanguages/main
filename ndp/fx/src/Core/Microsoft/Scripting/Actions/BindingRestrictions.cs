@@ -13,10 +13,16 @@
  *
  * ***************************************************************************/
 
+#if CLR2
+using Microsoft.Scripting.Ast;
+#else
+using System.Linq.Expressions;
+#endif
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic.Utils;
-using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 
 namespace System.Dynamic {

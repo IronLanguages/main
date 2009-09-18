@@ -13,15 +13,20 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using MSA = System.Linq.Expressions;
+#else
+using MSA = Microsoft.Scripting.Ast;
+#endif
+
 using System.Diagnostics;
 using Microsoft.Scripting;
 using IronRuby.Builtins;
 using IronRuby.Runtime;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
-using MSA = System.Linq.Expressions;
 
 namespace IronRuby.Compiler.Ast {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = MSA.Expression;
 
     /// <summary>
     /// yield(args)

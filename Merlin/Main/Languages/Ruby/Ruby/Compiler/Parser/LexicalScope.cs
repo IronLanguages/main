@@ -24,8 +24,13 @@ using IronRuby.Compiler.Ast;
 using IronRuby.Runtime;
 
 namespace IronRuby.Compiler {
-    using MSA = System.Linq.Expressions;
-    using Ast = System.Linq.Expressions.Expression;
+    #if !CLR2
+using MSA = System.Linq.Expressions;
+#else
+using MSA = Microsoft.Scripting.Ast;
+#endif
+
+    using Ast = Expression;
 
     public abstract class LexicalScope : HybridStringDictionary<LocalVariable> {
         // Null if there is no parent lexical scopes whose local variables are visible eto this scope.

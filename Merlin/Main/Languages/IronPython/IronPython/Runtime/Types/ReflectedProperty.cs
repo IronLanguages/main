@@ -13,10 +13,15 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Diagnostics;
 using System.Dynamic;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
@@ -242,11 +247,11 @@ namespace IronPython.Runtime.Types {
             if (Setter.Length != 0)
                 throw PythonOps.AttributeErrorForReadonlyAttribute(
                     DynamicHelpers.GetPythonTypeFromType(DeclaringType).Name,
-                    SymbolTable.StringToId(__name__));
+                    __name__);
             else
                 throw PythonOps.AttributeErrorForBuiltinAttributeDeletion(
                     DynamicHelpers.GetPythonTypeFromType(DeclaringType).Name,
-                    SymbolTable.StringToId(__name__));
+                    __name__);
         }
 
         public string __doc__ {

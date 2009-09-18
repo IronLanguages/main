@@ -13,17 +13,23 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using MSA = System.Linq.Expressions;
+#else
+using MSA = Microsoft.Scripting.Ast;
+#endif
+
 using System.Diagnostics;
+using System.Collections;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Conversions;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Ast;
 using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
-using MSA = System.Linq.Expressions;
 
 namespace IronRuby.Compiler.Ast {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = MSA.Expression;
 
     // rescue type
     //   statements
@@ -106,7 +112,7 @@ namespace IronRuby.Compiler.Ast {
                     }
 
                     if (_splatType != null) {
-                        var tmp = gen.CurrentScope.DefineHiddenVariable("#type_" + i, typeof(object));
+                        var tmp = gen.CurrentScope.DefineHiddenVariable("#type_" + i, typeof(IList));
                         temps[i] = tmp;
                         exprs[i] = Ast.Assign(tmp, TransformSplatType(gen));
 
@@ -151,7 +157,7 @@ namespace IronRuby.Compiler.Ast {
         }
 
         private MSA.Expression/*!*/ TransformSplatType(AstGenerator/*!*/ gen) {
-            return Ast.Dynamic(ConvertToArraySplatAction.Make(gen.Context), typeof(object), _splatType.TransformRead(gen));
+            return Ast.Dynamic(SplatAction.Make(gen.Context), typeof(IList), _splatType.TransformRead(gen));
         }
 
         private MSA.Expression/*!*/ MakeCompareException(AstGenerator/*!*/ gen, MSA.Expression/*!*/ comparisonSiteStorage, MSA.Expression/*!*/ expression) {

@@ -13,11 +13,16 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Dynamic;
-using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 
 using Microsoft.Scripting.Generation;
@@ -30,7 +35,7 @@ using IronPython.Runtime.Types;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Runtime.Binding {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = Expression;
 
     class PythonOperationBinder : DynamicMetaObjectBinder, IPythonSite, IExpressionSerializable {
         private readonly PythonContext/*!*/ _context;
@@ -76,15 +81,15 @@ namespace IronPython.Runtime.Binding {
                     break;
                 case PythonOperationKind.GetEnumeratorForIteration:
                     if (CompilerHelpers.GetType(args[0]) == typeof(List)) {
-                        if (typeof(T) == typeof(Func<CallSite, List, IEnumerator>)) {
-                            return (T)(object)new Func<CallSite, List, IEnumerator>(GetListEnumerator);
+                        if (typeof(T) == typeof(Func<CallSite, List, KeyValuePair<IEnumerator, IDisposable>>)) {
+                            return (T)(object)new Func<CallSite, List, KeyValuePair<IEnumerator, IDisposable>>(GetListEnumerator);
                         }
-                        return (T)(object)new Func<CallSite, object, IEnumerator>(GetListEnumerator);
+                        return (T)(object)new Func<CallSite, object, KeyValuePair<IEnumerator, IDisposable>>(GetListEnumerator);
                     } else if (CompilerHelpers.GetType(args[0]) == typeof(PythonTuple)) {
-                        if (typeof(T) == typeof(Func<CallSite, PythonTuple, IEnumerator>)) {
-                            return (T)(object)new Func<CallSite, PythonTuple, IEnumerator>(GetTupleEnumerator);
+                        if (typeof(T) == typeof(Func<CallSite, PythonTuple, KeyValuePair<IEnumerator, IDisposable>>)) {
+                            return (T)(object)new Func<CallSite, PythonTuple, KeyValuePair<IEnumerator, IDisposable>>(GetTupleEnumerator);
                         }
-                        return (T)(object)new Func<CallSite, object, IEnumerator>(GetTupleEnumerator);
+                        return (T)(object)new Func<CallSite, object, KeyValuePair<IEnumerator, IDisposable>>(GetTupleEnumerator);
 
                     }
                     break;
@@ -230,28 +235,28 @@ namespace IronPython.Runtime.Binding {
 
             return ((CallSite<Func<CallSite, object, object>>)site).Update(site, value);
         }
-        private IEnumerator GetListEnumerator(CallSite site, List value) {
-            return new ListIterator(value);
+        private KeyValuePair<IEnumerator, IDisposable> GetListEnumerator(CallSite site, List value) {
+            return new KeyValuePair<IEnumerator,IDisposable>(new ListIterator(value), null);
         }
 
-        private IEnumerator GetListEnumerator(CallSite site, object value) {
+        private KeyValuePair<IEnumerator, IDisposable> GetListEnumerator(CallSite site, object value) {
             if (value != null && value.GetType() == typeof(List)) {
-                return new ListIterator((List)value);
+                return new KeyValuePair<IEnumerator,IDisposable>(new ListIterator((List)value), null);
             }
 
-            return ((CallSite<Func<CallSite, object, IEnumerator>>)site).Update(site, value);
+            return ((CallSite<Func<CallSite, object, KeyValuePair<IEnumerator, IDisposable>>>)site).Update(site, value);
         }
 
-        private IEnumerator GetTupleEnumerator(CallSite site, PythonTuple value) {
-            return new TupleEnumerator(value);
+        private KeyValuePair<IEnumerator, IDisposable> GetTupleEnumerator(CallSite site, PythonTuple value) {
+            return new KeyValuePair<IEnumerator,IDisposable>(new TupleEnumerator(value), null);
         }
 
-        private IEnumerator GetTupleEnumerator(CallSite site, object value) {
+        private KeyValuePair<IEnumerator, IDisposable> GetTupleEnumerator(CallSite site, object value) {
             if (value != null && value.GetType() == typeof(PythonTuple)) {
-                return new TupleEnumerator((PythonTuple)value);
+                return new KeyValuePair<IEnumerator, IDisposable>(new TupleEnumerator((PythonTuple)value), null);
             }
 
-            return ((CallSite<Func<CallSite, object, IEnumerator>>)site).Update(site, value);
+            return ((CallSite<Func<CallSite, object, KeyValuePair<IEnumerator, IDisposable>>>)site).Update(site, value);
         }
 
         private bool ListContains(CallSite site, object other, List value) {
@@ -360,7 +365,7 @@ namespace IronPython.Runtime.Binding {
                     case PythonOperationKind.IsCallable: return typeof(bool);
                     case PythonOperationKind.Hash: return typeof(int);
                     case PythonOperationKind.Contains: return typeof(bool);
-                    case PythonOperationKind.GetEnumeratorForIteration: return typeof(IEnumerator);
+                    case PythonOperationKind.GetEnumeratorForIteration: return typeof(KeyValuePair<IEnumerator, IDisposable>);
                     case PythonOperationKind.CallSignatures: return typeof(IList<string>);
                     case PythonOperationKind.Documentation: return typeof(string);
                 }

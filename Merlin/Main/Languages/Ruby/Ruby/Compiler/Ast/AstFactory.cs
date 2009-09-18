@@ -13,11 +13,19 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using MSA = System.Linq.Expressions;
+#else
+using MSA = Microsoft.Scripting.Ast;
+#endif
+
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Dynamic;
 using System.Threading;
 using Microsoft.Scripting.Actions;
@@ -28,12 +36,12 @@ using Microsoft.Scripting.Utils;
 using IronRuby.Builtins;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
+using IronRuby.Runtime.Conversions;
 
 using AstUtils = Microsoft.Scripting.Ast.Utils;
-using MSA = System.Linq.Expressions;
 
 namespace IronRuby.Compiler.Ast {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = MSA.Expression;
 
     public static class AstFactory {
 
@@ -149,6 +157,7 @@ namespace IronRuby.Compiler.Ast {
         }
 
         internal static MSA.Expression/*!*/ YieldExpression(
+            RubyContext/*!*/ context,
             IList<MSA.Expression>/*!*/ arguments, 
             MSA.Expression splattedArgument,
             MSA.Expression rhsArgument,
@@ -160,18 +169,20 @@ namespace IronRuby.Compiler.Ast {
             bool hasArgumentArray;
             var opMethod = Methods.Yield(arguments.Count, splattedArgument != null, rhsArgument != null, out hasArgumentArray);
 
-            var args = new List<MSA.Expression>();
+            var args = new ReadOnlyCollectionBuilder<MSA.Expression>();
 
             foreach (var arg in arguments) {
                 args.Add(AstFactory.Box(arg));
             }
 
             if (hasArgumentArray) {
-                args = CollectionUtils.MakeList<MSA.Expression>(Ast.NewArrayInit(typeof(object), args));
+                var newArgs = new ReadOnlyCollectionBuilder<MSA.Expression>();
+                newArgs.Add(Ast.NewArrayInit(typeof(object), args));
+                args = newArgs;
             }
 
             if (splattedArgument != null) {
-                args.Add(AstFactory.Box(splattedArgument));
+                args.Add(Ast.Dynamic(SplatAction.Make(context), typeof(IList), splattedArgument));
             }
 
             if (rhsArgument != null) {
@@ -181,7 +192,7 @@ namespace IronRuby.Compiler.Ast {
             args.Add(AstFactory.Box(selfArgument));
             args.Add(bfcVariable);
 
-            return Ast.Call(opMethod, args.ToArray());
+            return Ast.Call(opMethod, args);
         }
     }
 }

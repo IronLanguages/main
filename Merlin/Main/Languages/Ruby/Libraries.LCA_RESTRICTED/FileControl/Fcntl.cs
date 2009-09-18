@@ -14,6 +14,7 @@
  * ***************************************************************************/
 
 using IronRuby.Runtime;
+using IronRuby.Builtins;
 
 namespace IronRuby.StandardLibrary.FileControl {
 

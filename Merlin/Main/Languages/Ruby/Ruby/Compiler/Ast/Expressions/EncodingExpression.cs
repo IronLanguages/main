@@ -25,8 +25,13 @@ using Microsoft.Scripting;
 using IronRuby.Builtins;
 
 namespace IronRuby.Compiler.Ast {
-    using MSA = System.Linq.Expressions;
-    using Ast = System.Linq.Expressions.Expression;
+    #if !CLR2
+using MSA = System.Linq.Expressions;
+#else
+using MSA = Microsoft.Scripting.Ast;
+#endif
+
+    using Ast = Expression;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
 
     public partial class EncodingExpression : Expression {

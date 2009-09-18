@@ -13,8 +13,13 @@
  *
  * ***************************************************************************/
 
-using AstUtils = Microsoft.Scripting.Ast.Utils;
+#if !CLR2
 using MSAst = System.Linq.Expressions;
+#else
+using MSAst = Microsoft.Scripting.Ast;
+#endif
+
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Compiler.Ast {
 

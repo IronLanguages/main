@@ -13,20 +13,26 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Dynamic;
 using System.Reflection;
 using IronRuby.Compiler;
 using Microsoft.Scripting.Utils;
-using Ast = System.Linq.Expressions.Expression;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 using IronRuby.Compiler.Generation;
-using System.Linq.Expressions;
 using System.Diagnostics;
 using IronRuby.Runtime.Calls;
 
 namespace IronRuby.Runtime.Conversions {
+    using Ast = Expression;
+
     public sealed class GenericConversionAction : RubyConversionAction {
         private readonly Type/*!*/ _type;
 

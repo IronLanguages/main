@@ -26,311 +26,311 @@ namespace IronPython.Runtime.Types {
 
         [return: MaybeNotImplemented]
         public static object operator +([NotNull]OldInstance self, object other) {
-            object res = InvokeOne(self, other, Symbols.OperatorAdd);
+            object res = InvokeOne(self, other, "__add__");
             if (res != NotImplementedType.Value) return res;
 
             OldInstance otherOc = other as OldInstance;
             if (otherOc != null) {
-                return InvokeOne(otherOc, self, Symbols.OperatorReverseAdd);
+                return InvokeOne(otherOc, self, "__radd__");
             }
-            return PythonOps.NotImplemented;
+            return NotImplementedType.Value;
         }
 
         [return: MaybeNotImplemented]
         public static object operator +(object other, [NotNull]OldInstance self) {
-            return InvokeOne(self, other, Symbols.OperatorReverseAdd);
+            return InvokeOne(self, other, "__radd__");
         }
 
         [return: MaybeNotImplemented]
         [SpecialName]
         public object InPlaceAdd(object other) {
-            return InvokeOne(this, other, Symbols.OperatorInPlaceAdd);
+            return InvokeOne(this, other, "__iadd__");
         }
 
         [return: MaybeNotImplemented]
         public static object operator -([NotNull]OldInstance self, object other) {
-            object res = InvokeOne(self, other, Symbols.OperatorSubtract);
+            object res = InvokeOne(self, other, "__sub__");
             if (res != NotImplementedType.Value) return res;
 
             OldInstance otherOc = other as OldInstance;
             if (otherOc != null) {
-                return InvokeOne(otherOc, self, Symbols.OperatorReverseSubtract);
+                return InvokeOne(otherOc, self, "__rsub__");
             }
-            return PythonOps.NotImplemented;
+            return NotImplementedType.Value;
         }
 
         [return: MaybeNotImplemented]
         public static object operator -(object other, [NotNull]OldInstance self) {
-            return InvokeOne(self, other, Symbols.OperatorReverseSubtract);
+            return InvokeOne(self, other, "__rsub__");
         }
 
         [return: MaybeNotImplemented]
         [SpecialName]
         public object InPlaceSubtract(object other) {
-            return InvokeOne(this, other, Symbols.OperatorInPlaceSubtract);
+            return InvokeOne(this, other, "__isub__");
         }
 
         [return: MaybeNotImplemented]
         [SpecialName]
         public static object Power([NotNull]OldInstance self, object other) {
-            object res = InvokeOne(self, other, Symbols.OperatorPower);
+            object res = InvokeOne(self, other, "__pow__");
             if (res != NotImplementedType.Value) return res;
 
             OldInstance otherOc = other as OldInstance;
             if (otherOc != null) {
-                return InvokeOne(otherOc, self, Symbols.OperatorReversePower);
+                return InvokeOne(otherOc, self, "__rpow__");
             }
-            return PythonOps.NotImplemented;
+            return NotImplementedType.Value;
         }
 
         [return: MaybeNotImplemented]
         [SpecialName]
         public static object Power(object other, [NotNull]OldInstance self) {
-            return InvokeOne(self, other, Symbols.OperatorReversePower);
+            return InvokeOne(self, other, "__rpow__");
         }
 
         [return: MaybeNotImplemented]
         [SpecialName]
         public object InPlacePower(object other) {
-            return InvokeOne(this, other, Symbols.OperatorInPlacePower);
+            return InvokeOne(this, other, "__ipow__");
         }
 
         [return: MaybeNotImplemented]
         public static object operator *([NotNull]OldInstance self, object other) {
-            object res = InvokeOne(self, other, Symbols.OperatorMultiply);
+            object res = InvokeOne(self, other, "__mul__");
             if (res != NotImplementedType.Value) return res;
 
             OldInstance otherOc = other as OldInstance;
             if (otherOc != null) {
-                return InvokeOne(otherOc, self, Symbols.OperatorReverseMultiply);
+                return InvokeOne(otherOc, self, "__rmul__");
             }
-            return PythonOps.NotImplemented;
+            return NotImplementedType.Value;
         }
 
         [return: MaybeNotImplemented]
         public static object operator *(object other, [NotNull]OldInstance self) {
-            return InvokeOne(self, other, Symbols.OperatorReverseMultiply);
+            return InvokeOne(self, other, "__rmul__");
         }
 
         [return: MaybeNotImplemented]
         [SpecialName]
         public object InPlaceMultiply(object other) {
-            return InvokeOne(this, other, Symbols.OperatorInPlaceMultiply);
+            return InvokeOne(this, other, "__imul__");
         }
 
         [return: MaybeNotImplemented]
         [SpecialName]
         public static object FloorDivide([NotNull]OldInstance self, object other) {
-            object res = InvokeOne(self, other, Symbols.OperatorFloorDivide);
+            object res = InvokeOne(self, other, "__floordiv__");
             if (res != NotImplementedType.Value) return res;
 
             OldInstance otherOc = other as OldInstance;
             if (otherOc != null) {
-                return InvokeOne(otherOc, self, Symbols.OperatorReverseFloorDivide);
+                return InvokeOne(otherOc, self, "__rfloordiv__");
             }
-            return PythonOps.NotImplemented;
+            return NotImplementedType.Value;
         }
 
         [return: MaybeNotImplemented]
         [SpecialName]
         public static object FloorDivide(object other, [NotNull]OldInstance self) {
-            return InvokeOne(self, other, Symbols.OperatorReverseFloorDivide);
+            return InvokeOne(self, other, "__rfloordiv__");
         }
 
         [return: MaybeNotImplemented]
         [SpecialName]
         public object InPlaceFloorDivide(object other) {
-            return InvokeOne(this, other, Symbols.OperatorInPlaceFloorDivide);
+            return InvokeOne(this, other, "__ifloordiv__");
         }
 
         [return: MaybeNotImplemented]
         public static object operator /([NotNull]OldInstance self, object other) {
-            object res = InvokeOne(self, other, Symbols.OperatorDivide);
+            object res = InvokeOne(self, other, "__div__");
             if (res != NotImplementedType.Value) return res;
 
             OldInstance otherOc = other as OldInstance;
             if (otherOc != null) {
-                return InvokeOne(otherOc, self, Symbols.OperatorReverseDivide);
+                return InvokeOne(otherOc, self, "__rdiv__");
             }
-            return PythonOps.NotImplemented;
+            return NotImplementedType.Value;
         }
 
         [return: MaybeNotImplemented]
         public static object operator /(object other, [NotNull]OldInstance self) {
-            return InvokeOne(self, other, Symbols.OperatorReverseDivide);
+            return InvokeOne(self, other, "__rdiv__");
         }
 
         [return: MaybeNotImplemented]
         [SpecialName]
         public object InPlaceDivide(object other) {
-            return InvokeOne(this, other, Symbols.OperatorInPlaceDivide);
+            return InvokeOne(this, other, "__idiv__");
         }
 
         [return: MaybeNotImplemented]
         [SpecialName]
         public static object TrueDivide([NotNull]OldInstance self, object other) {
-            object res = InvokeOne(self, other, Symbols.OperatorTrueDivide);
+            object res = InvokeOne(self, other, "__truediv__");
             if (res != NotImplementedType.Value) return res;
 
             OldInstance otherOc = other as OldInstance;
             if (otherOc != null) {
-                return InvokeOne(otherOc, self, Symbols.OperatorReverseTrueDivide);
+                return InvokeOne(otherOc, self, "__rtruediv__");
             }
-            return PythonOps.NotImplemented;
+            return NotImplementedType.Value;
         }
 
         [return: MaybeNotImplemented]
         [SpecialName]
         public static object TrueDivide(object other, [NotNull]OldInstance self) {
-            return InvokeOne(self, other, Symbols.OperatorReverseTrueDivide);
+            return InvokeOne(self, other, "__rtruediv__");
         }
 
         [return: MaybeNotImplemented]
         [SpecialName]
         public object InPlaceTrueDivide(object other) {
-            return InvokeOne(this, other, Symbols.OperatorInPlaceTrueDivide);
+            return InvokeOne(this, other, "__itruediv__");
         }
 
         [return: MaybeNotImplemented]
         public static object operator %([NotNull]OldInstance self, object other) {
-            object res = InvokeOne(self, other, Symbols.OperatorMod);
+            object res = InvokeOne(self, other, "__mod__");
             if (res != NotImplementedType.Value) return res;
 
             OldInstance otherOc = other as OldInstance;
             if (otherOc != null) {
-                return InvokeOne(otherOc, self, Symbols.OperatorReverseMod);
+                return InvokeOne(otherOc, self, "__rmod__");
             }
-            return PythonOps.NotImplemented;
+            return NotImplementedType.Value;
         }
 
         [return: MaybeNotImplemented]
         public static object operator %(object other, [NotNull]OldInstance self) {
-            return InvokeOne(self, other, Symbols.OperatorReverseMod);
+            return InvokeOne(self, other, "__rmod__");
         }
 
         [return: MaybeNotImplemented]
         [SpecialName]
         public object InPlaceMod(object other) {
-            return InvokeOne(this, other, Symbols.OperatorInPlaceMod);
+            return InvokeOne(this, other, "__imod__");
         }
 
         [return: MaybeNotImplemented]
         [SpecialName]
         public static object LeftShift([NotNull]OldInstance self, object other) {
-            object res = InvokeOne(self, other, Symbols.OperatorLeftShift);
+            object res = InvokeOne(self, other, "__lshift__");
             if (res != NotImplementedType.Value) return res;
 
             OldInstance otherOc = other as OldInstance;
             if (otherOc != null) {
-                return InvokeOne(otherOc, self, Symbols.OperatorReverseLeftShift);
+                return InvokeOne(otherOc, self, "__rlshift__");
             }
-            return PythonOps.NotImplemented;
+            return NotImplementedType.Value;
         }
 
         [return: MaybeNotImplemented]
         [SpecialName]
         public static object LeftShift(object other, [NotNull]OldInstance self) {
-            return InvokeOne(self, other, Symbols.OperatorReverseLeftShift);
+            return InvokeOne(self, other, "__rlshift__");
         }
 
         [return: MaybeNotImplemented]
         [SpecialName]
         public object InPlaceLeftShift(object other) {
-            return InvokeOne(this, other, Symbols.OperatorInPlaceLeftShift);
+            return InvokeOne(this, other, "__ilshift__");
         }
 
         [return: MaybeNotImplemented]
         [SpecialName]
         public static object RightShift([NotNull]OldInstance self, object other) {
-            object res = InvokeOne(self, other, Symbols.OperatorRightShift);
+            object res = InvokeOne(self, other, "__rshift__");
             if (res != NotImplementedType.Value) return res;
 
             OldInstance otherOc = other as OldInstance;
             if (otherOc != null) {
-                return InvokeOne(otherOc, self, Symbols.OperatorReverseRightShift);
+                return InvokeOne(otherOc, self, "__rrshift__");
             }
-            return PythonOps.NotImplemented;
+            return NotImplementedType.Value;
         }
 
         [return: MaybeNotImplemented]
         [SpecialName]
         public static object RightShift(object other, [NotNull]OldInstance self) {
-            return InvokeOne(self, other, Symbols.OperatorReverseRightShift);
+            return InvokeOne(self, other, "__rrshift__");
         }
 
         [return: MaybeNotImplemented]
         [SpecialName]
         public object InPlaceRightShift(object other) {
-            return InvokeOne(this, other, Symbols.OperatorInPlaceRightShift);
+            return InvokeOne(this, other, "__irshift__");
         }
 
         [return: MaybeNotImplemented]
         public static object operator &([NotNull]OldInstance self, object other) {
-            object res = InvokeOne(self, other, Symbols.OperatorBitwiseAnd);
+            object res = InvokeOne(self, other, "__and__");
             if (res != NotImplementedType.Value) return res;
 
             OldInstance otherOc = other as OldInstance;
             if (otherOc != null) {
-                return InvokeOne(otherOc, self, Symbols.OperatorReverseBitwiseAnd);
+                return InvokeOne(otherOc, self, "__rand__");
             }
-            return PythonOps.NotImplemented;
+            return NotImplementedType.Value;
         }
 
         [return: MaybeNotImplemented]
         public static object operator &(object other, [NotNull]OldInstance self) {
-            return InvokeOne(self, other, Symbols.OperatorReverseBitwiseAnd);
+            return InvokeOne(self, other, "__rand__");
         }
 
         [return: MaybeNotImplemented]
         [SpecialName]
         public object InPlaceBitwiseAnd(object other) {
-            return InvokeOne(this, other, Symbols.OperatorInPlaceBitwiseAnd);
+            return InvokeOne(this, other, "__iand__");
         }
 
         [return: MaybeNotImplemented]
         public static object operator |([NotNull]OldInstance self, object other) {
-            object res = InvokeOne(self, other, Symbols.OperatorBitwiseOr);
+            object res = InvokeOne(self, other, "__or__");
             if (res != NotImplementedType.Value) return res;
 
             OldInstance otherOc = other as OldInstance;
             if (otherOc != null) {
-                return InvokeOne(otherOc, self, Symbols.OperatorReverseBitwiseOr);
+                return InvokeOne(otherOc, self, "__ror__");
             }
-            return PythonOps.NotImplemented;
+            return NotImplementedType.Value;
         }
 
         [return: MaybeNotImplemented]
         public static object operator |(object other, [NotNull]OldInstance self) {
-            return InvokeOne(self, other, Symbols.OperatorReverseBitwiseOr);
+            return InvokeOne(self, other, "__ror__");
         }
 
         [return: MaybeNotImplemented]
         [SpecialName]
         public object InPlaceBitwiseOr(object other) {
-            return InvokeOne(this, other, Symbols.OperatorInPlaceBitwiseOr);
+            return InvokeOne(this, other, "__ior__");
         }
 
         [return: MaybeNotImplemented]
         public static object operator ^([NotNull]OldInstance self, object other) {
-            object res = InvokeOne(self, other, Symbols.OperatorExclusiveOr);
+            object res = InvokeOne(self, other, "__xor__");
             if (res != NotImplementedType.Value) return res;
 
             OldInstance otherOc = other as OldInstance;
             if (otherOc != null) {
-                return InvokeOne(otherOc, self, Symbols.OperatorReverseExclusiveOr);
+                return InvokeOne(otherOc, self, "__rxor__");
             }
-            return PythonOps.NotImplemented;
+            return NotImplementedType.Value;
         }
 
         [return: MaybeNotImplemented]
         public static object operator ^(object other, [NotNull]OldInstance self) {
-            return InvokeOne(self, other, Symbols.OperatorReverseExclusiveOr);
+            return InvokeOne(self, other, "__rxor__");
         }
 
         [return: MaybeNotImplemented]
         [SpecialName]
         public object InPlaceExclusiveOr(object other) {
-            return InvokeOne(this, other, Symbols.OperatorInPlaceExclusiveOr);
+            return InvokeOne(this, other, "__ixor__");
         }
 
 

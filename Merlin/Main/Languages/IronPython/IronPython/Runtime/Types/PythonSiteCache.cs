@@ -21,6 +21,7 @@ using System.Threading;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime.Operations;
 
@@ -30,20 +31,20 @@ namespace IronPython.Runtime.Types {
     /// PythonContext to avoid cross-runtime contamination due to the binder on the site.
     /// </summary>
     internal class PythonSiteCache {
-        private Dictionary<SymbolId, CallSite<Func<CallSite, object, CodeContext, object>>> _tryGetMemSite;
-        private Dictionary<SymbolId, CallSite<Func<CallSite, object, CodeContext, object>>> _tryGetMemSiteShowCls;
+        private Dictionary<string, CallSite<Func<CallSite, object, CodeContext, object>>> _tryGetMemSite;
+        private Dictionary<string, CallSite<Func<CallSite, object, CodeContext, object>>> _tryGetMemSiteShowCls;
         private CallSite<Func<CallSite, CodeContext, object, object>> _dirSite;
         private CallSite<Func<CallSite, CodeContext, object, string, object>> _getAttributeSite;
         private CallSite<Func<CallSite, CodeContext, object, object, string, object, object>> _setAttrSite;
         private CallSite<Func<CallSite, CodeContext, object, object>> _lenSite;
 
-        internal CallSite<Func<CallSite, object, CodeContext, object>> GetTryGetMemberSite(CodeContext context, SymbolId name) {
+        internal CallSite<Func<CallSite, object, CodeContext, object>> GetTryGetMemberSite(CodeContext context, string name) {
             CallSite<Func<CallSite, object, CodeContext, object>> site;
             if (PythonOps.IsClsVisible(context)) {
                 if (_tryGetMemSiteShowCls == null) {
                     Interlocked.CompareExchange(
                         ref _tryGetMemSiteShowCls,
-                        new Dictionary<SymbolId, CallSite<Func<CallSite, object, CodeContext, object>>>(),
+                        new Dictionary<string, CallSite<Func<CallSite, object, CodeContext, object>>>(StringComparer.Ordinal),
                         null
                     );
                 }
@@ -52,7 +53,7 @@ namespace IronPython.Runtime.Types {
                     if (!_tryGetMemSiteShowCls.TryGetValue(name, out site)) {
                         _tryGetMemSiteShowCls[name] = site = CallSite<Func<CallSite, object, CodeContext, object>>.Create(
                             PythonContext.GetContext(context).GetMember(
-                                SymbolTable.IdToString(name),
+                                name,
                                 true
                             )
                         );
@@ -62,7 +63,7 @@ namespace IronPython.Runtime.Types {
                 if (_tryGetMemSite == null) {
                     Interlocked.CompareExchange(
                         ref _tryGetMemSite,
-                        new Dictionary<SymbolId, CallSite<Func<CallSite, object, CodeContext, object>>>(),
+                        new Dictionary<string, CallSite<Func<CallSite, object, CodeContext, object>>>(StringComparer.Ordinal),
                         null
                     );
                 }
@@ -71,7 +72,7 @@ namespace IronPython.Runtime.Types {
                     if (!_tryGetMemSite.TryGetValue(name, out site)) {
                         _tryGetMemSite[name] = site = CallSite<Func<CallSite, object, CodeContext, object>>.Create(
                             PythonContext.GetContext(context).GetMember(
-                                SymbolTable.IdToString(name),
+                                name,
                                 true
                             )
                         );

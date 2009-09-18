@@ -19,7 +19,7 @@ using System.Diagnostics;
 using System.Text;
 
 namespace Microsoft.Scripting.Utils {
-    public static class ArrayUtils {
+    static class ArrayUtils {
         internal sealed class FunctorComparer<T> : IComparer<T> {
             private readonly Comparison<T> _comparison;
 

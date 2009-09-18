@@ -13,17 +13,22 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq.Expressions;
 
 namespace Microsoft.Scripting.Utils {
     /// <summary>
     /// Not all .NET enumerators throw exceptions if accessed in an invalid state. This type
     /// can be used to throw exceptions from enumerators implemented in IronPython.
     /// </summary>
-    public abstract class CheckedDictionaryEnumerator : IDictionaryEnumerator, IEnumerator<KeyValuePair<object, object>> {
+    abstract class CheckedDictionaryEnumerator : IDictionaryEnumerator, IEnumerator<KeyValuePair<object, object>> {
         private EnumeratorState _enumeratorState = EnumeratorState.NotStarted;
 
         private void CheckEnumeratorState() {

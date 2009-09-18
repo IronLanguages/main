@@ -13,8 +13,13 @@
  *
  * ***************************************************************************/
 
-using System.Diagnostics;
+#if !CLR2
 using MSAst = System.Linq.Expressions;
+#else
+using MSAst = Microsoft.Scripting.Ast;
+#endif
+
+using System.Diagnostics;
 using IronPython.Runtime.Binding;
 
 namespace IronPython.Compiler.Ast {

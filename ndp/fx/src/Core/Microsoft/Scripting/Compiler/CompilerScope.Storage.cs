@@ -13,11 +13,16 @@
  *
  * ***************************************************************************/
 
+using System;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 
+#if CLR2
+namespace Microsoft.Scripting.Ast.Compiler {
+#else
 namespace System.Linq.Expressions.Compiler {
+#endif
 
     internal sealed partial class CompilerScope {
 

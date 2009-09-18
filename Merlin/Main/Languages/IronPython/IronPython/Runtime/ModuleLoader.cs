@@ -34,7 +34,7 @@ namespace IronPython.Runtime {
 
             CodeContext newContext = _sc.CreateContext();
             newContext.ModuleContext.InitializeBuiltins(false);
-            pc.InitializeModule(_sc.SourceUnit.Path, newContext.GlobalScope, _sc, ModuleOptions.Initialize);
+            pc.InitializeModule(_sc.SourceUnit.Path, newContext.ModuleContext, _sc, ModuleOptions.Initialize);
 
             if (_parentName != null) {
                 // if we are a module in a package update the parent package w/ our scope.

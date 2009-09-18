@@ -22,12 +22,12 @@ using System.Threading;
 
 namespace IronPython.Runtime.Types {
     [Serializable]
-    internal sealed class CustomOldClassDictionaryStorage : SymbolIdDictionaryStorage {
+    internal sealed class CustomOldClassDictionaryStorage : StringDictionaryStorage {
         private int _keyVersion;
-        private SymbolId[] _extraKeys;
+        private string[] _extraKeys;
         private object[] _values;
 
-        public CustomOldClassDictionaryStorage(SymbolId[] extraKeys, int keyVersion) {
+        public CustomOldClassDictionaryStorage(string[] extraKeys, int keyVersion) {
             _extraKeys = extraKeys;
             _keyVersion = keyVersion;
             _values = new object[extraKeys.Length];
@@ -37,8 +37,6 @@ namespace IronPython.Runtime.Types {
         }
 
         public override void Add(object key, object value) {
-            Debug.Assert(!(key is SymbolId));
-
             int ikey = FindKey(key);
             if (ikey != -1) {
                 _values[ikey] = value;
@@ -49,8 +47,6 @@ namespace IronPython.Runtime.Types {
         }
 
         public override void AddNoLock(object key, object value) {
-            Debug.Assert(!(key is SymbolId));
-
             int ikey = FindKey(key);
             if (ikey != -1) {
                 _values[ikey] = value;
@@ -60,25 +56,7 @@ namespace IronPython.Runtime.Types {
             base.AddNoLock(key, value);
         }
 
-        public override void Add(SymbolId key, object value) {
-            int ikey = FindKey(key);
-            if (ikey != -1) {
-                _values[ikey] = value;
-            } else {
-                base.Add(key, value);
-            }
-        }
-
         public override bool Contains(object key) {
-            int ikey = FindKey(key);
-            if (ikey != -1) {
-                return _values[ikey] != Uninitialized.Instance;
-            }
-
-            return base.Contains(key);
-        }
-
-        public override bool Contains(SymbolId key) {
             int ikey = FindKey(key);
             if (ikey != -1) {
                 return _values[ikey] != Uninitialized.Instance;
@@ -102,22 +80,6 @@ namespace IronPython.Runtime.Types {
 
         public override bool TryGetValue(object key, out object value) {
             int ikey = FindKey(key);
-            if (ikey != -1) {
-                value = _values[ikey];
-                if (value != Uninitialized.Instance) {
-                    return true;
-                }
-
-                value = null;
-                return false;
-            }
-
-            return base.TryGetValue(key, out value);
-        }
-
-        public override bool TryGetValue(SymbolId key, out object value) {
-            int ikey = FindKey(key);
-
             if (ikey != -1) {
                 value = _values[ikey];
                 if (value != Uninitialized.Instance) {
@@ -156,8 +118,8 @@ namespace IronPython.Runtime.Types {
             List<KeyValuePair<object, object>> res = base.GetItems();
 
             for (int i = 0; i < _extraKeys.Length; i++) {
-                if (_extraKeys[i] != SymbolId.Empty && _values[i] != Uninitialized.Instance) {
-                    res.Add(new KeyValuePair<object, object>(SymbolTable.IdToString(_extraKeys[i]), _values[i]));
+                if (!String.IsNullOrEmpty(_extraKeys[i]) && _values[i] != Uninitialized.Instance) {
+                    res.Add(new KeyValuePair<object, object>(_extraKeys[i], _values[i]));
                 }
             }
 
@@ -173,13 +135,13 @@ namespace IronPython.Runtime.Types {
         public int FindKey(object key) {
             string strKey = key as string;
             if (strKey != null) {
-                return FindKey(SymbolTable.StringToId(strKey));
+                return FindKey(strKey);
             }
 
             return -1;
         }
 
-        public int FindKey(SymbolId key) {
+        public int FindKey(string key) {
             for (int i = 0; i < _extraKeys.Length; i++) {
                 if (_extraKeys[i] == key) {
                     return i;

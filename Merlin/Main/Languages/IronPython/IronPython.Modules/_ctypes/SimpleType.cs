@@ -44,13 +44,13 @@ namespace IronPython.Modules {
             internal readonly SimpleTypeKind _type;
             private readonly char _charType;
 
-            public SimpleType(CodeContext/*!*/ context, string name, PythonTuple bases, IAttributesCollection dict)
+            public SimpleType(CodeContext/*!*/ context, string name, PythonTuple bases, PythonDictionary dict)
                 : base(context, name, bases, dict) {
                 object val;
                 string sVal;
 
                 const string allowedTypes = "?cbBghHiIlLdfuzZqQPXOv";
-                if (!TryGetBoundCustomMember(context, SymbolTable.StringToId("_type_"), out val) ||
+                if (!TryGetBoundCustomMember(context, "_type_", out val) ||
                     (sVal = StringOps.AsString(val)) == null ||
                     sVal.Length != 1 ||
                     allowedTypes.IndexOf(sVal[0]) == -1) {
@@ -147,7 +147,7 @@ namespace IronPython.Modules {
 
             public SimpleCData in_dll(CodeContext/*!*/ context, object library, string name) {
                 IntPtr handle = GetHandleFromObject(library, "in_dll expected object with _handle attribute");
-                IntPtr addr = NativeFunctions.GetProcAddress(handle, name);
+                IntPtr addr = NativeFunctions.LoadFunction(handle, name);
                 if (addr == IntPtr.Zero) {
                     throw PythonOps.ValueError("{0} not found when attempting to load {1} from dll", name, Name);
                 }

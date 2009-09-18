@@ -13,6 +13,12 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using MSA = System.Linq.Expressions;
+#else
+using MSA = Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -22,9 +28,8 @@ using IronRuby.Runtime;
 using Microsoft.Scripting;
 
 namespace IronRuby.Compiler.Ast {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = MSA.Expression;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
-    using MSA = System.Linq.Expressions;
     
     internal sealed class ScopeBuilder {
         private readonly MSA.ParameterExpression/*!*/[] _parameters;

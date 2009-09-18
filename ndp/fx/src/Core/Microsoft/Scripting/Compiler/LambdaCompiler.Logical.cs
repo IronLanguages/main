@@ -13,6 +13,7 @@
  *
  * ***************************************************************************/
 
+using System;
 using System.Diagnostics;
 using System.Dynamic.Utils;
 using System.Reflection;
@@ -22,7 +23,11 @@ using System.Reflection.Emit;
 using System.Core;
 #endif
 
+#if CLR2
+namespace Microsoft.Scripting.Ast.Compiler {
+#else
 namespace System.Linq.Expressions.Compiler {
+#endif
 
     partial class LambdaCompiler {
 

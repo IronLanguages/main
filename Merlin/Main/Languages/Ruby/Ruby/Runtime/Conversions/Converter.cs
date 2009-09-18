@@ -13,10 +13,15 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Diagnostics;
 using System.Dynamic;
-using System.Linq.Expressions;
 using System.Reflection;
 using IronRuby.Compiler;
 using IronRuby.Runtime.Calls;
@@ -24,11 +29,12 @@ using Microsoft.Scripting.Actions.Calls;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Utils;
-using Ast = System.Linq.Expressions.Expression;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 using Microsoft.Scripting.Runtime;
 
 namespace IronRuby.Runtime.Conversions {
+    using Ast = Expression;
+
     internal static partial class Converter {
         internal static bool CanConvertFrom(DynamicMetaObject fromArg, Type/*!*/ fromType, Type/*!*/ toType, bool toNotNullable,
             NarrowingLevel level, bool explicitProtocolConversions, bool implicitProtocolConversions) {

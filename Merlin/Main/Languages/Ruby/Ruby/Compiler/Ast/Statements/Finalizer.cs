@@ -20,8 +20,13 @@ using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Compiler.Ast {
-    using MSA = System.Linq.Expressions;
-    using Ast = System.Linq.Expressions.Expression;
+    #if !CLR2
+using MSA = System.Linq.Expressions;
+#else
+using MSA = Microsoft.Scripting.Ast;
+#endif
+
+    using Ast = Expression;
 
     public partial class Finalizer : Expression {
         //	END { body }

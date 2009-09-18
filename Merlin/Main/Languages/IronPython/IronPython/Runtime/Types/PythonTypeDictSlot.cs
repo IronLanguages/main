@@ -45,7 +45,7 @@ namespace IronPython.Runtime.Types {
 
             IPythonObject sdo = instance as IPythonObject;
             if (sdo != null && sdo.PythonType.HasDictionary) {
-                IAttributesCollection res = sdo.Dict;
+                PythonDictionary res = sdo.Dict;
                 if (res != null || (res = sdo.SetDict(PythonDictionary.MakeSymbolDictionary())) != null) {
                     value = res;
                     return true;
@@ -59,14 +59,14 @@ namespace IronPython.Runtime.Types {
         internal override bool TrySetValue(CodeContext context, object instance, PythonType owner, object value) {
             IPythonObject sdo = instance as IPythonObject;
             if (sdo != null) {
-                if (!(value is IAttributesCollection))
+                if (!(value is PythonDictionary))
                     throw PythonOps.TypeError("__dict__ must be set to a dictionary, not '{0}'", owner.Name);
 
                 if (!sdo.PythonType.HasDictionary) {
                     return false;
                 }
 
-                sdo.ReplaceDict((IAttributesCollection)value);
+                sdo.ReplaceDict((PythonDictionary)value);
                 return true;
             }
 

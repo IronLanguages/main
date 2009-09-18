@@ -37,8 +37,8 @@ namespace IronPython.Runtime.Operations {
 
         public static string GetClassName(object self) {
             object cls;
-            if (PythonOps.TryGetBoundAttr(DefaultContext.DefaultCLS, self, Symbols.Class, out cls)) {
-                return PythonOps.GetBoundAttr(DefaultContext.DefaultCLS, cls, Symbols.Name).ToString();
+            if (PythonOps.TryGetBoundAttr(DefaultContext.DefaultCLS, self, "__class__", out cls)) {
+                return PythonOps.GetBoundAttr(DefaultContext.DefaultCLS, cls, "__name__").ToString();
             }
             return null;
         }
@@ -100,14 +100,14 @@ namespace IronPython.Runtime.Operations {
                     object attrVal;
 
                     if (self is OldInstance) {
-                        if (((OldInstance)self)._class.TryLookupSlot(SymbolTable.StringToId(s), out attrVal)) {
+                        if (((OldInstance)self)._class.TryLookupSlot(s, out attrVal)) {
                             attrSlot = attrVal as PythonTypeSlot;
                         } else {
                             attrVal = ObjectOps.__getattribute__(DefaultContext.DefaultCLS, self, s);
                         }
                     } else {
                         PythonType dt = DynamicHelpers.GetPythonType(self);
-                        dt.TryResolveSlot(DefaultContext.DefaultCLS, SymbolTable.StringToId(s), out attrSlot);
+                        dt.TryResolveSlot(DefaultContext.DefaultCLS, s, out attrSlot);
                         attrVal = ObjectOps.__getattribute__(DefaultContext.DefaultCLS, self, s);
                     }
 
@@ -186,10 +186,10 @@ namespace IronPython.Runtime.Operations {
             }
 
             public override object GetValue(object component) {
-                return PythonOps.GetBoundAttr(DefaultContext.DefaultCLS, component, SymbolTable.StringToId(_name));
+                return PythonOps.GetBoundAttr(DefaultContext.DefaultCLS, component, _name);
             }
             public override void SetValue(object component, object value) {
-                PythonOps.SetAttr(DefaultContext.DefaultCLS, component, SymbolTable.StringToId(_name), value);
+                PythonOps.SetAttr(DefaultContext.DefaultCLS, component, _name, value);
             }
 
             public override bool CanResetValue(object component) {
@@ -209,12 +209,12 @@ namespace IronPython.Runtime.Operations {
             }
 
             public override void ResetValue(object component) {
-                PythonOps.DeleteAttr(DefaultContext.DefaultCLS, component, SymbolTable.StringToId(_name));
+                PythonOps.DeleteAttr(DefaultContext.DefaultCLS, component, _name);
             }
 
             public override bool ShouldSerializeValue(object component) {
                 object o;
-                return PythonOps.TryGetBoundAttr(component, SymbolTable.StringToId(_name), out o);
+                return PythonOps.TryGetBoundAttr(component, _name, out o);
             }
         }
 

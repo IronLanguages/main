@@ -135,7 +135,7 @@ namespace IronPython.Runtime.Operations {
                 if (cdt.IsOldClass) {
                     OldClass oc = PythonOps.ToPythonType(cdt) as OldClass;
 
-                    if (oc != null && oc.TryGetBoundCustomMember(context, Symbols.Init, out value)) {
+                    if (oc != null && oc.TryGetBoundCustomMember(context, "__init__", out value)) {
                         return oc.GetOldStyleDescriptor(context, value, newObject, oc);
                     }
                     // fall through to new-style only case.  We might accidently
@@ -143,7 +143,7 @@ namespace IronPython.Runtime.Operations {
                     // type.
                 }
 
-                if (cdt.TryLookupSlot(context, Symbols.Init, out dts) &&
+                if (cdt.TryLookupSlot(context, "__init__", out dts) &&
                     dts.TryGetValue(context, newObject, dt, out value)) {
                     return value;
                 }
@@ -156,7 +156,7 @@ namespace IronPython.Runtime.Operations {
         private static void AddFinalizer(CodeContext/*!*/ context, PythonType dt, object newObject) {
             // check if object has finalizer...
             PythonTypeSlot dummy;
-            if (dt.TryResolveSlot(context, Symbols.Unassign, out dummy)) {
+            if (dt.TryResolveSlot(context, "__del__", out dummy)) {
                 IWeakReferenceable iwr = newObject as IWeakReferenceable;
                 Debug.Assert(iwr != null);
 
@@ -168,7 +168,7 @@ namespace IronPython.Runtime.Operations {
         private static object GetTypeNew(CodeContext/*!*/ context, PythonType dt) {
             PythonTypeSlot dts;
 
-            if (!dt.TryResolveSlot(context, Symbols.NewInst, out dts)) {
+            if (!dt.TryResolveSlot(context, "__new__", out dts)) {
                 throw PythonOps.TypeError("cannot create instances of {0}", dt.Name);
             }
 
@@ -181,8 +181,8 @@ namespace IronPython.Runtime.Operations {
 
         internal static bool IsRuntimeAssembly(Assembly assembly) {
             if (assembly == typeof(PythonOps).Assembly || // IronPython.dll
-                assembly == typeof(Microsoft.Scripting.Math.BigInteger).Assembly || // Microsoft.Scripting.dll
-                assembly == typeof(System.Linq.Expressions.Expression).Assembly) {  // Microsoft.Scripting.Core.dll
+                assembly == typeof(Microsoft.Scripting.Interpreter.LightCompiler).Assembly || // Microsoft.Scripting.dll
+                assembly == typeof(DynamicMetaObject).Assembly) {  // Microsoft.Scripting.Core.dll
                 return true;
             }
 
@@ -834,14 +834,14 @@ namespace IronPython.Runtime.Operations {
             return null;
         }
 
-        internal static bool TryInvokeUnaryOperator(CodeContext context, object o, SymbolId si, out object value) {
-            PerfTrack.NoteEvent(PerfTrack.Categories.Temporary, "UnaryOp " + CompilerHelpers.GetType(o).Name + " " + SymbolTable.IdToString(si));
+        internal static bool TryInvokeUnaryOperator(CodeContext context, object o, string name, out object value) {
+            PerfTrack.NoteEvent(PerfTrack.Categories.Temporary, "UnaryOp " + CompilerHelpers.GetType(o).Name + " " + name);
 
             PythonTypeSlot pts;
             PythonType pt = DynamicHelpers.GetPythonType(o);
             object callable;
 
-            if (pt.TryResolveMixedSlot(context, si, out pts) &&
+            if (pt.TryResolveMixedSlot(context, name, out pts) &&
                 pts.TryGetValue(context, o, pt, out callable)) {
                 value = PythonCalls.Call(context, callable);
                 return true;
@@ -851,13 +851,13 @@ namespace IronPython.Runtime.Operations {
             return false;
         }
 
-        internal static bool TryInvokeBinaryOperator(CodeContext context, object o, object arg1, SymbolId si, out object value) {
-            PerfTrack.NoteEvent(PerfTrack.Categories.Temporary, "BinaryOp " + CompilerHelpers.GetType(o).Name + " " + SymbolTable.IdToString(si));
+        internal static bool TryInvokeBinaryOperator(CodeContext context, object o, object arg1, string name, out object value) {
+            PerfTrack.NoteEvent(PerfTrack.Categories.Temporary, "BinaryOp " + CompilerHelpers.GetType(o).Name + " " + name);
 
             PythonTypeSlot pts;
             PythonType pt = DynamicHelpers.GetPythonType(o);
             object callable;
-            if (pt.TryResolveMixedSlot(context, si, out pts) &&
+            if (pt.TryResolveMixedSlot(context, name, out pts) &&
                 pts.TryGetValue(context, o, pt, out callable)) {
                 value = PythonCalls.Call(context, callable, arg1);
                 return true;
@@ -867,13 +867,13 @@ namespace IronPython.Runtime.Operations {
             return false;
         }
 
-        internal static bool TryInvokeTernaryOperator(CodeContext context, object o, object arg1, object arg2, SymbolId si, out object value) {
-            PerfTrack.NoteEvent(PerfTrack.Categories.Temporary, "TernaryOp " + CompilerHelpers.GetType(o).Name + " " + SymbolTable.IdToString(si));
+        internal static bool TryInvokeTernaryOperator(CodeContext context, object o, object arg1, object arg2, string name, out object value) {
+            PerfTrack.NoteEvent(PerfTrack.Categories.Temporary, "TernaryOp " + CompilerHelpers.GetType(o).Name + " " + name);
 
             PythonTypeSlot pts;
             PythonType pt = DynamicHelpers.GetPythonType(o);
             object callable;
-            if (pt.TryResolveMixedSlot(context, si, out pts) &&
+            if (pt.TryResolveMixedSlot(context, name, out pts) &&
                 pts.TryGetValue(context, o, pt, out callable)) {
                 value = PythonCalls.Call(context, callable, arg1, arg2);
                 return true;

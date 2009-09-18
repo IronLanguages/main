@@ -20,7 +20,7 @@ namespace Microsoft.Scripting.Utils {
 
     // Like ReadOnlyCollection<T>: wraps an IDictionary<TKey, TValue> in a read-only wrapper
     [Serializable]
-    public sealed class ReadOnlyDictionary<TKey, TValue> : IDictionary<TKey, TValue> {
+    internal sealed class ReadOnlyDictionary<TKey, TValue> : IDictionary<TKey, TValue> {
 
         // For wrapping non-readonly Keys, Values collections
         // Not used for standard dictionaries, which return read-only Keys and Values

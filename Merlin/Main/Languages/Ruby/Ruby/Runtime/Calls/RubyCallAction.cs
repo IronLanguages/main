@@ -13,10 +13,15 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Dynamic;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using IronRuby.Builtins;
@@ -24,10 +29,10 @@ using IronRuby.Compiler;
 using IronRuby.Compiler.Generation;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Utils;
-using Ast = System.Linq.Expressions.Expression;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Runtime.Calls {
+    using Ast = Expression;
 
     public class RubyCallAction : RubyMetaBinder {
         private readonly RubyCallSignature _signature;
@@ -110,7 +115,7 @@ namespace IronRuby.Runtime.Calls {
             MethodResolutionResult method;
             RubyClass targetClass = Context.GetImmediateClassOf(target);
             using (targetClass.Context.ClassHierarchyLocker()) {
-                version = targetClass.Version.Value;
+                version = targetClass.Version.Method;
                 method = targetClass.ResolveMethodForSiteNoLock(_methodName, GetVisibilityContext(Signature, scope));
             }
 

@@ -23,7 +23,7 @@ namespace IronPython.Modules {
         public const string __doc__ = "Provides a list of common error numbers.  These numbers are frequently reported in various exceptions.";
 
         [SpecialName]
-        public static void PerformModuleReload(PythonContext/*!*/ context, IAttributesCollection/*!*/ dict) {
+        public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
             PythonDictionary errorcode = new PythonDictionary();
 
             errorcode["E2BIG"] = E2BIG;
@@ -148,7 +148,7 @@ namespace IronPython.Modules {
             errorcode["WSASYSNOTREADY"] = WSASYSNOTREADY;
             errorcode["WSAVERNOTSUPPORTED"] = WSAVERNOTSUPPORTED;
 
-            dict[SymbolTable.StringToId("errorcode")] = errorcode;
+            dict["errorcode"] = errorcode;
         }
 
         public const int E2BIG = 7;

@@ -13,12 +13,17 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using System.Linq.Expressions;
+#else
+using Microsoft.Scripting.Ast;
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
-using System.Linq.Expressions;
 using Microsoft.Scripting.Utils;
 using AstFactory = IronRuby.Compiler.Ast.AstFactory;
 using IronRuby.Compiler;
@@ -26,7 +31,7 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 using System.Collections;
 
 namespace IronRuby.Runtime.Calls {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = Expression;
 
     public sealed class ArgsBuilder {
         private readonly Expression[]/*!*/ _arguments;
@@ -144,21 +149,17 @@ namespace IronRuby.Runtime.Calls {
 
             int listLength;
             ParameterExpression listVariable;
-            if (metaBuilder.AddSplattedArgumentTest(arg.Value, arg.Expression, out listLength, out listVariable)) {
-                if (listLength > 0) {
-                    for (int i = 0; i < listLength; i++) {
-                        Add(
-                            Ast.Call(
-                                listVariable,
-                                typeof(IList).GetMethod("get_Item"),
-                                AstUtils.Constant(i)
-                            )
-                        );
-                    }
+            metaBuilder.AddSplattedArgumentTest((IList)arg.Value, arg.Expression, out listLength, out listVariable);
+            if (listLength > 0) {
+                for (int i = 0; i < listLength; i++) {
+                    Add(
+                        Ast.Call(
+                            listVariable,
+                            typeof(IList).GetMethod("get_Item"),
+                            AstUtils.Constant(i)
+                        )
+                    );
                 }
-            } else {
-                // argument is not an array => add the argument itself:
-                Add(arg.Expression);
             }
         }
 

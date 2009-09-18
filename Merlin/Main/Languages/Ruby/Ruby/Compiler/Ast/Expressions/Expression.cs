@@ -13,14 +13,19 @@
  *
  * ***************************************************************************/
 
+#if !CLR2
+using MSA = System.Linq.Expressions;
+#else
+using MSA = Microsoft.Scripting.Ast;
+#endif
+
 using System.Collections.Generic;
 using System.Diagnostics;
 using Microsoft.Scripting;
-using MSA = System.Linq.Expressions;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Compiler.Ast {
-    using Ast = System.Linq.Expressions.Expression;
+    using Ast = MSA.Expression;
 
     /// <summary>
     /// Represents expressions. Statements are considered special cases of expressions in AST class hierarchy.
@@ -54,19 +59,26 @@ namespace IronRuby.Compiler.Ast {
         }
 
         /// <summary>
-        /// Transform as expression (value is read);
+        /// Transform as expression (value is read).
         /// </summary>
         internal abstract MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen);
 
         /// <summary>
-        /// Transform as statement (value is not read).
+        /// Transform as expression (value is read) and mark sequence point.
+        /// </summary>
+        internal MSA.Expression/*!*/ TransformReadStep(AstGenerator/*!*/ gen) {
+            return gen.AddDebugInfo(TransformRead(gen), Location);
+        }
+
+        /// <summary>
+        /// Transform as statement (value is not read). Marks sequnce point.
         /// </summary>
         internal virtual MSA.Expression/*!*/ Transform(AstGenerator/*!*/ gen) {
             return gen.AddDebugInfo(TransformRead(gen), Location);
         }
 
         /// <summary>
-        /// Transform and handle the result according to the specified result operation.
+        /// Transform and handle the result according to the specified result operation. Marks sequence point.
         /// </summary>
         internal virtual MSA.Expression/*!*/ TransformResult(AstGenerator/*!*/ gen, ResultOperation resultOperation) {
             MSA.Expression resultExpression = TransformRead(gen);

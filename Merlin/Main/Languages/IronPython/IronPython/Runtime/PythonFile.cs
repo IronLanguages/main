@@ -879,7 +879,7 @@ namespace IronPython.Runtime {
 
     [PythonType("file")]
     [DontMapIEnumerableToContains]
-    public class PythonFile : IDisposable, ICodeFormattable, IEnumerable<string>, IEnumerable, IWeakReferenceable {
+    public class PythonFile : IDisposable, ICodeFormattable, IEnumerator<string>, IEnumerator, IWeakReferenceable {
         private ConsoleStreamType _consoleStreamType;
         private SharedIO _io;   // null for non-console
         private Stream _stream; // null for console
@@ -892,6 +892,7 @@ namespace IronPython.Runtime {
         private bool _isOpen;
         private Nullable<long> _reseekPosition; // always null for console
         private WeakRefTracker _weakref;
+        private string _enumValue;
         internal readonly PythonContext/*!*/ _context;
 
         private bool _softspace;
@@ -998,7 +999,7 @@ namespace IronPython.Runtime {
 
         internal static void AddFilename(CodeContext context, string name, Exception ioe) {
             var pyExcep = PythonExceptions.ToPython(ioe);
-            PythonOps.SetAttr(context, pyExcep, SymbolTable.StringToId("filename"), name);
+            PythonOps.SetAttr(context, pyExcep, "filename", name);
         }
 
         internal static void ValidateMode(string mode) {
@@ -1117,7 +1118,7 @@ namespace IronPython.Runtime {
                 }
                 // TODO: Identify Mac?
             }
-            
+
             switch (fileMode) {
                 case PythonFileMode.TextCrLf:
                     return new PythonTextWriter(writer, "\r\n");
@@ -1403,7 +1404,7 @@ namespace IronPython.Runtime {
                         origin = SeekOrigin.End;
                         break;
                 }
-            
+
                 long newPos = _stream.Seek(offset, origin);
                 if (_reader != null) {
                     _reader.DiscardBufferedData();
@@ -1486,7 +1487,7 @@ namespace IronPython.Runtime {
                     _reader.Position += bytesWritten;
                 }
             }
-            
+
             if (IsConsole) {
                 flush();
             }
@@ -1545,9 +1546,9 @@ namespace IronPython.Runtime {
                         write(arr);
                         continue;
                     }
-                    
+
                     throw PythonOps.TypeError("writelines() argument must be a sequence of strings");
-                    
+
                 }
                 write(line);
             }
@@ -1678,30 +1679,6 @@ namespace IronPython.Runtime {
 
         #endregion
 
-        #region IEnumerable<string> Members
-
-        IEnumerator<string> IEnumerable<string>.GetEnumerator() {
-            for (; ; ) {
-                string line = readline();
-                if (line == "") yield break;
-                yield return line;
-            }
-        }
-
-        #endregion
-
-        #region IEnumerable Members
-
-        IEnumerator IEnumerable.GetEnumerator() {
-            for (; ; ) {
-                string line = readline();
-                if (line == "") yield break;
-                yield return line;
-            }
-        }
-
-        #endregion
-
         #region IWeakReferenceable Members
 
         WeakRefTracker IWeakReferenceable.GetWeakRef() {
@@ -1715,6 +1692,35 @@ namespace IronPython.Runtime {
 
         void IWeakReferenceable.SetFinalizer(WeakRefTracker value) {
             ((IWeakReferenceable)this).SetWeakRef(value);
+        }
+
+        #endregion
+
+        #region IEnumerator<string> Members
+
+        string IEnumerator<string>.Current {
+            get { return _enumValue; }
+        }
+
+        #endregion
+
+        #region IEnumerator Members
+
+        object IEnumerator.Current {
+            get { return _enumValue; }
+        }
+
+        bool IEnumerator.MoveNext() {
+            _enumValue = readline();
+            if (String.IsNullOrEmpty(_enumValue)) {
+                return false;
+            }
+
+            return true;
+        }
+
+        void IEnumerator.Reset() {
+            throw new NotImplementedException();
         }
 
         #endregion

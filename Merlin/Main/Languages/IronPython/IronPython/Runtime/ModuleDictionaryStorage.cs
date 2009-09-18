@@ -27,7 +27,7 @@ namespace IronPython.Runtime {
     /// <summary>
     /// Enables lazy initialization of module dictionaries.
     /// </summary>
-    class ModuleDictionaryStorage : SymbolIdDictionaryStorage {
+    class ModuleDictionaryStorage : StringDictionaryStorage {
         private Type/*!*/ _type;
         private bool _cleared;
 
@@ -56,11 +56,6 @@ namespace IronPython.Runtime {
 
         protected virtual void LazyAdd(object name, object value) {
             Add(name, value);
-        }
-
-        public override bool Contains(SymbolId key) {
-            object dummy;
-            return TryGetValue(key, out dummy);
         }
 
         public override bool Contains(object key) {
@@ -100,19 +95,6 @@ namespace IronPython.Runtime {
                 GetItems();
                 return base.Count;
             }
-        }
-
-        public override bool TryGetValue(SymbolId key, out object value) {
-            if (base.TryGetValue(key, out value)) {
-                if (value == Uninitialized.Instance) {
-                    value = null;
-                    return false;
-                } 
-
-                return true;
-            }
-
-            return TryGetLazyValue(SymbolTable.IdToString(key), out value);
         }
 
         private bool TryGetLazyValue(string name, out object value) {

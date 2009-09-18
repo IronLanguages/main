@@ -13,11 +13,11 @@
  *
  * ***************************************************************************/
 
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Dynamic.Utils;
-using System.Linq.Expressions.Compiler;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Threading;
@@ -27,7 +27,13 @@ using System.Runtime.CompilerServices;
 using System.Core;
 #endif
 
+#if CLR2
+namespace Microsoft.Scripting.Ast {
+#else
 namespace System.Linq.Expressions {
+#endif
+    using Compiler;
+
     /// <summary>
     /// Creates a <see cref="LambdaExpression"/> node.
     /// This captures a block of code that is similar to a .NET method body.

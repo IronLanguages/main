@@ -16,7 +16,7 @@ describe "Interface Groups" do
   EOL
   it "maps to a Microsoft::Scripting::Actions::TypeGroup" do
     #MS::Scripting isn't autoloaded when it gets returned from IInterfaceGroup.class
-    require 'microsoft.scripting'
+    require 'microsoft.dynamic'
     [IEmptyInterfaceGroup, IEmptyInterfaceGroup1,
       IInterfaceGroup, IInterfaceGroup1].each do |iface|
         iface.should be_kind_of Microsoft::Scripting::Actions::TypeGroup
