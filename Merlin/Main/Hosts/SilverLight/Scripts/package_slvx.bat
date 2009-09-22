@@ -1,5 +1,7 @@
 @echo off
 
+echo DLR slvx files being created ...
+
 set configuration=Debug
 if "%1" neq "" set configuration=%1
 
@@ -25,8 +27,6 @@ xcopy /Y /Q Microsoft.Scripting.Core.dll __Microsoft.Scripting.slvx
 xcopy /Y /Q Microsoft.Scripting.ExtensionAttribute.dll __Microsoft.Scripting.slvx
 xcopy /Y /Q Microsoft.Scripting.Silverlight.dll __Microsoft.Scripting.slvx
 
-echo DLR slvx files being created ...
-
 REM Create the SLVX files
 chiron /d:__IronRuby.slvx /x:IronRuby.slvx /s
 chiron /d:__IronPython.slvx /x:IronPython.slvx /s
@@ -46,6 +46,6 @@ REM call deploy_slvx.bat
 GOTO VERYEND
 
 :END
-echo Silverlight %configuration% build does not exist
+echo Silverlight %configuration% build does not exist, aborting slvx creation
 
 :VERYEND

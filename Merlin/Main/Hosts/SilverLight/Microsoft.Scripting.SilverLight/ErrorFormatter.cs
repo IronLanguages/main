@@ -97,6 +97,11 @@ namespace Microsoft.Scripting.Silverlight {
             // show the window in the targetElementId
             Window.Show(targetElementId);
 
+            // show the Repl if we can get to the current engine
+            if (DynamicApplication.Current.Engine != null) {
+                Repl.Show();
+            }
+
             // format the Exception
             string result;
             try {
@@ -287,8 +292,8 @@ namespace Microsoft.Scripting.Silverlight {
                 _exception = e;
                 _dynamicStackFrames = ScriptingRuntimeHelpers.GetDynamicStackFrames(e);
 
-                // We can get the source code context either from the DynamicStackFrame or from
-                // a SyntaxErrorException
+                // We can get the file name and line number from either the 
+                // DynamicStackFrame or from a SyntaxErrorException
                 SyntaxErrorException se = e as SyntaxErrorException;
                 if (null != se) {
                     _sourceFileName = se.GetSymbolDocumentName();
@@ -298,8 +303,10 @@ namespace Microsoft.Scripting.Silverlight {
                     _sourceLine = _dynamicStackFrames[0].GetFileLineNumber();
                 }
 
+                // Try to get the ScriptEngine from the source file's extension;
+                // if that fails just use the current ScriptEngine
                 ScriptEngine engine = null;
-                if (_sourceFileName != null && _sourceFileName.IndexOfAny(Path.GetInvalidPathChars()) == 0) {
+                if (_sourceFileName != null) {
                     try {
                         var extension = System.IO.Path.GetExtension(_sourceFileName);
                         _runtime.TryGetEngineByFileExtension(extension, out engine);
@@ -308,6 +315,8 @@ namespace Microsoft.Scripting.Silverlight {
                     }
                 }
 
+                // If we have the file name and the engine, use ExceptionOperations
+                // to generate the exception message. Otherwise, create it by hand
                 if (_sourceFileName != null && engine != null) {
                     ExceptionOperations es = engine.GetService<ExceptionOperations>();
                     es.GetExceptionMessage(_exception, out _message, out _errorTypeName);

@@ -103,16 +103,21 @@ namespace Microsoft.Scripting.Silverlight {
         /// </summary>
         public static Repl Show() {
             if (DynamicApplication.Current == null) {
-                throw new Exception("Need to give Show() an engine, since this is not a dynamic application");
+                throw new Exception("Use the Show(engine, scope) overload, since this is not a dynamic application");
             }
-            var engine = DynamicApplication.Current.LanguagesConfig.GetEngine(
-                DynamicApplication.Current.LanguagesConfig.Languages[0].Names[0]);
 
-            if (engine == null) {
+            ScriptEngine engine = null;
+            if (DynamicApplication.Current.Engine == null || DynamicApplication.Current.Engine.Engine == null) {
                 throw new Exception("Use the Show(engine, scope) overload; a default engine was not found");
             }
+            engine = DynamicApplication.Current.Engine.Engine;
 
-            return Show(engine, DynamicApplication.Current.Engine.EntryPointScope);
+            ScriptScope scope = DynamicApplication.Current.Engine.EntryPointScope;
+            if (scope == null) {
+                scope = engine.CreateScope();
+            }
+
+            return Show(engine, scope);
         }
 
         /// <summary>
