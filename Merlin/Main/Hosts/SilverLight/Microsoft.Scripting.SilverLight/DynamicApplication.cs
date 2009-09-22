@@ -75,6 +75,11 @@ namespace Microsoft.Scripting.Silverlight {
         /// Avaliable languages
         /// </summary>
         internal DynamicLanguageConfig LanguagesConfig { get; private set; }
+
+        /// <summary>
+        /// Hold onto the base uri since it cannot be accessed from a
+        /// background thread
+        internal Uri BaseUri { get; private set; }
         #endregion
 
         #region Depricated Properties
@@ -224,6 +229,7 @@ namespace Microsoft.Scripting.Silverlight {
 
             _Current = this;
             _UIThreadId = Thread.CurrentThread.ManagedThreadId;
+            BaseUri = HtmlPage.Document.DocumentUri;
 
             Settings.ReportUnhandledErrors = true;
 
