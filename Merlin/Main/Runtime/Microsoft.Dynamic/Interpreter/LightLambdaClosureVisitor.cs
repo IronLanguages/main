@@ -52,7 +52,7 @@ namespace Microsoft.Scripting.Interpreter {
         /// this first when resolving a variable in case a nested scope shadows
         /// one of our variable instances.
         /// </summary>
-        private readonly Stack<Set<ParameterExpression>> _shadowedVars = new Stack<Set<ParameterExpression>>();
+        private readonly Stack<HashSet<ParameterExpression>> _shadowedVars = new Stack<HashSet<ParameterExpression>>();
 
         private LightLambdaClosureVisitor(IList<ParameterExpression> closureVars, ParameterExpression closureArray) {
             _closureArray = closureArray;
@@ -89,7 +89,7 @@ namespace Microsoft.Scripting.Interpreter {
         #region closures
 
         protected override Expression VisitLambda<T>(Expression<T> node) {
-            _shadowedVars.Push(new Set<ParameterExpression>(node.Parameters));
+            _shadowedVars.Push(new HashSet<ParameterExpression>(node.Parameters));
             Expression b = Visit(node.Body);
             _shadowedVars.Pop();
             if (b == node.Body) {
@@ -100,7 +100,7 @@ namespace Microsoft.Scripting.Interpreter {
 
         protected override Expression VisitBlock(BlockExpression node) {
             if (node.Variables.Count > 0) {
-                _shadowedVars.Push(new Set<ParameterExpression>(node.Variables));
+                _shadowedVars.Push(new HashSet<ParameterExpression>(node.Variables));
             }
             var b = Visit(node.Expressions);
             if (node.Variables.Count > 0) {
@@ -114,7 +114,7 @@ namespace Microsoft.Scripting.Interpreter {
 
         protected override CatchBlock VisitCatchBlock(CatchBlock node) {
             if (node.Variable != null) {
-                _shadowedVars.Push(new Set<ParameterExpression>(new[] { node.Variable }));
+                _shadowedVars.Push(new HashSet<ParameterExpression>(new[] { node.Variable }));
             }
             Expression b = Visit(node.Body);
             Expression f = Visit(node.Filter);
@@ -194,7 +194,7 @@ namespace Microsoft.Scripting.Interpreter {
 
         private IndexExpression GetBox(ParameterExpression variable) {
             // Skip variables that are shadowed by a nested scope/lambda
-            foreach (Set<ParameterExpression> hidden in _shadowedVars) {
+            foreach (HashSet<ParameterExpression> hidden in _shadowedVars) {
                 if (hidden.Contains(variable)) {
                     return null;
                 }

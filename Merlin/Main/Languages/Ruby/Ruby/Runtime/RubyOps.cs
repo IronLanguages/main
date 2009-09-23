@@ -1007,19 +1007,19 @@ namespace IronRuby.Runtime {
 
         internal static bool TryGetGlobalScopeMethod(RubyContext/*!*/ context, Scope/*!*/ scope, string/*!*/ name, out object value) {
             string unmangled;
-            ScopeStorage scopeStorage = scope.Storage as ScopeStorage;
+            ScopeStorage scopeStorage = ((object)scope.Storage) as ScopeStorage;
             if (scopeStorage != null) {
                 return scopeStorage.TryGetValue(name, false, out value)
-                    || (unmangled = RubyUtils.TryUnmangleName(name)) != null && scopeStorage.TryGetValue(unmangled, false, out value);
+                    || (unmangled = RubyUtils.TryUnmangleMethodName(name)) != null && scopeStorage.TryGetValue(unmangled, false, out value);
             } else {
                 return context.Operations.TryGetMember(scope, name, out value)
-                    || (unmangled = RubyUtils.TryUnmangleName(name)) != null && context.Operations.TryGetMember(scope, unmangled, out value);
+                    || (unmangled = RubyUtils.TryUnmangleMethodName(name)) != null && context.Operations.TryGetMember(scope, unmangled, out value);
             }
         }
 
         internal static bool TryGetGlobalScopeConstant(RubyContext/*!*/ context, Scope/*!*/ scope, string/*!*/ name, out object value) {
             string mangled;
-            ScopeStorage scopeStorage = scope.Storage as ScopeStorage;
+            ScopeStorage scopeStorage = ((object)scope.Storage) as ScopeStorage;
             if (scopeStorage != null) {
                 return scopeStorage.TryGetValue(name, false, out value)
                     || (mangled = RubyUtils.TryMangleName(name)) != null && scopeStorage.TryGetValue(mangled, false, out value);
@@ -1031,7 +1031,7 @@ namespace IronRuby.Runtime {
 
         // TODO:
         internal static void ScopeSetMember(Scope scope, string name, object value) {
-            ScopeStorage scopeStorage = scope.Storage as ScopeStorage;
+            ScopeStorage scopeStorage = ((object)scope.Storage) as ScopeStorage;
             if (scopeStorage != null) {
                 scopeStorage.SetValue(name, false, value);
                 return;
@@ -1042,7 +1042,7 @@ namespace IronRuby.Runtime {
 
         // TODO:
         internal static bool ScopeContainsMember(Scope scope, string name) {
-            ScopeStorage scopeStorage = scope.Storage as ScopeStorage;
+            ScopeStorage scopeStorage = ((object)scope.Storage) as ScopeStorage;
             if (scopeStorage != null) {
                 return scopeStorage.HasValue(name, false);
             }
@@ -1052,7 +1052,7 @@ namespace IronRuby.Runtime {
 
         // TODO:
         internal static bool ScopeDeleteMember(Scope scope, string name) {
-            ScopeStorage scopeStorage = scope.Storage as ScopeStorage;
+            ScopeStorage scopeStorage = ((object)scope.Storage) as ScopeStorage;
             if (scopeStorage != null) {
                 return scopeStorage.DeleteValue(name, false);
             }
@@ -1062,7 +1062,7 @@ namespace IronRuby.Runtime {
 
         // TODO:
         internal static IList<KeyValuePair<string, object>> ScopeGetItems(Scope scope) {
-            ScopeStorage scopeStorage = scope.Storage as ScopeStorage;
+            ScopeStorage scopeStorage = ((object)scope.Storage) as ScopeStorage;
             if (scopeStorage != null) {
                 return scopeStorage.GetItems();
             }

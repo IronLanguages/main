@@ -344,7 +344,7 @@ namespace IronPythonTest {
             ScriptSource src = engine.CreateScriptSourceFromString("x.Bar()");
             ScriptScope scope = engine.CreateScope();
             scope.SetVariable("x", new Fooable());
-            AreEqual(src.Execute(scope), "Bar Called");
+            AreEqual((object)src.Execute(scope), "Bar Called");
         }
 
         class MyInvokeMemberBinder : InvokeMemberBinder {

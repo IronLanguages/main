@@ -87,6 +87,7 @@ namespace Microsoft.Scripting.Utils {
         /// Returns the value associated with the given key, or throws KeyNotFoundException
         /// if the key is not present.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1065:DoNotRaiseExceptionsInUnexpectedLocations")]
         public TValue this[TKey key] {
             get {
                 TValue res;

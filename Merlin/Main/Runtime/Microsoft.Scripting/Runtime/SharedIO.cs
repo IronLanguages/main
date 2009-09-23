@@ -126,7 +126,7 @@ namespace Microsoft.Scripting.Runtime {
                         _inputEncoding = StringUtils.DefaultEncoding;
                         _inputStream = new TextStream(Console.In, _inputEncoding);
 #else
-                        _inputStream = Console.OpenStandardInput();
+                        _inputStream = ConsoleInputStream.Instance;
                         _inputEncoding = Console.InputEncoding;
 #endif
                         _inputReader = Console.In;

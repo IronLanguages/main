@@ -21,18 +21,18 @@ namespace Microsoft.Scripting.Utils {
     /// <summary>
     /// A simple hashset, built on Dictionary{K, V}
     /// </summary>
-    internal sealed class Set<T> : ICollection<T> {
+    public sealed class HashSet<T> : ICollection<T> {
         private readonly Dictionary<T, object> _data;
 
-        internal Set() {
+        public HashSet() {
             _data = new Dictionary<T, object>();
         }
 
-        internal Set(IEqualityComparer<T> comparer) {
+        public HashSet(IEqualityComparer<T> comparer) {
             _data = new Dictionary<T, object>(comparer);
         }
 
-        internal Set(IList<T> list) {
+        public HashSet(IList<T> list) {
             _data = new Dictionary<T, object>(list.Count);
             foreach (T t in list) {
                 _data.Add(t, null);

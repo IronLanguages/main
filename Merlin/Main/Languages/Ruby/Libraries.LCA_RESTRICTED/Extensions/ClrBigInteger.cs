@@ -621,9 +621,8 @@ namespace IronRuby.Builtins {
         /// <returns>true or false</returns>
         /// <remarks>Returns false if other is NaN.</remarks>
         [RubyMethod("==")]
-        public static bool Equal(BigInteger/*!*/ self, double other) {
-            if (Double.IsNaN(other)) return false;
-            return (double)self == other;
+        public static bool Equal(RubyContext/*!*/ context, BigInteger/*!*/ self, double other) {
+            return !Double.IsNaN(other) && Protocols.ConvertToDouble(context, self) == other;
         }
 
         /// <summary>
@@ -902,13 +901,7 @@ namespace IronRuby.Builtins {
         /// <returns>self as a Float</returns>
         [RubyMethod("to_f")]
         public static double ToFloat(RubyContext/*!*/ context, BigInteger/*!*/ self) {
-            try {
-                return self.ToFloat64();
-            } catch (OverflowException) {
-                // If the BigInteger is too big for a float then we return infinity.
-                context.ReportWarning("Bignum out of Float range");
-                return self.Sign > 0 ? Double.PositiveInfinity : Double.NegativeInfinity;
-            }
+            return Protocols.ConvertToDouble(context, self);
         }
 
         #endregion

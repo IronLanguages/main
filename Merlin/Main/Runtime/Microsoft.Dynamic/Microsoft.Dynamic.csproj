@@ -14,7 +14,7 @@
     <SccAuxPath>SAK</SccAuxPath>
     <SccProvider>SAK</SccProvider>
     <DocumentationFile>..\..\Bin\Release\Microsoft.Scripting.XML</DocumentationFile>
-    <WarningsNotAsErrors>1685</WarningsNotAsErrors>
+    <WarningsNotAsErrors>1685,618</WarningsNotAsErrors>
     <NoWarn>1591</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AssemblyOriginatorKeyFile>..\..\Support\MSSharedLibKey.snk</AssemblyOriginatorKeyFile>
@@ -336,7 +336,7 @@
     <Compile Include="Utils\ReferenceEqualityComparer.cs" />
     <Compile Include="Utils\ReflectedCaller.Generated.cs" />
     <Compile Include="Utils\ReflectedCaller.cs" />
-    <Compile Include="Utils\Set.cs" />
+    <Compile Include="Utils\HashSet.cs" />
     <Compile Include="Utils\SynchronizedDictionary.cs" />
     <Compile Include="Utils\ThreadLocal.cs" />
     <Compile Include="Utils\TypeExtensions.cs" />

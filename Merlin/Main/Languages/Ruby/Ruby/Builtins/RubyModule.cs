@@ -1674,7 +1674,6 @@ namespace IronRuby.Builtins {
 
         internal bool TryGetMethod(string/*!*/ name, ref bool skipHidden, bool virtualLookup, out RubyMemberInfo method) {
             Context.RequiresClassHierarchyLock();
-            Assert.NotNull(name);
             Debug.Assert(_methods != null);
 
             // lookup Ruby method first:    
@@ -1684,7 +1683,8 @@ namespace IronRuby.Builtins {
 
             if (virtualLookup) {
                 string mangled;
-                if ((mangled = RubyUtils.TryMangleName(name)) != null && TryGetDefinedMethod(mangled, ref skipHidden, out method)
+                // TODO: set/get_FooBar??
+                if ((mangled = RubyUtils.TryMangleMethodName(name)) != null && TryGetDefinedMethod(mangled, ref skipHidden, out method)
                     && method.IsRubyMember) {
                     return true;
                 }
