@@ -18,7 +18,8 @@ require "pathname"
 require "erb"
 require "rdoc/markup/simple_markup"
 require "rdoc/markup/simple_markup/to_html"
-require File.dirname(__FILE__) + "/tutorial"
+$: << File.expand_path(File.dirname(__FILE__) + "/app")
+require "tutorial"
 
 # Utility class to convert from RDoc SimpleMarkup text to WPF FlowDocument.
 # It adds hyperlinking functinality to SM::ToHtml similar to Generators::HyperlinkHtml,
@@ -109,7 +110,9 @@ class HtmlTutorial
     @@rhtml = %q{
       <head>
         <title><%= @tutorial.name %></title>
-        <link rel="stylesheet" type="text/css" href="<%= css_file %>">
+        <style type="text/css">
+        <%= css_file_contents %>
+        </style>
       </head>
       
       <body>
@@ -175,13 +178,14 @@ class HtmlTutorial
     @@erb = ERB.new(@@rhtml)
 
     def generate_html html_file_name = nil
-      css_file = File.expand_path("Tutorial.css", File.dirname(__FILE__))
+      css_file = File.expand_path(File.dirname(__FILE__) + "/css") + "/Tutorial.css"
       warn "Missing file #{css_file}" if not File.exist? css_file
 
       if html_file_name # can be nil if generating html in memory
         html_file_path = Pathname.new(File.dirname(html_file_name))
-        css_file = Pathname.new(css_file).relative_path_from(html_file_path)
       end
+
+      css_file_contents = File.read(css_file)
 
       @@erb.result(binding)
     end
@@ -195,7 +199,7 @@ class HtmlTutorial
 
       open(html_file_name, "w+") { |file| file << html }
       
-      puts "Generated #{html_file_name}" if $DEBUG
+      puts "Generated #{html_file_name}"
       html_file_name
     end
     

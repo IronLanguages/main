@@ -109,12 +109,15 @@
     <Compile Include="DynamicApplication.cs" />
     <Compile Include="DynamicAppManifest.cs" />
     <Compile Include="DynamicEngine.cs" />
+    <Compile Include="DynamicLanguageConfig.cs" />
+    <Compile Include="DynamicScriptTags.cs" />
     <Compile Include="ErrorFormatter.cs" />
     <Compile Include="ExtensionTypes.cs" />
     <Compile Include="Repl.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="Window.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="XamlScriptTags.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="agdlr.css" />

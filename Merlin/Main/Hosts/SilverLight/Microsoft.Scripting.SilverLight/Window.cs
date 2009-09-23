@@ -51,7 +51,7 @@ namespace Microsoft.Scripting.Silverlight {
         // 1 - menu text
         // 0 - menu entry id
         private static string _menuEntryTemplate = @"
-<a id=""{0}Link"" href=""javascript:void(0);"" onclick=""sdlrw.showPanel('{0}')"">&uArr; {1}</a>";
+<a id=""{0}Link"" class=""{1}Link"" href=""javascript:void(0);"" onclick=""sdlrw.showPanel('{0}')"">&uArr; {2}</a>";
         #endregion
 
         #region Private fields
@@ -91,7 +91,11 @@ namespace Microsoft.Scripting.Silverlight {
         }
 
         public static void Show(string windowLocationId, bool inject) {
-            Show(HtmlPage.Document.GetElementById(windowLocationId), inject);
+            HtmlElement element = null;
+            if (windowLocationId != null) {
+                element = HtmlPage.Document.GetElementById(windowLocationId);
+            }
+            Show(element, inject);
         }
 
         public static void Show(HtmlElement windowLocationDiv, bool inject) {
@@ -101,9 +105,10 @@ namespace Microsoft.Scripting.Silverlight {
         }
 
         public void AddPanel(string title, HtmlElement panel) {
+            var origClass = panel.CssClass;
             panel.CssClass += " silverlightDlrPanel";
             _current.Contents.AppendChild(panel);
-            AddMenuItem(title, panel.Id);
+            AddMenuItem(title, panel.Id, origClass);
         }
 
         public void Initialize() {
@@ -115,8 +120,12 @@ namespace Microsoft.Scripting.Silverlight {
         }
 
         private void AddMenuItem(string title, string id) {
+            AddMenuItem(title, id, null);
+        }
+
+        private void AddMenuItem(string title, string id, string klass) {
             Menu.SetProperty("innerHTML",
-                string.Format(_menuEntryTemplate, id, title) +
+                string.Format(_menuEntryTemplate, id, klass.Split(' ')[0], title) +
                 Menu.GetProperty("innerHTML")
             );
         }

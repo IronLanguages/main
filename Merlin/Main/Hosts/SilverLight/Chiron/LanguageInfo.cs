@@ -25,11 +25,15 @@ namespace Chiron {
         internal readonly string[] Extensions;
         internal readonly string[] Assemblies;
         internal readonly string LanguageContext;
+        internal readonly string[] Names;
+        internal readonly string External;
 
-        public LanguageInfo(string[] extensions, string[] assemblies, string languageContext) {
+        public LanguageInfo(string[] extensions, string[] assemblies, string languageContext, string[] names, string external) {
             Extensions = extensions;
             Assemblies = assemblies;
             LanguageContext = languageContext;
+            Names = names;
+            External = external;
         }
 
         public string GetContextAssemblyName() {
@@ -39,10 +43,27 @@ namespace Chiron {
         public string GetExtensionsString() {
             StringBuilder str = new StringBuilder();
             foreach (string ext in Extensions) {
-                if (str.Length > 0) {
-                    str.Append(",");
-                }
-                str.Append(ext + ",." + ext);
+                if (str.Length > 0) str.Append(",");
+                if (ext.StartsWith(".")) str.Append(ext);
+                else str.Append(ext + ",." + ext);
+            }
+            return str.ToString();
+        }
+
+        public string GetNames() {
+            StringBuilder str = new StringBuilder();
+            foreach (string n in Names) {
+                if (str.Length > 0) str.Append(",");
+                str.Append(n);
+            }
+            return str.ToString();
+        }
+
+        public string GetAssemblyNames() {
+            StringBuilder str = new StringBuilder();
+            foreach (string asm in Assemblies) {
+                if (str.Length > 0) str.Append(";");
+                str.Append(asm);
             }
             return str.ToString();
         }
@@ -54,15 +75,26 @@ namespace Chiron {
             char[] splitChars = new char[] { ' ', '\t', ',', ';', '\r', '\n' };
 
             foreach (XmlElement elem in ((XmlElement)section).GetElementsByTagName("Language")) {
+                var external = elem.GetAttribute("external");
+                if (Chiron.ExternalUrlPrefix != null) {
+                    external = string.Format("{0}{1}", Chiron.ExternalUrlPrefix, external);
+                }
+
                 LanguageInfo info = new LanguageInfo(
                     elem.GetAttribute("extensions").Split(splitChars, StringSplitOptions.RemoveEmptyEntries),
                     elem.GetAttribute("assemblies").Split(splitChars, StringSplitOptions.RemoveEmptyEntries),
-                    elem.GetAttribute("languageContext")
+                    elem.GetAttribute("languageContext"),
+                    elem.GetAttribute("names").Split(splitChars, StringSplitOptions.RemoveEmptyEntries),
+                    external
                 );
 
                 foreach (string ext in info.Extensions) {
-                    languages["." + ext.ToLower()] = info;
+                    var _ext = ext;
+                    if(!_ext.StartsWith(".")) _ext = "." + _ext.ToLower();
+                    languages[_ext] = info;
                 }
+
+
             }
 
             return languages;

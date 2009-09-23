@@ -18,6 +18,8 @@ using System.Windows;
 using System.Windows.Browser;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Silverlight;
+using System;
+using System.Dynamic;
 
 [assembly: ExtensionType(typeof(HtmlDocument), typeof(HtmlDocumentExtension))]
 [assembly: ExtensionType(typeof(HtmlElement), typeof(HtmlElementExtension))]
@@ -66,6 +68,99 @@ namespace Microsoft.Scripting.Silverlight {
                 return OperationFailed.Value;
             }
             return result;
+        }
+    }
+
+    /// <summary>
+    /// Dynamic HtmlDocument
+    /// </summary>
+    public class DynamicHtmlDocument : DynamicHtmlObject {
+        public DynamicHtmlDocument() {
+            StaticObject = HtmlPage.Document;
+        }
+
+        public override bool TryInvokeMember(InvokeMemberBinder binder, object[] args, out object result) {
+            HtmlElement element = ((HtmlDocument)StaticObject).GetElementById(binder.Name);
+            if (element == null) {
+                return base.TryInvokeMember(binder, args, out result);
+            }
+            result = new DynamicHtmlObject(element);
+            return true;
+        }
+
+        public override bool TryGetMember(GetMemberBinder binder, out object result) {
+            HtmlElement element = ((HtmlDocument)StaticObject).GetElementById(binder.Name);
+            if (element == null) {
+                return base.TryGetMember(binder, out result);
+            }
+            result = new DynamicHtmlObject(element);
+            return true;
+        }
+    }
+
+    /// <summary>
+    /// Dynamic HtmlObject
+    /// </summary>
+    public class DynamicHtmlObject : DynamicScriptObject {
+        public DynamicHtmlObject() { }
+        public DynamicHtmlObject(HtmlObject obj) {
+            StaticObject = obj;
+        }
+
+        public override bool TryInvokeMember(InvokeMemberBinder binder, object[] args, out object result) {
+            try {
+                var obj = StaticObject.Invoke(binder.Name, args);
+                result = new DynamicScriptObject((ScriptObject)obj);
+                return true;
+            } catch (InvalidOperationException) {
+                return base.TryInvokeMember(binder, args, out result);
+            }
+        }
+
+        public override bool TryGetMember(GetMemberBinder binder, out object result) {
+            try {
+                var obj = StaticObject.Invoke(binder.Name);
+                result = new DynamicScriptObject((ScriptObject)obj);
+                return true;
+            } catch (InvalidOperationException) {
+                return base.TryGetMember(binder, out result);
+            }
+        }
+
+        public override bool TryInvoke(InvokeBinder binder, object[] args, out object result) {
+            return base.TryInvoke(binder, args, out result);
+        }
+    }
+
+    /// <summary>
+    /// Dynamic ScriptObject
+    /// </summary>
+    public class DynamicScriptObject : DynamicObject {
+        public ScriptObject StaticObject { get; protected set; }
+
+        public DynamicScriptObject() { }
+        public DynamicScriptObject(ScriptObject so) {
+            StaticObject = so;
+        }
+
+        public override bool TryInvokeMember(InvokeMemberBinder binder, object[] args, out object result) {
+            try {
+                var opts = DynamicApplication.Current.Engine.Engine.Operations;
+                result = opts.InvokeMember(StaticObject, binder.Name, args);
+                return true;
+            } catch {
+                return base.TryInvokeMember(binder, args, out result);
+            }
+        }
+
+        public override bool TryGetMember(GetMemberBinder binder, out object result) {
+            try {
+                var opts = DynamicApplication.Current.Engine.Engine.Operations;
+                result = opts.GetMember(StaticObject, binder.Name);
+                return true;
+            } catch {
+                return base.TryGetMember(binder, out result);
+            }
         }
     }
 }

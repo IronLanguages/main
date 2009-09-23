@@ -53,7 +53,7 @@ describe "01 - System.Windows.Browser" do
   end
   
 	it 'verifies Children collection returns correctly' do
-    @div.AppendChild(tag "div")
+    @div.AppendChild(tag("div"))
     @div.children.count.should.equal 3
   end
 end
