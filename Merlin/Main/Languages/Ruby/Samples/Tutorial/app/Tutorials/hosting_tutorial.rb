@@ -147,7 +147,8 @@ tutorial "IronRuby Hosting tutorial" do
                     eval "engine = '(undefined)'", bind
                     eval "def script() 'undefined' end", bind
                 end,
-                :code => 'engine = IronRuby.create_engine'
+                :code => 'engine = IronRuby.create_engine',
+                :test_hook => lambda { |type, spec, bind| spec.assert_equal(IronRuby.to_clr_type.full_name, "IronRuby.Ruby") if type == :before }
               ) { |iar| iar.bind.engine.redirect_output; true }
                 
             task :body => %{

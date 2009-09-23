@@ -17,7 +17,10 @@
 
 class ReplBufferStream
   def write_to_repl(str)
-    $repl.output_buffer.write str
+    GuiTutorial::Window.current.begin_invoke do
+      #TODO: Jimmy, fix me!
+      #$repl.output_buffer.write str
+    end
   end
 
   def puts(*args)
@@ -32,14 +35,18 @@ class ReplBufferStream
   end
 end
 
-# Hack to get minitest to work
+# minitest uses Signal.list, which does not exist in Silverlight. So fake it
 class Signal
   def self.list() Hash.new end
 end
 
-$LOAD_PATH << "./Libs/minitest-1.4.2/lib"
-$0 = __FILE__ # minitest expects this to be non-nil
-require "minitest/spec"
-MiniTest::Unit.output = ReplBufferStream.new
-require "test/test_console"
-MiniTest::Unit.new.run([])
+def run_tests()
+  $LOAD_PATH << "./Libs/minitest-1.4.2/lib"
+  $0 = __FILE__ # minitest expects this to be non-nil
+  require "minitest/spec"
+  MiniTest::Unit.output = ReplBufferStream.new
+  require "test/test_console"
+  MiniTest::Unit.new.run(ARGV)
+end
+
+Thread.new { run_tests }

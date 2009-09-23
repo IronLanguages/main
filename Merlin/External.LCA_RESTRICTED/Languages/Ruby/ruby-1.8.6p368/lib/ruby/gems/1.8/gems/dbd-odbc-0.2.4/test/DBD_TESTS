@@ -1,0 +1,48 @@
+================================================================================
+Using DBD tests
+================================================================================
+
+Create a YAML file named .ruby-dbi.test-config.yaml in your home directory.
+
+This file is a hash of keys that determine what you want to test and how you
+access the databases related to those tests.
+
+The key 'dbtypes' is an array which determines what tests you want to run. They
+*do not* correspond to the driver names, they correspond to the test
+directories that were made for them.
+
+Each 'dbtype' has a key that contains a hash of values:
+    - username: the username of your account
+    - password: the password for your account
+    - dbname: the name of the database to connect to
+
+NOTE that tests expect to connect to a database on localhost currently. This
+may be fixed in the future, especially when we start writing Oracle and
+SQLServer tests.
+
+Each DBD test relies on database semantics which may not match up entirely with
+this configuration. For instance, the postgresql tests expect you to be able to
+work with the database directly via the `psql' client. This is something which
+will eventually be remedied as time and ability allows.
+
+Here is a sample configuration to get you started with the postgresql tests:
+
+################################################################################
+
+---
+dbtypes:
+    - postgresql
+postgresql:
+    username: erikh
+    password: monkeys
+    dbname: rubytest 
+
+################################################################################
+
+NOTE the --- is part of the file and is not a separator.
+
+================================================================================
+Writing DBD tests
+================================================================================
+
+Coming soon.

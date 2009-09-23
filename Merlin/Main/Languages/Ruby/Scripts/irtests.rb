@@ -27,7 +27,9 @@ class IRTest
       :RubyGems => "#{ir} #{@root}\\Languages\\Ruby\\Tests\\Scripts\\RubyGemsTests.rb",
       :Rake => "#{ir} #{@root}\\Languages\\Ruby\\Tests\\Scripts\\RakeTests.rb",
       :Yaml => "#{ir} #{@root}\\..\\External.LCA_RESTRICTED\\Languages\\IronRuby\\yaml\\YamlTest\\yaml_test_suite.rb",
-      :Tutorial => "#{ir} -I#{@root}\\Languages\\Ruby\\Samples\\Tutorial #{@root}\\Languages\\Ruby\\Samples\\Tutorial\\test\\test_console.rb"
+      :Tutorial => "#{ir} -I#{@root}\\Languages\\Ruby\\Samples\\Tutorial #{@root}\\Languages\\Ruby\\Samples\\Tutorial\\test\\test_console.rb",
+      :ActionPack => "#{ir} #{@root}\\Languages\\Ruby\\Tests\\Scripts\\ActionPackTests.rb",
+      :ActiveSupport => "#{ir} #{@root}\\Languages\\Ruby\\Tests\\Scripts\\ActiveSupportTests.rb"
     }
   end
 
