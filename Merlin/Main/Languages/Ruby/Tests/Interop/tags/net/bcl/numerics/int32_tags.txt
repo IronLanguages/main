@@ -1,4 +1,1 @@
-fails:System::Int32 can be induced from a Bignum
-fails:System::Int32 raises a RangeError if out of range for Bignum
-fails:System::Int32 can be induced via an int
-fails:System::Int32 raises a RangeError if out of range for int
+fails:System::Int32 returns a string of the format 'value (Class)'

@@ -1,0 +1,1 @@
+fails:Enum values map to instances of the enum's class

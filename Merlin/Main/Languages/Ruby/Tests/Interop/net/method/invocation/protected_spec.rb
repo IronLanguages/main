@@ -1,5 +1,6 @@
 require File.dirname(__FILE__) + '/../../spec_helper'
 require File.dirname(__FILE__) + '/../shared/calling'
+require File.dirname(__FILE__) + '/../fixtures/classes'
 
 # TODO: test for errors
 =begin
@@ -13,8 +14,6 @@ end
 =end
 
 describe "Invoking a protected .NET method on an inherited Ruby class" do
-  class RubyClassWithMethods < ClassWithMethods
-  end
   before :each do 
     @obj = RubyClassWithMethods.new
     @result = "protected"

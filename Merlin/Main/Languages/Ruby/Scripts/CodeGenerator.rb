@@ -1,4 +1,4 @@
-﻿=begin
+=begin
    Utilities for C# source file generation.
 =end
 

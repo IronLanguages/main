@@ -1,18 +1,6 @@
 require File.dirname(__FILE__) + '/../../spec_helper'
 
 describe "System::String.new" do
-  csc <<-EOL
-  public partial class Klass {
-    public string A(){
-      return "a";
-    }
-
-    public string Aa(){
-      return "aa";
-    }
-  }
-  EOL
-
   before(:each) do
     @a = Klass.new.a
     @aa = Klass.new.Aa

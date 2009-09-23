@@ -1,5 +1,6 @@
 require File.dirname(__FILE__) + '/../../spec_helper'
 require File.dirname(__FILE__) + '/../shared/calling'
+require File.dirname(__FILE__) + '/../fixtures/classes'
 
 describe "Invoking a public .NET method" do
   before :each do 
@@ -10,8 +11,6 @@ describe "Invoking a public .NET method" do
 end
 
 describe "Invoking a public .NET method on an inherited Ruby class" do
-  class RubyClassWithMethods < ClassWithMethods
-  end
   before :each do 
     @obj = RubyClassWithMethods.new
     @result = "public"

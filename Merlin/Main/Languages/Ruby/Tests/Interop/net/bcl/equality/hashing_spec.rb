@@ -1,50 +1,6 @@
 require File.dirname(__FILE__) + "/../../spec_helper"
-
+require File.dirname(__FILE__) + '/../fixtures/classes'
 describe "Hashing" do
-  before :all do
-    # Ideally, we would just use mocks. However, we cant use mocks since MockObject does not deal with should_receive(:hash)
-    module HashingSpecs
-      class RubyClassWithHash
-        def initialize(h=123) @h = h end
-        def hash() @h end
-      end
-
-      class RubyClassWithoutHash
-        def hash() raise "hash should not be called" end
-      end
-
-      class RubyDerivedClass < EmptyClass
-        def hash() 123 end
-      end
-
-      class ToIntClass
-        def to_int() 123 end        
-      end
-
-      class RubyClassWithHashAndGetHashCode
-        def hash() 1 end
-        def GetHashCode() 2 end
-      end
-      
-      class HashableSubtype < Hashable
-      end
-
-      class HashableSubtypeWithHash < Hashable
-        def hash() 234 end
-      end
-    end
-  end
-
-  csc <<-EOL
-    public static class Hasher {
-      public static int GetHashCode(object o) { return o.GetHashCode(); }
-    }
-    
-    public class Hashable {
-      public override int GetHashCode() { return 123; }
-    }
-  EOL
-  
   it "maps Object#hash to System.Object.GetHashCode for Ruby classes" do
     o = HashingSpecs::RubyClassWithHash.new
     Hasher.get_hash_code(o).class.should == Fixnum

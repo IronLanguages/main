@@ -17,6 +17,6 @@ $raise = true
 
 begin
   p A.Main
-rescue
-  p $!.class.name == "System::IO::FileLoadException"
+rescue Exception => e
+  p e.class.name
 end

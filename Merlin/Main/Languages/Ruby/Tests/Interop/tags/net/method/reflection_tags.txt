@@ -1,1 +1,0 @@
-fails:Static .NET methods don't incorrectly get cached when called on an instance

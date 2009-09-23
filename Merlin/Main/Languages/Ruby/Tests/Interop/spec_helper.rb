@@ -57,5 +57,8 @@ class Object
   def assembly(*args)
     yield
   end
+  def no_csc
+    yield
+  end
 end
 

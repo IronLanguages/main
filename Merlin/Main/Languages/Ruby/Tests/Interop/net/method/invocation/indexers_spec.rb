@@ -1,16 +1,6 @@
 require File.dirname(__FILE__) + '/../../spec_helper'
 
 describe "Calling indexers" do
-  csc <<-EOL
-    public partial class ClassWithIndexer {
-      public int[,] Values = new int[,] { {0, 10}, {20, 30} };
-
-      public int this[int i, int j] { 
-        get { return Values[i,j]; } 
-        set { Values[i,j] = value; } 
-      }
-    }
-  EOL
   before :each do
     @klass = ClassWithIndexer.new
   end

@@ -1,47 +1,7 @@
 require File.dirname(__FILE__) + "/../../spec_helper"
+require File.dirname(__FILE__)+ '/../fixtures/classes'
 
 describe "Equality" do
-  before :all do
-    # Ideally, we would just use mocks. However, we cant use mocks since MockObject does not deal with should_receive(:hash)
-    module EqualitySpecs
-      class RubyClassWithEql
-        def initialize(result=nil) @result = result end
-        def eql?(other) if @result then @result else other == :ruby_marker end end
-      end
-
-      class RubyClassWithoutEql
-        def eql?(other) raise "eql? should not be called" end
-      end
-
-      class RubyDerivedClass < EmptyClass
-        def eql?(other) other == :ruby_marker end
-      end
-
-      class RubyClassWithEqlAndEquals
-        def eql?(other) other == :ruby_marker end
-        def Equals(other) other == :clr_marker end
-      end
-      
-      class EqualityCheckerSubtype  < Equatable
-      end
-
-      class EqualityCheckerSubtypeWithEql  < Equatable
-        def eql?(other) other == :ruby_marker end
-      end
-    end
-  end
-
-  csc <<-EOL
-    public static class EqualityChecker {
-      public static new bool Equals(object o1, object o2) { return o1.Equals(o2); }
-    }
-    
-    public class Equatable {
-      public override bool Equals(object other) { return (other is string) && ((string)other) == "ClrMarker"; }
-      public override int GetHashCode() { throw new NotImplementedException(); }
-    }
-  EOL
-  
   it "maps Object#eql? to System.Object.Equals for Ruby classes" do
     o = EqualitySpecs::RubyClassWithEql.new
     EqualityChecker.equals(o, :ruby_marker).should be_true

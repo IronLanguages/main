@@ -47,6 +47,10 @@ namespace IronRuby.Builtins {
     public static partial class UInt64Ops {
     }
 
+    [RubyClass(Extends = typeof(Decimal), Inherits = typeof(Integer), Restrictions = ModuleRestrictions.None), Includes(typeof(ClrBigInteger), Copy = true)]
+    public static partial class DecimalOps{
+    }
+
     #region new, size, induced_from
 
     // *** BEGIN GENERATED CODE ***
@@ -322,6 +326,45 @@ namespace IronRuby.Builtins {
         [RubyMethod("inspect")]
         public static MutableString/*!*/ Inspect(object/*!*/ self) {
             return MutableString.CreateMutable(RubyEncoding.Binary).Append(self.ToString()).Append(" (UInt64)");
+        }
+    }
+    
+    public static partial class DecimalOps {
+        [RubyMethod("size")]
+        public static int Size(Decimal self) {
+            return sizeof(Decimal);
+        }
+    
+        [RubyConstructor]
+        [RubyMethod("induced_from", RubyMethodAttributes.PublicSingleton)]
+        public static Decimal InducedFrom(RubyClass/*!*/ self, [DefaultProtocol]int value) {
+            if (value >= Decimal.MinValue && value <= Decimal.MaxValue) {
+                return (Decimal)value;
+            }
+            throw RubyExceptions.CreateRangeError(String.Format("Integer {0} out of range of {1}", value, self.Name));
+        }
+        
+        [RubyConstructor]
+        [RubyMethod("induced_from", RubyMethodAttributes.PublicSingleton)]
+        public static Decimal InducedFrom(RubyClass/*!*/ self, [NotNull]BigInteger/*!*/ value) {
+            if (value >= Decimal.MinValue && value <= Decimal.MaxValue) {
+                return (Decimal)value;
+            }
+            throw RubyExceptions.CreateRangeError(String.Format("Integer {0} out of range of {1}", value, self.Name));
+        }
+    
+        [RubyConstructor]
+        [RubyMethod("induced_from", RubyMethodAttributes.PublicSingleton)]
+        public static Decimal InducedFrom(RubyClass/*!*/ self, double value) {
+            if ((Decimal)value >= Decimal.MinValue && (Decimal)value <= Decimal.MaxValue) {
+                return (Decimal)value;
+            }
+            throw RubyExceptions.CreateRangeError(String.Format("Float {0} out of range of {1}", value, self.Name));
+        }
+        
+        [RubyMethod("inspect")]
+        public static MutableString/*!*/ Inspect(object/*!*/ self) {
+            return MutableString.CreateMutable(RubyEncoding.Binary).Append(self.ToString()).Append(" (Decimal)");
         }
     }
 
