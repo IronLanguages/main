@@ -634,17 +634,16 @@ no_csc do
   end
 
   class Helper
-    def self.run_matrix(results, input)
+    def self.run_matrix(results, input, keys)
       results[:OutInt32Arg] ||= TE
-      results.each do |meth, result|
+      keys.each do |meth|
+        result = results[meth] || TE
         it "binds '#{meth}' for '#{input}' with '#{result.to_s}' (ClassWithMethods)" do
           meth_call = (input == "NoArg" ? lambda { @target.send(meth)} : lambda {@target.send(meth, @values[input])})
           if result.class == Class && result < Exception
             meth_call.should raise_error result
           elsif result.class == Regexp
             res, ref = meth_call.call
-            #require File.expand_path("~\\desktop\\repl.rb")
-            #repl binding
             (res =~ result).should == 0
           else
             res, ref = meth_call.call
