@@ -224,8 +224,11 @@ csc <<-EOL
     protected string ProtectedMethod() { return "protected";}
     private string PrivateMethod() { return "private";}
     public ArrayList Tracker { get; set;}
+    private static ArrayList _staticTracker = new ArrayList();
+    public static ArrayList StaticTracker { get { return _staticTracker;}}
     #{@methods_string}
-    public void Reset() { Tracker = new ArrayList();}
+    public void Reset() { Tracker.Clear(); }
+    public static void StaticReset() { StaticTracker.Clear(); }
     public int SummingMethod(int a, int b){
       return a+b;
     }
@@ -315,7 +318,137 @@ csc <<-EOL
     // Default Value
     public string DefaultInt32Arg([DefaultParameterValue(10)] Int32 arg) { Tracker.Add(arg); return "DefaultInt32Arg";}
     public string Int32ArgDefaultInt32Arg(Int32 arg, [DefaultParameterValue(10)] Int32 arg2) { Tracker.Add(arg); Tracker.Add(arg2); return "Int32ArgDefaultInt32Arg";}
+
+    // static
+    public static string StaticMethodNoArg() { StaticTracker.Add(null); return "StaticMethodNoArg";}
+    public static string StaticMethodClassWithMethodsArg(ClassWithMethods arg) {StaticTracker.Add(arg); return "StaticMethodClassWithMethodsArg";}
+    public string ClassWithMethodsArg(ClassWithMethods arg) {Tracker.Add(arg); return "ClassWithMethodsArg";}
+
+    // generic method
+    public string GenericArg<T>(T arg) {Tracker.Add(arg); return String.Format("GenericArg[{0}]", typeof(T));}
+
+    // out on non-byref
+    public string OutNonByRefInt32Arg([Out] int arg) {arg = 1; Tracker.Add(arg); return "OutNonByRefInt32Arg";}
+    
+    // what does passing in nil mean?
+    public string ParamsIInterfaceArrTestArg(params IInterface[] args) { Tracker.Add(args == null); Tracker.Add(args); return "ParamsIInterfaceArrTestArg";}
+
+    // ref, out, ...
+    public string RefOutInt32Args(ref int arg1, out int arg2, int arg3) {arg1=arg2=arg3; Tracker.Add(arg1); Tracker.Add(arg2); Tracker.Add(arg3); return "RefOutInt32Args";}
+    public string RefInt32OutArgs(ref int arg1, int arg2, out int arg3) {arg3=arg1=arg2; Tracker.Add(arg1); Tracker.Add(arg2); Tracker.Add(arg3); return "RefInt32OutArgs";}
+    public string Int32RefOutArgs(int arg1, ref int arg2, out int arg3) {arg2=arg3=arg1; Tracker.Add(arg1); Tracker.Add(arg2); Tracker.Add(arg3); return "Int32RefOutArgs";}
+
+    // eight args
+    public string EightArgs(int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8) {
+      Tracker.Add(arg1);
+      Tracker.Add(arg2);
+      Tracker.Add(arg3);
+      Tracker.Add(arg4);
+      Tracker.Add(arg5);
+      Tracker.Add(arg6);
+      Tracker.Add(arg7);
+      Tracker.Add(arg8);
+      return "EightArgs";
+    }
+
+    public string IDictionaryOfIntIntArg(IDictionary<int, int> arg){ Tracker.Add(arg); return "IDictionaryOfIntIntArg";}
+    public string HashtableArg(Hashtable arg) { Tracker.Add(arg); return "HashtableArg";}
+    public string ListOfIntArg(List<int> arg) { Tracker.Add(arg); return "ListOfIntArg";}
+
+    // iterator support
+    public string IEnumerableIteratingArg(IEnumerable arg) {
+      IEnumerator ienum = arg.GetEnumerator(); 
+      while (ienum.MoveNext()) 
+        Tracker.Add(ienum.Current); 
+      return "IEnumerableIteratingArg";
+    }
+    public string IEnumeratorIteratingArg(IEnumerator arg) {
+      while (arg.MoveNext())
+        Tracker.Add(arg.Current);
+      return "IEnumeratorIteratingArg";
+    }
+    public string IListArg(IList arg) { Tracker.Add(arg); Tracker.Add(arg.Count); return "IListArg";}
+
+    public string IEnumerableOfCharIteratingArg(IEnumerable<Char> arg) {
+      IEnumerator ienum = arg.GetEnumerator(); 
+      while (ienum.MoveNext()) 
+        Tracker.Add(ienum.Current); 
+      return "IEnumerableOfCharIteratingArg";
+    }
+    public string IEnumeratorOfCharIteratingArg(IEnumerator<Char> arg) {
+      while (arg.MoveNext())
+        Tracker.Add(arg.Current);
+      return "IEnumeratorOfCharIteratingArg";
+    }
+    public string IListOfCharArg(IList<Char> arg) { Tracker.Add(arg); Tracker.Add(arg.Count); return "IListOfCharArg";}
+
+    public string IEnumerableOfIntIteratingArg(IEnumerable<int> arg) {
+      IEnumerator ienum = arg.GetEnumerator(); 
+      while (ienum.MoveNext()) 
+        Tracker.Add(ienum.Current); 
+      return "IEnumerableOfIntIteratingArg";
+    }
+    public string IEnumeratorOfIntIteratingArg(IEnumerator<int> arg) {
+      while (arg.MoveNext())
+        Tracker.Add(arg.Current);
+      return "IEnumeratorOfIntIteratingArg";
+    }
+    public string IListOfIntArg2(IList<int> arg) { Tracker.Add(arg); Tracker.Add(arg.Count); return "IListOfIntArg2";}
+
+    // delegate
+    public string DelegateArg(Delegate arg) {
+      IntIntDelegate d = (IntIntDelegate)arg;
+      Tracker.Add(d(10));
+      return "DelegateArg";
+    }
+
+    public string IntIntDelegateArg(IntIntDelegate arg) { Tracker.Add(arg(10)); return "IntIntDelegateArg";}
+
+    // byte array
+    public string RefByteArrArg(ref Byte[] arg) { Tracker.Add(arg); return "RefByteArrArg";}
+    public string ByteArrRefByteArrArg(Byte[] input, ref Byte[] arg) { arg = input; Tracker.Add(arg); return "ByteArrRefByteArrArg";}
+
+    // keywords
+    public string KeywordsArgs(int arg1, object arg2, ref string arg3) { arg3 = arg3.ToUpper(); Tracker.Add(arg3); return "KeywordsArgs";}
+
+    //more ref/out
+    public string RefStructImplementsIInterfaceArg(ref StructImplementsIInterface arg) { arg = new StructImplementsIInterface(); Tracker.Add(arg); return "RefStructImplementsIInterfaceArg";}
+    public string OutStructImplementsIInterfaceArg(out StructImplementsIInterface arg) { arg = new StructImplementsIInterface(); Tracker.Add(arg); return "OutStructImplementsIInterfaceArg";}
+    public string RefImplementsIInterfaceArg(ref ImplementsIInterface arg) { Tracker.Add(arg); return "RefImplementsIInterfaceArg";}
+    public string OutImplementsIInterfaceArg(out ImplementsIInterface arg) { arg = new ImplementsIInterface(); Tracker.Add(arg); return "OutImplementsIInterfaceArg";}
+    public string RefBooleanArg(ref Boolean arg) { Tracker.Add(arg); return "RefBooleanArg";}
+    public string OutBooleanArg(out Boolean arg) { arg = true; Tracker.Add(arg); return "OutBooleanArg";}
+    public string RefInt32Int32OutInt32Arg(ref int arg1, int arg2, out int arg3) { 
+      arg3 = arg1 + arg2;
+      arg1 = 100;
+      Tracker.Add(arg1);
+      Tracker.Add(arg2);
+      Tracker.Add(arg3);
+      return "RefInt32Int32OutInt32Arg";
+    }
   }
+
+  public struct StructWithMethods {
+    private short _shortField;
+    public short ShortField {
+      get { 
+        return _shortField;
+      }
+      set {
+        _shortField = value;
+      }
+    }
+  }
+
+  public partial class GenericClassWithMethods<K> {
+    public ArrayList Tracker { get; set;}
+    public GenericClassWithMethods() {
+      Tracker = new ArrayList();
+    }
+    public string GenericArg(K arg) { Tracker.Add(arg); return "GenericArg";}
+  }
+
+  public delegate int IntIntDelegate(int arg);
 
   public class VirtualMethodBaseClass { 
     public virtual string VirtualMethod() { return "virtual"; } 
@@ -329,6 +462,8 @@ csc <<-EOL
 EOL
   
 no_csc do
+  include System::Collections
+  include System::Collections::Generic
   TE = TypeError
   AE = ArgumentError
   OE = System::OverflowException
@@ -337,8 +472,9 @@ no_csc do
   SAO = System::Array[Object]
   SAI = System::Array[IInterface]
   SAC = System::Array[CStruct]
-  DObjObj = System::Collections::Generic::Dictionary[Object, Object]
-  DIntStr = System::Collections::Generic::Dictionary[Fixnum, System::String]
+  DObjObj = Dictionary[Object, Object]
+  DIntStr = Dictionary[Fixnum, System::String]
+  DIntInt = Dictionary[Fixnum, Fixnum]
   module BindingSpecs
     class ImplementsEnumerable
       include Enumerable
@@ -403,6 +539,98 @@ no_csc do
         def to_str; "to_str" end
       end
     end
+    
+    class TestListOfInt
+      include IEnumerable.of(Fixnum)
+      def initialize
+        @store = []
+      end
+
+      def get_enumerator
+        TestListEnumeratorOfInt.new(@store)
+      end
+
+      def <<(val)
+        @store << val
+        self
+      end
+
+      class TestListEnumeratorOfInt
+        include IEnumerator.of(Fixnum)
+        attr_reader :list
+        def initialize(list)
+          @list = list
+          @position = -1
+        end
+
+        def move_next
+          @position += 1
+          valid?
+        end
+
+        def reset
+          @position = -1
+        end
+
+        def valid?
+          @position != -1 && @position < @list.length
+        end
+
+        def current
+          if valid?
+            @list[@position]
+          else
+            raise System::InvalidOperationException.new
+          end
+        end
+      end
+    end
+    
+    class TestListOfChar
+      include IEnumerable.of(System::Char)
+      def initialize
+        @store = []
+      end
+
+      def get_enumerator
+        TestListEnumeratorOfChar.new(@store)
+      end
+
+      def <<(val)
+        @store << val
+        self
+      end
+
+      class TestListEnumeratorOfChar
+        include IEnumerator.of(System::Char)
+        attr_reader :list
+        def initialize(list)
+          @list = list
+          @position = -1
+        end
+
+        def move_next
+          @position += 1
+          valid?
+        end
+
+        def reset
+          @position = -1
+        end
+
+        def valid?
+          @position != -1 && @position < @list.length
+        end
+
+        def current
+          if valid?
+            @list[@position]
+          else
+            raise System::InvalidOperationException.new
+          end
+        end
+      end
+    end
   end
 
   class Helper
@@ -413,7 +641,12 @@ no_csc do
           meth_call = (input == "NoArg" ? lambda { @target.send(meth)} : lambda {@target.send(meth, @values[input])})
           if result.class == Class && result < Exception
             meth_call.should raise_error result
-          else 
+          elsif result.class == Regexp
+            res, ref = meth_call.call
+            #require File.expand_path("~\\desktop\\repl.rb")
+            #repl binding
+            (res =~ result).should == 0
+          else
             res, ref = meth_call.call
             res.should == result
           end
@@ -423,7 +656,10 @@ no_csc do
           meth_call = (input == "NoArg" ? lambda { @target2.send(meth)} : lambda {@target2.send(meth, @values[input])})
           if result.class == Class && result < Exception
             meth_call.should raise_error result
-          else 
+          elsif result.class == Regexp
+            res, ref = meth_call.call
+            (res =~ result).should == 0
+          else
             res, ref = meth_call.call
             res.should == result
           end
@@ -453,7 +689,13 @@ no_csc do
                      end
             @target.tracker.should == result
           end
-          ref.should == result if ref
+          if ref
+            if result.is_a? ArrayList
+              ref.should == result[0]
+            else
+              ref.should == result
+            end
+          end
         end
         
         it "passes the correct input (#{input}) into method (#{meth}) (RubyClassWithMethods)" do
@@ -478,7 +720,13 @@ no_csc do
                      end
             @target2.tracker.should == result
           end
-          ref.should == result if ref
+          if ref
+            if result.is_a? ArrayList
+              ref.should == result[0]
+            else
+              ref.should == result
+            end
+          end
         end
       end
     end
@@ -488,6 +736,7 @@ no_csc do
         def test_BooleanArg(v)
           !!v
         end
+        alias_method :test_RefBooleanArg, :test_BooleanArg
 
         def test_SingleArg(v)
           case v
@@ -568,6 +817,79 @@ no_csc do
         [System::Byte, System::SByte, System::Int16, System::UInt16, System::UInt32, System::Int64, System::UInt64].each do |val|
           define_method("test_#{val.name.gsub("System::","")}Arg") {|v| val.induced_from(v.to_int) if test_value(v)}
         end
+        
+        def test_IEnumerableIteratingArg(v)
+          case v
+          when Hash
+            KeyValuePair.of(Object,Object).new(1,1)
+          when DObjObj
+            [KeyValuePair.of(Object,Object).new(1,1),KeyValuePair.of(Object,Object).new(2,2)]
+          when DIntInt
+            [KeyValuePair.of(Fixnum,Fixnum).new(1,1),KeyValuePair.of(Fixnum,Fixnum).new(2,2)]
+          when DIntStr
+            [KeyValuePair.of(Fixnum, System::String).new(1,"1".to_clr_string),KeyValuePair.of(Fixnum, System::String).new(2,"2".to_clr_string)]
+          when Hashtable
+            [DictionaryEntry.new(2,2), DictionaryEntry.new(1,1)]
+          when System::String
+            test_IEnumerableOfCharIteratingArg(v)
+          end
+        end
+
+        def test_ListOfIntArg(v)
+          if [List[Fixnum], System::Array[Fixnum], List[Object], Array, 
+              System::Array[System::Char], ArrayList, List[System::Char],
+              System::Array[System::Byte], List[System::Byte]].any? {|e| v.is_a?(e)}
+            ArrayList.new << v
+          end
+        end
+        alias_method :test_GenericArg, :test_ListOfIntArg
+
+        def test_RefByteArrArg(v)
+          if v.is_a? String
+            res = System::Array.of(System::Byte).new(v.size)
+            i = 0
+            v.each_byte {|e| res[i] = System::Byte.induced_from(e); i+=1}
+            ArrayList.new << res
+          elsif v.is_a? System::Array.of(System::Byte)
+            ArrayList.new << v
+          end
+        end
+
+        def test_IEnumerableOfCharIteratingArg(v)
+          if v.is_a? System::String
+            v.to_s.split(//).map {|e| e.to_clr_string}
+          end
+        end
+
+        def test_IEnumeratorIteratingArg(v)
+          if [TestList::TestListEnumerator, BindingSpecs::TestListOfInt::TestListEnumeratorOfInt, BindingSpecs::TestListOfChar::TestListEnumeratorOfChar].any? {|e| v.is_a? e}
+            v.list
+          end
+        end
+        
+        def test_IEnumeratorOfIntIteratingArg(v)
+          if [BindingSpecs::TestListOfInt::TestListEnumeratorOfInt].any? {|e| v.is_a? e}
+            v.list
+          end
+        end
+        
+        def test_IEnumeratorOfCharIteratingArg(v)
+          if [BindingSpecs::TestListOfChar::TestListEnumeratorOfChar].any? {|e| v.is_a? e}
+            v.list
+          end
+        end
+
+        def test_DelegateArg(v)
+          case v
+          when IntIntDelegate
+            11
+          when Proc
+            12
+          when Method
+            14
+          end
+        end
+        alias_method :test_IntIntDelegateArg, :test_DelegateArg
 
         def method_missing(meth, *args, &blk)
           if meth =~ /test_.*?Arg/
@@ -622,7 +944,7 @@ no_csc do
       "System::Array[Object]InstanceEmpty" => SAO.new(0), "System::Array[Object]Instance" => SAO.new(2,Object.new), 
       "System::Array[IInterface]InstanceEmpty" => SAI.new(0), "System::Array[IInterface]Instance" => SAI.new(2, BindingSpecs::RubyImplementsIInterface.new),
       "System::Array[CStruct]InstanceEmpty" => SAC.new(0), "System::Array[CStruct]Instance" => SAC.new(2, CStruct.new),
-      "ArrayListInstanceEmpty" => System::Collections::ArrayList.new, "ArrayListInstance" => (System::Collections::ArrayList.new << 1 << 2 << 3),
+      "ArrayListInstanceEmpty" => ArrayList.new, "ArrayListInstance" => (ArrayList.new << 1 << 2 << 3),
       #{}                                                       {1=>1,2=>2}
       "Dictionary[Object,Object]InstanceEmpty" => DObjObj.new, "Dictionary[Object,Object]Instance" => dobj,
       #{}                                                       {1=>"1",2=>"2"}
@@ -632,8 +954,8 @@ no_csc do
       "CStructInstance" => CStruct.new,
       "Int32Instance" => 1,
       "IInterfaceInstance" => BindingSpecs::RubyImplementsIInterface.new,
-      "System::Collections::Generic::List[Fixnum]InstanceEmpty" => System::Collections::Generic::List[Fixnum].new, "System::Collections::Generic::List[Fixnum]Instance" => ( System::Collections::Generic::List[Fixnum].new << 1 << 2 << 3 ),
-      "System::Collections::Generic::List[Object]InstanceEmpty" => System::Collections::Generic::List[Object].new, "System::Collections::Generic::List[Object]Instance" => ( System::Collections::Generic::List[Object].new << Object.new << Object.new << Object.new ),
+      "System::Collections::Generic::List[Fixnum]InstanceEmpty" => List[Fixnum].new, "System::Collections::Generic::List[Fixnum]Instance" => ( List[Fixnum].new << 1 << 2 << 3 ),
+      "System::Collections::Generic::List[Object]InstanceEmpty" => List[Object].new, "System::Collections::Generic::List[Object]Instance" => ( List[Object].new << Object.new << Object.new << Object.new ),
       }
     end
     # TODO: More BigIntegerValues near boundaries
@@ -680,7 +1002,53 @@ no_csc do
           result
         end
     end
+    
+    def self.other_concern_args
 
+      dobj = DObjObj.new
+      dobj[1] = 1
+      dobj[2] = 2
+      dint = DIntStr.new
+      dint[1] = "1".to_clr_string
+      dint[2] = "2".to_clr_string
+      dii = DIntInt.new
+      dii[1] = 1
+      dii[2] = 2
+      ht = Hashtable.new
+      ht[1] = 1
+      ht[2] = 2
+      tl1 = TestList.new << 1 << 2 << 3
+      tl2 = BindingSpecs::TestListOfInt.new << 1 << 2 << 3
+      tl3 = BindingSpecs::TestListOfChar.new << System::Char.new("a") << System::Char.new("b") << System::Char.new("c")
+      types = {"ClassWithMethods" => ClassWithMethods.new, "int" => 1, "nil" => nil, "hash" => {1=> 1}, 
+               "Dictionary[obj,obj]" => dobj, "Dictionary[int,str]" => dint, "Dictionary[int,int]" => dii,
+               "hashtable" => ht, "List[int]" => ( List[Fixnum].new << 1 << 2 << 3 ),
+               "List[obj]" => ( List[Object].new << 1 << 2 << 3), "Array[int]" => System::Array.of(Fixnum).new(2,3),
+               "String" => "String", "Array" => [Object.new, 1, :blue], "Array[Char]" => System::Array.of(System::Char).new(2, System::Char.new("a")),
+               "System::String" => "System::String".to_clr_string, "Array[System::String]" => System::Array.of(System::String).new(2, "a".to_clr_string),
+               "ArrayList" => (ArrayList.new << 1 << 2 << 3),  "List[Char]" => ( List[System::Char].new << System::Char.new("a") << System::Char.new("b") << System::Char.new("c")), 
+               "IEnumerator" => tl1.get_enumerator, "IEnumerator[int]" => tl2.get_enumerator, "IEnumerator[Char]" => tl3.get_enumerator,
+               "IntIntDelegate" => IntIntDelegate.new {|a| a+1 }, "lambda" => lambda {|a| a+2}, 
+              "proc" => proc {|a| a+2}, "method" => method(:test_method),
+               "unboundmethod" => method(:test_method).unbind, "bool" => true, "Array[byte]" => System::Array.of(System::Byte).new(2, System::Byte.MinValue), 
+               "List[byte]" => (List[System::Byte].new << System::Byte.parse("1") << System::Byte.parse("2") << System::Byte.parse("3")), 
+               "self" => "self", "class" => "class", "this" => "this", "public" => "public",
+               "StructImplementsIInterface" => StructImplementsIInterface.new, "RubyImplementsIInterface" => BindingSpecs::RubyImplementsIInterface.new, 
+               "ImplementsIInterface" => ImplementsIInterface.new
+               }
+      #TODO: Add the byref types when make_by_ref_type works
+      #byrefStructImplementsIInterfaceInstance
+      #byrefRubyImplementsIInterface
+      #byrefImpelemntsIInterface, byrefbool
+      #ref_types = {"ByRefInt" => Fixnum.get_type.make_by_ref_type, "Array[ByRefByte]" => System::Array.of(System::Byte.get_type.make_by_ref_type),
+                   #"List[ByRefByte]" => List[System::Byte.get_type.make_by_ref_type]} 
+      types
+    end
+
+    
+    def self.test_method(a)
+      a+4
+    end
     private
     #returns random number between the given values. Using 0 for min value will
     #give an abnormlly high probability of 0 as the result.

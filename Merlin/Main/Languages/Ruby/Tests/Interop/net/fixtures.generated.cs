@@ -735,6 +735,8 @@ public abstract partial class AbstractClassWithMethods {
     protected string ProtectedMethod() { return "protected";}
     private string PrivateMethod() { return "private";}
     public ArrayList Tracker { get; set;}
+    private static ArrayList _staticTracker = new ArrayList();
+    public static ArrayList StaticTracker { get { return _staticTracker;}}
       #region private methods
   private string Private1Generic0Arg<T>() {
     return "private generic no args";
@@ -847,7 +849,8 @@ public abstract partial class AbstractClassWithMethods {
   }
   #endregion
 
-    public void Reset() { Tracker = new ArrayList();}
+    public void Reset() { Tracker.Clear(); }
+    public static void StaticReset() { StaticTracker.Clear(); }
     public int SummingMethod(int a, int b){
       return a+b;
     }
@@ -937,7 +940,137 @@ public abstract partial class AbstractClassWithMethods {
     // Default Value
     public string DefaultInt32Arg([DefaultParameterValue(10)] Int32 arg) { Tracker.Add(arg); return "DefaultInt32Arg";}
     public string Int32ArgDefaultInt32Arg(Int32 arg, [DefaultParameterValue(10)] Int32 arg2) { Tracker.Add(arg); Tracker.Add(arg2); return "Int32ArgDefaultInt32Arg";}
+
+    // static
+    public static string StaticMethodNoArg() { StaticTracker.Add(null); return "StaticMethodNoArg";}
+    public static string StaticMethodClassWithMethodsArg(ClassWithMethods arg) {StaticTracker.Add(arg); return "StaticMethodClassWithMethodsArg";}
+    public string ClassWithMethodsArg(ClassWithMethods arg) {Tracker.Add(arg); return "ClassWithMethodsArg";}
+
+    // generic method
+    public string GenericArg<T>(T arg) {Tracker.Add(arg); return String.Format("GenericArg[{0}]", typeof(T));}
+
+    // out on non-byref
+    public string OutNonByRefInt32Arg([Out] int arg) {arg = 1; Tracker.Add(arg); return "OutNonByRefInt32Arg";}
+    
+    // what does passing in nil mean?
+    public string ParamsIInterfaceArrTestArg(params IInterface[] args) { Tracker.Add(args == null); Tracker.Add(args); return "ParamsIInterfaceArrTestArg";}
+
+    // ref, out, ...
+    public string RefOutInt32Args(ref int arg1, out int arg2, int arg3) {arg1=arg2=arg3; Tracker.Add(arg1); Tracker.Add(arg2); Tracker.Add(arg3); return "RefOutInt32Args";}
+    public string RefInt32OutArgs(ref int arg1, int arg2, out int arg3) {arg3=arg1=arg2; Tracker.Add(arg1); Tracker.Add(arg2); Tracker.Add(arg3); return "RefInt32OutArgs";}
+    public string Int32RefOutArgs(int arg1, ref int arg2, out int arg3) {arg2=arg3=arg1; Tracker.Add(arg1); Tracker.Add(arg2); Tracker.Add(arg3); return "Int32RefOutArgs";}
+
+    // eight args
+    public string EightArgs(int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8) {
+      Tracker.Add(arg1);
+      Tracker.Add(arg2);
+      Tracker.Add(arg3);
+      Tracker.Add(arg4);
+      Tracker.Add(arg5);
+      Tracker.Add(arg6);
+      Tracker.Add(arg7);
+      Tracker.Add(arg8);
+      return "EightArgs";
+    }
+
+    public string IDictionaryOfIntIntArg(IDictionary<int, int> arg){ Tracker.Add(arg); return "IDictionaryOfIntIntArg";}
+    public string HashtableArg(Hashtable arg) { Tracker.Add(arg); return "HashtableArg";}
+    public string ListOfIntArg(List<int> arg) { Tracker.Add(arg); return "ListOfIntArg";}
+
+    // iterator support
+    public string IEnumerableIteratingArg(IEnumerable arg) {
+      IEnumerator ienum = arg.GetEnumerator(); 
+      while (ienum.MoveNext()) 
+        Tracker.Add(ienum.Current); 
+      return "IEnumerableIteratingArg";
+    }
+    public string IEnumeratorIteratingArg(IEnumerator arg) {
+      while (arg.MoveNext())
+        Tracker.Add(arg.Current);
+      return "IEnumeratorIteratingArg";
+    }
+    public string IListArg(IList arg) { Tracker.Add(arg); Tracker.Add(arg.Count); return "IListArg";}
+
+    public string IEnumerableOfCharIteratingArg(IEnumerable<Char> arg) {
+      IEnumerator ienum = arg.GetEnumerator(); 
+      while (ienum.MoveNext()) 
+        Tracker.Add(ienum.Current); 
+      return "IEnumerableOfCharIteratingArg";
+    }
+    public string IEnumeratorOfCharIteratingArg(IEnumerator<Char> arg) {
+      while (arg.MoveNext())
+        Tracker.Add(arg.Current);
+      return "IEnumeratorOfCharIteratingArg";
+    }
+    public string IListOfCharArg(IList<Char> arg) { Tracker.Add(arg); Tracker.Add(arg.Count); return "IListOfCharArg";}
+
+    public string IEnumerableOfIntIteratingArg(IEnumerable<int> arg) {
+      IEnumerator ienum = arg.GetEnumerator(); 
+      while (ienum.MoveNext()) 
+        Tracker.Add(ienum.Current); 
+      return "IEnumerableOfIntIteratingArg";
+    }
+    public string IEnumeratorOfIntIteratingArg(IEnumerator<int> arg) {
+      while (arg.MoveNext())
+        Tracker.Add(arg.Current);
+      return "IEnumeratorOfIntIteratingArg";
+    }
+    public string IListOfIntArg2(IList<int> arg) { Tracker.Add(arg); Tracker.Add(arg.Count); return "IListOfIntArg2";}
+
+    // delegate
+    public string DelegateArg(Delegate arg) {
+      IntIntDelegate d = (IntIntDelegate)arg;
+      Tracker.Add(d(10));
+      return "DelegateArg";
+    }
+
+    public string IntIntDelegateArg(IntIntDelegate arg) { Tracker.Add(arg(10)); return "IntIntDelegateArg";}
+
+    // byte array
+    public string RefByteArrArg(ref Byte[] arg) { Tracker.Add(arg); return "RefByteArrArg";}
+    public string ByteArrRefByteArrArg(Byte[] input, ref Byte[] arg) { arg = input; Tracker.Add(arg); return "ByteArrRefByteArrArg";}
+
+    // keywords
+    public string KeywordsArgs(int arg1, object arg2, ref string arg3) { arg3 = arg3.ToUpper(); Tracker.Add(arg3); return "KeywordsArgs";}
+
+    //more ref/out
+    public string RefStructImplementsIInterfaceArg(ref StructImplementsIInterface arg) { arg = new StructImplementsIInterface(); Tracker.Add(arg); return "RefStructImplementsIInterfaceArg";}
+    public string OutStructImplementsIInterfaceArg(out StructImplementsIInterface arg) { arg = new StructImplementsIInterface(); Tracker.Add(arg); return "OutStructImplementsIInterfaceArg";}
+    public string RefImplementsIInterfaceArg(ref ImplementsIInterface arg) { Tracker.Add(arg); return "RefImplementsIInterfaceArg";}
+    public string OutImplementsIInterfaceArg(out ImplementsIInterface arg) { arg = new ImplementsIInterface(); Tracker.Add(arg); return "OutImplementsIInterfaceArg";}
+    public string RefBooleanArg(ref Boolean arg) { Tracker.Add(arg); return "RefBooleanArg";}
+    public string OutBooleanArg(out Boolean arg) { arg = true; Tracker.Add(arg); return "OutBooleanArg";}
+    public string RefInt32Int32OutInt32Arg(ref int arg1, int arg2, out int arg3) { 
+      arg3 = arg1 + arg2;
+      arg1 = 100;
+      Tracker.Add(arg1);
+      Tracker.Add(arg2);
+      Tracker.Add(arg3);
+      return "RefInt32Int32OutInt32Arg";
+    }
   }
+
+  public struct StructWithMethods {
+    private short _shortField;
+    public short ShortField {
+      get { 
+        return _shortField;
+      }
+      set {
+        _shortField = value;
+      }
+    }
+  }
+
+  public partial class GenericClassWithMethods<K> {
+    public ArrayList Tracker { get; set;}
+    public GenericClassWithMethods() {
+      Tracker = new ArrayList();
+    }
+    public string GenericArg(K arg) { Tracker.Add(arg); return "GenericArg";}
+  }
+
+  public delegate int IntIntDelegate(int arg);
 
   public class VirtualMethodBaseClass { 
     public virtual string VirtualMethod() { return "virtual"; } 
