@@ -83,7 +83,7 @@ div.silverlightDlrWindowMenu a#silverlightDlrErrorReportLink.active {
   background-color: white;
 }
 
-div.silverlightDlrWindowMenu a#silverlightDlrReplLink.active {
+div.silverlightDlrWindowMenu a.silverlightDlrReplLink.active {
   color: white;
   background-color: #222;
 }
@@ -153,16 +153,16 @@ div.silverlightDlrErrorStackTraceLine {
  * REPL
  */
 
-#silverlightDlrRepl, 
-#silverlightDlrReplCode, 
-#silverlightDlrReplResult, 
+.silverlightDlrRepl, 
+.silverlightDlrReplCode, 
+.silverlightDlrReplResult, 
 .silverlightDlrReplPrompt {
   font-family: Consolas, "Andale Mono", courier, fixed, monospace;
   font-size: 12px;
 }
 
-#silverlightDlrReplCode, 
-#silverlightDlrReplResult, 
+.silverlightDlrReplCode, 
+.silverlightDlrReplResult, 
 .silverlightDlrReplPrompt {
   border: 0px;
   line-height: 16px;
@@ -170,7 +170,7 @@ div.silverlightDlrErrorStackTraceLine {
   color: white;
 }
 
-#silverlightDlrRepl {
+.silverlightDlrRepl {
   padding: 5px;
   background-color: #222;
   overflow: auto;
@@ -183,20 +183,19 @@ div.silverlightDlrErrorStackTraceLine {
   display: block;
 }
 
-#silverlightDlrReplCode {
+.silverlightDlrReplCode {
   width: 90%;
   height: 20px;
   position: relative;
   left: -1px; top: 0px;
 }
-#silverlightDlrReplCode:focus {
+.silverlightDlrReplCode:focus {
   border: 0px;
 }
 
-#silverlightDlrReplRun {
+.silverlightDlrReplRun {
   display: none;
 }
-form#silverlightDlrReplRunForm {
+form.silverlightDlrReplRunForm {
   color: black;
 }
-

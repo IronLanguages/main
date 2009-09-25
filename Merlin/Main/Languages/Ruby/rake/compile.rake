@@ -28,7 +28,7 @@ namespace :compile do
   task :dlr => [:extension_attributes] do
     IronRubyCompiler.compile :dlr_core
     IronRubyCompiler.compile :dlr_libs
-    IronRubyCompiler.compile :dlr_dynamic
+    IronRubyCompiler.compile :dlr_com
     IronRubyCompiler.compile :dlr_debug
   end
 
@@ -49,16 +49,19 @@ namespace :compile do
 
   desc "compile IronRuby console"
   task :console => [:libraries] do
-    IronRubyCompiler.compile :ir
+    IronRubyCompiler.compile :console
     IronRubyCompiler.move_config
-    IronRubyCompiler.compile :ir64
-    IronRubyCompiler.move_config "ir64"
   end
 
   desc "compile IronRuby.Tests"
   task :testhost => [:libraries] do
     IronRubyCompiler.compile :test_runner
-    IronRubyCompiler.move_config "IronRuby.Tests"
+    IronRubyCompiler.move_config "IronRuby.Tests.exe.config"
+  end
+
+  desc "compile IronRuby.Libraries.Scanner"
+  task :scanner => [:libraries] do
+    IronRubyCompiler.compile :scanner
   end
 
   desc "compile Yaml"
@@ -68,14 +71,10 @@ namespace :compile do
 
   desc "compile IronPython"
   task :ironpython => [:dlr] do
-    [:ironpython, :ipyw, :ipy, :ipyw64, :ipy64, :ironpython_modules].each do |target|
+    [:ironpython, :ipyw, :ipy, :ironpython_modules].each do |target|
       IronRubyCompiler.compile target
     end
-    %w{ipy ipyw ipy64 ipyw64}.each do |target|
-      IronRubyCompiler.move_config target
-    end
   end
-
   desc "compile IronRuby and IronPython"
   task :all => [:compile, :ironpython]
 end

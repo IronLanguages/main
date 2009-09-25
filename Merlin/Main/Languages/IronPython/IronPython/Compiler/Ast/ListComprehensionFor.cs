@@ -19,7 +19,9 @@ using MSAst = System.Linq.Expressions;
 using MSAst = Microsoft.Scripting.Ast;
 #endif
 
+using System;
 using System.Collections;
+using System.Collections.Generic;
 using Microsoft.Scripting;
 
 namespace IronPython.Compiler.Ast {
@@ -40,7 +42,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal override MSAst.Expression Transform(AstGenerator ag, MSAst.Expression body) {
-            MSAst.ParameterExpression temp = ag.GetTemporary("list_comprehension_for", typeof(IEnumerator));
+            MSAst.ParameterExpression temp = ag.GetTemporary("list_comprehension_for", typeof(KeyValuePair<IEnumerator, IDisposable>));
             return ForStatement.TransformForStatement(ag, temp, _list, _lhs, body, null, Span, _lhs.End, null, null);
         }
 

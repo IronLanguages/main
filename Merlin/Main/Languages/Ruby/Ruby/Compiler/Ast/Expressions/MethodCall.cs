@@ -183,7 +183,7 @@ namespace IronRuby.Compiler.Ast {
                     Methods.IsDefinedMethod.OpCall(
                         AstFactory.Box(_target.TransformRead(gen)), gen.CurrentScopeVariable, AstUtils.Constant(_methodName)
                     ),
-                    AstUtils.Constant(false)
+                    AstFactory.False
                 );
             } else {
                 return Methods.IsDefinedMethod.OpCall(gen.CurrentSelfVariable, gen.CurrentScopeVariable, AstUtils.Constant(_methodName));

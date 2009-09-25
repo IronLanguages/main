@@ -19,19 +19,19 @@ using System.Linq.Expressions;
 using Microsoft.Scripting.Ast;
 #endif
 
-using System.Collections.Generic;
+using System.Collections;
 using System.Diagnostics;
 using System.Dynamic;
+using System.Runtime.CompilerServices;
+using Microsoft.Scripting;
 using Microsoft.Scripting.Utils;
 using IronRuby.Builtins;
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Actions;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
 using IronRuby.Compiler;
-using Microsoft.Scripting;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Runtime.Calls {
     using Ast = Expression;
+    using AstExpressions = ReadOnlyCollectionBuilder<Expression>;
 
     /// <summary>
     /// Wraps the arguments of a dynamic call site
@@ -135,8 +135,8 @@ namespace IronRuby.Runtime.Calls {
             return (Proc)_args[GetBlockIndex()].Value;
         }
 
-        public object GetSplattedArgument() {
-            return _args[GetSplattedArgumentIndex()].Value;
+        public IList/*!*/ GetSplattedArgument() {
+            return (IList)_args[GetSplattedArgumentIndex()].Value;
         }
 
         public object GetRhsArgument() {
@@ -168,10 +168,11 @@ namespace IronRuby.Runtime.Calls {
         }
 
 
-        public Expression[]/*!*/ GetSimpleArgumentExpressions() {
-            var result = new Expression[SimpleArgumentCount];
-            for (int i = 0, j = GetSimpleArgumentsIndex(0); i < result.Length; j++, i++) {
-                result[i] = _args[j].Expression;
+        public AstExpressions/*!*/ GetSimpleArgumentExpressions() {
+            int count = SimpleArgumentCount;
+            var result = new AstExpressions(count);
+            for (int i = 0, j = GetSimpleArgumentsIndex(0); i < count; j++, i++) {
+                result.Add(_args[j].Expression);
             }
             return result;
         }
@@ -264,6 +265,8 @@ namespace IronRuby.Runtime.Calls {
             _args = args;
             _copyArgsOnWrite = true;
             _signature = signature;
+
+            Debug.Assert(!signature.HasSplattedArgument || GetSplattedArgument() != null);
         }
 
         // interop binders: the target is a Ruby meta-object closed over the context
@@ -271,7 +274,7 @@ namespace IronRuby.Runtime.Calls {
             Assert.NotNull(target, context);
             Assert.NotNullItems(args);
 
-            Debug.Assert(!signature.HasScope);
+            Debug.Assert(!signature.HasScope && !signature.HasSplattedArgument);
 
             _target = target;
             _context = context;

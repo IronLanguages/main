@@ -28,6 +28,7 @@ using IronRuby.Runtime.Calls;
 
 internal sealed class ReflectionCacheGenerator : Generator {
     private static readonly Type MethodCacheType = typeof(IronRuby.Compiler.Methods);
+    private static readonly Type FieldCacheType = typeof(IronRuby.Compiler.Fields);
 
     private string _outFile;
     private IndentedTextWriter _output;
@@ -69,14 +70,16 @@ internal sealed class ReflectionCacheGenerator : Generator {
         _anyError = false;
 
         var reflectedMethods = new Dictionary<string, MethodInfo>();
+        var reflectedFields = new Dictionary<string, FieldInfo>();
         foreach (var type in typeof(RubyOps).Assembly.GetExportedTypes()) {
             if (type.IsDefined(typeof(ReflectionCachedAttribute), false)) {
                 Console.WriteLine(type);
-                ReflectMethods(reflectedMethods, type);
+                ReflectMembers(reflectedMethods, reflectedFields, type);
             }
         }
 
         var methods = reflectedMethods.ToSortedList((m1, m2) => m1.Key.CompareTo(m2.Key));
+        var fields = reflectedFields.ToSortedList((f1, f2) => f1.Key.CompareTo(f2.Key));
         if (_anyError) {
             Environment.ExitCode = 1;
             return;
@@ -90,8 +93,9 @@ internal sealed class ReflectionCacheGenerator : Generator {
 
             _output.WriteLine("using System.Reflection;");
             _output.WriteLine("using System.Diagnostics;");
-            _output.WriteLine("using IronRuby.Runtime;");
             _output.WriteLine("using IronRuby.Builtins;");
+            _output.WriteLine("using IronRuby.Runtime;");
+            _output.WriteLine("using IronRuby.Runtime.Calls;");
             _output.WriteLine("using Microsoft.Scripting.Utils;");
 
             _output.WriteLine();
@@ -101,7 +105,7 @@ internal sealed class ReflectionCacheGenerator : Generator {
             _output.WriteLine("public static partial class {0} {{", MethodCacheType.Name);
             _output.Indent++;
 
-            GenerateOps(methods);
+            GenerateMembers(methods, "MethodInfo", "GetMethod");
             
             _output.WriteLine();
 
@@ -115,6 +119,16 @@ internal sealed class ReflectionCacheGenerator : Generator {
             _output.Indent--;
             _output.WriteLine("}");
 
+            _output.WriteLine("public static partial class {0} {{", FieldCacheType.Name);
+            _output.Indent++;
+
+            GenerateMembers(fields, "FieldInfo", "GetField");
+
+            _output.WriteLine();
+
+            _output.Indent--;
+            _output.WriteLine("}");
+
             _output.Indent--;
             _output.WriteLine("}");
 
@@ -122,10 +136,10 @@ internal sealed class ReflectionCacheGenerator : Generator {
         }
     }
 
-    private void ReflectMethods(Dictionary<string, MethodInfo>/*!*/ methods, Type/*!*/ type) {
+    private void ReflectMembers(Dictionary<string, MethodInfo>/*!*/ methods, Dictionary<string, FieldInfo>/*!*/ fields, Type/*!*/ type) {
         foreach (var method in type.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly)) {
             if (method.IsDefined(typeof(EmittedAttribute), false)) {
-                ReflectMethod(methods, method);
+                ReflectMember(methods, method);
             }
         }
 
@@ -133,35 +147,52 @@ internal sealed class ReflectionCacheGenerator : Generator {
             if (property.IsDefined(typeof(EmittedAttribute), false)) {
                 foreach (var method in new[] { property.GetGetMethod(), property.GetSetMethod() }) {
                     if (method != null && !method.IsDefined(typeof(EmittedAttribute), false)) {
-                        ReflectMethod(methods, method);
+                        ReflectMember(methods, method);
                     }
                 }
             }
         }
+
+        foreach (var field in type.GetFields(BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly)) {
+            if (field.IsDefined(typeof(EmittedAttribute), false)) {
+                ReflectMember(fields, field);
+            }
+        }
     }
 
-    private void ReflectMethod(Dictionary<string, MethodInfo>/*!*/ methods, MethodInfo/*!*/ method) {
-        string name = method.Name;
-        if (method.DeclaringType != typeof(RubyOps)) {
-            name = method.DeclaringType.Name + "_" + name;
+    private void ReflectMember<TMemberInfo>(Dictionary<string, TMemberInfo>/*!*/ members, TMemberInfo/*!*/ member) 
+        where TMemberInfo : MemberInfo {
+        string name = member.Name;
+        if (member.DeclaringType != typeof(RubyOps)) {
+            name = member.DeclaringType.Name + "_" + name;
         }
 
-        MethodInfo existingMethod;
-        if (methods.TryGetValue(name, out existingMethod)) {
-            Console.WriteLine("ERROR: Emitted methods should not have overloads: \n\t{0}\n\t{1}",
-                ReflectionUtils.FormatSignature(new StringBuilder(), existingMethod),
-                ReflectionUtils.FormatSignature(new StringBuilder(), method));
+        TMemberInfo existing;
+        if (members.TryGetValue(name, out existing)) {
+            switch (existing.MemberType) {
+                case MemberTypes.Method:
+                    Console.WriteLine("ERROR: Emitted methods should not have overloads: \n\t{0}\n\t{1}",
+                         ReflectionUtils.FormatSignature(new StringBuilder(), (MethodInfo)(object)existing),
+                         ReflectionUtils.FormatSignature(new StringBuilder(), (MethodInfo)(object)member));
+                    break;
+
+                case MemberTypes.Field:
+                    Console.WriteLine("ERROR: Multiple fields of name {0}", name);
+                    break;
+            }
             _anyError = true;
         } else {
-            methods.Add(name, method);
+            members.Add(name, member);
         }
     }
 
-    private void GenerateOps(IList<KeyValuePair<string, MethodInfo>>/*!*/ methods) {
-        foreach (var method in methods) {
-            _output.WriteLine("public static MethodInfo/*!*/ {0} {{ get {{ return _{0} ?? (_{0} = GetMethod(typeof({1}), \"{2}\")); }} }}",
-                method.Key, method.Value.DeclaringType.Name, method.Value.Name);
-            _output.WriteLine("private static MethodInfo _{0};", method.Key);
+    private void GenerateMembers<TMemberInfo>(IList<KeyValuePair<string, TMemberInfo>>/*!*/ members, string/*!*/ info, string/*!*/ getter)
+        where TMemberInfo : MemberInfo {
+
+        foreach (var member in members) {
+            _output.WriteLine("public static {3}/*!*/ {0} {{ get {{ return _{0} ?? (_{0} = {4}(typeof({1}), \"{2}\")); }} }}",
+                member.Key, member.Value.DeclaringType.Name, member.Value.Name, info, getter);
+            _output.WriteLine("private static {1} _{0};", member.Key, info);
         }
     }
 

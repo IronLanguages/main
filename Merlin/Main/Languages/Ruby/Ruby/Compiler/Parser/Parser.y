@@ -38,7 +38,7 @@ using IronRuby.Compiler.Ast;
 %token CASE WHEN WHILE UNTIL FOR BREAK NEXT REDO RETRY IN DO LOOP_DO BLOCK_DO
 %token RETURN YIELD SUPER SELF NIL TRUE FALSE AND OR NOT IF_MOD UNLESS_MOD
 %token WHILE_MOD UNTIL_MOD RESCUE_MOD ALIAS DEFINED UPPERCASE_BEGIN UPPERCASE_END LINE FILE ENCODING
-%token UPLUS UMINUS POW CMP EQ EQQ NEQ GEQ LEQ BITWISE_AND BITWISE_OR MATCH NMATCH
+%token UPLUS UMINUS POW CMP EQ EQQ NEQ GEQ LEQ LOGICAL_AND LOGICAL_OR MATCH NMATCH
 %token DOT2 DOT3 AREF ASET LSHFT RSHFT SEPARATING_DOUBLE_COLON LEADING_DOUBLE_COLON ASSOC LEFT_PAREN STRING_END
 %token LPAREN_ARG LBRACK LBRACE LBRACE_ARG STAR AMPERSAND 
 
@@ -138,8 +138,8 @@ using IronRuby.Compiler.Ast;
 %left RESCUE_MOD
 %right '?' ':'
 %nonassoc DOT2 DOT3
-%left  BITWISE_OR
-%left  BITWISE_AND
+%left  LOGICAL_OR
+%left  LOGICAL_AND
 %nonassoc  CMP EQ EQQ NEQ MATCH NMATCH
 %left  '>' GEQ '<' LEQ
 %left  '|' '^'
@@ -808,96 +808,96 @@ arg:
         }
     | arg '+' arg
         {
-            $$ = new MethodCall($1, Symbols.Plus, new Arguments($3), @2);
+            $$ = new MethodCall($1, Symbols.Plus, new Arguments($3), @$);
         }
     | arg '-' arg
         {
-            $$ = new MethodCall($1, Symbols.Minus, new Arguments($3), @2);
+            $$ = new MethodCall($1, Symbols.Minus, new Arguments($3), @$);
         }
     | arg '*' arg
         {
-            $$ = new MethodCall($1, Symbols.Multiply, new Arguments($3), @2);
+            $$ = new MethodCall($1, Symbols.Multiply, new Arguments($3), @$);
         }
     | arg '/' arg
         {
-            $$ = new MethodCall($1, Symbols.Divide, new Arguments($3), @2);
+            $$ = new MethodCall($1, Symbols.Divide, new Arguments($3), @$);
         }
     | arg '%' arg
         {
-            $$ = new MethodCall($1, Symbols.Mod, new Arguments($3), @2);
+            $$ = new MethodCall($1, Symbols.Mod, new Arguments($3), @$);
         }
     | arg POW arg
         {
-            $$ = new MethodCall($1, Symbols.Power, new Arguments($3), @2);
+            $$ = new MethodCall($1, Symbols.Power, new Arguments($3), @$);
         }
     | UMINUS_NUM INTEGER POW arg
         {
             // ** has precedence over unary minus, hence -number**arg is equivalent to -(number**arg)
-            $$ = new MethodCall(new MethodCall(Literal.Integer($2, @2), Symbols.Power, new Arguments($4), @3), Symbols.UnaryMinus, Arguments.Empty, @1);
+            $$ = new MethodCall(new MethodCall(Literal.Integer($2, @2), Symbols.Power, new Arguments($4), @3), Symbols.UnaryMinus, Arguments.Empty, @$);
         }
     | UMINUS_NUM BIG_INTEGER POW arg
         {
-            $$ = new MethodCall(new MethodCall(Literal.BigInteger($2, @2), Symbols.Power, new Arguments($4), @3), Symbols.UnaryMinus, Arguments.Empty, @1);
+            $$ = new MethodCall(new MethodCall(Literal.BigInteger($2, @2), Symbols.Power, new Arguments($4), @3), Symbols.UnaryMinus, Arguments.Empty, @$);
         }
     | UMINUS_NUM FLOAT POW arg
         {
-            $$ = new MethodCall(new MethodCall(Literal.Double($2, @2), Symbols.Power, new Arguments($4), @3), Symbols.UnaryMinus, Arguments.Empty, @1);
+            $$ = new MethodCall(new MethodCall(Literal.Double($2, @2), Symbols.Power, new Arguments($4), @3), Symbols.UnaryMinus, Arguments.Empty, @$);
         }
     | UPLUS arg
         {
-            $$ = new MethodCall($2, Symbols.UnaryPlus, null, @1);
+            $$ = new MethodCall($2, Symbols.UnaryPlus, null, @$);
         }
     | UMINUS arg
         {
-            $$ = new MethodCall($2, Symbols.UnaryMinus, null, @1);
+            $$ = new MethodCall($2, Symbols.UnaryMinus, null, @$);
         }
     | arg '|' arg
         {
-            $$ = new MethodCall($1, Symbols.BitwiseOr, new Arguments($3), @2);
+            $$ = new MethodCall($1, Symbols.BitwiseOr, new Arguments($3), @$);
         }
     | arg '^' arg
         {
-            $$ = new MethodCall($1, Symbols.Xor, new Arguments($3), @2);
+            $$ = new MethodCall($1, Symbols.Xor, new Arguments($3), @$);
         }
     | arg '&' arg
         {
-            $$ = new MethodCall($1, Symbols.BitwiseAnd, new Arguments($3), @2);
+            $$ = new MethodCall($1, Symbols.BitwiseAnd, new Arguments($3), @$);
         }
     | arg CMP arg
         {
-            $$ = new MethodCall($1, Symbols.Comparison, new Arguments($3), @2);
+            $$ = new MethodCall($1, Symbols.Comparison, new Arguments($3), @$);
         }
     | arg '>' arg
         {
-            $$ = new MethodCall($1, Symbols.GreaterThan, new Arguments($3), @2);
+            $$ = new MethodCall($1, Symbols.GreaterThan, new Arguments($3), @$);
         }
     | arg GEQ arg
         {
-            $$ = new MethodCall($1, Symbols.GreaterEqual, new Arguments($3), @2);
+            $$ = new MethodCall($1, Symbols.GreaterEqual, new Arguments($3), @$);
         }
     | arg '<' arg
         {
-            $$ = new MethodCall($1, Symbols.LessThan, new Arguments($3), @2);
+            $$ = new MethodCall($1, Symbols.LessThan, new Arguments($3), @$);
         }
     | arg LEQ arg
         {
-            $$ = new MethodCall($1, Symbols.LessEqual, new Arguments($3), @2);
+            $$ = new MethodCall($1, Symbols.LessEqual, new Arguments($3), @$);
         }
     | arg EQ arg
         {
-            $$ = new MethodCall($1, Symbols.Equal, new Arguments($3), @2);
+            $$ = new MethodCall($1, Symbols.Equal, new Arguments($3), @$);
         }
     | arg EQQ arg
         {
-            $$ = new MethodCall($1, Symbols.StrictEqual, new Arguments($3), @2);
+            $$ = new MethodCall($1, Symbols.StrictEqual, new Arguments($3), @$);
         }
     | arg NEQ arg
         {
-            $$ = new NotExpression(new MethodCall($1, Symbols.Equal, new Arguments($3), @$), @2);
+            $$ = new NotExpression(new MethodCall($1, Symbols.Equal, new Arguments($3), @$), @$);
         }
     | arg MATCH arg
         {
-            $$ = MakeMatch($1, $3, @2);
+            $$ = MakeMatch($1, $3, @$);
         }
     | arg NMATCH arg
         {
@@ -910,39 +910,39 @@ arg:
         }
     | '~' arg
         {
-            $$ = new MethodCall($2, Symbols.BitwiseNot, Arguments.Empty, @1);
+            $$ = new MethodCall($2, Symbols.BitwiseNot, Arguments.Empty, @$);
         }
     | arg LSHFT arg
         {
-            $$ = new MethodCall($1, Symbols.LeftShift, new Arguments($3), @2);
+            $$ = new MethodCall($1, Symbols.LeftShift, new Arguments($3), @$);
         }
     | arg RSHFT arg
         {
-            $$ = new MethodCall($1, Symbols.RightShift, new Arguments($3), @2);
+            $$ = new MethodCall($1, Symbols.RightShift, new Arguments($3), @$);
         }
-    | arg BITWISE_AND arg
+    | arg LOGICAL_AND arg
         {
-            $$ = new AndExpression($1, $3, @2);
+            $$ = new AndExpression($1, $3, @$);
         }
-    | arg BITWISE_OR arg
+    | arg LOGICAL_OR arg
         {
-            $$ = new OrExpression($1, $3, @2);
+            $$ = new OrExpression($1, $3, @$);
         }
-    | arg BITWISE_AND jump_statement_parameterless
+    | arg LOGICAL_AND jump_statement_parameterless
         {
-            $$ = new ConditionalJumpExpression($1, $3, false, null, @2);
+            $$ = new ConditionalJumpExpression($1, $3, false, null, @$);
         }
-    | arg BITWISE_OR jump_statement_parameterless
+    | arg LOGICAL_OR jump_statement_parameterless
         {
-            $$ = new ConditionalJumpExpression($1, $3, true, null, @2);
+            $$ = new ConditionalJumpExpression($1, $3, true, null, @$);
         }
     | arg DOT2 arg
         {
-            $$ = new RangeExpression($1, $3, false, @2);
+            $$ = new RangeExpression($1, $3, false, @$);
         }
     | arg DOT3 arg
         {
-            $$ = new RangeExpression($1, $3, true, @2);
+            $$ = new RangeExpression($1, $3, true, @$);
         }
     | DEFINED opt_nl arg
         {
@@ -1252,7 +1252,7 @@ primary:
     | method_call
     | method_call brace_block
         {    
-            $1.Block = $2;
+            SetBlock($1, $2);
             $$ = $1;
         }
     | IF expr then compstmt if_tail END
@@ -1420,14 +1420,10 @@ case_expression:
         {
             $$ = new CaseExpression(null, $3, $4, @$);
         }
-    | CASE expr opt_terms else_opt END
+    | CASE opt_terms ELSE compstmt END
         {
-            $$ = new CaseExpression($2, null, $4, @$);
-        }
-    | CASE opt_terms else_opt END
-        {
-            $$ = new CaseExpression(null, null, $3, @$);
-        }
+            $$ = new CaseExpression(null, null, new ElseIfClause(null, $4, @$), @$);
+        }   
 ;
 
 then:
@@ -1485,7 +1481,7 @@ block_parameters_opt:
         {
             $$ = CompoundLeftValue.EmptyBlockSignature;
         }
-    | BITWISE_OR
+    | LOGICAL_OR
         {
             $$ = CompoundLeftValue.EmptyBlockSignature;
         }
@@ -1510,7 +1506,7 @@ do_block:
 block_call: 
       command do_block
         {                            
-            ($$ = $1).Block = $2;
+            SetBlock($$ = $1, $2);
         }
     | block_call '.' operation2 opt_paren_args
         {

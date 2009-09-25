@@ -1881,16 +1881,7 @@ namespace IronPython.Runtime.Operations {
             return enumerator;
         }
 
-        public static IEnumerator GetEnumeratorForIteration(CodeContext/*!*/ context, object enumerable) {
-            IEnumerator enumerator;
-            if (!TryGetEnumerator(context, enumerable, out enumerator)) {
-                return ThrowTypeErrorForBadIteration(context, enumerable);
-            }
-
-            return enumerator;
-        }
-
-        public static IEnumerator ThrowTypeErrorForBadIteration(CodeContext context, object enumerable) {
+        public static KeyValuePair<IEnumerator, IDisposable> ThrowTypeErrorForBadIteration(CodeContext context, object enumerable) {
             throw PythonOps.TypeError("iteration over non-sequence of type {0}", PythonTypeOps.GetName(enumerable));
         }
 
@@ -1905,16 +1896,27 @@ namespace IronPython.Runtime.Operations {
             return false;
         }
 
-        public static IEnumerator<string> StringEnumerator(string str) {
-            return StringOps.StringEnumerator(str);
+        public static void ForLoopDispose(KeyValuePair<IEnumerator, IDisposable> iteratorInfo) {
+            if (iteratorInfo.Value != null) {
+                iteratorInfo.Value.Dispose();
+            }
         }
 
-        public static IEnumerator<Bytes> BytesEnumerator(IList<byte> bytes) {
-            return IListOfByteOps.BytesEnumerator(bytes);
+        public static KeyValuePair<IEnumerator, IDisposable> StringEnumerator(string str) {
+            return new KeyValuePair<IEnumerator, IDisposable>(StringOps.StringEnumerator(str), null);
         }
 
-        public static IEnumerator<int> BytesIntEnumerator(IList<byte> bytes) {
-            return IListOfByteOps.BytesIntEnumerator(bytes);
+        public static KeyValuePair<IEnumerator, IDisposable> BytesEnumerator(IList<byte> bytes) {
+            return new KeyValuePair<IEnumerator, IDisposable>(IListOfByteOps.BytesEnumerator(bytes), null);
+        }
+
+        public static KeyValuePair<IEnumerator, IDisposable> BytesIntEnumerator(IList<byte> bytes) {
+            return new KeyValuePair<IEnumerator, IDisposable>(IListOfByteOps.BytesIntEnumerator(bytes), null);
+        }
+
+        public static KeyValuePair<IEnumerator, IDisposable> GetEnumeratorFromEnumerable(IEnumerable enumerable) {
+            IEnumerator enumerator = enumerable.GetEnumerator();
+            return new KeyValuePair<IEnumerator, IDisposable>(enumerator, enumerator as IDisposable);
         }
 
         public static IEnumerable StringEnumerable(string str) {
@@ -3753,7 +3755,7 @@ namespace IronPython.Runtime.Operations {
 
         #region Exception Factories
 
-        private static Exception MultipleKeywordArgumentError(PythonFunction function, string name) {
+        public static Exception MultipleKeywordArgumentError(PythonFunction function, string name) {
             return TypeError("{0}() got multiple values for keyword argument '{1}'", function.__name__, name);
         }
 
@@ -4173,7 +4175,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static void ScopeSetMember(CodeContext context, Scope scope, string name, object value) {
-            ScopeStorage scopeStorage = scope.Storage as ScopeStorage;
+            ScopeStorage scopeStorage = ((object)scope.Storage) as ScopeStorage;
             if (scopeStorage != null) {
                 scopeStorage.SetValue(name, false, value);
                 return;
@@ -4183,7 +4185,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static object ScopeGetMember(CodeContext context, Scope scope, string name) {
-            ScopeStorage scopeStorage = scope.Storage as ScopeStorage;
+            ScopeStorage scopeStorage = ((object)scope.Storage) as ScopeStorage;
             if (scopeStorage != null) {
                 return scopeStorage.GetValue(name, false);
             }
@@ -4192,7 +4194,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static bool ScopeTryGetMember(CodeContext context, Scope scope, string name, out object value) {
-            ScopeStorage scopeStorage = scope.Storage as ScopeStorage;
+            ScopeStorage scopeStorage = ((object)scope.Storage) as ScopeStorage;
             if (scopeStorage != null) {
                 return scopeStorage.TryGetValue(name, false, out value);
             }
@@ -4201,7 +4203,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static bool ScopeContainsMember(CodeContext context, Scope scope, string name) {
-            ScopeStorage scopeStorage = scope.Storage as ScopeStorage;
+            ScopeStorage scopeStorage = ((object)scope.Storage) as ScopeStorage;
             if (scopeStorage != null) {
                 return scopeStorage.HasValue(name, false);
             }
@@ -4210,7 +4212,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static bool ScopeDeleteMember(CodeContext context, Scope scope, string name) {
-            ScopeStorage scopeStorage = scope.Storage as ScopeStorage;
+            ScopeStorage scopeStorage = ((object)scope.Storage) as ScopeStorage;
             if (scopeStorage != null) {
                 return scopeStorage.DeleteValue(name, false);
             }
@@ -4221,7 +4223,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static IList<object> ScopeGetMemberNames(CodeContext context, Scope scope) {
-            ScopeStorage scopeStorage = scope.Storage as ScopeStorage;
+            ScopeStorage scopeStorage = ((object)scope.Storage) as ScopeStorage;
             if (scopeStorage != null) {
                 List<object> res = new List<object>();
 

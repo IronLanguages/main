@@ -1,0 +1,9 @@
+﻿<UserControl xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Canvas x:Name="LayoutRoot">
+    <Path Canvas.Left="0" Width="100" Height="100" Data="M-0.3545306,-0.46517369                C-0.3545306,-0.46517369 14.084648,30.19025 29.166666,30.5" Stretch="Fill" Stroke="#FFFFFFFF" StrokeThickness="1" StrokeDashArray="1 3" Canvas.Top="0">
+      <Path.RenderTransform>
+        <ScaleTransform x:Name="scale" ScaleX="1" ScaleY="1"></ScaleTransform>
+      </Path.RenderTransform>
+    </Path>
+  </Canvas>
+</UserControl>

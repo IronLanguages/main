@@ -55,8 +55,12 @@
       <Name>Microsoft.Scripting.ExtensionAttribute</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\..\Runtime\Microsoft.Scripting\Microsoft.Scripting.csproj">
-      <Project>{EB66B766-6354-4208-A3D4-AACBDCB5C3B3}</Project>
+      <Project>{02FF0909-F5AD-48CF-A86A-345E721B7E40}</Project>
       <Name>Microsoft.Scripting</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Runtime\Microsoft.Dynamic\Microsoft.Dynamic.csproj">
+      <Project>{EB66B766-6354-4208-A3D4-AACBDCB5C3B3}</Project>
+      <Name>Microsoft.Dynamic</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
@@ -105,12 +109,15 @@
     <Compile Include="DynamicApplication.cs" />
     <Compile Include="DynamicAppManifest.cs" />
     <Compile Include="DynamicEngine.cs" />
+    <Compile Include="DynamicLanguageConfig.cs" />
+    <Compile Include="DynamicScriptTags.cs" />
     <Compile Include="ErrorFormatter.cs" />
     <Compile Include="ExtensionTypes.cs" />
     <Compile Include="Repl.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="Window.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="XamlScriptTags.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="agdlr.css" />

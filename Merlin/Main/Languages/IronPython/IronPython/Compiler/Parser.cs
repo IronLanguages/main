@@ -809,12 +809,12 @@ namespace IronPython.Compiler {
 
             bool ateParen = MaybeEat(TokenKind.LeftParenthesis);
 
-            IList<string> names;
+            string[] names;
             string[] asNames;
             bool fromFuture = false;
 
             if (MaybeEat(TokenKind.Multiply)) {
-                names = FromImportStatement.Star;
+                names = (string[])FromImportStatement.Star;
                 asNames = null;
             } else {
                 List<string> l = new List<string>();
@@ -995,21 +995,24 @@ namespace IronPython.Compiler {
         }
 
         public string SetPrivatePrefix(string name) {
-            // Remove any leading underscores before saving the prefix
             string oldPrefix = _privatePrefix;
 
+            _privatePrefix = GetPrivatePrefix(name);
+
+            return oldPrefix;
+        }
+
+        internal static string GetPrivatePrefix(string name) {
+            // Remove any leading underscores before saving the prefix
             if (name != null) {
-                string prefixString = name;
-                for (int i = 0; i < prefixString.Length; i++) {
-                    if (prefixString[i] != '_') {
-                        _privatePrefix = prefixString.Substring(i);
-                        return oldPrefix;
+                for (int i = 0; i < name.Length; i++) {
+                    if (name[i] != '_') {
+                        return name.Substring(i);
                     }
                 }
             }
             // Name consists of '_'s only, no private prefix mapping
-            _privatePrefix = null;
-            return oldPrefix;
+            return null;
         }
 
         //classdef: 'class' NAME ['(' testlist ')'] ':' suite

@@ -137,7 +137,7 @@ namespace IronPython.Modules {
             }
 
             public count(int n) {
-                _cur = _start = checked((n - 1));
+                _cur = _start = checked(n - 1);
             }
 
             public count([NotNull]BigInteger n) {
@@ -266,7 +266,6 @@ namespace IronPython.Modules {
             private IEnumerator<object> Yielder(IEnumerator iter) {
                 object curKey = _starterKey;
                 if (MoveNextHelper(iter)) {
-                    PythonContext pc = PythonContext.GetContext(_context);
                     while (!_fFinished) {
                         while (PythonContext.Equal(GetKey(iter.Current), curKey)) {
                             if (!MoveNextHelper(iter)) { 
@@ -281,7 +280,6 @@ namespace IronPython.Modules {
             }
 
             private IEnumerator<object> Grouper(IEnumerator iter, object curKey) {
-                PythonContext pc = PythonContext.GetContext(_context);
                 while (PythonContext.Equal(GetKey(iter.Current), curKey)) {
                     yield return iter.Current;
                     if (!MoveNextHelper(iter)) { 

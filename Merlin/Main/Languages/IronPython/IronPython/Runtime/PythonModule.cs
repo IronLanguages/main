@@ -290,7 +290,7 @@ namespace IronPython.Runtime {
                         typeof(PythonOps).GetMethod("ModuleSetMember"),
                         Utils.Convert(Expression, typeof(PythonModule)),
                         Expression.Constant(binder.Name),
-                        value.Expression
+                        Expression.Convert(value.Expression, typeof(object))
                     ),
                     BindingRestrictions.GetTypeRestriction(Expression, Value.GetType())
                 );

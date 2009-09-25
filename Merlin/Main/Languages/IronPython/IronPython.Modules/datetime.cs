@@ -388,7 +388,10 @@ namespace IronPython.Modules {
             }
 
             public static date fromordinal(int d) {
-                return new date(min._dateTime.AddDays(checked(d - 1)));
+                if (d < 1) {
+                    throw PythonOps.ValueError("ordinal must be >= 1");
+                }
+                return new date(min._dateTime.AddDays(d - 1));
             }
 
             public static date fromtimestamp(double timestamp) {
@@ -771,7 +774,10 @@ namespace IronPython.Modules {
             }
 
             public new static datetime fromordinal(int d) {
-                return new datetime(DateTime.MinValue + new TimeSpan(checked(d - 1), 0, 0, 0), 0, null);
+                if (d < 1) {
+                    throw PythonOps.ValueError("ordinal must be >= 1");
+                }
+                return new datetime(DateTime.MinValue + new TimeSpan(d - 1, 0, 0, 0), 0, null);
             }
 
             public static object combine(date date, time time) {

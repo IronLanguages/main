@@ -82,13 +82,14 @@ namespace IronRuby.Builtins {
     [DebuggerDisplay("{DebugName}")]
 #endif
     [DebuggerTypeProxy(typeof(RubyModule.DebugView))]
+    [ReflectionCached]
     public partial class RubyModule : IDuplicable, IRubyObject {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly")]
         public static readonly RubyModule[]/*!*/ EmptyArray = new RubyModule[0];
 
         // interlocked
         internal static int _globalMethodVersion = 0;
-        private static int _globalConstantVersion = 0;
+        internal static int _globalModuleId = 0;
 
         private enum State {
             Uninitialized,
@@ -119,18 +120,13 @@ namespace IronRuby.Builtins {
 
         [Emitted]
         public readonly VersionHandle Version;
+        public readonly int Id;
 
         // List of dependent classes - subclasses of this class and classes to which this module is included to (forms a DAG).
         private WeakList<RubyClass> _dependentClasses;
 
-        // List of modules nested into this module (forms a graph that may contain cycles):
-        private WeakList<RubyModule> _nestedModules;
-        
 #if DEBUG
-        private int _referringConstantRulesSinceLastUpdate;
         private int _referringMethodRulesSinceLastUpdate;
-        private int _debugId = Interlocked.Increment(ref _DebugId);
-        private static int _DebugId;
         
         public string DebugName { 
             get {
@@ -147,7 +143,7 @@ namespace IronRuby.Builtins {
                 } else {
                     name = _name;
                 }
-                return name + " #" + _debugId;
+                return name + " #" + Id;
             }
         }
 #endif
@@ -161,7 +157,7 @@ namespace IronRuby.Builtins {
         // constant table:
         private MemberTableState _constantsState = MemberTableState.Uninitialized;
         private Action<RubyModule> _constantsInitializer;
-        private Dictionary<string, object> _constants;  // null means lookup the execution context's global namespace 
+        private Dictionary<string, ConstantStorage> _constants;
         
         // method table:
         private MemberTableState _methodsState = MemberTableState.Uninitialized;
@@ -330,8 +326,9 @@ namespace IronRuby.Builtins {
             _restrictions = restrictions;
             _weakSelf = new WeakReference(this);
 
-            Version = new VersionHandle(Interlocked.Increment(ref _globalMethodVersion), Interlocked.Increment(ref _globalConstantVersion));
+            Version = new VersionHandle(Interlocked.Increment(ref _globalMethodVersion));
             Version.SetName(name);
+            Id = Interlocked.Increment(ref _globalModuleId);
         }
 
         #region Initialization (thread-safe)
@@ -343,7 +340,7 @@ namespace IronRuby.Builtins {
         private void InitializeConstantTableNoLock() {
             if (!ConstantInitializationNeeded) return;
 
-            _constants = new Dictionary<string, object>();
+            _constants = new Dictionary<string, ConstantStorage>();
             _constantsState = MemberTableState.Initializing;
 
             try {
@@ -475,7 +472,14 @@ namespace IronRuby.Builtins {
 
             for (int i = 0; i < trackers.Count; i++) {
                 var tracker = trackers[i];
-                _constants[names[i]] = (tracker is TypeGroup) ? tracker : (object)Context.GetModule(tracker.Type); 
+                ConstantStorage storage;
+                if (tracker is TypeGroup) {
+                    storage = new ConstantStorage(tracker, new WeakReference(tracker));
+                } else {
+                    var module = Context.GetModule(tracker.Type);
+                    storage = new ConstantStorage(module, module.WeakSelf);
+                }
+                _constants[names[i]] = storage;
             }
         }
 
@@ -500,13 +504,13 @@ namespace IronRuby.Builtins {
             }
 #endif
 
-            _constants = (module._constants != null) ? new Dictionary<string, object>(module._constants) : null;
+            _constants = (module._constants != null) ? new Dictionary<string, ConstantStorage>(module._constants) : null;
 
             // copy namespace members:
             if (module._namespaceTracker != null) {
                 Debug.Assert(_constants != null);
                 foreach (KeyValuePair<SymbolId, object> constant in module._namespaceTracker.SymbolAttributes) {
-                    _constants.Add(SymbolTable.IdToString(constant.Key), constant.Value);
+                    _constants.Add(SymbolTable.IdToString(constant.Key), new ConstantStorage(constant.Value));
                 }
             }
 
@@ -603,53 +607,10 @@ namespace IronRuby.Builtins {
             DependentClasses.Add(dependentClass.WeakSelf);
         }
 
-        internal WeakList<RubyModule/*!*/>/*!*/ NestedModules {
-            get {
-                Context.RequiresClassHierarchyLock();
-                if (_nestedModules == null) {
-                    _nestedModules = new WeakList<RubyModule>();
-                }
-                return _nestedModules;
-            }
-        }
-
-        // thread-safe:
-        internal void AddNestedModule(RubyModule/*!*/ nestedModule) {
-            using (_context.ClassHierarchyLocker()) {
-                NestedModules.Add(nestedModule.WeakSelf);
-            }
-        }
-
         private void IncrementMethodVersion() {
             if (IsClass) {
                 Version.Method = Interlocked.Increment(ref _globalMethodVersion);
             }
-        }
-
-        private void IncrementConstantVersion() {
-            Version.Constant = Interlocked.Increment(ref _globalConstantVersion);
-        }
-
-        internal void ConstantsUpdated() {
-            Context.RequiresClassHierarchyLock();
-
-            int affectedModules = 0;
-            int affectedRules = 0;
-            Func<RubyModule, int, bool> visitor = (module, _) => {
-                module.IncrementConstantVersion();
-#if DEBUG
-                affectedModules++;
-                affectedRules += module._referringConstantRulesSinceLastUpdate;
-                module._referringConstantRulesSinceLastUpdate = 0;
-#endif
-                return false;
-            };
-
-            visitor(this, 0);
-            ForEachRecursivelyDependentClass(visitor);
-            ForEachRecursivelyNestedModule(visitor);
-
-            Utils.Log(String.Format("{0,-50} Constant affected={1,-5} rules={2,-5}", Name, affectedModules, affectedRules), "UPDATED");
         }
 
         internal void MethodsUpdated(string/*!*/ reason) {
@@ -657,7 +618,7 @@ namespace IronRuby.Builtins {
 
             int affectedModules = 0;
             int affectedRules = 0;
-            Func<RubyModule, int, bool> visitor = (module, _) => {
+            Func<RubyModule, bool> visitor = (module) => {
                 module.IncrementMethodVersion();
 #if DEBUG
                 affectedModules++;
@@ -668,7 +629,7 @@ namespace IronRuby.Builtins {
                 return false;
             };
 
-            visitor(this, 0);
+            visitor(this);
             ForEachRecursivelyDependentClass(visitor);
 
             Utils.Log(String.Format("{0,-50} {1,-30} affected={2,-5} rules={3,-5}", Name, reason, affectedModules, affectedRules), "UPDATED");
@@ -677,58 +638,18 @@ namespace IronRuby.Builtins {
         /// <summary>
         /// Calls given action on all modules that are directly or indirectly nested into this module.
         /// </summary>
-        private void ForEachRecursivelyDependentClass(Func<RubyModule, int, bool>/*!*/ action) {
-            ForEachRecursivelyDependentClass(action, 0);
-        }
-
-        private bool ForEachRecursivelyDependentClass(Func<RubyModule, int, bool>/*!*/ action, int level) {
+        private bool ForEachRecursivelyDependentClass(Func<RubyModule, bool>/*!*/ action) {
             Context.RequiresClassHierarchyLock();
 
             if (_dependentClasses != null) {
-                level++;
                 foreach (var cls in _dependentClasses) {
-                    if (action(cls, level)) {
+                    if (action(cls)) {
                         return true;
                     }
 
-                    if (cls.ForEachRecursivelyDependentClass(action, level)) {
+                    if (cls.ForEachRecursivelyDependentClass(action)) {
                         return true;
                     }
-                }
-            }
-            return false;
-        }
-
-        private static readonly WeakList<RubyModule> _Visited = new WeakList<RubyModule>();
-
-        /// <summary>
-        /// Calls given action on all modules that are directly or indirectly nested into this module.
-        /// </summary>
-        internal void ForEachRecursivelyNestedModule(Func<RubyModule, int, bool>/*!*/ action) {
-            ForEachRecursivelyNestedModule(action, 0);
-        }
-
-        private bool ForEachRecursivelyNestedModule(Func<RubyModule, int, bool>/*!*/ action, int level) {
-            Context.RequiresClassHierarchyLock();
-
-            var nestedModules = _nestedModules;
-            if (nestedModules != null) {
-                // replace the list temporarily to prevent infinite recursion:
-                _nestedModules = _Visited;
-                level++;
-
-                try {
-                    foreach (var nested in nestedModules) {
-                        if (nested._nestedModules != _Visited && action(nested, level)) {
-                            return true;
-                        }
-
-                        if (nested.ForEachRecursivelyNestedModule(action, level)) {
-                            return true;
-                        }
-                    }
-                } finally {
-                    _nestedModules = nestedModules;
                 }
             }
             return false;
@@ -920,9 +841,6 @@ namespace IronRuby.Builtins {
             }
         }
 
-        // A singleton stored in constant table when CLR nested type or namespace member is removed.
-        private static readonly object RemovedConstant = new object();
-
         public string/*!*/ MakeNestedModuleName(string nestedModuleSimpleName) {
             return (IsObjectClass || nestedModuleSimpleName == null) ?
                 nestedModuleSimpleName :
@@ -969,10 +887,8 @@ namespace IronRuby.Builtins {
             Context.RequiresClassHierarchyLock();
 
             InitializeConstantsNoLock();
-            _constants[name] = value;
-
-            // TODO: we don't do dynamic constant lookup, so there is no need to update the class
-            // Updated("SetConstant");
+            _context.ConstantAccessVersion++;
+            _constants[name] = new ConstantStorage(value);
         }
 
         /// <summary>
@@ -984,7 +900,7 @@ namespace IronRuby.Builtins {
         /// </remarks>
         public bool SetConstantChecked(string/*!*/ name, object value) {
             using (Context.ClassHierarchyLocker()) {
-                object existing;
+                ConstantStorage existing;
                 var result = TryLookupConstantNoLock(false, false, null, name, out existing);
                 SetConstantNoLock(name, value);
                 return result == ConstantLookupResult.Found;
@@ -993,8 +909,8 @@ namespace IronRuby.Builtins {
         
         // thread-safe:
         public void SetAutoloadedConstant(string/*!*/ name, MutableString/*!*/ path) {
-            object dummy;
-            if (!TryGetConstantNoAutoload(name, out dummy)) {
+            ConstantStorage dummy;
+            if (!TryGetConstant(null, name, out dummy)) {
                 SetConstant(name, new AutoloadedConstant(MutableString.Create(path).Freeze()));
             }
         }
@@ -1002,37 +918,38 @@ namespace IronRuby.Builtins {
         // thread-safe:
         public MutableString GetAutoloadedConstantPath(string/*!*/ name) {
             using (Context.ClassHierarchyLocker()) {
-                object value;
+                ConstantStorage storage;
                 AutoloadedConstant autoloaded;
-                return (TryGetConstantNoAutoloadCheck(name, out value)
-                    && (autoloaded = value as AutoloadedConstant) != null
+                return (TryGetConstantNoAutoloadCheck(name, out storage)
+                    && (autoloaded = storage.Value as AutoloadedConstant) != null
                     && !autoloaded.Loaded) ?
                     autoloaded.Path : null;
             }
         }
 
-        /// <summary>
-        /// Get constant defined in this module. Do not autoload. Value is null for autoloaded constant.
-        /// </summary>
-        /// <remarks>
-        /// Thread safe.
-        /// </remarks>
-        public bool TryGetConstantNoAutoload(string/*!*/ name, out object value) {
-            using (Context.ClassHierarchyLocker()) {
-                return TryGetConstantNoLock(null, name, out value);
-            }
-        }
-
-        internal bool TryGetConstant(RubyContext/*!*/ callerContext, RubyGlobalScope autoloadScope, string/*!*/ name, out object value) {
+        internal bool TryGetConstant(RubyContext/*!*/ callerContext, RubyGlobalScope autoloadScope, string/*!*/ name, out ConstantStorage value) {
             return callerContext != Context ?
                 TryGetConstant(autoloadScope, name, out value) :
                 TryGetConstantNoLock(autoloadScope, name, out value);
         }
 
+        internal bool TryResolveConstant(RubyContext/*!*/ callerContext, RubyGlobalScope autoloadScope, string/*!*/ name, out ConstantStorage value) {
+            return callerContext != Context ?
+                TryResolveConstant(autoloadScope, name, out value) :
+                TryResolveConstantNoLock(autoloadScope, name, out value);
+        }
+
+        public bool TryGetConstant(RubyGlobalScope autoloadScope, string/*!*/ name, out object value) {
+            ConstantStorage storage;
+            var result = TryGetConstant(autoloadScope, name, out storage);
+            value = storage.Value;
+            return result;
+        }
+
         /// <summary>
         /// Get constant defined in this module.
         /// </summary>
-        public bool TryGetConstant(RubyGlobalScope autoloadScope, string/*!*/ name, out object value) {
+        internal bool TryGetConstant(RubyGlobalScope autoloadScope, string/*!*/ name, out ConstantStorage value) {
             using (Context.ClassHierarchyLocker()) {
                 return TryGetConstantNoLock(autoloadScope, name, out value);
             }
@@ -1041,33 +958,19 @@ namespace IronRuby.Builtins {
         /// <summary>
         /// Get constant defined in this module.
         /// </summary>
-        public bool TryGetConstantNoLock(RubyGlobalScope autoloadScope, string/*!*/ name, out object value) {
+        internal bool TryGetConstantNoLock(RubyGlobalScope autoloadScope, string/*!*/ name, out ConstantStorage value) {
             Context.RequiresClassHierarchyLock();
             return TryLookupConstantNoLock(false, false, autoloadScope, name, out value) != ConstantLookupResult.NotFound;
         }
 
         /// <summary>
-        /// Get constant defined in this module or any of its ancestors. Do not autoload. Value is null for autoloaded constant.
+        /// Get constant defined in this module or any of its ancestors. 
+        /// Autoloads if autoloadScope is not null.
         /// </summary>
         /// <remarks>
         /// Thread safe.
         /// </remarks>
-        public bool TryResolveConstantNoAutoload(string/*!*/ name, out object value) {
-            using (Context.ClassHierarchyLocker()) {
-                return TryResolveConstantNoLock(null, name, out value);
-            }
-        }
-
-        internal bool TryResolveConstant(RubyContext/*!*/ callerContext, RubyGlobalScope autoloadScope, string/*!*/ name, out object value) {
-            return callerContext != Context ?
-                TryResolveConstant(autoloadScope, name, out value) :
-                TryResolveConstantNoLock(autoloadScope, name, out value);
-        }
-
-        /// <summary>
-        /// Get constant defined in this module or any of its ancestors.
-        /// </summary>
-        public bool TryResolveConstant(RubyGlobalScope autoloadScope, string/*!*/ name, out object value) {
+        internal bool TryResolveConstant(RubyGlobalScope autoloadScope, string/*!*/ name, out ConstantStorage value) {
             using (Context.ClassHierarchyLocker()) {
                 return TryResolveConstantNoLock(autoloadScope, name, out value);
             }
@@ -1076,7 +979,7 @@ namespace IronRuby.Builtins {
         /// <summary>
         /// Get constant defined in this module or any of its ancestors.
         /// </summary>
-        public bool TryResolveConstantNoLock(RubyGlobalScope autoloadScope, string/*!*/ name, out object value) {
+        internal bool TryResolveConstantNoLock(RubyGlobalScope autoloadScope, string/*!*/ name, out ConstantStorage value) {
             Context.RequiresClassHierarchyLock();
             return TryLookupConstantNoLock(true, true, autoloadScope, name, out value) != ConstantLookupResult.NotFound;
         }
@@ -1087,19 +990,15 @@ namespace IronRuby.Builtins {
             FoundAutoload = 2,
         }
 
-        private ConstantLookupResult TryLookupConstantNoLock(bool included, bool inherited, RubyGlobalScope autoloadScope, 
-            string/*!*/ name, out object value) {
+        private ConstantLookupResult TryLookupConstantNoLock(bool included, bool inherited, RubyGlobalScope autoloadScope,
+            string/*!*/ name, out ConstantStorage value) {
 
             Context.RequiresClassHierarchyLock();
             Debug.Assert(included || !inherited);
 
-            if (autoloadScope != null && autoloadScope.Context != Context) {
-                throw RubyExceptions.CreateTypeError(String.Format("Cannot autoload constants to a foreign runtime #{0}", autoloadScope.Context.RuntimeId));
-            }
-
-            value = null;
+            value = default(ConstantStorage);
             while (true) {
-                object result;
+                ConstantStorage result;
 
                 RubyModule owner = included ? 
                     TryResolveConstantNoAutoloadCheck(inherited, name, out result) :
@@ -1109,7 +1008,7 @@ namespace IronRuby.Builtins {
                     return ConstantLookupResult.NotFound;
                 }
 
-                var autoloaded = result as AutoloadedConstant;
+                var autoloaded = result.Value as AutoloadedConstant;
                 if (autoloaded == null) {
                     value = result;
                     return ConstantLookupResult.Found;
@@ -1117,6 +1016,10 @@ namespace IronRuby.Builtins {
 
                 if (autoloadScope == null) {
                     return ConstantLookupResult.FoundAutoload;
+                }
+
+                if (autoloadScope.Context != Context) {
+                    throw RubyExceptions.CreateTypeError(String.Format("Cannot autoload constants to a foreign runtime #{0}", autoloadScope.Context.RuntimeId));
                 }
 
                 // autoloaded constants are removed before the associated file is loaded:
@@ -1131,42 +1034,44 @@ namespace IronRuby.Builtins {
         }
 
         // Returns the owner of the constant or null if the constant is not found.
-        private RubyModule TryResolveConstantNoAutoloadCheck(bool inherited, string/*!*/ name, out object value) {
+        private RubyModule TryResolveConstantNoAutoloadCheck(bool inherited, string/*!*/ name, out ConstantStorage value) {
             Context.RequiresClassHierarchyLock();
 
-            object result = null; // C# closure doesn't capture "out" parameters
+            var storage = default(ConstantStorage);
             RubyModule owner = null;
-            if (ForEachAncestor(inherited, (module) => (owner = module).TryGetConstantNoAutoloadCheck(name, out result))) {
-                value = result;
+            if (ForEachAncestor(inherited, (module) => (owner = module).TryGetConstantNoAutoloadCheck(name, out storage))) {
+                value = storage;
                 return owner;
             } else {
-                value = null;
+                value = storage;
                 return null;
             }
         }
 
         // Returns the owner of the constant (this module) or null if the constant is not found.
-        internal bool TryGetConstantNoAutoloadCheck(string/*!*/ name, out object value) {
+        internal bool TryGetConstantNoAutoloadCheck(string/*!*/ name, out ConstantStorage storage) {
             Context.RequiresClassHierarchyLock();
 
             InitializeConstantsNoLock();
 
-            if (_constants.TryGetValue(name, out value)) {
-                if (value == RemovedConstant) {
-                    value = null;
+            if (_constants.TryGetValue(name, out storage)) {
+                if (storage.IsRemoved) {
+                    storage = default(ConstantStorage);
                     return false;
+                } else {
+                    return true;
                 }
-                return true;
             }
 
             if (_namespaceTracker != null) {
+                object value;
                 if (_namespaceTracker.TryGetValue(SymbolTable.StringToId(name), out value)) {
-                    value = _context.TrackerToModule(value);
+                    storage = new ConstantStorage( _context.TrackerToModule(value));
                     return true;
                 }
-            } 
+            }
 
-            value = null;
+            storage = default(ConstantStorage);
             return false;
         }
 
@@ -1183,22 +1088,27 @@ namespace IronRuby.Builtins {
             InitializeConstantsNoLock();
 
             bool result;
-            if (_constants.TryGetValue(name, out value)) {
-                if (value == RemovedConstant) {
+            ConstantStorage storage;
+            if (_constants.TryGetValue(name, out storage)) {
+                if (storage.IsRemoved) {
                     value = null;
                     return false;
+                } else {
+                    value = storage.Value;
+                    result = true;
                 }
-
-                result = true;
             } else {
+                value = null;
                 result = false;
             }
 
             if (_namespaceTracker != null && _namespaceTracker.TryGetValue(SymbolTable.StringToId(name), out value)) {
-                _constants[name] = RemovedConstant;
+                _constants[name] = ConstantStorage.Removed;
+                _context.ConstantAccessVersion++;
                 result = true;
             } else if (result) {
                 _constants.Remove(name);
+                _context.ConstantAccessVersion++;
             }
 
             return result;
@@ -1209,8 +1119,10 @@ namespace IronRuby.Builtins {
 
             InitializeConstantsNoLock();
 
-            foreach (KeyValuePair<string, object> constant in _constants) {
-                if (constant.Value != RemovedConstant && action(this, constant.Key, constant.Value)) {
+            foreach (var constant in _constants) {
+                var name = constant.Key;
+                var storage = constant.Value;
+                if (!storage.IsRemoved && action(this, name, storage.Value)) {
                     return true;
                 }
             }
@@ -1674,7 +1586,6 @@ namespace IronRuby.Builtins {
 
         internal bool TryGetMethod(string/*!*/ name, ref bool skipHidden, bool virtualLookup, out RubyMemberInfo method) {
             Context.RequiresClassHierarchyLock();
-            Assert.NotNull(name);
             Debug.Assert(_methods != null);
 
             // lookup Ruby method first:    
@@ -1684,7 +1595,8 @@ namespace IronRuby.Builtins {
 
             if (virtualLookup) {
                 string mangled;
-                if ((mangled = RubyUtils.TryMangleName(name)) != null && TryGetDefinedMethod(mangled, ref skipHidden, out method)
+                // TODO: set/get_FooBar??
+                if ((mangled = RubyUtils.TryMangleMethodName(name)) != null && TryGetDefinedMethod(mangled, ref skipHidden, out method)
                     && method.IsRubyMember) {
                     return true;
                 }
@@ -1961,6 +1873,7 @@ namespace IronRuby.Builtins {
             }
 
             MixinsUpdated(_mixins, _mixins = expanded);
+            _context.ConstantAccessVersion++;
         }
 
         internal void InitializeNewMixin(RubyModule/*!*/ mixin) {

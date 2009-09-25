@@ -19,7 +19,9 @@ using MSA = System.Linq.Expressions;
 using MSA = Microsoft.Scripting.Ast;
 #endif
 
+using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Utils;
 using IronRuby.Runtime;
@@ -84,7 +86,7 @@ namespace IronRuby.Compiler.Ast {
 
             gen.EnterLoop(redoVariable, resultVariable, breakLabel, continueLabel);
             MSA.Expression transformedBody = gen.TransformStatements(_statements, ResultOperation.Ignore);
-            MSA.Expression transformedCondition = AstFactory.IsTrue(_condition.TransformRead(gen));
+            MSA.Expression transformedCondition = _condition.TransformCondition(gen, true);
             gen.LeaveLoop();
 
             MSA.Expression conditionPositiveStmt, conditionNegativeStmt;
@@ -97,7 +99,8 @@ namespace IronRuby.Compiler.Ast {
             }
 
             // make the loop first:
-            MSA.Expression loop = Ast.Block(
+            MSA.Expression loop = new AstBlock(null) {
+                gen.ClearDebugInfo(),
                 Ast.Assign(redoVariable, AstUtils.Constant(_isPostTest)),
 
                 AstFactory.Infinite(breakLabel, continueLabel,
@@ -125,8 +128,9 @@ namespace IronRuby.Compiler.Ast {
                         Ast.Break(breakLabel)
                     )
                 ),
-                AstUtils.Empty()
-            );
+                gen.ClearDebugInfo(),
+                AstUtils.Empty(),
+            };
 
             // wrap it to try finally that updates RFC state:
             if (!isInnerLoop) {
@@ -140,5 +144,10 @@ namespace IronRuby.Compiler.Ast {
 
             return AstFactory.Block(loop, resultVariable);
         }
+
+        internal override MSA.Expression/*!*/ Transform(AstGenerator/*!*/ gen) {
+            // do not mark a sequence point wrapping the entire node:
+            return TransformRead(gen);
+        }        
     }
 }

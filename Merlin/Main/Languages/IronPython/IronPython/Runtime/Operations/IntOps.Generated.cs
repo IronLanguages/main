@@ -258,6 +258,9 @@ namespace IronPython.Runtime.Operations {
         public static SByte Getdenominator(SByte x) {
             return (SByte)1;
         }
+        public static string __hex__(SByte value) {
+            return BigIntegerOps.__hex__(value);
+        }
     }
 
     public static partial class ByteOps {
@@ -568,6 +571,9 @@ namespace IronPython.Runtime.Operations {
         public static Byte Getdenominator(Byte x) {
             return (Byte)1;
         }
+        public static string __hex__(Byte value) {
+            return BigIntegerOps.__hex__(value);
+        }
     }
 
     public static partial class Int16Ops {
@@ -803,6 +809,9 @@ namespace IronPython.Runtime.Operations {
         [PropertyMethod, SpecialName]
         public static Int16 Getdenominator(Int16 x) {
             return (Int16)1;
+        }
+        public static string __hex__(Int16 value) {
+            return BigIntegerOps.__hex__(value);
         }
     }
 
@@ -1119,6 +1128,9 @@ namespace IronPython.Runtime.Operations {
         [PropertyMethod, SpecialName]
         public static UInt16 Getdenominator(UInt16 x) {
             return (UInt16)1;
+        }
+        public static string __hex__(UInt16 value) {
+            return BigIntegerOps.__hex__(value);
         }
     }
 
@@ -1613,6 +1625,9 @@ namespace IronPython.Runtime.Operations {
         public static UInt32 Getdenominator(UInt32 x) {
             return (UInt32)1;
         }
+        public static string __hex__(UInt32 value) {
+            return BigIntegerOps.__hex__(value);
+        }
     }
 
     public static partial class Int64Ops {
@@ -1852,6 +1867,9 @@ namespace IronPython.Runtime.Operations {
         [PropertyMethod, SpecialName]
         public static Int64 Getdenominator(Int64 x) {
             return (Int64)1;
+        }
+        public static string __hex__(Int64 value) {
+            return BigIntegerOps.__hex__(value);
         }
     }
 
@@ -2174,6 +2192,9 @@ namespace IronPython.Runtime.Operations {
         [PropertyMethod, SpecialName]
         public static UInt64 Getdenominator(UInt64 x) {
             return (UInt64)1;
+        }
+        public static string __hex__(UInt64 value) {
+            return BigIntegerOps.__hex__(value);
         }
     }
 

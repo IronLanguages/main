@@ -68,6 +68,11 @@ namespace IronRuby.Compiler.Ast {
             _ensureStatements = ensureStatements;
         }
 
+        internal override MSA.Expression/*!*/ Transform(AstGenerator/*!*/ gen) {
+            // do not mark a sequence point wrapping the entire block:
+            return TransformRead(gen);
+        }
+
         internal override MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen) {
             Assert.NotNull(gen);
 

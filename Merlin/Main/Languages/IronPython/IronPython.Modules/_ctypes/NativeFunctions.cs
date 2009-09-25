@@ -37,19 +37,54 @@ namespace IronPython.Modules {
         public static extern bool FreeLibrary(IntPtr hModule);
 
         [DllImport("kernel32.dll")]
-        public static extern IntPtr LoadLibrary(string lpFileName);
+        private static extern IntPtr LoadLibrary(string lpFileName);
 
         [DllImport("kernel32.dll", SetLastError = true)]
         public static extern void SetLastError(int errorCode);
 
         [DllImport("kernel32.dll")]
-        public static extern IntPtr GetProcAddress(IntPtr module, string lpFileName);
+        private static extern IntPtr GetProcAddress(IntPtr module, string lpFileName);
 
         [DllImport("kernel32.dll")]
-        public static extern IntPtr GetProcAddress(IntPtr module, IntPtr ordinal);
+        private static extern IntPtr GetProcAddress(IntPtr module, IntPtr ordinal);
 
         [DllImport("kernel32.dll")]
         public static extern void CopyMemory(IntPtr destination, IntPtr source, IntPtr Length);
+
+        // unix entry points, VM needs to map the filenames.
+        [DllImport("libdl.so")]
+        private static extern IntPtr dlopen(string filename, int flags);
+
+        [DllImport("libdl.so")]
+        private static extern IntPtr dlsym(IntPtr handle, string symbol);
+
+        public static IntPtr LoadDLL(string filename, int flags) {
+            if (Environment.OSVersion.Platform == PlatformID.Unix ||
+                Environment.OSVersion.Platform == PlatformID.MacOSX) {
+                return dlopen(filename, flags);
+            }
+
+            return LoadLibrary(filename);
+        }
+
+        public static IntPtr LoadFunction(IntPtr module, string functionName) {
+            if (Environment.OSVersion.Platform == PlatformID.Unix ||
+                Environment.OSVersion.Platform == PlatformID.MacOSX) {
+                return dlsym(module, functionName);
+            }
+
+            return GetProcAddress(module, functionName);
+        }
+
+        public static IntPtr LoadFunction(IntPtr module, IntPtr ordinal) {
+            if (Environment.OSVersion.Platform == PlatformID.Unix ||
+                Environment.OSVersion.Platform == PlatformID.MacOSX) {
+                return IntPtr.Zero;
+            }
+
+            return GetProcAddress(module, ordinal);
+
+        }
 
         /// <summary>
         /// Allocates memory that's zero-filled

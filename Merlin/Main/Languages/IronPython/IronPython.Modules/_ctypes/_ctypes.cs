@@ -183,12 +183,17 @@ namespace IronPython.Modules {
         }
 
         public static object LoadLibrary(string library, [DefaultParameterValue(0)]int mode) {
-            IntPtr res = NativeFunctions.LoadLibrary(library);
+            IntPtr res = NativeFunctions.LoadDLL(library, mode);
             if (res == IntPtr.Zero) {
                 throw PythonOps.OSError("cannot load library {0}", library);
             }
 
             return res.ToPython();
+        }
+
+        // Provided for Posix compat.
+        public static object dlopen(string library, [DefaultParameterValue(0)]int mode) {
+            return LoadLibrary(library, mode);
         }
 
         /// <summary>

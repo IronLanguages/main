@@ -203,7 +203,7 @@ namespace IronPython.Runtime.Binding {
                     Debug.Assert(res.LimitType == typeof(int));
                     break;
                 case PythonOperationKind.GetEnumeratorForIteration:
-                    res = BindingHelpers.AddPythonBoxing(MakeEnumeratorOperation(operation, args[0]));
+                    res = MakeEnumeratorOperation(operation, args[0]);
                     break;
                 case PythonOperationKind.NotRetObject:
                     res = MakeUnaryNotOperation(operation, args[0], typeof(object));
@@ -489,11 +489,11 @@ namespace IronPython.Runtime.Binding {
 
                 return new DynamicMetaObject(
                     Expression.Call(
+                        typeof(PythonOps).GetMethod("GetEnumeratorFromEnumerable"),
                         Expression.Convert(
                             self.Expression,
                             typeof(IEnumerable)
-                        ),
-                        typeof(IEnumerable).GetMethod("GetEnumerator")
+                        )
                     ),
                     self.Restrictions
                 );
@@ -501,9 +501,11 @@ namespace IronPython.Runtime.Binding {
             } else if (self.Value is IEnumerator ||                              // check for COM object (and fast check when we have values)
                     typeof(IEnumerator).IsAssignableFrom(self.GetLimitType())) { // check if we don't have a value
                 DynamicMetaObject ieres = new DynamicMetaObject(
-                    Ast.Convert(
-                        self.Expression,
-                        typeof(IEnumerator)
+                    MakeEnumeratorResult(
+                        Ast.Convert(
+                            self.Expression,
+                            typeof(IEnumerator)
+                        )
                     ),
                     self.Restrict(self.GetLimitType()).Restrictions
                 );
@@ -511,9 +513,11 @@ namespace IronPython.Runtime.Binding {
 #if !SILVERLIGHT
                 if (Microsoft.Scripting.ComInterop.ComBinder.IsComObject(self.Value)) {
                     ieres = new DynamicMetaObject(
-                        Expression.Convert(
-                             self.Expression,
-                             typeof(IEnumerator)
+                         MakeEnumeratorResult(
+                                Expression.Convert(
+                                 self.Expression,
+                                 typeof(IEnumerator)
+                             )
                          ),
                          ieres.Restrictions.Merge(
                             BindingRestrictions.GetExpressionRestriction(
@@ -546,7 +550,7 @@ namespace IronPython.Runtime.Binding {
                             Ast.Assign(tmp, res.Expression),
                             AstUtils.Constant(null)
                         ),
-                        tmp,
+                        MakeEnumeratorResult(tmp),
                         Ast.Call(
                             typeof(PythonOps).GetMethod("ThrowTypeErrorForBadIteration"),
                             PythonContext.GetCodeContext(operation),
@@ -555,6 +559,14 @@ namespace IronPython.Runtime.Binding {
                     )
                 ),
                 res.Restrictions
+            );
+        }
+
+        private static NewExpression MakeEnumeratorResult(Expression tmp) {
+            return Expression.New(
+                typeof(KeyValuePair<IEnumerator, IDisposable>).GetConstructor(new[] { typeof(IEnumerator), typeof(IDisposable) }),
+                tmp,
+                Expression.Constant(null, typeof(IDisposable))
             );
         }
 
@@ -1493,9 +1505,7 @@ namespace IronPython.Runtime.Binding {
             // make the Callable object which does the actual call to the function or slot
             Callable callable = Callable.MakeCallable(state, op, itemFunc, itemSlot);
             if (callable == null) {
-                DynamicMetaObject[] newTypes = (DynamicMetaObject[])types.Clone();
-                newTypes[0] = indexedType;
-                return TypeError(operation, "'{0}' object is unsubscriptable", newTypes);
+                return MakeUnindexableError(operation, op, types, indexedType, state);
             }
 
             // prepare the arguments and make the builder which will
@@ -1531,6 +1541,24 @@ namespace IronPython.Runtime.Binding {
             }
 
             return builder.MakeRule(state, args);
+        }
+
+        private static DynamicMetaObject MakeUnindexableError(DynamicMetaObjectBinder operation, PythonIndexType op, DynamicMetaObject/*!*/[] types, DynamicMetaObject indexedType, PythonContext state) {
+            DynamicMetaObject[] newTypes = (DynamicMetaObject[])types.Clone();
+            newTypes[0] = indexedType;
+
+            PythonTypeSlot dummySlot;
+            if (op != PythonIndexType.GetItem &&
+                op != PythonIndexType.GetSlice &&
+                DynamicHelpers.GetPythonType(indexedType.Value).TryResolveSlot(state.SharedContext, "__getitem__", out dummySlot)) {
+                // object supports indexing but not setting/deletion
+                if (op == PythonIndexType.SetItem || op == PythonIndexType.SetSlice) {
+                    return TypeError(operation, "'{0}' object does not support item assignment", newTypes);
+                } else {
+                    return TypeError(operation, "'{0}' object doesn't support item deletion", newTypes);
+                }
+            }
+            return TypeError(operation, "'{0}' object is unsubscriptable", newTypes);
         }
 
         /// <summary>

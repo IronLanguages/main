@@ -375,8 +375,8 @@ namespace IronRuby.Runtime {
             }
         }
 
-        [Emitted] 
-        public static object YieldSplat0(object splattee, object self, BlockParam/*!*/ blockParam) {
+        [Emitted]
+        public static object YieldSplat0(IList/*!*/ splattee, object self, BlockParam/*!*/ blockParam) {
             object result;
             var proc = blockParam.Proc;
             try {
@@ -389,7 +389,7 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted] 
-        public static object YieldSplat1(object arg1, object splattee, object self, BlockParam/*!*/ blockParam) {
+        public static object YieldSplat1(object arg1, IList/*!*/ splattee, object self, BlockParam/*!*/ blockParam) {
             object result;
             var proc = blockParam.Proc;
             try {
@@ -401,8 +401,8 @@ namespace IronRuby.Runtime {
             return result;
         }
 
-        [Emitted] 
-        public static object YieldSplat2(object arg1, object arg2, object splattee, object self, BlockParam/*!*/ blockParam) {
+        [Emitted]
+        public static object YieldSplat2(object arg1, object arg2, IList/*!*/ splattee, object self, BlockParam/*!*/ blockParam) {
             object result;
             var proc = blockParam.Proc;
             try {
@@ -414,8 +414,8 @@ namespace IronRuby.Runtime {
             return result;
         }
 
-        [Emitted] 
-        public static object YieldSplat3(object arg1, object arg2, object arg3, object splattee, object self, BlockParam/*!*/ blockParam) {
+        [Emitted]
+        public static object YieldSplat3(object arg1, object arg2, object arg3, IList/*!*/ splattee, object self, BlockParam/*!*/ blockParam) {
             object result;
             var proc = blockParam.Proc;
             try {
@@ -427,8 +427,8 @@ namespace IronRuby.Runtime {
             return result;
         }
 
-        [Emitted] 
-        public static object YieldSplat4(object arg1, object arg2, object arg3, object arg4, object splattee, object self, BlockParam/*!*/ blockParam) {
+        [Emitted]
+        public static object YieldSplat4(object arg1, object arg2, object arg3, object arg4, IList/*!*/ splattee, object self, BlockParam/*!*/ blockParam) {
             object result;
             var proc = blockParam.Proc;
             try {
@@ -440,8 +440,8 @@ namespace IronRuby.Runtime {
             return result;
         }
 
-        [Emitted] 
-        public static object YieldSplatN(object[]/*!*/ args, object splattee, object self, BlockParam/*!*/ blockParam) {
+        [Emitted]
+        public static object YieldSplatN(object[]/*!*/ args, IList/*!*/ splattee, object self, BlockParam/*!*/ blockParam) {
             object result;
             var proc = blockParam.Proc;
             try {
@@ -453,8 +453,8 @@ namespace IronRuby.Runtime {
             return result;
         }
 
-        [Emitted] 
-        public static object YieldSplatNRhs(object[]/*!*/ args, object splattee, object rhs, object self, BlockParam/*!*/ blockParam) {
+        [Emitted]
+        public static object YieldSplatNRhs(object[]/*!*/ args, IList/*!*/ splattee, object rhs, object self, BlockParam/*!*/ blockParam) {
             object result;
             var proc = blockParam.Proc;
             try {
@@ -600,16 +600,16 @@ namespace IronRuby.Runtime {
 
         [Emitted]
         public static RubyModule/*!*/ DefineModule(RubyScope/*!*/ scope, object target, string/*!*/ name) {
-            return DefineModule(scope, RubyUtils.GetModuleFromObject(scope.RubyContext, target), name);
+            return DefineModule(scope, RubyUtils.GetModuleFromObject(scope, target), name);
         }
 
         // thread-safe:
         private static RubyModule/*!*/ DefineModule(RubyScope/*!*/ scope, RubyModule/*!*/ owner, string/*!*/ name) {
             Assert.NotNull(scope, owner);
 
-            object existing;
+            ConstantStorage existing;
             if (owner.TryGetConstant(scope.GlobalScope, name, out existing)) {
-                RubyModule module = existing as RubyModule;
+                RubyModule module = existing.Value as RubyModule;
                 if (module == null || module.IsClass) {
                     throw RubyExceptions.CreateTypeError(String.Format("{0} is not a module", name));
                 }
@@ -644,7 +644,7 @@ namespace IronRuby.Runtime {
 
         [Emitted]
         public static RubyModule/*!*/ DefineClass(RubyScope/*!*/ scope, object target, string/*!*/ name, object superClassObject) {
-            return DefineClass(scope, RubyUtils.GetModuleFromObject(scope.RubyContext, target), name, superClassObject);
+            return DefineClass(scope, RubyUtils.GetModuleFromObject(scope, target), name, superClassObject);
         }
 
         // thread-safe:
@@ -652,12 +652,12 @@ namespace IronRuby.Runtime {
             Assert.NotNull(owner);
             RubyClass superClass = ToSuperClass(owner.Context, superClassObject);
 
-            object existing;
+            ConstantStorage existing;
             if (owner.IsObjectClass
                 ? owner.TryResolveConstant(scope.GlobalScope, name, out existing)
                 : owner.TryGetConstant(scope.GlobalScope, name, out existing)) {
 
-                RubyClass cls = existing as RubyClass;
+                RubyClass cls = existing.Value as RubyClass;
                 if (cls == null || !cls.IsClass) {
                     throw RubyExceptions.CreateTypeError(String.Format("{0} is not a class", name));
                 }
@@ -692,42 +692,318 @@ namespace IronRuby.Runtime {
 
         #region Constants
 
-        [Emitted] // ConstantVariable:
-        public static object GetGlobalConstant(RubyScope/*!*/ scope, string/*!*/ name) {
-            return RubyUtils.GetConstant(scope.GlobalScope, scope.RubyContext.ObjectClass, name, false);
+        /// <summary>
+        /// A
+        /// ::A
+        /// </summary>
+        [Emitted]
+        public static object GetUnqualifiedConstant(RubyScope/*!*/ scope, ConstantSiteCache/*!*/ cache, string/*!*/ name, bool isGlobal) {
+            object result = null;
+            RubyModule missingConstantOwner;
+            var context = scope.RubyContext;
+            using (context.ClassHierarchyLocker()) {
+                // Thread safety:
+                // Another thread could have already updated the value, so the site version might be the same as CAV.
+                // We do the lookup anyways since it is no-op and this only happens rarely.
+                //
+                // An important invariant holds here: in any time after initialized for the first time the Value field contains a valid value.
+                // Threads can read an older value (the previous version) but that is still correct since we don't guarantee immediate
+                // propagation of the constant write to all readers.
+                // 
+                // if (site.Version = CAV) {
+                //   <- another thread could increment CAV here - we may return old or new value (both are ok)
+                //   value = site.Value;
+                // } else {
+                //   <- another thread could get here as well and update the site before we get to update it.
+                //   GetConstant(...)
+                // }
+
+                // Constants might be updated during constant resolution due to autoload. 
+                // Any such updates need to invalidate the cache hence we need to capture the version before resolving the constant.
+                int newVersion = context.ConstantAccessVersion;
+
+                ConstantStorage storage;
+                if (!isGlobal) {
+                    missingConstantOwner = scope.TryResolveConstantNoLock(scope.GlobalScope, name, out storage);
+                } else if (context.ObjectClass.TryResolveConstantNoLock(scope.GlobalScope, name, out storage)) {
+                    missingConstantOwner = null;
+                } else {
+                    missingConstantOwner = context.ObjectClass;
+                }
+
+                object newCacheValue;
+                if (missingConstantOwner == null) {
+                    if (storage.WeakValue != null) {
+                        result = storage.Value;
+                        newCacheValue = storage.WeakValue;
+                    } else {
+                        result = newCacheValue = storage.Value;
+                    }
+                } else {
+                    newCacheValue = ConstantSiteCache.WeakMissingConstant;
+                }
+
+                cache.Update(newCacheValue, newVersion);
+            }
+
+            if (missingConstantOwner != null) {
+                result = missingConstantOwner.ConstantMissing(name);
+            }
+
+            return result;
         }
 
-        [Emitted] // ConstantVariable:
-        public static object GetUnqualifiedConstant(RubyScope/*!*/ scope, string/*!*/ name) {
-            return scope.ResolveConstant(true, name);
+        /// <summary>
+        /// A1::..::AN
+        /// ::A1::..::AN
+        /// </summary>
+        [Emitted]
+        public static object GetQualifiedConstant(RubyScope/*!*/ scope, ConstantSiteCache/*!*/ cache, string/*!*/[]/*!*/ qualifiedName, bool isGlobal) {
+            var globalScope = scope.GlobalScope;
+            var context = globalScope.Context;
+
+            using (context.ClassHierarchyLocker()) {
+                int newVersion = context.ConstantAccessVersion;
+                
+                ConstantStorage storage;
+                bool anyMissing;
+                RubyModule topModule = isGlobal ? context.ObjectClass : null;
+                object result = ResolveQualifiedConstant(scope, qualifiedName, topModule, true, out storage, out anyMissing);
+
+                // cache result only if no constant was missing:
+                if (!anyMissing) {
+                    Debug.Assert(result == storage.Value);
+                    cache.Update(storage.WeakValue ?? result, newVersion);
+                }
+
+                return result;
+            }
         }
 
-        [Emitted] // ConstantVariable:
-        public static object GetQualifiedConstant(object target, RubyScope/*!*/ scope, string/*!*/ name) {
-            return RubyUtils.GetConstant(scope.GlobalScope, RubyUtils.GetModuleFromObject(scope.RubyContext, target), name, false);
+        /// <summary>
+        /// {expr}::A1::..::AN
+        /// </summary>
+        [Emitted]
+        public static object GetExpressionQualifiedConstant(object target, RubyScope/*!*/ scope, ExpressionQualifiedConstantSiteCache/*!*/ cache,
+            string/*!*/[]/*!*/ qualifiedName) {
+            RubyModule module = target as RubyModule;
+            if (module == null) {
+                throw RubyUtils.CreateNotModuleException(scope, target);
+            }
+
+            var condition = cache.Condition;
+            RubyContext context = module.Context;
+
+            // Note that the module can be bound to another runtime:
+            if (module.Id == condition.ModuleId && context.ConstantAccessVersion == condition.Version) {
+                object value = cache.Value;
+                if (value.GetType() == typeof(WeakReference)) {
+                    return ((WeakReference)value).Target;
+                } else {
+                    return value;
+                }
+            }
+
+            using (context.ClassHierarchyLocker()) {
+                int newVersion = context.ConstantAccessVersion;
+                
+                ConstantStorage storage;
+                bool anyMissing;
+                object result = ResolveQualifiedConstant(scope, qualifiedName, module, true, out storage, out anyMissing);
+
+                // cache result only if no constant was missing:
+                if (!anyMissing) {
+                    Debug.Assert(result == storage.Value);
+                    cache.Update(storage.WeakValue ?? result, newVersion, module);
+                }
+
+                return result;
+            }
         }
 
-
-        [Emitted] // ConstantVariable:
-        public static bool IsDefinedGlobalConstant(RubyScope/*!*/ scope, string/*!*/ name) {
-            object result;
-            return scope.RubyContext.ObjectClass.TryResolveConstantNoAutoload(name, out result);
+        /// <summary>
+        /// defined? A
+        /// </summary>
+        [Emitted]
+        public static bool IsDefinedUnqualifiedConstant(RubyScope/*!*/ scope, IsDefinedConstantSiteCache/*!*/ cache, string/*!*/ name) {
+            var context = scope.RubyContext;
+            using (context.ClassHierarchyLocker()) {
+                int newVersion = context.ConstantAccessVersion;
+                
+                ConstantStorage storage;
+                bool exists = scope.TryResolveConstantNoLock(null, name, out storage) == null;
+                cache.Update(exists, newVersion);
+                return exists;
+            }
         }
 
-        [Emitted] // ConstantVariable:
-        public static bool IsDefinedUnqualifiedConstant(RubyScope/*!*/ scope, string/*!*/ name) {
-            object result;
-            return scope.TryResolveConstant(false, name, out result);
+        /// <summary>
+        /// defined? ::A
+        /// </summary>
+        [Emitted]
+        public static bool IsDefinedGlobalConstant(RubyScope/*!*/ scope, IsDefinedConstantSiteCache/*!*/ cache, string/*!*/ name) {
+            var context = scope.RubyContext;
+            using (context.ClassHierarchyLocker()) {
+                int newVersion = context.ConstantAccessVersion;
+
+                ConstantStorage storage;
+                bool exists = context.ObjectClass.TryResolveConstantNoLock(null, name, out storage);
+                cache.Update(exists, newVersion);
+                return exists;
+            }
         }
 
-        [Emitted] // ConstantVariable:
-        public static bool IsDefinedQualifiedConstant(object target, RubyScope/*!*/ scope, string/*!*/ name) {
-            object result;
+        /// <summary>
+        /// defined? A1::..::AN
+        /// defined? ::A1::..::AN
+        /// </summary>
+        [Emitted]
+        public static bool IsDefinedQualifiedConstant(RubyScope/*!*/ scope, IsDefinedConstantSiteCache/*!*/ cache,
+            string/*!*/[]/*!*/ qualifiedName, bool isGlobal) {
+
+            var context = scope.RubyContext;
+            using (context.ClassHierarchyLocker()) {
+                int newVersion = context.ConstantAccessVersion;
+
+                ConstantStorage storage;
+                bool anyMissing;
+                RubyModule topModule = isGlobal ? context.ObjectClass : null;
+                RubyModule owner;
+                try {
+                    owner = ResolveQualifiedConstant(scope, qualifiedName, topModule, false, out storage, out anyMissing) as RubyModule;
+                } catch {
+                    // autoload can raise an exception
+                    return false;
+                }
+                
+                // Note that the owner could be another runtime's module:
+                bool exists = owner != null && owner.TryResolveConstant(context, null, qualifiedName[qualifiedName.Length - 1], out storage);
+                
+                // cache result only if no constant was missing:
+                if (!anyMissing) {
+                    cache.Update(exists, newVersion);
+                }
+
+                return exists;
+            }
+        }
+
+        /// <summary>
+        /// defined? {expr}::A
+        /// defined? {expr}::A1::..::AN
+        /// </summary>
+        [Emitted]
+        public static bool IsDefinedExpressionQualifiedConstant(object target, RubyScope/*!*/ scope,
+            ExpressionQualifiedIsDefinedConstantSiteCache/*!*/ cache, string/*!*/[]/*!*/ qualifiedName) {
+
             RubyModule module = target as RubyModule;
             if (module == null) {
                 return false;
             }
-            return module.TryResolveConstantNoAutoload(name, out result);
+
+            var condition = cache.Condition;
+            RubyContext context = module.Context;
+
+            // Note that the module can be bound to another runtime:
+            if (module.Id == condition.ModuleId && context.ConstantAccessVersion == condition.Version) {
+                return cache.Value;
+            }
+
+            using (context.ClassHierarchyLocker()) {
+                int newVersion = context.ConstantAccessVersion;
+
+                ConstantStorage storage;
+                bool exists;
+                if (qualifiedName.Length == 1) {
+                    // Note that the owner could be another runtime's module:
+                    exists = module.TryResolveConstant(context, null, qualifiedName[0], out storage);
+                } else {
+                    bool anyMissing;
+                    RubyModule owner;
+                    try {
+                        owner = ResolveQualifiedConstant(scope, qualifiedName, module, false, out storage, out anyMissing) as RubyModule;
+                    } catch {
+                        // autoload can raise an exception:
+                        return false;
+                    }
+
+                    // Note that the owner could be another runtime's module:
+                    exists = owner != null && owner.TryResolveConstant(context, null, qualifiedName[qualifiedName.Length - 1], out storage);
+
+                    // cache result only if no constant was missing:
+                    if (anyMissing) {
+                        return exists;
+                    } 
+                }
+
+                cache.Update(exists, newVersion, module);
+                return exists;
+            }
+        }
+
+        private static object ResolveQualifiedConstant(RubyScope/*!*/ scope, string/*!*/[]/*!*/ qualifiedName, RubyModule topModule, bool isGet,
+            out ConstantStorage storage, out bool anyMissing) {
+
+            Debug.Assert(qualifiedName.Length >= 2 || qualifiedName.Length == 1 && isGet);
+            RubyContext context = scope.RubyContext;
+            context.RequiresClassHierarchyLock();
+
+            RubyModule missingConstantOwner;
+            RubyGlobalScope globalScope = scope.GlobalScope;
+            int nameCount = (isGet) ? qualifiedName.Length : qualifiedName.Length - 1;
+
+            string name = qualifiedName[0];
+            if (topModule == null) {
+                missingConstantOwner = scope.TryResolveConstantNoLock(globalScope, name, out storage);
+            } else if (topModule.TryResolveConstant(context, globalScope, name, out storage)) {
+                missingConstantOwner = null;
+            } else {
+                missingConstantOwner = topModule;
+            }
+
+            object result;
+            if (missingConstantOwner == null) {
+                result = storage.Value;
+                anyMissing = false;
+            } else {
+                anyMissing = true;
+                using (context.ClassHierarchyUnlocker()) {
+                    result = missingConstantOwner.ConstantMissing(name);
+                }
+            }
+
+            for (int i = 1; i < nameCount; i++) {
+                RubyModule owner = RubyUtils.GetModuleFromObject(scope, result);
+                // Note that the owner could be another runtime's module:
+                name = qualifiedName[i];
+                if (owner.TryResolveConstant(context, globalScope, name, out storage)) {
+                    
+                    // Constant write updates constant version in a single runtime only. 
+                    // Therefore if the chain mixes modules from different runtimes we cannot cache the result.
+                    if (owner.Context != context) {
+                        anyMissing = true;
+                    }
+                    
+                    result = storage.Value;
+                } else {
+                    anyMissing = true;
+                    using (context.ClassHierarchyUnlocker()) {
+                        result = owner.ConstantMissing(name);
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        [Emitted]
+        public static object GetMissingConstant(RubyScope/*!*/ scope, ConstantSiteCache/*!*/ cache, string/*!*/ name) {
+            return scope.GetInnerMostModuleForConstantLookup().ConstantMissing(name);
+        }
+
+        [Emitted]
+        public static object GetGlobalMissingConstant(RubyScope/*!*/ scope, ConstantSiteCache/*!*/ cache, string/*!*/ name) {
+            return scope.RubyContext.ObjectClass.ConstantMissing(name);
         }
 
 
@@ -745,7 +1021,7 @@ namespace IronRuby.Runtime {
 
         [Emitted] // ConstantVariable:
         public static object SetQualifiedConstant(object value, object target, RubyScope/*!*/ scope, string/*!*/ name) {
-            RubyUtils.SetConstant(RubyUtils.GetModuleFromObject(scope.RubyContext, target), name, value);
+            RubyUtils.SetConstant(RubyUtils.GetModuleFromObject(scope, target), name, value);
             return value;
         }
 
@@ -831,24 +1107,13 @@ namespace IronRuby.Runtime {
         #region Array
 
         [Emitted]
-        public static IList/*!*/ SplatAppend(IList/*!*/ array, object splattee) {
-            IList list;
-
-            if ((list = splattee as IList) != null) {
-                Utils.AddRange(array, list);
-            } else {
-                array.Add(splattee);
-            }
+        public static IList/*!*/ SplatAppend(IList/*!*/ array, IList/*!*/ list) {
+            Utils.AddRange(array, list);
             return array;
         }
 
         [Emitted]
-        public static object Splat(object/*!*/ value) {
-            var list = value as IList;
-            if (list == null) {
-                return value;
-            }
-
+        public static object Splat(IList/*!*/ list) {
             if (list.Count <= 1) {
                 return (list.Count > 0) ? list[0] : null;
             }
@@ -857,24 +1122,19 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted]
-        public static object SplatPair(object value, object array) {
-            var list = array as IList;
-            if (list != null) {
-                if (list.Count == 0) {
-                    return value;
-                }
-
-                RubyArray result = new RubyArray(list.Count + 1);
-                result.Add(value);
-                result.AddRange(list);
-                return result;
+        public static object SplatPair(object value, IList/*!*/ list) {
+            if (list.Count == 0) {
+                return value;
             }
 
-            return MakeArray2(value, array);
+            RubyArray result = new RubyArray(list.Count + 1);
+            result.Add(value);
+            result.AddRange(list);
+            return result;
         }
 
         [Emitted]
-        public static IList/*!*/ Unsplat(object/*!*/ splattee) {
+        public static IList/*!*/ Unsplat(object splattee) {
             var list = splattee as IList;
             if (list == null) {
                 list = new RubyArray(1);
@@ -888,8 +1148,8 @@ namespace IronRuby.Runtime {
         public static bool ExistsUnsplat(CallSite<Func<CallSite, object, object, object>>/*!*/ comparisonSite, object splattee, object value) {
             var list = splattee as IList;
             if (list != null) {
-                foreach (var item in list) {
-                    if (IsTrue(comparisonSite.Target(comparisonSite, item, value))) {
+                for (int i = 0; i < list.Count; i++) {
+                    if (IsTrue(comparisonSite.Target(comparisonSite, list[i], value))) {
                         return true;
                     }
                 }
@@ -1023,19 +1283,19 @@ namespace IronRuby.Runtime {
 
         internal static bool TryGetGlobalScopeMethod(RubyContext/*!*/ context, Scope/*!*/ scope, string/*!*/ name, out object value) {
             string unmangled;
-            ScopeStorage scopeStorage = scope.Storage as ScopeStorage;
+            ScopeStorage scopeStorage = ((object)scope.Storage) as ScopeStorage;
             if (scopeStorage != null) {
                 return scopeStorage.TryGetValue(name, false, out value)
-                    || (unmangled = RubyUtils.TryUnmangleName(name)) != null && scopeStorage.TryGetValue(unmangled, false, out value);
+                    || (unmangled = RubyUtils.TryUnmangleMethodName(name)) != null && scopeStorage.TryGetValue(unmangled, false, out value);
             } else {
                 return context.Operations.TryGetMember(scope, name, out value)
-                    || (unmangled = RubyUtils.TryUnmangleName(name)) != null && context.Operations.TryGetMember(scope, unmangled, out value);
+                    || (unmangled = RubyUtils.TryUnmangleMethodName(name)) != null && context.Operations.TryGetMember(scope, unmangled, out value);
             }
         }
 
         internal static bool TryGetGlobalScopeConstant(RubyContext/*!*/ context, Scope/*!*/ scope, string/*!*/ name, out object value) {
             string mangled;
-            ScopeStorage scopeStorage = scope.Storage as ScopeStorage;
+            ScopeStorage scopeStorage = ((object)scope.Storage) as ScopeStorage;
             if (scopeStorage != null) {
                 return scopeStorage.TryGetValue(name, false, out value)
                     || (mangled = RubyUtils.TryMangleName(name)) != null && scopeStorage.TryGetValue(mangled, false, out value);
@@ -1047,7 +1307,7 @@ namespace IronRuby.Runtime {
 
         // TODO:
         internal static void ScopeSetMember(Scope scope, string name, object value) {
-            ScopeStorage scopeStorage = scope.Storage as ScopeStorage;
+            ScopeStorage scopeStorage = ((object)scope.Storage) as ScopeStorage;
             if (scopeStorage != null) {
                 scopeStorage.SetValue(name, false, value);
                 return;
@@ -1058,7 +1318,7 @@ namespace IronRuby.Runtime {
 
         // TODO:
         internal static bool ScopeContainsMember(Scope scope, string name) {
-            ScopeStorage scopeStorage = scope.Storage as ScopeStorage;
+            ScopeStorage scopeStorage = ((object)scope.Storage) as ScopeStorage;
             if (scopeStorage != null) {
                 return scopeStorage.HasValue(name, false);
             }
@@ -1068,7 +1328,7 @@ namespace IronRuby.Runtime {
 
         // TODO:
         internal static bool ScopeDeleteMember(Scope scope, string name) {
-            ScopeStorage scopeStorage = scope.Storage as ScopeStorage;
+            ScopeStorage scopeStorage = ((object)scope.Storage) as ScopeStorage;
             if (scopeStorage != null) {
                 return scopeStorage.DeleteValue(name, false);
             }
@@ -1078,7 +1338,7 @@ namespace IronRuby.Runtime {
 
         // TODO:
         internal static IList<KeyValuePair<string, object>> ScopeGetItems(Scope scope) {
-            ScopeStorage scopeStorage = scope.Storage as ScopeStorage;
+            ScopeStorage scopeStorage = ((object)scope.Storage) as ScopeStorage;
             if (scopeStorage != null) {
                 return scopeStorage.GetItems();
             }
@@ -1444,18 +1704,13 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted] //RescueClause:
-        public static bool CompareSplattedExceptions(BinaryOpStorage/*!*/ comparisonStorage, RubyScope/*!*/ scope, object classObjects) {
-            var list = classObjects as IList;
-            if (list != null) {
-                for (int i = 0; i < list.Count; i++) {
-                    if (CompareException(comparisonStorage, scope, list[i])) {
-                        return true;
-                    }
+        public static bool CompareSplattedExceptions(BinaryOpStorage/*!*/ comparisonStorage, RubyScope/*!*/ scope, IList/*!*/ classObjects) {
+            for (int i = 0; i < classObjects.Count; i++) {
+                if (CompareException(comparisonStorage, scope, classObjects[i])) {
+                    return true;
                 }
-                return false;
-            } else {
-                return CompareException(comparisonStorage, scope, classObjects);
             }
+            return false;
         }
 
         [Emitted] //RescueClause:

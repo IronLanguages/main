@@ -147,7 +147,7 @@ namespace IronPython.Modules {
 
             public SimpleCData in_dll(CodeContext/*!*/ context, object library, string name) {
                 IntPtr handle = GetHandleFromObject(library, "in_dll expected object with _handle attribute");
-                IntPtr addr = NativeFunctions.GetProcAddress(handle, name);
+                IntPtr addr = NativeFunctions.LoadFunction(handle, name);
                 if (addr == IntPtr.Zero) {
                     throw PythonOps.ValueError("{0} not found when attempting to load {1} from dll", name, Name);
                 }

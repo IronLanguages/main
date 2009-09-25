@@ -51,7 +51,7 @@ namespace Microsoft.Scripting {
 
         private const int InitialTableSize = 256;
         private static readonly Dictionary<int, string> _fieldDict = CreateFieldDictionary();
-        [MultiRuntimeAware]
+
         private static int _nextCaseInsensitiveId = 1;
 
         internal const int CaseVersionMask = unchecked((int)0xFF000000);
@@ -164,7 +164,7 @@ namespace Microsoft.Scripting {
             }
         }
 
-        internal static SymbolId StringToIdOrEmpty(string value) {
+        public static SymbolId StringToIdOrEmpty(string value) {
             if (value == null) {
                 return SymbolId.Empty;
             }

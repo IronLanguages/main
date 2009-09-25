@@ -35,6 +35,7 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
     
 namespace IronRuby.Compiler.Ast {
     using Ast = MSA.Expression;
+    using AstExpressions = ReadOnlyCollectionBuilder<MSA.Expression>;
     
     internal sealed class AstGenerator {
         private static int _UniqueId;
@@ -42,6 +43,7 @@ namespace IronRuby.Compiler.Ast {
         private readonly RubyContext/*!*/ _context;
         private readonly RubyCompilerOptions/*!*/ _compilerOptions;
         private readonly MSA.SymbolDocumentInfo _document;
+        private readonly MSA.Expression _sequencePointClearance;
         private readonly RubyEncoding/*!*/ _encoding;
         private readonly Profiler _profiler;
         private readonly bool _printInteractiveResult;
@@ -62,6 +64,7 @@ namespace IronRuby.Compiler.Ast {
             _debugMode = context.DomainManager.Configuration.DebugMode;
             _traceEnabled = context.RubyOptions.EnableTracing;
             _document = document;
+            _sequencePointClearance = (document != null) ? Ast.ClearDebugInfo(document) : null;
             _encoding = encoding;
             _profiler = context.RubyOptions.Profile ? Profiler.Instance : null;
             _savingToDisk = context.RubyOptions.SavePath != null;
@@ -624,12 +627,12 @@ namespace IronRuby.Compiler.Ast {
             }
         }
 
-        internal List<MSA.Expression>/*!*/ TranformExpressions(IList<Expression>/*!*/ arguments) {
+        internal AstExpressions/*!*/ TranformExpressions(IList<Expression>/*!*/ arguments) {
             Assert.NotNull(arguments);
-            return TranformExpressions(arguments, new List<MSA.Expression>(arguments.Count));
+            return TranformExpressions(arguments, new AstExpressions(arguments.Count));
         }
 
-        internal List<MSA.Expression>/*!*/ TranformExpressions(IList<Expression>/*!*/ arguments, List<MSA.Expression>/*!*/ result) {
+        internal AstExpressions/*!*/ TranformExpressions(IList<Expression>/*!*/ arguments, AstExpressions/*!*/ result) {
             Assert.NotNullItems(arguments);
             Assert.NotNull(result);
 
@@ -681,62 +684,68 @@ namespace IronRuby.Compiler.Ast {
                 }
 
             } else {
-                var result = new MSA.Expression[count + 1];
-                int resultIndex = 0;
+                var result = new AstExpressions(count + 1);
 
                 if (prologue != null) {
-                    result[resultIndex++] = prologue;
+                    result.Add(prologue);
                 }
 
                 // transform all but the last statement if it is an expression stmt:
                 foreach (var statement in statements.AllButLast) {
-                    result[resultIndex++] = statement.Transform(this);
+                    result.Add(statement.Transform(this));
                 }
 
                 if (statements.Count > 0) {
                     if (resultOperation.IsIgnore) {
-                        result[resultIndex++] = statements.Last.Transform(this);
+                        result.Add(statements.Last.Transform(this));
                     } else {
-                        result[resultIndex++] = statements.Last.TransformResult(this, resultOperation);
+                        result.Add(statements.Last.TransformResult(this, resultOperation));
                     }
                 }
 
                 if (epilogue != null) {
-                    result[resultIndex++] = epilogue;
+                    result.Add(epilogue);
                 }
 
-                result[resultIndex++] = AstUtils.Empty();
-                Debug.Assert(resultIndex == result.Length);
-
-                return Ast.Block(new ReadOnlyCollection<MSA.Expression>(result));
+                result.Add(AstUtils.Empty());
+                return Ast.Block(result);
             }
+        }
+
+        internal MSA.Expression/*!*/ TransformStatementsToBooleanExpression(Statements statements, bool positive) {
+            return TransformStatementsToExpression(statements, true, positive);
         }
 
         internal MSA.Expression/*!*/ TransformStatementsToExpression(Statements statements) {
+            return TransformStatementsToExpression(statements, false, false);
+        }
+
+        private MSA.Expression/*!*/ TransformStatementsToExpression(Statements statements, bool toBoolean, bool positive) {
+
             if (statements == null || statements.Count == 0) {
-                return AstUtils.Constant(null);
+                return toBoolean ? AstUtils.Constant(!positive) : AstUtils.Constant(null);
             }
 
+            var last = toBoolean ? statements.Last.TransformCondition(this, positive) : statements.Last.TransformReadStep(this);
             if (statements.Count == 1) {
-                return statements.First.TransformRead(this);
+                return last;
             }
 
-            var result = new MSA.Expression[statements.Count];
-            int i = 0;
+            var result = new AstExpressions(statements.Count);
             foreach (var statement in statements.AllButLast) {
-                result[i++] = statement.Transform(this);
+                result.Add(statement.Transform(this));
             }
-            result[result.Length - 1] = statements.Last.TransformRead(this);
+            result.Add(last);
 
-            return Ast.Block(new ReadOnlyCollection<MSA.Expression>(result));
+            return Ast.Block(result);
         }
 
-        internal List<MSA.Expression>/*!*/ TransformMapletsToExpressions(IList<Maplet>/*!*/ maplets) {
+        internal AstExpressions/*!*/ TransformMapletsToExpressions(IList<Maplet>/*!*/ maplets) {
             Assert.NotNullItems(maplets);
-            return TransformMapletsToExpressions(maplets, new List<MSA.Expression>(maplets.Count * 2));
+            return TransformMapletsToExpressions(maplets, new AstExpressions(maplets.Count * 2));
         }
 
-        internal List<MSA.Expression>/*!*/ TransformMapletsToExpressions(IList<Maplet>/*!*/ maplets, List<MSA.Expression>/*!*/ result) {
+        internal AstExpressions/*!*/ TransformMapletsToExpressions(IList<Maplet>/*!*/ maplets, AstExpressions/*!*/ result) {
             Assert.NotNullItems(maplets);
             Assert.NotNull(result);
 
@@ -752,7 +761,7 @@ namespace IronRuby.Compiler.Ast {
             return MakeHashOpCall(TransformMapletsToExpressions(maplets));
         }
 
-        internal MSA.Expression/*!*/ MakeHashOpCall(List<MSA.Expression>/*!*/ expressions) {
+        internal MSA.Expression/*!*/ MakeHashOpCall(IEnumerable<MSA.Expression>/*!*/ expressions) {
             return Methods.MakeHash.OpCall(CurrentScopeVariable, AstUtils.NewArrayHelper(typeof(object), expressions));
         }
 
@@ -781,9 +790,16 @@ namespace IronRuby.Compiler.Ast {
             return Ast.Return(returnLabel, expression);
         }
 
+        internal MSA.Expression ClearDebugInfo() {
+            return _sequencePointClearance;
+        }
+
         internal MSA.Expression/*!*/ AddDebugInfo(MSA.Expression/*!*/ expression, SourceSpan location) {
             if (_document != null) {
-                return AstUtils.AddDebugInfo(expression, _document, location.Start, location.End);
+                // TODO: should we add clearance for non-goto expressions?
+                // return AstUtils.AddDebugInfo(expression, _document, location.Start, location.End);
+                var sequencePoint = Ast.DebugInfo(_document, location.Start.Line, location.Start.Column, location.End.Line, location.End.Column);
+                return Ast.Block(sequencePoint, expression);
             } else {
                 return expression;
             }

@@ -2362,7 +2362,7 @@ true
 false
 false
 -16
-16
+16 (Decimal)
 ");
         }
 

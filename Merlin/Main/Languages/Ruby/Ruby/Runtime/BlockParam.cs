@@ -208,6 +208,7 @@ namespace IronRuby.Runtime {
             metaBuilder.AddTypeRestriction(args.Target.GetType(), args.TargetExpression);
 
             metaBuilder.Result = AstFactory.YieldExpression(
+                args.RubyContext,
                 args.GetSimpleArgumentExpressions(),
                 args.GetSplattedArgumentExpression(),
                 args.GetRhsArgumentExpression(),

@@ -516,6 +516,12 @@ namespace IronRuby.Tests {
             return dir;
         }
 
+        internal TempFile/*!*/ MakeTempFile(string/*!*/ globalVariableName, string/*!*/ suffix, string/*!*/ content) {
+            var fileName = Driver.MakeTempFile(suffix, content);
+            TestRuntime.Context.DefineGlobalVariable(globalVariableName, fileName);
+            return new TempFile(fileName);
+        }
+
         internal static string/*!*/ MakeTempFile(string/*!*/ suffix, string/*!*/ content) {
             var dir = Path.GetTempPath();
             int pid = Process.GetCurrentProcess().Id;
@@ -534,6 +540,19 @@ namespace IronRuby.Tests {
                         // nop
                     }
                 }
+            }
+        }
+
+        internal sealed class TempFile : IDisposable {
+            private readonly string/*!*/ _file;
+
+            public TempFile(string/*!*/ file) {
+                Assert.NotNull(file);
+                _file = file;
+            }
+
+            public void Dispose() {
+                File.Delete(_file);
             }
         }
     }

@@ -28,7 +28,6 @@ using System.Runtime.CompilerServices;
 using System.Text;
 
 using Microsoft.Scripting.Utils;
-using Microsoft.Scripting.Generation;
 
 namespace Microsoft.Scripting.Runtime {
     /// <summary>
@@ -270,6 +269,7 @@ namespace Microsoft.Scripting.Runtime {
         
         #endregion
 
+        
         #endregion
         
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
@@ -362,7 +362,9 @@ namespace Microsoft.Scripting.Runtime {
                         ),
                         typeof(object)
                     ),
-                    self.Restrict(CompilerHelpers.GetType(self.Value)).Restrictions
+                    self.Value == null ?
+                        BindingRestrictions.GetExpressionRestriction(Expression.Equal(self.Expression, Expression.Constant(null))) :
+                        BindingRestrictions.GetTypeRestriction(self.Expression, self.Value.GetType())
                 );
             }
         }

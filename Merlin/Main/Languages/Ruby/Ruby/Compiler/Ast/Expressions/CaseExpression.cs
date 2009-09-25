@@ -20,11 +20,13 @@ using MSA = Microsoft.Scripting.Ast;
 #endif
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using IronRuby.Runtime.Calls;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Utils;
+using IronRuby.Runtime.Calls;
+using IronRuby.Runtime.Conversions;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Compiler.Ast {
@@ -53,14 +55,14 @@ namespace IronRuby.Compiler.Ast {
         // end
 
         private readonly Expression _value;
-        private readonly List<WhenClause>/*!*/ _whenClauses;
+        private readonly List<WhenClause> _whenClauses;
         private readonly Statements _elseStatements;
 
         public Expression Value {
             get { return _value; } 
         }
 
-        public List<WhenClause>/*!*/ WhenClauses {
+        public List<WhenClause> WhenClauses {
             get { return _whenClauses; }
         }
 
@@ -68,14 +70,12 @@ namespace IronRuby.Compiler.Ast {
             get { return _elseStatements; }
         }
 
-        internal CaseExpression(Expression value, List<WhenClause>/*!*/ whenClauses, ElseIfClause elseClause, SourceSpan location)
+        internal CaseExpression(Expression value, List<WhenClause> whenClauses, ElseIfClause elseClause, SourceSpan location)
             : this(value, whenClauses, (elseClause != null) ? elseClause.Statements : null, location) {
         }
 
-        public CaseExpression(Expression value, List<WhenClause>/*!*/ whenClauses, Statements elseStatements, SourceSpan location)
+        public CaseExpression(Expression value, List<WhenClause> whenClauses, Statements elseStatements, SourceSpan location)
             : base(location) {
-            ContractUtils.RequiresNotNull(whenClauses, "whenClauses");
-
             _value = value;
             _whenClauses = whenClauses;
             _elseStatements = elseStatements;
@@ -98,11 +98,13 @@ namespace IronRuby.Compiler.Ast {
 
         // when [<expr>, ...] *<array>
         private static MSA.Expression/*!*/ MakeArrayTest(AstGenerator/*!*/ gen, MSA.Expression/*!*/ array, MSA.Expression value) {
-            return Methods.ExistsUnsplat.OpCall(Ast.Constant(
-                CallSite<Func<CallSite, object, object, object>>.Create(
+            return Methods.ExistsUnsplat.OpCall(
+                Ast.Constant(CallSite<Func<CallSite, object, object, object>>.Create(
                     RubyCallAction.Make(gen.Context, "===", RubyCallSignature.WithImplicitSelf(2))
-                )
-            ), AstFactory.Box(array), AstFactory.Box(value));
+                )),
+                Ast.Dynamic(ConvertToArraySplatAction.Make(gen.Context), typeof(object), array), 
+                AstFactory.Box(value)
+            );
         }
 
         // when <expr0>, ... [*<array>]
@@ -146,14 +148,16 @@ namespace IronRuby.Compiler.Ast {
             } else {
                 value = null;
             }
-            
-            for (int i = _whenClauses.Count - 1; i >= 0; i-- ) {
-                // emit: else (if (condition) body else result)
-                result = AstFactory.Condition(
-                    TransformWhenCondition(gen, _whenClauses[i].Comparisons, _whenClauses[i].ComparisonArray, value),
-                    gen.TransformStatementsToExpression(_whenClauses[i].Statements),
-                    result
-                );
+
+            if (_whenClauses != null) {
+                for (int i = _whenClauses.Count - 1; i >= 0; i--) {
+                    // emit: else (if (condition) body else result)
+                    result = AstFactory.Condition(
+                        TransformWhenCondition(gen, _whenClauses[i].Comparisons, _whenClauses[i].ComparisonArray, value),
+                        gen.TransformStatementsToExpression(_whenClauses[i].Statements),
+                        result
+                    );
+                }
             }
 
             if (_value != null) {

@@ -50,7 +50,7 @@ namespace Microsoft.Scripting.Silverlight {
         protected static BrowserPAL _PAL;
         internal static BrowserPAL PAL {
             get {
-                if (_PAL == null) PAL = XapPAL.PAL;
+                if (_PAL == null) PAL = HttpPAL.PAL;
                 return _PAL;
             }
             set { _PAL = value; }
@@ -128,6 +128,11 @@ namespace Microsoft.Scripting.Silverlight {
             return OpenInputFileStream(path, mode, access, share);
         }
 
+        /// <summary>
+        /// Convert a string path to a Uri
+        /// </summary>
+        /// <param name="path">relative or absolute path</param>
+        /// <returns>normalized URI</returns>
         private Uri/*!*/ PathToUri(string/*!*/ path) {
             try {
                 return new Uri(VirtualFilesystem.NormalizePath(path), UriKind.RelativeOrAbsolute);
@@ -145,6 +150,17 @@ namespace Microsoft.Scripting.Silverlight {
 
         private XapPAL() {
             VirtualFilesystem = new XapVirtualFilesystem();
+        }
+    }
+
+    /// <summary>
+    /// PlatformAdaptationLayer to download and cache files over HTTP.
+    /// </summary>
+    internal sealed class HttpPAL : BrowserPAL {
+        internal static new readonly BrowserPAL PAL = new HttpPAL();
+
+        private HttpPAL() {
+            VirtualFilesystem = new HttpVirtualFilesystem();
         }
     }
 }

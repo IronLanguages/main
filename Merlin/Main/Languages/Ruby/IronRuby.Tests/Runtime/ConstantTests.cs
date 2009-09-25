@@ -14,6 +14,8 @@
  * ***************************************************************************/
 
 using IronRuby.Builtins;
+using System;
+using System.IO;
 namespace IronRuby.Tests {
 
     public partial class Tests {
@@ -277,6 +279,467 @@ Foo::Bar rescue p $!
 nil
 #<NameError: uninitialized constant Foo::Bar>
 ");
+        }
+
+        public void ConstantCaching_Unqualified1() {
+            TestOutput(@"
+module M
+  C = 1
+  module N
+    i = 0
+    while i < 2
+      p C
+      const_set(:C, 2) if i == 0 
+      i += 1
+    end
+  end
+end
+", @"
+1
+2
+");
+        }
+
+        public void ConstantCaching_Unqualified2() {
+            TestOutput(@"
+module M
+  module N
+    i = 0
+    while i < 2
+      puts defined?(C)                             # tested cache
+      const_set(:C, 2) if i == 0 
+      i += 1
+    end
+  end
+end
+", @"
+nil
+constant
+");
+        }
+
+        public void ConstantCaching_Unqualified3() {
+            Runtime.Globals.SetVariable("C", 1);
+            TestOutput(@"
+module M
+  $M = self
+  class ::Object
+    i = 0
+    while i < 3
+      p C                                          # tested cache
+      $M.const_set(:C, 2) if i == 0 
+      $M.send(:remove_const, :C) if i == 1
+      i += 1
+    end
+  end
+end
+", @"
+1
+2
+1
+");
+        }
+
+        /// <summary>
+        /// GlobalConstantAccess version needs to be invalidate on inclusion.
+        /// </summary>
+        public void ConstantCaching_Unqualified4() {
+            TestOutput(@"
+class C
+  def self.foo
+	X                         # tested cache
+  end
+end
+
+C.foo rescue p $!
+
+module M
+  X = 1
+end
+
+class C
+  include M
+end
+
+p C.foo
+", @"
+#<NameError: uninitialized constant C::X>
+1
+");
+        }
+
+        /// <summary>
+        /// module_eval {} in Ruby 1.9 changes constant lookup chain.
+        /// </summary>
+        [Options(Compatibility = RubyCompatibility.Ruby19)]
+        public void ConstantCaching_Unqualified5() {
+#if TODO
+            TestOutput(@"
+module A
+ 
+end
+
+module B
+  $q = Proc.new { X = 1 }
+  A.module_eval &$q
+end
+
+module C
+  module_eval &$q
+end
+
+p A.constants
+p B.constants
+p C.constants
+", @"
+[:X]
+[]
+[:X]
+");
+#endif
+        }
+
+        /// <summary>
+        /// Update of strong value needs to set the weak value as well (and vice versa).
+        /// </summary>
+        public void ConstantCaching_Unqualified6() {
+            TestOutput(@"
+X = [1]                       # assign a non-primitive value so that the cache needs to use a WeakRef
+
+class C
+  $C = self
+  def self.foo
+    X                         # tested cache
+  end
+end
+
+p $C.foo, $C.foo              # test twice - 1) Op-call returns the value 2) the cache returns the value
+
+module M
+  $M = self
+  X = 1                       # assign primitive value
+end
+
+class C
+  include $M                  # changes cached value from non-primitive (weak ref) to primitive (strong ref)
+end
+
+p $C.foo, $C.foo
+", @"
+[1]
+[1]
+1
+1
+");
+        }
+
+        /// <summary>
+        /// Check to see whether we don't unwrap WeakReferences accidentally, preserve object identity and unwrap null correctly.
+        /// </summary>
+        public void ConstantCaching_Unqualified7() {
+            var wr = new WeakReference(new object());
+            Context.DefineGlobalVariable("wr", wr);
+            var result = Engine.Execute<RubyArray>(@"
+C = $wr
+def c; C; end   # tested cache 
+r = [c, c]
+C = nil
+r + [c, c]
+");
+            Assert(ReferenceEquals(result[0], wr));
+            Assert(ReferenceEquals(result[1], wr));
+            Assert(ReferenceEquals(result[2], null));
+            Assert(ReferenceEquals(result[3], null));
+        }
+
+        public void ConstantCaching_Unqualified_IsDefined1() {
+            TestOutput(@"
+a = []
+2.times { a << defined?(Object) }
+a[0][0] = ?x
+puts a
+", @"
+xonstant
+constant
+");
+        }
+
+        public void ConstantCaching_Qualified1() {
+            AssertOutput(() => CompilerTest(@"
+module A
+  module B
+    $B = self
+    module C
+      module D
+      end
+    end
+  end
+end
+
+module NC
+  $NC = self
+  D = 1
+end
+
+i = 0 
+while i < 2 
+  p A::B::C::D, ::A::B::C::D
+  $B.const_set(:C, $NC) if i == 0
+  i += 1
+end
+", 0, 1), @"
+A::B::C::D
+A::B::C::D
+1
+1
+");
+        }
+
+        public void ConstantCaching_Qualified2() {
+            TestOutput(@"
+module A
+  module B
+    $B = self
+
+    module C
+      D = 1
+    end
+
+    def self.const_missing(name)
+      puts 'missing: ' + name.to_s
+      $C
+    end
+  end
+end
+
+module C
+  $C = self
+  module D    
+  end
+end
+
+module E
+  $E = self
+  D = 2
+end
+
+i = 0
+while i < 6
+  p A::B::C::D                                    # tested cache
+  $B.send(:remove_const, :C) if i == 1
+  $B.send(:const_set, :C, $E) if i == 3
+  i += 1
+end
+", @"
+1
+1
+missing: C
+C::D
+missing: C
+C::D
+2
+2
+");
+        }
+
+        public void ConstantCaching_Qualified_IsDefined1() {
+            TestOutput(@"
+module A
+  module B
+    $B = self
+
+    module C
+      D = 1                              # D is not module here
+    end
+
+    def self.const_missing(name)
+      puts 'missing: ' + name.to_s
+      $C
+    end
+  end
+end
+
+module C
+  $C = self
+  module D    
+    F = 1
+  end
+end
+
+module E
+  $E = self
+  module D  
+    F = 2
+  end
+end
+
+i = 0
+while i < 6
+  puts defined?(A::B::C::D::F)              # tested cache
+  $B.send(:remove_const, :C) if i == 1
+  $B.send(:const_set, :C, $E) if i == 3
+  i += 1
+end
+", @"
+nil
+nil
+missing: C
+constant
+missing: C
+constant
+constant
+constant
+");
+        }
+
+        public void ConstantCaching_Qualified_IsDefined2() {
+            TestOutput(@"
+def foo
+  $M
+end
+
+module M
+  $M = self  
+  A = 1
+end
+
+i = 0
+while i < 3
+  puts defined?(foo::A)              # tested cache
+  puts foo::A rescue p $!            # tested cache
+  $M.send(:remove_const, :A) if i == 1
+  i += 1
+end
+", @"
+constant
+1
+constant
+1
+nil
+#<NameError: uninitialized constant M::A>
+");
+        }
+
+        public void ConstantCaching_CrossRuntime1() {
+            var engine2 = Ruby.CreateEngine();
+
+            var c = Engine.Execute(@"
+module C
+  X = 1
+end
+C
+");
+            Ruby.GetExecutionContext(engine2).DefineGlobalVariable("C", c); 
+
+            var m = engine2.Execute(@"
+module M
+  module N
+    O = $C
+  end
+end
+M
+");
+            Context.DefineGlobalVariable("M", m); 
+
+            TestOutput(@"
+module D
+  E = $M
+end
+
+module Z
+  module O
+    X = 2
+  end
+end
+
+i = 0
+while i < 6
+  puts D::E::N::O::X rescue p $!         # tested cache
+  $M.send(:remove_const, :N) if i == 1
+  $M.send(:const_set, :N, Z) if i == 3
+  i += 1
+end
+", @"
+1
+1
+#<NameError: uninitialized constant M::N>
+#<NameError: uninitialized constant M::N>
+2
+2
+");
+        }
+
+        public void ConstantCaching_AutoUpdating1A() {
+            if (_driver.PartialTrust) return;
+
+            var autoloaded = @"
+$C.const_set(:D, 1)
+$C.const_set(:E, 1)
+
+module A
+  remove_const(:B)
+  class B
+    class C
+      D = 2
+    end
+  end
+end
+";
+            using (_driver.MakeTempFile("file", ".rb", autoloaded)) {
+                TestOutput(@"
+module A
+  module B
+    module C   
+      $C = self 
+      autoload(:D, $file)
+    end
+  end
+end
+
+i = 0
+while i < 2
+  puts A::B::C::D              # tested cache
+  i += 1
+end
+", @"
+1
+2
+");
+            }
+        }
+
+        public void ConstantCaching_AutoUpdating1B() {
+            if (_driver.PartialTrust) return;
+
+            var autoloaded = @"
+class X
+  D = 1
+end
+
+$B.const_set(:C, X)
+$A.send(:remove_const, :B)
+";
+
+            using (_driver.MakeTempFile("file", ".rb", autoloaded)) {
+                TestOutput(@"
+module A
+  $A = self
+  module B
+    $B = self 
+    autoload(:C, $file)
+  end
+end
+
+i = 0
+while i < 2
+  puts defined?(A::B::C::D)           # tested cache
+  i += 1
+end
+", @"
+constant
+nil
+");
+            }
         }
     }
 }

@@ -43,6 +43,8 @@ if ARGV.include?('TRACE')
   end
 end
 
+$:.unshift(File.dirname(__FILE__) + "/app")
+
 require 'gui_tutorial'
 
 module WpfTutorial

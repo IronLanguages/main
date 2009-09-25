@@ -86,7 +86,7 @@ namespace IronRuby.StandardLibrary.ParseTree {
 
             private static RubyArray/*!*/ GetNodeNames(RubyContext/*!*/ context, object self) {
                 object value;
-                context.GetClassOf(self).TryGetConstantNoAutoload("NODE_NAMES", out value);
+                context.GetClassOf(self).TryGetConstant(null, "NODE_NAMES", out value);
                 return value as RubyArray ?? new RubyArray();
             }
 
@@ -1340,7 +1340,7 @@ namespace IronRuby.StandardLibrary.ParseTree {
                 //     <e>
                 // ]
                 public override bool Enter(CaseExpression/*!*/ node) {
-                    var c = MakeNode(NodeKind.@case, 1 + node.WhenClauses.Count + 1);
+                    var c = MakeNode(NodeKind.@case, 1 + (node.WhenClauses != null ? node.WhenClauses.Count : 0) + 1);
 
                     if (node.Value != null) {
                         Walk(node.Value);
@@ -1349,25 +1349,27 @@ namespace IronRuby.StandardLibrary.ParseTree {
                         c.Add(null);
                     }
 
-                    foreach (var whenClause in node.WhenClauses) {
-                        var when = MakeNode(NodeKind.when, 2);
+                    if (node.WhenClauses != null) {
+                        foreach (var whenClause in node.WhenClauses) {
+                            var when = MakeNode(NodeKind.when, 2);
 
-                        var array = MakeNode(NodeKind.array,
-                            (whenClause.Comparisons != null ? whenClause.Comparisons.Length : 0) + 
-                            (whenClause.ComparisonArray != null ? 1 :0)
-                        );
+                            var array = MakeNode(NodeKind.array,
+                                (whenClause.Comparisons != null ? whenClause.Comparisons.Length : 0) +
+                                (whenClause.ComparisonArray != null ? 1 : 0)
+                            );
 
-                        AddRange(array, whenClause.Comparisons);
+                            AddRange(array, whenClause.Comparisons);
 
-                        if (whenClause.ComparisonArray != null) {
-                            Walk(whenClause.ComparisonArray);
-                            array.Add(MakeNode(NodeKind.when, _result, null));
+                            if (whenClause.ComparisonArray != null) {
+                                Walk(whenClause.ComparisonArray);
+                                array.Add(MakeNode(NodeKind.when, _result, null));
+                            }
+
+                            when.Add(array);
+                            when.Add(MakeBlock(whenClause.Statements));
+
+                            c.Add(when);
                         }
-
-                        when.Add(array);
-                        when.Add(MakeBlock(whenClause.Statements));
-
-                        c.Add(when);
                     }
 
                     c.Add(MakeBlock(node.ElseStatements));

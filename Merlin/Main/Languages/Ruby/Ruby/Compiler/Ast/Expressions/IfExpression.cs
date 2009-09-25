@@ -25,7 +25,7 @@ using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Compiler.Ast {
-    using Ast = Expression;
+    using Ast = MSA.Expression;
 
     public partial class IfExpression : Expression {
         private Expression/*!*/ _condition;
@@ -80,7 +80,7 @@ namespace IronRuby.Compiler.Ast {
             while (i >= 0) {
                 // emit: else (if (condition) body else result)
                 result = AstFactory.Condition(
-                    AstFactory.IsTrue(_elseIfClauses[i].Condition.TransformRead(gen)),
+                    _elseIfClauses[i].Condition.TransformCondition(gen, true),
                     gen.TransformStatementsToExpression(_elseIfClauses[i].Statements),
                     result
                 );
@@ -89,10 +89,15 @@ namespace IronRuby.Compiler.Ast {
 
             // if (condition) body else result
             return AstFactory.Condition(
-                AstFactory.IsTrue(_condition.TransformRead(gen)),
+                _condition.TransformCondition(gen, true),
                 gen.TransformStatementsToExpression(_body),
                 result
             );
+        }
+
+        internal override MSA.Expression/*!*/ Transform(AstGenerator/*!*/ gen) {
+            // do not mark a sequence point wrapping the entire condition:
+            return TransformRead(gen);
         }
     }
 }

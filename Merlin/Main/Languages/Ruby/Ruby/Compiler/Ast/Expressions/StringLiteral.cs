@@ -70,9 +70,5 @@ using MSA = Microsoft.Scripting.Ast;
         internal override MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen) {
             return Methods.CreateMutableStringL.OpCall(StringConstructor.MakeConstant(_value), AstUtils.Constant(gen.Encoding));
         }
-
-        internal override MSA.Expression TransformDefinedCondition(AstGenerator/*!*/ gen) {
-            return null;
-        }
     }
 }

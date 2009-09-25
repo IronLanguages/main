@@ -51,7 +51,7 @@ using System.Security;
 // You can specify all the values or you can default the Revision and Build Numbers 
 // by using the '*' as shown below:
 [assembly: SecurityTransparent]
-#if !CLR2
+#if CLR4
 [assembly: SecurityRules(SecurityRuleSet.Level1)]
 #endif
 

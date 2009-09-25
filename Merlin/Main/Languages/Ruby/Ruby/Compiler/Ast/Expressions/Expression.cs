@@ -22,6 +22,7 @@ using MSA = Microsoft.Scripting.Ast;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Microsoft.Scripting;
+using IronRuby.Builtins;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Compiler.Ast {
@@ -59,19 +60,41 @@ namespace IronRuby.Compiler.Ast {
         }
 
         /// <summary>
-        /// Transform as expression (value is read);
+        /// Transform as expression (value is read).
         /// </summary>
         internal abstract MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen);
 
         /// <summary>
-        /// Transform as statement (value is not read).
+        /// Transform as expression (value is read) and mark sequence point.
+        /// </summary>
+        internal MSA.Expression/*!*/ TransformReadStep(AstGenerator/*!*/ gen) {
+            return gen.AddDebugInfo(TransformRead(gen), Location);
+        }
+        
+        /// <summary>
+        /// Transform as expression whose value is read as Boolean.
+        /// </summary>
+        internal virtual MSA.Expression/*!*/ TransformReadBoolean(AstGenerator/*!*/ gen, bool positive) {
+            return (positive ? Methods.IsTrue : Methods.IsFalse).OpCall(AstFactory.Box(TransformRead(gen))); 
+        }
+        
+        /// <summary>
+        /// Transform as expression whose value is read as Boolean and mark a sequence point.
+        /// </summary>
+        internal MSA.Expression/*!*/ TransformCondition(AstGenerator/*!*/ gen, bool positive) {
+            return gen.AddDebugInfo(TransformReadBoolean(gen, positive), Location);
+        }	
+		
+
+        /// <summary>
+        /// Transform as statement (value is not read). Marks sequnce point.
         /// </summary>
         internal virtual MSA.Expression/*!*/ Transform(AstGenerator/*!*/ gen) {
             return gen.AddDebugInfo(TransformRead(gen), Location);
         }
 
         /// <summary>
-        /// Transform and handle the result according to the specified result operation.
+        /// Transform and handle the result according to the specified result operation. Marks sequence point.
         /// </summary>
         internal virtual MSA.Expression/*!*/ TransformResult(AstGenerator/*!*/ gen, ResultOperation resultOperation) {
             MSA.Expression resultExpression = TransformRead(gen);
@@ -97,10 +120,19 @@ namespace IronRuby.Compiler.Ast {
             return "expression";
         }
 
-        internal MSA.Expression/*!*/ TransformIsDefined(AstGenerator/*!*/ gen) {
+        internal virtual MSA.Expression/*!*/ TransformIsDefined(AstGenerator/*!*/ gen) {
             MSA.Expression condition = TransformDefinedCondition(gen);
-            MSA.Expression result = Methods.CreateMutableStringL.OpCall(AstUtils.Constant(GetNodeName(gen)), Ast.Constant(gen.Encoding));
+            MSA.Expression result = Methods.CreateMutableStringL.OpCall(AstUtils.Constant(GetNodeName(gen)), Ast.Constant(RubyEncoding.Binary));
             return (condition != null) ? Ast.Condition(condition, result, AstFactory.NullOfMutableString) : result;
+        }
+
+        internal MSA.Expression/*!*/ TransformBooleanIsDefined(AstGenerator/*!*/ gen, bool positive) {
+            var condition = TransformDefinedCondition(gen);
+            if (condition == null) {
+                return (positive) ? AstFactory.True : AstFactory.False;
+            } else {
+                return (positive) ? condition : Ast.Not(condition);
+            }
         }
 
         // Called on an expression that is used as a condition. 

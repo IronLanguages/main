@@ -24,7 +24,7 @@ using Microsoft.Scripting.Utils;
 using IronRuby.Runtime;
 
 namespace IronRuby.Compiler.Ast {
-    using Ast = Expression;
+    using Ast = MSA.Expression;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
     
     public partial class OrExpression : Expression {
@@ -49,6 +49,10 @@ namespace IronRuby.Compiler.Ast {
 
         internal override MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen) {
             return TransformRead(gen, _left.TransformRead(gen), _right.TransformRead(gen));
+        }
+
+        internal override MSA.Expression/*!*/ TransformReadBoolean(AstGenerator/*!*/ gen, bool positive) {
+            return AstFactory.Logical(_left.TransformReadBoolean(gen, positive), _right.TransformReadBoolean(gen, positive), !positive);
         }
 
         internal static MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen, MSA.Expression/*!*/ left, MSA.Expression/*!*/ right) {

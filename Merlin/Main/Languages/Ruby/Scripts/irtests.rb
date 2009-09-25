@@ -4,7 +4,7 @@ require 'singleton'
 class IRTest
   attr_accessor :options  
   
-  def initialize(options)
+  def initialize(options = {})
     @options = options
     
     @config = (options[:clr4] ? "V4 " : "") + (options[:release] ? "Release" : "Debug")
@@ -17,7 +17,6 @@ class IRTest
        
     mspec_base = "#{@root}\\..\\External.LCA_RESTRICTED\\Languages\\IronRuby\\mspec\\mspec\\bin\\mspec.bat ci -fd"
     ir = "\"#{@bin}\\ir.exe\" -v"
-    @start = Time.now
     @suites = {
       :Smoke => "#{@root}\\Languages\\Ruby\\Tests\\Scripts\\irtest.bat",
       :Legacy => "#{@root}\\Languages\\Ruby\\Tests\\run.bat",
@@ -27,14 +26,13 @@ class IRTest
       :RubyGems => "#{ir} #{@root}\\Languages\\Ruby\\Tests\\Scripts\\RubyGemsTests.rb",
       :Rake => "#{ir} #{@root}\\Languages\\Ruby\\Tests\\Scripts\\RakeTests.rb",
       :Yaml => "#{ir} #{@root}\\..\\External.LCA_RESTRICTED\\Languages\\IronRuby\\yaml\\YamlTest\\yaml_test_suite.rb",
-      :Tutorial => "#{ir} -I#{@root}\\Languages\\Ruby\\Samples\\Tutorial #{@root}\\Languages\\Ruby\\Samples\\Tutorial\\test\\test_console.rb"
+      :Tutorial => "#{ir} -I#{@root}\\Languages\\Ruby\\Samples\\Tutorial #{@root}\\Languages\\Ruby\\Samples\\Tutorial\\test\\test_console.rb",
+      :ActionPack => "#{ir} #{@root}\\Languages\\Ruby\\Tests\\Scripts\\ActionPackTests.rb",
+      :ActiveSupport => "#{ir} #{@root}\\Languages\\Ruby\\Tests\\Scripts\\ActiveSupportTests.rb"
     }
+    @start = Time.now
   end
 
-  def self.method_missing(meth, *args, &blk)
-    self.instance.send(meth, *args, &blk)
-  end
-  
   def run
     time("Starting")
     kill
@@ -59,7 +57,7 @@ class IRTest
 
   def git?
     git = File.exists? @root + "\\..\\..\\.git" # exists only for github.com
-    tfs = File.exists? @root + "\\..\\External.LCA_RESTRICTED\\Languages\\IronPython" # exists only in TFS
+    tfs = File.exists? @root + "\\Support\\Rowan.sln" # exists only in TFS
     abort("Could not determine if this is a GIT repo or not") if git == tfs
     git
   end
@@ -135,6 +133,7 @@ class IRTest
   end
 
   def test(suite)
+    @report = true
     title = suite.to_s.gsub("_", " ") << " Tests"
     test = @suites[suite]
     cmd = nil
@@ -153,6 +152,10 @@ class IRTest
     blk.call unless system cmd
   end
   
+  def exit_report
+    at_exit { report if @report}
+  end
+  
   def report
     puts "=" * 70
     exit_code = if @results.size == 1
@@ -169,6 +172,7 @@ class IRTest
     exit exit_code
   end
 end
+
 
 if $0 == __FILE__
   iroptions = {}

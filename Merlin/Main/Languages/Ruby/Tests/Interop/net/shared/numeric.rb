@@ -103,8 +103,12 @@ describe :numeric_conversion, :shared => true do
     @class.should have_instance_method(:inspect)
   end
 
-  it "returns a string of the format 'value (Class)'" do
-    c = @class.name.match(/::([^:]*)$/)[1]
-    @obj.inspect.should == "0 (#{c})"
+  it "returns a string of the format 'value (Class) (unless int32)'" do
+    if @class != Fixnum
+      c = @class.name.match(/::([^:]*)$/)[1]
+      @obj.inspect.should == "0 (#{c})"
+    else
+      @obj.inspect.should == "0"
+    end
   end
 end

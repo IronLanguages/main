@@ -24,7 +24,6 @@ using System;
 using System.Collections.Generic;
 using Microsoft.Scripting.Utils;
 using System.Dynamic;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace Microsoft.Scripting.Runtime {
     /// <summary>
@@ -43,6 +42,7 @@ namespace Microsoft.Scripting.Runtime {
     public sealed class Scope : IDynamicMetaObjectProvider {
         private ScopeExtension[] _extensions; // resizable
         private readonly IDynamicMetaObjectProvider _storage;
+        private static readonly object _getFailed = new object();
 
         /// <summary>
         /// Creates a new scope with a new empty thread-safe dictionary.  
@@ -136,7 +136,7 @@ namespace Microsoft.Scripting.Runtime {
             private MemberExpression StorageExpression {
                 get {
                     return Expression.Property(
-                        AstUtils.Convert(Expression, typeof(Scope)),
+                        Expression.Convert(Expression, typeof(Scope)),
                         typeof(Scope).GetProperty("Storage")
                     );
                 }
@@ -173,7 +173,7 @@ namespace Microsoft.Scripting.Runtime {
                 if (((AttributesAdapter)adapter)._data.TryGetValue(name, out result)) {
                     return result;
                 }
-                return OperationFailed.Value;
+                return _getFailed;
             }
 
             private static void TrySetMember(object adapter, SymbolId name, object value) {
@@ -212,7 +212,7 @@ namespace Microsoft.Scripting.Runtime {
                                             Expression.Constant(SymbolTable.StringToId(binder.Name))
                                         )
                                     ),
-                                    Expression.Constant(OperationFailed.Value, typeof(object))
+                                    Expression.Constant(_getFailed)
                                 ),
                                 tmp,
                                 Expression.Convert(binder.FallbackGetMember(this).Expression, typeof(object))

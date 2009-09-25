@@ -75,9 +75,9 @@ namespace IronPython.Modules {
 
                 string funcName = args[0] as string;
                 if (funcName != null) {
-                    _addr = NativeFunctions.GetProcAddress(intPtrHandle, funcName);
+                    _addr = NativeFunctions.LoadFunction(intPtrHandle, funcName);
                 } else {
-                    _addr = NativeFunctions.GetProcAddress(intPtrHandle, new IntPtr((int)nameOrOrdinal));
+                    _addr = NativeFunctions.LoadFunction(intPtrHandle, new IntPtr((int)nameOrOrdinal));
                 }
 
                 if (_addr == IntPtr.Zero) {
@@ -86,7 +86,7 @@ namespace IronPython.Modules {
                         // bytes is the number of bytes of the argument list.
                         string mangled = "_" + funcName + "@";
                         for (int i = 0; i < 128 && _addr == IntPtr.Zero; i += 4) {
-                            _addr = NativeFunctions.GetProcAddress(intPtrHandle, mangled + i);
+                            _addr = NativeFunctions.LoadFunction(intPtrHandle, mangled + i);
                         }
                     }
 
@@ -822,7 +822,7 @@ namespace IronPython.Modules {
                     }
                 }
 
-#if FALSE   // not implemented yet
+#if FALSE   // TODO: not implemented yet
                 /// <summary>
                 /// Provides the marshalling for a user defined object which has an _as_parameter_
                 /// value.

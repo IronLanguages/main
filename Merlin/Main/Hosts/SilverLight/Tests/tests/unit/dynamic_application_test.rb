@@ -13,8 +13,8 @@ describe 'Parsing init parameters' do
 
   # TODO test that errors are always turned on while parsing init params
 
-  it 'should have an entry point' do
-    DynamicApplication.current.entry_point.should.equal "app.rb".to_clr_string
+  it 'should have a nil entry point' do
+    DynamicApplication.current.entry_point.should.equal nil 
   end
 
   it 'should not have a debug flag' do
@@ -39,6 +39,8 @@ describe 'Parsing init parameters' do
     DynamicApplication.current.ErrorTargetID.should.equal 'errorLocation'.to_clr_string
   end
 end
+
+load_assembly 'Microsoft.Scripting'
 
 describe 'Hosting API' do
   it 'should create a ScriptRuntimeSetup' do
@@ -82,7 +84,7 @@ end
 
 describe 'Utility methods' do
   it 'should make a relative Uri' do
-    uri = "tests/assets/foo.xaml"
+    uri = "unit/assets/foo.xaml"
     DynamicApplication.current.make_uri(uri).should.equal System::Uri.new(uri, System::UriKind.relative)
   end
 end
@@ -91,7 +93,7 @@ describe 'XAML support' do
   def options
     @options ||= {
       :object => System::Windows::Controls::UserControl.new,
-      :xamlfile => "#{File.dirname(__FILE__)}/assets/foo.xaml"
+      :xamlfile => "unit/assets/foo.xaml"
     }
   end
 

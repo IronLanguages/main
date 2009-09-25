@@ -359,7 +359,7 @@ namespace Microsoft.Scripting.Runtime {
             var site = GetOrCreateSite<TTarget, TOther, TResult>(_lc.CreateBinaryOperationBinder(operation));
             return site.Target(site, target, other);
         }
-                
+        
         public string GetDocumentation(object o) {
             return _lc.GetDocumentation(o);
         }

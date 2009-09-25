@@ -242,16 +242,13 @@ Meta
         public void Autoload1() {
             if (_driver.PartialTrust) return;
 
-            string file = null;
-            try {
-                file = Driver.MakeTempFile(".rb", @"
+            var file = @"
 class D 
   p defined? X
   X = 123
 end
-");
-                Context.DefineGlobalVariable("file", file);
-    
+";
+            using (_driver.MakeTempFile("file", ".rb", file)) {
                 TestOutput(@"
 class D
   autoload(:X, $file)
@@ -265,11 +262,6 @@ end
 nil
 123
 ");
-
-            } finally {
-                if (file != null) {
-                    File.Delete(file);
-                }
             }
         }
 

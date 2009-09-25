@@ -42,24 +42,30 @@ bsr      =msbuild %MERLIN_ROOT%\Hosts\Silverlight\Silverlight.sln /p:Configurati
 ;= [Iron]Python program aliases
 ;=
 
-ipy     =%MERLIN_ROOT%\Bin\Debug\ipy.exe $*
-ipyr    =%MERLIN_ROOT%\Bin\Release\ipy.exe -X:TabCompletion $*
-ipyd    =%MERLIN_ROOT%\Bin\Debug\ipy.exe -D -X:TabCompletion $*
-ipw     =%MERLIN_ROOT%\Bin\Debug\ipyw.exe $*
-ipwr    =%MERLIN_ROOT%\Bin\Release\ipyw.exe $*
-ipwd    =%MERLIN_ROOT%\Bin\Debug\ipyw.exe -D $*
-ipi     =%MERLIN_ROOT%\Bin\Release\ipy.exe -D -X:TabCompletion -X:AutoIndent $*
-msip    =%windir%\system32\WindowsPowerShell\v1.0\powershell.exe measure-command { %MERLIN_ROOT%\Bin\Release\ipy.exe $* }
+ipy     ="%MERLIN_ROOT%\Bin\Debug\ipy.exe" $*
+ipyr    ="%MERLIN_ROOT%\Bin\Release\ipy.exe" -X:TabCompletion $*
+ipyd    ="%MERLIN_ROOT%\Bin\Debug\ipy.exe" -D -X:TabCompletion $*
+ipy4    ="%MERLIN_ROOT%\Bin\V4 Debug\ipy.exe" $*
+ipyr4   ="%MERLIN_ROOT%\Bin\V4 Release\ipy.exe" -X:TabCompletion $*
+ipyd4   ="%MERLIN_ROOT%\Bin\V4 Debug\ipy.exe" -D -X:TabCompletion $*
+ipw     ="%MERLIN_ROOT%\Bin\Debug\ipyw.exe" $*
+ipwr    ="%MERLIN_ROOT%\Bin\Release\ipyw.exe" $*
+ipwd    ="%MERLIN_ROOT%\Bin\Debug\ipyw.exe" -D $*
+ipi     ="%MERLIN_ROOT%\Bin\Release\ipy.exe" -D -X:TabCompletion -X:AutoIndent $*
+msip    ="%windir%\system32\WindowsPowerShell\v1.0\powershell.exe" measure-command { %MERLIN_ROOT%\Bin\Release\ipy.exe $* }
 
 ;==============================================================================
 ;= [Iron]Ruby program aliases
 ;=
 
-rbx     =%MERLIN_ROOT%\Bin\Debug\ir.exe $*
-rbr     =%MERLIN_ROOT%\Bin\Release\ir.exe $*
-rbd     =%MERLIN_ROOT%\Bin\Debug\ir.exe -D $*
-irb19 =%MERLIN_ROOT%\..\External.LCA_RESTRICTED\Languages\Ruby\ruby-1.9.1p129\bin\irb.bat $*
-ruby19 =%MERLIN_ROOT%\..\External.LCA_RESTRICTED\Languages\Ruby\ruby-1.9.1p129\bin\ruby.exe $*
+rbx     ="%MERLIN_ROOT%\Bin\Debug\ir.exe" $*
+rbr     ="%MERLIN_ROOT%\Bin\Release\ir.exe" $*
+rbd     ="%MERLIN_ROOT%\Bin\Debug\ir.exe" -D $*
+rbx4    ="%MERLIN_ROOT%\Bin\V4 Debug\ir.exe" $*
+rbr4    ="%MERLIN_ROOT%\Bin\V4 Release\ir.exe" $*
+rbd4    ="%MERLIN_ROOT%\Bin\V4 Debug\ir.exe" -D $*
+irb19   ="%MERLIN_ROOT%\..\External.LCA_RESTRICTED\Languages\Ruby\ruby-1.9.1p129\bin\irb.bat" $*
+ruby19  ="%MERLIN_ROOT%\..\External.LCA_RESTRICTED\Languages\Ruby\ruby-1.9.1p129\bin\ruby.exe" $*
 msir    =%windir%\system32\WindowsPowerShell\v1.0\powershell.exe measure-command { %MERLIN_ROOT%\Bin\Release\ir.exe $* }
 
 ;==============================================================================

@@ -19,17 +19,21 @@ using MSA = System.Linq.Expressions;
 using MSA = Microsoft.Scripting.Ast;
 #endif
 
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Utils;
 using IronRuby.Runtime;
+using IronRuby.Runtime.Conversions;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
-
-namespace IronRuby.Compiler.Ast {
-    using Ast = Expression;
 	
+namespace IronRuby.Compiler.Ast {
+    using Ast = MSA.Expression;
+    using AstExpressions = ReadOnlyCollectionBuilder<MSA.Expression>;
+    
     public partial class Arguments : Node {
         internal static readonly Arguments Empty = new Arguments(SourceSpan.None);
 
@@ -77,8 +81,8 @@ namespace IronRuby.Compiler.Ast {
 
         #region Transform to Call Expression
 
-        private List<MSA.Expression>/*!*/ MakeSimpleArgumentExpressionList(AstGenerator/*!*/ gen) {
-            var args = new List<MSA.Expression>();
+        private AstExpressions/*!*/ MakeSimpleArgumentExpressionList(AstGenerator/*!*/ gen) {
+            var args = new AstExpressions();
 
             if (_expressions != null) {
                 gen.TranformExpressions(_expressions, args);
@@ -103,7 +107,8 @@ namespace IronRuby.Compiler.Ast {
             }
 
             if (_array != null) {
-                callBuilder.SplattedArgument = _array.TransformRead(gen);
+                callBuilder.SplattedArgument = 
+                    Ast.Dynamic(SplatAction.Make(gen.Context), typeof(IList), _array.TransformRead(gen));
             }
         }
 
@@ -112,13 +117,14 @@ namespace IronRuby.Compiler.Ast {
         #region Transform To Yield
 
         internal MSA.Expression/*!*/ TransformToYield(AstGenerator/*!*/ gen, MSA.Expression/*!*/ bfcVariable, MSA.Expression/*!*/ selfExpression) {
-            var args = (_expressions != null) ? gen.TranformExpressions(_expressions) : new List<MSA.Expression>();
+            var args = (_expressions != null) ? gen.TranformExpressions(_expressions) : new AstExpressions();
 
             if (_maplets != null) {
                 args.Add(gen.TransformToHashConstructor(_maplets));
             }
 
             return AstFactory.YieldExpression(
+                gen.Context,
                 args,
                 (_array != null) ? _array.TransformRead(gen) : null,         // splatted argument
                 null,                                                        // rhs argument
@@ -140,7 +146,7 @@ namespace IronRuby.Compiler.Ast {
             );
         }
 
-        internal static MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen, List<MSA.Expression>/*!*/ rightValues, 
+        internal static MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen, AstExpressions/*!*/ rightValues, 
             MSA.Expression splattedValue, bool doSplat) {
 
             Assert.NotNull(gen, rightValues);
@@ -157,14 +163,17 @@ namespace IronRuby.Compiler.Ast {
             bool rightOneNone = rightValues.Count == 1 && splattedValue == null;
 
             if (rightNoneSplat) {
-                result = (doSplat ? Methods.Splat : Methods.Unsplat).OpCall(AstFactory.Box(splattedValue));
+                result = Ast.Dynamic(SplatAction.Make(gen.Context), typeof(IList), splattedValue);
+                if (doSplat) {
+                    result = Methods.Splat.OpCall(result);
+                }
             } else if (rightOneNone && doSplat) {
                 result = rightValues[0];
             } else {
                 result = Methods.MakeArrayOpCall(rightValues);
 
                 if (splattedValue != null) {
-                    result = Methods.SplatAppend.OpCall(result, AstFactory.Box(splattedValue));
+                    result = Methods.SplatAppend.OpCall(result, Ast.Dynamic(SplatAction.Make(gen.Context), typeof(IList), splattedValue));
                 }
             }
             return result;

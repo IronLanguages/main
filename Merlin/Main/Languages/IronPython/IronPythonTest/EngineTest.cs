@@ -344,7 +344,7 @@ namespace IronPythonTest {
             ScriptSource src = engine.CreateScriptSourceFromString("x.Bar()");
             ScriptScope scope = engine.CreateScope();
             scope.SetVariable("x", new Fooable());
-            AreEqual(src.Execute(scope), "Bar Called");
+            AreEqual((object)src.Execute(scope), "Bar Called");
         }
 
         class MyInvokeMemberBinder : InvokeMemberBinder {
@@ -1065,6 +1065,26 @@ xrange = xrange
 
                 AreEqual((object)ops.Invoke(f, inp), PythonTuple.MakeTuple(inp));
             }
+
+            ScriptScope mod = _env.CreateScope();
+
+            _pe.CreateScriptSourceFromString(@"
+class foo(object):
+    abc = 3
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+", SourceCodeKind.Statements).Execute(mod);
+
+            object klass = mod.GetVariable("foo");
+
+            // create instance of foo, verify members
+
+            object foo = ops.CreateInstance(klass , 123, 444);
+
+            Assert(ops.GetMember<int>(foo, "abc") == 3);
+            Assert(ops.GetMember<int>(foo, "x") == 123);
+            Assert(ops.GetMember<int>(foo, "y") == 444);
         }
 
         public void ScenarioCP712() {

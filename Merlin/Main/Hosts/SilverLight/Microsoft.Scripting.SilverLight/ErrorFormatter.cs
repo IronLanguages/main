@@ -77,6 +77,11 @@ namespace Microsoft.Scripting.Silverlight {
         static volatile bool _displayedError = false;
         static ScriptRuntime _runtime;
 
+        /// <summary>
+        /// Displays an error
+        /// </summary>
+        /// <param name="targetElementId">HTML id to put error information into</param>
+        /// <param name="e">Exception to get error info out of</param>
         internal static void DisplayError(string targetElementId, Exception e) {
             // we only support displaying one error
             if (_displayedError) {
@@ -84,27 +89,43 @@ namespace Microsoft.Scripting.Silverlight {
             }
             _displayedError = true;
 
-            _runtime = DynamicApplication.Current.Engine.Runtime;
+            // keep track of the runtime if it exists
+            if (DynamicApplication.Current.Engine != null) {
+                _runtime = DynamicApplication.Current.Engine.Runtime;
+            }
 
+            // show the window in the targetElementId
             Window.Show(targetElementId);
-            Repl.Show();
 
+            // show the Repl if we can get to the current engine
+            if (DynamicApplication.Current.Engine != null) {
+                Repl.Show();
+            }
+
+            // format the Exception
             string result;
-
             try {
                 result = FormatErrorAsHtml(e);
             } catch (Exception ex) {
                 result = EscapeHtml(ex.ToString());
             }
 
+            // Create a "div" with class/id set as the _errorReportId, and put
+            // formatted exception into it.
             var report = HtmlPage.Document.CreateElement("div");
             report.Id = report.CssClass = _errorReportId;
             report.SetProperty("innerHTML", result);
+
+            // Adds a new panel to the "Window", initialize it, and force the panel to be shown.
             Window.Current.AddPanel("Error Report (" + EscapeHtml(new DynamicExceptionInfo(e).ErrorTypeName) + ")", report);
             Window.Current.Initialize();
             Window.Current.ShowPanel(report.Id);
         }
 
+        /// <summary>
+        /// Get the dynamic exception info from the CLR exception, and format
+        /// it with the _errorHtmlTemplate.
+        /// </summary>
         internal static string FormatErrorAsHtml(Exception e) {
 
             // Get information about this exception object
@@ -128,7 +149,9 @@ namespace Microsoft.Scripting.Silverlight {
             );
         }
 
-        // Print the line with the error plus some context lines
+        /// <summary>
+        /// Render the line with the error plus some context lines
+        /// </summary>
         private static string FormatSourceCode(DynamicExceptionInfo err) {
             var sourceFile = err.SourceFileName;
             int line = err.SourceLine;
@@ -176,7 +199,9 @@ namespace Microsoft.Scripting.Silverlight {
             return text.ToString();
         }
 
-        // Gets the stack trace using whatever information we have available
+        /// <summary>
+        /// Gets the stack trace using whatever information we have available
+        /// </summary>
         private static string FormatStackTrace(DynamicExceptionInfo err) {
             Exception ex = err.Exception;
 
@@ -211,10 +236,16 @@ namespace Microsoft.Scripting.Silverlight {
             return EscapeHtml(ex.StackTrace != null ? ex.StackTrace : ex.ToString());
         }
 
+        /// <summary>
+        /// HtmlEncode, and escape spaces and newlines.
+        /// </summary>
         public static string EscapeHtml(string str) {
             return HttpUtility.HtmlEncode(str).Replace(" ", "&nbsp;").Replace("\n", "<br />");
         }
 
+        /// <summary>
+        /// Class used to handle syntax errors and throw the proper exception.
+        /// </summary>
         public class Sink : ErrorListener {
             public override void ErrorReported(ScriptSource source, string message, SourceSpan span, int errorCode, Severity severity) {
                 throw new SyntaxErrorException(message, HostingHelpers.GetSourceUnit(source), span, errorCode, severity);
@@ -261,8 +292,8 @@ namespace Microsoft.Scripting.Silverlight {
                 _exception = e;
                 _dynamicStackFrames = ScriptingRuntimeHelpers.GetDynamicStackFrames(e);
 
-                // We can get the source code context either from the DynamicStackFrame or from
-                // a SyntaxErrorException
+                // We can get the file name and line number from either the 
+                // DynamicStackFrame or from a SyntaxErrorException
                 SyntaxErrorException se = e as SyntaxErrorException;
                 if (null != se) {
                     _sourceFileName = se.GetSymbolDocumentName();
@@ -272,19 +303,20 @@ namespace Microsoft.Scripting.Silverlight {
                     _sourceLine = _dynamicStackFrames[0].GetFileLineNumber();
                 }
 
+                // Try to get the ScriptEngine from the source file's extension;
+                // if that fails just use the current ScriptEngine
                 ScriptEngine engine = null;
-                if (_sourceFileName != null && _sourceFileName.IndexOfAny(Path.GetInvalidPathChars()) == 0) {
+                if (_sourceFileName != null) {
                     try {
                         var extension = System.IO.Path.GetExtension(_sourceFileName);
                         _runtime.TryGetEngineByFileExtension(extension, out engine);
                     } catch (ArgumentException) {
                         engine = DynamicApplication.Current.Engine.Engine;
                     }
-                } else if (Repl.Current != null && Repl.Current.Engine != null) {
-                    // running at an interactive prompt, so get the prompt's engine
-                    engine = Repl.Current.Engine;
                 }
 
+                // If we have the file name and the engine, use ExceptionOperations
+                // to generate the exception message. Otherwise, create it by hand
                 if (_sourceFileName != null && engine != null) {
                     ExceptionOperations es = engine.GetService<ExceptionOperations>();
                     es.GetExceptionMessage(_exception, out _message, out _errorTypeName);

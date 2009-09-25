@@ -164,12 +164,12 @@ namespace Microsoft.Scripting.Runtime {
             IDictionary<string, object> options, string paramName) {
             ContractUtils.Requires(!_frozen, "Configuration cannot be modified once the runtime is initialized");
             ContractUtils.Requires(
-                CollectionUtils.TrueForAll(names, (id) => !String.IsNullOrEmpty(id) && !_languageNames.ContainsKey(id)),
+                names.TrueForAll((id) => !String.IsNullOrEmpty(id) && !_languageNames.ContainsKey(id)),
                 paramName ?? "names",
                 "Language name should not be null, empty or duplicated between languages"
             );
             ContractUtils.Requires(
-                CollectionUtils.TrueForAll(fileExtensions, (ext) => !String.IsNullOrEmpty(ext) && !_languageExtensions.ContainsKey(ext)),
+                fileExtensions.TrueForAll((ext) => !String.IsNullOrEmpty(ext) && !_languageExtensions.ContainsKey(ext)),
                 paramName ?? "fileExtensions",
                 "File extension should not be null, empty or duplicated between languages"
             );
