@@ -44,7 +44,7 @@ class Pathname
 
   def filtered_files
     raise "Cannot call filtered_files on a filename path: #{self}" if !directory?
-    files.find_all { |f| !EXCLUDED_EXTENSIONS.include?((self + f).extname) }.map { |f| f.downcase }
+    files.find_all { |f| !EXCLUDED_EXTENSIONS.include?((self + f).extname) }
   end
 end
 
@@ -135,6 +135,11 @@ class Configuration
   def self.resolve_framework_path(group, path)
     @master[group].resolve_framework_path(path)
   end
+  
+  def self.mono?
+    return true if ENV['mono']
+    ENV['OS'] != "Windows_NT"
+  end
 end
 
 Configuration.define do
@@ -151,10 +156,10 @@ Configuration.define do
     switches :all, 'define:SILVERLIGHT', 'nostdlib+', 'platform:AnyCPU'
     references 'mscorlib.dll'
   }
-  if ENV['mono'].nil?
+  unless mono?
     group(:desktop) {
       framework_path [Pathname.new(ENV['windir'].dup) + 'Microsoft.NET/Framework/v2.0.50727',
-                      Pathname.new('c:\program files\reference assemblies\microsoft\framework\v3.5')]
+                      Pathname.new('c:/program files/reference assemblies/microsoft/framework/v3.5')]
     }
     group(:silverlight) {
       framework_path [Pathname.new('c:/program files/microsoft silverlight/2.0.30523.6')]
@@ -163,13 +168,17 @@ Configuration.define do
     group(:mono) {
       framework_path {
         libdir = IO.popen('pkg-config --variable=libdir mono').read.strip
-        [Pathname.new(libdir) + 'mono' + '2.0']
+        path = [Pathname.new(libdir) + 'mono' + '2.0', Pathname.new('/usr/lib/mono/2.0/')]
+        path << Pathname.new(ENV['MONO_LIB'] + '/mono/2.0/') unless ENV['MONO_LIB'].nil? 
+        path
       }
       switches :all, 'noconfig'
       remove_switches ['warnaserror+']
     }
   end
-end
+end        
+
+
 
 module IronRubyUtils
   def banner(message)
@@ -186,10 +195,10 @@ module IronRubyUtils
 
   def is_test?
     ENV['test']
-  end
+  end    
   
   def mono?
-    ENV['mono']
+    Configuration.mono?
   end
   
   def rake_version
@@ -206,7 +215,7 @@ module IronRubyUtils
   end
 
   def exec_net(cmd)
-    if ENV['mono'].nil?
+    unless mono?
       exec cmd
     else
       exec "mono #{cmd}"
@@ -230,7 +239,7 @@ module IronRubyUtils
   end
 
   def clr
-    unless ENV['mono']
+    unless mono?
       ENV['clr'] ? ENV['clr'].to_sym : :desktop
     else
       :mono
@@ -247,7 +256,9 @@ module IronRubyUtils
 end
 
 class CSProjCompiler
+  
   include IronRubyUtils
+  
   def initialize(&b)
     @targets = {}
     instance_eval(&b)
@@ -278,10 +289,11 @@ class CSProjCompiler
       if cs_args.include?('noconfig')
         cs_args.delete('noconfig')
         cmd << " /noconfig"
-      end
+      end                      
+
       temp = Tempfile.new(name.to_s)
       cs_args.each { |opt| temp << ' /' + opt + "\n"}
-      options = get_compile_path_list(args[:csproj]).join("\n")
+      options = get_compile_path_list(args[:csproj]).join("\n")     
       temp.puts options
       temp.close
       cmd << " @" << temp.path
@@ -289,12 +301,13 @@ class CSProjCompiler
     end
   end
 
-  def get_case_sensitive_path(pathname)
+  def get_case_sensitive_path(pathname)   
+    return "../AssemblyVersion.cs" if pathname == "..\\AssemblyVersion.cs"
     elements = pathname.split '\\'
     result = Pathname.new '.'
     elements.each do |element|
       entry = result.entries.find { |p| p.downcase == element.downcase }
-      result = result + entry
+      result = result + entry unless entry.nil? 
     end
     result.to_s
   end
@@ -305,8 +318,8 @@ class CSProjCompiler
     if cs_proj_files.length == 1
       doc = REXML::Document.new(File.open(cs_proj_files.first))
       result = doc.elements.collect("/Project/ItemGroup/Compile") { |c| c.attributes['Include'] }
-      result.delete_if { |e| e =~ /(Silverlight\\SilverlightVersion.cs|System\\Dynamic\\Parameterized.System.Dynamic.cs)/ }
-      result.map! { |p| get_case_sensitive_path(p) } if ENV['mono']
+      result.delete_if { |e| e =~ /(Silverlight\\SilverlightVersion.cs|System\\Dynamic\\Parameterized.System.Dynamic.cs)|\.\./ }
+      result.map! { |p| get_case_sensitive_path(p) } if mono?
       result
     else
       raise ArgumentError.new("Found more than one .csproj file in directory! #{cs_proj_files.join(", ")}")
@@ -367,16 +380,18 @@ class CSProjCompiler
 
   def transform_config_file(configuration, source_path, target_build_path)
     # signing is on for IronRuby in Merlin, off for SVN and Binary
-    layout = {'Merlin' => { :LibraryPaths => '..\..\Languages\Ruby\libs;..\..\..\External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\site_ruby\1.8;..\..\..\External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\site_ruby;..\..\..\External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.8' }, 
-              'Binary' => { :LibraryPaths => '..\lib\IronRuby;..\lib\ruby\site_ruby\1.8;..\lib\ruby\site_ruby;..\lib\ruby\1.8' } }
+    layout = {'Merlin' => { :LibraryPaths => '..\..\Languages\Ruby\libs;..\..\..\External.LCA_RESTRICTED\Languages\Ruby\Ruby-1.8.6p287\lib\ruby\site_ruby\1.8;..\..\..\External.LCA_RESTRICTED\Languages\Ruby\Ruby-1.8.6p287\lib\ruby\site_ruby;..\..\..\External.LCA_RESTRICTED\Languages\Ruby\Ruby-1.8.6p287\lib\ruby\1.8' }, 
+              'Binary' => { :LibraryPaths => '..\lib\IronRuby;..\lib\ruby\site_ruby\1.8;..\lib\ruby\site_ruby;..\lib\ruby\1.8' },
+              'MerlinMono' => { :LibraryPaths => '../../Languages/Ruby/libs;../../../External.LCA_RESTRICTED/Languages/Ruby/Ruby-1.8.6p287/lib/ruby/site_ruby/1.8;../../../External.LCA_RESTRICTED/Languages/Ruby/Ruby-1.8.6p287/lib/ruby/site_ruby;../../../External.LCA_RESTRICTED/Languages/Ruby/Ruby-1.8.6p287/lib/ruby/1.8' }, 
+              'MonoRL' => { :LibraryPaths => '../lib;../lib/ironruby;../lib/ruby/site_ruby/1.8/;../lib/ruby/site_ruby/;../lib/ruby/1.8/' } }
     
     transform_config source_path, target_build_path, layout[configuration][:LibraryPaths]
   end
 
   def move_config(name = "ir.exe.config")
-    source = project_root + "Config/Unsigned/app.config"
+    source = project_root + "Config/Unsigned/App.config"
     config_file = build_path + name
-    transform_config_file('Merlin', source, config_file)
+    transform_config_file(mono? ? ((ENV['configuration']||:debug).to_sym == :debug ? 'MerlinMono' : 'MonoRL' ) : 'Merlin', source, config_file)
   end
 
   def method_missing(name, *args)

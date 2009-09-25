@@ -79,6 +79,6 @@ namespace :compile do
   task :all => [:compile, :ironpython]
 end
 desc "compile everything"
-task :compile => %w{happy clean_build compile:dlr compile:ruby compile:libraries compile:console compile:testhost compile:generator compile:yaml}
+task :compile => %w{happy clean_build compile:dlr compile:ruby compile:libraries compile:console compile:generator compile:yaml}
 
 

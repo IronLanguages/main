@@ -1,4 +1,4 @@
-#!/usr/bin/env ruby
+#!/usr/bin/env ir
 #  RDoc: Documentation tool for source code
 #        (see lib/rdoc/rdoc.rb for more information)
 #

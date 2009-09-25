@@ -12,7 +12,7 @@
 #
 #
 # ****************************************************************************
-require "#{ENV['MERLIN_ROOT']}\\Languages\\Ruby\\Scripts\\irtests"
+require "#{ENV['MERLIN_ROOT']}/Languages/Ruby/Scripts/irtests"
 namespace :test do
   desc "remove output files and generated debugging info from tests directory"
   task :clean do

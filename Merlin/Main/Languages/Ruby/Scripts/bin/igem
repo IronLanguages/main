@@ -1,4 +1,5 @@
-#!c:/utils/ruby/bin/ruby.exe
+#!/usr/bin/env ir
+
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
@@ -25,4 +26,3 @@ begin
 rescue Gem::SystemExitException => e
   exit e.exit_code
 end
-
