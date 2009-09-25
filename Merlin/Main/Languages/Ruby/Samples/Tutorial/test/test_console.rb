@@ -41,7 +41,7 @@ class MiniTest::Unit::TestCase
 end
 
 def get_standard_tutorial(file_name)
-  path = "Tutorials/#{file_name}"
+  path = "app/Tutorials/#{file_name}"
   path = File.expand_path(path, TUTORIAL_ROOT) if not SILVERLIGHT     
   Tutorial.get_tutorial path
 end

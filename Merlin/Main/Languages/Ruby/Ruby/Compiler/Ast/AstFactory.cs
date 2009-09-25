@@ -24,32 +24,35 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Dynamic;
-using System.Threading;
-using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Ast;
-using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using IronRuby.Builtins;
 using IronRuby.Runtime;
-using IronRuby.Runtime.Calls;
 using IronRuby.Runtime.Conversions;
 
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Compiler.Ast {
     using Ast = MSA.Expression;
+    using AstExpressions = ReadOnlyCollectionBuilder<MSA.Expression>;
 
     public static class AstFactory {
 
         internal static readonly MSA.Expression[] EmptyExpressions = new MSA.Expression[0];
         internal static readonly MSA.ParameterExpression[] EmptyParameters = new MSA.ParameterExpression[0];
-        internal static readonly MSA.Expression NullOfMutableString = AstUtils.Constant(null, typeof(MutableString));
-        internal static readonly MSA.Expression NullOfProc = AstUtils.Constant(null, typeof(Proc));
+        internal static readonly MSA.Expression NullOfMutableString = Ast.Constant(null, typeof(MutableString));
+        internal static readonly MSA.Expression NullOfProc = Ast.Constant(null, typeof(Proc));
+        internal static readonly MSA.Expression True = Ast.Constant(ScriptingRuntimeHelpers.True);
+        internal static readonly MSA.Expression False = Ast.Constant(ScriptingRuntimeHelpers.False);
         internal static readonly MSA.Expression BlockReturnReasonBreak = AstUtils.Constant(BlockReturnReason.Break);
+
+        public static AstExpressions/*!*/ Expressions(MSA.Expression/*!*/ expression) {
+            var result = new AstExpressions();
+            result.Add(expression);
+            return result;
+        }
 
         public static MSA.Expression/*!*/ Infinite(MSA.LabelTarget @break, MSA.LabelTarget @continue, params MSA.Expression[]/*!*/ body) {
             return AstUtils.Infinite(Ast.Block(body), @break, @continue);
@@ -92,6 +95,14 @@ namespace IronRuby.Compiler.Ast {
                 return Ast.Not(expression);
             } else {
                 return Methods.IsFalse.OpCall(Box(expression));
+            }
+        }
+
+        public static MSA.Expression/*!*/ Logical(MSA.Expression/*!*/ left, MSA.Expression/*!*/ right, bool isConjunction) {
+            if (isConjunction) {
+                return Ast.AndAlso(left, right);
+            } else {
+                return Ast.OrElse(left, right);
             }
         }
 
@@ -158,7 +169,7 @@ namespace IronRuby.Compiler.Ast {
 
         internal static MSA.Expression/*!*/ YieldExpression(
             RubyContext/*!*/ context,
-            IList<MSA.Expression>/*!*/ arguments, 
+            AstExpressions/*!*/ arguments, 
             MSA.Expression splattedArgument,
             MSA.Expression rhsArgument,
             MSA.Expression/*!*/ bfcVariable,
@@ -169,16 +180,14 @@ namespace IronRuby.Compiler.Ast {
             bool hasArgumentArray;
             var opMethod = Methods.Yield(arguments.Count, splattedArgument != null, rhsArgument != null, out hasArgumentArray);
 
-            var args = new ReadOnlyCollectionBuilder<MSA.Expression>();
+            var args = new AstExpressions();
 
             foreach (var arg in arguments) {
                 args.Add(AstFactory.Box(arg));
             }
 
             if (hasArgumentArray) {
-                var newArgs = new ReadOnlyCollectionBuilder<MSA.Expression>();
-                newArgs.Add(Ast.NewArrayInit(typeof(object), args));
-                args = newArgs;
+                args = AstFactory.Expressions(Ast.NewArrayInit(typeof(object), args));
             }
 
             if (splattedArgument != null) {

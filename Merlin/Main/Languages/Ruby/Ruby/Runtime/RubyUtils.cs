@@ -448,14 +448,14 @@ namespace IronRuby.Runtime {
             Assert.NotNull(globalScope, owner, name);
 
             using (owner.Context.ClassHierarchyLocker()) {
-                object result;
-                if (owner.TryResolveConstantNoLock(globalScope, name, out result)) {
-                    return result;
+                ConstantStorage storage;
+                if (owner.TryResolveConstantNoLock(globalScope, name, out storage)) {
+                    return storage.Value;
                 }
 
                 RubyClass objectClass = owner.Context.ObjectClass;
-                if (owner != objectClass && lookupObject && objectClass.TryResolveConstantNoLock(globalScope, name, out result)) {
-                    return result;
+                if (owner != objectClass && lookupObject && objectClass.TryResolveConstantNoLock(globalScope, name, out storage)) {
+                    return storage.Value;
                 }
             }
 
@@ -591,13 +591,16 @@ namespace IronRuby.Runtime {
 
         #region Modules, Classes
         
-        internal static RubyModule/*!*/ GetModuleFromObject(RubyContext/*!*/ context, object obj) {
-            Assert.NotNull(context);
+        internal static RubyModule/*!*/ GetModuleFromObject(RubyScope/*!*/ scope, object obj) {
             RubyModule module = obj as RubyModule;
             if (module == null) {
-                throw RubyExceptions.CreateTypeError(String.Format("{0} is not a class/module", context.GetClassOf(obj)));
+                throw CreateNotModuleException(scope, obj);
             }
             return module;
+        }
+
+        internal static Exception/*!*/ CreateNotModuleException(RubyScope/*!*/ scope, object obj) {
+            return RubyExceptions.CreateTypeError(String.Format("{0} is not a class/module", scope.RubyContext.GetClassOf(obj)));
         }
 
         public static void RequireMixins(RubyModule/*!*/ target, params RubyModule[]/*!*/ modules) {
@@ -788,12 +791,8 @@ namespace IronRuby.Runtime {
             );
         }
 
-        private static RubyScope/*!*/ CreateModuleEvalScope(RubyScope/*!*/ parent, object self, RubyModule module) {
+        private static RubyScope/*!*/ CreateModuleEvalScope(RubyScope/*!*/ parent, object self, RubyModule/*!*/ module) {
             var scope = new RubyModuleEvalScope(parent, module, self);
-
-            // module-eval defines a nested module scope that affects constant lookup:
-            parent.GetInnerMostModuleForConstantLookup().AddNestedModule(module);
-            
             scope.SetDebugName("instance/module-eval");
             return scope;
         }

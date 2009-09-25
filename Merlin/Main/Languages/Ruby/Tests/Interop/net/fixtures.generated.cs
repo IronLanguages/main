@@ -150,8 +150,8 @@ public class EmptyClass {}
     [return: MarshalAs(UnmanagedType.U1)]
     public virtual bool Foo() { return true;}
   }
-#line 7 "./delegate/fixtures/classes.rb"
-#line 12 "./delegate/fixtures/classes.rb"
+#line 8 "./delegate/fixtures/classes.rb"
+#line 13 "./delegate/fixtures/classes.rb"
 public partial class DelegateConversionClass {
     public delegate int Delegate1(string str);
     private ScriptEngine _engine;

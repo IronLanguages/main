@@ -90,7 +90,7 @@ namespace IronRuby.Compiler.Ast {
             }
             
             return Ast.Block(
-                Ast.Assign(singleton, Ast.Field(null, Fields.RubyOps_DefaultArgumentField)),
+                Ast.Assign(singleton, Ast.Field(null, Fields.DefaultArgument)),
                 result,
                 AstUtils.Empty()
             );

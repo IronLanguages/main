@@ -86,7 +86,7 @@ namespace IronRuby.Compiler.Ast {
 
             gen.EnterLoop(redoVariable, resultVariable, breakLabel, continueLabel);
             MSA.Expression transformedBody = gen.TransformStatements(_statements, ResultOperation.Ignore);
-            MSA.Expression transformedCondition = AstFactory.IsTrue(_condition.TransformReadStep(gen));
+            MSA.Expression transformedCondition = _condition.TransformCondition(gen, true);
             gen.LeaveLoop();
 
             MSA.Expression conditionPositiveStmt, conditionNegativeStmt;

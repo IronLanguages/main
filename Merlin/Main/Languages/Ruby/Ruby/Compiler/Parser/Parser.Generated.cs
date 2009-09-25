@@ -32,7 +32,7 @@ None = 127, Error = 128,
     And = 169, Or = 170, Not = 171, IfMod = 172, UnlessMod = 173, WhileMod = 174, UntilMod = 175, RescueMod = 176, 
     Alias = 177, Defined = 178, UppercaseBegin = 179, UppercaseEnd = 180, Line = 181, File = 182, Encoding = 183, Uplus = 184, 
     Uminus = 185, Pow = 186, Cmp = 187, Eq = 188, Eqq = 189, Neq = 190, Geq = 191, Leq = 192, 
-    BitwiseAnd = 193, BitwiseOr = 194, Match = 195, Nmatch = 196, Dot2 = 197, Dot3 = 198, Aref = 199, Aset = 200, 
+    LogicalAnd = 193, LogicalOr = 194, Match = 195, Nmatch = 196, Dot2 = 197, Dot3 = 198, Aref = 199, Aset = 200, 
     Lshft = 201, Rshft = 202, SeparatingDoubleColon = 203, LeadingDoubleColon = 204, Assoc = 205, LeftParen = 206, StringEnd = 207, LparenArg = 208, 
     Lbrack = 209, Lbrace = 210, LbraceArg = 211, Star = 212, Ampersand = 213, Identifier = 214, FunctionIdentifier = 215, GlobalVariable = 216, 
     InstanceVariable = 217, ConstantIdentifier = 218, ClassVariable = 219, Assignment = 220, Integer = 221, BigInteger = 222, Float = 223, StringContent = 224, 
@@ -3515,7 +3515,7 @@ public partial class Parser
 
   private void _227()
   {
-      // arg -> arg BitwiseAnd arg 
+      // arg -> arg LogicalAnd arg 
 #line 924 "Parser.y"
 			{
             yyval.Expression = new AndExpression(GetValue(3).Expression, GetValue(1).Expression, yyloc);
@@ -3524,7 +3524,7 @@ public partial class Parser
 
   private void _228()
   {
-      // arg -> arg BitwiseOr arg 
+      // arg -> arg LogicalOr arg 
 #line 928 "Parser.y"
 			{
             yyval.Expression = new OrExpression(GetValue(3).Expression, GetValue(1).Expression, yyloc);
@@ -3533,7 +3533,7 @@ public partial class Parser
 
   private void _229()
   {
-      // arg -> arg BitwiseAnd jump_statement_parameterless 
+      // arg -> arg LogicalAnd jump_statement_parameterless 
 #line 932 "Parser.y"
 			{
             yyval.Expression = new ConditionalJumpExpression(GetValue(3).Expression, GetValue(1).JumpStatement, false, null, yyloc);
@@ -3542,7 +3542,7 @@ public partial class Parser
 
   private void _230()
   {
-      // arg -> arg BitwiseOr jump_statement_parameterless 
+      // arg -> arg LogicalOr jump_statement_parameterless 
 #line 936 "Parser.y"
 			{
             yyval.Expression = new ConditionalJumpExpression(GetValue(3).Expression, GetValue(1).JumpStatement, true, null, yyloc);
@@ -4559,7 +4559,7 @@ public partial class Parser
 
   private void _355()
   {
-      // block_parameters_opt -> BitwiseOr 
+      // block_parameters_opt -> LogicalOr 
 #line 1485 "Parser.y"
 			{
             yyval.CompoundLeftValue = CompoundLeftValue.EmptyBlockSignature;

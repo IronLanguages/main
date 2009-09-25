@@ -44,6 +44,7 @@ namespace IronRuby.Runtime {
     /// <summary>
     /// An isolation context: could be per thread/request or shared accross certain threads.
     /// </summary>
+    [ReflectionCached]
     public sealed class RubyContext : LanguageContext {
         internal static readonly Guid RubyLanguageGuid = new Guid("F03C4640-DABA-473f-96F1-391400714DAB");
         private static readonly Guid LanguageVendor_Microsoft = new Guid(-1723120188, -6423, 0x11d2, 0x90, 0x3f, 0, 0xc0, 0x4f, 0xa3, 2, 0xa1);
@@ -54,8 +55,8 @@ namespace IronRuby.Runtime {
         public static readonly string/*!*/ MriReleaseDate = "2008-05-28";
 
         // IronRuby:
-        public const string/*!*/ IronRubyVersionString = "0.9.0.0";
-        public static readonly Version IronRubyVersion = new Version(0, 9, 0, 0);
+        public const string/*!*/ IronRubyVersionString = "0.9.1.0";
+        public static readonly Version IronRubyVersion = new Version(0, 9, 1, 0);
         internal const string/*!*/ IronRubyDisplayName = "IronRuby";
         internal const string/*!*/ IronRubyNames = "IronRuby;Ruby;rb";
         internal const string/*!*/ IronRubyFileExtensions = ".rb";
@@ -216,6 +217,9 @@ namespace IronRuby.Runtime {
         }
 
         private readonly CheckedMonitor/*!*/ _classHierarchyLock = new CheckedMonitor();
+
+        [Emitted]
+        public int ConstantAccessVersion = 1;
 
         [Conditional("DEBUG")]
         internal void RequiresClassHierarchyLock() {
@@ -555,9 +559,9 @@ namespace IronRuby.Runtime {
                 obj.SetConstantNoMutateNoLock("STDOUT", StandardOutput);
                 obj.SetConstantNoMutateNoLock("STDERR", StandardErrorOutput);
 
-                object ARGF;
-                if (obj.TryGetConstantNoAutoloadCheck("ARGF", out ARGF)) {
-                    _inputProvider.Singleton = ARGF;
+                ConstantStorage argf;
+                if (obj.TryGetConstantNoAutoloadCheck("ARGF", out argf)) {
+                    _inputProvider.Singleton = argf.Value;
                 }
 
                 obj.SetConstantNoMutateNoLock("ARGV", _inputProvider.CommandLineArguments);
@@ -1321,12 +1325,12 @@ namespace IronRuby.Runtime {
                         partialName = moduleName.Substring(pos, pos2 - pos);
                         pos = pos2 + 2;
                     }
-                    object tmp;
+                    ConstantStorage tmp;
                     if (!result.TryResolveConstantNoLock(autoloadScope, partialName, out tmp)) {
                         result = null;
                         return false;
                     }
-                    result = tmp as RubyModule;
+                    result = tmp.Value as RubyModule;
                     if (result == null) {
                         return false;
                     } else if (pos2 < 0) {
@@ -2285,7 +2289,6 @@ namespace IronRuby.Runtime {
 
                     output.WriteLine();
 #endif
-                    DumpNestedModules(output);
                     PerfTrack.DumpStats(output);
                 }
             }
@@ -2295,18 +2298,6 @@ namespace IronRuby.Runtime {
             ExecuteShutdownHandlers();
         }
 
-        private void DumpNestedModules(TextWriter/*!*/ output) {
-            using (ClassHierarchyLocker()) {
-                _objectClass.ForEachRecursivelyNestedModule(
-                    (nested, level) => {
-                        output.Write(new String(' ', 2 * level));
-                        output.WriteLine(nested);
-                        return false;
-                    }
-                );
-            }
-        }
-        
         #endregion
 
         #region Exceptions (thread-safe)

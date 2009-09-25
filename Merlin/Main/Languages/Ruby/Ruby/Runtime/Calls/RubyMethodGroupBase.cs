@@ -241,7 +241,7 @@ namespace IronRuby.Runtime.Calls {
                     // C.new.Add dispatches to the virtual ArrayList::Add, which in turn dispatches to the auto-generated override C$1::Add.
                     // That gets here since the defined method is a Ruby method (a detached CLR method group). If we called it directly
                     // it would invoke the C$1::Add override again leading to a stack overflow. So we need to use a base call instead.
-                    metaBuilder.Result = Ast.Field(null, Fields.RubyOps_ForwardToBase);
+                    metaBuilder.Result = Ast.Field(null, Fields.ForwardToBase);
                 } else {
                     metaBuilder.Result = bindingTarget.MakeExpression();
                 }

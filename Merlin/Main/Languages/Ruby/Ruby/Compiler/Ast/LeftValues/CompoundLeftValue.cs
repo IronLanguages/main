@@ -24,6 +24,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Text;
+using System.Runtime.CompilerServices;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Utils;
 using IronRuby.Runtime.Calls;
@@ -32,6 +33,7 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Compiler.Ast {
     using Ast = MSA.Expression;
+    using AstExpressions = ReadOnlyCollectionBuilder<MSA.Expression>;
 
     public partial class CompoundLeftValue : LeftValue {
         /// <summary>
@@ -80,14 +82,14 @@ namespace IronRuby.Compiler.Ast {
 
         internal override MSA.Expression/*!*/ TransformWrite(AstGenerator/*!*/ gen, MSA.Expression targetValue, MSA.Expression/*!*/ rightValue) {
             Debug.Assert(targetValue == null);
-            return TransformWrite(gen, CollectionUtils.MakeList(rightValue), null);
+            return TransformWrite(gen, AstFactory.Expressions(rightValue), null);
         }
 
         internal MSA.Expression/*!*/ TransformWrite(AstGenerator/*!*/ gen, CompoundRightValue/*!*/ rhs) {
             return TransformWrite(gen, gen.TranformExpressions(rhs.RightValues), (rhs.SplattedValue != null) ? rhs.SplattedValue.TransformRead(gen) : null);
         }
 
-        private MSA.Expression/*!*/ TransformWrite(AstGenerator/*!*/ gen, List<MSA.Expression>/*!*/ rightValues, MSA.Expression splattedValue) {
+        private MSA.Expression/*!*/ TransformWrite(AstGenerator/*!*/ gen, AstExpressions/*!*/ rightValues, MSA.Expression splattedValue) {
 
             // We need to distinguish various special cases here.
             // Each of the bool variables defined below is true iff the corresponding special form of LHS/RHS occurs.

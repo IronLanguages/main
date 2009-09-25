@@ -13,25 +13,15 @@
  *
  * ***************************************************************************/
 
-using System;
-using System.Dynamic;
-using System.Diagnostics;
-using System.Text;
-
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Math;
-using Microsoft.Scripting;
-
-using IronRuby.Builtins;
-
-namespace IronRuby.Compiler.Ast {
-    #if !CLR2
+#if !CLR2
 using MSA = System.Linq.Expressions;
 #else
 using MSA = Microsoft.Scripting.Ast;
 #endif
 
-    using Ast = Expression;
+using Microsoft.Scripting;
+
+namespace IronRuby.Compiler.Ast {
     using AstUtils = Microsoft.Scripting.Ast.Utils;
 
     public partial class EncodingExpression : Expression {
@@ -41,10 +31,6 @@ using MSA = Microsoft.Scripting.Ast;
 
         internal override MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen) {
             return AstUtils.Constant(gen.Encoding);
-        }
-
-        internal override MSA.Expression TransformDefinedCondition(AstGenerator/*!*/ gen) {
-            return null;
         }
     }
 }

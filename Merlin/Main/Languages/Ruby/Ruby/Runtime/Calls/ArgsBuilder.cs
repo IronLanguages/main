@@ -140,7 +140,7 @@ namespace IronRuby.Runtime.Calls {
         public void FillMissingArguments() {
             for (int i = _explicitArgCount; i < _mandatoryParamCount + _optionalParamCount; i++) {
                 // TODO: optimize field read?
-                _arguments[_nextArgIndex++] = Ast.Field(null, Fields.RubyOps_DefaultArgumentField);
+                _arguments[_nextArgIndex++] = Ast.Field(null, Fields.DefaultArgument);
             }
         }
 

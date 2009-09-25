@@ -203,6 +203,15 @@ namespace Microsoft.Scripting.Utils {
             return array;
         }
 
+        public static T[] ToReverseArray<T>(this IList<T> list) {
+            ContractUtils.RequiresNotNull(list, "list");
+            T[] result = new T[list.Count];
+            for (int i = 0; i < result.Length; i++) {
+                result[i] = list[result.Length - 1 - i];
+            }
+            return result;
+        }
+
         // .NET 3.5 method:
         public static IEnumerable<TSource> Concat<TSource>(this IEnumerable<TSource> first, IEnumerable<TSource> second) {
             ContractUtils.RequiresNotNull(first, "first");

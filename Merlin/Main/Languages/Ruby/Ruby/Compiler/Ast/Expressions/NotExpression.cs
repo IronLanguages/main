@@ -38,7 +38,11 @@ namespace IronRuby.Compiler.Ast {
         }
 
         internal override MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen) {
-            return Methods.IsFalse.OpCall(AstFactory.Box(_expression.TransformRead(gen))); 
+            return _expression.TransformReadBoolean(gen, false);
+        }
+
+        internal override MSA.Expression/*!*/ TransformReadBoolean(AstGenerator/*!*/ gen, bool positive) {
+            return _expression.TransformReadBoolean(gen, !positive);
         }
 
         internal override Expression/*!*/ ToCondition(LexicalScope/*!*/ currentScope) {

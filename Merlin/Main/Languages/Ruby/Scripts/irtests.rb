@@ -4,7 +4,7 @@ require 'singleton'
 class IRTest
   attr_accessor :options  
   
-  def initialize(options)
+  def initialize(options = {})
     @options = options
     
     @config = (options[:clr4] ? "V4 " : "") + (options[:release] ? "Release" : "Debug")
@@ -17,7 +17,6 @@ class IRTest
        
     mspec_base = "#{@root}\\..\\External.LCA_RESTRICTED\\Languages\\IronRuby\\mspec\\mspec\\bin\\mspec.bat ci -fd"
     ir = "\"#{@bin}\\ir.exe\" -v"
-    @start = Time.now
     @suites = {
       :Smoke => "#{@root}\\Languages\\Ruby\\Tests\\Scripts\\irtest.bat",
       :Legacy => "#{@root}\\Languages\\Ruby\\Tests\\run.bat",
@@ -31,12 +30,9 @@ class IRTest
       :ActionPack => "#{ir} #{@root}\\Languages\\Ruby\\Tests\\Scripts\\ActionPackTests.rb",
       :ActiveSupport => "#{ir} #{@root}\\Languages\\Ruby\\Tests\\Scripts\\ActiveSupportTests.rb"
     }
+    @start = Time.now
   end
 
-  def self.method_missing(meth, *args, &blk)
-    self.instance.send(meth, *args, &blk)
-  end
-  
   def run
     time("Starting")
     kill
@@ -137,6 +133,7 @@ class IRTest
   end
 
   def test(suite)
+    @report = true
     title = suite.to_s.gsub("_", " ") << " Tests"
     test = @suites[suite]
     cmd = nil
@@ -155,6 +152,10 @@ class IRTest
     blk.call unless system cmd
   end
   
+  def exit_report
+    at_exit { report if @report}
+  end
+  
   def report
     puts "=" * 70
     exit_code = if @results.size == 1
@@ -171,6 +172,7 @@ class IRTest
     exit exit_code
   end
 end
+
 
 if $0 == __FILE__
   iroptions = {}

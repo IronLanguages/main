@@ -109,7 +109,7 @@ describe "Static dependency loading" do
   end
   
   it "does propagate load exceptions" do
-    ruby_exe("dependencies1/test2.rb", :dir => File.dirname(__FILE__)).chomp.should == "System::IO::FileLoadException"
+    ruby_exe("dependencies1/test2.rb", :dir => File.dirname(__FILE__)).chomp.should == "true"
   end
 end
 

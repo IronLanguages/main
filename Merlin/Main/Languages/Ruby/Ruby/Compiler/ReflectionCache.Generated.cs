@@ -15,8 +15,9 @@
 
 using System.Reflection;
 using System.Diagnostics;
-using IronRuby.Runtime;
 using IronRuby.Builtins;
+using IronRuby.Runtime;
+using IronRuby.Runtime.Calls;
 using Microsoft.Scripting.Utils;
 
 namespace IronRuby.Compiler {
@@ -223,8 +224,10 @@ namespace IronRuby.Compiler {
         private static MethodInfo _GetDefaultExceptionMessage;
         public static MethodInfo/*!*/ GetEmptyScope { get { return _GetEmptyScope ?? (_GetEmptyScope = GetMethod(typeof(RubyOps), "GetEmptyScope")); } }
         private static MethodInfo _GetEmptyScope;
-        public static MethodInfo/*!*/ GetGlobalConstant { get { return _GetGlobalConstant ?? (_GetGlobalConstant = GetMethod(typeof(RubyOps), "GetGlobalConstant")); } }
-        private static MethodInfo _GetGlobalConstant;
+        public static MethodInfo/*!*/ GetExpressionQualifiedConstant { get { return _GetExpressionQualifiedConstant ?? (_GetExpressionQualifiedConstant = GetMethod(typeof(RubyOps), "GetExpressionQualifiedConstant")); } }
+        private static MethodInfo _GetExpressionQualifiedConstant;
+        public static MethodInfo/*!*/ GetGlobalMissingConstant { get { return _GetGlobalMissingConstant ?? (_GetGlobalMissingConstant = GetMethod(typeof(RubyOps), "GetGlobalMissingConstant")); } }
+        private static MethodInfo _GetGlobalMissingConstant;
         public static MethodInfo/*!*/ GetGlobalVariable { get { return _GetGlobalVariable ?? (_GetGlobalVariable = GetMethod(typeof(RubyOps), "GetGlobalVariable")); } }
         private static MethodInfo _GetGlobalVariable;
         public static MethodInfo/*!*/ GetInstanceData { get { return _GetInstanceData ?? (_GetInstanceData = GetMethod(typeof(RubyOps), "GetInstanceData")); } }
@@ -243,6 +246,8 @@ namespace IronRuby.Compiler {
         private static MethodInfo _GetMethodBlockParameterSelf;
         public static MethodInfo/*!*/ GetMethodUnwinderReturnValue { get { return _GetMethodUnwinderReturnValue ?? (_GetMethodUnwinderReturnValue = GetMethod(typeof(RubyOps), "GetMethodUnwinderReturnValue")); } }
         private static MethodInfo _GetMethodUnwinderReturnValue;
+        public static MethodInfo/*!*/ GetMissingConstant { get { return _GetMissingConstant ?? (_GetMissingConstant = GetMethod(typeof(RubyOps), "GetMissingConstant")); } }
+        private static MethodInfo _GetMissingConstant;
         public static MethodInfo/*!*/ GetParentLocals { get { return _GetParentLocals ?? (_GetParentLocals = GetMethod(typeof(RubyOps), "GetParentLocals")); } }
         private static MethodInfo _GetParentLocals;
         public static MethodInfo/*!*/ GetParentScope { get { return _GetParentScope ?? (_GetParentScope = GetMethod(typeof(RubyOps), "GetParentScope")); } }
@@ -295,6 +300,10 @@ namespace IronRuby.Compiler {
         private static MethodInfo _IsClrSingletonRuleValid;
         public static MethodInfo/*!*/ IsDefinedClassVariable { get { return _IsDefinedClassVariable ?? (_IsDefinedClassVariable = GetMethod(typeof(RubyOps), "IsDefinedClassVariable")); } }
         private static MethodInfo _IsDefinedClassVariable;
+        public static MethodInfo/*!*/ IsDefinedExpressionConstant { get { return _IsDefinedExpressionConstant ?? (_IsDefinedExpressionConstant = GetMethod(typeof(RubyOps), "IsDefinedExpressionConstant")); } }
+        private static MethodInfo _IsDefinedExpressionConstant;
+        public static MethodInfo/*!*/ IsDefinedExpressionQualifiedConstant { get { return _IsDefinedExpressionQualifiedConstant ?? (_IsDefinedExpressionQualifiedConstant = GetMethod(typeof(RubyOps), "IsDefinedExpressionQualifiedConstant")); } }
+        private static MethodInfo _IsDefinedExpressionQualifiedConstant;
         public static MethodInfo/*!*/ IsDefinedGlobalConstant { get { return _IsDefinedGlobalConstant ?? (_IsDefinedGlobalConstant = GetMethod(typeof(RubyOps), "IsDefinedGlobalConstant")); } }
         private static MethodInfo _IsDefinedGlobalConstant;
         public static MethodInfo/*!*/ IsDefinedGlobalVariable { get { return _IsDefinedGlobalVariable ?? (_IsDefinedGlobalVariable = GetMethod(typeof(RubyOps), "IsDefinedGlobalVariable")); } }
@@ -405,6 +414,8 @@ namespace IronRuby.Compiler {
         private static MethodInfo _PrintInteractiveResult;
         public static MethodInfo/*!*/ PropagateRetrySingleton { get { return _PropagateRetrySingleton ?? (_PropagateRetrySingleton = GetMethod(typeof(RubyOps), "PropagateRetrySingleton")); } }
         private static MethodInfo _PropagateRetrySingleton;
+        public static MethodInfo/*!*/ RubyModule_get_Context { get { return _RubyModule_get_Context ?? (_RubyModule_get_Context = GetMethod(typeof(RubyModule), "get_Context")); } }
+        private static MethodInfo _RubyModule_get_Context;
         public static MethodInfo/*!*/ RubyStruct_GetValue { get { return _RubyStruct_GetValue ?? (_RubyStruct_GetValue = GetMethod(typeof(RubyStruct), "GetValue")); } }
         private static MethodInfo _RubyStruct_GetValue;
         public static MethodInfo/*!*/ RubyStruct_SetValue { get { return _RubyStruct_SetValue ?? (_RubyStruct_SetValue = GetMethod(typeof(RubyStruct), "SetValue")); } }
@@ -584,6 +595,31 @@ namespace IronRuby.Compiler {
             }
             return YieldSplatN;
         }
+        
+    }
+    public static partial class Fields {
+        public static FieldInfo/*!*/ ConstantSiteCache_Value { get { return _ConstantSiteCache_Value ?? (_ConstantSiteCache_Value = GetField(typeof(ConstantSiteCache), "Value")); } }
+        private static FieldInfo _ConstantSiteCache_Value;
+        public static FieldInfo/*!*/ ConstantSiteCache_Version { get { return _ConstantSiteCache_Version ?? (_ConstantSiteCache_Version = GetField(typeof(ConstantSiteCache), "Version")); } }
+        private static FieldInfo _ConstantSiteCache_Version;
+        public static FieldInfo/*!*/ ConstantSiteCache_WeakMissingConstant { get { return _ConstantSiteCache_WeakMissingConstant ?? (_ConstantSiteCache_WeakMissingConstant = GetField(typeof(ConstantSiteCache), "WeakMissingConstant")); } }
+        private static FieldInfo _ConstantSiteCache_WeakMissingConstant;
+        public static FieldInfo/*!*/ ConstantSiteCache_WeakNull { get { return _ConstantSiteCache_WeakNull ?? (_ConstantSiteCache_WeakNull = GetField(typeof(ConstantSiteCache), "WeakNull")); } }
+        private static FieldInfo _ConstantSiteCache_WeakNull;
+        public static FieldInfo/*!*/ DefaultArgument { get { return _DefaultArgument ?? (_DefaultArgument = GetField(typeof(RubyOps), "DefaultArgument")); } }
+        private static FieldInfo _DefaultArgument;
+        public static FieldInfo/*!*/ ForwardToBase { get { return _ForwardToBase ?? (_ForwardToBase = GetField(typeof(RubyOps), "ForwardToBase")); } }
+        private static FieldInfo _ForwardToBase;
+        public static FieldInfo/*!*/ IsDefinedConstantSiteCache_Value { get { return _IsDefinedConstantSiteCache_Value ?? (_IsDefinedConstantSiteCache_Value = GetField(typeof(IsDefinedConstantSiteCache), "Value")); } }
+        private static FieldInfo _IsDefinedConstantSiteCache_Value;
+        public static FieldInfo/*!*/ IsDefinedConstantSiteCache_Version { get { return _IsDefinedConstantSiteCache_Version ?? (_IsDefinedConstantSiteCache_Version = GetField(typeof(IsDefinedConstantSiteCache), "Version")); } }
+        private static FieldInfo _IsDefinedConstantSiteCache_Version;
+        public static FieldInfo/*!*/ RubyContext_ConstantAccessVersion { get { return _RubyContext_ConstantAccessVersion ?? (_RubyContext_ConstantAccessVersion = GetField(typeof(RubyContext), "ConstantAccessVersion")); } }
+        private static FieldInfo _RubyContext_ConstantAccessVersion;
+        public static FieldInfo/*!*/ RubyModule_Version { get { return _RubyModule_Version ?? (_RubyModule_Version = GetField(typeof(RubyModule), "Version")); } }
+        private static FieldInfo _RubyModule_Version;
+        public static FieldInfo/*!*/ VersionHandle_Method { get { return _VersionHandle_Method ?? (_VersionHandle_Method = GetField(typeof(VersionHandle), "Method")); } }
+        private static FieldInfo _VersionHandle_Method;
         
     }
 }

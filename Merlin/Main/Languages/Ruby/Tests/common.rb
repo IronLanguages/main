@@ -30,11 +30,7 @@ module TestPath
     MERLIN_ROOT   = get_environment_variable('MERLIN_ROOT')
     TEST_DIR    = MERLIN_ROOT + "/Languages/Ruby/Tests"
     CORECLR_ROOT  = MERLIN_ROOT + "/Utilities/Silverlight/x86ret"
-    cruby = get_environment_variable('RUBY18_EXE')
-    unless File.exists?(cruby)
-      cruby = "ruby.exe"
-    end
-    CRUBY_EXE     = cruby
+    CRUBY_EXE     = get_environment_variable('RUBY18_EXE')
     
     ROWAN_BIN     = get_environment_variable('ROWAN_BIN')
 

@@ -145,8 +145,7 @@ nil
         }
 
         public void Scenario_RubyDefinedOperator_Constants2() {
-            AssertOutput(delegate() {
-                CompilerTest(@"
+            TestOutput(@"
 module M
   C = 1
 end
@@ -165,12 +164,26 @@ end
 puts defined?(X::C)
 puts defined?(raise::C)
 puts defined?(foo::C)
-");
-            }, @"
+", @"
 missing X
 constant
 nil
 constant
+");
+        }
+
+        public void Scenario_RubyDefinedOperator_Constants3() {
+            TestOutput(@"
+print '1' unless defined? FOO
+print '2' unless defined? FOO
+print '.' unless not (defined? Object and defined? FOO)
+print '.' unless defined? FOO or defined? Object
+print '.' if defined? FOO
+print '.' if defined? FOO
+print '7' if not (defined? Object and defined? FOO)
+print '8' if defined? FOO or defined? Object
+", @"
+1278
 ");
         }
 

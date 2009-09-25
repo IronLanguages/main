@@ -80,7 +80,7 @@ namespace IronRuby.Compiler.Ast {
             while (i >= 0) {
                 // emit: else (if (condition) body else result)
                 result = AstFactory.Condition(
-                    AstFactory.IsTrue(_elseIfClauses[i].Condition.TransformReadStep(gen)),
+                    _elseIfClauses[i].Condition.TransformCondition(gen, true),
                     gen.TransformStatementsToExpression(_elseIfClauses[i].Statements),
                     result
                 );
@@ -89,7 +89,7 @@ namespace IronRuby.Compiler.Ast {
 
             // if (condition) body else result
             return AstFactory.Condition(
-                AstFactory.IsTrue(_condition.TransformReadStep(gen)),
+                _condition.TransformCondition(gen, true),
                 gen.TransformStatementsToExpression(_body),
                 result
             );

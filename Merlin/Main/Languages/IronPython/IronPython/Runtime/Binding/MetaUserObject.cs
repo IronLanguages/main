@@ -290,23 +290,29 @@ namespace IronPython.Runtime.Binding {
 
         private static Expression/*!*/ AddExtensibleSelfCheck(DynamicMetaObjectBinder/*!*/ convertToAction, Type toType, DynamicMetaObject/*!*/ self, Expression/*!*/ callExpr) {
             ParameterExpression tmp = Ast.Variable(callExpr.Type, "tmp");
+            ConversionResultKind resKind = GetResultKind(convertToAction);
+            Type retType = (resKind == ConversionResultKind.ExplicitTry || resKind == ConversionResultKind.ImplicitTry) ? typeof(object) : toType;
+
             callExpr = Ast.Block(
                 new ParameterExpression[] { tmp },
                 Ast.Block(
                     Ast.Assign(tmp, callExpr),
                     Ast.Condition(
                         Ast.Equal(tmp, self.Expression),
-                        Ast.Property(
-                            AstUtils.Convert(self.Expression, self.GetLimitType()),
-                            self.GetLimitType().GetProperty("Value")
+                        AstUtils.Convert(
+                            Ast.Property(
+                                AstUtils.Convert(self.Expression, self.GetLimitType()),
+                                self.GetLimitType().GetProperty("Value")
+                            ),
+                            retType
                         ),
                         Ast.Dynamic(
                             new PythonConversionBinder(
                                 PythonContext.GetPythonContext(convertToAction),
                                 toType,
-                                ConversionResultKind.ExplicitCast
+                                GetResultKind(convertToAction)
                             ),
-                            toType,
+                            retType,
                             tmp
                         )
                     )

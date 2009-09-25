@@ -54,14 +54,18 @@ namespace IronPython.Runtime.Operations {
                     return ParseFloat(ScriptingRuntimeHelpers.CharToString((char)x));
                 }
 
-                double doubleVal;
-                if (Converter.TryConvertToDouble(x, out doubleVal)) return doubleVal;
-
-                if (x is Complex64) throw PythonOps.TypeError("can't convert complex to float; use abs(z)");
+                if (x is Complex64) {
+                    throw PythonOps.TypeError("can't convert complex to float; use abs(z)");
+                }
 
                 object d = PythonOps.CallWithContext(context, PythonOps.GetBoundAttr(context, x, "__float__"));
-                if (d is double) return d;
-                throw PythonOps.TypeError("__float__ returned non-float (type %s)", DynamicHelpers.GetPythonType(d));
+                if (d is double) {
+                    return d;
+                } else if (d is Extensible<double>) {
+                    return ((Extensible<double>)d).Value;
+                }
+
+                throw PythonOps.TypeError("__float__ returned non-float (type {0})", PythonTypeOps.GetName(d));
             } else {
                 return cls.CreateInstance(context, x);
             }
@@ -1081,6 +1085,10 @@ namespace IronPython.Runtime.Operations {
 
         public static int __hash__(float x) {
             return DoubleOps.__hash__(((double)x));
+        }
+
+        public static double __float__(float x) {
+            return x;
         }
     }
 }

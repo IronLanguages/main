@@ -43,10 +43,6 @@ namespace IronRuby.Compiler.Ast {
             _operation = operation;
         }
 
-        internal override MSA.Expression TransformDefinedCondition(AstGenerator/*!*/ gen) {
-            return null;
-        }
-
         internal override string/*!*/ GetNodeName(AstGenerator/*!*/ gen) {
             return "assignment";
         }

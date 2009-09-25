@@ -153,7 +153,7 @@ namespace IronRuby.Runtime.Calls {
                 }
 
                 if (args.Signature.IsVirtualCall && !method.Info.IsRubyMember) {
-                    metaBuilder.Result = Ast.Field(null, Fields.RubyOps_ForwardToBase);
+                    metaBuilder.Result = Ast.Field(null, Fields.ForwardToBase);
                     return true;
                 }
 

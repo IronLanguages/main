@@ -160,14 +160,14 @@ namespace IronPython.Runtime {
 
         [SpecialName, PropertyMethod, WrapperDescriptor]
         public static void Set__doc__(PythonProperty self, object value) {
-            throw PythonOps.TypeError("'property' object is immutable");
+            throw PythonOps.TypeError("readonly attribute");
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "value")]
         public object fdel {
             get { return _fdel; }
             set {
-                throw PythonOps.TypeError("'property' object is immutable");
+                throw PythonOps.TypeError("readonly attribute");
             }
         }
 
@@ -175,7 +175,7 @@ namespace IronPython.Runtime {
         public object fset {
             get { return _fset; }
             set {
-                throw PythonOps.TypeError("'property' object is immutable");
+                throw PythonOps.TypeError("readonly attribute");
             }
         }
 
@@ -183,7 +183,7 @@ namespace IronPython.Runtime {
         public object fget {
             get { return _fget; }
             set {
-                throw PythonOps.TypeError("'property' object is immutable");
+                throw PythonOps.TypeError("readonly attribute");
             }
         }
 

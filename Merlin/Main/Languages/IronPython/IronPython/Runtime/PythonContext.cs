@@ -3663,7 +3663,13 @@ namespace IronPython.Runtime {
         #region Tracing
 
         internal PythonTracebackListener TracebackListener {
-            get { return _tracebackListeners.Peek(); }
+            get {
+                if (_tracebackListeners == null) {
+                    return null;
+                }
+
+                return _tracebackListeners.Peek(); 
+            }
         }
 
         internal Debugging.CompilerServices.DebugContext DebugContext {

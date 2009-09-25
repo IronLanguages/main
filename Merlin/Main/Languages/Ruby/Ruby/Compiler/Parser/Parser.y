@@ -38,7 +38,7 @@ using IronRuby.Compiler.Ast;
 %token CASE WHEN WHILE UNTIL FOR BREAK NEXT REDO RETRY IN DO LOOP_DO BLOCK_DO
 %token RETURN YIELD SUPER SELF NIL TRUE FALSE AND OR NOT IF_MOD UNLESS_MOD
 %token WHILE_MOD UNTIL_MOD RESCUE_MOD ALIAS DEFINED UPPERCASE_BEGIN UPPERCASE_END LINE FILE ENCODING
-%token UPLUS UMINUS POW CMP EQ EQQ NEQ GEQ LEQ BITWISE_AND BITWISE_OR MATCH NMATCH
+%token UPLUS UMINUS POW CMP EQ EQQ NEQ GEQ LEQ LOGICAL_AND LOGICAL_OR MATCH NMATCH
 %token DOT2 DOT3 AREF ASET LSHFT RSHFT SEPARATING_DOUBLE_COLON LEADING_DOUBLE_COLON ASSOC LEFT_PAREN STRING_END
 %token LPAREN_ARG LBRACK LBRACE LBRACE_ARG STAR AMPERSAND 
 
@@ -138,8 +138,8 @@ using IronRuby.Compiler.Ast;
 %left RESCUE_MOD
 %right '?' ':'
 %nonassoc DOT2 DOT3
-%left  BITWISE_OR
-%left  BITWISE_AND
+%left  LOGICAL_OR
+%left  LOGICAL_AND
 %nonassoc  CMP EQ EQQ NEQ MATCH NMATCH
 %left  '>' GEQ '<' LEQ
 %left  '|' '^'
@@ -920,19 +920,19 @@ arg:
         {
             $$ = new MethodCall($1, Symbols.RightShift, new Arguments($3), @$);
         }
-    | arg BITWISE_AND arg
+    | arg LOGICAL_AND arg
         {
             $$ = new AndExpression($1, $3, @$);
         }
-    | arg BITWISE_OR arg
+    | arg LOGICAL_OR arg
         {
             $$ = new OrExpression($1, $3, @$);
         }
-    | arg BITWISE_AND jump_statement_parameterless
+    | arg LOGICAL_AND jump_statement_parameterless
         {
             $$ = new ConditionalJumpExpression($1, $3, false, null, @$);
         }
-    | arg BITWISE_OR jump_statement_parameterless
+    | arg LOGICAL_OR jump_statement_parameterless
         {
             $$ = new ConditionalJumpExpression($1, $3, true, null, @$);
         }
@@ -1481,7 +1481,7 @@ block_parameters_opt:
         {
             $$ = CompoundLeftValue.EmptyBlockSignature;
         }
-    | BITWISE_OR
+    | LOGICAL_OR
         {
             $$ = CompoundLeftValue.EmptyBlockSignature;
         }
