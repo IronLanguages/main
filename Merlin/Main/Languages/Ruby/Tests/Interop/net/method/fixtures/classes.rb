@@ -634,99 +634,70 @@ no_csc do
   end
 
   class Helper
+    def self.binds(target, meth, input, result)
+      lambda do
+        target = eval target
+        meth_call = (input == "NoArg" ? lambda { target.send(meth)} : lambda {target.send(meth, @values[input])})
+        if result.class == Class && result < Exception
+          meth_call.should raise_error result
+        elsif result.class == Regexp
+          res, ref = meth_call.call
+          (res =~ result).should == 0
+        else
+          res, ref = meth_call.call
+          res.should == result
+        end
+      end
+    end
+
+    def self.passes(target, meth, input, result)
+      lambda do
+        target = eval target
+        value = @values[input]
+        meth_call = (input == "NoArg" ? lambda { target.send(meth)} : lambda {target.send(meth, value)})
+        res, ref = meth_call.call
+        if input != "NoArg"
+          result = Helper.result(meth,value)
+          target.tracker.should == [*result]
+        else
+          result = case meth.to_s
+                   when /Params(?:Int32|CStruct|IInterface)ArrArg/
+                    [[]]
+                   when /DefaultInt32Arg/
+                     [10]
+                   when /NoArg/
+                     []
+                   when /OutInt32Arg/
+                     [2]
+                   else
+                     nil
+                   end
+          target.tracker.should == result
+        end
+        if ref
+          if result.is_a? ArrayList
+            ref.should == result[0]
+          else
+            ref.should == result
+          end
+        end
+      end
+    end
+
     def self.run_matrix(results, input, keys)
       results[:OutInt32Arg] ||= TE
       keys.each do |meth|
         result = results[meth] || TE
-        it "binds '#{meth}' for '#{input}' with '#{result.to_s}' (ClassWithMethods)" do
-          meth_call = (input == "NoArg" ? lambda { @target.send(meth)} : lambda {@target.send(meth, @values[input])})
-          if result.class == Class && result < Exception
-            meth_call.should raise_error result
-          elsif result.class == Regexp
-            res, ref = meth_call.call
-            (res =~ result).should == 0
-          else
-            res, ref = meth_call.call
-            res.should == result
-          end
-        end
+        
+        it "binds '#{meth}' for '#{input}' with '#{result.to_s}' (ClassWithMethods)", &(binds("@target", meth, input, result))
       
-        it "binds '#{meth}' for '#{input}' with '#{result.to_s}' (RubyClassWithMethods)" do
-          meth_call = (input == "NoArg" ? lambda { @target2.send(meth)} : lambda {@target2.send(meth, @values[input])})
-          if result.class == Class && result < Exception
-            meth_call.should raise_error result
-          elsif result.class == Regexp
-            res, ref = meth_call.call
-            (res =~ result).should == 0
-          else
-            res, ref = meth_call.call
-            res.should == result
-          end
-        end
+        it "binds '#{meth}' for '#{input}' with '#{result.to_s}' (RubyClassWithMethods)", &(binds("@target2", meth, input, result))
       
         next if result.class == Class && result < Exception
         
-        it "passes the correct input (#{input}) into method (#{meth}) (ClassWithMethods)" do
-          value = @values[input]
-          meth_call = (input == "NoArg" ? lambda { @target.send(meth)} : lambda {@target.send(meth, value)})
-          res, ref = meth_call.call
-          if input != "NoArg"
-            result = Helper.result(meth,value)
-            @target.tracker.should == [*result]
-          else
-            result = case meth.to_s
-                     when /Params(?:Int32|CStruct|IInterface)ArrArg/
-                      [[]]
-                     when /DefaultInt32Arg/
-                       [10]
-                     when /NoArg/
-                       []
-                     when /OutInt32Arg/
-                       [2]
-                     else
-                       nil
-                     end
-            @target.tracker.should == result
-          end
-          if ref
-            if result.is_a? ArrayList
-              ref.should == result[0]
-            else
-              ref.should == result
-            end
-          end
-        end
+        it "passes the correct input (#{input}) into method (#{meth}) (ClassWithMethods)", &(passes("@target", meth, input, result))
         
-        it "passes the correct input (#{input}) into method (#{meth}) (RubyClassWithMethods)" do
-          value = @values[input]
-          meth_call = (input == "NoArg" ? lambda { @target2.send(meth)} : lambda {@target2.send(meth, value)})
-          res, ref = meth_call.call
-          if input != "NoArg"
-            result = Helper.result(meth,value)
-            @target2.tracker.should == [*result]
-          else
-            result = case meth.to_s
-                     when /Params(?:Int32|CStruct|IInterface)ArrArg/
-                      [[]]
-                     when /DefaultInt32Arg/
-                       [10]
-                     when /NoArg/
-                       []
-                     when /OutInt32Arg/
-                       [2]
-                     else
-                       nil
-                     end
-            @target2.tracker.should == result
-          end
-          if ref
-            if result.is_a? ArrayList
-              ref.should == result[0]
-            else
-              ref.should == result
-            end
-          end
-        end
+        it "passes the correct input (#{input}) into method (#{meth}) (RubyClassWithMethods)", &(passes("@target2", meth, input, result))
       end
     end
         
@@ -800,6 +771,20 @@ no_csc do
         alias_method :test_BigIntegerArg, :test_Int32Arg
         alias_method :test_DefaultInt32Arg, :test_Int32Arg
         alias_method :test_Int32ArgParamsInt32ArrArg, :test_Int32Arg
+
+        def test_ParamsIInterfaceArrTestArg(v)
+          if v == nil
+            [true, [v]]
+          else
+            [false, [v]]
+          end
+        end
+
+        def test_IListArg(v)
+          [v,v.size]
+        end
+        alias_method :test_IListOfCharArg, :test_IListArg
+        alias_method :test_IListOfIntArg2, :test_IListArg
 
         def test_EnumIntArg(v)
           if v.is_a?(CustomEnum)

@@ -1,29 +1,8 @@
 require File.dirname(__FILE__) + "/../../spec_helper"
 require File.dirname(__FILE__) + "/../fixtures/classes"
 
-      #{"ClassWithMethods" => ClassWithMethods.new, "int" => 1, "nil" => nil, "hash" => {1=> 1}, 
-               #"Dictonary[obj,obj]" => dobj, "Dictionary[int,str]" => dint, "Dictionary[int,int]" => dii,
-               #"hashtable" => ht, "List[int]" => ( List[Fixnum].new << 1 << 2 << 3 ),
-               #"List[obj]" => ( List[Obj].new << 1 << 2 << 3), "Array[int]" = System::Array.of(Fixnum).new(2,3),
-               #"String" => "String", "Array" => [Object.new, 1, :blue], "Array[Char]" => System::Array.of(System::Char).new(2, System::Char.new),
-               #"System::String" => "System::String".to_clr_string, "Array[System::String]" => System::Array.of(System::String).new(2, "a".to_clr_string),
-               #"ArrayList" => (ArrayList.new << 1 << 2 << 3),  "List[Char]" => ( List[System::Char].new << System::Char.new("a") << System::Char.new("b") << System::Char.new("c")), 
-               #"IEnumerator" => tl1.get_enumerator, "IEnumerator[int]" => tl2.get_enumerator, "IEnumerator[Char]" => tl3.get_enumerator,
-               #"IntIntDelegate" => IntIntDelegate.new {|a| a+1 }, "lambda" => lambda {|a| a+2}, "proc" => proc {|a| a+3}, "method" => method(:test_method),
-               #"unboundmethod" => method(:test_method).unbind, "bool" => true, "Array[byte]" => System::Array.of(Byte).new(2, System::Byte.MinValue), 
-               #"List[Byte]" => (List[System::Byte].new << System::Byte.parse("1") << System::Byte.parse("2") << System::Byte.parse("3")), 
-               #"self" => "self", "class" => "class", "this" => "this", "public" => "public",
-               #"StructImplementsIInterface" => StructImplementsIInterface.new, "RubyImplementsIInterface" => RubyImplementsIInterface.new, 
-               #"ImplementsIInterface" => ImplementsIInterface
-               #}
 describe "Method parameter binding with misc parameters" do
-  #RefOutInt32Args RefInt32OutArgs Int32RefOutArgs EightArgs
-  #RefInt32Int32OutInt32Arg ByteArrRefByteArrArg KeywordsArg 
-  #
-  #ParamsIInterfaceArrTestArg IListOfIntArg2 IListArg IListOfCharArg 
-  #
-  #StaticMethodNoArg StaticMethodClassWithMethodsArg 
-  @keys = [:ClassWithMethodsArg, :GenericArg, :OutNonByRefInt32Arg, :IDictionaryOfIntIntArg, :HashtableArg, :ListOfIntArg, :IEnumerableIteratingArg, :IEnumeratorIteratingArg, :IEnumerableOfCharIteratingArg, :IEnumeratorOfCharIteratingArg, :IEnumerableOfIntIteratingArg, :IEnumeratorOfIntIteratingArg, :DelegateArg, :IntIntDelegateArg, :RefByteArrArg, :RefStructImplementsIInterfaceArg, :OutStructImplementsIInterfaceArg, :RefImplementsIInterfaceArg, :OutImplementsIInterfaceArg, :RefBooleanArg, :OutBooleanArg]
+  @keys = [:ClassWithMethodsArg, :GenericArg, :OutNonByRefInt32Arg, :IDictionaryOfIntIntArg, :HashtableArg, :ListOfIntArg, :IEnumerableIteratingArg, :IEnumeratorIteratingArg, :IEnumerableOfCharIteratingArg, :IEnumeratorOfCharIteratingArg, :IEnumerableOfIntIteratingArg, :IEnumeratorOfIntIteratingArg, :DelegateArg, :IntIntDelegateArg, :RefByteArrArg, :RefStructImplementsIInterfaceArg, :OutStructImplementsIInterfaceArg, :RefImplementsIInterfaceArg, :OutImplementsIInterfaceArg, :RefBooleanArg, :OutBooleanArg, :ParamsIInterfaceArrTestArg, :IListOfIntArg2, :IListOfCharArg, :IListArg]
   @matrix = {
    "ClassWithMethods" => {  :ClassWithMethodsArg => "ClassWithMethodsArg",
      :GenericArg => "GenericArg[ClassWithMethods]", 
@@ -56,38 +35,38 @@ describe "Method parameter binding with misc parameters" do
    "List[int]" => { :GenericArg => "GenericArg[System.Collections.Generic.List`1[System.Int32]]",
      :ListOfIntArg => "ListOfIntArg", :IEnumerableIteratingArg => "IEnumerableIteratingArg",
      :IEnumerableOfIntIteratingArg => "IEnumerableOfIntIteratingArg",
-     :RefBooleanArg => "RefBooleanArg"},
+     :RefBooleanArg => "RefBooleanArg", :IListArg => "IListArg", :IListOfIntArg2 => "IListOfIntArg2"},
    "List[obj]" => { :GenericArg => "GenericArg[System.Collections.Generic.List`1[System.Object]]",
      :IEnumerableIteratingArg => "IEnumerableIteratingArg",
-     :RefBooleanArg => "RefBooleanArg"},
+     :RefBooleanArg => "RefBooleanArg", :IListArg => "IListArg"},
    "Array[int]" => { :GenericArg => "GenericArg[System.Int32[]]",
      :IEnumerableIteratingArg => "IEnumerableIteratingArg",
      :IEnumerableOfIntIteratingArg => "IEnumerableOfIntIteratingArg",
-     :RefBooleanArg => "RefBooleanArg"},
+     :RefBooleanArg => "RefBooleanArg", :IListArg => "IListArg", :IListOfIntArg2 => "IListOfIntArg2"},
    "String" => { :GenericArg => "GenericArg[IronRuby.Builtins.MutableString]",
      :IEnumerableIteratingArg => "IEnumerableIteratingArg",
      :RefByteArrArg => "RefByteArrArg",
      :RefBooleanArg => "RefBooleanArg"},
    "Array" => { :GenericArg => "GenericArg[IronRuby.Builtins.RubyArray]",
      :IEnumerableIteratingArg => "IEnumerableIteratingArg",
-     :RefBooleanArg => "RefBooleanArg"},
+     :RefBooleanArg => "RefBooleanArg", :IListArg => "IListArg"},
    "Array[Char]" => { :GenericArg => "GenericArg[System.Char[]]",
      :IEnumerableIteratingArg => "IEnumerableIteratingArg",
      :IEnumerableOfCharIteratingArg => "IEnumerableOfCharIteratingArg",
-     :RefBooleanArg => "RefBooleanArg"},
+     :RefBooleanArg => "RefBooleanArg", :IListArg => "IListArg", :IListOfCharArg => "IListOfCharArg"},
    "System::String" => { :GenericArg => "GenericArg[System.String]",
      :IEnumerableIteratingArg => "IEnumerableIteratingArg",
      :IEnumerableOfCharIteratingArg => "IEnumerableOfCharIteratingArg"},
    "Array[System::String]" => { :GenericArg => "GenericArg[System.String[]]",
      :IEnumerableIteratingArg => "IEnumerableIteratingArg",
-     :RefBooleanArg => "RefBooleanArg"},
+     :RefBooleanArg => "RefBooleanArg", :IListArg => "IListArg", :IListOfCharArg => "IListOfCharArg"},
    "ArrayList" => { :GenericArg => "GenericArg[System.Collections.ArrayList]",
      :IEnumerableIteratingArg => "IEnumerableIteratingArg",
-     :RefBooleanArg => "RefBooleanArg"},
+     :RefBooleanArg => "RefBooleanArg", :IListArg => "IListArg"},
    "List[Char]" => { :GenericArg => "GenericArg[System.Collections.Generic.List`1[System.Char]]",
      :IEnumerableIteratingArg => "IEnumerableIteratingArg",
      :IEnumerableOfCharIteratingArg => "IEnumerableOfCharIteratingArg",
-     :RefBooleanArg => "RefBooleanArg"},
+     :RefBooleanArg => "RefBooleanArg", :IListArg => "IListArg", :IListOfCharArg => "IListOfCharArg"},
    "IEnumerator" => { :GenericArg => /GenericArg\[IronRuby\.Classes\.Object\$\d{1,3}\]/,
      :IEnumeratorIteratingArg => "IEnumeratorIteratingArg",
      :RefBooleanArg => "RefBooleanArg"},
@@ -120,30 +99,75 @@ describe "Method parameter binding with misc parameters" do
      :RefBooleanArg => "RefBooleanArg"},
    "Array[byte]" => { :GenericArg => "GenericArg[System.Byte[]]",
      :IEnumerableIteratingArg => "IEnumerableIteratingArg",
-     :RefByteArrArg => "RefByteArrArg", :RefBooleanArg => "RefBooleanArg"},
+     :RefByteArrArg => "RefByteArrArg", :RefBooleanArg => "RefBooleanArg", :IListArg => "IListArg"},
    "List[byte]" => { :GenericArg => "GenericArg[System.Collections.Generic.List`1[System.Byte]]",
      :IEnumerableIteratingArg => "IEnumerableIteratingArg",
-     :RefBooleanArg => "RefBooleanArg"},
+     :RefBooleanArg => "RefBooleanArg", :IListArg => "IListArg"},
    "self" => { :GenericArg => "GenericArg[IronRuby.Builtins.MutableString]",
      :IEnumerableIteratingArg => "IEnumerableIteratingArg",
      :RefByteArrArg => "RefByteArrArg",
      :RefBooleanArg => "RefBooleanArg"},
    "StructImplementsIInterface" => { :GenericArg => "GenericArg[StructImplementsIInterface]",
      :RefStructImplementsIInterfaceArg => "RefStructImplementsIInterfaceArg",
-     :RefBooleanArg => "RefBooleanArg"},
+     :RefBooleanArg => "RefBooleanArg", :ParamsIInterfaceArrTestArg => "ParamsIInterfaceArrTestArg"},
    "RubyImplementsIInterface" => { :GenericArg => /GenericArg\[IronRuby\.Classes\.Object\$\d{1,3}\]/,
-     :RefBooleanArg => "RefBooleanArg"},
+     :RefBooleanArg => "RefBooleanArg", :ParamsIInterfaceArrTestArg => "ParamsIInterfaceArrTestArg"},
    "ImplementsIInterface" => { :GenericArg => "GenericArg[ImplementsIInterface]",
      :RefImplementsIInterfaceArg => "RefImplementsIInterfaceArg",
-     :RefBooleanArg => "RefBooleanArg"},
+     :RefBooleanArg => "RefBooleanArg", :ParamsIInterfaceArrTestArg =>"ParamsIInterfaceArrTestArg"},
   }
   before(:each) do
     @target = ClassWithMethods.new
     @target2 = RubyClassWithMethods.new
     @values = Helper.other_concern_args
   end
+
+  after(:each) do
+    ClassWithMethods.StaticReset
+    RubyClassWithMethods.StaticReset
+  end
     
   @matrix.each do |input, results|
     Helper.run_matrix(results, input, @keys)
+  end
+
+  [ClassWithMethods, RubyClassWithMethods].each do |target|
+    it "binds 'StaticMethodNoArg' for '' with 'StaticMethodNoArg' (#{target})" do
+      target.StaticMethodNoArg.should == "StaticMethodNoArg"
+      target.StaticTracker.should == [ nil ]
+    end
+  
+    [@target, @target2, Class.new(ClassWithMethods).new, nil].each do |obj|
+      it "binds 'StaticMethodClassWithMethodsArg' for '#{obj.inspect}' with 'StaticMethodNoArg' (#{target})" do
+        target.StaticMethodClassWithMethodsArg(obj).should == "StaticMethodClassWithMethodsArg"
+      end
+
+      it "passes the correct input (#{obj.inspect}) into the method 'StaticMethodClassWithMethodsArg'" do
+        target.StaticMethodClassWithMethodsArg(obj)
+        target.StaticTracker.should == [obj]
+      end
+    end
+
+    [1, "", Object.new, CStruct.new, CustomEnum.A, true, false].each do |obj|
+      it "binds 'StaticMethodClassWithMethodsArg' for '#{obj.inspect}' with 'TypeError' (#{target})" do
+        lambda {target.send(:StaticMethodClassWithMethodsArg, obj)}.should raise_error TypeError
+      end
+    end
+  end
+
+
+  #RefOutInt32Args RefInt32OutArgs Int32RefOutArgs 
+  #RefInt32Int32OutInt32Arg ByteArrRefByteArrArg KeywordsArg 
+  #
+    #
+  it "binds the proper number of arguments" do
+    a = [1,2,3,4,5,6,7,8]
+    0.upto(6) do |i|
+      lambda{ @target.send(:EightArgs, *(a[0..i])) }.should raise_error AE
+    end
+
+    lambda { @target.EightArgs }.should raise_error AE
+    @target.EightArgs(*a).should == "EightArgs"
+    @target.tracker.should == a
   end
 end
