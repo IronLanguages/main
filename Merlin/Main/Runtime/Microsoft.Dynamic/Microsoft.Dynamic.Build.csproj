@@ -32,6 +32,7 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(SilverlightSdkPath)\System.dll</HintPath>
     </Reference>
+    <Reference Include="System.Numerics" Condition=" $(SilverlightBuild) != 'true' " />
     <Reference Include="System.Data" />
     <Reference Include="System.Runtime.Remoting" Condition=" $(SilverlightBuild) != 'true' " />
     <Reference Include="System.Xml" Condition=" $(SilverlightBuild) != 'true' " />
@@ -301,7 +302,8 @@
       <!--                        -->
       <!--          Math          -->
       <!--                        -->
-      <Compile Include="Math\BigInteger.cs" />
+      <Compile Include="Math\BigIntegerV2.cs" />
+      <Compile Include="Math\BigIntegerV4.cs" />
       <Compile Include="Math\Complex64.cs" />
     </ItemGroup>
     <ItemGroup>
@@ -395,6 +397,7 @@
       <Compile Include="Utils\IOUtils.cs" />
       <Compile Include="Utils\ListEqualityComparer.cs" />
       <Compile Include="Utils\MathUtils.cs" />
+      <Compile Include="Utils\MonitorUtils.cs" />
       <Compile Include="Utils\Publisher.cs" />
       <Compile Include="Utils\ReadOnlyDictionary.cs" />
       <Compile Include="Utils\ReferenceEqualityComparer.cs" />

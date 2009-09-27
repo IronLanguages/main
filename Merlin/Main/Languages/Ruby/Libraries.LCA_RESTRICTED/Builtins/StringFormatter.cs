@@ -792,7 +792,7 @@ namespace IronRuby.Builtins {
             StringBuilder/*!*/ result = new StringBuilder();
             bool isNegative = value.Sign == -1;
             BigInteger/*!*/ val = CastToUnsignedBigInteger(value);
-            BigInteger/*!*/ limit = isNegative ? GenerateMask(value) : new BigInteger(0);
+            BigInteger/*!*/ limit = isNegative ? GenerateMask(value) : BigInteger.Zero;
             uint mask = _Mask[bitsToShift];
             char[] digits = lowerCase ? _LowerDigits : _UpperDigits;
 

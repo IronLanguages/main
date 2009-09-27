@@ -1352,6 +1352,7 @@ internal class LibraryDef {
 
     private static string/*!*/ TypeNameDispenser(Type/*!*/ type) {
         return
+            type.FullName.StartsWith(typeof(Action).Namespace + ".Action") ||
             type.FullName.StartsWith(typeof(Action<>).Namespace + ".Action`") ||
             type.FullName.StartsWith(typeof(Func<>).Namespace + ".Func`") ?
             type.Name : type.FullName;

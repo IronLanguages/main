@@ -484,6 +484,8 @@
     </Reference>
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" Condition=" '$(SilverlightBuild)' != 'true' " />
+    <Reference Include="System.Numerics" Condition=" '$(TargetFrameworkVersion)' == 'v4.0' " />
+    <Reference Include="System.Core" Condition=" '$(TargetFrameworkVersion)' == 'v4.0' " />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\..\ndp\fx\src\Core\Microsoft\Scripting\Microsoft.Scripting.Core.csproj" Condition="'$(TargetFrameworkVersion)' != 'v4.0'">

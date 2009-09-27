@@ -14,9 +14,10 @@
  * ***************************************************************************/
 
 using System;
-using Microsoft.Scripting.Runtime;
 using System.Threading;
 using Microsoft.Scripting.Actions;
+using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
 
@@ -44,33 +45,56 @@ namespace IronRuby.StandardLibrary.Threading {
 
         [RubyMethod("try_lock")]
         public static bool TryLock(RubyMutex/*!*/ self) {
-            return self._isLocked = Monitor.TryEnter(self._mutex);
+            bool lockTaken = false;
+            try {
+                MonitorUtils.TryEnter(self._mutex, ref lockTaken);
+            } finally {
+                if (lockTaken) {
+                    self._isLocked = true;
+                }
+            }
+            return lockTaken;
         }
 
         [RubyMethod("lock")]
         public static RubyMutex/*!*/ Lock(RubyMutex/*!*/ self) {
-            Monitor.Enter(self._mutex);
-            self._isLocked = true;
+            bool lockTaken = false;
+            try {
+                MonitorUtils.Enter(self._mutex, ref lockTaken);
+            } finally {
+                if (lockTaken) {
+                    self._isLocked = true;
+                }
+            }
             return self;
         }
 
         [RubyMethod("unlock")]
         public static RubyMutex/*!*/ Unlock(RubyMutex/*!*/ self) {
-            self._isLocked = false;
-            Monitor.Exit(self._mutex);
+            bool lockTaken = true;
+            try {
+                MonitorUtils.Exit(self._mutex, ref lockTaken);
+            } finally {
+                if (!lockTaken) {
+                    self._isLocked = false;
+                }
+            }
             return self;
         }
 
         [RubyMethod("synchronize")]
         public static object Synchronize(BlockParam criticalSection, RubyMutex/*!*/ self) {
-            lock (self._mutex) {
-                self._isLocked = true;
-                try {
-                    object result;
-                    criticalSection.Yield(out result);
-                    return result;
-                } finally {
-                    self._isLocked = false;
+            bool lockTaken = false;
+            try {
+                MonitorUtils.Enter(self._mutex, ref lockTaken);
+                self._isLocked = lockTaken;
+                object result;
+                criticalSection.Yield(out result);
+                return result;
+            } finally {
+                if (lockTaken) {
+                    MonitorUtils.Exit(self._mutex, ref lockTaken);
+                    self._isLocked = lockTaken;
                 }
             }
         }

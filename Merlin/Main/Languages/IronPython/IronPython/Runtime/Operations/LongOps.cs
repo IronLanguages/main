@@ -571,6 +571,11 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static int __hash__(BigInteger self) {
+#if CLR4 // TODO: we might need our own hash code implementation. This avoids assertion failure.
+            if (self == -2147483648) {
+                return -2147483648;
+            }
+#endif
             // Call the DLR's BigInteger hash function, which will return an int32 representation of
             // b if b is within the int32 range. We use that as an optimization for hashing, and 
             // assert the assumption below.
@@ -578,7 +583,7 @@ namespace IronPython.Runtime.Operations {
 #if DEBUG
             int i;
             if (self.AsInt32(out i)) {
-                Debug.Assert(i == hash, "input:" + i);
+                Debug.Assert(i == hash, String.Format("hash({0}) == {1}", i, hash));
             }
 #endif
             return hash;

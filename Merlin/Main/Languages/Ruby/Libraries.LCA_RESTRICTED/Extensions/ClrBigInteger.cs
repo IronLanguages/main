@@ -927,7 +927,7 @@ namespace IronRuby.Builtins {
             }
 
             // TODO: Can we do the ToLower in BigInteger?
-            return MutableString.CreateAscii(self.ToString((uint)radix).ToLower());
+            return MutableString.CreateAscii(self.ToString(radix).ToLower());
         }
 
         #endregion
