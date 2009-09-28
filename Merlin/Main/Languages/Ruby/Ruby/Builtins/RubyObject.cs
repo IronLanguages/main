@@ -45,7 +45,7 @@ namespace IronRuby.Builtins {
         }
 
         public override string/*!*/ ToString() {
-#if DEBUG && !SILVERLIGHT && !CLR4
+#if DEBUG && !SILVERLIGHT && CLR2
             if (RubyBinder._DumpingExpression) {
                 return BaseToMutableString(this).ToString();
             }

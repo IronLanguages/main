@@ -81,7 +81,7 @@ namespace IronRuby.Runtime.Calls {
             return result;
         }
 
-#if DEBUG && !SILVERLIGHT && !CLR4
+#if DEBUG && !SILVERLIGHT && CLR2
         // ExpressionWriter might call ToString on a live object that might dynamically invoke a method.
         // We need to prevent recursion in such case.
         [ThreadStatic]
@@ -93,7 +93,7 @@ namespace IronRuby.Runtime.Calls {
 
         [Conditional("DEBUG")]
         internal static void DumpPrecompiledRule(DynamicMetaObjectBinder/*!*/ action, MethodDispatcher/*!*/ dispatcher) {
-#if DEBUG && !SILVERLIGHT && !CLR4
+#if DEBUG && !SILVERLIGHT && CLR2
             if (RubyOptions.ShowRules) {
                 var oldColor = Console.ForegroundColor;
                 Console.ForegroundColor = ConsoleColor.Cyan;
@@ -107,7 +107,7 @@ namespace IronRuby.Runtime.Calls {
 
         [Conditional("DEBUG")]
         internal static void DumpRule(DynamicMetaObjectBinder/*!*/ action, BindingRestrictions/*!*/ restrictions, Expression/*!*/ expr) {
-#if DEBUG && !SILVERLIGHT && !CLR4
+#if DEBUG && !SILVERLIGHT && CLR2
             if (RubyOptions.ShowRules) {
                 var oldColor = Console.ForegroundColor;
                 try {

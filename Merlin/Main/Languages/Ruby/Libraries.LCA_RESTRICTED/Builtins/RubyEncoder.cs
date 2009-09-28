@@ -157,11 +157,13 @@ namespace IronRuby.Builtins {
                     throw RubyExceptions.CreateArgumentError("pack(w): value out of range");
                 }
 
-                int i = bignum.Length;
+                // not very efficient but good enough:
+                uint[] words = bignum.GetWords();
+                int i = words.Length;
                 uint carry = 0;
                 bool write = false;
                 int shift = (Ceil(32 * i, 7) - 7) % 32;
-                uint w = bignum.GetWord(--i);
+                uint w = words[--i];
                 while (true) {
                     if (shift == 0 && i == 0) {
                         stream.WriteByte((byte)(w & 0x7f));
@@ -177,7 +179,7 @@ namespace IronRuby.Builtins {
 
                         if (shift < 7) {
                             carry = (w & (uint)((1 << shift) - 1)) << (7 - shift);
-                            w = bignum.GetWord(--i);
+                            w = words[--i];
                         }
                     }
 
@@ -651,12 +653,12 @@ namespace IronRuby.Builtins {
 
         #region Numbers
 
-        private static int Ceil(int n, int modulus) {
-            return n + (modulus - n % modulus) % modulus;
+        private static int Ceil(int n, int d) {
+            return CeilDiv(n, d) * d;
         }
 
         private static int CeilDiv(int n, int d) {
-            return Ceil(n, d) / d;
+            return (n + d - 1) / d;
         }
 
         // TODO: move to MutableString?
@@ -849,14 +851,10 @@ namespace IronRuby.Builtins {
                 }
 
                 IntegerValue integer = Protocols.CastToInteger(integerConversion, value);
-                int length;
+                ulong u;
                 if (integer.IsFixnum) {
                     Write(stream, unchecked((ulong)integer.Fixnum), swap);
-                } else if ((length = integer.Bignum.Length) <= 2) {
-                    ulong u = integer.Bignum.GetWord(0);
-                    if (length == 2) {
-                        u |= (ulong)integer.Bignum.GetWord(1) << 32;
-                    }
+                } else if (integer.Bignum.Abs().AsUInt64(out u)) {
                     if (integer.Bignum.Sign < 0) {
                         u = unchecked(~u + 1);
                     }

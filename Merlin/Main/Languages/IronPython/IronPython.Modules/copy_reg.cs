@@ -175,8 +175,14 @@ namespace IronPython.Modules {
             + "protocols 0 or 1\" for details."
             )]
         public static object _reconstructor(CodeContext/*!*/ context, object objType, object baseType, object baseState) {
-            object obj = PythonOps.Invoke(context, baseType, "__new__", objType, baseState);
-            PythonOps.Invoke(context, baseType, "__init__", obj, baseState);
+            object obj;
+            if (baseState == null) {
+                obj = PythonOps.Invoke(context, baseType, "__new__", objType);
+                PythonOps.Invoke(context, baseType, "__init__", obj);
+            } else {
+                obj = PythonOps.Invoke(context, baseType, "__new__", objType, baseState);
+                PythonOps.Invoke(context, baseType, "__init__", obj, baseState);
+            }
             return obj;
         }
 

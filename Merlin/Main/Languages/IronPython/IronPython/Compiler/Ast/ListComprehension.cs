@@ -86,6 +86,12 @@ namespace IronPython.Compiler.Ast {
             );
         }
 
+        public override string NodeName {
+            get {
+                return "list comprehension";
+            }
+        }
+
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {
                 if (_item != null) {

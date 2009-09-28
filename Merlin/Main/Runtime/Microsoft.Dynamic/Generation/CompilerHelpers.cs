@@ -78,19 +78,8 @@ namespace Microsoft.Scripting.Generation {
             return method.GetParameters().Length + 1;
         }
 
-        public static bool IsAttributeDefined(this ParameterInfo parameter, Type type, bool inherited) {
-#if !CLR2
-            // TODO: workaround for CLR4 bug #772820:
-            var method = parameter.Member as MethodInfo;
-            if (method != null && method.IsDynamicMethod()) {
-                return false;
-            }
-#endif
-            return parameter.IsDefined(type, inherited);
-        }
-
         public static bool IsParamArray(ParameterInfo parameter) {
-            return parameter.IsAttributeDefined(typeof(ParamArrayAttribute), false);
+            return parameter.IsDefined(typeof(ParamArrayAttribute), false);
         }
 
         public static bool IsOutParameter(ParameterInfo pi) {
@@ -126,11 +115,11 @@ namespace Microsoft.Scripting.Generation {
         }
 
         public static bool ProhibitsNull(ParameterInfo parameter) {
-            return parameter.IsAttributeDefined(typeof(NotNullAttribute), false);
+            return parameter.IsDefined(typeof(NotNullAttribute), false);
         }
 
         public static bool ProhibitsNullItems(ParameterInfo parameter) {
-            return parameter.IsAttributeDefined(typeof(NotNullItemsAttribute), false);
+            return parameter.IsDefined(typeof(NotNullItemsAttribute), false);
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]

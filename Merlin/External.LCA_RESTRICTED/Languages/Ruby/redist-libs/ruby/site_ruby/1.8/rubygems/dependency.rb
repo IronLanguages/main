@@ -136,7 +136,7 @@ class Gem::Dependency
   # #version_requirements
 
   def hash
-    name.hash + type.hash + version_requirements.hash
+    name.hash ^ type.hash ^ version_requirements.hash
   end
 
   def inspect # :nodoc:

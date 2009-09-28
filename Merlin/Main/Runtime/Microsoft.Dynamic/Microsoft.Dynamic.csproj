@@ -13,7 +13,6 @@
     <SccLocalPath>SAK</SccLocalPath>
     <SccAuxPath>SAK</SccAuxPath>
     <SccProvider>SAK</SccProvider>
-    <DocumentationFile>..\..\Bin\Release\Microsoft.Scripting.XML</DocumentationFile>
     <WarningsNotAsErrors>1685,618</WarningsNotAsErrors>
     <NoWarn>1591</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -241,6 +240,8 @@
     <Compile Include="Interpreter\RuntimeVariables.cs" />
     <Compile Include="Interpreter\InterpretedFrame.cs" />
     <Compile Include="Interpreter\LastFaultingLineExpression.cs" />
+    <Compile Include="Math\BigIntegerV2.cs" />
+    <Compile Include="Math\BigIntegerV4.cs" />
     <Compile Include="Runtime\BindingRestrictionsHelpers.cs" />
     <Compile Include="Runtime\DynamicDelegateCreator.cs" />
     <Compile Include="Runtime\DynamicNull.cs" />
@@ -305,7 +306,6 @@
     <Compile Include="Hosting\Shell\Style.cs" />
     <Compile Include="Hosting\Shell\SuperConsole.cs" />
     <Compile Include="GlobalSuppressions.cs" />
-    <Compile Include="Math\BigInteger.cs" />
     <Compile Include="Math\Complex64.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Runtime\AmbiguousFileNameException.cs" />
@@ -331,6 +331,7 @@
     <Compile Include="Utils\EnumUtils.cs" />
     <Compile Include="Utils\ListEqualityComparer.cs" />
     <Compile Include="Utils\MathUtils.cs" />
+    <Compile Include="Utils\MonitorUtils.cs" />
     <Compile Include="Utils\Publisher.cs" />
     <Compile Include="Utils\ReadOnlyDictionary.cs" />
     <Compile Include="Utils\ReferenceEqualityComparer.cs" />
@@ -451,6 +452,7 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Runtime.Remoting" Condition=" '$(SilverlightBuild)' != 'true' " />
     <Reference Include="System.Xml" Condition=" '$(SilverlightBuild)' != 'true' " />
+    <Reference Include="System.Numerics" Condition="'$(TargetFrameworkVersion)' == 'v4.0'" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Microsoft.Scripting.txt" />

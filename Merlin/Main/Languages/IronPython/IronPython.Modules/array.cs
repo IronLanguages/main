@@ -26,7 +26,9 @@ using IronPython.Runtime.Types;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 using SpecialName = System.Runtime.CompilerServices.SpecialNameAttribute;
+using System.Reflection;
 
 [assembly: PythonModule("array", typeof(IronPython.Modules.ArrayModule))]
 namespace IronPython.Modules {
@@ -49,7 +51,12 @@ namespace IronPython.Modules {
                 _typeCode = type[0];
                 _data = CreateData(_typeCode);
 
-                if (initializer != Type.Missing) extend(initializer);
+                if (initializer != Missing.Value) extend(initializer);
+            }
+
+            private array(char typeCode, ArrayData data) {                
+                _typeCode = typeCode;
+                _data = data;
             }
 
             private static ArrayData CreateData(char typecode) {
@@ -87,7 +94,7 @@ namespace IronPython.Modules {
             public static array operator +(array self, array other) {
                 if (self.typecode != other.typecode) throw PythonOps.TypeError("cannot add different typecodes");
 
-                array res = new array(self.typecode, Type.Missing);
+                array res = new array(self.typecode, Missing.Value);
                 foreach (object o in self) {
                     res.append(o);
                 }
@@ -117,44 +124,31 @@ namespace IronPython.Modules {
                 if ((BigInteger)value * array.__len__() * array.itemsize > SysModule.maxsize) {
                     throw PythonOps.MemoryError("");
                 }
-                array data = new array(array.typecode, Type.Missing);
-                for (int i = 0; i < value; i++) {
-                    data.extend(array);
+
+                if (value <= 0) {
+                    return new array(array.typecode, Missing.Value);
                 }
-                return data;
+                
+                return new array(array._typeCode, array._data.Multiply(value));
             }
 
             public static array operator *(array array, BigInteger value) {
-                if (value * array.__len__() * array.itemsize > SysModule.maxsize) {
-                    throw PythonOps.MemoryError("");
-                }
                 int intValue;
                 if (!value.AsInt32(out intValue)) {
                     throw PythonOps.OverflowError("cannot fit 'long' into an index-sized integer");
+                } else if (value * array.__len__() * array.itemsize > SysModule.maxsize) {
+                    throw PythonOps.MemoryError("");
                 }
+
                 return array * intValue;
             }
 
             public static array operator *(int value, array array) {
-                if ((BigInteger)value * array.__len__() * array.itemsize > SysModule.maxsize) {
-                    throw PythonOps.MemoryError("");
-                }
-                array data = new array(array.typecode, Type.Missing);
-                for (int i = 0; i < value; i++) {
-                    data.extend(array);
-                }
-                return data;
+                return array * value;
             }
 
             public static array operator *(BigInteger value, array array) {
-                if (value * array.__len__() * array.itemsize > SysModule.maxsize) {
-                    throw PythonOps.MemoryError("");
-                }
-                int intValue;
-                if (!value.AsInt32(out intValue)) {
-                    throw PythonOps.OverflowError("cannot fit 'long' into an index-sized integer");
-                }
-                return intValue * array;
+                return array * value;
             }
 
             public void append(object iterable) {
@@ -273,12 +267,18 @@ namespace IronPython.Modules {
             }
 
             public void fromunicode(CodeContext/*!*/ context, string s) {
-                if (s == null) throw PythonOps.TypeError("expected string");
-                if (s.Length == 0) throw PythonOps.ValueError("empty string");
-                if (_typeCode != 'u' && (s.Length % itemsize) != 0) throw PythonOps.ValueError("string length not a multiple of itemsize");
-                MemoryStream ms = new MemoryStream(PythonContext.GetContext(context).DefaultEncoding.GetBytes(s));
-
-                FromStream(ms);
+                if (s == null) {
+                    throw PythonOps.TypeError("expected string");
+                } else if (_typeCode != 'u') {
+                    throw PythonOps.ValueError("fromunicode() may only be called on type 'u' arrays");
+                }
+                
+                ArrayData<char> data = (ArrayData<char>)_data;
+                data.EnsureSize(data.Length + s.Length);
+                for (int i = 0; i < s.Length; i++) {
+                    data.Data[i + data.Length] = s[i];
+                }
+                data.Length += s.Length;
             }
 
             public int index(object x) {
@@ -482,7 +482,7 @@ namespace IronPython.Modules {
                     int start, stop, step;
                     index.indices(_data.Length, out start, out stop, out step);
 
-                    array pa = new array(new string(_typeCode, 1), Type.Missing);
+                    array pa = new array(new string(_typeCode, 1), Missing.Value);
                     if (step < 0) {
                         for (int i = start; i > stop; i += step) {
                             pa._data.Append(_data.GetData(i));
@@ -620,11 +620,7 @@ namespace IronPython.Modules {
             public string tounicode(CodeContext/*!*/ context) {
                 if (_typeCode != 'u') throw PythonOps.ValueError("only 'u' arrays can be converted to unicode");
 
-                Stream s = ToStream();
-                byte[] bytes = new byte[s.Length];
-                s.Read(bytes, 0, (int)s.Length);
-
-                return PythonContext.GetContext(context).DefaultEncoding.GetString(bytes, 0, bytes.Length);
+                return new string(((ArrayData<char>)_data).Data, 0, _data.Length);
             }
 
             public void write(PythonFile f) {
@@ -646,10 +642,11 @@ namespace IronPython.Modules {
                 public abstract void Insert(int index, object value);
                 public abstract void Remove(object value);
                 public abstract void RemoveAt(int index);
-                public abstract int Length { get; }
+                public abstract int Length { get; set; }
                 public abstract void Swap(int x, int y);
                 public abstract void Clear();
                 public abstract IntPtr GetAddress();
+                public abstract ArrayData Multiply(int count);
             }
 
             internal MemoryStream ToStream() {
@@ -833,13 +830,28 @@ namespace IronPython.Modules {
                 private GCHandle? _dataHandle;
 
                 public ArrayData() {
-                    _data = new T[8];
                     GC.SuppressFinalize(this);
+                    _data = new T[8];
+                }
+
+                private ArrayData(int size) {
+                    GC.SuppressFinalize(this);
+                    _data = new T[size];
+                    _count = size;
                 }
 
                 ~ArrayData() {
                     Debug.Assert(_dataHandle.HasValue);
                     _dataHandle.Value.Free();
+                }
+
+                public T[] Data {
+                    get {
+                        return _data;
+                    }
+                    set {
+                        _data = value;
+                    }
                 }
 
                 public override object GetData(int index) {
@@ -872,7 +884,7 @@ namespace IronPython.Modules {
                     _data[_count++] = GetValue(value);
                 }
 
-                private void EnsureSize(int size) {
+                public void EnsureSize(int size) {
                     if (_data.Length < size) {
                         Array.Resize(ref _data, _data.Length * 2);
                         if (_dataHandle != null) {
@@ -942,6 +954,9 @@ namespace IronPython.Modules {
                     get {
                         return _count;
                     }
+                    set {
+                        _count = value;
+                    }
                 }
 
                 public override void Clear() {
@@ -970,6 +985,24 @@ namespace IronPython.Modules {
                         GC.ReRegisterForFinalize(this);
                     }
                     return _dataHandle.Value.AddrOfPinnedObject();
+                }
+
+                public override ArrayData Multiply(int count) {
+                    var res = new ArrayData<T>(count * _count);
+                    if (count != 0) {
+                        Array.Copy(_data, res._data, _count);
+
+                        int newCount = count * _count;
+                        int block = _count;
+                        int pos = _count;
+                        while (pos < newCount) {
+                            Array.Copy(res._data, 0, res._data, pos, Math.Min(block, newCount - pos));
+                            pos += block;
+                            block *= 2;
+                        }
+                    }
+
+                    return res;
                 }
             }
 
@@ -1015,16 +1048,23 @@ namespace IronPython.Modules {
 
                 StringBuilder sb = new StringBuilder(res);
                 if (_typeCode == 'c' || _typeCode == 'u') {
+                    char quote = '\'';
+                    string s = new string(((ArrayData<char>)_data).Data, 0, _data.Length);
+                    if (s.IndexOf('\'') != -1 && s.IndexOf('\"') == -1) {
+                        quote = '\"';
+                    }
+
                     if (_typeCode == 'u') {
-                        sb.Append(", u'");
+                        sb.Append(", u");
                     } else {
-                        sb.Append(", '");
+                        sb.Append(", ");
                     }
-                    for (int i = 0; i < _data.Length; i++) {
-                        bool isUnicode = _typeCode == 'u';
-                        sb.Append(StringOps.ReprEncode(CharOps.ConvertToString((char)_data.GetData(i)), ref isUnicode));
-                    }
-                    sb.Append("')");
+                    sb.Append(quote);
+                    
+                    bool isUnicode = false;
+                    sb.Append(StringOps.ReprEncode(s, quote, ref isUnicode));
+                    sb.Append(quote);
+                    sb.Append(")");
                 } else {
                     sb.Append(", [");
                     for (int i = 0; i < _data.Length; i++) {

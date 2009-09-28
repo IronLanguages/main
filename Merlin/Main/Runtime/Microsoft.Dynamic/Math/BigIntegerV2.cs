@@ -12,6 +12,7 @@
  *
  *
  * ***************************************************************************/
+#if CLR2
 
 using System;
 using System.Collections.Generic;
@@ -356,22 +357,37 @@ namespace Microsoft.Scripting.Math {
         /// is returned.
         /// </summary>
         [CLSCompliant(false)]
-        public uint[] GetBits() {
+        public uint[] GetWords() {
             if (sign == 0) return new uint[0];
-            int mostSignificantNonZeroWord;
-            for (
-                mostSignificantNonZeroWord = data.Length - 1;
-                mostSignificantNonZeroWord >= 0 && data[mostSignificantNonZeroWord] == 0;
-                mostSignificantNonZeroWord--
-            ) ;
-            uint[] bits = new uint[mostSignificantNonZeroWord + 1];
-            Array.Copy(data, bits, mostSignificantNonZeroWord + 1);
+            int w = GetWordCount();
+            uint[] bits = new uint[w];
+            Array.Copy(data, bits, w);
             return bits;
         }
 
         [CLSCompliant(false)]
         public uint GetWord(int index) {
             return data[index];
+        }
+
+        public int GetBitCount() {
+            if (IsZero()) {
+                return 0;
+            }
+            int w = GetWordCount() - 1;
+            uint b = data[w];
+            Debug.Assert(b > 0);
+            int result = w * 32;
+            do {
+                b >>= 1;
+                result++;
+            } while (b > 0);
+
+            return result;
+        }
+
+        public int GetByteCount() {
+            return (GetBitCount() + 7) / 8;
         }
 
         /// <summary>
@@ -386,7 +402,7 @@ namespace Microsoft.Scripting.Math {
         public bool AsInt64(out long ret) {
             ret = 0;
             if (sign == 0) return true;
-            if (Length > 2) return false;
+            if (GetWordCount() > 2) return false;
             if (data.Length == 1) {
                 ret = sign * (long)data[0];
                 return true;
@@ -403,7 +419,7 @@ namespace Microsoft.Scripting.Math {
             ret = 0;
             if (sign == 0) return true;
             if (sign < 0) return false;
-            if (Length > 1) return false;
+            if (GetWordCount() > 1) return false;
             ret = data[0];
             return true;
         }
@@ -413,7 +429,7 @@ namespace Microsoft.Scripting.Math {
             ret = 0;
             if (sign == 0) return true;
             if (sign < 0) return false;
-            if (Length > 2) return false;
+            if (GetWordCount() > 2) return false;
             ret = (ulong)data[0];
             if (data.Length > 1) {
                 ret |= ((ulong)data[1]) << 32;
@@ -424,7 +440,7 @@ namespace Microsoft.Scripting.Math {
         public bool AsInt32(out int ret) {
             ret = 0;
             if (sign == 0) return true;
-            if (Length > 1) return false;
+            if (GetWordCount() > 1) return false;
             if (data[0] > 0x80000000) return false;
             if (data[0] == 0x80000000 && sign == 1) return false;
             ret = (int)data[0];
@@ -438,7 +454,7 @@ namespace Microsoft.Scripting.Math {
                 return true;
             }
 
-            int length = Length;
+            int length = GetWordCount();
             if (length > 3) {
                 ret = default(Decimal);
                 return false;
@@ -500,10 +516,8 @@ namespace Microsoft.Scripting.Math {
                 );
         }
 
-        public int Length {
-            get {
-                return GetLength(data);
-            }
+        public int GetWordCount() {
+            return GetLength(data);
         }
 
         private static int GetLength(uint[] data) {
@@ -605,8 +619,8 @@ namespace Microsoft.Scripting.Math {
                 throw new ArgumentNullException("y");
             }
             if (x.sign == y.sign) {
-                int xl = x.Length;
-                int yl = y.Length;
+                int xl = x.GetWordCount();
+                int yl = y.GetWordCount();
                 if (xl == yl) {
                     for (int i = xl - 1; i >= 0; i--) {
                         if (x.data[i] == y.data[i]) continue;
@@ -690,7 +704,7 @@ namespace Microsoft.Scripting.Math {
             }
 
             if (x.sign == y.sign) {
-                return new BigInteger(x.sign, add0(x.data, x.Length, y.data, y.Length));
+                return new BigInteger(x.sign, add0(x.data, x.GetWordCount(), y.data, y.GetWordCount()));
             } else {
                 return x - new BigInteger(-y.sign, y.data);  //??? performance issue
             }
@@ -708,17 +722,17 @@ namespace Microsoft.Scripting.Math {
                 uint[] z;
                 switch (c * x.sign) {
                     case +1:
-                        z = sub(x.data, x.Length, y.data, y.Length);
+                        z = sub(x.data, x.GetWordCount(), y.data, y.GetWordCount());
                         break;
                     case -1:
-                        z = sub(y.data, y.Length, x.data, x.Length);
+                        z = sub(y.data, y.GetWordCount(), x.data, x.GetWordCount());
                         break;
                     default:
                         return Zero;
                 }
                 return new BigInteger(c, z);
             } else {
-                uint[] z = add0(x.data, x.Length, y.data, y.Length);
+                uint[] z = add0(x.data, x.GetWordCount(), y.data, y.GetWordCount());
                 return new BigInteger(c, z);
             }
         }
@@ -734,8 +748,8 @@ namespace Microsoft.Scripting.Math {
             if (object.ReferenceEquals(y, null)) {
                 throw new ArgumentNullException("y");
             }
-            int xl = x.Length;
-            int yl = y.Length;
+            int xl = x.GetWordCount();
+            int yl = y.GetWordCount();
             int zl = xl + yl;
             uint[] xd = x.data, yd = y.data, zd = new uint[zl];
 
@@ -1016,25 +1030,6 @@ namespace Microsoft.Scripting.Math {
             return new BigInteger(x.sign * y.sign, q);
         }
 
-        private static uint div(uint[] n, ref int nl, uint d) {
-            ulong rem = 0;
-            int i = nl;
-            bool seenNonZero = false;
-            while (--i >= 0) {
-                rem <<= BitsPerDigit;
-                rem |= n[i];
-                uint v = (uint)(rem / d);
-                n[i] = v;
-                if (v == 0) {
-                    if (!seenNonZero) nl--;
-                } else {
-                    seenNonZero = true;
-                }
-                rem %= d;
-            }
-            return (uint)rem;
-        }
-
         private static uint extend(uint v, ref bool seenNonZero) {
             if (seenNonZero) {
                 return ~v;
@@ -1094,7 +1089,7 @@ namespace Microsoft.Scripting.Math {
             if (object.ReferenceEquals(y, null)) {
                 throw new ArgumentNullException("y");
             }
-            int xl = x.Length, yl = y.Length;
+            int xl = x.GetWordCount(), yl = y.GetWordCount();
             uint[] xd = x.data, yd = y.data;
 
             int zl = System.Math.Max(xl, yl);
@@ -1129,7 +1124,7 @@ namespace Microsoft.Scripting.Math {
             if (object.ReferenceEquals(y, null)) {
                 throw new ArgumentNullException("y");
             }
-            int xl = x.Length, yl = y.Length;
+            int xl = x.GetWordCount(), yl = y.GetWordCount();
             uint[] xd = x.data, yd = y.data;
 
             int zl = System.Math.Max(xl, yl);
@@ -1163,7 +1158,7 @@ namespace Microsoft.Scripting.Math {
             if (object.ReferenceEquals(y, null)) {
                 throw new ArgumentNullException("y");
             }
-            int xl = x.Length, yl = y.Length;
+            int xl = x.GetWordCount(), yl = y.GetWordCount();
             uint[] xd = x.data, yd = y.data;
 
             int zl = System.Math.Max(xl, yl);
@@ -1200,7 +1195,7 @@ namespace Microsoft.Scripting.Math {
             int digitShift = shift / BitsPerDigit;
             int smallShift = shift - (digitShift * BitsPerDigit);
 
-            int xl = x.Length;
+            int xl = x.GetWordCount();
             uint[] xd = x.data;
             int zl = xl + digitShift + 1;
             uint[] zd = new uint[zl];
@@ -1237,7 +1232,7 @@ namespace Microsoft.Scripting.Math {
             int digitShift = shift / BitsPerDigit;
             int smallShift = shift - (digitShift * BitsPerDigit);
 
-            int xl = x.Length;
+            int xl = x.GetWordCount();
             uint[] xd = x.data;
             int zl = xl - digitShift;
             if (zl < 0) zl = 0;
@@ -1361,58 +1356,9 @@ namespace Microsoft.Scripting.Math {
             return ToString(10);
         }
 
-        // generated by scripts/radix_generator.py
-        private static readonly uint[] maxCharsPerDigit = { 0, 0, 31, 20, 15, 13, 12, 11, 10, 10, 9, 9, 8, 8, 8, 8, 7, 7, 7, 7, 7, 7, 7, 7, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6 };
-        private static readonly uint[] groupRadixValues = { 0, 0, 2147483648, 3486784401, 1073741824, 1220703125, 2176782336, 1977326743, 1073741824, 3486784401, 1000000000, 2357947691, 429981696, 815730721, 1475789056, 2562890625, 268435456, 410338673, 612220032, 893871739, 1280000000, 1801088541, 2494357888, 3404825447, 191102976, 244140625, 308915776, 387420489, 481890304, 594823321, 729000000, 887503681, 1073741824, 1291467969, 1544804416, 1838265625, 2176782336 };
-
-        [CLSCompliant(false), Confined]
-        public string ToString(uint radix) {
-            if (radix < 2) {
-                throw ExceptionUtils.MakeArgumentOutOfRangeException("radix", radix, "radix must be >= 2");
-            }
-            if (radix > 36) {
-                throw ExceptionUtils.MakeArgumentOutOfRangeException("radix", radix, "radix must be <= 36");
-            }
-
-            int len = Length;
-            if (len == 0) return "0";
-
-            List<uint> digitGroups = new List<uint>();
-
-            uint[] d = copy(data);
-            int dl = Length;
-
-            uint groupRadix = groupRadixValues[radix];
-            while (dl > 0) {
-                uint rem = div(d, ref dl, groupRadix);
-                digitGroups.Add(rem);
-            }
-
-            StringBuilder ret = new StringBuilder();
-            if (sign == -1) ret.Append("-");
-            int digitIndex = digitGroups.Count - 1;
-
-            char[] tmpDigits = new char[maxCharsPerDigit[radix]];
-
-            AppendRadix((uint)digitGroups[digitIndex--], radix, tmpDigits, ret, false);
-            while (digitIndex >= 0) {
-                AppendRadix((uint)digitGroups[digitIndex--], radix, tmpDigits, ret, true);
-            }
-            return ret.ToString();
-        }
-
-        private static void AppendRadix(uint rem, uint radix, char[] tmp, StringBuilder buf, bool leadingZeros) {
-            const string symbols = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-
-            int digits = tmp.Length;
-            int i = digits;
-            while (i > 0 && (leadingZeros || rem != 0)) {
-                uint digit = rem % radix;
-                rem /= radix;
-                tmp[--i] = symbols[(int)digit];
-            }
-            if (leadingZeros) buf.Append(tmp);
-            else buf.Append(tmp, i, digits - i);
+        [Confined]
+        public string ToString(int radix) {
+            return MathUtils.BigIntegerToString(copy(data), sign, radix);
         }
 
         [Confined]
@@ -1773,18 +1719,5 @@ namespace Microsoft.Scripting.Math {
 
         #endregion        
     }
-
-    public static class BigIntegerExtensions {
-        public static BigInteger Random(this Random generator, BigInteger limit) {
-            ContractUtils.Requires(limit.Sign >= 0, "limit");
-            ContractUtils.RequiresNotNull(generator, "generator");
-
-            // TODO: this doesn't yield a uniform distribution (small numbers will be picked more frequently):
-            uint[] result = new uint[limit.Length + 1];
-            for (int i = 0; i < result.Length; i++) {
-                result[i] = unchecked((uint)generator.Next());
-            }
-            return new BigInteger(1, result) % limit;
-        }
-    }
 }
+#endif

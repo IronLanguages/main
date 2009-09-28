@@ -330,18 +330,25 @@ namespace IronPython.Runtime {
         }
 
         internal bool ContainsWorker(object value) {
-            lock (this) {
+            bool lockTaken = false;
+            try {
+                MonitorUtils.Enter(this, ref lockTaken);
+
                 for (int i = 0; i < _size; i++) {
                     object thisIndex = _data[i];
 
                     // release the lock while we may call user code...
-                    Monitor.Exit(this);
+                    MonitorUtils.Exit(this, ref lockTaken);
                     try {
                         if (PythonOps.EqualRetBool(thisIndex, value))
                             return true;
                     } finally {
-                        Monitor.Enter(this);
+                        MonitorUtils.Enter(this, ref lockTaken);
                     }
+                }
+            } finally {
+                if (lockTaken) {
+                    Monitor.Exit(this);
                 }
             }
             return false;
@@ -739,19 +746,25 @@ namespace IronPython.Runtime {
         }
 
         public int count(object item) {
-            lock (this) {
+            bool lockTaken = false;
+            try {
+                MonitorUtils.Enter(this, ref lockTaken);
                 int cnt = 0;
                 for (int i = 0, len = _size; i < len; i++) {
                     object val = _data[i];
 
-                    Monitor.Exit(this);
+                    MonitorUtils.Exit(this, ref lockTaken);
                     try {
                         if (PythonOps.EqualRetBool(val, item)) cnt++;
                     } finally {
-                        Monitor.Enter(this);
+                        MonitorUtils.Enter(this, ref lockTaken);
                     }
                 }
                 return cnt;
+            } finally {
+                if (lockTaken) {
+                    Monitor.Exit(this);
+                }
             }
         }
 
@@ -1512,15 +1525,20 @@ namespace IronPython.Runtime {
     /// </summary>
     public struct OrderedLocker : IDisposable {
         private readonly object _one, _two;
+        private bool _oneLocked, _twoLocked;
 
         public OrderedLocker(object/*!*/ one, object/*!*/ two) {
             Debug.Assert(one != null); Debug.Assert(two != null);
 
             _one = one;
             _two = two;
+            _oneLocked = false;
+            _twoLocked = false;
 
             if (one == two) {
-                Monitor.Enter(one);
+                try { } finally {
+                    MonitorUtils.Enter(one, ref _oneLocked);
+                }
                 return;
             }
 
@@ -1528,19 +1546,19 @@ namespace IronPython.Runtime {
             int hc2 = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(_two);
 
             if (hc1 < hc2) {
-                Monitor.Enter(_one);
-                Monitor.Enter(_two);
+                MonitorUtils.Enter(_one, ref _oneLocked);
+                MonitorUtils.Enter(_two, ref _twoLocked);
             } else if (hc1 != hc2) {
-                Monitor.Enter(_two); 
-                Monitor.Enter(_one);
+                MonitorUtils.Enter(_two, ref _twoLocked);
+                MonitorUtils.Enter(_one, ref _oneLocked);
             } else {
                 // rare, but possible.  We need a second opinion
                 if (IdDispenser.GetId(_one) < IdDispenser.GetId(_two)) {
-                    Monitor.Enter(_one);
-                    Monitor.Enter(_two);
+                    MonitorUtils.Enter(_one, ref _oneLocked);
+                    MonitorUtils.Enter(_two, ref _twoLocked);
                 } else {
-                    Monitor.Enter(_two);
-                    Monitor.Enter(_one);
+                    MonitorUtils.Enter(_two, ref _twoLocked);
+                    MonitorUtils.Enter(_one, ref _oneLocked);
                 }
             }
         }
@@ -1548,9 +1566,9 @@ namespace IronPython.Runtime {
         #region IDisposable Members
 
         public void Dispose() {
-            Monitor.Exit(_one);
+            MonitorUtils.Exit(_one, ref _oneLocked);
             if (_one != _two) {
-                Monitor.Exit(_two);
+                MonitorUtils.Exit(_two, ref _twoLocked);
             }
         }
 
