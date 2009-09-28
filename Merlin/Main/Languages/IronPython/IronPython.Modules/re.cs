@@ -306,7 +306,7 @@ namespace IronPython.Modules {
 
             public RE_Match search(object text, int pos, int endpos) {
                 string input = ValidateString(text, "text");
-                return RE_Match.make(_re.Match(input, pos, Math.Max(endpos - pos, 0)), this, input);
+                return RE_Match.make(_re.Match(input, pos, Math.Min(Math.Max(endpos - pos, 0), input.Length - pos)), this, input);
             }
 
             public object findall(CodeContext/*!*/ context, string @string) {

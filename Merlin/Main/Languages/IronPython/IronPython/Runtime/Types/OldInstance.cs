@@ -346,13 +346,6 @@ namespace IronPython.Runtime.Types {
 
                 object value;
                 if (TryGetBoundCustomMember(context, "__call__", out value)) {
-                    KwCallInfo kwInfo;
-
-                    if (args is object[])
-                        return PythonOps.CallWithContext(context, value, (object[])args);
-                    else if ((kwInfo = args as KwCallInfo) != null)
-                        return PythonOps.CallWithKeywordArgs(context, value, kwInfo.Arguments, kwInfo.Names);
-
                     return PythonOps.CallWithContext(context, value, args);
                 }
             } finally {
@@ -385,7 +378,7 @@ namespace IronPython.Runtime.Types {
 
                 object value;
                 if (TryGetBoundCustomMember(context, "__call__", out value)) {
-                    return PythonOps.CallWithArgsTupleAndKeywordDictAndContext(context, value, args, ArrayUtils.EmptyStrings, null, dict);
+                    return context.LanguageContext.CallWithKeywords(value, args, dict);
                 }
             } finally {
                 PythonOps.FunctionPopFrame();

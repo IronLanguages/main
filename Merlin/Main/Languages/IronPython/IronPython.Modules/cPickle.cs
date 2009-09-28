@@ -682,15 +682,15 @@ namespace IronPython.Modules {
                     result = PythonCalls.Call(context, reduceCallable, obj);
                 } else if (PythonOps.TryGetBoundAttr(context, obj, "__reduce_ex__", out reduceCallable)) {
                     if (obj is PythonType) {
-                        result = PythonOps.CallWithContext(context, reduceCallable, obj, _protocol);
+                        result = context.LanguageContext.Call(context, reduceCallable, obj, _protocol);
                     } else {
-                        result = PythonOps.CallWithContext(context, reduceCallable, _protocol);
+                        result = context.LanguageContext.Call(context, reduceCallable, _protocol);
                     }
                 } else if (PythonOps.TryGetBoundAttr(context, obj, "__reduce__", out reduceCallable)) {
                     if (obj is PythonType) {
-                        result = PythonOps.CallWithContext(context, reduceCallable, obj);
+                        result = context.LanguageContext.Call(context, reduceCallable, obj);
                     } else {
-                        result = PythonOps.CallWithContext(context, reduceCallable);
+                        result = context.LanguageContext.Call(context, reduceCallable);
                     }
                 } else {
                     throw PythonOps.AttributeError("no reduce function found for {0}", obj);

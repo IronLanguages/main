@@ -620,7 +620,7 @@ namespace IronPython.Compiler {
             while (MaybeEat(TokenKind.Assign)) {
                 string assignError = right.CheckAssign();
                 if (assignError != null) {
-                    ReportSyntaxError(right.Span.Start, right.Span.End, assignError, ErrorCodes.SyntaxError);
+                    ReportSyntaxError(right.Span.Start, right.Span.End, assignError, ErrorCodes.SyntaxError | ErrorCodes.NoCaret);
                 }
 
                 left.Add(right);

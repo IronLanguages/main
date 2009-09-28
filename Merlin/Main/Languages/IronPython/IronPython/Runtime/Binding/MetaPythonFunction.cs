@@ -546,6 +546,7 @@ namespace IronPython.Runtime.Binding {
                             // make a single copy.
                             exprArgs[_func.Value.ExpandListPosition] = Ast.Call(
                                 typeof(PythonOps).GetMethod("GetOrCopyParamsTuple"),
+                                GetFunctionParam(),
                                 AstUtils.Convert(_userProvidedParams, typeof(object))
                             );
                         } else {

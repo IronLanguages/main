@@ -1089,8 +1089,8 @@ for k, v in toError.iteritems():
 
             string sourceLine = PythonContext.GetSourceLine(e);
             string fileName = e.GetSymbolDocumentName();
-            object column = e.Column == 0 ? null : (object)e.Column;
-
+            object column = (e.Column == 0 || e.Data.Contains(PythonContext._syntaxErrorNoCaret)) ? null : (object)e.Column;
+            
             se.args = PythonTuple.MakeTuple(e.Message, PythonTuple.MakeTuple(fileName, e.Line, column, sourceLine));
 
             se.filename = fileName;

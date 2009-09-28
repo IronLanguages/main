@@ -1438,7 +1438,7 @@ namespace IronPython.Runtime.Operations {
             return new string(rchars);
         }
 
-        private static string ReprEncode(string s, char quote, ref bool isUnicode) {
+        internal static string ReprEncode(string s, char quote, ref bool isUnicode) {
             // in the common case we don't need to encode anything, so we
             // lazily create the StringBuilder only if necessary.
             StringBuilder b = null;

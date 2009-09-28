@@ -16,6 +16,7 @@
 using System;
 using System.Reflection;
 using Microsoft.Contracts;
+using Microsoft.Scripting.Runtime;
 
 namespace Microsoft.Scripting.Actions {
     public class ReflectedPropertyTracker : PropertyTracker {
@@ -60,6 +61,20 @@ namespace Microsoft.Scripting.Actions {
         public override MethodInfo GetSetMethod(bool privateMembers) {
             return _propInfo.GetSetMethod(privateMembers);
         }
+
+        public override MethodInfo GetDeleteMethod() {
+            return GetDeleteMethod(false);
+        }
+
+        public override MethodInfo GetDeleteMethod(bool privateMembers) {
+            MethodInfo res = _propInfo.DeclaringType.GetMethod("Delete" + _propInfo.Name, (privateMembers ? BindingFlags.NonPublic : 0) | BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public);
+            if (res != null && res.IsSpecialName && res.IsDefined(typeof(PropertyMethodAttribute), true)) {
+                return res;
+            }
+
+            return null;
+        }
+
 
         public override ParameterInfo[] GetIndexParameters() {
             return _propInfo.GetIndexParameters();

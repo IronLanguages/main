@@ -82,6 +82,10 @@ namespace IronPython.Modules {
                 }
             }
 
+            public void jumpahead(double count) {
+                throw PythonOps.TypeError("jumpahead requires an integer, not 'float'");
+            }
+
             public object random() {
                 lock (this) {
                     return _rnd.NextDouble();
