@@ -150,7 +150,10 @@ namespace IronPython.Modules {
         }
 
         public static double log(BigInteger value) {
-            return Check(value.Log());
+            if (value.Sign <= 0) {
+                throw PythonOps.ValueError("math domain error");
+            }
+            return value.Log();
         }
 
         public static double log(object value) {
@@ -194,7 +197,10 @@ namespace IronPython.Modules {
         }
 
         public static double log10(BigInteger value) {
-            return Check(value.Log10());
+            if (value.Sign <= 0) {
+                throw PythonOps.ValueError("math domain error");
+            }
+            return value.Log10();
         }
 
         public static double log10(object value) {

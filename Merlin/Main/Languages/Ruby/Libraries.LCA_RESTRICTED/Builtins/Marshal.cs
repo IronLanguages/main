@@ -112,7 +112,7 @@ namespace IronRuby.Builtins {
                     sign = '0';
                 }
                 _writer.Write((byte)sign);
-                uint[] bits = value.GetBits();
+                uint[] bits = value.GetWords();
                 int n = bits.Length * 2, mn = bits.Length - 1;
                 bool truncate = false;
                 if (bits.Length > 0 && (bits[mn] >> 16) == 0) {

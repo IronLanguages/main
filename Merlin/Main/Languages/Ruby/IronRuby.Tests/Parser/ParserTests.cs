@@ -1025,7 +1025,7 @@ add 'foo', 'bar'
                 b = p.Parse(s.Length, @base);
                 optimizedTime.Stop();
 
-                Assert(b.ToString((uint)@base) == s.TrimStart('0'));
+                Assert(b.ToString(@base) == s.TrimStart('0'));
 
                 p.Position = 0;
 
@@ -1033,7 +1033,7 @@ add 'foo', 'bar'
                 b = p.ParseDefault(s.Length, (uint)@base);
                 universalTime.Stop();
 
-                Assert(b.ToString((uint)@base) == s.TrimStart('0'));
+                Assert(b.ToString(@base) == s.TrimStart('0'));
             }
 
             if (repeat != 0) {
@@ -1063,7 +1063,7 @@ add 'foo', 'bar'
             Assert(i == expected.Length);
         }
 
-        private AssertTokenizer/*!*/ AssertTokenBigInteger(string/*!*/ source, uint @base) {
+        private AssertTokenizer/*!*/ AssertTokenBigInteger(string/*!*/ source, int @base) {
             return new AssertTokenizer(this).Load(source).ReadBigInteger(source.Replace("_", "").TrimStart('0'), @base);
         }
 

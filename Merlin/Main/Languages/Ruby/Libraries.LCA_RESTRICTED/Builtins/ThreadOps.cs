@@ -25,6 +25,8 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 namespace IronRuby.Builtins {
+    using Debug = System.Diagnostics.Debug;
+
     /// <summary>
     /// Ruby threads are represented by CLR thread objects (System.Threading.Thread).
     /// Ruby 1.8.N has green threads where the language does the thread scheduling. We map the green threads 
@@ -575,15 +577,21 @@ namespace IronRuby.Builtins {
         }
 
         private static void SetCritical(RubyContext/*!*/ context, bool value) {
-            System.Diagnostics.Debug.Assert(context.RubyOptions.Compatibility == RubyCompatibility.Ruby18);
+            Debug.Assert(context.RubyOptions.Compatibility == RubyCompatibility.Ruby18);
             if (value) {
-                Monitor.Enter(context.CriticalMonitor);
-                context.CriticalThread = Thread.CurrentThread;
+                bool lockTaken = false;
+                try {
+                    MonitorUtils.Enter(context.CriticalMonitor, ref lockTaken);
+                } finally {
+                    // thread could have been aborted just before/after Monitor.Enter acquired the lock:
+                    if (lockTaken) {
+                        context.CriticalThread = Thread.CurrentThread;
+                    }
+                }
             } else {
                 Monitor.Exit(context.CriticalMonitor);
                 context.CriticalThread = null;
             }
-
         }
 
         [RubyMethod("critical", RubyMethodAttributes.PublicSingleton)] // Compatibility <= RubyCompatibility.Ruby18

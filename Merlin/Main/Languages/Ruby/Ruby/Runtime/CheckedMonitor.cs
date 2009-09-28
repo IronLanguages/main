@@ -17,22 +17,34 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
+using Microsoft.Scripting.Utils;
 
 namespace IronRuby.Runtime {
     /// <summary>
+    /// TODO: use ReaderWriterLockSlim on CLR4?
     /// Queryable recursive lock.
     /// </summary>
     internal sealed class CheckedMonitor {
         private int _locked;
 
-        public void Enter() {
-            Monitor.Enter(this);
-            _locked++;
+        internal void Enter(ref bool lockTaken) {
+            try {
+                MonitorUtils.Enter(this, ref lockTaken);
+            } finally {
+                if (lockTaken) {
+                        _locked++;
+                }
+            }
         }
 
-        public void Exit() {
-            _locked--;
-            Monitor.Exit(this);
+        internal void Exit(ref bool lockTaken) {
+            try {
+                MonitorUtils.Exit(this, ref lockTaken);
+            } finally {
+                if (!lockTaken) {
+                    _locked--;
+                }
+            }
         }
 
         public bool IsLocked {
@@ -49,27 +61,31 @@ namespace IronRuby.Runtime {
 
         private struct CheckedMonitorLocker : IDisposable {
             private readonly CheckedMonitor/*!*/ _monitor;
+            private bool _lockTaken;
 
             public CheckedMonitorLocker(CheckedMonitor/*!*/ monitor) {
                 _monitor = monitor;
-                monitor.Enter();
+                _lockTaken = false;
+                monitor.Enter(ref _lockTaken);
             }
 
             public void Dispose() {
-                _monitor.Exit();
+                _monitor.Exit(ref _lockTaken);
             }
         }
 
         private struct CheckedMonitorUnlocker : IDisposable {
             private readonly CheckedMonitor/*!*/ _monitor;
+            private bool _lockTaken;
 
             public CheckedMonitorUnlocker(CheckedMonitor/*!*/ monitor) {
                 _monitor = monitor;
-                monitor.Exit();
+                _lockTaken = true;
+                monitor.Exit(ref _lockTaken);
             }
 
             public void Dispose() {
-                _monitor.Enter();
+                _monitor.Enter(ref _lockTaken);
             }
         }
     }

@@ -12,7 +12,7 @@
  *
  *
  * ***************************************************************************/
-
+#if CLR2
 using System.Collections;
 using System.Collections.Generic;
 
@@ -82,3 +82,4 @@ namespace Microsoft.Scripting.Utils {
         }
     }
 }
+#endif

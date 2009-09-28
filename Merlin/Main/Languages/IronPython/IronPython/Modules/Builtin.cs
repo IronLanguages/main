@@ -165,7 +165,7 @@ namespace IronPython.Modules {
         }
 
         public static object apply(CodeContext/*!*/ context, object func, object args, object kws) {
-            return PythonOps.CallWithArgsTupleAndKeywordDictAndContext(context, func, ArrayUtils.EmptyObjects, ArrayUtils.EmptyStrings, args, kws);
+            return context.LanguageContext.CallWithKeywords(func, args, kws);
         }
 
         public static PythonType basestring {

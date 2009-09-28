@@ -119,19 +119,28 @@ namespace Microsoft.Scripting.Ast {
                 );
             }
 
+#if !CLR2
             return Expression.New(
+                typeof(BigInteger).GetConstructor(new Type[] { typeof(int), typeof(byte[]) }),
+                Constant((int)value.Sign),
+                CreateArray<byte>(value.Abs().ToByteArray())
+            );
+#else
+             return Expression.New(
                 typeof(BigInteger).GetConstructor(new Type[] { typeof(int), typeof(uint[]) }),
                 Constant((int)value.Sign),
-                CreateUIntArray(value.GetBits())
+                CreateArray<uint>(value.GetWords())
             );
+#endif
         }
 
-        private static Expression CreateUIntArray(uint[] array) {
+        private static Expression CreateArray<T>(T[] array) {
+            // TODO: could we use blobs?
             Expression[] init = new Expression[array.Length];
             for (int i = 0; i < init.Length; i++) {
                 init[i] = Constant(array[i]);
             }
-            return Expression.NewArrayInit(typeof(uint), init);
+            return Expression.NewArrayInit(typeof(T), init);
         }
 
         private static Expression ComplexConstant(Complex64 value) {

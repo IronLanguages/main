@@ -45,6 +45,10 @@ namespace IronPython.Runtime.Operations {
         /// Removes an attribute from the provided member
         /// </summary>
         public static void __delattr__(CodeContext/*!*/ context, object self, string name) {
+            if (self is PythonType) {
+                throw PythonOps.TypeError("can't apply this __delattr__ to type object");
+            }
+
             PythonOps.ObjectDeleteAttribute(context, self, name);
         }
 
@@ -73,7 +77,7 @@ namespace IronPython.Runtime.Operations {
         /// <summary>
         /// Initializes the object.  The base class does nothing.
         /// </summary>
-        public static void __init__(CodeContext/*!*/ context, object self, params object[] args\u00F8) {
+        public static void __init__(CodeContext/*!*/ context, object self, [NotNull]params object[] args\u00F8) {
             InstanceOps.CheckInitArgs(context, null, args\u00F8, self);
         }
 
@@ -100,7 +104,7 @@ namespace IronPython.Runtime.Operations {
         /// Creates a new instance of the type
         /// </summary>
         [StaticExtensionMethod]
-        public static object __new__(CodeContext/*!*/ context, PythonType cls, params object[] args\u00F8) {
+        public static object __new__(CodeContext/*!*/ context, PythonType cls, [NotNull]params object[] args\u00F8) {
             if (cls == null) {
                 throw PythonOps.TypeError("__new__ expected type object, got {0}", PythonOps.Repr(context, DynamicHelpers.GetPythonType(cls)));
             }
@@ -114,7 +118,7 @@ namespace IronPython.Runtime.Operations {
         /// Creates a new instance of the type
         /// </summary>
         [StaticExtensionMethod]
-        public static object __new__(CodeContext/*!*/ context, PythonType cls, [ParamDictionary]IDictionary<object, object> kwargs\u00F8, params object[] args\u00F8) {
+        public static object __new__(CodeContext/*!*/ context, PythonType cls, [ParamDictionary]IDictionary<object, object> kwargs\u00F8, [NotNull]params object[] args\u00F8) {
             if (cls == null) {
                 throw PythonOps.TypeError("__new__ expected type object, got {0}", PythonOps.Repr(context, DynamicHelpers.GetPythonType(cls)));
             }
@@ -174,6 +178,10 @@ namespace IronPython.Runtime.Operations {
         /// Sets an attribute on the object without running any custom object defined behavior.
         /// </summary>
         public static void __setattr__(CodeContext/*!*/ context, object self, string name, object value) {
+            if (self is PythonType) {
+                throw PythonOps.TypeError("can't apply this __setattr__ to type object");
+            }
+
             PythonOps.ObjectSetAttribute(context, self, name, value);
         }
 

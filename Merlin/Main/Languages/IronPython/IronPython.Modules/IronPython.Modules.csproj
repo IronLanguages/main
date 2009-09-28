@@ -189,6 +189,7 @@
       <HintPath>$(SilverlightPath)\System.Core.dll</HintPath>
       <Aliases>systemcore</Aliases>
     </Reference>
+    <Reference Include="System.Numerics" Condition=" '$(TargetFrameworkVersion)' == 'v4.0' " />
     <Reference Include="System.Data" Condition=" '$(SilverlightBuild)' != 'true' " />
     <Reference Include="System.Xml" Condition=" '$(SilverlightBuild)' != 'true' " />
   </ItemGroup>

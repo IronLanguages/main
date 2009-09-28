@@ -1434,6 +1434,27 @@ ocinst = oc()
 
         }
 
+        public void ScenarioTokenCategorizer() {
+            var categorizer = _pe.GetService<TokenCategorizer>();
+            var source = _pe.CreateScriptSourceFromString("sys", SourceCodeKind.Statements);
+            categorizer.Initialize(null, source, SourceLocation.MinValue);
+            
+            TokenInfo token = categorizer.ReadToken();
+            AreEqual(token.Category, TokenCategory.Identifier);
+            
+            token = categorizer.ReadToken();
+            AreEqual(token.Category, TokenCategory.EndOfStream);
+
+            source = _pe.CreateScriptSourceFromString("\"sys\"", SourceCodeKind.Statements);
+            categorizer.Initialize(null, source, SourceLocation.MinValue);
+
+            token = categorizer.ReadToken();
+            AreEqual(token.Category, TokenCategory.StringLiteral);
+
+            token = categorizer.ReadToken();
+            AreEqual(token.Category, TokenCategory.EndOfStream);
+        }
+
         private void AreEqualLists<T>(IList<T> left, IList<T> right) {
             if (left.Count != right.Count) {
                 string res = "lists differ by length: " + left.Count + " vs " + right.Count + Environment.NewLine + ListsToString(left, right);

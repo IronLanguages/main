@@ -516,7 +516,6 @@ end
   end
 
   def test_files_non_array_pathological
-    skip "RangeError: bignum too big to convert into Fixnum"
     @a1.instance_variable_set :@files, "F"
     @a1.instance_variable_set :@test_files, "TF"
     @a1.instance_variable_set :@extra_rdoc_files, "ERF"
@@ -591,7 +590,6 @@ end
   end
 
   def test_hash
-    skip 'bignum too big to convert into Fixnum'
     assert_equal @a1.hash, @a1.hash
     assert_equal @a1.hash, @a1.dup.hash
     refute_equal @a1.hash, @a2.hash

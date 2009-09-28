@@ -139,8 +139,8 @@ end
 
 Configuration.define do
   group(:common) {
-    switches :all, 'nologo', 'noconfig', 'nowarn:1591,1701,1702', 'errorreport:prompt', 'warn:4', 'warnaserror-'
-    switches :debug, 'define:"DEBUG;TRACE;MICROSOFT_SCRIPTING_CORE"', 'debug+', 'debug:full', 'optimize-'
+    switches :all, 'nologo', 'noconfig', 'nowarn:1701,1702', 'errorreport:prompt', 'warn:4', 'warnaserror-'
+    switches :debug, 'define:"DEBUG;TRACE"', 'debug+', 'debug:full', 'optimize-'
     switches :release, 'define:TRACE', 'optimize+'
     references 'System.dll'
   }
@@ -284,6 +284,7 @@ class CSProjCompiler
       options = get_compile_path_list(args[:csproj]).join("\n")
       temp.puts options
       temp.close
+      FileUtils.cp temp.path, File.expand_path("~\\Desktop\\compile")
       cmd << " @" << temp.path
       exec cmd
     end
@@ -389,32 +390,32 @@ IronRubyCompiler = CSProjCompiler.new do
 # DLR
 #====================================================================
 
-  dlr_core :references => ['!System.dll','!System.Configuration.dll','Microsoft.Scripting.ExtensionAttribute.dll'], 
-           :switches   => ['target:library', 'define:MICROSOFT_SCRIPTING_CORE;CLR2'],
+  dlr_core :references => ['!System.dll','!System.Configuration.dll','Microsoft.Scripting.ExtensionAttribute.dll', '!System.Data.dll', '!System.Xml.dll'], 
+           :switches   => ['target:library', 'define:CLR2'],
            :output     => 'Microsoft.Scripting.Core.dll',
            :csproj     => 'Microsoft.Scripting.Core.csproj',
            :dir        => '../../../../ndp/fx/src/Core/Microsoft/Scripting'
 
   dlr_extension :references => ['!System.dll'],
-                :switches   => ['target:library', 'define:CLR2'],
+                :switches   => ['target:library'],
                 :output     => 'Microsoft.Scripting.ExtensionAttribute.dll',
                 :csproj     => 'Microsoft.Scripting.ExtensionAttribute.csproj',
                 :dir        => '../../../../ndp/fx/src/Core/Microsoft/Scripting'
                 
-  dlr_libs  :references => ['Microsoft.Scripting.Core.dll', '!System.Xml.dll', '!System.dll', '!System.Configuration.dll', 'Microsoft.Scripting.ExtensionAttribute.dll','!System.Runtime.Remoting.dll'],
-            :switches   => ['target:library', 'unsafe', 'define:CLR2'], 
+  dlr_libs  :references => ['Microsoft.Scripting.Core.dll', '!System.Xml.dll', '!System.dll', '!System.Configuration.dll', 'Microsoft.Scripting.ExtensionAttribute.dll','!System.Runtime.Remoting.dll', '!System.Data.dll'],
+            :switches   => ['target:library', 'unsafe+', 'nowarn:1591','define:CLR2'], 
             :output     => 'Microsoft.Scripting.dll', 
             :csproj     => 'Microsoft.Scripting.csproj',
             :dir        => '../../Runtime/Microsoft.Scripting'
             
   dlr_com :references   => ['Microsoft.Scripting.Core.dll', 'Microsoft.Scripting.dll','!System.Configuration.dll', '!System.Data.dll', '!System.Runtime.Remoting.dll', '!System.Xml.dll', '!System.dll', 'Microsoft.Scripting.ExtensionAttribute.dll'],
-          :switches     => ['target:library', 'unsafe', 'define:CLR2'],
+          :switches     => ['target:library', 'unsafe+', 'nowarn:1591', 'define:CLR2'],
           :output       => 'Microsoft.Dynamic.dll',
           :csproj       => 'Microsoft.Dynamic.csproj',
           :dir        => '../../Runtime/Microsoft.Dynamic'
 
   dlr_debug :references => ['!System.dll', '!System.Configuration.dll', 'Microsoft.Scripting.Core.dll', 'Microsoft.Dynamic.dll','Microsoft.Scripting.ExtensionAttribute.dll', 'Microsoft.Scripting.dll'],
-            :switches   => ['target:library', 'define:DEBUG;TRACE;CLR2'],
+            :switches   => ['target:library', 'define:DEBUG;TRACE;CLR2', 'nowarn:1591'],
             :output     => 'Microsoft.Scripting.Debugging.dll',
             :csproj     => 'Microsoft.Scripting.Debugging.csproj',
             :dir        => '../../Debugging/Microsoft.Scripting.Debugging'
@@ -422,28 +423,36 @@ IronRubyCompiler = CSProjCompiler.new do
 #====================================================================
 # IRONRUBY
 #====================================================================
-  generator :references => ['Microsoft.Scripting.Core.dll', 'Microsoft.Scripting.dll', 'Microsoft.Dynamic.dll','Microsoft.Scripting.ExtensionAttribute.dll', 'IronRuby.dll', '!System.dll'],
+  generator :references => ['Microsoft.Scripting.Core.dll', 'Microsoft.Scripting.dll', 'Microsoft.Dynamic.dll', 'IronRuby.dll', '!System.dll'],
+            :switches   => ['define:CLR2'],
             :output     => 'ClassInitGenerator.exe',
             :dir        => './ClassInitGenerator'
             
-  ironruby :references => ['Microsoft.Scripting.Core.dll', 'Microsoft.Scripting.dll', 'Microsoft.Scripting.ExtensionAttribute.dll', 'Microsoft.Dynamic.dll', '!System.dll', '!System.Configuration.dll'],
-           :switches   => ['target:library', 'define:CLR2'],
+  ironruby :references => ['Microsoft.Scripting.Core.dll', 'Microsoft.Scripting.dll', 'Microsoft.Scripting.ExtensionAttribute.dll', 'Microsoft.Dynamic.dll', '!System.dll', '!System.Configuration.dll', '!System.Data.dll', '!System.Xml.dll', 'Microsoft.Scripting.Debugging.dll'],
+           :switches   => ['target:library', 'define:CLR2', 'checked+'],
            :output     => 'IronRuby.dll',
            :dir        => './Ruby',
            :csproj     => 'Ruby.csproj'
           
-  libraries :references => ['Microsoft.Scripting.Core.dll', 'Microsoft.Scripting.dll', 'Microsoft.Dynamic.dll', 'Microsoft.Scripting.ExtensionAttribute.dll', 'IronRuby.dll', '!System.dll'],
-            :switches   => ['target:library', 'define:CLR2'],
+  libraries :references => ['Microsoft.Scripting.Core.dll', 'Microsoft.Scripting.dll', 'Microsoft.Dynamic.dll', '!System.Data.dll', '!System.Xml.dll', 'IronRuby.dll', '!System.dll'],
+            :switches   => ['target:library', 'define:CLR2', 'checked+'],
             :output     => 'IronRuby.Libraries.dll',
             :dir        => 'Libraries.LCA_RESTRICTED',
             :csproj     => 'IronRuby.Libraries.csproj'
             
   console :references => ['Microsoft.Scripting.Core.dll','Microsoft.Scripting.dll','IronRuby.dll', 'Microsoft.Dynamic.dll'],
+          :switches   => ['define:CLR2'],
           :output     => 'ir.exe',
           :dir        => './Console',
           :csproj     => 'Ruby.Console.csproj'
           
-  test_runner :references => ['Microsoft.Scripting.Core.dll', 'Microsoft.Scripting.dll', 'Microsoft.Dynamic.dll', 'IronRuby.dll', 'IronRuby.Libraries.dll', '!System.dll', '!System.Windows.Forms.dll'],
+  console_any :references => ['Microsoft.Scripting.Core.dll','Microsoft.Scripting.dll','IronRuby.dll', 'Microsoft.Dynamic.dll'],
+              :switches   => ['define:CLR2'],
+              :output     => 'ir64.exe',
+              :dir        => './Console',
+              :csproj     => 'Ruby.ConsoleAny.csproj'
+          
+  test_runner :references => ['Microsoft.Scripting.Core.dll', 'Microsoft.Scripting.dll', 'Microsoft.Dynamic.dll', 'IronRuby.dll', 'IronRuby.Libraries.dll', '!System.dll', '!System.Windows.Forms.dll', '!System.Data.dll', '!System.Xml.dll'],
               :switches   => ['define:CLR2'],
               :output     => 'IronRuby.Tests.exe',
               :dir        => './IronRuby.Tests',
@@ -453,7 +462,7 @@ IronRubyCompiler = CSProjCompiler.new do
           :output     => 'IronRuby.Libraries.Scanner.exe',
           :dir        => './IronRuby.Libraries.Scanner'
           
-  yaml :references => ['Microsoft.Scripting.Core.dll', 'Microsoft.Scripting.dll', 'Microsoft.Dynamic.dll', 'IronRuby.dll', 'IronRuby.Libraries.dll', '!System.dll'],
+  yaml :references => ['Microsoft.Scripting.Core.dll', 'Microsoft.Scripting.dll', 'Microsoft.Dynamic.dll', 'IronRuby.dll', 'IronRuby.Libraries.dll', '!System.Data.dll', '!System.Xml.dll', '!System.dll'],
        :switches   => ['target:library', 'define:CLR2'],
        :output     => 'IronRuby.Libraries.Yaml.dll',
        :dir        => '../../../External.LCA_RESTRICTED/Languages/IronRuby/Yaml/IronRuby.Libraries.Yaml',
