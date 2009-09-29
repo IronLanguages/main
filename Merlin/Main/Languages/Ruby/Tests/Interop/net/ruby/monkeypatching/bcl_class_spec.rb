@@ -9,6 +9,12 @@ describe "Monkey-patching CLR types" do
     end
   end
 
+  after(:all) do
+    class System::Collections::ArrayList
+      undef :total
+    end
+  end
+
   before(:each) do
     @list = System::Collections::ArrayList.new
     @list.add 3

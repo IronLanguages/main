@@ -92,6 +92,15 @@ namespace IronRuby.Runtime {
             return x;
         }
 
+        public static double ConvertToDouble(RubyContext/*!*/ context, BigInteger/*!*/ bignum) {
+            double result;
+            if (bignum.TryToFloat64(out result)) {
+                return result;
+            }
+            context.ReportWarning("Bignum out of Float range");
+            return bignum.Sign > 0 ? Double.PositiveInfinity : Double.NegativeInfinity;
+        }
+
         #endregion
 
         #region CastToString, TryCastToString, ConvertToString

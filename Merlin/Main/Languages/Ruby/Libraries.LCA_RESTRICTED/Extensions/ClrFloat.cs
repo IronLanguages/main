@@ -86,8 +86,8 @@ namespace IronRuby.Builtins {
         /// </summary>
         /// <returns>Float</returns>
         [RubyMethod("*")]
-        public static double Multiply(double self, [NotNull]BigInteger/*!*/ other) {
-            return self * (double)other;
+        public static double Multiply(RubyContext/*!*/ context, double self, [NotNull]BigInteger/*!*/ other) {
+            return self * Protocols.ConvertToDouble(context, other);
         }
 
         /// <summary>
@@ -126,8 +126,8 @@ namespace IronRuby.Builtins {
         /// </summary>
         /// <returns>Float</returns>
         [RubyMethod("+")]
-        public static double Add(double self, [NotNull]BigInteger/*!*/ other) {
-            return self + (double)other;
+        public static double Add(RubyContext/*!*/ context, double self, [NotNull]BigInteger/*!*/ other) {
+            return self + Protocols.ConvertToDouble(context, other);
         }
 
         /// <summary>
@@ -166,8 +166,8 @@ namespace IronRuby.Builtins {
         /// </summary>
         /// <returns>Float</returns>
         [RubyMethod("-")]
-        public static double Subtract(double self, [NotNull]BigInteger/*!*/ other) {
-            return self - (double)other;
+        public static double Subtract(RubyContext/*!*/ context, double self, [NotNull]BigInteger/*!*/ other) {
+            return self - Protocols.ConvertToDouble(context, other);
         }
 
         /// <summary>
@@ -206,8 +206,8 @@ namespace IronRuby.Builtins {
         /// </summary>
         /// <returns>Float</returns>
         [RubyMethod("/")]
-        public static double Divide(double self, [NotNull]BigInteger/*!*/ other) {
-            return self / (double)other;
+        public static double Divide(RubyContext/*!*/ context, double self, [NotNull]BigInteger/*!*/ other) {
+            return self / Protocols.ConvertToDouble(context, other);
         }
 
         /// <summary>
@@ -246,8 +246,8 @@ namespace IronRuby.Builtins {
         /// </summary>
         /// <returns>Float</returns>
         [RubyMethod("%"), RubyMethod("modulo")]
-        public static double Modulo(double self, [NotNull]BigInteger/*!*/ other) {
-            return (double)InternalDivMod(self, (double)other)[1];
+        public static double Modulo(RubyContext/*!*/ context, double self, [NotNull]BigInteger/*!*/ other) {
+            return (double)InternalDivMod(self, Protocols.ConvertToDouble(context, other))[1];
         }
 
         /// <summary>
@@ -293,8 +293,8 @@ namespace IronRuby.Builtins {
         /// Raises <code>self</code> the <code>other</code> power, where other is Bignum.
         /// </summary>
         [RubyMethod("**")]
-        public static double Power(double self, [NotNull]BigInteger/*!*/ other) {
-            return Math.Pow(self, (double)other);
+        public static double Power(RubyContext/*!*/ context, double self, [NotNull]BigInteger/*!*/ other) {
+            return Math.Pow(self, Protocols.ConvertToDouble(context, other));
         }
 
         /// <summary>
@@ -347,8 +347,8 @@ namespace IronRuby.Builtins {
         /// The quotient is rounded toward -infinity
         /// </remarks>
         [RubyMethod("divmod")]
-        public static RubyArray DivMod(double self, [NotNull]BigInteger/*!*/ other) {
-            return DivMod(self, (double)other);
+        public static RubyArray DivMod(RubyContext/*!*/ context, double self, [NotNull]BigInteger/*!*/ other) {
+            return DivMod(self, Protocols.ConvertToDouble(context, other));
         }
 
         /// <summary>
@@ -642,11 +642,11 @@ namespace IronRuby.Builtins {
         /// This is the basis for the tests in <code>Comparable</code>.
         /// </remarks>
         [RubyMethod("<=>")]
-        public static object Compare(double self, [NotNull]BigInteger/*!*/ other) {
+        public static object Compare(RubyContext/*!*/ context, double self, [NotNull]BigInteger/*!*/ other) {
             if (Double.IsNaN(self)) {
                 return null;
             }
-            return self.CompareTo((double)other);
+            return self.CompareTo(Protocols.ConvertToDouble(context, other));
         }
 
         /// <summary>
@@ -693,8 +693,8 @@ namespace IronRuby.Builtins {
         /// Returns true if self is less than other, where other is Bignum.
         /// </summary>
         [RubyMethod("<")]
-        public static bool LessThan(double self, [NotNull]BigInteger/*!*/ other) {
-            return LessThan(self, (double)other);
+        public static bool LessThan(RubyContext/*!*/ context, double self, [NotNull]BigInteger/*!*/ other) {
+            return LessThan(self, Protocols.ConvertToDouble(context, other));
         }
 
         /// <summary>
@@ -732,8 +732,8 @@ namespace IronRuby.Builtins {
         /// Returns true if self is less than or equal to other, where other is Bignum.
         /// </summary>
         [RubyMethod("<=")]
-        public static bool LessThanOrEqual(double self, [NotNull]BigInteger/*!*/ other) {
-            return LessThanOrEqual(self, (double)other);
+        public static bool LessThanOrEqual(RubyContext/*!*/ context, double self, [NotNull]BigInteger/*!*/ other) {
+            return LessThanOrEqual(self, Protocols.ConvertToDouble(context, other));
         }
 
         /// <summary>
@@ -771,8 +771,8 @@ namespace IronRuby.Builtins {
         /// Returns true if self is greater than other, where other is Bignum.
         /// </summary>
         [RubyMethod(">")]
-        public static bool GreaterThan(double self, [NotNull]BigInteger/*!*/ other) {
-            return GreaterThan(self, (double)other);
+        public static bool GreaterThan(RubyContext/*!*/ context, double self, [NotNull]BigInteger/*!*/ other) {
+            return GreaterThan(self, Protocols.ConvertToDouble(context, other));
         }
 
         /// <summary>
@@ -810,8 +810,8 @@ namespace IronRuby.Builtins {
         /// Returns true if self is greater than or equal to other, where other is Bignum.
         /// </summary>
         [RubyMethod(">=")]
-        public static bool GreaterThanOrEqual(double self, [NotNull]BigInteger/*!*/ other) {
-            return GreaterThanOrEqual(self, (double)other);
+        public static bool GreaterThanOrEqual(RubyContext/*!*/ context, double self, [NotNull]BigInteger/*!*/ other) {
+            return GreaterThanOrEqual(self, Protocols.ConvertToDouble(context, other));
         }
 
         /// <summary>

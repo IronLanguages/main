@@ -550,7 +550,7 @@ namespace IronRuby.Compiler.Generation {
             il.Emit(OpCodes.Stloc, resultVar);
 
             il.Emit(OpCodes.Ldloc, resultVar);
-            il.Emit(OpCodes.Ldsfld, Fields.RubyOps_ForwardToBase);
+            il.Emit(OpCodes.Ldsfld, Fields.ForwardToBase);
             il.Emit(OpCodes.Ceq);
             il.Emit(OpCodes.Brtrue, baseCallLabel);
 

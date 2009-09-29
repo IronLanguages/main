@@ -96,12 +96,23 @@ namespace IronPython.Runtime {
             get {
                 return func_globals;
             }
+            set {
+                throw PythonOps.TypeError("readonly attribute");
+            }
         }
 
         public object func_globals {
             get {
                 return _context.GlobalDict;
             }
+            set {
+                throw PythonOps.TypeError("readonly attribute");
+            }
+        }
+
+        [PropertyMethod, SpecialName, System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
+        public void Deletefunc_globals() {
+            throw PythonOps.TypeError("readonly attribute");
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]

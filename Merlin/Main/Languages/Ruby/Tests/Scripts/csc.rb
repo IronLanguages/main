@@ -26,6 +26,10 @@ class Object
     nil
   end
 
+  def no_csc
+    #intentionally blank.
+  end
+
   def const_missing(sym)
     debug("cmsym", sym)
     Module.new
@@ -136,7 +140,7 @@ end
 Compiler.create(ARGV[0])
 assembly("fixtures.generated.cs") do
   Dir.chdir(ARGV[0]) do
-    Dir["**/*_spec.rb"].each {|e| debug("file",e) }.each do |file|
+    Dir["**/fixtures/classes.rb"].each {|e| debug("file",e) }.each do |file|
       load file
     end
   end

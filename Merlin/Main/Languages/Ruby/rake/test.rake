@@ -12,7 +12,37 @@
 #
 #
 # ****************************************************************************
+
 require "#{ENV['MERLIN_ROOT']}/Languages/Ruby/Scripts/irtests"
+
+class IRTestTask < Rake::TaskLib
+  attr_accessor :name
+  @@irtest = nil 
+  def initialize(name, &blk)
+    @name = name
+    unless @@irtest
+      @@irtest = IRTest.new
+      @@irtest.exit_report
+    end
+    @block = blk
+    define
+  end
+
+  def irtest
+    @@irtest
+  end
+
+  def test(arg)
+    @@irtest.test(arg)
+  end
+  
+  def define
+    task name => :happy do
+      @block.call(self)
+    end
+  end
+end
+
 namespace :test do
   desc "remove output files and generated debugging info from tests directory"
   task :clean do
@@ -25,54 +55,67 @@ namespace :test do
   end
 
   desc "Run the IronRuby Dev unit test suite"
-  task :smoke => :happy do
-     load "#{ENV['MERLIN_ROOT']}\\Languages\\Ruby\\Tests\\Scripts\\irtest.rb"
+  IRTestTask.new :smoke do |t|
+     t.test(:Smoke)
   end
   
   desc "Run mspec psuedo-folders :lang, :cli, :netinterop, :cominterop, :thread, :netcli"
-  task :spec_a => :happy do
-    IRTest.test(:RubySpec_A)
+  IRTestTask.new :spec_a do |t|
+    t.test(:RubySpec_A)
   end
 
   desc "Run mspec psuedo-folders :core1, :lib1"
-  task :spec_b => :happy do
-    IRTest.test(:RubySpec_B)
+  IRTestTask.new :spec_b do |t|
+    t.test(:RubySpec_B)
   end
 
   desc "Run mspec psuedo-folders :core2, lib2"
-  task :spec_c => :happy do
-    IRTest.test(:RubySpec_C)
+  IRTestTask.new :spec_c do |t|
+    t.test(:RubySpec_C)
   end
 
   desc "Run all mspecs"
   task :specs => [:spec_a,:spec_b,:spec_c]
   
   desc "Run legacy Ruby tests"
-  task :legacy => :happy do
-    IRTest.test(:Legacy)
+  IRTestTask.new :legacy do |t|
+    t.test(:Legacy)
   end
 
   desc "Run app specific tests (Rubygems, Rake and YAML)"
-  task :apps => [:gems, :rake, :yaml]
+  task :apps => [:gems, :rake, :yaml, :rails]
 
   desc "Run rake tests"
-  task :rake => :happy do
-    IRTest.test(:Rake)
+  IRTestTask.new :rake do |t|
+    t.test(:Rake)
   end
 
   desc "Run gems tests"
-  task :gems => :happy do
-    IRTest.test(:RubyGems)
+  IRTestTask.new :gems do |t|
+    t.test(:RubyGems)
   end
 
   desc "Run Yaml tests"
-  task :yaml => :happy do
-    IRTest.test(:Yaml)
+  IRTestTask.new :yaml do |t|
+    t.test(:Yaml)
+  end
+
+  desc "Run Rails specific tests"
+  task :rails => [:actionpack, :activesupport]
+  
+  desc "Run ActionPack tests"
+  IRTestTask.new :actionpack do |t|
+    t.test(:ActionPack)
+  end
+  
+  desc "Run ActiveSupport tests"
+  IRTestTask.new :activesupport do |t|
+    t.test(:ActiveSupport)
   end
 
   desc "Run tests corresponding to samples"
-  task :samples => :happy do
-    IRTest.test(:Tutorial)
+  IRTestTask.new :samples do |t|
+    t.test(:Tutorial)
   end
 
   desc "Run all tests"

@@ -1,0 +1,19 @@
+﻿<UserControl xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Canvas x:Name="LayoutRoot">
+    <Rectangle x:Name="bkg" Width="30" Height="30" RenderTransformOrigin="0.45,0.45">
+      <Rectangle.Fill>
+        <ImageBrush x:Name="bkgBrush" ImageSource="pic3.png" AlignmentX="Left" AlignmentY="Top" Stretch="None">
+          <ImageBrush.Transform>
+            <TranslateTransform x:Name="bkgBrushPosition" X="0" Y="0"></TranslateTransform>
+          </ImageBrush.Transform>
+        </ImageBrush>
+      </Rectangle.Fill>
+      <Rectangle.RenderTransform>
+        <TransformGroup>
+          <ScaleTransform x:Name="scale" ScaleX="1.0" ScaleY="1.0"></ScaleTransform>
+          <RotateTransform x:Name="rotation" Angle="0"></RotateTransform>
+        </TransformGroup>
+      </Rectangle.RenderTransform>
+    </Rectangle>
+  </Canvas>
+</UserControl>

@@ -1,0 +1,4 @@
+fails:System::Decimal can be induced from a Float
+fails:System::Decimal raises a RangeError if out of range for Float
+fails:System::Decimal returns a Fixnum from the to_i method
+fails:System::Decimal returns a Fixnum from the to_int method

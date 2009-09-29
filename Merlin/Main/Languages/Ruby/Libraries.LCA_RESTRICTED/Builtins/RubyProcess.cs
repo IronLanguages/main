@@ -207,7 +207,7 @@ namespace IronRuby.Builtins {
             }
 
             // trigger constant initialization of Struct class:
-            context.GetClass(typeof(RubyStruct)).TryGetConstantNoAutoload(String.Empty, out value);
+            context.GetClass(typeof(RubyStruct)).TryGetConstant(null, String.Empty, out value);
 
             // try again:
             if (context.TryGetLibraryData(TmsStructClassKey, out value)) {

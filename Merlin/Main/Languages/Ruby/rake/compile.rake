@@ -51,6 +51,8 @@ namespace :compile do
   task :console => [:libraries] do
     IronRubyCompiler.compile :console
     IronRubyCompiler.move_config
+    IronRubyCompiler.compile :console_any
+    IronRubyCompiler.move_config "ir64.exe.config"
   end
 
   desc "compile IronRuby.Tests"

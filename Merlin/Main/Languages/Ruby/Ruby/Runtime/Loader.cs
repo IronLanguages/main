@@ -399,6 +399,9 @@ namespace IronRuby.Runtime {
         private sealed class AssemblyResolveHolder {
             private readonly WeakReference _loader;
 
+            [ThreadStatic]
+            private static HashSet<string> _assembliesBeingResolved;
+
             public AssemblyResolveHolder(Loader/*!*/ loader) {
                 _loader = new WeakReference(loader);
             }
@@ -414,7 +417,28 @@ namespace IronRuby.Runtime {
             private Assembly AssemblyResolveEvent(object sender, ResolveEventArgs args) {
                 Loader loader = (Loader)_loader.Target;
                 if (loader != null) {
-                    return loader.ResolveAssembly(args.Name);
+                    string assemblyName = args.Name;
+                    Utils.Log(String.Format("assembly resolve event: {0}", assemblyName), "RESOLVE_ASSEMBLY");
+
+                    if (_assembliesBeingResolved == null) {
+                        _assembliesBeingResolved = new HashSet<string>();
+                    } else if (_assembliesBeingResolved.Contains(assemblyName)) {
+                        Utils.Log(String.Format("recursive assembly resolution: {0}", assemblyName), "RESOLVE_ASSEMBLY");
+                        return null;
+                    }
+
+                    _assembliesBeingResolved.Add(assemblyName);
+                    try {
+                        return loader.ResolveAssembly(assemblyName);
+                    } catch (Exception e) {
+                        // the exception might not be reported by the type loader, so at least report a warning:
+                        loader._context.ReportWarning(
+                            String.Format("An exception was risen while resolving an assembly `{0}': {1}", assemblyName, e.Message)
+                        );
+                        throw;
+                    } finally {
+                        _assembliesBeingResolved.Remove(assemblyName);
+                    }
                 } else {
                     AppDomain.CurrentDomain.AssemblyResolve -= AssemblyResolveEvent;
                     return null;

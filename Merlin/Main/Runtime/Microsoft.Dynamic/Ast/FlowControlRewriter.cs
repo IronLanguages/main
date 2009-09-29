@@ -85,11 +85,11 @@ namespace Microsoft.Scripting.Ast {
 
             // Labels defined in this block
             // So we can figure out if we can just jump directly or if we need help
-            internal readonly Set<LabelTarget> LabelDefs = new Set<LabelTarget>();
+            internal readonly HashSet<LabelTarget> LabelDefs = new HashSet<LabelTarget>();
 
             // These two properties tell us what we need to emit in the flow control
             // (if anything)
-            internal Set<LabelTarget> NeedFlowLabels;
+            internal HashSet<LabelTarget> NeedFlowLabels;
 
             // To emit a jump that we can't do in IL, we set the state variable
             // and then jump to FlowLabel. It's up to the code at FlowLabel to
@@ -140,7 +140,7 @@ namespace Microsoft.Scripting.Ast {
             }
             if (!block.HasFlow) {
                 block.FlowLabel = Expression.Label();
-                block.NeedFlowLabels = new Set<LabelTarget>();
+                block.NeedFlowLabels = new HashSet<LabelTarget>();
             }
         }
 

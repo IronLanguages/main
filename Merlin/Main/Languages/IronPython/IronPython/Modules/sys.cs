@@ -291,7 +291,12 @@ namespace IronPython.Modules {
         }
 
         public static object gettrace(CodeContext/*!*/ context) {
-            return PythonContext.GetContext(context).TracebackListener.GetTraceObject();
+            var listener = PythonContext.GetContext(context).TracebackListener;
+
+            if (listener != null) {
+                return listener.GetTraceObject();
+            }
+            return null;
         }
 
         public static void setrecursionlimit(CodeContext/*!*/ context, int limit) {

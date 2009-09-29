@@ -1,4 +1,5 @@
 include System::Windows::Browser
+include Microsoft::Scripting::Silverlight
 
 Package = XapVirtualFilesystem.new
 

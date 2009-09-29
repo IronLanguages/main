@@ -51,10 +51,6 @@ namespace IronRuby.Compiler.Ast {
             return "assignment";
         }
 
-        internal override MSA.Expression TransformDefinedCondition(AstGenerator/*!*/ gen) {
-            return null;
-        }
-
         internal override MSA.Expression TransformTargetRead(AstGenerator/*!*/ gen) {
             return _qualifier.TransformRead(gen);
         }

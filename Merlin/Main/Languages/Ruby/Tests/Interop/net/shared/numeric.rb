@@ -1,6 +1,8 @@
 describe "A .NET numeric", :shared => true do
   before(:each) do
     @class = @method
+    @minvalue = NumericHelper.min_of(@class)
+    @maxvalue = NumericHelper.max_of(@class)
     @bignum = Bignum.Create(0)
   end
 
@@ -40,6 +42,8 @@ describe "A .NET numeric, induceable from Fixnum", :shared => true do
   before(:each) do
     @class = @method
     @bignum = Bignum.Create(0)
+    @minvalue = NumericHelper.min_of(@class)
+    @maxvalue = NumericHelper.max_of(@class)
   end
 
   it "can be induced via an int" do
@@ -61,6 +65,50 @@ describe :numeric_size, :shared => true do
   end
 
   it "has a size" do
-    @class.new(1).size.should == @size
+    @class.Parse("1").size.should == @size
+  end
+end
+
+describe :numeric_conversion, :shared => true do
+  before(:each) do
+    @class = @method
+    @obj = @class.Parse("0")
+  end
+
+  it "has a to_i method" do
+    @class.should have_instance_method(:to_i)
+  end
+
+  it "returns a Fixnum from the to_i method" do
+    @obj.to_i.should be_kind_of(Fixnum)
+  end
+
+  it "has a to_int method" do
+    @class.should have_instance_method(:to_int)
+  end
+
+  it "returns a Fixnum from the to_int method" do
+    @obj.to_int.should be_kind_of(Fixnum)
+  end
+
+  it "has a to_s method" do
+    @class.should have_instance_method(:to_s)
+  end
+
+  it "returns a string from the to_s method" do
+    @obj.to_s.should == "0"
+  end
+
+  it "has an inspect method" do
+    @class.should have_instance_method(:inspect)
+  end
+
+  it "returns a string of the format 'value (Class) (unless int32)'" do
+    if @class != Fixnum
+      c = @class.name.match(/::([^:]*)$/)[1]
+      @obj.inspect.should == "0 (#{c})"
+    else
+      @obj.inspect.should == "0"
+    end
   end
 end

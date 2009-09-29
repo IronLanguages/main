@@ -1,0 +1,59 @@
+﻿<UserControl xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <UserControl.Resources>
+    <Storyboard x:Name="spin">
+      <DoubleAnimationUsingKeyFrames BeginTime="00:00:00" Storyboard.TargetName="sat" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[2].(RotateTransform.Angle)">
+        <SplineDoubleKeyFrame KeyTime="00:00:00" Value="1"></SplineDoubleKeyFrame>
+        <SplineDoubleKeyFrame KeyTime="00:00:01.7000000" Value="359"></SplineDoubleKeyFrame>
+      </DoubleAnimationUsingKeyFrames>
+      <PointAnimationUsingKeyFrames BeginTime="00:00:00" Duration="00:00:00.0010000" Storyboard.TargetName="sat" Storyboard.TargetProperty="(UIElement.RenderTransformOrigin)">
+        <SplinePointKeyFrame KeyTime="00:00:00" Value="-0.744000017642975,-0.669000029563904"></SplinePointKeyFrame>
+      </PointAnimationUsingKeyFrames>
+      <DoubleAnimationUsingKeyFrames BeginTime="00:00:00" Duration="00:00:00.0010000" Storyboard.TargetName="sat" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[3].(TranslateTransform.X)">
+        <SplineDoubleKeyFrame KeyTime="00:00:00" Value="0.071"></SplineDoubleKeyFrame>
+      </DoubleAnimationUsingKeyFrames>
+      <DoubleAnimationUsingKeyFrames BeginTime="00:00:00" Duration="00:00:00.0010000" Storyboard.TargetName="sat" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[3].(TranslateTransform.Y)">
+        <SplineDoubleKeyFrame KeyTime="00:00:00" Value="-0.073"></SplineDoubleKeyFrame>
+      </DoubleAnimationUsingKeyFrames>
+      <DoubleAnimationUsingKeyFrames BeginTime="00:00:00" Storyboard.TargetName="sat" Storyboard.TargetProperty="(UIElement.Opacity)">
+        <SplineDoubleKeyFrame KeyTime="00:00:00" Value="1"></SplineDoubleKeyFrame>
+        <SplineDoubleKeyFrame KeyTime="00:00:00.3000000" Value="1"></SplineDoubleKeyFrame>
+        <SplineDoubleKeyFrame KeyTime="00:00:01.7000000" Value="0"></SplineDoubleKeyFrame>
+      </DoubleAnimationUsingKeyFrames>
+      <DoubleAnimationUsingKeyFrames BeginTime="00:00:00" Storyboard.TargetName="_base" Storyboard.TargetProperty="(UIElement.Opacity)">
+        <SplineDoubleKeyFrame KeyTime="00:00:00.3000000" Value="1"></SplineDoubleKeyFrame>
+        <SplineDoubleKeyFrame KeyTime="00:00:01.7000000" Value="0"></SplineDoubleKeyFrame>
+      </DoubleAnimationUsingKeyFrames>
+      <PointAnimationUsingKeyFrames BeginTime="00:00:00" Storyboard.TargetName="_base" Storyboard.TargetProperty="(UIElement.RenderTransformOrigin)">
+        <SplinePointKeyFrame KeyTime="00:00:00" Value="0.30799999833107,0.30799999833107"></SplinePointKeyFrame>
+        <SplinePointKeyFrame KeyTime="00:00:00.3000000" Value="0,0"></SplinePointKeyFrame>
+      </PointAnimationUsingKeyFrames>
+      <DoubleAnimationUsingKeyFrames BeginTime="00:00:00" Storyboard.TargetName="_base" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[2].(RotateTransform.Angle)">
+        <SplineDoubleKeyFrame KeyTime="00:00:00" Value="1"></SplineDoubleKeyFrame>
+        <SplineDoubleKeyFrame KeyTime="00:00:00.3000000" Value="0"></SplineDoubleKeyFrame>
+        <SplineDoubleKeyFrame KeyTime="00:00:01.7000000" Value="180"></SplineDoubleKeyFrame>
+      </DoubleAnimationUsingKeyFrames>
+    </Storyboard>
+  </UserControl.Resources>
+  <Canvas x:Name="LayoutRoot">
+    <Ellipse Height="20" Width="20" Canvas.Left="-4.5" Canvas.Top="-4.5" Fill="#FFE67323" Stroke="#FF21E8D4" StrokeDashOffset="0" StrokeDashArray="1 2" x:Name="_base" StrokeThickness="3" RenderTransformOrigin="0.5,0.5">
+      <Ellipse.RenderTransform>
+        <TransformGroup>
+          <ScaleTransform></ScaleTransform>
+          <SkewTransform></SkewTransform>
+          <RotateTransform></RotateTransform>
+          <TranslateTransform></TranslateTransform>
+        </TransformGroup>
+      </Ellipse.RenderTransform>
+    </Ellipse>
+    <Ellipse Height="5" Width="5" Canvas.Left="3" Canvas.Top="3" Fill="#FFFFFFFF" x:Name="sat" RenderTransformOrigin="0.5,0.5">
+      <Ellipse.RenderTransform>
+        <TransformGroup>
+          <ScaleTransform></ScaleTransform>
+          <SkewTransform></SkewTransform>
+          <RotateTransform></RotateTransform>
+          <TranslateTransform></TranslateTransform>
+        </TransformGroup>
+      </Ellipse.RenderTransform>
+    </Ellipse>
+  </Canvas>
+</UserControl>

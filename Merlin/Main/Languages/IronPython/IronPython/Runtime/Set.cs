@@ -87,9 +87,24 @@ namespace IronPython.Runtime {
         public static object GetHashableSetIfSet(object o) {
             SetCollection asSet = o as SetCollection;
             if (asSet != null) {
+                if (asSet.GetType() != typeof(SetCollection)) {
+                    // subclass of set, need to check if it is hashable
+                    if (IsHashable(asSet)) {
+                        return o;
+                    }
+                }
                 return FrozenSetCollection.Make(((IEnumerable)asSet).GetEnumerator());
             }
             return o;
+        }
+
+        private static bool IsHashable(SetCollection asSet) {
+            PythonTypeSlot pts;
+            PythonType pt = DynamicHelpers.GetPythonType(asSet);
+            object slotValue;
+
+            return pt.TryResolveSlot(DefaultContext.Default, "__hash__", out pts) &&
+                   pts.TryGetValue(DefaultContext.Default, asSet, pt, out slotValue) && slotValue != null;
         }
 
         public static ISet MakeSet(object setObj) {
@@ -467,7 +482,8 @@ namespace IronPython.Runtime {
         }
 
         public void remove([NotNull]SetCollection o) {
-            if (!_items.RemoveAlwaysHash(FrozenSetCollection.Make(((IEnumerable)o).GetEnumerator()))) {
+            var set = SetHelpers.GetHashableSetIfSet(o);
+            if (!_items.RemoveAlwaysHash(set)) {
                 throw PythonOps.KeyError(o);
             }
         }

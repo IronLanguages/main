@@ -22,6 +22,7 @@ using Microsoft.Scripting.Ast;
 using System.Collections;
 using System.Diagnostics;
 using System.Dynamic;
+using System.Runtime.CompilerServices;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Utils;
 using IronRuby.Builtins;
@@ -30,6 +31,7 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Runtime.Calls {
     using Ast = Expression;
+    using AstExpressions = ReadOnlyCollectionBuilder<Expression>;
 
     /// <summary>
     /// Wraps the arguments of a dynamic call site
@@ -166,10 +168,11 @@ namespace IronRuby.Runtime.Calls {
         }
 
 
-        public Expression[]/*!*/ GetSimpleArgumentExpressions() {
-            var result = new Expression[SimpleArgumentCount];
-            for (int i = 0, j = GetSimpleArgumentsIndex(0); i < result.Length; j++, i++) {
-                result[i] = _args[j].Expression;
+        public AstExpressions/*!*/ GetSimpleArgumentExpressions() {
+            int count = SimpleArgumentCount;
+            var result = new AstExpressions(count);
+            for (int i = 0, j = GetSimpleArgumentsIndex(0); i < count; j++, i++) {
+                result.Add(_args[j].Expression);
             }
             return result;
         }

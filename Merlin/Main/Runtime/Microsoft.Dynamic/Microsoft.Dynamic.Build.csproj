@@ -15,6 +15,7 @@
     <AssemblyOriginatorKeyFile>..\..\Support\MSSharedLibKey.snk</AssemblyOriginatorKeyFile>
     <SignAssembly Condition="'$(SignAssembly)' == '' And Exists('$(AssemblyOriginatorKeyFile)')">true</SignAssembly>
     <SignedSym Condition="'$(SignAssembly)' == 'true'">SIGNED</SignedSym>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DelaySign>true</DelaySign>
     <DefineConstants>CLR4;$(SignedSym)</DefineConstants>
     <BaseAddress>857735168</BaseAddress>
@@ -31,9 +32,13 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(SilverlightSdkPath)\System.dll</HintPath>
     </Reference>
+    <Reference Include="System.Numerics" Condition=" $(SilverlightBuild) != 'true' " />
     <Reference Include="System.Data" />
     <Reference Include="System.Runtime.Remoting" Condition=" $(SilverlightBuild) != 'true' " />
     <Reference Include="System.Xml" Condition=" $(SilverlightBuild) != 'true' " />
+    <ProjectReference Include="..\Microsoft.Scripting\Microsoft.Scripting.Build.csproj">
+      <Name>Microsoft.Scripting</Name>
+    </ProjectReference>
   </ItemGroup>
   <!-- Begin Generated Project Items By GenerateSystemCoreCsproj.py -->
     <ItemGroup>
@@ -297,7 +302,8 @@
       <!--                        -->
       <!--          Math          -->
       <!--                        -->
-      <Compile Include="Math\BigInteger.cs" />
+      <Compile Include="Math\BigIntegerV2.cs" />
+      <Compile Include="Math\BigIntegerV4.cs" />
       <Compile Include="Math\Complex64.cs" />
     </ItemGroup>
     <ItemGroup>
@@ -387,16 +393,17 @@
       <Compile Include="Utils\EnumUtils.cs" />
       <Compile Include="Utils\ExceptionFactory.Generated.cs" />
       <Compile Include="Utils\ExceptionUtils.cs" />
+      <Compile Include="Utils\HashSet.cs" />
       <Compile Include="Utils\IOUtils.cs" />
       <Compile Include="Utils\ListEqualityComparer.cs" />
       <Compile Include="Utils\MathUtils.cs" />
+      <Compile Include="Utils\MonitorUtils.cs" />
       <Compile Include="Utils\Publisher.cs" />
       <Compile Include="Utils\ReadOnlyDictionary.cs" />
       <Compile Include="Utils\ReferenceEqualityComparer.cs" />
       <Compile Include="Utils\ReflectedCaller.cs" />
       <Compile Include="Utils\ReflectedCaller.Generated.cs" />
       <Compile Include="Utils\ReflectionUtils.cs" />
-      <Compile Include="Utils\Set.cs" />
       <Compile Include="Utils\StringUtils.cs" />
       <Compile Include="Utils\SynchronizedDictionary.cs" />
       <Compile Include="Utils\TextStream.cs" />

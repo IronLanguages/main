@@ -891,13 +891,13 @@ namespace IronRuby.Builtins {
             var symbolicNames = self.Context.RubyOptions.Compatibility > RubyCompatibility.Ruby18;
 
             using (self.Context.ClassHierarchyLocker()) {
-                self.ForEachMember(inherited, attributes, foreignMembers, (name, module, member) =>
-                    result.Add(
-                        member.IsInteropMember && (module.Restrictions & ModuleRestrictions.NoNameMangling) == 0 ?
-                            new ClrName(name) :
-                            CreateMethodName(name, symbolicNames)
-                    )
-                );
+                self.ForEachMember(inherited, attributes, foreignMembers, (name, module, member) => {
+                    if (member.IsInteropMember && (module.Restrictions & ModuleRestrictions.NoNameMangling) == 0 && RubyUtils.HasMangledName(name)) {
+                        result.Add(new ClrName(name));
+                    } else {
+                        result.Add(CreateMethodName(name, symbolicNames));
+                    }
+                });
             }
             return result;
         }

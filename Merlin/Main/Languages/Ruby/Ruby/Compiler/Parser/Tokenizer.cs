@@ -1870,7 +1870,7 @@ namespace IronRuby.Compiler {
                     return Tokens.Assignment;
                 }
 
-                return Tokens.BitwiseAnd;
+                return Tokens.LogicalAnd;
             } 
             
             if (c == '=') {
@@ -1919,7 +1919,7 @@ namespace IronRuby.Compiler {
                     _lexicalState = LexicalState.EXPR_BEG;
                     return Tokens.Assignment;
                 }
-                return Tokens.BitwiseOr;
+                return Tokens.LogicalOr;
             }
 
             if (c == '=') {
@@ -3850,8 +3850,8 @@ namespace IronRuby.Compiler {
                 case Tokens.Neq:
                 case Tokens.Geq:
                 case Tokens.Leq:
-                case Tokens.BitwiseAnd:
-                case Tokens.BitwiseOr:
+                case Tokens.LogicalAnd:
+                case Tokens.LogicalOr:
                 case Tokens.Match:     // =~
                 case Tokens.Nmatch:    // !~
                 case Tokens.Dot2:      // ..

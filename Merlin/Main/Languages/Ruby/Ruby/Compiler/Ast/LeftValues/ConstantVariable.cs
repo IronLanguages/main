@@ -13,21 +13,25 @@
  *
  * ***************************************************************************/
 
-using System.Diagnostics;
-using System.Dynamic;
-using Microsoft.Scripting;
-using Microsoft.Scripting.Utils;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
-
-namespace IronRuby.Compiler.Ast {
-    #if !CLR2
+#if !CLR2
 using MSA = System.Linq.Expressions;
 #else
 using MSA = Microsoft.Scripting.Ast;
 #endif
 
-    using Ast = Expression;
-    using System;
+using System;
+using System.Diagnostics;
+using System.Dynamic;
+using System.Reflection;
+using Microsoft.Scripting;
+using Microsoft.Scripting.Utils;
+using AstUtils = Microsoft.Scripting.Ast.Utils;
+using IronRuby.Runtime;
+
+namespace IronRuby.Compiler.Ast {
+    using Ast = MSA.Expression;
+    using System.Collections.Generic;
+    using System.Threading;
     
     internal enum StaticScopeKind {
         Global,
@@ -100,31 +104,134 @@ using MSA = Microsoft.Scripting.Ast;
         private const int OpGet = 0;
         private const int OpIsDefined = 1;
 
-        private MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen, int/*!*/ opKind) {
-            MSA.Expression transformedName = TransformName(gen);
-            MSA.Expression transformedQualifier;
+        private MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen, int opKind) {
+            ConstantVariable constantQualifier = _qualifier as ConstantVariable;
+            if (constantQualifier != null) {
+                ConstantVariable constant;
+                List<string> names = new List<string>();
+                names.Add(Name);
+                do {
+                    names.Add(constantQualifier.Name);
+                    constant = constantQualifier;
+                    constantQualifier = constantQualifier.Qualifier as ConstantVariable;
+                } while (constantQualifier != null);
 
-            switch (TransformQualifier(gen, out transformedQualifier)) {
-                case StaticScopeKind.Global:
-                    return (opKind == OpGet ? Methods.GetGlobalConstant : Methods.IsDefinedGlobalConstant).
-                        OpCall(gen.CurrentScopeVariable, transformedName);
+                if (constant.Qualifier != null) {
+                    // {expr}::A::B
+                    return constant.MakeExpressionQualifiedRead(gen, opKind, names.ToReverseArray());
+                } else {
+                    // A::B
+                    return MakeCachedRead(gen, opKind, constant.IsGlobal, true, Ast.Constant(names.ToReverseArray()));
+                }
+            } else if (_qualifier != null) {
+                // {expr}::A
+                return MakeExpressionQualifiedRead(gen, opKind, new[] { Name });
+            } else {
+                // A
+                // ::A
+                return MakeCachedRead(gen, opKind, IsGlobal, false, Ast.Constant(Name));
+            }
+        }
 
-                case StaticScopeKind.EnclosingModule:
-                    return (opKind == OpGet ? Methods.GetUnqualifiedConstant : Methods.IsDefinedUnqualifiedConstant).
-                        OpCall(gen.CurrentScopeVariable, transformedName);
+        private MSA.Expression/*!*/ MakeExpressionQualifiedRead(AstGenerator/*!*/ gen, int opKind, string/*!*/[]/*!*/ names) {
+            Debug.Assert(_qualifier != null && !(_qualifier is ConstantVariable));
 
-                case StaticScopeKind.Explicit:
-                    if (opKind == OpGet) {
-                        return Methods.GetQualifiedConstant.OpCall(AstFactory.Box(transformedQualifier), gen.CurrentScopeVariable, transformedName);
-                    } else {
-                        return gen.TryCatchAny(
-                            Methods.IsDefinedQualifiedConstant.OpCall(AstFactory.Box(transformedQualifier), gen.CurrentScopeVariable, transformedName), 
-                            AstUtils.Constant(false)
-                        );
-                    }
+            object siteCache;
+            MethodInfo op;
+
+            if (opKind == OpIsDefined) {
+                siteCache = new ExpressionQualifiedIsDefinedConstantSiteCache();
+                op = Methods.IsDefinedExpressionQualifiedConstant;
+            } else {
+                siteCache = new ExpressionQualifiedConstantSiteCache();
+                op = Methods.GetExpressionQualifiedConstant;
             }
 
-            throw Assert.Unreachable;
+            var result = op.OpCall(
+                AstFactory.Box(_qualifier.TransformRead(gen)), 
+                gen.CurrentScopeVariable, 
+                Ast.Constant(siteCache), 
+                Ast.Constant(names)
+            );
+
+            return opKind == OpIsDefined ? Ast.TryCatch(result, Ast.Catch(typeof(Exception), AstFactory.False)) : result;
+        }
+
+        // if (site.Version == <context>.ConstantAccessVersion) {
+        //   object value = site.Value;
+        //   if (value.GetType() == typeof(WeakReference)) {
+        //     if (value == ConstantSiteCache.Missing) {
+        //       <result> = ConstantMissing(...);
+        //     } else {
+        //       <result> = ((WeakReference)value).Target;
+        //     }
+        //   } else {
+        //     <result> = value;
+        //   }
+        // } else {
+        //   <result> = GetConstant(...);
+        // }
+        private static MSA.Expression/*!*/ MakeCachedRead(AstGenerator/*!*/ gen, int opKind, bool isGlobal, bool isQualified,
+            MSA.Expression/*!*/ name) {
+
+            object siteCache;
+            MSA.ParameterExpression siteVar, valueVar;
+            FieldInfo versionField, valueField;
+            MSA.Expression readValue;
+            MSA.Expression fallback;
+
+            if (opKind == OpIsDefined) {
+                siteCache = new IsDefinedConstantSiteCache();
+                gen.CurrentScope.GetIsDefinedConstantSiteCacheVariables(out siteVar);
+                versionField = Fields.IsDefinedConstantSiteCache_Version;
+                valueField = Fields.IsDefinedConstantSiteCache_Value;
+
+                readValue = Ast.Field(siteVar, valueField);
+
+                fallback = (isQualified) ? 
+                    Methods.IsDefinedQualifiedConstant.OpCall(gen.CurrentScopeVariable, siteVar, name, AstUtils.Constant(isGlobal)) :
+                    (isGlobal ? Methods.IsDefinedGlobalConstant : Methods.IsDefinedUnqualifiedConstant).
+                        OpCall(gen.CurrentScopeVariable, siteVar, name); 
+
+            } else {
+                siteCache = (ConstantSiteCache)new ConstantSiteCache();
+                gen.CurrentScope.GetConstantSiteCacheVariables(out siteVar, out valueVar);
+                versionField = Fields.ConstantSiteCache_Version;
+                valueField = Fields.ConstantSiteCache_Value;
+
+                MSA.Expression weakValue = Ast.Call(Ast.Convert(valueVar, typeof(WeakReference)), Methods.WeakReference_get_Target);
+                if (!isQualified) {
+                    weakValue = Ast.Condition(
+                        // const missing:
+                        Ast.Equal(valueVar, AstUtils.Constant(ConstantSiteCache.WeakMissingConstant)),
+                        (isGlobal ? Methods.GetGlobalMissingConstant : Methods.GetMissingConstant).
+                            OpCall(gen.CurrentScopeVariable, siteVar, name),
+
+                        // weak value:
+                        weakValue
+                    );
+                }
+
+                readValue = Ast.Condition(
+                    Ast.TypeEqual(Ast.Assign(valueVar, Ast.Field(siteVar, valueField)), typeof(WeakReference)),
+                    weakValue,
+                    valueVar
+                );
+
+                fallback = (isQualified ? Methods.GetQualifiedConstant : Methods.GetUnqualifiedConstant).
+                    OpCall(gen.CurrentScopeVariable, siteVar, name, AstUtils.Constant(isGlobal));
+            }
+
+            return Ast.Block(
+                Ast.Condition(
+                    Ast.Equal(
+                        Ast.Field(Ast.Assign(siteVar, Ast.Constant(siteCache)), versionField),
+                        Ast.Field(Ast.Constant(gen.Context), Fields.RubyContext_ConstantAccessVersion)
+                    ),
+                    readValue,
+                    fallback
+                )
+            ); 
         }
 
         internal override MSA.Expression/*!*/ TransformWriteVariable(AstGenerator/*!*/ gen, MSA.Expression/*!*/ rightValue) {

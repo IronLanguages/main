@@ -140,7 +140,12 @@ namespace Chiron {
             // process requests for assemblies contained in Chiron's localAssemblyPath
             else if (TryProcessAssemblyRequest(s, r.Uri)) {
                 // done
-            } else {
+            }
+            // process requests for .slvx files contained in Chiron's localAssemblyPath
+            else if (TryProcessExternalRequest(s, r.Uri)) {
+              //done
+            } 
+            else {
                 // not found
                 s.WriteErrorResponse(404, "Resource not found");
             }
@@ -389,6 +394,50 @@ string.Format(@"<html><head><title>Object moved</title></head><body>
             // must end with DLL or PDB
             if (string.Compare(Path.GetExtension(uri), ".dll", StringComparison.OrdinalIgnoreCase) != 0 &&
                 string.Compare(Path.GetExtension(uri), ".pdb", StringComparison.OrdinalIgnoreCase) != 0)
+                return false;
+
+            // get mime type
+            string mimeType = HttpSocket.GetMimeType(uri);
+            if (string.IsNullOrEmpty(mimeType)) {
+                s.WriteErrorResponse(403);
+                return true;
+            }
+
+            // see if the file exists in the assembly reference path
+            string path = Chiron.TryGetAssemblyPath(uri);
+            if (path == null)
+                return false;
+
+            // read the file
+            byte[] body = null;
+            try {
+                body = File.ReadAllBytes(path);
+            } catch (Exception ex) {
+                s.WriteErrorResponse(500, ex.Message + "\r\n" + ex.StackTrace);
+                return true;
+            }
+
+            // write the response
+            s.WriteResponse(200, string.Format("Content-type: {0}\r\n", mimeType), body, false);
+            return true;
+        }
+
+        bool TryProcessExternalRequest(HttpSocket s, string uri) {
+            if (Chiron.ExternalUrlPrefix == "")
+                return false;
+
+            int slash = uri.LastIndexOf('/');
+            if (slash == -1)
+                return false;
+
+            // must start with external URL prefix
+            if (string.Compare(uri.Substring(0, slash + 1), Chiron.ExternalUrlPrefix, StringComparison.OrdinalIgnoreCase) != 0)
+                return false;
+
+            uri = uri.Substring(slash + 1);
+
+            // must end with SLVX
+            if (string.Compare(Path.GetExtension(uri), ".slvx", StringComparison.OrdinalIgnoreCase) != 0)
                 return false;
 
             // get mime type

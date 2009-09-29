@@ -22,6 +22,7 @@ using MSA = Microsoft.Scripting.Ast;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Utils;
@@ -31,6 +32,7 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 	
 namespace IronRuby.Compiler.Ast {
     using Ast = MSA.Expression;
+    using AstExpressions = ReadOnlyCollectionBuilder<MSA.Expression>;
     
     public partial class Arguments : Node {
         internal static readonly Arguments Empty = new Arguments(SourceSpan.None);
@@ -79,8 +81,8 @@ namespace IronRuby.Compiler.Ast {
 
         #region Transform to Call Expression
 
-        private List<MSA.Expression>/*!*/ MakeSimpleArgumentExpressionList(AstGenerator/*!*/ gen) {
-            var args = new List<MSA.Expression>();
+        private AstExpressions/*!*/ MakeSimpleArgumentExpressionList(AstGenerator/*!*/ gen) {
+            var args = new AstExpressions();
 
             if (_expressions != null) {
                 gen.TranformExpressions(_expressions, args);
@@ -115,7 +117,7 @@ namespace IronRuby.Compiler.Ast {
         #region Transform To Yield
 
         internal MSA.Expression/*!*/ TransformToYield(AstGenerator/*!*/ gen, MSA.Expression/*!*/ bfcVariable, MSA.Expression/*!*/ selfExpression) {
-            var args = (_expressions != null) ? gen.TranformExpressions(_expressions) : new List<MSA.Expression>();
+            var args = (_expressions != null) ? gen.TranformExpressions(_expressions) : new AstExpressions();
 
             if (_maplets != null) {
                 args.Add(gen.TransformToHashConstructor(_maplets));
@@ -144,7 +146,7 @@ namespace IronRuby.Compiler.Ast {
             );
         }
 
-        internal static MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen, List<MSA.Expression>/*!*/ rightValues, 
+        internal static MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen, AstExpressions/*!*/ rightValues, 
             MSA.Expression splattedValue, bool doSplat) {
 
             Assert.NotNull(gen, rightValues);

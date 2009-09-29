@@ -27,6 +27,20 @@ SilverlightDlrWindow.prototype = {
     e.style.display = "block"
   },
 
+  hasClass: function(ele, cls) {
+    return ele.className.match(new RegExp('(\\s|^)'+cls+'(\\s|$)'));
+  },
+  addClass: function(ele, cls) {
+    if (!this.hasClass(ele, cls)) 
+      ele.className += " " + cls;
+  },
+  removeClass: function(ele, cls) {
+    if (this.hasClass(ele, cls)) {
+      var reg = new RegExp('(\\s|^)'+cls+'(\\s|$)');
+      ele.className = ele.className.replace(reg,' ');
+    }
+  },
+
   getElement: function(id) {
     return document.getElementById(id)
   },
@@ -63,16 +77,18 @@ SilverlightDlrWindow.prototype = {
 
   setLinkActive: function(id) {
     e = this.getElement(id)
-    e.setAttribute('class', "active")
-    this.setLinkInactive(activeLink)
-    activeLink = e
+    if(!this.hasClass(e, 'active')) {
+      this.addClass(e, 'active')
+      this.setLinkInactive(activeLink)
+      activeLink = e
+    }
   },
 
   setLinkInactive: function(e) {
-    if(e != null) {
-      e.setAttribute('class', '')
+    if(e != null && this.hasClass(e, 'active')) {
+      this.removeClass(e, 'active')
+      activeLink = null
     }
-    activeLink = null
   },
   
   initialize: function() {

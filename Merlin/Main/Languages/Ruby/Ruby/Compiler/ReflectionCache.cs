@@ -13,41 +13,37 @@
  *
  * ***************************************************************************/
 
-using System;
-using System.Collections.Generic;
-using System.Collections;
-using System.Text;
-using System.Reflection;
-using System.Diagnostics;
-using System.Threading;
-using IronRuby.Compiler.Generation;
-using IronRuby.Runtime;
-using IronRuby.Builtins;
-using Microsoft.Scripting.Utils;
-
 #if !CLR2
 using MSA = System.Linq.Expressions;
 #else
 using MSA = Microsoft.Scripting.Ast;
 #endif
 
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Collections;
+using System.Diagnostics;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Text;
+using System.Threading;
+using IronRuby.Compiler.Generation;
+using IronRuby.Runtime;
+using IronRuby.Runtime.Calls;
+using IronRuby.Builtins;
+using Microsoft.Scripting.Utils;
+using Microsoft.Scripting.Runtime;
+
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 using AstFactory = IronRuby.Compiler.Ast.AstFactory;
-using IronRuby.Runtime.Calls;
-using System.Collections.ObjectModel;
-using Microsoft.Scripting.Runtime;
-using System.Runtime.CompilerServices;
 
 namespace IronRuby.Compiler {
-    internal static class Fields {
-        private static FieldInfo _RubyOps_DefaultArgumentField, _RubyOps_ForwardToBase, _VersionHandle_Method, _VersionHandle_Constant, _RubyModule_Version, _StrongBox_Value;
-        public static FieldInfo RubyOps_DefaultArgumentField { get { return _RubyOps_DefaultArgumentField ?? (_RubyOps_DefaultArgumentField = GetField(typeof(RubyOps), "DefaultArgument")); } }
-        public static FieldInfo RubyOps_ForwardToBase { get { return _RubyOps_ForwardToBase ?? (_RubyOps_ForwardToBase = GetField(typeof(RubyOps), "ForwardToBase")); } }
-        public static FieldInfo VersionHandle_Method { get { return _VersionHandle_Method ?? (_VersionHandle_Method = GetField(typeof(VersionHandle), "Method")); } }
-        public static FieldInfo VersionHandle_Constant { get { return _VersionHandle_Constant ?? (_VersionHandle_Constant = GetField(typeof(VersionHandle), "Constant")); } }
-        public static FieldInfo RubyModule_Version { get { return _RubyModule_Version ?? (_RubyModule_Version = GetField(typeof(RubyModule), "Version")); } }
+    public static partial class Fields {
+        private static FieldInfo _StrongBox_Value;
+        
         public static FieldInfo StrongBox_Value { get { return _StrongBox_Value ?? (_StrongBox_Value = GetField(typeof(StrongBox<object>), "Value")); } }
-
+        
         internal static FieldInfo/*!*/ GetField(Type/*!*/ type, string/*!*/ name) {
             var field = type.GetField(name);
             Debug.Assert(field != null, type.Name + "::" + name);
@@ -57,7 +53,8 @@ namespace IronRuby.Compiler {
     
     public static partial class Methods {
         private static ConstructorInfo _RubyCallSignatureCtor;
-        private static MethodInfo _Stopwatch_GetTimestamp, _IEnumerable_Of_Object_GetEnumerator, _IEnumerator_MoveNext, _IEnumerator_get_Current;
+        private static MethodInfo _Stopwatch_GetTimestamp, _IEnumerable_Of_Object_GetEnumerator, _IEnumerator_MoveNext, _IEnumerator_get_Current,
+            _WeakReference_get_Target;
 
         public static ConstructorInfo RubyCallSignatureCtor { get { return _RubyCallSignatureCtor ?? (_RubyCallSignatureCtor = GetConstructor(typeof(RubyCallSignature), typeof(uint))); } }
         
@@ -65,6 +62,7 @@ namespace IronRuby.Compiler {
         public static MethodInfo IEnumerable_Of_Object_GetEnumerator { get { return _IEnumerable_Of_Object_GetEnumerator ?? (_IEnumerable_Of_Object_GetEnumerator = GetMethod(typeof(IEnumerable<object>), "GetEnumerator", BindingFlags.Instance, Type.EmptyTypes)); } }
         public static MethodInfo IEnumerator_get_Current { get { return _IEnumerator_get_Current ?? (_IEnumerator_get_Current = GetMethod(typeof(IEnumerator), "get_Current", BindingFlags.Instance, Type.EmptyTypes)); } }
         public static MethodInfo IEnumerator_MoveNext { get { return _IEnumerator_MoveNext ?? (_IEnumerator_MoveNext = GetMethod(typeof(IEnumerator), "MoveNext", BindingFlags.Instance, Type.EmptyTypes)); } }
+        public static MethodInfo WeakReference_get_Target { get { return _WeakReference_get_Target ?? (_WeakReference_get_Target = GetMethod(typeof(WeakReference), "get_Target", BindingFlags.Instance, Type.EmptyTypes)); } }
 
         internal static ConstructorInfo/*!*/ GetConstructor(Type/*!*/ type, params Type/*!*/[]/*!*/ signature) {
             var ctor = type.GetConstructor(signature);
@@ -89,7 +87,7 @@ namespace IronRuby.Compiler {
             return method;
         }
 
-        public static MSA.Expression/*!*/ MakeArrayOpCall(List<MSA.Expression>/*!*/ args) {
+        public static MSA.Expression/*!*/ MakeArrayOpCall(IList<MSA.Expression>/*!*/ args) {
             Assert.NotNull(args);
 
             switch (args.Count) {

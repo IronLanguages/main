@@ -1,27 +1,41 @@
 require File.dirname(__FILE__) + '/../../spec_helper'
 
 describe "Overload resolution" do
-  csc <<-EOL
-  public partial class ClassWithOverloads {
-    public string PublicProtectedOverload(){
-      return "public overload";
-    }
-    
-    protected string PublicProtectedOverload(string str) {
-      return "protected overload";
-    }
-  }
-  EOL
   before(:each) do
     @klass = ClassWithOverloads.new
-    @methods = @klass.method(:Overloaded)
+    @overloaded_methods = @klass.method(:Overloaded)
+    @void_method = @klass.method(:void_signature_overload)
+    @val_methods = [:val_signature_overload, :val_array_signature_overload].map {|meth| @klass.method(meth)}
+    @ref_methods = [:ref_signature_overload, :ref_array_signature_overload].map {|meth| @klass.method(meth)}
+    @generic_method = @klass.method(:generic_signature_overload)
+    @calls = [[lambda {|meth| meth.call}, "SO void"], 
+            [lambda {|meth| meth.call("Hello")}, "SO string"],
+            [lambda {|meth| meth.call(1)}, "SO int"],
+            [lambda {|meth| meth.call("a",1,1,1)}, "SO string params(int[])"],
+            [lambda {|meth| meth.call("a","b","c")}, "SO string params(string[])"],
+            [lambda {|meth| meth.call("a",1,1)}, "SO string int int"],
+            [lambda {|meth| meth.call(1,2,3)}, "SO params(int[])"]]
+    @out_or_ref_calls = [[lambda {|meth| meth.overload(System::String.GetType.MakeByRefType.to_class).call()}, "SO ref string"]] #this array will hold more once this works.
   end
 
   it "is performed" do
-    @methods.call(100).should equal_clr_string("one arg")
-    @methods.call(100, 100).should equal_clr_string("two args")
+    @overloaded_methods.call(100).should equal_clr_string("one arg")
+    @overloaded_methods.call(100, 100).should equal_clr_string("two args")
     @klass.overloaded(100).should equal_clr_string("one arg")
     @klass.overloaded(100, 100).should equal_clr_string("two args")
+    @calls.each do |meth, result|
+      meth.call(@void_method)
+      @klass.tracker.should equal_clr_string result
+      @klass.tracker = System::String.empty
+      meth.call(@val_methods[0]).should == 1
+      @klass.tracker.should equal_clr_string result
+      @klass.tracker = System::String.empty
+      meth.call(@val_methods[1]).should == System::Array.of(Fixnum).new(1,1)
+      @klass.tracker.should equal_clr_string result
+      @klass.tracker = System::String.empty
+      meth.call(@ref_methods[0]).should equal_clr_string result
+      meth.call(@ref_methods[1]).should == System::Array.of(System::String).new(1,result.to_clr_string)
+    end
   end
 
   it "correctly binds with methods of different visibility" do
@@ -32,6 +46,23 @@ describe "Overload resolution" do
     
     method.call.should equal_clr_string("public overload")
     lambda { method.call("abc").should equal_clr_string("protected overload") }.should raise_error(ArgumentError, /1 for 0/)
+  end
+  
+  #http://ironruby.codeplex.com/WorkItem/View.aspx?WorkItemId=1849
+  it "is performed for various ref and out calls" do
+    @out_or_ref_calls.each do |meth, result| 
+      meth.call(@void_method)
+      @klass.tracker.should equal_clr_string result
+      @klass.tracker = System::String.empty
+      meth.call(@val_methods[0]).should == 1
+      @klass.tracker.should equal_clr_string result
+      @klass.tracker = System::String.empty
+      meth.call(@val_methods[1]).should == System::Array.of(Fixnum).new(1,1)
+      @klass.tracker.should equal_clr_string result
+      @klass.tracker = System::String.empty
+      meth.call(@ref_methods[0]).should equal_clr_string result
+      meth.call(@ref_methods[1]).should == System::Array.of(System::String).new(1,result.to_clr_string)
+    end
   end
 end
 

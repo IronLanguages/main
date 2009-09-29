@@ -32,17 +32,20 @@ namespace Microsoft.Scripting.Utils {
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2201:DoNotRaiseReservedExceptionTypes")] // TODO: fix
         public TValue GetOrCreateValue(TKey key, Func<TValue> create) {
-            lock (data) {
+            bool lockTaken = false;
+            try {
+                MonitorUtils.Enter(data, ref lockTaken);
+
                 PublishInfo<TValue> pubValue;
                 if (data.TryGetValue(key, out pubValue)) {
                     if (pubValue.Value == null && pubValue.Exception == null) {
                         pubValue.PrepareForWait();
-                        Monitor.Exit(data);
+                        MonitorUtils.Exit(data, ref lockTaken);
 
                         try {
                             pubValue.WaitForPublish();
                         } finally {
-                            Monitor.Enter(data);
+                            MonitorUtils.Enter(data, ref lockTaken);
                             pubValue.FinishWait();
                         }
                     }
@@ -55,15 +58,17 @@ namespace Microsoft.Scripting.Utils {
                 TValue ret;
                 // publish the empty PublishInfo
                 data[key] = pubValue = new PublishInfo<TValue>();
+
                 // release our lock while we create the new value
                 // then re-acquire the lock and publish the info.
-                Monitor.Exit(data);
+                MonitorUtils.Exit(data, ref lockTaken);
+
                 try {
                     try {
                         ret = create();
                         Debug.Assert(ret != null, "Can't publish a null value");
                     } finally {
-                        Monitor.Enter(data);
+                        MonitorUtils.Enter(data, ref lockTaken);
                     }
                 } catch (Exception e) {
                     pubValue.PublishError(e);
@@ -72,6 +77,10 @@ namespace Microsoft.Scripting.Utils {
 
                 pubValue.PublishValue(ret);
                 return ret;
+            } finally {
+                if (lockTaken) {
+                    Monitor.Exit(data);
+                }
             }
         }
 

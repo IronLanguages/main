@@ -1,4 +1,4 @@
-﻿require '../../Scripts/CodeGenerator.rb'
+require '../../Scripts/CodeGenerator.rb'
 
 def range_check_fixnum(type)
   if type == "Int64"
@@ -16,7 +16,7 @@ end
 
 generate(__FILE__) do
   template = DATA.read
-  types = ["Byte", "SByte", "Int16", "UInt16", "UInt32", "Int64", "UInt64"]
+  types = ["Byte", "SByte", "Int16", "UInt16", "UInt32", "Int64", "UInt64", "Decimal"]
   
   result = ""
   types.each do |type|

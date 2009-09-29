@@ -1505,9 +1505,7 @@ namespace IronPython.Runtime.Binding {
             // make the Callable object which does the actual call to the function or slot
             Callable callable = Callable.MakeCallable(state, op, itemFunc, itemSlot);
             if (callable == null) {
-                DynamicMetaObject[] newTypes = (DynamicMetaObject[])types.Clone();
-                newTypes[0] = indexedType;
-                return TypeError(operation, "'{0}' object is unsubscriptable", newTypes);
+                return MakeUnindexableError(operation, op, types, indexedType, state);
             }
 
             // prepare the arguments and make the builder which will
@@ -1543,6 +1541,24 @@ namespace IronPython.Runtime.Binding {
             }
 
             return builder.MakeRule(state, args);
+        }
+
+        private static DynamicMetaObject MakeUnindexableError(DynamicMetaObjectBinder operation, PythonIndexType op, DynamicMetaObject/*!*/[] types, DynamicMetaObject indexedType, PythonContext state) {
+            DynamicMetaObject[] newTypes = (DynamicMetaObject[])types.Clone();
+            newTypes[0] = indexedType;
+
+            PythonTypeSlot dummySlot;
+            if (op != PythonIndexType.GetItem &&
+                op != PythonIndexType.GetSlice &&
+                DynamicHelpers.GetPythonType(indexedType.Value).TryResolveSlot(state.SharedContext, "__getitem__", out dummySlot)) {
+                // object supports indexing but not setting/deletion
+                if (op == PythonIndexType.SetItem || op == PythonIndexType.SetSlice) {
+                    return TypeError(operation, "'{0}' object does not support item assignment", newTypes);
+                } else {
+                    return TypeError(operation, "'{0}' object doesn't support item deletion", newTypes);
+                }
+            }
+            return TypeError(operation, "'{0}' object is unsubscriptable", newTypes);
         }
 
         /// <summary>

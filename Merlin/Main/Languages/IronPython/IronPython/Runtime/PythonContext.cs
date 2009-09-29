@@ -111,6 +111,7 @@ namespace IronPython.Runtime {
         private CallSite<Func<CallSite, CodeContext, object, object, object>> _callSite1;
         private CallSite<Func<CallSite, CodeContext, object, object, object, object>> _callSite2;
         private CallSite<Func<CallSite, CodeContext, object, object[], IDictionary<object, object>, object>> _callDictSite;
+        private CallSite<Func<CallSite, CodeContext, object, object, object, object>> _callDictSiteLooselyTyped;
         private CallSite<Func<CallSite, CodeContext, object, string, PythonDictionary, PythonDictionary, PythonTuple, int, object>> _importSite;
         private CallSite<Func<CallSite, CodeContext, object, string, PythonDictionary, PythonDictionary, PythonTuple, object>> _oldImportSite;
         private CallSite<Func<CallSite, object, bool>> _isCallableSite;
@@ -2574,6 +2575,24 @@ namespace IronPython.Runtime {
             return CallSite<Func<CallSite, CodeContext, object, object[], IDictionary<object, object>, object>>.Create(Binders.InvokeKeywords(this));
         }
 
+
+        internal object CallWithKeywords(object func, object args, object dict) {
+            if (_callDictSiteLooselyTyped == null) {
+                Interlocked.CompareExchange(
+                    ref _callDictSiteLooselyTyped,
+                    MakeKeywordSplatSiteLooselyTyped(),
+                    null
+                );
+            }
+
+            return _callDictSiteLooselyTyped.Target(_callDictSiteLooselyTyped, SharedContext, func, args, dict);
+        }
+
+        internal CallSite<Func<CallSite, CodeContext, object, object, object, object>> MakeKeywordSplatSiteLooselyTyped() {
+            return CallSite<Func<CallSite, CodeContext, object, object, object, object>>.Create(Binders.InvokeKeywords(this));
+        }
+
+
         internal CallSite<Func<CallSite, CodeContext, object, string, PythonDictionary, PythonDictionary, PythonTuple, int, object>> ImportSite {
             get {
                 if (_importSite == null) {
@@ -3663,7 +3682,13 @@ namespace IronPython.Runtime {
         #region Tracing
 
         internal PythonTracebackListener TracebackListener {
-            get { return _tracebackListeners.Peek(); }
+            get {
+                if (_tracebackListeners == null) {
+                    return null;
+                }
+
+                return _tracebackListeners.Peek(); 
+            }
         }
 
         internal Debugging.CompilerServices.DebugContext DebugContext {

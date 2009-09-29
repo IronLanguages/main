@@ -159,7 +159,7 @@ namespace IronRuby.Tests {
             return this;
         }
 
-        public AssertTokenizer/*!*/ ReadBigInteger(string/*!*/ expected, uint @base) {
+        public AssertTokenizer/*!*/ ReadBigInteger(string/*!*/ expected, int @base) {
             Next();
             _tests.Assert(_actualToken == Tokens.BigInteger);
             _tests.Assert(StringComparer.OrdinalIgnoreCase.Compare(_actualValue.BigInteger.ToString(@base), expected) == 0);

@@ -1,0 +1,15 @@
+﻿<UserControl xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Width="600" Height="400">
+  <Canvas x:Name="LayoutRoot" Background="Black">
+    <Canvas.Clip>
+      <RectangleGeometry Rect="0,0,600,400"></RectangleGeometry>
+    </Canvas.Clip>
+    <Image Width="600" Height="400" Source="../samples/trigonometry/images/bkg.png"></Image>
+    <Image Width="600" Height="400" x:Name="bkg" Canvas.Left="-20" Canvas.Top="-20" Opacity="0.0" Stretch="Fill" Source="../samples/trigonometry/images/bkg.png">
+      <Image.RenderTransform>
+        <ScaleTransform x:Name="bkgScale" CenterX="300" CenterY="200" ScaleX="1.2" ScaleY="1.2"></ScaleTransform>
+      </Image.RenderTransform>
+    </Image>
+    <Canvas x:Name="curves" Opacity="1"></Canvas>
+    <Canvas x:Name="nodes"></Canvas>
+  </Canvas>
+</UserControl>

@@ -86,7 +86,7 @@ namespace IronRuby.StandardLibrary.ParseTree {
 
             private static RubyArray/*!*/ GetNodeNames(RubyContext/*!*/ context, object self) {
                 object value;
-                context.GetClassOf(self).TryGetConstantNoAutoload("NODE_NAMES", out value);
+                context.GetClassOf(self).TryGetConstant(null, "NODE_NAMES", out value);
                 return value as RubyArray ?? new RubyArray();
             }
 

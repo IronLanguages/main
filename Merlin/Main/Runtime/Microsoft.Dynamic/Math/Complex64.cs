@@ -122,7 +122,7 @@ namespace Microsoft.Scripting.Math {
             ContractUtils.RequiresNotNull(i, "i");
 
             // throws an overflow exception if we can't handle the value.
-            return MakeReal(i.ToFloat64());
+            return MakeReal((double)i);
         }
 
         public static bool operator ==(Complex64 x, Complex64 y) {

@@ -40,5 +40,9 @@ namespace IronRuby.Compiler.Ast {
         internal override MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen) {
             return _expression.TransformIsDefined(gen);
         }
+
+        internal override MSA.Expression/*!*/ TransformReadBoolean(AstGenerator/*!*/ gen, bool positive) {
+            return _expression.TransformBooleanIsDefined(gen, positive);
+        }
     }
 }

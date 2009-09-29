@@ -1,0 +1,19 @@
+﻿<UserControl xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <UserControl.Resources>
+    <Storyboard x:Name="sbDrop">
+      <DoubleAnimationUsingKeyFrames BeginTime="00:00:01" Storyboard.TargetName="ellipse" Storyboard.TargetProperty="(Canvas.Top)">
+        <SplineDoubleKeyFrame KeyTime="00:00:00.5" Value="200">
+          <SplineDoubleKeyFrame.KeySpline>
+            <KeySpline ControlPoint1="0,0" ControlPoint2="1,0"></KeySpline>
+          </SplineDoubleKeyFrame.KeySpline>
+        </SplineDoubleKeyFrame>
+      </DoubleAnimationUsingKeyFrames>
+      <DoubleAnimationUsingKeyFrames BeginTime="00:00:001.25" Storyboard.TargetName="ellipse" Storyboard.TargetProperty="(UIElement.Opacity)">
+        <SplineDoubleKeyFrame KeyTime="00:00:00.25" Value="0"></SplineDoubleKeyFrame>
+      </DoubleAnimationUsingKeyFrames>
+    </Storyboard>
+  </UserControl.Resources>
+  <Canvas x:Name="LayoutRoot">
+    <Ellipse x:Name="ellipse" Fill="#FF00FF" Width="4" Height="4" Canvas.Left="-2" Canvas.Top="-2"></Ellipse>
+  </Canvas>
+</UserControl>

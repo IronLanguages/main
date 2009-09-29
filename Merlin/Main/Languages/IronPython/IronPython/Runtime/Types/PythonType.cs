@@ -1944,10 +1944,11 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 
                 int index = _originalSlotCount;
 
+                string typeName = IronPython.Compiler.Parser.GetPrivatePrefix(name);
                 for (int i = 0; i < slots.Count; i++) {
                     string slotName = slots[i];
                     if (slotName.StartsWith("__") && !slotName.EndsWith("__")) {
-                        slotName = "_" + name + slotName;
+                        slotName = "_" + typeName + slotName;
                     }
 
                     AddSlot(slotName, new ReflectedSlotProperty(slotName, name, i + index));

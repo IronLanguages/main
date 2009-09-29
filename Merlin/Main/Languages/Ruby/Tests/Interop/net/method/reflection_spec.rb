@@ -1,13 +1,6 @@
 require File.dirname(__FILE__) + '/../spec_helper'
 
 describe "Reflecting on regular .NET methods" do
-  csc <<-EOL
-    public partial class ClassWithMethods {
-      public string PublicMethod() {return "public";}
-      protected string ProtectedMethod() {return "protected";}
-      private string PrivateMethod() {return "private";}
-    }
-  EOL
   before(:each) do
     @obj = ClassWithMethods.new
   end
@@ -56,13 +49,6 @@ describe "Reflecting on regular .NET methods" do
 end
 
 describe "Reflecting on abstract .NET methods" do
-  csc <<-EOL
-    public abstract partial class AbstractClassWithMethods {
-      public abstract string PublicMethod();
-      protected abstract string ProtectedMethod();
-    }
-  EOL
-
   it "should be able to be grabbed as an object after call to #method" do
     #Regression test for Rubyforge 24104
     AbstractClassWithMethods.method(:public_method) rescue nil
@@ -104,14 +90,6 @@ describe "Reflecting on .NET method objects" do
 end
 
 describe "Overloaded .NET methods" do
-  csc <<-EOL
-    public partial class ClassWithOverloads {
-      public string Overloaded() { return "empty"; }
-      public string Overloaded(int arg) { return "one arg"; }
-      public string Overloaded(int arg1, int arg2) { return "two args"; }
-    }
-  EOL
-  
   before(:each) do
     @methods = ClassWithOverloads.new.method(:Overloaded)
   end
@@ -144,18 +122,10 @@ describe "Generic .NET methods" do
 end
 
 describe "Static .NET methods" do
-  csc <<-EOL
-    public partial class Klass{
-      public static int StaticVoidMethod() {
-        return 1;
-      }
-    }
-  EOL
-
   it "don't incorrectly get cached when called on an instance" do
     #might be related to Rubyforge 24104
-    Klass.new.method(:test_method) rescue nil
-    Klass.method(:test_method).should be_kind_of(Method)
+    Klass.new.method(:static_void_method) rescue nil
+    Klass.method(:static_void_method).should be_kind_of(Method)
   end
 end
 

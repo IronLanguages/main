@@ -54,6 +54,10 @@ namespace IronRuby.Compiler.Ast {
             return gen.TransformStatementsToExpression(_statements);
         }
 
+        internal override MSA.Expression/*!*/ TransformReadBoolean(AstGenerator/*!*/ gen, bool positive) {
+            return gen.TransformStatementsToBooleanExpression(_statements, positive);
+        }
+
         internal override MSA.Expression/*!*/ Transform(AstGenerator/*!*/ gen) {
             // do not mark a sequence point wrapping the entire block:
             return TransformRead(gen);

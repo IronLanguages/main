@@ -40,6 +40,13 @@ namespace IronRuby.Compiler.Ast {
 
         private readonly ReadOnlyCollectionBuilder<MSA.ParameterExpression>/*!*/ _hiddenVariables;
 
+        // constant access site cache variables:
+        private MSA.ParameterExpression _csCacheVariable;
+        private MSA.ParameterExpression _csValueVariable;
+
+        // defined? site cache variables:
+        private MSA.ParameterExpression _dcsCacheVariable;
+
         // Local variables that hold on the closures used within this scope.
         // Closure #0 stores the parent scope's local variables, closure #1 stores grand parent scope's locals, etc.
         private List<MSA.ParameterExpression> _closures;
@@ -121,6 +128,22 @@ namespace IronRuby.Compiler.Ast {
         public MSA.ParameterExpression/*!*/ AddHidden(MSA.ParameterExpression/*!*/ variable) {
             _hiddenVariables.Add(variable);
             return variable;
+        }
+
+        public void GetConstantSiteCacheVariables(out MSA.ParameterExpression/*!*/ cacheVar, out MSA.ParameterExpression/*!*/ valueVar) {
+            if (_csCacheVariable == null) {
+                _csCacheVariable = DefineHiddenVariable("c_site", typeof(ConstantSiteCache));
+                _csValueVariable = DefineHiddenVariable("c_value", typeof(object));
+            }
+            cacheVar = _csCacheVariable;
+            valueVar = _csValueVariable;
+        }
+
+        public void GetIsDefinedConstantSiteCacheVariables(out MSA.ParameterExpression/*!*/ cacheVar) {
+            if (_dcsCacheVariable == null) {
+                _dcsCacheVariable = DefineHiddenVariable("dc_site", typeof(IsDefinedConstantSiteCache));
+            }
+            cacheVar = _dcsCacheVariable;
         }
 
         private int LiftedVisibleVariableCount {

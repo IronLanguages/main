@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="3.5" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -236,6 +236,7 @@
     <Compile Include="Utils\Assert.cs" />
     <Compile Include="Utils\CheckedDictionaryEnumerator.cs" />
     <Compile Include="Utils\CollectionExtensions.cs" />
+    <Compile Include="Utils\ConsoleInputStream.cs" />
     <Compile Include="Utils\ConsoleStreamType.cs" />
     <Compile Include="Utils\ContractUtils.cs" />
     <Compile Include="Utils\DictionaryUnionEnumerator.cs" />

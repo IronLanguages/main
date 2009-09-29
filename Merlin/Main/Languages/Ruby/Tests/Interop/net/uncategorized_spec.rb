@@ -1,17 +1,6 @@
 require File.dirname(__FILE__) + "/spec_helper"
 
-describe "Regression dev tests" do
-
-end
-
-describe "Command line options" do
-  describe "-profile" do
-    s = ruby_exe("puts IronRuby::Clr.profile{ require 'rubygems' }.size", :options => "-profile").chomp.to_i
-    s.should > 80
-    # We check for an upper bound only so that we can increase the lower bound, which is currently lower than we would like it to be
-  end
-end
-
+#not sure where to put these yet. I might add a ironruby folder to our RubySpec.
 describe "Enumerable blocks (Codeplex 1301)" do
   before :each do
     @b = [2, 5, 3, 6, 1, 4]  

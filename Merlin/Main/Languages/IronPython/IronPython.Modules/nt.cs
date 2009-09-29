@@ -769,24 +769,28 @@ namespace IronPython.Modules {
                 }
             }
 
-            public static PythonTuple operator +(stat_result stat, PythonTuple tuple) {
-                return stat.MakeTuple() + tuple;
+            public static PythonTuple operator +(stat_result stat, object tuple) {
+                PythonTuple tupleObj = tuple as PythonTuple;
+                if (tupleObj == null) {
+                    throw PythonOps.TypeError("can only concatenate tuple (not \"{0}\") to tuple", PythonTypeOps.GetName(tuple));
+                }
+                return stat.MakeTuple() + tupleObj;
             }
 
-            public static bool operator >(stat_result stat, IList o) {
+            public static bool operator >(stat_result stat, [NotNull]stat_result o) {
                 return stat.MakeTuple() > PythonTuple.Make(o);
             }
 
-            public static bool operator <(stat_result stat, IList o) {
-                return stat.MakeTuple() > PythonTuple.Make(o);
+            public static bool operator <(stat_result stat, [NotNull]stat_result o) {
+                return stat.MakeTuple() < PythonTuple.Make(o);
             }
 
-            public static bool operator >=(stat_result stat, IList o) {
+            public static bool operator >=(stat_result stat, [NotNull]stat_result o) {
                 return stat.MakeTuple() >= PythonTuple.Make(o);
             }
 
-            public static bool operator <=(stat_result stat, IList o) {
-                return stat.MakeTuple() >= PythonTuple.Make(o);
+            public static bool operator <=(stat_result stat, [NotNull]stat_result o) {
+                return stat.MakeTuple() <= PythonTuple.Make(o);
             }
 
             public static bool operator >(stat_result stat, object o) {

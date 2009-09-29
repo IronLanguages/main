@@ -193,7 +193,7 @@ namespace Microsoft.Scripting.Hosting {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
         public IEnumerable<string> GetVariableNames() {
             // Remoting: we eagerly enumerate all variables to avoid cross domain calls for each item.
-            return Engine.Operations.GetMemberNames(_scope.Storage);
+            return Engine.Operations.GetMemberNames((object)_scope.Storage);
         }
 
         /// <summary>
@@ -205,7 +205,7 @@ namespace Microsoft.Scripting.Hosting {
             var result = new List<KeyValuePair<string, object>>();
             
             foreach (string name in GetVariableNames()) {
-                result.Add(new KeyValuePair<string, object>(name, Engine.Operations.GetMember(_scope.Storage, name)));
+                result.Add(new KeyValuePair<string, object>(name, (object)Engine.Operations.GetMember((object)_scope.Storage, name)));
             }
 
             result.TrimExcess();

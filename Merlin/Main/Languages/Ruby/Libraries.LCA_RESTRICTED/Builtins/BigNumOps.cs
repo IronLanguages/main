@@ -43,8 +43,7 @@ namespace IronRuby.Builtins {
         /// </example>
         [RubyMethod("size")]
         public static int Size(BigInteger/*!*/ self) {
-            //TODO: Should we expose the number of bytes per word in a BitInteger?
-            return self.GetBits().Length * 4;
+            return self.GetWordCount() * 4;
         }
     }
 }

@@ -21,7 +21,7 @@ namespace IronRuby.Tests {
             Assert(RubyUtils.TryUnmangleName("stack") == "Stack");
             Assert(RubyUtils.TryUnmangleName("this_is_my_long_name") == "ThisIsMyLongName");
             Assert(RubyUtils.TryUnmangleName("f") == "F");
-            Assert(RubyUtils.TryUnmangleName("initialize") == null);
+            Assert(RubyUtils.TryUnmangleName("initialize") == "Initialize");
 
             // non-alpha characters are treated as lower-case letters: 
             Assert(RubyUtils.TryUnmangleName("foo_bar=") == "FooBar=");
@@ -72,13 +72,18 @@ namespace IronRuby.Tests {
             Assert(RubyUtils.TryUnmangleName("foo__bar") == null);
             Assert(RubyUtils.TryUnmangleName("_foo") == null);
             Assert(RubyUtils.TryUnmangleName("foo_") == null);
+
+            // special method names:
+            Assert(RubyUtils.TryUnmangleMethodName("initialize") == null);
+            Assert(RubyUtils.TryUnmangleMethodName("class") == null);
+            Assert(RubyUtils.TryUnmangleMethodName("message") == "Message"); // we don't special case Exception.Message 
         }
 
         public void NameMangling2() {
             Assert(RubyUtils.TryMangleName("Stack") == "stack");
             Assert(RubyUtils.TryMangleName("ThisIsMyLongName") == "this_is_my_long_name");
             Assert(RubyUtils.TryMangleName("F") == "f");
-            Assert(RubyUtils.TryMangleName("Initialize") == null);
+            Assert(RubyUtils.TryMangleName("Initialize") == "initialize");
             Assert(RubyUtils.TryMangleName("fooBar") == "foo_bar");
 
             // characters that are not upper case letters are treated as lower-case:
@@ -139,6 +144,11 @@ namespace IronRuby.Tests {
             Assert(RubyUtils.TryMangleName("foo__bar") == null);
             Assert(RubyUtils.TryMangleName("_foo") == null);
             Assert(RubyUtils.TryMangleName("foo_") == null);
+
+            // special method names:
+            Assert(RubyUtils.TryMangleMethodName("Initialize") == null);
+            Assert(RubyUtils.TryMangleMethodName("Class") == null);
+            Assert(RubyUtils.TryMangleMethodName("Message") == "message"); // we don't special case Exception.Message
         }
     }
 }

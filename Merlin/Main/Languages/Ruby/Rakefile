@@ -14,6 +14,8 @@
 # ****************************************************************************
 #
 
+require 'rake'
+require 'rake/tasklib'
 $rakefile_path = File.dirname(__FILE__)
 require $rakefile_path + '/context'
 

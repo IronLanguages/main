@@ -55,7 +55,7 @@ namespace IronRuby.Compiler.Ast {
 
         internal override MSA.Expression/*!*/ TransformRead(AstGenerator/*!*/ gen) {
             return AstFactory.Condition(
-                Methods.IsFalse.OpCall(AstFactory.Box(_condition.TransformRead(gen))),
+                _condition.TransformCondition(gen, false),            
                 gen.TransformStatementsToExpression(_statements),
                 gen.TransformStatementsToExpression(_elseClause != null ? _elseClause.Statements : null)
             );

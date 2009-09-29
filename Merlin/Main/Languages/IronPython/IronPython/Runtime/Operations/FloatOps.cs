@@ -54,14 +54,18 @@ namespace IronPython.Runtime.Operations {
                     return ParseFloat(ScriptingRuntimeHelpers.CharToString((char)x));
                 }
 
-                double doubleVal;
-                if (Converter.TryConvertToDouble(x, out doubleVal)) return doubleVal;
-
-                if (x is Complex64) throw PythonOps.TypeError("can't convert complex to float; use abs(z)");
+                if (x is Complex64) {
+                    throw PythonOps.TypeError("can't convert complex to float; use abs(z)");
+                }
 
                 object d = PythonOps.CallWithContext(context, PythonOps.GetBoundAttr(context, x, "__float__"));
-                if (d is double) return d;
-                throw PythonOps.TypeError("__float__ returned non-float (type %s)", DynamicHelpers.GetPythonType(d));
+                if (d is double) {
+                    return d;
+                } else if (d is Extensible<double>) {
+                    return ((Extensible<double>)d).Value;
+                }
+
+                throw PythonOps.TypeError("__float__ returned non-float (type {0})", PythonTypeOps.GetName(d));
             } else {
                 return cls.CreateInstance(context, x);
             }
@@ -203,7 +207,7 @@ namespace IronPython.Runtime.Operations {
                 }
             }
 
-            int highBit = GetMostSignificantBit(finalBits);
+            int highBit = finalBits.GetBitCount();
             // minus 1 because we'll discard the high bit as it's implicit
             int finalExponent = highBit - decimalPointBit - 1;  
 
@@ -243,7 +247,7 @@ namespace IronPython.Runtime.Operations {
                         finalBits = (roundedBits >> 1) & 0xfffffffffffff;
 
                         // check to see if we overflowed into the next bit (e.g. we had a pattern like ffffff rounding to 1000000)
-                        if (GetMostSignificantBit(roundedBits) != GetMostSignificantBit(finalBitsAndRoundingBit)) {
+                        if (roundedBits.GetBitCount() != finalBitsAndRoundingBit.GetBitCount()) {
                             if (finalExponent != -1023) {
                                 // we overflowed and we're a normalized number.  Discard the new least significant bit so we have
                                 // the correct number of bits.  We need to raise the exponent to account for this division by 2.
@@ -308,18 +312,6 @@ namespace IronPython.Runtime.Operations {
 
         private static Exception HexStringOverflow() {
             return PythonOps.OverflowError("hexadecimal value too large to represent as a float");
-        }
-
-        private static int GetMostSignificantBit(BigInteger fractionVal) {
-            int highBit = fractionVal.Length * 32;
-            if (highBit != 0) {
-                BigInteger test = BigInteger.One << (highBit - 1);
-                while ((fractionVal & test) == 0 && test != BigInteger.Zero) {
-                    highBit--;
-                    test = test >> 1;
-                }
-            }
-            return highBit;
         }
 
         private static Exception InvalidHexString() {
@@ -1081,6 +1073,10 @@ namespace IronPython.Runtime.Operations {
 
         public static int __hash__(float x) {
             return DoubleOps.__hash__(((double)x));
+        }
+
+        public static double __float__(float x) {
+            return x;
         }
     }
 }

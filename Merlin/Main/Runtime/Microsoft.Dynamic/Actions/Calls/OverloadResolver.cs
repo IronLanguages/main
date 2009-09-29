@@ -423,7 +423,7 @@ namespace Microsoft.Scripting.Actions.Calls {
             if (result.Count == 0) {
                 // attempt generic method type inference
                 foreach (ApplicableCandidate candidate in candidates) {
-                    if (!candidate.Method.Method.ContainsGenericParameters) {
+                    if (!candidate.Method.Method.IsGenericMethodDefinition) {
                         continue;
                     }
 

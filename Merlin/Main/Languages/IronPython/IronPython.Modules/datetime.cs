@@ -577,13 +577,18 @@ namespace IronPython.Modules {
                 return this._dateTime.CompareTo(date._dateTime);
             }
 
+            internal bool CheckType(object other) {
+                return CheckType(other, true);
+            }
+
             /// <summary>
             /// Used to check the type to see if we can do a comparison.  Returns true if we can
             /// or false if we should return NotImplemented.  May throw if the type's really wrong.
             /// </summary>
-            internal bool CheckType(object other) {
-                if (other == null)
-                    throw PythonOps.TypeError("can't compare datetime.date to NoneType");
+            internal bool CheckType(object other, bool shouldThrow) {
+                if (other == null) {
+                    return CheckTypeError(other, shouldThrow);
+                }
 
                 if (other.GetType() != GetType()) {
                     // if timetuple is defined on the other object go ahead and let it try the compare,
@@ -596,10 +601,18 @@ namespace IronPython.Modules {
                         }
                     }
 
-                    throw PythonOps.TypeError("can't compare datetime.date to {0}", PythonTypeOps.GetName(other));
+                    return CheckTypeError(other, shouldThrow);
                 }
 
                 return true;
+            }
+
+            private static bool CheckTypeError(object other, bool shouldThrow) {
+                if (shouldThrow) {
+                    throw PythonOps.TypeError("can't compare datetime.date to {0}", PythonTypeOps.GetName(other));
+                } else {
+                    return true;
+                }
             }
 
             [return: MaybeNotImplemented]
@@ -630,11 +643,15 @@ namespace IronPython.Modules {
                 return Microsoft.Scripting.Runtime.ScriptingRuntimeHelpers.BooleanToObject(self.CompareTo(other) <= 0);
             }
 
-            public bool __eq__(object other) {
+            public object __eq__(object other) {
+                if (!CheckType(other, false)) return NotImplementedType.Value;
+
                 return Equals(other);
             }
 
-            public bool __ne__(object other) {
+            public object __ne__(object other) {
+                if (!CheckType(other, false)) return NotImplementedType.Value;
+
                 return !Equals(other);
             }
 
@@ -687,12 +704,43 @@ namespace IronPython.Modules {
                 _tz = tzinfo;
             }
 
+            public datetime([NotNull]string str) {
+                if (str.Length != 10) {
+                    throw PythonOps.TypeError("an integer is required");
+                }
+
+                int microSeconds = (((int)str[7]) << 16) | ((int)str[8] << 8) | (int)str[9];
+                int month = (int)str[2];
+                if (month == 0 || month > 12) {
+                    throw PythonOps.TypeError("invalid month");
+                }
+                InternalDateTime = new DateTime(
+                    (((int)str[0]) << 8) | (int)str[1], 
+                    month, 
+                    (int)str[3], 
+                    (int)str[4], 
+                    (int)str[5], 
+                    (int)str[6], 
+                    microSeconds  / 1000
+                );
+                _lostMicroseconds = microsecond % 1000;
+            }
+
+            public datetime([NotNull]string str, [NotNull]tzinfo tzinfo)
+                : this(str) {
+                _tz = tzinfo;
+            }
+
+            private void Initialize(int year, int month, int day, int hour, int minute, int second, int microsecond, tzinfo tzinfo) {
+            }
+
             public datetime(DateTime dt)
                 : this(dt, 0, null) {
             }
 
             // just present to match CPython's error messages...
             public datetime(params object[] args) {
+                
                 if (args.Length < 3) {
                     throw PythonOps.TypeError("function takes at least 3 arguments ({0} given)", args.Length);
                 } else if (args.Length > 8) {
@@ -1087,7 +1135,7 @@ namespace IronPython.Modules {
                 }
 
                 if (_tz != null) {
-                    sb.AppendFormat(", tzinfo={0}", _tz.tzname(this).ToLower());
+                    sb.AppendFormat(", tzinfo={0}", PythonOps.Repr(context, _tz));
                 }
                 sb.AppendFormat(")");
                 return sb.ToString();
@@ -1409,6 +1457,15 @@ namespace IronPython.Modules {
 
         [PythonType]
         public class tzinfo {
+            public tzinfo() {
+            }
+
+            public tzinfo(params object[] args) {
+            }
+
+            public tzinfo([ParamDictionary]PythonDictionary dict, params object[] args) {
+            }
+
             public virtual object fromutc(datetime dt) {
                 timedelta dtOffset = utcoffset(dt);
                 if (dtOffset == null)
@@ -1430,11 +1487,21 @@ namespace IronPython.Modules {
             }
 
             public virtual string tzname(object dt) {
-                throw new NotImplementedException();
+                throw new NotImplementedException("a tzinfo subclass must implement tzname()");
             }
 
             public virtual timedelta utcoffset(object dt) {
                 throw new NotImplementedException();
+            }
+
+            public PythonTuple __reduce__(CodeContext/*!*/ context) {
+                object dict;
+                if (GetType() == typeof(tzinfo) ||
+                    !PythonOps.TryGetBoundAttr(context, this, "__dict__", out dict)) {
+                    return PythonTuple.MakeTuple(DynamicHelpers.GetPythonType(this), PythonTuple.EMPTY);
+                }
+
+                return PythonTuple.MakeTuple(DynamicHelpers.GetPythonType(this), PythonTuple.EMPTY, dict);
             }
         }
     }

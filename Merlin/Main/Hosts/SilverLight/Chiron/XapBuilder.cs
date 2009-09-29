@@ -27,6 +27,7 @@ namespace Chiron {
     /// Needs to know how to insert assemblies for the language
     /// </summary>
     static class XapBuilder {
+
         public static byte[] XapToMemory(string dir) {
             MemoryStream ms = new MemoryStream();
             XapFiles(new ZipArchive(ms, FileAccess.Write), dir);
@@ -105,6 +106,9 @@ namespace Chiron {
             if (Chiron.ExternalUrlPrefix != null) {
                 externals = GetLanguageExternals(langs);
                 assemblies = new List<Uri>();
+#if DEBUG
+                assemblies.Add(GetAssemblyUri("Microsoft.Scripting.Silverlight.dll"));
+#endif
             } else {
                 externals = new List<Uri>();
                 assemblies = GetLanguageAssemblies(langs);
@@ -112,31 +116,32 @@ namespace Chiron {
             return Chiron.ManifestTemplate.Generate(assemblies, externals);
         }
 
-        // Gets the list of DLR+language assemblies that will be automatically added to the XAP
+        // Gets the list of DLR+language assemblies that could be automatically
+        //added to the XAP (if externalUrlPrefix is not set).
         private static IList<Uri> GetLanguageAssemblies(IEnumerable<LanguageInfo> langs) {
+            return GetLanguageAssemblies(langs, false);
+        }
+        private static IList<Uri> GetLanguageAssemblies(IEnumerable<LanguageInfo> langs, bool ooxDebug) {
             IList<Uri> assemblies = new List<Uri>();
             assemblies.Add(GetAssemblyUri("Microsoft.Scripting.Silverlight.dll"));
-            assemblies.Add(GetAssemblyUri("Microsoft.Scripting.ExtensionAttribute.dll"));
-            assemblies.Add(GetAssemblyUri("Microsoft.Scripting.Core.dll"));
-            assemblies.Add(GetAssemblyUri("Microsoft.Scripting.dll"));
-            assemblies.Add(GetAssemblyUri("Microsoft.Dynamic.dll"));
-            foreach (LanguageInfo lang in langs) {
-                foreach (string asm in lang.Assemblies) {
-                    assemblies.Add(GetAssemblyUri(asm));
+            if(!ooxDebug) {
+                assemblies.Add(GetAssemblyUri("Microsoft.Scripting.ExtensionAttribute.dll"));
+                assemblies.Add(GetAssemblyUri("Microsoft.Scripting.Core.dll"));
+                assemblies.Add(GetAssemblyUri("Microsoft.Scripting.dll"));
+                assemblies.Add(GetAssemblyUri("Microsoft.Dynamic.dll"));
+                foreach (LanguageInfo lang in langs) {
+                    foreach (string asm in lang.Assemblies) {
+                        assemblies.Add(GetAssemblyUri(asm));
+                    }
                 }
             }
             return assemblies;
         }
 
-        // Gets the list of DLR+Language extensions that will be automatically added to the XAP
+        // Gets the list of extensions that will be automatically added to the XAP
         private static IList<Uri> GetLanguageExternals(IEnumerable<LanguageInfo> langs) {
             IList<Uri> extensions = new List<Uri>();
             extensions.Add(GetExternalUri("Microsoft.Scripting.slvx"));
-            foreach (LanguageInfo lang in langs) {
-                var asmParts = lang.GetContextAssemblyName().Split(new char[] { ',' });
-                if (asmParts.Length > 0)
-                    extensions.Add(GetExternalUri(asmParts[0] + ".slvx"));
-            }
             return extensions;
         }
 
@@ -211,9 +216,14 @@ namespace Chiron {
                 writer.WriteLine("<Languages>");
 
                 foreach (LanguageInfo lang in langs) {
-                    writer.WriteLine("  <Language languageContext=\"{0}\"", lang.LanguageContext);
-                    writer.WriteLine("            assembly=\"{0}\"", lang.GetContextAssemblyName());
-                    writer.WriteLine("            extensions=\"{0}\" />", lang.GetExtensionsString());
+                    writer.WriteLine("  <Language");
+                    writer.WriteLine("            names=\"{0}\"", lang.GetNames());
+                    writer.WriteLine("            languageContext=\"{0}\"", lang.LanguageContext);
+                    writer.WriteLine("            extensions=\"{0}\"", lang.GetExtensionsString());
+                    writer.WriteLine("            assemblies=\"{0}\"", lang.GetAssemblyNames());
+                    writer.WriteLine("            external=\"{0}\"", lang.External);
+                    writer.WriteLine("  />");
+                    
                 }
 
                 writer.WriteLine("</Languages>");
@@ -226,12 +236,16 @@ namespace Chiron {
         internal static ICollection<LanguageInfo> FindSourceLanguages(string dir) {
             Dictionary<LanguageInfo, bool> result = new Dictionary<LanguageInfo, bool>();
 
-            foreach (string file in Directory.GetFiles(dir, "*", SearchOption.AllDirectories)) {
-                string ext = Path.GetExtension(file);
-                LanguageInfo lang;
-                if (Chiron.Languages.TryGetValue(ext.ToLower(), out lang)) {
-                    result[lang] = true;
+            if (Chiron.ExternalUrlPrefix == null) {
+                foreach (string file in Directory.GetFiles(dir, "*", SearchOption.AllDirectories)) {
+                    string ext = Path.GetExtension(file);
+                    LanguageInfo lang;
+                    if (Chiron.Languages.TryGetValue(ext.ToLower(), out lang)) {
+                        result[lang] = true;
+                    }
                 }
+            } else {
+                return Chiron.Languages.Values;
             }
 
             return result.Keys;

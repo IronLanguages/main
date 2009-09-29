@@ -1,128 +1,5 @@
 require File.dirname(__FILE__) + '/../../spec_helper'
 
-@methods_string = <<-EOL
-  #region private methods
-  private string Private1Generic0Arg<T>() {
-    return "private generic no args";
-  }
-  
-  private string Private1Generic1Arg<T>(T arg0) {
-    return Public1Generic1Arg<T>(arg0);
-  }
-
-  private string Private1Generic2Arg<T>(T arg0, string arg1) {
-    return Public1Generic2Arg<T>(arg0, arg1);
-  }
-
-  private string Private2Generic2Arg<T, U>(T arg0, U arg1) {
-    return Public2Generic2Arg<T, U>(arg0, arg1);
-  }
-
-  private string Private2Generic3Arg<T, U>(T arg0, U arg1, string arg2) {
-    return Public2Generic3Arg<T, U>(arg0, arg1, arg2);
-  }
-
-  private string Private3Generic3Arg<T, U, V>(T arg0, U arg1, V arg2) {
-    return Public3Generic3Arg<T, U, V>(arg0, arg1, arg2);
-  }
-
-  private string Private3Generic4Arg<T, U, V>(T arg0, U arg1, V arg2, string arg3) {
-    return Public3Generic4Arg<T, U, V>(arg0, arg1, arg2, arg3);
-  }
-  #endregion
-  
-  #region protected methods
-  protected string Protected1Generic0Arg<T>() {
-    return "protected generic no args";
-  }
-  
-  protected string Protected1Generic1Arg<T>(T arg0) {
-    return Public1Generic1Arg<T>(arg0);
-  }
-
-  protected string Protected1Generic2Arg<T>(T arg0, string arg1) {
-    return Public1Generic2Arg<T>(arg0, arg1);
-  }
-
-  protected string Protected2Generic2Arg<T, U>(T arg0, U arg1) {
-    return Public2Generic2Arg<T, U>(arg0, arg1);
-  }
-
-  protected string Protected2Generic3Arg<T, U>(T arg0, U arg1, string arg2) {
-    return Public2Generic3Arg<T, U>(arg0, arg1, arg2);
-  }
-
-  protected string Protected3Generic3Arg<T, U, V>(T arg0, U arg1, V arg2) {
-    return Public3Generic3Arg<T, U, V>(arg0, arg1, arg2);
-  }
-
-  protected string Protected3Generic4Arg<T, U, V>(T arg0, U arg1, V arg2, string arg3) {
-    return Public3Generic4Arg<T, U, V>(arg0, arg1, arg2, arg3);
-  }
-  #endregion
- 
-  #region public methods
-  public string Public1Generic0Arg<T>() {
-    return "public generic no args";
-  }
-
-  public string Public1Generic1Arg<T>(T arg0) {
-    return arg0.ToString();
-  }
-
-  public string Public1Generic2Arg<T>(T arg0, string arg1) {
-    return System.String.Format("{0} {1}", arg0, arg1);
-  }
-
-  public string Public2Generic2Arg<T, U>(T arg0, U arg1) {
-    return Public1Generic2Arg<T>(arg0, arg1.ToString());
-  }
-
-  public string Public2Generic3Arg<T, U>(T arg0, U arg1, string arg2) {
-    return System.String.Format("{0} {1} {2}", arg0, arg1, arg2);
-  }
-
-  public string Public3Generic3Arg<T, U, V>(T arg0, U arg1, V arg2) {
-    return Public2Generic3Arg<T, U>(arg0, arg1, arg2.ToString());
-  }
-
-  public string Public3Generic4Arg<T, U, V>(T arg0, U arg1, V arg2, string arg3) {
-    return System.String.Format("{0} {1} {2} {3}", arg0, arg1, arg2, arg3);
-  }
-  #endregion
-  
-  #region Constrained methods
-  public T StructConstraintMethod<T>(T arg0)
-  where T : struct {
-    return arg0;
-  }
-
-  public T ClassConstraintMethod<T>(T arg0)
-  where T : class {
-    return arg0;
-  }
-
-  public T ConstructorConstraintMethod<T>()
-  where T : new() {
-    return new T();
-  }
-
-  public T TypeConstraintMethod<T, TBase>(T arg0)
-  where T : TBase {
-    return arg0;
-  }
-  #endregion
-EOL
-
-@conflicting_method_string = <<-EOL
-  public string Public1Generic2Arg<T>(T arg0, K arg1) {
-    return Public2Generic2Arg<T, K>(arg0, arg1);
-  }
-  
-  public string ConflictingGenericMethod<K>(K arg0) {
-    return arg0.ToString();
-  }
-EOL
 describe :generic_methods, :shared => true do
   it "are callable via call and [] when pubic or protected" do
     @klass.method(:public_1_generic_0_arg).of(Fixnum).call.should equal_clr_string("public generic no args")
@@ -185,7 +62,7 @@ describe :generic_methods, :shared => true do
   it "has proper errors for constrained generics" do
     lambda { @klass.method(:struct_constraint_method).of(String).call("a")}.should raise_error(ArgumentError)
     lambda { @klass.method(:class_constraint_method).of(Fixnum).call(1)}.should raise_error(ArgumentError)
-    lambda { @klass.method(:constructor_constraint_method).of(ClrString).call}.should raise_error(ArgumentError)
+    lambda { @klass.method(:constructor_constraint_method).of(System::String).call}.should raise_error(ArgumentError)
     lambda { @klass.method(:type_constraint_method).of(String, Klass).call("a")}.should raise_error(ArgumentError)
   end
 
@@ -201,10 +78,6 @@ describe :generic_methods, :shared => true do
     end
     @klass.method(:constructor_constraint_method).of(Foo).call.foo.should == 10
     @klass.method(:type_constraint_method).of(SubFoo, Foo).call(SubFoo.new).foo.should == 10
-  end
-
-  it "has proper error messages for skipping generic" do
-    lambda {@klass.method(:public_1_generic_1_arg).call("a")}.should raise_error(ArgumentError, /generic/i)
   end
 
   it "has proper error messages for incorrect number of arguments" do
@@ -223,25 +96,6 @@ describe :generic_conflicting_methods, :shared => true do
 end
 describe "Generic methods" do
   describe "on regular classes" do
-    csc <<-EOL
-    public partial class ClassWithMethods {
-      #{@methods_string}
-    }
-
-    public partial class Klass {
-      private int _foo;
-      
-      public int Foo {
-        get { return _foo; }
-      }
-
-      public Klass() {
-        _foo = 10;
-      }
-    }
-
-    public partial class SubKlass : Klass {}
-    EOL
     before :each do
       t = ClassWithMethods
       @klass, @subklass = t.new, Class.new(t).new
@@ -261,14 +115,6 @@ describe "Generic methods" do
   end
 
   describe "on generic classes with one parameter" do
-    csc <<-EOL
-    #pragma warning disable 693
-    public partial class GenericClassWithMethods<K> {
-    #{@methods_string}
-    #{@conflicting_method_string}
-    }
-    #pragma warning restore 693
-    EOL
     before :each do
       t = GenericClassWithMethods.of(Fixnum)
       @klass, @subklass = t.new, Class.new(t).new
@@ -288,14 +134,6 @@ describe "Generic methods" do
   end
 
   describe "on generic classes with 2 parameters" do
-    csc <<-EOL
-    #pragma warning disable 693
-    public partial class GenericClass2Params<K, J> {
-    #{@methods_string}
-    #{@conflicting_method_string}
-    }
-    #pragma warning restore 693
-    EOL
     before :each do
       t = GenericClass2Params.of(Fixnum, String)
       @klass, @subklass = t.new, Class.new(t).new

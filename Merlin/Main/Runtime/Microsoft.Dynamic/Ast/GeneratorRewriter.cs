@@ -77,7 +77,7 @@ namespace Microsoft.Scripting.Ast {
 
         private List<int> _debugCookies;
 
-        private readonly Set<ParameterExpression> _vars = new Set<ParameterExpression>();
+        private readonly HashSet<ParameterExpression> _vars = new HashSet<ParameterExpression>();
 
         // Possible optimization: reuse temps. Requires scoping them correctly,
         // and then storing them back in a free list

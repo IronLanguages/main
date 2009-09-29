@@ -467,52 +467,46 @@ namespace IronRuby.Runtime {
         }
 
         // thread-safe:
-        // dynamic dispatch to "const_missing" if not found
-        public object ResolveConstant(bool autoload, string/*!*/ name) {
-            object result;
-
-            if (TryResolveConstant(autoload, name, out result)) {
-                return result;
-            }
-
-            RubyContext.CheckConstantName(name);
-            var owner = GetInnerMostModuleForConstantLookup();
-            return owner.ConstantMissing(name);
-        }
-
-        // thread-safe:
-        public bool TryResolveConstant(bool autoload, string/*!*/ name, out object result) {
+        // Returns null on success, the lexically inner-most module on failure.
+        internal RubyModule TryResolveConstantNoLock(RubyGlobalScope autoloadScope, string/*!*/ name, out ConstantStorage result) {
             var context = RubyContext;
-            using (context.ClassHierarchyLocker()) {
-                RubyGlobalScope autoloadScope = autoload ? GlobalScope : null;
-                RubyScope scope = this;
+            context.RequiresClassHierarchyLock();
+            
+            RubyScope scope = this;
 
-                // lexical lookup first:
-                RubyModule innerMostModule = null;
-                do {
-                    RubyModule module = scope.Module;
+            // lexical lookup first:
+            RubyModule innerMostModule = null;
+            do {
+                RubyModule module = scope.Module;
 
-                    if (module != null) {
-                        if (module.TryGetConstant(context, autoloadScope, name, out result)) {
-                            return true;
-                        }
-
-                        // remember the module:
-                        if (innerMostModule == null) {
-                            innerMostModule = module;
-                        }
+                if (module != null) {
+                    if (module.TryGetConstant(context, autoloadScope, name, out result)) {
+                        return null;
                     }
 
-                    scope = scope.Parent;
-                } while (scope != null);
-
-                // check the inner most module and it's base classes/mixins:
-                if (innerMostModule != null && innerMostModule.TryResolveConstant(context, autoloadScope, name, out result)) {
-                    return true;
+                    // remember the module:
+                    if (innerMostModule == null) {
+                        innerMostModule = module;
+                    }
                 }
 
-                return RubyContext.ObjectClass.TryResolveConstant(context, autoloadScope, name, out result);
+                scope = scope.Parent;
+            } while (scope != null);
+
+            // check the inner most module and it's base classes/mixins:
+            if (innerMostModule != null) {
+                if (innerMostModule.TryResolveConstant(context, autoloadScope, name, out result)) {
+                    return null;
+                }
+            } else {
+                innerMostModule = context.ObjectClass;
             }
+
+            if (context.ObjectClass.TryResolveConstant(context, autoloadScope, name, out result)) {
+                return null;
+            }
+
+            return innerMostModule;
         }
 
         #endregion
@@ -765,8 +759,6 @@ var closureScope = scope as RubyClosureScope;
             InLoop = parent.InLoop;
             InRescue = parent.InRescue;
             MethodAttributes = RubyMethodAttributes.PublicInstance;
-
-            parent.GetInnerMostModuleForConstantLookup().AddNestedModule(module);
         }
     }
 
@@ -810,8 +802,6 @@ var closureScope = scope as RubyClosureScope;
             InLoop = parent.InLoop;
             InRescue = parent.InRescue;
             MethodAttributes = RubyMethodAttributes.PublicInstance;
-
-            parent.GetInnerMostModuleForConstantLookup().AddNestedModule(module);
             SetEmptyLocals();
         }
 

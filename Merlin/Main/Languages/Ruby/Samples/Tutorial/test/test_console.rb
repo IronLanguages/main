@@ -14,7 +14,13 @@
 # ****************************************************************************
 
 require 'stringio'
-require 'tutorial.rb'
+
+if !defined?(SILVERLIGHT) || !SILVERLIGHT
+  $: << File.expand_path(File.dirname(__FILE__) + '/..')
+  $: << File.expand_path(File.dirname(__FILE__) + '/../app')
+end
+
+require 'tutorial'
 require 'console_tutorial'
 
 if not SILVERLIGHT
@@ -25,14 +31,19 @@ if not SILVERLIGHT
 
   MiniTest::Unit.autorun # tests will run using at_exit
   
-  # cd to Tutorial folder
-  FileUtils.cd File.expand_path("..", File.dirname(File.expand_path(__FILE__, FileUtils.pwd)))
+  TUTORIAL_ROOT = File.expand_path("..", File.dirname(File.expand_path(__FILE__, FileUtils.pwd)))
 end
 
 class MiniTest::Unit::TestCase
   def self.test_order
     :not_random
   end
+end
+
+def get_standard_tutorial(file_name)
+  path = "app/Tutorials/#{file_name}"
+  path = File.expand_path(path, TUTORIAL_ROOT) if not SILVERLIGHT     
+  Tutorial.get_tutorial path
 end
 
 describe "ReplContext" do
@@ -66,7 +77,7 @@ describe "ConsoleTutorial" do
   before(:each) do
     @in = StringIO.new
     @out = StringIO.new
-    tutorial = Tutorial.get_tutorial('Tutorials/tryruby_tutorial.rb')
+    tutorial = get_standard_tutorial('tryruby_tutorial.rb')
     @app = ConsoleTutorial.new tutorial, @in, @out
   end
   
@@ -90,8 +101,8 @@ module TutorialTests
     "code = #{code.inspect} #{result}"
   end
   
-  def self.create_tests testcase, tutorial_path
-    tutorial = Tutorial.get_tutorial tutorial_path
+  def self.create_tests testcase, tutorial_file
+    tutorial = get_standard_tutorial tutorial_file
     context = Tutorial::ReplContext.new
     tutorial.sections.each_index do |s|
       section = tutorial.sections[s]
@@ -119,6 +130,7 @@ module TutorialTests
         return
       end
       task.setup.call(context.bind) if task.setup
+      task.test_hook.call(:before, spec, context.bind) if task.test_hook
       result = context.interact "" # Ensure that the user can try unrelated code snippets without moving to the next task
       if task.code.respond_to? :to_ary
         task.code.each do |code|
@@ -131,27 +143,27 @@ module TutorialTests
         result = context.interact task.code_string
         assert_task_success spec, task, task.code_string, result
       end
-      task.test_hook.call(:cleanup, context.bind) if task.test_hook
+      task.test_hook.call(:after, spec, context.bind) if task.test_hook
     end
   end
 end
 
 describe "IronRubyTutorial" do
-  TutorialTests.create_tests self, 'Tutorials/ironruby_tutorial.rb' if defined? RUBY_ENGINE
+  TutorialTests.create_tests self, 'ironruby_tutorial.rb' if defined? RUBY_ENGINE
 end
 
 describe "HostingTutorial" do
-  TutorialTests.create_tests self, 'Tutorials/hosting_tutorial.rb' if defined? RUBY_ENGINE
+  TutorialTests.create_tests self, 'hosting_tutorial.rb' if defined? RUBY_ENGINE
 end
 
 describe "TryRubyTutorial" do
-  TutorialTests.create_tests self, 'Tutorials/tryruby_tutorial.rb'
+  TutorialTests.create_tests self, 'tryruby_tutorial.rb'
 end
 
 if not SILVERLIGHT
 describe "HtmlGeneratorTests" do
   it "basically works" do
-    tutorial = Tutorial.get_tutorial('Tutorials/tryruby_tutorial.rb')
+    tutorial = get_standard_tutorial('tryruby_tutorial.rb')
     html_tutorial = HtmlTutorial.new tutorial
     html = html_tutorial.generate_html
     assert_match %r{<h2>Table of Contents</h2>}, html

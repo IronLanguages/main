@@ -75,9 +75,5 @@ namespace IronRuby.Compiler.Ast {
                 return base.GetNodeName(gen);
             }
         }
-
-        internal override MSA.Expression TransformDefinedCondition(AstGenerator/*!*/ gen) {
-            return null;
-        }
     }
 }

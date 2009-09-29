@@ -41,7 +41,7 @@ module Config
   # Set up paths
   if ENV["MERLIN_ROOT"] then
     # This is a dev environment. See http://wiki.github.com/ironruby/ironruby
-    TOPDIR = File.expand_path("bin/Debug", ENV["MERLIN_ROOT"])
+    TOPDIR = ENV["ROWAN_BIN"] || File.expand_path("bin/Debug", ENV["MERLIN_ROOT"])
     CONFIG["bindir"] = TOPDIR
     CONFIG["libdir"] = File.expand_path("../External.LCA_RESTRICTED/Languages/Ruby/redist-libs", ENV["MERLIN_ROOT"])
   else

@@ -1,13 +1,6 @@
 require File.dirname(__FILE__) + '/../../spec_helper'
 
 describe "Converting Ruby arrays to .NET arrays" do
-  csc <<-EOL
-    public partial class Klass {
-      public T[] ArrayAcceptingMethod<T>(T[] arg0) {
-        return arg0;
-      }
-    }
-  EOL
   before :each do
     @method = Klass.new.method(:array_accepting_method)
   end

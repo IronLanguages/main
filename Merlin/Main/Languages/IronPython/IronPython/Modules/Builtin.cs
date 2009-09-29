@@ -165,7 +165,7 @@ namespace IronPython.Modules {
         }
 
         public static object apply(CodeContext/*!*/ context, object func, object args, object kws) {
-            return PythonOps.CallWithArgsTupleAndKeywordDictAndContext(context, func, ArrayUtils.EmptyObjects, ArrayUtils.EmptyStrings, args, kws);
+            return context.LanguageContext.CallWithKeywords(func, args, kws);
         }
 
         public static PythonType basestring {
@@ -1748,7 +1748,7 @@ namespace IronPython.Modules {
 
         private static int GetRangeAsInt(double index, string name) {
             if (index < Int32.MinValue || index > Int32.MaxValue) {
-                throw PythonOps.TypeError("expected integer for " + name + " argument, got float");
+                throw PythonOps.TypeError("range() integer {0} argument expected, got float.", name);
             }
             return (int)index;
         }
