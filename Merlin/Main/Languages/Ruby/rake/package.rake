@@ -38,8 +38,8 @@ namespace :package do
     # %w(ir ipy ipyw).each { |cmd| FileUtils.cp "#{BUILD_BIN}/#{cmd}.exe", "#{PACKAGE_DIR}/bin/" }
     %w(ir).each { |cmd| FileUtils.cp "#{BUILD_BIN}/#{cmd}.exe", "#{PACKAGE_DIR}/bin/" }
 
-#    FileUtils.cp Dir.glob("#{BUILD_BIN}/IronRuby*.dll"), "#{PACKAGE_DIR}/bin"   
-    FileUtils.cp Dir.glob("#{BUILD_BIN}/IronPython*.dll"), "#{PACKAGE_DIR}/bin"
+    FileUtils.cp Dir.glob("#{BUILD_BIN}/IronRuby*.dll"), "#{PACKAGE_DIR}/bin"   
+#    FileUtils.cp Dir.glob("#{BUILD_BIN}/IronPython*.dll"), "#{PACKAGE_DIR}/bin"
     FileUtils.cp Dir.glob("#{BUILD_BIN}/Microsoft.Scripting*.dll"), "#{PACKAGE_DIR}/bin"
     FileUtils.cp "#{BUILD_BIN}/Microsoft.Dynamic.dll", "#{PACKAGE_DIR}/bin"
 

@@ -57,8 +57,10 @@ namespace :compile do
 
   desc "compile IronRuby.Tests"
   task :testhost => [:libraries] do
-    IronRubyCompiler.compile :test_runner
-    IronRubyCompiler.move_config "IronRuby.Tests.exe.config"
+    unless mono?
+      IronRubyCompiler.compile :test_runner
+      IronRubyCompiler.move_config "IronRuby.Tests.exe.config"
+    end
   end
 
   desc "compile IronRuby.Libraries.Scanner"
@@ -81,6 +83,6 @@ namespace :compile do
   task :all => [:compile, :ironpython]
 end
 desc "compile everything"
-task :compile => %w{happy clean_build compile:dlr compile:ruby compile:libraries compile:console compile:generator compile:yaml}
+task :compile => %w{happy clean_build compile:dlr compile:ruby compile:libraries compile:console compile:generator compile:yaml compile:testhost}
 
 
