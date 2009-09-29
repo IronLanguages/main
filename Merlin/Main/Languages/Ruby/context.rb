@@ -296,7 +296,7 @@ class CSProjCompiler
       options = get_compile_path_list(args[:csproj]).join("\n")     
       temp.puts options
       temp.close
-      FileUtils.cp temp.path, File.expand_path("~\\Desktop\\compile")
+
       cmd << " @" << temp.path
       exec cmd
     end
@@ -438,7 +438,7 @@ IronRubyCompiler = CSProjCompiler.new do
 #====================================================================
 # IRONRUBY
 #====================================================================
-  generator :references => ['Microsoft.Scripting.Core.dll', 'Microsoft.Scripting.dll', 'Microsoft.Dynamic.dll', 'IronRuby.dll', '!System.dll'],
+  generator :references => ['Microsoft.Scripting.Core.dll', 'Microsoft.Scripting.dll', 'Microsoft.Scripting.ExtensionAttribute.dll', 'Microsoft.Dynamic.dll', 'IronRuby.dll', '!System.dll'],
             :switches   => ['define:CLR2'],
             :output     => 'ClassInitGenerator.exe',
             :dir        => './ClassInitGenerator'
@@ -449,7 +449,7 @@ IronRubyCompiler = CSProjCompiler.new do
            :dir        => './Ruby',
            :csproj     => 'Ruby.csproj'
           
-  libraries :references => ['Microsoft.Scripting.Core.dll', 'Microsoft.Scripting.dll', 'Microsoft.Dynamic.dll', '!System.Data.dll', '!System.Xml.dll', 'IronRuby.dll', '!System.dll'],
+  libraries :references => ['IronRuby.dll','Microsoft.Scripting.Core.dll', 'Microsoft.Scripting.dll', 'Microsoft.Scripting.ExtensionAttribute.dll', 'Microsoft.Dynamic.dll', '!System.Data.dll', '!System.Xml.dll', '!System.dll'],
             :switches   => ['target:library', 'define:CLR2', 'checked+'],
             :output     => 'IronRuby.Libraries.dll',
             :dir        => 'Libraries.LCA_RESTRICTED',
