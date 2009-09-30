@@ -754,6 +754,7 @@ no_csc do
         alias_method :test_Int32ArrArg, :test_IEnumerableArg
         alias_method :test_ParamsInt32ArrArg, :test_IEnumerableArg
         alias_method :test_ParamsCStructArrArg, :test_IEnumerableArg
+        alias_method :test_HashtableArg, :test_IEnumerableArg
         
         def test_RefInt32Arg(v)
           1
@@ -822,11 +823,13 @@ no_csc do
         def test_ListOfIntArg(v)
           if [List[Fixnum], System::Array[Fixnum], List[Object], Array, 
               System::Array[System::Char], ArrayList, List[System::Char],
-              System::Array[System::Byte], List[System::Byte]].any? {|e| v.is_a?(e)}
+              System::Array[System::Byte], List[System::Byte], Hashtable, 
+              DIntInt, DIntStr, DObjObj, Hash].any? {|e| v.is_a?(e)}
             ArrayList.new << v
           end
         end
         alias_method :test_GenericArg, :test_ListOfIntArg
+        alias_method :test_IDictionaryOfIntIntArg, :test_ListOfIntArg
 
         def test_RefByteArrArg(v)
           if v.is_a? String
