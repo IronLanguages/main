@@ -1,0 +1,1 @@
+fails:System::Char#inspect Outputs a ' delimited string with a (Char) annotation
