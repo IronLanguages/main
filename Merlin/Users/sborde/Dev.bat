@@ -1,6 +1,10 @@
 color 47
 
-set MERLIN_TFS=c:\vs_langs01_s\Merlin\Main
+if "%COMPUTERNAME%" == "SBORDE1" (
+    set MERLIN_TFS=d:\vs_langs01_s\Merlin\Main
+) else (
+    set MERLIN_TFS=c:\vs_langs01_s\Merlin\Main
+)
 path=%path%;%MERLIN_TFS%\External\Tools
 path=%path%;%ProgramFiles%\Windows Resource Kits\Tools
 path=%path%;%MERLIN_TFS%\..\External.LCA_RESTRICTED\languages\ruby\ruby-1.8.6p368\bin
