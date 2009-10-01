@@ -172,10 +172,32 @@ namespace IronPython.Modules {
                 // their original value.
                 string newdir = dir;
                 
+                if (IsWindows()) {
+                    if (newdir.Length >= 2 && newdir[1] == ':' && 
+                        (newdir[0] < 'a' || newdir[0] > 'z') && (newdir[0] < 'A' || newdir[0] > 'Z')) {
+                        // invalid drive, .NET will reject this
+                        if (newdir.Length == 2) {
+                            return newdir + Path.DirectorySeparatorChar;
+                        } else if (newdir[2] == Path.DirectorySeparatorChar) {
+                            return newdir;
+                        } else {
+                            return newdir.Substring(0, 2) + Path.DirectorySeparatorChar + newdir.Substring(2);
+                        }
+                    }
+                    if (newdir.Length > 2 && newdir.IndexOf(':', 2) != -1) {
+                        // : is an invalid char if it's not in the 2nd position
+                        newdir = newdir.Substring(0, 2) + newdir.Substring(2).Replace(':', Char.MaxValue);
+                    }
+
+                    if (newdir.Length > 0 && newdir[0] == ':') {
+                        newdir = Char.MaxValue + newdir.Substring(1);
+                    }
+                }
+
                 foreach (char c in Path.GetInvalidPathChars()) {
                     newdir = newdir.Replace(c, Char.MaxValue);
                 }
-
+                
                 // walk backwards through the path replacing the same characters.  We should have
                 // only updated the directory leaving the filename which we're fixing.
                 string res = context.LanguageContext.DomainManager.Platform.GetFullPath(newdir);
@@ -193,6 +215,12 @@ namespace IronPython.Modules {
 
                 return res;
             }
+        }
+
+        private static bool IsWindows() {
+            return Environment.OSVersion.Platform == PlatformID.Win32NT ||
+                Environment.OSVersion.Platform == PlatformID.Win32S ||
+                Environment.OSVersion.Platform == PlatformID.Win32Windows;
         }
 
 #if !SILVERLIGHT
@@ -1359,12 +1387,15 @@ namespace IronPython.Modules {
             return ToPythonException(e, null);
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Interoperability", "CA1404:CallGetLastErrorImmediatelyAfterPInvoke")]
         private static Exception ToPythonException(Exception e, string filename) {
             if (e is ArgumentException || e is ArgumentNullException || e is ArgumentTypeException) {
                 // rethrow reasonable exceptions
                 return ExceptionHelpers.UpdateForRethrow(e);
             }
-
+#if !SILVERLIGHT
+            int error = Marshal.GetLastWin32Error();
+#endif
             string message = e.Message;
             int errorCode;
 
@@ -1385,6 +1416,20 @@ namespace IronPython.Modules {
                         message = "Access is denied";
                     }
                 }
+
+#if !SILVERLIGHT
+                IOException ioe = e as IOException;
+                if (ioe != null) {
+                    switch (error) {
+                        case PythonExceptions._WindowsError.ERROR_DIR_NOT_EMPTY:
+                            throw PythonExceptions.CreateThrowable(WindowsError, error, "The directory is not empty");
+                        case PythonExceptions._WindowsError.ERROR_ACCESS_DENIED:
+                            throw PythonExceptions.CreateThrowable(WindowsError, error, "Access is denied");
+                        case PythonExceptions._WindowsError.ERROR_SHARING_VIOLATION:
+                            throw PythonExceptions.CreateThrowable(WindowsError, error, "The process cannot access the file because it is being used by another process");
+                    }
+                }
+#endif
 
                 errorCode = System.Runtime.InteropServices.Marshal.GetHRForException(e);
                 if ((errorCode & ~0xfff) == (unchecked((int)0x80070000))) {

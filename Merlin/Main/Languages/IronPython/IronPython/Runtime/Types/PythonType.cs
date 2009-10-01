@@ -1965,7 +1965,19 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
             if (CheckForSlotWithDefault(context, bases, slots, "__dict__")) {
                 _attrs |= PythonTypeAttributes.HasDictionary;
-                AddSlot("__dict__", new PythonTypeDictSlot(this));
+                PythonTypeSlot pts;
+                bool inheritsDict = false;
+                for(int i = 1; i<_resolutionOrder.Count; i++) {
+                    PythonType pt = _resolutionOrder[i];
+                    if (pt.TryResolveSlot(context, "__dict__", out pts)) {
+                        inheritsDict = true;
+                        break;
+                    }
+                }
+
+                if (!inheritsDict) {
+                    AddSlot("__dict__", new PythonTypeDictSlot(this));
+                }
             }
 
             object modName;

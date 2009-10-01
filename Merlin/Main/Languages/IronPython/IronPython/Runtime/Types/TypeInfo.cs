@@ -921,12 +921,7 @@ namespace IronPython.Runtime.Types {
         class DocumentationDescriptor : PythonTypeSlot {
             internal override bool TryGetValue(CodeContext context, object instance, PythonType owner, out object value) {
                 if (owner.IsSystemType) {
-                    if (instance is IDynamicMetaObjectProvider && !(instance is IPythonObject) && !DynamicHelpers.GetPythonType(instance).IsPythonType) {
-                        // ask the foreign IDO for it's documentation
-                        value = PythonContext.GetContext(context).GetDocumentation(instance);
-                    } else {
-                        value = PythonTypeOps.GetDocumentation(owner.UnderlyingSystemType);
-                    }
+                    value = PythonTypeOps.GetDocumentation(owner.UnderlyingSystemType);
                     return true;
                 }
 

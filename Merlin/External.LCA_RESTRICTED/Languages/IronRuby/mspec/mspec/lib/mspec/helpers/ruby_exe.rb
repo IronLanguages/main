@@ -87,19 +87,18 @@ class Object
     when :install_name
       bin = Config::CONFIG["RUBY_INSTALL_NAME"] || Config::CONFIG["ruby_install_name"]
       bin << (Config::CONFIG['EXEEXT'] || Config::CONFIG['exeext'] || '')
-      File.join(Config::CONFIG['bindir'], bin)
+      File.join(File.expand_path(Config::CONFIG['bindir']), bin)
     end
   end
 
   def resolve_ruby_exe
     [:env, :engine, :name, :install_name].each do |option|
       next unless cmd = ruby_exe_options(option)
-      exe = cmd.split.first
 
       # It has been reported that File.executable is not reliable
       # on Windows platforms (see commit 56bc555c). So, we check the
       # platform. 
-      if File.exists?(exe) and (SpecGuard.windows? or File.executable?(exe))
+      if File.exists?(cmd) and (SpecGuard.windows? or File.executable?(cmd))
         return cmd
       end
     end
@@ -111,7 +110,7 @@ class Object
     working_dir = opts[:dir] || "."
     Dir.chdir(working_dir) do
       body = "-e #{code.inspect}" if code and not File.exists?(code)
-      cmd = [RUBY_EXE, ENV['RUBY_FLAGS'], opts[:options], body, opts[:args]]
+      cmd = [RUBY_EXE.inspect, ENV['RUBY_FLAGS'], opts[:options], body, opts[:args]]
       `#{cmd.compact.join(' ')}`
     end
   end

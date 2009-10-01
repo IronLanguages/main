@@ -38,7 +38,7 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 namespace IronRuby.Runtime.Calls {
     using Ast = Expression;
 
-    internal sealed class RubyOverloadResolver : OverloadResolver {
+    public sealed class RubyOverloadResolver : OverloadResolver {
         private readonly CallArguments/*!*/ _args;
         private readonly MetaObjectBuilder/*!*/ _metaBuilder;
         private readonly SelfCallConvention _callConvention;
@@ -58,19 +58,19 @@ namespace IronRuby.Runtime.Calls {
         private ParameterExpression _listVariable;
         private IList _list;
 
-        public RubyContext/*!*/ Context {
+        internal RubyContext/*!*/ Context {
             get { return _args.RubyContext; }
         }
 
-        public Expression/*!*/ ScopeExpression {
+        internal Expression/*!*/ ScopeExpression {
             get { return _args.MetaScope.Expression; }
         }
 
-        public Expression/*!*/ ContextExpression {
+        internal Expression/*!*/ ContextExpression {
             get { return _args.MetaContext.Expression; }
         }
 
-        public RubyOverloadResolver(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, SelfCallConvention callConvention,
+        internal RubyOverloadResolver(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, SelfCallConvention callConvention,
             bool implicitProtocolConversions)
             : base(args.RubyContext.Binder) {
             _args = args;

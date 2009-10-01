@@ -29,7 +29,7 @@ namespace IronRuby.StandardLibrary.Open3 {
             object self, 
             [DefaultProtocol, NotNull]MutableString/*!*/ command) {
 
-            Process process = RubyIOOps.OpenPipe(context, command, true, true, true);
+            Process process = RubyProcess.CreateProcess(context, command, true, true, true);
             RubyArray result = new RubyArray();
             result.Add(new RubyIO(context, null, process.StandardInput, IOMode.WriteOnly));
             result.Add(new RubyIO(context, process.StandardOutput, null, IOMode.ReadOnly));

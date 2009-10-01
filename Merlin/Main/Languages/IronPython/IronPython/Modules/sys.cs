@@ -261,7 +261,7 @@ namespace IronPython.Modules {
 
             if (o == null) {
                 pyContext.UnregisterTracebackHandler();
-                pyContext.TracebackListener.SetTrace(null, null);
+                PythonTracebackListener.SetTrace(null, null);
             } else {
                 // We're following CPython behavior here.
                 // If CurrentPythonFrame is not null then we're currently inside a traceback, and
@@ -270,7 +270,7 @@ namespace IronPython.Modules {
                 if (pyThread == null || !pyThread.InTraceback) {
                     pyContext.PushTracebackHandler(new PythonTracebackListener((PythonContext)context.LanguageContext));
                     pyContext.RegisterTracebackHandler();
-                    pyContext.TracebackListener.SetTrace(o, (TracebackDelegate)Converter.ConvertToDelegate(o, typeof(TracebackDelegate)));
+                    PythonTracebackListener.SetTrace(o, (TracebackDelegate)Converter.ConvertToDelegate(o, typeof(TracebackDelegate)));
                 }
             }
         }
@@ -291,12 +291,7 @@ namespace IronPython.Modules {
         }
 
         public static object gettrace(CodeContext/*!*/ context) {
-            var listener = PythonContext.GetContext(context).TracebackListener;
-
-            if (listener != null) {
-                return listener.GetTraceObject();
-            }
-            return null;
+            return PythonTracebackListener.GetTraceObject();
         }
 
         public static void setrecursionlimit(CodeContext/*!*/ context, int limit) {

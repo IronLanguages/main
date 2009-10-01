@@ -165,7 +165,11 @@ namespace IronPython.Hosting {
             InitializePath(ref pathIndex);
             InitializeModules();
             InitializeExtensionDLLs();
+
             ImportSite();
+
+            PythonContext.InsertIntoPath(0, ".");
+            PythonContext.InsertIntoPath(++pathIndex, PythonContext.DomainManager.Platform.CurrentDirectory);
 
             if (Options.Command == null && Options.FileName != null) {
                 if (Options.FileName == "-") {
@@ -202,9 +206,6 @@ namespace IronPython.Hosting {
         }
         
         private void InitializePath(ref int pathIndex) {
-
-            PythonContext.InsertIntoPath(pathIndex++, PythonContext.DomainManager.Platform.CurrentDirectory);
-
 #if !SILVERLIGHT // paths, environment vars
             if (!Options.IgnoreEnvironmentVariables) {
                 string path = Environment.GetEnvironmentVariable("IRONPYTHONPATH");

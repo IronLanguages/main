@@ -1572,10 +1572,21 @@ namespace IronRuby.Runtime {
 
         #endregion
 
+        #region Strings, Encodings
+
         [Emitted]
         public static RubyEncoding/*!*/ CreateEncoding(int codepage) {
             return RubyEncoding.GetRubyEncoding(codepage);
         }
+
+        [Emitted, Obsolete("Internal only")]
+        public static byte[]/*!*/ GetMutableStringBytes(MutableString/*!*/ str) {
+            return str.GetByteArray();
+        }
+
+        #endregion
+
+        #region Booleans
 
         [Emitted]
         public static bool IsTrue(object obj) {
@@ -1596,6 +1607,8 @@ namespace IronRuby.Runtime {
         public static object NullIfTrue(object obj) {
             return (obj is bool && !(bool)obj || obj == null) ? DefaultArgument : null;
         }
+
+        #endregion
 
         #region Exceptions
 
@@ -1828,6 +1841,8 @@ namespace IronRuby.Runtime {
             return module == _currentDeclaringModule && methodName == _currentMethodName;
         }
 
+        #region Ranges
+
         [Emitted]
         public static Range/*!*/ CreateInclusiveRange(object begin, object end, RubyScope/*!*/ scope, BinaryOpStorage/*!*/ comparisonStorage) {
             return new Range(comparisonStorage, scope.RubyContext, begin, end, false);
@@ -1848,11 +1863,7 @@ namespace IronRuby.Runtime {
             return new Range(begin, end, true);
         }
 
-        [Emitted]
-        public static object CreateDefaultInstance() {
-            // nop (stub)
-            return null;
-        }
+        #endregion
 
         #region Dynamic Operations
 
@@ -2357,6 +2368,12 @@ namespace IronRuby.Runtime {
 
         [Emitted]
         public static void X(string marker) {
+        }
+        
+        [Emitted]
+        public static object CreateDefaultInstance() {
+            // nop (stub)
+            return null;
         }
     }
 }
