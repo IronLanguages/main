@@ -24,4 +24,8 @@ describe :float_modulo, :shared => true do
       lambda { 1.0.send(@method, 0.0) }.should raise_error(ZeroDivisionError)
     end
   end
+
+  it "allows large operands without error" do
+    lambda { 1.0.send(@method, 2**50000) }.should_not raise_error
+  end
 end
