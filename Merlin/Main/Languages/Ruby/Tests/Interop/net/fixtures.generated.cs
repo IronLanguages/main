@@ -1087,7 +1087,7 @@ namespace NotEmptyNamespace {
       public static int Bar() { return 1; }
     }
   }
-#line 1 "./ruby/fixtures/classes.rb"
+#line 14 "./ruby/fixtures/classes.rb"
 namespace CLRNew {
     public class Ctor {
       public int Tracker {get; set;}
@@ -1098,28 +1098,112 @@ namespace CLRNew {
     }
   }
   public class PublicNameHolder {
-    public string a() { return "a";}
-    public string A() { return "A";}
-    public string Unique() { return "Unique"; }
-    public string snake_case() {return "snake_case";}
-    public string CamelCase() {return "CamelCase";}
-    public string Mixed_Snake_case() {return "Mixed_Snake_case";}
-    public string CAPITAL() { return "CAPITAL";}
-    public string PartialCapitalID() { return "PartialCapitalID";}
-    public string PartialCapitalId() { return "PartialCapitalId";}
-    public string __LeadingCamelCase() { return "__LeadingCamelCase";}
-    public string __leading_snake_case() { return "__leading_snake_case";}
-    public string foNBar() { return "foNBar"; }
-    public string fNNBar() { return "fNNBar"; }
-    public string NNNBar() { return "NNNBar"; }
-    public string MyUIApp() { return "MyUIApp"; }
-    public string MyIdYA() { return "MyIdYA"; }
-    public string NaN() { return "NaN"; }
-    public string NaNa() { return "NaNa"; }
+    public string a(){return "a";}
+    public string A(){return "A";}
+    public string Unique(){return "Unique";}
+    public string snake_case(){return "snake_case";}
+    public string CamelCase(){return "CamelCase";}
+    public string Mixed_Snake_case(){return "Mixed_Snake_case";}
+    public string CAPITAL(){return "CAPITAL";}
+    public string PartialCapitalID(){return "PartialCapitalID";}
+    public string PartialCapitalId(){return "PartialCapitalId";}
+    public string __LeadingCamelCase(){return "__LeadingCamelCase";}
+    public string __leading_snake_case(){return "__leading_snake_case";}
+    public string foNBar(){return "foNBar";}
+    public string fNNBar(){return "fNNBar";}
+    public string NNNBar(){return "NNNBar";}
+    public string MyUIApp(){return "MyUIApp";}
+    public string MyIdYA(){return "MyIdYA";}
+    public string NaN(){return "NaN";}
+    public string NaNa(){return "NaNa";}
+    
   }
 
-  public class SubPublicNameHolder : PublicNameHolder {
+  public class StaticNameHolder {
+    public static string a(){return "a";}
+    public static string A(){return "A";}
+    public static string Unique(){return "Unique";}
+    public static string snake_case(){return "snake_case";}
+    public static string CamelCase(){return "CamelCase";}
+    public static string Mixed_Snake_case(){return "Mixed_Snake_case";}
+    public static string CAPITAL(){return "CAPITAL";}
+    public static string PartialCapitalID(){return "PartialCapitalID";}
+    public static string PartialCapitalId(){return "PartialCapitalId";}
+    public static string __LeadingCamelCase(){return "__LeadingCamelCase";}
+    public static string __leading_snake_case(){return "__leading_snake_case";}
+    public static string foNBar(){return "foNBar";}
+    public static string fNNBar(){return "fNNBar";}
+    public static string NNNBar(){return "NNNBar";}
+    public static string MyUIApp(){return "MyUIApp";}
+    public static string MyIdYA(){return "MyIdYA";}
+    public static string NaN(){return "NaN";}
+    public static string NaNa(){return "NaNa";}
+    
   }
+
+  public class SubPublicNameHolder : PublicNameHolder {}
+
+  public class SubStaticNameHolder : StaticNameHolder {}
+    
+  public class NotMangled {
+  public string Class(){return "Class";}
+    public string Clone(){return "Clone";}
+    public string Display(){return "Display";}
+    public string Dup(){return "Dup";}
+    public string Extend(){return "Extend";}
+    public string Freeze(){return "Freeze";}
+    public string Hash(){return "Hash";}
+    public string Initialize(){return "Initialize";}
+    public string Inspect(){return "Inspect";}
+    public string InstanceEval(){return "InstanceEval";}
+    public string InstanceExec(){return "InstanceExec";}
+    public string InstanceVariableGet(){return "InstanceVariableGet";}
+    public string InstanceVariableSet(){return "InstanceVariableSet";}
+    public string InstanceVariables(){return "InstanceVariables";}
+    public string Method(){return "Method";}
+    public string Methods(){return "Methods";}
+    public string ObjectId(){return "ObjectId";}
+    public string PrivateMethods(){return "PrivateMethods";}
+    public string ProtectedMethods(){return "ProtectedMethods";}
+    public string PublicMethods(){return "PublicMethods";}
+    public string Send(){return "Send";}
+    public string SingletonMethods(){return "SingletonMethods";}
+    public string Taint(){return "Taint";}
+    public string Untaint(){return "Untaint";}
+    
+  }
+
+  public class SubNotMangled : NotMangled {}
+  
+  public class StaticNotMangled {
+  public static string Class(){return "Class";}
+    public static string Clone(){return "Clone";}
+    public static string Display(){return "Display";}
+    public static string Dup(){return "Dup";}
+    public static string Extend(){return "Extend";}
+    public static string Freeze(){return "Freeze";}
+    public static string Hash(){return "Hash";}
+    public static string Initialize(){return "Initialize";}
+    public static string Inspect(){return "Inspect";}
+    public static string InstanceEval(){return "InstanceEval";}
+    public static string InstanceExec(){return "InstanceExec";}
+    public static string InstanceVariableGet(){return "InstanceVariableGet";}
+    public static string InstanceVariableSet(){return "InstanceVariableSet";}
+    public static string InstanceVariables(){return "InstanceVariables";}
+    public static string Method(){return "Method";}
+    public static string Methods(){return "Methods";}
+    public static string ObjectId(){return "ObjectId";}
+    public static string PrivateMethods(){return "PrivateMethods";}
+    public static string ProtectedMethods(){return "ProtectedMethods";}
+    public static string PublicMethods(){return "PublicMethods";}
+    public static string Send(){return "Send";}
+    public static string SingletonMethods(){return "SingletonMethods";}
+    public static string Taint(){return "Taint";}
+    public static string Untaint(){return "Untaint";}
+    
+  }
+
+  public class SubStaticNotMangled : StaticNotMangled {}
 #line 1 "./struct/fixtures/classes.rb"
 public struct EmptyStruct {}
   public struct CStruct { public int m1() {return 1;}}
