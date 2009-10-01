@@ -202,3 +202,16 @@ describe "Enumerable blocks (Codeplex 1301)" do
   end
 
 end
+
+describe "Monkeypatching Exception classes" do
+  #TODO This needs more complete testing, but this covers the regression case.
+  it "should call the monkey patched method" do
+    begin
+      LoadError.metaclass_alias :_new, :new
+      LoadError.metaclass_def(:new) {|message| ZeroDivisionError.new message }
+      lambda { require 'non-existant' }.should raise_error(ZeroDivisionError)
+    ensure
+      LoadError.metaclass_alias :new, :_new
+    end
+  end
+end
