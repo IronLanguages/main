@@ -62,10 +62,11 @@ describe "Kernel#system" do
     Kernel.should have_private_instance_method(:system)
   end
 
-
-  it "expands shell variables when given a single string argument" do
-    result = system("ruby #{@helper_script} #{@shell_var} foo")
-    result.should be_true
+  ruby_version_is "1.9" do
+    it "expands shell variables when given a single string argument" do
+      result = system("ruby #{@helper_script} #{@shell_var} foo")
+      result.should be_true
+    end
   end
   
   it "does not expand shell variables when given multiples arguments" do

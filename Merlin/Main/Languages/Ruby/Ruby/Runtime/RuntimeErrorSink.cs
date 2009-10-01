@@ -57,7 +57,7 @@ namespace IronRuby.Runtime {
                     } else {
                         codeLine = null;
                     }
-                    encoding = RubyEncoding.GetRubyEncoding(reader.Encoding);
+                    encoding = reader.Encoding != null ? RubyEncoding.GetRubyEncoding(reader.Encoding) : RubyEncoding.UTF8;
                 }
             } else {
                 path = null;

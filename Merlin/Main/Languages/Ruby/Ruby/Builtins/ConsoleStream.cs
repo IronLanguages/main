@@ -25,7 +25,7 @@ namespace IronRuby.Builtins {
     /// <summary>
     /// A custom Stream class that forwards calls to Console In/Out/Error based on ConsoleType
     /// </summary>
-    internal class ConsoleStream : Stream {
+    internal sealed class ConsoleStream : Stream {
         private ConsoleStreamType _consoleType;
         private readonly SharedIO _io;
 
@@ -33,6 +33,10 @@ namespace IronRuby.Builtins {
             Assert.NotNull(io);
             _consoleType = consoleType;
             _io = io;
+        }
+
+        public ConsoleStreamType StreamType {
+            get { return _consoleType; }
         }
 
         public override bool CanRead {

@@ -13,6 +13,10 @@
  *
  * ***************************************************************************/
 
+#if !SILVERLIGHT
+using System.IO.Compression;
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -21,9 +25,6 @@ using IronRuby.Builtins;
 using IronRuby.Runtime;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Generation;
-#if !SILVERLIGHT
-    using System.IO.Compression;
-#endif
 using System.Diagnostics;
 using System.Text;
 using System.Runtime.InteropServices;

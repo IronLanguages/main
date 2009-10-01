@@ -361,11 +361,11 @@ namespace Microsoft.Scripting {
         }
 
         /// <summary>
-        /// A string like  "pecified path is invalid."
+        /// A string like  "Specified path is invalid."
         /// </summary>
         internal static string InvalidPath {
             get {
-                return "pecified path is invalid.";
+                return "Specified path is invalid.";
             }
         }
 
@@ -790,7 +790,7 @@ namespace Microsoft.Scripting {
         }
 
         /// <summary>
-        /// ArgumentException with message like "pecified path is invalid."
+        /// ArgumentException with message like "Specified path is invalid."
         /// </summary>
         internal static Exception InvalidPath() {
             return new ArgumentException(Strings.InvalidPath);

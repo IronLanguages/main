@@ -203,7 +203,7 @@ namespace Microsoft.Scripting {
                         new[] { tmp },
                         Expression.Condition(
                             Expression.Call(
-                                Expression.Constant(variable),
+                                Variable(variable),
                                 variable.GetType().GetMethod("TryGetValue"),
                                 tmp
                             ),
@@ -215,6 +215,17 @@ namespace Microsoft.Scripting {
                 );
             }
 
+            private static Expression Variable(IScopeVariable variable) {
+                
+                return Expression.Convert(
+                    Expression.Property(
+                        Expression.Constant(((IWeakReferencable)variable).WeakReference),
+                        typeof(WeakReference).GetProperty("Target")
+                    ), 
+                    variable.GetType()
+                );
+            }
+
             public override DynamicMetaObject BindSetMember(SetMemberBinder binder, DynamicMetaObject value) {
                 IScopeVariable variable = Value.GetVariable(binder.Name, binder.IgnoreCase);
 
@@ -222,7 +233,7 @@ namespace Microsoft.Scripting {
                 return new DynamicMetaObject(
                     Expression.Block(
                         Expression.Call(
-                            Expression.Constant(variable),
+                            Variable(variable),
                             variable.GetType().GetMethod("SetValue"),
                             objExpression
                         ),
@@ -237,7 +248,7 @@ namespace Microsoft.Scripting {
                 return new DynamicMetaObject(
                     Expression.Condition(
                         Expression.Call(
-                            Expression.Constant(variable),
+                            Variable(variable),
                             variable.GetType().GetMethod("DeleteValue")
                         ),
                         Expression.Default(binder.ReturnType),
@@ -291,6 +302,12 @@ namespace Microsoft.Scripting {
         bool DeleteValue();
     }
 
+    internal interface IWeakReferencable {
+        WeakReference WeakReference {
+            get;
+        }
+    }
+
     /// <summary>
     /// Boxes the value for storage in a scope. Languages or consumers of the scope
     /// can save this value and use it to get/set the current value in the scope for
@@ -298,8 +315,9 @@ namespace Microsoft.Scripting {
     /// 
     /// ScopeVariables are case sensitive and will only refer to a single value.
     /// </summary>
-    public sealed class ScopeVariable : IScopeVariable {
+    public sealed class ScopeVariable : IScopeVariable, IWeakReferencable {
         private object _value;
+        private WeakReference _weakref;
         private static readonly object _novalue = new object();
         
         internal ScopeVariable() {
@@ -345,6 +363,20 @@ namespace Microsoft.Scripting {
         }
 
         #endregion
+
+        #region IWeakReferencable Members
+
+        public WeakReference WeakReference {
+            get {
+                if (_weakref == null) {
+                    _weakref = new WeakReference(this);
+                }
+
+                return _weakref;
+            }
+        }
+
+        #endregion
     }
 
     /// <summary>
@@ -355,9 +387,10 @@ namespace Microsoft.Scripting {
     /// ScopeVariablesIgnoreCase are case insensitive and may access different casings
     /// depending on how other gets/sets occur in the scope.
     /// </summary>
-    public sealed class ScopeVariableIgnoreCase : IScopeVariable {
+    public sealed class ScopeVariableIgnoreCase : IScopeVariable, IWeakReferencable {
         private readonly string _firstCasing;
         private readonly ScopeVariable _firstVariable;
+        private WeakReference _weakref;
         private Dictionary<string, ScopeVariable> _overflow;
         
         internal ScopeVariableIgnoreCase(string casing) {
@@ -492,6 +525,20 @@ namespace Microsoft.Scripting {
                     _overflow[name] = res = new ScopeVariable();
                 }
                 return res;
+            }
+        }
+
+        #endregion
+
+        #region IWeakReferencable Members
+
+        public WeakReference WeakReference {
+            get {
+                if (_weakref == null) {
+                    _weakref = new WeakReference(this);
+                }
+
+                return _weakref;
             }
         }
 

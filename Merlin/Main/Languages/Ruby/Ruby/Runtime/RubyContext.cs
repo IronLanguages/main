@@ -2475,8 +2475,8 @@ namespace IronRuby.Runtime {
             return new InteropBinder.CreateInstance(this, callInfo);
         }
 
-        public override ConvertBinder/*!*/ CreateConvertBinder(Type toType, bool explicitCast) {
-            return new InteropBinder.Convert(this, toType, explicitCast);
+        public override ConvertBinder/*!*/ CreateConvertBinder(Type toType, bool? explicitCast) {
+            return new InteropBinder.Convert(this, toType, explicitCast ?? true);
         }
 
         // TODO: override GetMemberNames?

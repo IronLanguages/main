@@ -35,8 +35,8 @@ namespace IronPython.Runtime {
     internal sealed class PythonTracebackListener : Debugging.ITraceCallback {
         private readonly PythonContext _pythonContext;
         [ThreadStatic] private static TraceThread _threads;
-        [ThreadStatic] private TracebackDelegate _globalTraceDispatch;
-        [ThreadStatic] private object _globalTraceObject;
+        [ThreadStatic] private static TracebackDelegate _globalTraceDispatch;
+        [ThreadStatic] private static object _globalTraceObject;
         private bool _exceptionThrown;
         
 #if PROFILE_SUPPORT
@@ -59,12 +59,12 @@ namespace IronPython.Runtime {
             }
         }
 
-        internal void SetTrace(object function, TracebackDelegate traceDispatch) {
+        internal static void SetTrace(object function, TracebackDelegate traceDispatch) {
             _globalTraceDispatch = traceDispatch;
             _globalTraceObject = function;
         }
 
-        internal object GetTraceObject() {
+        internal static object GetTraceObject() {
             return _globalTraceObject;
         }
 
@@ -178,14 +178,14 @@ namespace IronPython.Runtime {
             }
 
             bool traceDispatchThrew = true;
-            _pythonContext.TracePipeline.TraceCallback = null;
+            PythonContext.TracePipeline.TraceCallback = null;
             thread.InTraceback = true;
             try {
                 traceDispatch = traceDispatch(pyFrame, traceEvent, args);
                 traceDispatchThrew = false;
             } finally {
                 thread.InTraceback = false;
-                _pythonContext.TracePipeline.TraceCallback = this;
+                PythonContext.TracePipeline.TraceCallback = this;
 
                 if (traceDispatchThrew) {
                     // We're matching CPython's behavior here.  If the trace dispatch throws any exceptions
