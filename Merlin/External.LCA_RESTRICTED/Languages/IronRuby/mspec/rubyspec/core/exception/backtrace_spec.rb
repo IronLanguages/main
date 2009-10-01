@@ -69,4 +69,11 @@ describe "Exception#backtrace" do
 
     e.backtrace.join("\n").should =~ /backtrace_spec/
   end
+
+  it "returns proper line numbers, not 16707566" do
+    backtrace = ruby_exe(fixture(__FILE__, "backtrace.rb"), :args => "2>&1").chomp
+    backtrace.include?("backtrace.rb:2:in `foo'").should be_true
+    backtrace.include?("backtrace.rb:5").should be_true
+    backtrace.include?("16707566").should be_false
+  end
 end
