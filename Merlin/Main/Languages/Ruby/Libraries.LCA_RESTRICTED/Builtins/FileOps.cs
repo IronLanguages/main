@@ -91,9 +91,9 @@ namespace IronRuby.Builtins {
             PATH_SEPARATOR = MutableString.CreateAscii(PathSeparatorChar.ToString()).Freeze();
         }
 
-        private const char AltDirectorySeparatorChar = '\\';
-        private const char DirectorySeparatorChar = '/';
-        private const char PathSeparatorChar = ';';
+        private const char AltDirectorySeparatorChar = Path.AltDirectorySeparatorChar;
+        private const char DirectorySeparatorChar = Path.DirectorySeparatorChar;
+        private const char PathSeparatorChar = Path.PathSeparator;
 
         internal static bool IsDirectorySeparator(int c) {
             return c == DirectorySeparatorChar || c == AltDirectorySeparatorChar;
