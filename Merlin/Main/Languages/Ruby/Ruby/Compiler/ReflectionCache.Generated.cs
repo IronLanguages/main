@@ -248,6 +248,8 @@ namespace IronRuby.Compiler {
         private static MethodInfo _GetMethodUnwinderReturnValue;
         public static MethodInfo/*!*/ GetMissingConstant { get { return _GetMissingConstant ?? (_GetMissingConstant = GetMethod(typeof(RubyOps), "GetMissingConstant")); } }
         private static MethodInfo _GetMissingConstant;
+        public static MethodInfo/*!*/ GetMutableStringBytes { get { return _GetMutableStringBytes ?? (_GetMutableStringBytes = GetMethod(typeof(RubyOps), "GetMutableStringBytes")); } }
+        private static MethodInfo _GetMutableStringBytes;
         public static MethodInfo/*!*/ GetParentLocals { get { return _GetParentLocals ?? (_GetParentLocals = GetMethod(typeof(RubyOps), "GetParentLocals")); } }
         private static MethodInfo _GetParentLocals;
         public static MethodInfo/*!*/ GetParentScope { get { return _GetParentScope ?? (_GetParentScope = GetMethod(typeof(RubyOps), "GetParentScope")); } }
@@ -300,8 +302,6 @@ namespace IronRuby.Compiler {
         private static MethodInfo _IsClrSingletonRuleValid;
         public static MethodInfo/*!*/ IsDefinedClassVariable { get { return _IsDefinedClassVariable ?? (_IsDefinedClassVariable = GetMethod(typeof(RubyOps), "IsDefinedClassVariable")); } }
         private static MethodInfo _IsDefinedClassVariable;
-        public static MethodInfo/*!*/ IsDefinedExpressionConstant { get { return _IsDefinedExpressionConstant ?? (_IsDefinedExpressionConstant = GetMethod(typeof(RubyOps), "IsDefinedExpressionConstant")); } }
-        private static MethodInfo _IsDefinedExpressionConstant;
         public static MethodInfo/*!*/ IsDefinedExpressionQualifiedConstant { get { return _IsDefinedExpressionQualifiedConstant ?? (_IsDefinedExpressionQualifiedConstant = GetMethod(typeof(RubyOps), "IsDefinedExpressionQualifiedConstant")); } }
         private static MethodInfo _IsDefinedExpressionQualifiedConstant;
         public static MethodInfo/*!*/ IsDefinedGlobalConstant { get { return _IsDefinedGlobalConstant ?? (_IsDefinedGlobalConstant = GetMethod(typeof(RubyOps), "IsDefinedGlobalConstant")); } }

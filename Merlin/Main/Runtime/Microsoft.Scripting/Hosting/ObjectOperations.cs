@@ -203,14 +203,16 @@ namespace Microsoft.Scripting.Hosting {
         }
 
         /// <summary>
-        /// Convers the object obj to the type T.
+        /// Converts the object obj to the type T.  The conversion will be explicit or implicit depending on 
+        /// what the langauge prefers.
         /// </summary>
         public T ConvertTo<T>(object obj) {
             return _ops.ConvertTo<T>(obj);
         }
 
         /// <summary>
-        /// Converts the object obj to the type type.
+        /// Converts the object obj to the type type. The conversion will be explicit or implicit depending on 
+        /// what the langauge prefers.
         /// </summary>
         public object ConvertTo(object obj, Type type) {
             ContractUtils.RequiresNotNull(type, "type");
@@ -220,6 +222,8 @@ namespace Microsoft.Scripting.Hosting {
 
         /// <summary>
         /// Converts the object obj to the type T.  Returns true if the value can be converted, false if it cannot.
+        /// 
+        /// The conversion will be explicit or implicit depending on what the langauge prefers.
         /// </summary>
         public bool TryConvertTo<T>(object obj, out T result) {
             return _ops.TryConvertTo<T>(obj, out result);
@@ -227,6 +231,8 @@ namespace Microsoft.Scripting.Hosting {
 
         /// <summary>
         /// Converts the object obj to the type type.  Returns true if the value can be converted, false if it cannot.
+        /// 
+        /// The conversion will be explicit or implicit depending on what the langauge prefers.
         /// </summary>
         public bool TryConvertTo(object obj, Type type, out object result) {
             return _ops.TryConvertTo(obj, type, out result);
@@ -266,6 +272,40 @@ namespace Microsoft.Scripting.Hosting {
             return _ops.TryExplicitConvertTo(obj, type, out result);
         }
 
+
+        /// <summary>
+        /// Converts the object obj to the type T including implicit conversions.
+        /// </summary>
+        public T ImplicitConvertTo<T>(object obj) {
+            return _ops.ImplicitConvertTo<T>(obj);
+        }
+
+        /// <summary>
+        /// Converts the object obj to the type type including implicit conversions.
+        /// </summary>
+        public object ImplicitConvertTo(object obj, Type type) {
+            ContractUtils.RequiresNotNull(type, "type");
+
+            return _ops.ImplicitConvertTo(obj, type);
+        }
+
+        /// <summary>
+        /// Converts the object obj to the type T including implicit conversions.
+        /// 
+        /// Returns true if the value can be converted, false if it cannot.
+        /// </summary>
+        public bool TryImplicitConvertTo<T>(object obj, out T result) {
+            return _ops.TryImplicitConvertTo<T>(obj, out result);
+        }
+
+        /// <summary>
+        /// Converts the object obj to the type type including implicit conversions.  
+        /// 
+        /// Returns true if the value can be converted, false if it cannot.
+        /// </summary>
+        public bool TryImplicitConvertTo(object obj, Type type, out object result) {
+            return _ops.TryImplicitConvertTo(obj, type, out result);
+        }
 
         /// <summary>
         /// Performs a generic unary operation on the specified target and returns the result.

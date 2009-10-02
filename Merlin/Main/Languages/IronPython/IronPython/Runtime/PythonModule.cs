@@ -21,6 +21,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
+using System.Runtime.CompilerServices;
 using System.Threading;
 
 using Microsoft.Scripting;
@@ -45,6 +46,10 @@ namespace IronPython.Runtime {
 
         public PythonModule() {
             _dict = new PythonDictionary();
+            if (GetType() != typeof(PythonModule) && this is IPythonObject) {
+                // we should share the user dict w/ our dict.
+                ((IPythonObject)this).ReplaceDict(_dict);
+            }
         }
 
         /// <summary>
@@ -96,20 +101,24 @@ namespace IronPython.Runtime {
 
         public void __init__(string name, string documentation) {
             _dict["__name__"] = name;
-
-            if (documentation != null) {
-                _dict["__doc__"] = documentation;
-            }
+            _dict["__doc__"] = documentation;
         }
 
         public object __getattribute__(CodeContext/*!*/ context, string name) {
+            PythonTypeSlot slot;
+            object res;
+            if (GetType() != typeof(PythonModule) &&
+                DynamicHelpers.GetPythonType(this).TryResolveMixedSlot(context, name, out slot) &&
+                slot.TryGetValue(context, this, DynamicHelpers.GetPythonType(this), out res)) {
+                return res;
+            }
+
             switch (name) {
                 // never look in the dict for these...
                 case "__dict__": return __dict__;
                 case "__class__": return DynamicHelpers.GetPythonType(this);
             }
 
-            object res;
             if (_dict.TryGetValue(name, out res)) {
                 return res;
             }
@@ -119,32 +128,55 @@ namespace IronPython.Runtime {
         }
 
         internal object GetAttributeNoThrow(CodeContext/*!*/ context, string name) {
+            PythonTypeSlot slot;
+            object res;
+            if (GetType() != typeof(PythonModule) &&
+                DynamicHelpers.GetPythonType(this).TryResolveMixedSlot(context, name, out slot) &&
+                slot.TryGetValue(context, this, DynamicHelpers.GetPythonType(this), out res)) {
+                return res;
+            }
+
             switch (name) {
                 // never look in the dict for these...
                 case "__dict__": return __dict__;
                 case "__class__": return DynamicHelpers.GetPythonType(this);
             }
 
-            object res;
             if (_dict.TryGetValue(name, out res)) {
+                return res;
+            } else if (DynamicHelpers.GetPythonType(this).TryGetNonCustomMember(context, this, name, out res)) {
                 return res;
             }
 
-            // fall back to object to provide all of our other attributes (e.g. __setattr__, etc...)
-            try {
-                return ObjectOps.__getattribute__(context, this, name);
-            } catch (MissingMemberException) {
-                return OperationFailed.Value;
-            }
+            return OperationFailed.Value;
         }
 
-        public void __setattr__(string name, object value) {
+        public void __setattr__(CodeContext/*!*/ context, string name, object value) {
+            PythonTypeSlot slot;
+            if (GetType() != typeof(PythonModule) &&
+                DynamicHelpers.GetPythonType(this).TryResolveMixedSlot(context, name, out slot) &&
+                slot.TrySetValue(context, this, DynamicHelpers.GetPythonType(this), value)) {
+                return;
+            }
+
+            switch (name) {
+                case "__dict__": throw PythonOps.TypeError("readonly attribute");
+                case "__class__": throw PythonOps.TypeError("__class__ assignment: only for heap types");
+            }
+
             Debug.Assert(value != Uninitialized.Instance);
 
             _dict[name] = value;
         }
 
-        public void __delattr__(string name) {
+        public void __delattr__(CodeContext/*!*/ context, string name) {
+            PythonTypeSlot slot;
+            if (GetType() != typeof(PythonModule) &&
+                DynamicHelpers.GetPythonType(this).TryResolveMixedSlot(context, name, out slot) &&
+                slot.TryDeleteValue(context, this, DynamicHelpers.GetPythonType(this))) {
+                return;
+            }
+
             switch (name) {
                 case "__dict__": throw PythonOps.TypeError("readonly attribute");
                 case "__class__": throw PythonOps.TypeError("can't delete __class__ attribute");
@@ -178,10 +210,27 @@ namespace IronPython.Runtime {
             return String.Format("<module '{0}' from '{1}'>", name, file);
         }
 
-        public PythonDictionary __dict__ {
+        internal PythonDictionary __dict__ {
             get {
                 return _dict;
             }
+        }
+
+        [SpecialName, PropertyMethod]
+        public PythonDictionary Get__dict__() {
+            return _dict;
+        }
+
+        [SpecialName, PropertyMethod]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
+        public void Set__dict__(object value) {
+            throw PythonOps.TypeError("readonly attribute");
+        }
+
+        [SpecialName, PropertyMethod]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
+        public void Delete__dict__() {
+            throw PythonOps.TypeError("readonly attribute");
         }
 
         internal Scope Scope {
@@ -222,26 +271,15 @@ namespace IronPython.Runtime {
 
             private DynamicMetaObject GetMemberWorker(DynamicMetaObjectBinder binder, DynamicMetaObject codeContext) {
                 string name = GetGetMemberName(binder);
-
-                if (name == "__dict__") {
-                    return new DynamicMetaObject(
-                        Expression.Property(
-                            Utils.Convert(Expression, typeof(PythonModule)),
-                            typeof(PythonModule).GetProperty("__dict__")
-                        ),
-                        BindingRestrictions.GetTypeRestriction(Expression, Value.GetType())
-                    );
-
-                }
-
-                var tmp = Expression.Variable(typeof(object), "res");
+                var tmp = Expression.Variable(typeof(object), "res");                
 
                 return new DynamicMetaObject(
                     Expression.Block(
                         new[] { tmp },
                         Expression.Condition(
                             Expression.Call(
-                                typeof(PythonOps).GetMethod("ModuleGetMember"),
+                                typeof(PythonOps).GetMethod("ModuleTryGetMember"),
+                                PythonContext.GetCodeContext(binder),
                                 Utils.Convert(Expression, typeof(PythonModule)),
                                 Expression.Constant(name),
                                 tmp
@@ -258,38 +296,15 @@ namespace IronPython.Runtime {
             public override DynamicMetaObject BindSetMember(SetMemberBinder binder, DynamicMetaObject value) {
                 Debug.Assert(value.Value != Uninitialized.Instance);
 
-                switch (binder.Name) {
-                    case "__dict__":
-                        return new DynamicMetaObject(
-                            Expression.Throw(
-                                Expression.Call(
-                                    typeof(PythonOps).GetMethod("TypeError"),
-                                    Expression.Constant("readonly attribute"),
-                                    Expression.NewArrayInit(typeof(object))
-                                ),
-                                typeof(object)
-                            ),
-                            BindingRestrictions.GetTypeRestriction(Expression, Value.GetType())
-                        );
-                    case "__class__":
-                        return new DynamicMetaObject(
-                            Expression.Throw(
-                                Expression.Call(
-                                    typeof(PythonOps).GetMethod("TypeError"),
-                                    Expression.Constant("__class__ assignment: only for heap types"),
-                                    Expression.NewArrayInit(typeof(object))
-                                ),
-                                typeof(object)
-                            ),
-                            BindingRestrictions.GetTypeRestriction(Expression, Value.GetType())
-                        );
-                }
-
                 return new DynamicMetaObject(
-                    Expression.Call(
-                        typeof(PythonOps).GetMethod("ModuleSetMember"),
-                        Utils.Convert(Expression, typeof(PythonModule)),
-                        Expression.Constant(binder.Name),
+                    Expression.Block(
+                        Expression.Call(
+                            Utils.Convert(Expression, typeof(PythonModule)),
+                            typeof(PythonModule).GetMethod("__setattr__"),
+                            PythonContext.GetCodeContext(binder),
+                            Expression.Constant(binder.Name),
+                            Expression.Convert(value.Expression, typeof(object))
+                        ),
                         Expression.Convert(value.Expression, typeof(object))
                     ),
                     BindingRestrictions.GetTypeRestriction(Expression, Value.GetType())
@@ -297,40 +312,12 @@ namespace IronPython.Runtime {
             }
 
             public override DynamicMetaObject BindDeleteMember(DeleteMemberBinder binder) {
-                switch (binder.Name) {
-                    case "__dict__":
-                        return new DynamicMetaObject(
-                            Expression.Throw(
-                                Expression.Call(
-                                    typeof(PythonOps).GetMethod("TypeError"),
-                                    Expression.Constant("can't set attributes of built-in/extension type 'module'"),
-                                    Expression.NewArrayInit(typeof(object))
-                                )
-                            ),
-                            BindingRestrictions.GetTypeRestriction(Expression, Value.GetType())
-                        );
-                    case "__class__":
-                        return new DynamicMetaObject(
-                            Expression.Throw(
-                                Expression.Call(
-                                    typeof(PythonOps).GetMethod("TypeError"),
-                                    Expression.Constant("can't delete __class__ attribute"),
-                                    Expression.NewArrayInit(typeof(object))
-                                )
-                            ),
-                            BindingRestrictions.GetTypeRestriction(Expression, Value.GetType())
-                        );
-                }
-
                 return new DynamicMetaObject(
-                    Expression.Condition(
-                        Expression.Call(
-                            typeof(PythonOps).GetMethod("ModuleDeleteMember"),
-                            Utils.Convert(Expression, typeof(PythonModule)),
-                            Expression.Constant(binder.Name)
-                        ),
-                        Expression.Default(binder.ReturnType),
-                        binder.FallbackDeleteMember(this).Expression
+                    Expression.Call(
+                        Utils.Convert(Expression, typeof(PythonModule)),
+                        typeof(PythonModule).GetMethod("__delattr__"),
+                        PythonContext.GetCodeContext(binder),
+                        Expression.Constant(binder.Name)
                     ),
                     BindingRestrictions.GetTypeRestriction(Expression, Value.GetType())
                 );

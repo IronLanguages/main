@@ -227,21 +227,23 @@ namespace Microsoft.Scripting.Runtime {
         }
 
         /// <summary>
-        /// Convers the object obj to the type T.
+        /// Converts the object obj to the type T.  The conversion will be explicit or implicit
+        /// depending on what the langauge prefers.
         /// </summary>
         public T ConvertTo<T>(object obj) {
             CallSite<Func<CallSite, object, T>> site;
-            site = GetOrCreateSite<object, T>(_lc.CreateConvertBinder(typeof(T), false));
+            site = GetOrCreateSite<object, T>(_lc.CreateConvertBinder(typeof(T), null));
             return site.Target(site, obj);
         }
 
-        /// <summary>
-        /// Converts the object obj to the type type.
+        /// <summary> 
+        /// Converts the object obj to the type type.  The conversion will be explicit or implicit
+        /// depending on what the langauge prefers.
         /// </summary>
         public object ConvertTo(object obj, Type type) {
             if (type.IsInterface || type.IsClass) {
                 CallSite<Func<CallSite, object, object>> site;
-                site = GetOrCreateSite<object, object>(_lc.CreateConvertBinder(type, false));
+                site = GetOrCreateSite<object, object>(_lc.CreateConvertBinder(type, null));
                 return site.Target(site, obj);
             }
 
@@ -261,6 +263,8 @@ namespace Microsoft.Scripting.Runtime {
 
         /// <summary>
         /// Converts the object obj to the type T.  Returns true if the value can be converted, false if it cannot.
+        /// 
+        /// The conversion will be explicit or implicit depending on what the langauge prefers.
         /// </summary>
         public bool TryConvertTo<T>(object obj, out T result) {
             try {
@@ -277,6 +281,8 @@ namespace Microsoft.Scripting.Runtime {
 
         /// <summary>
         /// Converts the object obj to the type type.  Returns true if the value can be converted, false if it cannot.
+        /// 
+        /// The conversion will be explicit or implicit depending on what the langauge prefers.
         /// </summary>
         public bool TryConvertTo(object obj, Type type, out object result) {
             try {
@@ -333,6 +339,58 @@ namespace Microsoft.Scripting.Runtime {
         public bool TryExplicitConvertTo<T>(object obj, out T result) {
             try {
                 result = ExplicitConvertTo<T>(obj);
+                return true;
+            } catch (ArgumentTypeException) {
+                result = default(T);
+                return false;
+            } catch (InvalidCastException) {
+                result = default(T);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Convers the object obj to the type T including implicit conversions.
+        /// </summary>
+        public T ImplicitConvertTo<T>(object obj) {
+            CallSite<Func<CallSite, object, T>> site;
+            site = GetOrCreateSite<object, T>(_lc.CreateConvertBinder(typeof(T), false));
+            return site.Target(site, obj);
+        }
+
+        /// <summary>
+        /// Converts the object obj to the type type including implicit conversions.
+        /// </summary>
+        public object ImplicitConvertTo(object obj, Type type) {
+            CallSite<Func<CallSite, object, object>> site;
+            site = GetOrCreateSite<object, object>(_lc.CreateConvertBinder(type, false));
+            return site.Target(site, obj);
+        }
+
+        /// <summary>
+        /// Converts the object obj to the type type including implicit conversions. 
+        /// 
+        /// Returns true if the value can be converted, false if it cannot.
+        /// </summary>
+        public bool TryImplicitConvertTo(object obj, Type type, out object result) {
+            try {
+                result = ImplicitConvertTo(obj, type);
+                return true;
+            } catch (ArgumentTypeException) {
+                result = null;
+                return false;
+            } catch (InvalidCastException) {
+                result = null;
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Converts the object obj to the type T.  Returns true if the value can be converted, false if it cannot.
+        /// </summary>
+        public bool TryImplicitConvertTo<T>(object obj, out T result) {
+            try {
+                result = ImplicitConvertTo<T>(obj);
                 return true;
             } catch (ArgumentTypeException) {
                 result = default(T);

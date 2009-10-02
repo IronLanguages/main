@@ -20,6 +20,7 @@ using Microsoft.Scripting.Ast;
 #endif
 
 using System;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -34,6 +35,7 @@ using Microsoft.Scripting.Utils;
 
 namespace IronRuby.Builtins {
     using Ast = Expression;
+    using Utils = IronRuby.Runtime.Utils;
 
     /// <summary>
     /// Implementation of IO builtin class. 
@@ -218,13 +220,10 @@ namespace IronRuby.Builtins {
 
             IOMode mode = IOModeEnum.Parse(modeString);
 
-            ProcessStartInfo startInfo = KernelOps.GetShell(context, command);
-            startInfo.UseShellExecute = false;
-
             bool redirectStandardInput = mode.CanWrite();
             bool redirectStandardOutput = mode.CanRead();
 
-            Process process = OpenPipe(context, command, redirectStandardInput, redirectStandardOutput, false);
+            Process process = RubyProcess.CreateProcess(context, command, redirectStandardInput, redirectStandardOutput, false);
 
             StreamReader reader = null;
             StreamWriter writer = null;
@@ -237,28 +236,6 @@ namespace IronRuby.Builtins {
             }
 
             return new RubyIO(context, reader, writer, mode);
-        }
-
-        internal static Process/*!*/ OpenPipe(RubyContext/*!*/ context, MutableString/*!*/ command, 
-            bool redirectStandardInput, bool redirectStandardOutput, bool redirectStandardError) {
-
-            ProcessStartInfo startInfo = KernelOps.GetShell(context, command);
-            startInfo.UseShellExecute = false;
-
-            startInfo.RedirectStandardInput = redirectStandardInput;
-            startInfo.RedirectStandardOutput = redirectStandardOutput;
-            startInfo.RedirectStandardError = redirectStandardError;
-
-            Process process;
-            try {
-                process = Process.Start(startInfo);
-            } catch (Exception e) {
-                throw RubyExceptions.CreateENOENT(startInfo.FileName, e);
-            }
-
-            context.ChildProcessExitStatus = new RubyProcess.Status(process);
-
-            return process;
         }
 
 #endif
@@ -473,11 +450,48 @@ namespace IronRuby.Builtins {
             self.Flush();
         }
 
-        [RubyMethod("isatty")]
-        [RubyMethod("tty?")]
+        #region isatty
+        
+#if !SILVERLIGHT
+        [RubyMethod("isatty", BuildConfig = "!SILVERLIGHT")]
+        [RubyMethod("tty?", BuildConfig = "!SILVERLIGHT")]
         public static bool IsAtty(RubyIO/*!*/ self) {
-            return self.IsConsole;
+            ConsoleStreamType? console = self.ConsoleStreamType;
+            if (console == null) {
+                return self.GetStream().BaseStream == Stream.Null;
+            }
+
+            IntPtr handle = GetStdHandle(GetStdHandleId(console.Value));
+            if (handle == IntPtr.Zero) {
+                throw new Win32Exception();
+            }
+
+            return GetFileType(handle) == FILE_TYPE_CHAR;
         }
+
+        private static int GetStdHandleId(ConsoleStreamType streamType) {
+            switch (streamType) {
+                case ConsoleStreamType.Input: return STD_INPUT_HANDLE;
+                case ConsoleStreamType.Output: return STD_OUTPUT_HANDLE;
+                case ConsoleStreamType.ErrorOutput: return STD_ERROR_HANDLE;
+                default: throw Assert.Unreachable;
+            }
+        }
+
+        private const int FILE_TYPE_CHAR = 0x0002;
+
+        private const int STD_INPUT_HANDLE = -10;
+        private const int STD_OUTPUT_HANDLE = -11;
+        private const int STD_ERROR_HANDLE = -12;
+
+        [DllImport("kernel32")]
+        private extern static IntPtr GetStdHandle(int nStdHandle);
+        
+        [DllImport("kernel32")]
+        private extern static int GetFileType(IntPtr hFile);
+#endif
+
+        #endregion
 
         [RubyMethod("sync")]
         public static bool Sync(RubyIO/*!*/ self) {

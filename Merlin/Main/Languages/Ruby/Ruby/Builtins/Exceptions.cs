@@ -238,6 +238,21 @@ namespace IronRuby.Builtins {
     }
 
     [Serializable]
+    public class ExecFormatError : ExternalException {
+        private const string/*!*/ M = "Exec format error";
+
+        public ExecFormatError() : this(null, null) { }
+        public ExecFormatError(string message) : this(message, null) { }
+        public ExecFormatError(string message, Exception inner) : base(RubyExceptions.MakeMessage(message, M), inner) { }
+        public ExecFormatError(MutableString message) : base(RubyExceptions.MakeMessage(ref message, M)) { RubyExceptionData.InitializeException(this, message); }
+
+#if !SILVERLIGHT
+        protected ExecFormatError(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
+            : base(info, context) { }
+#endif
+    }
+
+    [Serializable]
     public class InvalidError : ExternalException {
         private const string/*!*/ M = "Invalid argument";
 

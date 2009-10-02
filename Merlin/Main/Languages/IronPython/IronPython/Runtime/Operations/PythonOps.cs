@@ -4166,17 +4166,15 @@ namespace IronPython.Runtime.Operations {
             return buffer.ToString().MakeByteArray();
         }
 
-        public static bool ModuleGetMember(PythonModule module, string name, out object res) {
-            return module.__dict__.TryGetValue(name, out res) && res != Uninitialized.Instance;
-        }
+        public static bool ModuleTryGetMember(CodeContext context, PythonModule module, string name, out object res) {
+            object value = module.GetAttributeNoThrow(context, name);
+            if (value != OperationFailed.Value) {
+                res = value;
+                return true;
+            }
 
-        public static object ModuleSetMember(PythonModule module, string name, object value) {
-            Debug.Assert(value != Uninitialized.Instance);
-            return module.__dict__[name] = value;
-        }
-
-        public static bool ModuleDeleteMember(PythonModule module, string name) {
-            return module.__dict__.Remove(name);
+            res = null;
+            return false;
         }
 
         internal static void ScopeSetMember(CodeContext context, Scope scope, string name, object value) {

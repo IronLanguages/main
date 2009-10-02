@@ -38,6 +38,7 @@ namespace IronPython.Runtime.Operations {
             if (o is string) return __new__(null, (string)o, 10);
             if (o is double) return DoubleOps.__int__((double)o);
             if (o is int) return o;
+            if (o is bool) return ((bool)o) ? 1 : 0;
             if (o is BigInteger) {
                 BigInteger bi = o as BigInteger;
                 int res;

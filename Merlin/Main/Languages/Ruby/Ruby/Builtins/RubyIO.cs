@@ -122,10 +122,14 @@ namespace IronRuby.Builtins {
             _fileDescriptor = value; 
         }
 
-        public bool IsConsole {
+        /// <summary>
+        /// Returns true if the IO object represents stdin/stdout/stderr (no matter whether or not the actual streams are redirected).
+        /// </summary>
+        public ConsoleStreamType? ConsoleStreamType {
             get {
                 var stream = GetStream();
-                return stream.BaseStream is ConsoleStream || stream.BaseStream == Stream.Null; 
+                var console = stream.BaseStream as ConsoleStream;
+                return console != null ? console.StreamType : (ConsoleStreamType?)null;
             } 
         }
 

@@ -17,6 +17,7 @@ using System;
 using IronRuby.Builtins;
 using IronRuby.Runtime;
 using Microsoft.Scripting;
+using Microsoft.Scripting.Hosting;
 using Microsoft.Scripting.Hosting.Shell;
 using Microsoft.Scripting.Runtime;
 using System.Reflection;
@@ -65,13 +66,21 @@ namespace IronRuby.Hosting {
             return RunFile(Engine.CreateScriptSourceFromFile(RubyUtils.CanonicalizePath(fileName), (((RubyContext)Language).RubyOptions.KCode ?? RubyEncoding.Binary).Encoding));
         }
 
-        protected override void ExecuteCommand(string command) {
+        protected override void ExecuteCommand(string/*!*/ command) {
+            ExecuteCommand(CreateCommandSource(command, SourceCodeKind.InteractiveCode));
+        }
+
+        protected override int RunCommand(string/*!*/ command) {
+            return RunFile(CreateCommandSource(command, SourceCodeKind.Statements));
+        }
+
+        private ScriptSource/*!*/ CreateCommandSource(string/*!*/ command, SourceCodeKind kind) {
 #if SILVERLIGHT
-            base.ExecuteCommand(command);
+            return Engine.CreateScriptSourceFromString(command, kind);
 #else
             var kcode = ((RubyContext)Language).RubyOptions.KCode;
             var encoding = kcode != null ? kcode.Encoding : System.Console.InputEncoding;
-            ExecuteCommand(Engine.CreateScriptSource(new BinaryContentProvider(encoding.GetBytes(command)), null, encoding, SourceCodeKind.InteractiveCode));
+            return Engine.CreateScriptSource(new BinaryContentProvider(encoding.GetBytes(command)), null, encoding, kind);
 #endif
         }
         
