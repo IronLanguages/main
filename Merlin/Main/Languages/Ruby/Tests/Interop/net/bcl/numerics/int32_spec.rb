@@ -15,4 +15,19 @@ describe "System::Int32" do
   it "is Fixnum" do
     System::Int32.should == Fixnum
   end
+
+  it "gives preference to ruby methods before .NET methods" do
+    module FixnumMixin
+      def to_string
+        "In FixnumMixin#to_string"
+      end
+    end
+
+    class Fixnum
+      include FixnumMixin
+    end
+    
+    1.to_string.should == "In FixnumMixin#to_string"
+  end
+
 end
