@@ -22,3 +22,7 @@ end
 describe "Abstract derived classes" do
   it_behaves_like :uninstantiable_class, AbstractDerived
 end
+
+describe "Ruby derived from abstract class with an event" do
+  it_behaves_like :instantiable_class, RubyHasAnEvent
+end

@@ -150,6 +150,14 @@ public class EmptyClass {}
     [return: MarshalAs(UnmanagedType.U1)]
     public virtual bool Foo() { return true;}
   }
+
+  public interface IHaveAnEvent {
+    event EventHandler MyEvent;
+  }
+
+  public abstract class AbstractHasAnEvent : IHaveAnEvent {
+    public abstract event EventHandler MyEvent;
+  }
 #line 8 "./delegate/fixtures/classes.rb"
 #line 13 "./delegate/fixtures/classes.rb"
 public partial class DelegateConversionClass {
