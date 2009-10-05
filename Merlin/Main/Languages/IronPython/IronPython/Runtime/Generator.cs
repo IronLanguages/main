@@ -30,7 +30,7 @@ using IronPython.Runtime.Operations;
 namespace IronPython.Runtime {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix"), PythonType("generator")]
     [DontMapIDisposableToContextManager, DontMapIEnumerableToContains]
-    public sealed class PythonGenerator : IEnumerator, IEnumerator<object>, ICodeFormattable {
+    public sealed class PythonGenerator : IEnumerator, IEnumerator<object>, ICodeFormattable, IEnumerable {
         private readonly Func<MutableTuple, object>/*!*/ _next;     // The delegate which contains the user code to perform the iteration.
         private readonly PythonFunction _function;                  // the function which created the generator
         private readonly MutableTuple _data;                        // the closure data we need to pass into each iteration.  Item000 is the index, Item001 is the current value
@@ -564,5 +564,14 @@ namespace IronPython.Runtime {
                 }
             }
         }
+
+        #region IEnumerable Members
+
+        IEnumerator IEnumerable.GetEnumerator() {
+            // only present for better C# interop
+            return this;
+        }
+
+        #endregion
     }
 }
