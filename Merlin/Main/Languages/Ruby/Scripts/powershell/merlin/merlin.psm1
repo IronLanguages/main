@@ -7,6 +7,12 @@ function get-batchfile {
   }
 }
 
+function insert-path {
+  param([string]$append)
+
+  set-content Env:\Path ((get-content Env:\Path) + ";" + $append)
+}
+
 function initialize-merlin {
   param([string]$path = "C:\vsl\")
 
@@ -25,13 +31,13 @@ function initialize-merlin {
   if (test-path $alias_internal) { . $alias_internal }
    
   if (Test-Path function:r) {Remove-item -Force function:r}
-  . $scripts\append-path.ps1 "${env:RUBY18_BIN}"
-  . $scripts\append-path.ps1 "${env:MERLIN_ROOT}\External\Tools"
-  . $scripts\append-path.ps1 "${env:MERLIN_ROOT}\Scripts\Bat"
-  . $scripts\append-path.ps1 "${env:MERLIN_ROOT}\..\Snap\bin"
-  . $scripts\append-path.ps1 "${env:MERLIN_EXTERNAL}\Languages\IronRuby\mspec\mspec\bin"   
-  . $scripts\append-path.ps1 "${env:MERLIN_ROOT}\Languages\Ruby\Scripts"
-  . $scripts\append-path.ps1 "${env:MERLIN_ROOT}\Languages\Ruby\Scripts\Bin"
+  insert-path "${env:RUBY18_BIN}"
+  insert-path "${env:MERLIN_ROOT}\External\Tools"
+  insert-path "${env:MERLIN_ROOT}\Scripts\Bat"
+  insert-path "${env:MERLIN_ROOT}\..\Snap\bin"
+  insert-path "${env:MERLIN_EXTERNAL}\Languages\IronRuby\mspec\mspec\bin"   
+  insert-path "${env:MERLIN_ROOT}\Languages\Ruby\Scripts"
+  insert-path "${env:MERLIN_ROOT}\Languages\Ruby\Scripts\Bin"
 
   function global:dbin { cd "${env:MERLIN_ROOT}\Bin\Debug" }
   function global:rbin { cd "${env:MERLIN_ROOT}\Bin\Release" }
