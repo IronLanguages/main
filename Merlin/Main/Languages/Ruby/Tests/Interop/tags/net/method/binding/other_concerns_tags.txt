@@ -116,3 +116,5 @@ fails:Method parameter binding with misc parameters binds 'IListArg' for 'Array[
 fails:Method parameter binding with misc parameters binds 'IListArg' for 'Array[System::String]' with 'IListArg' (RubyClassWithMethods)
 fails:Method parameter binding with misc parameters passes the correct input (Array[System::String]) into method (IListArg) (ClassWithMethods)
 fails:Method parameter binding with misc parameters passes the correct input (Array[System::String]) into method (IListArg) (RubyClassWithMethods)
+fails:Method parameter binding with misc parameters passes the correct input (NoArg) into method (OutNonByRefInt32Arg) (ClassWithMethods)
+fails:Method parameter binding with misc parameters passes the correct input (NoArg) into method (OutNonByRefInt32Arg) (RubyClassWithMethods)

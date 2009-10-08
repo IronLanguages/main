@@ -2,7 +2,7 @@ require File.dirname(__FILE__) + "/../../spec_helper"
 require File.dirname(__FILE__) + "/../fixtures/classes"
 
 describe "Method parameter binding with misc parameters" do
-  @keys = [:ClassWithMethodsArg, :GenericArg, :OutNonByRefInt32Arg, :IDictionaryOfIntIntArg, :HashtableArg, :ListOfIntArg, :IEnumerableIteratingArg, :IEnumeratorIteratingArg, :IEnumerableOfCharIteratingArg, :IEnumeratorOfCharIteratingArg, :IEnumerableOfIntIteratingArg, :IEnumeratorOfIntIteratingArg, :DelegateArg, :IntIntDelegateArg, :RefByteArrArg, :RefStructImplementsIInterfaceArg, :OutStructImplementsIInterfaceArg, :RefImplementsIInterfaceArg, :OutImplementsIInterfaceArg, :RefBooleanArg, :OutBooleanArg, :ParamsIInterfaceArrTestArg, :IListOfIntArg2, :IListOfCharArg, :IListArg]
+  @keys = [:ClassWithMethodsArg, :GenericArg, :OutNonByRefInt32Arg, :IDictionaryOfIntIntArg, :HashtableArg, :ListOfIntArg, :IEnumerableIteratingArg, :IEnumeratorIteratingArg, :IEnumerableOfCharIteratingArg, :IEnumeratorOfCharIteratingArg, :IEnumerableOfIntIteratingArg, :IEnumeratorOfIntIteratingArg, :DelegateArg, :IntIntDelegateArg, :RefByteArrArg, :RefStructImplementsIInterfaceArg, :OutStructImplementsIInterfaceArg, :RefImplementsIInterfaceArg, :RefBooleanArg, :OutBooleanArg, :ParamsIInterfaceArrTestArg, :IListOfIntArg2, :IListOfCharArg, :IListArg]
   @matrix = {
    "ClassWithMethods" => {  :ClassWithMethodsArg => "ClassWithMethodsArg",
      :GenericArg => "GenericArg[ClassWithMethods]", 
@@ -115,6 +115,9 @@ describe "Method parameter binding with misc parameters" do
    "ImplementsIInterface" => { :GenericArg => "GenericArg[ImplementsIInterface]",
      :RefImplementsIInterfaceArg => "RefImplementsIInterfaceArg",
      :RefBooleanArg => "RefBooleanArg", :ParamsIInterfaceArrTestArg =>"ParamsIInterfaceArrTestArg"},
+   "NoArg" => (Hash.new(AE).merge({:OutNonByRefInt32Arg => "OutNonByRefInt32Arg", 
+     :OutStructImplementsIInterfaceArg => "OutStructImplementsIInterfaceArg",  
+     :OutBooleanArg => "OutBooleanArg", :ParamsIInterfaceArrTestArg => "ParamsIInterfaceArrTestArg"}))
   }
   before(:each) do
     @target = ClassWithMethods.new
@@ -156,10 +159,44 @@ describe "Method parameter binding with misc parameters" do
   end
 
 
-  #RefOutInt32Args RefInt32OutArgs Int32RefOutArgs 
-  #RefInt32Int32OutInt32Arg ByteArrRefByteArrArg KeywordsArg 
-  #
-    #
+  it "doesn't special case keyword args" do
+    %w{this self class public}.each do |arg|
+      [@target, @target2].each do |target|
+        target.KeywordsArgs(1, target, arg).should == ["KeywordsArgs", arg.upcase]
+        target.tracker.should == arg.upcase
+        target.reset
+      end
+    end
+  end
+
+  it "binds ref out and regular params correctly" do
+    %w{RefOutInt32Args RefInt32OutArgs Int32RefOutArgs}.each do
+      [@target, @target2].each do |target|
+        target.RefOutInt32Args(1,2).should == ["RefOutInt32Args", 2, 2]
+        target.tracker.should == [2,2,2]
+        target.reset
+        target.RefInt32OutArgs(1,2).should == ["RefInt32OutArgs", 2, 2]
+        target.tracker.should == [2,2,2]
+        target.reset
+        target.Int32RefOutArgs(1,2).should == ["Int32RefOutArgs", 1, 1]
+        target.tracker.should == [1,1,1]
+        target.reset
+        target.RefInt32Int32OutInt32Arg(1,2).should == ["RefInt32Int32OutInt32Arg", 100, 3]
+        target.tracker.should == [100, 2, 3]
+        target.reset
+      end
+    end
+  end
+
+  it "binds Byte[] and Ref Byte[] methods" do
+    input = System::Array.of(System::Byte).new(2, System::Byte.new(1))
+    [@target, @target].each do |target|
+      target.ByteArrRefByteArrArg(input , System::Array.of(System::Byte).new(2, System::Byte.new(3))).should == ["ByteArrRefByteArrArg", input]
+      target.tracker.should == [input]
+      target.reset
+    end
+  end
+  
   it "binds the proper number of arguments" do
     a = [1,2,3,4,5,6,7,8]
     0.upto(6) do |i|
@@ -169,5 +206,16 @@ describe "Method parameter binding with misc parameters" do
     lambda { @target.EightArgs }.should raise_error AE
     @target.EightArgs(*a).should == "EightArgs"
     @target.tracker.should == a
+  end
+end
+
+describe "Generic class methods" do
+  it "bind correctly" do
+    target = GenericClassWithMethods.of(Fixnum).new
+    [100, Bignum.Zero, 4.5].each do |param|
+      target.GenericArg(param).should == "GenericArg"
+      target.tracker.should == param.to_i
+      target.reset
+    end
   end
 end

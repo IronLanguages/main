@@ -1075,10 +1075,58 @@ public abstract partial class AbstractClassWithMethods {
     public GenericClassWithMethods() {
       Tracker = new ArrayList();
     }
+
+    public void Reset() { Tracker.Clear();}
     public string GenericArg(K arg) { Tracker.Add(arg); return "GenericArg";}
   }
 
   public delegate int IntIntDelegate(int arg);
+
+  public interface I1 { string M(); }
+  public interface I2 { string M(); }
+  public interface I3<T> { string M(); }
+  public interface I4 { string M(int arg); }
+
+//TODO: Write tests for these cases when Explicit interface methods work.
+  public class ClassI1_1 : I1 {
+    string I1.M() { return "I1.M"; }
+  }
+
+  public class ClassI1_2 : I1 {
+    string I1.M() { return "I1.M"; }
+    public string M() { return "class M"; }
+  }
+
+  public class ClassI2I1 : I2, I1 {
+    string I1.M() { return "I1.M"; }
+    string I2.M() { return "I2.M"; }
+  }
+
+  public class ClassI3Obj : I3<object> {
+    string I3<object>.M() { return "I3<object>.M"; }
+    public string M() { return "class M"; }
+  }
+
+  public class ClassI1I2I3Obj : I1, I2, I3<object> {
+    string I1.M() { return "I1.M"; }
+    string I2.M() { return "I2.M"; }
+    string I3<object>.M() { return "I3<object>.M"; }
+    public string M() { return "class M"; }
+  }
+
+  public class ClassI3_1<T> : I3<T> {
+    string I3<T>.M() { return "I3<T>.M"; }
+    public string M() { return "class M"; }
+  }
+
+  public class ClassI3_2<T> : I3<T> {
+    string I3<T>.M() { return "I3<T>.M"; }
+  }
+
+  public class ClassI1I4 : I1, I4 {
+    string I1.M() { return "I1.M"; }
+    string I4.M(int arg) { return "I4.M"; }
+  }
 
   public class VirtualMethodBaseClass { 
     public virtual string VirtualMethod() { return "virtual"; } 
@@ -1088,6 +1136,95 @@ public abstract partial class AbstractClassWithMethods {
   }
   public class VirtualMethodOverrideOverride : VirtualMethodBaseClass {
     public override string VirtualMethod() { return "override"; } 
+  }
+  
+  public class ClassWithNullableMethods {
+    public ClassWithNullableMethods() {
+      Tracker = new ArrayList();
+    }
+    public ArrayList Tracker { get; set;}
+    public void Reset() { Tracker.Clear(); }
+    public Int16? Int16NullableProperty {get; set;}
+    public Int32? Int32NullableProperty {get; set;}
+    public Int64? Int64NullableProperty {get; set;}
+    public UInt16? UInt16NullableProperty {get; set;}
+    public UInt32? UInt32NullableProperty {get; set;}
+    public UInt64? UInt64NullableProperty {get; set;}
+    public Byte? ByteNullableProperty {get; set;}
+    public SByte? SByteNullableProperty {get; set;}
+    public Decimal? DecimalNullableProperty {get; set;}
+    public Single? SingleNullableProperty {get; set;}
+    public Double? DoubleNullableProperty {get; set;}
+    public Char? CharNullableProperty {get; set;}
+    public CustomEnum? CustomEnumNullableProperty {get; set;}
+    public Boolean? BooleanNullableProperty {get; set;}
+    
+    
+    public string Int16NullableArg(Int16? arg) { Tracker.Add(arg); return "Int16NullableArg"; }
+    public string Int32NullableArg(Int32? arg) { Tracker.Add(arg); return "Int32NullableArg"; }
+    public string Int64NullableArg(Int64? arg) { Tracker.Add(arg); return "Int64NullableArg"; }
+    public string UInt16NullableArg(UInt16? arg) { Tracker.Add(arg); return "UInt16NullableArg"; }
+    public string UInt32NullableArg(UInt32? arg) { Tracker.Add(arg); return "UInt32NullableArg"; }
+    public string UInt64NullableArg(UInt64? arg) { Tracker.Add(arg); return "UInt64NullableArg"; }
+    public string ByteNullableArg(Byte? arg) { Tracker.Add(arg); return "ByteNullableArg"; }
+    public string SByteNullableArg(SByte? arg) { Tracker.Add(arg); return "SByteNullableArg"; }
+    public string DecimalNullableArg(Decimal? arg) { Tracker.Add(arg); return "DecimalNullableArg"; }
+    public string SingleNullableArg(Single? arg) { Tracker.Add(arg); return "SingleNullableArg"; }
+    public string DoubleNullableArg(Double? arg) { Tracker.Add(arg); return "DoubleNullableArg"; }
+    public string CharNullableArg(Char? arg) { Tracker.Add(arg); return "CharNullableArg"; }
+    public string CustomEnumNullableArg(CustomEnum? arg) { Tracker.Add(arg); return "CustomEnumNullableArg"; }
+    public string BooleanNullableArg(Boolean? arg) { Tracker.Add(arg); return "BooleanNullableArg"; }
+  }
+
+  public class StaticClassWithNullableMethods {
+    private static ArrayList _tracker = new ArrayList();
+    public static ArrayList Tracker { get { return _tracker;}}
+    public static void Reset() { 
+      Tracker.Clear(); 
+      StaticInt16NullableProperty = null;
+      StaticInt32NullableProperty = null;
+      StaticInt64NullableProperty = null;
+      StaticUInt16NullableProperty = null;
+      StaticUInt32NullableProperty = null;
+      StaticUInt64NullableProperty = null;
+      StaticByteNullableProperty = null;
+      StaticSByteNullableProperty = null;
+      StaticDecimalNullableProperty = null;
+      StaticSingleNullableProperty = null;
+      StaticDoubleNullableProperty = null;
+      StaticCharNullableProperty = null;
+      StaticCustomEnumNullableProperty = null;
+      StaticBooleanNullableProperty = null;
+    }
+    
+    public static Int16? StaticInt16NullableProperty {get; set;}
+    public static Int32? StaticInt32NullableProperty {get; set;}
+    public static Int64? StaticInt64NullableProperty {get; set;}
+    public static UInt16? StaticUInt16NullableProperty {get; set;}
+    public static UInt32? StaticUInt32NullableProperty {get; set;}
+    public static UInt64? StaticUInt64NullableProperty {get; set;}
+    public static Byte? StaticByteNullableProperty {get; set;}
+    public static SByte? StaticSByteNullableProperty {get; set;}
+    public static Decimal? StaticDecimalNullableProperty {get; set;}
+    public static Single? StaticSingleNullableProperty {get; set;}
+    public static Double? StaticDoubleNullableProperty {get; set;}
+    public static Char? StaticCharNullableProperty {get; set;}
+    public static CustomEnum? StaticCustomEnumNullableProperty {get; set;}
+    public static Boolean? StaticBooleanNullableProperty {get; set;}
+    public static string StaticInt16NullableArg(Int16? arg) { Tracker.Add(arg); return "StaticInt16NullableArg"; }
+    public static string StaticInt32NullableArg(Int32? arg) { Tracker.Add(arg); return "StaticInt32NullableArg"; }
+    public static string StaticInt64NullableArg(Int64? arg) { Tracker.Add(arg); return "StaticInt64NullableArg"; }
+    public static string StaticUInt16NullableArg(UInt16? arg) { Tracker.Add(arg); return "StaticUInt16NullableArg"; }
+    public static string StaticUInt32NullableArg(UInt32? arg) { Tracker.Add(arg); return "StaticUInt32NullableArg"; }
+    public static string StaticUInt64NullableArg(UInt64? arg) { Tracker.Add(arg); return "StaticUInt64NullableArg"; }
+    public static string StaticByteNullableArg(Byte? arg) { Tracker.Add(arg); return "StaticByteNullableArg"; }
+    public static string StaticSByteNullableArg(SByte? arg) { Tracker.Add(arg); return "StaticSByteNullableArg"; }
+    public static string StaticDecimalNullableArg(Decimal? arg) { Tracker.Add(arg); return "StaticDecimalNullableArg"; }
+    public static string StaticSingleNullableArg(Single? arg) { Tracker.Add(arg); return "StaticSingleNullableArg"; }
+    public static string StaticDoubleNullableArg(Double? arg) { Tracker.Add(arg); return "StaticDoubleNullableArg"; }
+    public static string StaticCharNullableArg(Char? arg) { Tracker.Add(arg); return "StaticCharNullableArg"; }
+    public static string StaticCustomEnumNullableArg(CustomEnum? arg) { Tracker.Add(arg); return "StaticCustomEnumNullableArg"; }
+    public static string StaticBooleanNullableArg(Boolean? arg) { Tracker.Add(arg); return "StaticBooleanNullableArg"; }
   }
 #line 1 "./namespaces/fixtures/classes.rb"
 namespace NotEmptyNamespace {

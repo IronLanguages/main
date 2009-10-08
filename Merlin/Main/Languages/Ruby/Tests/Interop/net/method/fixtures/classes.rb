@@ -445,10 +445,58 @@ csc <<-EOL
     public GenericClassWithMethods() {
       Tracker = new ArrayList();
     }
+
+    public void Reset() { Tracker.Clear();}
     public string GenericArg(K arg) { Tracker.Add(arg); return "GenericArg";}
   }
 
   public delegate int IntIntDelegate(int arg);
+
+  public interface I1 { string M(); }
+  public interface I2 { string M(); }
+  public interface I3<T> { string M(); }
+  public interface I4 { string M(int arg); }
+
+//TODO: Write tests for these cases when Explicit interface methods work.
+  public class ClassI1_1 : I1 {
+    string I1.M() { return "I1.M"; }
+  }
+
+  public class ClassI1_2 : I1 {
+    string I1.M() { return "I1.M"; }
+    public string M() { return "class M"; }
+  }
+
+  public class ClassI2I1 : I2, I1 {
+    string I1.M() { return "I1.M"; }
+    string I2.M() { return "I2.M"; }
+  }
+
+  public class ClassI3Obj : I3<object> {
+    string I3<object>.M() { return "I3<object>.M"; }
+    public string M() { return "class M"; }
+  }
+
+  public class ClassI1I2I3Obj : I1, I2, I3<object> {
+    string I1.M() { return "I1.M"; }
+    string I2.M() { return "I2.M"; }
+    string I3<object>.M() { return "I3<object>.M"; }
+    public string M() { return "class M"; }
+  }
+
+  public class ClassI3_1<T> : I3<T> {
+    string I3<T>.M() { return "I3<T>.M"; }
+    public string M() { return "class M"; }
+  }
+
+  public class ClassI3_2<T> : I3<T> {
+    string I3<T>.M() { return "I3<T>.M"; }
+  }
+
+  public class ClassI1I4 : I1, I4 {
+    string I1.M() { return "I1.M"; }
+    string I4.M(int arg) { return "I4.M"; }
+  }
 
   public class VirtualMethodBaseClass { 
     public virtual string VirtualMethod() { return "virtual"; } 
@@ -458,6 +506,95 @@ csc <<-EOL
   }
   public class VirtualMethodOverrideOverride : VirtualMethodBaseClass {
     public override string VirtualMethod() { return "override"; } 
+  }
+  
+  public class ClassWithNullableMethods {
+    public ClassWithNullableMethods() {
+      Tracker = new ArrayList();
+    }
+    public ArrayList Tracker { get; set;}
+    public void Reset() { Tracker.Clear(); }
+    public Int16? Int16NullableProperty {get; set;}
+    public Int32? Int32NullableProperty {get; set;}
+    public Int64? Int64NullableProperty {get; set;}
+    public UInt16? UInt16NullableProperty {get; set;}
+    public UInt32? UInt32NullableProperty {get; set;}
+    public UInt64? UInt64NullableProperty {get; set;}
+    public Byte? ByteNullableProperty {get; set;}
+    public SByte? SByteNullableProperty {get; set;}
+    public Decimal? DecimalNullableProperty {get; set;}
+    public Single? SingleNullableProperty {get; set;}
+    public Double? DoubleNullableProperty {get; set;}
+    public Char? CharNullableProperty {get; set;}
+    public CustomEnum? CustomEnumNullableProperty {get; set;}
+    public Boolean? BooleanNullableProperty {get; set;}
+    
+    
+    public string Int16NullableArg(Int16? arg) { Tracker.Add(arg); return "Int16NullableArg"; }
+    public string Int32NullableArg(Int32? arg) { Tracker.Add(arg); return "Int32NullableArg"; }
+    public string Int64NullableArg(Int64? arg) { Tracker.Add(arg); return "Int64NullableArg"; }
+    public string UInt16NullableArg(UInt16? arg) { Tracker.Add(arg); return "UInt16NullableArg"; }
+    public string UInt32NullableArg(UInt32? arg) { Tracker.Add(arg); return "UInt32NullableArg"; }
+    public string UInt64NullableArg(UInt64? arg) { Tracker.Add(arg); return "UInt64NullableArg"; }
+    public string ByteNullableArg(Byte? arg) { Tracker.Add(arg); return "ByteNullableArg"; }
+    public string SByteNullableArg(SByte? arg) { Tracker.Add(arg); return "SByteNullableArg"; }
+    public string DecimalNullableArg(Decimal? arg) { Tracker.Add(arg); return "DecimalNullableArg"; }
+    public string SingleNullableArg(Single? arg) { Tracker.Add(arg); return "SingleNullableArg"; }
+    public string DoubleNullableArg(Double? arg) { Tracker.Add(arg); return "DoubleNullableArg"; }
+    public string CharNullableArg(Char? arg) { Tracker.Add(arg); return "CharNullableArg"; }
+    public string CustomEnumNullableArg(CustomEnum? arg) { Tracker.Add(arg); return "CustomEnumNullableArg"; }
+    public string BooleanNullableArg(Boolean? arg) { Tracker.Add(arg); return "BooleanNullableArg"; }
+  }
+
+  public class StaticClassWithNullableMethods {
+    private static ArrayList _tracker = new ArrayList();
+    public static ArrayList Tracker { get { return _tracker;}}
+    public static void Reset() { 
+      Tracker.Clear(); 
+      StaticInt16NullableProperty = null;
+      StaticInt32NullableProperty = null;
+      StaticInt64NullableProperty = null;
+      StaticUInt16NullableProperty = null;
+      StaticUInt32NullableProperty = null;
+      StaticUInt64NullableProperty = null;
+      StaticByteNullableProperty = null;
+      StaticSByteNullableProperty = null;
+      StaticDecimalNullableProperty = null;
+      StaticSingleNullableProperty = null;
+      StaticDoubleNullableProperty = null;
+      StaticCharNullableProperty = null;
+      StaticCustomEnumNullableProperty = null;
+      StaticBooleanNullableProperty = null;
+    }
+    
+    public static Int16? StaticInt16NullableProperty {get; set;}
+    public static Int32? StaticInt32NullableProperty {get; set;}
+    public static Int64? StaticInt64NullableProperty {get; set;}
+    public static UInt16? StaticUInt16NullableProperty {get; set;}
+    public static UInt32? StaticUInt32NullableProperty {get; set;}
+    public static UInt64? StaticUInt64NullableProperty {get; set;}
+    public static Byte? StaticByteNullableProperty {get; set;}
+    public static SByte? StaticSByteNullableProperty {get; set;}
+    public static Decimal? StaticDecimalNullableProperty {get; set;}
+    public static Single? StaticSingleNullableProperty {get; set;}
+    public static Double? StaticDoubleNullableProperty {get; set;}
+    public static Char? StaticCharNullableProperty {get; set;}
+    public static CustomEnum? StaticCustomEnumNullableProperty {get; set;}
+    public static Boolean? StaticBooleanNullableProperty {get; set;}
+    public static string StaticInt16NullableArg(Int16? arg) { Tracker.Add(arg); return "StaticInt16NullableArg"; }
+    public static string StaticInt32NullableArg(Int32? arg) { Tracker.Add(arg); return "StaticInt32NullableArg"; }
+    public static string StaticInt64NullableArg(Int64? arg) { Tracker.Add(arg); return "StaticInt64NullableArg"; }
+    public static string StaticUInt16NullableArg(UInt16? arg) { Tracker.Add(arg); return "StaticUInt16NullableArg"; }
+    public static string StaticUInt32NullableArg(UInt32? arg) { Tracker.Add(arg); return "StaticUInt32NullableArg"; }
+    public static string StaticUInt64NullableArg(UInt64? arg) { Tracker.Add(arg); return "StaticUInt64NullableArg"; }
+    public static string StaticByteNullableArg(Byte? arg) { Tracker.Add(arg); return "StaticByteNullableArg"; }
+    public static string StaticSByteNullableArg(SByte? arg) { Tracker.Add(arg); return "StaticSByteNullableArg"; }
+    public static string StaticDecimalNullableArg(Decimal? arg) { Tracker.Add(arg); return "StaticDecimalNullableArg"; }
+    public static string StaticSingleNullableArg(Single? arg) { Tracker.Add(arg); return "StaticSingleNullableArg"; }
+    public static string StaticDoubleNullableArg(Double? arg) { Tracker.Add(arg); return "StaticDoubleNullableArg"; }
+    public static string StaticCharNullableArg(Char? arg) { Tracker.Add(arg); return "StaticCharNullableArg"; }
+    public static string StaticCustomEnumNullableArg(CustomEnum? arg) { Tracker.Add(arg); return "StaticCustomEnumNullableArg"; }
+    public static string StaticBooleanNullableArg(Boolean? arg) { Tracker.Add(arg); return "StaticBooleanNullableArg"; }
   }
 EOL
   
@@ -656,24 +793,8 @@ no_csc do
         value = @values[input]
         meth_call = (input == "NoArg" ? lambda { target.send(meth)} : lambda {target.send(meth, value)})
         res, ref = meth_call.call
-        if input != "NoArg"
-          result = Helper.result(meth,value)
-          target.tracker.should == [*result]
-        else
-          result = case meth.to_s
-                   when /Params(?:Int32|CStruct|IInterface)ArrArg/
-                    [[]]
-                   when /DefaultInt32Arg/
-                     [10]
-                   when /NoArg/
-                     []
-                   when /OutInt32Arg/
-                     [2]
-                   else
-                     nil
-                   end
-          target.tracker.should == result
-        end
+        result = Helper.result(meth,value, input)
+        target.tracker.should == [*result]
         if ref
           if result.is_a? ArrayList
             ref.should == result[0]
@@ -700,15 +821,39 @@ no_csc do
         it "passes the correct input (#{input}) into method (#{meth}) (RubyClassWithMethods)", &(passes("@target2", meth, input, result))
       end
     end
+
+    def self.property_binds(target, meth, input, result)
+      lambda do
+        target = eval target
+        value = @values[input]
+        method = lambda {target.send("#{meth}=", value)}
+        if result.class == Class && result < Exception
+          method.should raise_error result
+        else
+          target.send(meth).should == nil
+          method.call
+          target.send(meth).should == value
+        end
+      end
+    end
+    def self.run_property_matrix(results, input, keys, targets_one_and_two = true)
+      keys.each do |meth|
+        result = results[meth] || TE
         
-    class ResultHelper
+        it "binds property '#{meth}' with '#{input}' on (ClassWithMethods)", &(property_binds("@target", meth, input, result))
+        next unless targets_one_and_two
+        it "binds property '#{meth}' with '#{input}' on (RubyClassWithMethods)", &(property_binds("@target2", meth, input, result))
+      end
+    end
+        
+    class ConversionHelper
       class << self
-        def test_BooleanArg(v)
+        def convert_for_BooleanArg(v)
           !!v
         end
-        alias_method :test_RefBooleanArg, :test_BooleanArg
+        alias_method :convert_for_RefBooleanArg, :convert_for_BooleanArg
 
-        def test_SingleArg(v)
+        def convert_for_SingleArg(v)
           case v
           when System::UInt32, System::Int32
             System::Single.parse(v.to_s)
@@ -719,15 +864,15 @@ no_csc do
           end
         end
 
-        def test_DoubleArg(v)
+        def convert_for_DoubleArg(v)
           System::Double.induced_from(int32(v)) if v.is_a? System::Char
         end
         
-        def test_DecimalArg(v)
+        def convert_for_DecimalArg(v)
           System::Decimal.induced_from(int32(v)) if v.is_a? System::Char
         end
 
-        def test_CharArg(v)
+        def convert_for_CharArg(v)
           case v
           when System::String
             v[0]
@@ -738,72 +883,72 @@ no_csc do
           end
         end
 
-        def test_IEnumerableArg(v)
+        def convert_for_IEnumerableArg(v)
           if test_value(v)
             v.to_int
           else
             [v]
           end
         end
-        alias_method :test_IListArg, :test_IEnumerableArg
-        alias_method :test_IListOfObjArg, :test_IEnumerableArg
-        alias_method :test_IListOfIntArg, :test_IEnumerableArg
-        alias_method :test_IEnumerableOfIntArg, :test_IEnumerableArg
-        alias_method :test_ArrayArg, :test_IEnumerableArg
-        alias_method :test_ArrayListArg, :test_IEnumerableArg
-        alias_method :test_Int32ArrArg, :test_IEnumerableArg
-        alias_method :test_ParamsInt32ArrArg, :test_IEnumerableArg
-        alias_method :test_ParamsCStructArrArg, :test_IEnumerableArg
-        alias_method :test_HashtableArg, :test_IEnumerableArg
+        alias_method :convert_for_IListArg, :convert_for_IEnumerableArg
+        alias_method :convert_for_IListOfObjArg, :convert_for_IEnumerableArg
+        alias_method :convert_for_IListOfIntArg, :convert_for_IEnumerableArg
+        alias_method :convert_for_IEnumerableOfIntArg, :convert_for_IEnumerableArg
+        alias_method :convert_for_ArrayArg, :convert_for_IEnumerableArg
+        alias_method :convert_for_ArrayListArg, :convert_for_IEnumerableArg
+        alias_method :convert_for_Int32ArrArg, :convert_for_IEnumerableArg
+        alias_method :convert_for_ParamsInt32ArrArg, :convert_for_IEnumerableArg
+        alias_method :convert_for_ParamsCStructArrArg, :convert_for_IEnumerableArg
+        alias_method :convert_for_HashtableArg, :convert_for_IEnumerableArg
         
-        def test_RefInt32Arg(v)
+        def convert_for_RefInt32Arg(v)
           1
         end
 
-        def test_Int32ArgDefaultInt32Arg(v)
+        def convert_for_Int32ArgDefaultInt32Arg(v)
           [Fixnum.induced_from(v.to_int), 10]
         end
 
-        def test_Int32Arg(v)
+        def convert_for_Int32Arg(v)
           if test_value(v)
             v.to_int
           end
         end
-        alias_method :test_BigIntegerArg, :test_Int32Arg
-        alias_method :test_DefaultInt32Arg, :test_Int32Arg
-        alias_method :test_Int32ArgParamsInt32ArrArg, :test_Int32Arg
+        alias_method :convert_for_BigIntegerArg, :convert_for_Int32Arg
+        alias_method :convert_for_DefaultInt32Arg, :convert_for_Int32Arg
+        alias_method :convert_for_Int32ArgParamsInt32ArrArg, :convert_for_Int32Arg
 
-        def test_ParamsIInterfaceArrTestArg(v)
+        def convert_for_ParamsIInterfaceArrTestArg(v)
           if v == nil
             [true, [v]]
-          else
+          else 
             [false, [v]]
           end
         end
 
-        def test_IListArg(v)
+        def convert_for_IListArg(v)
           [v,v.size]
         end
-        alias_method :test_IListOfCharArg, :test_IListArg
-        alias_method :test_IListOfIntArg2, :test_IListArg
+        alias_method :convert_for_IListOfCharArg, :convert_for_IListArg
+        alias_method :convert_for_IListOfIntArg2, :convert_for_IListArg
 
-        def test_EnumIntArg(v)
+        def convert_for_EnumIntArg(v)
           if v.is_a?(CustomEnum)
             EnumInt.new
           end
         end
         
-        def test_CustomEnumArg(v)
+        def convert_for_CustomEnumArg(v)
           if v.is_a?(EnumInt)
             CustomEnum.new
           end
         end
 
         [System::Byte, System::SByte, System::Int16, System::UInt16, System::UInt32, System::Int64, System::UInt64].each do |val|
-          define_method("test_#{val.name.gsub("System::","")}Arg") {|v| val.induced_from(v.to_int) if test_value(v)}
+          define_method("convert_for_#{val.name.gsub("System::","")}Arg") {|v| val.induced_from(v.to_int) if test_value(v)}
         end
         
-        def test_IEnumerableIteratingArg(v)
+        def convert_for_IEnumerableIteratingArg(v)
           case v
           when Hash
             KeyValuePair.of(Object,Object).new(1,1)
@@ -816,11 +961,11 @@ no_csc do
           when Hashtable
             [DictionaryEntry.new(2,2), DictionaryEntry.new(1,1)]
           when System::String
-            test_IEnumerableOfCharIteratingArg(v)
+            convert_for_IEnumerableOfCharIteratingArg(v)
           end
         end
 
-        def test_ListOfIntArg(v)
+        def convert_for_ListOfIntArg(v)
           if [List[Fixnum], System::Array[Fixnum], List[Object], Array, 
               System::Array[System::Char], ArrayList, List[System::Char],
               System::Array[System::Byte], List[System::Byte], Hashtable, 
@@ -828,10 +973,10 @@ no_csc do
             ArrayList.new << v
           end
         end
-        alias_method :test_GenericArg, :test_ListOfIntArg
-        alias_method :test_IDictionaryOfIntIntArg, :test_ListOfIntArg
+        alias_method :convert_for_GenericArg, :convert_for_ListOfIntArg
+        alias_method :convert_for_IDictionaryOfIntIntArg, :convert_for_ListOfIntArg
 
-        def test_RefByteArrArg(v)
+        def convert_for_RefByteArrArg(v)
           if v.is_a? String
             res = System::Array.of(System::Byte).new(v.size)
             i = 0
@@ -842,31 +987,31 @@ no_csc do
           end
         end
 
-        def test_IEnumerableOfCharIteratingArg(v)
+        def convert_for_IEnumerableOfCharIteratingArg(v)
           if v.is_a? System::String
             v.to_s.split(//).map {|e| e.to_clr_string}
           end
         end
 
-        def test_IEnumeratorIteratingArg(v)
+        def convert_for_IEnumeratorIteratingArg(v)
           if [TestList::TestListEnumerator, BindingSpecs::TestListOfInt::TestListEnumeratorOfInt, BindingSpecs::TestListOfChar::TestListEnumeratorOfChar].any? {|e| v.is_a? e}
             v.list
           end
         end
         
-        def test_IEnumeratorOfIntIteratingArg(v)
+        def convert_for_IEnumeratorOfIntIteratingArg(v)
           if [BindingSpecs::TestListOfInt::TestListEnumeratorOfInt].any? {|e| v.is_a? e}
             v.list
           end
         end
         
-        def test_IEnumeratorOfCharIteratingArg(v)
+        def convert_for_IEnumeratorOfCharIteratingArg(v)
           if [BindingSpecs::TestListOfChar::TestListEnumeratorOfChar].any? {|e| v.is_a? e}
             v.list
           end
         end
 
-        def test_DelegateArg(v)
+        def convert_for_DelegateArg(v)
           case v
           when IntIntDelegate
             11
@@ -876,10 +1021,10 @@ no_csc do
             14
           end
         end
-        alias_method :test_IntIntDelegateArg, :test_DelegateArg
+        alias_method :convert_for_IntIntDelegateArg, :convert_for_DelegateArg
 
         def method_missing(meth, *args, &blk)
-          if meth =~ /test_.*?Arg/
+          if meth =~ /convert_for_.*?Arg/
             value
           end
         end
@@ -894,14 +1039,38 @@ no_csc do
         end
       end
     end
-    def self.result(meth, value) 
-      result = ResultHelper.send("test_#{meth}", value)
+    def self.result(meth, value, input) 
+      result = if input == "NoArg"
+                 case meth.to_s
+                 when /Params(?:Int32|CStruct|IInterface)ArrArg/
+                  [[]]
+                 when /DefaultInt32Arg/
+                   [10]
+                 when /NoArg/
+                   []
+                 when /OutInt32Arg/
+                   [2]
+                 when /ParamsIInterfaceArrTestArg/
+                   [false, []]
+                 when /OutBoolean/
+                   true
+                 when /OutImplementsIInterface/
+                   ImplementsIInterface.new
+                 when /OutStructImplementsIInterface/
+                   StructImplementsIInterface.new
+                 when /OutNonByRefInt32Arg/
+                   1
+                 else
+                   nil
+                 end
+               else
+                 ConversionHelper.send("convert_for_#{meth}", value)
+               end
       result.nil? ? result = value : nil
       result
     end
     
     def self.collection_args
-      #RubyArray , RubyHash , RubyClassWithEnumerable, IO, String, System::Array[int], System::Array[Object], IList, IEnumerable, IEnumerator, monkeypatched object
       obj = Object.new
       class << obj
         include Enumerable
@@ -1032,7 +1201,26 @@ no_csc do
       types
     end
 
-    
+    def self.nullable_args
+      {
+         "Int16?Value" => System::Nullable[System::Int16].new(1),
+         "Int32?Value" => System::Nullable[System::Int32].new(1),
+         "Int64?Value" => System::Nullable[System::Int64].new(1),
+         "UInt16?Value" => System::Nullable[System::UInt16].new(1),
+         "UInt32?Value" => System::Nullable[System::UInt32].new(1),
+         "UInt64?Value" => System::Nullable[System::UInt64].new(1),
+         "Byte?Value" => System::Nullable[System::Byte].new(1),
+         "SByte?Value" => System::Nullable[System::SByte].new(1),
+         "Decimal?Value" => System::Nullable[System::Decimal].new(1),
+         "Single?Value" => System::Nullable[System::Single].new(1), 
+         "Char?Value" => System::Nullable[System::Char].new("a"), 
+         "Double?Value" => System::Nullable[System::Double].new(1),
+         "Boolean?Value" => System::Nullable[System::Boolean].new(1), 
+         "CustomEnum?Value" => System::Nullable[CustomEnum].new(CustomEnum.A),
+         "nil" => nil, "obj" => Object.new, "true" => true, "false" => false
+      }
+    end
+
     def self.test_method(a)
       a+4
     end
@@ -1044,4 +1232,6 @@ no_csc do
     end
   end
   class RubyClassWithMethods < ClassWithMethods; end
+  class RubyClassWithNullableMethods < ClassWithNullableMethods; end
+  class RubyStaticClassWithNullableMethods < StaticClassWithNullableMethods; end
 end
