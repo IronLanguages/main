@@ -13,6 +13,10 @@
  *
  * ***************************************************************************/
 
+#if CLR2
+using Microsoft.Scripting.Utils;
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -20,7 +24,6 @@ using System.Windows;
 using System.Reflection;
 using System.IO;
 using System.Text.RegularExpressions;
-using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Silverlight {
     public class DynamicAppManifest {

@@ -424,7 +424,7 @@ namespace Microsoft.Scripting.Actions {
             } else {
                 resolver = resolverFactory.CreateOverloadResolver(parameters, new CallSignature(parameters.Length - 1), CallTypes.ImplicitInstance);
             }
-            BindingTarget target = resolver.ResolveOverload(method.Name, new MethodBase[] { method }, NarrowingLevel.None, NarrowingLevel.Three);
+            BindingTarget target = resolver.ResolveOverload(method.Name, new MethodBase[] { method }, NarrowingLevel.None, NarrowingLevel.All);
 
             if (!target.Success) {
                 BindingRestrictions restrictions = BindingRestrictions.Combine(parameters);

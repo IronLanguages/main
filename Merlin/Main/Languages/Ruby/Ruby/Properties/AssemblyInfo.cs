@@ -53,6 +53,6 @@ using IronRuby.Runtime;
 #endif
 
 [assembly: SecurityTransparent]
-#if !CLR2
+#if !CLR2 && !SILVERLIGHT
 [assembly: SecurityRules(SecurityRuleSet.Level1)]
 #endif

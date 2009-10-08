@@ -287,6 +287,10 @@ namespace IronPythonTest {
 
             Flag = 198;
         }
+        
+        public Single P01 {
+            get; set;
+        }
     }
 
     public class DispatchBase {

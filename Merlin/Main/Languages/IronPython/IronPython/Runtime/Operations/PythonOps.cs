@@ -4127,11 +4127,11 @@ namespace IronPython.Runtime.Operations {
 
         #endregion
 
-        private static readonly Microsoft.Scripting.Utils.ThreadLocal<List<FunctionStack>> _funcStack = new Microsoft.Scripting.Utils.ThreadLocal<List<FunctionStack>>(true);
-        private static Func<List<FunctionStack>> Creator = () => new List<FunctionStack>();
+        [ThreadStatic]
+        private static List<FunctionStack> _funcStack;
 
         public static List<FunctionStack> GetFunctionStack() {
-            return _funcStack.GetOrCreate(Creator);
+            return _funcStack ?? (_funcStack = new List<FunctionStack>());
         }
 
         public static List<FunctionStack> PushFrame(CodeContext context, FunctionCode function) {

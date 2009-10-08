@@ -461,15 +461,25 @@ namespace IronRuby.Builtins {
                 return self.GetStream().BaseStream == Stream.Null;
             }
 
-            IntPtr handle = GetStdHandle(GetStdHandleId(console.Value));
-            if (handle == IntPtr.Zero) {
-                throw new Win32Exception();
-            }
+            int fd = GetStdHandleFd(console.Value);
+            switch (Environment.OSVersion.Platform) {
+                case PlatformID.Win32NT:
+                case PlatformID.Win32S:
+                case PlatformID.Win32Windows:
+                case PlatformID.WinCE:
+                    IntPtr handle = GetStdHandle(fd);
+                    if (handle == IntPtr.Zero) {
+                        throw new Win32Exception();
+                    }
 
-            return GetFileType(handle) == FILE_TYPE_CHAR;
+                    return GetFileType(handle) == FILE_TYPE_CHAR;
+
+                default:
+                    return isatty(fd) == 1;
+            }
         }
 
-        private static int GetStdHandleId(ConsoleStreamType streamType) {
+        private static int GetStdHandleFd(ConsoleStreamType streamType) {
             switch (streamType) {
                 case ConsoleStreamType.Input: return STD_INPUT_HANDLE;
                 case ConsoleStreamType.Output: return STD_OUTPUT_HANDLE;
@@ -489,6 +499,9 @@ namespace IronRuby.Builtins {
         
         [DllImport("kernel32")]
         private extern static int GetFileType(IntPtr hFile);
+
+        [DllImport ("libc")]
+        private static extern int isatty(int desc);
 #endif
 
         #endregion

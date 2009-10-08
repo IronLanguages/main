@@ -50,7 +50,7 @@ namespace IronPython.Runtime.Types {
         }
 
         internal override bool TryGetValue(CodeContext context, object instance, PythonType owner, out object value) {
-            if (instance != null) {
+            if (instance != null || owner == TypeCache.Null) {
                 CheckSelf(context, instance);
                 value = UncheckedGetAttribute(instance);
                 return true;

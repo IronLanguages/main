@@ -81,7 +81,7 @@ namespace IronPython.Runtime {
             ContractUtils.RequiresNotNull(name, "name");
 
 
-            FieldName fieldName = ParseFieldName(name);
+            FieldName fieldName = ParseFieldName(name, false);
 
             if (String.IsNullOrEmpty(fieldName.ArgumentName)) {
                 throw PythonOps.ValueError("empty field name");
@@ -357,17 +357,13 @@ namespace IronPython.Runtime {
 
                     if (fieldName != null) {
                         // get the argument value
-                        object argValue = GetArgumentValue(ParseFieldName(fieldName));
+                        object argValue = GetArgumentValue(ParseFieldName(fieldName, true));
 
                         // apply the conversion
                         argValue = ApplyConversion(conversion, argValue);
 
                         // handle computed format specifiers
                         formatSpec = ReplaceComputedFormats(formatSpec);
-
-                        if (argValue == null) {
-                            throw PythonOps.ValueError("NoneType does not have __format__ method");
-                        }
 
                         // append the string
                         builder.Append(Builtin.format(_context.SharedContext, argValue, formatSpec));
@@ -385,19 +381,9 @@ namespace IronPython.Runtime {
             private string/*!*/ ReplaceComputedFormats(string/*!*/ formatSpec) {
                 int computeStart = formatSpec.IndexOf('{');
                 if (computeStart != -1) {
-                    int depth = 1;
-                    int end;
-                    for (end = computeStart; end < formatSpec.Length && depth != 0; end++) {
-                        if (formatSpec[end] == '{') {
-                            depth++;
-                        } else if (formatSpec[end] == '}') {
-                            depth--;
-                        }
-                    }
-
                     formatSpec = FormatString(
                         _context,
-                        formatSpec.Substring(computeStart, end - computeStart),
+                        formatSpec,
                         _args,
                         _kwArgs,
                         _depth + 1
@@ -494,18 +480,18 @@ namespace IronPython.Runtime {
         /// <summary>
         /// Parses the field name including attribute access or element indexing.
         /// </summary>
-        private static FieldName ParseFieldName(string/*!*/ str) {
+        private static FieldName ParseFieldName(string/*!*/ str, bool reportErrors) {
             // (identifier | integer) ("." attribute_name | "[" element_index "]")*
             int index = 0;
             string arg = ParseIdentifier(str, false, ref index);
 
-            return new FieldName(arg, ParseFieldAccessors(str, index));
+            return new FieldName(arg, ParseFieldAccessors(str, index, reportErrors));
         }
 
         /// <summary>
         /// Parses the field name including attribute access or element indexing.
         /// </summary>
-        private static IEnumerable<FieldAccessor> ParseFieldAccessors(string/*!*/ str, int index) {
+        private static IEnumerable<FieldAccessor> ParseFieldAccessors(string/*!*/ str, int index, bool reportErrors) {
             // (identifier | integer) ("." attribute_name | "[" element_index "]")*
             while (index != str.Length && str[index] != '}') {
                 char accessType = str[index];
@@ -529,7 +515,11 @@ namespace IronPython.Runtime {
 
                     yield return new FieldAccessor(identifier, !isIndex);
                 } else {
-                    break;
+                    if (reportErrors) {
+                        throw PythonOps.ValueError("Only '.' and '[' are valid in format field specifier, got {0}", accessType);
+                    } else {
+                        break;
+                    }
                 }
             }
         }

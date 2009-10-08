@@ -35,7 +35,7 @@ namespace IronPython.Compiler {
         private readonly string _moduleName;
 
         public OnDiskScriptCode(Func<CodeContext, FunctionCode, object> code, SourceUnit sourceUnit, string moduleName) :
-            base(sourceUnit) {
+            base(sourceUnit, SourceSpan.None) {
             _code = code;
             _moduleName = moduleName;
         }

@@ -970,12 +970,56 @@ namespace IronPython.Compiler.Ast {
         internal MSAst.Expression AddProfiling(MSAst.Expression/*!*/ body) {
             if (_profiler != null) {
                 MSAst.ParameterExpression tick = GetTemporary("$tick", typeof(long));
-                bool unique = (_profilerName == NameForExec);
-                body = _profiler.AddProfiling(body, tick, ProfilerName, unique);
+                return new DelayedProfiling(this, body, tick);
             }
             return body;
         }
 
+        /// <summary>
+        /// Reducible node so that re-writing for profiling does not occur until
+        /// after the script code has been completed and is ready to be compiled.
+        /// 
+        /// Without this extra node profiling would force reduction of the node
+        /// and we wouldn't have setup our constant access correctly yet.
+        /// </summary>
+        class DelayedProfiling : MSAst.Expression {
+            private readonly AstGenerator _astGen;
+            private readonly MSAst.Expression _body;
+            private readonly MSAst.ParameterExpression _tick;
+
+            public DelayedProfiling(AstGenerator astGen, MSAst.Expression body, MSAst.ParameterExpression tick) {
+                _astGen = astGen;
+                _body = body;
+                _tick = tick;
+            }
+
+            public override bool CanReduce {
+                get {
+                    return true;
+                }
+            }
+            
+            public override Type Type {
+                get {
+                    return _body.Type;
+                }
+            }
+
+            protected override MSAst.Expression VisitChildren(ExpressionVisitor visitor) {
+                return visitor.Visit(_body);
+            }
+
+            public override MSAst.Expression Reduce() {
+                bool unique = (_astGen._profilerName == NameForExec);
+                return _astGen._profiler.AddProfiling(_body, _tick, _astGen.ProfilerName, unique);
+            }
+
+            public override ExpressionType NodeType {
+                get {
+                    return ExpressionType.Extension;
+                }
+            }
+        }
         /// <summary>
         /// Creates a method frame for tracking purposes and enforces recursion
         /// </summary>

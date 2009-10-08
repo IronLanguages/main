@@ -483,8 +483,8 @@ namespace IronPython.Runtime.Binding {
                         self.Restrictions
                     );
                 }
-            } else if (self.Value is IEnumerable ||
-                    typeof(IEnumerable).IsAssignableFrom(self.GetLimitType())) {
+            } else if ((self.Value is IEnumerable ||
+                    typeof(IEnumerable).IsAssignableFrom(self.GetLimitType())) && !(self.Value is PythonGenerator)) {
                 self = self.Restrict(self.GetLimitType());
 
                 return new DynamicMetaObject(

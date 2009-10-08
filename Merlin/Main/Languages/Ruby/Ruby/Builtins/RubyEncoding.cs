@@ -24,10 +24,11 @@ using System.Collections.Generic;
 using System.Text;
 using System.Diagnostics;
 using System.Threading;
-using Microsoft.Scripting;
+using System.Runtime.Serialization;
+using System.Security.Permissions;
 using Microsoft.Scripting.Utils;
-using IronRuby.Runtime;
 using Microsoft.Scripting.Runtime;
+using IronRuby.Runtime;
 using IronRuby.Compiler;
 
 namespace IronRuby.Builtins {
@@ -37,7 +38,8 @@ namespace IronRuby.Builtins {
     /// Instances of this class are app-domain singletons. That's all right as far as the class is readonly and doesn't implement IRubyObject.
     /// Taint, frozen flags and instance variables need to be stored in per-runtime lookaside table.
     /// </summary>
-    public class RubyEncoding : IExpressionSerializable {
+    [Serializable]
+    public class RubyEncoding : ISerializable, IExpressionSerializable {
         #region Singletons
 
         internal const int CodePageBinary = 0;
@@ -123,6 +125,40 @@ namespace IronRuby.Builtins {
             _realEncoding = realEncoding ?? this;
             _maxBytesPerChar = strictEncoding.GetMaxByteCount(1);
         }
+
+        #region Serialization
+#if !SILVERLIGHT
+        private RubyEncoding(SerializationInfo/*!*/ info, StreamingContext context) {
+            throw Assert.Unreachable;
+        }
+
+        [Serializable]
+        internal sealed class Deserializer : ISerializable, IObjectReference {
+            private readonly int _codePage;
+            private readonly bool _isKCoding;
+
+            private Deserializer(SerializationInfo/*!*/ info, StreamingContext context) {
+                _codePage = info.GetInt32("CodePage");
+                _isKCoding = info.GetBoolean("IsKCoding");
+            }
+
+            public object GetRealObject(StreamingContext context) {
+                return _isKCoding ? TryGetKCoding(_codePage) : GetRubyEncoding(_codePage);
+            }
+
+            void ISerializable.GetObjectData(SerializationInfo/*!*/ info, StreamingContext context) {
+                throw Assert.Unreachable;
+            }
+        }
+
+        [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.SerializationFormatter)]
+        void ISerializable.GetObjectData(SerializationInfo/*!*/ info, StreamingContext context) {
+            info.AddValue("CodePage", _encoding.CodePage);
+            info.AddValue("IsKCoding", IsKCoding);
+            info.SetType(typeof(Deserializer));
+        }
+#endif
+        #endregion
 
         public int MaxBytesPerChar {
             get { return _maxBytesPerChar; }
@@ -382,7 +418,7 @@ namespace IronRuby.Builtins {
         }
 
         Expression/*!*/ IExpressionSerializable.CreateExpression() {
-            // TODO: use a static fields, deal with KCODEs
+            // TODO: use static fields, deal with KCODEs
             return Methods.CreateEncoding.OpCall(Expression.Constant(_encoding.CodePage));
         }
 #else

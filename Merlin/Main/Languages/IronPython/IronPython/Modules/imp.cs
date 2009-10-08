@@ -86,7 +86,7 @@ namespace IronPython.Modules {
             // already loaded? do reload()
             PythonModule module = pythonContext.GetModuleByName(name);
             if (module != null) {
-                Importer.ReloadModule(context, module);
+                Importer.ReloadModule(context, module, file);
                 return module;
             }
 

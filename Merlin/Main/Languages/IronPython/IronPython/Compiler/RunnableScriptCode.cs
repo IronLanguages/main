@@ -28,9 +28,11 @@ using IronPython.Runtime.Operations;
 namespace IronPython.Compiler {    
     abstract class RunnableScriptCode : ScriptCode {
         private FunctionCode _code;
+        private readonly SourceSpan _span;
 
-        public RunnableScriptCode(SourceUnit sourceUnit)
+        public RunnableScriptCode(SourceUnit sourceUnit, SourceSpan span)
             : base(sourceUnit) {
+            _span = span;
         }
 
         public override object Run() {
@@ -71,7 +73,7 @@ namespace IronPython.Compiler {
                         "",
                         ArrayUtils.EmptyStrings,
                         GetCodeAttributes(),
-                        SourceSpan.None,
+                        _span,
                         SourceUnit.Path,
                         false,
                         true,

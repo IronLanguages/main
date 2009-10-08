@@ -882,7 +882,7 @@ namespace IronPython.Runtime {
     public class PythonFile : IDisposable, ICodeFormattable, IEnumerator<string>, IEnumerator, IWeakReferenceable {
         private ConsoleStreamType _consoleStreamType;
         private SharedIO _io;   // null for non-console
-        private Stream _stream; // null for console
+        internal Stream _stream; // null for console
         private string _mode;
         private string _name, _encoding;
         private PythonFileMode _fileMode;

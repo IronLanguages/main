@@ -13,4 +13,13 @@
 #
 # ****************************************************************************
 
-load_assembly 'IronRuby.Libraries', 'IronRuby.StandardLibrary.Win32API'
+case System::Environment.OSVersion.Platform
+  when System::PlatformID.Win32S:
+  when System::PlatformID.Win32Windows:
+  when System::PlatformID.Win32NT:
+    load_assembly 'IronRuby.Libraries', 'IronRuby.StandardLibrary.Win32API'
+  else
+    raise LoadError, "Win32API is only available on Windows"
+end
+
+

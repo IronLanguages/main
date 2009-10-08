@@ -117,7 +117,7 @@ class IRTest
         return
       end
     end
-    
+        
     msbuild "Hosts\\Silverlight\\Silverlight.sln", @sl_config, options
   end
 
@@ -148,7 +148,9 @@ class IRTest
   end
 
   def run_cmd(cmd, &blk)
-    puts cmd if $DEBUG
+    puts
+    puts cmd
+    puts
     blk.call unless system cmd
   end
   

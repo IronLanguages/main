@@ -656,6 +656,8 @@ namespace IronRuby.Tests {
                 Dlr_Methods,
                 Dlr_Visibility,
                 Dlr_Languages,
+
+                Serialization1,
             };
         }
     }
