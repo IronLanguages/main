@@ -342,6 +342,98 @@ public interface IDoFoo {
       return;
     }
   }
+  public interface I1 { string M(); }
+  public interface I2 { string M(); }
+  public interface I3<T> { string M(); }
+  public interface I4 { string M(int arg); }
+
+//TODO: Write tests for these cases when Explicit interface methods work.
+  public class ClassI1_1 : I1 {
+    string I1.M() { return "I1.M"; }
+  }
+
+  public class ClassI1_2 : I1 {
+    string I1.M() { return "I1.M"; }
+    public string M() { return "class M"; }
+  }
+
+  public class ClassI2I1 : I2, I1 {
+    string I1.M() { return "I1.M"; }
+    string I2.M() { return "I2.M"; }
+  }
+
+  public class ClassI3Obj : I3<object> {
+    string I3<object>.M() { return "I3<object>.M"; }
+    public string M() { return "class M"; }
+  }
+
+  public class ClassI1I2I3Obj : I1, I2, I3<object> {
+    string I1.M() { return "I1.M"; }
+    string I2.M() { return "I2.M"; }
+    string I3<object>.M() { return "I3<object>.M"; }
+    public string M() { return "class M"; }
+  }
+
+  public class ClassI3_1<T> : I3<T> {
+    string I3<T>.M() { return "I3<T>.M"; }
+    public string M() { return "class M"; }
+  }
+
+  public class ClassI3_2<T> : I3<T> {
+    string I3<T>.M() { return "I3<T>.M"; }
+  }
+
+  public class ClassI1I4 : I1, I4 {
+    string I1.M() { return "I1.M"; }
+    string I4.M(int arg) { return "I4.M"; }
+  }
+
+  public class PublicEventArgs : EventArgs { }
+  class PrivateEventArgs : PublicEventArgs { }
+  public delegate IPublicInterface PublicDelegateType(IPublicInterface sender, PublicEventArgs args);
+
+  // Private class
+  class PrivateClass : IPublicInterface {
+      public IPublicInterface Hello {
+          get { return this; }
+          set { }
+      }
+
+      public void Foo(IPublicInterface f) {
+      }
+
+      public IPublicInterface RetInterface() {
+          return this;
+      }
+
+      public event PublicDelegateType MyEvent;
+      public IPublicInterface FireEvent(PublicEventArgs args) {
+          return MyEvent(this, args);
+      }
+
+      public PublicEventArgs GetEventArgs() {
+          return new PrivateEventArgs();
+      }
+  }
+
+  // Public Interface
+  public interface IPublicInterface {
+      IPublicInterface Hello { get; set; }
+      void Foo(IPublicInterface f);
+      IPublicInterface RetInterface();
+      event PublicDelegateType MyEvent;
+      IPublicInterface FireEvent(PublicEventArgs args);
+      PublicEventArgs GetEventArgs();
+  }
+
+  // Access the private class via the public interface
+  public class InterfaceOnlyTest {
+      public static IPublicInterface PrivateClass {
+          get {
+              return new PrivateClass(); 
+          }
+      }
+  }
 #line 1 "./interfacegroup/fixtures/classes.rb"
 public interface IEmptyInterfaceGroup { }
   public interface IEmptyInterfaceGroup<T> { }
@@ -1057,19 +1149,6 @@ public abstract partial class AbstractClassWithMethods {
       return "RefInt32Int32OutInt32Arg";
     }
   }
-
-  public struct StructWithMethods {
-    private short _shortField;
-    public short ShortField {
-      get { 
-        return _shortField;
-      }
-      set {
-        _shortField = value;
-      }
-    }
-  }
-
   public partial class GenericClassWithMethods<K> {
     public ArrayList Tracker { get; set;}
     public GenericClassWithMethods() {
@@ -1081,52 +1160,6 @@ public abstract partial class AbstractClassWithMethods {
   }
 
   public delegate int IntIntDelegate(int arg);
-
-  public interface I1 { string M(); }
-  public interface I2 { string M(); }
-  public interface I3<T> { string M(); }
-  public interface I4 { string M(int arg); }
-
-//TODO: Write tests for these cases when Explicit interface methods work.
-  public class ClassI1_1 : I1 {
-    string I1.M() { return "I1.M"; }
-  }
-
-  public class ClassI1_2 : I1 {
-    string I1.M() { return "I1.M"; }
-    public string M() { return "class M"; }
-  }
-
-  public class ClassI2I1 : I2, I1 {
-    string I1.M() { return "I1.M"; }
-    string I2.M() { return "I2.M"; }
-  }
-
-  public class ClassI3Obj : I3<object> {
-    string I3<object>.M() { return "I3<object>.M"; }
-    public string M() { return "class M"; }
-  }
-
-  public class ClassI1I2I3Obj : I1, I2, I3<object> {
-    string I1.M() { return "I1.M"; }
-    string I2.M() { return "I2.M"; }
-    string I3<object>.M() { return "I3<object>.M"; }
-    public string M() { return "class M"; }
-  }
-
-  public class ClassI3_1<T> : I3<T> {
-    string I3<T>.M() { return "I3<T>.M"; }
-    public string M() { return "class M"; }
-  }
-
-  public class ClassI3_2<T> : I3<T> {
-    string I3<T>.M() { return "I3<T>.M"; }
-  }
-
-  public class ClassI1I4 : I1, I4 {
-    string I1.M() { return "I1.M"; }
-    string I4.M(int arg) { return "I4.M"; }
-  }
 
   public class VirtualMethodBaseClass { 
     public virtual string VirtualMethod() { return "virtual"; } 
@@ -1352,6 +1385,17 @@ namespace CLRNew {
 #line 1 "./struct/fixtures/classes.rb"
 public struct EmptyStruct {}
   public struct CStruct { public int m1() {return 1;}}
+  public struct StructWithMethods {
+    private short _shortField;
+    public short ShortField {
+      get { 
+        return _shortField;
+      }
+      set {
+        _shortField = value;
+      }
+    }
+  }
 #line 1 "./typegroup/fixtures/classes.rb"
 public class StaticMethodTypeGroup {
     public static int Return(int retval) { return retval; }

@@ -427,19 +427,6 @@ csc <<-EOL
       return "RefInt32Int32OutInt32Arg";
     }
   }
-
-  public struct StructWithMethods {
-    private short _shortField;
-    public short ShortField {
-      get { 
-        return _shortField;
-      }
-      set {
-        _shortField = value;
-      }
-    }
-  }
-
   public partial class GenericClassWithMethods<K> {
     public ArrayList Tracker { get; set;}
     public GenericClassWithMethods() {
@@ -451,52 +438,6 @@ csc <<-EOL
   }
 
   public delegate int IntIntDelegate(int arg);
-
-  public interface I1 { string M(); }
-  public interface I2 { string M(); }
-  public interface I3<T> { string M(); }
-  public interface I4 { string M(int arg); }
-
-//TODO: Write tests for these cases when Explicit interface methods work.
-  public class ClassI1_1 : I1 {
-    string I1.M() { return "I1.M"; }
-  }
-
-  public class ClassI1_2 : I1 {
-    string I1.M() { return "I1.M"; }
-    public string M() { return "class M"; }
-  }
-
-  public class ClassI2I1 : I2, I1 {
-    string I1.M() { return "I1.M"; }
-    string I2.M() { return "I2.M"; }
-  }
-
-  public class ClassI3Obj : I3<object> {
-    string I3<object>.M() { return "I3<object>.M"; }
-    public string M() { return "class M"; }
-  }
-
-  public class ClassI1I2I3Obj : I1, I2, I3<object> {
-    string I1.M() { return "I1.M"; }
-    string I2.M() { return "I2.M"; }
-    string I3<object>.M() { return "I3<object>.M"; }
-    public string M() { return "class M"; }
-  }
-
-  public class ClassI3_1<T> : I3<T> {
-    string I3<T>.M() { return "I3<T>.M"; }
-    public string M() { return "class M"; }
-  }
-
-  public class ClassI3_2<T> : I3<T> {
-    string I3<T>.M() { return "I3<T>.M"; }
-  }
-
-  public class ClassI1I4 : I1, I4 {
-    string I1.M() { return "I1.M"; }
-    string I4.M(int arg) { return "I4.M"; }
-  }
 
   public class VirtualMethodBaseClass { 
     public virtual string VirtualMethod() { return "virtual"; } 
