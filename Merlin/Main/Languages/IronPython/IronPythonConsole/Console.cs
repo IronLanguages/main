@@ -14,12 +14,14 @@
  * ***************************************************************************/
 
 using System;
-using IronPython.Hosting;
-using IronPython.Runtime;
+using System.Collections.Generic;
+
 using Microsoft.Scripting.Hosting;
 using Microsoft.Scripting.Hosting.Providers;
 using Microsoft.Scripting.Hosting.Shell;
-using System.Reflection.Emit;
+
+using IronPython.Hosting;
+using IronPython.Runtime;
 
 internal sealed class PythonConsoleHost : ConsoleHost {
 
@@ -35,8 +37,8 @@ internal sealed class PythonConsoleHost : ConsoleHost {
         return new PythonOptionsParser();
     }
 
-    protected override LanguageSetup/*!*/ CreateLanguageSetup() {
-        return Python.CreateLanguageSetup(null);
+    protected override ScriptRuntimeSetup CreateRuntimeSetup() {
+        return Python.CreateRuntimeSetup(new Dictionary<string, object>() { { "SearchPaths", new string[0] } });
     }
 
     protected override void ParseHostOptions(string/*!*/[]/*!*/ args) {

@@ -26,7 +26,7 @@ using System.Security;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Microsoft")]
 [assembly: AssemblyProduct("IronPython")]
-[assembly: AssemblyCopyright("� Microsoft Corporation.  All rights reserved.")]
+[assembly: AssemblyCopyright("© Microsoft Corporation.  All rights reserved.")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -52,6 +52,6 @@ using System.Security;
 
 [assembly: SecurityTransparent]
 [assembly: CLSCompliant(false)]
-#if !CLR2
+#if !CLR2 && !SILVERLIGHT
 [assembly: SecurityRules(SecurityRuleSet.Level1)]
 #endif

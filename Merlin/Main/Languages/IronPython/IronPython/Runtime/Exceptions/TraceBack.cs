@@ -78,20 +78,20 @@ namespace IronPython.Runtime.Exceptions {
         private readonly PythonDebuggingPayload _debugProperties;
         private readonly Func<IAttributesCollection> _scopeCallback;
 
-        private readonly object _globals;
+        private readonly PythonDictionary _globals;
         private readonly object _locals;
-        private readonly object _code;
+        private readonly FunctionCode _code;
         private readonly CodeContext/*!*/ _context;
         private readonly TraceBackFrame _back;
 
-        internal TraceBackFrame(CodeContext/*!*/ context, object globals, object locals, object code) {
+        internal TraceBackFrame(CodeContext/*!*/ context, PythonDictionary globals, object locals, FunctionCode code) {
             _globals = globals;
             _locals = locals;
             _code = code;
             _context = context;
         }
 
-        internal TraceBackFrame(CodeContext/*!*/ context, object globals, object locals, object code, TraceBackFrame back) {
+        internal TraceBackFrame(CodeContext/*!*/ context, PythonDictionary globals, object locals, FunctionCode code, TraceBackFrame back) {
             _globals = globals;
             _locals = locals;
             _code = code;
@@ -99,7 +99,7 @@ namespace IronPython.Runtime.Exceptions {
             _back = back;
         }
 
-        internal TraceBackFrame(PythonTracebackListener traceAdapter, object code, TraceBackFrame back, PythonDebuggingPayload debugProperties, Func<IAttributesCollection> scopeCallback) {
+        internal TraceBackFrame(PythonTracebackListener traceAdapter, FunctionCode code, TraceBackFrame back, PythonDebuggingPayload debugProperties, Func<IAttributesCollection> scopeCallback) {
             _traceAdapter = traceAdapter;
             _code = code;
             _back = back;
@@ -139,7 +139,7 @@ namespace IronPython.Runtime.Exceptions {
             }
         }
 
-        public object f_globals {
+        public PythonDictionary f_globals {
             get {
                 if (_traceAdapter != null && _scopeCallback != null) {
                     return new PythonDictionary(new AttributesDictionaryStorage(_scopeCallback()));
@@ -159,7 +159,7 @@ namespace IronPython.Runtime.Exceptions {
             }
         }
 
-        public object f_code {
+        public FunctionCode f_code {
             get {
                 return _code;
             }

@@ -22,8 +22,13 @@
     <SignedSym Condition="'$(SignAssembly)' == 'true'">SIGNED</SignedSym>
     <DelaySign>true</DelaySign>
     <BaseAddress>857735168</BaseAddress>
-    <SilverlightPath Condition="'$(SilverlightPath)' == ''">..\..\Utilities\Silverlight\x86ret\</SilverlightPath>
     <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
+    <Silverlight3Path>..\..\Utilities\Silverlight\x86ret</Silverlight3Path>
+    <Silverlight4Path>..\..\Utilities\Silverlight\v4-x86fre</Silverlight4Path>
+
+    <!-- The following two lines prevent csc.rsp and Microsoft.NETFramework.props from adding additional assembly references -->
+    <NoConfig>true</NoConfig>
+    <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FxCop|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -73,6 +78,7 @@
     <NoWarn>1591,618</NoWarn>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
     <SilverlightBuild>true</SilverlightBuild>
+    <SilverlightPath Condition="'$(SilverlightPath)' == ''">$(Silverlight3Path)</SilverlightPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight Release|AnyCPU' ">
     <OutputPath>..\..\Bin\Silverlight Release\</OutputPath>
@@ -86,6 +92,7 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
     <SilverlightBuild>true</SilverlightBuild>
+    <SilverlightPath Condition="'$(SilverlightPath)' == ''">$(Silverlight3Path)</SilverlightPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'V4 Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -112,12 +119,50 @@
     <RunCodeAnalysis>false</RunCodeAnalysis>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
   </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight 4 Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\..\Bin\Silverlight 4 Debug\</OutputPath>
+    <DocumentationFile>..\..\Bin\Silverlight 4 Debug\Microsoft.Scripting.xml</DocumentationFile>
+    <DefineConstants>TRACE;DEBUG;SILVERLIGHT;CLR4;$(SignedSym)</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
+    <NoStdLib>true</NoStdLib>
+    <NoWarn>1591,618</NoWarn>
+    <RunCodeAnalysis>false</RunCodeAnalysis>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <SilverlightBuild>true</SilverlightBuild>
+    <SilverlightPath Condition="'$(SilverlightPath)' == ''">$(Silverlight4Path)</SilverlightPath>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight 4 Release|AnyCPU' ">
+    <NoStdLib>true</NoStdLib>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <OutputPath>..\..\Bin\Silverlight 4 Release\</OutputPath>
+    <DocumentationFile>..\..\Bin\Silverlight 4 Release\Microsoft.Scripting.xml</DocumentationFile>
+    <DefineConstants>TRACE;SILVERLIGHT;CLR4;$(SignedSym)</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <NoWarn>1591,618</NoWarn>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <SilverlightBuild>true</SilverlightBuild>
+    <SilverlightPath Condition="'$(SilverlightPath)' == ''">$(Silverlight4Path)</SilverlightPath>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\Hosts\Silverlight\SilverlightVersion.cs" Condition=" '$(SilverlightBuild)' == 'true' ">
       <Link>Properties\SilverlightVersion.cs</Link>
     </Compile>
     <Compile Include="ArgumentTypeException.cs" />
     <Compile Include="AssemblyLoadedEventArgs.cs" />
+    <Compile Include="Stubs.cs" />
     <Compile Include="CompilerOptions.cs" />
     <Compile Include="ErrorSink.cs" />
     <Compile Include="GlobalSuppressions.cs" />
@@ -148,74 +193,30 @@
     <Compile Include="Hosting\ScriptScope.cs" />
     <Compile Include="Hosting\ScriptSource.cs" />
     <Compile Include="Hosting\TokenCategorizer.cs" />
-    <Compile Include="Runtime\BaseSymbolDictionary.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="Runtime\ContextId.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="Runtime\DlrConfiguration.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="Runtime\DynamicOperations.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="Runtime\DynamicRuntimeHostingProvider.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="Runtime\InvariantContext.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="Runtime\LanguageBoundTextContentProvider.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="Runtime\LanguageContext.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="Runtime\NotNullAttribute.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="Runtime\Operators.cs">
-      <SubType>Code</SubType>
-    </Compile>
+    <Compile Include="Runtime\BaseSymbolDictionary.cs" />
+    <Compile Include="Runtime\ContextId.cs" />
+    <Compile Include="Runtime\DlrConfiguration.cs" />
+    <Compile Include="Runtime\DynamicOperations.cs" />
+    <Compile Include="Runtime\DynamicRuntimeHostingProvider.cs" />
+    <Compile Include="Runtime\InvariantContext.cs" />
+    <Compile Include="Runtime\LanguageBoundTextContentProvider.cs" />
+    <Compile Include="Runtime\LanguageContext.cs" />
+    <Compile Include="Runtime\NotNullAttribute.cs" />
+    <Compile Include="Runtime\Operators.cs" />
     <Compile Include="Runtime\ParamDictionaryAttribute.cs" />
-    <Compile Include="Runtime\ParserSink.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="Runtime\Scope.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="Runtime\ScopeExtension.cs">
-      <SubType>Code</SubType>
-    </Compile>
+    <Compile Include="Runtime\ParserSink.cs" />
+    <Compile Include="Runtime\Scope.cs" />
+    <Compile Include="Runtime\ScopeExtension.cs" />
     <Compile Include="Runtime\ScopeStorage.cs" />
-    <Compile Include="Runtime\ScriptCode.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="Runtime\ScriptDomainManager.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="Runtime\SharedIO.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="Runtime\SourceStringContentProvider.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="Runtime\StreamContentProvider.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="Runtime\SymbolDictionary.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="Runtime\TokenInfo.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="Runtime\TokenizerService.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="Runtime\TokenTriggers.cs">
-      <SubType>Code</SubType>
-    </Compile>
+    <Compile Include="Runtime\ScriptCode.cs" />
+    <Compile Include="Runtime\ScriptDomainManager.cs" />
+    <Compile Include="Runtime\SharedIO.cs" />
+    <Compile Include="Runtime\SourceStringContentProvider.cs" />
+    <Compile Include="Runtime\StreamContentProvider.cs" />
+    <Compile Include="Runtime\SymbolDictionary.cs" />
+    <Compile Include="Runtime\TokenInfo.cs" />
+    <Compile Include="Runtime\TokenizerService.cs" />
+    <Compile Include="Runtime\TokenTriggers.cs" />
     <Compile Include="Runtime\TransformDictEnumerator.cs" />
     <Compile Include="ScriptCodeParseResult.cs" />
     <Compile Include="Severity.cs" />
@@ -247,17 +248,29 @@
     <Compile Include="Utils\StringUtils.cs" />
     <Compile Include="Utils\TextStream.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <Reference Include="System" Condition=" '$(SilverlightBuild)' != 'true' " />
-    <Reference Include="System.Configuration" Condition=" '$(SilverlightBuild)' != 'true' " />
-    <Reference Include="mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" Condition=" '$(SilverlightBuild)' == 'true' ">
+  <ItemGroup Condition=" '$(SilverlightBuild)' != 'true' ">
+    <Reference Include="System" />
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Runtime.Remoting" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Core" Condition=" '$(TargetFrameworkVersion)' == 'v4.0' " />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(SilverlightBuild)' == 'true' ">
+    <Reference Include="mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(SilverlightPath)\mscorlib.dll</HintPath>
     </Reference>
-    <Reference Include="System, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" Condition=" '$(SilverlightBuild)' == 'true' ">
+    <Reference Include="System, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(SilverlightPath)\System.dll</HintPath>
     </Reference>
+    <Reference Include="System.Core, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" Condition=" '$(TargetFrameworkVersion)' == 'v4.0' ">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(SilverlightPath)\System.Core.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\..\..\..\ndp\fx\src\Core\Microsoft\Scripting\Microsoft.Scripting.Core.csproj" Condition="'$(TargetFrameworkVersion)' != 'v4.0'">
       <Project>{2AE75F5A-CD1F-4925-9647-AF4D1C282FB4}</Project>
       <Name>Microsoft.Scripting.Core</Name>
@@ -267,9 +280,6 @@
       <Project>{8B0F1074-750E-4D64-BF23-A1E0F54261E5}</Project>
       <Name>Microsoft.Scripting.ExtensionAttribute</Name>
     </ProjectReference>
-    <Reference Include="System.Data" />
-    <Reference Include="System.Runtime.Remoting" Condition=" '$(SilverlightBuild)' != 'true' " />
-    <Reference Include="System.Xml" Condition=" '$(SilverlightBuild)' != 'true' " />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" Condition=" '$(SilverlightTreeBuild)' != 'true' " />
   <Import Condition=" '$(Golden)' == 'True'" Project="..\..\External\Build\Microsoft.VersionNumber.targets" />

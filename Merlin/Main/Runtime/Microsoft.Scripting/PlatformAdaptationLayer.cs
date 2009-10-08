@@ -78,15 +78,14 @@ namespace Microsoft.Scripting {
             AssemblyName languageKeyVer = new AssemblyName(typeof(PlatformAdaptationLayer).Assembly.FullName);
             AddAssemblyMappings(languageKeyVer, 
                 "Microsoft.Scripting",
+                "Microsoft.Dynamic",
                 "Microsoft.Scripting.ExtensionAttribute",
                 "Microsoft.Scripting.Core",
                 "Microsoft.Scripting.Silverlight",
                 "IronPython",
                 "IronPython.Modules",
                 "IronRuby",
-                "IronRuby.Libraries",
-                "Microsoft.JScript.Compiler",
-                "Microsoft.JScript.Runtime"
+                "IronRuby.Libraries"
             );
 
             // transparent assemblies => same version as mscorlib but uses transparent key (same as languages)

@@ -182,7 +182,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public object gi_code {
+        public FunctionCode gi_code {
             get {
                 return _function.func_code;
             }

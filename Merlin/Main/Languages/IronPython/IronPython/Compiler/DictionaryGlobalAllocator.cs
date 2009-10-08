@@ -52,7 +52,7 @@ namespace IronPython.Compiler.Ast {
                 ArrayGlobalAllocator._arrayFuncParams
             );
 
-            return new PythonScriptCode(context, lambda, context.SourceUnit, handlerLocations, loopAndFinallyLocations);
+            return new PythonScriptCode(context, lambda, context.SourceUnit, handlerLocations, loopAndFinallyLocations, ast.Body.Span);
         }
 
         public override MSAst.Expression/*!*/ GlobalContext {

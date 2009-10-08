@@ -393,6 +393,10 @@ namespace IronPython.Runtime {
         }
 
         public static object ReloadModule(CodeContext/*!*/ context, PythonModule/*!*/ module) {
+            return ReloadModule(context, module, null);
+        }
+
+        internal static object ReloadModule(CodeContext/*!*/ context, PythonModule/*!*/ module, PythonFile file) {
             PythonContext pc = PythonContext.GetContext(context);
 
             // We created the module and it only contains Python code. If the user changes
@@ -429,13 +433,29 @@ namespace IronPython.Runtime {
                 }
             }
 
-            if (!pc.DomainManager.Platform.FileExists(fileName)) {
-                throw PythonOps.SystemError("module source file not found");
-            }
+            SourceUnit sourceUnit;
+            if (file != null) {
+                sourceUnit = pc.CreateSourceUnit(new PythonFileStreamContentProvider(file), fileName, file.Encoding, SourceCodeKind.File);
+            } else {
+                if (!pc.DomainManager.Platform.FileExists(fileName)) {
+                    throw PythonOps.SystemError("module source file not found");
+                }
 
-            SourceUnit sourceUnit = pc.CreateFileUnit(fileName, pc.DefaultEncoding, SourceCodeKind.File);
+                sourceUnit = pc.CreateFileUnit(fileName, pc.DefaultEncoding, SourceCodeKind.File);
+            }
             pc.GetScriptCode(sourceUnit, name, ModuleOptions.None).Run(module.Scope);
             return module;
+        }
+
+        class PythonFileStreamContentProvider : StreamContentProvider {
+            private readonly PythonFile _file;
+            public PythonFileStreamContentProvider(PythonFile file) {
+                _file = file;
+            }
+
+            public override Stream GetStream() {
+                return _file._stream;
+            }
         }
 
         /// <summary>

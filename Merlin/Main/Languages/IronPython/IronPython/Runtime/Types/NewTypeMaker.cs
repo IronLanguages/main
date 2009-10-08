@@ -534,20 +534,39 @@ namespace IronPython.Runtime.Types {
         }
 
         private void ImplementDynamicObject() {
-            ImplementInterface(typeof(IDynamicMetaObjectProvider));
-
-            MethodInfo decl;
-            MethodBuilder impl;
-            ILGen il = DefineMethodOverride(MethodAttributes.Private, typeof(IDynamicMetaObjectProvider), "GetMetaObject", out decl, out impl);
-            MethodInfo mi = typeof(UserTypeOps).GetMethod("GetMetaObjectHelper");
-
-            bool explicitDynamicObject = false;
+            // true if the user has explicitly included IDynamicMetaObjectProvider in the list of interfaces
+            bool explicitDynamicObject = false; 
             foreach (Type t in _interfaceTypes) {
                 if (t == typeof(IDynamicMetaObjectProvider)) {
                     explicitDynamicObject = true;
                     break;
                 }
             }
+
+            // true if our base type implements IDMOP already
+            bool baseIdo = typeof(IDynamicMetaObjectProvider).IsAssignableFrom(_baseType);
+            if (baseIdo) {
+                InterfaceMapping mapping = _baseType.GetInterfaceMap(typeof(IDynamicMetaObjectProvider));
+                if (mapping.TargetMethods[0].IsPrivate) {
+                    // explicitly implemented IDynamicMetaObjectProvider, we cannot override it.
+
+                    if (_baseType.IsDefined(typeof(DynamicBaseTypeAttribute), true)) {
+                        // but it's been implemented by IronPython so it's going to return a MetaUserObject
+                        return;
+                    }
+
+                    // we can't dispatch to the subclasses IDMOP implementation, completely
+                    // replace it with our own.
+                    baseIdo = false;
+                }
+            }
+
+            ImplementInterface(typeof(IDynamicMetaObjectProvider));
+
+            MethodInfo decl;
+            MethodBuilder impl;
+            ILGen il = DefineMethodOverride(MethodAttributes.Private, typeof(IDynamicMetaObjectProvider), "GetMetaObject", out decl, out impl);
+            MethodInfo mi = typeof(UserTypeOps).GetMethod("GetMetaObjectHelper");
 
             LocalBuilder retVal = il.DeclareLocal(typeof(DynamicMetaObject));
             Label retLabel = il.DefineLabel();
@@ -617,7 +636,7 @@ namespace IronPython.Runtime.Types {
             il.EmitLoadArg(1);  // parameter
                 
             // baseMetaObject
-            if (typeof(IDynamicMetaObjectProvider).IsAssignableFrom(_baseType)) {
+            if (baseIdo) {
                 InterfaceMapping imap = _baseType.GetInterfaceMap(typeof(IDynamicMetaObjectProvider));
 
                 il.EmitLoadArg(0);  // this

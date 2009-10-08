@@ -552,18 +552,9 @@ namespace Microsoft.Scripting.Silverlight {
         /// </summary>
         /// <param name="result"></param>
         internal void ShowValueInResultDiv(object result) {
-            ScriptScope scope = _engine.CreateScope();
-            scope.SetVariable("sdlr_result", result);
-            string resultStr;
-            // TODO: Need some language specific way of doing this:
-            try {
-                resultStr = _engine.CreateScriptSourceFromString("sdlr_result.inspect").Execute(scope).ToString();
-            } catch {
-                resultStr = _engine.CreateScriptSourceFromString("repr(sdlr_result)").Execute(scope).ToString();
-            }
             _outputBuffer.ElementClass = _sdlrValue;
             _outputBuffer.ElementName = "div";
-            _outputBuffer.Write("=> " + resultStr);
+            _outputBuffer.Write("=> " + _engine.Operations.Format(result));
             _outputBuffer.Reset();
         }
 

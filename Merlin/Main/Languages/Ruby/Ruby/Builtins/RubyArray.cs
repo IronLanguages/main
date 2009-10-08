@@ -22,6 +22,8 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Utils;
 using IronRuby.Runtime.Calls;
 using IronRuby.Runtime.Conversions;
+using System.Security.Permissions;
+using System.Runtime.Serialization;
 
 namespace IronRuby.Builtins {
 
@@ -29,6 +31,7 @@ namespace IronRuby.Builtins {
     /// Implements Ruby array.
     /// Not thread safe (even when frozen).
     /// </summary>
+    [Serializable]
     [DebuggerDisplay("{GetDebugView()}")]
     public partial class RubyArray : IList<object>, IList, IRubyObjectState, IDuplicable {
         private object[]/*!*/ _content;
