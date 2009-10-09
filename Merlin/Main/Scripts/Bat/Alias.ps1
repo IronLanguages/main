@@ -9,12 +9,12 @@ function global:rt { Set-Location "${env:MERLIN_ROOT}\Runtime" }
 function global:r { Set-Location "${env:MERLIN_ROOT}" }
 function global:mspc { Set-Location "${env:MERLIN_ROOT}\..\External.LCA_RESTRICTED\Languages\IronRuby\mspec" }
 
-function global:irk { Set-Location "`"${env:MERLIN_ROOT}\Hosts\IronRuby.Rack\`"" }
-function global:rbs { Set-Location "`"${env:MERLIN_ROOT}\Languages\Ruby\Samples\`"" }
-function global:msl { Set-Location "`"${env:PROGRAM_FILES_32}\Microsoft Silverlight\`"" }
-function global:mss { Set-Location "`"${env:MERLIN_ROOT}\Hosts\Silverlight\`"" }
-function global:ch { Set-Location "`"${env:MERLIN_ROOT}\Hosts\Silverlight\Chiron\`"" }
-function global:sls { Set-Location "`"${env:MERLIN_ROOT}\Hosts\Silverlight\Samples\`"" }
+function global:irk { Set-Location "${env:MERLIN_ROOT}\Hosts\IronRuby.Rack" }
+function global:rbs { Set-Location "${env:MERLIN_ROOT}\Languages\Ruby\Samples" }
+function global:msl { Set-Location "${env:PROGRAM_FILES_32}\Microsoft Silverlight" }
+function global:mss { Set-Location "${env:MERLIN_ROOT}\Hosts\Silverlight" }
+function global:ch { Set-Location "${env:MERLIN_ROOT}\Hosts\Silverlight\Chiron" }
+function global:sls { Set-Location "${env:MERLIN_ROOT}\Hosts\Silverlight\Samples" }
 
 #=============================================================================
 # Build commands
@@ -33,10 +33,10 @@ function global:gencache { cmd /C "${env:MERLIN_ROOT}\Languages\Ruby\Ruby\Compil
 # Silverlight Build Commands
 #
 
-function global:bsrbd { cmd /C "msbuild ${env:MERLIN_ROOT}\Languages\Ruby\Ruby.sln /p:Configuration=`"Silverlight Debug`" /p:SilverlightPath=`"C:\Program Files\Microsoft Silverlight\3.0.40723.0`"" }
-function global:bsrbr { cmd /C "msbuild ${env:MERLIN_ROOT}\Languages\Ruby\Ruby.sln /p:Configuration=`"Silverlight Release`" /p:SilverlightPath=`"C:\Program Files\Microsoft Silverlight\3.0.40723.0`"" }
-function global:bsd { cmd /C "msbuild ${env:MERLIN_ROOT}\Hosts\Silverlight\Silverlight.sln /p:Configuration=`"Silverlight Debug`" /p:SilverlightPath=`"C:\Program Files\Microsoft Silverlight\3.0.40723.0`"" }
-function global:bsr { cmd /C "msbuild ${env:MERLIN_ROOT}\Hosts\Silverlight\Silverlight.sln /p:Configuration=`"Silverlight Release`" /p:SilverlightPath=`"C:\Program Files\Microsoft Silverlight\3.0.40723.0`"" }
+function global:bsrbd { cmd /C "msbuild ${env:MERLIN_ROOT}\Languages\Ruby\Ruby.sln /p:Configuration=`"Silverlight Debug`" /p:SilverlightPath=`"C:\Program Files\Microsoft Silverlight\3.0.40818.0`"" }
+function global:bsrbr { cmd /C "msbuild ${env:MERLIN_ROOT}\Languages\Ruby\Ruby.sln /p:Configuration=`"Silverlight Release`" /p:SilverlightPath=`"C:\Program Files\Microsoft Silverlight\3.0.40818.0`"" }
+function global:bsd { cmd /C "msbuild ${env:MERLIN_ROOT}\Hosts\Silverlight\Silverlight.sln /p:Configuration=`"Silverlight Debug`" /p:SilverlightPath=`"C:\Program Files\Microsoft Silverlight\3.0.40818.0`"" }
+function global:bsr { cmd /C "msbuild ${env:MERLIN_ROOT}\Hosts\Silverlight\Silverlight.sln /p:Configuration=`"Silverlight Release`" /p:SilverlightPath=`"C:\Program Files\Microsoft Silverlight\3.0.40818.0`"" }
 
 #=============================================================================
 # [Iron]Python program aliases
@@ -72,8 +72,8 @@ function global:msir { cmd /C "${env:windir}\system32\WindowsPowerShell\v1.0\pow
 # Chiron aliases
 #
 
-function global:chd { cmd /C "`"${env:MERLIN_ROOT}\Bin\Silverlight Debug\Chiron.exe`" $args" }
-function global:chr { cmd /C "`"${env:MERLIN_ROOT}\Bin\Silverlight Release\Chiron.exe`" $args" }
+function global:chd { . "${env:MERLIN_ROOT}\Bin\Silverlight Debug\Chiron.exe" $args }
+function global:chr { . "${env:MERLIN_ROOT}\Bin\Silverlight Release\Chiron.exe" $args }
 
 #=============================================================================
 # Miscellaneous utilities

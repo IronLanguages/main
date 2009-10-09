@@ -1,4 +1,7 @@
 require 'logger'
+
+$:.unshift File.dirname(__FILE__)
+
 require 'browser'
 
 module CodePlex
