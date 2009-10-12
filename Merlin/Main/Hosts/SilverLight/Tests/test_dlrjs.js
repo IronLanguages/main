@@ -188,4 +188,23 @@ $(document).ready(function() {
       $('script#' + id).remove()
     });
 
+    test('ensure SL control is an immediate sibling', function() {
+      $(document.body).prepend("<script type=\"application/xml+xaml\" width=\"10\" height=\"1\" id=\"bar\"></script>")
+      DLR.__startup()
+      name = 'script#bar + span > object'
+      object = $(name)
+      waitForTrue(
+        function() {
+          return object.length > 0
+        },
+        function() { 
+          equals(object.length, 1)
+          $('script#bar').remove()
+        }, 
+        function() { 
+          ok(false, object.length + " matches for $('" + name + "') rather than 1")
+          $('script#bar').remove()
+        }
+      );
+    });
 });

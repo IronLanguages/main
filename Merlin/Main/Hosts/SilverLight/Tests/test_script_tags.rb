@@ -15,8 +15,13 @@ def deferred
   lambda { |obj| obj.has_key?(:defer) && obj[:defer] }
 end
 
+def in_order
+  lambda { |obj| obj == obj.sort }
+end
+
 def get_script(id)
-  System::Windows::Browser::HtmlPage.document.get_element_by_id(id).get_property('innerHTML').to_s
+  System::Windows::Browser::
+    HtmlPage.document.get_element_by_id(id).get_property('innerHTML').to_s
 end
 
 describe "DLR-based script tags: end-to-end" do
@@ -77,6 +82,10 @@ describe "DLR-based script tags: end-to-end" do
 
   it 'will not run script tags with a random prefix' do
     script_tag('random-prefix').should.not have_run
+  end
+
+  it 'runs scripts in order' do
+    script_tag('in-order-execution').should.be in_order
   end
 
 end

@@ -29,26 +29,25 @@ namespace Microsoft.Scripting.Silverlight {
     public class DynamicScriptTags {
 
         /// <summary>
-        /// Inline strings and external URIs for a unique language/defer-status combination.
+        /// Inline strings and external URIs for script-tag registered 
+        /// to this control.
         /// </summary>
         public class ScriptCode {
             public string Language { get; private set; }
             public bool Defer { get; private set; }
-            public List<string> Inline { get; private set; }
-            public List<Uri> External { get; private set; }
+            public string Inline { get; set; }
+            public Uri External { get; set; }
 
             public ScriptCode(string lang, bool defer) {
                 Language = lang;
                 Defer = defer;
-                Inline = new List<string>();
-                External = new List<Uri>();
             }
         }
 
         /// <summary>
-        /// Dictionary of language-name(string) => (Dictionary of defer-status(bool) => ScriptCode)
+        /// Script code registered for this Silverlight control
         /// </summary>
-        public Dictionary<string, Dictionary<bool, ScriptCode>> Code { get; private set; }
+        public List<ScriptCode> Code { get; private set; }
 
         /// <summary>
         /// Holds onto the language config
@@ -61,7 +60,7 @@ namespace Microsoft.Scripting.Silverlight {
         /// </summary>
         public DynamicScriptTags(DynamicLanguageConfig langConfig) {
             _LangConfig = langConfig;
-            Code = new Dictionary<string, Dictionary<bool, ScriptCode>>();
+            Code = new List<ScriptCode>();
             GetScriptTags();
         }
 
@@ -92,21 +91,15 @@ namespace Microsoft.Scripting.Silverlight {
 
                 _LangConfig.LanguagesUsed[language] = true;
 
-                if (!Code.ContainsKey(type) || Code[type] == null) {
-                    Code[type] = new Dictionary<bool, ScriptCode>();
-                }
-                if (!Code[type].ContainsKey(defer) || Code[type][defer] == null) {
-                    var sc = new ScriptCode(language, defer);
-                    Code[type][defer] = sc;
-                }
-
+                var sc = new ScriptCode(language, defer);
                 if (src != null) {
-                    Code[type][defer].External.Add(MakeUriAbsolute(new Uri(src, UriKind.RelativeOrAbsolute)));
+                    sc.External = MakeUriAbsolute(new Uri(src, UriKind.RelativeOrAbsolute));
                 } else {
                     var innerHtml = (string)e.GetProperty("innerHTML");
                     if (innerHtml != null)
-                        Code[type][defer].Inline.Add(RemoveMargin(innerHtml));
+                        sc.Inline = RemoveMargin(innerHtml);
                 }
+                Code.Add(sc);
             }
         }
 
@@ -117,9 +110,9 @@ namespace Microsoft.Scripting.Silverlight {
         /// </summary>
         public void DownloadExternalCode(Action onComplete) {
             var externalUris = new List<Uri>();
-            foreach (var pair1 in Code)
-                foreach(var pair2 in pair1.Value)
-                    externalUris.AddRange(pair2.Value.External);
+            foreach (var sc in Code)
+                if(sc.External != null)
+                    externalUris.Add(sc.External);
             ((HttpVirtualFilesystem)HttpPAL.PAL.VirtualFilesystem).
                 DownloadAndCache(externalUris, onComplete);
         }
@@ -129,13 +122,9 @@ namespace Microsoft.Scripting.Silverlight {
         /// </summary>
         public bool HasScriptTags {
             get {
-                foreach (var i in Code) {
-                    foreach (var j in i.Value) {
-                        if (j.Value.Inline.Count > 0) {
-                            return true;
-                        }
-                    }
-                }
+                foreach (var i in Code)
+                    if (i.External != null && i.Inline != null)
+                        return true;
                 return false;
             }
         }
@@ -144,36 +133,32 @@ namespace Microsoft.Scripting.Silverlight {
         /// Runs the registered script tags against the DynamicEngine.
         /// </summary>
         public void Run(DynamicEngine engine) {
-            foreach (var pair in Code) {
-                var lang = pair.Key;
-                engine.Engine = _LangConfig.GetEngine(GetLanguageNameFrom(pair.Key));
-                if (engine.Engine != null) {
-                    foreach (var pair2 in pair.Value) {
-                        var defer = pair2.Key;
-                        var scripts = pair2.Value;
-                        if (!defer) {
-                            foreach (var uri in scripts.External) {
-                                var code = BrowserPAL.PAL.VirtualFilesystem.GetFileContents(uri);
-                                if (code == null) continue;
-                                ScriptSource externalSourceCode =
-                                    engine.Engine.CreateScriptSourceFromString(
-                                        code,
-                                        uri.AbsoluteUri,
-                                        SourceCodeKind.File
-                                    );
-                                externalSourceCode.Compile(new ErrorFormatter.Sink()).Execute(engine.EntryPointScope);
-                            }
-                            foreach (var code in scripts.Inline) {
-                                ScriptSource inlineSourceCode =
-                                    engine.Engine.CreateScriptSourceFromString(
-                                        code,
-                                        HtmlPage.Document.DocumentUri.LocalPath.Remove(0, 1),
-                                        SourceCodeKind.File
-                                    );
-                                inlineSourceCode.Compile(new ErrorFormatter.Sink()).Execute(engine.EntryPointScope);
-                            }
-                        }
+            var inlineScope = engine.CreateScope();
+            foreach (var sc in Code) {
+                engine.Engine = _LangConfig.GetEngine(sc.Language);
+                if (engine.Engine != null && !sc.Defer) {
+                    ScriptSource sourceCode = null;
+                    ScriptScope scope = null;
+                    if(sc.External != null) {
+                        var code = BrowserPAL.PAL.VirtualFilesystem.GetFileContents(sc.External);
+                        if (code == null) continue;
+                        sourceCode =
+                            engine.Engine.CreateScriptSourceFromString(
+                                code,
+                                sc.External.AbsoluteUri,
+                                SourceCodeKind.File
+                            );
+                        scope = engine.CreateScope();
+                    } else if (sc.Inline != null) {
+                        sourceCode =
+                            engine.Engine.CreateScriptSourceFromString(
+                                sc.Inline,
+                                HtmlPage.Document.DocumentUri.LocalPath.Remove(0, 1),
+                                SourceCodeKind.File
+                            );
+                        scope = inlineScope;
                     }
+                    sourceCode.Compile(new ErrorFormatter.Sink()).Execute(scope);
                 }
             }
         }

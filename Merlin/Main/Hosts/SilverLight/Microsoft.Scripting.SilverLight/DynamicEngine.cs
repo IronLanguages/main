@@ -95,10 +95,18 @@ namespace Microsoft.Scripting.Silverlight {
         /// globals and modules.
         /// </summary>
         private void InitializeScope() {
-            EntryPointScope = Runtime.CreateScope();
-            EntryPointScope.SetVariable("document", new DynamicHtmlDocument());
-            EntryPointScope.SetVariable("window", new DynamicHtmlObject(HtmlPage.Window));
-            EntryPointScope.SetVariable("me", DynamicApplication.Current.RootVisual);
+            EntryPointScope = CreateScope();
+        }
+
+        /// <summary>
+        /// Creates a new scope, adding any convenience globals and modules.
+        /// </summary>
+        public ScriptScope CreateScope() {
+            var scope = Runtime.CreateScope();
+            scope.SetVariable("document", new DynamicHtmlDocument());
+            scope.SetVariable("window", new DynamicHtmlObject(HtmlPage.Window));
+            scope.SetVariable("me", DynamicApplication.Current.RootVisual);
+            return scope;
         }
 
         /// <summary>
