@@ -2,6 +2,7 @@ require File.dirname(__FILE__) + "/../../bcl/fixtures/classes"
 reference "System.dll"
 csc <<-EOL
 using Microsoft.Scripting.Math;
+using Microsoft.Scripting.Utils;
 using System.Collections.Generic;
 EOL
 def method_block(type, prefix, suffix = "", &blk)
@@ -537,6 +538,357 @@ csc <<-EOL
     public static string StaticCustomEnumNullableArg(CustomEnum? arg) { Tracker.Add(arg); return "StaticCustomEnumNullableArg"; }
     public static string StaticBooleanNullableArg(Boolean? arg) { Tracker.Add(arg); return "StaticBooleanNullableArg"; }
   }
+
+public class GenericTypeInference {
+    public static string Tx<T>(T x) {
+        return typeof(T).ToString();
+    }
+
+    public static string TxTy<T>(T x, T y) {
+        return typeof(T).ToString();
+    }
+
+    public static string TxTyTz<T>(T x, T y, T z) {
+        return typeof(T).ToString();
+    }
+
+    public static string TParamsArrx<T>(params T[] x) {
+        return typeof(T).ToString();
+    }
+
+    public static string TxTParamsArry<T>(T x, params T[] y) {
+        return typeof(T).ToString();
+    }
+
+    public static string TxClass<T>(T x) 
+        where T : class {
+        return typeof(T).ToString();
+    }
+
+    public static string TxStruct<T>(T x) 
+        where T : struct {
+        return typeof(T).ToString();
+    }
+
+    public static string TxIList<T>(T x) 
+        where T : IList {
+        return typeof(T).ToString();
+    }
+
+    public static string TxUyTConstrainedToU<T, U>(T x, U y)
+        where T : U {
+        return String.Format("{0}, {1}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public static string ObjxUyTConstrainedToU<T, U>(object x, U y)
+        where T : U {
+        return String.Format("{0}, {1}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public static string TxObjyTConstrainedToU<T, U>(T x, object y)
+        where T : U {
+        return String.Format("{0}, {1}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public static string TxUyVzTConstrainedToUConstrainedToV<T, U, V>(T x, U y, V z)
+        where T : U
+        where U : V {
+        return String.Format("{0}, {1}, {2}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public static string TxUyVzTConstrainedToUConstrainedToClass<T, U, V>(T x, U y, V z)
+        where T : U
+        where U : class {
+        return String.Format("{0}, {1}, {2}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public static string TxUyVzTConstrainedToUConstrainedToIList<T, U, V>(T x, U y, V z)
+        where T : U
+        where U : IList {
+        return String.Format("{0}, {1}, {2}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public static string TObjectx<T>(object x){
+        return typeof(T).ToString();
+    }
+
+    public static string TxObjecty<T, U>(T x, object y) {
+        return String.Format("{0}, {1}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public static string TxFuncTy<T>(T x, Func<T> y) {
+        return typeof(T).ToString();
+    }
+
+    public static string TxActionTy<T>(T x, Action<T> y) {
+        return typeof(T).ToString();
+    }
+
+    public static string TxIListTy<T>(T x, IList<T> y) {
+        return typeof(T).ToString();
+    }
+
+    public static string TxDictionaryTIListTy<T>(T x, Dictionary<T, IList<T>> y){
+        return typeof(T).ToString();
+    }
+
+    public static string TxIEnumerableTy<T>(T x, IEnumerable<T> y) {
+        return typeof(T).ToString();
+    }
+
+    public static string TxTConstrainedToIEnumerable<T>(T x) {
+        return typeof(T).ToString();
+    }
+
+    public static string TxUyTConstrainedToIListU<T, U>(T x, U y) {
+        return String.Format("{0}, {1}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public static string TxUy<T, U>(T x, U y) {
+        return String.Format("{0}, {1}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public static string IEnumerableTx<T>(IEnumerable<T> x) {
+        return typeof(T).ToString();
+    }
+
+    public static string IEnumerableTxFuncTBooly<T>(IEnumerable<T> x, Func<T, bool> y) {
+        return typeof(T).ToString();
+    }
+
+    public static string IEnumerableTxFuncTIntBooly<T>(IEnumerable<T> x, Func<T, bool> y) {
+        return typeof(T).ToString();
+    }
+
+    public static string ListTx<T>(List<T> x) {
+        return typeof(T).ToString();
+    }
+
+    public static string ListListTx<T>(List<List<T>> x) {
+        return typeof(T).ToString();
+    }
+
+    public static string DictionaryTTx<T>(Dictionary<T,T> x) {
+        return typeof(T).ToString();
+    }
+
+    public static string ListTxClass<T>(List<T> x)
+        where T : class {
+        return typeof(T).ToString();
+    }
+
+    public static string ListTxStruct<T>(List<T> x)
+        where T : struct {
+        return typeof(T).ToString();
+    }
+
+    public static string ListTxNew<T>(List<T> x)
+        where T : new() {
+        return typeof(T).ToString();
+    }
+    
+    public static string DictionaryDictionaryTTDictionaryTTx<T>(Dictionary<Dictionary<T,T>, Dictionary<T,T>> x) {
+        return typeof(T).ToString();
+    }
+
+    public static string FuncTBoolxStruct<T>(Func<T, bool> x) 
+        where T : struct {
+        return typeof(T).ToString();
+    }
+
+    public static string FuncTBoolxIList<T>(Func<T, bool> x)
+        where T : IList {
+        return typeof(T).ToString();
+    }
+
+    public static string IListTxIListTy<T>(IList<T> x, IList<T> y) {
+        return typeof(T).ToString();
+    }
+}
+public class SelfEnumerable : IEnumerable<SelfEnumerable> {
+    #region IEnumerable<Test> Members
+
+    IEnumerator<SelfEnumerable> IEnumerable<SelfEnumerable>.GetEnumerator() {
+        throw new NotImplementedException();
+    }
+
+    #endregion
+
+    #region IEnumerable Members
+
+    IEnumerator IEnumerable.GetEnumerator() {
+        throw new NotImplementedException();
+    }
+
+    #endregion
+}
+
+public class GenericTypeInferenceInstance {
+    public string Tx<T>(T x) {
+        return typeof(T).ToString();
+    }
+
+    public string TxTy<T>(T x, T y) {
+        return typeof(T).ToString();
+    }
+
+    public string TxTyTz<T>(T x, T y, T z) {
+        return typeof(T).ToString();
+    }
+
+    public string TParamsArrx<T>(params T[] x) {
+        return typeof(T).ToString();
+    }
+
+    public string TxTParamsArry<T>(T x, params T[] y) {
+        return typeof(T).ToString();
+    }
+
+    public string TxClass<T>(T x) 
+        where T : class {
+        return typeof(T).ToString();
+    }
+
+    public string TxStruct<T>(T x) 
+        where T : struct {
+        return typeof(T).ToString();
+    }
+
+    public string TxIList<T>(T x) 
+        where T : IList {
+        return typeof(T).ToString();
+    }
+
+    public string TxUyTConstrainedToU<T, U>(T x, U y)
+        where T : U {
+        return String.Format("{0}, {1}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public string ObjxUyTConstrainedToU<T, U>(object x, U y)
+        where T : U {
+        return String.Format("{0}, {1}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public string TxObjyTConstrainedToU<T, U>(T x, object y)
+        where T : U {
+        return String.Format("{0}, {1}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public string TxUyVzTConstrainedToUConstrainedToV<T, U, V>(T x, U y, V z)
+        where T : U
+        where U : V {
+        return String.Format("{0}, {1}, {2}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public string TxUyVzTConstrainedToUConstrainedToClass<T, U, V>(T x, U y, V z)
+        where T : U
+        where U : class {
+        return String.Format("{0}, {1}, {2}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public string TxUyVzTConstrainedToUConstrainedToIList<T, U, V>(T x, U y, V z)
+        where T : U
+        where U : IList {
+        return String.Format("{0}, {1}, {2}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public string TObjectx<T>(object x){
+        return typeof(T).ToString();
+    }
+
+    public string TxObjecty<T, U>(T x, object y) {
+        return String.Format("{0}, {1}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public string TxFuncTy<T>(T x, Func<T> y) {
+        return typeof(T).ToString();
+    }
+
+    public string TxActionTy<T>(T x, Action<T> y) {
+        return typeof(T).ToString();
+    }
+
+    public string TxIListTy<T>(T x, IList<T> y) {
+        return typeof(T).ToString();
+    }
+
+    public string TxDictionaryTIListTy<T>(T x, Dictionary<T, IList<T>> y){
+        return typeof(T).ToString();
+    }
+
+    public string TxIEnumerableTy<T>(T x, IEnumerable<T> y) {
+        return typeof(T).ToString();
+    }
+
+    public string TxTConstrainedToIEnumerable<T>(T x) {
+        return typeof(T).ToString();
+    }
+
+    public string TxUyTConstrainedToIListU<T, U>(T x, U y) {
+        return String.Format("{0}, {1}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public string TxUy<T, U>(T x, U y) {
+        return String.Format("{0}, {1}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public string IEnumerableTx<T>(IEnumerable<T> x) {
+        return typeof(T).ToString();
+    }
+
+    public string IEnumerableTxFuncTBooly<T>(IEnumerable<T> x, Func<T, bool> y) {
+        return typeof(T).ToString();
+    }
+
+    public string IEnumerableTxFuncTIntBooly<T>(IEnumerable<T> x, Func<T, bool> y) {
+        return typeof(T).ToString();
+    }
+
+    public string ListTx<T>(List<T> x) {
+        return typeof(T).ToString();
+    }
+
+    public string ListListTx<T>(List<List<T>> x) {
+        return typeof(T).ToString();
+    }
+
+    public string DictionaryTTx<T>(Dictionary<T,T> x) {
+        return typeof(T).ToString();
+    }
+
+    public string ListTxClass<T>(List<T> x)
+        where T : class {
+        return typeof(T).ToString();
+    }
+
+    public string ListTxStruct<T>(List<T> x)
+        where T : struct {
+        return typeof(T).ToString();
+    }
+
+    public string ListTxNew<T>(List<T> x)
+        where T : new() {
+        return typeof(T).ToString();
+    }
+    
+    public string DictionaryDictionaryTTDictionaryTTx<T>(Dictionary<Dictionary<T,T>, Dictionary<T,T>> x) {
+        return typeof(T).ToString();
+    }
+
+    public string FuncTBoolxStruct<T>(Func<T, bool> x) 
+        where T : struct {
+        return typeof(T).ToString();
+    }
+
+    public string FuncTBoolxIList<T>(Func<T, bool> x)
+        where T : IList {
+        return typeof(T).ToString();
+    }
+
+    public string IListTxIListTy<T>(IList<T> x, IList<T> y) {
+        return typeof(T).ToString();
+    }
+}
 EOL
   
 no_csc do
@@ -1011,7 +1363,9 @@ no_csc do
       result
     end
     
-    def self.collection_args
+    def self.args
+    # TODO: More BigIntegerValues near boundaries
+    # TODO: More NullableIntegerValues near boundaries
       obj = Object.new
       class << obj
         include Enumerable
@@ -1028,36 +1382,16 @@ no_csc do
       dint = DIntStr.new
       dint[1] = "1".to_clr_string
       dint[2] = "2".to_clr_string
-      tl1 = TestList.new
-      tl2 = TestList.new << 1 << 2 << 3
-      {"monkeypatched" => obj, 
-      "ArrayInstanceEmpty" => [], "ArrayInstance" => [1,2,3], 
-      "HashInstanceEmpty" => {}, "HashInstance" => {1=>2,3=>4,5=>6}, 
-      "ImplementsEnumerableInstance" => BindingSpecs::ImplementsEnumerable.new, 
-      "StringInstanceEmpty" => "", "StringInstance" => "abc", 
-      #[]                                                       [2,2]
-      "System::Array[Fixnum]InstanceEmpty" => SAF.new(0), "System::Array[Fixnum]Instance" => SAF.new(2,2), 
-      #[]                                                       [Object.new,Object.new]
-      "System::Array[Object]InstanceEmpty" => SAO.new(0), "System::Array[Object]Instance" => SAO.new(2,Object.new), 
-      "System::Array[IInterface]InstanceEmpty" => SAI.new(0), "System::Array[IInterface]Instance" => SAI.new(2, BindingSpecs::RubyImplementsIInterface.new),
-      "System::Array[CStruct]InstanceEmpty" => SAC.new(0), "System::Array[CStruct]Instance" => SAC.new(2, CStruct.new),
-      "ArrayListInstanceEmpty" => ArrayList.new, "ArrayListInstance" => (ArrayList.new << 1 << 2 << 3),
-      #{}                                                       {1=>1,2=>2}
-      "Dictionary[Object,Object]InstanceEmpty" => DObjObj.new, "Dictionary[Object,Object]Instance" => dobj,
-      #{}                                                       {1=>"1",2=>"2"}
-      "Dictionary[Fixnum,String]InstanceEmpty" => DIntStr.new, "Dictionary[Fixnum,String]Instance" => dint,
-      "TestListInstanceEmpty" => tl1, "TestListInstance" => tl2,
-      "TestListEnumeratorInstanceEmpty" => tl1.get_enumerator, "TestListEnumeratorInstance" => tl2.get_enumerator, 
-      "CStructInstance" => CStruct.new,
-      "Int32Instance" => 1,
-      "IInterfaceInstance" => BindingSpecs::RubyImplementsIInterface.new,
-      "System::Collections::Generic::List[Fixnum]InstanceEmpty" => List[Fixnum].new, "System::Collections::Generic::List[Fixnum]Instance" => ( List[Fixnum].new << 1 << 2 << 3 ),
-      "System::Collections::Generic::List[Object]InstanceEmpty" => List[Object].new, "System::Collections::Generic::List[Object]Instance" => ( List[Object].new << Object.new << Object.new << Object.new ),
-      }
-    end
-    # TODO: More BigIntegerValues near boundaries
-    # TODO: More NullableIntegerValues near boundaries
-    def self.numeric_and_string_args
+      dii = DIntInt.new
+      dii[1] = 1
+      dii[2] = 2
+      ht = Hashtable.new
+      ht[1] = 1
+      ht[2] = 2
+      tl1 = TestList.new << 1 << 2 << 3
+      tl2 = BindingSpecs::TestListOfInt.new << 1 << 2 << 3
+      tl3 = BindingSpecs::TestListOfChar.new << System::Char.new("a") << System::Char.new("b") << System::Char.new("c")
+      tl4 = TestList.new
       clr_values = {}
       #            Fixnum         Float
       clr_types = [System::Int32, System::Double, System::SByte, System::Int16, System::Int64, System::Single, System::Decimal]
@@ -1080,12 +1414,8 @@ no_csc do
         "Convert::ToS" => BindingSpecs::Convert::ToS.new, "Convert::ToStr" => BindingSpecs::Convert::ToStr.new, "Convert::ToStrToS" => BindingSpecs::Convert::ToStrToS.new,
         "System::CharMaxValue" => System::Char.MaxValue, "System::CharMinValue" => System::Char.MinValue
       }
-      other.merge clr_values      
-    end
-
-    def self.classlike_args
-      
-       [BindingSpecs::RubyImplementsIInterface, ImplementsIInterface, BindingSpecs::RubyDerivedFromImplementsIInterface, DerivedFromImplementsIInterface,
+      other.merge! clr_values      
+      types = [BindingSpecs::RubyImplementsIInterface, ImplementsIInterface, BindingSpecs::RubyDerivedFromImplementsIInterface, DerivedFromImplementsIInterface,
         BindingSpecs::RubyDerivedFromDerivedFromImplementsIInterface, BindingSpecs::RubyDerivedFromDerivedFromAbstractAndImplementsIInterface, DerivedFromAbstract,
         BindingSpecs::RubyDerivedFromAbstract,BindingSpecs::RubyDerivedFromDerivedFromAbstract, 
         Class, Object, CStruct, StructImplementsIInterface, EnumInt, CustomEnum].inject({"anonymous class" => Class.new, "anonymous classInstance" => Class.new.new, "metaclass" => Object.new.metaclass, "AbstractClass" => AbstractClass}) do |result, klass|
@@ -1098,41 +1428,60 @@ no_csc do
           end
           result
         end
-    end
-    
-    def self.other_concern_args
-
-      dobj = DObjObj.new
-      dobj[1] = 1
-      dobj[2] = 2
-      dint = DIntStr.new
-      dint[1] = "1".to_clr_string
-      dint[2] = "2".to_clr_string
-      dii = DIntInt.new
-      dii[1] = 1
-      dii[2] = 2
-      ht = Hashtable.new
-      ht[1] = 1
-      ht[2] = 2
-      tl1 = TestList.new << 1 << 2 << 3
-      tl2 = BindingSpecs::TestListOfInt.new << 1 << 2 << 3
-      tl3 = BindingSpecs::TestListOfChar.new << System::Char.new("a") << System::Char.new("b") << System::Char.new("c")
-      types = {"ClassWithMethods" => ClassWithMethods.new, "int" => 1, "nil" => nil, "hash" => {1=> 1}, 
-               "Dictionary[obj,obj]" => dobj, "Dictionary[int,str]" => dint, "Dictionary[int,int]" => dii,
-               "hashtable" => ht, "List[int]" => ( List[Fixnum].new << 1 << 2 << 3 ),
-               "List[obj]" => ( List[Object].new << 1 << 2 << 3), "Array[int]" => System::Array.of(Fixnum).new(2,3),
-               "String" => "String", "Array" => [Object.new, 1, :blue], "Array[Char]" => System::Array.of(System::Char).new(2, System::Char.new("a")),
-               "System::String" => "System::String".to_clr_string, "Array[System::String]" => System::Array.of(System::String).new(2, "a".to_clr_string),
-               "ArrayList" => (ArrayList.new << 1 << 2 << 3),  "List[Char]" => ( List[System::Char].new << System::Char.new("a") << System::Char.new("b") << System::Char.new("c")), 
-               "IEnumerator" => tl1.get_enumerator, "IEnumerator[int]" => tl2.get_enumerator, "IEnumerator[Char]" => tl3.get_enumerator,
-               "IntIntDelegate" => IntIntDelegate.new {|a| a+1 }, "lambda" => lambda {|a| a+2}, 
-              "proc" => proc {|a| a+2}, "method" => method(:test_method),
-               "unboundmethod" => method(:test_method).unbind, "bool" => true, "Array[byte]" => System::Array.of(System::Byte).new(2, System::Byte.MinValue), 
-               "List[byte]" => (List[System::Byte].new << System::Byte.parse("1") << System::Byte.parse("2") << System::Byte.parse("3")), 
-               "self" => "self", "class" => "class", "this" => "this", "public" => "public",
-               "StructImplementsIInterface" => StructImplementsIInterface.new, "RubyImplementsIInterface" => BindingSpecs::RubyImplementsIInterface.new, 
-               "ImplementsIInterface" => ImplementsIInterface.new
-               }
+      types.merge! other
+      types.merge!({"ClassWithMethods" => ClassWithMethods.new, "int" => 1, "hash" => {1=> 1}, 
+                "Dictionary[obj,obj]" => dobj, "Dictionary[int,str]" => dint, "Dictionary[int,int]" => dii,
+                "hashtable" => ht, "List[int]" => ( List[Fixnum].new << 1 << 2 << 3 ),
+                "List[obj]" => ( List[Object].new << 1 << 2 << 3), "Array[int]" => System::Array.of(Fixnum).new(2,3),
+                "String" => "String", "Array" => [Object.new, 1, :blue], "Array[Char]" => System::Array.of(System::Char).new(2, System::Char.new("a")),
+                "System::String" => "System::String".to_clr_string, "Array[System::String]" => System::Array.of(System::String).new(2, "a".to_clr_string),
+                "ArrayList" => (ArrayList.new << 1 << 2 << 3),  "List[Char]" => ( List[System::Char].new << System::Char.new("a") << System::Char.new("b") << System::Char.new("c")), 
+                "IEnumerator" => tl1.get_enumerator, "IEnumerator[int]" => tl2.get_enumerator, "IEnumerator[Char]" => tl3.get_enumerator,
+                "IntIntDelegate" => IntIntDelegate.new {|a| a+1 }, "lambda" => lambda {|a| a+2}, 
+                "proc" => proc {|a| a+2}, "method" => method(:test_method),
+                "unboundmethod" => method(:test_method).unbind, "bool" => true, "Array[byte]" => System::Array.of(System::Byte).new(2, System::Byte.MinValue), 
+                "List[byte]" => (List[System::Byte].new << System::Byte.parse("1") << System::Byte.parse("2") << System::Byte.parse("3")), 
+                "self" => "self", "class" => "class", "this" => "this", "public" => "public",
+                "RubyImplementsIInterfaceInstance" => BindingSpecs::RubyImplementsIInterface.new, 
+                "Int16?Value" => System::Nullable[System::Int16].new(1),
+                "Int32?Value" => System::Nullable[System::Int32].new(1),
+                "Int64?Value" => System::Nullable[System::Int64].new(1),
+                "UInt16?Value" => System::Nullable[System::UInt16].new(1),
+                "UInt32?Value" => System::Nullable[System::UInt32].new(1),
+                "UInt64?Value" => System::Nullable[System::UInt64].new(1),
+                "Byte?Value" => System::Nullable[System::Byte].new(1),
+                "SByte?Value" => System::Nullable[System::SByte].new(1),
+                "Decimal?Value" => System::Nullable[System::Decimal].new(1),
+                "Single?Value" => System::Nullable[System::Single].new(1), 
+                "Char?Value" => System::Nullable[System::Char].new("a"), 
+                "Double?Value" => System::Nullable[System::Double].new(1),
+                "Boolean?Value" => System::Nullable[System::Boolean].new(1), 
+                "CustomEnum?Value" => System::Nullable[CustomEnum].new(CustomEnum.A),
+                "obj" => Object.new, 
+                "monkeypatched" => obj, 
+                "ArrayInstanceEmpty" => [], "ArrayInstance" => [1,2,3], 
+                "HashInstanceEmpty" => {}, "HashInstance" => {1=>2,3=>4,5=>6}, 
+                "ImplementsEnumerableInstance" => BindingSpecs::ImplementsEnumerable.new, 
+                "StringInstanceEmpty" => "", "StringInstance" => "abc", 
+                #[]                                                       [2,2]
+                "System::Array[Fixnum]InstanceEmpty" => SAF.new(0), "System::Array[Fixnum]Instance" => SAF.new(2,2), 
+                #[]                                                       [Object.new,Object.new]
+                "System::Array[Object]InstanceEmpty" => SAO.new(0), "System::Array[Object]Instance" => SAO.new(2,Object.new), 
+                "System::Array[IInterface]InstanceEmpty" => SAI.new(0), "System::Array[IInterface]Instance" => SAI.new(2, BindingSpecs::RubyImplementsIInterface.new),
+                "System::Array[CStruct]InstanceEmpty" => SAC.new(0), "System::Array[CStruct]Instance" => SAC.new(2, CStruct.new),
+                "ArrayListInstanceEmpty" => ArrayList.new, "ArrayListInstance" => (ArrayList.new << 1 << 2 << 3),
+                #{}                                                       {1=>1,2=>2}
+                "Dictionary[Object,Object]InstanceEmpty" => DObjObj.new, "Dictionary[Object,Object]Instance" => dobj,
+                #{}                                                       {1=>"1",2=>"2"}
+                "Dictionary[Fixnum,String]InstanceEmpty" => DIntStr.new, "Dictionary[Fixnum,String]Instance" => dint,
+                "TestListInstanceEmpty" => tl4, "TestListInstance" => tl1,
+                "TestListEnumeratorInstanceEmpty" => tl4.get_enumerator, "TestListEnumeratorInstance" => tl1.get_enumerator, 
+                "CStructInstance" => CStruct.new,
+                "Int32Instance" => 1,
+                "IInterfaceInstance" => BindingSpecs::RubyImplementsIInterface.new,
+                "System::Collections::Generic::List[Fixnum]InstanceEmpty" => List[Fixnum].new, "System::Collections::Generic::List[Fixnum]Instance" => ( List[Fixnum].new << 1 << 2 << 3 ),
+                "System::Collections::Generic::List[Object]InstanceEmpty" => List[Object].new, "System::Collections::Generic::List[Object]Instance" => ( List[Object].new << Object.new << Object.new << Object.new ),
+      })
       #TODO: Add the byref types when make_by_ref_type works
       #byrefStructImplementsIInterfaceInstance
       #byrefRubyImplementsIInterface
@@ -1140,27 +1489,9 @@ no_csc do
       #ref_types = {"ByRefInt" => Fixnum.get_type.make_by_ref_type, "Array[ByRefByte]" => System::Array.of(System::Byte.get_type.make_by_ref_type),
                    #"List[ByRefByte]" => List[System::Byte.get_type.make_by_ref_type]} 
       types
+
     end
 
-    def self.nullable_args
-      {
-         "Int16?Value" => System::Nullable[System::Int16].new(1),
-         "Int32?Value" => System::Nullable[System::Int32].new(1),
-         "Int64?Value" => System::Nullable[System::Int64].new(1),
-         "UInt16?Value" => System::Nullable[System::UInt16].new(1),
-         "UInt32?Value" => System::Nullable[System::UInt32].new(1),
-         "UInt64?Value" => System::Nullable[System::UInt64].new(1),
-         "Byte?Value" => System::Nullable[System::Byte].new(1),
-         "SByte?Value" => System::Nullable[System::SByte].new(1),
-         "Decimal?Value" => System::Nullable[System::Decimal].new(1),
-         "Single?Value" => System::Nullable[System::Single].new(1), 
-         "Char?Value" => System::Nullable[System::Char].new("a"), 
-         "Double?Value" => System::Nullable[System::Double].new(1),
-         "Boolean?Value" => System::Nullable[System::Boolean].new(1), 
-         "CustomEnum?Value" => System::Nullable[CustomEnum].new(CustomEnum.A),
-         "nil" => nil, "obj" => Object.new, "true" => true, "false" => false
-      }
-    end
 
     def self.test_method(a)
       a+4
@@ -1175,4 +1506,5 @@ no_csc do
   class RubyClassWithMethods < ClassWithMethods; end
   class RubyClassWithNullableMethods < ClassWithNullableMethods; end
   class RubyStaticClassWithNullableMethods < StaticClassWithNullableMethods; end
+  class RubyGenericTypeInferenceInstance < GenericTypeInferenceInstance; end
 end

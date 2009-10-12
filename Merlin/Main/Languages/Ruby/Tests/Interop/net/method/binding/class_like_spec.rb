@@ -64,7 +64,7 @@ describe "Method parameter binding with Class-like parameters" do
   before(:each) do
     @target = ClassWithMethods.new
     @target2 = RubyClassWithMethods.new
-    @values = Helper.classlike_args
+    @values = Helper.args
     nil #extraneous puts statement?
   end
     

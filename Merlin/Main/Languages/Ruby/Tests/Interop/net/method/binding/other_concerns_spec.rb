@@ -107,12 +107,12 @@ describe "Method parameter binding with misc parameters" do
      :IEnumerableIteratingArg => "IEnumerableIteratingArg",
      :RefByteArrArg => "RefByteArrArg",
      :RefBooleanArg => "RefBooleanArg"},
-   "StructImplementsIInterface" => { :GenericArg => "GenericArg[StructImplementsIInterface]",
+   "StructImplementsIInterfaceInstance" => { :GenericArg => "GenericArg[StructImplementsIInterface]",
      :RefStructImplementsIInterfaceArg => "RefStructImplementsIInterfaceArg",
      :RefBooleanArg => "RefBooleanArg", :ParamsIInterfaceArrTestArg => "ParamsIInterfaceArrTestArg"},
-   "RubyImplementsIInterface" => { :GenericArg => /GenericArg\[IronRuby\.Classes\.Object\$\d{1,3}\]/,
+   "RubyImplementsIInterfaceInstance" => { :GenericArg => /GenericArg\[IronRuby\.Classes\.Object\$\d{1,3}\]/,
      :RefBooleanArg => "RefBooleanArg", :ParamsIInterfaceArrTestArg => "ParamsIInterfaceArrTestArg"},
-   "ImplementsIInterface" => { :GenericArg => "GenericArg[ImplementsIInterface]",
+   "ImplementsIInterfaceInstance" => { :GenericArg => "GenericArg[ImplementsIInterface]",
      :RefImplementsIInterfaceArg => "RefImplementsIInterfaceArg",
      :RefBooleanArg => "RefBooleanArg", :ParamsIInterfaceArrTestArg =>"ParamsIInterfaceArrTestArg"},
    "NoArg" => (Hash.new(AE).merge({:OutNonByRefInt32Arg => "OutNonByRefInt32Arg", 
@@ -122,7 +122,7 @@ describe "Method parameter binding with misc parameters" do
   before(:each) do
     @target = ClassWithMethods.new
     @target2 = RubyClassWithMethods.new
-    @values = Helper.other_concern_args
+    @values = Helper.args
   end
 
   after(:each) do

@@ -50,7 +50,7 @@ describe "Method parameter binding with Nullable parameters" do
   before(:each) do
     @target = ClassWithNullableMethods.new
     @target2 = RubyClassWithNullableMethods.new
-    @values = Helper.nullable_args
+    @values = Helper.args
   end
 
   @matrix.each do |input, results|
@@ -111,7 +111,7 @@ describe "Static method parameter binding with Nullable parameters on" do
     @target2 = RubyStaticClassWithNullableMethods
     @target.reset()
     @target2.reset()
-    @values = Helper.nullable_args
+    @values = Helper.args
   end
 
   @matrix.each do |input, results|

@@ -329,7 +329,7 @@ describe "Method parameter binding" do
   before(:each) do
     @target = ClassWithMethods.new
     @target2 = RubyClassWithMethods.new
-    @values = Helper.numeric_and_string_args
+    @values = Helper.args
     nil #extraneous puts statement?
   end
     

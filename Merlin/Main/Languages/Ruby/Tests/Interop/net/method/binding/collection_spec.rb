@@ -51,7 +51,7 @@ describe "Method parameter binding for collections" do
   before(:each) do
     @target = ClassWithMethods.new
     @target2 = RubyClassWithMethods.new
-    @values = Helper.collection_args
+    @values = Helper.args
     nil #extraneous puts statement?
   end
     

@@ -5,6 +5,7 @@ using Microsoft.Scripting.Hosting;
 using IronRuby.Runtime;
 using IronRuby.Builtins;
 using Microsoft.Scripting.Math;
+using Microsoft.Scripting.Utils;
 using System.Collections.Generic;
 #line 1 "./bcl/fixtures/classes.rb"
 #line 5 "./bcl/fixtures/classes.rb"
@@ -447,7 +448,7 @@ public interface IEmptyInterfaceGroup { }
   public interface IInterfaceGroup1<T> {void m1();}
   public interface IInterfaceGroup1<T,V> {void m1();}
 #line 3 "./method/fixtures/classes.rb"
-#line 146 "./method/fixtures/classes.rb"
+#line 147 "./method/fixtures/classes.rb"
 public abstract partial class AbstractClassWithMethods {
     public abstract string PublicMethod();
     protected abstract string ProtectedMethod();
@@ -1259,6 +1260,357 @@ public abstract partial class AbstractClassWithMethods {
     public static string StaticCustomEnumNullableArg(CustomEnum? arg) { Tracker.Add(arg); return "StaticCustomEnumNullableArg"; }
     public static string StaticBooleanNullableArg(Boolean? arg) { Tracker.Add(arg); return "StaticBooleanNullableArg"; }
   }
+
+public class GenericTypeInference {
+    public static string Tx<T>(T x) {
+        return typeof(T).ToString();
+    }
+
+    public static string TxTy<T>(T x, T y) {
+        return typeof(T).ToString();
+    }
+
+    public static string TxTyTz<T>(T x, T y, T z) {
+        return typeof(T).ToString();
+    }
+
+    public static string TParamsArrx<T>(params T[] x) {
+        return typeof(T).ToString();
+    }
+
+    public static string TxTParamsArry<T>(T x, params T[] y) {
+        return typeof(T).ToString();
+    }
+
+    public static string TxClass<T>(T x) 
+        where T : class {
+        return typeof(T).ToString();
+    }
+
+    public static string TxStruct<T>(T x) 
+        where T : struct {
+        return typeof(T).ToString();
+    }
+
+    public static string TxIList<T>(T x) 
+        where T : IList {
+        return typeof(T).ToString();
+    }
+
+    public static string TxUyTConstrainedToU<T, U>(T x, U y)
+        where T : U {
+        return String.Format("{0}, {1}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public static string ObjxUyTConstrainedToU<T, U>(object x, U y)
+        where T : U {
+        return String.Format("{0}, {1}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public static string TxObjyTConstrainedToU<T, U>(T x, object y)
+        where T : U {
+        return String.Format("{0}, {1}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public static string TxUyVzTConstrainedToUConstrainedToV<T, U, V>(T x, U y, V z)
+        where T : U
+        where U : V {
+        return String.Format("{0}, {1}, {2}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public static string TxUyVzTConstrainedToUConstrainedToClass<T, U, V>(T x, U y, V z)
+        where T : U
+        where U : class {
+        return String.Format("{0}, {1}, {2}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public static string TxUyVzTConstrainedToUConstrainedToIList<T, U, V>(T x, U y, V z)
+        where T : U
+        where U : IList {
+        return String.Format("{0}, {1}, {2}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public static string TObjectx<T>(object x){
+        return typeof(T).ToString();
+    }
+
+    public static string TxObjecty<T, U>(T x, object y) {
+        return String.Format("{0}, {1}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public static string TxFuncTy<T>(T x, Func<T> y) {
+        return typeof(T).ToString();
+    }
+
+    public static string TxActionTy<T>(T x, Action<T> y) {
+        return typeof(T).ToString();
+    }
+
+    public static string TxIListTy<T>(T x, IList<T> y) {
+        return typeof(T).ToString();
+    }
+
+    public static string TxDictionaryTIListTy<T>(T x, Dictionary<T, IList<T>> y){
+        return typeof(T).ToString();
+    }
+
+    public static string TxIEnumerableTy<T>(T x, IEnumerable<T> y) {
+        return typeof(T).ToString();
+    }
+
+    public static string TxTConstrainedToIEnumerable<T>(T x) {
+        return typeof(T).ToString();
+    }
+
+    public static string TxUyTConstrainedToIListU<T, U>(T x, U y) {
+        return String.Format("{0}, {1}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public static string TxUy<T, U>(T x, U y) {
+        return String.Format("{0}, {1}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public static string IEnumerableTx<T>(IEnumerable<T> x) {
+        return typeof(T).ToString();
+    }
+
+    public static string IEnumerableTxFuncTBooly<T>(IEnumerable<T> x, Func<T, bool> y) {
+        return typeof(T).ToString();
+    }
+
+    public static string IEnumerableTxFuncTIntBooly<T>(IEnumerable<T> x, Func<T, bool> y) {
+        return typeof(T).ToString();
+    }
+
+    public static string ListTx<T>(List<T> x) {
+        return typeof(T).ToString();
+    }
+
+    public static string ListListTx<T>(List<List<T>> x) {
+        return typeof(T).ToString();
+    }
+
+    public static string DictionaryTTx<T>(Dictionary<T,T> x) {
+        return typeof(T).ToString();
+    }
+
+    public static string ListTxClass<T>(List<T> x)
+        where T : class {
+        return typeof(T).ToString();
+    }
+
+    public static string ListTxStruct<T>(List<T> x)
+        where T : struct {
+        return typeof(T).ToString();
+    }
+
+    public static string ListTxNew<T>(List<T> x)
+        where T : new() {
+        return typeof(T).ToString();
+    }
+    
+    public static string DictionaryDictionaryTTDictionaryTTx<T>(Dictionary<Dictionary<T,T>, Dictionary<T,T>> x) {
+        return typeof(T).ToString();
+    }
+
+    public static string FuncTBoolxStruct<T>(Func<T, bool> x) 
+        where T : struct {
+        return typeof(T).ToString();
+    }
+
+    public static string FuncTBoolxIList<T>(Func<T, bool> x)
+        where T : IList {
+        return typeof(T).ToString();
+    }
+
+    public static string IListTxIListTy<T>(IList<T> x, IList<T> y) {
+        return typeof(T).ToString();
+    }
+}
+public class SelfEnumerable : IEnumerable<SelfEnumerable> {
+    #region IEnumerable<Test> Members
+
+    IEnumerator<SelfEnumerable> IEnumerable<SelfEnumerable>.GetEnumerator() {
+        throw new NotImplementedException();
+    }
+
+    #endregion
+
+    #region IEnumerable Members
+
+    IEnumerator IEnumerable.GetEnumerator() {
+        throw new NotImplementedException();
+    }
+
+    #endregion
+}
+
+public class GenericTypeInferenceInstance {
+    public string Tx<T>(T x) {
+        return typeof(T).ToString();
+    }
+
+    public string TxTy<T>(T x, T y) {
+        return typeof(T).ToString();
+    }
+
+    public string TxTyTz<T>(T x, T y, T z) {
+        return typeof(T).ToString();
+    }
+
+    public string TParamsArrx<T>(params T[] x) {
+        return typeof(T).ToString();
+    }
+
+    public string TxTParamsArry<T>(T x, params T[] y) {
+        return typeof(T).ToString();
+    }
+
+    public string TxClass<T>(T x) 
+        where T : class {
+        return typeof(T).ToString();
+    }
+
+    public string TxStruct<T>(T x) 
+        where T : struct {
+        return typeof(T).ToString();
+    }
+
+    public string TxIList<T>(T x) 
+        where T : IList {
+        return typeof(T).ToString();
+    }
+
+    public string TxUyTConstrainedToU<T, U>(T x, U y)
+        where T : U {
+        return String.Format("{0}, {1}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public string ObjxUyTConstrainedToU<T, U>(object x, U y)
+        where T : U {
+        return String.Format("{0}, {1}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public string TxObjyTConstrainedToU<T, U>(T x, object y)
+        where T : U {
+        return String.Format("{0}, {1}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public string TxUyVzTConstrainedToUConstrainedToV<T, U, V>(T x, U y, V z)
+        where T : U
+        where U : V {
+        return String.Format("{0}, {1}, {2}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public string TxUyVzTConstrainedToUConstrainedToClass<T, U, V>(T x, U y, V z)
+        where T : U
+        where U : class {
+        return String.Format("{0}, {1}, {2}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public string TxUyVzTConstrainedToUConstrainedToIList<T, U, V>(T x, U y, V z)
+        where T : U
+        where U : IList {
+        return String.Format("{0}, {1}, {2}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public string TObjectx<T>(object x){
+        return typeof(T).ToString();
+    }
+
+    public string TxObjecty<T, U>(T x, object y) {
+        return String.Format("{0}, {1}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public string TxFuncTy<T>(T x, Func<T> y) {
+        return typeof(T).ToString();
+    }
+
+    public string TxActionTy<T>(T x, Action<T> y) {
+        return typeof(T).ToString();
+    }
+
+    public string TxIListTy<T>(T x, IList<T> y) {
+        return typeof(T).ToString();
+    }
+
+    public string TxDictionaryTIListTy<T>(T x, Dictionary<T, IList<T>> y){
+        return typeof(T).ToString();
+    }
+
+    public string TxIEnumerableTy<T>(T x, IEnumerable<T> y) {
+        return typeof(T).ToString();
+    }
+
+    public string TxTConstrainedToIEnumerable<T>(T x) {
+        return typeof(T).ToString();
+    }
+
+    public string TxUyTConstrainedToIListU<T, U>(T x, U y) {
+        return String.Format("{0}, {1}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public string TxUy<T, U>(T x, U y) {
+        return String.Format("{0}, {1}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public string IEnumerableTx<T>(IEnumerable<T> x) {
+        return typeof(T).ToString();
+    }
+
+    public string IEnumerableTxFuncTBooly<T>(IEnumerable<T> x, Func<T, bool> y) {
+        return typeof(T).ToString();
+    }
+
+    public string IEnumerableTxFuncTIntBooly<T>(IEnumerable<T> x, Func<T, bool> y) {
+        return typeof(T).ToString();
+    }
+
+    public string ListTx<T>(List<T> x) {
+        return typeof(T).ToString();
+    }
+
+    public string ListListTx<T>(List<List<T>> x) {
+        return typeof(T).ToString();
+    }
+
+    public string DictionaryTTx<T>(Dictionary<T,T> x) {
+        return typeof(T).ToString();
+    }
+
+    public string ListTxClass<T>(List<T> x)
+        where T : class {
+        return typeof(T).ToString();
+    }
+
+    public string ListTxStruct<T>(List<T> x)
+        where T : struct {
+        return typeof(T).ToString();
+    }
+
+    public string ListTxNew<T>(List<T> x)
+        where T : new() {
+        return typeof(T).ToString();
+    }
+    
+    public string DictionaryDictionaryTTDictionaryTTx<T>(Dictionary<Dictionary<T,T>, Dictionary<T,T>> x) {
+        return typeof(T).ToString();
+    }
+
+    public string FuncTBoolxStruct<T>(Func<T, bool> x) 
+        where T : struct {
+        return typeof(T).ToString();
+    }
+
+    public string FuncTBoolxIList<T>(Func<T, bool> x)
+        where T : IList {
+        return typeof(T).ToString();
+    }
+
+    public string IListTxIListTy<T>(IList<T> x, IList<T> y) {
+        return typeof(T).ToString();
+    }
+}
 #line 1 "./namespaces/fixtures/classes.rb"
 namespace NotEmptyNamespace {
     public class Foo {
