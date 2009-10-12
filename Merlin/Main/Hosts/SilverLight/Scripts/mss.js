@@ -16,17 +16,38 @@ if(!DLR.path) {
   DLR.path = null 
 }
 
+if (typeof HTMLElement != "undefined" && !HTMLElement.prototype.insertAdjacentElement) {
+    HTMLElement.prototype.insertAdjacentElement = function(where, parsedNode) {
+        switch (where) {
+            case 'beforeBegin':
+                this.parentNode.insertBefore(parsedNode, this)
+                break;
+            case 'afterBegin':
+                this.insertBefore(parsedNode, this.firstChild);
+                break;
+            case 'beforeEnd':
+                this.appendChild(parsedNode);
+                break;
+            case 'afterEnd':
+                if (this.nextSibling)
+                    this.parentNode.insertBefore(parsedNode, this.nextSibling);
+                else this.parentNode.appendChild(parsedNode);
+                break;
+        }
+    }
+}
+
 if(!DLR.__loaded) {
 
   Object.merge = function(dest, src) {
-    var temp = {}
+    var _temp = {}
     for(var prop in dest) {
-      temp[prop] = dest[prop]
+      _temp[prop] = dest[prop]
     }
     for(var prop in src) {
-      temp[prop] = src[prop]
+      _temp[prop] = src[prop]
     }
-    return temp
+    return _temp
   }
 
   DLR.parseSettings = function(defaults, settings) {
@@ -65,10 +86,10 @@ if(!DLR.__loaded) {
     for(var i = 0; i < elements.length; i++) {
       var element = elements[i];
       if(element.type == 'application/xml+xaml' && !element.defer) {
-        settings = {
+        settings = Object.merge(DLR.settings, {
           width: element.getAttribute('width'),
           height: element.getAttribute('height')
-        };
+        });
         if(element.id == '')
           element.id = DLR.__defaultXAMLId + DLR.__objectCount;
         settings.xamlid = element.id;
@@ -84,15 +105,24 @@ if(!DLR.__loaded) {
   DLR.__objectCount = 0
 
   DLR.createObject = function(settings) {
-    settings = DLR.parseSettings(
-      DLR.defaultSettings(),
-      typeof(settings) == 'undefined' ? {} : settings
-    )
+    settings = typeof(settings) == 'undefined' ? {} : settings;
+    var xamlid = settings.xamlid;
+    settings = DLR.parseSettings(DLR.defaultSettings(), settings)
+
     var spantag = document.createElement("span");
-    document.body.appendChild(spantag);
-    if(settings.id == DLR.defaultSettings().id && DLR.__objectCount > 0) {
+    var sibling = null;
+    if(xamlid)
+      sibling = document.getElementById(xamlid);
+    if(sibling && !sibling.parentElement && sibling.parentNode)
+      sibling.parentElement = sibling.parentNode
+    if(!sibling || !sibling.parentElement || sibling.parentElement.tagName == "HEAD")
+      document.body.appendChild(spantag);
+    else
+      sibling.insertAdjacentElement('afterEnd', spantag);
+
+    if(settings.id == DLR.defaultSettings().id && DLR.__objectCount > 0)
       settings.id = DLR.__defaultObjectId + DLR.__objectCount
-    }
+
     slHtml = Silverlight.buildHTML(settings);
     spantag.innerHTML = slHtml;
     DLR.__objectCount++;
