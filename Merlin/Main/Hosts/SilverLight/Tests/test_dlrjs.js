@@ -147,26 +147,26 @@ $(document).ready(function() {
     });
 
     test("Manually adding controls", function() {
-      DLR.createObject();
+      DLR.createSilverlightObject();
       equals($('object#silverlightDLRObject1').length, 1)
-      DLR.createObject();
+      DLR.createSilverlightObject();
       equals($('object#silverlightDLRObject2').length, 1)
     });
 
-  var old_createObject = null;
+  var old_createSilverlightObject = null;
   module('XAML script tags', {
     setup: function() {
-      old_createObject = DLR.createObject
+      old_createSilverlightObject = DLR.createSilverlightObject
     },
     teardown: function() {
-      DLR.createObject = old_createObject
+      DLR.createSilverlightObject = old_createSilverlightObject
     }
   })
 
     test('with ID produces a SL control with matching xamlid', function() {
       $(document.body).append("<script type=\"application/xml+xaml\" width=\"100\" height=\"150\" id=\"foo\"></script>")
       equals(DLR.__loaded, true)
-      DLR.createObject = function(settings) {
+      DLR.createSilverlightObject = function(settings) {
         equals(settings.width, '100')
         equals(settings.height, '150')
         equals(settings.xamlid, 'foo')
@@ -179,7 +179,7 @@ $(document).ready(function() {
       $(document.body).append("<script type=\"application/xml+xaml\" width=\"200\" height=\"250\"></script>")
       equals(DLR.__loaded, true)
       id = DLR.__defaultXAMLId + DLR.__objectCount
-      DLR.createObject = function(settings) {
+      DLR.createSilverlightObject = function(settings) {
         equals(settings.width, '200')
         equals(settings.height, '250')
         equals(settings.xamlid, id)

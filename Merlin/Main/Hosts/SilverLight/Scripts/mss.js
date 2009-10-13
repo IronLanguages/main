@@ -78,7 +78,7 @@ if(!DLR.__loaded) {
 
   DLR.__startup = function() {
     if(!DLR.__loaded && DLR.autoAdd && Silverlight.isInstalled(null)) {
-      DLR.createObject(DLR.settings);
+      DLR.createSilverlightObject(DLR.settings);
       DLR.__loaded = true;
     }
 
@@ -93,7 +93,7 @@ if(!DLR.__loaded) {
         if(element.id == '')
           element.id = DLR.__defaultXAMLId + DLR.__objectCount;
         settings.xamlid = element.id;
-        DLR.createObject(settings);
+        DLR.createSilverlightObject(settings);
       }
     }
   }
@@ -104,7 +104,7 @@ if(!DLR.__loaded) {
 
   DLR.__objectCount = 0
 
-  DLR.createObject = function(settings) {
+  DLR.createSilverlightObject = function(settings) {
     settings = typeof(settings) == 'undefined' ? {} : settings;
     var xamlid = settings.xamlid;
     settings = DLR.parseSettings(DLR.defaultSettings(), settings)

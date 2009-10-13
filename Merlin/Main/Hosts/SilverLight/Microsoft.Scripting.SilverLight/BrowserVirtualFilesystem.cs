@@ -279,7 +279,7 @@ namespace Microsoft.Scripting.Silverlight {
                 fullUri = relativeUri;
             } else {
                 baseUri = baseUri ?? DefaultBaseUri();
-                fullUri = new Uri(NormalizePath(((Uri)baseUri).AbsoluteUri) + relativeUri.ToString(), UriKind.Absolute);
+                fullUri = new Uri(NormalizePath(Path.Combine(((Uri)baseUri).AbsoluteUri, relativeUri.ToString())), UriKind.Absolute);
             }
 
             if (_cache.Has(fullUri)) {
