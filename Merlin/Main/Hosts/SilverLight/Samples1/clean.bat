@@ -1,2 +1,2 @@
-rmdir /S /Q dlr
-del dlr.js
+rmdir /S /Q %~dp0dlr
+del %~dp0dlr.js
