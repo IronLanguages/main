@@ -212,6 +212,37 @@ namespace IronRuby.Builtins {
         public static RubyEncoding/*!*/ GetRubyEncoding(string/*!*/ name) {
             return GetRubyEncoding(GetEncodingByRubyName(name));
         }
+
+        public static RubyRegexOptions ToRegexOption(RubyEncoding encoding) {
+#if SILVERLIGHT
+            return RubyRegexOptions.NONE;
+#else
+            if (encoding == null || !encoding._isKCoding) {
+                return RubyRegexOptions.NONE;
+            }
+
+            switch (encoding._encoding.CodePage) {
+                case RubyEncoding.CodePageUTF8: return RubyRegexOptions.UTF8;
+                case RubyEncoding.CodePageSJIS: return RubyRegexOptions.SJIS;
+                case RubyEncoding.CodePageEUC: return RubyRegexOptions.EUC;
+            }
+
+            throw Assert.Unreachable;
+#endif
+        }
+
+        public static RubyEncoding GetKCoding(RubyRegexOptions options) {
+#if SILVERLIGHT
+            return null;
+#else
+            switch (options & RubyRegexOptions.EncodingMask) {
+                case RubyRegexOptions.EUC: return RubyEncoding.KCodeEUC;
+                case RubyRegexOptions.SJIS: return RubyEncoding.KCodeSJIS;
+                case RubyRegexOptions.UTF8: return RubyEncoding.KCodeUTF8;
+                default: return null;
+            }
+#endif
+        }
         
 #if !SILVERLIGHT
         private static Dictionary<int, RubyEncoding> _Encodings;

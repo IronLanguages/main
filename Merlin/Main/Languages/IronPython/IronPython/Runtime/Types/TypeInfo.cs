@@ -307,6 +307,8 @@ namespace IronPython.Runtime.Types {
                                         // doesn't define it on object we need to filter it out.  
                                         res = FilterObjectEquality(res);
                                     }
+
+                                    res = FilterAlternateMethods(opInfo, res);
                                 }
 
                                 if (res.Count > 0) {
@@ -325,6 +327,30 @@ namespace IronPython.Runtime.Types {
                 }
 
                 return MemberGroup.EmptyGroup;
+            }
+
+            /// <summary>
+            /// Filters alternative methods out that don't match the expected signature and therefore
+            /// are just sharing a common method name.
+            /// </summary>
+            private static MemberGroup FilterAlternateMethods(OperatorMapping opInfo, MemberGroup res) {
+                if (res.Count > 0 && opInfo.AlternateExpectedType != null) {
+                    List<MemberTracker> matchingMethods = new List<MemberTracker>();
+                    for (int i = 0; i < res.Count; i++) {
+                        MemberTracker mt = res[i];
+                        if (mt.MemberType == TrackerTypes.Method &&
+                            ((MethodTracker)mt).Method.ReturnType == opInfo.AlternateExpectedType) {
+                            matchingMethods.Add(mt);
+                        }
+                    }
+
+                    if (matchingMethods.Count == 0) {
+                        res = MemberGroup.EmptyGroup;
+                    } else {
+                        res = new MemberGroup(matchingMethods.ToArray());
+                    }
+                }
+                return res;
             }
 
             /// <summary>
@@ -526,6 +552,10 @@ namespace IronPython.Runtime.Types {
                 // The operator resolver maps standard .NET operator methods into Python operator
                 // methods
                 new OperatorResolver(),
+
+                // Runs after operator resolver to map default members to __getitem__/__setitem__
+                new OneOffResolver("__getitem__", GetItemResolver),
+                new OneOffResolver("__setitem__", SetItemResolver),
                 
                 // Runs after operator resolver to map __ne__ -> !__eq__
                 new OneOffResolver("__ne__", FallbackInequalityResolver),
@@ -601,6 +631,32 @@ namespace IronPython.Runtime.Types {
             }
         }
         private static Func<MemberBinder/*!*/, Type/*!*/, MemberGroup/*!*/> _BigIntegerResolver;
+
+        /// <summary>
+        /// Provides a resolution for __getitem__
+        /// </summary>
+        private static Func<MemberBinder/*!*/, Type/*!*/, MemberGroup/*!*/>/*!*/ GetItemResolver {
+            get {
+                if (_GetItemResolver == null) {
+                    _GetItemResolver = MakeIndexerResolver(false);
+                }
+                return _GetItemResolver;
+            }
+        }
+        private static Func<MemberBinder/*!*/, Type/*!*/, MemberGroup/*!*/> _GetItemResolver;
+
+        /// <summary>
+        /// Provides a resolution for __setitem__
+        /// </summary>
+        private static Func<MemberBinder/*!*/, Type/*!*/, MemberGroup/*!*/>/*!*/ SetItemResolver {
+            get {
+                if (_SetItemResolver == null) {
+                    _SetItemResolver = MakeIndexerResolver(true);
+                }
+                return _SetItemResolver;
+            }
+        }
+        private static Func<MemberBinder/*!*/, Type/*!*/, MemberGroup/*!*/> _SetItemResolver;
 
         #endregion
 
@@ -1511,6 +1567,38 @@ namespace IronPython.Runtime.Types {
                     return new MemberGroup(tracker);
                 }
                 return MemberGroup.EmptyGroup;
+            };
+        }
+
+        /// <summary>
+        /// Helper for creating __getitem__/__setitem__ resolvers
+        /// </summary>
+        /// <param name="set">false for a getter, true for a setter</param>
+        private static Func<MemberBinder/*!*/, Type/*!*/, MemberGroup/*!*/>/*!*/ MakeIndexerResolver(bool set) {
+            return delegate(MemberBinder/*!*/ binder, Type/*!*/ type) {
+                List<MemberInfo> members = null;
+
+                foreach (MemberInfo member in type.GetDefaultMembers()) {
+                    PropertyInfo property = member as PropertyInfo;
+                    if (property != null) {
+                        MethodInfo accessor;
+                        if (!set) {
+                            accessor = property.GetGetMethod();
+                        } else {
+                            accessor = property.GetSetMethod();
+                        }
+                        if (accessor != null) {
+                            members = members ?? new List<MemberInfo>();
+                            members.Add(accessor);
+                        }
+                    }
+                }
+
+                if (members == null) {
+                    return MemberGroup.EmptyGroup;
+                } else {
+                    return new MemberGroup(members.ToArray());
+                }
             };
         }
 

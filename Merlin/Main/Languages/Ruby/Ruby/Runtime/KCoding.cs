@@ -32,7 +32,7 @@ namespace IronRuby.Runtime {
             _encoding = encoding;
         }
 
-        public static int GetCodePage(int firstChar) {
+        internal static int GetCodePage(int firstChar) {
             switch (firstChar) {
                 case 'E':
                 case 'e': return RubyEncoding.CodePageEUC;

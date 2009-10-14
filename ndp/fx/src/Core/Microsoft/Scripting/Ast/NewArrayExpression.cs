@@ -214,7 +214,7 @@ namespace System.Linq.Expressions {
             ReadOnlyCollection<Expression> boundsList = bounds.ToReadOnly();
 
             int dimensions = boundsList.Count;
-            ContractUtils.Requires(dimensions > 0, "bounds", Strings.BoundsCannotBeLessThanOne);
+            if (dimensions <= 0) throw Error.BoundsCannotBeLessThanOne();
 
             for (int i = 0; i < dimensions; i++) {
                 Expression expr = boundsList[i];

@@ -115,8 +115,10 @@ namespace IronPython.Compiler.Ast {
             }
 
             ConstantInfo ci;
-            if (!_allConstants.TryGetValue(value, out ci)) {
-                _allConstants[value] = _constants[value] = ci = NextConstant(_constants.Count, CompilerHelpers.GetType(value));
+            lock (_allConstants) {
+                if (!_allConstants.TryGetValue(value, out ci)) {
+                    _allConstants[value] = _constants[value] = ci = NextConstant(_constants.Count, CompilerHelpers.GetType(value));
+                }
             }
 
             return ci.Expression;

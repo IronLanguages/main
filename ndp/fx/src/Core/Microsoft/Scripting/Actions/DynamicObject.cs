@@ -580,13 +580,15 @@ namespace System.Dynamic {
             }
 
             /// <summary>
-            /// Returns our Expression converted to our known LimitType
+            /// Returns our Expression converted to DynamicObject
             /// </summary>
             private Expression GetLimitedSelf() {
-                if (TypeUtils.AreEquivalent(Expression.Type, LimitType)) {
+                // Convert to DynamicObject rather than LimitType, because
+                // the limit type might be non-public.
+                if (TypeUtils.AreEquivalent(Expression.Type, typeof(DynamicObject))) {
                     return Expression;
                 }
-                return Expression.Convert(Expression, LimitType);
+                return Expression.Convert(Expression, typeof(DynamicObject));
             }
 
             private new DynamicObject Value {

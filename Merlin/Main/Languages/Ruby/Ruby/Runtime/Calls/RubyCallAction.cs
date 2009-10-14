@@ -32,6 +32,7 @@ using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Runtime.Calls {
+    using AstFactory = IronRuby.Compiler.Ast.AstFactory;
     using Ast = Expression;
 
     public class RubyCallAction : RubyMetaBinder {
@@ -47,7 +48,7 @@ namespace IronRuby.Runtime.Calls {
         }
 
         public override Type/*!*/ ReturnType {
-            get { return typeof(object); }
+            get { return _signature.ResolveOnly ? typeof(bool) : typeof(object); }
         }
 
         internal protected RubyCallAction(RubyContext context, string/*!*/ methodName, RubyCallSignature signature) 
@@ -97,7 +98,9 @@ namespace IronRuby.Runtime.Calls {
         #region Precompiled Rules
 
         public override T BindDelegate<T>(CallSite<T>/*!*/ site, object[]/*!*/ args) {
-            if (Context == null || (Signature.Flags & ~(RubyCallFlags.HasImplicitSelf | RubyCallFlags.HasScope | RubyCallFlags.HasBlock)) != 0) {
+            if (Context == null || 
+                Signature.ResolveOnly ||
+                (Signature.Flags & ~(RubyCallFlags.HasImplicitSelf | RubyCallFlags.HasScope | RubyCallFlags.HasBlock)) != 0) {
                 return base.BindDelegate<T>(site, args);
             }
 
@@ -152,12 +155,20 @@ namespace IronRuby.Runtime.Calls {
                     return false;
                 }
 
+                if (args.Signature.ResolveOnly) {
+                    metaBuilder.Result = AstFactory.True;
+                    return true;    
+                }
+                
                 if (args.Signature.IsVirtualCall && !method.Info.IsRubyMember) {
                     metaBuilder.Result = Ast.Field(null, Fields.ForwardToBase);
                     return true;
                 }
 
                 method.Info.BuildCall(metaBuilder, args, methodName);
+                return true;
+            } else if (args.Signature.ResolveOnly) {
+                metaBuilder.Result = AstFactory.False;
                 return true;
             } else {
                 return BuildMethodMissingCall(metaBuilder, args, methodName, methodMissing, method.IncompatibleVisibility, false, defaultFallback);

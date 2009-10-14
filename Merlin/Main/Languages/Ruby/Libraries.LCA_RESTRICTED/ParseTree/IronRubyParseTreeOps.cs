@@ -368,9 +368,9 @@ namespace IronRuby.StandardLibrary.ParseTree {
                 public override bool Enter(RegularExpression/*!*/ node) {
                     StringLiteral lit;
                     if (node.Pattern.Count == 0) {
-                        _result = MakeNode(NodeKind.lit, new RubyRegex(String.Empty, node.Options));
+                        _result = MakeNode(NodeKind.lit, new RubyRegex(MutableString.CreateEmpty(), node.Options));
                     } else if (node.Pattern.Count == 1 && (lit = node.Pattern[0] as StringLiteral) != null) {
-                        _result = MakeNode(NodeKind.lit, lit.GetMutableString(_encoding).ToRegularExpression(node.Options));
+                        _result = MakeNode(NodeKind.lit, new RubyRegex(lit.GetMutableString(_encoding), node.Options));
                     } else {
                         var regex = VisitStringConstructor(node.Pattern, NodeKind.dregx);
                         if (node.Options != RubyRegexOptions.NONE) {

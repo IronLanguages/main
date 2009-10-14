@@ -26,7 +26,7 @@ namespace IronRuby.Builtins {
     /// <summary>
     /// Converts a Ruby regexp pattern to a CLR pattern
     /// </summary>
-    internal class RegexpTransformer {
+    internal sealed class RegexpTransformer {
         [Flags]
         enum PatternState {
             Normal,
@@ -34,18 +34,22 @@ namespace IronRuby.Builtins {
             InCharacterClass
         }
 
-        string/*!*/ _rubyPattern;
-        PatternState _state = PatternState.Normal;
-        int _index;
-        StringBuilder/*!*/ _sb;
+        private string/*!*/ _rubyPattern;
+        private PatternState _state = PatternState.Normal;
+        private int _index;
+        private StringBuilder/*!*/ _sb;
+        private bool _hasGAnchor;
 
-        internal static string Transform(string/*!*/ rubyPattern, RubyRegexOptions options) {
+        internal static string Transform(string/*!*/ rubyPattern, RubyRegexOptions options, out bool hasGAnchor) {
             if (rubyPattern == "\\Af(?=[[:xdigit:]]{2}+\\z)") {
                 // pp.rb uses this pattern. The real fix requires cracking the entire regexp and so is left for later
+                hasGAnchor = false;
                 return "\\Af(?=(?:[[:xdigit:]]{2})+\\z)";
             }
             RegexpTransformer transformer = new RegexpTransformer(rubyPattern);
-            return transformer.Transform();
+            var result = transformer.Transform();
+            hasGAnchor = transformer._hasGAnchor;
+            return result;
         }
 
         private RegexpTransformer(string/*!*/ rubyPattern) {
@@ -226,8 +230,7 @@ namespace IronRuby.Builtins {
                 case 'A': // beginning of string
                 case 'Z': // end of string, or before newline at the end
                 case 'z': // end of string
-                case 'G':
-
+                
                 case 'd':
                 case 'D':
                 case 's':
@@ -296,6 +299,11 @@ namespace IronRuby.Builtins {
                     _sb.Append(c);
                     LeaveEscapeSequence();
                     break;
+
+                case 'G':
+                    _hasGAnchor = true;
+                    AppendEscapedChar(c);
+                    return;
 
                 default:
                     if (IsMetaCharacterWithDirectMapping(c)) {

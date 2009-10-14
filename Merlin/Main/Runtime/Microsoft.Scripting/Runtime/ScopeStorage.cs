@@ -198,6 +198,11 @@ namespace Microsoft.Scripting {
             public override DynamicMetaObject BindGetMember(GetMemberBinder binder) {
                 IScopeVariable variable = Value.GetVariable(binder.Name, binder.IgnoreCase);
                 var tmp = Expression.Parameter(typeof(object));
+                var fallback = binder.FallbackGetMember(this).Expression;
+                if (fallback.Type != typeof(object)) {
+                    // both types need to be object for condition
+                    fallback = Expression.Convert(fallback, typeof(object));
+                }
                 return new DynamicMetaObject(
                     Expression.Block(
                         new[] { tmp },
@@ -208,7 +213,7 @@ namespace Microsoft.Scripting {
                                 tmp
                             ),
                             tmp,
-                            binder.FallbackGetMember(this).Expression
+                            fallback
                         )
                     ),
                     BindingRestrictions.GetInstanceRestriction(Expression, Value)

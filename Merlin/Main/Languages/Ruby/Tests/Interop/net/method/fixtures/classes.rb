@@ -1316,9 +1316,22 @@ no_csc do
         end
         alias_method :convert_for_IntIntDelegateArg, :convert_for_DelegateArg
 
-        def method_missing(meth, *args, &blk)
+        def convert_for_StringArg(arg)
+          case arg
+          when NilClass
+            nil
+          when Symbol
+            arg.to_s
+          when Fixnum
+            arg.to_sym.to_s
+          else
+            arg.to_str
+          end
+        end
+        
+        def method_missing(meth, arg)
           if meth =~ /convert_for_.*?Arg/
-            value
+            arg
           end
         end
         

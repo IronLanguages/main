@@ -281,15 +281,6 @@ class LegacyRouteSetTests
 
 end
 
-class LinkToUnlessCurrentWithControllerTest
-  # NoMethodError: protected method `default_url_options' called for #<LinkToUnlessCurrentWithControllerTest::TasksController:0x0043838 @before_filter_chain_aborted=false, @performed_redirect=false, @performed_render=false, @_request=#<ActionController::TestRequest:0x00437ac @env={"rack.version"=>[0, 1], "rack.input"=>IronRuby.StandardLibrary.StringIO.StringIO, "rack.errors"=>IronRuby.StandardLibrary.S
-  def test_link_to_unless_current_shows_link() end
-
-  # NoMethodError: protected method `default_url_options' called for #<LinkToUnlessCurrentWithControllerTest::TasksController:0x00438ee @before_filter_chain_aborted=false, @performed_redirect=false, @performed_render=false, @_request=#<ActionController::TestRequest:0x0043862 @env={"rack.version"=>[0, 1], "rack.input"=>IronRuby.StandardLibrary.StringIO.StringIO, "rack.errors"=>IronRuby.StandardLibrary.S
-  def test_link_to_unless_current_to_current() end
-
-end
-
 class MultipartParamsParsingTest
   # NoMethodError: undefined method `stat' for #<File:c:/github/ironruby/Merlin/External.LCA_RESTRICTED/Languages/IronRuby/RailsTests-2.3.3/actionpack/test/controller/request/../../fixtures/multipart/none>
   def test_does_not_create_tempfile_if_no_file_has_been_selected() end
@@ -334,15 +325,6 @@ class PageCachingTest
 
 end
 
-class PolymorphicControllerTest
-  # NoMethodError: protected method `default_url_options' called for #<PolymorphicControllerTest::SessionsController:0x0046aec @before_filter_chain_aborted=false, @performed_redirect=false, @performed_render=false, @_request=#<ActionController::TestRequest:0x00469ac @env={"rack.version"=>[0, 1], "rack.input"=>IronRuby.StandardLibrary.StringIO.StringIO, "rack.errors"=>IronRuby.StandardLibrary.StringIO.S
-  def test_new_nested_resource() end
-
-  # NoMethodError: protected method `default_url_options' called for #<PolymorphicControllerTest::WorkshopsController:0x0046c52 @before_filter_chain_aborted=false, @performed_redirect=false, @performed_render=false, @_request=#<ActionController::TestRequest:0x0046b12 @env={"rack.version"=>[0, 1], "rack.input"=>IronRuby.StandardLibrary.StringIO.StringIO, "rack.errors"=>IronRuby.StandardLibrary.StringIO.
-  def test_new_resource() end
-
-end
-
 class ReloadableRenderTest
   # <"undefined method `doesnt_exist' for #<ActionView::Base:0x004d78c @_rendered={:template=>#<ActionView::ReloadableTemplate:0x004d816 @template_path=\"test/_raise.html.erb\", @load_path=\"c:/github/ironruby/Merlin/External.LCA_RESTRICTED/Languages/IronRuby/RailsTests-2.3.3/actionpack/test/fixtures\", @base_path=\"test\", @name=\"_raise\", @locale=nil, @format=\"html\", @extension=\"erb\", @_memoized
   def test_render_partial_with_errors() end
@@ -381,15 +363,6 @@ end
 class TestTest
   # NoMethodError: undefined method `stat' for #<File:C:/Users/sborde/AppData/Local/Temp/mona_lisa.jpg.13276.10>
   def test_fixture_file_upload() end
-end
-
-class UrlHelperWithControllerTest
-  # NoMethodError: protected method `default_url_options' called for #<UrlHelperWithControllerTest::UrlHelperController:0x006195a @before_filter_chain_aborted=false, @performed_redirect=false, @performed_render=false, @_request=#<ActionController::TestRequest:0x0061928 @env={"rack.version"=>[0, 1], "rack.input"=>IronRuby.StandardLibrary.StringIO.StringIO, "rack.errors"=>IronRuby.StandardLibrary.StringI
-  def test_named_route_path_shows_only_path() end
-
-  # NoMethodError: protected method `default_url_options' called for #<UrlHelperWithControllerTest::UrlHelperController:0x0061a04 @before_filter_chain_aborted=false, @performed_redirect=false, @performed_render=false, @_request=#<ActionController::TestRequest:0x00619d4 @env={"rack.version"=>[0, 1], "rack.input"=>IronRuby.StandardLibrary.StringIO.StringIO, "rack.errors"=>IronRuby.StandardLibrary.StringI
-  def test_named_route_url_shows_host_and_path() end
-
 end
 
 class UrlWriterTests

@@ -991,7 +991,7 @@ namespace IronPython.Compiler {
             return ret;
         }
 
-        public string SetPrivatePrefix(string name) {
+        private string SetPrivatePrefix(string name) {
             string oldPrefix = _privatePrefix;
 
             _privatePrefix = GetPrivatePrefix(name);

@@ -32,6 +32,7 @@ namespace IronRuby.Tests {
     using AstUtils = Microsoft.Scripting.Ast.Utils;
 
     public partial class Tests {
+        [Options(NoRuntime = true)]
         public void Interpreter1() {
             var m_AddValue = new Action<StrongBox<int>, int>(Interpreter1_AddValue).Method;
             var m_ThrowNSE = new Action(Interpreter1_ThrowNSE).Method;
@@ -197,6 +198,7 @@ namespace IronRuby.Tests {
             return 20;
         }
 
+        [Options(NoRuntime = true)]
         public void Interpreter2() {
             Interpreter2_Test<Func<int>>(
                 (var) => Ast.Lambda<Func<int>>(var),
@@ -247,6 +249,7 @@ namespace IronRuby.Tests {
         /// <summary>
         /// ThreadAbortException handling.
         /// </summary>
+        [Options(NoRuntime = true)]
         public void Interpreter3() {
             if (_driver.PartialTrust) return;
 
@@ -406,6 +409,68 @@ namespace IronRuby.Tests {
             tracker.Add(e.ExceptionState);
             Thread.ResetAbort();
             tracker.Add(e.ExceptionState);
+        }
+
+        [Options(NoRuntime = true)]
+        public void Interpreter5() {
+            var strArray1 = new string[] { "foo" };
+            var strArray2 = new string[1, 1];
+            var strArray3 = new string[1, 1, 1];
+            var strArray8 = new string[1, 1, 1, 1, 1, 1, 1, 1];
+            strArray2[0, 0] = "foo";
+            strArray3[0, 0, 0] = "foo";
+            strArray8[0, 0, 0, 0, 0, 0, 0, 0] = "foo";
+
+           // T[]::Get
+            Assert("foo" == Ast.Lambda<Func<string>>(
+                Ast.Call(Ast.Constant(strArray1), typeof(string[]).GetMethod("Get"), Ast.Constant(0))
+            ).LightCompile()());
+
+            // T[]::Set
+            Ast.Lambda<Action>(
+                Ast.Call(Ast.Constant(strArray1), typeof(string[]).GetMethod("Set"), Ast.Constant(0), Ast.Constant("bar"))
+            ).LightCompile()();
+            Assert(strArray1[0] == "bar");
+
+            // T[,]::Get
+            Assert("foo" == Ast.Lambda<Func<string>>(
+                Ast.Call(Ast.Constant(strArray2), typeof(string[,]).GetMethod("Get"), Ast.Constant(0), Ast.Constant(0))
+            ).LightCompile()());
+
+            // T[,]::Set
+            Ast.Lambda<Action>(
+                Ast.Call(Ast.Constant(strArray2), typeof(string[,]).GetMethod("Set"), Ast.Constant(0), Ast.Constant(0), Ast.Constant("bar"))
+            ).LightCompile()();
+            Assert(strArray2[0, 0] == "bar");
+
+            // T[,,]::Get
+            Assert("foo" == Ast.Lambda<Func<string>>(
+                Ast.Call(Ast.Constant(strArray3), typeof(string[, ,]).GetMethod("Get"), Ast.Constant(0), Ast.Constant(0), Ast.Constant(0))
+            ).LightCompile()());
+
+            // T[,,]::Set
+            Ast.Lambda<Action>(
+                Ast.Call(Ast.Constant(strArray3), typeof(string[, ,]).GetMethod("Set"), Ast.Constant(0), Ast.Constant(0), Ast.Constant(0), Ast.Constant("bar"))
+            ).LightCompile()();
+            Assert(strArray3[0, 0, 0] == "bar");
+
+            // T[*]::Get
+            Assert("foo" == Ast.Lambda<Func<string>>(
+                Ast.Call(Ast.Constant(strArray8), typeof(string[, , , , , , ,]).GetMethod("Get"),
+                        Ast.Constant(0), Ast.Constant(0), Ast.Constant(0), Ast.Constant(0),
+                        Ast.Constant(0), Ast.Constant(0), Ast.Constant(0), Ast.Constant(0)
+                )
+            ).LightCompile()());
+
+            // T[*]::Set
+            Ast.Lambda<Action>(
+                Ast.Call(Ast.Constant(strArray8), typeof(string[, , , , , , ,]).GetMethod("Set"),
+                        Ast.Constant(0), Ast.Constant(0), Ast.Constant(0), Ast.Constant(0),
+                        Ast.Constant(0), Ast.Constant(0), Ast.Constant(0), Ast.Constant(0),
+                        Ast.Constant("bar")
+                )
+            ).LightCompile()();
+            Assert(strArray8[0, 0, 0, 0, 0, 0, 0, 0] == "bar");
         }
     }
 }

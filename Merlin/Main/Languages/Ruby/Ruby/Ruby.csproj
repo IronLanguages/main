@@ -23,7 +23,6 @@
     <BaseAddress>887095296</BaseAddress>
     <Silverlight3Path>..\..\..\Utilities\Silverlight\x86ret</Silverlight3Path>
     <Silverlight4Path>..\..\..\Utilities\Silverlight\v4-x86fre</Silverlight4Path>
-    
     <!-- The following two lines prevent csc.rsp and Microsoft.NETFramework.props from adding additional assembly references -->
     <NoConfig>true</NoConfig>
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
@@ -147,15 +146,15 @@
     <Reference Include="System.Core" Condition=" '$(TargetFrameworkVersion)' == 'v4.0' " />
   </ItemGroup>
   <ItemGroup Condition=" '$(SilverlightBuild)' == 'true' ">
-    <Reference Include="mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" >
+    <Reference Include="mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(SilverlightPath)\mscorlib.dll</HintPath>
     </Reference>
-    <Reference Include="System.Net, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" >
+    <Reference Include="System.Net, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(SilverlightPath)\System.Net.dll</HintPath>
     </Reference>
-    <Reference Include="System, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" >
+    <Reference Include="System, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(SilverlightPath)\System.dll</HintPath>
     </Reference>
@@ -200,7 +199,6 @@
     <Compile Include="Builtins\RubyBufferedStream.cs" />
     <Compile Include="Builtins\RubyEvent.Meta.cs" />
     <Compile Include="Builtins\DuplexStream.cs" />
-    <Compile Include="Builtins\GenericRegex.cs" />
     <Compile Include="Builtins\Hash.Subclass.cs" />
     <Compile Include="Builtins\RegexpTransformer.cs" />
     <Compile Include="Builtins\RubyArray.Subclass.cs" />

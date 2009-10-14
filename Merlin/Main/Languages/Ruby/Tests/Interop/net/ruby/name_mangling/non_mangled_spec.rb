@@ -11,7 +11,7 @@ describe "Methods that don't get mangled" do
       end
 
       it "don't work on #{obj.class} when called with the mangled name (#{meth_name.to_snake_case})" do
-        lambda {obj.__send__(meth_name.to_snake_case)}.should raise_error(NoMethodError)
+        obj.__send__(meth_name.to_snake_case).should == "base #{meth_name}"
       end
     end
   end

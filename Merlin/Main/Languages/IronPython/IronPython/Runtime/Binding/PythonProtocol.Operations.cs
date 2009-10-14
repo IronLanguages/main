@@ -2422,14 +2422,31 @@ namespace IronPython.Runtime.Binding {
         /// </summary>
         public static DynamicMetaObject/*!*/ TypeError(DynamicMetaObjectBinder/*!*/ action, string message, params DynamicMetaObject[] types) {
             if (action is IPythonSite) {
+                Expression[] formatArgs;
+                Type[] typeArgs;
+
                 // produce our custom errors for Python...
-                Expression[] formatArgs = new Expression[types.Length + 1];
-                for (int i = 1; i < formatArgs.Length; i++) {
-                    formatArgs[i] = AstUtils.Constant(MetaPythonObject.GetPythonType(types[i - 1]).Name);
+                if (types.Length <= 3) {
+                    // String.Format only has overloads for up to 3 objects following the format string
+                    formatArgs = new Expression[types.Length + 1];
+                    for (int i = 1; i < formatArgs.Length; i++) {
+                        formatArgs[i] = AstUtils.Constant(MetaPythonObject.GetPythonType(types[i - 1]).Name);
+                    }
+                    formatArgs[0] = AstUtils.Constant(message);
+                    typeArgs = CompilerHelpers.MakeRepeatedArray<Type>(typeof(object), types.Length + 1);
+                    typeArgs[0] = typeof(string);
+                } else {
+                    // Use the params overload for String.Format
+                    formatArgs = new Expression[types.Length];
+                    for (int i = 0; i < formatArgs.Length; i++) {
+                        formatArgs[i] = AstUtils.Constant(MetaPythonObject.GetPythonType(types[i]).Name);
+                    }
+                    formatArgs = new Expression[] {
+                        AstUtils.Constant(message),
+                        Expression.NewArrayInit(typeof(object), formatArgs)
+                    };
+                    typeArgs = new Type[] { typeof(string), typeof(object[]) };
                 }
-                formatArgs[0] = AstUtils.Constant(message);
-                Type[] typeArgs = CompilerHelpers.MakeRepeatedArray<Type>(typeof(object), types.Length + 1);
-                typeArgs[0] = typeof(string);
 
                 Expression error = Ast.Throw(
                     Ast.Call(

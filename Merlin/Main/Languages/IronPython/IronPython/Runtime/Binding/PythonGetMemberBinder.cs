@@ -126,6 +126,7 @@ namespace IronPython.Runtime.Binding {
                     switch (Name) {
                         case "__str__":
                         case "__repr__":
+                        case "__doc__":
                             // need to return the built in method descriptor for these...
                             break;
                         case "__file__":
@@ -181,7 +182,7 @@ namespace IronPython.Runtime.Binding {
 
             public object GetError(CallSite site, TSelfType target, CodeContext context) {
                 if (target != null && target.GetType() == _type) {
-                    throw PythonOps.AttributeErrorForMissingAttribute(DynamicHelpers.GetPythonType(target).Name, _name);
+                    throw PythonOps.AttributeErrorForObjectMissingAttribute(target, _name);
                 }
 
                 return ((CallSite<Func<CallSite, TSelfType, CodeContext, object>>)site).Update(site, target, context);

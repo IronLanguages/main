@@ -145,12 +145,8 @@ namespace IronRuby.Builtins {
                 SwitchToMutable();
             }
 
-            public override GenericRegex/*!*/ ToRegularExpression(RubyRegexOptions options) {
-                return new StringRegex(_data, options);
-            }
-
             public override Content/*!*/ EscapeRegularExpression() {
-                StringBuilder sb = StringRegex.EscapeToStringBuilder(_data);
+                StringBuilder sb = RubyRegex.EscapeToStringBuilder(_data);
                 return (sb != null) ? new StringContent(sb.ToString(), _owner) : this;
             }
 

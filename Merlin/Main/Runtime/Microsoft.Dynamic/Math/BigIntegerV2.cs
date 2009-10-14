@@ -231,11 +231,34 @@ namespace Microsoft.Scripting.Math {
             return Create(i);
         }
 
-        public static explicit operator double(BigInteger i) {
-            if (object.ReferenceEquals(i, null)) {
-                throw new ArgumentNullException("i");
+        public static explicit operator BigInteger(double self) {
+            return Create(self);
+        }
+
+        public static explicit operator BigInteger(float self) {
+            return Create((double)self);
+        }
+
+        public static explicit operator double(BigInteger self) {
+            if (object.ReferenceEquals(self, null)) {
+                throw new ArgumentNullException("self");
             }
-            return i.ToFloat64();
+            return self.ToFloat64();
+        }
+
+        public static explicit operator float(BigInteger self) {
+            if (object.ReferenceEquals(self, null)) {
+                throw new ArgumentNullException("self");
+            }
+            return checked((float)self.ToFloat64());
+        }
+
+        public static explicit operator decimal(BigInteger self) {
+            decimal res;
+            if (self.AsDecimal(out res)) {
+                return res;
+            }
+            throw new OverflowException();
         }
 
         public static explicit operator byte(BigInteger self) {
@@ -304,25 +327,6 @@ namespace Microsoft.Scripting.Math {
                 return tmp;
             }
             throw new OverflowException();
-        }
-
-        public static explicit operator float(BigInteger self) {
-            if (object.ReferenceEquals(self, null)) {
-                throw new ArgumentNullException("self");
-            }
-            return checked((float)self.ToFloat64());
-        }
-
-        public static explicit operator decimal(BigInteger self) {
-            decimal res;
-            if (self.AsDecimal(out res)) {
-                return res;
-            }
-            throw new OverflowException();
-        }
-
-        public static explicit operator BigInteger(double self) {
-            return Create(self);
         }
 
         public BigInteger(BigInteger copy) {

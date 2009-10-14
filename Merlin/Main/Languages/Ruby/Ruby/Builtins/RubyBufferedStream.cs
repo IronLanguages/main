@@ -107,23 +107,25 @@ namespace IronRuby.Builtins {
         }
 
         public int WriteBytes(byte[]/*!*/ buffer, int offset, int count, bool preserveEndOfLines) {
+            ContractUtils.RequiresArrayRange(buffer.Length, offset, count, "offset", "count");
             FlushRead();
 
             if (preserveEndOfLines) {
                 _stream.Write(buffer, offset, count);
-                return buffer.Length;
+                return count;
             } else {
                 int bytesWritten = 0;
                 int i = offset;
-                while (i < count) {
+                int end = offset + count;
+                while (i < end) {
                     int j = i;
-                    while (j < buffer.Length && buffer[j] != LF) {
+                    while (j < end && buffer[j] != LF) {
                         j++;
                     }
                     _stream.Write(buffer, i, j - i);
                     bytesWritten += j - i;
 
-                    if (j < buffer.Length) {
+                    if (j < end) {
                         _stream.WriteByte(CR);
                         _stream.WriteByte(LF);
                         bytesWritten += 2;

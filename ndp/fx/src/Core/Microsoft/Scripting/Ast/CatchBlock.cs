@@ -169,7 +169,7 @@ namespace System.Linq.Expressions {
             RequiresCanRead(body, "body");
             if (filter != null) {
                 RequiresCanRead(filter, "filter");
-                ContractUtils.Requires(filter.Type == typeof(bool), Strings.ArgumentMustBeBoolean);
+                if (filter.Type != typeof(bool)) throw Error.ArgumentMustBeBoolean();
             }
 
             return new CatchBlock(type, variable, body, filter);

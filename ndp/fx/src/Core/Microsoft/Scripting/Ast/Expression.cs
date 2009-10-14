@@ -141,7 +141,7 @@ namespace System.Linq.Expressions {
         /// </summary>
         /// <returns>The reduced expression.</returns>
         public virtual Expression Reduce() {
-            ContractUtils.Requires(!CanReduce, "this", Strings.ReducibleMustOverrideReduce);
+            if (CanReduce) throw Error.ReducibleMustOverrideReduce();
             return this;
         }
 
@@ -158,7 +158,7 @@ namespace System.Linq.Expressions {
         /// itself with the modified children.
         /// </remarks>
         protected internal virtual Expression VisitChildren(ExpressionVisitor visitor) {
-            ContractUtils.Requires(CanReduce, "this", Strings.MustBeReducible);
+            if (!CanReduce) throw Error.MustBeReducible();
             return visitor.Visit(ReduceExtensions());
         }
 
@@ -191,14 +191,14 @@ namespace System.Linq.Expressions {
         /// certain invariants.
         /// </remarks>
         public Expression ReduceAndCheck() {
-            ContractUtils.Requires(CanReduce, "this", Strings.MustBeReducible);
+            if (!CanReduce) throw Error.MustBeReducible();
 
             var newNode = Reduce();
 
             // 1. Reduction must return a new, non-null node
             // 2. Reduction must return a new node whose result type can be assigned to the type of the original node
-            ContractUtils.Requires(newNode != null && newNode != this, "this", Strings.MustReduceToDifferent);
-            ContractUtils.Requires(TypeUtils.AreReferenceAssignable(Type, newNode.Type), "this", Strings.ReducedNotCompatible);
+            if (newNode == null || newNode == this) throw Error.MustReduceToDifferent();
+            if (!TypeUtils.AreReferenceAssignable(Type, newNode.Type)) throw Error.ReducedNotCompatible();
             return newNode;
         }
 

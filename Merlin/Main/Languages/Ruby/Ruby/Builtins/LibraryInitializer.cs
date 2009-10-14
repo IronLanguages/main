@@ -70,11 +70,11 @@ namespace IronRuby.Builtins {
             return _context.DefineLibraryClass(name, type, instanceTrait, classTrait, constantsInitializer, super, mixins, factories, (RubyModuleAttributes)attributes, _builtin);
         }
 
-        protected RubyClass/*!*/ ExtendClass(Type/*!*/ type, RubyClass super, 
+        protected RubyClass/*!*/ ExtendClass(Type/*!*/ type, int attributes, RubyClass super, 
             Action<RubyModule> instanceTrait, Action<RubyModule> classTrait, Action<RubyModule> constantsInitializer,
             RubyModule/*!*/[]/*!*/ mixins, params Delegate[] factories) {
 
-            return _context.DefineLibraryClass(null, type, instanceTrait, classTrait, constantsInitializer, super, mixins, factories, RubyModuleAttributes.None, _builtin);
+            return _context.DefineLibraryClass(null, type, instanceTrait, classTrait, constantsInitializer, super, mixins, factories, (RubyModuleAttributes)attributes, _builtin);
         }
 
         protected RubyModule/*!*/ DefineGlobalModule(string/*!*/ name, Type/*!*/ type, int attributes,
@@ -101,10 +101,10 @@ namespace IronRuby.Builtins {
             return _context.DefineLibraryModule(name, type, instanceTrait, classTrait, constantsInitializer, mixins, (RubyModuleAttributes)attributes, _builtin);
         }
 
-        protected RubyModule/*!*/ ExtendModule(Type/*!*/ type,
+        protected RubyModule/*!*/ ExtendModule(Type/*!*/ type, int attributes, 
             Action<RubyModule> instanceTrait, Action<RubyModule> classTrait, Action<RubyModule> constantsInitializer,
             params RubyModule/*!*/[]/*!*/ mixins) {
-            return _context.DefineLibraryModule(null, type, instanceTrait, classTrait, constantsInitializer, mixins, RubyModuleAttributes.None, _builtin);
+            return _context.DefineLibraryModule(null, type, instanceTrait, classTrait, constantsInitializer, mixins, (RubyModuleAttributes)attributes, _builtin);
         }
 
         protected object/*!*/ DefineSingleton(Action<RubyModule> instanceTrait, Action<RubyModule> classTrait, Action<RubyModule> constantsInitializer,

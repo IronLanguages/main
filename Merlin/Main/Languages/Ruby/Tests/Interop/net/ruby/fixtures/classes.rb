@@ -41,7 +41,8 @@ csc <<-EOL
 
   public class SubStaticNameHolder : StaticNameHolder {}
     
-  public class NotMangled {
+  public class MangledBase {}
+  public class NotMangled : MangledBase {
   #{ 
         Helper.non_mangled_methods.inject("") do |result, name|
           result << Helper.define_clr_method(name)
@@ -51,7 +52,7 @@ csc <<-EOL
 
   public class SubNotMangled : NotMangled {}
   
-  public class StaticNotMangled {
+  public class StaticNotMangled : MangledBase {
   #{ 
         Helper.non_mangled_methods.inject("") do |result, name|
           result << Helper.define_static_clr_method(name)
@@ -65,6 +66,12 @@ no_csc do
   class CLRNew::Ctor
     def initialize
       tracker = 2
+    end
+  end
+
+  class MangledBase
+    Helper.non_mangled_methods.each do |method|
+      define_method(method.to_snake_case) { "base #{method}"}
     end
   end
 end

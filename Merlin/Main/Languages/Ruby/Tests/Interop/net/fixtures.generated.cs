@@ -1675,7 +1675,8 @@ namespace CLRNew {
 
   public class SubStaticNameHolder : StaticNameHolder {}
     
-  public class NotMangled {
+  public class MangledBase {}
+  public class NotMangled : MangledBase {
   public string Class(){return "Class";}
     public string Clone(){return "Clone";}
     public string Display(){return "Display";}
@@ -1705,7 +1706,7 @@ namespace CLRNew {
 
   public class SubNotMangled : NotMangled {}
   
-  public class StaticNotMangled {
+  public class StaticNotMangled : MangledBase {
   public static string Class(){return "Class";}
     public static string Clone(){return "Clone";}
     public static string Display(){return "Display";}

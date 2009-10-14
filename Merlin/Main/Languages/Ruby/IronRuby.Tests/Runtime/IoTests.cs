@@ -26,10 +26,6 @@ using Microsoft.Scripting.Utils;
 namespace IronRuby.Tests {
     public partial class Tests {
         public void File1() {
-            Test_Read1();
-        }
-
-        public void File2() {
             TestOutput(@"
 stdout = IO.open(1, 'w', &nil) 
 stdout.puts('hello')
@@ -55,7 +51,8 @@ hello
             return BinaryEncoding.Instance.GetBytes(str);
         }
 
-        private void Test_Read1() {
+        [Options(NoRuntime = true)]
+        public void File2() {
             string s;
             string crlf = "\r\n";
             var stream = new TestStream(false, B(
@@ -96,6 +93,28 @@ hello
             io.BaseStream.Seek(0, SeekOrigin.Begin);
             Assert(io.AppendBytes(buffer, Int32.MaxValue, false) == s.Length - 2);
             Assert(buffer.ToString() == s + s.Replace(crlf, "\n"));
+        }
+
+        [Options(NoRuntime = true)]
+        public void File3() {
+            var stream = new MemoryStream();
+            var io = new RubyBufferedStream(stream);
+
+            io.Write(new byte[] { 0, 1, 2, 3 }, 1, 2);
+            Assert(stream.ToArray().ValueEquals(new byte[] { 1, 2 }));
+            stream.Seek(0, SeekOrigin.Begin);
+
+            Assert(io.WriteBytes(new byte[] { 0, 1, 2, 3 }, 1, 2, true) == 2);
+            Assert(stream.ToArray().ValueEquals(new byte[] { 1, 2 }));
+            stream.Seek(0, SeekOrigin.Begin);
+
+            Assert(io.WriteBytes(new byte[] { 0, 1, 2, 3 }, 1, 2, false) == 2);
+            Assert(stream.ToArray().ValueEquals(new byte[] { 1, 2 }));
+            stream.Seek(0, SeekOrigin.Begin);
+
+            Assert(io.WriteBytes(new byte[] { 0, 1, (byte)'\n', 2 }, 1, 2, false) == 3);
+            Assert(stream.ToArray().ValueEquals(new byte[] { 1, (byte)'\r', (byte)'\n' }));
+            stream.Seek(0, SeekOrigin.Begin);
         }
     }
 }

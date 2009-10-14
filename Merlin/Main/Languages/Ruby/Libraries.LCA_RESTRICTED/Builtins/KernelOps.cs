@@ -425,8 +425,9 @@ namespace IronRuby.Builtins {
         public static MutableString/*!*/ Inspect(UnaryOpStorage/*!*/ inspectStorage, ConversionStorage<MutableString>/*!*/ tosConversion,
             object self) {
 
+            RubyClass cls;
             var context = tosConversion.Context;
-            if (context.HasInstanceVariables(self)) {
+            if (context.HasInstanceVariables(self) && ((cls = context.GetClassOf(self)).IsRubyClass || cls.IsObjectClass)) {
                 return RubyUtils.InspectObject(inspectStorage, tosConversion, self);
             } else {
                 var site = tosConversion.GetSite(ConvertToSAction.Make(context));
@@ -915,11 +916,13 @@ namespace IronRuby.Builtins {
         /// Includes CLR private members if PrivateBinding is on.
         /// </summary>
         [RubyMethod("clr_member")]
-        public static RubyMethod/*!*/ GetClrMember(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]string/*!*/ name) {
+        public static RubyMethod/*!*/ GetClrMember(RubyContext/*!*/ context, object self, [DefaultParameterValue(null), NotNull]object asType, 
+            [DefaultProtocol, NotNull]string/*!*/ name) {
             RubyMemberInfo info;
 
             RubyClass cls = context.GetClassOf(self);
-            if (!cls.TryGetClrMember(name, out info)) {
+            Type type = (asType != null) ? Protocols.ToType(context, asType) : null;
+            if (!cls.TryGetClrMember(name, type, out info)) {
                 throw RubyExceptions.CreateNameError(String.Format("undefined CLR method `{0}' for class `{1}'", name, cls.Name));
             }
 
