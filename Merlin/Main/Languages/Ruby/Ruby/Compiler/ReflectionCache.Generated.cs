@@ -48,6 +48,8 @@ namespace IronRuby.Compiler {
         private static MethodInfo _ConvertBignumToFixnum;
         public static MethodInfo/*!*/ ConvertBignumToFloat { get { return _ConvertBignumToFloat ?? (_ConvertBignumToFloat = GetMethod(typeof(RubyOps), "ConvertBignumToFloat")); } }
         private static MethodInfo _ConvertBignumToFloat;
+        public static MethodInfo/*!*/ ConvertCharToFloat { get { return _ConvertCharToFloat ?? (_ConvertCharToFloat = GetMethod(typeof(RubyOps), "ConvertCharToFloat")); } }
+        private static MethodInfo _ConvertCharToFloat;
         public static MethodInfo/*!*/ ConvertDoubleToFixnum { get { return _ConvertDoubleToFixnum ?? (_ConvertDoubleToFixnum = GetMethod(typeof(RubyOps), "ConvertDoubleToFixnum")); } }
         private static MethodInfo _ConvertDoubleToFixnum;
         public static MethodInfo/*!*/ ConvertFixnumToSymbol { get { return _ConvertFixnumToSymbol ?? (_ConvertFixnumToSymbol = GetMethod(typeof(RubyOps), "ConvertFixnumToSymbol")); } }
@@ -310,8 +312,6 @@ namespace IronRuby.Compiler {
         private static MethodInfo _IsDefinedGlobalVariable;
         public static MethodInfo/*!*/ IsDefinedInstanceVariable { get { return _IsDefinedInstanceVariable ?? (_IsDefinedInstanceVariable = GetMethod(typeof(RubyOps), "IsDefinedInstanceVariable")); } }
         private static MethodInfo _IsDefinedInstanceVariable;
-        public static MethodInfo/*!*/ IsDefinedMethod { get { return _IsDefinedMethod ?? (_IsDefinedMethod = GetMethod(typeof(RubyOps), "IsDefinedMethod")); } }
-        private static MethodInfo _IsDefinedMethod;
         public static MethodInfo/*!*/ IsDefinedQualifiedConstant { get { return _IsDefinedQualifiedConstant ?? (_IsDefinedQualifiedConstant = GetMethod(typeof(RubyOps), "IsDefinedQualifiedConstant")); } }
         private static MethodInfo _IsDefinedQualifiedConstant;
         public static MethodInfo/*!*/ IsDefinedUnqualifiedConstant { get { return _IsDefinedUnqualifiedConstant ?? (_IsDefinedUnqualifiedConstant = GetMethod(typeof(RubyOps), "IsDefinedUnqualifiedConstant")); } }

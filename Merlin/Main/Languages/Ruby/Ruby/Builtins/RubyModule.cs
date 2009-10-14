@@ -1249,6 +1249,10 @@ namespace IronRuby.Builtins {
                     IsClass ? "class" : "module", _name, _context.RuntimeId));
             }
 
+            if (method.IsUndefined && name == Symbols.Initialize) {
+                throw RubyExceptions.CreateTypeError("Cannot undefine `initialize' method");
+            }
+
             PrepareMethodUpdate(name, method);
 
             InitializeMethodsNoLock();

@@ -161,7 +161,7 @@ namespace System.Linq.Expressions {
             ContractUtils.RequiresNotNull(method, "method");
             ContractUtils.Requires(method.IsStatic, "method");
             var type = method.DeclaringType as TypeBuilder;
-            ContractUtils.Requires(type != null, "method", Strings.MethodBuilderDoesNotHaveTypeBuilder);
+            if (type == null) throw Error.MethodBuilderDoesNotHaveTypeBuilder();
 
             LambdaCompiler.Compile(this, method, debugInfoGenerator);
         }
@@ -584,7 +584,7 @@ namespace System.Linq.Expressions {
         /// <param name="typeArgs">An array of Type objects that specify the type arguments for the System.Func delegate type.</param>
         /// <returns>The type of a System.Func delegate that has the specified type arguments.</returns>
         public static Type GetFuncType(params Type[] typeArgs) {
-            ContractUtils.Requires(ValidateTryGetFuncActionArgs(typeArgs), "typeArgs", Strings.TypeMustNotBeByRef);
+            if (!ValidateTryGetFuncActionArgs(typeArgs)) throw Error.TypeMustNotBeByRef();
 
             Type result = DelegateHelpers.GetFuncType(typeArgs);
             if (result == null) {
@@ -614,7 +614,7 @@ namespace System.Linq.Expressions {
         /// <param name="typeArgs">An array of Type objects that specify the type arguments for the System.Action delegate type.</param>
         /// <returns>The type of a System.Action delegate that has the specified type arguments.</returns>
         public static Type GetActionType(params Type[] typeArgs) {
-            ContractUtils.Requires(ValidateTryGetFuncActionArgs(typeArgs), "typeArgs", Strings.TypeMustNotBeByRef);
+            if (!ValidateTryGetFuncActionArgs(typeArgs)) throw Error.TypeMustNotBeByRef();
 
             Type result = DelegateHelpers.GetActionType(typeArgs);
             if (result == null) {

@@ -24,11 +24,18 @@ using Microsoft.Scripting;
 using System.Runtime.CompilerServices;
 using IronRuby.Runtime.Calls;
 using Microsoft.Scripting.Utils;
+using System.Text.RegularExpressions;
+using System.Diagnostics;
 
 namespace IronRuby.Builtins {
 
     [RubyClass(Extends = typeof(string), Restrictions = ModuleRestrictions.None)]
     [Includes(typeof(ClrString), typeof(Enumerable), typeof(Comparable))]
+    [HideMethod("[]")]
+    [HideMethod("==")]
+    [HideMethod("insert")]
+    [HideMethod("split")]
+    [HideMethod("clone")]
     public static class ClrStringOps {
         [RubyConstructor]
         public static string/*!*/ Create(RubyClass/*!*/ self, [DefaultProtocol]MutableString/*!*/ str) {
@@ -125,7 +132,72 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        #region  TODO: [], slice
+        #region [], slice
+
+        [RubyMethod("[]")]
+        [RubyMethod("slice")]
+        public static object GetChar(string/*!*/ self, [DefaultProtocol]int index) {
+            return MutableStringOps.InExclusiveRangeNormalized(self.Length, ref index) ? RubyUtils.CharToObject(self[index]) : null;
+        }
+
+        [RubyMethod("[]")]
+        [RubyMethod("slice")]
+        public static string GetSubstring(string/*!*/ self, [DefaultProtocol]int start, [DefaultProtocol]int count) {
+            if (!MutableStringOps.NormalizeSubstringRange(self.Length, ref start, ref count)) {
+                return (start == self.Length) ? self : null;
+            }
+
+            return self.Substring(start, count);
+        }
+
+        [RubyMethod("[]")]
+        [RubyMethod("slice")]
+        public static string GetSubstring(ConversionStorage<int>/*!*/ fixnumCast, string/*!*/ self, [NotNull]Range/*!*/ range) {
+            int begin, count;
+            if (!MutableStringOps.NormalizeSubstringRange(fixnumCast, range, self.Length, out begin, out count)) {
+                return null;
+            }
+            return (count < 0) ? self : GetSubstring(self, begin, count);
+        }
+
+        [RubyMethod("[]")]
+        [RubyMethod("slice")]
+        public static string GetSubstring(string/*!*/ self, [NotNull]string/*!*/ searchStr) {
+            return (self.IndexOf(searchStr) != -1) ? searchStr : null;
+        }
+
+        [RubyMethod("[]")]
+        [RubyMethod("slice")]
+        public static string GetSubstring(RubyScope/*!*/ scope, string/*!*/ self, [NotNull]RubyRegex/*!*/ regex) {
+            if (regex.IsEmpty) {
+                return String.Empty;
+            }
+
+            // TODO (opt): don't create a new mutable string:
+            MatchData match = RegexpOps.Match(scope, regex, MutableString.Create(self, RubyEncoding.UTF8));
+            if (match == null) {
+                return null;
+            }
+
+            var result = match.GetValue();
+            return result != null ? result.ToString() : null;
+        }
+
+        [RubyMethod("[]")]
+        [RubyMethod("slice")]
+        public static string GetSubstring(RubyScope/*!*/ scope, string/*!*/ self, [NotNull]RubyRegex/*!*/ regex, [DefaultProtocol]int occurrance) {
+            if (regex.IsEmpty) {
+                return String.Empty;
+            }
+
+            MatchData match = RegexpOps.Match(scope, regex, MutableString.Create(self, RubyEncoding.UTF8));
+            if (match == null || !RegexpOps.NormalizeGroupIndex(ref occurrance, match.GroupCount)) {
+                return null;
+            }
+
+            MutableString result = match.GetGroupValue(occurrance);
+            return result != null ? result.ToString() : null;
+        }
 
         #endregion
 
@@ -187,6 +259,8 @@ namespace IronRuby.Builtins {
         #endregion
 
         #region TODO: index, rindex
+
+
         #endregion
 
         #region TODO: delete
@@ -195,11 +269,21 @@ namespace IronRuby.Builtins {
         #region TODO: count
         #endregion
 
-        #region TODO: include?
+        #region include?
+
+        [RubyMethod("include?")]
+        public static bool Include(string/*!*/ str, [DefaultProtocol, NotNull]string/*!*/ subString) {
+            return str.IndexOf(subString) != -1;
+        }
 
         #endregion
 
-        #region TODO: insert
+        #region insert
+
+        [RubyMethod("insert")]
+        public static string Insert(string/*!*/ self, [DefaultProtocol]int start, [DefaultProtocol, NotNull]string/*!*/ value) {
+            return self.Insert(MutableStringOps.NormalizeInsertIndex(start, self.Length), value);
+        }
 
         #endregion
 
@@ -230,7 +314,29 @@ namespace IronRuby.Builtins {
         #region TODO: succ
         #endregion
 
-        #region TODO: split
+        #region split
+
+        // TODO: return an array of CLR strings, not mutable strings
+
+        [RubyMethod("split")]
+        public static RubyArray/*!*/ Split(ConversionStorage<MutableString>/*!*/ stringCast, RubyScope/*!*/ scope, string/*!*/ self) {
+            return MutableStringOps.Split(stringCast, scope, MutableString.Create(self, RubyEncoding.UTF8), (MutableString)null, 0);
+        }
+
+        [RubyMethod("split")]
+        public static RubyArray/*!*/ Split(ConversionStorage<MutableString>/*!*/ stringCast, RubyScope/*!*/ scope, string/*!*/ self,
+            [DefaultProtocol]string separator, [DefaultProtocol, Optional]int limit) {
+
+            return MutableStringOps.Split(stringCast, scope, MutableString.Create(self, RubyEncoding.UTF8), MutableString.Create(separator, RubyEncoding.UTF8), limit);
+        }
+
+        [RubyMethod("split")]
+        public static RubyArray/*!*/ Split(ConversionStorage<MutableString>/*!*/ stringCast, RubyScope/*!*/ scope, string/*!*/ self, 
+            [NotNull]RubyRegex/*!*/ regexp, [DefaultProtocol, Optional]int limit) {
+
+            return MutableStringOps.Split(stringCast, scope, MutableString.Create(self, RubyEncoding.UTF8), regexp, limit);
+        }
+
         #endregion
 
         #region TODO: strip, lstrip, rstrip
@@ -301,7 +407,22 @@ namespace IronRuby.Builtins {
         #region TODO: upto
         #endregion
 
-        #region TODO: replace, reverse
+        #region replace, reverse
+
+        // Ruby replace is a mutating operation, we fallback to System.String::Replace.
+
+        [RubyMethod("reverse")]
+        public static string/*!*/ GetReversed(string/*!*/ self) {
+            // TODO: surrogates
+            StringBuilder result = new StringBuilder(self.Length);
+            result.Length = self.Length;
+            for (int i = 0; i < self.Length; i++) {
+                result[i] = self[self.Length - 1 - i];
+            }
+
+            return result.ToString();
+        }
+
         #endregion
 
         #region TODO: tr, tr_s

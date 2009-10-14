@@ -454,7 +454,7 @@ namespace System.Linq.Expressions {
         public static DynamicExpression MakeDynamic(Type delegateType, CallSiteBinder binder, IEnumerable<Expression> arguments) {
             ContractUtils.RequiresNotNull(delegateType, "delegateType");
             ContractUtils.RequiresNotNull(binder, "binder");
-            ContractUtils.Requires(delegateType.IsSubclassOf(typeof(Delegate)), "delegateType", Strings.TypeMustBeDerivedFromSystemDelegate);
+            if (!delegateType.IsSubclassOf(typeof(Delegate))) throw Error.TypeMustBeDerivedFromSystemDelegate();
 
             var method = GetValidMethodForDynamic(delegateType);
 
@@ -480,7 +480,7 @@ namespace System.Linq.Expressions {
         public static DynamicExpression MakeDynamic(Type delegateType, CallSiteBinder binder, Expression arg0) {
             ContractUtils.RequiresNotNull(delegateType, "delegatType");
             ContractUtils.RequiresNotNull(binder, "binder");
-            ContractUtils.Requires(delegateType.IsSubclassOf(typeof(Delegate)), "delegateType", Strings.TypeMustBeDerivedFromSystemDelegate);
+            if (!delegateType.IsSubclassOf(typeof(Delegate))) throw Error.TypeMustBeDerivedFromSystemDelegate();
 
             var method = GetValidMethodForDynamic(delegateType);
             var parameters = method.GetParametersCached();
@@ -509,7 +509,7 @@ namespace System.Linq.Expressions {
         public static DynamicExpression MakeDynamic(Type delegateType, CallSiteBinder binder, Expression arg0, Expression arg1) {
             ContractUtils.RequiresNotNull(delegateType, "delegatType");
             ContractUtils.RequiresNotNull(binder, "binder");
-            ContractUtils.Requires(delegateType.IsSubclassOf(typeof(Delegate)), "delegateType", Strings.TypeMustBeDerivedFromSystemDelegate);
+            if (!delegateType.IsSubclassOf(typeof(Delegate))) throw Error.TypeMustBeDerivedFromSystemDelegate();
 
             var method = GetValidMethodForDynamic(delegateType);
             var parameters = method.GetParametersCached();
@@ -541,7 +541,7 @@ namespace System.Linq.Expressions {
         public static DynamicExpression MakeDynamic(Type delegateType, CallSiteBinder binder, Expression arg0, Expression arg1, Expression arg2) {
             ContractUtils.RequiresNotNull(delegateType, "delegatType");
             ContractUtils.RequiresNotNull(binder, "binder");
-            ContractUtils.Requires(delegateType.IsSubclassOf(typeof(Delegate)), "delegateType", Strings.TypeMustBeDerivedFromSystemDelegate);
+            if (!delegateType.IsSubclassOf(typeof(Delegate))) throw Error.TypeMustBeDerivedFromSystemDelegate();
 
             var method = GetValidMethodForDynamic(delegateType);
             var parameters = method.GetParametersCached();
@@ -576,7 +576,7 @@ namespace System.Linq.Expressions {
         public static DynamicExpression MakeDynamic(Type delegateType, CallSiteBinder binder, Expression arg0, Expression arg1, Expression arg2, Expression arg3) {
             ContractUtils.RequiresNotNull(delegateType, "delegatType");
             ContractUtils.RequiresNotNull(binder, "binder");
-            ContractUtils.Requires(delegateType.IsSubclassOf(typeof(Delegate)), "delegateType", Strings.TypeMustBeDerivedFromSystemDelegate);
+            if (!delegateType.IsSubclassOf(typeof(Delegate))) throw Error.TypeMustBeDerivedFromSystemDelegate();
 
             var method = GetValidMethodForDynamic(delegateType);
             var parameters = method.GetParametersCached();
@@ -597,7 +597,7 @@ namespace System.Linq.Expressions {
         private static MethodInfo GetValidMethodForDynamic(Type delegateType) {
             var method = delegateType.GetMethod("Invoke");
             var pi = method.GetParametersCached();
-            ContractUtils.Requires(pi.Length > 0 && pi[0].ParameterType == typeof(CallSite), "delegateType", Strings.FirstArgumentMustBeCallSite);
+            if (pi.Length == 0 || pi[0].ParameterType != typeof(CallSite)) throw Error.FirstArgumentMustBeCallSite();
             return method;
         }
 
@@ -848,7 +848,7 @@ namespace System.Linq.Expressions {
             var type = arg.Type;
             ContractUtils.RequiresNotNull(type, "type");
             TypeUtils.ValidateType(type);
-            ContractUtils.Requires(type != typeof(void), Strings.ArgumentTypeCannotBeVoid);
+            if (type == typeof(void)) throw Error.ArgumentTypeCannotBeVoid();
         }
     }
 }

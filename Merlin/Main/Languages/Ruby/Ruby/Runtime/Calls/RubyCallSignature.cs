@@ -54,21 +54,26 @@ namespace IronRuby.Runtime.Calls {
     /// </summary>
     public struct RubyCallSignature : IEquatable<RubyCallSignature> {
         private const int FlagsCount = 7;
-        private const int MaxArgumentCount = (int)(UInt32.MaxValue >> FlagsCount);
-        private const RubyCallFlags FlagsMask = (RubyCallFlags)(1 << FlagsCount) - 1;
+
+        private const int ResolveOnlyArgumentCount = (int)(UInt32.MaxValue >> FlagsCount);
+        private const int MaxArgumentCount = ResolveOnlyArgumentCount - 1;
+        private const uint FlagsMask = (1 << FlagsCount) - 1;
 
         private readonly uint _countAndFlags;
 
-        public bool HasImplicitSelf { get { return ((RubyCallFlags)_countAndFlags & RubyCallFlags.HasImplicitSelf) != 0; } }
-        public bool HasScope { get { return ((RubyCallFlags)_countAndFlags & RubyCallFlags.HasScope) != 0; } }
-        public bool HasBlock { get { return ((RubyCallFlags)_countAndFlags & RubyCallFlags.HasBlock) != 0; } }
-        public bool HasSplattedArgument { get { return ((RubyCallFlags)_countAndFlags & RubyCallFlags.HasSplattedArgument) != 0; } }
-        public bool HasRhsArgument { get { return ((RubyCallFlags)_countAndFlags & RubyCallFlags.HasRhsArgument) != 0; } }
-        public bool IsInteropCall { get { return ((RubyCallFlags)_countAndFlags & RubyCallFlags.IsInteropCall) != 0; } }
-        public bool IsVirtualCall { get { return ((RubyCallFlags)_countAndFlags & RubyCallFlags.IsVirtualCall) != 0; } }
+        public bool HasImplicitSelf { get { return (_countAndFlags & (uint)RubyCallFlags.HasImplicitSelf) != 0; } }
+        public bool HasScope { get { return (_countAndFlags & (uint)RubyCallFlags.HasScope) != 0; } }
+        public bool HasBlock { get { return (_countAndFlags & (uint)RubyCallFlags.HasBlock) != 0; } }
+        public bool HasSplattedArgument { get { return (_countAndFlags & (uint)RubyCallFlags.HasSplattedArgument) != 0; } }
+        public bool HasRhsArgument { get { return (_countAndFlags & (uint)RubyCallFlags.HasRhsArgument) != 0; } }
+        public bool IsInteropCall { get { return (_countAndFlags & (uint)RubyCallFlags.IsInteropCall) != 0; } }
+        public bool IsVirtualCall { get { return (_countAndFlags & (uint)RubyCallFlags.IsVirtualCall) != 0; } }
 
-        public int ArgumentCount { get { return (int)_countAndFlags >> FlagsCount; } }
-        internal RubyCallFlags Flags { get { return (RubyCallFlags)_countAndFlags & FlagsMask; } }
+        // defined? ignores arguments hence we can use one argument number (max) to represent resolve only sites:
+        public bool ResolveOnly { get { return ArgumentCount == ResolveOnlyArgumentCount; } }
+
+        public int ArgumentCount { get { return (int)(_countAndFlags >> FlagsCount); } }
+        internal RubyCallFlags Flags { get { return (RubyCallFlags)(_countAndFlags & FlagsMask); } }
         
         // total call-site arguments w/o RubyContext/RubyScope
         public int TotalArgumentCount {
@@ -81,15 +86,23 @@ namespace IronRuby.Runtime.Calls {
             }
         }
 
+        /// <summary>
+        /// Used by defined? operator applied on methods.
+        /// </summary>
+        private RubyCallSignature(RubyCallFlags flags) {
+            Debug.Assert(((int)flags >> FlagsCount) == 0);
+            _countAndFlags = ((uint)ResolveOnlyArgumentCount << FlagsCount) | (uint)flags;
+        }
+
         public RubyCallSignature(int argumentCount, RubyCallFlags flags) {
-            Debug.Assert(argumentCount >= 0 && argumentCount < MaxArgumentCount);
+            Debug.Assert(argumentCount >= 0 && argumentCount <= MaxArgumentCount);
             Debug.Assert(((int)flags >> FlagsCount) == 0);
 
             _countAndFlags = ((uint)argumentCount << FlagsCount) | (uint)flags;
         }
 
         public RubyCallSignature(bool hasScope, bool hasImplicitSelf, int argumentCount, bool hasSplattedArgument, bool hasBlock, bool hasRhsArgument) {
-            Debug.Assert(argumentCount >= 0 && argumentCount < MaxArgumentCount);
+            Debug.Assert(argumentCount >= 0 && argumentCount <= MaxArgumentCount);
 
             var flags = RubyCallFlags.None;
             if (hasImplicitSelf) flags |= RubyCallFlags.HasImplicitSelf;
@@ -151,6 +164,10 @@ namespace IronRuby.Runtime.Calls {
             return new RubyCallSignature(argumentCount, RubyCallFlags.HasScope | RubyCallFlags.HasBlock | RubyCallFlags.HasSplattedArgument);
         }
 
+        public static RubyCallSignature IsDefined(bool hasImplicitSelf) {
+            return new RubyCallSignature(RubyCallFlags.HasScope | (hasImplicitSelf ? RubyCallFlags.HasImplicitSelf : RubyCallFlags.None));
+        }
+
         internal Expression/*!*/ CreateExpression() {
             return Ast.New(Methods.RubyCallSignatureCtor, AstUtils.Constant(_countAndFlags));
         }
@@ -163,8 +180,8 @@ namespace IronRuby.Runtime.Calls {
             return "(" +
                 (HasImplicitSelf ? "." : "") +
                 (IsVirtualCall ? "V" : "") +
-                (HasScope ? "S," : "C,") +
-                ArgumentCount.ToString() + 
+                (HasScope ? "S" : "C") +
+                (ResolveOnly ? "?" : "," + ArgumentCount.ToString()) + 
                 (HasSplattedArgument ? "*" : "") + 
                 (HasBlock ? "&" : "") + 
                 (HasRhsArgument ? "=" : "") + 

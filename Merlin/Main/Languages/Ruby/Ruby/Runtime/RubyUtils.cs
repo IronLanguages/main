@@ -192,6 +192,15 @@ namespace IronRuby.Runtime {
             return context.GetInstanceData(obj).ObjectId;
         }
 
+        private const int CachedCharCount = 256;
+        private static object[] _charCache = new object[CachedCharCount];
+
+        public static object/*!*/ CharToObject(char ch) {
+            return (ch < CachedCharCount) ? (_charCache[(int)ch] ?? (_charCache[(int)ch] = (object)ch)) : (object)ch;
+        }
+
+        
+
         #endregion
 
         #region Names

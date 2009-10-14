@@ -181,7 +181,7 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[0] = arg0;
             frame.Data[1] = arg1;
             frame.BoxLocals();
-            var ret = _interpreter.Run(frame);
+            _interpreter.Run(frame);
             arg0 = (T0)frame.Data[0];
             arg1 = (T1)frame.Data[1];
         }
@@ -197,8 +197,8 @@ namespace Microsoft.Scripting.Interpreter {
                 frame.Data[i] = arguments[i];
             }
             frame.BoxLocals();
-            object ret = _interpreter.Run(frame);
-            return ret;
+            _interpreter.Run(frame);
+            return frame.Pop();
         }
     }
 }

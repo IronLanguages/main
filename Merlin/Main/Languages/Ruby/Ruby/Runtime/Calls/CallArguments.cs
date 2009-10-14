@@ -289,7 +289,7 @@ namespace IronRuby.Runtime.Calls {
                 new DynamicMetaObject(AstUtils.Constant(context), BindingRestrictions.Empty, context),
                 target,
                 args,
-                RubyCallSignature.Simple(callInfo.ArgumentCount)
+                RubyCallSignature.Interop(callInfo.ArgumentCount)
             ) {
         }
 

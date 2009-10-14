@@ -565,6 +565,23 @@ namespace IronRuby.Builtins {
         }
 
         /// <summary>
+        /// Switches the content to a byte array using the current encoding and decodes the binary into a string using the given encoding.
+        /// </summary>
+        /// <exception cref="DecoderFallbackException">Invalid characters present.</exception>
+        public string/*!*/ ToString(Encoding/*!*/ encoding) {
+            byte[] bytes = _content.GetByteArray();
+            return encoding.GetString(bytes, 0, bytes.Length);
+        }
+
+        /// <summary>
+        /// Switches the content to a byte array using the current encoding and decodes the binary into a string using the given encoding.
+        /// </summary>
+        /// <exception cref="DecoderFallbackException">Invalid characters present.</exception>
+        public string/*!*/ ToString(Encoding/*!*/ encoding, int start, int count) {
+            return encoding.GetString(_content.GetByteArray(), start, count);
+        }
+
+        /// <summary>
         /// This property can be viewed using a string visualizer in a debugger, making it easy to inspect large or multi-line strings.
         /// </summary>
         internal string/*!*/ Dump {
@@ -577,10 +594,6 @@ namespace IronRuby.Builtins {
         /// </summary>
         public byte[]/*!*/ ToByteArray() {
             return _content.ToByteArray();
-        }
-
-        public GenericRegex/*!*/ ToRegularExpression(RubyRegexOptions options) {
-            return _content.ToRegularExpression(options);
         }
 
         /// <summary>

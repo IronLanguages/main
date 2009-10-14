@@ -354,7 +354,7 @@ namespace System.Linq.Expressions {
         private static void ValidateGoto(LabelTarget target, ref Expression value, string targetParameter, string valueParameter) {
             ContractUtils.RequiresNotNull(target, targetParameter);
             if (value == null) {
-                ContractUtils.Requires(target.Type == typeof(void), Strings.LabelMustBeVoidOrHaveExpression);
+                if (target.Type != typeof(void)) throw Error.LabelMustBeVoidOrHaveExpression();
             } else {
                 ValidateGotoType(target.Type, ref value, valueParameter);
             }

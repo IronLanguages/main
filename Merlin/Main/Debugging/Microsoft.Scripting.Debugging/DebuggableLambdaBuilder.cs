@@ -70,6 +70,7 @@ namespace Microsoft.Scripting.Debugging {
         private static readonly MSAst.ParameterExpression _caughtException = Ast.Variable(typeof(Exception), "$caughtException");
         private static readonly MSAst.ParameterExpression _retValAsObject = Ast.Variable(typeof(object), "$retVal");
         private static readonly MSAst.ParameterExpression _retValFromGeneratorLoop = Ast.Variable(typeof(object), "$retValFromGen");
+        private static readonly MSAst.ParameterExpression _frameExitException = Expression.Parameter(typeof(bool), "$frameExitException");
 
         internal DebuggableLambdaBuilder(DebugContext debugContext, DebugLambdaInfo lambdaInfo) {
             _debugContext = debugContext;
@@ -115,7 +116,7 @@ namespace Microsoft.Scripting.Debugging {
         private MSAst.LambdaExpression TransformLambda(MSAst.LambdaExpression lambda) {
             MSAst.Expression body = lambda.Body;
 
-            _lambdaVars.AddRange(new[] { _thread, _framePushed, _caughtException, _funcInfo, _traceLocations, _debugMarker });
+            _lambdaVars.AddRange(new[] { _thread, _framePushed, _caughtException, _funcInfo, _traceLocations, _debugMarker, _frameExitException });
 
             _generatorParams.Add(_frame);
             _generatorVars.Add(_caughtException);
@@ -490,10 +491,28 @@ namespace Microsoft.Scripting.Debugging {
                 typeof(RuntimeOps).GetMethod("OnFrameEnterTraceEvent"),
                 _thread
             ));
+            
+            var frameExit = AstUtils.If(
+                Ast.Equal(
+                    _debugMarkerLocationMap.Length > 0 ?
+                        Ast.Property(_sourceFilesMap[_debugMarkerLocationMap[0].SourceFile], "Mode") :
+                        _globalDebugMode,
+                    AstUtils.Constant((int)DebugMode.FullyEnabled)
+                ),
+                Ast.Call(
+                    typeof(RuntimeOps).GetMethod("OnFrameExitTraceEvent"),
+                    _thread,
+                    _debugMarker,
+                    _retVal != null ? (MSAst.Expression)Ast.Convert(_retVal, typeof(object)) : Ast.Constant(null)
+                )
+            );
 
-
+            // normal exit
             tryExpressions.Add(
-                _retVal != null ? Ast.Assign(_retVal, debuggableBody) : debuggableBody
+                Ast.Block(
+                    _retVal != null ? Ast.Assign(_retVal, debuggableBody) : debuggableBody, 
+                    Ast.Assign(_frameExitException, Expression.Constant(true)),
+                    frameExit) 
             );
 
             tryExpressions.Add(
@@ -501,32 +520,15 @@ namespace Microsoft.Scripting.Debugging {
             );
 
             MSAst.Expression[] popFrame = new MSAst.Expression[] {
-                AstUtils.Try(
-                    AstUtils.If(
-                        Ast.Equal(
-                            _debugMarkerLocationMap.Length > 0 ? 
-                                Ast.Property(_sourceFilesMap[_debugMarkerLocationMap[0].SourceFile], "Mode") :
-                                _globalDebugMode,
-                            AstUtils.Constant((int)DebugMode.FullyEnabled)
-                        ),
-                        Ast.Call(
-                            typeof(RuntimeOps).GetMethod("OnFrameExitTraceEvent"),
-                            _thread,
-                            _debugMarker,
-                            _retVal != null ? (MSAst.Expression)Ast.Convert(_retVal, typeof(object)) : Ast.Constant(null)
-                        )
-                    )
-                ).Finally(
-                    AstUtils.If(
-                        // Fire thead-exit event if PopFrame returns true
-                        Ast.AndAlso(
-                            Ast.Equal(Ast.Call(typeof(RuntimeOps).GetMethod("PopFrame"), _thread), Ast.Constant(true)),
-                            Ast.Equal(_globalDebugMode, AstUtils.Constant((int)DebugMode.FullyEnabled))
-                        ),
-                        Ast.Call(
-                            typeof(RuntimeOps).GetMethod("OnThreadExitEvent"),
-                            _thread
-                        )
+                AstUtils.If(
+                    // Fire thead-exit event if PopFrame returns true
+                    Ast.AndAlso(
+                        Ast.Equal(Ast.Call(typeof(RuntimeOps).GetMethod("PopFrame"), _thread), Ast.Constant(true)),
+                        Ast.Equal(_globalDebugMode, AstUtils.Constant((int)DebugMode.FullyEnabled))
+                    ),
+                    Ast.Call(
+                        typeof(RuntimeOps).GetMethod("OnThreadExitEvent"),
+                        _thread
                     )
                 )
             };
@@ -551,27 +553,31 @@ namespace Microsoft.Scripting.Debugging {
                     Ast.Catch(
                         _caughtException, 
                         Ast.Block(
-                            // Let ForceToGeneratorLoopException exceptions bubble up to the next catch
-                            AstUtils.If(
-                                Ast.TypeIs(
-                                    _caughtException,
-                                    typeof(ForceToGeneratorLoopException)
-                                ),
-                                Ast.Throw(_caughtException)
-                            ),
-
                             // The expressions below will always throw.
                             // If the exception needs to be cancelled then OnTraceEvent will throw ForceToGeneratorLoopException.
                             // If the exception is not being cancelled then we'll just rethrow at the end of the catch block.
                             AstUtils.If(
-                                Ast.NotEqual(_globalDebugMode, AstUtils.Constant((int)DebugMode.Disabled)),
-                                _noPushFrameOptimization ? Ast.Empty() : _conditionalPushFrame,
-                                Ast.Call(
-                                    typeof(RuntimeOps).GetMethod("OnTraceEventUnwind"),
-                                    _thread,
-                                    _debugMarker,
-                                    _caughtException
-                                )
+                                Ast.Not(
+                                    Ast.TypeIs(
+                                        _caughtException,
+                                        typeof(ForceToGeneratorLoopException)
+                                    )
+                                ),
+                                AstUtils.If(
+                                    Ast.NotEqual(_globalDebugMode, AstUtils.Constant((int)DebugMode.Disabled)),
+                                    _noPushFrameOptimization ? Ast.Empty() : _conditionalPushFrame,
+                                    Ast.Call(
+                                        typeof(RuntimeOps).GetMethod("OnTraceEventUnwind"),
+                                        _thread,
+                                        _debugMarker,
+                                        _caughtException
+                                    )
+                                ),
+                                // exception exit
+                                AstUtils.If(
+                                    Expression.Not(_frameExitException),
+                                    frameExit
+                                )                                
                             ),
 
                             Ast.Rethrow(),

@@ -1010,7 +1010,7 @@ namespace IronPython.Runtime.Operations {
                 return value;
             }
 
-            throw PythonOps.AttributeErrorForMissingAttribute(PythonTypeOps.GetName(o), name);
+            throw PythonOps.AttributeErrorForObjectMissingAttribute(o, name);
         }
 
         internal static IList<string> GetStringMemberList(IPythonMembersList pyMemList) {
@@ -4072,8 +4072,26 @@ namespace IronPython.Runtime.Operations {
             return PythonOps.TypeError("exceptions must be classes or instances, not {0}", PythonTypeOps.GetName(type));
         }
 
+        public static Exception AttributeErrorForObjectMissingAttribute(object obj, string attributeName) {
+            if (obj is OldInstance) {
+                return AttributeErrorForOldInstanceMissingAttribute(((OldInstance)obj)._class.Name, attributeName);
+            } else if (obj is OldClass) {
+                return AttributeErrorForOldClassMissingAttribute(((OldClass)obj).Name, attributeName);
+            } else {
+                return AttributeErrorForMissingAttribute(PythonTypeOps.GetName(obj), attributeName);
+            }
+        }
+
         public static Exception AttributeErrorForMissingAttribute(string typeName, string attributeName) {
             return PythonOps.AttributeError("'{0}' object has no attribute '{1}'", typeName, attributeName);
+        }
+
+        public static Exception AttributeErrorForOldInstanceMissingAttribute(string typeName, string attributeName) {
+            return PythonOps.AttributeError("{0} instance has no attribute '{1}'", typeName, attributeName);
+        }
+
+        public static Exception AttributeErrorForOldClassMissingAttribute(string typeName, string attributeName) {
+            return PythonOps.AttributeError("class {0} has no attribute '{1}'", typeName, attributeName);
         }
 
         public static Exception UncallableError(object func) {

@@ -106,8 +106,16 @@ namespace IronRuby.Tests {
             }
         }
 
+        #endregion
+
+        #region Misc
+
         public class Overloads1 {
             public class X {
+            }
+
+            public enum E {
+                A = 1, B = 2
             }
 
             public void F1(int a) { }
@@ -138,6 +146,12 @@ namespace IronRuby.Tests {
             public void L1(SymbolId a, [DefaultProtocol, NotNull]string b) { }
             public void L2([NotNull]string a, [DefaultProtocol, NotNull]string b) { }
             public void L3([DefaultProtocol]MutableString a, [DefaultProtocol, NotNull]string b) { }
+
+            public void M1(int a) { }
+            public void M2(E e) { }
+
+            public void N1(string a) { }
+            public void N2(char a) { }
         }
 
         public void OverloadResolution_Numeric1() {
@@ -183,6 +197,13 @@ namespace IronRuby.Tests {
                 new { Args = new[] { MO(ms), MO(sym) }, Overloads = "L*", Result = "L3" },
                 new { Args = new[] { MO(null), MO(sym) }, Overloads = "L*", Result = "L3" },
                 new { Args = new[] { MO(c), MO(sym) }, Overloads = "L*", Result = "L3" },
+
+                // M
+                new { Args = new[] { MO(1) }, Overloads = "M*", Result = "M1" },
+                new { Args = new[] { MO(Overloads1.E.A) }, Overloads = "M*", Result = "M2" },
+
+                // N
+                new { Args = new[] { MO(MutableString.CreateAscii("x")) }, Overloads = "N*", Result = "N1" },
             };
 
             for (int i = 0; i < cases.Length; i++) {

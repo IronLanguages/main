@@ -99,7 +99,7 @@ namespace System.Runtime.CompilerServices {
         public static CallSite Create(Type delegateType, CallSiteBinder binder) {
             ContractUtils.RequiresNotNull(delegateType, "delegateType");
             ContractUtils.RequiresNotNull(binder, "binder");
-            ContractUtils.Requires(delegateType.IsSubclassOf(typeof(Delegate)), "delegateType", Strings.TypeMustBeDerivedFromSystemDelegate);
+            if (!delegateType.IsSubclassOf(typeof(Delegate))) throw Error.TypeMustBeDerivedFromSystemDelegate();
 
             if (_SiteCtors == null) {
                 // It's okay to just set this, worst case we're just throwing away some data

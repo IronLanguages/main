@@ -62,7 +62,6 @@ namespace IronRuby.Builtins {
 
             public abstract byte[]/*!*/ ToByteArray();
             internal abstract byte[]/*!*/ GetByteArray();
-            public abstract GenericRegex/*!*/ ToRegularExpression(RubyRegexOptions options);
 
             // returns self if there are no characters to be escaped:
             public abstract Content/*!*/ EscapeRegularExpression();

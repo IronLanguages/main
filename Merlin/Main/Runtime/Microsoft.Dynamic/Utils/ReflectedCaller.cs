@@ -28,10 +28,15 @@ namespace Microsoft.Scripting.Utils {
         /// Creates a new ReflectedCaller which can be used to quickly invoke the provided MethodInfo.
         /// </summary>
         public static ReflectedCaller Create(MethodInfo info) {
-            if ((!info.IsStatic && info.DeclaringType.IsValueType) || 
-                info is System.Reflection.Emit.DynamicMethod) {
+            // A workaround for CLR bug #796414 (Unable to create delegates for Array.Get/Set):
+            // T[]::Address - not supported by ETs due to T& return value
+            if (info.DeclaringType != null && info.DeclaringType.IsArray && (info.Name == "Get" || info.Name == "Set")) {
+                return GetArrayAccessor(info);
+            }
+
+            if (info is DynamicMethod || !info.IsStatic && info.DeclaringType.IsValueType) {
                 return new SlowReflectedCaller(info);
-            }            
+            }
 
             ParameterInfo[] pis = info.GetParameters();
             int argCnt = pis.Length;
@@ -86,6 +91,45 @@ namespace Microsoft.Scripting.Utils {
             }
 
             return res;            
+        }
+
+        private static ReflectedCaller GetArrayAccessor(MethodInfo info) {
+            Type arrayType = info.DeclaringType;
+            bool isGetter = info.Name == "Get";
+            switch (arrayType.GetArrayRank()) {
+                case 1:
+                    return Create(isGetter ?
+                        arrayType.GetMethod("GetValue", new[] { typeof(int)}) :
+                        new Action<Array, int, object>(ArrayItemSetter1).Method
+                    );
+               
+                case 2: 
+                    return Create(isGetter ? 
+                        arrayType.GetMethod("GetValue", new[] { typeof(int), typeof(int) }) :
+                        new Action<Array, int, int, object>(ArrayItemSetter2).Method
+                    );
+
+                case 3: 
+                    return Create(isGetter ?
+                        arrayType.GetMethod("GetValue", new[] { typeof(int), typeof(int), typeof(int) }) :
+                        new Action<Array, int, int, int, object>(ArrayItemSetter3).Method
+                    );
+
+                default: 
+                    return new SlowReflectedCaller(info);
+            }
+        }
+
+        public static void ArrayItemSetter1(Array array, int index0, object value) {
+            array.SetValue(value, index0);
+        }
+
+        public static void ArrayItemSetter2(Array array, int index0, int index1, object value) {
+            array.SetValue(value, index0, index1);
+        }
+
+        public static void ArrayItemSetter3(Array array, int index0, int index1, int index2, object value) {
+            array.SetValue(value, index0, index1, index2);
         }
 
         private static bool ShouldCache(MethodInfo info) {            

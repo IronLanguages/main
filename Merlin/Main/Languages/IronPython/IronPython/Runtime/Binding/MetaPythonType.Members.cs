@@ -753,9 +753,7 @@ namespace IronPython.Runtime.Binding {
                 }
 
                 public bool Target(CodeContext context, object self, out object result) {
-                    throw PythonOps.AttributeErrorForMissingAttribute(
-                        DynamicHelpers.GetPythonType(self).Name,
-                        _name);
+                    throw PythonOps.AttributeErrorForObjectMissingAttribute(self, _name);
                 }
             }
         }

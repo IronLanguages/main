@@ -557,30 +557,55 @@ namespace Microsoft.Scripting.Interpreter {
             }
         }
 
-        private void CompileIndexAssignment(BinaryExpression node, bool asVoid) {
-            var index = (IndexExpression)node.Left;
+        private void CompileIndexExpression(Expression expr) {
+            var index = (IndexExpression)expr;
+
+            // instance:
+            if (index.Object != null) {
+                Compile(index.Object);
+            }
+
+            // indexes, byref args not allowed.
+            foreach (var arg in index.Arguments) {
+                Compile(arg);
+            }
 
             if (index.Indexer != null) {
-                throw new NotImplementedException();
+                AddInstruction(new CallInstruction(index.Indexer.GetGetMethod(true)));
+            } else if (index.Arguments.Count != 1) {
+                AddInstruction(new CallInstruction(index.Object.Type.GetMethod("Get", BindingFlags.Public | BindingFlags.Instance)));
+            } else {
+                AddInstruction(CreateGetArrayItemInstruction(index.Object.Type));
             }
+        }
 
-            if (index.Arguments.Count > 1) {
-                throw new NotImplementedException();
-            }
+        private void CompileIndexAssignment(BinaryExpression node, bool asVoid) {
+            var index = (IndexExpression)node.Left;
 
             if (!asVoid) {
                 throw new NotImplementedException();
             }
 
-            // TODO:
-            //Compile(node.Right);
-            //Compile(index.Object);
+            // instance:
+            if (index.Object != null) {
+                Compile(index.Object);
+            }
 
-            //for (int i = 0; i < index.Arguments.Count - 1; i++) {
-            //    Compile(index.Arguments[i]);
-            //}
+            // indexes, byref args not allowed.
+            foreach (var arg in index.Arguments) {
+                Compile(arg);
+            }
 
-            CompileSetArrayItem(index.Object, index.Arguments[0], node.Right);            
+            // value:
+            Compile(node.Right);
+
+            if (index.Indexer != null) {
+                AddInstruction(new CallInstruction(index.Indexer.GetSetMethod(true)));
+            } else if (index.Arguments.Count != 1) {
+                AddInstruction(new CallInstruction(index.Object.Type.GetMethod("Set", BindingFlags.Public | BindingFlags.Instance)));
+            } else {
+                AddInstruction(CreateSetArrayItemInstruction(index.Object.Type));
+            }
         }
 
         private void CompileMemberAssignment(BinaryExpression node, bool asVoid) {
@@ -673,7 +698,10 @@ namespace Microsoft.Scripting.Interpreter {
             } else {
                 switch (node.NodeType) {
                     case ExpressionType.ArrayIndex:
-                        CompileArrayIndex(node.Left, node.Right);
+                        Debug.Assert(node.Right.Type == typeof(int));
+                        Compile(node.Left);
+                        Compile(node.Right);
+                        AddInstruction(CreateGetArrayItemInstruction(node.Left.Type));
                         return;
 
                     case ExpressionType.Equal:
@@ -748,50 +776,27 @@ namespace Microsoft.Scripting.Interpreter {
             throw new NotImplementedException();
         }
 
-        private void CompileArrayIndex(Expression array, Expression index) {
-            if (index.Type == typeof(int)) {
-                Type elemType = array.Type.GetElementType();
-                Compile(array);
-                Compile(index);
-                if (elemType.IsClass || elemType.IsInterface) {
-                    AddInstruction(GetArrayItemInstruction<object>.Instance);
-                } else if (elemType == typeof(bool)) {
-                    AddInstruction(GetArrayItemInstruction<bool>.Instance);
-                } else if (elemType == typeof(SymbolId)) {
-                    AddInstruction(GetArrayItemInstruction<SymbolId>.Instance);
-                } else {
-                    AddInstruction((Instruction)typeof(GetArrayItemInstruction<>).MakeGenericType(elemType).GetField("Instance").GetValue(null));
-                }
+        public Instruction CreateGetArrayItemInstruction(Type arrayType) {
+            Type elementType = arrayType.GetElementType();
+            if (elementType.IsClass || elementType.IsInterface) {
+                return GetArrayItemInstruction<object>.Instance;
+            } else if (elementType == typeof(bool)) {
+                return GetArrayItemInstruction<bool>.Instance;
+            } else if (elementType == typeof(SymbolId)) {
+                return GetArrayItemInstruction<SymbolId>.Instance;
             } else {
-                throw new NotImplementedException("ArrayIndex index type " + index.Type);
+                return (Instruction)typeof(GetArrayItemInstruction<>).MakeGenericType(elementType).GetField("Instance").GetValue(null);
             }
         }
 
-        private void CompileSetArrayItem(Expression array, Expression index, Expression value) {
-            Type elemType = array.Type.GetElementType();
-            if ((elemType.IsClass || elemType.IsInterface) && index.Type == typeof(int)) {
-                Compile(value);
-                Compile(array);
-                Compile(index);
-                AddInstruction(SetArrayItemInstruction<object>.Instance);
+        public Instruction CreateSetArrayItemInstruction(Type arrayType) {
+            Type elementType = arrayType.GetElementType();
+            if (elementType.IsClass || elementType.IsInterface) {
+                return SetArrayItemInstruction<object>.Instance;
             } else {
-                // TODO: this code doesn't work, we just need to visit the expressions and force compilation
-                _forceCompile = true;
+                return (Instruction)typeof(SetArrayItemInstruction<>).MakeGenericType(elementType).GetField("Instance").GetValue(null);
             }
         }
-
-
-        private void CompileIndexExpression(Expression expr) {
-            var node = (IndexExpression)expr;
-
-            if (node.Object.Type.IsArray && node.Arguments.Count == 1) {
-                CompileArrayIndex(node.Object, node.Arguments[0]);
-                return;
-            }
-
-            throw new System.NotImplementedException();
-        }
-
 
         private void CompileConvertUnaryExpression(Expression expr) {
             var node = (UnaryExpression)expr;

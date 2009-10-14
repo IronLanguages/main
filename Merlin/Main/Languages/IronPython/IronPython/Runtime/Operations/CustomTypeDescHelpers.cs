@@ -102,7 +102,7 @@ namespace IronPython.Runtime.Operations {
                     if (self is OldInstance) {
                         if (((OldInstance)self)._class.TryLookupSlot(s, out attrVal)) {
                             attrSlot = attrVal as PythonTypeSlot;
-                        } else {
+                        } else if (!((OldInstance)self).Dictionary.TryGetValue(s, out attrVal)) {
                             attrVal = ObjectOps.__getattribute__(DefaultContext.DefaultCLS, self, s);
                         }
                     } else {

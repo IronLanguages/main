@@ -761,7 +761,8 @@ namespace Microsoft.Scripting.Hosting {
 
         /// <summary>
         /// Converts the remote object into the specified type returning a handle to
-        /// the new remote object.
+        /// the new remote object. The conversion will be explicit or implicit depending on 
+        /// what the langauge prefers.
         /// </summary>
         public ObjectHandle ConvertTo<T>([NotNull]ObjectHandle obj) {
             return new ObjectHandle(ConvertTo<T>(GetLocalObject(obj)));
@@ -769,7 +770,8 @@ namespace Microsoft.Scripting.Hosting {
 
         /// <summary>
         /// Converts the remote object into the specified type returning a handle to
-        /// the new remote object.
+        /// the new remote object. The conversion will be explicit or implicit depending on 
+        /// what the langauge prefers.
         /// </summary>
         public ObjectHandle ConvertTo([NotNull]ObjectHandle obj, Type type) {
             return new ObjectHandle(ConvertTo(GetLocalObject(obj), type));
@@ -778,7 +780,8 @@ namespace Microsoft.Scripting.Hosting {
         /// <summary>
         /// Converts the remote object into the specified type returning a handle to
         /// the new remote object. Returns true if the value can be converted,
-        /// false if it cannot.
+        /// false if it cannot. The conversion will be explicit or implicit depending on 
+        /// what the langauge prefers.
         /// </summary>
         public bool TryConvertTo<T>([NotNull]ObjectHandle obj, out ObjectHandle result) {
             T resultObj;
@@ -793,7 +796,8 @@ namespace Microsoft.Scripting.Hosting {
         /// <summary>
         /// Converts the remote object into the specified type returning a handle to
         /// the new remote object. Returns true if the value can be converted,
-        /// false if it cannot.
+        /// false if it cannot. The conversion will be explicit or implicit depending on 
+        /// what the langauge prefers.
         /// </summary>
         public bool TryConvertTo([NotNull]ObjectHandle obj, Type type, out ObjectHandle result) {
             object resultObj;
@@ -845,6 +849,54 @@ namespace Microsoft.Scripting.Hosting {
         public bool TryExplicitConvertTo([NotNull]ObjectHandle obj, Type type, out ObjectHandle result) {
             object outp;
             bool res = _ops.TryExplicitConvertTo(GetLocalObject(obj), type, out outp);
+            if (res) {
+                result = new ObjectHandle(obj);
+            } else {
+                result = null;
+            }
+            return res;
+        }
+
+        /// <summary>
+        /// Converts the object obj to the type T including implicit conversions.
+        /// </summary>
+        public ObjectHandle ImplicitConvertTo<T>([NotNull]ObjectHandle obj) {
+            return new ObjectHandle(_ops.ImplicitConvertTo<T>(GetLocalObject(obj)));
+        }
+
+        /// <summary>
+        /// Converts the object obj to the type type including implicit conversions.
+        /// </summary>
+        public ObjectHandle ImplicitConvertTo([NotNull]ObjectHandle obj, Type type) {
+            ContractUtils.RequiresNotNull(type, "type");
+
+            return new ObjectHandle(_ops.ImplicitConvertTo(GetLocalObject(obj), type));
+        }
+
+        /// <summary>
+        /// Converts the object obj to the type T including implicit conversions.
+        /// 
+        /// Returns true if the value can be converted, false if it cannot.
+        /// </summary>
+        public bool TryImplicitConvertTo<T>([NotNull]ObjectHandle obj, out ObjectHandle result) {
+            T outp;
+            bool res = _ops.TryImplicitConvertTo<T>(GetLocalObject(obj), out outp);
+            if (res) {
+                result = new ObjectHandle(obj);
+            } else {
+                result = null;
+            }
+            return res;
+        }
+
+        /// <summary>
+        /// Converts the object obj to the type type including implicit conversions.  
+        /// 
+        /// Returns true if the value can be converted, false if it cannot.
+        /// </summary>
+        public bool TryImplicitConvertTo([NotNull]ObjectHandle obj, Type type, out ObjectHandle result) {
+            object outp;
+            bool res = _ops.TryImplicitConvertTo(GetLocalObject(obj), type, out outp);
             if (res) {
                 result = new ObjectHandle(obj);
             } else {

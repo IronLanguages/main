@@ -15,7 +15,7 @@
 
 namespace IronRuby.Tests {
     public partial class Tests {
-        public void Scenario_RubyDefinedOperator_Globals1() {
+        public void DefinedOperator_Globals1() {
             AssertOutput(delegate() {
                 CompilerTest(@"
 p defined? $+
@@ -31,7 +31,7 @@ nil
 ");
         }
 
-        public void Scenario_RubyDefinedOperator_Globals2() {
+        public void DefinedOperator_Globals2() {
             AssertOutput(delegate() {
                 CompilerTest(@"
 alias $foo $bar
@@ -55,7 +55,7 @@ nil
 ");
         }
 
-        public void Scenario_RubyDefinedOperator_Methods1() {
+        public void DefinedOperator_Methods1() {
             CompilerTest(@"
 module M
   def foo; end
@@ -81,8 +81,7 @@ C.new.foo_defined?
             AssertEquals(o, 1);
         }
 
-        public void Scenario_RubyDefinedOperator_Methods2() {
-            // TODO: visibility
+        public void DefinedOperator_Methods2() {
             AssertOutput(() => CompilerTest(@"
 def foo
   puts 'foo'
@@ -92,7 +91,7 @@ end
 puts defined? 1.+
 puts defined? 1.method_that_doesnt_exist
 puts defined? raise.foo
-# TODO: puts defined? foo.foo should return nil (visibility)
+puts defined? foo.foo(puts(1))                  # foo is private
 public :foo
 puts defined? foo.foo
 "), @"
@@ -100,11 +99,13 @@ method
 nil
 nil
 foo
+nil
+foo
 method
 ");
         }
 
-        public void Scenario_RubyDefinedOperator_Constants1() {
+        public void DefinedOperator_Constants1() {
             AssertOutput(delegate() {
                 CompilerTest(@"
 W = 0
@@ -144,7 +145,7 @@ nil
 ");
         }
 
-        public void Scenario_RubyDefinedOperator_Constants2() {
+        public void DefinedOperator_Constants2() {
             TestOutput(@"
 module M
   C = 1
@@ -172,7 +173,7 @@ constant
 ");
         }
 
-        public void Scenario_RubyDefinedOperator_Constants3() {
+        public void DefinedOperator_Constants3() {
             TestOutput(@"
 print '1' unless defined? FOO
 print '2' unless defined? FOO
@@ -187,7 +188,7 @@ print '8' if defined? FOO or defined? Object
 ");
         }
 
-        public void Scenario_RubyDefinedOperator_Expressions1() {
+        public void DefinedOperator_Expressions1() {
             AssertOutput(delegate() {
                 CompilerTest(@"
 puts defined? true
@@ -216,7 +217,7 @@ expression
 ");
         }
 
-        public void Scenario_RubyDefinedOperator_InstanceVariables1() {
+        public void DefinedOperator_InstanceVariables1() {
             AssertOutput(delegate() {
                 CompilerTest(@"
 p defined? @x
@@ -232,7 +233,7 @@ nil
 ");
         }
 
-        public void Scenario_RubyDefinedOperator_ClassVariables1() {
+        public void DefinedOperator_ClassVariables1() {
             AssertOutput(delegate() {
                 CompilerTest(@"
 module M
@@ -263,7 +264,7 @@ class variable
 ");
         }
 
-        public void Scenario_RubyDefinedOperator_ClassVariables2() {
+        public void DefinedOperator_ClassVariables2() {
             AssertOutput(delegate() {
                 CompilerTest(@"
 @@x = 1
@@ -274,7 +275,7 @@ class variable
 ");
         }
 
-        public void Scenario_RubyDefinedOperator_Yield1() {
+        public void DefinedOperator_Yield1() {
             AssertOutput(delegate() {
                 CompilerTest(@"
 def foo
@@ -290,7 +291,7 @@ yield
 ");
         }
 
-        public void Scenario_RubyDefinedOperator_Locals1() {
+        public void DefinedOperator_Locals1() {
             AssertOutput(delegate() {
                 CompilerTest(@"
 def bob a
@@ -309,6 +310,36 @@ local-variable
 local-variable
 local-variable
 local-variable
+");
+        }
+
+        public void DefinedOperator_Super1() {
+            AssertOutput(delegate() {
+                CompilerTest(@"
+class C
+  def foo
+    defined?(super(puts(1)))
+  end
+end
+
+class D < C
+  def foo
+    defined?(super(puts(1)))
+  end
+
+  def bar
+    defined?(super(puts(1)))
+  end
+end
+
+puts C.new.foo
+puts D.new.foo
+puts D.new.bar
+");
+            }, @"
+nil
+super
+nil
 ");
         }
     }

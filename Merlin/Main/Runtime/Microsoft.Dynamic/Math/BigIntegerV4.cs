@@ -115,8 +115,17 @@ namespace Microsoft.Scripting.Math {
             return new BigInteger((BigInt)self);
         }
 
+        public static explicit operator BigInteger(float self) {
+            return new BigInteger((BigInt)self);
+        }
+
         public static explicit operator double(BigInteger self) {
             return (double)self._value;
+        }
+
+
+        public static explicit operator float(BigInteger self) {
+            return (float)self._value;
         }
 
         public static explicit operator byte(BigInteger self) {

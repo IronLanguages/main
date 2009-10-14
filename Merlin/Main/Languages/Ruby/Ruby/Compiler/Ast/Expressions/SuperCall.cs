@@ -24,10 +24,11 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Utils;
 using IronRuby.Builtins;
+using IronRuby.Runtime.Calls;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Compiler.Ast {
-    using Ast = Expression;
+    using Ast = MSA.Expression;
 
     /// <summary>
     /// super(args)
@@ -86,9 +87,13 @@ namespace IronRuby.Compiler.Ast {
         }
 
         internal override MSA.Expression/*!*/ TransformDefinedCondition(AstGenerator/*!*/ gen) {
-            // TODO:
-            //throw new NotImplementedError();
-            return AstUtils.Constant(false);
+            // MRI doesn't evaluate the arguments 
+            return Ast.Dynamic(
+                SuperCallAction.Make(gen.Context, RubyCallSignature.IsDefined(true), gen.CurrentFrame.UniqueId),
+                typeof(bool),
+                gen.CurrentScopeVariable,
+                gen.CurrentSelfVariable
+            );
         }
 
         internal override string/*!*/ GetNodeName(AstGenerator/*!*/ gen) {

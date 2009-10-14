@@ -173,13 +173,9 @@ namespace IronRuby.Builtins {
                 return SwitchToBinary().GetByteArray();
             }
 
-            public override GenericRegex/*!*/ ToRegularExpression(RubyRegexOptions options) {
-                return new StringRegex(ToString(), options);
-            }
-
             public override Content/*!*/ EscapeRegularExpression() {
                 // TODO:
-                StringBuilder sb = StringRegex.EscapeToStringBuilder(ToString());
+                StringBuilder sb = RubyRegex.EscapeToStringBuilder(ToString());
                 return (sb != null) ? new CharArrayContent(sb.ToString().ToCharArray(), _owner) : this;
             }
 

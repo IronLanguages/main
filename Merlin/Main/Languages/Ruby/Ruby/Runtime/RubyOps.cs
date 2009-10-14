@@ -577,13 +577,6 @@ namespace IronRuby.Runtime {
             owner.UndefineMethod(name);
         }
 
-        [Emitted] // MethodCall:
-        public static bool IsDefinedMethod(object self, RubyScope/*!*/ scope, string/*!*/ name) {
-            // MRI: this is different from UndefineMethod, it behaves like Kernel#method (i.e. doesn't use lexical scope):
-            // TODO: visibility
-            return scope.RubyContext.ResolveMethod(self, name, VisibilityContext.AllVisible).Found;
-        }
-
         #endregion
 
         #region Modules
@@ -1229,7 +1222,8 @@ namespace IronRuby.Runtime {
 
             var result = new TElement[list.Count];
             for (int i = 0; i < result.Length; i++) {
-                result[i] = site.Target(site, list[i]);
+                object item = list[i];
+                result[i] = (item is TElement) ? (TElement)item : site.Target(site, item);
             }
 
             return result;

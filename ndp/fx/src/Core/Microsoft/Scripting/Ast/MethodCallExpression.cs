@@ -814,9 +814,9 @@ namespace System.Linq.Expressions {
 
         private static void ValidateStaticOrInstanceMethod(Expression instance, MethodInfo method) {
             if (method.IsStatic) {
-                ContractUtils.Requires(instance == null, "instance", Strings.OnlyStaticMethodsHaveNullInstance);
+                if (instance != null) throw new ArgumentException(Strings.OnlyStaticMethodsHaveNullInstance, "instance");
             } else {
-                ContractUtils.Requires(instance != null, "method", Strings.OnlyStaticMethodsHaveNullInstance);
+                if (instance == null) throw new ArgumentException(Strings.OnlyStaticMethodsHaveNullInstance, "method");
                 RequiresCanRead(instance, "instance");
                 ValidateCallInstanceType(instance.Type, method);
             }

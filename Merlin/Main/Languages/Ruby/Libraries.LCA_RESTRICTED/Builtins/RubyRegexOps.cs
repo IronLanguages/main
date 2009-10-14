@@ -25,6 +25,27 @@ using Microsoft.Scripting.Utils;
 namespace IronRuby.Builtins {
     [RubyClass("Regexp", Extends = typeof(RubyRegex), Inherits = typeof(Object)), Includes(typeof(Enumerable))]
     public static class RegexpOps {
+        #region Helpers
+
+        internal static bool NormalizeGroupIndex(ref int index, int groupCount) {
+            // Normalize index against # Groups in Match
+            if (index < 0) {
+                index += groupCount;
+                // Cannot refer to zero using negative indices 
+                if (index == 0) {
+                    return false;
+                }
+            }
+
+            if (index < 0 || index > groupCount) {
+                return false;
+            }
+
+            return true;
+        }
+
+        #endregion
+
         #region constructors, compile
 
         [RubyConstructor]
@@ -69,7 +90,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("initialize", RubyMethodAttributes.PrivateInstance)]
         public static RubyRegex/*!*/ Reinitialize(RubyRegex/*!*/ self, [NotNull]RubyRegex/*!*/ other) {
-            self.Set(other.GetPattern(), other.Options);
+            self.Set(other.Pattern, other.Options);
             return self;
         }
 
@@ -175,8 +196,8 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("kcode")]
-        public static MutableString GetEncoding(RubyRegex/*!*/ self) {
-            switch (self.Options & RubyRegexOptions.EncodingMask) {
+        public static MutableString GetKCode(RubyRegex/*!*/ self) {
+            switch (self.Options & RubyRegexOptions.CompleteEncodingMask) {
                 case RubyRegexOptions.NONE: return null;
                 case RubyRegexOptions.EUC: return MutableString.CreateAscii("euc");
                 case RubyRegexOptions.FIXED: return MutableString.CreateAscii("none");
@@ -184,6 +205,11 @@ namespace IronRuby.Builtins {
                 case RubyRegexOptions.SJIS: return MutableString.CreateAscii("sjis");
                 default: throw Assert.Unreachable;
             }
+        }
+
+        [RubyMethod("encoding")]
+        public static RubyEncoding/*!*/ GetEncoding(RubyRegex/*!*/ self) {
+            return self.Encoding;
         }
 
         [RubyMethod("casefold?")]
@@ -200,7 +226,7 @@ namespace IronRuby.Builtins {
         public static int GetHash(RubyRegex/*!*/ self) {
             return self.GetHashCode();
         }
-        
+
         [RubyMethod("=="), RubyMethod("eql?")]
         public static bool Equals(RubyRegex/*!*/ self, object other) {
             return false;
@@ -220,12 +246,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("===")]
         public static bool CaseCompare(ConversionStorage<MutableString>/*!*/ stringTryCast, RubyScope/*!*/ scope, RubyRegex/*!*/ self, object obj) {
             MutableString str = Protocols.TryCastToString(stringTryCast, obj);
-            if (str == null) {
-                return false;
-            } 
-            
-            MatchData match = Match(scope, self, str);
-            return (match != null && match.Success) ? true : false;
+            return str != null && Match(scope, self, str) != null;
         }
 
         [RubyMethod("~")]
@@ -235,7 +256,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("source")]
         public static MutableString/*!*/ Source(RubyRegex/*!*/ self) {
-            return self.GetPattern();
+            return self.Pattern.Clone();
         }
 
         [RubyMethod("escape", RubyMethodAttributes.PublicSingleton)]
@@ -251,14 +272,14 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("last_match", RubyMethodAttributes.PublicSingleton)]
         public static MutableString/*!*/ LastMatch(RubyScope/*!*/ scope, RubyClass/*!*/ self, [DefaultProtocol]int groupIndex) {
-            return scope.GetInnerMostClosureScope().CurrentMatch.GetGroupValue(scope.RubyContext, groupIndex);
+            return scope.GetInnerMostClosureScope().CurrentMatch.GetGroupValue(groupIndex);
         }
 
         [RubyMethod("union", RubyMethodAttributes.PublicSingleton)]
         public static RubyRegex/*!*/ Union(ConversionStorage<MutableString>/*!*/ stringCast, RubyClass/*!*/ self, [NotNull]params object[]/*!*/ strings) {
 
             if (strings.Length == 0) {
-                return new RubyRegex("(?!)", RubyRegexOptions.NONE);
+                return new RubyRegex(MutableString.CreateAscii("(?!)"), RubyRegexOptions.NONE);
             }
 
             MutableString result = MutableString.CreateMutable(RubyEncoding.Binary);

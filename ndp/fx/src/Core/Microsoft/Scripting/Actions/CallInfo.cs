@@ -70,7 +70,7 @@ namespace System.Dynamic {
 
             var argNameCol = argNames.ToReadOnly();
 
-            ContractUtils.Requires(argCount >= argNameCol.Count, "argCount", Strings.ArgCntMustBeGreaterThanNameCnt);
+            if (argCount < argNameCol.Count) throw Error.ArgCntMustBeGreaterThanNameCnt();
             ContractUtils.RequiresNotNullItems(argNameCol, "argNames");
 
             _argCount = argCount;

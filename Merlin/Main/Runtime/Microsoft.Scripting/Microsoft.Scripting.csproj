@@ -16,7 +16,6 @@
     <DocumentationFile>..\..\Bin\Release\Microsoft.Dynamic.xml</DocumentationFile>
     <WarningsNotAsErrors>1685</WarningsNotAsErrors>
     <NoWarn>1591</NoWarn>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AssemblyOriginatorKeyFile>..\..\Support\MSSharedLibKey.snk</AssemblyOriginatorKeyFile>
     <SignAssembly Condition="'$(SignAssembly)' == '' And Exists('$(AssemblyOriginatorKeyFile)')">true</SignAssembly>
     <SignedSym Condition="'$(SignAssembly)' == 'true'">SIGNED</SignedSym>

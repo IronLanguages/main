@@ -153,11 +153,32 @@ py_add
             Engine.Execute("def foo; 1; end");
             Assert(Context.ObjectClass.GetMethod("foo") != null);
 
-            // When executed against a scope top-level methods are defined on main singleton and also stored in the scope:
+            // The method is private and shouldn't be invokable via InvokeMember:
+            AssertExceptionThrown<MissingMethodException>(() => Engine.Operations.InvokeMember(new object(), "foo"));
+
+            // When executed against a scope top-level methods are defined on main singleton and also stored in the scope.
+            // This is equivalent to instance_evaling the code against the main singleton.
             var scope = Engine.CreateScope();
             Engine.Execute("def bar; 1; end", scope);
             Assert(Context.ObjectClass.GetMethod("bar") == null);
             Assert(scope.GetVariable("bar") != null);
+            
+            // we can invoke the method on a scope:
+            Assert((int)Engine.Operations.InvokeMember(scope, "bar") == 1);
+            
+            // Since we don't define top-level methods on Object when executing against a scope, 
+            // executions against different scopes don’t step on each other:
+            var scope1 = Engine.CreateScope();
+            var scope2 = Engine.CreateScope();
+            Engine.Execute("def foo(a,b); a + b; end", scope1);
+            Engine.Execute("def foo(a,b); a - b; end", scope2);
+            Assert(Engine.Execute<int>("foo(1,2)", scope1) == 3);
+            Assert(Engine.Execute<int>("foo(1,2)", scope2) == -1);
+
+            // Contrary, last one wins when executing w/o scope:
+            Engine.Execute("def baz(a,b); a + b; end");
+            Engine.Execute("def baz(a,b); a - b; end");
+            Assert(Engine.Execute<int>("baz(1,2)") == -1);
         }
 
         public void RubyHosting2() {
