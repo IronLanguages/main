@@ -85,7 +85,7 @@ end
 describe 'Utility methods' do
   it 'should make a relative Uri' do
     uri = "unit/assets/foo.xaml"
-    DynamicApplication.current.make_uri(uri).should.equal System::Uri.new(uri, System::UriKind.relative)
+    DynamicApplication.make_uri(uri).should.equal System::Uri.new(uri, System::UriKind.relative)
   end
 end
 
@@ -124,7 +124,7 @@ describe 'XAML support' do
 
   it 'should load a xaml file into a object' do
     reset_options
-    DynamicApplication.current.load_component(options[:object], options[:xamlfile])
+    DynamicApplication.load_component(options[:object], options[:xamlfile])
     check_xaml_support(options[:object])
   end
 end

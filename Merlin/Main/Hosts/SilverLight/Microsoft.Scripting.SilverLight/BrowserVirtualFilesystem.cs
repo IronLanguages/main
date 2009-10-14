@@ -157,8 +157,15 @@ namespace Microsoft.Scripting.Silverlight {
         /// </summary>
         /// <param name="path">a string representing a path</param>
         /// <returns>a normalized version of "path"</returns>
-        public virtual string NormalizePath(string path) {
+        public static string Normalize(string path) {
             return path.Replace('\\', '/');
+        }
+
+        /// <summary>
+        /// See (static) BrowserVirtualFilesystem.Normalize
+        /// </summary>
+        public virtual string NormalizePath(string path) {
+            return BrowserVirtualFilesystem.Normalize(path);
         }
 
         /// <summary>
@@ -252,7 +259,7 @@ namespace Microsoft.Scripting.Silverlight {
         /// <summary>
         /// The cache of files already downloaded
         /// </summary>
-        private Cache _cache = new Cache();
+        private DownloadCache _cache = new DownloadCache();
 
         /// <summary>
         /// Gets a file out of the download cache. This does not download the
@@ -274,31 +281,13 @@ namespace Microsoft.Scripting.Silverlight {
                 if (stream != null) return stream;
             }
 
-            Uri fullUri;
-            if (relativeUri.IsAbsoluteUri) {
-                fullUri = relativeUri;
-            } else {
-                baseUri = baseUri ?? DefaultBaseUri();
-                fullUri = new Uri(NormalizePath(Path.Combine(((Uri)baseUri).AbsoluteUri, relativeUri.ToString())), UriKind.Absolute);
-            }
+            var fullUri = DynamicApplication.MakeUri((Uri)baseUri, relativeUri);
 
             if (_cache.Has(fullUri)) {
                 return new MemoryStream(System.Text.Encoding.UTF8.GetBytes(_cache[fullUri]));
             } else {
                 return null;
             }
-        }
-
-        /// <summary>
-        /// The default base URI is the HTML page's URI.
-        /// </summary>
-        /// <returns></returns>
-        private Uri DefaultBaseUri() {
-            var uri = DynamicApplication.Current.BaseUri;
-            var server = uri.GetComponents(UriComponents.SchemeAndServer, UriFormat.Unescaped);
-            var path = NormalizePath(Path.GetDirectoryName(uri.LocalPath));
-            var defaultBaseUri = new Uri(new Uri(server), path);
-            return defaultBaseUri;
         }
 
         /// <summary>
@@ -317,7 +306,7 @@ namespace Microsoft.Scripting.Silverlight {
     /// <summary>
     /// A cache of Uris mapping to strings.
     /// </summary>
-    public class Cache {
+    public class DownloadCache {
 
         private Dictionary<Uri, string> _cache = new Dictionary<Uri, string>();
 
@@ -328,7 +317,7 @@ namespace Microsoft.Scripting.Silverlight {
         /// <param name="uri"></param>
         /// <param name="code"></param>
         public void Add(Uri uri, string code) {
-            if (!_cache.ContainsKey(uri)) {
+            if (!Has(uri)) {
                 _cache.Add(uri, code);
             }
         }
@@ -389,7 +378,7 @@ namespace Microsoft.Scripting.Silverlight {
                             content = s.ReadToEnd();
                         }
                         var key = (Uri)e.UserState;
-                        _cache.Add(key, content);
+                        Add(key, content);
                         downloadQueue.Remove(key);
                         if (downloadQueue.Count == 0) {
                             onComplete.Invoke();

@@ -55,10 +55,16 @@ namespace Microsoft.Scripting.Silverlight {
         private DynamicLanguageConfig _LangConfig;
 
         /// <summary>
+        /// true while the script-tag is running, false otherwise
+        /// </summary>
+        internal bool RunningScriptTags;
+
+        /// <summary>
         /// Given a language config it processes the script-tags on the HTML
         /// page (see "GetScriptTags").
         /// </summary>
         public DynamicScriptTags(DynamicLanguageConfig langConfig) {
+            RunningScriptTags = false;
             _LangConfig = langConfig;
             Code = new List<ScriptCode>();
             GetScriptTags();
@@ -93,7 +99,7 @@ namespace Microsoft.Scripting.Silverlight {
 
                 var sc = new ScriptCode(language, defer);
                 if (src != null) {
-                    sc.External = MakeUriAbsolute(new Uri(src, UriKind.RelativeOrAbsolute));
+                    sc.External = DynamicApplication.MakeUri(src);
                 } else {
                     var innerHtml = (string)e.GetProperty("innerHTML");
                     if (innerHtml != null)
@@ -153,12 +159,16 @@ namespace Microsoft.Scripting.Silverlight {
                         sourceCode =
                             engine.Engine.CreateScriptSourceFromString(
                                 sc.Inline,
-                                HtmlPage.Document.DocumentUri.LocalPath.Remove(0, 1),
+                                DynamicApplication.BaseUri.LocalPath.Remove(0, 1),
                                 SourceCodeKind.File
                             );
                         scope = inlineScope;
                     }
-                    sourceCode.Compile(new ErrorFormatter.Sink()).Execute(scope);
+                    if (sourceCode != null && scope != null) {
+                        RunningScriptTags = true;
+                        sourceCode.Compile(new ErrorFormatter.Sink()).Execute(scope);
+                        RunningScriptTags = false;
+                    }
                 }
             }
         }
@@ -260,30 +270,6 @@ namespace Microsoft.Scripting.Silverlight {
                 if (line[i] != ' ')
                     return line;
             return line.Remove(0, n);
-        }
-
-        /// <summary>
-        /// Makes the URI absolute (if it isn't already) against the HTML page.
-        /// </summary>
-        private Uri MakeUriAbsolute(Uri uri) {
-            Uri referenceUri = HtmlPage.Document.DocumentUri;
-            if (!uri.IsAbsoluteUri) {
-
-                // Is this a direcory name?
-                Uri baseUri = null;
-                if (Path.GetExtension(referenceUri.AbsoluteUri) == "") {
-                    // yes, so just use the directory
-                    baseUri = referenceUri;
-                } else {
-                    // no, so strip off the filename
-                    var slashIndex = referenceUri.AbsoluteUri.LastIndexOf('/');
-                    baseUri = new Uri(referenceUri.AbsoluteUri.Substring(0, slashIndex + 1), UriKind.Absolute);
-                }
-
-                return new Uri(baseUri, uri);
-            } else {
-                return uri;
-            }
         }
 
         /// <summary>

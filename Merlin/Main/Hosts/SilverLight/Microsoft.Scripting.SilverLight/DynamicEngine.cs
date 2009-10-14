@@ -59,6 +59,10 @@ namespace Microsoft.Scripting.Silverlight {
         /// </summary>
         public ScriptScope EntryPointScope { get; private set; }
 
+        /// <summary>
+        /// true while the entry-point is running, false otherwise
+        /// </summary>
+        internal bool RunningEntryPoint { get; set; }
 
         /// <summary>
         /// Finds the avaliable languages, initializes the ScriptRuntime, 
@@ -70,6 +74,7 @@ namespace Microsoft.Scripting.Silverlight {
         /// Initializes the languages, ScriptRuntime, and entry-point ScriptScope.
         /// </summary>
         public DynamicEngine(DynamicLanguageConfig langConfig) {
+            RunningEntryPoint = false;
             if (langConfig == null) {
                 InitializeLangConfig();
             } else {
@@ -178,13 +183,14 @@ namespace Microsoft.Scripting.Silverlight {
         /// </summary>
         /// <param name="entryPoint">path to the script</param>
         public void Run(string entryPoint) {
-            if (Settings.EntryPoint != null) {
+            if (entryPoint != null) {
                 var vfs = ((BrowserPAL) Runtime.Host.PlatformAdaptationLayer).VirtualFilesystem;
                 string code = vfs.GetFileContents(entryPoint);
-                Engine = Runtime.GetEngineByFileExtension(Path.GetExtension(Settings.EntryPoint));
-
+                Engine = Runtime.GetEngineByFileExtension(Path.GetExtension(entryPoint));
                 ScriptSource sourceCode = Engine.CreateScriptSourceFromString(code, entryPoint, SourceCodeKind.File);
+                RunningEntryPoint = true;
                 sourceCode.Compile(new ErrorFormatter.Sink()).Execute(EntryPointScope);
+                RunningEntryPoint = false;
             }
         }
     }

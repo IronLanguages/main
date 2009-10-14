@@ -24,6 +24,7 @@
     #from System.Xml.Linq import *
     from System.Diagnostics import * # enables outputing to a debug window!
     from System.Windows.Markup import * # for XamlReader
+    from Microsoft.Scripting.Silverlight.DynamicApplication import MakeUri
     
     layoutRoot = me.LayoutRoot
     
@@ -90,7 +91,7 @@
     def LoadSnowflake():
         client = WebClient()
         client.DownloadStringCompleted += SnowflakeLoaded
-        client.DownloadStringAsync(Uri("particles/snowflake.xaml", UriKind.RelativeOrAbsolute))
+        client.DownloadStringAsync(MakeUri("snowflake.xaml"))
         
     def Main():
         global _snowflake

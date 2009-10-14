@@ -23,6 +23,7 @@
       #from System.Xml.Linq import *
       from System.Diagnostics import * # enables outputing to a debug window!
       from System.Windows.Markup import * # for XamlReader
+      from Microsoft.Scripting.Silverlight.DynamicApplication import MakeUri
       
       layoutRoot = me.LayoutRoot
       curves = me.curves
@@ -208,12 +209,12 @@
       def LoadNode():
           client = WebClient()
           client.DownloadStringCompleted += NodeLoaded
-          client.DownloadStringAsync(Uri("trigonometry/node.xaml", UriKind.RelativeOrAbsolute))
+          client.DownloadStringAsync(MakeUri("node.xaml"))
           
       def LoadCurve():
           client = WebClient()
           client.DownloadStringCompleted += CurveLoaded
-          client.DownloadStringAsync(Uri("trigonometry/curve.xaml", UriKind.RelativeOrAbsolute))
+          client.DownloadStringAsync(MakeUri("curve.xaml"))
           
       def setupNodes():
           global _node

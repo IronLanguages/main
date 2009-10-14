@@ -21,7 +21,8 @@
     from System.Net import * # for WebClient
     from System.Windows.Resources import * # for WebClient
     from System.Diagnostics import * # enables outputing to a debug window!
-    
+    from Microsoft.Scripting.Silverlight.DynamicApplication import MakeUri
+
     grid = me.grid
     layoutRoot = me.LayoutRoot
     globeComp = me.globeComp
@@ -131,7 +132,7 @@
     sb.Completed += sb_Completed
     
     layoutRoot.Resources.Add("sb", sb)
-    webClient.OpenReadAsync(Uri("image.sequencer/images/redGlobe.zip", UriKind.Relative))
+    webClient.OpenReadAsync(MakeUri("images/redGlobe.zip"))
   </script>
 
   
