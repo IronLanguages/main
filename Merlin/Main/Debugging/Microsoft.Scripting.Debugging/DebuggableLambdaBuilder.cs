@@ -70,7 +70,7 @@ namespace Microsoft.Scripting.Debugging {
         private static readonly MSAst.ParameterExpression _caughtException = Ast.Variable(typeof(Exception), "$caughtException");
         private static readonly MSAst.ParameterExpression _retValAsObject = Ast.Variable(typeof(object), "$retVal");
         private static readonly MSAst.ParameterExpression _retValFromGeneratorLoop = Ast.Variable(typeof(object), "$retValFromGen");
-        private static readonly MSAst.ParameterExpression _frameExitException = Expression.Parameter(typeof(bool), "$frameExitException");
+        private static readonly MSAst.ParameterExpression _frameExitException = Ast.Parameter(typeof(bool), "$frameExitException");
 
         internal DebuggableLambdaBuilder(DebugContext debugContext, DebugLambdaInfo lambdaInfo) {
             _debugContext = debugContext;
@@ -511,7 +511,7 @@ namespace Microsoft.Scripting.Debugging {
             tryExpressions.Add(
                 Ast.Block(
                     _retVal != null ? Ast.Assign(_retVal, debuggableBody) : debuggableBody, 
-                    Ast.Assign(_frameExitException, Expression.Constant(true)),
+                    Ast.Assign(_frameExitException, Ast.Constant(true)),
                     frameExit) 
             );
 
@@ -575,7 +575,7 @@ namespace Microsoft.Scripting.Debugging {
                                 ),
                                 // exception exit
                                 AstUtils.If(
-                                    Expression.Not(_frameExitException),
+                                    Ast.Not(_frameExitException),
                                     frameExit
                                 )                                
                             ),

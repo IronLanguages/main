@@ -2438,18 +2438,18 @@ p(-a)
 p(+a)
 ");
             }, @"
-20
-12
-4
-64
-0
+20 (Decimal)
+12 (Decimal)
+4 (Decimal)
+64 (Decimal)
+0 (Decimal)
 false
 true
 true
 true
 false
 false
--16
+-16 (Decimal)
 16 (Decimal)
 ");
         }

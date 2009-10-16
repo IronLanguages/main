@@ -82,6 +82,13 @@ namespace IronRuby.Runtime {
             }
         }
 
+        public static object Normalize(decimal x) {
+            if (x >= Int32.MinValue && x <= Int32.MaxValue) {
+                return ScriptingRuntimeHelpers.Int32ToObject(Decimal.ToInt32(x));
+            }
+            return BigInteger.Create(x);
+        }
+
         public static object Normalize(object x) {
             int result;
             if (x is BigInteger) {

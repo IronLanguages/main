@@ -186,6 +186,9 @@ namespace IronRuby.Builtins {
             new Func<IronRuby.Builtins.RubyClass, System.Object, System.Exception>(BuiltinsLibraryInitializer.ExceptionFactory__SignalException));
             IronRuby.Builtins.RubyClass def38 = Context.StandardErrorClass = DefineGlobalClass("StandardError", typeof(System.SystemException), 0x00000007, def46, null, null, null, IronRuby.Builtins.RubyModule.EmptyArray, 
             new Func<IronRuby.Builtins.RubyClass, System.Object, System.Exception>(BuiltinsLibraryInitializer.ExceptionFactory__StandardError));
+            ExtendClass(typeof(System.Decimal), 0x00000000, def41, LoadSystem__Decimal_Instance, LoadSystem__Decimal_Class, null, IronRuby.Builtins.RubyModule.EmptyArray, 
+                new Func<IronRuby.Builtins.RubyModule, System.Double, System.Decimal>(IronRuby.Builtins.DecimalOps.InducedFrom)
+            );
             ExtendClass(typeof(System.Single), 0x00000000, def41, LoadSystem__Single_Instance, LoadSystem__Single_Class, null, new IronRuby.Builtins.RubyModule[] {def42}, 
                 new Func<IronRuby.Builtins.RubyClass, System.Double, System.Single>(IronRuby.Builtins.SingleOps.Create)
             );
@@ -227,11 +230,6 @@ namespace IronRuby.Builtins {
                 new Func<IronRuby.Builtins.RubyClass, System.Int32, System.Byte>(IronRuby.Builtins.ByteOps.InducedFrom), 
                 new Func<IronRuby.Builtins.RubyClass, Microsoft.Scripting.Math.BigInteger, System.Byte>(IronRuby.Builtins.ByteOps.InducedFrom), 
                 new Func<IronRuby.Builtins.RubyClass, System.Double, System.Byte>(IronRuby.Builtins.ByteOps.InducedFrom)
-            );
-            ExtendClass(typeof(System.Decimal), 0x00000000, def48, LoadSystem__Decimal_Instance, LoadSystem__Decimal_Class, null, IronRuby.Builtins.RubyModule.EmptyArray, 
-                new Func<IronRuby.Builtins.RubyClass, System.Int32, System.Decimal>(IronRuby.Builtins.DecimalOps.InducedFrom), 
-                new Func<IronRuby.Builtins.RubyClass, Microsoft.Scripting.Math.BigInteger, System.Decimal>(IronRuby.Builtins.DecimalOps.InducedFrom), 
-                new Func<IronRuby.Builtins.RubyClass, System.Double, System.Decimal>(IronRuby.Builtins.DecimalOps.InducedFrom)
             );
             ExtendClass(typeof(System.Int16), 0x00000000, def48, LoadSystem__Int16_Instance, LoadSystem__Int16_Class, null, IronRuby.Builtins.RubyModule.EmptyArray, 
                 new Func<IronRuby.Builtins.RubyClass, System.Int32, System.Int16>(IronRuby.Builtins.Int16Ops.InducedFrom), 
@@ -5648,22 +5646,40 @@ namespace IronRuby.Builtins {
         }
         
         private static void LoadSystem__Decimal_Instance(IronRuby.Builtins.RubyModule/*!*/ module) {
-            LoadIronRuby__Clr__BigInteger_Instance(module);
+            module.DefineLibraryMethod("==", 0x51, 
+                new Func<System.Decimal, System.Double, System.Boolean>(IronRuby.Builtins.DecimalOps.Equal), 
+                new Func<IronRuby.Runtime.BinaryOpStorage, System.Decimal, System.Object, System.Boolean>(IronRuby.Builtins.DecimalOps.Equal)
+            );
+            
             module.DefineLibraryMethod("inspect", 0x51, 
                 new Func<System.Object, IronRuby.Builtins.MutableString>(IronRuby.Builtins.DecimalOps.Inspect)
             );
             
             module.DefineLibraryMethod("size", 0x51, 
-                new Func<System.Decimal, System.Int32>(IronRuby.Builtins.DecimalOps.Size)
+                new Func<System.Object, System.Int32>(IronRuby.Builtins.DecimalOps.Size)
+            );
+            
+            module.DefineLibraryMethod("to_f", 0x51, 
+                new Func<System.Decimal, System.Double>(IronRuby.Builtins.DecimalOps.ToDouble)
+            );
+            
+            module.DefineLibraryMethod("to_i", 0x51, 
+                new Func<System.Decimal, System.Object>(IronRuby.Builtins.DecimalOps.ToInt)
+            );
+            
+            module.DefineLibraryMethod("to_int", 0x51, 
+                new Func<System.Decimal, System.Object>(IronRuby.Builtins.DecimalOps.ToInt)
             );
             
         }
         
         private static void LoadSystem__Decimal_Class(IronRuby.Builtins.RubyModule/*!*/ module) {
             module.DefineLibraryMethod("induced_from", 0x61, 
-                new Func<IronRuby.Builtins.RubyClass, System.Int32, System.Decimal>(IronRuby.Builtins.DecimalOps.InducedFrom), 
-                new Func<IronRuby.Builtins.RubyClass, Microsoft.Scripting.Math.BigInteger, System.Decimal>(IronRuby.Builtins.DecimalOps.InducedFrom), 
-                new Func<IronRuby.Builtins.RubyClass, System.Double, System.Decimal>(IronRuby.Builtins.DecimalOps.InducedFrom)
+                new Func<IronRuby.Builtins.RubyModule, System.Double, System.Decimal>(IronRuby.Builtins.DecimalOps.InducedFrom), 
+                new Func<IronRuby.Builtins.RubyModule, System.Decimal, System.Decimal>(IronRuby.Builtins.DecimalOps.InducedFrom), 
+                new Func<IronRuby.Builtins.RubyModule, System.Int32, System.Decimal>(IronRuby.Builtins.DecimalOps.InducedFrom), 
+                new Func<IronRuby.Builtins.RubyModule, Microsoft.Scripting.Math.BigInteger, System.Decimal>(IronRuby.Builtins.DecimalOps.InducedFrom), 
+                new Func<IronRuby.Builtins.RubyModule, System.Object, System.Double>(IronRuby.Builtins.DecimalOps.InducedFrom)
             );
             
         }

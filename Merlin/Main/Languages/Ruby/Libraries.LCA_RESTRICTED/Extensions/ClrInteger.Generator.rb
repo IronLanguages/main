@@ -16,7 +16,7 @@ end
 
 generate(__FILE__) do
   template = DATA.read
-  types = ["Byte", "SByte", "Int16", "UInt16", "UInt32", "Int64", "UInt64", "Decimal"]
+  types = ["Byte", "SByte", "Int16", "UInt16", "UInt32", "Int64", "UInt64"]
   
   result = ""
   types.each do |type|
