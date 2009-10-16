@@ -126,6 +126,7 @@ namespace IronPython.Runtime.Binding {
                     switch (Name) {
                         case "__str__":
                         case "__repr__":
+                        case "__doc__":
                             // need to return the built in method descriptor for these...
                             break;
                         case "__file__":
@@ -181,7 +182,7 @@ namespace IronPython.Runtime.Binding {
 
             public object GetError(CallSite site, TSelfType target, CodeContext context) {
                 if (target != null && target.GetType() == _type) {
-                    throw PythonOps.AttributeErrorForMissingAttribute(DynamicHelpers.GetPythonType(target).Name, _name);
+                    throw PythonOps.AttributeErrorForObjectMissingAttribute(target, _name);
                 }
 
                 return ((CallSite<Func<CallSite, TSelfType, CodeContext, object>>)site).Update(site, target, context);
@@ -669,7 +670,11 @@ namespace IronPython.Runtime.Binding {
         #endregion
     }
 
-    class CompatibilityGetMember : GetMemberBinder, IPythonSite {
+    class CompatibilityGetMember : GetMemberBinder, IPythonSite
+#if !CLR2 && SILVERLIGHT
+        , IInvokeOnGetBinder
+#endif
+    {
         private readonly PythonContext/*!*/ _context;
         private readonly bool _isNoThrow;
 
@@ -715,6 +720,14 @@ namespace IronPython.Runtime.Binding {
             return ob._context.Binder == _context.Binder &&
                 base.Equals(obj);
         }
+#if !CLR2 && SILVERLIGHT
+        #region IInvokeOnGetBinder Members
+
+        public bool InvokeOnGet {
+            get { return true; }
+        }
+        #endregion
+#endif
     }
 
     [Flags]

@@ -88,6 +88,11 @@ namespace IronRuby.Runtime.Conversions {
             // TODO: 
             // nullable int (see Array#fill, Sockets:ConvertToSocketFlag, Kernel#open(perm=nil), File.chown, IO#read)
 
+            // TODO: do we want to use a default protocol for enums?
+            if (parameterType.IsEnum) {
+                return null;
+            }
+
             switch (Type.GetTypeCode(parameterType)) {
                 case TypeCode.SByte: return (factory) => factory.Conversion<ConvertToSByteAction>();
                 case TypeCode.Byte: return (factory) => factory.Conversion<ConvertToByteAction>();

@@ -223,7 +223,7 @@ namespace IronRuby.Runtime {
 
         [Conditional("DEBUG")]
         internal void RequiresClassHierarchyLock() {
-            ContractUtils.Requires(_classHierarchyLock.IsLocked, "Code can only be executed while holding class hierarchy lock.");
+            Debug.Assert(_classHierarchyLock.IsLocked, "Code can only be executed while holding class hierarchy lock.");
         }
 
         // classes used by runtime (we need to update initialization generator if any of these are added):

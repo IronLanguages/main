@@ -17,6 +17,9 @@ class IRTest
        
     mspec_base = "#{@root}\\..\\External.LCA_RESTRICTED\\Languages\\IronRuby\\mspec\\mspec\\bin\\mspec.bat ci -fd"
     ir = "\"#{@bin}\\ir.exe\" -v"
+    if options[:parallel]
+      ir = "cmd /K #{ir}"
+    end
     @suites = {
       :Smoke => "#{@root}\\Languages\\Ruby\\Tests\\Scripts\\irtest.bat",
       :Legacy => "#{@root}\\Languages\\Ruby\\Tests\\run.bat",
@@ -117,7 +120,7 @@ class IRTest
         return
       end
     end
-    
+        
     msbuild "Hosts\\Silverlight\\Silverlight.sln", @sl_config, options
   end
 
@@ -138,7 +141,7 @@ class IRTest
     test = @suites[suite]
     cmd = nil
     if options[:parallel]
-      cmd = "start \"#{title}\" #{test}"
+      cmd = "start /BELOWNORMAL \"#{title}\" #{test}"
     else
       puts title
       cmd = test
@@ -148,7 +151,9 @@ class IRTest
   end
 
   def run_cmd(cmd, &blk)
-    puts cmd if $DEBUG
+    puts
+    puts cmd
+    puts
     blk.call unless system cmd
   end
   

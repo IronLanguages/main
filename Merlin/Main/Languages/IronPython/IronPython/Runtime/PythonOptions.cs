@@ -238,8 +238,8 @@ namespace IronPython {
             }
         }
     
-        public PythonOptions(IDictionary<string, object> options) 
-            : base(options) {
+        public PythonOptions(IDictionary<string, object> options)
+            : base(EnsureSearchPaths(options)) {
 
             _arguments = GetStringCollectionOption(options, "Arguments") ?? EmptyStringCollection;
             _warningFilters = GetStringCollectionOption(options, "WarningFilters", ';', ',') ?? EmptyStringCollection;
@@ -282,6 +282,15 @@ namespace IronPython {
             }
 
             _python30 = _version == new Version(3, 0);
+        }
+
+        private static IDictionary<string, object> EnsureSearchPaths(IDictionary<string, object> options) {
+            if (options == null) {
+                return new Dictionary<string, object>() { { "SearchPaths", new[] { "." } } };
+            } else if (!options.ContainsKey("SearchPaths")) {
+                options["SearchPaths"] = new [] { "." };
+            } 
+            return options;
         }
     }
 }

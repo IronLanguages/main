@@ -434,7 +434,10 @@ no_csc do
         it "passes the correct input (#{input}) into method (#{meth}) (ClassWithMethods)" do
           value = @values[input]
           meth_call = (input == "NoArg" ? lambda { @target.send(meth)} : lambda {@target.send(meth, value)})
+          
+          # calls the C# method
           res, ref = meth_call.call
+          
           if input != "NoArg"
             result = Helper.result(meth,value)
             @target.tracker.should == [*result]
@@ -568,10 +571,23 @@ no_csc do
         [System::Byte, System::SByte, System::Int16, System::UInt16, System::UInt32, System::Int64, System::UInt64].each do |val|
           define_method("test_#{val.name.gsub("System::","")}Arg") {|v| val.induced_from(v.to_int) if test_value(v)}
         end
-
-        def method_missing(meth, *args, &blk)
+        
+        def test_StringArg(arg)
+          case arg
+          when NilClass
+            nil
+          when Symbol
+            arg.to_s
+          when Fixnum
+            arg.to_sym.to_s
+          else
+            arg.to_str
+          end
+        end
+        
+        def method_missing(meth, arg)
           if meth =~ /test_.*?Arg/
-            value
+            arg
           end
         end
         

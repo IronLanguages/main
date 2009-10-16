@@ -17,15 +17,14 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Security;
+using IronRuby.Builtins;
+using IronRuby.Runtime;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Hosting;
 using Microsoft.Scripting.Hosting.Shell;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-using IronRuby.Builtins;
-using System.Text;
-using IronRuby.Runtime;
-using System.Security;
 
 namespace IronRuby.Hosting {
     public sealed class RubyOptionsParser : OptionsParser<ConsoleOptions> {
@@ -64,7 +63,7 @@ namespace IronRuby.Hosting {
                 _debugListener = new ConsoleTraceListener { IndentSize = 4, Filter = new CustomTraceFilter { EnableAll = categories.Length == 0 } };
                 Debug.Listeners.Add(_debugListener);
             } 
-          
+         
             foreach (var category in categories) {
                 ((CustomTraceFilter)_debugListener.Filter).Categories[category] = enable;
             }
@@ -85,6 +84,63 @@ namespace IronRuby.Hosting {
         protected override void ParseArgument(string arg) {
             ContractUtils.RequiresNotNull(arg, "arg");
 
+            if (arg.StartsWith("-e")) {
+                string command;
+                if (arg == "-e") {
+                    command = PopNextArg();
+                } else {
+                    command = arg.Substring(2);
+                }
+
+                LanguageSetup.Options["MainFile"] = "-e";
+                if (CommonConsoleOptions.Command == null) {
+                    CommonConsoleOptions.Command = String.Empty;
+                } else {
+                    CommonConsoleOptions.Command += "\n";
+                }
+                CommonConsoleOptions.Command += command;
+                return;
+            }
+
+            if (arg.StartsWith("-I")) {
+                string includePaths;
+                if (arg == "-I") {
+                    includePaths = PopNextArg();
+                } else {
+                    includePaths = arg.Substring(2);
+                }
+
+                _loadPaths.AddRange(GetPaths(includePaths));
+                return;
+            }
+
+#if !SILVERLIGHT
+            if (arg.StartsWith("-K")) {
+                LanguageSetup.Options["KCode"] = arg.Length >= 3 ? RubyEncoding.GetKCodingByNameInitial(arg[2]) : null;
+                return;
+            }
+#endif
+            if (arg.StartsWith("-r")) {
+                string libPath;
+                if (arg == "-r") {
+                    libPath = PopNextArg();
+                } else {
+                    libPath = arg.Substring(2);
+                }
+
+                LanguageSetup.Options["RequiredLibraries"] = libPath;
+                return;
+            }
+
+            if (arg.StartsWith("-0") ||
+                arg.StartsWith("-C") ||
+                arg.StartsWith("-F") ||
+                arg.StartsWith("-i") ||
+                arg.StartsWith("-T") ||
+                arg.StartsWith("-x")) {
+                throw new InvalidOptionException(String.Format("Option `{0}' not supported", arg));
+            }
+
             int colon = arg.IndexOf(':');
             string optionName, optionValue;
             if (colon >= 0) {
@@ -98,6 +154,22 @@ namespace IronRuby.Hosting {
             switch (optionName) {
                 #region Ruby options
 
+                case "-a":
+                case "-c":
+                case "--copyright":
+                case "-l":
+                case "-n":
+                case "-p":
+                case "-s":
+                case "-S":
+                    throw new InvalidOptionException(String.Format("Option `{0}' not supported", optionName));
+
+                case "-d":
+                    // TODO: have a separate option
+                    RuntimeSetup.DebugMode = true;          // $DEBUG = true
+                    break;
+
+                case "--version":
                 case "-v":
                     CommonConsoleOptions.PrintVersion = true;
                     CommonConsoleOptions.Exit = true;
@@ -116,10 +188,6 @@ namespace IronRuby.Hosting {
                     LanguageSetup.Options["Verbosity"] = 2; // $VERBOSE = true
                     break;
 
-                case "-d":
-                    RuntimeSetup.DebugMode = true;          // $DEBUG = true
-                    break;
-                
                 #endregion
 
 #if DEBUG && !SILVERLIGHT
@@ -179,61 +247,18 @@ namespace IronRuby.Hosting {
                     LanguageSetup.Options["Compatibility"] = RubyCompatibility.Ruby20;
                     break;
 
-                default:
-                    if (arg.StartsWith("-e")) {
-                        string command;
-                        if (arg == "-e") {
-                            command = PopNextArg();
-                        } else {
-                            command = arg.Substring(2);
-                        }
-
-                        LanguageSetup.Options["MainFile"] = "-e";
-                        if (CommonConsoleOptions.Command == null) {
-                            CommonConsoleOptions.Command = String.Empty;
-                        } else {
-                              CommonConsoleOptions.Command += "\n";
-                        }
-                        CommonConsoleOptions.Command += command;
-                        break;
+                case "-X":
+                    switch (optionValue) {
+                        case "AutoIndent":
+                        case "TabCompletion":
+                        case "ColorfulConsole":
+                            throw new InvalidOptionException(String.Format("Option `{0}' not supported", optionName));
                     }
-
-                    if (arg.StartsWith("-I")) {
-                        string includePaths;
-                        if (arg == "-I") {
-                            includePaths = PopNextArg();
-                        } else {
-                            includePaths = arg.Substring(2);
-                        }
-
-                        _loadPaths.AddRange(GetPaths(includePaths));
-                        break;
-                    }
-
-                    if (arg.StartsWith("-r")) {
-                        string libPath;
-                        if (arg == "-r") {
-                            libPath = PopNextArg();
-                        } else {
-                            libPath = arg.Substring(2);
-                        }
-
-                        LanguageSetup.Options["RequiredLibraries"] = libPath;
-                        break;
-                    }
-
-#if !SILVERLIGHT
-                    if (arg.StartsWith("-K")) {
-                        LanguageSetup.Options["KCode"] = optionName.Length >= 3 ? RubyEncoding.GetKCodingByNameInitial(optionName[2]) : null;
-                        break;
-                    }
-#endif
-                    if (arg == "-X:Interpret") {
-                        LanguageSetup.Options["InterpretedMode"] = ScriptingRuntimeHelpers.True;
-                        break;
-                    }
-
+                    goto default;
+                    
+               default:
                     base.ParseArgument(arg);
+
                     if (ConsoleOptions.FileName != null) {
                         LanguageSetup.Options["MainFile"] = RubyUtils.CanonicalizePath(ConsoleOptions.FileName);
                         LanguageSetup.Options["Arguments"] = PopRemainingArgs();
@@ -272,53 +297,72 @@ namespace IronRuby.Hosting {
         }
 
         public override void GetHelp(out string commandLine, out string[,] options, out string[,] environmentVariables, out string comments) {
-            string[,] standardOptions;
-            base.GetHelp(out commandLine, out standardOptions, out environmentVariables, out comments);
+            commandLine = "[options] [file] [arguments]";
+            environmentVariables = null;
+            comments = null;
 
-            string [,] rubyOptions = new string[,] {
-             // { "-0[octal]",       "specify record separator (\0, if no argument)" },
-             // { "-a",              "autosplit mode with -n or -p (splits $_ into $F)" },
-             // { "-c",              "check syntax only" },
-             // { "-Cdirectory",     "cd to directory, before executing your script" },
-                { "-d",              "set debugging flags (set $DEBUG to true)" },
-                { "-e 'command'",    "one line of script. Several -e's allowed. Omit [programfile]" },
-             // { "-Fpattern",       "split() pattern for autosplit (-a)" },
-             // { "-i[extension]",   "edit ARGV files in place (make backup if extension supplied)" },
-                { "-Idirectory",     "specify $LOAD_PATH directory (may be used more than once)" },
+            options = new string[,] {
+             // { "-0[octal]",                   "specify record separator (\0, if no argument)" },
+             // { "-a",                          "autosplit mode with -n or -p (splits $_ into $F)" },
+             // { "-c",                          "check syntax only" },
+             // { "-Cdirectory",                 "cd to directory, before executing your script" },
+                { "-d",                          "set debugging flags (set $DEBUG to true)" },
+                { "-D",                          "emit debugging information (PDBs) for Visual Studio debugger" },
+                { "-e 'command'",                "one line of script. Several -e's allowed. Omit [file]" },
+             // { "-Fpattern",                   "split() pattern for autosplit (-a)" },
+                { "-h[elp]",                     "Display usage" },
+             // { "-i[extension]",               "edit ARGV files in place (make backup if extension supplied)" },
+                { "-Idirectory",                 "specify $LOAD_PATH directory (may be used more than once)" },
 #if !SILVERLIGHT
-                { "-Kkcode",         "specifies KANJI (Japanese) code-set: { U, UTF8" },
+                { "-Kkcode",                     "specifies KANJI (Japanese) code-set" },
 #endif
-             // { "-l",              "enable line ending processing" },
-             // { "-n",              "assume 'while gets(); ... end' loop around your script" },
-             // { "-p",              "assume loop like -n but print line also like sed" },
-                { "-rlibrary",       "require the library, before executing your script" },
-             // { "-s",              "enable some switch parsing for switches after script name" },
-             // { "-S",              "look for the script using PATH environment variable" },
-             // { "-T[level]",       "turn on tainting checks" },
-                { "-v",              "print version number, then turn on verbose mode" },
-                { "-w",              "turn warnings on for your script" },
-                { "-W[level]",       "set warning level; 0=silence, 1=medium, 2=verbose (default)" },
-             // { "-x[directory]",   "strip off text before #!ruby line and perhaps cd to directory" },
-#if DEBUG
-                { "-opt",           "dummy" }, 
-                { "-DT",            "" },
-                { "-DT*",           "" },
-                { "-ET",            "" },
-                { "-ET*",           "" },
-                { "-save [path]",   "Save generated code to given path" },
-                { "-load",          "Load pre-compiled code" },
-                { "-useThreadAbortForSyncRaise", "For testing purposes" },
-                { "-compileRegexps", "Faster throughput, slower startup" },
-#endif
-                { "-trace",         "Enable support for set_trace_func" },
-                { "-profile",       "Enable support for 'pi = IronRuby::Clr.profile { block_to_profile }'" },
-                { "-18",            "Ruby 1.8 mode" },
-                { "-19",            "Ruby 1.9 mode" },
-                { "-20",            "Ruby 2.0 mode" },
-            };
+             // { "-l",                          "enable line ending processing" },
+             // { "-n",                          "assume 'while gets(); ... end' loop around your script" },
+             // { "-p",                          "assume loop like -n but print line also like sed" },
+                { "-rlibrary",                   "require the library, before executing your script" },
+             // { "-s",                          "enable some switch parsing for switches after script name" },
+             // { "-S",                          "look for the script using PATH environment variable" },
+             // { "-T[level]",                   "turn on tainting checks" },
+                { "-v",                          "print version number, then turn on verbose mode" },
+                { "-w",                          "turn warnings on for your script" },
+                { "-W[level]",                   "set warning level; 0=silence, 1=medium, 2=verbose (default)" },
+             // { "-x[directory]",               "strip off text before #!ruby line and perhaps cd to directory" },
+             // { "--copyright",                 "print the copyright" },
+                { "--version",                   "print the version" },
 
-            // Append the Ruby-specific options and the standard options
-            options = ArrayUtils.Concatenate(rubyOptions, standardOptions);
+                { "-trace",                      "enable support for set_trace_func" },
+                { "-profile",                    "enable support for 'pi = IronRuby::Clr.profile { block_to_profile }'" },
+                { "-18",                         "Ruby 1.8 mode" },
+                { "-19",                         "Ruby 1.9 mode" },
+                { "-20",                         "Ruby 2.0 mode" },
+
+                { "-X:ExceptionDetail",          "enable ExceptionDetail mode" },
+                { "-X:NoAdaptiveCompilation",    "disable adaptive compilation" },
+                { "-X:PassExceptions",           "do not catch exceptions that are unhandled by script code" },
+                { "-X:PrivateBinding",           "enable binding to private members" },
+                { "-X:ShowClrExceptions",        "display CLS Exception information" },
+                { "-X:RemoteRuntimeChannel",     "remote console channel" }, 
+             // { "-X:AutoIndent",               "Enable auto-indenting in the REPL loop" },
+#if !SILVERLIGHT
+             // { "-X:TabCompletion",            "Enable TabCompletion mode" },
+             // { "-X:ColorfulConsole",          "Enable ColorfulConsole" },
+#endif
+
+#if DEBUG
+                { "-DT",                         "disables tracing of specified events [debug only]" },
+                { "-DT*",                        "disables tracing of all events [debug only]" },
+                { "-ET",                         "enables tracing of specified events [debug only]" },
+                { "-ET*",                        "enables tracing of all events [debug only]" },
+                { "-save [path]",                "save generated code to given path [debug only]" },
+                { "-load",                       "load pre-compiled code [debug only]" },
+                { "-useThreadAbortForSyncRaise", "for testing purposes [debug only]" },
+                { "-compileRegexps",             "faster throughput, slower startup [debug only]" },
+                { "-X:AssembliesDir <dir>",      "set the directory for saving generated assemblies [debug only]" },
+                { "-X:SaveAssemblies",           "save generated assemblies [debug only]" },
+                { "-X:TrackPerformance",         "track performance sensitive areas [debug only]" },
+                { "-X:PerfStats",                "print performance stats when the process exists [debug only]" },
+#endif
+            };
         }
     }
 }

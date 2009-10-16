@@ -169,13 +169,13 @@ namespace IronRuby.Builtins {
                 // nop
             }
 
-            public override GenericRegex/*!*/ ToRegularExpression(RubyRegexOptions options) {
-                // TODO: Fix BinaryRegex and use instead
-                return new StringRegex(ToString(), options);
-            }
-
             public override Content/*!*/ EscapeRegularExpression() {
-                return new BinaryContent(BinaryRegex.Escape(ToByteArray()), _owner);
+                // TODO:
+                var a = ToByteArray();
+                return new BinaryContent(
+                    BinaryEncoding.Obsolete.GetBytes(RubyRegex.Escape(BinaryEncoding.Obsolete.GetString(a, 0, a.Length))),
+                    _owner
+                );
             }
 
             public override void CheckEncoding() {
@@ -248,7 +248,7 @@ namespace IronRuby.Builtins {
             }
 
             public override int IndexOf(byte[]/*!*/ bytes, int start, int count) {
-                return Utils.IndexOf(_data, bytes, start, count);
+                return Utils.IndexOf(_data, _count, bytes, start, count);
             }
 
             public override int IndexIn(Content/*!*/ str, int start, int count) {
@@ -272,7 +272,7 @@ namespace IronRuby.Builtins {
             }
 
             public override int LastIndexOf(byte[]/*!*/ bytes, int start, int count) {
-                return Utils.LastIndexOf(_data, bytes, start, count);
+                return Utils.LastIndexOf(_data, _count, bytes, start, count);
             }
 
             public override int LastIndexIn(Content/*!*/ str, int start, int count) {

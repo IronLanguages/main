@@ -433,7 +433,9 @@ namespace IronRuby.Tests {
                 if (!_partialTrust) { 
                     Console.Write("Repro: {0}", Environment.CommandLine);
                 } else {
-                    Console.Write("Repro: IronRuby.Tests.exe /partial");
+                    Console.Write("Repro: IronRuby.Tests.exe /partial{0}{1}", 
+                        _noAdaptiveCompilation ? " /noadaptive" : "",
+                        _isDebug ? " /debug" : "");
                 }
                 if (largs.Count == 0) {
                     Console.Write(" {0}", String.Join(" ", failedCases.ToArray()));

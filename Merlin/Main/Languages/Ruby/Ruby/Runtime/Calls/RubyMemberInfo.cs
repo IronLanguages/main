@@ -145,6 +145,7 @@ namespace IronRuby.Runtime.Calls {
         /// Method definition that replaces/overrides this method will cause version update of all dependent subclasses/modules, which
         /// triggers invalidation of sites that are bound to those classes.
         /// </summary>
+        [DebuggerDisplay("{_invalidateSitesOnOverride}")]
         internal bool InvalidateSitesOnOverride {
             get {
                 Context.RequiresClassHierarchyLock();

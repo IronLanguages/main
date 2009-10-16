@@ -47,7 +47,7 @@ namespace IronPython.Compiler {
         private ScriptCode _unoptimizedCode;
 
         public RuntimeScriptCode(CompilerContext/*!*/ context, MSAst.Expression<Func<FunctionCode, object>>/*!*/ expression, PythonAst/*!*/ ast, CodeContext/*!*/ codeContext)
-            : base(context.SourceUnit) {
+            : base(context.SourceUnit, ast.Body.Span) {
             Debug.Assert(codeContext.GlobalScope.GetExtension(codeContext.LanguageContext.ContextId) != null);
 
             _code = expression;

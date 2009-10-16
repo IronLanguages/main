@@ -308,7 +308,7 @@ namespace System.Linq.Expressions.Compiler {
             ContractUtils.RequiresNotNull(paramTypes, "paramTypes");
 
             ConstructorInfo ci = type.GetConstructor(paramTypes);
-            ContractUtils.Requires(ci != null, "type", Strings.TypeDoesNotHaveConstructorForTheSignature);
+            if (ci == null) throw Error.TypeDoesNotHaveConstructorForTheSignature();
             il.EmitNew(ci);
         }
 
@@ -915,7 +915,7 @@ namespace System.Linq.Expressions.Compiler {
         internal static void EmitArray(this ILGenerator il, Type elementType, int count, Action<int> emit) {
             ContractUtils.RequiresNotNull(elementType, "elementType");
             ContractUtils.RequiresNotNull(emit, "emit");
-            ContractUtils.Requires(count >= 0, "count", Strings.CountCannotBeNegative);
+            if (count < 0) throw Error.CountCannotBeNegative();
 
             il.EmitInt(count);
             il.Emit(OpCodes.Newarr, elementType);
@@ -936,7 +936,7 @@ namespace System.Linq.Expressions.Compiler {
         /// </summary>
         internal static void EmitArray(this ILGenerator il, Type arrayType) {
             ContractUtils.RequiresNotNull(arrayType, "arrayType");
-            ContractUtils.Requires(arrayType.IsArray, "arrayType", Strings.ArrayTypeMustBeArray);
+            if (!arrayType.IsArray) throw Error.ArrayTypeMustBeArray();
 
             int rank = arrayType.GetArrayRank();
             if (rank == 1) {

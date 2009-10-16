@@ -68,16 +68,15 @@ namespace IronRuby.Runtime.Calls {
         }
 
         internal override void BuildCallNoFlow(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name) {
-            Expression expr = null;
             Expression instance = _fieldInfo.IsStatic ? null : Ast.Convert(args.TargetExpression, _fieldInfo.DeclaringType);
 
             if (_isSetter) {
-                // parameters should be: instance/type, value
-                if (args.SimpleArgumentCount == 0 && args.Signature.HasRhsArgument) {
-                    expr = Ast.Assign(
+                var actualArgs = RubyOverloadResolver.NormalizeArguments(metaBuilder, args, 1, 1);
+                if (!metaBuilder.Error) {
+                    metaBuilder.Result = Ast.Assign(
                         Ast.Field(instance, _fieldInfo),
                         Converter.ConvertExpression(
-                            args.GetRhsArgumentExpression(), 
+                            actualArgs[0].Expression, 
                             _fieldInfo.FieldType,
                             args.RubyContext, 
                             args.MetaContext.Expression,
@@ -86,25 +85,17 @@ namespace IronRuby.Runtime.Calls {
                     );
                 }
             } else {
-                // parameter should be: instance/type
-                if (args.SimpleArgumentCount == 0) {
+                RubyOverloadResolver.NormalizeArguments(metaBuilder, args, 0, 0);
+                if (!metaBuilder.Error) {
                     if (_fieldInfo.IsLiteral) {
                         // TODO: seems like Compiler should correctly handle the literal field case
                         // (if you emit a read to a literal field, you get a NotSupportedExpception from
                         // FieldHandle when we try to emit)
-                        expr = AstUtils.Constant(_fieldInfo.GetValue(null));
+                        metaBuilder.Result = AstUtils.Constant(_fieldInfo.GetValue(null));
                     } else {
-                        expr = Ast.Field(instance, _fieldInfo);
+                        metaBuilder.Result = Ast.Field(instance, _fieldInfo);
                     }
                 }
-            }
-
-            if (expr != null) {
-                metaBuilder.Result = expr;
-            } else {
-                metaBuilder.SetError(
-                    Methods.MakeInvalidArgumentTypesError.OpCall(AstUtils.Constant(_isSetter ? name + "=" : name))
-                );
             }
         }
     }

@@ -1030,9 +1030,9 @@ namespace Microsoft.Scripting.Interpreter {
         public override int ProducedStack { get { return 0; } }
 
         public override int Run(InterpretedFrame frame) {
+            T value = (T)frame.Pop();
             int index = (int)frame.Pop();
             T[] array = (T[])frame.Pop();
-            T value = (T)frame.Pop();
             array[index] = value;
             return +1;
         }

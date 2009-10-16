@@ -181,8 +181,10 @@ namespace IronPython.Runtime {
             PythonContext.TracePipeline.TraceCallback = null;
             thread.InTraceback = true;
             try {
-                traceDispatch = traceDispatch(pyFrame, traceEvent, args);
+                TracebackDelegate dlg = traceDispatch(pyFrame, traceEvent, args);
                 traceDispatchThrew = false;
+
+                pyFrame.Setf_trace(dlg);
             } finally {
                 thread.InTraceback = false;
                 PythonContext.TracePipeline.TraceCallback = this;

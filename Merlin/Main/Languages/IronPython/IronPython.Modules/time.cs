@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if SILVERLIGHT
+#if SILVERLIGHT && CLR2
 extern alias systemcore;
 using TimeZoneInfo = systemcore::System.TimeZoneInfo;
 #endif

@@ -32,7 +32,7 @@ namespace IronRuby.StandardLibrary.StringScanner {
         private int _currentPosition;
         private int _foundPosition;
         private MutableString _lastMatch;
-        private GroupCollection _lastMatchingGroups;
+        private MatchData _lastMatchingGroups;
 
         #region Construction
 
@@ -118,12 +118,12 @@ namespace IronRuby.StandardLibrary.StringScanner {
                 return null;
             }
             if (subgroup < 0) {
-                subgroup = self.LastMatchingGroups.Count - subgroup;
+                subgroup = self.LastMatchingGroups.GroupCount - subgroup;
             }
-            if (subgroup >= self.LastMatchingGroups.Count) {
+            if (subgroup >= self.LastMatchingGroups.GroupCount) {
                 return null;
             }
-            return MutableString.Create(self.LastMatchingGroups[subgroup].ToString(), self._scanString.Encoding);
+            return self.LastMatchingGroups.GetGroupValue(subgroup);
         }
 
         [RubyMethod("beginning_of_line?")]
@@ -391,11 +391,12 @@ namespace IronRuby.StandardLibrary.StringScanner {
         #region Helpers
 
         private bool Match(RubyRegex/*!*/ pattern, bool currentPositionOnly, bool advancePosition) {
-            Match match = pattern.Match(_scanString, _currentPosition);
+            // TODO: KCODE?
+            MatchData match = pattern.Match(null, _scanString, _currentPosition);
             _lastMatch = null;
             _lastMatchingGroups = null;
             _foundPosition = 0;
-            if (!match.Success) {
+            if (match == null) {
                 return false;
             }
             if (currentPositionOnly && match.Index != _currentPosition) {
@@ -405,7 +406,7 @@ namespace IronRuby.StandardLibrary.StringScanner {
             _foundPosition = match.Index;
             _previousPosition = _currentPosition;
             _lastMatch = _scanString.GetSlice(_foundPosition, match.Length);
-            _lastMatchingGroups = match.Groups;
+            _lastMatchingGroups = match;
             if (advancePosition) {
                 _currentPosition += length;
             }
@@ -444,7 +445,7 @@ namespace IronRuby.StandardLibrary.StringScanner {
             get { return _lastMatch; }
         }
 
-        private GroupCollection LastMatchingGroups {
+        private MatchData LastMatchingGroups {
             get { return _lastMatchingGroups; }
         }
 

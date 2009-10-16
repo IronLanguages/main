@@ -199,7 +199,7 @@ namespace System.Linq.Expressions {
         /// <returns>The created <see cref="SwitchExpression"/>.</returns>
         public static SwitchExpression Switch(Type type, Expression switchValue, Expression defaultBody, MethodInfo comparison, IEnumerable<SwitchCase> cases) {
             RequiresCanRead(switchValue, "switchValue");
-            ContractUtils.Requires(switchValue.Type != typeof(void), "switchValue", Strings.ArgumentCannotBeOfTypeVoid);
+            if (switchValue.Type == typeof(void)) throw Error.ArgumentCannotBeOfTypeVoid();
 
             var caseList = cases.ToReadOnly();
             ContractUtils.RequiresNotEmpty(caseList, "cases");
@@ -269,7 +269,7 @@ namespace System.Linq.Expressions {
             }
 
             if (defaultBody == null) {
-                ContractUtils.Requires(resultType == typeof(void), "defaultBody", Strings.DefaultBodyMustBeSupplied);
+                if (resultType != typeof(void)) throw Error.DefaultBodyMustBeSupplied();
             } else {
                 ValidateSwitchCaseType(defaultBody, customType, resultType, "defaultBody");
             }

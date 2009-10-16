@@ -229,7 +229,8 @@ namespace IronRuby.StandardLibrary.Yaml {
                         throw new ConstructorException("Unknown regular expression option: '" + c + "'");
                 }
             }            
-            return new RubyRegex(match.Groups["expr"].Value, options);            
+            // TODO: encoding (ignore kcode on 1.9, string enc?):
+            return new RubyRegex(MutableString.CreateMutable(match.Groups["expr"].Value, RubyEncoding.UTF8), options);            
         }
 
         private static object ConstructPrivateObject(RubyConstructor/*!*/ ctor, string className, Node node) {

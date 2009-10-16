@@ -437,8 +437,8 @@ namespace IronRuby.Runtime.Calls {
             Type typeTwo = candidateTwo.Type;
             Type actualType = arg.GetLimitType();
 
-            // if nil is passed as a block argument prefer BlockParam over missing block:
             if (actualType == typeof(DynamicNull)) {
+                // if nil is passed as a block argument prefers BlockParam over a missing block:
                 if (typeOne == typeof(BlockParam) && typeTwo == typeof(MissingBlockParam)) {
                     Debug.Assert(!candidateOne.ProhibitNull);
                     return Candidate.One;
@@ -448,31 +448,34 @@ namespace IronRuby.Runtime.Calls {
                     Debug.Assert(!candidateTwo.ProhibitNull);
                     return Candidate.Two;
                 }
-            } else if (actualType == typeof(MissingBlockParam)) {
-                if (typeOne == typeof(BlockParam) && typeTwo == typeof(MissingBlockParam)) {
-                    return Candidate.Two;
-                }
-
-                if (typeOne == typeof(MissingBlockParam) && typeTwo == typeof(BlockParam)) {
-                    return Candidate.One;
-                }
-            } else if (actualType == typeof(BlockParam)) {
-                if (typeOne == typeof(BlockParam) && typeTwo == typeof(MissingBlockParam)) {
-                    return Candidate.One;
-                }
-
-                if (typeOne == typeof(MissingBlockParam) && typeTwo == typeof(BlockParam)) {
-                    return Candidate.Two;
-                }
-
-                if (typeOne == typeof(BlockParam) && typeTwo == typeof(BlockParam)) {
-                    if (candidateOne.ProhibitNull) {
+            } else {
+                if (typeOne == actualType) {
+                    if (typeTwo == actualType) {
+                        // prefer non-nullable reference type over nullable:
+                        if (!actualType.IsValueType) {
+                            if (candidateOne.ProhibitNull) {
+                                return Candidate.One;
+                            } else if (candidateTwo.ProhibitNull) {
+                                return Candidate.Two;
+                            }
+                        }
+                    } else {
                         return Candidate.One;
-                    } else if (candidateTwo.ProhibitNull) {
-                        return Candidate.Two;
                     }
+                } else if (typeTwo == actualType) {
+                    return Candidate.Two;
                 }
             }
+
+            // prefer integer type over enum:
+            if (typeOne.IsEnum && Enum.GetUnderlyingType(typeOne) == typeTwo) {
+                return Candidate.Two;
+            }
+
+            if (typeTwo.IsEnum && Enum.GetUnderlyingType(typeTwo) == typeOne) {
+                return Candidate.One;
+            }
+
             return base.SelectBestConversionFor(arg, candidateOne, candidateTwo, level);
         }
 

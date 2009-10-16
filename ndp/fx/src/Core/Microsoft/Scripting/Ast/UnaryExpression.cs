@@ -678,11 +678,10 @@ namespace System.Linq.Expressions {
         public static UnaryExpression Unbox(Expression expression, Type type) {
             RequiresCanRead(expression, "expression");
             ContractUtils.RequiresNotNull(type, "type");
-            ContractUtils.Requires(
-                expression.Type.IsInterface || expression.Type == typeof(object),
-                "expression", Strings.InvalidUnboxType
-            );
-            ContractUtils.Requires(type.IsValueType, "type", Strings.InvalidUnboxType);
+            if (!expression.Type.IsInterface && expression.Type != typeof(object)) {
+                throw Error.InvalidUnboxType();
+            }
+            if (!type.IsValueType) throw Error.InvalidUnboxType();
             TypeUtils.ValidateType(type);
             return new UnaryExpression(ExpressionType.Unbox, expression, type, null);
         }
@@ -788,7 +787,7 @@ namespace System.Linq.Expressions {
         ///<paramref name="expression" /> is null.</exception>
         public static UnaryExpression Quote(Expression expression) {
             RequiresCanRead(expression, "expression");
-            ContractUtils.Requires(expression is LambdaExpression, Strings.QuotedExpressionMustBeLambda);
+            if (!(expression is LambdaExpression)) throw Error.QuotedExpressionMustBeLambda();
             return new UnaryExpression(ExpressionType.Quote, expression, expression.GetType(), null);
         }
 
@@ -830,7 +829,7 @@ namespace System.Linq.Expressions {
 
             if (value != null) {
                 RequiresCanRead(value, "value");
-                ContractUtils.Requires(!value.Type.IsValueType, "value", Strings.ArgumentMustNotHaveValueType);
+                if (value.Type.IsValueType) throw Error.ArgumentMustNotHaveValueType();
             }
             return new UnaryExpression(ExpressionType.Throw, value, type, null);
         }

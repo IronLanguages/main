@@ -287,6 +287,10 @@ namespace IronPythonTest {
 
             Flag = 198;
         }
+        
+        public Single P01 {
+            get; set;
+        }
     }
 
     public class DispatchBase {
@@ -1193,6 +1197,12 @@ namespace IronPythonTest {
 
         public PythonType M34<T>(IList<T> x, IList<T> y) {
             return DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
+    }
+
+    public class WithCompare {
+        public static bool Compare(object x, object y) {
+            return true;
         }
     }
 }

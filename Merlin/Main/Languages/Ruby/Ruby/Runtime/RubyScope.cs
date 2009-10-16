@@ -635,24 +635,18 @@ namespace IronRuby.Runtime {
         internal MutableString GetCurrentMatchGroup(int index) {
             Debug.Assert(index >= 0);
 
-            // we don't need to check index range, Groups indexer returns an unsuccessful group if out of range:
             var match = _currentMatch;
-            Group group;
-            if (match != null && (group = match.Groups[index]).Success) {
-                return MutableString.Create(group.Value, match.Encoding).TaintBy(match.OriginalString);
-            }
-
-            return null;
+            return (match != null) ? match.GetGroupValue(index) : null;
         }
 
         internal MutableString GetCurrentMatchLastGroup() {
             var match = _currentMatch;
             if (match != null) {
                 // TODO: cache the last successful group index?
-                for (int i = match.Groups.Count - 1; i >= 0; i--) {
-                    Group group = match.Groups[i];
-                    if (group.Success) {
-                        return MutableString.Create(group.Value, match.Encoding).TaintBy(match.OriginalString);
+                for (int i = match.GroupCount - 1; i >= 0; i--) {
+                    MutableString result = match.GetGroupValue(i);
+                    if (result != null) {
+                        return result;
                     }
                 }
             }

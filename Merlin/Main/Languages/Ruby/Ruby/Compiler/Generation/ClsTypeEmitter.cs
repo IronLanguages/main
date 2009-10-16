@@ -525,14 +525,11 @@ namespace IronRuby.Compiler.Generation {
                     mi.IsVirtual ?
                         (mi.Attributes | MethodAttributes.NewSlot) :
                         ((mi.Attributes & ~MethodAttributes.MemberAccessMask) | MethodAttributes.Public),
-                    mi.ReturnType,
-                    ReflectionUtils.GetParameterTypes(parameters)
+                    mi.CallingConvention
                 );
-                CopyGenericMethodAttributes(mi, impl);
+                ReflectionUtils.CopyMethodSignature(mi, impl, false);
                 il = CreateILGen(impl.GetILGenerator());
             }
-
-            //CompilerHelpers.GetArgumentNames(parameters));  TODO: Set names
 
             EmitVirtualSiteCall(il, mi, name);
 
@@ -569,30 +566,13 @@ namespace IronRuby.Compiler.Generation {
         /// super(type, obj) calls.
         /// </summary>
         private MethodBuilder CreateSuperCallHelper(MethodInfo mi) {
-            ParameterInfo[] parms = mi.GetParameters();
-            Type[] types = ReflectionUtils.GetParameterTypes(parms);
-            Type miType = mi.DeclaringType;
-            for (int i = 0; i < types.Length; i++) {
-                if (types[i] == miType) {
-                    types[i] = _tb;
-                }
-            }
-
             MethodAttributes attrs = MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.SpecialName;
             if (mi.IsStatic) {
                 attrs |= MethodAttributes.Static;
             }
 
-            MethodBuilder method = _tb.DefineMethod(
-                BaseMethodPrefix + mi.Name,
-                attrs,
-                mi.ReturnType, types
-            );
-            CopyGenericMethodAttributes(mi, method);
-
-            for (int i = 0; i < types.Length; i++) {
-                method.DefineParameter(i + 1, ParameterAttributes.None, parms[i].Name);
-            }
+            MethodBuilder method = _tb.DefineMethod(BaseMethodPrefix + mi.Name, attrs, mi.CallingConvention);
+            ReflectionUtils.CopyMethodSignature(mi, method, true);
 
             EmitBaseMethodDispatch(mi, CreateILGen(method.GetILGenerator()));
             return method;
@@ -658,49 +638,8 @@ namespace IronRuby.Compiler.Generation {
         }
 
         protected ILGen DefineMethodOverride(MethodAttributes extra, MethodInfo decl, out MethodBuilder impl) {
-            MethodAttributes finalAttrs = (decl.Attributes & ~MethodAttributesToEraseInOveride) | extra;
-            if (!decl.DeclaringType.IsInterface) {
-                finalAttrs &= ~MethodAttributes.NewSlot;
-            }
-
-            if ((extra & MethodAttributes.MemberAccessMask) != 0) {
-                // remove existing member access, add new member access
-                finalAttrs &= ~MethodAttributes.MemberAccessMask;
-                finalAttrs |= extra;
-            }
-            Type[] signature = ReflectionUtils.GetParameterTypes(decl.GetParameters());
-            impl = _tb.DefineMethod(decl.Name, finalAttrs, decl.ReturnType, signature);
-            CopyGenericMethodAttributes(decl, impl);
+            impl = ReflectionUtils.DefineMethodOverride(_tb, extra, decl);
             return CreateILGen(impl.GetILGenerator());
-        }
-
-        private static void CopyGenericMethodAttributes(MethodInfo from, MethodBuilder to) {
-            if (from.IsGenericMethodDefinition) {
-                Type[] args = from.GetGenericArguments();
-                string[] names = new string[args.Length];
-                for (int i = 0; i < args.Length; i++) {
-                    names[i] = args[i].Name;
-                }
-                var builders = to.DefineGenericParameters(names);
-                for (int i = 0; i < args.Length; i++) {
-                    // Copy template parameter attributes
-                    builders[i].SetGenericParameterAttributes(args[i].GenericParameterAttributes);
-
-                    // Copy template parameter constraints
-                    Type[] constraints = args[i].GetGenericParameterConstraints();
-                    List<Type> interfaces = new List<Type>(constraints.Length);
-                    foreach (Type constraint in constraints) {
-                        if (constraint.IsInterface) {
-                            interfaces.Add(constraint);
-                        } else {
-                            builders[i].SetBaseTypeConstraint(constraint);
-                        }
-                    }
-                    if (interfaces.Count > 0) {
-                        builders[i].SetInterfaceConstraints(interfaces.ToArray());
-                    }
-                }
-            }
         }
 
         // TODO: use in Python's OverrideConstructor:

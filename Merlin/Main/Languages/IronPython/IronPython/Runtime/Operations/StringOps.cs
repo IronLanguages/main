@@ -306,8 +306,8 @@ namespace IronPython.Runtime.Operations {
             return s.IndexOf(item) != -1;
         }
 
-        public static string __format__(string self, string formatSpec) {
-            return self;
+        public static string __format__(CodeContext/*!*/ context, string self, string formatSpec) {
+            return ObjectOps.__format__(context, self, formatSpec);
         }
 
         public static int __len__(string s) {
@@ -1132,7 +1132,7 @@ namespace IronPython.Runtime.Operations {
             return ret.ToString();
         }
 
-        public static string/*!*/ format(CodeContext/*!*/ context, string format_string, params object[] args) {
+        public static string/*!*/ format(CodeContext/*!*/ context, string format_string, [NotNull]params object[] args) {
             return NewStringFormatter.FormatString(
                 PythonContext.GetContext(context),
                 format_string,

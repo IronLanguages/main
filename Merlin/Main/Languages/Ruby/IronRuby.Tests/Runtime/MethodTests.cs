@@ -332,7 +332,7 @@ System::Decimal.+(2) rescue puts 'error'
 p System::Decimal.new(1).+(1) rescue p $!
 ", @"
 error
-2
+2 (Decimal)
 ");
         }
 

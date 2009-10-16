@@ -1189,7 +1189,7 @@ namespace IronPython.Modules {
             private Exception CannotPickle(CodeContext/*!*/ context, object obj, string format, params object[] args) {
                 StringBuilder msgBuilder = new StringBuilder();
                 msgBuilder.Append("Can't pickle ");
-                msgBuilder.Append(obj);
+                msgBuilder.Append(PythonOps.ToString(context, obj));
                 if (format != null) {
                     msgBuilder.Append(": ");
                     msgBuilder.Append(String.Format(format, args));

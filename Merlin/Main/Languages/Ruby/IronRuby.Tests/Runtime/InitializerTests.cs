@@ -13,6 +13,7 @@
  *
  * ***************************************************************************/
 
+using IronRuby.Runtime;
 namespace IronRuby.Tests {
     public partial class Tests {
 
@@ -173,6 +174,24 @@ puts ""C: #{z}""
             }, @"
 B: 0
 C: foo
+");
+        }
+
+        public void Scenario_RubyInitializers6() {
+            TestOutput(@"
+class C
+  undef :initialize rescue p $!
+
+  define_method(:initialize) { |*args| p args }
+  new(1,2,3)
+
+  def initialize; puts 'init'; end
+  new
+end
+", @"
+#<TypeError: Cannot undefine `initialize' method>
+[1, 2, 3]
+init
 ");
         }
 

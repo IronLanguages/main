@@ -359,8 +359,8 @@ namespace System.Linq.Expressions {
             // Accessor parameters cannot be ByRef.
 
             ContractUtils.RequiresNotNull(property, "property");
-            ContractUtils.Requires(!property.PropertyType.IsByRef, "property", Strings.PropertyCannotHaveRefType);
-            ContractUtils.Requires(property.PropertyType != typeof(void), "property", Strings.PropertyTypeCannotBeVoid);
+            if (property.PropertyType.IsByRef) throw Error.PropertyCannotHaveRefType();
+            if (property.PropertyType == typeof(void)) throw Error.PropertyTypeCannotBeVoid();
 
             ParameterInfo[] getParameters = null;
             MethodInfo getter = property.GetGetMethod(true);
@@ -372,20 +372,20 @@ namespace System.Linq.Expressions {
             MethodInfo setter = property.GetSetMethod(true);
             if (setter != null) {
                 ParameterInfo[] setParameters = setter.GetParametersCached();
-                ContractUtils.Requires(setParameters.Length > 0, "property", Strings.SetterHasNoParams);
+                if (setParameters.Length == 0) throw Error.SetterHasNoParams();
 
                 // valueType is the type of the value passed to the setter (last parameter)
                 Type valueType = setParameters[setParameters.Length - 1].ParameterType;
-                ContractUtils.Requires(!valueType.IsByRef, "property", Strings.PropertyCannotHaveRefType);
-                ContractUtils.Requires(setter.ReturnType == typeof(void), "property", Strings.SetterMustBeVoid);
-                ContractUtils.Requires(property.PropertyType == valueType, "property", Strings.PropertyTyepMustMatchSetter);
+                if (valueType.IsByRef) throw Error.PropertyCannotHaveRefType();
+                if (setter.ReturnType != typeof(void)) throw Error.SetterMustBeVoid();
+                if (property.PropertyType != valueType) throw Error.PropertyTyepMustMatchSetter();
 
                 if (getter != null) {
-                    ContractUtils.Requires(!(getter.IsStatic ^ setter.IsStatic), "property", Strings.BothAccessorsMustBeStatic);
-                    ContractUtils.Requires(getParameters.Length == setParameters.Length - 1, "property", Strings.IndexesOfSetGetMustMatch);
+                    if (getter.IsStatic ^ setter.IsStatic) throw Error.BothAccessorsMustBeStatic();
+                    if (getParameters.Length != setParameters.Length - 1) throw Error.IndexesOfSetGetMustMatch();
 
                     for (int i = 0; i < getParameters.Length; i++) {
-                        ContractUtils.Requires(getParameters[i].ParameterType == setParameters[i].ParameterType, "property", Strings.IndexesOfSetGetMustMatch);
+                        if (getParameters[i].ParameterType != setParameters[i].ParameterType) throw Error.IndexesOfSetGetMustMatch();
                     }
                 } else {
                     ValidateAccessor(instance, setter, setParameters.RemoveLast(), ref argList);
@@ -401,11 +401,11 @@ namespace System.Linq.Expressions {
             ContractUtils.RequiresNotNull(arguments, "arguments");
 
             ValidateMethodInfo(method);
-            ContractUtils.Requires((method.CallingConvention & CallingConventions.VarArgs) == 0, "method", Strings.AccessorsCannotHaveVarArgs);
+            if ((method.CallingConvention & CallingConventions.VarArgs) != 0) throw Error.AccessorsCannotHaveVarArgs();
             if (method.IsStatic) {
-                ContractUtils.Requires(instance == null, "instance", Strings.OnlyStaticMethodsHaveNullInstance);
+                if (instance != null) throw Error.OnlyStaticMethodsHaveNullInstance();
             } else {
-                ContractUtils.Requires(instance != null, "method", Strings.OnlyStaticMethodsHaveNullInstance);
+                if (instance == null) throw Error.OnlyStaticMethodsHaveNullInstance();
                 RequiresCanRead(instance, "instance");
                 ValidateCallInstanceType(instance.Type, method);
             }
@@ -425,7 +425,7 @@ namespace System.Linq.Expressions {
                     RequiresCanRead(arg, "arguments");
 
                     Type pType = pi.ParameterType;
-                    ContractUtils.Requires(!pType.IsByRef, "indexes", Strings.AccessorsCannotHaveByRefArgs);
+                    if (pType.IsByRef) throw Error.AccessorsCannotHaveByRefArgs();
                     TypeUtils.ValidateType(pType);
 
                     if (!TypeUtils.AreReferenceAssignable(pType, arg.Type)) {

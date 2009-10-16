@@ -194,9 +194,14 @@ namespace IronRuby.Runtime {
             return copy;
         }
 
-        internal static int IndexOf(byte[]/*!*/ array, byte[]/*!*/ bytes, int start, int count) {
-            // TODO:
-            for (int i = start; i < start + count - bytes.Length + 1; i++) {
+        /// <summary>
+        /// Implements the same behavior as String.IndexOf on ASCII strings.
+        /// </summary>
+        internal static int IndexOf(byte[]/*!*/ array, int arrayLength, byte[]/*!*/ bytes, int start, int count) {
+            ContractUtils.RequiresArrayRange(arrayLength, start, count, "start", "count");
+
+            int finish = start + count - bytes.Length;
+            for (int i = start; i <= finish; i++) {
                 bool match = true;
                 for (int j = 0; j < bytes.Length; j++) {
                     if (bytes[j] != array[i + j]) {
@@ -212,14 +217,21 @@ namespace IronRuby.Runtime {
             return -1;
         }
 
-        internal static int LastIndexOf(byte[]/*!*/ array, byte[]/*!*/ bytes, int start, int count) {
-            // TODO:
-            int finish = start - count < 0 ? bytes.Length - 1 : start - count + bytes.Length;
-            //for (int i = start; i < start + count - bytes.Length + 1; i++) {
-            for (int i = start; i >= finish; --i) {
+        /// <summary>
+        /// Implements the same behavior as String.LastIndexOf on ASCII strings.
+        /// </summary>
+        internal static int LastIndexOf(byte[]/*!*/ array, int arrayLength, byte[]/*!*/ value, int start, int count) {
+            int finish = start - count + 1;
+            ContractUtils.RequiresArrayRange(arrayLength, finish, count, "start", "count");
+
+            if (value.Length == 0) {
+                return start;
+            }
+
+            for (int i = start - value.Length + 1; i >= finish; i--) {
                 bool match = true;
-                for (int j = 0; j < bytes.Length; j++) {
-                    if (bytes[j] != array[i + j]) {
+                for (int j = 0; j < value.Length; j++) {
+                    if (value[j] != array[i + j]) {
                         match = false;
                         break;
                     }

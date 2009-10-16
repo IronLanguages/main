@@ -125,8 +125,10 @@ namespace Chiron {
             IList<Uri> assemblies = new List<Uri>();
             assemblies.Add(GetAssemblyUri("Microsoft.Scripting.Silverlight.dll"));
             if(!ooxDebug) {
+#if CLR2                
                 assemblies.Add(GetAssemblyUri("Microsoft.Scripting.ExtensionAttribute.dll"));
                 assemblies.Add(GetAssemblyUri("Microsoft.Scripting.Core.dll"));
+#endif
                 assemblies.Add(GetAssemblyUri("Microsoft.Scripting.dll"));
                 assemblies.Add(GetAssemblyUri("Microsoft.Dynamic.dll"));
                 foreach (LanguageInfo lang in langs) {

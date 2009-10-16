@@ -282,6 +282,12 @@ namespace IronRuby.Runtime.Conversions {
                         return Candidate.Two;
                     }
                     return Candidate.Equivalent;
+
+                case TypeCode.Char:
+                    if (t2 == typeof(string)) {
+                        return Candidate.Two;
+                    }
+                    return Candidate.Equivalent;
             }
             return Candidate.Equivalent;
         }

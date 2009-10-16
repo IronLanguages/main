@@ -210,7 +210,7 @@ namespace IronPython.Runtime.Types {
                 return PythonOps.CallWithContext(context, value);
             }
 
-            throw PythonOps.AttributeErrorForMissingAttribute(_class.Name, "__len__");
+            throw PythonOps.AttributeErrorForOldInstanceMissingAttribute(_class.Name, "__len__");
         }
 
         public object __pos__(CodeContext context) {
@@ -220,7 +220,7 @@ namespace IronPython.Runtime.Types {
                 return PythonOps.CallWithContext(context, value);
             }
 
-            throw PythonOps.AttributeErrorForMissingAttribute(_class.Name, "__pos__");
+            throw PythonOps.AttributeErrorForOldInstanceMissingAttribute(_class.Name, "__pos__");
         }
 
         [SpecialName]
@@ -241,7 +241,7 @@ namespace IronPython.Runtime.Types {
                 return PythonCalls.Call(context, value, item);
             }
 
-            throw PythonOps.AttributeErrorForMissingAttribute(_class.Name, "__delitem__");
+            throw PythonOps.AttributeErrorForOldInstanceMissingAttribute(_class.Name, "__delitem__");
         }
 
         public object __getslice__(CodeContext context, int i, int j) {
@@ -296,7 +296,7 @@ namespace IronPython.Runtime.Types {
                 return PythonOps.CallWithContext(context, value);
             }
 
-            throw PythonOps.AttributeErrorForMissingAttribute(_class.Name, "__neg__");
+            throw PythonOps.AttributeErrorForOldInstanceMissingAttribute(_class.Name, "__neg__");
         }
 
         public object __abs__(CodeContext context) {
@@ -306,7 +306,7 @@ namespace IronPython.Runtime.Types {
                 return PythonOps.CallWithContext(context, value);
             }
 
-            throw PythonOps.AttributeErrorForMissingAttribute(_class.Name, "__abs__");
+            throw PythonOps.AttributeErrorForOldInstanceMissingAttribute(_class.Name, "__abs__");
         }
 
         public object __invert__(CodeContext context) {
@@ -316,7 +316,7 @@ namespace IronPython.Runtime.Types {
                 return PythonOps.CallWithContext(context, value);
             }
 
-            throw PythonOps.AttributeErrorForMissingAttribute(_class.Name, "__invert__");
+            throw PythonOps.AttributeErrorForOldInstanceMissingAttribute(_class.Name, "__invert__");
         }
 
         public object __contains__(CodeContext context, object index) {
@@ -412,7 +412,7 @@ namespace IronPython.Runtime.Types {
                 return PythonOps.CallWithContext(context, value);
             }
 
-            throw PythonOps.AttributeErrorForMissingAttribute(_class.Name, "__hex__");
+            throw PythonOps.AttributeErrorForOldInstanceMissingAttribute(_class.Name, "__hex__");
         }
 
         public object __oct__(CodeContext context) {
@@ -421,7 +421,7 @@ namespace IronPython.Runtime.Types {
                 return PythonOps.CallWithContext(context, value);
             }
 
-            throw PythonOps.AttributeErrorForMissingAttribute(_class.Name, "__oct__");
+            throw PythonOps.AttributeErrorForOldInstanceMissingAttribute(_class.Name, "__oct__");
         }
 
         public object __int__(CodeContext context) {

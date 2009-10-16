@@ -25,6 +25,7 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Utils;
 using IronRuby.Builtins;
+using IronRuby.Runtime.Calls;
 using IronRuby.Runtime;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
@@ -178,16 +179,15 @@ namespace IronRuby.Compiler.Ast {
         }
 
         internal override MSA.Expression TransformDefinedCondition(AstGenerator/*!*/ gen) {
-            if (_target != null) {
-                return gen.TryCatchAny(
-                    Methods.IsDefinedMethod.OpCall(
-                        AstFactory.Box(_target.TransformRead(gen)), gen.CurrentScopeVariable, AstUtils.Constant(_methodName)
-                    ),
-                    AstFactory.False
-                );
-            } else {
-                return Methods.IsDefinedMethod.OpCall(gen.CurrentSelfVariable, gen.CurrentScopeVariable, AstUtils.Constant(_methodName));
-            }
+            // MRI doesn't evaluate the arguments 
+            MSA.Expression result = Ast.Dynamic(
+                RubyCallAction.Make(gen.Context, _methodName, RubyCallSignature.IsDefined(_target == null)), 
+                typeof(bool),
+                gen.CurrentScopeVariable,
+                (_target != null) ? AstFactory.Box(_target.TransformRead(gen)) : gen.CurrentSelfVariable
+            );
+
+            return (_target != null) ? gen.TryCatchAny(result, AstFactory.False) : result;
         }
 
         internal override string/*!*/ GetNodeName(AstGenerator/*!*/ gen) {

@@ -134,7 +134,7 @@ namespace System.Linq.Expressions {
         /// <returns>The created <see cref="LoopExpression"/>.</returns>
         public static LoopExpression Loop(Expression body, LabelTarget @break, LabelTarget @continue) {
             RequiresCanRead(body, "body");
-            ContractUtils.Requires(@continue == null || @continue.Type == typeof(void), "continue", Strings.LabelTypeMustBeVoid);
+            if (@continue != null && @continue.Type != typeof(void)) throw Error.LabelTypeMustBeVoid();
             return new LoopExpression(body, @break, @continue);
         }
     }

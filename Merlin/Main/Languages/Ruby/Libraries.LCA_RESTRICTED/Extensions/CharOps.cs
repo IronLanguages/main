@@ -57,5 +57,10 @@ namespace IronRuby.Builtins {
 
             return str.GetChar(0);
         }
+
+        [RubyMethod("inspect")]
+        public static MutableString/*!*/ Inspect(char self) {
+            return MutableString.CreateMutable("'" + self + "' (Char)", RubyEncoding.UTF8);
+        }
     }
 }
