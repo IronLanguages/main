@@ -1,2 +1,4 @@
 fails:Dir.chdir calls #to_str on the argument if it's not a String
 fails:Dir.chdir defaults to the home directory when given a block but no argument
+unstable:Dir.chdir changes to the specified directory
+unstable:Dir.chdir changes to the specified directory for the duration of the block

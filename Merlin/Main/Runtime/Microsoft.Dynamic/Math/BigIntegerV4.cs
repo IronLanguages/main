@@ -128,6 +128,10 @@ namespace Microsoft.Scripting.Math {
             return (float)self._value;
         }
 
+        public static explicit operator decimal(BigInteger self) {
+            return (decimal)self._value;
+        }
+
         public static explicit operator byte(BigInteger self) {
             return (byte)self._value;
         }
@@ -162,14 +166,6 @@ namespace Microsoft.Scripting.Math {
         [CLSCompliant(false)]
         public static explicit operator UInt64(BigInteger self) {
             return (UInt64)self._value;
-        }
-
-        public static explicit operator float(BigInteger self) {
-            return (float)self._value;
-        }
-
-        public static explicit operator decimal(BigInteger self) {
-            return (decimal)self._value;
         }
 
         public BigInteger(BigInteger copy) {

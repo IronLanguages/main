@@ -33,8 +33,8 @@ describe "A .NET numeric", :shared => true do
   end
 
   it "raises a RangeError if out of range for Bignum" do
-    lambda { @class.induced_from(@minvalue -1 + @bignum)}.should raise_error(RangeError)
-    lambda { @class.induced_from(@maxvalue + 1 + @bignum)}.should raise_error(RangeError)
+    lambda { @class.induced_from(2**512)}.should raise_error(RangeError)
+    lambda { @class.induced_from(-2**512)}.should raise_error(RangeError)
   end
 end
 

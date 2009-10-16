@@ -17,10 +17,16 @@ end
 describe "System::Decimal" do
   before(:each) do
     @size = NumericHelper.size_of_decimal
-  end
+  end 
   
   it_behaves_like "A .NET numeric", System::Decimal
-  it_behaves_like "A .NET numeric, induceable from Fixnum", System::Decimal
   it_behaves_like :numeric_size, System::Decimal
   it_behaves_like :numeric_conversion, System::Decimal
+  
+  it "can be induced via an int" do
+    a = @class.induced_from(Fixnum.MinValue)
+    b = @class.induced_from(Fixnum.MaxValue)
+    a.should be_kind_of System::Decimal
+    b.should be_kind_of System::Decimal
+  end
 end
