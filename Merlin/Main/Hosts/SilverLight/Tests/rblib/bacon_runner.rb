@@ -11,8 +11,9 @@ if SILVERLIGHT
   include System::Windows
   include System::Windows::Controls
 
-  engine = DynamicApplication.current.engine.runtime.get_engine("ruby")
-  repl = Repl.show(engine, engine.create_scope)
+  dyneng = DynamicApplication.current.engine
+  engine = dyneng.runtime.get_engine("ruby")
+  repl = Repl.show(engine, dyneng.create_scope)
 
   $stdout = repl.output_buffer
   $stderr = repl.output_buffer

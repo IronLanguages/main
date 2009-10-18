@@ -227,7 +227,9 @@ namespace Microsoft.Scripting.Silverlight {
             } else {
                 sri = Application.GetResourceStream((StreamResourceInfo) xap, relativeUri);
             }
-            return (sri != null) ? sri.Stream : null;
+            return sri == null ? 
+                DynamicApplication.GetManifestResourceStream(relativeUri.ToString()) :
+                sri.Stream;
         }
 
         #region Depricated Methods

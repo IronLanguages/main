@@ -19,10 +19,11 @@
     require 'rblib/bacon_runner'
     BaconRunner.run(
       :unit => %W(
-        console
+        browser_virtual_filesystem
         dynamic_application
         extension_types
-        package
+        ruby_extensions
+        repl
         window
       ),
       :integration => [

@@ -17,24 +17,24 @@ if(!DLR.path) {
 }
 
 if (typeof HTMLElement != "undefined" && !HTMLElement.prototype.insertAdjacentElement) {
-    HTMLElement.prototype.insertAdjacentElement = function(where, parsedNode) {
-        switch (where) {
-            case 'beforeBegin':
-                this.parentNode.insertBefore(parsedNode, this)
-                break;
-            case 'afterBegin':
-                this.insertBefore(parsedNode, this.firstChild);
-                break;
-            case 'beforeEnd':
-                this.appendChild(parsedNode);
-                break;
-            case 'afterEnd':
-                if (this.nextSibling)
-                    this.parentNode.insertBefore(parsedNode, this.nextSibling);
-                else this.parentNode.appendChild(parsedNode);
-                break;
-        }
+  HTMLElement.prototype.insertAdjacentElement = function(where, parsedNode) {
+    switch (where) {
+      case 'beforeBegin':
+        this.parentNode.insertBefore(parsedNode, this)
+        break;
+      case 'afterBegin':
+        this.insertBefore(parsedNode, this.firstChild);
+        break;
+      case 'beforeEnd':
+        this.appendChild(parsedNode);
+        break;
+      case 'afterEnd':
+        if (this.nextSibling)
+          this.parentNode.insertBefore(parsedNode, this.nextSibling);
+        else this.parentNode.appendChild(parsedNode);
+        break;
     }
+  }
 }
 
 if(!DLR.__loaded) {
@@ -50,6 +50,14 @@ if(!DLR.__loaded) {
     return _temp
   }
 
+  /*
+   * DLR.parseSettings(defaults, settings)
+   *
+   * @param defaults: an object representing the default settings.
+   * @param settings: overrides any default settings.
+   * @returns An object ready to be given to DLR.__createSilverlightObject:
+   *          the DLR-specific options are moved into initParams.
+   */
   DLR.parseSettings = function(defaults, settings) {
     // the the full settings dictionary
     var raw_settings = Object.merge(defaults, settings);
@@ -76,9 +84,16 @@ if(!DLR.__loaded) {
     return raw_settings;
   }
 
+  /*
+   * DLR.__startup()
+   *
+   * Creates a Silverlight control (using the current DLR.settings) if the DLR
+   * hasn't loaded yet, autoAdd is true, and Silverlight is installed.
+   * Also adds a silverlight control for each XAML script-tag
+   */
   DLR.__startup = function() {
     if(!DLR.__loaded && DLR.autoAdd && Silverlight.isInstalled(null)) {
-      DLR.createSilverlightObject(DLR.settings);
+      DLR.__createSilverlightObject(null, DLR.settings);
       DLR.__loaded = true;
     }
 
@@ -86,10 +101,10 @@ if(!DLR.__loaded) {
     for(var i = 0; i < elements.length; i++) {
       var element = elements[i];
       if(element.type == 'application/xml+xaml' && !element.defer) {
-        settings = Object.merge(DLR.settings, {
+        settings = {
           width: element.getAttribute('width'),
           height: element.getAttribute('height')
-        });
+        };
         if(element.id == '')
           element.id = DLR.__defaultXAMLId + DLR.__objectCount;
         settings.xamlid = element.id;
@@ -104,17 +119,44 @@ if(!DLR.__loaded) {
 
   DLR.__objectCount = 0
 
+  /*
+   * DLR.createSilverlightObject(settings)
+   *
+   * @param settings: pre-parsed settings to be passed as 2nd argument to 
+   *                  DLR.parseSettings
+   *
+   * Parses settings and passes them to DLR.__createSilverlightObject.
+   */
   DLR.createSilverlightObject = function(settings) {
     settings = typeof(settings) == 'undefined' ? {} : settings;
+
     var xamlid = settings.xamlid;
-    settings = DLR.parseSettings(DLR.defaultSettings(), settings)
+    DLR.__createSilverlightObject(
+      xamlid,
+      DLR.parseSettings(DLR.defaultSettings(), settings)
+    );
+  }
+
+  /*
+   * DLR.__createSilverlightObject(settings)
+   *
+   * @param settings: Already-parsed settings to create the Silverlight control
+   *                  with.
+   *
+   * If settings.xamlid points to a valid DOM element, the Silverlight control
+   * is added as a sibling afer. Otherwise it's appended to the body.
+   */
+  DLR.__createSilverlightObject = function(xamlid, settings) {
+    settings = typeof(settings) == 'undefined' ? {} : settings;
 
     var spantag = document.createElement("span");
     var sibling = null;
+
     if(xamlid)
       sibling = document.getElementById(xamlid);
     if(sibling && !sibling.parentElement && sibling.parentNode)
-      sibling.parentElement = sibling.parentNode
+      sibling.parentElement = sibling.parentNode;
+    
     if(!sibling || !sibling.parentElement || sibling.parentElement.tagName == "HEAD")
       document.body.appendChild(spantag);
     else
@@ -140,8 +182,8 @@ if(!DLR.__loaded) {
   }
 
   DLR.settings = DLR.parseSettings(
-      DLR.defaultSettings(),
-      !DLR.settings ? {} : DLR.settings
+    DLR.defaultSettings(),
+    !DLR.settings ? {} : DLR.settings
   );
 
   if(window.addEventListener) {

@@ -164,7 +164,7 @@ namespace Microsoft.Scripting.Silverlight {
             var block = HtmlPage.Document.CreateElement(tagName);
             block.SetAttribute("type", mimeType);
             
-            string scriptOrStyle = GetResource(filename);
+            string scriptOrStyle = DynamicApplication.GetResource(filename);
             
             var ieScriptOrStyleSet = false;
 
@@ -187,14 +187,6 @@ namespace Microsoft.Scripting.Silverlight {
 
         private HtmlElement HtmlHead() {
             return HtmlPage.Document.GetElementsByTagName("head")[0] as HtmlElement;
-        }
-
-        private string GetResource(string filename) {
-            var assembly = Assembly.GetExecutingAssembly();
-            var textStreamReader = new StreamReader(assembly.GetManifestResourceStream("Microsoft.Scripting.Silverlight." + filename));
-            var result = textStreamReader.ReadToEnd();
-            textStreamReader.Close();
-            return result;
         }
 
         private string WindowHtml() {

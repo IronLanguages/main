@@ -81,7 +81,7 @@ namespace Microsoft.Scripting.Silverlight {
         /// Figure out the best baseUri to use; the entryPoint's path if it's
         /// currently running, and the HTML page's path otherwise. 
         /// </summary>
-        internal static Uri BaseUri {
+        public static Uri BaseUri {
             get {
                 if (_Current.Engine != null && _Current.Engine.RunningEntryPoint) {
                     return new Uri(
@@ -98,9 +98,7 @@ namespace Microsoft.Scripting.Silverlight {
         /// background thread
         /// </summary>
         internal static Uri _HtmlPageUri;
-
         #endregion
-
         #region Depricated Properties
         [Obsolete("Use DynamicApplication.Current.Engine.Runtime instead")]
         public ScriptRuntime Runtime { get { return Engine.Runtime; } }
@@ -129,7 +127,7 @@ namespace Microsoft.Scripting.Silverlight {
         private static int _UIThreadId;
         #endregion
 
-        #region Public API
+        #region LoadComponent, LoadRootVisual
         // these are instance methods so you can do Application.Current.TheMethod(...)
 
         /// <summary>
@@ -221,7 +219,8 @@ namespace Microsoft.Scripting.Silverlight {
                 return component;
             }
         }
-
+        #endregion
+        #region MakeUri
         /// <summary>
         /// See MakeUri(Uri, Uri)
         /// </summary>
@@ -244,14 +243,15 @@ namespace Microsoft.Scripting.Silverlight {
         }
 
         /// <summary>
-        /// makes a Uri out of a baseUri and a relativeUri.
+        /// Makes a Uri out of a baseUri and a relativeUri.
+        /// 
         /// If the relativeUri is actually absolute, just return it.
-        /// Otherwise, take the baseUri and relativeUri and try to combine 
+        /// Otherwise, take the baseUri and relativeUri and try to combine
         /// them. When the baseUri is null, make the baseUri the entry-point's
-        /// directory and try checking if the combined Uri exists in the XAP 
-        /// file; if so return it. Otherwise, make the baseUri 
+        /// directory and try checking if the combined Uri exists in the XAP
+        /// file; if so return it. Otherwise, make the baseUri
         /// DynamicApplication.BaseUri and return the combined Uri. The Uris
-        /// are "combined", by taking everything but the filename of the 
+        /// are "combined", by taking everything but the filename of the
         /// baseUri and tacking the relativeUri onto the end.
         /// </summary>
         public static Uri MakeUri(Uri baseUri, Uri relativeUri) {
@@ -325,6 +325,7 @@ namespace Microsoft.Scripting.Silverlight {
                     Engine = new DynamicEngine();
                     if (Settings.ConsoleEnabled)
                         Repl.Show();
+                    LanguageTypeExtensions.Load(Engine.LangConfig);
                     ScriptTags.Run(Engine);
                     Engine.Run(Settings.EntryPoint);
                 });
@@ -353,6 +354,25 @@ namespace Microsoft.Scripting.Silverlight {
             args.Handled = true;
             ErrorFormatter.DisplayError(Settings.ErrorTargetID, args.ExceptionObject);
         }
+
+        /// <summary>
+        /// Get a resource out of the current assembly
+        /// </summary>
+        /// <param name="filename">name of the resource</param>
+        /// <returns>The string contents of the resource</returns>
+        internal static string GetResource(string filename) {
+            var stream = GetManifestResourceStream(filename);
+            if (stream == null) return null;
+            var textStreamReader = new StreamReader(stream);
+            var result = textStreamReader.ReadToEnd();
+            textStreamReader.Close();
+            return result;
+        }
+
+        internal static Stream GetManifestResourceStream(string filename) {
+            return Assembly.GetExecutingAssembly().GetManifestResourceStream("Microsoft.Scripting.Silverlight." + filename);
+        }
+
         #endregion
     }
 }

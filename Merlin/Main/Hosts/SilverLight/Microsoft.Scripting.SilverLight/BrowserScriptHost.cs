@@ -45,8 +45,10 @@ namespace Microsoft.Scripting.Silverlight {
     /// Base class for all browser-based PlatformAdaptationLayers. 
     /// Delegates compatible operations to a BrowserVirtualFileSystem.
     /// </summary>
-    internal abstract class BrowserPAL : PlatformAdaptationLayer {
-        internal BrowserVirtualFilesystem VirtualFilesystem { get; set; }
+    // BUG: should be internal, but Ruby is refusing to call members if so
+    public abstract class BrowserPAL : PlatformAdaptationLayer {
+
+        public BrowserVirtualFilesystem VirtualFilesystem { get; internal set; }
 
         protected static BrowserPAL _PAL;
         internal static BrowserPAL PAL {

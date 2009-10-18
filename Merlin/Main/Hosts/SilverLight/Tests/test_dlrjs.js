@@ -139,9 +139,11 @@ $(document).ready(function() {
           equals(object.attr('height'), "1")
           equals(object.attr('data'), "data:application/x-silverlight,")
           equals(object.attr('type'), "application/x-silverlight")
+          object.remove()
         }, 
         function() {
           ok(false, name + " not found")
+          $(name).remove()
         }
       );
     });
@@ -151,6 +153,8 @@ $(document).ready(function() {
       equals($('object#silverlightDLRObject1').length, 1)
       DLR.createSilverlightObject();
       equals($('object#silverlightDLRObject2').length, 1)
+      $('object#silverlightDLRObject1').remove()
+      $('object#silverlightDLRObject2').remove()
     });
 
   var old_createSilverlightObject = null;
@@ -200,10 +204,12 @@ $(document).ready(function() {
         function() { 
           equals(object.length, 1)
           $('script#bar').remove()
+          object.remove()
         }, 
         function() { 
           ok(false, object.length + " matches for $('" + name + "') rather than 1")
           $('script#bar').remove()
+          object.remove()
         }
       );
     });

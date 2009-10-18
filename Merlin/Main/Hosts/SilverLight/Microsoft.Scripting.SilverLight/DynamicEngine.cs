@@ -108,9 +108,10 @@ namespace Microsoft.Scripting.Silverlight {
         /// </summary>
         public ScriptScope CreateScope() {
             var scope = Runtime.CreateScope();
-            scope.SetVariable("document", new DynamicHtmlDocument());
-            scope.SetVariable("window", new DynamicHtmlObject(HtmlPage.Window));
+            scope.SetVariable("document", HtmlPage.Document);
+            scope.SetVariable("window", HtmlPage.Window);
             scope.SetVariable("me", DynamicApplication.Current.RootVisual);
+            scope.SetVariable("xaml", DynamicApplication.Current.RootVisual);
             return scope;
         }
 

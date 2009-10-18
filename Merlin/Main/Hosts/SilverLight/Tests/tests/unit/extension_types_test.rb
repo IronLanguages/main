@@ -1,6 +1,5 @@
 include Helpers
-
-load_assembly "Microsoft.Dynamic.dll"
+load_assembly 'Microsoft.Dynamic'
 
 describe 'Html document extension' do
   before do
@@ -57,7 +56,7 @@ end
 describe 'Framework element extension' do
   before do
     @root = System::Windows::Controls::UserControl.new
-    DynamicApplication.current.load_component @root, "#{File.dirname(__FILE__)}/assets/foo.xaml"
+    DynamicApplication.load_component @root, "#{File.dirname(__FILE__)}/assets/foo.xaml"
   end
 
   it 'should find a UIElement' do
