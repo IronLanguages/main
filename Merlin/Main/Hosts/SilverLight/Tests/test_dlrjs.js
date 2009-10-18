@@ -157,6 +157,15 @@ $(document).ready(function() {
       $('object#silverlightDLRObject2').remove()
     });
 
+    test('is created with DLR.settings', function() {
+      DLR.settings = {background: 'yellow'}
+      DLR.createSilverlightObject();
+      obj = $('object#silverlightDLRObject3')
+      equals(obj.length, 1)
+      equals($('param[name=background]', obj).attr('value'), 'yellow')
+      obj.remove()
+    });
+
   var old_createSilverlightObject = null;
   module('XAML script tags', {
     setup: function() {
