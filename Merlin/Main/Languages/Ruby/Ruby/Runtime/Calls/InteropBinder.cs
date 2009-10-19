@@ -20,6 +20,7 @@ using Microsoft.Scripting.Ast;
 #endif
 
 using System;
+using System.Collections;
 using System.Diagnostics;
 using System.Dynamic;
 using System.Reflection;
@@ -507,15 +508,12 @@ namespace IronRuby.Runtime.Calls {
 
         internal sealed class GetIndex : GetIndexBinder, IInteropBinder {
             private readonly RubyContext/*!*/ _context;
+            public RubyContext Context { get { return _context; } }
 
             internal GetIndex(RubyContext/*!*/ context, CallInfo/*!*/ callInfo)
                 : base(callInfo) {
                 Assert.NotNull(context);
                 _context = context;
-            }
-
-            public RubyContext Context {
-                get { return _context; }
             }
 
             #region Ruby -> DLR
@@ -564,15 +562,12 @@ namespace IronRuby.Runtime.Calls {
 
         internal sealed class SetIndex : SetIndexBinder, IInteropBinder {
             private readonly RubyContext/*!*/ _context;
+            public RubyContext Context { get { return _context; } }
 
             internal SetIndex(RubyContext/*!*/ context, CallInfo/*!*/ callInfo)
                 : base(callInfo) {
                 Assert.NotNull(context);
                 _context = context;
-            }
-
-            public RubyContext Context {
-                get { return _context; }
             }
 
             #region Ruby -> DLR
@@ -625,15 +620,12 @@ namespace IronRuby.Runtime.Calls {
         internal sealed class BinaryOperation : BinaryOperationBinder, IInteropBinder {
             private static readonly CallInfo _CallInfo = new CallInfo(1);
             private readonly RubyContext/*!*/ _context;
+            public RubyContext Context { get { return _context; } }
 
             internal BinaryOperation(RubyContext/*!*/ context, ExpressionType operation)
                 : base(operation) {
                 Assert.NotNull(context);
                 _context = context;
-            }
-
-            public RubyContext Context {
-                get { return _context; }
             }
 
             public override DynamicMetaObject/*!*/ FallbackBinaryOperation(DynamicMetaObject/*!*/ target, DynamicMetaObject/*!*/ arg, DynamicMetaObject errorSuggestion) {
@@ -660,15 +652,12 @@ namespace IronRuby.Runtime.Calls {
         internal sealed class UnaryOperation : UnaryOperationBinder, IInteropBinder {
             private static readonly CallInfo _CallInfo = new CallInfo(0);
             private readonly RubyContext/*!*/ _context;
+            public RubyContext Context { get { return _context; } }
 
             internal UnaryOperation(RubyContext/*!*/ context, ExpressionType operation)
                 : base(operation) {
                 Assert.NotNull(context);
                 _context = context;
-            }
-
-            public RubyContext Context {
-                get { return _context; }
             }
 
             public override DynamicMetaObject/*!*/ FallbackUnaryOperation(DynamicMetaObject/*!*/ target, DynamicMetaObject errorSuggestion) {
@@ -692,19 +681,12 @@ namespace IronRuby.Runtime.Calls {
 
         internal sealed class Convert : ConvertBinder, IInteropBinder {
             private readonly RubyContext/*!*/ _context;
+            public RubyContext Context { get { return _context; } }
 
             public Convert(RubyContext/*!*/ context, Type/*!*/ type, bool isExplicit)
                 : base(type, isExplicit) {
                 Assert.NotNull(context);
                 _context = context;
-            }
-
-            public Type/*!*/ ResultType {
-                get { return Type; }
-            }
-
-            public RubyContext Context {
-                get { return _context; }
             }
 
             public override DynamicMetaObject/*!*/ FallbackConvert(DynamicMetaObject/*!*/ target, DynamicMetaObject errorSuggestion) {
@@ -734,6 +716,33 @@ namespace IronRuby.Runtime.Calls {
             }
         }
 
+        /// <summary>
+        /// Tries convert to IList. If the covnersion is not implemented by the target meta-object wraps it into an object[].
+        /// </summary>
+        internal sealed class Splat : ConvertBinder, IInteropBinder {
+            private readonly RubyContext/*!*/ _context;
+            public RubyContext Context { get { return _context; } }
+
+            public Splat(RubyContext/*!*/ context)
+                : base(typeof(IList), true) {
+                Assert.NotNull(context);
+                _context = context;
+            }
+
+            public override DynamicMetaObject/*!*/ FallbackConvert(DynamicMetaObject/*!*/ target, DynamicMetaObject errorSuggestion) {
+#if !SILVERLIGHT
+                DynamicMetaObject result;
+                if (Microsoft.Scripting.ComInterop.ComBinder.TryConvert(this, target, out result)) {
+                    return result;
+                }
+#endif
+                return target.Clone(Ast.NewArrayInit(typeof(object), target.Expression));
+            }
+
+            public override string/*!*/ ToString() {
+                return "Interop.Splat" + (_context != null ? " @" + Context.RuntimeId.ToString() : null);
+            }
+        }
 
         // TODO: remove
         internal static DynamicMetaObject/*!*/ CreateErrorMetaObject(this DynamicMetaObjectBinder binder, DynamicMetaObject/*!*/ target, DynamicMetaObject/*!*/[]/*!*/ args, 

@@ -397,11 +397,11 @@ namespace IronRuby.Builtins {
 
             if (readable) {
                 var flags = (RubyMemberFlags)RubyUtils.GetSpecialMethodVisibility(attributesScope.Visibility, name);
-                self.SetLibraryMethod(name, new RubyAttributeReaderInfo(flags, self, varName), false);
+                self.AddMethod(scope.RubyContext, name, new RubyAttributeReaderInfo(flags, self, varName));
             }
             
             if (writable) {
-                self.SetLibraryMethod(name + "=", new RubyAttributeWriterInfo((RubyMemberFlags)attributesScope.Visibility, self, varName), false);
+                self.AddMethod(scope.RubyContext, name + "=", new RubyAttributeWriterInfo((RubyMemberFlags)attributesScope.Visibility, self, varName));
             }
         }
 
@@ -993,6 +993,17 @@ namespace IronRuby.Builtins {
             return self.TypeTracker != null ? self.TypeTracker.Type : null;
         }
 
+        [RubyMethod("to_clr_ref")]
+        public static RubyModule ToClrRef(RubyModule/*!*/ self) {
+            try {
+                return self.TypeTracker != null ? self.Context.GetClass(self.TypeTracker.Type.MakeByRefType()) : null;
+            } catch (Exception) {
+                throw RubyExceptions.CreateTypeError(
+                    String.Format("Cannot create by-ref type for `{0}'", self.Context.GetTypeName(self.TypeTracker.Type, true))
+                );
+            }
+        }
+
         [RubyMethod("of")]
         [RubyMethod("[]")]
         public static RubyModule/*!*/ Of(RubyModule/*!*/ self, [NotNull]params object[]/*!*/ typeArgs) {
@@ -1004,7 +1015,16 @@ namespace IronRuby.Builtins {
             int provided = typeArgs.Length;
 
             if (provided == 1 && type == typeof(Array)) {
-                return self.Context.GetModule(Protocols.ToType(self.Context, typeArgs[0]).MakeArrayType());
+                Type elementType = Protocols.ToType(self.Context, typeArgs[0]);
+                Type arrayType;
+                try {
+                    arrayType = elementType.MakeArrayType();
+                } catch (Exception) {
+                    throw RubyExceptions.CreateTypeError(
+                        String.Format("Cannot create array type for `{0}'", self.Context.GetTypeName(elementType, true))
+                    );
+                }
+                return self.Context.GetModule(arrayType);
             }
 
             if (!type.IsGenericTypeDefinition) {

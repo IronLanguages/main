@@ -22,6 +22,7 @@ using Microsoft.Scripting.Hosting.Shell;
 using Microsoft.Scripting.Runtime;
 using System.Reflection;
 using System.Threading;
+using System.IO;
 
 namespace IronRuby.Hosting {
    
@@ -30,6 +31,10 @@ namespace IronRuby.Hosting {
     /// </summary>
     public class RubyCommandLine : CommandLine {
         public RubyCommandLine() {
+        }
+
+        internal new RubyConsoleOptions Options {
+            get { return (RubyConsoleOptions)base.Options; }
         }
 
         protected override string Logo {
@@ -59,6 +64,14 @@ namespace IronRuby.Hosting {
             } catch (SystemExit e) {
                 return e.Status;
             }
+        }
+
+        protected override int Run() {
+            if (Options.ChangeDirectory != null) {
+                Environment.CurrentDirectory = Options.ChangeDirectory;
+            }
+
+            return base.Run();
         }
 
         // overridden to set the default encoding to KCODE/BINARY

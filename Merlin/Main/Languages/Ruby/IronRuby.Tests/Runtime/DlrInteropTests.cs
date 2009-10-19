@@ -17,6 +17,7 @@
 using System.Linq.Expressions;
 #else
 using Microsoft.Scripting.Ast;
+using dynamic = System.Object;
 #endif
 
 using System;
@@ -28,6 +29,7 @@ using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using System.Collections;
+using IronRuby.Runtime;
 
 namespace IronRuby.Tests {
     #region Custom binders
@@ -439,39 +441,6 @@ end
 self.number = Number.new(100)
 
 #------------------------------------------------------------------------------
-class Helpers
-    def self.get_ruby_array
-        [100, 200]
-    end
-    
-    def self.get_ruby_string
-        'Ruby string'.to_clr_string
-    end
-    
-    def self.get_ruby_hash
-        { 'Ruby'.to_clr_string => 'keyed by Ruby'.to_clr_string, 'C#'.to_clr_string => 'keyed by C#'.to_clr_string }
-    end
-    
-    def self._a_method
-        'Ruby method'.to_clr_string
-    end
-    
-    def self.get_ruby_callable
-        self.method(:_a_method)
-    end
-    
-    def self.get_singleton_string
-        s = 'Hello'.to_clr_string
-        class<<s
-            def ToString
-                'Singleton'.to_clr_string
-            end
-        end
-        s
-    end
-end
-
-#------------------------------------------------------------------------------
 class RubyComparable
     include Comparable
     def initialize val
@@ -577,13 +546,6 @@ class SanityTest
         assert_equal((main.ruby_comparable > 100), false)
         assert_equal((main.ruby_comparable >= 100), true)
         
-        # Helpers
-        assert_equal Helpers.get_ruby_array()[0], 100
-        assert_equal System::Exception.new(Helpers.get_ruby_string).class, Exception
-        assert_equal Helpers.get_ruby_hash()['Ruby'.to_clr_string], 'keyed by Ruby'.to_clr_string
-        assert_equal Helpers.get_ruby_callable().call(), 'Ruby method'.to_clr_string
-        assert_equal Helpers.get_singleton_string.ToString, 'Singleton'
-        
         # Methods
         assert_equal Methods.default_values(100), 'a:100 b:2'.to_clr_string
         assert_equal Methods.varargs(100, 200), '100 200'.to_clr_string
@@ -681,7 +643,7 @@ end
             AreEqual(MyInvokeMemberBinder.Invoke(misc_class, "ToString"), "FallbackInvokeMember");
         }
 
-        public void Dlr_Conversions() {
+        public void Dlr_Conversions1() {
             Engine.Execute(@"
 class C
   def to_int
@@ -714,6 +676,55 @@ end
             AreEqual(MyConvertBinder.Convert<string>(c, "FallbackConvert"), "str");
         }
 
+        public class DynamicList : IDynamicMetaObjectProvider {
+            public DynamicMetaObject/*!*/ GetMetaObject(Expression/*!*/ parameter) {
+                return new Meta(parameter, BindingRestrictions.Empty, this);
+            }
+
+            public class Meta : DynamicMetaObject {
+                internal Meta(Expression/*!*/ expression, BindingRestrictions/*!*/ restrictions, object/*!*/ value)
+                    : base(expression, restrictions, value) {
+                }
+
+                public override DynamicMetaObject/*!*/ BindConvert(ConvertBinder/*!*/ binder) {
+                    if (binder.Type != typeof(IList)) {
+                        return binder.FallbackConvert(this);
+                    }
+
+                    return new DynamicMetaObject(
+                        Expression.Constant(new object[] { 1, 2, 3}),
+                        BindingRestrictions.GetTypeRestriction(Expression, Value.GetType())
+                    );
+                }
+            }
+        }
+
+        public void Dlr_Splatting1() {
+            var scope = Engine.CreateScope();
+            scope.SetVariable("x", new DynamicList());
+
+            var a = Engine.Execute<RubyArray>(@"a,b,c = *x; [a,b,c]", scope);
+            Assert((int)a[0] == 1);
+            Assert((int)a[1] == 2);
+            Assert((int)a[2] == 3);
+
+            a = Engine.Execute<RubyArray>(@"a,b,c = x; [a,b,c]", scope);
+            Assert((int)a[0] == 1);
+            Assert((int)a[1] == 2);
+            Assert((int)a[2] == 3);
+
+            var expando = new ExpandoObject();
+            scope.SetVariable("x", expando);
+            
+            a = Engine.Execute<RubyArray>(@"a,b = *x; [a,b]", scope);
+            Assert(a[0] == expando);
+            Assert(a[1] == null);
+
+            a = Engine.Execute<RubyArray>(@"a,b = x; [a,b]", scope);
+            Assert(a[0] == expando);
+            Assert(a[1] == null);
+        }
+
         public void Dlr_Indexable() {
             var scope = CreateInteropScope();
             object indexable = scope.GetVariable("indexable");
@@ -743,11 +754,31 @@ end
         }
 
         public void Dlr_RubyObjects() {
-            //assert_equal Helpers.get_ruby_array()[0], 100
-            //assert_equal System::Exception.new(Helpers.get_ruby_string).class, Exception
-            //assert_equal Helpers.get_ruby_hash()[:ruby], 'Ruby'
-            //assert_equal Helpers.get_ruby_callable().call(), 'Ruby method'
-            //# assert_equal Helpers.get_singleton_string.ToString, 'Singleton' # Bug!!! - this hangs the process
+            var scope = Engine.CreateScope();
+            Engine.Execute(@"
+scope.ruby_array = [100, 200]
+scope.ruby_hash = { 1 => 3, 2 => 4 }
+
+def inc(a)
+  a + 1
+end
+
+scope.ruby_method = method(:inc)
+scope.ruby_proc = proc { |a| a + 2 } 
+", scope);
+
+#if !CLR2
+            dynamic s = scope;
+            AreEqual(s.ruby_array[0], 100);
+            AreEqual(s.ruby_hash[1], 3);
+            AreEqual(s.ruby_method(1), 2);
+            AreEqual(s.ruby_proc(1), 3);
+#endif
+            object method = scope.GetVariable("ruby_method");
+            AreEqual(MyInvokeBinder.Invoke(method, 1), 2);
+
+            object proc = scope.GetVariable("ruby_proc");
+            AreEqual(MyInvokeBinder.Invoke(proc, 1), 3);
         }
 
         public void Dlr_Methods() {

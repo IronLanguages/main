@@ -48,8 +48,6 @@ namespace IronRuby.Compiler {
         private static MethodInfo _ConvertBignumToFixnum;
         public static MethodInfo/*!*/ ConvertBignumToFloat { get { return _ConvertBignumToFloat ?? (_ConvertBignumToFloat = GetMethod(typeof(RubyOps), "ConvertBignumToFloat")); } }
         private static MethodInfo _ConvertBignumToFloat;
-        public static MethodInfo/*!*/ ConvertCharToFloat { get { return _ConvertCharToFloat ?? (_ConvertCharToFloat = GetMethod(typeof(RubyOps), "ConvertCharToFloat")); } }
-        private static MethodInfo _ConvertCharToFloat;
         public static MethodInfo/*!*/ ConvertDoubleToFixnum { get { return _ConvertDoubleToFixnum ?? (_ConvertDoubleToFixnum = GetMethod(typeof(RubyOps), "ConvertDoubleToFixnum")); } }
         private static MethodInfo _ConvertDoubleToFixnum;
         public static MethodInfo/*!*/ ConvertFixnumToSymbol { get { return _ConvertFixnumToSymbol ?? (_ConvertFixnumToSymbol = GetMethod(typeof(RubyOps), "ConvertFixnumToSymbol")); } }
@@ -410,6 +408,8 @@ namespace IronRuby.Compiler {
         private static MethodInfo _NullIfTrue;
         public static MethodInfo/*!*/ ObjectToMutableString { get { return _ObjectToMutableString ?? (_ObjectToMutableString = GetMethod(typeof(RubyOps), "ObjectToMutableString")); } }
         private static MethodInfo _ObjectToMutableString;
+        public static MethodInfo/*!*/ ObjectToString { get { return _ObjectToString ?? (_ObjectToString = GetMethod(typeof(RubyOps), "ObjectToString")); } }
+        private static MethodInfo _ObjectToString;
         public static MethodInfo/*!*/ PrintInteractiveResult { get { return _PrintInteractiveResult ?? (_PrintInteractiveResult = GetMethod(typeof(RubyOps), "PrintInteractiveResult")); } }
         private static MethodInfo _PrintInteractiveResult;
         public static MethodInfo/*!*/ PropagateRetrySingleton { get { return _PropagateRetrySingleton ?? (_PropagateRetrySingleton = GetMethod(typeof(RubyOps), "PropagateRetrySingleton")); } }

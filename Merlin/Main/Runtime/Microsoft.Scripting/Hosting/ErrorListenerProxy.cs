@@ -50,7 +50,7 @@ namespace Microsoft.Scripting.Hosting {
                 }
 
                 _listener.ErrorReported(scriptSource, message, span, errorCode, severity);
-            } else {
+            } else if (severity == Severity.FatalError || severity == Severity.Error) {
                 throw new SyntaxErrorException(message, sourceUnit, span, errorCode, severity);
             }
         }

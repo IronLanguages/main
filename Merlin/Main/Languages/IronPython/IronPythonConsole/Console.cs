@@ -38,7 +38,13 @@ internal sealed class PythonConsoleHost : ConsoleHost {
     }
 
     protected override ScriptRuntimeSetup CreateRuntimeSetup() {
-        return Python.CreateRuntimeSetup(new Dictionary<string, object>() { { "SearchPaths", new string[0] } });
+        ScriptRuntimeSetup srs = ScriptRuntimeSetup.ReadConfiguration();
+        foreach (var langSetup in srs.LanguageSetups) {
+            if (langSetup.FileExtensions.Contains(".py")) {
+                langSetup.Options["SearchPaths"] = new string[0];
+            }
+        }
+        return srs;
     }
 
     protected override void ParseHostOptions(string/*!*/[]/*!*/ args) {

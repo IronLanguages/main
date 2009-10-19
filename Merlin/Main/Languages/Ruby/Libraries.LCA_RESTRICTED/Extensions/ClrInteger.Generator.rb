@@ -16,13 +16,15 @@ end
 
 generate(__FILE__) do
   template = DATA.read
-  types = ["Byte", "SByte", "Int16", "UInt16", "UInt32", "Int64", "UInt64"]
+  types       = ["Byte",  "SByte", "Int16", "UInt16", "UInt32",     "Int64",      "UInt64"]
+  overflowsTo = ["Int32", "Int32", "Int32", "Int32",  "BigInteger", "BigInteger", "BigInteger"]
   
   result = ""
-  types.each do |type|
+  types.each_with_index do |type, i|
     result += template.dup.
       gsub!('$RangeCheckFixnum', range_check_fixnum(type)).
-      gsub!('$Self', type)
+      gsub!('$Self', type).
+      gsub!('$OverflowType', overflowsTo[i])
       
     result += "\n"
   end
@@ -67,5 +69,14 @@ public static partial class $SelfOps {
     [RubyMethod("inspect")]
     public static MutableString/*!*/ Inspect(object/*!*/ self) {
         return MutableString.CreateMutable(RubyEncoding.Binary).Append(self.ToString()).Append(" ($Self)");
+    }
+    
+    [RubyMethod("succ")]
+    [RubyMethod("next")]
+    public static object Next($Self self) {
+        if (self == $Self.MaxValue) {
+            return ($OverflowType)self + 1;
+        }
+        return ($Self)(self + 1);
     }
 }

@@ -32,6 +32,7 @@ using IronRuby.Runtime.Calls;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Math;
+using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using AstFactory = IronRuby.Compiler.Ast.AstFactory;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
@@ -502,6 +503,11 @@ namespace IronRuby.Runtime.Conversions {
         protected override void SetError(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, Expression/*!*/ targetClassNameConstant, Type/*!*/ resultType) {
             metaBuilder.Result = AstFactory.Box(args.TargetExpression);
         }
+
+        protected override DynamicMetaObjectBinder/*!*/ GetInteropBinder(RubyContext/*!*/ context, IList<DynamicMetaObject>/*!*/ args, out MethodInfo postProcessor) {
+            postProcessor = null;
+            return new InteropBinder.Splat(context);
+        }
     }
 
     public sealed class SplatAction : ProtocolConversionAction<SplatAction> {
@@ -548,6 +554,11 @@ namespace IronRuby.Runtime.Conversions {
                         args.TargetExpression
                     )
                 );
+        }
+
+        protected override DynamicMetaObjectBinder/*!*/ GetInteropBinder(RubyContext/*!*/ context, IList<DynamicMetaObject>/*!*/ args, out MethodInfo postProcessor) {
+            postProcessor = null;
+            return new InteropBinder.Splat(context);
         }
     }
 

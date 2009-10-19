@@ -1272,6 +1272,26 @@ namespace Microsoft.Scripting.Interpreter {
         }
     }
 
+    public class TypeIsInstruction<T> : Instruction {
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
+        public static readonly Instruction Instance = new TypeIsInstruction<T>();
+
+        private TypeIsInstruction() { }
+
+        public override int ConsumedStack { get { return 1; } }
+        public override int ProducedStack { get { return 1; } }
+
+        public override int Run(InterpretedFrame frame) {
+            // unfortunately Type.IsInstanceOfType() is 35-times slower than "is T" so we use generic code:
+            frame.Push(ScriptingRuntimeHelpers.BooleanToObject(frame.Pop() is T));
+            return +1;
+        }
+
+        public override string InstructionName {
+            get { return "TypeIs " + typeof(T).Name; }
+        }
+    }
+
     public class NotInstruction : Instruction {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         public static readonly Instruction Instance = new NotInstruction();
@@ -1280,7 +1300,7 @@ namespace Microsoft.Scripting.Interpreter {
         public override int ConsumedStack { get { return 1; } }
         public override int ProducedStack { get { return 1; } }
         public override int Run(InterpretedFrame frame) {
-            frame.Push(!(bool)frame.Pop());
+            frame.Push((bool)frame.Pop() ? ScriptingRuntimeHelpers.False : ScriptingRuntimeHelpers.True);
             return +1;
         }
     }

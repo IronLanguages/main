@@ -1506,16 +1506,16 @@ namespace Microsoft.Scripting.Interpreter {
             Debug.Assert(expr.NodeType == ExpressionType.TypeIs);
             var node = (TypeBinaryExpression)expr;
 
+            Compile(node.Expression);
+
             // use TypeEqual for sealed types:
             if (node.TypeOperand.IsSealed) {
-                Compile(node.Expression);
                 PushConstant(node.TypeOperand);
                 AddInstruction(TypeEqualsInstruction.Instance);
                 return;
             }
 
-            // TODO:
-            throw new System.NotImplementedException();
+            AddInstruction((Instruction)typeof(TypeIsInstruction<>).MakeGenericType(node.TypeOperand).GetField("Instance").GetValue(null));
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "expr")]

@@ -107,7 +107,8 @@ namespace IronRuby.Compiler.Generation {
 
         protected abstract void EmitImplicitContext(ILGen il);
         protected abstract void EmitMakeCallAction(string name, int nargs, bool isList);
-        protected abstract FieldInfo GetConversionSite(Type toType);
+        protected abstract FieldInfo GetConversionSiteField(Type toType);
+        protected abstract MethodInfo GetGenericConversionSiteFactory(Type toType);
         protected abstract void EmitClassObjectFromInstance(ILGen il);
         
         protected abstract bool TryGetName(Type clrType, MethodInfo mi, out string name);
@@ -487,20 +488,43 @@ namespace IronRuby.Compiler.Generation {
             var callTarget = il.DeclareLocal(typeof(object));
             il.Emit(OpCodes.Stloc, callTarget);
 
-            var site = GetConversionSite(toType);
+            if (toType.IsGenericParameter && toType.DeclaringMethod != null) {
+                MethodInfo siteFactory = GetGenericConversionSiteFactory(toType);
+                Debug.Assert(siteFactory.GetParameters().Length == 0 && typeof(CallSite).IsAssignableFrom(siteFactory.ReturnType));
 
-            // Emit the site invoke
-            il.EmitFieldGet(site);
-            FieldInfo target = site.FieldType.GetField("Target");
-            il.EmitFieldGet(target);
-            il.EmitFieldGet(site);
+                // siteVar = GetConversionSite<T>()
+                var siteVar = il.DeclareLocal(siteFactory.ReturnType);
+                il.Emit(OpCodes.Call, siteFactory);
+                il.Emit(OpCodes.Stloc, siteVar);
 
-            // Emit the context
-            EmitContext(il, false);
+                // Emit the site invoke
+                il.Emit(OpCodes.Ldloc, siteVar);
+                FieldInfo target = siteVar.LocalType.GetField("Target");
+                il.EmitFieldGet(target);
+                il.Emit(OpCodes.Ldloc, siteVar);
 
-            il.Emit(OpCodes.Ldloc, callTarget);
+                // Emit the context
+                EmitContext(il, false);
 
-            il.EmitCall(target.FieldType, "Invoke");
+                il.Emit(OpCodes.Ldloc, callTarget);
+
+                il.EmitCall(target.FieldType, "Invoke");
+            } else {
+                var site = GetConversionSiteField(toType);
+
+                // Emit the site invoke
+                il.EmitFieldGet(site);
+                FieldInfo target = site.FieldType.GetField("Target");
+                il.EmitFieldGet(target);
+                il.EmitFieldGet(site);
+
+                // Emit the context
+                EmitContext(il, false);
+
+                il.Emit(OpCodes.Ldloc, callTarget);
+
+                il.EmitCall(target.FieldType, "Invoke");
+            }
         }
 
         private MethodBuilder CreateVTableSetterOverride(MethodInfo mi, string name) {

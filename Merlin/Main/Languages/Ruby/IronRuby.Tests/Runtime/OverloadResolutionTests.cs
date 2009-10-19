@@ -257,7 +257,7 @@ namespace IronRuby.Tests {
         #region Failures
 
         public class AmbiguousOverloads {
-            public static int F(params object[] p) {
+            public static int F(object[] p) {
                 return 1;
             }
             
@@ -276,11 +276,11 @@ namespace IronRuby.Tests {
 
         public void AmbiguousMatch1() {
             Runtime.Globals.SetVariable("C", Context.GetClass(typeof(AmbiguousOverloads)));
-            AssertOutput(() => CompilerTest(@"
+            TestOutput(@"
 [1, nil, 'foo'].each do |x| 
   puts C.f(x) rescue p $!.class
 end 
-"), @"
+", @"
 2
 System::Reflection::AmbiguousMatchException
 3

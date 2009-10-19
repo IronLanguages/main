@@ -58,6 +58,12 @@ namespace IronRuby.Runtime.Calls {
             _overloads = overloads;
         }
 
+        public RubyLibraryMethodInfo(Delegate/*!*/[]/*!*/ overloads, RubyMethodVisibility visibility, RubyModule/*!*/ declaringModule) 
+            : this(overloads, (RubyMemberFlags)visibility & RubyMemberFlags.VisibilityMask, declaringModule) {
+            ContractUtils.RequiresNotNull(declaringModule, "declaringModule");
+            ContractUtils.RequiresNotNullItems(overloads, "overloads");
+        }
+
         // copy ctor
         private RubyLibraryMethodInfo(RubyLibraryMethodInfo/*!*/ info, MethodBase/*!*/[]/*!*/ methods)
             : base(methods, info.Flags, info.DeclaringModule) {

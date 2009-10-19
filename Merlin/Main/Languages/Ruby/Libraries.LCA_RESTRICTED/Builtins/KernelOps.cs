@@ -409,7 +409,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("to_s")]
         public static MutableString/*!*/ ToS([NotNull]IRubyObject/*!*/ self) {
-            return RubyObject.BaseToMutableString(self);
+            return RubyUtils.ObjectBaseToMutableString(self);
         }
 
         [RubyMethod("to_s")]
@@ -1283,7 +1283,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("require", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("require", RubyMethodAttributes.PublicSingleton)]
         public static bool Require(RubyScope/*!*/ scope, object self, [DefaultProtocol, NotNull]MutableString/*!*/ libraryName) {
-            return scope.RubyContext.Loader.LoadFile(scope.GlobalScope.Scope, self, libraryName, LoadFlags.LoadOnce | LoadFlags.AppendExtensions);
+            return scope.RubyContext.Loader.LoadFile(scope.GlobalScope.Scope, self, libraryName, LoadFlags.Require);
         }
 
         #endregion

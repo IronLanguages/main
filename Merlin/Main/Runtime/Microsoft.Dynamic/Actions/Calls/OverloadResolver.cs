@@ -186,6 +186,14 @@ namespace Microsoft.Scripting.Actions.Calls {
         }
 
         /// <summary>
+        /// Always expand params array/dictionary parameters to simple parameters. 
+        /// Do not allow an array/dictionary to be passed to params array/dictionary.
+        /// </summary>
+        protected virtual bool BindToUnexpandedParams(MethodCandidate candidate) {
+            return true;
+        }
+
+        /// <summary>
         /// Called before arguments binding.
         /// </summary>
         /// <returns>
@@ -275,12 +283,17 @@ namespace Microsoft.Scripting.Actions.Calls {
         }
 
         private void AddSimpleTarget(MethodCandidate target) {
-            AddTarget(target);
-            if (BinderHelpers.IsParamsMethod(target.Method)) {
+            if (target.HasParamsArray || target.HasParamsDictionary) {
+                if (BindToUnexpandedParams(target)) {
+                    AddTarget(target);
+                }
+                
                 if (_paramsCandidates == null) {
                     _paramsCandidates = new List<MethodCandidate>();
                 }
                 _paramsCandidates.Add(target);
+            } else {
+                AddTarget(target);
             }
         }
 
@@ -907,29 +920,41 @@ namespace Microsoft.Scripting.Actions.Calls {
         #region Step 5: Results, Errors
         
         private int[] GetExpectedArgCounts() {
-            if (_candidateSets.Count == 0) {
+            if (_candidateSets.Count == 0 && _paramsCandidates == null) {
                 return new int[0];
             }
-            
-            int minParamsArray = Int32.MaxValue;
-            var arities = new BitArray(_candidateSets.Keys.Max() + 1);
-            foreach (var targetSet in _candidateSets.Values) {
-                foreach (var candidate in targetSet.Candidates) {
-                    int visibleCount = candidate.GetVisibleParameterCount();
-                    arities[visibleCount] = true;
 
+            int minParamsArray = Int32.MaxValue;
+            if (_paramsCandidates != null) {
+                foreach (var candidate in _paramsCandidates) {
                     if (candidate.HasParamsArray) {
-                        arities[visibleCount - 1] = true;
-                        minParamsArray = System.Math.Min(minParamsArray, visibleCount);
+                        minParamsArray = System.Math.Min(minParamsArray, candidate.GetVisibleParameterCount() - 1);
                     }
                 }
             }
 
             var result = new List<int>();
-            for (int i = 0; i < System.Math.Min(arities.Count, minParamsArray); i++) {
-                if (arities[i]) {
-                    result.Add(i);
+            if (_candidateSets.Count > 0) {
+                var arities = new BitArray(System.Math.Min(_candidateSets.Keys.Max(), minParamsArray) + 1);
+
+                foreach (var targetSet in _candidateSets.Values) {
+                    foreach (var candidate in targetSet.Candidates) {
+                        if (!candidate.HasParamsArray) {
+                            int visibleCount = candidate.GetVisibleParameterCount();
+                            if (visibleCount < arities.Count) {
+                                arities[visibleCount] = true;
+                            }
+                        }
+                    }
                 }
+
+                for (int i = 0; i < arities.Count; i++) {
+                    if (arities[i] || i == minParamsArray) {
+                        result.Add(i);
+                    }
+                }
+            } else if (minParamsArray < Int32.MaxValue) {
+                result.Add(minParamsArray);
             }
 
             // all arities starting from minParamsArray are available:
