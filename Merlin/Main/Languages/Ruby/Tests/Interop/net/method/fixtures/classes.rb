@@ -1519,5 +1519,6 @@ no_csc do
   class RubyClassWithMethods < ClassWithMethods; end
   class RubyClassWithNullableMethods < ClassWithNullableMethods; end
   class RubyStaticClassWithNullableMethods < StaticClassWithNullableMethods; end
+  class RubyGenericTypeInference < GenericTypeInference; end
   class RubyGenericTypeInferenceInstance < GenericTypeInferenceInstance; end
 end

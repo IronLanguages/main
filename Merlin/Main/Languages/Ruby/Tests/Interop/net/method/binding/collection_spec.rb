@@ -21,7 +21,7 @@ describe "Method parameter binding for collections" do
     "StringInstance" => {:NoArg => AE, :IEnumerableArg => "IEnumerableArg"},
     "StringInstanceEmpty" => {:NoArg => AE, :IEnumerableArg => "IEnumerableArg"},
     "System::Array[Fixnum]InstanceEmpty" => {:NoArg => AE, :Int32ArrArg => "Int32ArrArg", :ParamsInt32ArrArg => "ParamsInt32ArrArg", :IListOfIntArg => "IListOfIntArg", :ArrayArg => "ArrayArg", :IEnumerableOfIntArg => "IEnumerableOfIntArg", :IEnumerableArg => "IEnumerableArg"},
-    "System::Array[Fixnum]Instance" => {:NoArg => AE, :Int32ArrArg =>` "Int32ArrArg", :ParamsInt32ArrArg => "ParamsInt32ArrArg", :IListOfIntArg => "IListOfIntArg", :ArrayArg => "ArrayArg", :IEnumerableOfIntArg => "IEnumerableOfIntArg", :IEnumerableArg => "IEnumerableArg"},
+    "System::Array[Fixnum]Instance" => {:NoArg => AE, :Int32ArrArg => "Int32ArrArg", :ParamsInt32ArrArg => "ParamsInt32ArrArg", :IListOfIntArg => "IListOfIntArg", :ArrayArg => "ArrayArg", :IEnumerableOfIntArg => "IEnumerableOfIntArg", :IEnumerableArg => "IEnumerableArg"},
     "System::Array[Object]InstanceEmpty" => {:NoArg => AE, :ObjectArrArg => "ObjectArrArg", :IListOfObjArg => "IListOfObjArg", :ArrayArg => "ArrayArg", :IEnumerableArg => "IEnumerableArg"},
     "System::Array[Object]Instance" => {:NoArg => AE, :ObjectArrArg => "ObjectArrArg", :IListOfObjArg => "IListOfObjArg", :ArrayArg => "ArrayArg", :IEnumerableArg => "IEnumerableArg"},
     "System::Array[IInterface]Instance" => {:NoArg => AE, :ObjectArrArg => "ObjectArrArg", :IInterfaceArrArg => "IInterfaceArrArg", :ParamsIInterfaceArrArg => "ParamsIInterfaceArrArg", :IListOfObjArg => "IListOfObjArg", :ArrayArg => "ArrayArg", :IEnumerableArg => "IEnumerableArg"},
