@@ -32,6 +32,7 @@ using IronRuby.Runtime.Calls;
 
 namespace IronRuby.Runtime.Conversions {
     using Ast = Expression;
+    using Microsoft.Scripting.Generation;
 
     public sealed class GenericConversionAction : RubyConversionAction {
         private readonly Type/*!*/ _type;
@@ -92,7 +93,7 @@ namespace IronRuby.Runtime.Conversions {
                 metaBuilder.SetError(Methods.MakeTypeConversionError.OpCall(
                     contextExpression,
                     AstUtils.Convert(target.Expression, typeof(object)),
-                    Ast.Constant(toType)
+                    Ast.Constant(toType, typeof(Type))
                 ));
                 return true;
             }

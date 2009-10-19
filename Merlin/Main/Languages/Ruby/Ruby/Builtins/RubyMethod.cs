@@ -25,11 +25,11 @@ using System.Runtime.CompilerServices;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
 using Microsoft.Scripting.Utils;
+using Microsoft.Scripting.Generation;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronRuby.Builtins {
     using Ast = Expression;
-
     using BlockCallTargetUnsplatN = Func<BlockParam, object, object[], RubyArray, object>;
 
     public partial class RubyMethod {
@@ -105,7 +105,7 @@ namespace IronRuby.Builtins {
             metaBuilder.AddRestriction(Ast.Equal(args.TargetExpression, AstUtils.Constant(this)));
 
             // set the target (becomes self in the called method):
-            args.SetTarget(AstUtils.Constant(_target), _target);
+            args.SetTarget(AstUtils.Constant(_target, CompilerHelpers.GetVisibleType(_target)), _target);
 
             _info.BuildCall(metaBuilder, args, _name);
         }

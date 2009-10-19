@@ -175,7 +175,6 @@ namespace IronRuby.Runtime {
             }
         }
 
-        // TODO: move to the host
         [Emitted]
         public static void PrintInteractiveResult(RubyScope/*!*/ scope, MutableString/*!*/ value) {
             var writer = scope.RubyContext.DomainManager.SharedIO.OutputStream;
@@ -575,13 +574,6 @@ namespace IronRuby.Runtime {
                 throw RubyExceptions.CreateUndefinedMethodError(owner, name);
             }
             owner.UndefineMethod(name);
-        }
-
-        [Emitted] // MethodCall:
-        public static bool IsDefinedMethod(object self, RubyScope/*!*/ scope, string/*!*/ name) {
-            // MRI: this is different from UndefineMethod, it behaves like Kernel#method (i.e. doesn't use lexical scope):
-            // TODO: visibility
-            return scope.RubyContext.ResolveMethod(self, name, VisibilityContext.AllVisible).Found;
         }
 
         #endregion
@@ -1229,7 +1221,8 @@ namespace IronRuby.Runtime {
 
             var result = new TElement[list.Count];
             for (int i = 0; i < result.Length; i++) {
-                result[i] = site.Target(site, list[i]);
+                object item = list[i];
+                result[i] = (item is TElement) ? (TElement)item : site.Target(site, item);
             }
 
             return result;
@@ -1572,10 +1565,21 @@ namespace IronRuby.Runtime {
 
         #endregion
 
+        #region Strings, Encodings
+
         [Emitted]
         public static RubyEncoding/*!*/ CreateEncoding(int codepage) {
             return RubyEncoding.GetRubyEncoding(codepage);
         }
+
+        [Emitted, Obsolete("Internal only")]
+        public static byte[]/*!*/ GetMutableStringBytes(MutableString/*!*/ str) {
+            return str.GetByteArray();
+        }
+
+        #endregion
+
+        #region Booleans
 
         [Emitted]
         public static bool IsTrue(object obj) {
@@ -1596,6 +1600,8 @@ namespace IronRuby.Runtime {
         public static object NullIfTrue(object obj) {
             return (obj is bool && !(bool)obj || obj == null) ? DefaultArgument : null;
         }
+
+        #endregion
 
         #region Exceptions
 
@@ -1828,6 +1834,8 @@ namespace IronRuby.Runtime {
             return module == _currentDeclaringModule && methodName == _currentMethodName;
         }
 
+        #region Ranges
+
         [Emitted]
         public static Range/*!*/ CreateInclusiveRange(object begin, object end, RubyScope/*!*/ scope, BinaryOpStorage/*!*/ comparisonStorage) {
             return new Range(comparisonStorage, scope.RubyContext, begin, end, false);
@@ -1848,11 +1856,7 @@ namespace IronRuby.Runtime {
             return new Range(begin, end, true);
         }
 
-        [Emitted]
-        public static object CreateDefaultInstance() {
-            // nop (stub)
-            return null;
-        }
+        #endregion
 
         #region Dynamic Operations
 
@@ -2261,6 +2265,11 @@ namespace IronRuby.Runtime {
 
         #region Ruby Types
 
+        [Emitted]
+        public static string/*!*/ ObjectToString(IRubyObject/*!*/ obj) {
+            return RubyUtils.ObjectToMutableString(obj).ToString();
+        }
+
         [Emitted] //RubyTypeBuilder
         public static RubyInstanceData/*!*/ GetInstanceData(ref RubyInstanceData/*!*/ instanceData) {
             if (instanceData == null) {
@@ -2357,6 +2366,12 @@ namespace IronRuby.Runtime {
 
         [Emitted]
         public static void X(string marker) {
+        }
+        
+        [Emitted]
+        public static object CreateDefaultInstance() {
+            // nop (stub)
+            return null;
         }
     }
 }

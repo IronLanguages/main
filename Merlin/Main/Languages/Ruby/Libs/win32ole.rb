@@ -60,7 +60,7 @@ class WIN32OLE
     # we create a wrapper object which does the cast
     load_assembly "Microsoft.Dynamic"
     strongly_typed_enumerable = Microsoft::Scripting::Utils::EnumerableWrapper.new(@com_object)
-    result = strongly_typed_enumerable.each &b
+    result = strongly_typed_enumerable.each(&b)
     (result == strongly_typed_enumerable) ? self : result
   end
   

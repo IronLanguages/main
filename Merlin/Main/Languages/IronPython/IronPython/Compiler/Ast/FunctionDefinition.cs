@@ -440,7 +440,7 @@ namespace IronPython.Compiler.Ast {
             MSAst.Expression funcCode = ag.Globals.GetConstant(
                 new FunctionCode(
                     ag.PyContext,
-                    ag.EmitDebugSymbols ? null : originalDelegate,
+                    EmitDebugFunction(ag) ? null : originalDelegate,
                     code,
                     name,
                     ag.GetDocumentation(_body),
@@ -462,7 +462,7 @@ namespace IronPython.Compiler.Ast {
             bodyGen.FuncCodeExpr = funcCode;
 
             MSAst.Expression ret;
-            if (ag.EmitDebugSymbols && !ag.PyContext.EnableTracing) {
+            if (EmitDebugFunction(ag)) {
                 // we need to compile all of the debuggable code together at once otherwise mdbg gets confused.  If we're
                 // in tracing mode we'll still compile things one off though just to keep things simple.  The code will still
                 // be debuggable but naive debuggers like mdbg will have more issues.
@@ -493,6 +493,10 @@ namespace IronPython.Compiler.Ast {
             ret = ag.AddDecorators(ret, _decorators);
 
             return ret;
+        }
+
+        private static bool EmitDebugFunction(AstGenerator ag) {
+            return ag.EmitDebugSymbols && !ag.PyContext.EnableTracing;
         }
 
         private IList<string> GetVarNames() {

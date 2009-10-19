@@ -38,7 +38,7 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 namespace IronRuby.Runtime.Calls {
     using Ast = Expression;
 
-    internal sealed class RubyOverloadResolver : OverloadResolver {
+    public sealed class RubyOverloadResolver : OverloadResolver {
         private readonly CallArguments/*!*/ _args;
         private readonly MetaObjectBuilder/*!*/ _metaBuilder;
         private readonly SelfCallConvention _callConvention;
@@ -58,19 +58,19 @@ namespace IronRuby.Runtime.Calls {
         private ParameterExpression _listVariable;
         private IList _list;
 
-        public RubyContext/*!*/ Context {
+        internal RubyContext/*!*/ Context {
             get { return _args.RubyContext; }
         }
 
-        public Expression/*!*/ ScopeExpression {
+        internal Expression/*!*/ ScopeExpression {
             get { return _args.MetaScope.Expression; }
         }
 
-        public Expression/*!*/ ContextExpression {
+        internal Expression/*!*/ ContextExpression {
             get { return _args.MetaContext.Expression; }
         }
 
-        public RubyOverloadResolver(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, SelfCallConvention callConvention,
+        internal RubyOverloadResolver(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, SelfCallConvention callConvention,
             bool implicitProtocolConversions)
             : base(args.RubyContext.Binder) {
             _args = args;
@@ -80,6 +80,14 @@ namespace IronRuby.Runtime.Calls {
         }
 
         #region Step 1: Special Parameters
+
+        /// <summary>
+        /// We expand params arrays for library methods. Splat operator needs to be used to pass content of an array/list into params array method.
+        /// </summary>
+        protected override bool BindToUnexpandedParams(MethodCandidate/*!*/ candidate) {
+            // TODO: separate flag?
+            return _implicitProtocolConversions;
+        }
 
         protected override BitArray MapSpecialParameters(ParameterMapping/*!*/ mapping) {
             var infos = mapping.ParameterInfos;
@@ -437,8 +445,8 @@ namespace IronRuby.Runtime.Calls {
             Type typeTwo = candidateTwo.Type;
             Type actualType = arg.GetLimitType();
 
-            // if nil is passed as a block argument prefer BlockParam over missing block:
             if (actualType == typeof(DynamicNull)) {
+                // if nil is passed as a block argument prefers BlockParam over a missing block:
                 if (typeOne == typeof(BlockParam) && typeTwo == typeof(MissingBlockParam)) {
                     Debug.Assert(!candidateOne.ProhibitNull);
                     return Candidate.One;
@@ -448,31 +456,34 @@ namespace IronRuby.Runtime.Calls {
                     Debug.Assert(!candidateTwo.ProhibitNull);
                     return Candidate.Two;
                 }
-            } else if (actualType == typeof(MissingBlockParam)) {
-                if (typeOne == typeof(BlockParam) && typeTwo == typeof(MissingBlockParam)) {
-                    return Candidate.Two;
-                }
-
-                if (typeOne == typeof(MissingBlockParam) && typeTwo == typeof(BlockParam)) {
-                    return Candidate.One;
-                }
-            } else if (actualType == typeof(BlockParam)) {
-                if (typeOne == typeof(BlockParam) && typeTwo == typeof(MissingBlockParam)) {
-                    return Candidate.One;
-                }
-
-                if (typeOne == typeof(MissingBlockParam) && typeTwo == typeof(BlockParam)) {
-                    return Candidate.Two;
-                }
-
-                if (typeOne == typeof(BlockParam) && typeTwo == typeof(BlockParam)) {
-                    if (candidateOne.ProhibitNull) {
+            } else {
+                if (typeOne == actualType) {
+                    if (typeTwo == actualType) {
+                        // prefer non-nullable reference type over nullable:
+                        if (!actualType.IsValueType) {
+                            if (candidateOne.ProhibitNull) {
+                                return Candidate.One;
+                            } else if (candidateTwo.ProhibitNull) {
+                                return Candidate.Two;
+                            }
+                        }
+                    } else {
                         return Candidate.One;
-                    } else if (candidateTwo.ProhibitNull) {
-                        return Candidate.Two;
                     }
+                } else if (typeTwo == actualType) {
+                    return Candidate.Two;
                 }
             }
+
+            // prefer integer type over enum:
+            if (typeOne.IsEnum && Enum.GetUnderlyingType(typeOne) == typeTwo) {
+                return Candidate.Two;
+            }
+
+            if (typeTwo.IsEnum && Enum.GetUnderlyingType(typeTwo) == typeOne) {
+                return Candidate.One;
+            }
+
             return base.SelectBestConversionFor(arg, candidateOne, candidateTwo, level);
         }
 

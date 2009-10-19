@@ -21,41 +21,56 @@ using System.Text;
 using System.Text.RegularExpressions;
 using IronRuby.Compiler;
 using IronRuby.Runtime;
+using System.Collections.Generic;
 
 namespace IronRuby.Builtins {
     public partial class RubyRegex : IEquatable<RubyRegex>, IDuplicable {
-        private GenericRegex/*!*/ _regex;
+        // 1.9: correctly encoded, switched to characters 
+        // 1.8: k-coded binary data, if _options specify encoding, or raw binary data otherwise.
+        private MutableString/*!*/ _pattern;
+        private RubyRegexOptions _options;
+        private bool _hasGAnchor;
+
+        private Regex _cachedRegex;
+
+        // Ruby 1.8: match operations use KCODE encoding so we need to remember the one for which we have cached CLR Regex.
+        private RubyRegexOptions _cachedKCode;
 
         #region Construction
 
         public RubyRegex() {
-            _regex = StringRegex.Empty;
+            _pattern = MutableString.CreateEmpty();
+            _options = RubyRegexOptions.NONE;
+        }
+
+        public RubyRegex(MutableString/*!*/ pattern) 
+            : this(pattern, RubyRegexOptions.NONE) {
         }
 
         public RubyRegex(MutableString/*!*/ pattern, RubyRegexOptions options) {
-            ContractUtils.RequiresNotNull(pattern, "pattern");
-            _regex = pattern.ToRegularExpression(GetPersistedOptions(options));
-        }
-
-        public RubyRegex(string/*!*/ pattern, RubyRegexOptions options) {
-            ContractUtils.RequiresNotNull(pattern, "pattern");
-            _regex = new StringRegex(pattern, GetPersistedOptions(options));
-        }
-
-        public RubyRegex(byte[]/*!*/ pattern, RubyRegexOptions options) {
-            ContractUtils.RequiresNotNull(pattern, "pattern");
-            // TODO: _regex = new BinaryRegex(pattern, RubyRegex.GetPersistedOptions(options));
-            _regex = new StringRegex(BinaryEncoding.Obsolete.GetString(pattern, 0, pattern.Length), GetPersistedOptions(options));
-        }
-
-        public RubyRegex(Regex/*!*/ regex) {
-            ContractUtils.RequiresNotNull(regex, "regex");
-            _regex = new StringRegex(regex);
+            Set(pattern, options);
         }
 
         public RubyRegex(RubyRegex/*!*/ regex) {
             ContractUtils.RequiresNotNull(regex, "regex");
-            _regex = regex._regex;
+            Set(regex.Pattern, regex.Options);
+        }
+
+        public void Set(MutableString/*!*/ pattern, RubyRegexOptions options) {
+            ContractUtils.RequiresNotNull(pattern, "pattern");
+
+            // RubyRegexOptions.Once is only used to determine how the Regexp object should be created and cached. 
+            // It is not a property of the final object. /foo/ should compare equal with /foo/o.
+            _options = options & ~RubyRegexOptions.Once;
+
+            RubyEncoding kcoding = RubyEncoding.GetKCoding(options);
+            if (kcoding != null || pattern.Encoding.IsKCoding) {
+                _pattern = MutableString.CreateBinary(pattern.ToByteArray(), kcoding ?? RubyEncoding.Binary).Freeze();
+            } else {
+                _pattern = pattern.SwitchToCharacters().Clone().Freeze();
+            }
+            
+            TransformPattern(kcoding, options & RubyRegexOptions.EncodingMask);
         }
 
         /// <summary>
@@ -75,124 +90,112 @@ namespace IronRuby.Builtins {
 
         #endregion
 
-        public bool IsEmpty {
-            get { return _regex.IsEmpty; }
-        }
+        #region Transformation to CLR Regex
 
-        public RubyRegexOptions Options {
-            get { return _regex.Options; }
-        }
-
-        public RubyEncoding/*!*/ Encoding {
-            // TODO:
-            get { return _regex.GetPattern().Encoding; }
-        }
-
-        public MutableString/*!*/ GetPattern() {
-            return _regex.GetPattern();
-        }
-
-#if DEBUG
-        public string/*!*/ GetTransformedPattern() {
-            return _regex.GetTransformedPattern();
-        }
-#endif
-        public bool Equals(RubyRegex other) {
-            return ReferenceEquals(this, other) || other != null && _regex.Equals(other._regex);
-        }
-
-        public override bool Equals(object other) {
-            return _regex.Equals(other as RubyRegex);
-        }
-
-        public override int GetHashCode() {
-            return _regex.GetHashCode();
-        }
-
-        #region Match, ReverseMatch, Matches, Split
-
-        public Match/*!*/ Match(MutableString/*!*/ input) {
-            return Match(input, 0);
-        }
-
-        public Match/*!*/ Match(MutableString/*!*/ input, int start) {
+        private Regex/*!*/ Transform(ref RubyEncoding kcoding, MutableString/*!*/ input, int start, out string strInput) {
             ContractUtils.RequiresNotNull(input, "input");
-            return Match(input, start, input.GetCharCount() - start);
-        }
 
-        public Match/*!*/ Match(MutableString/*!*/ input, int start, int count) {
-            ContractUtils.RequiresNotNull(input, "input");
-            return _regex.Match(input, start, count);
-        }
-
-        public Match/*!*/ ReverseMatch(MutableString/*!*/ str, int start) {
-            ContractUtils.RequiresNotNull(str, "str");
-            return _regex.ReverseMatch(str, start);
-        }
-        
-        public Match/*!*/ ReverseMatch(MutableString/*!*/ str, int start, int count) {
-            ContractUtils.RequiresNotNull(str, "str");
-            return _regex.ReverseMatch(str, start, count);            
-        }
-
-        public MatchCollection/*!*/ Matches(MutableString/*!*/ input) {
-            return Matches(input, 0);
-        }
-
-        public MatchCollection/*!*/ Matches(MutableString/*!*/ input, int start) {
-            ContractUtils.RequiresNotNull(input, "input");
-            return _regex.Matches(input, start);
-        }
-
-        public MutableString[]/*!*/ Split(MutableString/*!*/ input) {
-            return _regex.Split(input, 0, 0);
-        }
-
-        public MutableString[]/*!*/ Split(MutableString/*!*/ input, int count) {
-            return _regex.Split(input, count, 0);
-        }
-        
-        public MutableString[]/*!*/ Split(MutableString/*!*/ input, int count, int start) {
-            return _regex.Split(input, count, start);
-        }
-
-        public static MatchData SetCurrentMatchData(RubyScope/*!*/ scope, RubyRegex/*!*/ regex, MutableString/*!*/ str) {
-            var targetScope = scope.GetInnerMostClosureScope();
-            
-            if (str == null) {
-                return targetScope.CurrentMatch = null;
-            }
-
-            Match match = regex.Match(str, 0);
-            if (match.Success) {
-                return targetScope.CurrentMatch = scope.RubyContext.TaintObjectBy(new MatchData(match, str), str);
+            // K-coding of the current operation (the current KCODE gets preference over the KCODE regex option):
+            RubyRegexOptions kc = _options & RubyRegexOptions.EncodingMask;
+            if (kc != 0) {
+                kcoding = _pattern.Encoding;
             } else {
-                return targetScope.CurrentMatch = null;
+                kc = RubyEncoding.ToRegexOption(kcoding);
             }
+
+            // Convert input to a string. Force k-coding if necessary.
+            if (kc != 0) {
+                try {
+                    strInput = ForceEncoding(input, kcoding.StrictEncoding, start);
+                } catch (DecoderFallbackException) {
+                    throw RubyExceptions.CreateArgumentError(String.Format("invalid {0} character", kcoding.RealEncoding));
+                }
+            } else if (input.Encoding.IsKCoding) {
+                strInput = input.ToString(BinaryEncoding.Instance);
+            } else {
+                _pattern.RequireCompatibleEncoding(input);
+                input.SwitchToCharacters();
+                strInput = input.ToString();
+            }
+
+            return TransformPattern(kcoding, kc);
+        }
+
+        private Regex/*!*/ TransformPattern(RubyEncoding kcoding, RubyRegexOptions kc) {
+            // We can reuse cached CLR regex if it was created for the same k-coding:
+            if (_cachedRegex != null && kc == _cachedKCode) {
+                return _cachedRegex;
+            }
+
+            string pattern;
+            if (kc != 0) {
+                try {
+                    pattern = _pattern.ToString(kcoding.StrictEncoding);
+                } catch (DecoderFallbackException) {
+                    throw RubyExceptions.CreateArgumentError(String.Format("invalid multi-byte sequence in {0} regex pattern", kcoding));
+                }
+            } else {
+                pattern = _pattern.ConvertToString();
+            }
+
+            Regex result;
+            try {
+                result = new Regex(RegexpTransformer.Transform(pattern, _options, out _hasGAnchor), ToClrOptions(_options));
+            } catch (Exception e) {
+                throw new RegexpError(e.Message);
+            }
+
+            _cachedKCode = kc;
+            _cachedRegex = result;
+            return result;
+        }
+
+        private static string/*!*/ ForceEncoding(MutableString/*!*/ input, Encoding/*!*/ encoding, int start) {
+            int byteCount = input.GetByteCount();
+
+            if (start < 0) {
+                start += byteCount;
+            }
+            if (start < 0) {
+                return null;
+            }
+
+            return (start <= byteCount) ? input.ToString(encoding, start, byteCount - start) : null;
         }
 
         #endregion
 
-        /// <summary>
-        /// Returns a new instance of MutableString that contains escaped content of the given string.
-        /// </summary>
-        public static MutableString/*!*/ Escape(MutableString/*!*/ str) {
-            // TODO:
-            return str.EscapeRegularExpression();
+        public bool IsEmpty {
+            get { return _pattern.IsEmpty; }
         }
 
-        public void Set(MutableString/*!*/ pattern, RubyRegexOptions options) {
-            _regex = pattern.ToRegularExpression(options);
+        public RubyRegexOptions Options {
+            get { return _options; }
         }
 
-        internal static RubyRegexOptions GetPersistedOptions(RubyRegexOptions options) {
-            // RubyRegexOptions.Once is only used to determine how the Regexp object should be created and cached. 
-            // It is not a property of the final object. /foo/ should compare equal with /foo/o.
-            return options & ~RubyRegexOptions.Once;
+        public RubyEncoding/*!*/ Encoding {
+            get { return _pattern.Encoding; }
+        }
+
+        public MutableString/*!*/ Pattern {
+            get { return _pattern; }
+        }
+
+        public bool Equals(RubyRegex other) {
+            return ReferenceEquals(this, other) 
+                || other != null && _options.Equals(other._options) && _pattern.Equals(other._pattern);
+        }
+
+        public override bool Equals(object other) {
+            return Equals(other as RubyRegex);
+        }
+
+        public override int GetHashCode() {
+            return _pattern.GetHashCode() ^ _options.GetHashCode();
         }
 
         public static RegexOptions ToClrOptions(RubyRegexOptions options) {
-            RegexOptions result = RegexOptions.Multiline;
+            RegexOptions result = RegexOptions.Multiline | RegexOptions.CultureInvariant;
 
 #if DEBUG
             if (RubyOptions.CompileRegexps) {
@@ -214,9 +217,141 @@ namespace IronRuby.Builtins {
             if ((options & RubyRegexOptions.Multiline) != 0) {
                 result |= RegexOptions.Singleline;
             }
-            
+
             return result;
         }
+
+        #region Match, LastMatch, Matches, Split
+
+        public MatchData Match(RubyEncoding kcode, MutableString/*!*/ input) {
+            string str;
+            return MatchData.Create(Transform(ref kcode, input, 0, out str).Match(str), input, str, kcode, 0);
+        }
+
+        /// <summary>
+        /// Start is a number of bytes if kcode is given, otherwise it's a number of characters.
+        /// </summary>
+        public MatchData Match(RubyEncoding kcode, MutableString/*!*/ input, int start) {
+            string str;
+            Regex regex = Transform(ref kcode, input, start, out str);
+
+            Match match;
+            if (kcode != null) {
+                if (str == null) {
+                    return null;
+                }
+                match = regex.Match(str, 0);
+            } else {
+                if (start < 0) {
+                    start += str.Length;
+                }
+                if (start < 0 || start > str.Length) {
+                    return null;
+                }
+                match = regex.Match(str, start);
+            }
+
+            return MatchData.Create(match, input, str, kcode, start);
+        }
+
+        public MatchData LastMatch(RubyEncoding kcode, MutableString/*!*/ input) {
+            return LastMatch(kcode, input, Int32.MaxValue);
+        }
+
+        /// <summary>
+        /// Finds the last match whose index is less than or equal to "start".
+        /// Captures are ordered in the same way as with forward match. This is different from .NET reverse matching.
+        /// Start is a number of bytes if kcode is given, otherwise it's a number of characters.
+        /// </summary>
+        public MatchData LastMatch(RubyEncoding kcode, MutableString/*!*/ input, int start) {
+            string str;
+            Regex regex = Transform(ref kcode, input, 0, out str);
+            Debug.Assert(str != null);
+
+            if (kcode != null) {
+                byte[] bytes = input.GetByteArray();
+
+                if (start < 0) {
+                    start += bytes.Length;
+                }
+
+                // GetCharCount returns the number of whole characters:
+                start = (start >= bytes.Length) ? str.Length : kcode.Encoding.GetCharCount(bytes, 0, start + 1) - 1;
+            } else {
+                if (start < 0) {
+                    start += str.Length;
+                }
+
+                if (start > str.Length) {
+                    start = str.Length;
+                }
+            }
+
+            Match match;
+            if (_hasGAnchor) {
+                // This only makes some \G anchors work. It seems that CLR doesn't support \G if preceeded by some characters.
+                // For example, this works in MRI but doesn't in CLR: "abcabczzz".rindex(/.+\G.+/, 3)
+                match = regex.Match(str, start);
+            } else {
+                match = LastMatch(regex, str, start);
+                if (match == null) {
+                    return null;
+                }
+            }
+            return MatchData.Create(match, input, str, kcode, 0);
+        }
+
+        /// <summary>
+        /// Binary searches "str" for the last match whose index is within the range [0, start].
+        /// </summary>
+        private static Match LastMatch(Regex/*!*/ regex, string/*!*/ input, int start) {
+            Match result = null;
+            int s = 0;
+            int e = start;
+
+            while (s <= e) {
+                int m = (s + e) / 2;
+                Match match = regex.Match(input, m);
+                if (match.Success && match.Index <= e) {
+                    result = match;
+                    s = match.Index + 1;
+                } else {
+                    e = m - 1;
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Returns a collection of fresh MatchData objects.
+        /// </summary>
+        public IList<MatchData>/*!*/ Matches(RubyEncoding kcode, MutableString/*!*/ input) {
+            string str;
+            MatchCollection matches = Transform(ref kcode, input, 0, out str).Matches(str);
+
+            var result = new MatchData[matches.Count];
+            for (int i = 0; i < result.Length; i++) {
+                result[i] = MatchData.Create(matches[i], input, str, kcode, 0);
+            }
+            return result;
+        }
+
+        public MutableString[]/*!*/ Split(RubyEncoding kcode, MutableString/*!*/ input) {
+            string str;
+            return MutableString.MakeArray(Transform(ref kcode, input, 0, out str).Split(str), kcode ?? input.Encoding);
+        }
+        
+        public MutableString[]/*!*/ Split(RubyEncoding kcode, MutableString/*!*/ input, int count) {
+            string str;
+            return MutableString.MakeArray(Transform(ref kcode, input, 0, out str).Split(str, count), kcode ?? input.Encoding);
+        }
+
+        public static MatchData SetCurrentMatchData(RubyScope/*!*/ scope, RubyRegex/*!*/ regex, MutableString str) {
+            return scope.GetInnerMostClosureScope().CurrentMatch = (str != null) ? regex.Match(scope.RubyContext.KCode, str) : null;
+        }
+
+        #endregion               
 
         #region ToString, Inspect
 
@@ -231,7 +366,7 @@ namespace IronRuby.Builtins {
         public MutableString/*!*/ Inspect() {
             MutableString result = MutableString.CreateMutable(RubyEncoding.Binary);
             result.Append('/');
-            AppendEscapeForwardSlash(result, GetPattern());
+            AppendEscapeForwardSlash(result, _pattern);
             result.Append('/');
             AppendOptionString(result, true, true);
             return result;
@@ -246,7 +381,7 @@ namespace IronRuby.Builtins {
             }
             AppendOptionString(result, false, false);
             result.Append(':');
-            AppendEscapeForwardSlash(result, GetPattern());
+            AppendEscapeForwardSlash(result, _pattern);
             result.Append(')');
             return result;
         }
@@ -311,6 +446,102 @@ namespace IronRuby.Builtins {
                 first = i; // include forward slash in the next append
                 i = SkipToUnescapedForwardSlash(pattern, i + 1);
             }
+
+            result.Append(pattern, first, pattern.Length - first);
+            return result;
+        }
+
+        #endregion
+
+        #region Escape
+
+        private const int EndOfPattern = -1;
+
+        /// <summary>
+        /// Returns a new instance of MutableString that contains escaped content of the given string.
+        /// </summary>
+        public static MutableString/*!*/ Escape(MutableString/*!*/ str) {
+            return str.EscapeRegularExpression();
+        }
+
+        private static int SkipNonSpecial(string/*!*/ pattern, int i, out char escaped) {
+            while (i < pattern.Length) {
+                char c = pattern[i];
+                switch (c) {
+                    case '$':
+                    case '^':
+                    case '|':
+                    case '[':
+                    case ']':
+                    case '(':
+                    case ')':
+                    case '\\':
+                    case '.':
+                    case '#':
+                    case '-':
+
+                    case '{':
+                    case '}':
+                    case '*':
+                    case '+':
+                    case '?':
+                    case ' ':
+                        escaped = c;
+                        return i;
+
+                    case '\t':
+                        escaped = 't';
+                        return i;
+
+                    case '\n':
+                        escaped = 'n';
+                        return i;
+
+                    case '\r':
+                        escaped = 'r';
+                        return i;
+
+                    case '\f':
+                        escaped = 'f';
+                        return i;
+                }
+                i++;
+            }
+
+            escaped = '\0';
+            return EndOfPattern;
+        }
+
+        internal static string/*!*/ Escape(string/*!*/ pattern) {
+            StringBuilder sb = EscapeToStringBuilder(pattern);
+            return (sb != null) ? sb.ToString() : pattern;
+        }
+
+        internal static StringBuilder EscapeToStringBuilder(string/*!*/ pattern) {
+            int first = 0;
+            char escaped;
+            int i = SkipNonSpecial(pattern, 0, out escaped);
+
+            if (i == EndOfPattern) {
+                return null;
+            }
+
+            StringBuilder result = new StringBuilder(pattern.Length + 1);
+
+            do {
+                Debug.Assert(i < pattern.Length);
+                // pattern[i] needs escape
+
+                result.Append(pattern, first, i - first);
+                result.Append('\\');
+                result.Append(escaped);
+                i++;
+
+                Debug.Assert(i <= pattern.Length);
+
+                first = i;
+                i = SkipNonSpecial(pattern, i, out escaped);
+            } while (i >= 0);
 
             result.Append(pattern, first, pattern.Length - first);
             return result;

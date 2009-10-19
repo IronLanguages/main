@@ -635,24 +635,18 @@ namespace IronRuby.Runtime {
         internal MutableString GetCurrentMatchGroup(int index) {
             Debug.Assert(index >= 0);
 
-            // we don't need to check index range, Groups indexer returns an unsuccessful group if out of range:
             var match = _currentMatch;
-            Group group;
-            if (match != null && (group = match.Groups[index]).Success) {
-                return MutableString.Create(group.Value, match.Encoding).TaintBy(match.OriginalString);
-            }
-
-            return null;
+            return (match != null) ? match.GetGroupValue(index) : null;
         }
 
         internal MutableString GetCurrentMatchLastGroup() {
             var match = _currentMatch;
             if (match != null) {
                 // TODO: cache the last successful group index?
-                for (int i = match.Groups.Count - 1; i >= 0; i--) {
-                    Group group = match.Groups[i];
-                    if (group.Success) {
-                        return MutableString.Create(group.Value, match.Encoding).TaintBy(match.OriginalString);
+                for (int i = match.GroupCount - 1; i >= 0; i--) {
+                    MutableString result = match.GetGroupValue(i);
+                    if (result != null) {
+                        return result;
                     }
                 }
             }
@@ -917,6 +911,11 @@ var closureScope = scope as RubyClosureScope;
             if (isMain) {
                 scope.SetDebugName("top-main");
                 context.ObjectClass.SetConstant("TOPLEVEL_BINDING", new Binding(scope));
+                if (context.RubyOptions.RequirePaths != null) {
+                    foreach (var path in context.RubyOptions.RequirePaths) {
+                        context.Loader.LoadFile(globalScope, rubyGlobalScope.MainObject, MutableString.Create(path, RubyEncoding.UTF8), LoadFlags.Require);
+                    }
+                }
             } else {
                 scope.SetDebugName("top-required");
             }
@@ -990,16 +989,18 @@ var closureScope = scope as RubyClosureScope;
                 RubyOps.ScopeSetMember(globalScope, str, value);
                 return value;
             } else {
-                if (args.Length != 0) {
-                    throw RubyOps.MakeWrongNumberOfArgumentsError(args.Length, 0);
-                }
-
-                object value;
-                if (RubyOps.TryGetGlobalScopeMethod(context, globalScope, str, out value)) {
-                    return value;
+                object result;
+                if (RubyOps.TryGetGlobalScopeMethod(context, globalScope, str, out result)) {
+                    if (args.Length != 0) {
+                        throw RubyOps.MakeWrongNumberOfArgumentsError(args.Length, 0);
+                    }
+                    return result;
                 }
 
                 if (self != null && str == "scope") {
+                    if (args.Length != 0) {
+                        throw RubyOps.MakeWrongNumberOfArgumentsError(args.Length, 0);
+                    }
                     return self;
                 }
             }

@@ -949,7 +949,7 @@ internal class LibraryDef {
     }
 
     private void GenerateSetConstant(string/*!*/ owner, string/*!*/ name, string/*!*/ expression) {
-        _output.WriteLine("{0}.Set{3}Constant(\"{1}\", {2});", owner, name, expression, Builtins ? "Builtin" : null);
+        _output.WriteLine("Set{3}Constant({0}, \"{1}\", {2});", owner, name, expression, Builtins ? "Builtin" : null);
     }
 
     private void GenerateAliases(ModuleDef/*!*/ def, string/*!*/ ownerRef) {
@@ -999,8 +999,9 @@ internal class LibraryDef {
 #endif
 
                 if (def.IsExtension) {
-                    _output.Write("ExtendClass(typeof({0}), {1}, {2}, ",
+                    _output.Write("ExtendClass(typeof({0}), {1}, {2}, {3}, ",
                         TypeName(def.Extends),
+                        def.GetModuleAttributes(),
                         def.Super != null ? def.Super.RefName : "null",
                         def.GetInitializerDelegates()
                     );
@@ -1034,7 +1035,11 @@ internal class LibraryDef {
                 }
 
                 if (def.IsExtension) {
-                    _output.Write("ExtendModule(typeof({0}), {1}, ", TypeName(def.Extends), def.GetInitializerDelegates());
+                    _output.Write("ExtendModule(typeof({0}), {1}, {2}, ", 
+                        TypeName(def.Extends),
+                        def.GetModuleAttributes(),
+                        def.GetInitializerDelegates()
+                    );
                 } else {
                     _output.Write("Define{0}Module(\"{1}\", typeof({2}), {3}, {4}, ",
                         def.IsGlobal ? "Global" : "",
@@ -1231,13 +1236,13 @@ internal class LibraryDef {
             }
 
             if (def.IsRuleGenerator) {
-                _output.WriteLine("module.DefineRuleGenerator(\"{0}\", 0x{1:x}, {2}.{3}());",
+                _output.WriteLine("DefineRuleGenerator(module, \"{0}\", 0x{1:x}, {2}.{3}());",
                     def.Name,
                     attributes,
                     TypeName(def.Overloads[0].DeclaringType),
                     def.Overloads[0].Name);
             } else {
-                _output.Write("module.DefineLibraryMethod(\"{0}\", 0x{1:x}", def.Name, attributes);
+                _output.Write("DefineLibraryMethod(module, \"{0}\", 0x{1:x}", def.Name, attributes);
 
                 _output.WriteLine(", ");
 

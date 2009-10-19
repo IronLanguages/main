@@ -1064,6 +1064,43 @@ puts m.overload(System::Array[Object]).arity
 ");
         }
 
+        public class ClassWithSlot1 {
+            public int Foo() {
+                return 1;
+            }
+
+            public override string ToString() {
+                return "base";
+            }
+        }
+
+        public class ClassWithNewSlot1 : ClassWithSlot1 {
+            public new string ToString() {
+                return "subclass";
+            }
+
+            public new int Foo() {
+                return 2;
+            }
+        }
+
+        public void ClrNewSlot1() {
+            Context.ObjectClass.SetConstant("NewSlot", Context.GetClass(typeof(ClassWithNewSlot1)));
+            Context.ObjectClass.SetConstant("Base", Context.GetClass(typeof(ClassWithSlot1)));
+            TestOutput(@"
+c = NewSlot.new
+p c.to_string
+p c.clr_member(Object, :to_string).call
+p c.foo
+p c.clr_member(Base, :foo).call
+", @"
+'subclass'
+'base'
+2
+1
+");
+        }
+
         #endregion
 
         #region Interfaces
@@ -1082,10 +1119,14 @@ puts m.overload(System::Array[Object]).arity
 
         public interface InterfaceFoo2 {
             int Foo();
+            int this[int i] { get; }
+            event Action Evnt;
+            int EvntValue { get; }
         }
 
         public interface InterfaceBar1 {
             int Bar();
+            int Bar(int i);
         }
 
         public interface InterfaceBaz1 {
@@ -1102,19 +1143,31 @@ puts m.overload(System::Array[Object]).arity
         }
 
         internal class InternalClass1 : InterfaceClassBase1, IEnumerable, IComparable, InterfaceBaz1, InterfaceFoo1, InterfaceFoo2, InterfaceBar1 {
+            int _evntValue;
+
             // simple:
-            public int Baz() { return 123; }
+            public int Baz() { return 0; }
 
             // simple explicit:
-            int IComparable.CompareTo(object obj) { return 0; }
+            int IComparable.CompareTo(object obj) { return 1; }
 
             // explicit + implicit
-            public int Bar() { return 0;}
-            int InterfaceBar1.Bar() { return 0; }
+            public int Bar() { return -1; }
+            int InterfaceBar1.Bar() { return 2; }
+            int InterfaceBar1.Bar(int i) { return 3; }
 
             // multiple explicit with the same signature 
-            int InterfaceFoo1.Foo() { return 1; }
-            int InterfaceFoo2.Foo() { return 2; }
+            int InterfaceFoo1.Foo() { return 4; }
+            int InterfaceFoo2.Foo() { return 5; }
+
+            // explicit default indexer:
+            int InterfaceFoo2.this[int i] { get { return 6; } }
+
+            // explicit property:
+            int InterfaceFoo2.EvntValue { get { return _evntValue; } }
+
+            // explicit event:
+            event Action InterfaceFoo2.Evnt { add { _evntValue++; } remove { _evntValue--; } }
         }
 
         public class ClassWithInterfaces2 : ClassWithInterfaces1, IComparable {
@@ -1148,24 +1201,37 @@ puts($obj2 <=> 1)
         /// Calling (explicit) interface methods on internal classes.
         /// A method that is accessible via any interface should be called. 
         /// If there is more than one then regular overload resolution should kick in.
-        /// 
         /// </summary>
-        public void ClrInterfaces2() {
+        public void ClrExplicitInterfaces1() {
             Context.ObjectClass.SetConstant("Inst", new InternalClass1());
             Context.ObjectClass.SetConstant("InterfaceFoo1", Context.GetModule(typeof(InterfaceFoo1)));
             Context.ObjectClass.SetConstant("InterfaceFoo2", Context.GetModule(typeof(InterfaceFoo2)));
             Context.ObjectClass.SetConstant("InterfaceBar1", Context.GetModule(typeof(InterfaceBar1)));
 
-            // TODO: explicit interface impl
             TestOutput(@"
 p Inst.GetEnumerator().nil?
-#p Inst.CompareTo(nil)
-#p Inst.Bar                               
-#p Inst.as(InterfaceFoo1).Foo   # or Inst.interface_method(InterfaceFoo1, :Foo).call ?
-#p Inst.as(InterfaceFoo2).Foo
-#p Inst.as(InterfaceBar1).Bar
+p Inst.baz
+p Inst.clr_member(System::IComparable, :compare_to).call(nil)
+p Inst.clr_member(InterfaceBar1, :bar).call
+p Inst.clr_member(InterfaceBar1, :bar).call(1)
+p Inst.clr_member(InterfaceFoo1, :foo).call
+p Inst.clr_member(InterfaceFoo2, :foo).call
+p Inst.clr_member(InterfaceFoo2, :[]).call(1)
+
+p Inst.clr_member(InterfaceFoo2, :evnt_value).call
+Inst.clr_member(InterfaceFoo2, :evnt).call { }
+p Inst.clr_member(InterfaceFoo2, :evnt_value).call
 ", @"
 false
+0
+1
+2
+3
+4
+5
+6
+0
+1
 ");
         }
 
@@ -1837,8 +1903,27 @@ end
             var range = new Range(1, 2, true);
             Assert(range.ToString() == "1...2");
 
-            var regex = new RubyRegex("hello", RubyRegexOptions.IgnoreCase | RubyRegexOptions.Multiline);
+            var regex = new RubyRegex(MutableString.CreateAscii("hello"), RubyRegexOptions.IgnoreCase | RubyRegexOptions.Multiline);
             Assert(regex.ToString() == "(?mi-x:hello)");
+        }
+
+        public class EmptyClass1 {
+        }
+
+        public void ClrToString1() {
+            Context.ObjectClass.SetConstant("C", Context.GetClass(typeof(EmptyClass1)));
+
+            AssertOutput(() => CompilerTest(@"
+class D; include System::Collections::Generic::IList[Fixnum]; end
+class E < C; include System::Collections::Generic::IList[Fixnum]; end
+class F; end
+
+p D.new, E.new, F.new
+"), @"
+#<D:0x*>
+#<E:0x*>
+#<F:0x*>
+", OutputFlags.Match);
         }
 
         public void ClrHashEquals4() {
@@ -2219,12 +2304,11 @@ a[0] = 'x'
 a[1] = C.new
 a[2] = :z
 
-# TODO: params array parameter of 'p' binds to the vector if passed alone
-p a,
-  System::Array[System::String].new(3, C.new),
-  System::Array[System::String].new([C.new, C.new]),
-  System::Array[System::Byte].new(3) { |x| x },
-  System::Array[System::Byte].new(3, 1)
+p a
+p System::Array[System::String].new(3, C.new)
+p System::Array[System::String].new([C.new, C.new])
+p System::Array[System::Byte].new(3) { |x| x }
+p System::Array[System::Byte].new(3, 1)
 ", @"
 ['x', 'c', 'z']
 ['c', 'c', 'c']
@@ -2251,7 +2335,7 @@ p System::Char.new('9').to_i
 ", @"
 [System::Char, IronRuby::Clr::String, Enumerable, Comparable, System::ValueType, Object, Kernel]
 [System::String, IronRuby::Clr::String, Enumerable, Comparable, Object, Kernel]
-'a'
+'a' (Char)
 1
 0
 'foo'
@@ -2287,6 +2371,28 @@ Foo
 Bar        
 ");
         }
+        
+        public void ClrEnums2() {
+            Context.ObjectClass.SetConstant("C", Context.GetClass(typeof(ClassWithEnum)));
+            Context.ObjectClass.SetConstant("E", Context.GetClass(typeof(ClassWithEnum.MyEnum)));
+
+            TestOutput(@"
+class X
+  def to_int
+    E.Baz
+  end
+end
+
+p System::Array[E].new([1, E.Bar])
+
+# TODO: allow default protocol to convert to an enum?
+System::Array[E].new [X.new] rescue puts $!
+
+", @"
+[Foo, Bar]
+can't convert X into IronRuby::Tests::Tests::ClassWithEnum::MyEnum
+");
+        }
 
         [Flags]
         public enum FlagsInt { A = 1, B = 2 }
@@ -2297,7 +2403,7 @@ Bar
         [Flags]
         public enum FlagsByte : byte { N = 0, E = 4, F = 8 }
         
-        public void ClrEnums2() {
+        public void ClrEnums3() {
             Context.ObjectClass.SetConstant("A", FlagsInt.A);
             Context.ObjectClass.SetConstant("B", FlagsInt.B);
             Context.ObjectClass.SetConstant("C", FlagsULong.C);
@@ -2350,18 +2456,18 @@ p(-a)
 p(+a)
 ");
             }, @"
-20
-12
-4
-64
-0
+20 (Decimal)
+12 (Decimal)
+4 (Decimal)
+64 (Decimal)
+0 (Decimal)
 false
 true
 true
 true
 false
 false
--16
+-16 (Decimal)
 16 (Decimal)
 ");
         }

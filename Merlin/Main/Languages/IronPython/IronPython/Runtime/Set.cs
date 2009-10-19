@@ -425,6 +425,10 @@ namespace IronPython.Runtime {
         /// </summary>
         /// <param name="s"></param>
         public void update(object s) {
+            if (Object.ReferenceEquals(s, this)) {
+                return;
+            }
+
             IEnumerator ie = PythonOps.GetEnumerator(s);
             while (ie.MoveNext()) {
                 add(ie.Current);
@@ -1234,21 +1238,19 @@ namespace IronPython.Runtime {
     /// </summary>
     [PythonType("setiterator")]
     public sealed class SetIterator : IEnumerable, IEnumerable<object>, IEnumerator, IEnumerator<object> {
-        private bool _mutable;
-        private int _count;
-        private CommonDictionaryStorage _items;
-        private IEnumerator<object> _enumerator;
+        private readonly CommonDictionaryStorage _items;
+        private readonly IEnumerator<object> _enumerator;
+        private readonly int _version;
 
         internal SetIterator(CommonDictionaryStorage items, bool mutable) {
-            _mutable = mutable;
             _items = items;
             if (mutable) {
                 lock (items) {
-                    _count = items.Count;
+                    _version = _items.Version;
                     _enumerator = items.GetKeys().GetEnumerator();
                 }
             } else {
-                _count = items.Count;
+                _version = _items.Version;
                 _enumerator = items.GetKeys().GetEnumerator();
             }
         }
@@ -1257,7 +1259,7 @@ namespace IronPython.Runtime {
 
         public object Current {
             get {
-                if (_mutable && (_count != _items.Count || !_items.Contains(_enumerator.Current))) {
+                if (_items.Version != _version) {
                     throw PythonOps.RuntimeError("set changed during iteration");
                 }
 

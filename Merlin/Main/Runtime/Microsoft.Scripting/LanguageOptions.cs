@@ -82,7 +82,7 @@ namespace Microsoft.Scripting {
             _showClrExceptions = GetOption(options, "ShowClrExceptions", false);
             _perfStats = GetOption(options, "PerfStats", false);
             _noAdaptiveCompilation = GetOption(options, "NoAdaptiveCompilation", false);
-            _searchPaths = GetSearchPathsOption(options) ?? new ReadOnlyCollection<string>(new[] { "." });
+            _searchPaths = GetSearchPathsOption(options) ?? new ReadOnlyCollection<string>(new string[0]);
         }
 
         public static T GetOption<T>(IDictionary<string, object> options, string name, T defaultValue) {

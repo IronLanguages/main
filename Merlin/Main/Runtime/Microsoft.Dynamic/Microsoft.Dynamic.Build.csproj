@@ -15,7 +15,6 @@
     <AssemblyOriginatorKeyFile>..\..\Support\MSSharedLibKey.snk</AssemblyOriginatorKeyFile>
     <SignAssembly Condition="'$(SignAssembly)' == '' And Exists('$(AssemblyOriginatorKeyFile)')">true</SignAssembly>
     <SignedSym Condition="'$(SignAssembly)' == 'true'">SIGNED</SignedSym>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DelaySign>true</DelaySign>
     <DefineConstants>CLR4;$(SignedSym)</DefineConstants>
     <BaseAddress>857735168</BaseAddress>

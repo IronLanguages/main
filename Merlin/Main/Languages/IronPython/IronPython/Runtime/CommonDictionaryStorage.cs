@@ -56,6 +56,7 @@ namespace IronPython.Runtime {
         private Func<object, int> _hashFunc;
         private Func<object, object, bool> _eqFunc;
         private Type _keyType;
+        private int _version;
 
         private const int InitialBucketSize = 7;
         private const int ResizeMultiplier = 3;
@@ -108,6 +109,12 @@ namespace IronPython.Runtime {
 
             for (int i = 0; i < items.Length / 2; i++) {
                 AddOne(items[i * 2 + 1], items[i * 2]);
+            }
+        }
+
+        public int Version {
+            get{
+                return _version;
             }
         }
 
@@ -267,6 +274,8 @@ namespace IronPython.Runtime {
         }
 
         private bool AddWorker(Bucket[] buckets, object key, object value, int hc) {
+            _version++;
+
             int index = hc % buckets.Length;
             Bucket prev = buckets[index];
             Bucket cur = prev;
@@ -354,6 +363,7 @@ namespace IronPython.Runtime {
                         prev.Next = bucket.Next;
                     }
                     _count--;
+                    _version++;
 
                     return true;
                 }
@@ -441,6 +451,7 @@ namespace IronPython.Runtime {
                 if (_buckets != null) {
                     _buckets = new Bucket[8];
                     _count = 0;
+                    _version++;
                 }
             }
         }

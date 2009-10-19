@@ -344,8 +344,17 @@ namespace Microsoft.Scripting.Runtime {
             }
         }
 
-        public virtual ConvertBinder CreateConvertBinder(Type toType, bool explicitCast) {
-            return new DefaultConvertAction(toType, explicitCast);
+        /// <summary>
+        /// Creates a conversion binder.
+        /// 
+        /// If explicitCast is true then the binder should do explicit conversions.
+        /// If explicitCast is false then the binder should do implicit conversions.
+        /// 
+        /// If explicitCast is null it is up to the language to select the conversions
+        /// which closest match their normal behavior.
+        /// </summary>
+        public virtual ConvertBinder CreateConvertBinder(Type toType, bool? explicitCast) {
+            return new DefaultConvertAction(toType, explicitCast ?? false);
         }
 
         private class DefaultGetMemberAction : GetMemberBinder {

@@ -32,7 +32,9 @@ namespace Microsoft.Scripting {
         }
 
         public virtual void Add(SourceUnit source, string/*!*/ message, SourceSpan span, int errorCode, Severity severity) {
-            throw new SyntaxErrorException(message, source, span, errorCode, severity);
+            if (severity == Severity.FatalError || severity == Severity.Error) {
+                throw new SyntaxErrorException(message, source, span, errorCode, severity);
+            }
         }
 
         /// <summary>
@@ -40,7 +42,9 @@ namespace Microsoft.Scripting {
         /// since SourceUnit cannot be marshaled across AppDomains.
         /// </summary>
         public virtual void Add(string message, string path, string code, string line, SourceSpan span, int errorCode, Severity severity) {
-            throw new SyntaxErrorException(message, path, code, line, span, errorCode, severity);
+            if (severity == Severity.FatalError || severity == Severity.Error) {
+                throw new SyntaxErrorException(message, path, code, line, span, errorCode, severity);
+            }
         }
     }
 

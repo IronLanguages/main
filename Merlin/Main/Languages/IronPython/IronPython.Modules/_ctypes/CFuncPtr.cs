@@ -12,6 +12,7 @@
  *
  *
  * ***************************************************************************/
+#if !SILVERLIGHT
 #if !CLR2
 using System.Linq.Expressions;
 #endif
@@ -19,6 +20,7 @@ using System.Linq.Expressions;
 using System;
 using System.Collections.Generic;
 using System.Dynamic;
+using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
@@ -36,9 +38,7 @@ using IronPython.Runtime;
 using IronPython.Runtime.Binding;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
-using System.Diagnostics;
 
-#if !SILVERLIGHT
 namespace IronPython.Modules {
     /// <summary>
     /// Provides support for interop with native code from Python code.

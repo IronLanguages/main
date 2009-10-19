@@ -16,41 +16,75 @@
     <AssemblyOriginatorKeyFile>..\..\..\Support\MSSharedLibKey.snk</AssemblyOriginatorKeyFile>
     <SignAssembly Condition="'$(SignAssembly)' == '' And Exists('$(AssemblyOriginatorKeyFile)')">true</SignAssembly>
     <SignedSym Condition="'$(SignAssembly)' == 'true'">SIGNED</SignedSym>
-    <DelaySign>true</DelaySign>
+    <DelaySign>true</DelaySign>    
     <SilverlightBuild>true</SilverlightBuild>
-    <SilverlightPath Condition="$(SilverlightPath) == ''">..\..\..\Utilities\Silverlight\x86ret\</SilverlightPath>
-    <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
+    <Silverlight3Path>..\..\..\Utilities\Silverlight\x86ret</Silverlight3Path>
+    <Silverlight4Path>..\..\..\Utilities\Silverlight\v4-x86fre</Silverlight4Path>
+
+    <!-- The following two lines prevent csc.rsp and Microsoft.NETFramework.props from adding additional assembly references -->
+    <NoConfig>true</NoConfig>
+    <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>..\..\..\Bin\Silverlight Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE;SILVERLIGHT;SILVERLIGHT_3;$(SignedSym)</DefineConstants>
+    <DefineConstants>DEBUG;TRACE;SILVERLIGHT;SILVERLIGHT_3;CLR2;$(SignedSym)</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <NoStdLib>true</NoStdLib>
     <PlatformTarget>AnyCPU</PlatformTarget>
+    <SilverlightPath Condition="'$(SilverlightPath)' == ''">$(Silverlight3Path)</SilverlightPath>
+    <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight Release|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>..\..\..\Bin\Silverlight Release\</OutputPath>
-    <DefineConstants>TRACE;SILVERLIGHT;SILVERLIGHT_3;$(SignedSym)</DefineConstants>
+    <DefineConstants>TRACE;SILVERLIGHT;SILVERLIGHT_3;CLR2;$(SignedSym)</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <NoStdLib>true</NoStdLib>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DelaySign>true</DelaySign>
+    <SilverlightPath Condition="'$(SilverlightPath)' == ''">$(Silverlight3Path)</SilverlightPath>
+    <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight 4 Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\..\..\Bin\Silverlight 4 Debug\</OutputPath>
+    <DefineConstants>TRACE;DEBUG;SILVERLIGHT;CLR4;$(SignedSym)</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
+    <NoStdLib>true</NoStdLib>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <SilverlightPath Condition="'$(SilverlightPath)' == ''">$(Silverlight4Path)</SilverlightPath>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight 4 Release|AnyCPU' ">
+    <NoStdLib>true</NoStdLib>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <OutputPath>..\..\..\Bin\Silverlight 4 Release\</OutputPath>
+    <DefineConstants>TRACE;SILVERLIGHT;CLR4;$(SignedSym)</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <SilverlightPath Condition="'$(SilverlightPath)' == ''">$(Silverlight4Path)</SilverlightPath>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\..\ndp\fx\src\Core\Microsoft\Scripting\Microsoft.Scripting.Core.csproj">
+    <ProjectReference Include="..\..\..\..\..\ndp\fx\src\Core\Microsoft\Scripting\Microsoft.Scripting.Core.csproj" Condition=" '$(TargetFrameworkVersion)' != 'v4.0' ">
       <Project>{2AE75F5A-CD1F-4925-9647-AF4D1C282FB4}</Project>
       <Name>Microsoft.Scripting.Core</Name>
       <Private>False</Private>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\..\..\ndp\fx\src\Core\Microsoft\Scripting\Microsoft.Scripting.ExtensionAttribute.csproj">
+    <ProjectReference Include="..\..\..\..\..\ndp\fx\src\Core\Microsoft\Scripting\Microsoft.Scripting.ExtensionAttribute.csproj" Condition=" '$(TargetFrameworkVersion)' != 'v4.0' ">
       <Project>{8B0F1074-750E-4D64-BF23-A1E0F54261E5}</Project>
       <Name>Microsoft.Scripting.ExtensionAttribute</Name>
     </ProjectReference>
@@ -98,6 +132,10 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(SilverlightPath)\System.Net.dll</HintPath>
       <Private>False</Private>
+    </Reference>
+    <Reference Include="System.Core, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" Condition=" '$(TargetFrameworkVersion)' == 'v4.0' ">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(SilverlightPath)\System.Core.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>

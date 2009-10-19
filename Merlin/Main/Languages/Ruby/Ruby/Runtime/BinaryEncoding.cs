@@ -83,7 +83,7 @@ namespace IronRuby.Runtime {
             ContractUtils.RequiresArrayRange(chars, charIndex, byteCount, "charIndex", "byteCount");
 
             for (int i = 0; i < byteCount; i++) {
-                chars[byteIndex + i] = (char)bytes[charIndex + i];
+                chars[charIndex + i] = (char)bytes[byteIndex + i];
             }
 
             return byteCount;

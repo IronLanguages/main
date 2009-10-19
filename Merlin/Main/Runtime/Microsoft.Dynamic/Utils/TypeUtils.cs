@@ -244,7 +244,7 @@ namespace Microsoft.Scripting.Utils {
 
         // keep in sync with System.Core version
         internal static bool AreEquivalent(Type t1, Type t2) {
-#if CLR2
+#if CLR2 || SILVERLIGHT // type equivalence not implemented on Silverlight
             return t1 == t2;
 #else
             return t1 == t2 || t1.IsEquivalentTo(t2);

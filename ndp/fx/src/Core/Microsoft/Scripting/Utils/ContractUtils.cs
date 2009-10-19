@@ -51,14 +51,6 @@ namespace System.Dynamic.Utils {
             }
         }
 
-        internal static void Requires(bool precondition, string paramName, string message) {
-            Debug.Assert(!string.IsNullOrEmpty(paramName));
-
-            if (!precondition) {
-                throw new ArgumentException(message, paramName);
-            }
-        }
-
         internal static void RequiresNotNull(object value, string paramName) {
             Debug.Assert(!string.IsNullOrEmpty(paramName));
 

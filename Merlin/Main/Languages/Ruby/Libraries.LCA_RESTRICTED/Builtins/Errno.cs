@@ -141,6 +141,16 @@ namespace IronRuby.Builtins {
             }
         }
 
+        [RubyClass("ENOEXEC", Extends = typeof(ExecFormatError), Inherits = typeof(ExternalException))]
+        public class ExecFormatErrorOps {
+            [RubyConstructor]
+            public static BadFileDescriptorError/*!*/ Create(RubyClass/*!*/ self, [DefaultProtocol, DefaultParameterValue(null)]MutableString message) {
+                var result = new BadFileDescriptorError(RubyExceptions.MakeMessage(ref message, "Exec format error"));
+                RubyExceptionData.InitializeException(result, message);
+                return result;
+            }
+        }
+
         [RubyClass("EPIPE"), Serializable]
         public class PipeError : ExternalException {
             private const string/*!*/ M = "Broken pipe";

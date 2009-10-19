@@ -25,6 +25,7 @@ using Microsoft.Scripting.Utils;
 
 using IronRuby.Builtins;
 using IronRuby.Runtime.Calls;
+using IronRuby.Runtime;
 
 namespace IronRuby.Tests {
     public partial class Tests { 
@@ -146,6 +147,13 @@ py_add
 
             scope.SetVariable("some_variable", "foo");
             Assert(compiled.Execute<string>(scope) == "foo");
+
+            // we throw correct exceptions:
+            scope = Engine.CreateScope();
+            scope.SetVariable("bar", 1);
+            AssertExceptionThrown<MissingMethodException>(() => Engine.Execute("foo 1,2,3"));
+            AssertExceptionThrown<MissingMethodException>(() => Engine.Execute("foo 1,2,3", scope));
+            AssertExceptionThrown<ArgumentException>(() => Engine.Execute("bar 1,2,3", scope));
         }
 
         public void RubyHosting1D() {
@@ -153,11 +161,32 @@ py_add
             Engine.Execute("def foo; 1; end");
             Assert(Context.ObjectClass.GetMethod("foo") != null);
 
-            // When executed against a scope top-level methods are defined on main singleton and also stored in the scope:
+            // The method is private and shouldn't be invokable via InvokeMember:
+            AssertExceptionThrown<MissingMethodException>(() => Engine.Operations.InvokeMember(new object(), "foo"));
+
+            // When executed against a scope top-level methods are defined on main singleton and also stored in the scope.
+            // This is equivalent to instance_evaling the code against the main singleton.
             var scope = Engine.CreateScope();
             Engine.Execute("def bar; 1; end", scope);
             Assert(Context.ObjectClass.GetMethod("bar") == null);
             Assert(scope.GetVariable("bar") != null);
+            
+            // we can invoke the method on a scope:
+            Assert((int)Engine.Operations.InvokeMember(scope, "bar") == 1);
+            
+            // Since we don't define top-level methods on Object when executing against a scope, 
+            // executions against different scopes don’t step on each other:
+            var scope1 = Engine.CreateScope();
+            var scope2 = Engine.CreateScope();
+            Engine.Execute("def foo(a,b); a + b; end", scope1);
+            Engine.Execute("def foo(a,b); a - b; end", scope2);
+            Assert(Engine.Execute<int>("foo(1,2)", scope1) == 3);
+            Assert(Engine.Execute<int>("foo(1,2)", scope2) == -1);
+
+            // Contrary, last one wins when executing w/o scope:
+            Engine.Execute("def baz(a,b); a + b; end");
+            Engine.Execute("def baz(a,b); a - b; end");
+            Assert(Engine.Execute<int>("baz(1,2)") == -1);
         }
 
         public void RubyHosting2() {
@@ -236,10 +265,29 @@ IronRuby.globals.z = IronRuby.globals.x + FooBar
             Assert(Runtime.Globals.GetVariable<int>("z") == 3);
         }
 
-        public void Scenario_RubyEngine1() {
-            ScriptScope scope = Runtime.CreateScope();
-            object x = Engine.CreateScriptSourceFromString("1 + 1").Execute(scope);
-            AssertEquals(x, 2);
+        public void RubyHosting_Scopes1() {
+            TestOutput(@"
+engine = IronRuby.create_engine
+scope = engine.create_scope
+scope.x = 1
+scope.y = 2
+p scope.x + scope.y
+", @"
+3
+");
+        }
+
+        public void HostingDefaultOptions1() {
+            // this reports warnings that the default ErrorSink should ignore:
+            Engine.Execute(@"
+x = lambda { }
+1.times &x
+
+a = 'ba'.gsub /b/, '1'
+");
+
+            // errors and fatal errors should trigger an exception:
+            AssertExceptionThrown<SyntaxErrorException>(() => Engine.Execute("}"));
         }
 
         public void Scenario_RubyInteractive1() {
@@ -351,6 +399,8 @@ end
 
             var lambda = Engine.Operations.ConvertTo<Func<int, int>>(Engine.Execute("lambda { |x| x * 2 }"));
             Assert(lambda(10) == 20);
+
+            Assert((int)Engine.CreateOperations().InvokeMember(null, "to_i") == 0);
         }
 
         public void ObjectOperations2() {

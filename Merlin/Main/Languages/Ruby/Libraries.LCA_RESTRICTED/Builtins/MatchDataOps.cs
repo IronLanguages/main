@@ -36,20 +36,20 @@ namespace IronRuby.Builtins {
         #region Public Instance Methods
 
         [RubyMethod("[]")]
-        public static MutableString GetGroup(RubyContext/*!*/ context, MatchData/*!*/ self, [DefaultProtocol]int index) {
-            index = IListOps.NormalizeIndex(self.Groups.Count, index);
-            return self.GetGroupValue(context, index);
+        public static MutableString GetGroup(MatchData/*!*/ self, [DefaultProtocol]int index) {
+            index = IListOps.NormalizeIndex(self.GroupCount, index);
+            return self.GetGroupValue(index);
         }
 
         [RubyMethod("[]")]
-        public static RubyArray GetGroup(RubyContext/*!*/ context, MatchData/*!*/ self, [DefaultProtocol]int start, [DefaultProtocol]int length) {
-            if (!IListOps.NormalizeRange(self.Groups.Count, ref start, ref length)) {
+        public static RubyArray GetGroup(MatchData/*!*/ self, [DefaultProtocol]int start, [DefaultProtocol]int length) {
+            if (!IListOps.NormalizeRange(self.GroupCount, ref start, ref length)) {
                 return null;
             }
 
             RubyArray result = new RubyArray();
             for (int i = 0; i < length; i++) {
-                result.Add(self.GetGroupValue(context, start + i));
+                result.Add(self.GetGroupValue(start + i));
             }
 
             return result;
@@ -58,37 +58,37 @@ namespace IronRuby.Builtins {
         [RubyMethod("[]")]
         public static RubyArray GetGroup(ConversionStorage<int>/*!*/ fixnumCast, MatchData/*!*/ self, [NotNull]Range/*!*/ range) {
             int begin, count;
-            if (!IListOps.NormalizeRange(fixnumCast, self.Groups.Count, range, out begin, out count)) {
+            if (!IListOps.NormalizeRange(fixnumCast, self.GroupCount, range, out begin, out count)) {
                 return null;
             }
-            return GetGroup(fixnumCast.Context, self, begin, count);
+            return GetGroup(self, begin, count);
         }
 
         [RubyMethod("begin")]
         public static object Begin(MatchData/*!*/ self, [DefaultProtocol]int groupIndex) {
-            var group = self.GetExistingGroup(groupIndex);
-            return group.Success ? ScriptingRuntimeHelpers.Int32ToObject(group.Index) : null;
+            self.RequireExistingGroup(groupIndex);
+            return self.GroupSuccess(groupIndex) ? ScriptingRuntimeHelpers.Int32ToObject(self.GetGroupStart(groupIndex)) : null;
         }
 
         [RubyMethod("end")]
         public static object End(MatchData/*!*/ self, [DefaultProtocol]int groupIndex) {
-            var group = self.GetExistingGroup(groupIndex);
-            return group.Success ? ScriptingRuntimeHelpers.Int32ToObject(group.Index + group.Length) : null;
+            self.RequireExistingGroup(groupIndex);
+            return self.GroupSuccess(groupIndex) ? ScriptingRuntimeHelpers.Int32ToObject(self.GetGroupEnd(groupIndex)) : null;
         }
 
         [RubyMethod("length")]
         [RubyMethod("size")]
         public static int Length(MatchData/*!*/ self) {
-            return self.Groups.Count;
+            return self.GroupCount;
         }
 
         [RubyMethod("offset")]
         public static RubyArray/*!*/ Offset(MatchData/*!*/ self, [DefaultProtocol]int groupIndex) {
-            var group = self.GetExistingGroup(groupIndex);
+            self.RequireExistingGroup(groupIndex);
             RubyArray result = new RubyArray(2);
-            if (group.Success) {
-                result.Add(group.Index);
-                result.Add(group.Index + group.Length);
+            if (self.GroupSuccess(groupIndex)) {
+                result.Add(self.GetGroupStart(groupIndex));
+                result.Add(self.GetGroupEnd(groupIndex));
             } else {
                 result.Add(null);
                 result.Add(null);
@@ -106,28 +106,28 @@ namespace IronRuby.Builtins {
             return self.OriginalString.GetSlice(self.Index + self.Length).TaintBy(self, context);
         }
 
-        private static RubyArray/*!*/ ReturnMatchingGroups(RubyContext/*!*/ context, MatchData/*!*/ self, int groupIndex) {
+        private static RubyArray/*!*/ ReturnMatchingGroups(MatchData/*!*/ self, int groupIndex) {
             Debug.Assert(groupIndex >= 0);
             
-            if (self.Groups.Count < groupIndex) {
+            if (self.GroupCount < groupIndex) {
                 return new RubyArray();
             }
 
-            RubyArray result = new RubyArray(self.Groups.Count - groupIndex);
-            for (int i = groupIndex; i < self.Groups.Count; i++) {
-                result.Add(self.GetGroupValue(context, i));
+            RubyArray result = new RubyArray(self.GroupCount - groupIndex);
+            for (int i = groupIndex; i < self.GroupCount; i++) {
+                result.Add(self.GetGroupValue(i));
             }
             return result;
         }
 
         [RubyMethod("captures")]
-        public static RubyArray/*!*/ Captures(RubyContext/*!*/ context, MatchData/*!*/ self) {
-            return ReturnMatchingGroups(context, self, 1);
+        public static RubyArray/*!*/ Captures(MatchData/*!*/ self) {
+            return ReturnMatchingGroups(self, 1);
         }
 
         [RubyMethod("to_a")]
-        public static RubyArray/*!*/ ToArray(RubyContext/*!*/ context, MatchData/*!*/ self) {
-            return ReturnMatchingGroups(context, self, 0);
+        public static RubyArray/*!*/ ToArray(MatchData/*!*/ self) {
+            return ReturnMatchingGroups(self, 0);
         }
 
         [RubyMethod("string")]
@@ -136,10 +136,10 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("select")]
-        public static object Select(RubyContext/*!*/ context, [NotNull]BlockParam/*!*/ block, MatchData/*!*/ self) {
+        public static object Select([NotNull]BlockParam/*!*/ block, MatchData/*!*/ self) {
             RubyArray result = new RubyArray();
-            for (int i = 0; i < self.Groups.Count; i++) {
-                MutableString value = self.GetGroupValue(context, i);
+            for (int i = 0; i < self.GroupCount; i++) {
+                MutableString value = self.GetGroupValue(i);
 
                 object blockResult;
                 if (block.Yield(value, out blockResult)) {
@@ -159,7 +159,7 @@ namespace IronRuby.Builtins {
 
             RubyArray result = new RubyArray();
             for (int i = 0; i < indices.Length; i++) {
-                result.Add(GetGroup(conversionStorage.Context, self, indices[i]));
+                result.Add(GetGroup(self, indices[i]));
             }
             return result;
         }
@@ -170,8 +170,8 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("to_s")]
-        public static MutableString/*!*/ ToS(RubyContext/*!*/ context, MatchData/*!*/ self) {
-            return MutableString.Create(self.Value, self.Encoding).TaintBy(self, context);
+        public static MutableString/*!*/ ToS(MatchData/*!*/ self) {
+            return self.GetValue();
         }
 
         #endregion

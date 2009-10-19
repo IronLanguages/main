@@ -13,15 +13,16 @@
  *
  * ***************************************************************************/
 
+#if CLR2
+using Microsoft.Scripting.Utils;
+#endif
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using System.Dynamic;
 using System.Windows;
 using System.Windows.Resources;
 using Microsoft.Scripting.Hosting;
-using Microsoft.Scripting.Utils;
-using System.Collections.Generic;
 
 namespace Microsoft.Scripting.Silverlight {
 

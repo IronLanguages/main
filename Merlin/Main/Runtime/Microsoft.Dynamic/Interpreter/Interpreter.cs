@@ -73,13 +73,13 @@ namespace Microsoft.Scripting.Interpreter {
             }
         }
 
-        public object Run(InterpretedFrame frame) {
+        public void Run(InterpretedFrame frame) {
             if (_onlyFaultHandlers) {
                 bool fault = true;
                 try {
                     RunInstructions(frame);
                     fault = false;
-                    return frame.Pop();
+                    return;
                 } finally {
                     if (fault) {
                         frame.FaultingInstruction = frame.InstructionIndex;
@@ -90,7 +90,7 @@ namespace Microsoft.Scripting.Interpreter {
                 while (true) {
                     try {
                         RunInstructions(frame);
-                        return frame.Pop();
+                        return;
                     } catch (Exception exc) {
                         frame.FaultingInstruction = frame.InstructionIndex;
                         ExceptionHandler handler = HandleCatch(frame, exc);
@@ -104,7 +104,8 @@ namespace Microsoft.Scripting.Interpreter {
                         if (abort != null) {
                             _anyAbortException = abort;
                             frame.CurrentAbortHandler = handler;
-                            return Run(frame);
+                            Run(frame);
+                            return;
                         } 
                     }
                 }

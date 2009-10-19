@@ -49,15 +49,11 @@ namespace IronRuby.Builtins {
 
         #region Helpers
 
-        internal static int NormalizeIndex(MutableString/*!*/ str, int index) {
-            return IListOps.NormalizeIndex(str.Length, index);
-        }
-
-        private static bool InExclusiveRangeNormalized(MutableString/*!*/ str, ref int index) {
+        internal static bool InExclusiveRangeNormalized(int length, ref int index) {
             if (index < 0) {
-                index = index + str.Length;
+                index = index + length;
             }
-            return index >= 0 && index < str.Length;
+            return index >= 0 && index < length;
         }
 
         private static bool InInclusiveRangeNormalized(MutableString/*!*/ str, ref int index) {
@@ -65,6 +61,44 @@ namespace IronRuby.Builtins {
                 index = index + str.Length;
             }
             return index >= 0 && index <= str.Length;
+        }
+
+        internal static bool NormalizeSubstringRange(ConversionStorage<int>/*!*/ fixnumCast, Range/*!*/ range, int length, out int begin, out int count) {
+            begin = Protocols.CastToFixnum(fixnumCast, range.Begin);
+            int end = Protocols.CastToFixnum(fixnumCast, range.End);
+
+            begin = IListOps.NormalizeIndex(length, begin);
+            if (begin < 0 || begin > length) {
+                count = 0;
+                return false;
+            }
+
+            end = IListOps.NormalizeIndex(length, end); 
+
+            count = range.ExcludeEnd ? end - begin : end - begin + 1;
+            return true;
+        }
+
+        internal static bool NormalizeSubstringRange(int length, ref int start, ref int count) {
+            start = IListOps.NormalizeIndex(length, start);
+
+            if (start == length || start < 0 || start > length || count < 0) {
+                return false;
+            }
+
+            if (start + count > length) {
+                count = length - start;
+            }
+
+            return true;
+        }
+
+        internal static int NormalizeInsertIndex(int index, int length) {
+            int result = index < 0 ? index + length + 1 : index;
+            if (result > length || result < 0) {
+                throw RubyExceptions.CreateIndexError(String.Format("index {0} out of string", index));
+            }
+            return result;
         }
         
         // Parses interval strings that are of this form:
@@ -438,32 +472,9 @@ namespace IronRuby.Builtins {
 
         #region slice!
 
-        private static Group MatchRegexp(RubyScope/*!*/ scope, MutableString/*!*/ self, RubyRegex/*!*/ regex, int occurrance) {
-            MatchData match = RegexpOps.Match(scope, regex, self); 
-            if (match == null || !match.Success)
-                return null;
-
-            // Normalize index against # Groups in Match
-            if (occurrance < 0) {
-                occurrance += match.Groups.Count;
-                // Cannot refer to zero using negative indices 
-                if (occurrance == 0) {
-                    return null;
-                }
-            }
-
-            if (occurrance < 0 || occurrance > match.Groups.Count) {
-                return null;
-            }
-
-            return match.Groups[occurrance].Success ? match.Groups[occurrance] : null;
-        }
-
         [RubyMethod("slice!")]
-        public static object RemoveCharInPlace(RubyContext/*!*/ context, MutableString/*!*/ self, 
-            [DefaultProtocol]int index) {
-
-            if (!InExclusiveRangeNormalized(self, ref index)) {
+        public static object RemoveCharInPlace(RubyContext/*!*/ context, MutableString/*!*/ self, [DefaultProtocol]int index) {
+            if (!InExclusiveRangeNormalized(self.GetByteCount(), ref index)) {
                 return null;
             }
 
@@ -474,9 +485,7 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("slice!")]
-        public static MutableString RemoveSubstringInPlace(MutableString/*!*/ self,
-            [DefaultProtocol]int start, [DefaultProtocol]int length) {
-
+        public static MutableString RemoveSubstringInPlace(MutableString/*!*/ self, [DefaultProtocol]int start, [DefaultProtocol]int length) {
             if (length < 0) {
                 return null;
             }
@@ -504,7 +513,7 @@ namespace IronRuby.Builtins {
                 return null;
             }
 
-            end = NormalizeIndex(self, end);
+            end = IListOps.NormalizeIndex(self.Length, end);
 
             int count = range.ExcludeEnd ? end - begin : end - begin + 1;
             return count < 0 ? self.CreateInstance() : RemoveSubstringInPlace(self, begin, count);
@@ -517,7 +526,7 @@ namespace IronRuby.Builtins {
             }
 
             MatchData match = RegexpOps.Match(scope, regex, self);
-            if (match == null || !match.Success) {
+            if (match == null) {
                 return null;
             }
 
@@ -532,8 +541,13 @@ namespace IronRuby.Builtins {
                 return self.Clone().TaintBy(regex, scope);
             }
 
-            Group group = MatchRegexp(scope, self, regex, occurrance);
-            return group == null ? null : RemoveSubstringInPlace(self, group.Index, group.Length).TaintBy(regex, scope);
+            MatchData match = RegexpOps.Match(scope, regex, self);
+            if (match == null || !RegexpOps.NormalizeGroupIndex(ref occurrance, match.GroupCount)) {
+                return null;
+            }
+
+            return match.GroupSuccess(occurrance) ?
+                RemoveSubstringInPlace(self, match.GetGroupStart(occurrance), match.GetGroupLength(occurrance)).TaintBy(regex, scope) : null;
         }
 
         [RubyMethod("slice!")]
@@ -558,56 +572,34 @@ namespace IronRuby.Builtins {
         [RubyMethod("[]")]
         [RubyMethod("slice")]
         public static object GetChar(MutableString/*!*/ self, [DefaultProtocol]int index) {
-            return InExclusiveRangeNormalized(self, ref index) ? (object)(int)self.GetByte(index) : null;
+            return InExclusiveRangeNormalized(self.GetByteCount(), ref index) ? ScriptingRuntimeHelpers.Int32ToObject(self.GetByte(index)) : null;
         }
 
         [RubyMethod("[]")]
         [RubyMethod("slice")]
-        public static MutableString GetSubstring(MutableString/*!*/ self, 
-            [DefaultProtocol]int start, [DefaultProtocol]int length) {
-
-            start = NormalizeIndex(self, start);
-
-            if (start == self.Length) {
-                return self.CreateInstance().TaintBy(self);
+        public static MutableString GetSubstring(MutableString/*!*/ self, [DefaultProtocol]int start, [DefaultProtocol]int count) {
+            int byteCount = self.GetByteCount();
+            if (!NormalizeSubstringRange(byteCount, ref start, ref count)) {
+                return (start == byteCount) ? self.CreateInstance().TaintBy(self) : null;
             }
 
-            if (start < 0 || start > self.Length || length < 0) {
-                return null;
-            }
-
-            if (start + length > self.Length) {
-                length = self.Length - start;
-            }
-
-            return self.CreateInstance().Append(self, start, length).TaintBy(self);
+            return self.CreateInstance().Append(self, start, count).TaintBy(self);
         }
 
         [RubyMethod("[]")]
         [RubyMethod("slice")]
         public static MutableString GetSubstring(ConversionStorage<int>/*!*/ fixnumCast, MutableString/*!*/ self, [NotNull]Range/*!*/ range) {
-            int begin = Protocols.CastToFixnum(fixnumCast, range.Begin);
-            int end = Protocols.CastToFixnum(fixnumCast, range.End);
-
-            begin = NormalizeIndex(self, begin);
-            if (begin < 0 || begin > self.Length) {
+            int begin, count;
+            if (!NormalizeSubstringRange(fixnumCast, range, self.GetByteCount(), out begin, out count)) {
                 return null;
             }
-
-            end = NormalizeIndex(self, end);
-
-            int count = range.ExcludeEnd ? end - begin : end - begin + 1;
             return (count < 0) ? self.CreateInstance().TaintBy(self) : GetSubstring(self, begin, count);
         }
 
         [RubyMethod("[]")]
         [RubyMethod("slice")]
         public static MutableString GetSubstring(MutableString/*!*/ self, [NotNull]MutableString/*!*/ searchStr) {
-            if (self.IndexOf(searchStr) != -1) {
-                return searchStr.Clone();
-            } else {
-                return null;
-            }
+            return (self.IndexOf(searchStr) != -1) ? searchStr.Clone() : null;
         }
 
         [RubyMethod("[]")]
@@ -622,8 +614,7 @@ namespace IronRuby.Builtins {
                 return null;
             }
 
-            string result = match.Value;
-            return (result.Length == 0) ? null : self.CreateInstance().TaintBy(self).Append(result).TaintBy(regex, scope);
+            return self.CreateInstance().TaintBy(self).Append(self, match.Index, match.Length).TaintBy(regex, scope);
         }
 
         [RubyMethod("[]")]
@@ -634,12 +625,13 @@ namespace IronRuby.Builtins {
                 return self.CreateInstance().TaintBy(self).TaintBy(regex, scope);
             }
 
-            Group group = MatchRegexp(scope, self, regex, occurrance);
-            if (group == null || !group.Success) {
+            MatchData match = RegexpOps.Match(scope, regex, self);
+            if (match == null || !RegexpOps.NormalizeGroupIndex(ref occurrance, match.GroupCount)) {
                 return null;
             }
 
-            return self.CreateInstance().Append(group.Value).TaintBy(self).TaintBy(regex, scope);
+            MutableString result = match.AppendGroupValue(occurrance, self.CreateInstance());
+            return result != null ? result.TaintBy(regex, scope) : null;
         }
 
         #endregion
@@ -746,11 +738,11 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("[]=")]
-        public static MutableString ReplaceSubstring(MutableString/*!*/ self,
+        public static MutableString ReplaceSubstring(RubyContext/*!*/ context, MutableString/*!*/ self,
             [NotNull]RubyRegex/*!*/ regex, [DefaultProtocol, NotNull]MutableString/*!*/ value) {
-            
-            Match match = regex.Match(self);
-            if (!match.Success) {
+
+            MatchData match = regex.Match(context.KCode, self);
+            if (match == null) {
                 throw RubyExceptions.CreateIndexError("regexp not matched");
             }
 
@@ -1225,7 +1217,7 @@ namespace IronRuby.Builtins {
 
             var matchScope = scope.GetInnerMostClosureScope();
             MatchData match = RegexpOps.Match(scope, pattern, input);
-            if (match == null || !match.Success) {
+            if (match == null) {
                 result = null;
                 blockResult = null;
                 matchScope.CurrentMatch = null;
@@ -1236,7 +1228,7 @@ namespace IronRuby.Builtins {
             result = input.Clone();
             matchScope.CurrentMatch = match;
 
-            if (block.Yield(MutableString.Create(match.Value, input.Encoding), out blockResult)) {
+            if (block.Yield(match.GetValue(), out blockResult)) {
                 return true;
             }
 
@@ -1261,7 +1253,7 @@ namespace IronRuby.Builtins {
 
             var matchScope = scope.GetInnerMostClosureScope();
 
-            MatchCollection matches = regex.Matches(input);
+            var matches = regex.Matches(tosConversion.Context.KCode, input);
             if (matches.Count == 0) {
                 result = null;
                 blockResult = null;
@@ -1273,12 +1265,11 @@ namespace IronRuby.Builtins {
             result = input.CreateInstance().TaintBy(input);
             
             int offset = 0;
-            foreach (Match match in matches) {
-                MatchData currentMatch = new MatchData(match, input);
-                matchScope.CurrentMatch = currentMatch;
+            foreach (MatchData match in matches) {
+                matchScope.CurrentMatch = match;
 
                 input.TrackChanges();
-                if (block.Yield(MutableString.Create(match.Value, input.Encoding), out blockResult)) {
+                if (block.Yield(match.GetValue(), out blockResult)) {
                     return true;
                 }
                 if (input.HasChanged) {
@@ -1286,7 +1277,7 @@ namespace IronRuby.Builtins {
                 }
 
                 // resets the $~ scope variable to the last match (skipd if block jumped):
-                matchScope.CurrentMatch = currentMatch;
+                matchScope.CurrentMatch = match;
 
                 MutableString replacement = Protocols.ConvertToString(tosConversion, blockResult);
                 result.TaintBy(replacement);
@@ -1313,32 +1304,35 @@ namespace IronRuby.Builtins {
             }
         }
 
-        private static void AppendReplacementExpression(MutableString input, GroupCollection/*!*/ groups, MutableString/*!*/ result, MutableString/*!*/ replacement) {
+        private static void AppendReplacementExpression(MutableString/*!*/ input, MatchData/*!*/ match, MutableString/*!*/ result, 
+            MutableString/*!*/ replacement) {
+
             int backslashCount = 0;
             for (int i = 0; i < replacement.Length; i++) {
                 char c = replacement.GetChar(i);
-                if (c == '\\')
+                if (c == '\\') {
                     backslashCount++;
-                else if (backslashCount == 0)
+                } else if (backslashCount == 0) {
                     result.Append(c);
-                else {
+                } else {
                     AppendBackslashes(backslashCount, result, 0);
                     // Odd number of \'s + digit means insert replacement expression
                     if ((backslashCount & 1) == 1) {
                         if (Char.IsDigit(c)) {
-                            AppendGroupByIndex(groups, c - '0', backslashCount, result);
+                            AppendGroupByIndex(match, c - '0', result);
                         } else if (c == '&') {
-                            AppendGroupByIndex(groups, groups.Count - 1, backslashCount, result);
+                            AppendGroupByIndex(match, match.GroupCount - 1, result);
                         } else if (c == '`') {
                             // Replace with everything in the input string BEFORE the match
-                            result.Append(input, 0, groups[0].Index);
+                            result.Append(input, 0, match.Index);
                         } else if (c == '\'') {
                             // Replace with everything in the input string AFTER the match
-                            int start = groups[0].Index + groups[0].Length;
-                            result.Append(input, start, input.Length - start);
+                            int start = match.Index + match.Length;
+                            // TODO:
+                            result.Append(input, start, input.GetLength() - start);
                         } else if (c == '+') {
                             // Replace last character in last successful match group
-                            AppendLastCharOfLastMatchGroup(groups, result);
+                            AppendLastCharOfLastMatchGroup(match, result);
                         } else {
                             // unknown escaped replacement char, go ahead and replace untouched
                             result.Append('\\');
@@ -1355,36 +1349,31 @@ namespace IronRuby.Builtins {
             AppendBackslashes(backslashCount, result, 1);
         }
 
-        private static void AppendLastCharOfLastMatchGroup(GroupCollection groups, MutableString result) {
-            int i = groups.Count - 1;
+        private static void AppendLastCharOfLastMatchGroup(MatchData/*!*/ match, MutableString/*!*/ result) {
+            int i = match.GroupCount - 1;
             // move to last successful match group
-            while (i > 0 && !groups[i].Success) {
+            while (i > 0 && !match.GroupSuccess(i)) {
                 i--;
             }
 
-            if (i > 0 && groups[i].Value.Length > 0) {
-                result.Append(groups[i].Value[groups[i].Length - 1]);
+            if (i > 0 && match.GroupSuccess(i)) {
+                int length = match.GetGroupLength(i);
+                if (length > 0) {
+                   result.Append(match.OriginalString, match.GetGroupStart(i) + length - 1, 1);
+                }
             }
         }
 
-        private static void AppendGroupByIndex(GroupCollection/*!*/ groups, int index, int backslashCount, MutableString/*!*/ result) {
-            if (groups[index].Success) {
-                result.Append(groups[index].Value);
+        private static void AppendGroupByIndex(MatchData/*!*/ match, int index, MutableString/*!*/ result) {
+            var value = match.GetGroupValue(index);
+            if (value != null) {
+                result.Append(value);
             }
-        }
-
-        private static void AppendReplacementExpression(MutableString/*!*/ input, MatchData/*!*/ match, MutableString/*!*/ result, MutableString/*!*/ replacement) {
-            AppendReplacementExpression(input, match.Groups, result, replacement);
-        }
-
-        // TODO: we have two overloads right now because we haven't unified Matches to return a List<MatchData> yet ...
-        private static void AppendReplacementExpression(MutableString/*!*/ input, Match/*!*/ match, MutableString/*!*/ result, MutableString/*!*/ replacement) {
-            AppendReplacementExpression(input, match.Groups, result, replacement);
         }
 
         private static MutableString ReplaceFirst(RubyScope/*!*/ scope, MutableString/*!*/ input, MutableString/*!*/ replacement, RubyRegex/*!*/ pattern) {
             MatchData match = RegexpOps.Match(scope, pattern, input);
-            if (match == null || !match.Success) {
+            if (match == null) {
                 return null;
             }
 
@@ -1407,7 +1396,7 @@ namespace IronRuby.Builtins {
             var matchScope = scope.GetInnerMostClosureScope();
             
             // case of all
-            MatchCollection matches = regex.Matches(input);
+            IList<MatchData> matches = regex.Matches(scope.RubyContext.KCode, input);
             if (matches.Count == 0) {
                 matchScope.CurrentMatch = null;
                 return null;
@@ -1416,7 +1405,7 @@ namespace IronRuby.Builtins {
             MutableString result = input.CreateInstance().TaintBy(input).TaintBy(replacement);
 
             int offset = 0;
-            foreach (Match match in matches) {
+            foreach (MatchData match in matches) {
                 result.Append(input, offset, match.Index - offset);
                 AppendReplacementExpression(input, match, result, replacement);
                 offset = match.Index + match.Length;
@@ -1424,7 +1413,7 @@ namespace IronRuby.Builtins {
 
             result.Append(input, offset, input.Length - offset);
 
-            matchScope.CurrentMatch = new MatchData(matches[matches.Count - 1], input);
+            matchScope.CurrentMatch = matches[matches.Count - 1];
             return result;
         }
 
@@ -1459,7 +1448,8 @@ namespace IronRuby.Builtins {
 
             object blockResult;
             MutableString result;
-            var regex = new RubyRegex(Regex.Escape(matchString.ToString()), RubyRegexOptions.NONE);
+            // TODO:
+            var regex = new RubyRegex(MutableString.CreateMutable(Regex.Escape(matchString.ToString()), matchString.Encoding), RubyRegexOptions.NONE);
 
             return BlockReplaceFirst(tosConversion, scope, self, block, regex, out blockResult, out result) ? blockResult : (result ?? self.Clone());
         }
@@ -1471,7 +1461,8 @@ namespace IronRuby.Builtins {
 
             object blockResult;
             MutableString result;
-            var regex = new RubyRegex(Regex.Escape(matchString.ToString()), RubyRegexOptions.NONE);
+            // TODO:
+            var regex = new RubyRegex(MutableString.CreateMutable(Regex.Escape(matchString.ToString()), matchString.Encoding), RubyRegexOptions.NONE);
 
             self.TrackChanges();
             object r = BlockReplaceAll(tosConversion, scope, self, block, regex, out blockResult, out result) ? blockResult : (result ?? self.Clone());
@@ -1583,122 +1574,114 @@ namespace IronRuby.Builtins {
 
         #region index, rindex
 
+        // encoding aware
         [RubyMethod("index")]
         public static object Index(MutableString/*!*/ self, 
             [DefaultProtocol, NotNull]MutableString/*!*/ substring, [DefaultProtocol, Optional]int start) {
 
-            if (!NormalizeStart(self, ref start)) {
+            self.SwitchToCharacters();
+            if (!NormalizeStart(self.GetCharCount(), ref start)) {
                 return null;
             }
+
+            self.RequireCompatibleEncoding(substring);
+            substring.SwitchToCharacters();
+
             int result = self.IndexOf(substring, start);
             return (result != -1) ? ScriptingRuntimeHelpers.Int32ToObject(result) : null;
         }
 
+        // encoding aware
         [RubyMethod("index")]
         public static object Index(MutableString/*!*/ self, 
             int character, [DefaultProtocol, Optional]int start) {
 
-            if (!NormalizeStart(self, ref start) || character < 0 || character > 255) {
+            if (!self.IsBinaryEncoded && !self.Encoding.IsKCoding && !self.IsAscii()) {
+                throw RubyExceptions.CreateTypeError("type mismatch: Fixnum given");
+            }
+
+            if (!NormalizeStart(self.GetByteCount(), ref start) || character < 0 || character > 255) {
                 return null;
             }
+
             int result = self.IndexOf((byte)character, start);
             return (result != -1) ? ScriptingRuntimeHelpers.Int32ToObject(result) : null;
         }
 
+        // encoding aware
         [RubyMethod("index")]
         public static object Index(RubyScope/*!*/ scope, MutableString/*!*/ self, 
             [NotNull]RubyRegex/*!*/ regex, [DefaultProtocol, Optional]int start) {
 
-            if (!NormalizeStart(self, ref start)) {
-                return null;
-            }
-
-            var matchScope = scope.GetInnerMostClosureScope();
-
-            Match match = regex.Match(self, start);
-            if (match.Success) {
-                matchScope.CurrentMatch = new MatchData(match, self);
-                return ScriptingRuntimeHelpers.Int32ToObject(match.Index);
-            } else {
-                matchScope.CurrentMatch = null;
-                return null;
-            }
+            MatchData match = regex.Match(scope.RubyContext.KCode, self, start);
+            scope.GetInnerMostClosureScope().CurrentMatch = match;
+            return (match != null) ? ScriptingRuntimeHelpers.Int32ToObject(match.Index) : null;
         }
 
+        // encoding aware
         [RubyMethod("rindex")]
-        public static object ReverseIndex(MutableString/*!*/ self,
-            [DefaultProtocol, NotNull]MutableString/*!*/ substring) {
-            return ReverseIndex(self, substring, self.Length);
-        }
+        public static object LastIndexOf(MutableString/*!*/ self,
+            [DefaultProtocol, NotNull]MutableString/*!*/ substring, [DefaultProtocol, DefaultParameterValue(Int32.MaxValue)]int start) {
 
-        [RubyMethod("rindex")]
-        public static object ReverseIndex(MutableString/*!*/ self,
-            [DefaultProtocol, NotNull]MutableString/*!*/ substring, [DefaultProtocol]int start) {
-            start = NormalizeIndex(self, start);
+            self.SwitchToCharacters();
+            int charCount = self.GetCharCount();
 
+            start = IListOps.NormalizeIndex(charCount, start);
             if (start < 0) {
                 return null;
             }
 
             if (substring.IsEmpty) {
-                return ScriptingRuntimeHelpers.Int32ToObject((start >= self.Length) ? self.Length : start);
+                return ScriptingRuntimeHelpers.Int32ToObject((start >= charCount) ? charCount : start);
             }
 
-            start += substring.Length - 1;
+            self.RequireCompatibleEncoding(substring);
+            substring.SwitchToCharacters();
+            int subCharCount = substring.GetCharCount();
 
-            if (start >= self.Length) {
-                start = self.Length - 1;
+            // LastIndexOf has CLR semantics: no characters of the substring are matched beyond start position.
+            // Hence we need to increase start by the length of the substring - 1.
+            if (start > charCount - subCharCount) {
+                start = charCount - 1;
+            } else {
+                start += subCharCount - 1;
             }
 
             int result = self.LastIndexOf(substring, start);
             return (result != -1) ? ScriptingRuntimeHelpers.Int32ToObject(result) : null;
         }
 
+        // encoding aware
         [RubyMethod("rindex")]
-        public static object ReverseIndex(MutableString/*!*/ self,
-            int character, [DefaultProtocol, DefaultParameterValue(-1)]int start) {
+        public static object LastIndexOf(MutableString/*!*/ self,
+            int character, [DefaultProtocol, DefaultParameterValue(Int32.MaxValue)]int start) {
 
-            start = NormalizeIndex(self, start);
+            if (!self.IsBinaryEncoded && !self.Encoding.IsKCoding && !self.IsAscii()) {
+                throw RubyExceptions.CreateTypeError("type mismatch: Fixnum given");
+            }
+
+            int byteCount = self.GetByteCount();
+            start = IListOps.NormalizeIndex(byteCount, start);
             if (start < 0 || character < 0 || character > 255) {
                 return null;
             }
 
-            if (start >= self.Length) {
-                start = self.Length - 1;
+            if (start >= byteCount) {
+                start = byteCount - 1;
             }
             
             int result = self.LastIndexOf((byte)character, start);
             return (result != -1) ? ScriptingRuntimeHelpers.Int32ToObject(result) : null;
         }
 
-        // TODO: note that .NET regex semantics don't line up well in these cases - so some specs do fail. There are 4 failures in rindex that are due to regex differences.
-
+        // encoding aware
         [RubyMethod("rindex")]
-        public static object ReverseIndex(RubyScope/*!*/ scope, MutableString/*!*/ self,
-            [NotNull]RubyRegex/*!*/ regex) {
-            return ReverseIndex(scope, self, regex, self.Length);
-        }
+        public static object LastIndexOf(RubyScope/*!*/ scope, MutableString/*!*/ self, 
+            [NotNull]RubyRegex/*!*/ regex, [DefaultProtocol, DefaultParameterValue(Int32.MaxValue)]int start) {
 
-        [RubyMethod("rindex")]
-        public static object ReverseIndex(RubyScope/*!*/ scope, MutableString/*!*/ self, 
-            [NotNull]RubyRegex/*!*/ regex, [DefaultProtocol]int start) {
-
-            start = NormalizeIndex(self, start);
-            if (start < 0) {
-                return null;
-            }
-            start = (start > self.Length) ? self.Length : start;
-
-            var matchScope = scope.GetInnerMostClosureScope();
-            
-            Match match = regex.ReverseMatch(self, start);
-            if (match.Success) {
-                matchScope.CurrentMatch = new MatchData(match, self);
-                return ScriptingRuntimeHelpers.Int32ToObject(match.Index);
-            } else {
-                matchScope.CurrentMatch = null;
-                return null;
-            }
+            MatchData match = regex.LastMatch(scope.RubyContext.KCode, self, start);
+            scope.GetInnerMostClosureScope().CurrentMatch = match;
+            return (match != null) ? ScriptingRuntimeHelpers.Int32ToObject(match.Index) : null;
         }
 
         // Start in range ==> search range from the first character towards the end.
@@ -1708,9 +1691,9 @@ namespace IronRuby.Builtins {
         // [0, length)      ==> [start, length)
         // start > length   ==> false
         //
-        private static bool NormalizeStart(MutableString/*!*/ self, ref int start) {
-            start = NormalizeIndex(self, start);
-            if (start < 0 || start > self.Length) {
+        private static bool NormalizeStart(int length, ref int start) {
+            start = IListOps.NormalizeIndex(length, start);
+            if (start < 0 || start > length) {
                 return false;
             }
             return true;
@@ -1771,8 +1754,9 @@ namespace IronRuby.Builtins {
             BitArray map = new RangeParser(ranges).Parse();
             int count = 0;
             for (int i = 0; i < self.Length; i++) {
-                if (map.Get(self.GetChar(i)))
+                if (map.Get(self.GetChar(i))) {
                     count++;
+                }
             }
             return ScriptingRuntimeHelpers.Int32ToObject(count);
         }
@@ -1807,12 +1791,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("insert")]
         public static MutableString Insert(MutableString/*!*/ self, [DefaultProtocol]int start, [DefaultProtocol, NotNull]MutableString/*!*/ value) {
-            int offset = start < 0 ? start + self.Length + 1 : start;
-            if (offset > self.Length || offset < 0) {
-                throw RubyExceptions.CreateIndexError(String.Format("index {0} out of string", start));
-            }
-
-            return self.Insert(offset, value).TaintBy(value);
+            return self.Insert(NormalizeInsertIndex(start, self.GetLength()), value).TaintBy(value);
         }
 
         #endregion
@@ -1858,7 +1837,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("scan")]
         public static RubyArray/*!*/ Scan(RubyScope/*!*/ scope, MutableString/*!*/ self, [DefaultProtocol, NotNull]RubyRegex/*!*/ regex) {
-            MatchCollection matches = regex.Matches(self);
+            IList<MatchData> matches = regex.Matches(scope.RubyContext.KCode, self);
 
             var matchScope = scope.GetInnerMostClosureScope();
             
@@ -1868,51 +1847,46 @@ namespace IronRuby.Builtins {
                 return result;
             } 
 
-            foreach (Match match in matches) {
+            foreach (MatchData match in matches) {
                 result.Add(MatchToScanResult(scope, self, regex, match));
             }
 
-            matchScope.CurrentMatch = new MatchData(matches[matches.Count - 1], self);
+            matchScope.CurrentMatch = matches[matches.Count - 1];
             return result;
         }
 
         [RubyMethod("scan")]
         public static object/*!*/ Scan(RubyScope/*!*/ scope, [NotNull]BlockParam/*!*/ block, MutableString/*!*/ self, [DefaultProtocol, NotNull]RubyRegex regex) {
             var matchScope = scope.GetInnerMostClosureScope();
-            
-            MatchCollection matches = regex.Matches(self);
+
+            IList<MatchData> matches = regex.Matches(scope.RubyContext.KCode, self);
             if (matches.Count == 0) {
                 matchScope.CurrentMatch = null;
                 return self;
             } 
 
-            foreach (Match match in matches) {
-                var currentMatch = new MatchData(match, self);
-
-                matchScope.CurrentMatch = currentMatch;
+            foreach (MatchData match in matches) {
+                matchScope.CurrentMatch = match;
 
                 object blockResult;
                 if (block.Yield(MatchToScanResult(scope, self, regex, match), out blockResult)) {
                     return blockResult;
                 }
 
-                // resets the $~ scope variable to the last match (skipd if block jumped):
-                matchScope.CurrentMatch = currentMatch;
+                // resets the $~ scope variable to the last match (skipped if block jumped):
+                matchScope.CurrentMatch = match;
             }
             return self;
         }
 
-        private static object MatchToScanResult(RubyScope/*!*/ scope, MutableString/*!*/ self, RubyRegex/*!*/ regex, Match/*!*/ match) {
-            if (match.Groups.Count == 1) {
-                return MutableString.Create(match.Value, self.Encoding).TaintBy(self).TaintBy(regex, scope);
+        private static object MatchToScanResult(RubyScope/*!*/ scope, MutableString/*!*/ self, RubyRegex/*!*/ regex, MatchData/*!*/ match) {
+            if (match.GroupCount == 1) {
+                return match.GetValue().TaintBy(regex, scope);
             } else {
-                var result = new RubyArray(match.Groups.Count - 1);
-                for (int i = 1; i < match.Groups.Count; i++) {
-                    if (match.Groups[i].Success) {
-                        result.Add(MutableString.Create(match.Groups[i].Value, self.Encoding).TaintBy(self).TaintBy(regex, scope));
-                    } else {
-                        result.Add(null);
-                    }
+                var result = new RubyArray(match.GroupCount - 1);
+                for (int i = 1; i < match.GroupCount; i++) {
+                    MutableString value = match.GetGroupValue(i);
+                    result.Add(value != null ? value.TaintBy(regex, scope) : value);
                 }
                 return result;
             }
@@ -2021,10 +1995,11 @@ namespace IronRuby.Builtins {
         // InternalSplit method which also flows taint
 
         private static int IndexOf(MutableString/*!*/ str, MutableString/*!*/ separator, int index) {
-            if (separator.Length > 0)
+            if (separator.Length > 0) {
                 return str.IndexOf(separator, index);
-            else
+            } else {
                 return index + 1;
+            }
         }
 
         private static RubyArray/*!*/ WhitespaceSplit(MutableString/*!*/ self, int maxComponents) {
@@ -2060,7 +2035,6 @@ namespace IronRuby.Builtins {
             int i = 0;
             int next;
             while (maxComponents > 1 && i < selfLength && (next = IndexOf(self, separator, i)) != -1) {
-
                 if (next > i || keepEmpty) {
                     result.Add(self.CreateInstance().Append(self, i, next - i).TaintBy(self));
                     maxComponents--;
@@ -2136,7 +2110,7 @@ namespace IronRuby.Builtins {
 
             if (limit == 0) {
                 // suppress trailing empty fields
-                RubyArray array = MakeRubyArray(self, regexp.Split(self));
+                RubyArray array = MakeRubyArray(self, regexp.Split(stringCast.Context.KCode, self));
                 while (array.Count != 0 && ((MutableString)array[array.Count - 1]).Length == 0) {
                     array.RemoveAt(array.Count - 1);
                 }
@@ -2148,10 +2122,10 @@ namespace IronRuby.Builtins {
                 return result;
             } else if (limit < 0) {
                 // does not suppress trailing fields when negative 
-                return MakeRubyArray(self, regexp.Split(self));
+                return MakeRubyArray(self, regexp.Split(stringCast.Context.KCode, self));
             } else {
                 // limit > 1 limits to N fields
-                return MakeRubyArray(self, regexp.Split(self, limit));
+                return MakeRubyArray(self, regexp.Split(stringCast.Context.KCode, self, limit));
             }
         }
 

@@ -13,11 +13,19 @@ namespace IronPython.Runtime.Types {
         private readonly PythonOperationKind _operator;
         private readonly string _name;
         private readonly string _altName;
+        private readonly Type _altExpectedType;
 
         private OperatorMapping(PythonOperationKind op, string name, string altName) {
             _operator = op;
             _name = name;
             _altName = altName;
+        }
+
+        private OperatorMapping(PythonOperationKind op, string name, string altName, Type alternateExpectedType) {
+            _operator = op;
+            _name = name;
+            _altName = altName;
+            _altExpectedType = alternateExpectedType;
         }
 
         /// <summary>
@@ -60,6 +68,18 @@ namespace IronPython.Runtime.Types {
         /// </summary>
         public string AlternateName {
             get { return _altName; }
+        }
+
+        /// <summary>
+        /// The return type that must match for the alternate operator to be valid.
+        /// 
+        /// This is available alternate operators don't have special names and therefore
+        /// could be confused for a normal method which isn't fulfilling the contract.
+        /// </summary>
+        public Type AlternateExpectedType {
+            get {
+                return _altExpectedType;
+            }
         }
 
         private static OperatorMapping[] MakeOperatorTable() {
@@ -111,7 +131,7 @@ namespace IronPython.Runtime.Types {
             res.Add(new OperatorMapping(PythonOperationKind.DeleteItem, "del_Item", "DeleteItem"));        // not defined
 
             // DLR Extended operators:
-            res.Add(new OperatorMapping(PythonOperationKind.Compare, "op_Compare", "Compare"));        // not defined
+            res.Add(new OperatorMapping(PythonOperationKind.Compare, "op_Compare", "Compare", typeof(int)));        // not defined
 
             res.Add(new OperatorMapping(PythonOperationKind.CallSignatures, "GetCallSignatures", null));
             res.Add(new OperatorMapping(PythonOperationKind.Documentation, "GetDocumentation", null));

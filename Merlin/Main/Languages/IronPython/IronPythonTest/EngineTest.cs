@@ -1097,6 +1097,12 @@ class foo(object):
             //AreEqual(4, scope1.GetVariable<int>("_"));
         }
 
+        public void ScenarioCP24784() {
+            var code = _pe.CreateScriptSourceFromString("def f():\r\n \r\n print 1", SourceCodeKind.InteractiveCode);
+
+            AreEqual(code.GetCodeProperties(), ScriptCodeParseResult.IncompleteStatement);
+        }
+
         public delegate int CP19724Delegate(double p1);
         public void ScenarioCP19724()
         {

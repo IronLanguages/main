@@ -63,7 +63,7 @@ namespace IronRuby.Runtime.Calls {
         }
 
         public override Type/*!*/ ReturnType {
-            get { return typeof(object); }
+            get { return _signature.ResolveOnly ? typeof(bool) : typeof(object); }
         }
 
         #region Rule Generation
@@ -109,6 +109,12 @@ namespace IronRuby.Runtime.Calls {
                 metaBuilder.TreatRestrictionsAsConditions = false;
 
                 method = targetClass.ResolveSuperMethodNoLock(currentMethodName, currentDeclaringModule).InvalidateSitesOnOverride().Info;
+
+                if (_signature.ResolveOnly) {
+                    metaBuilder.Result = AstUtils.Constant(method != null);
+                    return true;
+                }
+
                 if (method == null) {
                     // MRI: method_missing is called for the targetClass, not for the super:
                     methodMissing = targetClass.ResolveMethodMissingForSite(currentMethodName, RubyMethodVisibility.None);

@@ -321,12 +321,11 @@ namespace IronRuby.StandardLibrary.Yaml {
                 throw RubyExceptions.NoBlockGiven();
             }
 
-            MutableString pattern = typeRegex.GetPattern();
-            MutableString tag = MutableString.CreateMutable(pattern.Encoding).
+            MutableString tag = MutableString.CreateMutable(typeRegex.Encoding).
                 Append("tag:").
                 Append(domainAndDate).
                 Append(':').
-                Append(pattern);
+                Append(typeRegex.Pattern);
 
             RubyConstructor.AddExternalMultiConstructor(tag.ConvertToString(), block);
             return null;

@@ -17,10 +17,12 @@ using System;
 using IronRuby.Builtins;
 using IronRuby.Runtime;
 using Microsoft.Scripting;
+using Microsoft.Scripting.Hosting;
 using Microsoft.Scripting.Hosting.Shell;
 using Microsoft.Scripting.Runtime;
 using System.Reflection;
 using System.Threading;
+using System.IO;
 
 namespace IronRuby.Hosting {
    
@@ -29,6 +31,10 @@ namespace IronRuby.Hosting {
     /// </summary>
     public class RubyCommandLine : CommandLine {
         public RubyCommandLine() {
+        }
+
+        internal new RubyConsoleOptions Options {
+            get { return (RubyConsoleOptions)base.Options; }
         }
 
         protected override string Logo {
@@ -60,18 +66,34 @@ namespace IronRuby.Hosting {
             }
         }
 
+        protected override int Run() {
+            if (Options.ChangeDirectory != null) {
+                Environment.CurrentDirectory = Options.ChangeDirectory;
+            }
+
+            return base.Run();
+        }
+
         // overridden to set the default encoding to KCODE/BINARY
         protected override int RunFile(string fileName) {
             return RunFile(Engine.CreateScriptSourceFromFile(RubyUtils.CanonicalizePath(fileName), (((RubyContext)Language).RubyOptions.KCode ?? RubyEncoding.Binary).Encoding));
         }
 
-        protected override void ExecuteCommand(string command) {
+        protected override void ExecuteCommand(string/*!*/ command) {
+            ExecuteCommand(CreateCommandSource(command, SourceCodeKind.InteractiveCode));
+        }
+
+        protected override int RunCommand(string/*!*/ command) {
+            return RunFile(CreateCommandSource(command, SourceCodeKind.Statements));
+        }
+
+        private ScriptSource/*!*/ CreateCommandSource(string/*!*/ command, SourceCodeKind kind) {
 #if SILVERLIGHT
-            base.ExecuteCommand(command);
+            return Engine.CreateScriptSourceFromString(command, kind);
 #else
             var kcode = ((RubyContext)Language).RubyOptions.KCode;
             var encoding = kcode != null ? kcode.Encoding : System.Console.InputEncoding;
-            ExecuteCommand(Engine.CreateScriptSource(new BinaryContentProvider(encoding.GetBytes(command)), null, encoding, SourceCodeKind.InteractiveCode));
+            return Engine.CreateScriptSource(new BinaryContentProvider(encoding.GetBytes(command)), null, encoding, kind);
 #endif
         }
         

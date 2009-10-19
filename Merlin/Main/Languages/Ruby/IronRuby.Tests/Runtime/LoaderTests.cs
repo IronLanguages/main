@@ -186,7 +186,7 @@ Python
             private void ObjectMonkeyPatch(RubyModule/*!*/ module) {
                 Debug.Assert(module == Context.ObjectClass);
 
-                module.DefineLibraryMethod("object_monkey", 0x9, new System.Delegate[] {
+                DefineLibraryMethod(module, "object_monkey", 0x9, new System.Delegate[] {
                     new Func<object, string>(MonkeyWorker),
                 });
             }

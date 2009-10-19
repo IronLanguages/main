@@ -28,6 +28,7 @@ namespace IronRuby.Runtime {
         private readonly ReadOnlyCollection<string>/*!*/ _arguments;
         private readonly RubyEncoding/*!*/ _argumentEncoding;
         private readonly ReadOnlyCollection<string>/*!*/ _libraryPaths;
+        private readonly ReadOnlyCollection<string> _requirePaths;
         private readonly string _mainFile;
         private readonly bool _enableTracing;
         private readonly int _verbosity;
@@ -85,6 +86,10 @@ namespace IronRuby.Runtime {
             get { return _libraryPaths; }
         }
 
+        public ReadOnlyCollection<string> RequirePaths {
+            get { return _requirePaths; }
+        }
+
         public bool HasSearchPaths {
             get { return _hasSearchPaths; }
         }
@@ -110,6 +115,7 @@ namespace IronRuby.Runtime {
             _profile = GetOption(options, "Profile", false);
             _noAssemblyResolveHook = GetOption(options, "NoAssemblyResolveHook", false);
             _libraryPaths = GetStringCollectionOption(options, "LibraryPaths", ';', ',') ?? new ReadOnlyCollection<string>(new[] { "." });
+            _requirePaths = GetStringCollectionOption(options, "RequiredPaths", ';', ',');
             _hasSearchPaths = GetOption<object>(options, "SearchPaths", null) != null;
             _compatibility = GetCompatibility(options, "Compatibility", RubyCompatibility.Default);
 

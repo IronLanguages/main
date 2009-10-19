@@ -20,7 +20,7 @@ using System.Diagnostics;
 
 namespace IronRuby.Builtins {
 #if GENERATOR
-    Stateless = ['MatchData', 'Proc', 'Range', 'RubyRegex']
+    Stateless = ['Proc', 'Range', 'RubyRegex']
 
     def generate
       Stateless.each do |cls| 
@@ -113,19 +113,6 @@ namespace IronRuby.Builtins {
 
             public RubyInstanceData TryGetInstanceData() {
                 return _instanceData;
-            }
-
-            public bool IsFrozen {
-                get { return _instanceData != null && _instanceData.Frozen; }
-            }
-
-            public bool IsTainted {
-                get { return _instanceData != null && _instanceData.Tainted; }
-                set { GetInstanceData().Tainted = value; }
-            }
-
-            public void Freeze() {
-                GetInstanceData().Freeze();
             }
 
             public int BaseGetHashCode() {
@@ -303,7 +290,7 @@ namespace IronRuby.Builtins {
 #endregion
 
 #if GENERATOR
-    Stateful = ['RubyArray']
+    Stateful = ['RubyArray', 'MatchData']
 
     def generate
       Stateful.each do |cls| 

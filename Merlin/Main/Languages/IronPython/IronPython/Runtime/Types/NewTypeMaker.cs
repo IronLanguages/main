@@ -534,20 +534,39 @@ namespace IronPython.Runtime.Types {
         }
 
         private void ImplementDynamicObject() {
-            ImplementInterface(typeof(IDynamicMetaObjectProvider));
-
-            MethodInfo decl;
-            MethodBuilder impl;
-            ILGen il = DefineMethodOverride(MethodAttributes.Private, typeof(IDynamicMetaObjectProvider), "GetMetaObject", out decl, out impl);
-            MethodInfo mi = typeof(UserTypeOps).GetMethod("GetMetaObjectHelper");
-
-            bool explicitDynamicObject = false;
+            // true if the user has explicitly included IDynamicMetaObjectProvider in the list of interfaces
+            bool explicitDynamicObject = false; 
             foreach (Type t in _interfaceTypes) {
                 if (t == typeof(IDynamicMetaObjectProvider)) {
                     explicitDynamicObject = true;
                     break;
                 }
             }
+
+            // true if our base type implements IDMOP already
+            bool baseIdo = typeof(IDynamicMetaObjectProvider).IsAssignableFrom(_baseType);
+            if (baseIdo) {
+                InterfaceMapping mapping = _baseType.GetInterfaceMap(typeof(IDynamicMetaObjectProvider));
+                if (mapping.TargetMethods[0].IsPrivate) {
+                    // explicitly implemented IDynamicMetaObjectProvider, we cannot override it.
+
+                    if (_baseType.IsDefined(typeof(DynamicBaseTypeAttribute), true)) {
+                        // but it's been implemented by IronPython so it's going to return a MetaUserObject
+                        return;
+                    }
+
+                    // we can't dispatch to the subclasses IDMOP implementation, completely
+                    // replace it with our own.
+                    baseIdo = false;
+                }
+            }
+
+            ImplementInterface(typeof(IDynamicMetaObjectProvider));
+
+            MethodInfo decl;
+            MethodBuilder impl;
+            ILGen il = DefineMethodOverride(MethodAttributes.Private, typeof(IDynamicMetaObjectProvider), "GetMetaObject", out decl, out impl);
+            MethodInfo mi = typeof(UserTypeOps).GetMethod("GetMetaObjectHelper");
 
             LocalBuilder retVal = il.DeclareLocal(typeof(DynamicMetaObject));
             Label retLabel = il.DefineLabel();
@@ -617,7 +636,7 @@ namespace IronPython.Runtime.Types {
             il.EmitLoadArg(1);  // parameter
                 
             // baseMetaObject
-            if (typeof(IDynamicMetaObjectProvider).IsAssignableFrom(_baseType)) {
+            if (baseIdo) {
                 InterfaceMapping imap = _baseType.GetInterfaceMap(typeof(IDynamicMetaObjectProvider));
 
                 il.EmitLoadArg(0);  // this
@@ -1261,9 +1280,9 @@ namespace IronPython.Runtime.Types {
                     mi.IsVirtual ?
                         (mi.Attributes | MethodAttributes.NewSlot) :
                         ((mi.Attributes & ~MethodAttributes.MemberAccessMask) | MethodAttributes.Public),
-                    mi.ReturnType,
-                    ReflectionUtils.GetParameterTypes(mi.GetParameters()));
-                CopyGenericMethodAttributes(mi, impl);
+                    mi.CallingConvention
+                );
+                ReflectionUtils.CopyMethodSignature(mi, impl, false);
                 il = new ILGen(impl.GetILGenerator());
             }
         }
@@ -1298,30 +1317,13 @@ namespace IronPython.Runtime.Types {
         /// super(type, obj) calls.
         /// </summary>
         private MethodBuilder CreateSuperCallHelper(MethodInfo mi) {
-            ParameterInfo[] parms = mi.GetParameters();
-            Type[] types = ReflectionUtils.GetParameterTypes(parms);
-            Type miType = mi.DeclaringType;
-            for (int i = 0; i < types.Length; i++) {
-                if (types[i] == miType) {
-                    types[i] = _tg;
-                }
-            }
-
             MethodAttributes attrs = MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.SpecialName;
             if (mi.IsStatic) {
                 attrs |= MethodAttributes.Static;
             }
 
-            MethodBuilder method = _tg.DefineMethod(
-                BaseMethodPrefix + mi.Name,
-                attrs,
-                mi.ReturnType, types
-            );
-            CopyGenericMethodAttributes(mi, method);
-            for (int i = 0; i < types.Length; i++) {
-                method.DefineParameter(i + 1, ParameterAttributes.None, parms[i].Name);
-            }
-
+            MethodBuilder method = _tg.DefineMethod(BaseMethodPrefix + mi.Name, attrs, mi.CallingConvention);
+            ReflectionUtils.CopyMethodSignature(mi, method, true);
             EmitBaseMethodDispatch(mi, new ILGen(method.GetILGenerator()));
             return method;
         }
@@ -1370,49 +1372,8 @@ namespace IronPython.Runtime.Types {
         }
 
         private ILGen DefineMethodOverride(MethodAttributes extra, MethodInfo decl, out MethodBuilder impl) {
-            MethodAttributes finalAttrs = (decl.Attributes & ~(MethodAttributesToEraseInOveride)) | extra;
-            if (!decl.DeclaringType.IsInterface) {
-                finalAttrs &= ~MethodAttributes.NewSlot;
-            }
-
-            if ((extra & MethodAttributes.MemberAccessMask) != 0) {
-                // remove existing member access, add new member access
-                finalAttrs &= ~MethodAttributes.MemberAccessMask;
-                finalAttrs |= extra;
-            }
-            Type[] signature = ReflectionUtils.GetParameterTypes(decl.GetParameters());
-            impl = _tg.DefineMethod(decl.Name, finalAttrs, decl.ReturnType, signature);
-            CopyGenericMethodAttributes(decl, impl);
+            impl = ReflectionUtils.DefineMethodOverride(_tg, extra, decl);
             return new ILGen(impl.GetILGenerator());
-        }
-
-        private static void CopyGenericMethodAttributes(MethodInfo from, MethodBuilder to) {
-            if (from.IsGenericMethodDefinition) {
-                Type[] args = from.GetGenericArguments();
-                string[] names = new string[args.Length];
-                for (int i = 0; i < args.Length; i++) {
-                    names[i] = args[i].Name;
-                }
-                var builders = to.DefineGenericParameters(names);
-                for (int i = 0; i < args.Length; i++) {
-                    // Copy template parameter attributes
-                    builders[i].SetGenericParameterAttributes(args[i].GenericParameterAttributes);
-
-                    // Copy template parameter constraints
-                    Type[] constraints = args[i].GetGenericParameterConstraints();
-                    List<Type> interfaces = new List<Type>(constraints.Length);
-                    foreach (Type constraint in constraints) {
-                        if (constraint.IsInterface) {
-                            interfaces.Add(constraint);
-                        } else {
-                            builders[i].SetBaseTypeConstraint(constraint);
-                        }
-                    }
-                    if (interfaces.Count > 0) {
-                        builders[i].SetInterfaceConstraints(interfaces.ToArray());
-                    }
-                }
-            }
         }
 
         /// <summary>

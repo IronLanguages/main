@@ -24,26 +24,6 @@ using Microsoft.Scripting.Utils;
 
 namespace IronRuby.Tests {
     public partial class Tests {
-        public void MutableString1() {
-            Test_Factories();
-            Test_GetHashCode();
-            Test_IsAscii();
-            Test_Length();
-            Test_Append_Byte();
-            Test_Append_Char();
-            Test_Insert_Byte();
-            Test_Insert_Char();
-            Test_Remove_Byte();
-            Test_Remove_Char();
-            Test_SwitchRepr();
-            Test_Concatenate();
-            Test_Reverse();
-        }
-
-        public void MutableString2() {
-            Test_Translate();
-        }
-
         private MutableString/*!*/ MS(string/*!*/ data) {
             return MutableString.CreateMutable(data.Length * 3, RubyEncoding.Binary).Append(data);
         }
@@ -60,7 +40,8 @@ namespace IronRuby.Tests {
             return MutableString.CreateBinary(data.Length * 3, e).Append(data);
         }
 
-        private void Test_Factories() {
+        [Options(NoRuntime = true)]
+        public void MutableString_Factories() {
             var x = MutableString.CreateAscii("");
             Assert(!x.IsBinary && x.IsEmpty);
 
@@ -92,7 +73,8 @@ namespace IronRuby.Tests {
             Assert(x.IsBinary && x.GetByteCount() == 3 && x.Encoding == RubyEncoding.UTF8);
         }
 
-        private void Test_GetHashCode() {
+        [Options(NoRuntime = true)]
+        public void MutableString_GetHashCode() {
             int h1, h2;
             MutableString s;
 
@@ -152,7 +134,8 @@ namespace IronRuby.Tests {
             Assert(a.GetHashCode() != b.GetHashCode());
         }
 
-        private void Test_IsAscii() {
+        [Options(NoRuntime = true)]
+        public void MutableString_IsAscii() {
             var a = MutableString.CreateBinary(new byte[] { 0x12, 0x34, 0x56 }, RubyEncoding.Binary);
             Assert(a.IsAscii());
             a.Remove(2);
@@ -167,7 +150,8 @@ namespace IronRuby.Tests {
             Assert(a.IsAscii());
         }
 
-        private void Test_Length() {
+        [Options(NoRuntime = true)]
+        public void MutableString_Length() {
             MutableString x;
             x = MutableString.Create("a", RubyEncoding.Binary);
             Assert(MutableStringOps.GetLength(x) == 1);
@@ -179,7 +163,8 @@ namespace IronRuby.Tests {
             Assert(MutableStringOps.GetLength(x) == 2);
         }
 
-        private void Test_Append_Byte() {
+        [Options(NoRuntime = true)]
+        public void MutableString_Append_Byte() {
             MutableString x;
             x = MutableString.CreateBinary(new byte[] { 1, 2 });
             Assert(x.GetByteCount() == 2);
@@ -214,7 +199,8 @@ namespace IronRuby.Tests {
             Assert(x.Equals(MS(new byte[] { 1, 2, 3, 4, 5, 6, 7, 7, 7, 7, 7, 7, 7, 7, 15, 16, 17, 18, 19, 20 })));
         }
 
-        private void Test_Append_Char() {
+        [Options(NoRuntime = true)]
+        public void MutableString_Append_Char() {
             var e = RubyEncoding.UTF8;
 
             MutableString x;
@@ -257,7 +243,8 @@ namespace IronRuby.Tests {
             Assert(x.Equals(MS("αβγδfghhhhhhhhijκλμνzzzz", e)));
         }
 
-        private void Test_Insert_Byte() {
+        [Options(NoRuntime = true)]
+        public void MutableString_Insert_Byte() {
             MutableString x;
             x = MutableString.CreateBinary(new byte[] { 1, 2 });
             x.Insert(0, 3);
@@ -276,7 +263,8 @@ namespace IronRuby.Tests {
             Assert(x.CompareTo(MS(new byte[] { 8, 3, 5, 6, 7, 9, 10, 1, 2, 4 })) == 0);
         }
 
-        private void Test_Insert_Char() {
+        [Options(NoRuntime = true)]
+        public void MutableString_Insert_Char() {
             var e = RubyEncoding.UTF8;
 
             MutableString x;
@@ -297,7 +285,8 @@ namespace IronRuby.Tests {
             Assert(x.CompareTo(MS("835679Ω124", e)) == 0);
         }
 
-        private void Test_Remove_Byte() {
+        [Options(NoRuntime = true)]
+        public void MutableString_Remove_Byte() {
             MutableString x;
             x = MutableString.CreateBinary(new byte[] { });
             for (int i = 0; i < 10; i++) {
@@ -321,7 +310,8 @@ namespace IronRuby.Tests {
             Assert(x.Equals(MS(new byte[] { })));
         }
 
-        private void Test_Remove_Char() {
+        [Options(NoRuntime = true)]
+        public void MutableString_Remove_Char() {
             var e = RubyEncoding.UTF8;
 
             MutableString x;
@@ -382,7 +372,8 @@ namespace IronRuby.Tests {
             }
         }
 
-        private void Test_SwitchRepr() {
+        [Options(NoRuntime = true)]
+        public void MutableString_SwitchRepr() {
             // \u{12345} in UTF-8:
             var u12345 = new byte[] { 0xF0, 0x92, 0x8D, 0x85 };
             var u215c = new byte[] { 0xE2, 0x85, 0x9C };
@@ -405,7 +396,8 @@ namespace IronRuby.Tests {
             // var e = RubyEncoding.GetRubyEncoding(new NonInvertibleEncoding());
         }
 
-        private void Test_Concatenate() {
+        [Options(NoRuntime = true)]
+        public void MutableString_Concatenate() {
             var utf8 = new byte[] { 0xe2, 0x85, 0x9c };
             var sjis = new byte[] { 0x82, 0xA0 };
             var ascii = new byte[] { 0x20 };
@@ -446,7 +438,8 @@ namespace IronRuby.Tests {
             Assert(b.ValueCompareTo(b.Length, ArrayUtils.AppendRange(b1, b2)) == 0);
         }
 
-        private void Test_Reverse() {
+        [Options(NoRuntime = true)]
+        public void MutableString_Reverse() {
             var SJIS = RubyEncoding.GetRubyEncoding(RubyEncoding.CodePageSJIS);
             var utf8 = new byte[] { 0xe2, 0x85, 0x9c };
             var rev_bin_utf8 = new byte[] { 0x9c, 0x85, 0xe2};
@@ -478,7 +471,7 @@ namespace IronRuby.Tests {
             // TODO: KCODE
         }
 
-        private void Test_Reverse(byte[]/*!*/ b, RubyEncoding/*!*/ e, byte[]/*!*/ expected) {
+        public void Test_Reverse(byte[]/*!*/ b, RubyEncoding/*!*/ e, byte[]/*!*/ expected) {
             var s = MutableString.CreateBinary(b, e);
             MutableStringOps.Reverse(s);
             var actual = s.ToByteArray();
@@ -493,7 +486,8 @@ namespace IronRuby.Tests {
             return Encoding.GetEncoding("SJIS").GetBytes(str);
         }
 
-        private void Test_Translate() {
+        [Options(NoRuntime = true)]
+        public void MutableString_Translate1() {
             var SJIS = RubyEncoding.GetRubyEncoding(RubyEncoding.CodePageSJIS);
             var sjis = new byte[] { 0x82, 0xA0 };
             var u12345 = new byte[] { 0xF0, 0x92, 0x8D, 0x85 }; // \u{12345} in UTF-8
@@ -566,6 +560,231 @@ namespace IronRuby.Tests {
             Assert(result.Encoding == expectedEncoding);
             var b = result.ToByteArray();
             Assert(b.ValueEquals(expected));
+        }
+
+        [Options(NoRuntime = true)]
+        public void MutableString_IndexOf1() {
+            MutableString a;
+            string s = "12123";
+
+            a = MutableString.CreateBinary(ArrayUtils.AppendRange(BinaryEncoding.Instance.GetBytes(s), new byte[] { 0, 0 }));
+            a.Remove(s.Length, 2);
+
+            Action<string> test1 = (value) => {
+                Assert(a.IndexOf(BinaryEncoding.Instance.GetBytes(value)) == s.IndexOf(value));
+            };
+
+            Action<string, int> test2 = (value, start) => {
+                Assert(a.IndexOf(BinaryEncoding.Instance.GetBytes(value), start) == s.IndexOf(value, start));
+            };
+
+            Action<string, int, int> test3 = (value, start, count) => {
+                Assert(a.IndexOf(BinaryEncoding.Instance.GetBytes(value), start, count) == s.IndexOf(value, start, count));
+            };
+
+            test1("");
+            test1("0");
+            test1("12");
+            test1("3");
+            test2("12", 0);
+            test2("12", 1);
+            test2("12", 2);
+            test2("30", 4);
+            test3("", 2, 0);
+            test3("12", 2, 1);
+            test3("12", 2, 2);
+        }
+
+        [Options(NoRuntime = true)]
+        public void MutableString_LastIndexOf1() {
+            MutableString a;
+            string s = "12123";
+
+            a = MutableString.CreateBinary(ArrayUtils.AppendRange(BinaryEncoding.Instance.GetBytes(s), new byte[] { 0, 0 }));
+            a.Remove(s.Length, 2);
+
+            Action<string> test1 = (value) => {
+                Assert(a.LastIndexOf(BinaryEncoding.Instance.GetBytes(value)) == s.LastIndexOf(value));
+            };
+
+            Action<string, int> test2 = (value, start) => {
+                Assert(a.LastIndexOf(BinaryEncoding.Instance.GetBytes(value), start) == s.LastIndexOf(value, start));
+            };
+
+            Action<string, int, int> test3 = (value, start, count) => {
+                Assert(a.LastIndexOf(BinaryEncoding.Instance.GetBytes(value), start, count) == s.LastIndexOf(value, start, count));
+            };
+
+            test1("");
+            test1("0");
+            test1("12");
+            test1("3");
+            test2("12", 0);
+            test2("12", 1);
+            test2("12", 2);
+            test3("12", 4, 2);
+            test3("12", 4, 3);
+            test3("12", 0, 1);
+            test3("12", 0, 0);
+            test3("", 2, 0);
+
+            AssertExceptionThrown<ArgumentOutOfRangeException>(() => a.LastIndexOf(new byte[] { 6 }, 0, 2));
+            AssertExceptionThrown<ArgumentOutOfRangeException>(() => a.LastIndexOf(new byte[] { 6 }, 6, 2));
+        }
+
+        [Options(NoRuntime = true)]
+        public void MutableString_Index1() {
+            var SJIS = RubyEncoding.GetRubyEncoding(RubyEncoding.CodePageSJIS);
+            var sjis = new byte[] { 0x82, 0xA0 };
+            var u12345 = new byte[] { 0xF0, 0x92, 0x8D, 0x85 }; // \u{12345} in UTF-8
+            var invalid = MutableString.CreateBinary(new byte[] { 0x80 }, RubyEncoding.UTF8);
+
+            // SJIS non-ASCII string:
+            AssertExceptionThrown<InvalidOperationException>(
+                () => MutableStringOps.Index(MutableString.CreateBinary(sjis, SJIS), 0xA0, 0)
+            );
+
+            // binary encoding:
+            int i;
+            i = (int)MutableStringOps.Index(MutableString.CreateBinary(sjis, RubyEncoding.Binary), 0xA0, 0);
+            Assert(i == 1);
+
+            // ASCII-only are ok:
+            i = (int)MutableStringOps.Index(MutableString.CreateMutable("abc", RubyEncoding.UTF8), (int)'a', 0);
+            Assert(i == 0);
+
+            // k-coded are ok:
+            i = (int)MutableStringOps.Index(MutableString.CreateBinary(u12345, RubyEncoding.KCodeUTF8), 0x85, 0);
+            Assert(i == 3);
+
+            MutableString a, b;
+
+            // incompatible encodings:
+            a = MutableString.CreateBinary(sjis, SJIS);
+            b = MutableString.CreateBinary(u12345, RubyEncoding.UTF8);
+            AssertExceptionThrown<EncodingCompatibilityError>(() => MutableStringOps.Index(a, b, 0));
+
+            // invalid character:
+            AssertExceptionThrown<ArgumentException>(() => MutableStringOps.Index(invalid, MutableString.FrozenEmpty, 0));
+            AssertExceptionThrown<ArgumentException>(() => MutableStringOps.Index(MutableString.FrozenEmpty, invalid, 0));
+            
+            // returns character index:
+            i = (int)MutableStringOps.Index(
+                MutableString.CreateMutable("aαb", RubyEncoding.UTF8),
+                MutableString.CreateMutable("b", SJIS), 
+                0
+            );
+            Assert(i == 2);
+
+            // returns character index:
+            i = (int)MutableStringOps.Index(
+                MutableString.CreateMutable("αabbba", RubyEncoding.UTF8),
+                MutableString.CreateAscii("a"),
+                2
+            );
+            Assert(i == 5);
+
+            // returns byte index for k-coded strings:
+            i = (int)MutableStringOps.Index(
+                MutableString.CreateMutable("αaβb", RubyEncoding.KCodeUTF8),
+                MutableString.CreateMutable("a", RubyEncoding.KCodeSJIS),
+                0
+            );
+            Assert(i == 2);
+
+            // returns byte index for k-coded strings:
+            i = (int)MutableStringOps.Index(
+                MutableString.CreateMutable("αabbba", RubyEncoding.KCodeUTF8),
+                MutableString.CreateAscii("a"),
+                2
+            );
+            Assert(i == 2);
+        }
+
+        public void MutableString_IndexRegex1() {
+            var SJIS = RubyEncoding.GetRubyEncoding(RubyEncoding.CodePageSJIS);
+            var sjis = new byte[] { 0x82, 0xA0 };
+            var u12345 = new byte[] { 0xF0, 0x92, 0x8D, 0x85 }; // \u{12345} in UTF-8
+            var invalid = MutableString.CreateBinary(new byte[] { 0x80 }, RubyEncoding.UTF8);
+            int i;
+            MutableString a;
+            RubyRegex r;
+            RubyScope scope = new RubyTopLevelScope(Context);
+
+            // incompatible encodings:
+            a = MutableString.CreateBinary(sjis, SJIS);
+            r = new RubyRegex(MutableString.CreateBinary(u12345, RubyEncoding.UTF8));
+            AssertExceptionThrown<EncodingCompatibilityError>(() => MutableStringOps.Index(scope, a, r, 0));
+
+            // invalid character:
+            AssertExceptionThrown<ArgumentException>(() => MutableStringOps.Index(scope, invalid, r, 0));
+
+            // returns character index:
+            i = (int)MutableStringOps.Index(
+                scope,
+                MutableString.CreateMutable("aαb", RubyEncoding.UTF8),
+                new RubyRegex(MutableString.CreateMutable("b", SJIS)),
+                0
+            );
+            Assert(i == 2);
+
+            // "start at" counts chars in 1.9, returns character index
+            i = (int)MutableStringOps.Index(
+                scope,
+                MutableString.CreateMutable("αabbba", RubyEncoding.UTF8),
+                new RubyRegex(MutableString.CreateAscii("a")),
+                2
+            );
+            Assert(i == 5);
+
+            // "start at" counts bytes in 1.8, returns byte index (regardless of KCODE)
+            i = (int)MutableStringOps.Index(
+                scope,
+                MutableString.CreateBinary(Encoding.UTF8.GetBytes("αa"), RubyEncoding.Binary),
+                new RubyRegex(MutableString.CreateAscii("a"), RubyRegexOptions.UTF8),
+                2
+            );
+            Assert(i == 2);
+
+            // returns byte index for k-coded strings:
+            i = (int)MutableStringOps.Index(
+                scope,
+                MutableString.CreateMutable("αaβb", RubyEncoding.KCodeUTF8),
+                new RubyRegex(MutableString.CreateMutable("a", RubyEncoding.KCodeSJIS)),
+                0
+            );
+            Assert(i == 2);
+
+            // returns byte index for k-coded strings:
+            i = (int)MutableStringOps.Index(
+                scope,
+                MutableString.CreateMutable("αabbba", RubyEncoding.KCodeUTF8),
+                new RubyRegex(MutableString.CreateAscii("a")),
+                2
+            );
+            Assert(i == 2);
+
+            // uses the current KCODE for match:
+            a = MutableString.CreateBinary(new byte[] { 0x82, 0xa1, 0x82, 0xa0, 0x82, 0xa0 }, RubyEncoding.Binary);
+            r = new RubyRegex(MutableString.CreateBinary(new byte[] { 0x82, 0xa0, (byte)'{', (byte)'2', (byte)'}' }, RubyEncoding.Binary));
+
+            Context.KCode = RubyEncoding.KCodeSJIS;
+            Assert((int)MutableStringOps.Index(scope, a, r, 0) == 2);
+
+            Context.KCode = null;
+            Assert(MutableStringOps.Index(scope, a, r, 0) == null);
+
+            // invalid characters:
+            a = MutableString.CreateBinary(new byte[] { 0x82, 0x82, 0xa0, 0xa0, 0x82 }, RubyEncoding.Binary);
+            r = new RubyRegex(MutableString.CreateBinary(new byte[] { 0x82, 0xa0, (byte)'{', (byte)'2', (byte)'}' }, RubyEncoding.Binary));
+
+            // TODO:
+            // We throw an exception here since we don't exactly know how MRI handles invalid characters.
+            Context.KCode = RubyEncoding.KCodeSJIS;
+            AssertExceptionThrown<ArgumentException>(() => MutableStringOps.Index(scope, a, r, 0));
+
+            Context.KCode = null;
+            Assert((int)MutableStringOps.Index(scope, a, r, 0) == 1);
         }
     }
 }

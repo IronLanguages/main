@@ -203,8 +203,7 @@ namespace IronRuby.Builtins {
             }
 
             private void WriteStringValue(MutableString/*!*/ value) {
-                // TODO: MutableString should be able to return a byte[] without converting the repr?
-                byte[] data = MutableString.Create(value).ConvertToBytes();
+                byte[] data = value.ToByteArray();
                 WriteInt32(data.Length);
                 _writer.Write(data);
             }
@@ -228,7 +227,7 @@ namespace IronRuby.Builtins {
             private void WriteRegex(RubyRegex/*!*/ value) {
                 SubclassData instanceWriter = new SubclassData(this, value, typeof(RubyRegex));
                 _writer.Write((byte)'/');
-                WriteStringValue(value.GetPattern());
+                WriteStringValue(value.Pattern);
                 _writer.Write((byte)value.Options);
             }
 
@@ -760,7 +759,7 @@ namespace IronRuby.Builtins {
                         RubyRegex rsc = (obj as RubyRegex);
                         if (rsc != null) {
                             RubyRegex regex = ReadRegex();
-                            rsc.Set(regex.GetPattern(), regex.Options);
+                            rsc.Set(regex.Pattern, regex.Options);
                             loaded = true;
                         }
                         break;

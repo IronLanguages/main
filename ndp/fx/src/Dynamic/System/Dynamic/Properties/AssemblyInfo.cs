@@ -32,6 +32,9 @@ using System.Security;
 [assembly: AssemblyCopyright("© Microsoft Corporation.  All rights reserved.")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
+#if !CLR2
+[assembly: SecurityRules(SecurityRuleSet.Level1)]
+#endif
 
 // Setting ComVisible to false makes the types in this assembly not visible 
 // to COM components.  If you need to access a type in this assembly from 

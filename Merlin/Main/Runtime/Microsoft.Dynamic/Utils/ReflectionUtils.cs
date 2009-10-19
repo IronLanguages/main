@@ -300,5 +300,136 @@ namespace Microsoft.Scripting.Utils {
         }
 
 
+        #region Type Builder
+
+        private const MethodAttributes MethodAttributesToEraseInOveride = MethodAttributes.Abstract | MethodAttributes.ReservedMask;
+
+        public static MethodBuilder DefineMethodOverride(TypeBuilder tb, MethodAttributes extra, MethodInfo decl) {
+            MethodAttributes finalAttrs = (decl.Attributes & ~MethodAttributesToEraseInOveride) | extra;
+            if (!decl.DeclaringType.IsInterface) {
+                finalAttrs &= ~MethodAttributes.NewSlot;
+            }
+
+            if ((extra & MethodAttributes.MemberAccessMask) != 0) {
+                // remove existing member access, add new member access
+                finalAttrs &= ~MethodAttributes.MemberAccessMask;
+                finalAttrs |= extra;
+            }
+
+            MethodBuilder impl = tb.DefineMethod(decl.Name, finalAttrs, decl.CallingConvention);
+            CopyMethodSignature(decl, impl, false);
+            return impl;
+        }
+
+#if CLR2 && !SILVERLIGHT
+        // ParameterInfo.GetRequiredCustomModifiers is broken on method signatures that contain generic parameters on CLR < 2.0.50727.4918
+        private static bool? _modopsSupported;
+        private static bool ModopsSupported {
+            get {
+                if (_modopsSupported == null) {
+                    Assembly mscorlib = typeof(object).Assembly;
+                    var companyAttrs = mscorlib.GetCustomAttributes(typeof(AssemblyCompanyAttribute), false);
+                    if (companyAttrs.Length != 1 || ((AssemblyCompanyAttribute)companyAttrs[0]).Company.IndexOf("Microsoft") == -1) {
+                        _modopsSupported = true;
+                    } else {
+                        Version version = new Version(((AssemblyFileVersionAttribute)mscorlib.GetCustomAttributes(typeof(AssemblyFileVersionAttribute), false)[0]).Version);
+                        _modopsSupported = version.Revision >= 4918;
+                    }
+                }
+                return _modopsSupported.Value;
+            }
+        }
+#endif
+
+        public static void CopyMethodSignature(MethodInfo from, MethodBuilder to, bool substituteDeclaringType) {
+            ParameterInfo[] paramInfos = from.GetParameters();
+            Type[] parameterTypes = new Type[paramInfos.Length];
+            Type[][] parameterRequiredModifiers = null, parameterOptionalModifiers = null;
+            Type[] returnRequiredModifiers = null, returnOptionalModifiers = null;
+
+#if !SILVERLIGHT
+#if CLR2
+            bool copyModopts = !from.IsGenericMethodDefinition || ModopsSupported;
+#else
+            bool copyModopts = true;
+#endif
+            if (copyModopts) {    
+                returnRequiredModifiers = from.ReturnParameter.GetRequiredCustomModifiers();
+                returnOptionalModifiers = from.ReturnParameter.GetOptionalCustomModifiers();
+            }
+#endif
+
+            for (int i = 0; i < paramInfos.Length; i++) {
+                if (substituteDeclaringType && paramInfos[i].ParameterType == from.DeclaringType) {
+                    parameterTypes[i] = to.DeclaringType;
+                } else {
+                    parameterTypes[i] = paramInfos[i].ParameterType;
+                }
+
+#if !SILVERLIGHT
+                if (copyModopts) {
+                    var mods = paramInfos[i].GetRequiredCustomModifiers();
+                    if (mods.Length > 0) {
+                        if (parameterRequiredModifiers == null) {
+                            parameterRequiredModifiers = new Type[paramInfos.Length][];
+                        }
+
+                        parameterRequiredModifiers[i] = mods;
+                    }
+
+                    mods = paramInfos[i].GetOptionalCustomModifiers();
+                    if (mods.Length > 0) {
+                        if (parameterOptionalModifiers == null) {
+                            parameterOptionalModifiers = new Type[paramInfos.Length][];
+                        }
+
+                        parameterOptionalModifiers[i] = mods;
+                    }
+                }
+#endif
+            }
+
+            to.SetSignature(
+                from.ReturnType, returnRequiredModifiers, returnOptionalModifiers,
+                parameterTypes, parameterRequiredModifiers, parameterOptionalModifiers
+            );
+
+            CopyGenericMethodAttributes(from, to);
+
+            for (int i = 0; i < paramInfos.Length; i++) {
+                to.DefineParameter(i + 1, paramInfos[i].Attributes, paramInfos[i].Name);
+            }
+        }
+
+        private static void CopyGenericMethodAttributes(MethodInfo from, MethodBuilder to) {
+            if (from.IsGenericMethodDefinition) {
+                Type[] args = from.GetGenericArguments();
+                string[] names = new string[args.Length];
+                for (int i = 0; i < args.Length; i++) {
+                    names[i] = args[i].Name;
+                }
+                var builders = to.DefineGenericParameters(names);
+                for (int i = 0; i < args.Length; i++) {
+                    // Copy template parameter attributes
+                    builders[i].SetGenericParameterAttributes(args[i].GenericParameterAttributes);
+
+                    // Copy template parameter constraints
+                    Type[] constraints = args[i].GetGenericParameterConstraints();
+                    List<Type> interfaces = new List<Type>(constraints.Length);
+                    foreach (Type constraint in constraints) {
+                        if (constraint.IsInterface) {
+                            interfaces.Add(constraint);
+                        } else {
+                            builders[i].SetBaseTypeConstraint(constraint);
+                        }
+                    }
+                    if (interfaces.Count > 0) {
+                        builders[i].SetInterfaceConstraints(interfaces.ToArray());
+                    }
+                }
+            }
+        }
+
+        #endregion
     }
 }

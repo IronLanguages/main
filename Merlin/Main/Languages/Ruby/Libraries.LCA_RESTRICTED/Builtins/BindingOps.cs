@@ -17,8 +17,11 @@ using IronRuby.Runtime;
 
 namespace IronRuby.Builtins {
     [RubyClass("Binding", Extends = typeof(Binding))]
-    public static class BindingOps {                
+    [UndefineMethod("new", IsStatic = true)]
+    [UndefineMethod("LocalScope")]
+    public static class BindingOps {
         // dup
         // clone
+        // 1.9: eval
     }
 }

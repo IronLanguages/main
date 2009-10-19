@@ -17,6 +17,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -408,7 +409,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("to_s")]
         public static MutableString/*!*/ ToS([NotNull]IRubyObject/*!*/ self) {
-            return RubyObject.BaseToMutableString(self);
+            return RubyUtils.ObjectBaseToMutableString(self);
         }
 
         [RubyMethod("to_s")]
@@ -424,8 +425,9 @@ namespace IronRuby.Builtins {
         public static MutableString/*!*/ Inspect(UnaryOpStorage/*!*/ inspectStorage, ConversionStorage<MutableString>/*!*/ tosConversion,
             object self) {
 
+            RubyClass cls;
             var context = tosConversion.Context;
-            if (context.HasInstanceVariables(self)) {
+            if (context.HasInstanceVariables(self) && ((cls = context.GetClassOf(self)).IsRubyClass || cls.IsObjectClass)) {
                 return RubyUtils.InspectObject(inspectStorage, tosConversion, self);
             } else {
                 var site = tosConversion.GetSite(ConvertToSAction.Make(context));
@@ -914,11 +916,13 @@ namespace IronRuby.Builtins {
         /// Includes CLR private members if PrivateBinding is on.
         /// </summary>
         [RubyMethod("clr_member")]
-        public static RubyMethod/*!*/ GetClrMember(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]string/*!*/ name) {
+        public static RubyMethod/*!*/ GetClrMember(RubyContext/*!*/ context, object self, [DefaultParameterValue(null), NotNull]object asType, 
+            [DefaultProtocol, NotNull]string/*!*/ name) {
             RubyMemberInfo info;
 
             RubyClass cls = context.GetClassOf(self);
-            if (!cls.TryGetClrMember(name, out info)) {
+            Type type = (asType != null) ? Protocols.ToType(context, asType) : null;
+            if (!cls.TryGetClrMember(name, type, out info)) {
                 throw RubyExceptions.CreateNameError(String.Format("undefined CLR method `{0}' for class `{1}'", name, cls.Name));
             }
 
@@ -998,81 +1002,16 @@ namespace IronRuby.Builtins {
         #region `, exec, system, fork, 1.9: spawn
 
 #if !SILVERLIGHT
-        // Looks for RUBYSHELL and then COMSPEC under Windows
-        internal static ProcessStartInfo/*!*/ GetShell(RubyContext/*!*/ context, MutableString/*!*/ command) {
-            PlatformAdaptationLayer pal = context.DomainManager.Platform;
-            string shell = pal.GetEnvironmentVariable("RUBYSHELL");
-            if (shell == null) {
-                shell = pal.GetEnvironmentVariable("COMSPEC");
-            }
-
-            if (shell == null) {
-                string[] commandParts = command.ConvertToString().Split(new char[] { ' ' }, 2);
-                return new ProcessStartInfo(commandParts[0], commandParts.Length == 2 ? commandParts[1] : null);
-            } else {
-                return new ProcessStartInfo(shell, String.Format("/C \"{0}\"", command.ConvertToString()));
-            }
-        }
-
-        private static MutableString/*!*/ JoinArguments(MutableString/*!*/[]/*!*/ args) {
-            MutableString result = MutableString.CreateMutable(RubyEncoding.Binary);
-
-            for (int i = 0; i < args.Length; i++) {
-                result.Append(args[i]);
-                if (args.Length > 1 && i < args.Length - 1) {
-                    result.Append(' ');
-                }
-            }
-
-            return result;
-        }
-
-        private static Process/*!*/ ExecuteProcessAndWait(ProcessStartInfo/*!*/ psi) {
-            psi.UseShellExecute = false;
-            psi.RedirectStandardError = true;
-            try {
-                Process p = Process.Start(psi);
-                p.WaitForExit();
-                return p;
-            } catch (Exception e) {
-                throw RubyExceptions.CreateENOENT(psi.FileName, e);
-            }
-        }
-
-        internal static Process/*!*/ ExecuteProcessCapturingStandardOutput(ProcessStartInfo/*!*/ psi) {
-            psi.UseShellExecute = false;
-            psi.RedirectStandardError = true;
-            psi.RedirectStandardOutput = true;
-
-            try {
-                return Process.Start(psi);
-            } catch (Exception e) {
-                throw RubyExceptions.CreateENOENT(psi.FileName, e);
-            }
-        }
-
-        // Executes a command in a shell child process
-        private static Process/*!*/ ExecuteCommandInShell(RubyContext/*!*/ context, MutableString/*!*/ command) {
-            return ExecuteProcessAndWait(GetShell(context, command));
-        }
-
-        // Executes a command directly in a child process - command is the name of the executable
-        private static Process/*!*/ ExecuteCommand(MutableString/*!*/ command, MutableString[]/*!*/ args) {
-            return ExecuteProcessAndWait(new ProcessStartInfo(command.ToString(), JoinArguments(args).ToString()));
-        }
-
-        // Backtick always executes the command in a shell child process
-
         [RubyMethod("`", RubyMethodAttributes.PrivateInstance, BuildConfig = "!SILVERLIGHT")]
         [RubyMethod("`", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
         public static MutableString/*!*/ ExecuteCommand(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]MutableString/*!*/ command) {
-            Process p = ExecuteProcessCapturingStandardOutput(GetShell(context, command));
+            Process p = RubyProcess.CreateProcess(context, command, true);
+
             string output = p.StandardOutput.ReadToEnd();
             if (Environment.NewLine != "\n") {
                 output = output.Replace(Environment.NewLine, "\n");
             }
             MutableString result = MutableString.Create(output, RubyEncoding.GetRubyEncoding(p.StandardOutput.CurrentEncoding));
-            context.ChildProcessExitStatus = new RubyProcess.Status(p);
             return result;
         }
 
@@ -1082,8 +1021,8 @@ namespace IronRuby.Builtins {
         [RubyMethod("exec", RubyMethodAttributes.PrivateInstance, BuildConfig = "!SILVERLIGHT")]
         [RubyMethod("exec", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
         public static void Execute(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]MutableString/*!*/ command) {
-            Process p = ExecuteCommandInShell(context, command);
-            context.ChildProcessExitStatus = new RubyProcess.Status(p);
+            Process p = RubyProcess.CreateProcess(context, command, false);
+            p.WaitForExit();
             Exit(self, p.ExitCode);
         }
 
@@ -1091,26 +1030,32 @@ namespace IronRuby.Builtins {
         [RubyMethod("exec", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
         public static void Execute(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]MutableString/*!*/ command,
             [DefaultProtocol, NotNull, NotNullItems]params MutableString[]/*!*/ args) {
-            Process p = ExecuteCommand(command, args);
-            context.ChildProcessExitStatus = new RubyProcess.Status(p);
+            Process p = RubyProcess.CreateProcess(context, command, args);
             Exit(self, p.ExitCode);
         }
 
         [RubyMethod("system", RubyMethodAttributes.PrivateInstance, BuildConfig = "!SILVERLIGHT")]
         [RubyMethod("system", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
         public static bool System(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]MutableString/*!*/ command) {
-            Process p = ExecuteCommandInShell(context, command);
-            context.ChildProcessExitStatus = new RubyProcess.Status(p);
-            return p.ExitCode == 0;
+            try {
+                Process p = RubyProcess.CreateProcess(context, command, false);
+                p.WaitForExit();
+                return p.ExitCode == 0;
+            } catch (FileNotFoundException) {
+                return false;
+            }
         }
 
         [RubyMethod("system", RubyMethodAttributes.PrivateInstance, BuildConfig = "!SILVERLIGHT")]
         [RubyMethod("system", RubyMethodAttributes.PublicSingleton, BuildConfig = "!SILVERLIGHT")]
         public static bool System(RubyContext/*!*/ context, object self, [DefaultProtocol, NotNull]MutableString/*!*/ command,
             [DefaultProtocol, NotNull, NotNullItems]params MutableString/*!*/[]/*!*/ args) {
-            Process p = ExecuteCommand(command, args);
-            context.ChildProcessExitStatus = new RubyProcess.Status(p);
-            return p.ExitCode == 0;
+            try {
+                Process p = RubyProcess.CreateProcess(context, command, args);
+                return p.ExitCode == 0;
+            } catch (FileNotFoundException) {
+                return false;
+            }
         }
 
         //fork
@@ -1338,7 +1283,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("require", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("require", RubyMethodAttributes.PublicSingleton)]
         public static bool Require(RubyScope/*!*/ scope, object self, [DefaultProtocol, NotNull]MutableString/*!*/ libraryName) {
-            return scope.RubyContext.Loader.LoadFile(scope.GlobalScope.Scope, self, libraryName, LoadFlags.LoadOnce | LoadFlags.AppendExtensions);
+            return scope.RubyContext.Loader.LoadFile(scope.GlobalScope.Scope, self, libraryName, LoadFlags.Require);
         }
 
         #endregion

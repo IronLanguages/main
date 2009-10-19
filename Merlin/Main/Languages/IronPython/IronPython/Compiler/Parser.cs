@@ -151,10 +151,7 @@ namespace IronPython.Compiler {
             bool parsingMultiLineCmpdStmt;
             bool isEmptyStmt = false;
 
-            // ugly but it's difficult to flow this in at creation time.
-            _tokenizer._dontImplyDedent = true;
             properties = ScriptCodeParseResult.Complete;
-
 
             StartParsing();
             Statement ret = InternalParseInteractiveInput(out parsingMultiLineCmpdStmt, out isEmptyStmt);
@@ -994,7 +991,7 @@ namespace IronPython.Compiler {
             return ret;
         }
 
-        public string SetPrivatePrefix(string name) {
+        private string SetPrivatePrefix(string name) {
             string oldPrefix = _privatePrefix;
 
             _privatePrefix = GetPrivatePrefix(name);

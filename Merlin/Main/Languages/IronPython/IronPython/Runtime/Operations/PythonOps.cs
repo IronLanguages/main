@@ -1010,7 +1010,7 @@ namespace IronPython.Runtime.Operations {
                 return value;
             }
 
-            throw PythonOps.AttributeErrorForMissingAttribute(PythonTypeOps.GetName(o), name);
+            throw PythonOps.AttributeErrorForObjectMissingAttribute(o, name);
         }
 
         internal static IList<string> GetStringMemberList(IPythonMembersList pyMemList) {
@@ -4072,8 +4072,26 @@ namespace IronPython.Runtime.Operations {
             return PythonOps.TypeError("exceptions must be classes or instances, not {0}", PythonTypeOps.GetName(type));
         }
 
+        public static Exception AttributeErrorForObjectMissingAttribute(object obj, string attributeName) {
+            if (obj is OldInstance) {
+                return AttributeErrorForOldInstanceMissingAttribute(((OldInstance)obj)._class.Name, attributeName);
+            } else if (obj is OldClass) {
+                return AttributeErrorForOldClassMissingAttribute(((OldClass)obj).Name, attributeName);
+            } else {
+                return AttributeErrorForMissingAttribute(PythonTypeOps.GetName(obj), attributeName);
+            }
+        }
+
         public static Exception AttributeErrorForMissingAttribute(string typeName, string attributeName) {
             return PythonOps.AttributeError("'{0}' object has no attribute '{1}'", typeName, attributeName);
+        }
+
+        public static Exception AttributeErrorForOldInstanceMissingAttribute(string typeName, string attributeName) {
+            return PythonOps.AttributeError("{0} instance has no attribute '{1}'", typeName, attributeName);
+        }
+
+        public static Exception AttributeErrorForOldClassMissingAttribute(string typeName, string attributeName) {
+            return PythonOps.AttributeError("class {0} has no attribute '{1}'", typeName, attributeName);
         }
 
         public static Exception UncallableError(object func) {
@@ -4127,11 +4145,11 @@ namespace IronPython.Runtime.Operations {
 
         #endregion
 
-        private static readonly Microsoft.Scripting.Utils.ThreadLocal<List<FunctionStack>> _funcStack = new Microsoft.Scripting.Utils.ThreadLocal<List<FunctionStack>>(true);
-        private static Func<List<FunctionStack>> Creator = () => new List<FunctionStack>();
+        [ThreadStatic]
+        private static List<FunctionStack> _funcStack;
 
         public static List<FunctionStack> GetFunctionStack() {
-            return _funcStack.GetOrCreate(Creator);
+            return _funcStack ?? (_funcStack = new List<FunctionStack>());
         }
 
         public static List<FunctionStack> PushFrame(CodeContext context, FunctionCode function) {
@@ -4166,17 +4184,15 @@ namespace IronPython.Runtime.Operations {
             return buffer.ToString().MakeByteArray();
         }
 
-        public static bool ModuleGetMember(PythonModule module, string name, out object res) {
-            return module.__dict__.TryGetValue(name, out res) && res != Uninitialized.Instance;
-        }
+        public static bool ModuleTryGetMember(CodeContext context, PythonModule module, string name, out object res) {
+            object value = module.GetAttributeNoThrow(context, name);
+            if (value != OperationFailed.Value) {
+                res = value;
+                return true;
+            }
 
-        public static object ModuleSetMember(PythonModule module, string name, object value) {
-            Debug.Assert(value != Uninitialized.Instance);
-            return module.__dict__[name] = value;
-        }
-
-        public static bool ModuleDeleteMember(PythonModule module, string name) {
-            return module.__dict__.Remove(name);
+            res = null;
+            return false;
         }
 
         internal static void ScopeSetMember(CodeContext context, Scope scope, string name, object value) {

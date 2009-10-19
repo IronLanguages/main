@@ -2020,7 +2020,12 @@ namespace IronRuby.Compiler {
                 }
             }
 
-            return options | encoding;
+            // encoding is ignored in 1.9:
+            if (_compatibility == RubyCompatibility.Ruby18) {
+                return options | encoding;
+            } else {
+                return options;
+            }
         }
 
         #endregion

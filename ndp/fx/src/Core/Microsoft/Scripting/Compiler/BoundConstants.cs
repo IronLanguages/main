@@ -141,6 +141,11 @@ namespace System.Linq.Expressions.Compiler {
                 return;
             }
             EmitConstantsArray(lc);
+            
+            // The same lambda can be in multiple places in the tree, so we
+            // need to clear any locals from last time.
+            _cache.Clear();
+
             foreach (var reference in _references) {
                 if (ShouldCache(reference.Value)) {
                     if (--count > 0) {

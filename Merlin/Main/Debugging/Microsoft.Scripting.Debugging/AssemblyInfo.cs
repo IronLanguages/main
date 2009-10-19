@@ -1,4 +1,4 @@
-/* ****************************************************************************
+﻿/* ****************************************************************************
  *
  * Copyright (c) Microsoft Corporation. 
  *
@@ -27,7 +27,7 @@ using System.Security;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Microsoft")]
 [assembly: AssemblyProduct("Microsoft.Scripting")]
-[assembly: AssemblyCopyright("� Microsoft Corporation.  All rights reserved.")]
+[assembly: AssemblyCopyright("© Microsoft Corporation.  All rights reserved.")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -51,7 +51,7 @@ using System.Security;
 // You can specify all the values or you can default the Revision and Build Numbers 
 // by using the '*' as shown below:
 [assembly: SecurityTransparent]
-#if !CLR2
+#if !CLR2 && !SILVERLIGHT
 [assembly: SecurityRules(SecurityRuleSet.Level1)]
 #endif
 

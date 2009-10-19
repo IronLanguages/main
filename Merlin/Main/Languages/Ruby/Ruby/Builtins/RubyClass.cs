@@ -682,6 +682,13 @@ namespace IronRuby.Builtins {
 
         // thread safe: doesn't need any lock since it only accesses immutable state
         public bool TryGetClrMember(string/*!*/ name, out RubyMemberInfo method) {
+            return TryGetClrMember(name, null, out method);
+        }
+
+        // thread safe: doesn't need any lock since it only accesses immutable state
+        public bool TryGetClrMember(string/*!*/ name, Type asType, out RubyMemberInfo method) {
+            Debug.Assert(!_isSingletonClass);
+
             // Get the first class in hierarchy that represents CLR type - worse case we end up with Object.
             // Ruby classes don't represent a CLR type and hence expose no CLR members.
             RubyClass cls = this;
@@ -689,17 +696,24 @@ namespace IronRuby.Builtins {
                 cls = cls.SuperClass;
             }
 
-            Debug.Assert(!cls.TypeTracker.Type.IsInterface);
+            Type type = cls.TypeTracker.Type;
+            Debug.Assert(!type.IsInterface);
 
-            // Note: We don't cache failures as this API is not used so frequently (e.g. for regular method dispatch) that we would need caching.
+            // Note: We don't cache results as this API is not used so frequently (e.g. for regular method dispatch).
+            
+            if (asType != null && !asType.IsAssignableFrom(type)) {
+                throw RubyExceptions.CreateNameError(String.Format("`{0}' does not inherit from `{0}'", cls.Name, Context.GetTypeName(asType, true)));
+            }
+
+            // TODO: should declaring module of the resulting method rather be the base class?
             method = null;
-            return cls.TryGetClrMember(cls.TypeTracker.Type, name, true, 0, out method);
+            return cls.TryGetClrMember(asType ?? type, name, true, 0, out method);
         }
 
         // thread safe: doesn't need any lock since it only accesses immutable state
         public bool TryGetClrConstructor(out RubyMemberInfo method) {
             ConstructorInfo[] ctors;
-            if (TypeTracker != null && !TypeTracker.Type.IsInterface && (ctors = TypeTracker.Type.GetConstructors()) != null && ctors.Length > 0) {
+            if (TypeTracker != null && !TypeTracker.Type.IsInterface && (ctors = GetConstructors(TypeTracker.Type)).Length > 0) {
                 method = new RubyMethodGroupInfo(ctors, this, true);
                 return true;
             }
@@ -725,6 +739,10 @@ namespace IronRuby.Builtins {
             return false;
         }
 
+        /// <summary>
+        /// Returns a fresh instance of RubyMemberInfo each time it is called. The caller needs to cache it if appropriate.
+        /// May add or use method groups to/from super-clases if BindingFlags.DeclaredOnly is used.
+        /// </summary>
         private bool TryGetClrMember(Type/*!*/ type, string/*!*/ name, bool tryUnmangle, BindingFlags basicBindingFlags, out RubyMemberInfo method) {
             basicBindingFlags |= BindingFlags.Public | BindingFlags.NonPublic;
 
@@ -760,7 +778,7 @@ namespace IronRuby.Builtins {
                 }
             } else if (name.LastCharacter() == '=') {
                 string propertyName = name.Substring(0, name.Length - 1);
-                string altName = tryUnmangle ? RubyUtils.TryUnmangleName(propertyName) : null;
+                string altName = tryUnmangle ? RubyUtils.TryUnmangleMethodName(propertyName) : null;
                 
                 // property setter:
                 if (TryGetClrProperty(type, bindingFlags, true, name, propertyName, altName, out method)) return true;
@@ -768,7 +786,7 @@ namespace IronRuby.Builtins {
                 // writeable field:
                 if (TryGetClrField(type, bindingFlags, true, propertyName, altName, out method)) return true;
             } else {
-                string altName = tryUnmangle ? RubyUtils.TryUnmangleName(name) : null;
+                string altName = tryUnmangle ? RubyUtils.TryUnmangleMethodName(name) : null;
 
                 // method:
                 if (TryGetClrMethod(type, bindingFlags, false, name, null, name, altName, out method)) return true;
@@ -869,6 +887,12 @@ namespace IronRuby.Builtins {
         ///        2) C.HidesInheritedOverloads == false
         ///           All overloads of the method we look for are in [type..C) and in the RubyMemberInfo.
         /// </summary>
+        /// <remarks>
+        /// Doesn't include explicitly implemented interface methods. Including them would allow to call them directly (obj.foo) 
+        /// if the overload resolution succeeds. However, the interface methods are probably implemented explicitly for a reason:
+        /// 1) There is a conflict in signatures -> the overload resolution would probably fail.
+        /// 2) The class was designed with an intention to not expose the implementations directly.
+        /// </remarks>
         private bool TryGetClrMethod(Type/*!*/ type, BindingFlags bindingFlags, bool specialNameOnly, 
             string/*!*/ name, string clrNamePrefix, string/*!*/ clrName, string altClrName, out RubyMemberInfo method) {
 
@@ -1197,7 +1221,7 @@ namespace IronRuby.Builtins {
             ConstructorInfo[] ctors;
             if (TypeTracker == null) {
                 metaBuilder.SetError(Methods.MakeNotClrTypeError.OpCall(Ast.Convert(args.TargetExpression, typeof(RubyClass))));
-            } else if ((ctors = TypeTracker.Type.GetConstructors()) == null || ctors.Length == 0) {
+            } else if ((ctors = GetConstructors(TypeTracker.Type)).Length == 0) {
                 metaBuilder.SetError(Methods.MakeConstructorUndefinedError.OpCall(Ast.Convert(args.TargetExpression, typeof(RubyClass))));
             } else {
                 RubyMethodGroupInfo.BuildCallNoFlow(metaBuilder, args, methodName, ctors, SelfCallConvention.NoSelf, true);
@@ -1216,15 +1240,16 @@ namespace IronRuby.Builtins {
 
                 initializer = ResolveMethodForSiteNoLock(Symbols.Initialize, VisibilityContext.AllVisible).Info;
 
-                // Initializer resolves to Object#initializer unless overridden in a derived class.
-                // We ensure that this method cannot be removed.
+                // Initializer resolves to Object#initialize unless overridden in a derived class.
+                // We ensure that initializer cannot be removed/undefined so that we don't ever fall back to method_missing.
                 Debug.Assert(initializer != null);
             }
 
-            bool hasRubyInitializer = initializer is RubyMethodInfo;
-            bool hasLibraryInitializer = !hasRubyInitializer && !initializer.DeclaringModule.IsObjectClass && initializer is RubyLibraryMethodInfo;
+            bool isLibraryMethod = initializer is RubyLibraryMethodInfo;
+            bool isRubyInitializer = initializer.IsRubyMember && !isLibraryMethod;
+            bool isLibraryInitializer = isLibraryMethod && !initializer.DeclaringModule.IsObjectClass;
 
-            if (hasRubyInitializer || hasLibraryInitializer && _isRubyClass) {
+            if (isRubyInitializer || isLibraryInitializer && _isRubyClass) {
                 // allocate and initialize:
                 bool allocatorFound = BuildAllocatorCall(metaBuilder, args, () => AstUtils.Constant(Name));
                 if (metaBuilder.Error) {
@@ -1259,10 +1284,10 @@ namespace IronRuby.Builtins {
                     constructionOverloads = (MethodBase[])ReflectionUtils.GetMethodInfos(_factories);
                 } else {
                     // TODO: handle protected constructors
-                    constructionOverloads = (type == typeof(object) ? typeof(RubyObject) : type).GetConstructors();
+                    constructionOverloads = GetConstructors(type == typeof(object) ? typeof(RubyObject) : type);
 
                     if (type.IsValueType) {
-                        if (constructionOverloads.Length == 0 || type.GetConstructor(Type.EmptyTypes) == null) {
+                        if (constructionOverloads.Length == 0 || GetConstructor(type) == null) {
                             constructionOverloads = ArrayUtils.Append(constructionOverloads, Methods.CreateDefaultInstance);
                         }
                     } else if (constructionOverloads.Length == 0) {
@@ -1287,6 +1312,21 @@ namespace IronRuby.Builtins {
             }
         }
 
+        private ConstructorInfo[]/*!*/ GetConstructors(Type/*!*/ type) {
+            return type.GetConstructors(
+                BindingFlags.Instance | BindingFlags.Public | (Context.DomainManager.Configuration.PrivateBinding ? BindingFlags.NonPublic : 0)
+            );
+        }
+
+        private ConstructorInfo GetConstructor(Type/*!*/ type, params Type[]/*!*/ parameterTypes) {
+            return type.GetConstructor(
+                BindingFlags.Instance | BindingFlags.Public | (Context.DomainManager.Configuration.PrivateBinding ? BindingFlags.NonPublic : 0),
+                null,
+                parameterTypes,
+                null
+            );
+        }
+
         private Expression/*!*/ MarkNewException(Expression/*!*/ expression) {
             // mark the exception as "Ruby created" so that "new" is not called again on its class when handled in rescue clause:
             return IsException() ? Methods.MarkException.OpCall(AstUtils.Convert(expression, typeof(Exception))) : expression;
@@ -1299,11 +1339,11 @@ namespace IronRuby.Builtins {
             var instanceVariable = metaBuilder.GetTemporary(instanceExpr.Type, "#instance");
 
             // We know an exact type of the new instance and that there is no singleton for that instance.
-            // We also have the exact method we need to call ("initialize" is a RubyMethodInfo).
+            // We also have the exact method we need to call ("initialize" is a RubyMethodInfo/RubyLambdaMethodInfo).
             // => no tests are necessary:
             args.SetTarget(instanceVariable, null);
 
-            if (initializer is RubyMethodInfo) {
+            if (initializer is RubyMethodInfo || initializer is RubyLambdaMethodInfo) {
                 initializer.BuildCallNoFlow(metaBuilder, args, Symbols.Initialize);
             } else {
                 // TODO: we need more refactoring of RubyMethodGroupInfo.BuildCall to be able to inline this:
@@ -1354,24 +1394,25 @@ namespace IronRuby.Builtins {
                 return Methods.AllocateStructInstance.OpCall(AstUtils.Convert(args.TargetExpression, typeof(RubyClass)));
             }
 
+            var bindingFlags = BindingFlags.Public | (Context.DomainManager.Configuration.PrivateBinding ? BindingFlags.NonPublic : 0);
             ConstructorInfo ctor;
             if (IsException()) {
-                if ((ctor = type.GetConstructor(new[] { typeof(string) })) != null) {
+                if ((ctor = GetConstructor(type, typeof(string))) != null) {
                     return Ast.New(ctor, defaultExceptionMessage());
-                } else if ((ctor = type.GetConstructor(new[] { typeof(string), typeof(Exception) })) != null) {
+                } else if ((ctor = GetConstructor(type, typeof(string), typeof(Exception))) != null) {
                     return Ast.New(ctor, defaultExceptionMessage(), AstUtils.Constant(null));
                 }
             }
 
-            if ((ctor = type.GetConstructor(new[] { typeof(RubyClass) })) != null) {
+            if ((ctor = GetConstructor(type, typeof(RubyClass))) != null) {
                 return Ast.New(ctor, AstUtils.Convert(args.TargetExpression, typeof(RubyClass)));
             }
 
-            if ((ctor = type.GetConstructor(new[] { typeof(RubyContext) })) != null) {
+            if ((ctor = GetConstructor(type, typeof(RubyContext))) != null) {
                 return Ast.New(ctor, AstUtils.Convert(args.MetaContext.Expression, typeof(RubyContext)));
             }
 
-            if ((ctor = type.GetConstructor(Type.EmptyTypes)) != null) {
+            if ((ctor = GetConstructor(type)) != null) {
                 return Ast.New(ctor);
             }
 

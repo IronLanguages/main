@@ -36,7 +36,7 @@ namespace IronRuby.Runtime {
     public sealed class RubyExceptionData {
         internal static readonly Microsoft.Scripting.Utils.ThreadLocal<InterpretedFrame> CurrentInterpretedFrame = new Microsoft.Scripting.Utils.ThreadLocal<InterpretedFrame>();
 
-        private static readonly object/*!*/ _DataKey = new object();
+        private static readonly object/*!*/ _DataKey = typeof(RubyExceptionData);
         internal const string TopLevelMethodName = "#";
 
 #if SILVERLIGHT
@@ -60,6 +60,7 @@ namespace IronRuby.Runtime {
         private Exception/*!*/ _visibleException;
 #if DEBUG
         // For asynchronous exceptions, this is useful to figure out which thread raised the exception
+        [NonSerialized]
         private Thread/*!*/ _throwingThread;
 #endif
 
@@ -69,7 +70,8 @@ namespace IronRuby.Runtime {
         // can be set explicitly by the user (even to nil):
         private RubyArray _backtrace;
 
-        private CallSite<Func<CallSite, RubyContext, Exception, RubyArray, object>>/*!*/ _setBacktraceCallSite;
+        [NonSerialized]
+        private CallSite<Func<CallSite, RubyContext, Exception, RubyArray, object>> _setBacktraceCallSite;
 
         private RubyExceptionData(Exception/*!*/ exception) {
             _exception = exception;

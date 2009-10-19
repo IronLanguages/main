@@ -47,8 +47,8 @@ namespace IronPython.Compiler {
 
         private Func<CodeContext/*!*/, FunctionCode/*!*/, object>/*!*/ _target, _tracingTarget; // lazily compiled targets
 
-        public PythonScriptCode(CompilerContext/*!*/ context, Expression<Func<CodeContext/*!*/, FunctionCode/*!*/, object>>/*!*/ lambda, SourceUnit/*!*/ sourceUnit, Dictionary<int, bool> handlerLocations, Dictionary<int, Dictionary<int, bool>> loopAndFinallyLocations)
-            : base(sourceUnit) {
+        public PythonScriptCode(CompilerContext/*!*/ context, Expression<Func<CodeContext/*!*/, FunctionCode/*!*/, object>>/*!*/ lambda, SourceUnit/*!*/ sourceUnit, Dictionary<int, bool> handlerLocations, Dictionary<int, Dictionary<int, bool>> loopAndFinallyLocations, SourceSpan span)
+            : base(sourceUnit, span) {
             Assert.NotNull(lambda, context);
 
             _context = context;
