@@ -147,6 +147,18 @@ namespace IronRuby.Runtime {
             return str.AppendFormat("0x{0:x7}", 2 * objectId);
         }
 
+        public static MutableString/*!*/ ObjectToMutableString(IRubyObject/*!*/ self) {
+            return RubyUtils.FormatObject(self.ImmediateClass.GetNonSingletonClass().Name, self.GetInstanceData().ObjectId, self.IsTainted);
+        }
+
+        public static MutableString/*!*/ ObjectBaseToMutableString(IRubyObject/*!*/ self) {
+            if (self is RubyObject) {
+                return RubyUtils.ObjectToMutableString(self);
+            } else {
+                return MutableString.CreateMutable(self.BaseToString(), RubyEncoding.UTF8);
+            }
+        }
+
         public static bool TryDuplicateObject(
             CallSiteStorage<Func<CallSite, object, object, object>>/*!*/ initializeCopyStorage,
             CallSiteStorage<Func<CallSite, RubyClass, object>>/*!*/ allocateStorage, 

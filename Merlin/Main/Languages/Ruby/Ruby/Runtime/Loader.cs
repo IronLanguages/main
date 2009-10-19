@@ -37,7 +37,9 @@ namespace IronRuby.Runtime {
         LoadOnce = 1,
         LoadIsolated = 2,
         AppendExtensions = 4,
-        ResolveLoaded = 8
+        ResolveLoaded = 8,
+
+        Require = LoadOnce | AppendExtensions,
     }
 
     // TODO: thread safety

@@ -911,6 +911,11 @@ var closureScope = scope as RubyClosureScope;
             if (isMain) {
                 scope.SetDebugName("top-main");
                 context.ObjectClass.SetConstant("TOPLEVEL_BINDING", new Binding(scope));
+                if (context.RubyOptions.RequirePaths != null) {
+                    foreach (var path in context.RubyOptions.RequirePaths) {
+                        context.Loader.LoadFile(globalScope, rubyGlobalScope.MainObject, MutableString.Create(path, RubyEncoding.UTF8), LoadFlags.Require);
+                    }
+                }
             } else {
                 scope.SetDebugName("top-required");
             }
@@ -984,16 +989,18 @@ var closureScope = scope as RubyClosureScope;
                 RubyOps.ScopeSetMember(globalScope, str, value);
                 return value;
             } else {
-                if (args.Length != 0) {
-                    throw RubyOps.MakeWrongNumberOfArgumentsError(args.Length, 0);
-                }
-
-                object value;
-                if (RubyOps.TryGetGlobalScopeMethod(context, globalScope, str, out value)) {
-                    return value;
+                object result;
+                if (RubyOps.TryGetGlobalScopeMethod(context, globalScope, str, out result)) {
+                    if (args.Length != 0) {
+                        throw RubyOps.MakeWrongNumberOfArgumentsError(args.Length, 0);
+                    }
+                    return result;
                 }
 
                 if (self != null && str == "scope") {
+                    if (args.Length != 0) {
+                        throw RubyOps.MakeWrongNumberOfArgumentsError(args.Length, 0);
+                    }
                     return self;
                 }
             }

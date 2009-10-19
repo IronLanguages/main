@@ -27,8 +27,13 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 namespace IronRuby.Hosting {
-    public sealed class RubyOptionsParser : OptionsParser<ConsoleOptions> {
+    public sealed class RubyConsoleOptions : ConsoleOptions {
+        public string ChangeDirectory;
+    }
+
+    public sealed class RubyOptionsParser : OptionsParser<RubyConsoleOptions> {
         private readonly List<string>/*!*/ _loadPaths = new List<string>();
+        private readonly List<string>/*!*/ _requiredPaths = new List<string>();
 
 #if DEBUG && !SILVERLIGHT
         private ConsoleTraceListener _debugListener;
@@ -121,14 +126,12 @@ namespace IronRuby.Hosting {
             }
 #endif
             if (arg.StartsWith("-r")) {
-                string libPath;
-                if (arg == "-r") {
-                    libPath = PopNextArg();
-                } else {
-                    libPath = arg.Substring(2);
-                }
+                _requiredPaths.Add((arg == "-r") ? PopNextArg() : arg.Substring(2));
+                return;
+            }
 
-                LanguageSetup.Options["RequiredLibraries"] = libPath;
+            if (arg.StartsWith("-C")) {
+                ConsoleOptions.ChangeDirectory = arg.Substring(2);
                 return;
             }
 
@@ -294,6 +297,7 @@ namespace IronRuby.Hosting {
             }
 #endif
             LanguageSetup.Options["SearchPaths"] = _loadPaths;
+            LanguageSetup.Options["RequiredPaths"] = _requiredPaths;
         }
 
         public override void GetHelp(out string commandLine, out string[,] options, out string[,] environmentVariables, out string comments) {
@@ -305,7 +309,7 @@ namespace IronRuby.Hosting {
              // { "-0[octal]",                   "specify record separator (\0, if no argument)" },
              // { "-a",                          "autosplit mode with -n or -p (splits $_ into $F)" },
              // { "-c",                          "check syntax only" },
-             // { "-Cdirectory",                 "cd to directory, before executing your script" },
+                { "-Cdirectory",                 "cd to directory, before executing your script" },
                 { "-d",                          "set debugging flags (set $DEBUG to true)" },
                 { "-D",                          "emit debugging information (PDBs) for Visual Studio debugger" },
                 { "-e 'command'",                "one line of script. Several -e's allowed. Omit [file]" },

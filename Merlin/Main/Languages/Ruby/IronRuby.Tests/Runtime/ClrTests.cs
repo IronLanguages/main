@@ -1907,6 +1907,25 @@ end
             Assert(regex.ToString() == "(?mi-x:hello)");
         }
 
+        public class EmptyClass1 {
+        }
+
+        public void ClrToString1() {
+            Context.ObjectClass.SetConstant("C", Context.GetClass(typeof(EmptyClass1)));
+
+            AssertOutput(() => CompilerTest(@"
+class D; include System::Collections::Generic::IList[Fixnum]; end
+class E < C; include System::Collections::Generic::IList[Fixnum]; end
+class F; end
+
+p D.new, E.new, F.new
+"), @"
+#<D:0x*>
+#<E:0x*>
+#<F:0x*>
+", OutputFlags.Match);
+        }
+
         public void ClrHashEquals4() {
             var e = new RubyObject(Context.ObjectClass);
             int h;
@@ -2285,12 +2304,11 @@ a[0] = 'x'
 a[1] = C.new
 a[2] = :z
 
-# TODO: params array parameter of 'p' binds to the vector if passed alone
-p a,
-  System::Array[System::String].new(3, C.new),
-  System::Array[System::String].new([C.new, C.new]),
-  System::Array[System::Byte].new(3) { |x| x },
-  System::Array[System::Byte].new(3, 1)
+p a
+p System::Array[System::String].new(3, C.new)
+p System::Array[System::String].new([C.new, C.new])
+p System::Array[System::Byte].new(3) { |x| x }
+p System::Array[System::Byte].new(3, 1)
 ", @"
 ['x', 'c', 'z']
 ['c', 'c', 'c']

@@ -267,7 +267,9 @@ namespace Microsoft.Scripting.ComInterop {
 
         private static MethodInfo Create_ConvertByrefToPtr() {
             // We dont use AssemblyGen.DefineMethod since that can create a anonymously-hosted DynamicMethod which cannot contain unverifiable code.
-            TypeBuilder type = Snippets.Shared.DefineType("Type$ConvertByrefToPtr", typeof(object), false, false).TypeBuilder;
+            var assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName("ComSnippets"), AssemblyBuilderAccess.Run);
+            var moduleBuilder = assemblyBuilder.DefineDynamicModule("ComSnippets");
+            var type = moduleBuilder.DefineType("Type$ConvertByrefToPtr", TypeAttributes.Public);
 
             Type[] paramTypes = new Type[] { typeof(Variant).MakeByRefType() };
             MethodBuilder mb = type.DefineMethod("ConvertByrefToPtr", MethodAttributes.Public | MethodAttributes.Static, typeof(IntPtr), paramTypes);
