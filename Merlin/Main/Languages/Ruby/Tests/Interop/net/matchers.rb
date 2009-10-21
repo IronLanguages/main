@@ -60,7 +60,63 @@ class ClrStringMatcher
   end
 end
 
+class InferMatcher
+  def initialize(meth)
+    @meth = meth
+    @exceptions = []
+    @passing = []
+  end
+
+  def with(*args)
+    @passing <<  args 
+    self
+  end
+  
+  def except(*args)
+    @exceptions << args
+    self
+  end
+
+  def matches?(target)
+    @target_type = target.GetType
+    pass = []
+    @passing.each do |arg|
+      pass << (target.send(@meth, *arg) == type_to_string(*arg))
+    end
+    @exceptions.each do |arg|
+      pass << begin
+                target.send(@meth, *arg)
+                false
+              rescue ArgumentError
+                true
+              end
+    end
+    pass.all? {|e| e}
+  end
+  
+  def type_to_string(*type)
+    type = type.last
+    if type == nil
+      'System.Object'
+    else
+      type.GetType.ToString
+    end
+  end
+  
+  def failure_message
+    ["Expected to be able to infer the generic type", "from calling #{@meth} on #{@target_type}"]
+  end
+
+  def negative_failure_message
+    ["Expected not to be able to infer the generic type", "from calling #{@meth} on #{@target_type}"]
+  end
+end
+
 class Object
+  def infer(meth)
+    InferMatcher.new(meth)
+  end
+  
   def be_able_to_load(assembly)
     BeAbleToLoadMatcher.new(assembly)
   end

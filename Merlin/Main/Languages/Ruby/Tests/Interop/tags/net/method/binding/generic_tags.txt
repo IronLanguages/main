@@ -1,3 +1,1 @@
-fails:Generic Type inference should work for simple TxTy methods with differing types with a subclass relationship (Array)
-fails:Generic Type inference should work for simple TParamsArrx methods with differing types with a subclass relationship (Array)
-fails:Generic Type inference should work for simple TxTParamsArry methods with differing types with a subclass relationship (Array)
+fails:Generic Type inference on TxTParamsArry methods should work with differing types with a subclass relationship (Array)
