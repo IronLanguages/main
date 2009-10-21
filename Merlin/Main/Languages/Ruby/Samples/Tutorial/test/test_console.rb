@@ -15,7 +15,9 @@
 
 require 'stringio'
 
-if !defined?(SILVERLIGHT) || !SILVERLIGHT
+SILVERLIGHT = false unless defined?(SILVERLIGHT)
+
+if not SILVERLIGHT
   $: << File.expand_path(File.dirname(__FILE__) + '/..')
   $: << File.expand_path(File.dirname(__FILE__) + '/../app')
 end
@@ -126,7 +128,7 @@ module TutorialTests
 
   def self.run_test spec, context, chapter
     chapter.tasks.each do |task| 
-      if not task.should_run? context.bind
+      if not task.should_run? context.bind 
         return
       end
       task.setup.call(context.bind) if task.setup
@@ -161,12 +163,12 @@ describe "TryRubyTutorial" do
 end
 
 if not SILVERLIGHT
-describe "HtmlGeneratorTests" do
-  it "basically works" do
-    tutorial = get_standard_tutorial('tryruby_tutorial.rb')
-    html_tutorial = HtmlTutorial.new tutorial
-    html = html_tutorial.generate_html
-    assert_match %r{<h2>Table of Contents</h2>}, html
+  describe "HtmlGeneratorTests" do
+    it "basically works" do
+      tutorial = get_standard_tutorial('tryruby_tutorial.rb')
+      html_tutorial = HtmlTutorial.new tutorial
+      html = html_tutorial.generate_html
+      assert_match %r{<h2>Table of Contents</h2>}, html
+    end
   end
-end
 end

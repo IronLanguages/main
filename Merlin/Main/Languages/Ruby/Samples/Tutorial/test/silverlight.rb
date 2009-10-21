@@ -18,8 +18,7 @@
 class ReplBufferStream
   def write_to_repl(str)
     GuiTutorial::Window.current.begin_invoke do
-      #TODO: Jimmy, fix me!
-      #$repl.output_buffer.write str
+      $repl.output_buffer.write str
     end
   end
 
