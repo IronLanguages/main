@@ -448,6 +448,7 @@ tutorial "IronRuby tutorial" do
         end
 
         chapter "Loading .NET libraries from a given path" do
+            silverlight false #having problems loading this in Silverlight from another thread
             introduction %{
 		Loading .NET libraries from a given path
             }
