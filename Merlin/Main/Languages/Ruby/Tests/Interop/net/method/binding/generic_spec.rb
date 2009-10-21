@@ -100,4 +100,30 @@ describe "Generic Type inference" do
 
     it_behaves_like :relationships, :TxTParamsArry
   end
+
+  describe "on Txclass methods" do
+    it "should not work with ValueTypes" do
+      @targets.each do |target|
+        target.should infer(:TxClass).except(1)
+        #Ruby's True map pretty much to CLR's true, so for Generics it gets
+        #treated as a value type. Documenting that here.
+        target.should infer(:TxClass).except(@args["true"])
+      end
+    end
+
+    it "should work on C# reference types" do
+      @targets.each do |target|
+        target.should infer(:TxClass).with(@args["System::Stringa"])
+        target.should infer(:TxClass).with(@args["obj"])
+      end
+    end
+    
+    it "should work on Ruby types" do
+      @targets.each do |target|
+        target.should infer(:TxClass).with(@args["Stringa"])
+        target.should infer(:TxClass).with(@args["anonymous class"])
+        target.should infer(:TxClass).with(@args["nil"])
+      end
+    end
+  end
 end
