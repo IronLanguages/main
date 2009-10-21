@@ -6,7 +6,7 @@ describe 'DynamicApplication' do
     
     # TODO try to make another instance
   end
-end
+end 
 
 describe 'Parsing init parameters' do
   # TODO test parsing init params
@@ -93,7 +93,9 @@ describe 'XAML support' do
   def options
     @options ||= {
       :object => System::Windows::Controls::UserControl.new,
-      :xamlfile => "unit/assets/foo.xaml"
+      :xamlfile => "unit/assets/foo.xaml",
+      :xamlfileoutside => 'assets/bar.xaml',
+      :xamlstring => File.open('unit/assets/foo.xaml'){|f| f.read}
     }
   end
 
@@ -102,29 +104,65 @@ describe 'XAML support' do
   end
 
   def check_xaml_support(obj = nil)
-    obj ||= DynamicApplication.current.root_visual
+    obj ||= @dynapp.root_visual
     # Rough test that the xaml file was loaded
     msg = obj.find_name('message')
     msg.text.should.equal 'Foo.xaml'.to_clr_string
   end
 
-  it 'should load a XAML file, represented by a string, and set it as the visual root' do
+  before do
     reset_options
-    DynamicApplication.current.load_root_visual(options[:object], options[:xamlfile])
-    DynamicApplication.current.root_visual.should.equal options[:object]
+    @dynapp = DynamicApplication.current
+  end
+
+  Uri = System::Uri
+  UriKind = System::UriKind
+
+  it 'should load a XAML file, represented by a string, and set it as the visual root' do
+    result = @dynapp.load_root_visual(options[:object], options[:xamlfile])
+    @dynapp.root_visual.should.equal options[:object]
+    result.should.equal options[:object]
     check_xaml_support
   end
 
   it 'should load a xaml file, represented by a Uri, and set it as the visual root' do
-    reset_options
-    DynamicApplication.current.load_root_visual(options[:object], System::Uri.new(options[:xamlfile], System::UriKind.relative))
-    DynamicApplication.current.root_visual.should.equal options[:object]
+    result = @dynapp.load_root_visual(options[:object], Uri.new(options[:xamlfile], UriKind.relative))
+    @dynapp.root_visual.should.equal options[:object]
+    result.should.equal options[:object]
     check_xaml_support
   end
 
-  it 'should load a xaml file into a object' do
-    reset_options
-    DynamicApplication.load_component(options[:object], options[:xamlfile])
+  it 'should load a xaml string and set it as the root visual' do
+    result = @dynapp.load_root_visual_from_string(options[:xamlstring])
+    @dynapp.root_visual.should.equal result
+    check_xaml_support
+  end
+
+  it 'should load a xaml file, represented by a string, into a object' do
+    result = DynamicApplication.load_component(options[:object], options[:xamlfile])
+    result.should == options[:object]
+    check_xaml_support(result)
+  end
+
+  it 'should load a xaml file, represented by a Uri, into a object' do
+    result = DynamicApplication.load_component(options[:object], Uri.new(options[:xamlfile], UriKind.relative))
     check_xaml_support(options[:object])
+  end
+
+  it 'should load a xaml file as a string, from outside the XAP, as a new object' do
+    result = DynamicApplication.load_component(options[:object], options[:xamlfileoutside])
+    result.should.not.equal options[:object] # limitation with XamlReader.Load
+    check_xaml_support(result)
+  end
+
+  it 'should load a xaml file as a Uri, from outside the XAP, as a new object' do
+    result = DynamicApplication.load_component(options[:object], Uri.new(options[:xamlfileoutside], UriKind.relative))
+    result.should.not.equal options[:object] # limitation with XamlReader.Load
+    check_xaml_support(result)
+  end
+
+  it 'should load a xaml string as a new object' do
+    result = DynamicApplication.load_component_from_string(options[:xamlstring])
+    check_xaml_support(result)
   end
 end

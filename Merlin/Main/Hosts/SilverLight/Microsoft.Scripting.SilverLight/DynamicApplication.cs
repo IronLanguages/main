@@ -138,7 +138,7 @@ namespace Microsoft.Scripting.Silverlight {
         /// <param name="uri">Uri to a XAML file</param>
         /// <returns>the RootVisual</returns>
         public DependencyObject LoadRootVisual(UIElement root, Uri uri) {
-            root = (UIElement) LoadComponent(root, uri);
+            LoadComponent(root, uri);
             RootVisual = root;
             return root;
         }
@@ -151,25 +151,20 @@ namespace Microsoft.Scripting.Silverlight {
         /// <param name="uri">string representing the relative Uri of the XAML file</param>
         /// <returns>the RootVisual</returns>
         public DependencyObject LoadRootVisual(UIElement root, string xamlUri) {
-            return LoadRootVisual(root, xamlUri, true);
+            return LoadRootVisual(root, MakeUri(xamlUri));
         }
 
         /// <summary>
-        /// Either loads a XAML file URI, or the XAML itself, represented by a string,
+        /// Loads the XAML itself, represented by a string,
         /// and sets the RootVisual of the application.
         /// </summary>
-        /// <param name="root">element to load XAML into</param>
-        /// <param name="xamlOrUri">string representing a URI of a XAML file, or the XAML content itself</param>
-        /// <param name="uri">set this to "true" if "xamlOrUri" is a URI, and "false" if it is XAML content</param>
+        /// <param name="root">UIElement to load XAML into</param>
+        /// <param name="xamlString">the XAML content itself</param>
         /// <returns>the RootVisual</returns>
-        public DependencyObject LoadRootVisual(UIElement root, string xamlOrUri, bool uri) {
-            if (uri) {
-                return LoadRootVisual(root, MakeUri(xamlOrUri));
-            } else {
-                root = (UIElement)LoadComponent(root, xamlOrUri, false);
-                RootVisual = root;
-                return root;
-            }
+        public DependencyObject LoadRootVisualFromString(string xamlString) {
+            var root = LoadComponentFromString(xamlString) as UIElement;
+            RootVisual = root;
+            return root;
         }
 
         /// <summary>
@@ -178,7 +173,7 @@ namespace Microsoft.Scripting.Silverlight {
         /// <param name="component">The object to load the XAML into</param>
         /// <param name="uri">string representing the relative Uri of the XAML file</param>
         public static object LoadComponent(object component, string xamlUri) {
-            return LoadComponent(component, xamlUri, true);
+            return LoadComponent(component, MakeUri(xamlUri));
         }
 
         /// <summary>
@@ -187,37 +182,24 @@ namespace Microsoft.Scripting.Silverlight {
         /// <param name="component">The object to load the XAML into</param>
         /// <param name="uri">relative Uri of the XAML file</param>
         public static new object LoadComponent(object component, Uri relativeUri) {
-            if (Application.GetResourceStream(relativeUri) == null) {
-                var xamlStream = HttpPAL.PAL.VirtualFilesystem.GetFile(relativeUri);
-                if (xamlStream != null) {
-                    string xaml;
-                    using (StreamReader sr = new StreamReader(xamlStream)) {
-                        xaml = sr.ReadToEnd();
-                    }
-                    return LoadComponent(component, xaml, false);
-                }
+            if (relativeUri.IsAbsoluteUri || Application.GetResourceStream(relativeUri) == null) {
+                // XAML file is not in the XAP, so fall back to XamlReader.Load
+                var xaml = HttpPAL.PAL.VirtualFilesystem.GetFileContents(relativeUri);
+                if (xaml != null) return LoadComponentFromString(xaml);
             } else {
                 Application.LoadComponent(component, relativeUri);
                 return component;
             }
             return null;
-
         }
 
         /// <summary>
-        /// Loads a XAML file or XAML content into an object.
+        /// Returns an object with the xaml string loaded
         /// </summary>
-        /// <param name="component">The object to load XAML into</param>
-        /// <param name="xamlOrUri">either the URI of a XAML file, or the actual XAML content</param>
-        /// <param name="uri">set this to "true" if "xamlOrUri" is a URI, and "false" if it is XAML content</param>
-        /// <returns>The loaded XAML</returns>
-        public static object LoadComponent(object component, string xamlOrUri, bool uri) {
-            if (uri) {
-                return LoadComponent(component, MakeUri(xamlOrUri));
-            } else {
-                component = XamlReader.Load(Regex.Replace(xamlOrUri, "x:Class=\".*?\"", ""));
-                return component;
-            }
+        /// <param name="xaml">XAML string to load</param>
+        /// <returns>Loaded XAML object</returns>
+        public static object LoadComponentFromString(string xaml) {
+            return XamlReader.Load(Regex.Replace(xaml, "x:Class=\".*?\"", ""));
         }
         #endregion
         #region MakeUri
