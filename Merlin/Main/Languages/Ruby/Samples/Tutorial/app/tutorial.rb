@@ -455,17 +455,20 @@ class Object
     if not Thread.current[:section]
       raise "platform should only be used within a section definition"
     end
-    Thread.current[:platform_match] = (SILVERLIGHT == enabled)
+    Thread.current[:"platform_match#{Thread.current[:chapter] ? "_chapter" : nil}"] = (SILVERLIGHT == enabled)
   end
   
   def chapter name
     raise "Only one chapter can be under creation at a time" if Thread.current[:chapter]
     chapter = Tutorial::Chapter.new name
     Thread.current[:chapter] = chapter
+    Thread.current[:platform_match_chapter] = nil
 
     yield
 
-    Thread.current[:section].chapters << chapter
+    if Thread.current[:platform_match_chapter] == nil or Thread.current[:platform_match_chapter]
+      Thread.current[:section].chapters << chapter
+    end
     Thread.current[:chapter] = nil
   end
 
