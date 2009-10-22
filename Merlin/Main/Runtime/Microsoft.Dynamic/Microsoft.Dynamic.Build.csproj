@@ -286,16 +286,28 @@
       <!--                               -->
       <Compile Include="Interpreter\DynamicInstructions.cs" />
       <Compile Include="Interpreter\DynamicInstructions.Generated.cs" />
-      <Compile Include="Interpreter\Instruction.cs" />
       <Compile Include="Interpreter\InterpretedFrame.cs" />
       <Compile Include="Interpreter\Interpreter.cs" />
       <Compile Include="Interpreter\LastFaultingLineExpression.cs" />
       <Compile Include="Interpreter\LightCompiler.cs" />
+      <Compile Include="Interpreter\LightCompilerDebugView.cs" />
       <Compile Include="Interpreter\LightDelegateCreator.cs" />
       <Compile Include="Interpreter\LightLambda.cs" />
       <Compile Include="Interpreter\LightLambda.Generated.cs" />
       <Compile Include="Interpreter\LightLambdaClosureVisitor.cs" />
       <Compile Include="Interpreter\RuntimeVariables.cs" />
+    </ItemGroup>
+    <ItemGroup>
+      <!--                                            -->
+      <!--          Interpreter.Instructions          -->
+      <!--                                            -->
+      <Compile Include="Interpreter\Instructions\ArrayOperations.cs" />
+      <Compile Include="Interpreter\Instructions\CallInstruction.cs" />
+      <Compile Include="Interpreter\Instructions\CallInstruction.Generated.cs" />
+      <Compile Include="Interpreter\Instructions\Instruction.cs" />
+      <Compile Include="Interpreter\Instructions\InstructionFactory.cs" />
+      <Compile Include="Interpreter\Instructions\LocalAccess.cs" />
+      <Compile Include="Interpreter\Instructions\StackInstructions.cs" />
     </ItemGroup>
     <ItemGroup>
       <!--                        -->
@@ -400,8 +412,6 @@
       <Compile Include="Utils\Publisher.cs" />
       <Compile Include="Utils\ReadOnlyDictionary.cs" />
       <Compile Include="Utils\ReferenceEqualityComparer.cs" />
-      <Compile Include="Utils\ReflectedCaller.cs" />
-      <Compile Include="Utils\ReflectedCaller.Generated.cs" />
       <Compile Include="Utils\ReflectionUtils.cs" />
       <Compile Include="Utils\StringUtils.cs" />
       <Compile Include="Utils\SynchronizedDictionary.cs" />

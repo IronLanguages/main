@@ -29,6 +29,7 @@ using System.Text;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Generation;
+using Microsoft.Scripting.Interpreter;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
@@ -390,14 +391,15 @@ namespace IronPython.Runtime.Binding {
                             PropertyTracker pt = (PropertyTracker)members[0];
                             if (!pt.IsStatic && pt.GetIndexParameters().Length == 0) {
                                 MethodInfo prop = pt.GetGetMethod();
+                                ParameterInfo[] parameters;
 
-                                if (prop != null && prop.GetParameters().Length == 0) {
+                                if (prop != null && (parameters = prop.GetParameters()).Length == 0) {
                                     if (prop.ReturnType == typeof(bool)) {
-                                        return new FastPropertyGet<TSelfType>(type, ReflectedCaller.Create(prop).Invoke).GetPropertyBool;
+                                        return new FastPropertyGet<TSelfType>(type, Instruction.Call(prop, parameters).Invoke).GetPropertyBool;
                                     } else if (prop.ReturnType == typeof(int)) {
-                                        return new FastPropertyGet<TSelfType>(type, ReflectedCaller.Create(prop).Invoke).GetPropertyInt;
+                                        return new FastPropertyGet<TSelfType>(type, Instruction.Call(prop, parameters).Invoke).GetPropertyInt;
                                     } else {
-                                        return new FastPropertyGet<TSelfType>(type, ReflectedCaller.Create(prop).Invoke).GetProperty;
+                                        return new FastPropertyGet<TSelfType>(type, Instruction.Call(prop, parameters).Invoke).GetProperty;
                                     }
                                 }
                             }

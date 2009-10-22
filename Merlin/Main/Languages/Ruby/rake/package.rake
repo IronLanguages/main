@@ -27,10 +27,12 @@ task :package do
   # Copy binaries
   system %Q{copy "#{ENV['MERLIN_ROOT']}\\Languages\\Ruby\\IronRuby.BinaryLayout.config" "#{PACKAGE_DIR}\\bin\\ir.exe.config"}
   system %Q{copy "#{ENV['MERLIN_ROOT']}\\bin\\release\\ir.exe" #{PACKAGE_DIR}\\bin\\}
+  system %Q{copy "#{ENV['MERLIN_ROOT']}\\bin\\release\\ir64.exe" #{PACKAGE_DIR}\\bin\\}
   system %Q{copy "#{ENV['MERLIN_ROOT']}\\bin\\release\\IronRuby*.dll" #{PACKAGE_DIR}\\bin\\}
   system %Q{copy "#{ENV['MERLIN_ROOT']}\\bin\\release\\Microsoft.Scripting.Core.dll" #{PACKAGE_DIR}\\bin\\}
   system %Q{copy "#{ENV['MERLIN_ROOT']}\\bin\\release\\Microsoft.Scripting.dll" #{PACKAGE_DIR}\\bin\\}
   system %Q{copy "#{ENV['MERLIN_ROOT']}\\bin\\release\\Microsoft.Dynamic.dll" #{PACKAGE_DIR}\\bin\\}
+  system %Q{copy "#{ENV['MERLIN_ROOT']}\\bin\\release\\Microsoft.Scripting.Debugging.dll" #{PACKAGE_DIR}\\bin\\}
   system %Q{copy "#{ENV['MERLIN_ROOT']}\\bin\\release\\Microsoft.Scripting.ExtensionAttribute.dll" #{PACKAGE_DIR}\\bin\\}
   system %Q{copy "#{ENV['MERLIN_ROOT']}\\Languages\\Ruby\\Scripts\\bin\\*" #{PACKAGE_DIR}\\bin\\}
 
