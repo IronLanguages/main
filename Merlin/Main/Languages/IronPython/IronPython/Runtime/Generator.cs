@@ -43,7 +43,14 @@ namespace IronPython.Runtime {
         /// </summary>
         private bool _active;
         private GeneratorFinalizer _finalizer;                      // finalizer object
-        private static GeneratorFinalizer _lastFinalizer;           // last finalier
+
+        /// <summary>
+        /// We cache the GeneratorFinalizer of generators that were closed on the user
+        /// thread, and did not get finalized on the finalizer thread. We can then reuse
+        /// the object. Reusing objects with a finalizer is good because it reduces
+        /// the load on the GC's finalizer queue.
+        /// </summary>
+        private static GeneratorFinalizer _LastFinalizer;
 
         /// <summary>
         /// Fields set by Throw() to communicate an exception to the yield point.
@@ -64,7 +71,7 @@ namespace IronPython.Runtime {
             _dataTuple = GetDataTuple();
             State = GeneratorRewriter.NotStarted;
 
-            if (_lastFinalizer == null || (_finalizer = Interlocked.Exchange(ref _lastFinalizer, null)) == null) {
+            if (_LastFinalizer == null || (_finalizer = Interlocked.Exchange(ref _LastFinalizer, null)) == null) {
                 _finalizer = new GeneratorFinalizer(this);
             } else {
                 _finalizer.Generator = this;
@@ -457,8 +464,13 @@ namespace IronPython.Runtime {
         }
 
         private void SuppressFinalize() {
-            _finalizer.Generator = null;
-            _lastFinalizer = _finalizer;            
+            if (_finalizer != null) {
+                _finalizer.Generator = null;
+                _LastFinalizer = _finalizer;
+            } else {
+                // We must be on the finalizer thread, and being called from _finalizer.Finalize()
+                Debug.Assert(Thread.CurrentThread.Name == null);
+            }
         }
 
         private bool Closed {
@@ -560,6 +572,11 @@ namespace IronPython.Runtime {
 
             ~GeneratorFinalizer() {
                 if (Generator != null) {
+                    Debug.Assert(Generator._finalizer == this);
+                    // We set this to null to indicate that the GeneratorFinalizer has been finalized, 
+                    // and should not be reused (ie saved in PythonGenerator._LastFinalizer)
+                    Generator._finalizer = null;
+
                     Generator.Finalizer();
                 }
             }

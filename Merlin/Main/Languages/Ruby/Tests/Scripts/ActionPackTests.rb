@@ -433,3 +433,9 @@ class CleanBacktraceTest
   def test_should_clean_assertion_lines_from_backtrace() end
 end
 
+class CompiledTemplatesTest
+  #Errno::EACCES: Access to the path 'Merlin\External.LCA_RESTRICTED\Languages\IronRuby\RailsTests-2.3.3\actionpack\test\fixtures\test\hello_world.erb' is denied.
+  def test_parallel_reloadable_view_paths_are_working() end
+  def test_template_changes_are_not_reflected_with_cached_template_loading() end
+  def test_template_changes_are_reflected_without_cached_template_loading() end
+end
