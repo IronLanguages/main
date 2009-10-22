@@ -28,7 +28,7 @@ tutorial 'Try Ruby tutorial' do
 
   section "Chapter 1" do
     
-    chapter "Section 1" do
+    chapter "Section 1 - The Basics" do
 
       task :title => 'Using the prompt', 
            :body  => %{
@@ -111,7 +111,7 @@ tutorial 'Try Ruby tutorial' do
               }
     end
 
-    chapter "Section 2" do
+    chapter "Section 2 - Errors and Arrays" do
 
       task(:title => 'Do something uncomfortable',
            :body => %{
@@ -213,11 +213,6 @@ tutorial 'Try Ruby tutorial' do
                  Good stuff up ahead.
               }
 
-    end
-
-    chapter "Placeholder" do
-      task :body => 'This is only a placeholder. Type this code to finish:', 
-           :code => '42'
     end
 
   end

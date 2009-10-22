@@ -112,7 +112,7 @@ if SILVERLIGHT
     end
 
     def scroll_to_bottom
-      scroll_to_vertical_offset(actual_height)
+      scroll_to_vertical_offset(actual_height + scrollable_height)
     end
   end
 end
