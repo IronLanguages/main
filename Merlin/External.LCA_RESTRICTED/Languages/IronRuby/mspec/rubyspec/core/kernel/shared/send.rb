@@ -1,3 +1,5 @@
+
+
 describe :kernel_send, :shared => true do
   it "invokes the named method" do
     class KernelSpecs::Foo
@@ -6,8 +8,69 @@ describe :kernel_send, :shared => true do
       end
     end
     KernelSpecs::Foo.new.send(@method, :bar).should == 'done'
+    KernelSpecs::Foo.new.send(@method, "bar").should == 'done'
+  end
+  
+  it "invokes the named public method" do
+    class KernelSpecs::Foo
+      def bar
+        'done'
+      end
+    end
+    KernelSpecs::Foo.new.send(@method, :bar).should == 'done'
   end
 
+  it "invokes the named alias of a public method" do
+    class KernelSpecs::Foo
+      alias :aka :bar
+      def bar
+        'done'
+      end
+    end
+    KernelSpecs::Foo.new.send(@method, :aka).should == 'done'
+  end
+
+  it "invokes the named protected method" do
+    class KernelSpecs::Foo
+      protected
+      def bar
+        'done'
+      end
+    end
+    KernelSpecs::Foo.new.send(@method, :bar).should == 'done'
+  end
+
+  it "invokes the named private method" do
+    class KernelSpecs::Foo
+      private
+      def bar
+        'done2'
+      end
+    end
+    KernelSpecs::Foo.new.send(@method, :bar).should == 'done2'
+  end
+
+  it "invokes the named alias of a private method" do
+    class KernelSpecs::Foo
+      alias :aka :bar
+      private
+      def bar
+        'done2'
+      end
+    end
+    KernelSpecs::Foo.new.send(@method, :aka).should == 'done2'
+  end
+
+  it "invokes the named alias of a protected method" do
+    class KernelSpecs::Foo
+      alias :aka :bar
+      protected
+      def bar
+        'done2'
+      end
+    end
+    KernelSpecs::Foo.new.send(@method, :aka).should == 'done2'
+  end
   it "invokes a class method if called on a class" do
     class KernelSpecs::Foo
       def self.bar
@@ -26,6 +89,10 @@ describe :kernel_send, :shared => true do
     lambda { KernelSpecs::Foo.new.send(@method, :syegsywhwua) }.should raise_error(NameError)
   end
 
+  it "raises a TypeError if the first argument isn't a Symbol or string" do
+    lambda {KernelSpecs::Foo.new.send(@method, [])}.should raise_error(TypeError)
+  end
+
   it "raises a NameError if the corresponding singleton method can't be found" do
     class KernelSpecs::Foo
       def self.bar
@@ -40,7 +107,7 @@ describe :kernel_send, :shared => true do
       def bar; end
     end
 
-    lambda { KernelSpecs::Foo.new.send(:bar, :arg) }.should raise_error(ArgumentError)
+    lambda { KernelSpecs::Foo.new.send(@method, :bar, :arg) }.should raise_error(ArgumentError)
   end
 
   it "raises an ArgumentError if called with fewer arguments than required parameters" do
@@ -91,6 +158,17 @@ describe :kernel_send, :shared => true do
     end
   end
 
+  it "passes the block into the method" do
+    class KernelSpecs::Foo
+      def iter
+        a = []
+        yield a
+        a
+      end
+    end
+
+    KernelSpecs::Foo.new.send(@method, :iter) { |b| b << 1}.should == [1]
+  end
   # Confirm commit r24306 
   it "has an arity of -1" do
     method(:__send__).arity.should == -1

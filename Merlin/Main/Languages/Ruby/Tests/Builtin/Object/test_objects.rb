@@ -15,110 +15,7 @@
 
 require "../../Util/simple_test.rb"
 
-describe "inspect object attributes" do
-  it "asserts object identity for built-in types" do
-    3.object_id.should == 3.object_id
-    3.object_id.should_not == 4.object_id
-
-    a, b = [], []
-    a.object_id.should_not == b.object_id
-  end
-
-  it "tests for well-known object_id values" do
-    nil.object_id.should == 4
-    true.object_id.should == 2
-    false.object_id.should == 0
-    0.object_id.should == 1
-    1.object_id.should == 3
-    2.object_id.should == 5
-    -1.object_id.should == -1
-    -2.object_id.should == -3
-  end
-
-  it "tests for nil objects" do
-    3.nil?.should == false
-    nil.nil?.should == true
-    [].nil?.should == false
-  end
-
-  it "converts well-known object to strings" do
-    true.to_s.should == "true"
-    false.to_s.should == "false"
-    nil.to_s.should == ""
-  end
-end
-
-# TODO: must implement is_a?
-#test "kind_of? and is_a? tests on well-known types" do
-#  assert 3.is_a? Fixnum
-#  assert 3.is_a? Integer
-#  assert 3.is_a? Numeric
-#  assert 3.is_a? Object
-#end
-
 describe "Object#send" do
-  it "test basic functionality" do
-    # simple stuff
-    nil.send(:inspect).should == nil.inspect
-    nil.send("inspect").should == "nil"
-    5.send("==", (2 + 3)).should == true
-    
-    # test block support
-    a, b = [1,2,3,4], []
-    a.send(:each) { |e| b << e }
-    b.should == [1,2,3,4]
-    
-    # class method
-    String.send('new', 'abc').should == 'abc'
-    Array.send("[]", 1, 2, 3).should == [1, 2, 3]
-  end
-  
-  it "test error messages" do
-    should_raise(ArgumentError, "no method name given") { 123.send }
-    should_raise(ArgumentError, "no method name given") { 123.send {} }
-    skip "TODO: The current exception message is - can't convert Array into Symbol" do
-        should_raise(TypeError, "[] is not a symbol") { 123.send [] }
-        should_raise(TypeError, "[] is not a symbol") { 123.send([]) {} }
-    end
-      
-    #TODO: fix error message
-    should_raise(NoMethodError) { 123.send "Abc" }
-    skip "TODO: our error message for undefined methods isn't quite right" do
-      should_raise(NoMethodError, "undefined method `Abc' for 123:Fixnum") { 123.send "Abc" }
-    end
-  end
-  
-  it "deals with module method" do 
-    2.send(">", 4).should == false
-    2.send("between?", 1, 3).should == true
-    
-    should_raise(RuntimeError, 'the error message') { Kernel.send('raise', 'the error message') }
-  end 
-  
-  it "gives errors if incorrect arguments given" do 
-    # should_raise(LocalJumpError, "no block given") { 'abc'.send 'each' }
-    
-    # TODO: expected message - "wrong number of arguments (1 for 0)"
-    should_raise(ArgumentError) { 'abc'.send :length, 3 }
-  end 
-  
-  it "test argument splatting" do
-    # basic tests
-    [4,5,6].send(*[:to_s]).should == "456"
-    123.send(*["+", 5]).should == 128
-    Hash.send("[]",1,2,3,4).should == { 1=>2, 3=>4 }
-    Hash.send(*["[]",1,2,3,4]).should == { 1=>2, 3=>4 }
-    
-    Hash.send ("[]",*[1,2,3,4]).should == { 1=>2, 3=>4 }
-    "abc".send(:<<, *["def"]).should == "abcdef"
-    "abcdef".send("index", *["cd"]).should == 2
-    
-    # negative tests
-    skip "TODO: The current exception message is - can't convert Array into Symbol" do
-        should_raise(TypeError, "[:inspect] is not a symbol") { 123.send([:inspect]) }    
-    end
-  end
-  
   it "test dynamic site polymorphism" do
     # test the dynamic site to make sure it is truly polymorphic
     # mix some errors in as well
@@ -208,19 +105,6 @@ describe "Object#send" do
 end
   
 describe "Object#__send__" do
-  it "__send__ should work like send" do
-    # simple stuff
-    nil.__send__(:inspect).should == nil.inspect
-    nil.__send__("inspect").should == "nil"
-    5.__send__("==", (2 + 3)).should == true
-
-    def foo x, y, z; x.__send__ y, z; end
-    foo(1, :+, 2).should == 3
-    foo(1, "-", 2).should == -1
-    foo("abc", :<<, "def").should == "abcdef"
-    foo([1,2], :+, [3,4]).should == [1,2,3,4]          
-  end
-  
   it "__send__ can be overriden" do
     class TypeSendUnderbar1
       def __send__ x; x; end
