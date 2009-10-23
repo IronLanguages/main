@@ -51,18 +51,20 @@ namespace Microsoft.Scripting.Interpreter {
     }
 
     public class DynamicInstructionN : Instruction {
-        private ReflectedCaller _target;
-        private FieldInfo _targetField;
-        private CallSite _site;
-        private int _argCount;
-        private bool _isVoid;
+        private readonly CallInstruction _target;
+        private readonly FieldInfo _targetField;
+        private readonly CallSite _site;
+        private readonly int _argCount;
+        private readonly bool _isVoid;
 
         public DynamicInstructionN(Type delegateType, CallSite site) {
             var methodInfo = delegateType.GetMethod("Invoke");
-            _target = ReflectedCaller.Create(methodInfo);
+            var parameters = methodInfo.GetParameters();
+
+            _target = CallInstruction.Create(methodInfo, parameters);
             _targetField = site.GetType().GetField("Target");
             _site = site;
-            _argCount = methodInfo.GetParameters().Length;
+            _argCount = parameters.Length;
         }
 
         public DynamicInstructionN(Type delegateType, CallSite site, bool isVoid)
