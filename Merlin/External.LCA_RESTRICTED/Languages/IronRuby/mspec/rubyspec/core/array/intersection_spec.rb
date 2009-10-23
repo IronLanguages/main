@@ -61,7 +61,7 @@ describe "Array#&" do
     ([obj1] & [obj2]).should == []
   end
   
-  it "does return subclass instances for Array subclasses" do
+  it "does not return subclass instances for Array subclasses" do
     (ArraySpecs::MyArray[1, 2, 3] & []).class.should == Array
     (ArraySpecs::MyArray[1, 2, 3] & ArraySpecs::MyArray[1, 2, 3]).class.should == Array
     ([] & ArraySpecs::MyArray[1, 2, 3]).class.should == Array

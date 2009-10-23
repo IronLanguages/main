@@ -35,16 +35,10 @@
 #                                                           #####               ###
 
 # begin
-builtin\array\test_array.rb                                 all
-builtin\class\test_class.rb                                 all
-builtin\enumerable\test_enumerable.rb                       all
 builtin\hash\test_hash.rb                                   all
 builtin\module\test_module.rb                               all
 builtin\object\test_objects.rb                              all
-builtin\range\test_range.rb                                 all
 builtin\string\test_string.rb                               all
-builtin\stringscanner\test_strscan.rb                       cruby-
-builtin\test_dir.rb                                         coreclr-
 # end 
 
 # begin

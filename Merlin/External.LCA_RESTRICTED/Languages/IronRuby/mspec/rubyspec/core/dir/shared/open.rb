@@ -10,7 +10,9 @@ describe :dir_open, :shared => true do
       Dir.send @method, DirSpecs.nonexistent
     end.should raise_error(SystemCallError)
   end
+end
 
+describe :dir_open_with_block, :shared => true do
   it "may take a block which is yielded to with the Dir instance" do
     Dir.send(@method, DirSpecs.mock_dir) {|dir| dir.class.should == Dir }
   end

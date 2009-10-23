@@ -20,4 +20,22 @@ describe :enumerable_entries, :shared => true do
       count.arguments_passed.should == [:hello, "world"]
     end
   end
+  
+  it "calls each" do
+    class EnumTest2
+      include Enumerable
+      attr_reader :each_called
+      def initialize
+        @each_called = false
+      end
+      def each
+        @each_called = true
+        yield 123
+      end
+    end
+    
+    e = EnumTest2.new
+    e.to_a.should == [123]
+    e.each_called.should == true
+  end
 end

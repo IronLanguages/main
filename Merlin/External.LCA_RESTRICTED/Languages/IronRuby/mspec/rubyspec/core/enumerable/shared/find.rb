@@ -40,6 +40,17 @@ describe :enumerable_find, :shared => true do
     @numerous.send(@method, fail_proc) {|e| false }.should == "cheeseburgers"
   end
   
+  it "returns the value of the ifnone object if the block is false" do
+    @ifnone = Object.new
+    class << @ifnone
+      def call
+        "not found"
+      end
+    end
+    @numerous.send(@method, @ifnone) {|e| false }.should == "not found"
+    @numerous.send(@method, nil) {|e| false }.should == nil
+  end
+  
   ruby_version_is "" ... "1.8.7" do
     it "raises a LocalJumpError if no block given" do
       lambda { @numerous.send(@method) }.should raise_error(LocalJumpError)
