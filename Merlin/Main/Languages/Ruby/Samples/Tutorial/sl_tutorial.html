@@ -39,13 +39,11 @@
   <script type='text/ruby' src='console_tutorial.rb'></script>
 
   <script type="text/ruby">
-    $repl = Microsoft::Scripting::Silverlight::Repl.show('ruby')
-    $stdout = $repl.output_buffer
-    $stderr = $repl.output_buffer
+    include Microsoft::Scripting::Silverlight
 
     def load_assembly_from_path(path)
-      Microsoft::Scripting::Silverlight::DynamicApplication.
-        current.runtime.host.platform_adaptation_layer.load_assembly_from_path(path)
+      DynamicApplication.current.runtime.host.platform_adaptation_layer.
+      load_assembly_from_path(path)
     end
 
     # From Silverlight 3 SDK
@@ -57,11 +55,12 @@
     require 'System.Windows.Controls.Toolkit'
 
     require 'gui_tutorial'
-
     Application.Current.RootVisual = GuiTutorial::Window.current
 
-    include System::Windows::Browser
-    if HtmlPage.document.query_string.contains_key "test".to_clr_string
+    if document.query_string.keys.include?('test')
+      $repl = Repl.show('ruby')
+      $stdout = $repl.output_buffer
+      $stderr = $repl.output_buffer
       require "test/silverlight"
     end
   </script>

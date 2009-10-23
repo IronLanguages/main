@@ -22,6 +22,7 @@
       from System.Windows.Interop import * # for Framerate
       from System.Net import * # for WebClient
       from System.Windows.Resources import * # for WebClient
+      from Microsoft.Scripting.Silverlight.DynamicApplication import MakeUri
       
       layoutRoot = me.LayoutRoot
       tiles = me.tiles
@@ -51,7 +52,7 @@
               self.bkgBrush.AlignmentY = AlignmentY.Top
               self.bkgBrush.Stretch = Stretch.None
               self.bkgBrush.Transform = self.bkgBrushPosition
-              self.bkgBrush.ImageSource = BitmapImage(Uri("transforms/images/pic3.png", UriKind.Relative))
+              self.bkgBrush.ImageSource = BitmapImage(MakeUri("images/pic3.png"))
               
               self.bkg = Rectangle()
               self.bkg.Width = 30
@@ -149,7 +150,7 @@
       layoutRoot.Resources.Add("sb", sb)
       sb.Begin()
       
-      #webClient.OpenReadAsync(Uri("transforms/Tile.xaml", UriKind.Relative))
+      #webClient.OpenReadAsync(MakeUri("Tile.xaml"))
   </script>
 
   <!-- 

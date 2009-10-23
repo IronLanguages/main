@@ -1,8 +1,6 @@
 include System::Windows::Browser
 include Microsoft::Scripting::Silverlight
 
-Package = XapVirtualFilesystem.new
-
 module Helpers
   def tag(tag_name, options = {}, style_options = {})
     div = HtmlPage.document.create_element tag_name

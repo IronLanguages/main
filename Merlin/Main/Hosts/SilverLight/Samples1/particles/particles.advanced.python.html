@@ -21,6 +21,7 @@
       from System.Net import * # for WebClient
       from System.Windows.Resources import * # for WebClient
       from System.Windows.Markup import * # for XamlReader
+      from Microsoft.Scripting.Silverlight.DynamicApplication import MakeUri
 
       layoutRoot = me.LayoutRoot
 
@@ -70,7 +71,7 @@
       def LoadDot():
           client = WebClient()
           client.DownloadStringCompleted += DotLoaded
-          client.DownloadStringAsync(Uri("particles/dot3.xaml", UriKind.RelativeOrAbsolute))
+          client.DownloadStringAsync(MakeUri("dot3.xaml"))
           
       def Main():
           x = 0

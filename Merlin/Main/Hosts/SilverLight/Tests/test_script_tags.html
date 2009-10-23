@@ -56,6 +56,26 @@
     foo
   </script>
 
+  <script type="text/ruby">
+    $script_tags_run ||= {}
+    $script_tags_run['in-order-execution'] ||= []
+    $script_tags_run['in-order-execution'] << 1
+  </script>
+
+  <script type="text/ruby">
+    $script_tags_run ||= {}
+    $script_tags_run['in-order-execution'] ||= []
+    $script_tags_run['in-order-execution'] << 2
+  </script>
+
+  <script type="application/ruby" src="fixtures/inorder3.rb"></script>
+
+  <script type="text/ruby">
+    $script_tags_run ||= {}
+    $script_tags_run['in-order-execution'] ||= []
+    $script_tags_run['in-order-execution'] << 4
+  </script>
+
   <!-- end of ruby script-tag fixtures -->
 
   <!-- start of python script-tag fixtures -->

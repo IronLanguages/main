@@ -19,6 +19,7 @@
     from System.Windows.Controls import *
     from System.Windows.Media import *
     from System.Diagnostics import * # enables outputing to a debug window!
+    from Microsoft.Scripting.Silverlight.DynamicApplication import MakeUri
 
     grid = me.grid
     layoutRoot = me.LayoutRoot
@@ -80,9 +81,9 @@
     for i in range(0, totalImages):
         # this path might seem odd because the images need to be found relative
         # to the /gs directory. Alternately you could specify a fully qualified path to images
-        imageName = "image.sequencer/images/redGlobe_" + i.ToString() + ".png"
+        imageName = "images/redGlobe_" + i.ToString() + ".png"
         img = Image()
-        img.Source = BitmapImage(Uri(imageName, UriKind.Relative))
+        img.Source = BitmapImage(MakeUri(imageName))
         img.SetValue(Canvas.LeftProperty, Convert.ToDouble(i * imageWidth))
         holder.Children.Add(img)
   </script>

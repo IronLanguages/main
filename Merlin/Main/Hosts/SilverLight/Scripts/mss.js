@@ -16,19 +16,48 @@ if(!DLR.path) {
   DLR.path = null 
 }
 
+if (typeof HTMLElement != "undefined" && !HTMLElement.prototype.insertAdjacentElement) {
+  HTMLElement.prototype.insertAdjacentElement = function(where, parsedNode) {
+    switch (where) {
+      case 'beforeBegin':
+        this.parentNode.insertBefore(parsedNode, this)
+        break;
+      case 'afterBegin':
+        this.insertBefore(parsedNode, this.firstChild);
+        break;
+      case 'beforeEnd':
+        this.appendChild(parsedNode);
+        break;
+      case 'afterEnd':
+        if (this.nextSibling)
+          this.parentNode.insertBefore(parsedNode, this.nextSibling);
+        else this.parentNode.appendChild(parsedNode);
+        break;
+    }
+  }
+}
+
 if(!DLR.__loaded) {
 
   Object.merge = function(dest, src) {
-    var temp = {}
+    var _temp = {}
     for(var prop in dest) {
-      temp[prop] = dest[prop]
+      _temp[prop] = dest[prop]
     }
     for(var prop in src) {
-      temp[prop] = src[prop]
+      _temp[prop] = src[prop]
     }
-    return temp
+    return _temp
   }
 
+  /*
+   * DLR.parseSettings(defaults, settings)
+   *
+   * @param defaults: an object representing the default settings.
+   * @param settings: overrides any default settings.
+   * @returns An object ready to be given to DLR.__createSilverlightObject:
+   *          the DLR-specific options are moved into initParams.
+   */
   DLR.parseSettings = function(defaults, settings) {
     // the the full settings dictionary
     var raw_settings = Object.merge(defaults, settings);
@@ -55,9 +84,16 @@ if(!DLR.__loaded) {
     return raw_settings;
   }
 
+  /*
+   * DLR.__startup()
+   *
+   * Creates a Silverlight control (using the current DLR.settings) if the DLR
+   * hasn't loaded yet, autoAdd is true, and Silverlight is installed.
+   * Also adds a silverlight control for each XAML script-tag
+   */
   DLR.__startup = function() {
     if(!DLR.__loaded && DLR.autoAdd && Silverlight.isInstalled(null)) {
-      DLR.createObject(DLR.settings);
+      DLR.createSilverlightObject({});
       DLR.__loaded = true;
     }
 
@@ -72,7 +108,7 @@ if(!DLR.__loaded) {
         if(element.id == '')
           element.id = DLR.__defaultXAMLId + DLR.__objectCount;
         settings.xamlid = element.id;
-        DLR.createObject(settings);
+        DLR.createSilverlightObject(settings);
       }
     }
   }
@@ -83,19 +119,59 @@ if(!DLR.__loaded) {
 
   DLR.__objectCount = 0
 
-  DLR.createObject = function(settings) {
-    settings = DLR.parseSettings(
-      DLR.defaultSettings(),
-      typeof(settings) == 'undefined' ? {} : settings
-    )
+  /*
+   * DLR.createSilverlightObject(settings)
+   *
+   * @param settings: pre-parsed settings to be passed as 2nd argument to 
+   *                  DLR.parseSettings
+   *
+   * Parses settings and passes them to DLR.__createSilverlightObject.
+   */
+  DLR.createSilverlightObject = function(settings) {
+    settings = typeof(settings) == 'undefined' ? {} : settings;
+
+    var xamlid = settings.xamlid;
+    DLR.__createSilverlightObject(
+      xamlid,
+      DLR.parseSettings(DLR.getSettings(), settings)
+    );
+  }
+
+  /*
+   * DLR.__createSilverlightObject(settings)
+   *
+   * @param settings: Already-parsed settings to create the Silverlight control
+   *                  with.
+   *
+   * If settings.xamlid points to a valid DOM element, the Silverlight control
+   * is added as a sibling afer. Otherwise it's appended to the body.
+   */
+  DLR.__createSilverlightObject = function(xamlid, settings) {
+    settings = typeof(settings) == 'undefined' ? {} : settings;
+
     var spantag = document.createElement("span");
-    document.body.appendChild(spantag);
-    if(settings.id == DLR.defaultSettings().id && DLR.__objectCount > 0) {
+    var sibling = null;
+
+    if(xamlid)
+      sibling = document.getElementById(xamlid);
+    if(sibling && !sibling.parentElement && sibling.parentNode)
+      sibling.parentElement = sibling.parentNode;
+    
+    if(!sibling || !sibling.parentElement || sibling.parentElement.tagName == "HEAD")
+      document.body.appendChild(spantag);
+    else
+      sibling.insertAdjacentElement('afterEnd', spantag);
+
+    if(settings.id == DLR.defaultSettings().id && DLR.__objectCount > 0)
       settings.id = DLR.__defaultObjectId + DLR.__objectCount
-    }
+
     slHtml = Silverlight.buildHTML(settings);
     spantag.innerHTML = slHtml;
     DLR.__objectCount++;
+  }
+
+  DLR.getSettings = function() {
+    return Object.merge(DLR.defaultSettings(), DLR.settings);
   }
 
   DLR.defaultSettings = function() {
@@ -109,10 +185,8 @@ if(!DLR.__loaded) {
     };
   }
 
-  DLR.settings = DLR.parseSettings(
-      DLR.defaultSettings(),
-      !DLR.settings ? {} : DLR.settings
-  );
+  if(!DLR.settings)
+    DLR.settings = {}
 
   if(window.addEventListener) {
     window.addEventListener('load', DLR.__startup, false);

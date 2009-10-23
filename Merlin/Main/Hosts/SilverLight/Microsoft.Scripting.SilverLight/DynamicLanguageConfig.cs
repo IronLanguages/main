@@ -57,7 +57,7 @@ namespace Microsoft.Scripting.Silverlight {
         /// </summary>
         /// <param name="name">name of the language</param>
         /// <returns>configuration information for the language</returns>
-        private DynamicLanguageInfo GetLanguageByName(string name) {
+        public DynamicLanguageInfo GetLanguageByName(string name) {
             foreach (var lang in Languages)
                 foreach (var n in lang.Names)
                     if (n.ToLower() == name.ToLower())

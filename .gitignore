@@ -9,6 +9,7 @@ Snippets.scripting.dll
 /Merlin/Main/Bin
 /Merlin/Main/External
 /Merlin/External.LCA_RESTRICTED/Languages/Ruby/redist-libs/ironruby
+/Merlin/Main/Utilities/Silverlight
 *.csproj.vspscc
 *.csproj.user
 *.vssscc
