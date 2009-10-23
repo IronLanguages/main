@@ -1490,7 +1490,7 @@ namespace IronPython.Runtime.Types {
             MethodInfo cast = null;
             ParameterInfo[] castParams = null;
             foreach (Type t in binder.GetContributingTypes(fromType)) {
-                foreach (string castName in CastNames) {
+                foreach (string castName in GetCastNames(fromType, toTypes[0])) {
                     foreach (MemberInfo member in t.GetMember(castName)) {
                         MethodInfo method;
                         ParameterInfo[] methodParams;
@@ -1547,13 +1547,13 @@ namespace IronPython.Runtime.Types {
 
             return cast;
         }
-        private static string[] _CastNames;
-        private static string[] CastNames {
-            get {
-                if (_CastNames != null) return _CastNames;
-                _CastNames = new string[] { "op_Implicit", "op_Explicit" };
-                return _CastNames;
+
+        private static readonly string[] CastNames = new[] { "op_Implicit", "op_Explicit" };
+        private static string[] GetCastNames(Type fromType, Type toType) {
+            if (PythonBinder.IsPythonType(fromType)) {
+                return CastNames;
             }
+            return new[] { "op_Implicit", "op_Explicit", "ConvertTo" + toType.Name };
         }
 
         /// <summary>

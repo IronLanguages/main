@@ -26,7 +26,6 @@ using IronRuby.Runtime;
 namespace IronRuby.Tests {
 
     public partial class Tests {
-
         internal static MethodInfo/*!*/ CreateParamsArrayMethod(string/*!*/ name, Type/*!*/[]/*!*/ paramTypes, int paramsArrayIndex, int returnValue) {
             var tb = Snippets.Shared.DefineType("<T>", typeof(object), false, false).TypeBuilder;
             var mb = tb.DefineMethod(name, CompilerHelpers.PublicStatic, typeof(KeyValuePair<int, Array>), paramTypes);
@@ -39,26 +38,6 @@ namespace IronRuby.Tests {
             il.Emit(OpCodes.Newobj, typeof(KeyValuePair<int, Array>).GetConstructor(new[] { typeof(int), typeof(Array) }));
             il.Emit(OpCodes.Ret);
             return tb.CreateType().GetMethod(name, BindingFlags.Public | BindingFlags.Static);
-
-#if FALSE
-            var array = il.DeclareLocal(typeof(object[]));
-            il.Emit(OpCodes.Ldc_I4, paramTypes.Length);
-            il.Emit(OpCodes.Newarr, typeof(object[]));
-            il.Emit(OpCodes.Stloc, array);
-
-            for (int i = 0; i < paramTypes.Length; i++) {
-                il.Emit(OpCodes.Ldloc, array);
-                il.Emit(OpCodes.Ldc_I4, i);
-                il.Emit(OpCodes.Ldarg, i);
-                il.Emit(OpCodes.Box, typeof(object));
-                il.Emit(OpCodes.Stelem, typeof(object));
-            }
-
-            il.Emit(OpCodes.Ldloc, array);
-            il.Emit(OpCodes.Ldc_I4, returnValue);
-            il.Emit(OpCodes.Newobj, typeof(KeyValuePair<Array, int>).GetConstructor(new[] { typeof(Array), typeof(int) }));
-            il.Emit(OpCodes.Ret);
-#endif
         }
 
         public void Scenario_RubyArgSplatting1() {
@@ -139,28 +118,15 @@ p [has_value, value]
 ");
         }
 
-        /// <summary>
-        /// Splat anything that implements to_ary.
-        /// </summary>
         public void Scenario_RubyArgSplatting5() {
-            // TODO:
-//            XAssertOutput(delegate() {
-//                CompilerTest(@"
-//");
-//            }, @"
-//");
-        }
-
-        public void Scenario_RubyArgSplatting6() {
-
             var c = Context.GetClass(typeof(MethodsWithParamArrays));
             Runtime.Globals.SetVariable("C", new MethodsWithParamArrays());
 
             // The post-param-array arguments might decide which overload to call:
-            c.SetLibraryMethod("bar", new RubyMethodGroupInfo(new[] { 
+            c.SetMethodNoEvent(Context, "bar", new RubyMethodGroupInfo(new[] { 
                 CreateParamsArrayMethod("B0", new[] { typeof(int), typeof(int), typeof(int[]), typeof(bool) }, 2, 0),
                 CreateParamsArrayMethod("B1", new[] { typeof(int), typeof(int[]), typeof(int), typeof(int) }, 1, 1),
-            }, c, true), true);
+            }, c, true));
 
             AssertOutput(delegate() {
                 CompilerTest(@"
@@ -208,11 +174,11 @@ B1 -> 10000
 
             // Overloads might differ only in the element types of params-array.
             // If binder decision is not based upon all splatted item types
-            c.SetLibraryMethod("baz", new RubyMethodGroupInfo(new[] { 
+            c.SetMethodNoEvent(Context, "baz", new RubyMethodGroupInfo(new[] { 
                 CreateParamsArrayMethod("Z0", new[] { typeof(int), typeof(object[]) }, 1, 0),
                 CreateParamsArrayMethod("Z1", new[] { typeof(int), typeof(MutableString[]) }, 1, 1),
                 CreateParamsArrayMethod("Z2", new[] { typeof(int), typeof(int[]) }, 1, 2),
-            }, c, true), true);
+            }, c, true));
 
             AssertOutput(delegate() {
                 CompilerTest(@"
@@ -234,10 +200,10 @@ Z1 -> 10000
 ");
 
             // Tests error handling and caching.
-            c.SetLibraryMethod("error", new RubyMethodGroupInfo(new[] { 
+            c.SetMethodNoEvent(Context, "error", new RubyMethodGroupInfo(new[] { 
                 CreateParamsArrayMethod("E1", new[] { typeof(int), typeof(MutableString[]) }, 1, 1),
                 CreateParamsArrayMethod("E2", new[] { typeof(int), typeof(int[]) }, 1, 2),
-            }, c, true), true);
+            }, c, true));
 
             AssertOutput(delegate() {
                 CompilerTest(@"

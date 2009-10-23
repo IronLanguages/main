@@ -81,6 +81,14 @@ namespace IronRuby.Runtime.Calls {
 
         #region Step 1: Special Parameters
 
+        /// <summary>
+        /// We expand params arrays for library methods. Splat operator needs to be used to pass content of an array/list into params array method.
+        /// </summary>
+        protected override bool BindToUnexpandedParams(MethodCandidate/*!*/ candidate) {
+            // TODO: separate flag?
+            return _implicitProtocolConversions;
+        }
+
         protected override BitArray MapSpecialParameters(ParameterMapping/*!*/ mapping) {
             var infos = mapping.ParameterInfos;
             var method = mapping.Method;

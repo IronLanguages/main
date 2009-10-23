@@ -713,7 +713,7 @@ namespace IronRuby.Builtins {
         // thread safe: doesn't need any lock since it only accesses immutable state
         public bool TryGetClrConstructor(out RubyMemberInfo method) {
             ConstructorInfo[] ctors;
-            if (TypeTracker != null && !TypeTracker.Type.IsInterface && (ctors = TypeTracker.Type.GetConstructors()) != null && ctors.Length > 0) {
+            if (TypeTracker != null && !TypeTracker.Type.IsInterface && (ctors = GetConstructors(TypeTracker.Type)).Length > 0) {
                 method = new RubyMethodGroupInfo(ctors, this, true);
                 return true;
             }
@@ -1221,7 +1221,7 @@ namespace IronRuby.Builtins {
             ConstructorInfo[] ctors;
             if (TypeTracker == null) {
                 metaBuilder.SetError(Methods.MakeNotClrTypeError.OpCall(Ast.Convert(args.TargetExpression, typeof(RubyClass))));
-            } else if ((ctors = TypeTracker.Type.GetConstructors()) == null || ctors.Length == 0) {
+            } else if ((ctors = GetConstructors(TypeTracker.Type)).Length == 0) {
                 metaBuilder.SetError(Methods.MakeConstructorUndefinedError.OpCall(Ast.Convert(args.TargetExpression, typeof(RubyClass))));
             } else {
                 RubyMethodGroupInfo.BuildCallNoFlow(metaBuilder, args, methodName, ctors, SelfCallConvention.NoSelf, true);
@@ -1284,10 +1284,10 @@ namespace IronRuby.Builtins {
                     constructionOverloads = (MethodBase[])ReflectionUtils.GetMethodInfos(_factories);
                 } else {
                     // TODO: handle protected constructors
-                    constructionOverloads = (type == typeof(object) ? typeof(RubyObject) : type).GetConstructors();
+                    constructionOverloads = GetConstructors(type == typeof(object) ? typeof(RubyObject) : type);
 
                     if (type.IsValueType) {
-                        if (constructionOverloads.Length == 0 || type.GetConstructor(Type.EmptyTypes) == null) {
+                        if (constructionOverloads.Length == 0 || GetConstructor(type) == null) {
                             constructionOverloads = ArrayUtils.Append(constructionOverloads, Methods.CreateDefaultInstance);
                         }
                     } else if (constructionOverloads.Length == 0) {
@@ -1310,6 +1310,21 @@ namespace IronRuby.Builtins {
                     }
                 }
             }
+        }
+
+        private ConstructorInfo[]/*!*/ GetConstructors(Type/*!*/ type) {
+            return type.GetConstructors(
+                BindingFlags.Instance | BindingFlags.Public | (Context.DomainManager.Configuration.PrivateBinding ? BindingFlags.NonPublic : 0)
+            );
+        }
+
+        private ConstructorInfo GetConstructor(Type/*!*/ type, params Type[]/*!*/ parameterTypes) {
+            return type.GetConstructor(
+                BindingFlags.Instance | BindingFlags.Public | (Context.DomainManager.Configuration.PrivateBinding ? BindingFlags.NonPublic : 0),
+                null,
+                parameterTypes,
+                null
+            );
         }
 
         private Expression/*!*/ MarkNewException(Expression/*!*/ expression) {
@@ -1379,24 +1394,25 @@ namespace IronRuby.Builtins {
                 return Methods.AllocateStructInstance.OpCall(AstUtils.Convert(args.TargetExpression, typeof(RubyClass)));
             }
 
+            var bindingFlags = BindingFlags.Public | (Context.DomainManager.Configuration.PrivateBinding ? BindingFlags.NonPublic : 0);
             ConstructorInfo ctor;
             if (IsException()) {
-                if ((ctor = type.GetConstructor(new[] { typeof(string) })) != null) {
+                if ((ctor = GetConstructor(type, typeof(string))) != null) {
                     return Ast.New(ctor, defaultExceptionMessage());
-                } else if ((ctor = type.GetConstructor(new[] { typeof(string), typeof(Exception) })) != null) {
+                } else if ((ctor = GetConstructor(type, typeof(string), typeof(Exception))) != null) {
                     return Ast.New(ctor, defaultExceptionMessage(), AstUtils.Constant(null));
                 }
             }
 
-            if ((ctor = type.GetConstructor(new[] { typeof(RubyClass) })) != null) {
+            if ((ctor = GetConstructor(type, typeof(RubyClass))) != null) {
                 return Ast.New(ctor, AstUtils.Convert(args.TargetExpression, typeof(RubyClass)));
             }
 
-            if ((ctor = type.GetConstructor(new[] { typeof(RubyContext) })) != null) {
+            if ((ctor = GetConstructor(type, typeof(RubyContext))) != null) {
                 return Ast.New(ctor, AstUtils.Convert(args.MetaContext.Expression, typeof(RubyContext)));
             }
 
-            if ((ctor = type.GetConstructor(Type.EmptyTypes)) != null) {
+            if ((ctor = GetConstructor(type)) != null) {
                 return Ast.New(ctor);
             }
 

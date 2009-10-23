@@ -231,6 +231,7 @@
     <Compile Include="Thread\RubyMutex.cs" />
     <Compile Include="Thread\RubyQueue.cs" />
     <Compile Include="Thread\SizedQueue.cs" />
+    <Compile Include="Thread\ThreadOps.cs" />
     <Compile Include="Win32API\Win32API.cs" />
     <Compile Include="Zlib\zlib.cs" />
   </ItemGroup>

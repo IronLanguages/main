@@ -12,49 +12,65 @@
  *
  *
  * ***************************************************************************/
-
 using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
-namespace Microsoft.Scripting.Utils {
-    public partial class ReflectedCaller {
-        internal ReflectedCaller() { }
-        private static readonly Dictionary<MethodInfo, ReflectedCaller> _cache = new Dictionary<MethodInfo,ReflectedCaller>();
+namespace Microsoft.Scripting.Interpreter {
+    public abstract partial class CallInstruction : Instruction {
+        public abstract MethodInfo Info { get; }
+
+        /// <summary>
+        /// The number of arguments including "this" for instance methods.
+        /// </summary>
+        public abstract int ArgumentCount { get; }
+
+        #region Construction
+
+        internal CallInstruction() { }
+        
+        private static readonly Dictionary<MethodInfo, CallInstruction> _cache = new Dictionary<MethodInfo, CallInstruction>();
+
+        internal static CallInstruction Create(MethodInfo info) {
+            return Create(info, info.GetParameters());
+        }
 
         /// <summary>
         /// Creates a new ReflectedCaller which can be used to quickly invoke the provided MethodInfo.
         /// </summary>
-        public static ReflectedCaller Create(MethodInfo info) {
+        internal static CallInstruction Create(MethodInfo info, ParameterInfo[] parameters) {
+            int argumentCount = parameters.Length;
+            if (!info.IsStatic) {
+                argumentCount++;
+            }
+
             // A workaround for CLR bug #796414 (Unable to create delegates for Array.Get/Set):
             // T[]::Address - not supported by ETs due to T& return value
             if (info.DeclaringType != null && info.DeclaringType.IsArray && (info.Name == "Get" || info.Name == "Set")) {
-                return GetArrayAccessor(info);
+                return GetArrayAccessor(info, argumentCount);
             }
 
             if (info is DynamicMethod || !info.IsStatic && info.DeclaringType.IsValueType) {
-                return new SlowReflectedCaller(info);
+                return new MethodInfoCallInstruction(info, argumentCount);
             }
 
-            ParameterInfo[] pis = info.GetParameters();
-            int argCnt = pis.Length;
-            if (!info.IsStatic) argCnt++;
-            if (argCnt >= MaxHelpers) {
+            if (argumentCount >= MaxHelpers) {
                 // no delegate for this size, fallback to reflection invoke
-                return new SlowReflectedCaller(info);
+                return new MethodInfoCallInstruction(info, argumentCount);
             }
 
-            foreach (ParameterInfo pi in pis) {
+            foreach (ParameterInfo pi in parameters) {
                 if (pi.ParameterType.IsByRef) {
                     // we don't support ref args via generics.
-                    return new SlowReflectedCaller(info);
+                    return new MethodInfoCallInstruction(info, argumentCount);
                 }
             }
 
             // see if we've created one w/ a delegate
-            ReflectedCaller res;
+            CallInstruction res;
             if (ShouldCache(info)) {
                 lock (_cache) {
                     if (_cache.TryGetValue(info, out res)) {
@@ -65,22 +81,22 @@ namespace Microsoft.Scripting.Utils {
 
             // create it 
             try {
-                if (argCnt < MaxArgs) {
-                    res = FastCreate(info, pis);
+                if (argumentCount < MaxArgs) {
+                    res = FastCreate(info, parameters);
                 } else {
-                    res = SlowCreate(info, pis);
+                    res = SlowCreate(info, parameters);
                 }
             } catch (TargetInvocationException tie) {
                 if (!(tie.InnerException is NotSupportedException)) {
                     throw;
                 }
 
-                res = new SlowReflectedCaller(info);
+                res = new MethodInfoCallInstruction(info, argumentCount);
             } catch (NotSupportedException) {
                 // if Delegate.CreateDelegate can't handle the method fallback to 
                 // the slow reflection version.  For example this can happen w/ 
                 // a generic method defined on an interface and implemented on a class.
-                res = new SlowReflectedCaller(info);
+                res = new MethodInfoCallInstruction(info, argumentCount);
             }
 
             // cache it for future users if it's a reasonable method to cache
@@ -93,7 +109,7 @@ namespace Microsoft.Scripting.Utils {
             return res;            
         }
 
-        private static ReflectedCaller GetArrayAccessor(MethodInfo info) {
+        private static CallInstruction GetArrayAccessor(MethodInfo info, int argumentCount) {
             Type arrayType = info.DeclaringType;
             bool isGetter = info.Name == "Get";
             switch (arrayType.GetArrayRank()) {
@@ -116,7 +132,7 @@ namespace Microsoft.Scripting.Utils {
                     );
 
                 default: 
-                    return new SlowReflectedCaller(info);
+                    return new MethodInfoCallInstruction(info, argumentCount);
             }
         }
 
@@ -168,7 +184,7 @@ namespace Microsoft.Scripting.Utils {
         /// <summary>
         /// Uses reflection to create new instance of the appropriate ReflectedCaller
         /// </summary>
-        private static ReflectedCaller SlowCreate(MethodInfo info, ParameterInfo[] pis) {
+        private static CallInstruction SlowCreate(MethodInfo info, ParameterInfo[] pis) {
             List<Type> types = new List<Type>();
             if (!info.IsStatic) types.Add(info.DeclaringType);
             foreach (ParameterInfo pi in pis) {
@@ -179,20 +195,42 @@ namespace Microsoft.Scripting.Utils {
             }
             Type[] arrTypes = types.ToArray();
 
-            return (ReflectedCaller)Activator.CreateInstance(GetHelperType(info, arrTypes), info);
+            return (CallInstruction)Activator.CreateInstance(GetHelperType(info, arrTypes), info);
         }
+
+        #endregion
+
+        #region Instruction
+
+        public sealed override int ProducedStack { get { return Info.ReturnType == typeof(void) ? 0 : 1; } }
+        public sealed override int ConsumedStack { get { return ArgumentCount; } }
+
+        public sealed override string InstructionName {
+            get { return "Call"; }
+        }
+
+        public override string ToString() {
+            return "Call(" + Info + ")";
+        }
+
+        #endregion
     }
 
-    sealed partial class SlowReflectedCaller : ReflectedCaller {
-        private MethodInfo _target;
+    internal sealed partial class MethodInfoCallInstruction : CallInstruction {
+        private readonly MethodInfo _target;
+        private readonly int _argumentCount;
 
-        public SlowReflectedCaller(MethodInfo target) {
+        public override MethodInfo Info { get { return _target; } }
+        public override int ArgumentCount { get { return _argumentCount; } }
+
+        internal MethodInfoCallInstruction(MethodInfo target, int argumentCount) {
             _target = target;
+            _argumentCount = argumentCount;
         }
         
         public override object Invoke(params object[] args) {
             return InvokeWorker(args);
-        }        
+        }
        
         public override object InvokeInstance(object instance, params object[] args) {
             if (_target.IsStatic) {
@@ -233,5 +271,32 @@ namespace Microsoft.Scripting.Utils {
             }
             return newArgs;
         }
+
+        public sealed override int Run(InterpretedFrame frame) {
+            object[] args = new object[_argumentCount];
+            for (int i = _argumentCount - 1; i >= 0; i--) {
+                args[i] = frame.Pop();
+            }
+
+            object ret = Invoke(args);
+            if (_target.ReturnType != typeof(void)) {
+                frame.Push(ret);
+            }
+            return +1;
+        }
     }
+
+    #region Factories
+
+    public partial class Instruction {
+        public static CallInstruction Call(MethodInfo method) {
+            return Call(method, method.GetParameters());
+        }
+
+        public static CallInstruction Call(MethodInfo method, ParameterInfo[] parameters) {
+            return CallInstruction.Create(method, parameters);
+        }
+    }
+
+    #endregion
 }

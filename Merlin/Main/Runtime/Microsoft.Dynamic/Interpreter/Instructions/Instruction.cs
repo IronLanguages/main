@@ -13,20 +13,13 @@
  *
  * ***************************************************************************/
 
-#if !CLR2
-using System.Linq.Expressions;
-#else
-using Microsoft.Scripting.Ast;
-#endif
-
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-using System.Diagnostics;
-using System.Threading;
 
 namespace Microsoft.Scripting.Interpreter {
 
@@ -34,7 +27,7 @@ namespace Microsoft.Scripting.Interpreter {
         void AddInstructions(LightCompiler compiler);
     }
 
-    public abstract class Instruction {
+    public abstract partial class Instruction {
         public virtual int ConsumedStack { get { return 0; } }
         public virtual int ProducedStack { get { return 0; } }
 
@@ -47,408 +40,15 @@ namespace Microsoft.Scripting.Interpreter {
         public override string ToString() {
             return InstructionName + "()";
         }
-    }
 
-    #region Basic Stack Operations
-
-    public class PushInstruction : Instruction {
-        private object _value;
-        public PushInstruction(object value) {
-            this._value = value;
+        public virtual string ToString(LightCompiler compiler) {
+            return ToString();
         }
 
-        public override int ProducedStack { get { return 1; } }
-        public override int Run(InterpretedFrame frame) {
-            frame.Data[frame.StackIndex++] = _value;
-            return +1;
-        }
-
-        public override string ToString() {
-            return "Push(" + (_value ?? "null") + ")";
+        public static Instruction DefaultValue(Type type) {
+            return InstructionFactory.GetFactory(type).DefaultValue();
         }
     }
-
-    public class PopInstruction : Instruction {
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
-        public static readonly PopInstruction Instance = new PopInstruction();
-
-        private PopInstruction() { }
-
-        public override int ConsumedStack { get { return 1; } }
-        public override int Run(InterpretedFrame frame) {
-            frame.Pop();
-            return +1;
-        }
-
-        public override string ToString() {
-            return "Pop()";
-        }
-    }
-
-    public class DupInstruction : Instruction {
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
-        public readonly static DupInstruction Instance = new DupInstruction();
-
-        private DupInstruction() { }
-
-        public override int ConsumedStack { get { return 0; } }
-        public override int ProducedStack { get { return 1; } }
-
-        public override int Run(InterpretedFrame frame) {
-            frame.Data[frame.StackIndex++] = frame.Peek();
-            return +1;
-        }
-
-        public override string ToString() {
-            return "Dup()";
-        }
-    }
-
-    #endregion
-
-    #region Local Variables
-
-    public interface IBoxableInstruction {
-        Instruction BoxIfIndexMatches(int index);
-    }
-
-    public abstract class LocalAccessInstruction : Instruction {
-        internal readonly int _index;
-
-        protected LocalAccessInstruction(int index) {
-            _index = index;
-        }
-
-#if DEBUG
-        public override string ToString() {
-            return InstructionName + "(" + _name + ": " + _index + ")";
-        }
-
-        private string _name;
-#endif
-
-        [Conditional("DEBUG")]
-        public void SetName(string name) {
-#if DEBUG
-            _name = name;
-#endif
-        }
-
-        [Conditional("DEBUG")]
-        public void SetName(LocalAccessInstruction other) {
-#if DEBUG
-            _name = other._name;
-#endif
-        }
-    }
-
-    public sealed class GetLocalInstruction : LocalAccessInstruction, IBoxableInstruction {
-        public GetLocalInstruction(int index) 
-            : base(index) {
-        }
-
-        public override int ProducedStack { get { return 1; } }
-        
-        public override int Run(InterpretedFrame frame) {
-            frame.Data[frame.StackIndex++] = frame.Data[_index];
-            //frame.Push(frame.Data[_index]);
-            return +1;
-        }
-
-        public Instruction BoxIfIndexMatches(int index) {
-            if (index == _index) {
-                var result = new GetBoxedLocalInstruction(index);
-                result.SetName(this);
-                return result;
-            } else {
-                return null;
-            }
-        }
-    }
-
-    public sealed class GetBoxedLocalInstruction : LocalAccessInstruction {
-        public GetBoxedLocalInstruction(int index)
-            : base(index) {
-        }
-
-        public override int ProducedStack { get { return 1; } }
-
-        public override int Run(InterpretedFrame frame) {
-            var box = (StrongBox<object>)frame.Data[_index];
-            frame.Data[frame.StackIndex++] = box.Value;
-            return +1;
-        }
-    }
-
-    public sealed class GetClosureInstruction : LocalAccessInstruction {
-        public GetClosureInstruction(int index) 
-            : base(index) {
-        }
-
-        public override int ProducedStack { get { return 1; } }
-
-        public override int Run(InterpretedFrame frame) {
-            var box = frame.Closure[_index];
-            frame.Data[frame.StackIndex++] = box.Value;
-            return +1;
-        }
-    }
-
-    public sealed class GetBoxedClosureInstruction : LocalAccessInstruction {
-        public GetBoxedClosureInstruction(int index) 
-            : base(index) {
-        }
-
-        public override int ProducedStack { get { return 1; } }
-
-        public override int Run(InterpretedFrame frame) {
-            var box = frame.Closure[_index];
-            frame.Data[frame.StackIndex++] = box;
-            return +1;
-        }
-    }
-
-    public sealed class SetLocalInstruction : LocalAccessInstruction, IBoxableInstruction {
-        public SetLocalInstruction(int index)
-            : base(index) {
-        }
-
-        public override int ConsumedStack { get { return 1; } }
-        public override int ProducedStack { get { return 1; } }
-
-        public override int Run(InterpretedFrame frame) {
-            frame.Data[_index] = frame.Peek();
-            return +1;
-        }
-
-        public Instruction BoxIfIndexMatches(int index) {
-            if (index == _index) {
-                var result = new SetBoxedLocalInstruction(index);
-                result.SetName(this);
-                return result;
-            } else {
-                return null;
-            }
-        }
-    }
-
-    public sealed class SetBoxedLocalInstruction : LocalAccessInstruction {
-        public SetBoxedLocalInstruction(int index) 
-            : base(index) {
-        }
-
-        public override int ConsumedStack { get { return 1; } }
-        public override int ProducedStack { get { return 1; } }
-
-        public override int Run(InterpretedFrame frame) {
-            var box = (StrongBox<object>)frame.Data[_index];
-            box.Value = frame.Peek();
-            return +1;
-        }
-    }
-
-    public sealed class SetBoxedLocalVoidInstruction : LocalAccessInstruction {
-        public SetBoxedLocalVoidInstruction(int index)
-            : base(index) {
-        }
-
-        public override int ConsumedStack { get { return 1; } }
-        public override int ProducedStack { get { return 0; } }
-
-        public override int Run(InterpretedFrame frame) {
-            var box = (StrongBox<object>)frame.Data[_index];
-            box.Value = frame.Data[--frame.StackIndex];
-            return +1;
-        }
-    }
-
-    public sealed class SetClosureInstruction : LocalAccessInstruction {
-        public SetClosureInstruction(int index)
-            : base(index) {
-        }
-
-        public override int ConsumedStack { get { return 1; } }
-        public override int ProducedStack { get { return 1; } }
-
-        public override int Run(InterpretedFrame frame) {
-            var box = frame.Closure[_index];
-            box.Value = frame.Peek();
-            return +1;
-        }
-    }
-
-    public sealed class SetLocalVoidInstruction : LocalAccessInstruction, IBoxableInstruction {
-        public SetLocalVoidInstruction(int index) 
-            : base(index) {
-        }
-
-        public override int ConsumedStack { get { return 1; } }
-        public override int Run(InterpretedFrame frame) {
-            frame.Data[_index] = frame.Data[--frame.StackIndex];
-            //frame.Data[_index] = frame.Pop();
-            return +1;
-        }
-
-        public Instruction BoxIfIndexMatches(int index) {
-            if (index == _index) {
-                var result = new SetBoxedLocalVoidInstruction(index);
-                result.SetName(this);
-                return result;
-            } else {
-                return null;
-            }
-        }
-    }
-
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1012:AbstractTypesShouldNotHaveConstructors")]
-    public abstract class InitializeLocalInstruction : LocalAccessInstruction {
-        public InitializeLocalInstruction(int index)
-            : base(index) {
-        }
-
-        private sealed class Reference : InitializeLocalInstruction, IBoxableInstruction {
-            public Reference(int index) 
-                : base(index) {
-            }
-
-            public override int Run(InterpretedFrame frame) {
-                // nop
-                return 1;
-            }
-
-            public Instruction BoxIfIndexMatches(int index) {
-                if (index == _index) {
-                    var result = new ImmutableBox(index, null);
-                    result.SetName(this);
-                    return result;
-                } else {
-                    return null;
-                }
-            }
-
-            public override string InstructionName {
-                get { return "InitRef"; }
-            }
-        }
-
-        private sealed class ImmutableValue : InitializeLocalInstruction, IBoxableInstruction {
-            private readonly object _defaultValue;
-
-            public ImmutableValue(int index, object defaultValue) 
-                : base(index) {
-                _defaultValue = defaultValue;
-            }
-
-            public override int Run(InterpretedFrame frame) {
-                frame.Data[_index] = _defaultValue;
-                return 1;
-            }
-
-            public Instruction BoxIfIndexMatches(int index) {
-                if (index == _index) {
-                    var result = new ImmutableBox(index, _defaultValue);
-                    result.SetName(this);
-                    return result;
-                } else {
-                    return null;
-                }
-            }
-
-            public override string InstructionName {
-                get { return "InitImmutableValue"; }
-            }
-        }
-
-        private sealed class ImmutableBox : InitializeLocalInstruction {
-            // immutable value:
-            private readonly object _defaultValue;
-
-            public ImmutableBox(int index, object defaultValue)
-                : base(index) {
-                _defaultValue = defaultValue;
-            }
-
-            public override int Run(InterpretedFrame frame) {
-                frame.Data[_index] = new StrongBox<object>() { Value = _defaultValue };
-                return 1;
-            }
-
-            public override string InstructionName {
-                get { return "InitImmutableBox"; }
-            }
-        }
-
-        private sealed class MutableValue : InitializeLocalInstruction, IBoxableInstruction {
-            private readonly Type _type;
-
-            public MutableValue(int index, Type type)
-                : base(index) {
-                _type = type;
-            }
-
-            public override int Run(InterpretedFrame frame) {
-				try {
-	                frame.Data[_index] = Activator.CreateInstance(_type);
-	            } catch (TargetInvocationException e) {
-	                ExceptionHelpers.UpdateForRethrow(e.InnerException);
-	                throw e.InnerException;
-	            }
-
-                return 1;
-            }
-
-            public Instruction BoxIfIndexMatches(int index) {
-                if (index == _index) {
-                    var result = new MutableBox(index, _type);
-                    result.SetName(this);
-                    return result;
-                } else {
-                    return null;
-                }
-            }
-
-            public override string InstructionName {
-                get { return "InitMutableValue"; }
-            }
-        }
-
-        private sealed class MutableBox : InitializeLocalInstruction {
-            private readonly Type _type;
-
-            public MutableBox(int index, Type type)
-                : base(index) {
-                _type = type;
-            }
-
-            public override int Run(InterpretedFrame frame) {
-                frame.Data[_index] = new StrongBox<object>() { Value = Activator.CreateInstance(_type) };
-                return 1;
-            }
-
-            public override string InstructionName {
-                get { return "InitMutableBox"; }
-            }
-        }
-
-        public static Instruction Create(int index, ParameterExpression local) {
-            var result = CreateInstance(index, local);
-            result.SetName(local.Name);
-            return result;
-        }
-
-        private static LocalAccessInstruction CreateInstance(int index, ParameterExpression local) {
-            object value = LightCompiler.GetImmutableDefaultValue(local.Type);
-            if (value != null) {
-                return new ImmutableValue(index, value);
-            } else if (local.Type.IsValueType) {
-                return new MutableValue(index, local.Type);
-            } else {
-                return new Reference(index);
-            }
-        }
-    }
-
-    #endregion
 
     #region Branches
 
@@ -761,44 +361,7 @@ namespace Microsoft.Scripting.Interpreter {
 
     #endregion
 
-    #region operations, i.e. calls, arithmetic, comparisons, etc.
-
-    //TODO generate the Func and Action equivalent overloads for better performance
-    public class CallInstruction : Instruction {
-        private ReflectedCaller _target;
-        private MethodInfo _methodInfo;
-        private bool _isVoid;
-        private int _argCount;
-
-        public CallInstruction(MethodInfo target) {
-            _methodInfo = target;
-            _isVoid = target.ReturnType == typeof(void);
-            _argCount = target.GetParameters().Length;
-            if (!target.IsStatic) _argCount += 1;
-
-            _target = ReflectedCaller.Create(target);
-        }
-
-        public override int ProducedStack { get { return _isVoid ? 0 : 1; } }
-        public override int ConsumedStack { get { return _argCount; } }
-
-        public override int Run(InterpretedFrame frame) {
-            object[] args = new object[_argCount];
-            for (int i = _argCount - 1; i >= 0; i--) {
-                args[i] = frame.Pop();
-            }
-
-            object ret = _target.Invoke(args);
-            if (!_isVoid) frame.Push(ret);
-
-            return +1;
-        }
-
-        public override string ToString() {
-            return "Call(" + _methodInfo + ")";
-        }
-    }
-
+    #region operations, i.e. arithmetic, comparisons, etc.
 
     public class CreateDelegateInstruction : Instruction {
         private readonly LightDelegateCreator _creator;
@@ -828,65 +391,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
     }
 
-    public class NewArrayInitInstruction : Instruction {
-        private Type _elementType;
-        private int _elementCount;
-        public NewArrayInitInstruction(Type elementType, int elementCount) {
-            this._elementType = elementType;
-            this._elementCount = elementCount;
-        }
-
-        public override int ConsumedStack { get { return _elementCount; } }
-        public override int ProducedStack { get { return 1; } }
-        public override int Run(InterpretedFrame frame) {
-            var array = Array.CreateInstance(_elementType, _elementCount);
-            for (int i = _elementCount - 1; i >= 0; i--) {
-                array.SetValue(frame.Pop(), i);
-            }
-            frame.Push(array);
-            return +1;
-        }
-    }
-
-    public class NewArrayBoundsInstruction1 : Instruction {
-        private Type _elementType;
-
-        public NewArrayBoundsInstruction1(Type elementType) {
-            this._elementType = elementType;
-        }
-
-        public override int ConsumedStack { get { return 1; } }
-        public override int ProducedStack { get { return 1; } }
-        public override int Run(InterpretedFrame frame) {
-            int length = (int)frame.Pop();
-            var array = Array.CreateInstance(_elementType, length);
-            frame.Push(array);
-            return +1;
-        }
-    }
-
-    public class NewArrayBoundsInstructionN : Instruction {
-        private Type _elementType;
-        private int _boundsCount;
-        public NewArrayBoundsInstructionN(Type elementType, int boundsCount) {
-            this._elementType = elementType;
-            this._boundsCount = boundsCount;
-        }
-
-        public override int ConsumedStack { get { return _boundsCount; } }
-        public override int ProducedStack { get { return 1; } }
-        public override int Run(InterpretedFrame frame) {
-            var bounds = new int[_boundsCount];
-            for (int i = _boundsCount - 1; i >= 0; i--) {
-                bounds[i] = (int)frame.Pop();
-            }
-            var array = Array.CreateInstance(_elementType, bounds);
-            frame.Push(array);
-            return +1;
-        }
-    }
-
-    public sealed class NewInstruction : Instruction {
+    public class NewInstruction : Instruction {
         private readonly ConstructorInfo _constructor;
         private readonly int _argCount;
 
@@ -920,32 +425,19 @@ namespace Microsoft.Scripting.Interpreter {
         }
     }
 
-    public sealed class NewValueTypeInstruction : Instruction {
-        private readonly Type _type;
-
-        public NewValueTypeInstruction(Type type) {
-            Assert.NotNull(type);
-            Debug.Assert(type.IsValueType);
-            _type = type;
-        }
+    public class DefaultValueInstruction<T> : Instruction {
+        internal DefaultValueInstruction() { }
 
         public override int ConsumedStack { get { return 0; } }
         public override int ProducedStack { get { return 1; } }
 
         public override int Run(InterpretedFrame frame) {
-            object ret;
-            try {
-                ret = Activator.CreateInstance(_type);
-            } catch (TargetInvocationException e) {
-                ExceptionHelpers.UpdateForRethrow(e.InnerException);
-                throw e.InnerException;
-            }
-            frame.Push(ret);
+            frame.Push(default(T));
             return +1;
         }
 
         public override string ToString() {
-            return "New " + _type + "()";
+            return "New " + typeof(T);
         }
     }
 
@@ -997,48 +489,6 @@ namespace Microsoft.Scripting.Interpreter {
             object self = frame.Pop();
             _field.SetValue(self, value);
             return +1;
-        }
-    }
-
-    public class GetArrayItemInstruction<T> : Instruction {
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
-        public static readonly Instruction Instance = new GetArrayItemInstruction<T>();
-
-        private GetArrayItemInstruction() { }
-
-        public override int ConsumedStack { get { return 2; } }
-        public override int ProducedStack { get { return 1; } }
-
-        public override int Run(InterpretedFrame frame) {
-            int index = (int)frame.Pop();
-            T[] array = (T[])frame.Pop();
-            frame.Push(array[index]);
-            return +1;
-        }
-
-        public override string InstructionName {
-            get { return "GetArrayItem"; }
-        }
-    }
-
-    public class SetArrayItemInstruction<T> : Instruction {
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
-        public static readonly Instruction Instance = new SetArrayItemInstruction<T>();
-
-        private SetArrayItemInstruction() { }
-        public override int ConsumedStack { get { return 3; } }
-        public override int ProducedStack { get { return 0; } }
-
-        public override int Run(InterpretedFrame frame) {
-            T value = (T)frame.Pop();
-            int index = (int)frame.Pop();
-            T[] array = (T[])frame.Pop();
-            array[index] = value;
-            return +1;
-        }
-
-        public override string InstructionName {
-            get { return "SetArrayItem"; }
         }
     }
 
@@ -1272,6 +722,23 @@ namespace Microsoft.Scripting.Interpreter {
         }
     }
 
+    public class TypeIsInstruction<T> : Instruction {
+        internal TypeIsInstruction() { }
+
+        public override int ConsumedStack { get { return 1; } }
+        public override int ProducedStack { get { return 1; } }
+
+        public override int Run(InterpretedFrame frame) {
+            // unfortunately Type.IsInstanceOfType() is 35-times slower than "is T" so we use generic code:
+            frame.Push(ScriptingRuntimeHelpers.BooleanToObject(frame.Pop() is T));
+            return +1;
+        }
+
+        public override string ToString() {
+            return "TypeIs " + typeof(T).Name; 
+        }
+    }
+
     public class NotInstruction : Instruction {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         public static readonly Instruction Instance = new NotInstruction();
@@ -1280,7 +747,7 @@ namespace Microsoft.Scripting.Interpreter {
         public override int ConsumedStack { get { return 1; } }
         public override int ProducedStack { get { return 1; } }
         public override int Run(InterpretedFrame frame) {
-            frame.Push(!(bool)frame.Pop());
+            frame.Push((bool)frame.Pop() ? ScriptingRuntimeHelpers.False : ScriptingRuntimeHelpers.True);
             return +1;
         }
     }
@@ -1818,7 +1285,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
     }
 
-    public sealed class TypeEqualsInstruction : Instruction {
+    public class TypeEqualsInstruction : Instruction {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         public static readonly TypeEqualsInstruction Instance = new TypeEqualsInstruction();
 

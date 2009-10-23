@@ -701,15 +701,15 @@ namespace IronRuby.Builtins {
             set { GetInstanceData().Tainted = value; }
         }
 
-        public int BaseGetHashCode() {
+        int IRubyObject.BaseGetHashCode() {
             return base.GetHashCode();
         }
 
-        public bool BaseEquals(object other) {
+        bool IRubyObject.BaseEquals(object other) {
             return base.Equals(other);
         }
 
-        public string/*!*/ BaseToString() {
+        string/*!*/ IRubyObject.BaseToString() {
             return base.ToString();
         }
 
@@ -836,7 +836,7 @@ namespace IronRuby.Builtins {
 
                  using (autoloadScope.Context.ClassHierarchyUnlocker()) {
                      _loaded = true;
-                     return autoloadScope.Context.Loader.LoadFile(autoloadScope.Scope, null, _path, LoadFlags.LoadOnce | LoadFlags.AppendExtensions);
+                     return autoloadScope.Context.Loader.LoadFile(autoloadScope.Scope, null, _path, LoadFlags.Require);
                  }
             }
         }
@@ -863,14 +863,6 @@ namespace IronRuby.Builtins {
         public void SetConstant(string/*!*/ name, object value) {
             using (Context.ClassHierarchyLocker()) {
                 SetConstantNoLock(name, value);
-            }
-        }
-
-        // thread-safe:
-        public void SetBuiltinConstant(string/*!*/ name, object value) {
-            // TODO: hoist the lock?
-            using (Context.ClassHierarchyLocker()) {
-                SetConstantNoMutateNoLock(name, value);
             }
         }
 
@@ -1240,7 +1232,7 @@ namespace IronRuby.Builtins {
             SetMethodNoMutateNoEventNoLock(callerContext, name, method);
         }
 
-        private void SetMethodNoMutateNoEventNoLock(RubyContext/*!*/ callerContext, string/*!*/ name, RubyMemberInfo/*!*/ method) {
+        internal void SetMethodNoMutateNoEventNoLock(RubyContext/*!*/ callerContext, string/*!*/ name, RubyMemberInfo/*!*/ method) {
             Context.RequiresClassHierarchyLock();
             Assert.NotNull(name, method);
 
@@ -1400,58 +1392,6 @@ namespace IronRuby.Builtins {
         // thread-safe:
         public void HideMethod(string/*!*/ name) {
             SetMethodNoEvent(Context, name, RubyMethodInfo.HiddenMethod);
-        }
-
-        // thread-safe:
-        public void DefineLibraryMethod(string/*!*/ name, int attributes, params Delegate[]/*!*/ overloads) {
-            var flags = (RubyMemberFlags)(attributes & (int)RubyMethodAttributes.MemberFlagsMask);
-            bool skipEvent = ((RubyMethodAttributes)attributes & RubyMethodAttributes.NoEvent) != 0;
-            RubyCompatibility compatibility = (RubyCompatibility)(attributes >> RubyMethodAttribute.CompatibilityEncodingShift);
-            if (compatibility > Context.RubyOptions.Compatibility) {
-                return;
-            }
-            SetLibraryMethod(name, new RubyLibraryMethodInfo(overloads, flags, this), skipEvent);
-        }
-
-        // thread-safe:
-        public void DefineLibraryMethod(string/*!*/ name, int attributes, Delegate/*!*/ overload) {
-            DefineLibraryMethod(name, attributes, new[] { overload });
-        }
-
-        // thread-safe:
-        public void DefineLibraryMethod(string/*!*/ name, int attributes, Delegate/*!*/ overload1, Delegate/*!*/ overload2) {
-            DefineLibraryMethod(name, attributes, new[] { overload1, overload2 });
-        }
-
-        // thread-safe:
-        public void DefineLibraryMethod(string/*!*/ name, int attributes, Delegate/*!*/ overload1, Delegate/*!*/ overload2, Delegate/*!*/ overload3) {
-            DefineLibraryMethod(name, attributes, new[] { overload1, overload2, overload3 });
-        }
-
-        // thread-safe:
-        public void DefineLibraryMethod(string/*!*/ name, int attributes, Delegate/*!*/ overload1, Delegate/*!*/ overload2, Delegate/*!*/ overload3, Delegate/*!*/ overload4) {
-            DefineLibraryMethod(name, attributes, new[] { overload1, overload2, overload3, overload4 });
-        }
-
-        // thread-safe:
-        public void DefineRuleGenerator(string/*!*/ name, int attributes, RuleGenerator/*!*/ generator) {
-            Assert.NotNull(generator);
-            var flags = (RubyMemberFlags)(attributes & (int)RubyMethodAttributes.VisibilityMask);
-            bool skipEvent = ((RubyMethodAttributes)attributes & RubyMethodAttributes.NoEvent) != 0;
-            SetLibraryMethod(name, new RubyCustomMethodInfo(generator, flags, this), skipEvent);
-        }
-
-        // thread-safe:
-        public void SetLibraryMethod(string/*!*/ name, RubyMemberInfo/*!*/ method, bool noEvent) {
-            // trigger event only for non-builtins:
-            if (noEvent) {
-                // TODO: hoist lock?
-                using (Context.ClassHierarchyLocker()) {
-                    SetMethodNoMutateNoEventNoLock(_context, name, method);
-                }
-            } else {
-                AddMethod(_context, name, method);
-            }
         }
 
         // thread-safe:

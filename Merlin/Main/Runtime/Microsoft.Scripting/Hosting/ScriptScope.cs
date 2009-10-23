@@ -275,15 +275,16 @@ namespace Microsoft.Scripting.Hosting {
 
             // TODO: support for IgnoreCase in underlying ScriptScope APIs
             public override DynamicMetaObject BindSetMember(SetMemberBinder action, DynamicMetaObject value) {
+                Expression objValue = Expression.Convert(value.Expression, typeof(object));
                 return new DynamicMetaObject(
                     Expression.Block(
                         Expression.Call(
                             Expression.Convert(Expression, typeof(ScriptScope)),
                             typeof(ScriptScope).GetMethod("SetVariable", new[] { typeof(string), typeof(object) }),
                             Expression.Constant(action.Name),
-                            Expression.Convert(value.Expression, typeof(object))
+                            objValue
                         ),
-                        value.Expression
+                        objValue
                     ),
                     Restrictions.Merge(value.Restrictions).Merge(BindingRestrictions.GetTypeRestriction(Expression, typeof(ScriptScope)))
                 );

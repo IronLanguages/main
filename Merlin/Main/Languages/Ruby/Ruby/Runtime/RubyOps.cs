@@ -175,7 +175,6 @@ namespace IronRuby.Runtime {
             }
         }
 
-        // TODO: move to the host
         [Emitted]
         public static void PrintInteractiveResult(RubyScope/*!*/ scope, MutableString/*!*/ value) {
             var writer = scope.RubyContext.DomainManager.SharedIO.OutputStream;
@@ -2265,6 +2264,11 @@ namespace IronRuby.Runtime {
         #endregion
 
         #region Ruby Types
+
+        [Emitted]
+        public static string/*!*/ ObjectToString(IRubyObject/*!*/ obj) {
+            return RubyUtils.ObjectToMutableString(obj).ToString();
+        }
 
         [Emitted] //RubyTypeBuilder
         public static RubyInstanceData/*!*/ GetInstanceData(ref RubyInstanceData/*!*/ instanceData) {

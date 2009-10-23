@@ -147,18 +147,22 @@ namespace IronRuby.Builtins {
         // add methods to the generated class
         private static void AddClassMembers(RubyClass/*!*/ cls, string[]/*!*/ structMembers) {
             var newInstance = new RuleGenerator(RuleGenerators.InstanceConstructor);
+            var context = cls.Context;
 
-            cls.SingletonClass.DefineRuleGenerator("[]", (int)RubyMethodAttributes.PublicSingleton, newInstance);
-            cls.SingletonClass.DefineRuleGenerator("new", (int)RubyMethodAttributes.PublicSingleton, newInstance);
+            cls.SingletonClass.AddMethod(context, "[]", new RubyCustomMethodInfo(newInstance, RubyMemberFlags.Public, cls.SingletonClass));
+            cls.SingletonClass.AddMethod(context, "new", new RubyCustomMethodInfo(newInstance, RubyMemberFlags.Public, cls.SingletonClass));
 
-            cls.SingletonClass.DefineLibraryMethod("members", (int)RubyMethodAttributes.PublicSingleton,
-                new Func<RubyClass, RubyArray>(GetMembers)
-            );
+            cls.SingletonClass.AddMethod(context, "members", new RubyLibraryMethodInfo(
+                new Delegate[] { new Func<RubyClass, RubyArray>(GetMembers) },
+                RubyMemberFlags.Public, 
+                cls.SingletonClass
+            ));
 
             for (int i = 0; i < structMembers.Length; i++) {
                 string getter = structMembers[i];
-                cls.DefineRuleGenerator(getter, (int)RubyMethodAttributes.PublicInstance, CreateGetter(i));
-                cls.DefineRuleGenerator(getter + '=', (int)RubyMethodAttributes.PublicInstance, CreateSetter(i));
+
+                cls.AddMethod(context, getter, new RubyCustomMethodInfo(CreateGetter(i), RubyMemberFlags.Public, cls));
+                cls.AddMethod(context, getter + '=', new RubyCustomMethodInfo(CreateSetter(i), RubyMemberFlags.Public, cls));
             }
         }
 

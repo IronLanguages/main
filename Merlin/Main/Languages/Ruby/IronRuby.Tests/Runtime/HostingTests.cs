@@ -25,6 +25,7 @@ using Microsoft.Scripting.Utils;
 
 using IronRuby.Builtins;
 using IronRuby.Runtime.Calls;
+using IronRuby.Runtime;
 
 namespace IronRuby.Tests {
     public partial class Tests { 
@@ -146,6 +147,13 @@ py_add
 
             scope.SetVariable("some_variable", "foo");
             Assert(compiled.Execute<string>(scope) == "foo");
+
+            // we throw correct exceptions:
+            scope = Engine.CreateScope();
+            scope.SetVariable("bar", 1);
+            AssertExceptionThrown<MissingMethodException>(() => Engine.Execute("foo 1,2,3"));
+            AssertExceptionThrown<MissingMethodException>(() => Engine.Execute("foo 1,2,3", scope));
+            AssertExceptionThrown<ArgumentException>(() => Engine.Execute("bar 1,2,3", scope));
         }
 
         public void RubyHosting1D() {
@@ -257,10 +265,29 @@ IronRuby.globals.z = IronRuby.globals.x + FooBar
             Assert(Runtime.Globals.GetVariable<int>("z") == 3);
         }
 
-        public void Scenario_RubyEngine1() {
-            ScriptScope scope = Runtime.CreateScope();
-            object x = Engine.CreateScriptSourceFromString("1 + 1").Execute(scope);
-            AssertEquals(x, 2);
+        public void RubyHosting_Scopes1() {
+            TestOutput(@"
+engine = IronRuby.create_engine
+scope = engine.create_scope
+scope.x = 1
+scope.y = 2
+p scope.x + scope.y
+", @"
+3
+");
+        }
+
+        public void HostingDefaultOptions1() {
+            // this reports warnings that the default ErrorSink should ignore:
+            Engine.Execute(@"
+x = lambda { }
+1.times &x
+
+a = 'ba'.gsub /b/, '1'
+");
+
+            // errors and fatal errors should trigger an exception:
+            AssertExceptionThrown<SyntaxErrorException>(() => Engine.Execute("}"));
         }
 
         public void Scenario_RubyInteractive1() {
@@ -372,6 +399,8 @@ end
 
             var lambda = Engine.Operations.ConvertTo<Func<int, int>>(Engine.Execute("lambda { |x| x * 2 }"));
             Assert(lambda(10) == 20);
+
+            Assert((int)Engine.CreateOperations().InvokeMember(null, "to_i") == 0);
         }
 
         public void ObjectOperations2() {

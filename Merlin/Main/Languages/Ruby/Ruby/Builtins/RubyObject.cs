@@ -44,16 +44,28 @@ namespace IronRuby.Builtins {
             _immediateClass = cls;
         }
 
+        protected virtual RubyObject/*!*/ CreateInstance() {
+            return new RubyObject(_immediateClass.NominalClass);
+        }
+
+        object IDuplicable.Duplicate(RubyContext/*!*/ context, bool copySingletonMembers) {
+            var result = CreateInstance();
+            context.CopyInstanceData(this, result, copySingletonMembers);
+            return result;
+        }
+
+        #region ToString, Equals, GetHashCode
+
         public override string/*!*/ ToString() {
 #if DEBUG && !SILVERLIGHT && CLR2
             if (RubyBinder._DumpingExpression) {
-                return BaseToMutableString(this).ToString();
+                return RubyUtils.ObjectBaseToMutableString(this).ToString();
             }
 #endif
             var site = _immediateClass.ToStringSite;
             object toStringResult = site.Target(site, this);
             if (ReferenceEquals(toStringResult, RubyOps.ForwardToBase)) {
-                return BaseToString();
+                return ((IRubyObject)this).BaseToString();
             }
 
             string str = toStringResult as string;
@@ -63,22 +75,6 @@ namespace IronRuby.Builtins {
 
             var mstr = toStringResult as MutableString ?? RubyUtils.ObjectToMutableString(_immediateClass.Context, toStringResult);
             return mstr.ToString();
-        }
-
-        public string/*!*/ BaseToString() {
-            return ToMutableString(this).ToString();
-        }
-
-        public static MutableString/*!*/ ToMutableString(IRubyObject/*!*/ self) {
-            return RubyUtils.FormatObject(self.ImmediateClass.GetNonSingletonClass().Name, self.GetInstanceData().ObjectId, self.IsTainted);
-        }
-
-        public static MutableString/*!*/ BaseToMutableString(IRubyObject/*!*/ self) {
-            if (self is RubyObject) {
-                return ToMutableString(self);
-            } else {
-                return MutableString.CreateMutable(self.BaseToString(), RubyEncoding.UTF8);
-            }
         }
 
         public override bool Equals(object other) {
@@ -97,10 +93,6 @@ namespace IronRuby.Builtins {
             return RubyOps.IsTrue(equalsResult);
         }
 
-        public bool BaseEquals(object other) {
-            return base.Equals(other);
-        }
-
         public override int GetHashCode() {
             var site = _immediateClass.GetHashCodeSite;
             object hashResult = site.Target(site, this);
@@ -111,23 +103,19 @@ namespace IronRuby.Builtins {
             return Protocols.ToHashCode(hashResult);
         }
 
-        public int BaseGetHashCode() {
+        string/*!*/ IRubyObject.BaseToString() {
+            return RubyOps.ObjectToString(this);
+        }
+
+        bool IRubyObject.BaseEquals(object other) {
+            return base.Equals(other);
+        }
+
+        int IRubyObject.BaseGetHashCode() {
             return base.GetHashCode();
         }
 
-        public MutableString/*!*/ Inspect() {
-            return _immediateClass.Context.Inspect(this);
-        }
-
-        protected virtual RubyObject/*!*/ CreateInstance() {
-            return new RubyObject(_immediateClass.NominalClass);
-        }
-
-        object IDuplicable.Duplicate(RubyContext/*!*/ context, bool copySingletonMembers) {
-            var result = CreateInstance();
-            context.CopyInstanceData(this, result, copySingletonMembers);
-            return result;
-        }
+        #endregion
 
         #region IRubyObject
 
@@ -160,6 +148,8 @@ namespace IronRuby.Builtins {
 
         #endregion
 
+        #region Serialization
+
 #if !SILVERLIGHT
         protected RubyObject(SerializationInfo/*!*/ info, StreamingContext context) {
             RubyOps.DeserializeObject(out _instanceData, out _immediateClass, info);
@@ -170,5 +160,7 @@ namespace IronRuby.Builtins {
             RubyOps.SerializeObject(_instanceData, _immediateClass, info);
         }
 #endif
+
+        #endregion
     }
 }

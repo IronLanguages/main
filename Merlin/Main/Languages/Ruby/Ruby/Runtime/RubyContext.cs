@@ -52,7 +52,8 @@ namespace IronRuby.Runtime {
 
         // MRI compliance:
         public static readonly string/*!*/ MriVersion = "1.8.6";
-        public static readonly string/*!*/ MriReleaseDate = "2008-05-28";
+        public static readonly string/*!*/ MriReleaseDate = "2009-03-31";
+        public static readonly int MriPatchLevel = 0; // TODO: core/string/modulo are failing if we claim compat with 368
 
         // IronRuby:
         public const string/*!*/ IronRubyVersionString = "0.9.1.0";
@@ -284,10 +285,6 @@ namespace IronRuby.Runtime {
             set { _commandLineProgramPath = value; }
         }
 
-        internal RubyBinder RubyBinder {
-            get { return (RubyBinder)Binder; }
-        }
-
         internal RubyScope/*!*/ EmptyScope {
             get { return _emptyScope; }
         }
@@ -460,10 +457,8 @@ namespace IronRuby.Runtime {
             InitializeGlobalVariables();
         }
 
-        public RubyBinder Binder {
-            get {
-                return _binder;
-            }
+        internal RubyBinder/*!*/ Binder {
+            get { return _binder; }
         }
 
         /// <summary>
@@ -545,7 +540,7 @@ namespace IronRuby.Runtime {
 
                 obj.SetConstantNoMutateNoLock("RUBY_ENGINE", rubyEngine);
                 obj.SetConstantNoMutateNoLock("RUBY_VERSION", version);
-                obj.SetConstantNoMutateNoLock("RUBY_PATCHLEVEL", 0);
+                obj.SetConstantNoMutateNoLock("RUBY_PATCHLEVEL", RubyContext.MriPatchLevel);
                 obj.SetConstantNoMutateNoLock("RUBY_PLATFORM", platform);
                 obj.SetConstantNoMutateNoLock("RUBY_RELEASE_DATE", releaseDate);
 
@@ -782,6 +777,8 @@ namespace IronRuby.Runtime {
             if (type.IsGenericType && !type.IsGenericTypeDefinition) {
                 // C<T0..Tn>'s super class is its generic definition C<,..,>
                 baseClass = GetOrCreateClassNoLock(type.GetGenericTypeDefinition());
+            } else if (type.IsByRef) {
+                baseClass = _objectClass;
             } else {
                 baseClass = GetOrCreateClassNoLock(type.BaseType);
             }
@@ -1254,6 +1251,23 @@ namespace IronRuby.Runtime {
                 return result.Append(type.Name);
             }
 
+            // arrays, by-refs, pointers:
+            Type elementType = type.GetElementType();
+            if (elementType != null) {
+                AppendQualifiedNameNoLock(result, elementType, context, noGenericArgs);
+                if (type.IsByRef) {
+                    result.Append('&');
+                } else if (type.IsArray) {
+                    result.Append('[');
+                    result.Append(',', type.GetArrayRank() - 1);
+                    result.Append(']');
+                } else {
+                    Debug.Assert(type.IsPointer);
+                    result.Append('*');
+                }
+                return result;
+            }
+            
             // qualifiers:
             if (type.DeclaringType != null) {
                 AppendQualifiedNameNoLock(result, type.DeclaringType, context, noGenericArgs);

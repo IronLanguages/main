@@ -13,6 +13,10 @@
  *
  * ***************************************************************************/
 
+#if CLR2
+using dynamic = System.Object;
+#endif
+
 using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Hosting;
 using Microsoft.Scripting.Hosting.Providers;
@@ -24,6 +28,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using Microsoft.Scripting;
+using System.Runtime.Remoting;
 
 #if SILVERLIGHT
 [assembly: DynamicLanguageProvider(typeof(RubyContext), RubyContext.IronRubyDisplayName, RubyContext.IronRubyNames, RubyContext.IronRubyFileExtensions)]
@@ -117,14 +122,17 @@ namespace IronRuby {
 
         internal static bool RequireFile(LanguageContext/*!*/ context, KeyValuePair<string, Scope> pathAndScope) {
             var rc = (RubyContext)context;
-            return rc.Loader.LoadFile(pathAndScope.Value, null, MutableString.Create(pathAndScope.Key, RubyEncoding.UTF8),
-                LoadFlags.LoadOnce | LoadFlags.AppendExtensions);
+            return rc.Loader.LoadFile(pathAndScope.Value, null, MutableString.Create(pathAndScope.Key, RubyEncoding.UTF8), LoadFlags.Require);
         }
 
         // TODO:
         public static RubyContext/*!*/ GetExecutionContext(ScriptEngine/*!*/ engine) {
             ContractUtils.RequiresNotNull(engine, "engine");
-            return (RubyContext)HostingHelpers.GetLanguageContext(engine);
+            var context = HostingHelpers.GetLanguageContext(engine) as RubyContext;
+            if (context == null) {
+                throw new InvalidOperationException("Given engine is not a Ruby engine");
+            }
+            return context;
         }
 
         // TODO:

@@ -317,47 +317,47 @@ namespace IronPython.Runtime {
                 return false;
             }
 
-            // If the module has __path__ (and __path__ is list), nested module is being imported
-            // otherwise, importing sibling to the importing module
-            if (package == null && pyGlobals._storage.TryGetPath(out attribute) && (path = attribute as List) != null) {
-                // found __path__, importing nested module. The actual name of the nested module
-                // is the name of the mod plus the name of the imported module
-                if (level == -1) {
-                    // absolute import of some module
-                    full = modName + "." + name;
-                    object parentModule;
-                    if (PythonContext.GetContext(context).SystemStateModules.TryGetValue(modName, out parentModule)) {
-                        parentMod = parentModule as PythonModule;
-                    }
-                } else if (String.IsNullOrEmpty(name)) {
-                    // relative import of ancestor
-                    full = (StringOps.rsplit(modName, ".", level - 1)[0] as string);
-                } else {
-                    // relative import of some ancestors child
-                    string parentName = (StringOps.rsplit(modName, ".", level - 1)[0] as string);
-                    full = parentName + "." + name;
-                    object parentModule;
-                    if (PythonContext.GetContext(context).SystemStateModules.TryGetValue(parentName, out parentModule)) {
-                        parentMod = parentModule as PythonModule;
-                    }
-                }
-                return true;
-            }
-
-            // importing sibling. The name of the imported module replaces
-            // the last element in the importing module name
-            string[] names = modName.Split('.');
-            if (names.Length == 1) {
-                // name doesn't include dot, only absolute import possible
-                if (level > 0) {
-                    throw PythonOps.ValueError("Attempted relative import in non-package");
-                }
-
-                return false;
-            }
-
             string pn;
             if (package == null) {
+                // If the module has __path__ (and __path__ is list), nested module is being imported
+                // otherwise, importing sibling to the importing module
+                if (pyGlobals._storage.TryGetPath(out attribute) && (path = attribute as List) != null) {
+                    // found __path__, importing nested module. The actual name of the nested module
+                    // is the name of the mod plus the name of the imported module
+                    if (level == -1) {
+                        // absolute import of some module
+                        full = modName + "." + name;
+                        object parentModule;
+                        if (PythonContext.GetContext(context).SystemStateModules.TryGetValue(modName, out parentModule)) {
+                            parentMod = parentModule as PythonModule;
+                        }
+                    } else if (String.IsNullOrEmpty(name)) {
+                        // relative import of ancestor
+                        full = (StringOps.rsplit(modName, ".", level - 1)[0] as string);
+                    } else {
+                        // relative import of some ancestors child
+                        string parentName = (StringOps.rsplit(modName, ".", level - 1)[0] as string);
+                        full = parentName + "." + name;
+                        object parentModule;
+                        if (PythonContext.GetContext(context).SystemStateModules.TryGetValue(parentName, out parentModule)) {
+                            parentMod = parentModule as PythonModule;
+                        }
+                    }
+                    return true;
+                }
+
+                // importing sibling. The name of the imported module replaces
+                // the last element in the importing module name
+                string[] names = modName.Split('.');
+                if (names.Length == 1) {
+                    // name doesn't include dot, only absolute import possible
+                    if (level > 0) {
+                        throw PythonOps.ValueError("Attempted relative import in non-package");
+                    }
+
+                    return false;
+                }
+
                 pn = GetParentPackageName(level, names);
             } else {
                 // __package__ doesn't include module name, so level is - 1.

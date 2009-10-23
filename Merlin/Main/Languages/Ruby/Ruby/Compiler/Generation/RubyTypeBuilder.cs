@@ -371,7 +371,12 @@ namespace IronRuby.Compiler.Generation {
             // string IRubyObject.BaseToString() { return base.ToString(); }
             il = DefineMethodOverride(_tb, Methods.IRubyObject_BaseToString);
             il.EmitLoadArg(0);
-            il.EmitCall(_tb.BaseType.GetMethod("ToString", Type.EmptyTypes));
+            MethodInfo toString = _tb.BaseType.GetMethod("ToString", Type.EmptyTypes);
+            if (toString.DeclaringType == typeof(object)) {
+                il.EmitCall(Methods.ObjectToString);
+            } else {
+                il.EmitCall(toString);
+            }
             il.Emit(OpCodes.Ret);
         }
 

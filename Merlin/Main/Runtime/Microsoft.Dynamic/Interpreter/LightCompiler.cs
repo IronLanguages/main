@@ -134,61 +134,6 @@ namespace Microsoft.Scripting.Interpreter {
         }
     }
 
-#if !SILVERLIGHT
-    [DebuggerTypeProxy(typeof(Instructions.DebugView))]
-#endif
-    public class Instructions : List<Instruction> {
-        #region Debug View
-#if !SILVERLIGHT
-        internal sealed class DebugView {
-            private readonly Instructions _instructions;
-
-            public DebugView(Instructions instructions) {
-                Assert.NotNull(instructions);
-                _instructions = instructions;
-            }
-
-            [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-            public InstructionView[]/*!*/ A0 {
-                get {
-                    var result = new List<InstructionView>();
-                    int index = 0;
-                    int stackDepth = 0;
-                    foreach (var instruction in _instructions) {
-                        result.Add(new InstructionView(index, stackDepth, instruction));
-                        index++;
-                        stackDepth += instruction.ProducedStack - instruction.ConsumedStack;
-                    }
-                    return result.ToArray();
-                }
-            }
-
-            [DebuggerDisplay("{GetValue(),nq}", Name = "{GetName(),nq}")]
-            internal struct InstructionView {
-                private readonly int _index;
-                private readonly int _stackDepth;
-                private readonly Instruction _instruction;
-
-                internal string GetName() {
-                    return _index.ToString() + (_stackDepth == 0 ? "" : " D(" + _stackDepth.ToString() + ")");
-                }
-
-                internal string GetValue() {
-                    return _instruction.ToString() + " " + (_instruction.ProducedStack - _instruction.ConsumedStack).ToString();
-
-                }
-
-                public InstructionView(int index, int stackDepth, Instruction instruction) {
-                    _index = index;
-                    _stackDepth = stackDepth;
-                    _instruction = instruction;
-                }
-            }
-        }
-#endif
-        #endregion
-    }
-
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1506:AvoidExcessiveClassCoupling")]
     public class LightCompiler {
         private static readonly MethodInfo _RunMethod = typeof(Interpreter).GetMethod("Run");
@@ -200,7 +145,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 #endif
 
-        private readonly Instructions _instructions = new Instructions();
+        private readonly Instructions _instructions;
         private int _maxStackDepth = 0;
         private int _currentStackDepth = 0;
 
@@ -236,24 +181,25 @@ namespace Microsoft.Scripting.Interpreter {
         private readonly bool _compileLoops;
 
         internal LightCompiler(bool compileLoops) {
+            _instructions = new Instructions(this);
             _compileLoops = compileLoops;
         }
 
-        private LightCompiler(LightCompiler parent) {
+        private LightCompiler(LightCompiler parent)
+            : this(parent._compileLoops) {
             _parent = parent;
-            _compileLoops = parent._compileLoops;
         }
 
         internal LightDelegateCreator CompileTop(LambdaExpression node) {
             foreach (var p in node.Parameters) {
-                this.AddVariable(p);
+                AddVariable(p);
             }
 
             Compile(node.Body);
             
             // pop the result of the last expression:
             if (node.Body.Type != typeof(void) && node.ReturnType == typeof(void)) {
-                AddInstruction(PopInstruction.Instance);
+                AddInstruction(Instruction.Pop());
             }
 
             Debug.Assert(_currentStackDepth == (node.ReturnType != typeof(void) ? 1 : 0));
@@ -358,7 +304,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public void PushConstant(object value) {
-            AddInstruction(new PushInstruction(value));
+            AddInstruction(Instruction.Push(value));
         }
 
         private void CompileConstantExpression(Expression expr) {
@@ -378,7 +324,7 @@ namespace Microsoft.Scripting.Interpreter {
                     if (value != null) {
                         PushConstant(value);
                     } else {
-                        AddInstruction(new NewValueTypeInstruction(type));
+                        AddInstruction(Instruction.DefaultValue(type));
                     }
                 } else {
                     PushConstant(null);
@@ -405,6 +351,14 @@ namespace Microsoft.Scripting.Interpreter {
                 case TypeCode.Decimal: return default(Decimal);
                 default: return null;
             }
+        }
+
+        internal List<ParameterExpression> Locals {
+            get { return _locals; }
+        }
+
+        internal List<ParameterExpression> ClosureVariables {
+            get { return _closureVariables; }
         }
 
         private bool IsBoxed(int index) {
@@ -449,61 +403,59 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public Instruction GetVariable(ParameterExpression variable) {
-            LocalAccessInstruction local;
+            Instruction local;
 
             int index = GetVariableIndex(variable);
             if (index != -1) {
                 if (_localIsBoxed[index]) {
-                    local = new GetBoxedLocalInstruction(index);
+                    local = Instruction.GetBoxedLocal(index);
                 } else {
-                    local = new GetLocalInstruction(index);
+                    local = Instruction.GetLocal(index);
                 }
             } else {
                 EnsureAvailableForClosure(variable);
 
                 index = _closureVariables.IndexOf(variable);
                 Debug.Assert(index != -1);
-                local = new GetClosureInstruction(index);
+                local = Instruction.GetClosure(index);
             }
-            local.SetName(variable.Name);
             return local;
         }
 
         public Instruction GetBoxedVariable(ParameterExpression variable) {
-            LocalAccessInstruction local;
+            Instruction local;
 
             int index = GetVariableIndex(variable);
             if (index != -1) {
                 Debug.Assert(_localIsBoxed[index]);
-                local = new GetLocalInstruction(index);
+                local = Instruction.GetLocal(index);
             } else {
 
                 EnsureAvailableForClosure(variable);
 
                 index = _closureVariables.IndexOf(variable);
                 Debug.Assert(index != -1);
-                local = new GetBoxedClosureInstruction(index);
+                local = Instruction.GetBoxedClosure(index);
             }
-            local.SetName(variable.Name);
             return local;
         }
 
         public void CompileSetVariable(ParameterExpression variable, bool isVoid) {
-            LocalAccessInstruction local;
+            Instruction local;
 
             int index = GetVariableIndex(variable);
             if (index != -1) {
                 if (_localIsBoxed[index]) {
                     if (isVoid) {
-                        local = new SetBoxedLocalVoidInstruction(index);
+                        local = Instruction.SetBoxedLocalVoid(index);
                     } else {
-                        local = new SetBoxedLocalInstruction(index);
+                        local = Instruction.SetBoxedLocal(index);
                     }
                 } else {
                     if (isVoid) {
-                        local = new SetLocalVoidInstruction(index);
+                        local = Instruction.SetLocalVoid(index);
                     } else {
-                        local = new SetLocalInstruction(index);
+                        local = Instruction.SetLocal(index);
                     }
                 }
                 AddInstruction(local);
@@ -512,13 +464,11 @@ namespace Microsoft.Scripting.Interpreter {
 
                 index = _closureVariables.IndexOf(variable);
                 Debug.Assert(index != -1);
-                AddInstruction(local = new SetClosureInstruction(index));
+                AddInstruction(local = Instruction.SetClosure(index));
                 if (isVoid) {
-                    AddInstruction(PopInstruction.Instance);
+                    AddInstruction(Instruction.Pop());
                 }
             }
-
-            local.SetName(variable.Name);
         }
 
 
@@ -542,7 +492,7 @@ namespace Microsoft.Scripting.Interpreter {
             // TODO: basic flow analysis so we don't have to initialize all
             // variables.
             foreach (var local in node.Variables) {
-                AddInstruction(InitializeLocalInstruction.Create(AddVariable(local), local));
+                AddInstruction(Instruction.InitializeLocal(AddVariable(local), local.Type));
             }
 
             for (int i = 0; i < node.Expressions.Count - 1; i++) {
@@ -571,11 +521,11 @@ namespace Microsoft.Scripting.Interpreter {
             }
 
             if (index.Indexer != null) {
-                AddInstruction(new CallInstruction(index.Indexer.GetGetMethod(true)));
+                AddInstruction(Instruction.Call(index.Indexer.GetGetMethod(true)));
             } else if (index.Arguments.Count != 1) {
-                AddInstruction(new CallInstruction(index.Object.Type.GetMethod("Get", BindingFlags.Public | BindingFlags.Instance)));
+                AddInstruction(Instruction.Call(index.Object.Type.GetMethod("Get", BindingFlags.Public | BindingFlags.Instance)));
             } else {
-                AddInstruction(CreateGetArrayItemInstruction(index.Object.Type));
+                AddInstruction(Instruction.GetArrayItem(index.Object.Type));
             }
         }
 
@@ -600,11 +550,11 @@ namespace Microsoft.Scripting.Interpreter {
             Compile(node.Right);
 
             if (index.Indexer != null) {
-                AddInstruction(new CallInstruction(index.Indexer.GetSetMethod(true)));
+                AddInstruction(Instruction.Call(index.Indexer.GetSetMethod(true)));
             } else if (index.Arguments.Count != 1) {
-                AddInstruction(new CallInstruction(index.Object.Type.GetMethod("Set", BindingFlags.Public | BindingFlags.Instance)));
+                AddInstruction(Instruction.Call(index.Object.Type.GetMethod("Set", BindingFlags.Public | BindingFlags.Instance)));
             } else {
-                AddInstruction(CreateSetArrayItemInstruction(index.Object.Type));
+                AddInstruction(Instruction.SetArrayItem(index.Object.Type));
             }
         }
 
@@ -620,14 +570,14 @@ namespace Microsoft.Scripting.Interpreter {
                 int index = 0;
                 if (!asVoid) {
                     index = AddVariable(Expression.Parameter(node.Right.Type, null));
-                    AddInstruction(new SetLocalInstruction(index));
+                    AddInstruction(Instruction.SetLocal(index));
                     // TODO: free the variable when it goes out of scope
                 }
 
-                AddInstruction(new CallInstruction(method));
+                AddInstruction(Instruction.Call(method));
 
                 if (!asVoid) {
-                    AddInstruction(new GetLocalInstruction(index));
+                    AddInstruction(Instruction.GetLocal(index));
                 }
                 return;
             }
@@ -644,14 +594,14 @@ namespace Microsoft.Scripting.Interpreter {
                 int index = 0;
                 if (!asVoid) {
                     index = AddVariable(Expression.Parameter(node.Right.Type, null));
-                    AddInstruction(new SetLocalInstruction(index));
+                    AddInstruction(Instruction.SetLocal(index));
                     // TODO: free the variable when it goes out of scope
                 }
 
                 AddInstruction(new FieldAssignInstruction(fi));
 
                 if (!asVoid) {
-                    AddInstruction(new GetLocalInstruction(index));
+                    AddInstruction(Instruction.GetLocal(index));
                 }
                 return;
             }
@@ -694,14 +644,14 @@ namespace Microsoft.Scripting.Interpreter {
             if (node.Method != null) {
                 Compile(node.Left);
                 Compile(node.Right);
-                AddInstruction(new CallInstruction(node.Method));
+                AddInstruction(Instruction.Call(node.Method));
             } else {
                 switch (node.NodeType) {
                     case ExpressionType.ArrayIndex:
                         Debug.Assert(node.Right.Type == typeof(int));
                         Compile(node.Left);
                         Compile(node.Right);
-                        AddInstruction(CreateGetArrayItemInstruction(node.Left.Type));
+                        AddInstruction(Instruction.GetArrayItem(node.Left.Type));
                         return;
 
                     case ExpressionType.Equal:
@@ -776,28 +726,6 @@ namespace Microsoft.Scripting.Interpreter {
             throw new NotImplementedException();
         }
 
-        public Instruction CreateGetArrayItemInstruction(Type arrayType) {
-            Type elementType = arrayType.GetElementType();
-            if (elementType.IsClass || elementType.IsInterface) {
-                return GetArrayItemInstruction<object>.Instance;
-            } else if (elementType == typeof(bool)) {
-                return GetArrayItemInstruction<bool>.Instance;
-            } else if (elementType == typeof(SymbolId)) {
-                return GetArrayItemInstruction<SymbolId>.Instance;
-            } else {
-                return (Instruction)typeof(GetArrayItemInstruction<>).MakeGenericType(elementType).GetField("Instance").GetValue(null);
-            }
-        }
-
-        public Instruction CreateSetArrayItemInstruction(Type arrayType) {
-            Type elementType = arrayType.GetElementType();
-            if (elementType.IsClass || elementType.IsInterface) {
-                return SetArrayItemInstruction<object>.Instance;
-            } else {
-                return (Instruction)typeof(SetArrayItemInstruction<>).MakeGenericType(elementType).GetField("Instance").GetValue(null);
-            }
-        }
-
         private void CompileConvertUnaryExpression(Expression expr) {
             var node = (UnaryExpression)expr;
             if (node.Method != null) {
@@ -805,7 +733,7 @@ namespace Microsoft.Scripting.Interpreter {
 
                 // We should be able to ignore Int32ToObject
                 if (node.Method != Runtime.ScriptingRuntimeHelpers.Int32ToObjectMethod) {
-                    AddInstruction(new CallInstruction(node.Method));
+                    AddInstruction(Instruction.Call(node.Method));
                 }
             } else if (node.Type == typeof(void)) {
                 CompileAsVoid(node.Operand);
@@ -851,8 +779,8 @@ namespace Microsoft.Scripting.Interpreter {
             var node = (UnaryExpression)expr;
             
             if (node.Method != null) {
-                this.Compile(node.Operand);
-                AddInstruction(new CallInstruction(node.Method));
+                Compile(node.Operand);
+                AddInstruction(Instruction.Call(node.Method));
             } else {
                 switch (node.NodeType) {
                     case ExpressionType.Not:
@@ -1198,25 +1126,27 @@ namespace Microsoft.Scripting.Interpreter {
                 // interpreter's CallInstruction. Instead, we use
                 // Interpreter.Run, which logically represents the running
                 // method, and will appear in the stack trace of an exception.
-                AddInstruction(new PushInstruction(_RunMethod));
+                AddInstruction(Instruction.Push(_RunMethod));
                 return;
             }
 
+            var parameters = node.Method.GetParameters();
+
             //TODO support pass by reference and lots of other fancy stuff;
             // force compilation for now:
-            if (!CollectionUtils.TrueForAll(node.Method.GetParameters(), (p) => !p.IsByRefParameter())) {
+            if (!CollectionUtils.TrueForAll(parameters, (p) => !p.IsByRefParameter())) {
                 _forceCompile = true;
             }
 
             if (!node.Method.IsStatic) {
-                this.Compile(node.Object);
+                Compile(node.Object);
             }
 
             foreach (var arg in node.Arguments) {
-                this.Compile(arg);
+                Compile(arg);
             }
 
-            AddInstruction(new CallInstruction(node.Method));
+            AddInstruction(Instruction.Call(node.Method, parameters));
         }
 
         private void CompileNewExpression(Expression expr) {
@@ -1229,7 +1159,7 @@ namespace Microsoft.Scripting.Interpreter {
                 AddInstruction(new NewInstruction(node.Constructor));
             } else {
                 Debug.Assert(expr.Type.IsValueType);
-                AddInstruction(new NewValueTypeInstruction(node.Type));
+                AddInstruction(Instruction.DefaultValue(node.Type));
             }
         }
 
@@ -1259,9 +1189,9 @@ namespace Microsoft.Scripting.Interpreter {
             if (pi != null) {
                 var method = pi.GetGetMethod();
                 if (node.Expression != null) {
-                    this.Compile(node.Expression);
+                    Compile(node.Expression);
                 }
-                AddInstruction(new CallInstruction(method));
+                AddInstruction(Instruction.Call(method));
                 return;
             }
 
@@ -1277,15 +1207,15 @@ namespace Microsoft.Scripting.Interpreter {
             }
 
             Type elementType = node.Type.GetElementType();
-            int count = node.Expressions.Count;
+            int rank = node.Expressions.Count;
 
             if (node.NodeType == ExpressionType.NewArrayInit) {
-                AddInstruction(new NewArrayInitInstruction(elementType, count));
+                AddInstruction(Instruction.NewArrayInit(elementType, rank));
             } else if (node.NodeType == ExpressionType.NewArrayBounds) {
-                if (count == 1) {
-                    AddInstruction(new NewArrayBoundsInstruction1(elementType));
+                if (rank == 1) {
+                    AddInstruction(Instruction.NewArray(elementType));
                 } else {
-                    AddInstruction(new NewArrayBoundsInstructionN(elementType, count));
+                    AddInstruction(Instruction.NewArrayBounds(elementType, rank));
                 }
             } else {
                 throw new System.NotImplementedException();
@@ -1454,7 +1384,7 @@ namespace Microsoft.Scripting.Interpreter {
                 var leftNotNull = MakeLabel();
                 Compile(node.Left);
                 AddBranch(new CoalescingBranchInstruction(), leftNotNull);
-                AddInstruction(PopInstruction.Instance);
+                AddInstruction(Instruction.Pop());
                 Compile(node.Right);
                 leftNotNull.Mark();
             }
@@ -1506,16 +1436,16 @@ namespace Microsoft.Scripting.Interpreter {
             Debug.Assert(expr.NodeType == ExpressionType.TypeIs);
             var node = (TypeBinaryExpression)expr;
 
+            Compile(node.Expression);
+
             // use TypeEqual for sealed types:
             if (node.TypeOperand.IsSealed) {
-                Compile(node.Expression);
                 PushConstant(node.TypeOperand);
                 AddInstruction(TypeEqualsInstruction.Instance);
                 return;
             }
 
-            // TODO:
-            throw new System.NotImplementedException();
+            AddInstruction((Instruction)typeof(TypeIsInstruction<>).MakeGenericType(node.TypeOperand).GetField("Instance").GetValue(null));
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "expr")]
@@ -1555,7 +1485,7 @@ namespace Microsoft.Scripting.Interpreter {
                 default:
                     Compile(expr);
                     if (expr.Type != typeof(void)) {
-                        AddInstruction(PopInstruction.Instance);
+                        AddInstruction(Instruction.Pop());
                     }
                     break;
             }

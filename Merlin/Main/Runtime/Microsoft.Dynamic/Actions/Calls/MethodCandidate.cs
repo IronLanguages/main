@@ -27,6 +27,7 @@ using System.Dynamic;
 using System.Reflection;
 using Microsoft.Contracts;
 using Microsoft.Scripting.Generation;
+using Microsoft.Scripting.Interpreter;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
@@ -351,7 +352,7 @@ namespace Microsoft.Scripting.Actions.Calls {
             private readonly Func<object[], object>[] _argBuilders;
             private readonly Func<object[], object> _instanceBuilder;
             private readonly MethodInfo _mi;
-            private ReflectedCaller _caller;
+            private CallInstruction _caller;
             private int _hitCount;
 
             public Caller(MethodInfo mi, Func<object[], object>[] argBuilders, Func<object[], object> instanceBuilder) {
@@ -415,7 +416,7 @@ namespace Microsoft.Scripting.Actions.Calls {
                 if (_hitCount > 100) {
                     shouldOptimize = true;
                 } else if ((_hitCount > 5 || forceCaller) && _caller == null) {
-                    _caller = ReflectedCaller.Create(_mi);
+                    _caller = CallInstruction.Create(_mi, _mi.GetParameters());
                 }
                 return shouldOptimize;
             }

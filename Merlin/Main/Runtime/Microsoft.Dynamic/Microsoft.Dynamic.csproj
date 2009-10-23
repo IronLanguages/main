@@ -23,7 +23,6 @@
     <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
     <Silverlight3Path>..\..\Utilities\Silverlight\x86ret</Silverlight3Path>
     <Silverlight4Path>..\..\Utilities\Silverlight\v4-x86fre</Silverlight4Path>
-
     <!-- The following two lines prevent csc.rsp and Microsoft.NETFramework.props from adding additional assembly references -->
     <NoConfig>true</NoConfig>
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
@@ -268,6 +267,13 @@
     <Compile Include="Hosting\Shell\Remote\RemoteConsoleCommandLine.cs" />
     <Compile Include="Hosting\Shell\Remote\RemoteConsoleHost.cs" />
     <Compile Include="Hosting\Shell\Remote\RemoteRuntimeServer.cs" />
+    <Compile Include="Interpreter\Instructions\ArrayOperations.cs" />
+    <Compile Include="Interpreter\Instructions\CallInstruction.cs" />
+    <Compile Include="Interpreter\Instructions\CallInstruction.Generated.cs" />
+    <Compile Include="Interpreter\Instructions\InstructionFactory.cs" />
+    <Compile Include="Interpreter\Instructions\LocalAccess.cs" />
+    <Compile Include="Interpreter\Instructions\StackOperations.cs" />
+    <Compile Include="Interpreter\LightCompilerDebugView.cs" />
     <Compile Include="Interpreter\LightDelegateCreator.cs" />
     <Compile Include="Interpreter\LightLambda.Generated.cs" />
     <Compile Include="Interpreter\Interpreter.cs" />
@@ -275,7 +281,7 @@
     <Compile Include="Interpreter\DynamicInstructions.cs" />
     <Compile Include="Interpreter\LightLambdaClosureVisitor.cs" />
     <Compile Include="Interpreter\LightLambda.cs" />
-    <Compile Include="Interpreter\Instruction.cs" />
+    <Compile Include="Interpreter\Instructions\Instruction.cs" />
     <Compile Include="Interpreter\LightCompiler.cs" />
     <Compile Include="Interpreter\RuntimeVariables.cs" />
     <Compile Include="Interpreter\InterpretedFrame.cs" />
@@ -375,8 +381,6 @@
     <Compile Include="Utils\Publisher.cs" />
     <Compile Include="Utils\ReadOnlyDictionary.cs" />
     <Compile Include="Utils\ReferenceEqualityComparer.cs" />
-    <Compile Include="Utils\ReflectedCaller.Generated.cs" />
-    <Compile Include="Utils\ReflectedCaller.cs" />
     <Compile Include="Utils\HashSet.cs" />
     <Compile Include="Utils\SynchronizedDictionary.cs" />
     <Compile Include="Utils\ThreadLocal.cs" />
@@ -472,11 +476,11 @@
     <Reference Include="System.Core" Condition=" '$(TargetFrameworkVersion)' == 'v4.0' " />
   </ItemGroup>
   <ItemGroup Condition=" '$(SilverlightBuild)' == 'true' ">
-    <Reference Include="mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" >
+    <Reference Include="mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(SilverlightPath)\mscorlib.dll</HintPath>
     </Reference>
-    <Reference Include="System, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" >
+    <Reference Include="System, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(SilverlightPath)\System.dll</HintPath>
     </Reference>

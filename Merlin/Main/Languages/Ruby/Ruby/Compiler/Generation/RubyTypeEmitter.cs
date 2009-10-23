@@ -30,6 +30,8 @@ using IronRuby.Builtins;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
 using IronRuby.Runtime.Conversions;
+using Microsoft.Scripting.Utils;
+using System.Collections.Generic;
 
 namespace IronRuby.Compiler.Generation {
     public class RubyTypeEmitter : ClsTypeEmitter {
@@ -74,7 +76,34 @@ namespace IronRuby.Compiler.Generation {
             cctor.EmitCall(typeof(RubyTypeEmitter), "MakeRubyCallSite");
         }
 
-        protected override FieldInfo GetConversionSite(Type toType) {
+
+        #region Dynamic Conversions
+
+        private static Dictionary<Type, CallSite> _conversionSites;
+
+        [Emitted]
+        public static CallSite<Func<CallSite, RubyContext, object, T>>/*!*/ GetConversionSite<T>() {
+            if (_conversionSites == null) {
+                _conversionSites = new Dictionary<Type, CallSite>();
+            }
+            Type toType = typeof(T);
+
+            lock (_conversionSites) {
+                CallSite site;
+                if (_conversionSites.TryGetValue(toType, out site)) {
+                    return (CallSite<Func<CallSite, RubyContext, object, T>>)site;
+                }
+                var newSite = CallSite<Func<CallSite, RubyContext, object, T>>.Create(ProtocolConversionAction.GetConversionAction(null, toType, true));
+                _conversionSites[toType] = newSite;
+                return newSite;
+            }
+        }
+
+        protected override MethodInfo GetGenericConversionSiteFactory(Type toType) {
+            return typeof(RubyTypeEmitter).GetMethod("GetConversionSite").MakeGenericMethod(toType);
+        }
+
+        protected override FieldInfo GetConversionSiteField(Type toType) {
             return AllocateDynamicSite(
                 new Type[] { typeof(CallSite), typeof(RubyContext), typeof(object), toType },
                 (site) => Expression.Assign(
@@ -87,6 +116,8 @@ namespace IronRuby.Compiler.Generation {
                 )
             );
         }
+
+        #endregion
 
         protected override void EmitImplicitContext(ILGen il) {
             il.EmitLoadArg(0);
