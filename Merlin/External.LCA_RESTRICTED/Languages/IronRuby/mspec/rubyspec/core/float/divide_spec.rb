@@ -27,4 +27,9 @@ describe "Float#/" do
     (-0.0 / 0.0).to_s.should == 'NaN'
     (-0.0 / -0.0).to_s.should == 'NaN'
   end
+
+  #IronRuby was throwing an OverflowException
+  it "allows large divisors without error" do
+    lambda {1.0 / 2**50000}.should_not raise_error
+  end
 end

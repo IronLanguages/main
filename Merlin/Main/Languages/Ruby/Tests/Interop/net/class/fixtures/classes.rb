@@ -60,6 +60,14 @@ csc <<-EOL
     [return: MarshalAs(UnmanagedType.U1)]
     public virtual bool Foo() { return true;}
   }
+
+  public interface IHaveAnEvent {
+    event EventHandler MyEvent;
+  }
+
+  public abstract class AbstractHasAnEvent : IHaveAnEvent {
+    public abstract event EventHandler MyEvent;
+  }
 EOL
 
 no_csc do
@@ -84,5 +92,9 @@ no_csc do
     def m
       1
     end
+  end
+
+  class RubyHasAnEvent < AbstractHasAnEvent
+    
   end
 end

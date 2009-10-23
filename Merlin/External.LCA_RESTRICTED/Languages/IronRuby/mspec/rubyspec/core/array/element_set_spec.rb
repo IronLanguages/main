@@ -480,3 +480,95 @@ describe "Array#[] after a shift" do
   end
 end
 
+describe "Array#[]= needs review" do
+  # TODO: bust this baby up into multiple it
+  it "[]= with start, length should set elements" do
+    a = [];   a[0, 0] = nil;            a.should == []
+    a = [];   a[2, 0] = nil;            a.should == [nil, nil]
+    a = [];   a[0, 2] = nil;            a.should == []
+    a = [];   a[2, 2] = nil;            a.should == [nil, nil]
+    
+    a = [];   a[0, 0] = [];             a.should == []
+    a = [];   a[2, 0] = [];             a.should == [nil, nil]
+    a = [];   a[0, 2] = [];             a.should == []
+    a = [];   a[2, 2] = [];             a.should == [nil, nil]
+
+    a = [];   a[0, 0] = ["a"];          a.should == ["a"]
+    a = [];   a[2, 0] = ["a"];          a.should == [nil, nil, "a"]
+    a = [];   a[0, 2] = ["a","b"];      a.should == ["a", "b"]
+    a = [];   a[2, 2] = ["a","b"];      a.should == [nil, nil, "a", "b"]
+
+    a = [];   a[0, 0] = ["a","b","c"];  a.should == ["a", "b", "c"]
+    a = [];   a[2, 0] = ["a","b","c"];  a.should == [nil, nil, "a", "b", "c"]
+    a = [];   a[0, 2] = ["a","b","c"];  a.should == ["a", "b", "c"]
+    a = [];   a[2, 2] = ["a","b","c"];  a.should == [nil, nil, "a", "b", "c"]
+
+    a = [1, 2, 3, 4]
+    a[0, 0] = [8, 9, 9];  a.should == [8, 9, 9, 1, 2, 3, 4]
+    a = [1, 2, 3, 4]
+    a[1, 0] = [8, 9, 9];  a.should == [1, 8, 9, 9, 2, 3, 4]
+    a = [1, 2, 3, 4]
+    a[-1,0] = [8, 9, 9];  a.should == [1, 2, 3, 8, 9, 9, 4]
+    a = [1, 2, 3, 4]
+    a[4, 0] = [8, 9, 9];  a.should == [1, 2, 3, 4, 8, 9, 9]
+
+    a = [1, 2, 3, 4]
+    a[0, 1] = [9];        a.should == [9, 2, 3, 4]
+    a[1, 1] = [8];        a.should == [9, 8, 3, 4]
+    a[-1,1] = [7];        a.should == [9, 8, 3, 7]
+    a[4, 1] = [9];        a.should == [9, 8, 3, 7, 9]
+
+    a = [1, 2, 3, 4]
+    a[0, 1] = [8, 9];     a.should == [8, 9, 2, 3, 4]
+    a = [1, 2, 3, 4]
+    a[1, 1] = [8, 9];     a.should == [1, 8, 9, 3, 4]
+    a = [1, 2, 3, 4]
+    a[-1,1] = [8, 9];     a.should == [1, 2, 3, 8, 9]
+    a = [1, 2, 3, 4]
+    a[4, 1] = [8, 9];     a.should == [1, 2, 3, 4, 8, 9]
+
+    a = [1, 2, 3, 4]
+    a[0, 2] = [8, 9];     a.should == [8, 9, 3, 4]
+    a = [1, 2, 3, 4]
+    a[1, 2] = [8, 9];     a.should == [1, 8, 9, 4]
+    a = [1, 2, 3, 4]
+    a[-2,2] = [8, 9];     a.should == [1, 2, 8, 9]
+    a = [1, 2, 3, 4]
+    a[-1,2] = [8, 9];     a.should == [1, 2, 3, 8, 9]
+    a = [1, 2, 3, 4]
+    a[4, 2] = [8, 9];     a.should == [1, 2, 3, 4, 8, 9]
+
+    a = [1, 2, 3, 4]
+    a[0, 2] = [7, 8, 9];  a.should == [7, 8, 9, 3, 4]
+    a = [1, 2, 3, 4]
+    a[1, 2] = [7, 8, 9];  a.should == [1, 7, 8, 9, 4]
+    a = [1, 2, 3, 4]
+    a[-2,2] = [7, 8, 9];  a.should == [1, 2, 7, 8, 9]
+    a = [1, 2, 3, 4]
+    a[-1,2] = [7, 8, 9];  a.should == [1, 2, 3, 7, 8, 9]
+    a = [1, 2, 3, 4]
+    a[4, 2] = [7, 8, 9];  a.should == [1, 2, 3, 4, 7, 8, 9]
+  end
+
+  it "should assign multiple array elements with the [start, length]= syntax" do
+    a = [1, 2, 3, 4]
+    a[0, 2] = [1, 1.25, 1.5, 1.75, 2]
+    a.should == [1, 1.25, 1.5, 1.75, 2, 3, 4]
+    a[1, 1] = a[3, 1] = []
+    a.should == [1, 1.5, 2, 3, 4]
+    a[0, 2] = [1]
+    a.should == [1, 2, 3, 4]
+    a[5, 0] = [4, 3, 2, 1]
+    a.should == [1, 2, 3, 4, nil, 4, 3, 2, 1]
+    a[-2, 5] = nil
+    a.should == [1, 2, 3, 4, nil, 4, 3]
+    a[-2, 5] = []
+    a.should == [1, 2, 3, 4, nil]
+    a[0, 2] = nil
+    a.should == [3, 4, nil]
+    a[0, 100] = [1, 2, 3]
+    a.should == [1, 2, 3]
+    a[0, 2] *= 2
+    a.should == [1, 2, 1, 2, 3]
+  end
+end

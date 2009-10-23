@@ -5,6 +5,7 @@ using Microsoft.Scripting.Hosting;
 using IronRuby.Runtime;
 using IronRuby.Builtins;
 using Microsoft.Scripting.Math;
+using Microsoft.Scripting.Utils;
 using System.Collections.Generic;
 #line 1 "./bcl/fixtures/classes.rb"
 #line 5 "./bcl/fixtures/classes.rb"
@@ -149,6 +150,14 @@ public class EmptyClass {}
   public abstract class Unsafe {
     [return: MarshalAs(UnmanagedType.U1)]
     public virtual bool Foo() { return true;}
+  }
+
+  public interface IHaveAnEvent {
+    event EventHandler MyEvent;
+  }
+
+  public abstract class AbstractHasAnEvent : IHaveAnEvent {
+    public abstract event EventHandler MyEvent;
   }
 #line 8 "./delegate/fixtures/classes.rb"
 #line 13 "./delegate/fixtures/classes.rb"
@@ -334,6 +343,98 @@ public interface IDoFoo {
       return;
     }
   }
+  public interface I1 { string M(); }
+  public interface I2 { string M(); }
+  public interface I3<T> { string M(); }
+  public interface I4 { string M(int arg); }
+
+//TODO: Write tests for these cases when Explicit interface methods work.
+  public class ClassI1_1 : I1 {
+    string I1.M() { return "I1.M"; }
+  }
+
+  public class ClassI1_2 : I1 {
+    string I1.M() { return "I1.M"; }
+    public string M() { return "class M"; }
+  }
+
+  public class ClassI2I1 : I2, I1 {
+    string I1.M() { return "I1.M"; }
+    string I2.M() { return "I2.M"; }
+  }
+
+  public class ClassI3Obj : I3<object> {
+    string I3<object>.M() { return "I3<object>.M"; }
+    public string M() { return "class M"; }
+  }
+
+  public class ClassI1I2I3Obj : I1, I2, I3<object> {
+    string I1.M() { return "I1.M"; }
+    string I2.M() { return "I2.M"; }
+    string I3<object>.M() { return "I3<object>.M"; }
+    public string M() { return "class M"; }
+  }
+
+  public class ClassI3_1<T> : I3<T> {
+    string I3<T>.M() { return "I3<T>.M"; }
+    public string M() { return "class M"; }
+  }
+
+  public class ClassI3_2<T> : I3<T> {
+    string I3<T>.M() { return "I3<T>.M"; }
+  }
+
+  public class ClassI1I4 : I1, I4 {
+    string I1.M() { return "I1.M"; }
+    string I4.M(int arg) { return "I4.M"; }
+  }
+
+  public class PublicEventArgs : EventArgs { }
+  class PrivateEventArgs : PublicEventArgs { }
+  public delegate IPublicInterface PublicDelegateType(IPublicInterface sender, PublicEventArgs args);
+
+  // Private class
+  class PrivateClass : IPublicInterface {
+      public IPublicInterface Hello {
+          get { return this; }
+          set { }
+      }
+
+      public void Foo(IPublicInterface f) {
+      }
+
+      public IPublicInterface RetInterface() {
+          return this;
+      }
+
+      public event PublicDelegateType MyEvent;
+      public IPublicInterface FireEvent(PublicEventArgs args) {
+          return MyEvent(this, args);
+      }
+
+      public PublicEventArgs GetEventArgs() {
+          return new PrivateEventArgs();
+      }
+  }
+
+  // Public Interface
+  public interface IPublicInterface {
+      IPublicInterface Hello { get; set; }
+      void Foo(IPublicInterface f);
+      IPublicInterface RetInterface();
+      event PublicDelegateType MyEvent;
+      IPublicInterface FireEvent(PublicEventArgs args);
+      PublicEventArgs GetEventArgs();
+  }
+
+  // Access the private class via the public interface
+  public class InterfaceOnlyTest {
+      public static IPublicInterface PrivateClass {
+          get {
+              return new PrivateClass(); 
+          }
+      }
+  }
 #line 1 "./interfacegroup/fixtures/classes.rb"
 public interface IEmptyInterfaceGroup { }
   public interface IEmptyInterfaceGroup<T> { }
@@ -347,7 +448,7 @@ public interface IEmptyInterfaceGroup { }
   public interface IInterfaceGroup1<T> {void m1();}
   public interface IInterfaceGroup1<T,V> {void m1();}
 #line 3 "./method/fixtures/classes.rb"
-#line 146 "./method/fixtures/classes.rb"
+#line 147 "./method/fixtures/classes.rb"
 public abstract partial class AbstractClassWithMethods {
     public abstract string PublicMethod();
     protected abstract string ProtectedMethod();
@@ -735,6 +836,8 @@ public abstract partial class AbstractClassWithMethods {
     protected string ProtectedMethod() { return "protected";}
     private string PrivateMethod() { return "private";}
     public ArrayList Tracker { get; set;}
+    private static ArrayList _staticTracker = new ArrayList();
+    public static ArrayList StaticTracker { get { return _staticTracker;}}
       #region private methods
   private string Private1Generic0Arg<T>() {
     return "private generic no args";
@@ -847,7 +950,8 @@ public abstract partial class AbstractClassWithMethods {
   }
   #endregion
 
-    public void Reset() { Tracker = new ArrayList();}
+    public void Reset() { Tracker.Clear(); }
+    public static void StaticReset() { StaticTracker.Clear(); }
     public int SummingMethod(int a, int b){
       return a+b;
     }
@@ -937,7 +1041,126 @@ public abstract partial class AbstractClassWithMethods {
     // Default Value
     public string DefaultInt32Arg([DefaultParameterValue(10)] Int32 arg) { Tracker.Add(arg); return "DefaultInt32Arg";}
     public string Int32ArgDefaultInt32Arg(Int32 arg, [DefaultParameterValue(10)] Int32 arg2) { Tracker.Add(arg); Tracker.Add(arg2); return "Int32ArgDefaultInt32Arg";}
+
+    // static
+    public static string StaticMethodNoArg() { StaticTracker.Add(null); return "StaticMethodNoArg";}
+    public static string StaticMethodClassWithMethodsArg(ClassWithMethods arg) {StaticTracker.Add(arg); return "StaticMethodClassWithMethodsArg";}
+    public string ClassWithMethodsArg(ClassWithMethods arg) {Tracker.Add(arg); return "ClassWithMethodsArg";}
+
+    // generic method
+    public string GenericArg<T>(T arg) {Tracker.Add(arg); return String.Format("GenericArg[{0}]", typeof(T));}
+
+    // out on non-byref
+    public string OutNonByRefInt32Arg([Out] int arg) {arg = 1; Tracker.Add(arg); return "OutNonByRefInt32Arg";}
+    
+    // what does passing in nil mean?
+    public string ParamsIInterfaceArrTestArg(params IInterface[] args) { Tracker.Add(args == null); Tracker.Add(args); return "ParamsIInterfaceArrTestArg";}
+
+    // ref, out, ...
+    public string RefOutInt32Args(ref int arg1, out int arg2, int arg3) {arg1=arg2=arg3; Tracker.Add(arg1); Tracker.Add(arg2); Tracker.Add(arg3); return "RefOutInt32Args";}
+    public string RefInt32OutArgs(ref int arg1, int arg2, out int arg3) {arg3=arg1=arg2; Tracker.Add(arg1); Tracker.Add(arg2); Tracker.Add(arg3); return "RefInt32OutArgs";}
+    public string Int32RefOutArgs(int arg1, ref int arg2, out int arg3) {arg2=arg3=arg1; Tracker.Add(arg1); Tracker.Add(arg2); Tracker.Add(arg3); return "Int32RefOutArgs";}
+
+    // eight args
+    public string EightArgs(int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8) {
+      Tracker.Add(arg1);
+      Tracker.Add(arg2);
+      Tracker.Add(arg3);
+      Tracker.Add(arg4);
+      Tracker.Add(arg5);
+      Tracker.Add(arg6);
+      Tracker.Add(arg7);
+      Tracker.Add(arg8);
+      return "EightArgs";
+    }
+
+    public string IDictionaryOfIntIntArg(IDictionary<int, int> arg){ Tracker.Add(arg); return "IDictionaryOfIntIntArg";}
+    public string HashtableArg(Hashtable arg) { Tracker.Add(arg); return "HashtableArg";}
+    public string ListOfIntArg(List<int> arg) { Tracker.Add(arg); return "ListOfIntArg";}
+
+    // iterator support
+    public string IEnumerableIteratingArg(IEnumerable arg) {
+      IEnumerator ienum = arg.GetEnumerator(); 
+      while (ienum.MoveNext()) 
+        Tracker.Add(ienum.Current); 
+      return "IEnumerableIteratingArg";
+    }
+    public string IEnumeratorIteratingArg(IEnumerator arg) {
+      while (arg.MoveNext())
+        Tracker.Add(arg.Current);
+      return "IEnumeratorIteratingArg";
+    }
+    public string IListArg(IList arg) { Tracker.Add(arg); Tracker.Add(arg.Count); return "IListArg";}
+
+    public string IEnumerableOfCharIteratingArg(IEnumerable<Char> arg) {
+      IEnumerator ienum = arg.GetEnumerator(); 
+      while (ienum.MoveNext()) 
+        Tracker.Add(ienum.Current); 
+      return "IEnumerableOfCharIteratingArg";
+    }
+    public string IEnumeratorOfCharIteratingArg(IEnumerator<Char> arg) {
+      while (arg.MoveNext())
+        Tracker.Add(arg.Current);
+      return "IEnumeratorOfCharIteratingArg";
+    }
+    public string IListOfCharArg(IList<Char> arg) { Tracker.Add(arg); Tracker.Add(arg.Count); return "IListOfCharArg";}
+
+    public string IEnumerableOfIntIteratingArg(IEnumerable<int> arg) {
+      IEnumerator ienum = arg.GetEnumerator(); 
+      while (ienum.MoveNext()) 
+        Tracker.Add(ienum.Current); 
+      return "IEnumerableOfIntIteratingArg";
+    }
+    public string IEnumeratorOfIntIteratingArg(IEnumerator<int> arg) {
+      while (arg.MoveNext())
+        Tracker.Add(arg.Current);
+      return "IEnumeratorOfIntIteratingArg";
+    }
+    public string IListOfIntArg2(IList<int> arg) { Tracker.Add(arg); Tracker.Add(arg.Count); return "IListOfIntArg2";}
+
+    // delegate
+    public string DelegateArg(Delegate arg) {
+      IntIntDelegate d = (IntIntDelegate)arg;
+      Tracker.Add(d(10));
+      return "DelegateArg";
+    }
+
+    public string IntIntDelegateArg(IntIntDelegate arg) { Tracker.Add(arg(10)); return "IntIntDelegateArg";}
+
+    // byte array
+    public string RefByteArrArg(ref Byte[] arg) { Tracker.Add(arg); return "RefByteArrArg";}
+    public string ByteArrRefByteArrArg(Byte[] input, ref Byte[] arg) { arg = input; Tracker.Add(arg); return "ByteArrRefByteArrArg";}
+
+    // keywords
+    public string KeywordsArgs(int arg1, object arg2, ref string arg3) { arg3 = arg3.ToUpper(); Tracker.Add(arg3); return "KeywordsArgs";}
+
+    //more ref/out
+    public string RefStructImplementsIInterfaceArg(ref StructImplementsIInterface arg) { arg = new StructImplementsIInterface(); Tracker.Add(arg); return "RefStructImplementsIInterfaceArg";}
+    public string OutStructImplementsIInterfaceArg(out StructImplementsIInterface arg) { arg = new StructImplementsIInterface(); Tracker.Add(arg); return "OutStructImplementsIInterfaceArg";}
+    public string RefImplementsIInterfaceArg(ref ImplementsIInterface arg) { Tracker.Add(arg); return "RefImplementsIInterfaceArg";}
+    public string OutImplementsIInterfaceArg(out ImplementsIInterface arg) { arg = new ImplementsIInterface(); Tracker.Add(arg); return "OutImplementsIInterfaceArg";}
+    public string RefBooleanArg(ref Boolean arg) { Tracker.Add(arg); return "RefBooleanArg";}
+    public string OutBooleanArg(out Boolean arg) { arg = true; Tracker.Add(arg); return "OutBooleanArg";}
+    public string RefInt32Int32OutInt32Arg(ref int arg1, int arg2, out int arg3) { 
+      arg3 = arg1 + arg2;
+      arg1 = 100;
+      Tracker.Add(arg1);
+      Tracker.Add(arg2);
+      Tracker.Add(arg3);
+      return "RefInt32Int32OutInt32Arg";
+    }
   }
+  public partial class GenericClassWithMethods<K> {
+    public ArrayList Tracker { get; set;}
+    public GenericClassWithMethods() {
+      Tracker = new ArrayList();
+    }
+
+    public void Reset() { Tracker.Clear();}
+    public string GenericArg(K arg) { Tracker.Add(arg); return "GenericArg";}
+  }
+
+  public delegate int IntIntDelegate(int arg);
 
   public class VirtualMethodBaseClass { 
     public virtual string VirtualMethod() { return "virtual"; } 
@@ -948,13 +1171,453 @@ public abstract partial class AbstractClassWithMethods {
   public class VirtualMethodOverrideOverride : VirtualMethodBaseClass {
     public override string VirtualMethod() { return "override"; } 
   }
+  
+  public class ClassWithNullableMethods {
+    public ClassWithNullableMethods() {
+      Tracker = new ArrayList();
+    }
+    public ArrayList Tracker { get; set;}
+    public void Reset() { Tracker.Clear(); }
+    public Int16? Int16NullableProperty {get; set;}
+    public Int32? Int32NullableProperty {get; set;}
+    public Int64? Int64NullableProperty {get; set;}
+    public UInt16? UInt16NullableProperty {get; set;}
+    public UInt32? UInt32NullableProperty {get; set;}
+    public UInt64? UInt64NullableProperty {get; set;}
+    public Byte? ByteNullableProperty {get; set;}
+    public SByte? SByteNullableProperty {get; set;}
+    public Decimal? DecimalNullableProperty {get; set;}
+    public Single? SingleNullableProperty {get; set;}
+    public Double? DoubleNullableProperty {get; set;}
+    public Char? CharNullableProperty {get; set;}
+    public CustomEnum? CustomEnumNullableProperty {get; set;}
+    public Boolean? BooleanNullableProperty {get; set;}
+    
+    
+    public string Int16NullableArg(Int16? arg) { Tracker.Add(arg); return "Int16NullableArg"; }
+    public string Int32NullableArg(Int32? arg) { Tracker.Add(arg); return "Int32NullableArg"; }
+    public string Int64NullableArg(Int64? arg) { Tracker.Add(arg); return "Int64NullableArg"; }
+    public string UInt16NullableArg(UInt16? arg) { Tracker.Add(arg); return "UInt16NullableArg"; }
+    public string UInt32NullableArg(UInt32? arg) { Tracker.Add(arg); return "UInt32NullableArg"; }
+    public string UInt64NullableArg(UInt64? arg) { Tracker.Add(arg); return "UInt64NullableArg"; }
+    public string ByteNullableArg(Byte? arg) { Tracker.Add(arg); return "ByteNullableArg"; }
+    public string SByteNullableArg(SByte? arg) { Tracker.Add(arg); return "SByteNullableArg"; }
+    public string DecimalNullableArg(Decimal? arg) { Tracker.Add(arg); return "DecimalNullableArg"; }
+    public string SingleNullableArg(Single? arg) { Tracker.Add(arg); return "SingleNullableArg"; }
+    public string DoubleNullableArg(Double? arg) { Tracker.Add(arg); return "DoubleNullableArg"; }
+    public string CharNullableArg(Char? arg) { Tracker.Add(arg); return "CharNullableArg"; }
+    public string CustomEnumNullableArg(CustomEnum? arg) { Tracker.Add(arg); return "CustomEnumNullableArg"; }
+    public string BooleanNullableArg(Boolean? arg) { Tracker.Add(arg); return "BooleanNullableArg"; }
+  }
+
+  public class StaticClassWithNullableMethods {
+    private static ArrayList _tracker = new ArrayList();
+    public static ArrayList Tracker { get { return _tracker;}}
+    public static void Reset() { 
+      Tracker.Clear(); 
+      StaticInt16NullableProperty = null;
+      StaticInt32NullableProperty = null;
+      StaticInt64NullableProperty = null;
+      StaticUInt16NullableProperty = null;
+      StaticUInt32NullableProperty = null;
+      StaticUInt64NullableProperty = null;
+      StaticByteNullableProperty = null;
+      StaticSByteNullableProperty = null;
+      StaticDecimalNullableProperty = null;
+      StaticSingleNullableProperty = null;
+      StaticDoubleNullableProperty = null;
+      StaticCharNullableProperty = null;
+      StaticCustomEnumNullableProperty = null;
+      StaticBooleanNullableProperty = null;
+    }
+    
+    public static Int16? StaticInt16NullableProperty {get; set;}
+    public static Int32? StaticInt32NullableProperty {get; set;}
+    public static Int64? StaticInt64NullableProperty {get; set;}
+    public static UInt16? StaticUInt16NullableProperty {get; set;}
+    public static UInt32? StaticUInt32NullableProperty {get; set;}
+    public static UInt64? StaticUInt64NullableProperty {get; set;}
+    public static Byte? StaticByteNullableProperty {get; set;}
+    public static SByte? StaticSByteNullableProperty {get; set;}
+    public static Decimal? StaticDecimalNullableProperty {get; set;}
+    public static Single? StaticSingleNullableProperty {get; set;}
+    public static Double? StaticDoubleNullableProperty {get; set;}
+    public static Char? StaticCharNullableProperty {get; set;}
+    public static CustomEnum? StaticCustomEnumNullableProperty {get; set;}
+    public static Boolean? StaticBooleanNullableProperty {get; set;}
+    public static string StaticInt16NullableArg(Int16? arg) { Tracker.Add(arg); return "StaticInt16NullableArg"; }
+    public static string StaticInt32NullableArg(Int32? arg) { Tracker.Add(arg); return "StaticInt32NullableArg"; }
+    public static string StaticInt64NullableArg(Int64? arg) { Tracker.Add(arg); return "StaticInt64NullableArg"; }
+    public static string StaticUInt16NullableArg(UInt16? arg) { Tracker.Add(arg); return "StaticUInt16NullableArg"; }
+    public static string StaticUInt32NullableArg(UInt32? arg) { Tracker.Add(arg); return "StaticUInt32NullableArg"; }
+    public static string StaticUInt64NullableArg(UInt64? arg) { Tracker.Add(arg); return "StaticUInt64NullableArg"; }
+    public static string StaticByteNullableArg(Byte? arg) { Tracker.Add(arg); return "StaticByteNullableArg"; }
+    public static string StaticSByteNullableArg(SByte? arg) { Tracker.Add(arg); return "StaticSByteNullableArg"; }
+    public static string StaticDecimalNullableArg(Decimal? arg) { Tracker.Add(arg); return "StaticDecimalNullableArg"; }
+    public static string StaticSingleNullableArg(Single? arg) { Tracker.Add(arg); return "StaticSingleNullableArg"; }
+    public static string StaticDoubleNullableArg(Double? arg) { Tracker.Add(arg); return "StaticDoubleNullableArg"; }
+    public static string StaticCharNullableArg(Char? arg) { Tracker.Add(arg); return "StaticCharNullableArg"; }
+    public static string StaticCustomEnumNullableArg(CustomEnum? arg) { Tracker.Add(arg); return "StaticCustomEnumNullableArg"; }
+    public static string StaticBooleanNullableArg(Boolean? arg) { Tracker.Add(arg); return "StaticBooleanNullableArg"; }
+  }
+
+public class GenericTypeInference {
+    public static string Tx<T>(T x) {
+        return typeof(T).ToString();
+    }
+
+    public static string TxTy<T>(T x, T y) {
+        return typeof(T).ToString();
+    }
+
+    public static string TxTyTz<T>(T x, T y, T z) {
+        return typeof(T).ToString();
+    }
+
+    public static string TParamsArrx<T>(params T[] x) {
+        return typeof(T).ToString();
+    }
+
+    public static string TxTParamsArry<T>(T x, params T[] y) {
+        return typeof(T).ToString();
+    }
+
+    public static string TxClass<T>(T x) 
+        where T : class {
+        return typeof(T).ToString();
+    }
+
+    public static string TxStruct<T>(T x) 
+        where T : struct {
+        return typeof(T).ToString();
+    }
+
+    public static string TxIList<T>(T x) 
+        where T : IList {
+        return typeof(T).ToString();
+    }
+
+    public static string TxUyTConstrainedToU<T, U>(T x, U y)
+        where T : U {
+        return String.Format("{0}, {1}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public static string ObjxUyTConstrainedToU<T, U>(object x, U y)
+        where T : U {
+        return String.Format("{0}, {1}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public static string TxObjyTConstrainedToU<T, U>(T x, object y)
+        where T : U {
+        return String.Format("{0}, {1}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public static string TxUyVzTConstrainedToUConstrainedToV<T, U, V>(T x, U y, V z)
+        where T : U
+        where U : V {
+        return String.Format("{0}, {1}, {2}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public static string TxUyVzTConstrainedToUConstrainedToClass<T, U, V>(T x, U y, V z)
+        where T : U
+        where U : class {
+        return String.Format("{0}, {1}, {2}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public static string TxUyVzTConstrainedToUConstrainedToIList<T, U, V>(T x, U y, V z)
+        where T : U
+        where U : IList {
+        return String.Format("{0}, {1}, {2}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public static string TObjectx<T>(object x){
+        return typeof(T).ToString();
+    }
+
+    public static string TxObjecty<T, U>(T x, object y) {
+        return String.Format("{0}, {1}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public static string TxFuncTy<T>(T x, Func<T> y) {
+        return typeof(T).ToString();
+    }
+
+    public static string TxActionTy<T>(T x, Action<T> y) {
+        return typeof(T).ToString();
+    }
+
+    public static string TxIListTy<T>(T x, IList<T> y) {
+        return typeof(T).ToString();
+    }
+
+    public static string TxDictionaryTIListTy<T>(T x, Dictionary<T, IList<T>> y){
+        return typeof(T).ToString();
+    }
+
+    public static string TxIEnumerableTy<T>(T x, IEnumerable<T> y) {
+        return typeof(T).ToString();
+    }
+
+    public static string TxTConstrainedToIEnumerable<T>(T x) {
+        return typeof(T).ToString();
+    }
+
+    public static string TxUyTConstrainedToIListU<T, U>(T x, U y) {
+        return String.Format("{0}, {1}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public static string TxUy<T, U>(T x, U y) {
+        return String.Format("{0}, {1}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public static string IEnumerableTx<T>(IEnumerable<T> x) {
+        return typeof(T).ToString();
+    }
+
+    public static string IEnumerableTxFuncTBooly<T>(IEnumerable<T> x, Func<T, bool> y) {
+        return typeof(T).ToString();
+    }
+
+    public static string IEnumerableTxFuncTIntBooly<T>(IEnumerable<T> x, Func<T, bool> y) {
+        return typeof(T).ToString();
+    }
+
+    public static string ListTx<T>(List<T> x) {
+        return typeof(T).ToString();
+    }
+
+    public static string ListListTx<T>(List<List<T>> x) {
+        return typeof(T).ToString();
+    }
+
+    public static string DictionaryTTx<T>(Dictionary<T,T> x) {
+        return typeof(T).ToString();
+    }
+
+    public static string ListTxClass<T>(List<T> x)
+        where T : class {
+        return typeof(T).ToString();
+    }
+
+    public static string ListTxStruct<T>(List<T> x)
+        where T : struct {
+        return typeof(T).ToString();
+    }
+
+    public static string ListTxNew<T>(List<T> x)
+        where T : new() {
+        return typeof(T).ToString();
+    }
+    
+    public static string DictionaryDictionaryTTDictionaryTTx<T>(Dictionary<Dictionary<T,T>, Dictionary<T,T>> x) {
+        return typeof(T).ToString();
+    }
+
+    public static string FuncTBoolxStruct<T>(Func<T, bool> x) 
+        where T : struct {
+        return typeof(T).ToString();
+    }
+
+    public static string FuncTBoolxIList<T>(Func<T, bool> x)
+        where T : IList {
+        return typeof(T).ToString();
+    }
+
+    public static string IListTxIListTy<T>(IList<T> x, IList<T> y) {
+        return typeof(T).ToString();
+    }
+}
+public class SelfEnumerable : IEnumerable<SelfEnumerable> {
+    #region IEnumerable<Test> Members
+
+    IEnumerator<SelfEnumerable> IEnumerable<SelfEnumerable>.GetEnumerator() {
+        throw new NotImplementedException();
+    }
+
+    #endregion
+
+    #region IEnumerable Members
+
+    IEnumerator IEnumerable.GetEnumerator() {
+        throw new NotImplementedException();
+    }
+
+    #endregion
+}
+
+public class GenericTypeInferenceInstance {
+    public string Tx<T>(T x) {
+        return typeof(T).ToString();
+    }
+
+    public string TxTy<T>(T x, T y) {
+        return typeof(T).ToString();
+    }
+
+    public string TxTyTz<T>(T x, T y, T z) {
+        return typeof(T).ToString();
+    }
+
+    public string TParamsArrx<T>(params T[] x) {
+        return typeof(T).ToString();
+    }
+
+    public string TxTParamsArry<T>(T x, params T[] y) {
+        return typeof(T).ToString();
+    }
+
+    public string TxClass<T>(T x) 
+        where T : class {
+        return typeof(T).ToString();
+    }
+
+    public string TxStruct<T>(T x) 
+        where T : struct {
+        return typeof(T).ToString();
+    }
+
+    public string TxIList<T>(T x) 
+        where T : IList {
+        return typeof(T).ToString();
+    }
+
+    public string TxUyTConstrainedToU<T, U>(T x, U y)
+        where T : U {
+        return String.Format("{0}, {1}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public string ObjxUyTConstrainedToU<T, U>(object x, U y)
+        where T : U {
+        return String.Format("{0}, {1}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public string TxObjyTConstrainedToU<T, U>(T x, object y)
+        where T : U {
+        return String.Format("{0}, {1}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public string TxUyVzTConstrainedToUConstrainedToV<T, U, V>(T x, U y, V z)
+        where T : U
+        where U : V {
+        return String.Format("{0}, {1}, {2}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public string TxUyVzTConstrainedToUConstrainedToClass<T, U, V>(T x, U y, V z)
+        where T : U
+        where U : class {
+        return String.Format("{0}, {1}, {2}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public string TxUyVzTConstrainedToUConstrainedToIList<T, U, V>(T x, U y, V z)
+        where T : U
+        where U : IList {
+        return String.Format("{0}, {1}, {2}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public string TObjectx<T>(object x){
+        return typeof(T).ToString();
+    }
+
+    public string TxObjecty<T, U>(T x, object y) {
+        return String.Format("{0}, {1}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public string TxFuncTy<T>(T x, Func<T> y) {
+        return typeof(T).ToString();
+    }
+
+    public string TxActionTy<T>(T x, Action<T> y) {
+        return typeof(T).ToString();
+    }
+
+    public string TxIListTy<T>(T x, IList<T> y) {
+        return typeof(T).ToString();
+    }
+
+    public string TxDictionaryTIListTy<T>(T x, Dictionary<T, IList<T>> y){
+        return typeof(T).ToString();
+    }
+
+    public string TxIEnumerableTy<T>(T x, IEnumerable<T> y) {
+        return typeof(T).ToString();
+    }
+
+    public string TxTConstrainedToIEnumerable<T>(T x) {
+        return typeof(T).ToString();
+    }
+
+    public string TxUyTConstrainedToIListU<T, U>(T x, U y) {
+        return String.Format("{0}, {1}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public string TxUy<T, U>(T x, U y) {
+        return String.Format("{0}, {1}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public string IEnumerableTx<T>(IEnumerable<T> x) {
+        return typeof(T).ToString();
+    }
+
+    public string IEnumerableTxFuncTBooly<T>(IEnumerable<T> x, Func<T, bool> y) {
+        return typeof(T).ToString();
+    }
+
+    public string IEnumerableTxFuncTIntBooly<T>(IEnumerable<T> x, Func<T, bool> y) {
+        return typeof(T).ToString();
+    }
+
+    public string ListTx<T>(List<T> x) {
+        return typeof(T).ToString();
+    }
+
+    public string ListListTx<T>(List<List<T>> x) {
+        return typeof(T).ToString();
+    }
+
+    public string DictionaryTTx<T>(Dictionary<T,T> x) {
+        return typeof(T).ToString();
+    }
+
+    public string ListTxClass<T>(List<T> x)
+        where T : class {
+        return typeof(T).ToString();
+    }
+
+    public string ListTxStruct<T>(List<T> x)
+        where T : struct {
+        return typeof(T).ToString();
+    }
+
+    public string ListTxNew<T>(List<T> x)
+        where T : new() {
+        return typeof(T).ToString();
+    }
+    
+    public string DictionaryDictionaryTTDictionaryTTx<T>(Dictionary<Dictionary<T,T>, Dictionary<T,T>> x) {
+        return typeof(T).ToString();
+    }
+
+    public string FuncTBoolxStruct<T>(Func<T, bool> x) 
+        where T : struct {
+        return typeof(T).ToString();
+    }
+
+    public string FuncTBoolxIList<T>(Func<T, bool> x)
+        where T : IList {
+        return typeof(T).ToString();
+    }
+
+    public string IListTxIListTy<T>(IList<T> x, IList<T> y) {
+        return typeof(T).ToString();
+    }
+}
 #line 1 "./namespaces/fixtures/classes.rb"
 namespace NotEmptyNamespace {
     public class Foo {
       public static int Bar() { return 1; }
     }
   }
-#line 1 "./ruby/fixtures/classes.rb"
+#line 14 "./ruby/fixtures/classes.rb"
 namespace CLRNew {
     public class Ctor {
       public int Tracker {get; set;}
@@ -965,31 +1628,127 @@ namespace CLRNew {
     }
   }
   public class PublicNameHolder {
-    public string a() { return "a";}
-    public string A() { return "A";}
-    public string Unique() { return "Unique"; }
-    public string snake_case() {return "snake_case";}
-    public string CamelCase() {return "CamelCase";}
-    public string Mixed_Snake_case() {return "Mixed_Snake_case";}
-    public string CAPITAL() { return "CAPITAL";}
-    public string PartialCapitalID() { return "PartialCapitalID";}
-    public string PartialCapitalId() { return "PartialCapitalId";}
-    public string __LeadingCamelCase() { return "__LeadingCamelCase";}
-    public string __leading_snake_case() { return "__leading_snake_case";}
-    public string foNBar() { return "foNBar"; }
-    public string fNNBar() { return "fNNBar"; }
-    public string NNNBar() { return "NNNBar"; }
-    public string MyUIApp() { return "MyUIApp"; }
-    public string MyIdYA() { return "MyIdYA"; }
-    public string NaN() { return "NaN"; }
-    public string NaNa() { return "NaNa"; }
+    public string a(){return "a";}
+    public string A(){return "A";}
+    public string Unique(){return "Unique";}
+    public string snake_case(){return "snake_case";}
+    public string CamelCase(){return "CamelCase";}
+    public string Mixed_Snake_case(){return "Mixed_Snake_case";}
+    public string CAPITAL(){return "CAPITAL";}
+    public string PartialCapitalID(){return "PartialCapitalID";}
+    public string PartialCapitalId(){return "PartialCapitalId";}
+    public string __LeadingCamelCase(){return "__LeadingCamelCase";}
+    public string __leading_snake_case(){return "__leading_snake_case";}
+    public string foNBar(){return "foNBar";}
+    public string fNNBar(){return "fNNBar";}
+    public string NNNBar(){return "NNNBar";}
+    public string MyUIApp(){return "MyUIApp";}
+    public string MyIdYA(){return "MyIdYA";}
+    public string NaN(){return "NaN";}
+    public string NaNa(){return "NaNa";}
+    
   }
 
-  public class SubPublicNameHolder : PublicNameHolder {
+  public class StaticNameHolder {
+    public static string a(){return "a";}
+    public static string A(){return "A";}
+    public static string Unique(){return "Unique";}
+    public static string snake_case(){return "snake_case";}
+    public static string CamelCase(){return "CamelCase";}
+    public static string Mixed_Snake_case(){return "Mixed_Snake_case";}
+    public static string CAPITAL(){return "CAPITAL";}
+    public static string PartialCapitalID(){return "PartialCapitalID";}
+    public static string PartialCapitalId(){return "PartialCapitalId";}
+    public static string __LeadingCamelCase(){return "__LeadingCamelCase";}
+    public static string __leading_snake_case(){return "__leading_snake_case";}
+    public static string foNBar(){return "foNBar";}
+    public static string fNNBar(){return "fNNBar";}
+    public static string NNNBar(){return "NNNBar";}
+    public static string MyUIApp(){return "MyUIApp";}
+    public static string MyIdYA(){return "MyIdYA";}
+    public static string NaN(){return "NaN";}
+    public static string NaNa(){return "NaNa";}
+    
   }
+
+  public class SubPublicNameHolder : PublicNameHolder {}
+
+  public class SubStaticNameHolder : StaticNameHolder {}
+    
+  public class MangledBase {}
+  public class NotMangled : MangledBase {
+  public string Class(){return "Class";}
+    public string Clone(){return "Clone";}
+    public string Display(){return "Display";}
+    public string Dup(){return "Dup";}
+    public string Extend(){return "Extend";}
+    public string Freeze(){return "Freeze";}
+    public string Hash(){return "Hash";}
+    public string Initialize(){return "Initialize";}
+    public string Inspect(){return "Inspect";}
+    public string InstanceEval(){return "InstanceEval";}
+    public string InstanceExec(){return "InstanceExec";}
+    public string InstanceVariableGet(){return "InstanceVariableGet";}
+    public string InstanceVariableSet(){return "InstanceVariableSet";}
+    public string InstanceVariables(){return "InstanceVariables";}
+    public string Method(){return "Method";}
+    public string Methods(){return "Methods";}
+    public string ObjectId(){return "ObjectId";}
+    public string PrivateMethods(){return "PrivateMethods";}
+    public string ProtectedMethods(){return "ProtectedMethods";}
+    public string PublicMethods(){return "PublicMethods";}
+    public string Send(){return "Send";}
+    public string SingletonMethods(){return "SingletonMethods";}
+    public string Taint(){return "Taint";}
+    public string Untaint(){return "Untaint";}
+    
+  }
+
+  public class SubNotMangled : NotMangled {}
+  
+  public class StaticNotMangled : MangledBase {
+  public static string Class(){return "Class";}
+    public static string Clone(){return "Clone";}
+    public static string Display(){return "Display";}
+    public static string Dup(){return "Dup";}
+    public static string Extend(){return "Extend";}
+    public static string Freeze(){return "Freeze";}
+    public static string Hash(){return "Hash";}
+    public static string Initialize(){return "Initialize";}
+    public static string Inspect(){return "Inspect";}
+    public static string InstanceEval(){return "InstanceEval";}
+    public static string InstanceExec(){return "InstanceExec";}
+    public static string InstanceVariableGet(){return "InstanceVariableGet";}
+    public static string InstanceVariableSet(){return "InstanceVariableSet";}
+    public static string InstanceVariables(){return "InstanceVariables";}
+    public static string Method(){return "Method";}
+    public static string Methods(){return "Methods";}
+    public static string ObjectId(){return "ObjectId";}
+    public static string PrivateMethods(){return "PrivateMethods";}
+    public static string ProtectedMethods(){return "ProtectedMethods";}
+    public static string PublicMethods(){return "PublicMethods";}
+    public static string Send(){return "Send";}
+    public static string SingletonMethods(){return "SingletonMethods";}
+    public static string Taint(){return "Taint";}
+    public static string Untaint(){return "Untaint";}
+    
+  }
+
+  public class SubStaticNotMangled : StaticNotMangled {}
 #line 1 "./struct/fixtures/classes.rb"
 public struct EmptyStruct {}
   public struct CStruct { public int m1() {return 1;}}
+  public struct StructWithMethods {
+    private short _shortField;
+    public short ShortField {
+      get { 
+        return _shortField;
+      }
+      set {
+        _shortField = value;
+      }
+    }
+  }
 #line 1 "./typegroup/fixtures/classes.rb"
 public class StaticMethodTypeGroup {
     public static int Return(int retval) { return retval; }

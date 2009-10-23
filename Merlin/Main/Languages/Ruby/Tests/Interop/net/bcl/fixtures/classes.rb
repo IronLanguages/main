@@ -177,6 +177,7 @@ no_csc do
 
     class TestListEnumerator
       include System::Collections::IEnumerator
+      attr_reader :list
       def initialize(list)
         @list = list
         @position = -1

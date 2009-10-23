@@ -6,4 +6,8 @@ describe "Float#-" do
     (2_560_496.1691 - bignum_value).should be_close(-9223372036852215808.000, TOLERANCE)
     (5.5 - 5.5).should be_close(0.0,TOLERANCE)
   end
+
+  it "allows large operands without error" do
+    lambda {1.0 - 2**50000}.should_not raise_error
+  end
 end

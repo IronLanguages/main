@@ -19,7 +19,11 @@ describe "StringScanner#string=" do
   end
 
   it "changes the string being scanned to the argument and resets the scanner" do
-    @s.string = "Hello world"
+    @s.scan(/\w+/)
+    @s.pos.should == 4
+    a = "Hello world"
+    @s.string = a
     @s.string.should == "Hello world"
+    @s.pos.should == 0
   end
 end

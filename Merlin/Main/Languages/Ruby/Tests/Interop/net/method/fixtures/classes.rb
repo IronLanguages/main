@@ -2,6 +2,7 @@ require File.dirname(__FILE__) + "/../../bcl/fixtures/classes"
 reference "System.dll"
 csc <<-EOL
 using Microsoft.Scripting.Math;
+using Microsoft.Scripting.Utils;
 using System.Collections.Generic;
 EOL
 def method_block(type, prefix, suffix = "", &blk)
@@ -224,8 +225,11 @@ csc <<-EOL
     protected string ProtectedMethod() { return "protected";}
     private string PrivateMethod() { return "private";}
     public ArrayList Tracker { get; set;}
+    private static ArrayList _staticTracker = new ArrayList();
+    public static ArrayList StaticTracker { get { return _staticTracker;}}
     #{@methods_string}
-    public void Reset() { Tracker = new ArrayList();}
+    public void Reset() { Tracker.Clear(); }
+    public static void StaticReset() { StaticTracker.Clear(); }
     public int SummingMethod(int a, int b){
       return a+b;
     }
@@ -315,7 +319,126 @@ csc <<-EOL
     // Default Value
     public string DefaultInt32Arg([DefaultParameterValue(10)] Int32 arg) { Tracker.Add(arg); return "DefaultInt32Arg";}
     public string Int32ArgDefaultInt32Arg(Int32 arg, [DefaultParameterValue(10)] Int32 arg2) { Tracker.Add(arg); Tracker.Add(arg2); return "Int32ArgDefaultInt32Arg";}
+
+    // static
+    public static string StaticMethodNoArg() { StaticTracker.Add(null); return "StaticMethodNoArg";}
+    public static string StaticMethodClassWithMethodsArg(ClassWithMethods arg) {StaticTracker.Add(arg); return "StaticMethodClassWithMethodsArg";}
+    public string ClassWithMethodsArg(ClassWithMethods arg) {Tracker.Add(arg); return "ClassWithMethodsArg";}
+
+    // generic method
+    public string GenericArg<T>(T arg) {Tracker.Add(arg); return String.Format("GenericArg[{0}]", typeof(T));}
+
+    // out on non-byref
+    public string OutNonByRefInt32Arg([Out] int arg) {arg = 1; Tracker.Add(arg); return "OutNonByRefInt32Arg";}
+    
+    // what does passing in nil mean?
+    public string ParamsIInterfaceArrTestArg(params IInterface[] args) { Tracker.Add(args == null); Tracker.Add(args); return "ParamsIInterfaceArrTestArg";}
+
+    // ref, out, ...
+    public string RefOutInt32Args(ref int arg1, out int arg2, int arg3) {arg1=arg2=arg3; Tracker.Add(arg1); Tracker.Add(arg2); Tracker.Add(arg3); return "RefOutInt32Args";}
+    public string RefInt32OutArgs(ref int arg1, int arg2, out int arg3) {arg3=arg1=arg2; Tracker.Add(arg1); Tracker.Add(arg2); Tracker.Add(arg3); return "RefInt32OutArgs";}
+    public string Int32RefOutArgs(int arg1, ref int arg2, out int arg3) {arg2=arg3=arg1; Tracker.Add(arg1); Tracker.Add(arg2); Tracker.Add(arg3); return "Int32RefOutArgs";}
+
+    // eight args
+    public string EightArgs(int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8) {
+      Tracker.Add(arg1);
+      Tracker.Add(arg2);
+      Tracker.Add(arg3);
+      Tracker.Add(arg4);
+      Tracker.Add(arg5);
+      Tracker.Add(arg6);
+      Tracker.Add(arg7);
+      Tracker.Add(arg8);
+      return "EightArgs";
+    }
+
+    public string IDictionaryOfIntIntArg(IDictionary<int, int> arg){ Tracker.Add(arg); return "IDictionaryOfIntIntArg";}
+    public string HashtableArg(Hashtable arg) { Tracker.Add(arg); return "HashtableArg";}
+    public string ListOfIntArg(List<int> arg) { Tracker.Add(arg); return "ListOfIntArg";}
+
+    // iterator support
+    public string IEnumerableIteratingArg(IEnumerable arg) {
+      IEnumerator ienum = arg.GetEnumerator(); 
+      while (ienum.MoveNext()) 
+        Tracker.Add(ienum.Current); 
+      return "IEnumerableIteratingArg";
+    }
+    public string IEnumeratorIteratingArg(IEnumerator arg) {
+      while (arg.MoveNext())
+        Tracker.Add(arg.Current);
+      return "IEnumeratorIteratingArg";
+    }
+    public string IListArg(IList arg) { Tracker.Add(arg); Tracker.Add(arg.Count); return "IListArg";}
+
+    public string IEnumerableOfCharIteratingArg(IEnumerable<Char> arg) {
+      IEnumerator ienum = arg.GetEnumerator(); 
+      while (ienum.MoveNext()) 
+        Tracker.Add(ienum.Current); 
+      return "IEnumerableOfCharIteratingArg";
+    }
+    public string IEnumeratorOfCharIteratingArg(IEnumerator<Char> arg) {
+      while (arg.MoveNext())
+        Tracker.Add(arg.Current);
+      return "IEnumeratorOfCharIteratingArg";
+    }
+    public string IListOfCharArg(IList<Char> arg) { Tracker.Add(arg); Tracker.Add(arg.Count); return "IListOfCharArg";}
+
+    public string IEnumerableOfIntIteratingArg(IEnumerable<int> arg) {
+      IEnumerator ienum = arg.GetEnumerator(); 
+      while (ienum.MoveNext()) 
+        Tracker.Add(ienum.Current); 
+      return "IEnumerableOfIntIteratingArg";
+    }
+    public string IEnumeratorOfIntIteratingArg(IEnumerator<int> arg) {
+      while (arg.MoveNext())
+        Tracker.Add(arg.Current);
+      return "IEnumeratorOfIntIteratingArg";
+    }
+    public string IListOfIntArg2(IList<int> arg) { Tracker.Add(arg); Tracker.Add(arg.Count); return "IListOfIntArg2";}
+
+    // delegate
+    public string DelegateArg(Delegate arg) {
+      IntIntDelegate d = (IntIntDelegate)arg;
+      Tracker.Add(d(10));
+      return "DelegateArg";
+    }
+
+    public string IntIntDelegateArg(IntIntDelegate arg) { Tracker.Add(arg(10)); return "IntIntDelegateArg";}
+
+    // byte array
+    public string RefByteArrArg(ref Byte[] arg) { Tracker.Add(arg); return "RefByteArrArg";}
+    public string ByteArrRefByteArrArg(Byte[] input, ref Byte[] arg) { arg = input; Tracker.Add(arg); return "ByteArrRefByteArrArg";}
+
+    // keywords
+    public string KeywordsArgs(int arg1, object arg2, ref string arg3) { arg3 = arg3.ToUpper(); Tracker.Add(arg3); return "KeywordsArgs";}
+
+    //more ref/out
+    public string RefStructImplementsIInterfaceArg(ref StructImplementsIInterface arg) { arg = new StructImplementsIInterface(); Tracker.Add(arg); return "RefStructImplementsIInterfaceArg";}
+    public string OutStructImplementsIInterfaceArg(out StructImplementsIInterface arg) { arg = new StructImplementsIInterface(); Tracker.Add(arg); return "OutStructImplementsIInterfaceArg";}
+    public string RefImplementsIInterfaceArg(ref ImplementsIInterface arg) { Tracker.Add(arg); return "RefImplementsIInterfaceArg";}
+    public string OutImplementsIInterfaceArg(out ImplementsIInterface arg) { arg = new ImplementsIInterface(); Tracker.Add(arg); return "OutImplementsIInterfaceArg";}
+    public string RefBooleanArg(ref Boolean arg) { Tracker.Add(arg); return "RefBooleanArg";}
+    public string OutBooleanArg(out Boolean arg) { arg = true; Tracker.Add(arg); return "OutBooleanArg";}
+    public string RefInt32Int32OutInt32Arg(ref int arg1, int arg2, out int arg3) { 
+      arg3 = arg1 + arg2;
+      arg1 = 100;
+      Tracker.Add(arg1);
+      Tracker.Add(arg2);
+      Tracker.Add(arg3);
+      return "RefInt32Int32OutInt32Arg";
+    }
   }
+  public partial class GenericClassWithMethods<K> {
+    public ArrayList Tracker { get; set;}
+    public GenericClassWithMethods() {
+      Tracker = new ArrayList();
+    }
+
+    public void Reset() { Tracker.Clear();}
+    public string GenericArg(K arg) { Tracker.Add(arg); return "GenericArg";}
+  }
+
+  public delegate int IntIntDelegate(int arg);
 
   public class VirtualMethodBaseClass { 
     public virtual string VirtualMethod() { return "virtual"; } 
@@ -326,9 +449,451 @@ csc <<-EOL
   public class VirtualMethodOverrideOverride : VirtualMethodBaseClass {
     public override string VirtualMethod() { return "override"; } 
   }
+  
+  public class ClassWithNullableMethods {
+    public ClassWithNullableMethods() {
+      Tracker = new ArrayList();
+    }
+    public ArrayList Tracker { get; set;}
+    public void Reset() { Tracker.Clear(); }
+    public Int16? Int16NullableProperty {get; set;}
+    public Int32? Int32NullableProperty {get; set;}
+    public Int64? Int64NullableProperty {get; set;}
+    public UInt16? UInt16NullableProperty {get; set;}
+    public UInt32? UInt32NullableProperty {get; set;}
+    public UInt64? UInt64NullableProperty {get; set;}
+    public Byte? ByteNullableProperty {get; set;}
+    public SByte? SByteNullableProperty {get; set;}
+    public Decimal? DecimalNullableProperty {get; set;}
+    public Single? SingleNullableProperty {get; set;}
+    public Double? DoubleNullableProperty {get; set;}
+    public Char? CharNullableProperty {get; set;}
+    public CustomEnum? CustomEnumNullableProperty {get; set;}
+    public Boolean? BooleanNullableProperty {get; set;}
+    
+    
+    public string Int16NullableArg(Int16? arg) { Tracker.Add(arg); return "Int16NullableArg"; }
+    public string Int32NullableArg(Int32? arg) { Tracker.Add(arg); return "Int32NullableArg"; }
+    public string Int64NullableArg(Int64? arg) { Tracker.Add(arg); return "Int64NullableArg"; }
+    public string UInt16NullableArg(UInt16? arg) { Tracker.Add(arg); return "UInt16NullableArg"; }
+    public string UInt32NullableArg(UInt32? arg) { Tracker.Add(arg); return "UInt32NullableArg"; }
+    public string UInt64NullableArg(UInt64? arg) { Tracker.Add(arg); return "UInt64NullableArg"; }
+    public string ByteNullableArg(Byte? arg) { Tracker.Add(arg); return "ByteNullableArg"; }
+    public string SByteNullableArg(SByte? arg) { Tracker.Add(arg); return "SByteNullableArg"; }
+    public string DecimalNullableArg(Decimal? arg) { Tracker.Add(arg); return "DecimalNullableArg"; }
+    public string SingleNullableArg(Single? arg) { Tracker.Add(arg); return "SingleNullableArg"; }
+    public string DoubleNullableArg(Double? arg) { Tracker.Add(arg); return "DoubleNullableArg"; }
+    public string CharNullableArg(Char? arg) { Tracker.Add(arg); return "CharNullableArg"; }
+    public string CustomEnumNullableArg(CustomEnum? arg) { Tracker.Add(arg); return "CustomEnumNullableArg"; }
+    public string BooleanNullableArg(Boolean? arg) { Tracker.Add(arg); return "BooleanNullableArg"; }
+  }
+
+  public class StaticClassWithNullableMethods {
+    private static ArrayList _tracker = new ArrayList();
+    public static ArrayList Tracker { get { return _tracker;}}
+    public static void Reset() { 
+      Tracker.Clear(); 
+      StaticInt16NullableProperty = null;
+      StaticInt32NullableProperty = null;
+      StaticInt64NullableProperty = null;
+      StaticUInt16NullableProperty = null;
+      StaticUInt32NullableProperty = null;
+      StaticUInt64NullableProperty = null;
+      StaticByteNullableProperty = null;
+      StaticSByteNullableProperty = null;
+      StaticDecimalNullableProperty = null;
+      StaticSingleNullableProperty = null;
+      StaticDoubleNullableProperty = null;
+      StaticCharNullableProperty = null;
+      StaticCustomEnumNullableProperty = null;
+      StaticBooleanNullableProperty = null;
+    }
+    
+    public static Int16? StaticInt16NullableProperty {get; set;}
+    public static Int32? StaticInt32NullableProperty {get; set;}
+    public static Int64? StaticInt64NullableProperty {get; set;}
+    public static UInt16? StaticUInt16NullableProperty {get; set;}
+    public static UInt32? StaticUInt32NullableProperty {get; set;}
+    public static UInt64? StaticUInt64NullableProperty {get; set;}
+    public static Byte? StaticByteNullableProperty {get; set;}
+    public static SByte? StaticSByteNullableProperty {get; set;}
+    public static Decimal? StaticDecimalNullableProperty {get; set;}
+    public static Single? StaticSingleNullableProperty {get; set;}
+    public static Double? StaticDoubleNullableProperty {get; set;}
+    public static Char? StaticCharNullableProperty {get; set;}
+    public static CustomEnum? StaticCustomEnumNullableProperty {get; set;}
+    public static Boolean? StaticBooleanNullableProperty {get; set;}
+    public static string StaticInt16NullableArg(Int16? arg) { Tracker.Add(arg); return "StaticInt16NullableArg"; }
+    public static string StaticInt32NullableArg(Int32? arg) { Tracker.Add(arg); return "StaticInt32NullableArg"; }
+    public static string StaticInt64NullableArg(Int64? arg) { Tracker.Add(arg); return "StaticInt64NullableArg"; }
+    public static string StaticUInt16NullableArg(UInt16? arg) { Tracker.Add(arg); return "StaticUInt16NullableArg"; }
+    public static string StaticUInt32NullableArg(UInt32? arg) { Tracker.Add(arg); return "StaticUInt32NullableArg"; }
+    public static string StaticUInt64NullableArg(UInt64? arg) { Tracker.Add(arg); return "StaticUInt64NullableArg"; }
+    public static string StaticByteNullableArg(Byte? arg) { Tracker.Add(arg); return "StaticByteNullableArg"; }
+    public static string StaticSByteNullableArg(SByte? arg) { Tracker.Add(arg); return "StaticSByteNullableArg"; }
+    public static string StaticDecimalNullableArg(Decimal? arg) { Tracker.Add(arg); return "StaticDecimalNullableArg"; }
+    public static string StaticSingleNullableArg(Single? arg) { Tracker.Add(arg); return "StaticSingleNullableArg"; }
+    public static string StaticDoubleNullableArg(Double? arg) { Tracker.Add(arg); return "StaticDoubleNullableArg"; }
+    public static string StaticCharNullableArg(Char? arg) { Tracker.Add(arg); return "StaticCharNullableArg"; }
+    public static string StaticCustomEnumNullableArg(CustomEnum? arg) { Tracker.Add(arg); return "StaticCustomEnumNullableArg"; }
+    public static string StaticBooleanNullableArg(Boolean? arg) { Tracker.Add(arg); return "StaticBooleanNullableArg"; }
+  }
+
+public class GenericTypeInference {
+    public static string Tx<T>(T x) {
+        return typeof(T).ToString();
+    }
+
+    public static string TxTy<T>(T x, T y) {
+        return typeof(T).ToString();
+    }
+
+    public static string TxTyTz<T>(T x, T y, T z) {
+        return typeof(T).ToString();
+    }
+
+    public static string TParamsArrx<T>(params T[] x) {
+        return typeof(T).ToString();
+    }
+
+    public static string TxTParamsArry<T>(T x, params T[] y) {
+        return typeof(T).ToString();
+    }
+
+    public static string TxClass<T>(T x) 
+        where T : class {
+        return typeof(T).ToString();
+    }
+
+    public static string TxStruct<T>(T x) 
+        where T : struct {
+        return typeof(T).ToString();
+    }
+
+    public static string TxIList<T>(T x) 
+        where T : IList {
+        return typeof(T).ToString();
+    }
+
+    public static string TxUyTConstrainedToU<T, U>(T x, U y)
+        where T : U {
+        return String.Format("{0}, {1}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public static string ObjxUyTConstrainedToU<T, U>(object x, U y)
+        where T : U {
+        return String.Format("{0}, {1}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public static string TxObjyTConstrainedToU<T, U>(T x, object y)
+        where T : U {
+        return String.Format("{0}, {1}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public static string TxUyVzTConstrainedToUConstrainedToV<T, U, V>(T x, U y, V z)
+        where T : U
+        where U : V {
+        return String.Format("{0}, {1}, {2}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public static string TxUyVzTConstrainedToUConstrainedToClass<T, U, V>(T x, U y, V z)
+        where T : U
+        where U : class {
+        return String.Format("{0}, {1}, {2}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public static string TxUyVzTConstrainedToUConstrainedToIList<T, U, V>(T x, U y, V z)
+        where T : U
+        where U : IList {
+        return String.Format("{0}, {1}, {2}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public static string TObjectx<T>(object x){
+        return typeof(T).ToString();
+    }
+
+    public static string TxObjecty<T, U>(T x, object y) {
+        return String.Format("{0}, {1}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public static string TxFuncTy<T>(T x, Func<T> y) {
+        return typeof(T).ToString();
+    }
+
+    public static string TxActionTy<T>(T x, Action<T> y) {
+        return typeof(T).ToString();
+    }
+
+    public static string TxIListTy<T>(T x, IList<T> y) {
+        return typeof(T).ToString();
+    }
+
+    public static string TxDictionaryTIListTy<T>(T x, Dictionary<T, IList<T>> y){
+        return typeof(T).ToString();
+    }
+
+    public static string TxIEnumerableTy<T>(T x, IEnumerable<T> y) {
+        return typeof(T).ToString();
+    }
+
+    public static string TxTConstrainedToIEnumerable<T>(T x) {
+        return typeof(T).ToString();
+    }
+
+    public static string TxUyTConstrainedToIListU<T, U>(T x, U y) {
+        return String.Format("{0}, {1}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public static string TxUy<T, U>(T x, U y) {
+        return String.Format("{0}, {1}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public static string IEnumerableTx<T>(IEnumerable<T> x) {
+        return typeof(T).ToString();
+    }
+
+    public static string IEnumerableTxFuncTBooly<T>(IEnumerable<T> x, Func<T, bool> y) {
+        return typeof(T).ToString();
+    }
+
+    public static string IEnumerableTxFuncTIntBooly<T>(IEnumerable<T> x, Func<T, bool> y) {
+        return typeof(T).ToString();
+    }
+
+    public static string ListTx<T>(List<T> x) {
+        return typeof(T).ToString();
+    }
+
+    public static string ListListTx<T>(List<List<T>> x) {
+        return typeof(T).ToString();
+    }
+
+    public static string DictionaryTTx<T>(Dictionary<T,T> x) {
+        return typeof(T).ToString();
+    }
+
+    public static string ListTxClass<T>(List<T> x)
+        where T : class {
+        return typeof(T).ToString();
+    }
+
+    public static string ListTxStruct<T>(List<T> x)
+        where T : struct {
+        return typeof(T).ToString();
+    }
+
+    public static string ListTxNew<T>(List<T> x)
+        where T : new() {
+        return typeof(T).ToString();
+    }
+    
+    public static string DictionaryDictionaryTTDictionaryTTx<T>(Dictionary<Dictionary<T,T>, Dictionary<T,T>> x) {
+        return typeof(T).ToString();
+    }
+
+    public static string FuncTBoolxStruct<T>(Func<T, bool> x) 
+        where T : struct {
+        return typeof(T).ToString();
+    }
+
+    public static string FuncTBoolxIList<T>(Func<T, bool> x)
+        where T : IList {
+        return typeof(T).ToString();
+    }
+
+    public static string IListTxIListTy<T>(IList<T> x, IList<T> y) {
+        return typeof(T).ToString();
+    }
+}
+public class SelfEnumerable : IEnumerable<SelfEnumerable> {
+    #region IEnumerable<Test> Members
+
+    IEnumerator<SelfEnumerable> IEnumerable<SelfEnumerable>.GetEnumerator() {
+        throw new NotImplementedException();
+    }
+
+    #endregion
+
+    #region IEnumerable Members
+
+    IEnumerator IEnumerable.GetEnumerator() {
+        throw new NotImplementedException();
+    }
+
+    #endregion
+}
+
+public class GenericTypeInferenceInstance {
+    public string Tx<T>(T x) {
+        return typeof(T).ToString();
+    }
+
+    public string TxTy<T>(T x, T y) {
+        return typeof(T).ToString();
+    }
+
+    public string TxTyTz<T>(T x, T y, T z) {
+        return typeof(T).ToString();
+    }
+
+    public string TParamsArrx<T>(params T[] x) {
+        return typeof(T).ToString();
+    }
+
+    public string TxTParamsArry<T>(T x, params T[] y) {
+        return typeof(T).ToString();
+    }
+
+    public string TxClass<T>(T x) 
+        where T : class {
+        return typeof(T).ToString();
+    }
+
+    public string TxStruct<T>(T x) 
+        where T : struct {
+        return typeof(T).ToString();
+    }
+
+    public string TxIList<T>(T x) 
+        where T : IList {
+        return typeof(T).ToString();
+    }
+
+    public string TxUyTConstrainedToU<T, U>(T x, U y)
+        where T : U {
+        return String.Format("{0}, {1}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public string ObjxUyTConstrainedToU<T, U>(object x, U y)
+        where T : U {
+        return String.Format("{0}, {1}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public string TxObjyTConstrainedToU<T, U>(T x, object y)
+        where T : U {
+        return String.Format("{0}, {1}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public string TxUyVzTConstrainedToUConstrainedToV<T, U, V>(T x, U y, V z)
+        where T : U
+        where U : V {
+        return String.Format("{0}, {1}, {2}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public string TxUyVzTConstrainedToUConstrainedToClass<T, U, V>(T x, U y, V z)
+        where T : U
+        where U : class {
+        return String.Format("{0}, {1}, {2}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public string TxUyVzTConstrainedToUConstrainedToIList<T, U, V>(T x, U y, V z)
+        where T : U
+        where U : IList {
+        return String.Format("{0}, {1}, {2}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public string TObjectx<T>(object x){
+        return typeof(T).ToString();
+    }
+
+    public string TxObjecty<T, U>(T x, object y) {
+        return String.Format("{0}, {1}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public string TxFuncTy<T>(T x, Func<T> y) {
+        return typeof(T).ToString();
+    }
+
+    public string TxActionTy<T>(T x, Action<T> y) {
+        return typeof(T).ToString();
+    }
+
+    public string TxIListTy<T>(T x, IList<T> y) {
+        return typeof(T).ToString();
+    }
+
+    public string TxDictionaryTIListTy<T>(T x, Dictionary<T, IList<T>> y){
+        return typeof(T).ToString();
+    }
+
+    public string TxIEnumerableTy<T>(T x, IEnumerable<T> y) {
+        return typeof(T).ToString();
+    }
+
+    public string TxTConstrainedToIEnumerable<T>(T x) {
+        return typeof(T).ToString();
+    }
+
+    public string TxUyTConstrainedToIListU<T, U>(T x, U y) {
+        return String.Format("{0}, {1}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public string TxUy<T, U>(T x, U y) {
+        return String.Format("{0}, {1}", typeof(T).ToString(), typeof(U).ToString());
+    }
+
+    public string IEnumerableTx<T>(IEnumerable<T> x) {
+        return typeof(T).ToString();
+    }
+
+    public string IEnumerableTxFuncTBooly<T>(IEnumerable<T> x, Func<T, bool> y) {
+        return typeof(T).ToString();
+    }
+
+    public string IEnumerableTxFuncTIntBooly<T>(IEnumerable<T> x, Func<T, bool> y) {
+        return typeof(T).ToString();
+    }
+
+    public string ListTx<T>(List<T> x) {
+        return typeof(T).ToString();
+    }
+
+    public string ListListTx<T>(List<List<T>> x) {
+        return typeof(T).ToString();
+    }
+
+    public string DictionaryTTx<T>(Dictionary<T,T> x) {
+        return typeof(T).ToString();
+    }
+
+    public string ListTxClass<T>(List<T> x)
+        where T : class {
+        return typeof(T).ToString();
+    }
+
+    public string ListTxStruct<T>(List<T> x)
+        where T : struct {
+        return typeof(T).ToString();
+    }
+
+    public string ListTxNew<T>(List<T> x)
+        where T : new() {
+        return typeof(T).ToString();
+    }
+    
+    public string DictionaryDictionaryTTDictionaryTTx<T>(Dictionary<Dictionary<T,T>, Dictionary<T,T>> x) {
+        return typeof(T).ToString();
+    }
+
+    public string FuncTBoolxStruct<T>(Func<T, bool> x) 
+        where T : struct {
+        return typeof(T).ToString();
+    }
+
+    public string FuncTBoolxIList<T>(Func<T, bool> x)
+        where T : IList {
+        return typeof(T).ToString();
+    }
+
+    public string IListTxIListTy<T>(IList<T> x, IList<T> y) {
+        return typeof(T).ToString();
+    }
+}
 EOL
   
 no_csc do
+  include System::Collections
+  include System::Collections::Generic
   TE = TypeError
   AE = ArgumentError
   OE = System::OverflowException
@@ -337,8 +902,9 @@ no_csc do
   SAO = System::Array[Object]
   SAI = System::Array[IInterface]
   SAC = System::Array[CStruct]
-  DObjObj = System::Collections::Generic::Dictionary[Object, Object]
-  DIntStr = System::Collections::Generic::Dictionary[Fixnum, System::String]
+  DObjObj = Dictionary[Object, Object]
+  DIntStr = Dictionary[Fixnum, System::String]
+  DIntInt = Dictionary[Fixnum, Fixnum]
   module BindingSpecs
     class ImplementsEnumerable
       include Enumerable
@@ -403,96 +969,184 @@ no_csc do
         def to_str; "to_str" end
       end
     end
-  end
+    
+    class TestListOfInt
+      include IEnumerable.of(Fixnum)
+      def initialize
+        @store = []
+      end
 
-  class Helper
-    def self.run_matrix(results, input)
-      results[:OutInt32Arg] ||= TE
-      results.each do |meth, result|
-        it "binds '#{meth}' for '#{input}' with '#{result.to_s}' (ClassWithMethods)" do
-          meth_call = (input == "NoArg" ? lambda { @target.send(meth)} : lambda {@target.send(meth, @values[input])})
-          if result.class == Class && result < Exception
-            meth_call.should raise_error result
-          else 
-            res, ref = meth_call.call
-            res.should == result
-          end
+      def get_enumerator
+        TestListEnumeratorOfInt.new(@store)
+      end
+
+      def <<(val)
+        @store << val
+        self
+      end
+
+      class TestListEnumeratorOfInt
+        include IEnumerator.of(Fixnum)
+        attr_reader :list
+        def initialize(list)
+          @list = list
+          @position = -1
         end
-      
-        it "binds '#{meth}' for '#{input}' with '#{result.to_s}' (RubyClassWithMethods)" do
-          meth_call = (input == "NoArg" ? lambda { @target2.send(meth)} : lambda {@target2.send(meth, @values[input])})
-          if result.class == Class && result < Exception
-            meth_call.should raise_error result
-          else 
-            res, ref = meth_call.call
-            res.should == result
-          end
+
+        def move_next
+          @position += 1
+          valid?
         end
-      
-        next if result.class == Class && result < Exception
-        
-        it "passes the correct input (#{input}) into method (#{meth}) (ClassWithMethods)" do
-          value = @values[input]
-          meth_call = (input == "NoArg" ? lambda { @target.send(meth)} : lambda {@target.send(meth, value)})
-          
-          # calls the C# method
-          res, ref = meth_call.call
-          
-          if input != "NoArg"
-            result = Helper.result(meth,value)
-            @target.tracker.should == [*result]
+
+        def reset
+          @position = -1
+        end
+
+        def valid?
+          @position != -1 && @position < @list.length
+        end
+
+        def current
+          if valid?
+            @list[@position]
           else
-            result = case meth.to_s
-                     when /Params(?:Int32|CStruct|IInterface)ArrArg/
-                      [[]]
-                     when /DefaultInt32Arg/
-                       [10]
-                     when /NoArg/
-                       []
-                     when /OutInt32Arg/
-                       [2]
-                     else
-                       nil
-                     end
-            @target.tracker.should == result
+            raise System::InvalidOperationException.new
           end
-          ref.should == result if ref
-        end
-        
-        it "passes the correct input (#{input}) into method (#{meth}) (RubyClassWithMethods)" do
-          value = @values[input]
-          meth_call = (input == "NoArg" ? lambda { @target2.send(meth)} : lambda {@target2.send(meth, value)})
-          res, ref = meth_call.call
-          if input != "NoArg"
-            result = Helper.result(meth,value)
-            @target2.tracker.should == [*result]
-          else
-            result = case meth.to_s
-                     when /Params(?:Int32|CStruct|IInterface)ArrArg/
-                      [[]]
-                     when /DefaultInt32Arg/
-                       [10]
-                     when /NoArg/
-                       []
-                     when /OutInt32Arg/
-                       [2]
-                     else
-                       nil
-                     end
-            @target2.tracker.should == result
-          end
-          ref.should == result if ref
         end
       end
     end
-        
-    class ResultHelper
-      class << self
-        def test_BooleanArg(v)
-          !!v
+    
+    class TestListOfChar
+      include IEnumerable.of(System::Char)
+      def initialize
+        @store = []
+      end
+
+      def get_enumerator
+        TestListEnumeratorOfChar.new(@store)
+      end
+
+      def <<(val)
+        @store << val
+        self
+      end
+
+      class TestListEnumeratorOfChar
+        include IEnumerator.of(System::Char)
+        attr_reader :list
+        def initialize(list)
+          @list = list
+          @position = -1
         end
 
-        def test_SingleArg(v)
+        def move_next
+          @position += 1
+          valid?
+        end
+
+        def reset
+          @position = -1
+        end
+
+        def valid?
+          @position != -1 && @position < @list.length
+        end
+
+        def current
+          if valid?
+            @list[@position]
+          else
+            raise System::InvalidOperationException.new
+          end
+        end
+      end
+    end
+  end
+
+  class Helper
+    def self.binds(target, meth, input, result)
+      lambda do
+        target = eval target
+        meth_call = (input == "NoArg" ? lambda { target.send(meth)} : lambda {target.send(meth, @values[input])})
+        if result.class == Class && result < Exception
+          meth_call.should raise_error result
+        elsif result.class == Regexp
+          res, ref = meth_call.call
+          (res =~ result).should == 0
+        else
+          res, ref = meth_call.call
+          res.should == result
+        end
+      end
+    end
+
+    def self.passes(target, meth, input, result)
+      lambda do
+        target = eval target
+        value = @values[input]
+        meth_call = (input == "NoArg" ? lambda { target.send(meth)} : lambda {target.send(meth, value)})
+        res, ref = meth_call.call
+        result = Helper.result(meth,value, input)
+        target.tracker.should == [*result]
+        if ref
+          if result.is_a? ArrayList
+            ref.should == result[0]
+          else
+            ref.should == result
+          end
+        end
+      end
+    end
+
+    def self.run_matrix(results, input, keys)
+      results[:OutInt32Arg] ||= TE
+      keys.each do |meth|
+        result = results[meth] || TE
+        
+        it "binds '#{meth}' for '#{input}' with '#{result.to_s}' (ClassWithMethods)", &(binds("@target", meth, input, result))
+      
+        it "binds '#{meth}' for '#{input}' with '#{result.to_s}' (RubyClassWithMethods)", &(binds("@target2", meth, input, result))
+      
+        next if result.class == Class && result < Exception
+        
+        it "passes the correct input (#{input}) into method (#{meth}) (ClassWithMethods)", &(passes("@target", meth, input, result))
+        
+        it "passes the correct input (#{input}) into method (#{meth}) (RubyClassWithMethods)", &(passes("@target2", meth, input, result))
+      end
+    end
+
+    def self.property_binds(target, meth, input, result)
+      lambda do
+        target = eval target
+        value = @values[input]
+        method = lambda {target.send("#{meth}=", value)}
+        if result.class == Class && result < Exception
+          method.should raise_error result
+        else
+          target.send(meth).should == nil
+          method.call
+          target.send(meth).should == value
+        end
+      end
+    end
+    def self.run_property_matrix(results, input, keys, targets_one_and_two = true)
+      keys.each do |meth|
+        result = results[meth] || TE
+        
+        it "binds property '#{meth}' with '#{input}' on (ClassWithMethods)", &(property_binds("@target", meth, input, result))
+        next unless targets_one_and_two
+        it "binds property '#{meth}' with '#{input}' on (RubyClassWithMethods)", &(property_binds("@target2", meth, input, result))
+      end
+    end
+        
+    class ConversionHelper
+      class << self
+        def convert_for_BooleanArg(v)
+          !!v
+        end
+        alias_method :convert_for_RefBooleanArg, :convert_for_BooleanArg
+
+        def convert_for_SingleArg(v)
           case v
           when System::UInt32, System::Int32
             System::Single.parse(v.to_s)
@@ -503,15 +1157,15 @@ no_csc do
           end
         end
 
-        def test_DoubleArg(v)
+        def convert_for_DoubleArg(v)
           System::Double.induced_from(int32(v)) if v.is_a? System::Char
         end
         
-        def test_DecimalArg(v)
+        def convert_for_DecimalArg(v)
           System::Decimal.induced_from(int32(v)) if v.is_a? System::Char
         end
 
-        def test_CharArg(v)
+        def convert_for_CharArg(v)
           case v
           when System::String
             v[0]
@@ -522,57 +1176,147 @@ no_csc do
           end
         end
 
-        def test_IEnumerableArg(v)
+        def convert_for_IEnumerableArg(v)
           if test_value(v)
             v.to_int
           else
             [v]
           end
         end
-        alias_method :test_IListArg, :test_IEnumerableArg
-        alias_method :test_IListOfObjArg, :test_IEnumerableArg
-        alias_method :test_IListOfIntArg, :test_IEnumerableArg
-        alias_method :test_IEnumerableOfIntArg, :test_IEnumerableArg
-        alias_method :test_ArrayArg, :test_IEnumerableArg
-        alias_method :test_ArrayListArg, :test_IEnumerableArg
-        alias_method :test_Int32ArrArg, :test_IEnumerableArg
-        alias_method :test_ParamsInt32ArrArg, :test_IEnumerableArg
-        alias_method :test_ParamsCStructArrArg, :test_IEnumerableArg
+        alias_method :convert_for_IListArg, :convert_for_IEnumerableArg
+        alias_method :convert_for_IListOfObjArg, :convert_for_IEnumerableArg
+        alias_method :convert_for_IListOfIntArg, :convert_for_IEnumerableArg
+        alias_method :convert_for_IEnumerableOfIntArg, :convert_for_IEnumerableArg
+        alias_method :convert_for_ArrayArg, :convert_for_IEnumerableArg
+        alias_method :convert_for_ArrayListArg, :convert_for_IEnumerableArg
+        alias_method :convert_for_Int32ArrArg, :convert_for_IEnumerableArg
+        alias_method :convert_for_ParamsInt32ArrArg, :convert_for_IEnumerableArg
+        alias_method :convert_for_ParamsCStructArrArg, :convert_for_IEnumerableArg
+        alias_method :convert_for_HashtableArg, :convert_for_IEnumerableArg
         
-        def test_RefInt32Arg(v)
+        def convert_for_RefInt32Arg(v)
           1
         end
 
-        def test_Int32ArgDefaultInt32Arg(v)
+        def convert_for_Int32ArgDefaultInt32Arg(v)
           [Fixnum.induced_from(v.to_int), 10]
         end
 
-        def test_Int32Arg(v)
+        def convert_for_Int32Arg(v)
           if test_value(v)
             v.to_int
           end
         end
-        alias_method :test_BigIntegerArg, :test_Int32Arg
-        alias_method :test_DefaultInt32Arg, :test_Int32Arg
-        alias_method :test_Int32ArgParamsInt32ArrArg, :test_Int32Arg
+        alias_method :convert_for_BigIntegerArg, :convert_for_Int32Arg
+        alias_method :convert_for_DefaultInt32Arg, :convert_for_Int32Arg
+        alias_method :convert_for_Int32ArgParamsInt32ArrArg, :convert_for_Int32Arg
 
-        def test_EnumIntArg(v)
+        def convert_for_ParamsIInterfaceArrTestArg(v)
+          if v == nil
+            [true, [v]]
+          else 
+            [false, [v]]
+          end
+        end
+
+        def convert_for_IListArg(v)
+          [v,v.size]
+        end
+        alias_method :convert_for_IListOfCharArg, :convert_for_IListArg
+        alias_method :convert_for_IListOfIntArg2, :convert_for_IListArg
+
+        def convert_for_EnumIntArg(v)
           if v.is_a?(CustomEnum)
             EnumInt.new
           end
         end
         
-        def test_CustomEnumArg(v)
+        def convert_for_CustomEnumArg(v)
           if v.is_a?(EnumInt)
             CustomEnum.new
           end
         end
 
         [System::Byte, System::SByte, System::Int16, System::UInt16, System::UInt32, System::Int64, System::UInt64].each do |val|
-          define_method("test_#{val.name.gsub("System::","")}Arg") {|v| val.induced_from(v.to_int) if test_value(v)}
+          define_method("convert_for_#{val.name.gsub("System::","")}Arg") {|v| val.induced_from(v.to_int) if test_value(v)}
         end
         
-        def test_StringArg(arg)
+        def convert_for_IEnumerableIteratingArg(v)
+          case v
+          when Hash
+            KeyValuePair.of(Object,Object).new(1,1)
+          when DObjObj
+            [KeyValuePair.of(Object,Object).new(1,1),KeyValuePair.of(Object,Object).new(2,2)]
+          when DIntInt
+            [KeyValuePair.of(Fixnum,Fixnum).new(1,1),KeyValuePair.of(Fixnum,Fixnum).new(2,2)]
+          when DIntStr
+            [KeyValuePair.of(Fixnum, System::String).new(1,"1".to_clr_string),KeyValuePair.of(Fixnum, System::String).new(2,"2".to_clr_string)]
+          when Hashtable
+            [DictionaryEntry.new(2,2), DictionaryEntry.new(1,1)]
+          when System::String
+            convert_for_IEnumerableOfCharIteratingArg(v)
+          end
+        end
+
+        def convert_for_ListOfIntArg(v)
+          if [List[Fixnum], System::Array[Fixnum], List[Object], Array, 
+              System::Array[System::Char], ArrayList, List[System::Char],
+              System::Array[System::Byte], List[System::Byte], Hashtable, 
+              DIntInt, DIntStr, DObjObj, Hash].any? {|e| v.is_a?(e)}
+            ArrayList.new << v
+          end
+        end
+        alias_method :convert_for_GenericArg, :convert_for_ListOfIntArg
+        alias_method :convert_for_IDictionaryOfIntIntArg, :convert_for_ListOfIntArg
+
+        def convert_for_RefByteArrArg(v)
+          if v.is_a? String
+            res = System::Array.of(System::Byte).new(v.size)
+            i = 0
+            v.each_byte {|e| res[i] = System::Byte.induced_from(e); i+=1}
+            ArrayList.new << res
+          elsif v.is_a? System::Array.of(System::Byte)
+            ArrayList.new << v
+          end
+        end
+
+        def convert_for_IEnumerableOfCharIteratingArg(v)
+          if v.is_a? System::String
+            v.to_s.split(//).map {|e| e.to_clr_string}
+          end
+        end
+
+        def convert_for_IEnumeratorIteratingArg(v)
+          if [TestList::TestListEnumerator, BindingSpecs::TestListOfInt::TestListEnumeratorOfInt, BindingSpecs::TestListOfChar::TestListEnumeratorOfChar].any? {|e| v.is_a? e}
+            v.list
+          end
+        end
+        
+        def convert_for_IEnumeratorOfIntIteratingArg(v)
+          if [BindingSpecs::TestListOfInt::TestListEnumeratorOfInt].any? {|e| v.is_a? e}
+            v.list
+          end
+        end
+        
+        def convert_for_IEnumeratorOfCharIteratingArg(v)
+          if [BindingSpecs::TestListOfChar::TestListEnumeratorOfChar].any? {|e| v.is_a? e}
+            v.list
+          end
+        end
+
+        def convert_for_DelegateArg(v)
+          case v
+          when IntIntDelegate
+            11
+          when Proc
+            12
+          when Method
+            14
+          end
+        end
+        alias_method :convert_for_IntIntDelegateArg, :convert_for_DelegateArg
+
+        def convert_for_StringArg(arg)
           case arg
           when NilClass
             nil
@@ -586,7 +1330,7 @@ no_csc do
         end
         
         def method_missing(meth, arg)
-          if meth =~ /test_.*?Arg/
+          if meth =~ /convert_for_.*?Arg/
             arg
           end
         end
@@ -601,14 +1345,40 @@ no_csc do
         end
       end
     end
-    def self.result(meth, value) 
-      result = ResultHelper.send("test_#{meth}", value)
+    def self.result(meth, value, input) 
+      result = if input == "NoArg"
+                 case meth.to_s
+                 when /Params(?:Int32|CStruct|IInterface)ArrArg/
+                  [[]]
+                 when /DefaultInt32Arg/
+                   [10]
+                 when /NoArg/
+                   []
+                 when /OutInt32Arg/
+                   [2]
+                 when /ParamsIInterfaceArrTestArg/
+                   [false, []]
+                 when /OutBoolean/
+                   true
+                 when /OutImplementsIInterface/
+                   ImplementsIInterface.new
+                 when /OutStructImplementsIInterface/
+                   StructImplementsIInterface.new
+                 when /OutNonByRefInt32Arg/
+                   1
+                 else
+                   nil
+                 end
+               else
+                 ConversionHelper.send("convert_for_#{meth}", value)
+               end
       result.nil? ? result = value : nil
       result
     end
     
-    def self.collection_args
-      #RubyArray , RubyHash , RubyClassWithEnumerable, IO, String, System::Array[int], System::Array[Object], IList, IEnumerable, IEnumerator, monkeypatched object
+    def self.args
+    # TODO: More BigIntegerValues near boundaries
+    # TODO: More NullableIntegerValues near boundaries
       obj = Object.new
       class << obj
         include Enumerable
@@ -625,36 +1395,16 @@ no_csc do
       dint = DIntStr.new
       dint[1] = "1".to_clr_string
       dint[2] = "2".to_clr_string
-      tl1 = TestList.new
-      tl2 = TestList.new << 1 << 2 << 3
-      {"monkeypatched" => obj, 
-      "ArrayInstanceEmpty" => [], "ArrayInstance" => [1,2,3], 
-      "HashInstanceEmpty" => {}, "HashInstance" => {1=>2,3=>4,5=>6}, 
-      "ImplementsEnumerableInstance" => BindingSpecs::ImplementsEnumerable.new, 
-      "StringInstanceEmpty" => "", "StringInstance" => "abc", 
-      #[]                                                       [2,2]
-      "System::Array[Fixnum]InstanceEmpty" => SAF.new(0), "System::Array[Fixnum]Instance" => SAF.new(2,2), 
-      #[]                                                       [Object.new,Object.new]
-      "System::Array[Object]InstanceEmpty" => SAO.new(0), "System::Array[Object]Instance" => SAO.new(2,Object.new), 
-      "System::Array[IInterface]InstanceEmpty" => SAI.new(0), "System::Array[IInterface]Instance" => SAI.new(2, BindingSpecs::RubyImplementsIInterface.new),
-      "System::Array[CStruct]InstanceEmpty" => SAC.new(0), "System::Array[CStruct]Instance" => SAC.new(2, CStruct.new),
-      "ArrayListInstanceEmpty" => System::Collections::ArrayList.new, "ArrayListInstance" => (System::Collections::ArrayList.new << 1 << 2 << 3),
-      #{}                                                       {1=>1,2=>2}
-      "Dictionary[Object,Object]InstanceEmpty" => DObjObj.new, "Dictionary[Object,Object]Instance" => dobj,
-      #{}                                                       {1=>"1",2=>"2"}
-      "Dictionary[Fixnum,String]InstanceEmpty" => DIntStr.new, "Dictionary[Fixnum,String]Instance" => dint,
-      "TestListInstanceEmpty" => tl1, "TestListInstance" => tl2,
-      "TestListEnumeratorInstanceEmpty" => tl1.get_enumerator, "TestListEnumeratorInstance" => tl2.get_enumerator, 
-      "CStructInstance" => CStruct.new,
-      "Int32Instance" => 1,
-      "IInterfaceInstance" => BindingSpecs::RubyImplementsIInterface.new,
-      "System::Collections::Generic::List[Fixnum]InstanceEmpty" => System::Collections::Generic::List[Fixnum].new, "System::Collections::Generic::List[Fixnum]Instance" => ( System::Collections::Generic::List[Fixnum].new << 1 << 2 << 3 ),
-      "System::Collections::Generic::List[Object]InstanceEmpty" => System::Collections::Generic::List[Object].new, "System::Collections::Generic::List[Object]Instance" => ( System::Collections::Generic::List[Object].new << Object.new << Object.new << Object.new ),
-      }
-    end
-    # TODO: More BigIntegerValues near boundaries
-    # TODO: More NullableIntegerValues near boundaries
-    def self.numeric_and_string_args
+      dii = DIntInt.new
+      dii[1] = 1
+      dii[2] = 2
+      ht = Hashtable.new
+      ht[1] = 1
+      ht[2] = 2
+      tl1 = TestList.new << 1 << 2 << 3
+      tl2 = BindingSpecs::TestListOfInt.new << 1 << 2 << 3
+      tl3 = BindingSpecs::TestListOfChar.new << System::Char.new("a") << System::Char.new("b") << System::Char.new("c")
+      tl4 = TestList.new
       clr_values = {}
       #            Fixnum         Float
       clr_types = [System::Int32, System::Double, System::SByte, System::Int16, System::Int64, System::Single, System::Decimal]
@@ -677,12 +1427,8 @@ no_csc do
         "Convert::ToS" => BindingSpecs::Convert::ToS.new, "Convert::ToStr" => BindingSpecs::Convert::ToStr.new, "Convert::ToStrToS" => BindingSpecs::Convert::ToStrToS.new,
         "System::CharMaxValue" => System::Char.MaxValue, "System::CharMinValue" => System::Char.MinValue
       }
-      other.merge clr_values      
-    end
-
-    def self.classlike_args
-      
-       [BindingSpecs::RubyImplementsIInterface, ImplementsIInterface, BindingSpecs::RubyDerivedFromImplementsIInterface, DerivedFromImplementsIInterface,
+      other.merge! clr_values      
+      types = [BindingSpecs::RubyImplementsIInterface, ImplementsIInterface, BindingSpecs::RubyDerivedFromImplementsIInterface, DerivedFromImplementsIInterface,
         BindingSpecs::RubyDerivedFromDerivedFromImplementsIInterface, BindingSpecs::RubyDerivedFromDerivedFromAbstractAndImplementsIInterface, DerivedFromAbstract,
         BindingSpecs::RubyDerivedFromAbstract,BindingSpecs::RubyDerivedFromDerivedFromAbstract, 
         Class, Object, CStruct, StructImplementsIInterface, EnumInt, CustomEnum].inject({"anonymous class" => Class.new, "anonymous classInstance" => Class.new.new, "metaclass" => Object.new.metaclass, "AbstractClass" => AbstractClass}) do |result, klass|
@@ -695,8 +1441,74 @@ no_csc do
           end
           result
         end
+      types.merge! other
+      types.merge!({"ClassWithMethods" => ClassWithMethods.new, "int" => 1, "hash" => {1=> 1}, 
+                "Dictionary[obj,obj]" => dobj, "Dictionary[int,str]" => dint, "Dictionary[int,int]" => dii,
+                "hashtable" => ht, "List[int]" => ( List[Fixnum].new << 1 << 2 << 3 ),
+                "List[obj]" => ( List[Object].new << 1 << 2 << 3), "Array[int]" => System::Array.of(Fixnum).new(2,3),
+                "String" => "String", "Array" => [Object.new, 1, :blue], "Array[Char]" => System::Array.of(System::Char).new(2, System::Char.new("a")),
+                "System::String" => "System::String".to_clr_string, "Array[System::String]" => System::Array.of(System::String).new(2, "a".to_clr_string),
+                "ArrayList" => (ArrayList.new << 1 << 2 << 3),  "List[Char]" => ( List[System::Char].new << System::Char.new("a") << System::Char.new("b") << System::Char.new("c")), 
+                "IEnumerator" => tl1.get_enumerator, "IEnumerator[int]" => tl2.get_enumerator, "IEnumerator[Char]" => tl3.get_enumerator,
+                "IntIntDelegate" => IntIntDelegate.new {|a| a+1 }, "lambda" => lambda {|a| a+2}, 
+                "proc" => proc {|a| a+2}, "method" => method(:test_method),
+                "unboundmethod" => method(:test_method).unbind, "bool" => true, "Array[byte]" => System::Array.of(System::Byte).new(2, System::Byte.MinValue), 
+                "List[byte]" => (List[System::Byte].new << System::Byte.parse("1") << System::Byte.parse("2") << System::Byte.parse("3")), 
+                "self" => "self", "class" => "class", "this" => "this", "public" => "public",
+                "RubyImplementsIInterfaceInstance" => BindingSpecs::RubyImplementsIInterface.new, 
+                "Int16?Value" => System::Nullable[System::Int16].new(1),
+                "Int32?Value" => System::Nullable[System::Int32].new(1),
+                "Int64?Value" => System::Nullable[System::Int64].new(1),
+                "UInt16?Value" => System::Nullable[System::UInt16].new(1),
+                "UInt32?Value" => System::Nullable[System::UInt32].new(1),
+                "UInt64?Value" => System::Nullable[System::UInt64].new(1),
+                "Byte?Value" => System::Nullable[System::Byte].new(1),
+                "SByte?Value" => System::Nullable[System::SByte].new(1),
+                "Decimal?Value" => System::Nullable[System::Decimal].new(1),
+                "Single?Value" => System::Nullable[System::Single].new(1), 
+                "Char?Value" => System::Nullable[System::Char].new("a"), 
+                "Double?Value" => System::Nullable[System::Double].new(1),
+                "Boolean?Value" => System::Nullable[System::Boolean].new(1), 
+                "CustomEnum?Value" => System::Nullable[CustomEnum].new(CustomEnum.A),
+                "obj" => Object.new, 
+                "monkeypatched" => obj, 
+                "ArrayInstanceEmpty" => [], "ArrayInstance" => [1,2,3], 
+                "HashInstanceEmpty" => {}, "HashInstance" => {1=>2,3=>4,5=>6}, 
+                "ImplementsEnumerableInstance" => BindingSpecs::ImplementsEnumerable.new, 
+                "StringInstanceEmpty" => "", "StringInstance" => "abc", 
+                #[]                                                       [2,2]
+                "System::Array[Fixnum]InstanceEmpty" => SAF.new(0), "System::Array[Fixnum]Instance" => SAF.new(2,2), 
+                #[]                                                       [Object.new,Object.new]
+                "System::Array[Object]InstanceEmpty" => SAO.new(0), "System::Array[Object]Instance" => SAO.new(2,Object.new), 
+                "System::Array[IInterface]InstanceEmpty" => SAI.new(0), "System::Array[IInterface]Instance" => SAI.new(2, BindingSpecs::RubyImplementsIInterface.new),
+                "System::Array[CStruct]InstanceEmpty" => SAC.new(0), "System::Array[CStruct]Instance" => SAC.new(2, CStruct.new),
+                "ArrayListInstanceEmpty" => ArrayList.new, "ArrayListInstance" => (ArrayList.new << 1 << 2 << 3),
+                #{}                                                       {1=>1,2=>2}
+                "Dictionary[Object,Object]InstanceEmpty" => DObjObj.new, "Dictionary[Object,Object]Instance" => dobj,
+                #{}                                                       {1=>"1",2=>"2"}
+                "Dictionary[Fixnum,String]InstanceEmpty" => DIntStr.new, "Dictionary[Fixnum,String]Instance" => dint,
+                "TestListInstanceEmpty" => tl4, "TestListInstance" => tl1,
+                "TestListEnumeratorInstanceEmpty" => tl4.get_enumerator, "TestListEnumeratorInstance" => tl1.get_enumerator, 
+                "CStructInstance" => CStruct.new,
+                "Int32Instance" => 1,
+                "IInterfaceInstance" => BindingSpecs::RubyImplementsIInterface.new,
+                "System::Collections::Generic::List[Fixnum]InstanceEmpty" => List[Fixnum].new, "System::Collections::Generic::List[Fixnum]Instance" => ( List[Fixnum].new << 1 << 2 << 3 ),
+                "System::Collections::Generic::List[Object]InstanceEmpty" => List[Object].new, "System::Collections::Generic::List[Object]Instance" => ( List[Object].new << Object.new << Object.new << Object.new ),
+      })
+      #TODO: Add the byref types when make_by_ref_type works
+      #byrefStructImplementsIInterfaceInstance
+      #byrefRubyImplementsIInterface
+      #byrefImpelemntsIInterface, byrefbool
+      #ref_types = {"ByRefInt" => Fixnum.get_type.make_by_ref_type, "Array[ByRefByte]" => System::Array.of(System::Byte.get_type.make_by_ref_type),
+                   #"List[ByRefByte]" => List[System::Byte.get_type.make_by_ref_type]} 
+      types
+
     end
 
+
+    def self.test_method(a)
+      a+4
+    end
     private
     #returns random number between the given values. Using 0 for min value will
     #give an abnormlly high probability of 0 as the result.
@@ -705,4 +1517,8 @@ no_csc do
     end
   end
   class RubyClassWithMethods < ClassWithMethods; end
+  class RubyClassWithNullableMethods < ClassWithNullableMethods; end
+  class RubyStaticClassWithNullableMethods < StaticClassWithNullableMethods; end
+  class RubyGenericTypeInference < GenericTypeInference; end
+  class RubyGenericTypeInferenceInstance < GenericTypeInferenceInstance; end
 end

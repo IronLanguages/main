@@ -456,7 +456,7 @@ IronRubyCompiler = CSProjCompiler.new do
             :csproj     => 'IronRuby.Libraries.csproj'
             
   console :references => ['Microsoft.Scripting.Core.dll','Microsoft.Scripting.dll','IronRuby.dll', 'Microsoft.Dynamic.dll'],
-          :switches   => ['define:CLR2'],
+          :switches   => ['define:CLR2', "platform:x86"],
           :output     => 'ir.exe',
           :dir        => './Console',
           :csproj     => 'Ruby.Console.csproj'
@@ -494,13 +494,13 @@ IronRubyCompiler = CSProjCompiler.new do
              :csproj     => 'IronPython.csproj'
             
   ipyw :references => ['IronPython.dll', 'Microsoft.Dynamic.dll', 'Microsoft.Scripting.Core.dll', 'Microsoft.Scripting.dll', '!System.dll', '!System.Windows.Forms.dll'],
-       :switches   => ['target:winexe', "define:IRONPYTHON_WINDOW;CLR2", "win32icon:ipy.ico"],
+       :switches   => ['target:winexe', "define:IRONPYTHON_WINDOW;CLR2", "win32icon:ipy.ico", "platform:x86"],
        :output     => 'ipyw.exe',
        :dir        => '../IronPython/IronPythonWindow',
        :csproj     => 'IronPythonWindow.csproj'
       
   ipy :references => ['IronPython.dll', 'Microsoft.Scripting.Core.dll','Microsoft.Scripting.dll', 'Microsoft.Dynamic.dll', '!System.dll'],
-      :switches   => ['target:exe', 'win32icon:ipy.ico', 'define:CLR2'],
+      :switches   => ['target:exe', 'win32icon:ipy.ico', 'define:CLR2', "platform:x86"],
       :output     => 'ipy.exe',
       :dir        => '../IronPython/IronPythonConsole',
       :csproj     => 'IronPythonConsole.csproj'

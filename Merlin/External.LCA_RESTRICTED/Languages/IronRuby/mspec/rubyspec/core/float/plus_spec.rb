@@ -18,4 +18,8 @@ describe "Float#+" do
     m.should_receive(:method_missing).with(:coerce, 1.5).and_return([10.0, 1.5])
     (1.5 + m).should == 11.5
   end
+
+  it "allows large operands without error" do
+    lambda { 1.0 + 2**50000 }.should_not raise_error
+  end
 end
