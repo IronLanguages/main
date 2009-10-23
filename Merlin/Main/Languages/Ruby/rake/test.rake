@@ -12,7 +12,9 @@
 #
 #
 # ****************************************************************************
-require "#{ENV['MERLIN_ROOT']}\\Languages\\Ruby\\Scripts\\irtests"
+
+require "#{ENV['MERLIN_ROOT']}/Languages/Ruby/Scripts/irtests"
+
 class IRTestTask < Rake::TaskLib
   attr_accessor :name
   @@irtest = nil 
@@ -40,6 +42,7 @@ class IRTestTask < Rake::TaskLib
     end
   end
 end
+
 namespace :test do
   desc "remove output files and generated debugging info from tests directory"
   task :clean do

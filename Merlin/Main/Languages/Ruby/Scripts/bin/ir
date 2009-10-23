@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+fpath=`which $0`
+fdir=`dirname $fpath`
+mono $fdir/ir.exe $*
