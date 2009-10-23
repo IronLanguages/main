@@ -7,14 +7,20 @@
 module MiniTest
   class Assertion < Exception; end
   class Skip < Assertion; end
-
   file = if RUBY_VERSION =~ /^1\.9/ then  # bt's expanded, but __FILE__ isn't :(
            File.expand_path __FILE__
          elsif  __FILE__ =~ /^[^\.]/ then # assume both relative
            require 'pathname'
            pwd = Pathname.new Dir.pwd
            pn = Pathname.new File.expand_path(__FILE__)
-           pn = File.join(".", pn.relative_path_from(pwd)) unless pn.relative?
+           # Fix for http://rubyforge.org/tracker/?func=detail&atid=4097&aid=26434&group_id=1040
+           begin
+             pn = File.join(".", pn.relative_path_from(pwd)) unless pn.relative?
+           rescue ArgumentError => e
+             if not /different prefix/ =~ e.message
+               raise
+             end
+           end
            pn.to_s
          else                             # assume both are expanded
            __FILE__
