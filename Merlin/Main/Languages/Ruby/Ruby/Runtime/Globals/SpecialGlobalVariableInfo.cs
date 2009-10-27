@@ -38,13 +38,11 @@ namespace IronRuby.Runtime {
                 case GlobalVariableId.MatchLastGroup:
                     return (scope != null) ? scope.GetInnerMostClosureScope().GetCurrentMatchLastGroup() : null;
 
-                case GlobalVariableId.MatchPrefix:
-                    // TODO:
-                    throw new NotImplementedException();
+                case GlobalVariableId.PreMatch:
+                    return (scope != null) ? scope.GetInnerMostClosureScope().GetCurrentPreMatch() : null;
 
-                case GlobalVariableId.MatchSuffix:
-                    // TODO:
-                    throw new NotImplementedException();
+                case GlobalVariableId.PostMatch:
+                    return (scope != null) ? scope.GetInnerMostClosureScope().GetCurrentPostMatch() : null;
 
                 case GlobalVariableId.EntireMatch:
                     return (scope != null) ? scope.GetInnerMostClosureScope().GetCurrentMatchGroup(0) : null;
@@ -149,8 +147,8 @@ namespace IronRuby.Runtime {
                     return;
 
                 case GlobalVariableId.MatchLastGroup:
-                case GlobalVariableId.MatchPrefix:
-                case GlobalVariableId.MatchSuffix:
+                case GlobalVariableId.PreMatch:
+                case GlobalVariableId.PostMatch:
                 case GlobalVariableId.EntireMatch:
                     throw ReadOnlyError(name);
                 

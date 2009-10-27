@@ -173,5 +173,13 @@ namespace IronRuby.Builtins {
                 throw RubyExceptions.CreateIndexError(String.Format("index {0} out of matches", index));
             }
         }
+
+        public MutableString/*!*/ GetPreMatch() {
+            return _originalString.GetSlice(0, GetGroupStart(0)).TaintBy(this);
+        }
+        
+        public MutableString/*!*/ GetPostMatch() {
+            return _originalString.GetSlice(GetGroupEnd(0)).TaintBy(this);
+        }
     }
 }

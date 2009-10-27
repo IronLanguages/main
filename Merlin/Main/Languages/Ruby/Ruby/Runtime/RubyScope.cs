@@ -639,6 +639,16 @@ namespace IronRuby.Runtime {
             return (match != null) ? match.GetGroupValue(index) : null;
         }
 
+        internal MutableString GetCurrentPreMatch() {
+            var match = _currentMatch;
+            return (match != null) ? match.GetPreMatch() : null;
+        }
+
+        internal MutableString GetCurrentPostMatch() {
+            var match = _currentMatch;
+            return (match != null) ? match.GetPostMatch() : null;
+        }
+
         internal MutableString GetCurrentMatchLastGroup() {
             var match = _currentMatch;
             if (match != null) {

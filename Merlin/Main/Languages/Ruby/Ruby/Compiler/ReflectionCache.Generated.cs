@@ -216,10 +216,10 @@ namespace IronRuby.Compiler {
         private static MethodInfo _GetCurrentMatchGroup;
         public static MethodInfo/*!*/ GetCurrentMatchLastGroup { get { return _GetCurrentMatchLastGroup ?? (_GetCurrentMatchLastGroup = GetMethod(typeof(RubyOps), "GetCurrentMatchLastGroup")); } }
         private static MethodInfo _GetCurrentMatchLastGroup;
-        public static MethodInfo/*!*/ GetCurrentMatchPrefix { get { return _GetCurrentMatchPrefix ?? (_GetCurrentMatchPrefix = GetMethod(typeof(RubyOps), "GetCurrentMatchPrefix")); } }
-        private static MethodInfo _GetCurrentMatchPrefix;
-        public static MethodInfo/*!*/ GetCurrentMatchSuffix { get { return _GetCurrentMatchSuffix ?? (_GetCurrentMatchSuffix = GetMethod(typeof(RubyOps), "GetCurrentMatchSuffix")); } }
-        private static MethodInfo _GetCurrentMatchSuffix;
+        public static MethodInfo/*!*/ GetCurrentPreMatch { get { return _GetCurrentPreMatch ?? (_GetCurrentPreMatch = GetMethod(typeof(RubyOps), "GetCurrentPreMatch")); } }
+        private static MethodInfo _GetCurrentPreMatch;
+        public static MethodInfo/*!*/ GetCurrentPostMatch { get { return _GetCurrentPostMatch ?? (_GetCurrentPostMatch = GetMethod(typeof(RubyOps), "GetCurrentPostMatch")); } }
+        private static MethodInfo _GetCurrentPostMatch;
         public static MethodInfo/*!*/ GetDefaultExceptionMessage { get { return _GetDefaultExceptionMessage ?? (_GetDefaultExceptionMessage = GetMethod(typeof(RubyOps), "GetDefaultExceptionMessage")); } }
         private static MethodInfo _GetDefaultExceptionMessage;
         public static MethodInfo/*!*/ GetEmptyScope { get { return _GetEmptyScope ?? (_GetEmptyScope = GetMethod(typeof(RubyOps), "GetEmptyScope")); } }

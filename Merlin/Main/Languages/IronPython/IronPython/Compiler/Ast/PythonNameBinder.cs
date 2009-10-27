@@ -71,21 +71,28 @@ namespace IronPython.Compiler.Ast {
         public ParameterBinder(PythonNameBinder binder) {
             _binder = binder;
         }
-        public override bool Walk(NameExpression node) {
-            // Called for the sublist parameters. The elements of the tuple become regular
-            // local variables, therefore don't make the parameters (DefineParameter), but
-            // regular locals (DefineName)
-            _binder.DefineName(node.Name);
-            node.Reference = _binder.Reference(node.Name);
-            return false;
-        }
+
         public override bool Walk(Parameter node) {
             node.Variable = _binder.DefineParameter(node.Name);
             return false;
         }
         public override bool Walk(SublistParameter node) {
             node.Variable = _binder.DefineParameter(node.Name);
-            return true;
+            // we walk the node by hand to avoid walking the default values.
+            WalkTuple(node.Tuple);
+            return false;
+        }
+
+        private void WalkTuple(TupleExpression tuple) {
+            foreach (Expression innerNode in tuple.Items) {
+                NameExpression name = innerNode as NameExpression;
+                if (name != null) {
+                    _binder.DefineName(name.Name);
+                    name.Reference = _binder.Reference(name.Name);
+                } else {
+                    WalkTuple((TupleExpression)innerNode);
+                }
+            }
         }
         public override bool Walk(TupleExpression node) {
             return true;

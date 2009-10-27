@@ -376,7 +376,7 @@ namespace Microsoft.Scripting.Math {
 
         public int GetBitCount() {
             if (IsZero()) {
-                return 0;
+                return 1;
             }
             int w = GetWordCount() - 1;
             uint b = data[w];

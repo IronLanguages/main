@@ -108,7 +108,7 @@ namespace IronRuby.Compiler {
         public static readonly string MatchData = RegexMatchReference.MatchDataName;
         public static readonly string EntireMatch = RegexMatchReference.EntireMatchName;
         public static readonly string MatchLastGroup = RegexMatchReference.MatchLastGroupName;
-        public static readonly string MatchPrefix = RegexMatchReference.MatchPrefixName;
-        public static readonly string MatchSuffix = RegexMatchReference.MatchSuffixName;
+        public static readonly string PreMatch = RegexMatchReference.PreMatchName;
+        public static readonly string PostMatch = RegexMatchReference.PostMatchName;
     }
 }

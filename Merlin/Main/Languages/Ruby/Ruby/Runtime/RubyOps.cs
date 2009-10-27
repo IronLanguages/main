@@ -1360,21 +1360,13 @@ namespace IronRuby.Runtime {
         }
 
         [Emitted] //RegexMatchReference:
-        public static MutableString GetCurrentMatchPrefix(RubyScope/*!*/ scope) {
-            MatchData match = scope.GetInnerMostClosureScope().CurrentMatch;
-            if (match == null) {
-                return null;
-            }
-            return match.OriginalString.GetSlice(0, match.Index).TaintBy(match.OriginalString);
+        public static MutableString GetCurrentPreMatch(RubyScope/*!*/ scope) {
+            return scope.GetInnerMostClosureScope().GetCurrentPreMatch();
         }
 
         [Emitted] //RegexMatchReference:
-        public static MutableString GetCurrentMatchSuffix(RubyScope/*!*/ scope) {
-            MatchData match = scope.GetInnerMostClosureScope().CurrentMatch;
-            if (match == null) {
-                return null;
-            }
-            return match.OriginalString.GetSlice(match.Index + match.Length);
+        public static MutableString GetCurrentPostMatch(RubyScope/*!*/ scope) {
+            return scope.GetInnerMostClosureScope().GetCurrentPostMatch();
         }
 
         [Emitted] //RegularExpression:

@@ -275,30 +275,31 @@ namespace IronPython.Modules {
                 throw ToPythonException(e, path);
             }
         }
-#endif
 
         public static object open(CodeContext/*!*/ context, string filename, int flag) {
             return open(context, filename, flag, 0777);
         }
 
+        private const int DefaultBufferSize = 4096;
+
         public static object open(CodeContext/*!*/ context, string filename, int flag, int mode) {
             try {
                 FileMode fileMode = FileModeFromFlags(flag);
                 FileAccess access = FileAccessFromFlags(flag);
+                FileOptions options = FileOptionsFromFlags(flag);
                 FileStream fs;
                 if (access == FileAccess.Read && (fileMode == FileMode.CreateNew || fileMode == FileMode.Create || fileMode == FileMode.Append)) {
                     // .NET doesn't allow Create/CreateNew w/ access == Read, so create the file, then close it, then
                     // open it again w/ just read access.
-                    fs = File.Open(filename, fileMode, FileAccess.Write, FileShare.None);
+                    fs = new FileStream(filename, fileMode, FileAccess.Write, FileShare.None);
                     fs.Close();
-                    fs = File.Open(filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                    fs = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, DefaultBufferSize, options);
                 } else if(access == FileAccess.ReadWrite && fileMode == FileMode.Append) {
-                    fs = File.Open(filename, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
+                    fs = new FileStream(filename, FileMode.Append, FileAccess.Write, FileShare.ReadWrite, DefaultBufferSize, options);
                 } else {
-                    fs = File.Open(filename, fileMode, access, FileShare.ReadWrite);
+                    fs = new FileStream(filename, fileMode, access, FileShare.ReadWrite, DefaultBufferSize, options);
                 }
                 
-
                 string mode2;
                 if (fs.CanRead && fs.CanWrite) mode2 = "w+";
                 else if (fs.CanWrite) mode2 = "w";
@@ -314,7 +315,21 @@ namespace IronPython.Modules {
             }
         }
 
-#if !SILVERLIGHT
+        private static FileOptions FileOptionsFromFlags(int flag) {
+            FileOptions res = FileOptions.None;
+            if ((flag & O_TEMPORARY) != 0) {
+                res |= FileOptions.DeleteOnClose;
+            }
+            if ((flag & O_RANDOM) != 0) {
+                res |= FileOptions.RandomAccess;
+            }
+            if ((flag & O_SEQUENTIAL) != 0) {
+                res |= FileOptions.SequentialScan;
+            }
+
+            return res;
+        }
+
         public static PythonFile popen(CodeContext/*!*/ context, string command) {
             return popen(context, command, "r");
         }

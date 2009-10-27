@@ -240,7 +240,7 @@ namespace Microsoft.Scripting.Math {
 
         public int GetBitCount() {
             if (_value.IsZero) {
-                return 0;
+                return 1;
             }
 
             int hi;
@@ -271,6 +271,12 @@ namespace Microsoft.Scripting.Math {
 
         private byte GetHighestByte(out int index, out byte[] byteArray) {
             byte[] bytes = BigInt.Abs(_value).ToByteArray();
+            if (_value.IsZero) {
+                byteArray = bytes;
+                index = 0;
+                return 1;
+            }
+
             int hi = bytes.Length;
             byte b;
             do {

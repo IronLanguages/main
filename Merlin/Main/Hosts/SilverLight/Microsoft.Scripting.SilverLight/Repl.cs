@@ -114,7 +114,7 @@ namespace Microsoft.Scripting.Silverlight {
 
             ScriptScope scope = DynamicApplication.Current.Engine.EntryPointScope;
             if (scope == null) {
-                scope = DynamicApplication.Current.Engine.CreateScope();
+                scope = engine.CreateScope();
             }
 
             return Show(engine, scope);

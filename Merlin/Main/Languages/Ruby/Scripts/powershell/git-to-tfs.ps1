@@ -19,7 +19,7 @@ $log = invoke-expression "git log --name-status ^$begin..$end" | select-string "
 $message = $log | select-string "^\s+"
 $files = $log | select-string "^(M|A|D)"
 if(!$skip_tfs) {
-  cd "$env:MERLIN_ROOT\..\.."
+  pushd "$env:MERLIN_ROOT\..\.."
   $files | %{
     $mode_and_file = $_.ToString().Split()
     $mode = $mode_and_file | select-object -first 1
@@ -35,4 +35,4 @@ if(!$skip_msg){
   set-content -path "$env:HOME\Desktop\commit-$remote.txt" $message
 }
 set PAGER=$pager
-
+popd

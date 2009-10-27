@@ -42,12 +42,12 @@ namespace IronRuby.Compiler.Ast {
         internal const string MatchLastGroupName = "+";
 
         // $`
-        internal const int MatchPrefix = -3;
-        internal const string MatchPrefixName = "`";
+        internal const int PreMatch = -3;
+        internal const string PreMatchName = "`";
 
         // $'
-        internal const int MatchSuffix = -4;
-        internal const string MatchSuffixName = "'";
+        internal const int PostMatch = -4;
+        internal const string PostMatchName = "'";
 
         private readonly int _index;
 
@@ -57,7 +57,7 @@ namespace IronRuby.Compiler.Ast {
 
         internal RegexMatchReference(int index, SourceSpan location) 
             : base(location) {
-            Debug.Assert(index >= MatchSuffix, "index");
+            Debug.Assert(index >= PostMatch, "index");
             _index = index;
         }
 
@@ -71,11 +71,11 @@ namespace IronRuby.Compiler.Ast {
         }
 
         public RegexMatchReference/*!*/ CreatePrefixReference(SourceSpan location) {
-            return new RegexMatchReference(MatchPrefix, location);
+            return new RegexMatchReference(PreMatch, location);
         }
 
         public RegexMatchReference/*!*/ CreateSuffixReference(SourceSpan location) {
-            return new RegexMatchReference(MatchSuffix, location);
+            return new RegexMatchReference(PostMatch, location);
         }
 
         public RegexMatchReference/*!*/ CreateMatchReference(SourceSpan location) {
@@ -89,8 +89,8 @@ namespace IronRuby.Compiler.Ast {
                     case EntireMatch: return EntireMatchName;
                     case MatchData: return MatchDataName;
                     case MatchLastGroup: return MatchLastGroupName;
-                    case MatchPrefix: return MatchPrefixName;
-                    case MatchSuffix: return MatchSuffixName;
+                    case PreMatch: return PreMatchName;
+                    case PostMatch: return PostMatchName;
                     default: return _index.ToString();
                 }
             }
@@ -117,11 +117,11 @@ namespace IronRuby.Compiler.Ast {
                 case MatchLastGroup:
                     return Methods.GetCurrentMatchLastGroup.OpCall(gen.CurrentScopeVariable);
                 
-                case MatchPrefix:
-                    return Methods.GetCurrentMatchPrefix.OpCall(gen.CurrentScopeVariable);
+                case PreMatch:
+                    return Methods.GetCurrentPreMatch.OpCall(gen.CurrentScopeVariable);
 
-                case MatchSuffix:
-                    return Methods.GetCurrentMatchSuffix.OpCall(gen.CurrentScopeVariable);
+                case PostMatch:
+                    return Methods.GetCurrentPostMatch.OpCall(gen.CurrentScopeVariable);
 
                 default:
                     return Methods.GetCurrentMatchGroup.OpCall(gen.CurrentScopeVariable, AstUtils.Constant(_index));
@@ -137,8 +137,8 @@ namespace IronRuby.Compiler.Ast {
             switch (_index) {
                 case MatchData: return "$" + MatchDataName;
                 case MatchLastGroup: return "$" + MatchLastGroupName;
-                case MatchPrefix: return "$" + MatchPrefixName;
-                case MatchSuffix: return "$" + MatchSuffixName;
+                case PreMatch: return "$" + PreMatchName;
+                case PostMatch: return "$" + PostMatchName;
                 default: return "$" + _index.ToString();
             }
         }

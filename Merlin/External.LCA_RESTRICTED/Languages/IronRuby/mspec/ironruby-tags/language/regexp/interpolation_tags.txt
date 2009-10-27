@@ -1,1 +1,0 @@
-critical:Regexps with interpolation throws NoMethodError on missing to_s

@@ -97,13 +97,13 @@ namespace IronRuby.Builtins {
         }
 
         [RubyMethod("pre_match")]
-        public static MutableString/*!*/ PreMatch(RubyContext/*!*/ context, MatchData/*!*/ self) {
-            return self.OriginalString.GetSlice(0, self.Index).TaintBy(self, context);
+        public static MutableString/*!*/ PreMatch(MatchData/*!*/ self) {
+            return self.GetPreMatch();
         }
 
         [RubyMethod("post_match")]
-        public static MutableString/*!*/ PostMatch(RubyContext/*!*/ context, MatchData/*!*/ self) {
-            return self.OriginalString.GetSlice(self.Index + self.Length).TaintBy(self, context);
+        public static MutableString/*!*/ PostMatch(MatchData/*!*/ self) {
+            return self.GetPostMatch();
         }
 
         private static RubyArray/*!*/ ReturnMatchingGroups(MatchData/*!*/ self, int groupIndex) {

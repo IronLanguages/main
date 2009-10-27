@@ -1345,11 +1345,11 @@ namespace IronRuby.Compiler {
                     return Tokens.MatchReference;
 
                 case '`':
-                    _tokenValue.SetInteger(RegexMatchReference.MatchPrefix);
+                    _tokenValue.SetInteger(RegexMatchReference.PreMatch);
                     return Tokens.MatchReference;
 
                 case '\'':		
-                    _tokenValue.SetInteger(RegexMatchReference.MatchSuffix);
+                    _tokenValue.SetInteger(RegexMatchReference.PostMatch);
                     return Tokens.MatchReference;
 
                 case '+':

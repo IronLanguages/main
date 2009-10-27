@@ -307,7 +307,7 @@
       <Compile Include="Interpreter\Instructions\Instruction.cs" />
       <Compile Include="Interpreter\Instructions\InstructionFactory.cs" />
       <Compile Include="Interpreter\Instructions\LocalAccess.cs" />
-      <Compile Include="Interpreter\Instructions\StackInstructions.cs" />
+      <Compile Include="Interpreter\Instructions\StackOperations.cs" />
     </ItemGroup>
     <ItemGroup>
       <!--                        -->

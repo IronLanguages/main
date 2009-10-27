@@ -20,8 +20,8 @@ namespace IronRuby.Runtime {
         MatchData,
         EntireMatch,
         MatchLastGroup,
-        MatchPrefix,
-        MatchSuffix,
+        PreMatch,
+        PostMatch,
 
         CurrentException,
         CurrentExceptionBacktrace,
@@ -52,8 +52,8 @@ namespace IronRuby.Runtime {
         public static readonly GlobalVariable MatchData = new SpecialGlobalVariableInfo(GlobalVariableId.MatchData);
         public static readonly GlobalVariable EntireMatch = new SpecialGlobalVariableInfo(GlobalVariableId.EntireMatch);
         public static readonly GlobalVariable MatchLastGroup = new SpecialGlobalVariableInfo(GlobalVariableId.MatchLastGroup);
-        public static readonly GlobalVariable MatchPrefix = new SpecialGlobalVariableInfo(GlobalVariableId.MatchPrefix);
-        public static readonly GlobalVariable MatchSuffix = new SpecialGlobalVariableInfo(GlobalVariableId.MatchSuffix);
+        public static readonly GlobalVariable PreMatch = new SpecialGlobalVariableInfo(GlobalVariableId.PreMatch);
+        public static readonly GlobalVariable PostMatch = new SpecialGlobalVariableInfo(GlobalVariableId.PostMatch);
 
         public static readonly GlobalVariable CurrentException = new SpecialGlobalVariableInfo(GlobalVariableId.CurrentException);
         public static readonly GlobalVariable CurrentExceptionBacktrace = new SpecialGlobalVariableInfo(GlobalVariableId.CurrentExceptionBacktrace);
@@ -94,8 +94,8 @@ namespace IronRuby.Runtime {
             context.DefineGlobalVariableNoLock(Symbols.MatchData, MatchData);
             context.DefineGlobalVariableNoLock(Symbols.EntireMatch, EntireMatch);
             context.DefineGlobalVariableNoLock(Symbols.MatchLastGroup, MatchLastGroup);
-            context.DefineGlobalVariableNoLock(Symbols.MatchPrefix, MatchPrefix);
-            context.DefineGlobalVariableNoLock(Symbols.MatchSuffix, MatchSuffix);
+            context.DefineGlobalVariableNoLock(Symbols.PreMatch, PreMatch);
+            context.DefineGlobalVariableNoLock(Symbols.PostMatch, PostMatch);
             context.DefineGlobalVariableNoLock(Symbols.LastInputLine, LastInputLine);
 
             // directly accessed variables provided by execution context:
