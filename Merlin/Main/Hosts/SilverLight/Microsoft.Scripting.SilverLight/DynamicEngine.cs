@@ -59,6 +59,10 @@ namespace Microsoft.Scripting.Silverlight {
         /// </summary>
         public ScriptScope EntryPointScope { get; private set; }
 
+        /// <summary>
+        /// true while the entry-point is running, false otherwise
+        /// </summary>
+        internal bool RunningEntryPoint { get; set; }
 
         /// <summary>
         /// Finds the avaliable languages, initializes the ScriptRuntime, 
@@ -70,6 +74,7 @@ namespace Microsoft.Scripting.Silverlight {
         /// Initializes the languages, ScriptRuntime, and entry-point ScriptScope.
         /// </summary>
         public DynamicEngine(DynamicLanguageConfig langConfig) {
+            RunningEntryPoint = false;
             if (langConfig == null) {
                 InitializeLangConfig();
             } else {
@@ -95,10 +100,19 @@ namespace Microsoft.Scripting.Silverlight {
         /// globals and modules.
         /// </summary>
         private void InitializeScope() {
-            EntryPointScope = Runtime.CreateScope();
-            EntryPointScope.SetVariable("document", new DynamicHtmlDocument());
-            EntryPointScope.SetVariable("window", new DynamicHtmlObject(HtmlPage.Window));
-            EntryPointScope.SetVariable("me", DynamicApplication.Current.RootVisual);
+            EntryPointScope = CreateScope();
+        }
+
+        /// <summary>
+        /// Creates a new scope, adding any convenience globals and modules.
+        /// </summary>
+        public ScriptScope CreateScope() {
+            var scope = Runtime.CreateScope();
+            scope.SetVariable("document", HtmlPage.Document);
+            scope.SetVariable("window", HtmlPage.Window);
+            scope.SetVariable("me", DynamicApplication.Current.RootVisual);
+            scope.SetVariable("xaml", DynamicApplication.Current.RootVisual);
+            return scope;
         }
 
         /// <summary>
@@ -170,13 +184,14 @@ namespace Microsoft.Scripting.Silverlight {
         /// </summary>
         /// <param name="entryPoint">path to the script</param>
         public void Run(string entryPoint) {
-            if (Settings.EntryPoint != null) {
+            if (entryPoint != null) {
                 var vfs = ((BrowserPAL) Runtime.Host.PlatformAdaptationLayer).VirtualFilesystem;
                 string code = vfs.GetFileContents(entryPoint);
-                Engine = Runtime.GetEngineByFileExtension(Path.GetExtension(Settings.EntryPoint));
-
+                Engine = Runtime.GetEngineByFileExtension(Path.GetExtension(entryPoint));
                 ScriptSource sourceCode = Engine.CreateScriptSourceFromString(code, entryPoint, SourceCodeKind.File);
+                RunningEntryPoint = true;
                 sourceCode.Compile(new ErrorFormatter.Sink()).Execute(EntryPointScope);
+                RunningEntryPoint = false;
             }
         }
     }
