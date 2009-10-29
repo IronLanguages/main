@@ -45,6 +45,19 @@ namespace InteropTests.Generics1 {
     public class D<T> : C<T> {
         public override int Arity { get { return 11; } }
     }
+
+    public interface J<T> {
+        void MethodOnJ();
+    }
+
+    public interface I<T> : J<T> {
+        void MethodOnI();
+    }
+
+    public class E<T> : I<T>, J<T> {
+        void I<T>.MethodOnI() { }
+        void J<T>.MethodOnJ() { }
+    }
 }
 
 namespace InteropTests.Namespaces2 {
@@ -1388,7 +1401,7 @@ InteropTests::Generics1::C[Fixnum]
 #<ArgumentError: `InteropTests::Generics1::C[Fixnum]' is not a generic type definition>
 ");
             
-            // C<T> instantiations are subclasses of C<>:
+            // C<> is a mixin for all its instantiations:
             TestOutput(@"
 include InteropTests::Generics1
 C[1].class_eval do
@@ -1404,6 +1417,65 @@ p C[Float].ancestors[0..2]
 InteropTests::Generics1::C[Fixnum]
 InteropTests::Generics1::C[String]
 [InteropTests::Generics1::C[Float], InteropTests::Generics1::C[T], Object]
+");
+
+            // It is possible to include a generic type definition into another class. It behaves like a Ruby module.
+            // Besides inclusion of a generic interface instantiation transitively includes its generic type definition.
+            TestOutput(@"
+include InteropTests::Generics1
+
+class ClassA 
+  include C[1]
+  include I[1]
+  p ancestors
+  new
+end
+
+class ClassB
+  include C[Fixnum] rescue p $!
+  include I[Fixnum]
+  p ancestors
+  new
+end
+", @"
+[ClassA, InteropTests::Generics1::I[T], InteropTests::Generics1::C[T], Object, InteropTests::Generics1, Kernel]
+#<TypeError: wrong argument type Class (expected Module)>
+[ClassB, InteropTests::Generics1::I[Fixnum], InteropTests::Generics1::I[T], Object, InteropTests::Generics1, Kernel]
+");
+
+            // generic type definitions cannot be instantiated and don't expose their methods:
+            TestOutput(@"
+include InteropTests::Generics1
+p C[Fixnum].new.method(:Arity)
+C[1].new rescue p $!
+C[1].instance_method(:Arity) rescue p $!
+", @"
+#<Method: InteropTests::Generics1::C[Fixnum]#Arity>
+#<NoMethodError: undefined method `new' for InteropTests::Generics1::C[T]:Module>
+#<NameError: undefined method `Arity' for module `InteropTests::Generics1::C[T]'>
+");
+        }
+
+        public class GenericClass1<T> {
+            public int Foo(T item) {
+                return 1;
+            }
+        }
+
+        public class GenericSubclass1<T> : GenericClass1<T> {
+        }
+
+        public void ClrGenerics2() {
+            Context.ObjectClass.SetConstant("T", Context.GetClass(GetType()));
+
+            // CLR methods with generic arguments defined on a generic type don't get duplicated:
+            // (C<T> inherits from C<> but the generic type definition should be ignored when looking for CLR method overloads):
+            TestOutput(@"
+p T::GenericClass1[Fixnum].new.foo(1)
+p T::GenericSubclass1[Fixnum].new.foo(1)
+", @"
+1
+1
 ");
         }
 
@@ -1430,7 +1502,7 @@ InteropTests::Generics1::C[String]
             }
         }
 
-        public void ClrGenerics2() {
+        public void ClrGenerics3() {
             Context.ObjectClass.SetConstant("C1", Context.GetClass(typeof(ClassWithNestedGenericTypes1)));
             Context.ObjectClass.SetConstant("C2", Context.GetClass(typeof(ClassWithNestedGenericTypes2)));
 
@@ -1763,6 +1835,126 @@ p E.new.virtual_method
 11
 21
 ");
+        }
+
+        public class ClassWithProperties {
+            private int _prop;
+            private int[] _values = new int[1];
+
+            public virtual int Prop {
+                get { return _prop; }
+                set { _prop = value; }
+            }
+
+            public virtual int this[int i] {
+                get { return _values[i]; }
+                set { _values[i] = value; }
+            }
+            
+            public int[] Report() {
+                Prop = 10;
+                this[0] = 20;
+                return new int[] { Prop, _prop, this[0], _values[0] };
+            }
+        }
+
+        public void ClrOverride5() {
+            Context.ObjectClass.SetConstant("C", Context.GetClass(typeof(ClassWithProperties)));
+            TestOutput(@"
+class D < C
+end
+
+p D.new.report
+
+class D < C
+  def prop
+    4
+  end
+
+  def prop= value
+    super(5)
+  end
+
+  def [] index
+    6
+  end
+
+  def []= index, value
+    super(index, 7)
+  end
+end
+
+p D.new.report
+", @"
+[10, 10, 20, 20]
+[4, 5, 6, 7]
+");
+        }
+
+        public class ClassWithVirtuals1 {
+            public virtual int Foo() { return 1; }
+            public virtual int Goo() { return 20; }
+            protected int Prot() { return 1000; }
+
+            public virtual int Bar() { return 1; }
+        }
+
+        public class ClassWithVirtuals2 : ClassWithVirtuals1 {
+            public int Report() {
+                return Foo() + Goo();
+            }
+
+            public sealed override int Goo() { return 30; }
+
+            public override int Bar() { return 2; }
+        }
+
+        public class ClassWithVirtuals3 : ClassWithVirtuals2 {
+            public override int Bar() { return 3; }
+        }
+
+        public interface I1 { int f(); }
+        public interface I2 { int g(); }
+
+        public void ClrOverride6() {
+            Context.ObjectClass.SetConstant("C", Context.GetClass(typeof(ClassWithVirtuals2)));
+            Context.ObjectClass.SetConstant("I1", Context.GetModule(typeof(I1)));
+            Context.ObjectClass.SetConstant("I2", Context.GetModule(typeof(I2)));
+            TestOutput(@"
+class D < C
+  include I1
+end
+
+class E < D 
+  include I2
+  
+  def foo
+    super + 100
+  end
+
+  def goo
+    super + prot
+  end
+end
+
+p E.new.report
+p E.new.goo
+", @"
+131
+1030
+");
+
+            AssertOutput(() => CompilerTest(@"
+class C
+  def bar
+    super + 100
+  end
+end
+
+C.new.bar rescue p $!
+"), @"
+#<NoMethodError: Virtual CLR method `bar' called via super from *; Super calls to virtual CLR methods can only be used in a Ruby subclass of the class declaring the method>
+", OutputFlags.Match);
         }
 
         /// <summary>

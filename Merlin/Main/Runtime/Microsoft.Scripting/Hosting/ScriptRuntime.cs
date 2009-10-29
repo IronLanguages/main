@@ -16,6 +16,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Dynamic;
 using System.IO;
 using System.Reflection;
 using System.Security.Permissions;
@@ -259,12 +260,22 @@ namespace Microsoft.Scripting.Hosting {
             return GetEngine(languageId).CreateScope();
         }
 
+        public ScriptScope CreateScope(IDynamicMetaObjectProvider storage) {
+            return InvariantEngine.CreateScope(storage);
+        }
+
+        public ScriptScope CreateScope(string languageId, IDynamicMetaObjectProvider storage) {
+            return GetEngine(languageId).CreateScope(storage);
+        }
+
+        [Obsolete("IAttributesCollection is obsolete, use CreateScope(IDynamicMetaObjectProvider) instead")]
         public ScriptScope CreateScope(IAttributesCollection dictionary) {
             return InvariantEngine.CreateScope(dictionary);
         }
 
-        public ScriptScope CreateScope(string languageId, IAttributesCollection dictionary) {
-            return GetEngine(languageId).CreateScope(dictionary);
+        [Obsolete("IAttributesCollection is obsolete, use CreateScope(string, IDynamicMetaObjectProvider) instead")]
+        public ScriptScope CreateScope(string languageId, IAttributesCollection storage) {
+            return GetEngine(languageId).CreateScope(storage);
         }
 
         #endregion

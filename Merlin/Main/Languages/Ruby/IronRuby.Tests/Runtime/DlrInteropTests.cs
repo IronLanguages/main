@@ -15,12 +15,15 @@
 
 #if !CLR2
 using System.Linq.Expressions;
+using CsBinder = Microsoft.CSharp.RuntimeBinder.Binder;
+using CSharpBinderFlags = Microsoft.CSharp.RuntimeBinder.CSharpBinderFlags;
 #else
 using Microsoft.Scripting.Ast;
 using dynamic = System.Object;
 #endif
 
 using System;
+using System.Diagnostics;
 using System.Dynamic;
 using System.Runtime.CompilerServices;
 using IronRuby.Builtins;
@@ -30,6 +33,7 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using System.Collections;
 using IronRuby.Runtime;
+using System.Collections.Generic;
 
 namespace IronRuby.Tests {
     #region Custom binders
@@ -496,9 +500,8 @@ class SanityTest
     def self.sanity_test main
         # $ruby_array_list
         assert_equal main.ruby_array_list.Count, 2
-        assert_error lambda { main.ruby_array_list[0] }, NameError # Bug !!!!!!!!!!!! Should equal 100
-
-        assert_error lambda { main.ruby_array_list.Count = 1 }, NoMethodError
+        main.ruby_array_list[0]
+    
         assert_equal main.ruby_array_list.ruby_method, 'Hi from Ruby'.to_clr_string
         assert_equal main.ruby_array_list.IndexOf(nil), 123456789
         
@@ -601,6 +604,13 @@ end
             // Ruby attributes are invoked directly via SetMember/GetMember:
             AreEqual(MySetMemberBinder.Invoke(ruby_array_list, "ruby_attribute", 123), 123);
             AreEqual(MyGetMemberBinder.Invoke(ruby_array_list, "ruby_attribute"), 123);
+#if !CLR2
+            List<object> result = new List<object>();
+            foreach (object item in (dynamic)ruby_array_list) {
+                result.Add(item);
+            }
+            Assert(result.Count == 2 && (int)result[0] == 100 && (int)result[1] == 200);
+#endif
         }
 
         public void Dlr_MethodMissing() {

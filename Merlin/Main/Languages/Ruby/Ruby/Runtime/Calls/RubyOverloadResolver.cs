@@ -103,9 +103,7 @@ namespace IronRuby.Runtime.Calls {
 
             if (_callConvention == SelfCallConvention.SelfIsInstance) {
                 if (CompilerHelpers.IsStatic(method)) {
-                    Debug.Assert(RubyUtils.IsOperator(method) || CompilerHelpers.IsExtension(method) || 
-                        method.Name.EndsWith(RubyMethodGroupInfo.SuperCallMethodWrapperNameSuffix)
-                    );
+                    Debug.Assert(RubyUtils.IsOperator(method) || CompilerHelpers.IsExtension(method));
 
                     // receiver maps to the first parameter:
                     mapping.AddParameter(new ParameterWrapper(infos[i], infos[i].ParameterType, null, true, false, false, true));
@@ -674,13 +672,23 @@ namespace IronRuby.Runtime.Calls {
                 case BindingResult.AmbiguousMatch:
                     exceptionValue = MakeAmbiguousCallError(target);
                     break;
+
                 case BindingResult.IncorrectArgumentCount:
                     exceptionValue = MakeIncorrectArgumentCountError(target);
                     break;
+
                 case BindingResult.CallFailure:
                     exceptionValue = MakeCallFailureError(target);
                     break;
-                default: throw new InvalidOperationException();
+
+                case BindingResult.NoCallableMethod:
+                    exceptionValue = Methods.CreateArgumentsError.OpCall(
+                        AstUtils.Constant(String.Format("Method '{0}' is not callable", target.Name))
+                    );
+                    break;
+
+                default: 
+                    throw new InvalidOperationException();
             }
             return Microsoft.Scripting.Actions.ErrorInfo.FromException(exceptionValue);
         }
@@ -771,14 +779,17 @@ namespace IronRuby.Runtime.Calls {
                             }
                         }
                         break;
+
                     case CallFailureReason.TypeInference:
                         // TODO: Display generic parameters so it's clear what we couldn't infer.
                         return Methods.CreateArgumentsError.OpCall(
                             AstUtils.Constant(String.Format("generic arguments could not be infered for method '{0}'", target.Name))
                         );
+
                     case CallFailureReason.DuplicateKeyword:
                     case CallFailureReason.UnassignableKeyword:
-                    default: throw new InvalidOperationException();
+                    default: 
+                        throw new InvalidOperationException();
                 }
             }
             throw new InvalidOperationException();

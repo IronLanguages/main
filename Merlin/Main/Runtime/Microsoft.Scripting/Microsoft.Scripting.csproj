@@ -24,7 +24,6 @@
     <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
     <Silverlight3Path>..\..\Utilities\Silverlight\x86ret</Silverlight3Path>
     <Silverlight4Path>..\..\Utilities\Silverlight\v4-x86fre</Silverlight4Path>
-
     <!-- The following two lines prevent csc.rsp and Microsoft.NETFramework.props from adding additional assembly references -->
     <NoConfig>true</NoConfig>
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
@@ -242,6 +241,7 @@
     <Compile Include="Utils\DictionaryUnionEnumerator.cs" />
     <Compile Include="Utils\ExceptionFactory.Generated.cs" />
     <Compile Include="Utils\ExceptionUtils.cs" />
+    <Compile Include="Utils\ExpressionUtils.cs" />
     <Compile Include="Utils\ReadOnlyDictionary.cs" />
     <Compile Include="Utils\ReflectionUtils.cs" />
     <Compile Include="Utils\StringUtils.cs" />

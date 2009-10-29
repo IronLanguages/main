@@ -47,6 +47,11 @@ namespace IronRuby.Builtins {
             return MutableString.Create(value);
         }
 
+        [RubyConstructor]
+        public static MutableString/*!*/ Create(RubyClass/*!*/ self, [NotNull]byte[]/*!*/ value) {
+            return MutableString.CreateBinary(value);
+        }
+
         #region Helpers
 
         internal static bool InExclusiveRangeNormalized(int length, ref int index) {
@@ -343,6 +348,12 @@ namespace IronRuby.Builtins {
 
         #region initialize, initialize_copy
 
+        // Reinitialization. Not called when a factory/non-default ctor is called.
+        [RubyMethod("initialize", RubyMethodAttributes.PrivateInstance)]
+        public static MutableString/*!*/ Reinitialize(MutableString/*!*/ self) {
+            return self;
+        }
+
         // "initialize" not called when a factory/non-default ctor is called.
         // "initialize_copy" called from "dup" and "clone"
         [RubyMethod("initialize", RubyMethodAttributes.PrivateInstance)]
@@ -350,10 +361,11 @@ namespace IronRuby.Builtins {
         public static MutableString/*!*/ Reinitialize(MutableString/*!*/ self, [DefaultProtocol, NotNull]MutableString other) {
             return Replace(self, other);
         }
-        
-        // Reinitialization. Not called when a factory/non-default ctor is called.
+
         [RubyMethod("initialize", RubyMethodAttributes.PrivateInstance)]
-        public static MutableString/*!*/ Reinitialize(MutableString/*!*/ self) {
+        public static MutableString/*!*/ Reinitialize(MutableString/*!*/ self, [NotNull]byte[] other) {
+            self.Clear();
+            self.Append(other);
             return self;
         }
 

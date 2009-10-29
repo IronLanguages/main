@@ -74,6 +74,7 @@
     <DefineConstants>TRACE;DEBUG;IRONPYTHON_WINDOW;CLR4;$(SignedSym)</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'V4 Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -82,6 +83,7 @@
     <DefineConstants>TRACE;IRONPYTHON_WINDOW;CLR4;$(SignedSym)</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />

@@ -40,10 +40,10 @@ namespace IronRuby.Builtins {
         NoOverrides = 1,
 
         /// <summary>
-        /// Module doesn't allow its methods to be called by mangled names.
+        /// Module doesn't allow its methods to be called by mangled (FooBar -> foo_bar) or mapped ([] -> get_Item) names.
         /// Used for built-ins.
         /// </summary>
-        NoNameMangling = 2,
+        NoNameMapping = 2,
 
         /// <summary>
         /// Module is not published in the runtime global scope.
@@ -53,7 +53,7 @@ namespace IronRuby.Builtins {
         /// <summary>
         /// Default restrictions for built-in modules.
         /// </summary>
-        Builtin = NoOverrides | NoNameMangling | NotPublished,
+        Builtin = NoOverrides | NoNameMapping | NotPublished,
 
         All = Builtin
     }
@@ -63,7 +63,7 @@ namespace IronRuby.Builtins {
         None = 0,
 
         NoOverrides = ModuleRestrictions.NoOverrides,
-        NoNameMangling = ModuleRestrictions.NoNameMangling,
+        NoNameMangling = ModuleRestrictions.NoNameMapping,
         NotPublished = ModuleRestrictions.NotPublished,
         RestrictionsMask = ModuleRestrictions.All,
 
@@ -229,8 +229,12 @@ namespace IronRuby.Builtins {
             get { return _typeTracker != null && _typeTracker.Type.IsInterface; }
         }
 
+        public bool IsClrModule {
+            get { return _typeTracker != null && IsModuleType(_typeTracker.Type); }
+        }
+
         public virtual Type/*!*/ GetUnderlyingSystemType() {
-            if (IsInterface) {
+            if (IsClrModule) {
                 return _typeTracker.Type;
             } else {
                 throw new InvalidOperationException();
@@ -349,7 +353,7 @@ namespace IronRuby.Builtins {
                         Utils.Log(_name ?? "<anonymous>", "CT_INIT");
                         // TODO: use lock-free operations in initializers
                         _constantsInitializer(this);
-                    } else if (!IsInterface && _typeTracker != null) {
+                    } else if (_typeTracker != null && !_typeTracker.Type.IsInterface) {
                         // Load types eagerly. We do this only for CLR types that have no constant initializer (not builtins) and 
                         // a constant access is performed (otherwise this method wouldn't be called).
                         // 
@@ -1142,9 +1146,9 @@ namespace IronRuby.Builtins {
 
             ForEachAncestor(inherited, delegate(RubyModule/*!*/ module) {
 
-                // skip interfaces (methods declared on interfaces have already been looked for in the class);
-                // if 'this' is an interface, we want to visit all interface methods:
-                if (module.IsInterface && !this.IsInterface) return false;
+                // Skip CLR modules (methods declared on CLR modules have already been looked for in the class).
+                // If 'this' is a CLR module, we want to visit all mixed-in methods.
+                if (module.IsClrModule && !this.IsClrModule) return false;
 
                 // notification that we entered the module (it could have no method):
                 if (action(module, null, null)) return true;
@@ -1539,7 +1543,7 @@ namespace IronRuby.Builtins {
 
             if (virtualLookup) {
                 string mangled;
-                // TODO: set/get_FooBar??
+                // Note: property and default indexers getters and setters use FooBar, FooBar= and [], []= names, respectively, in virtual sites:
                 if ((mangled = RubyUtils.TryMangleMethodName(name)) != null && TryGetDefinedMethod(mangled, ref skipHidden, out method)
                     && method.IsRubyMember) {
                     return true;
@@ -1564,12 +1568,13 @@ namespace IronRuby.Builtins {
         private bool TryGetClrMember(string/*!*/ name, bool virtualLookup, out RubyMemberInfo method) {
             // Skip hidden CLR overloads.
             // Skip lookup on types that are not visible, that are interfaces or generic type definitions.
-            if (_typeTracker != null && !_typeTracker.Type.IsInterface && !_typeTracker.Type.IsGenericTypeDefinition) {
+            if (_typeTracker != null && !IsModuleType(_typeTracker.Type)) {
                 // Note: Do not allow mangling for CLR virtual lookups - we want to match the overridden name exactly as is, 
                 // so that it corresponds to the base method call the override stub performs.
-                bool tryUnmangle = !virtualLookup && (_restrictions & ModuleRestrictions.NoNameMangling) == 0;
+                bool mapNames = (Restrictions & ModuleRestrictions.NoNameMapping) == 0;
+                bool unmangleNames = !virtualLookup && mapNames;
 
-                if (TryGetClrMember(_typeTracker.Type, name, tryUnmangle, out method)) {
+                if (TryGetClrMember(_typeTracker.Type, name, mapNames, unmangleNames, out method)) {
                     _methods.Add(name, method);
                     return true;
                 }
@@ -1579,7 +1584,7 @@ namespace IronRuby.Builtins {
             return false;
         }
 
-        protected virtual bool TryGetClrMember(Type/*!*/ type, string/*!*/ name, bool tryUnmangle, out RubyMemberInfo method) {
+        protected virtual bool TryGetClrMember(Type/*!*/ type, string/*!*/ name, bool mapNames, bool unmangleNames, out RubyMemberInfo method) {
             method = null;
             return false;
         }
@@ -1600,7 +1605,7 @@ namespace IronRuby.Builtins {
             }
 
             // CLR members (do not include interface members - they are not callable methods, just metadata):
-            if (_typeTracker != null && !_typeTracker.Type.IsInterface) {
+            if (_typeTracker != null && !IsModuleType(_typeTracker.Type)) {
                 foreach (string name in EnumerateClrMembers(_typeTracker.Type)) {
                     if (action(this, name, RubyMemberInfo.InteropMember)) {
                         return true;
@@ -1762,6 +1767,13 @@ namespace IronRuby.Builtins {
 
         #region Mixins (thread-safe)
 
+        /// <summary>
+        /// Returns true if the CLR type is treated as Ruby module (as opposed to a Ruby class)
+        /// </summary>
+        public static bool IsModuleType(Type/*!*/ type) {
+            return type.IsInterface || type.IsGenericTypeDefinition;
+        }
+
         // thread-safe:
         public bool HasAncestor(RubyModule/*!*/ module) {
             using (Context.ClassHierarchyLocker()) {
@@ -1797,23 +1809,14 @@ namespace IronRuby.Builtins {
             RubyModule[] expanded = ExpandMixinsNoLock(GetSuperClass(), _mixins, modules);
 
             foreach (RubyModule module in expanded) {
-                if (module.IsInterface) {
-                    if (!CanIncludeClrInterface) {
-                        bool alreadyIncluded = false;
-                        foreach (RubyModule includedModule in _mixins) {
-                            if (includedModule == module) {
-                                alreadyIncluded = true;
-                                break;
-                            }
-                        }
-                        if (!alreadyIncluded) {
-                            throw new InvalidOperationException(String.Format(
-                                "Interface {0} cannot be included in class {1} because its underlying type has already been created.",
-                                module.Name, Name
-                                ));
-                        }
+                if (module.IsInterface && !CanIncludeClrInterface) {
+                    if (Array.IndexOf(_mixins, module) == -1) {
+                        throw new InvalidOperationException(String.Format(
+                            "Interface `{0}' cannot be included in class `{1}' because its underlying type has already been created",
+                            module.Name, Name
+                        ));
                     }
-                }
+                } 
             }
 
             MixinsUpdated(_mixins, _mixins = expanded);

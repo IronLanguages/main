@@ -6,6 +6,6 @@ end
 
 describe :uninstantiable_generic_class, :shared => true do
   it "are not able to be instantiated" do
-    lambda { @method.new }.should raise_error(ArgumentError, /generic/)
+    lambda { @method.new }.should raise_error(NoMethodError, /new/)
   end
 end

@@ -22,7 +22,6 @@ using Microsoft.Scripting.Ast;
 
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Runtime.Remoting;
 using System.Runtime.Serialization;
@@ -51,10 +50,8 @@ namespace Microsoft.Scripting.Hosting {
         private readonly Scope _scope;
         private readonly ScriptEngine _engine;
 
-        public ScriptScope(ScriptEngine engine, Scope scope) {
-            ContractUtils.RequiresNotNull(engine, "engine");
-            ContractUtils.RequiresNotNull(scope, "scope");
-
+        internal ScriptScope(ScriptEngine engine, Scope scope) {
+            Assert.NotNull(engine, scope);
             _scope = scope;
             _engine = engine;
         }
@@ -79,7 +76,7 @@ namespace Microsoft.Scripting.Hosting {
         /// <exception cref="MissingMemberException">The specified name is not defined in the scope.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="name"/> is a <c>null</c> reference.</exception>
         public dynamic GetVariable(string name) {
-            return Engine.Operations.GetMember(Scope, name);
+            return _engine.Operations.GetMember(Scope, name);
         }
 
         /// <summary>
@@ -90,7 +87,7 @@ namespace Microsoft.Scripting.Hosting {
         /// <exception cref="MissingMemberException">The specified name is not defined in the scope.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="name"/> is a <c>null</c> reference.</exception>
         public T GetVariable<T>(string name) {
-            return _engine.Operations.ConvertTo<T>((object)_engine.GetVariable(this, name));
+            return _engine.Operations.GetMember<T>(Scope, name);
         }
 
         /// <summary>
@@ -98,7 +95,7 @@ namespace Microsoft.Scripting.Hosting {
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="name"/> is a <c>null</c> reference.</exception>
         public bool TryGetVariable(string name, out dynamic value) {
-            return Engine.Operations.TryGetMember(Scope, name, out value);
+            return _engine.Operations.TryGetMember(Scope, name, out value);
         }
 
         /// <summary>
@@ -109,7 +106,7 @@ namespace Microsoft.Scripting.Hosting {
         /// <exception cref="ArgumentNullException"><paramref name="name"/> is a <c>null</c> reference.</exception>
         public bool TryGetVariable<T>(string name, out T value) {
             object result;
-            if (Engine.Operations.TryGetMember(Scope, name, out result)) {
+            if (_engine.Operations.TryGetMember(Scope, name, out result)) {
                 value = _engine.Operations.ConvertTo<T>(result);
                 return true;
             }
@@ -122,7 +119,7 @@ namespace Microsoft.Scripting.Hosting {
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="name"/> is a <c>null</c> reference.</exception>
         public void SetVariable(string name, object value) {
-            Engine.Operations.SetMember(Scope, name, value);
+            _engine.Operations.SetMember(Scope, name, value);
         }
 
 #if !SILVERLIGHT
@@ -179,8 +176,8 @@ namespace Microsoft.Scripting.Hosting {
         /// <returns><c>true</c> if the value existed in the scope before it has been removed.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="name"/> is a <c>null</c> reference.</exception>
         public bool RemoveVariable(string name) {
-            if (Engine.Operations.ContainsMember(_scope, name)) {
-                Engine.Operations.RemoveMember(_scope, name);
+            if (_engine.Operations.ContainsMember(_scope, name)) {
+                _engine.Operations.RemoveMember(_scope, name);
                 return true;
             }
 
@@ -193,7 +190,7 @@ namespace Microsoft.Scripting.Hosting {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
         public IEnumerable<string> GetVariableNames() {
             // Remoting: we eagerly enumerate all variables to avoid cross domain calls for each item.
-            return Engine.Operations.GetMemberNames((object)_scope.Storage);
+            return _engine.Operations.GetMemberNames((object)_scope.Storage);
         }
 
         /// <summary>
@@ -205,7 +202,7 @@ namespace Microsoft.Scripting.Hosting {
             var result = new List<KeyValuePair<string, object>>();
             
             foreach (string name in GetVariableNames()) {
-                result.Add(new KeyValuePair<string, object>(name, (object)Engine.Operations.GetMember((object)_scope.Storage, name)));
+                result.Add(new KeyValuePair<string, object>(name, (object)_engine.Operations.GetMember((object)_scope.Storage, name)));
             }
 
             result.TrimExcess();

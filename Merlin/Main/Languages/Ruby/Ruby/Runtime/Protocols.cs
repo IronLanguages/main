@@ -438,7 +438,7 @@ namespace IronRuby.Runtime {
             }
 
             RubyModule module = value as RubyModule;
-            if (module != null && (module.IsClass || module.IsInterface)) {
+            if (module != null && (module.IsClass || module.IsClrModule)) {
                 return module.GetUnderlyingSystemType();
             }
 

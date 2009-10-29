@@ -55,6 +55,7 @@ namespace Microsoft.Scripting.Runtime {
         /// <summary>
         /// Creates a new scope with the provided dictionary.
         /// </summary>
+        [Obsolete("IAttributesCollection is obsolete, use Scope(IDynamicMetaObjectProvider) overload instead")]
         public Scope(IAttributesCollection dictionary) {
             _extensions = ScopeExtension.EmptyArray;
             _storage = new AttributesAdapter(dictionary);
@@ -100,13 +101,17 @@ namespace Microsoft.Scripting.Runtime {
             }
         }
 
-        class MetaScope : DynamicMetaObject {
+        internal sealed class MetaScope : DynamicMetaObject {
             public MetaScope(Expression parameter, Scope scope)
                 : base(parameter, BindingRestrictions.Empty, scope) {
             }
 
             public override DynamicMetaObject BindGetMember(GetMemberBinder binder) {
                 return Restrict(binder.Bind(StorageMetaObject, DynamicMetaObject.EmptyMetaObjects));
+            }
+
+            public override DynamicMetaObject BindInvokeMember(InvokeMemberBinder binder, DynamicMetaObject[] args) {
+                return Restrict(binder.Bind(StorageMetaObject, args));
             }
 
             public override DynamicMetaObject BindSetMember(SetMemberBinder binder, DynamicMetaObject value) {                
@@ -161,7 +166,7 @@ namespace Microsoft.Scripting.Runtime {
 
         #endregion
 
-        class AttributesAdapter : IDynamicMetaObjectProvider {
+        internal sealed class AttributesAdapter : IDynamicMetaObjectProvider {
             private readonly IAttributesCollection _data;
 
             public AttributesAdapter(IAttributesCollection data) {
@@ -192,12 +197,26 @@ namespace Microsoft.Scripting.Runtime {
 
             #endregion
 
-            class Meta : DynamicMetaObject {
+            internal sealed class Meta : DynamicMetaObject {
                 public Meta(Expression parameter, AttributesAdapter storage)
                     : base(parameter, BindingRestrictions.Empty, storage) {
                 }
 
                 public override DynamicMetaObject BindGetMember(GetMemberBinder binder) {
+                    return DynamicTryGetMember(binder.Name,
+                        binder.FallbackGetMember(this).Expression,
+                        (tmp) => tmp
+                    );
+                }
+
+                public override DynamicMetaObject BindInvokeMember(InvokeMemberBinder binder, DynamicMetaObject[] args) {
+                    return DynamicTryGetMember(binder.Name, 
+                        binder.FallbackInvokeMember(this, args).Expression,
+                        (tmp) => binder.FallbackInvoke(new DynamicMetaObject(tmp, BindingRestrictions.Empty), args, null).Expression
+                    );
+                }
+
+                private DynamicMetaObject DynamicTryGetMember(string name, Expression fallback, Func<Expression, Expression> resultOp) {
                     var tmp = Expression.Parameter(typeof(object));
                     return new DynamicMetaObject(
                         Expression.Block(
@@ -209,13 +228,13 @@ namespace Microsoft.Scripting.Runtime {
                                         Expression.Invoke(
                                             Expression.Constant(new Func<object, SymbolId, object>(AttributesAdapter.TryGetMember)),
                                             Expression,
-                                            Expression.Constant(SymbolTable.StringToId(binder.Name))
+                                            Expression.Constant(SymbolTable.StringToId(name))
                                         )
                                     ),
                                     Expression.Constant(_getFailed)
                                 ),
-                                tmp,
-                                Expression.Convert(binder.FallbackGetMember(this).Expression, typeof(object))
+                                ExpressionUtils.Convert(resultOp(tmp), typeof(object)),
+                                ExpressionUtils.Convert(fallback, typeof(object))
                             )
                         ),
                         GetRestrictions()

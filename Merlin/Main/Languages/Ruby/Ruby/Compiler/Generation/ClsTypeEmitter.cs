@@ -35,42 +35,7 @@ using IronRuby.Runtime.Calls;
 
 namespace IronRuby.Compiler.Generation {
 
-    public abstract partial class ClsTypeEmitter {
-        class SpecialNames {
-            private readonly Dictionary<string/*!*/, List<string/*!*/>/*!*/>/*!*/ _specialNames;
-
-            internal SpecialNames() {
-                _specialNames = new Dictionary<string, List<string>>();
-            }
-
-            internal void SetSpecialName(string/*!*/ specialName, List<string/*!*/>/*!*/ names) {
-                _specialNames[specialName] = names;
-            }
-
-            internal void SetSpecialName(string/*!*/ name) {
-                List<string> names = new List<string>(1);
-                names.Add(name);
-                _specialNames[name] = names;
-            }
-
-            internal IEnumerable<string> GetBaseName(MethodInfo/*!*/ mi) {
-                string newName;
-                if (mi.Name.StartsWith(BaseMethodPrefix)) {
-                    newName = mi.Name.Substring(BaseMethodPrefix.Length);
-                } else if (mi.Name.StartsWith(FieldGetterPrefix)) {
-                    newName = mi.Name.Substring(FieldGetterPrefix.Length);
-                } else if (mi.Name.StartsWith(FieldSetterPrefix)) {
-                    newName = mi.Name.Substring(FieldSetterPrefix.Length);
-                } else {
-                    throw new InvalidOperationException();
-                }
-
-                Debug.Assert(_specialNames.ContainsKey(newName));
-
-                return _specialNames[newName];
-            }
-        }
-
+    public abstract class ClsTypeEmitter {
         public const string VtableNamesField = "#VTableNames#";
         public const string BaseMethodPrefix = "#base#";
         public const string FieldGetterPrefix = "#field_get#", FieldSetterPrefix = "#field_set#";
@@ -79,18 +44,12 @@ namespace IronRuby.Compiler.Generation {
         private readonly TypeBuilder _tb;
         private readonly Type _baseType;
         private int _site;
-        private readonly SpecialNames _specialNames;
         private readonly List<Expression> _dynamicSiteFactories;
 
         protected ClsTypeEmitter(TypeBuilder tb) {
             _tb = tb;
             _baseType = tb.BaseType;
-            _specialNames = new SpecialNames();
             _dynamicSiteFactories = new List<Expression>();
-        }
-
-        private static bool ShouldOverrideVirtual(MethodInfo/*!*/ mi) {
-            return true;
         }
 
         private static bool CanOverrideMethod(MethodInfo/*!*/ mi) {
@@ -111,9 +70,6 @@ namespace IronRuby.Compiler.Generation {
         protected abstract MethodInfo GetGenericConversionSiteFactory(Type toType);
         protected abstract void EmitClassObjectFromInstance(ILGen il);
         
-        protected abstract bool TryGetName(Type clrType, MethodInfo mi, out string name);
-        protected abstract bool TryGetName(Type clrType, EventInfo ei, MethodInfo mi, out string name);
-        protected abstract bool TryGetName(Type clrType, PropertyInfo pi, MethodInfo mi, out string name);
         protected abstract Type/*!*/[]/*!*/ MakeSiteSignature(int nargs);
         protected abstract Type/*!*/ ContextType { get; }
 
@@ -247,8 +203,6 @@ namespace IronRuby.Compiler.Generation {
 
                     fieldAccessorNames.Add(method.Name);
                 }
-
-                _specialNames.SetSpecialName(fi.Name, fieldAccessorNames);
             }
         }
 
@@ -257,9 +211,18 @@ namespace IronRuby.Compiler.Generation {
         /// including statics and non-statics.
         /// </summary>
         internal void OverrideMethods(Type type) {
-            // if we have conflicting virtual's due to new slots only override the methods on the
-            // most derived class.
+            // if we have conflicting virtual's due to new slots only override the methods on the most derived class.
             var added = new Dictionary<Key<string, MethodSignatureInfo>, MethodInfo>();
+
+            string defaultGetter, defaultSetter;
+            object[] attrs = type.GetCustomAttributes(typeof(DefaultMemberAttribute), false);
+            if (attrs.Length == 1) {
+                string indexer = ((DefaultMemberAttribute)attrs[0]).MemberName;
+                defaultGetter = "get_" + indexer;
+                defaultSetter = "set_" + indexer;
+            } else {
+                defaultGetter = defaultSetter = null;
+            }
 
             MethodInfo overridden;
             MethodInfo[] methods = type.GetMethods(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.FlattenHierarchy);
@@ -277,127 +240,37 @@ namespace IronRuby.Compiler.Generation {
                 }
             }
 
-            var overriddenProperties = new Dictionary<PropertyInfo, PropertyBuilder>();
             foreach (MethodInfo mi in added.Values) {
-                if (!ShouldOverrideVirtual(mi) || !CanOverrideMethod(mi)) continue;
+                if (mi.DeclaringType == typeof(object) && mi.Name == "Finalize") {
+                    continue;
+                }
 
                 if (mi.IsPublic || mi.IsProtected()) {
-                    if (mi.IsSpecialName) {
-                        OverrideSpecialName(mi, overriddenProperties);
-                    } else {
-                        OverrideBaseMethod(mi);
-                    }
-                }
-            }
-        }
+                    if (mi.IsVirtual && !mi.IsFinal) {
+                        if (CanOverrideMethod(mi)) {
+                            // override non-sealed virtual methods
+                            string name = mi.Name;
+                            if (mi.IsSpecialName) {
+                                if (name == defaultGetter) {
+                                    name = "[]";
+                                } else if (name == defaultSetter) {
+                                    name = "[]=";
+                                } else if (name.StartsWith("get_")) {
+                                    name = name.Substring(4);
+                                } else if (name.StartsWith("set_")) {
+                                    name = name.Substring(4) + "=";
+                                }
+                            }
 
-        private void OverrideSpecialName(MethodInfo mi, Dictionary<PropertyInfo, PropertyBuilder> overridden) {
-            if (!mi.IsVirtual || mi.IsFinal) {
-                if ((mi.IsProtected() || mi.IsSpecialName) && (mi.Name.StartsWith("get_") || mi.Name.StartsWith("set_"))) {
-                    // need to be able to call into protected getter/setter methods from derived types,
-                    // even if these methods aren't virtual and we are in partial trust.
-                    _specialNames.SetSpecialName(mi.Name);
-                    MethodBuilder mb = CreateSuperCallHelper(mi);
+                            CreateVTableMethodOverride(mi, name);
 
-                    foreach (PropertyInfo pi in mi.DeclaringType.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)) {
-                        if (pi.GetGetMethod(true) == mi || pi.GetSetMethod(true) == mi) {
-                            AddPublicProperty(mi, overridden, mb, pi);
-                            break;
-                        }
-                    }
-                }
-            } else if (!TryOverrideProperty(mi, overridden)) {
-                EventInfo[] eis = mi.DeclaringType.GetEvents(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-                foreach (EventInfo ei in eis) {
-                    if (ei.GetAddMethod() == mi) {
-                        CreateVTableMethodOverride(mi, mi.Name);
-                        return;
-                    } else if (ei.GetRemoveMethod() == mi) {
-                        CreateVTableMethodOverride(mi, mi.Name);
-                        return;
-                    }
-                }
-
-                OverrideBaseMethod(mi);
-            }
-        }
-
-        private bool TryOverrideProperty(MethodInfo mi, Dictionary<PropertyInfo, PropertyBuilder> overridden) {
-            string name;
-            PropertyInfo[] pis = mi.DeclaringType.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-
-            _specialNames.SetSpecialName(mi.Name);
-            MethodBuilder mb = null;
-            MethodInfo accessor;
-            PropertyInfo foundProperty = null;
-            foreach (PropertyInfo pi in pis) {
-                if (pi.GetIndexParameters().Length > 0) {
-                    if ((accessor = pi.GetGetMethod(true)) != null && mi.MethodHandle == accessor.MethodHandle) {
-                        mb = CreateVTableMethodOverride(mi, "__getitem__");
-                        if (!mi.IsAbstract) {
+                            // define a stub for calling base virtual methods from dynamic methods:
                             CreateSuperCallHelper(mi);
                         }
-                        foundProperty = pi;
-                        break;
-                    } else if ((accessor = pi.GetSetMethod(true)) != null && mi.MethodHandle == accessor.MethodHandle) {
-                        mb = CreateVTableMethodOverride(mi, "__setitem__");
-                        if (!mi.IsAbstract) {
-                            CreateSuperCallHelper(mi);
-                        }
-                        foundProperty = pi;
-                        break;
-                    }
-                } else if ((accessor = pi.GetGetMethod(true)) != null && mi.MethodHandle == accessor.MethodHandle) {
-                    if (mi.Name != "get_PythonType") {
-                        if (!TryGetName(mi.DeclaringType, pi, mi, out name)) {
-                            return true;
-                        }
-                        mb = CreateVTableGetterOverride(mi, name);
-                        if (!mi.IsAbstract) {
-                            CreateSuperCallHelper(mi);
-                        }
-                    }
-                    foundProperty = pi;
-                    break;
-                } else if ((accessor = pi.GetSetMethod(true)) != null && mi.MethodHandle == accessor.MethodHandle) {
-                    if (!TryGetName(mi.DeclaringType, pi, mi, out name)) {
-                        return true;
-                    }
-                    mb = CreateVTableSetterOverride(mi, name);
-                    if (!mi.IsAbstract) {
+                    } else if (mi.IsProtected()) {
+                        // define a stub for calling protected methods from dynamic methods:
                         CreateSuperCallHelper(mi);
                     }
-                    foundProperty = pi;
-                    break;
-                }
-            }
-
-            if (foundProperty != null) {
-                AddPublicProperty(mi, overridden, mb, foundProperty);
-                return true;
-            }
-            return false;
-        }
-
-        private void AddPublicProperty(MethodInfo mi, Dictionary<PropertyInfo, PropertyBuilder> overridden, MethodBuilder mb, PropertyInfo foundProperty) {
-            MethodInfo getter = foundProperty.GetGetMethod(true);
-            MethodInfo setter = foundProperty.GetSetMethod(true);
-            if (getter != null && getter.IsProtected() || setter != null && setter.IsProtected()) {
-                PropertyBuilder builder;
-                if (!overridden.TryGetValue(foundProperty, out builder)) {
-                    ParameterInfo[] indexArgs = foundProperty.GetIndexParameters();
-                    Type[] paramTypes = new Type[indexArgs.Length];
-                    for (int i = 0; i < paramTypes.Length; i++) {
-                        paramTypes[i] = indexArgs[i].ParameterType;
-                    }
-
-                    overridden[foundProperty] = builder = _tb.DefineProperty(foundProperty.Name, foundProperty.Attributes, foundProperty.PropertyType, paramTypes);
-                }
-
-                if (foundProperty.GetGetMethod(true) == mi) {
-                    builder.SetGetMethod(mb);
-                } else if (foundProperty.GetSetMethod(true) == mi) {
-                    builder.SetSetMethod(mb);
                 }
             }
         }
@@ -424,35 +297,6 @@ namespace IronRuby.Compiler.Generation {
                 il.EmitString(mi.Name);
                 il.EmitCall(MissingInvokeMethodException());
                 il.Emit(OpCodes.Throw);
-            }
-        }
-
-        private void OverrideBaseMethod(MethodInfo mi) {
-            if ((!mi.IsVirtual || mi.IsFinal) && !mi.IsProtected()) {
-                return;
-            }
-
-            Type baseType;
-            if (_baseType == mi.DeclaringType || _baseType.IsSubclassOf(mi.DeclaringType)) {
-                baseType = _baseType;
-            } else {
-                // We must be inherting from an interface
-                Debug.Assert(mi.DeclaringType.IsInterface);
-                baseType = mi.DeclaringType;
-            }
-
-            string name = null;
-            if (!TryGetName(baseType, mi, out name)) return;
-
-            if (mi.DeclaringType == typeof(object) && mi.Name == "Finalize") return;
-
-            _specialNames.SetSpecialName(mi.Name);
-
-            if (!mi.IsStatic) {
-                CreateVTableMethodOverride(mi, name);
-            }
-            if (!mi.IsAbstract) {
-                CreateSuperCallHelper(mi);
             }
         }
 
@@ -527,39 +371,12 @@ namespace IronRuby.Compiler.Generation {
             }
         }
 
-        private MethodBuilder CreateVTableSetterOverride(MethodInfo mi, string name) {
-            MethodBuilder impl;
-            ILGen il = DefineMethodOverride(MethodAttributes.Public, mi, out impl);
-
-            EmitVirtualSiteCall(il, mi, name);
-
-            _tb.DefineMethodOverride(impl, mi);
-            return impl;
-        }
-
         private MethodBuilder CreateVTableMethodOverride(MethodInfo mi, string name) {
             ParameterInfo[] parameters = mi.GetParameters();
             MethodBuilder impl;
-            ILGen il;
-            if (mi.IsVirtual && !mi.IsFinal) {
-                il = DefineMethodOverride(MethodAttributes.Public, mi, out impl);
-            } else {
-                impl = _tb.DefineMethod(
-                    mi.Name,
-                    mi.IsVirtual ?
-                        (mi.Attributes | MethodAttributes.NewSlot) :
-                        ((mi.Attributes & ~MethodAttributes.MemberAccessMask) | MethodAttributes.Public),
-                    mi.CallingConvention
-                );
-                ReflectionUtils.CopyMethodSignature(mi, impl, false);
-                il = CreateILGen(impl.GetILGenerator());
-            }
-
+            ILGen il = DefineMethodOverride(MethodAttributes.Public, mi, out impl);
             EmitVirtualSiteCall(il, mi, name);
-
-            if (mi.IsVirtual && !mi.IsFinal) {
-                _tb.DefineMethodOverride(impl, mi);
-            }
+            _tb.DefineMethodOverride(impl, mi);
             return impl;
         }
 
@@ -623,7 +440,6 @@ namespace IronRuby.Compiler.Generation {
                 _cctor.Emit(OpCodes.Ret);
             }
             Type result = _tb.CreateType();
-            new OverrideBuilder(_baseType).AddBaseMethods(result, _specialNames);
             return result;
         }
 

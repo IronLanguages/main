@@ -23,9 +23,7 @@ using System;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
-using Microsoft.Scripting;
 using Microsoft.Scripting.Generation;
-using Microsoft.Scripting.Runtime;
 using IronRuby.Builtins;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
@@ -35,15 +33,28 @@ using System.Collections.Generic;
 
 namespace IronRuby.Compiler.Generation {
     public class RubyTypeEmitter : ClsTypeEmitter {
-        private FieldBuilder _immediateClassField;
+        private readonly FieldBuilder _immediateClassField;
+        private readonly FieldBuilder _instanceDataField;
 
         public RubyTypeEmitter(TypeBuilder tb)
             : base(tb) {
+
+            if (!typeof(IRubyType).IsAssignableFrom(tb.BaseType)) {
+                _immediateClassField = tb.DefineField(RubyObject.ImmediateClassFieldName, typeof(RubyClass), FieldAttributes.Private);
+                _instanceDataField = tb.DefineField(RubyObject.InstanceDataFieldName, typeof(RubyInstanceData), FieldAttributes.Private);
+            }
+        }
+
+        internal bool IsDerivedRubyType {
+            get { return _immediateClassField == null; }
         }
 
         internal FieldBuilder ImmediateClassField {
             get { return _immediateClassField; }
-            set { _immediateClassField = value; }
+        }
+
+        internal FieldBuilder InstanceDataField {
+            get { return _instanceDataField; }
         }
 
         public static void AddRemoveEventHelper(object method, object instance, object dt, object eventValue, string name) {
@@ -131,29 +142,6 @@ namespace IronRuby.Compiler.Generation {
             } else {
                 il.EmitFieldGet(_immediateClassField);
             }
-        }
-
-        protected override bool TryGetName(Type clrType, MethodInfo mi, out string name) {
-            name = mi.Name;
-            return true;
-        }
-
-        protected override bool TryGetName(Type clrType, EventInfo ei, MethodInfo mi, out string name) {
-            // TODO: Determine naming convention?
-            name = ei.Name;
-            return true;
-        }
-
-        protected override bool TryGetName(Type clrType, PropertyInfo pi, MethodInfo mi, out string name) {
-            if (mi.Name.StartsWith("get_")) {
-                name = pi.Name;
-            } else if (mi.Name.StartsWith("set_")) {
-                name = pi.Name + "=";
-            } else {
-                name = null;
-                return false;
-            }
-            return true;
         }
 
         protected override Type/*!*/[]/*!*/ MakeSiteSignature(int nargs) {

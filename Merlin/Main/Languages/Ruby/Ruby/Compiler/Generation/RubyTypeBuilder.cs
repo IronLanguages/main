@@ -64,31 +64,41 @@ namespace IronRuby.Compiler.Generation {
         #endregion
 
         protected readonly TypeBuilder/*!*/ _tb;
-        protected readonly FieldBuilder/*!*/ _immediateClassField;
-        protected readonly FieldBuilder/*!*/ _instanceDataField;
+        private RubyTypeEmitter _emitter;
 
         internal RubyTypeBuilder(TypeBuilder/*!*/ tb) {
             _tb = tb;
-            _immediateClassField = _tb.DefineField(RubyObject.ImmediateClassFieldName, typeof(RubyClass), FieldAttributes.Private);
-            _instanceDataField = _tb.DefineField(RubyObject.InstanceDataFieldName, typeof(RubyInstanceData), FieldAttributes.Private);
+        }
+
+        internal bool IsDerivedRubyType {
+            get { return _emitter.ImmediateClassField == null; }
+        }
+
+        internal FieldBuilder ImmediateClassField {
+            get { return _emitter.ImmediateClassField; }
+        }
+
+        internal FieldBuilder InstanceDataField {
+            get { return _emitter.InstanceDataField; }
         }
 
         public void Implement(ClsTypeEmitter/*!*/ emitter) {
+            _emitter = (RubyTypeEmitter)emitter;
             DefineConstructors();
-            DefineRubyObjectImplementation();
-            DefineSerializer();
 
-            RubyTypeEmitter re = (emitter as RubyTypeEmitter);
-            Assert.NotNull(re);
-            re.ImmediateClassField = _immediateClassField;
-
-            DefineDynamicObjectImplementation();
+            if (!IsDerivedRubyType) {
+                DefineRubyObjectImplementation();
+                DefineSerializer();
+                DefineDynamicObjectImplementation();
 
 #if !SILVERLIGHT // ICustomTypeDescriptor
-            DefineCustomTypeDescriptor();
+                DefineCustomTypeDescriptor();
 #endif
-
+                DefineRubyTypeImplementation();
+            }
         }
+
+        #region Constructors
 
 #if !SILVERLIGHT
         private static readonly Type/*!*/[]/*!*/ _deserializerSignature = new Type[] { typeof(SerializationInfo), typeof(StreamingContext) };
@@ -217,9 +227,11 @@ namespace IronRuby.Compiler.Generation {
 
                 // We need to initialize before calling base ctor since the ctor can call virtual methods.
                 // _immediateClass = immediateClass:
-                il.EmitLoadArg(0);
-                il.EmitLoadArg(1 + ctor.ClassParamIndex);
-                il.EmitFieldSet(_immediateClassField);
+                if (!IsDerivedRubyType) {
+                    il.EmitLoadArg(0);
+                    il.EmitLoadArg(1 + ctor.ClassParamIndex);
+                    il.EmitFieldSet(ImmediateClassField);
+                }
 
                 // base ctor call:
                 il.EmitLoadArg(0);
@@ -270,14 +282,17 @@ namespace IronRuby.Compiler.Generation {
             il.Emit(OpCodes.Call, baseCtor);
 
             il.EmitLoadArg(0);
-            il.EmitFieldAddress(_instanceDataField);
+            il.EmitFieldAddress(InstanceDataField);
             il.EmitLoadArg(0);
-            il.EmitFieldAddress(_immediateClassField);
+            il.EmitFieldAddress(ImmediateClassField);
             il.EmitLoadArg(1);
             il.EmitCall(Methods.DeserializeObject);
             il.Emit(OpCodes.Ret);
         }
 #endif
+        #endregion
+
+        #region "Built-in" Interfaces
 
         private void DefineRubyObjectImplementation() {
             _tb.AddInterfaceImplementation(typeof(IRubyObject));
@@ -296,43 +311,43 @@ namespace IronRuby.Compiler.Generation {
 
             ILGen il;
 
-            // RubyClass! IRubyObject.ImmediateClass { get { return _immediateClassField; } }
+            // RubyClass! get_ImmediateClass { get { return _immediateClassField; } }
             il = DefineMethodOverride(_tb, Methods.IRubyObject_get_ImmediateClass);
             il.EmitLoadArg(0);
-            il.EmitFieldGet(_immediateClassField);
+            il.EmitFieldGet(ImmediateClassField);
             il.Emit(OpCodes.Ret);
 
-            // RubyClass! IRubyObject.ImmediateClass { set { _immediateClassField = value; } }
-            il = DefineMethodOverride(_tb, Methods.IRubyObject_set_ImmediateClass);
+            // RubyClass! IRubyObject.set_ImmediateClass { _immediateClassField = value; }
+            il = DefinePrivateInterfaceMethodOverride(_tb, Methods.IRubyObject_set_ImmediateClass);
             il.EmitLoadArg(0);
             il.EmitLoadArg(1);
-            il.EmitFieldSet(_immediateClassField);
+            il.EmitFieldSet(ImmediateClassField);
             il.Emit(OpCodes.Ret);
 
             // RubyInstanceData IRubyObject.TryGetInstanceData() { return _instanceData; }
-            il = DefineMethodOverride(_tb, Methods.IRubyObject_TryGetInstanceData);
+            il = DefinePrivateInterfaceMethodOverride(_tb, Methods.IRubyObject_TryGetInstanceData);
             il.EmitLoadArg(0);
-            il.EmitFieldGet(_instanceDataField);
+            il.EmitFieldGet(InstanceDataField);
             il.Emit(OpCodes.Ret);
 
             // RubyInstanceData! IRubyObject.GetInstanceData() { return RubyOps.GetInstanceData(ref _instanceData); }
-            il = DefineMethodOverride(_tb, Methods.IRubyObject_GetInstanceData);
+            il = DefinePrivateInterfaceMethodOverride(_tb, Methods.IRubyObject_GetInstanceData);
             il.EmitLoadArg(0);
-            il.EmitFieldAddress(_instanceDataField);
+            il.EmitFieldAddress(InstanceDataField);
             il.EmitCall(Methods.GetInstanceData);
             il.Emit(OpCodes.Ret);
 
             // bool IRubyObject.IsFrozen { get { return RubyOps.IsObjectFrozen(_instanceData); } }
-            il = DefineMethodOverride(_tb, Methods.IRubyObjectState_get_IsFrozen);
+            il = DefinePrivateInterfaceMethodOverride(_tb, Methods.IRubyObjectState_get_IsFrozen);
             il.EmitLoadArg(0);
-            il.EmitFieldGet(_instanceDataField);
+            il.EmitFieldGet(InstanceDataField);
             il.EmitCall(Methods.IsObjectFrozen);
             il.Emit(OpCodes.Ret);
 
             // void IRubyObject.Freeze { RubyOps.FreezeObject(ref _instanceData); }
-            il = DefineMethodOverride(_tb, Methods.IRubyObjectState_Freeze);
+            il = DefinePrivateInterfaceMethodOverride(_tb, Methods.IRubyObjectState_Freeze);
             il.EmitLoadArg(0);
-            il.EmitFieldAddress(_instanceDataField);
+            il.EmitFieldAddress(InstanceDataField);
             il.EmitCall(Methods.FreezeObject);
             il.Emit(OpCodes.Ret);
 
@@ -340,15 +355,15 @@ namespace IronRuby.Compiler.Generation {
             //   get { return RubyOps.IsObjectTainted(_instanceData); }
             //   set { return RubyOps.SetObjectTaint(ref _instanceData, value); }
             // }
-            il = DefineMethodOverride(_tb, Methods.IRubyObjectState_get_IsTainted);
+            il = DefinePrivateInterfaceMethodOverride(_tb, Methods.IRubyObjectState_get_IsTainted);
             il.EmitLoadArg(0);
-            il.EmitFieldGet(_instanceDataField);
+            il.EmitFieldGet(InstanceDataField);
             il.EmitCall(Methods.IsObjectTainted);
             il.Emit(OpCodes.Ret);
 
-            il = DefineMethodOverride(_tb, Methods.IRubyObjectState_set_IsTainted);
+            il = DefinePrivateInterfaceMethodOverride(_tb, Methods.IRubyObjectState_set_IsTainted);
             il.EmitLoadArg(0);
-            il.EmitFieldAddress(_instanceDataField);
+            il.EmitFieldAddress(InstanceDataField);
             il.EmitLoadArg(1);
             il.EmitCall(Methods.SetObjectTaint);
             il.Emit(OpCodes.Ret);
@@ -356,20 +371,20 @@ namespace IronRuby.Compiler.Generation {
             // TODO: can we merge this with #base#GetHashCode/Equals/ToString?
 
             // int IRubyObject.BaseGetHashCode() { return base.GetHashCode(); }
-            il = DefineMethodOverride(_tb, Methods.IRubyObject_BaseGetHashCode);
+            il = DefinePrivateInterfaceMethodOverride(_tb, Methods.IRubyObject_BaseGetHashCode);
             il.EmitLoadArg(0);
             il.EmitCall(_tb.BaseType.GetMethod("GetHashCode", Type.EmptyTypes));
             il.Emit(OpCodes.Ret);
 
             // int IRubyObject.BaseEquals(object other) { return base.Equals(other); }
-            il = DefineMethodOverride(_tb, Methods.IRubyObject_BaseEquals);
+            il = DefinePrivateInterfaceMethodOverride(_tb, Methods.IRubyObject_BaseEquals);
             il.EmitLoadArg(0);
             il.EmitLoadArg(1);
             il.EmitCall(_tb.BaseType.GetMethod("Equals", new[] { typeof(object) }));
             il.Emit(OpCodes.Ret);
 
             // string IRubyObject.BaseToString() { return base.ToString(); }
-            il = DefineMethodOverride(_tb, Methods.IRubyObject_BaseToString);
+            il = DefinePrivateInterfaceMethodOverride(_tb, Methods.IRubyObject_BaseToString);
             il.EmitLoadArg(0);
             MethodInfo toString = _tb.BaseType.GetMethod("ToString", Type.EmptyTypes);
             if (toString.DeclaringType == typeof(object)) {
@@ -380,6 +395,21 @@ namespace IronRuby.Compiler.Generation {
             il.Emit(OpCodes.Ret);
         }
 
+        private void DefineDynamicObjectImplementation() {
+            _tb.AddInterfaceImplementation(typeof(IRubyDynamicMetaObjectProvider));
+
+            // MetaObject! IDynamicMetaObjectProvider.GetMetaObject(Expression! parameter) { return RubyOps.GetMetaObject(this, parameter); }
+            ILGen il = DefinePrivateInterfaceMethodOverride(_tb, typeof(IDynamicMetaObjectProvider).GetMethod("GetMetaObject"));
+            il.EmitLoadArg(0);
+            il.EmitLoadArg(1);
+            il.EmitCall(Methods.GetMetaObject);
+            il.Emit(OpCodes.Ret);
+        }
+
+        private void DefineRubyTypeImplementation() {
+            _tb.AddInterfaceImplementation(typeof(IRubyType));
+        }
+        
         private void DefineSerializer() {
 #if !SILVERLIGHT
             ILGen il;
@@ -407,38 +437,46 @@ namespace IronRuby.Compiler.Generation {
             }
 
             il.EmitLoadArg(0);
-            il.EmitFieldGet(_instanceDataField);
+            il.EmitFieldGet(InstanceDataField);
             il.EmitLoadArg(0);
-            il.EmitFieldGet(_immediateClassField);
+            il.EmitFieldGet(ImmediateClassField);
             il.EmitLoadArg(1);
             il.EmitCall(Methods.SerializeObject);
             il.Emit(OpCodes.Ret);
 #endif
         }
 
-        private void DefineDynamicObjectImplementation() {
-            _tb.AddInterfaceImplementation(typeof(IRubyDynamicMetaObjectProvider));
+#if !SILVERLIGHT // ICustomTypeDescriptor
+        private void DefineCustomTypeDescriptor() {
+            _tb.AddInterfaceImplementation(typeof(ICustomTypeDescriptor));
 
-            // MetaObject! IDynamicMetaObjectProvider.GetMetaObject(Expression! parameter) {
-            //   return RubyOps.GetMetaObject(this, parameter);
-            // }
-
-            MethodInfo decl = typeof(IDynamicMetaObjectProvider).GetMethod("GetMetaObject");
-            MethodBuilder impl = _tb.DefineMethod(
-                decl.Name,
-                decl.Attributes & ~(MethodAttributes.Abstract | MethodAttributes.ReservedMask),
-                decl.ReturnType,
-                ReflectionUtils.GetParameterTypes(decl.GetParameters())
-            );
-
-            ILGen il = new ILGen(impl.GetILGenerator());
-            il.EmitLoadArg(0);
-            il.EmitLoadArg(1);
-            il.EmitCall(Methods.GetMetaObject);
-            il.Emit(OpCodes.Ret);
-
-            _tb.DefineMethodOverride(impl, decl);
+            foreach (MethodInfo m in typeof(ICustomTypeDescriptor).GetMethods()) {
+                ImplementCTDOverride(m);
+            }
         }
+
+        private void ImplementCTDOverride(MethodInfo m) {
+            MethodBuilder builder;
+            ILGen il = DefinePrivateInterfaceMethodOverride(_tb, m, out builder);
+            il.EmitLoadArg(0);
+
+            ParameterInfo[] pis = m.GetParameters();
+            Type[] paramTypes = new Type[pis.Length + 1];
+            paramTypes[0] = typeof(object);
+            for (int i = 0; i < pis.Length; i++) {
+                il.EmitLoadArg(i + 1);
+                paramTypes[i + 1] = pis[i].ParameterType;
+            }
+
+            il.EmitCall(typeof(CustomTypeDescHelpers), m.Name, paramTypes);
+            il.EmitBoxing(m.ReturnType);
+            il.Emit(OpCodes.Ret);
+        }
+#endif
+
+        #endregion
+
+        #region Utils
 
         private static ILGen/*!*/ DefineMethodOverride(TypeBuilder/*!*/ tb, MethodInfo/*!*/ decl) {
             MethodBuilder impl;
@@ -479,32 +517,6 @@ namespace IronRuby.Compiler.Generation {
             return new ILGen(impl.GetILGenerator());
         }
 
-#if !SILVERLIGHT // ICustomTypeDescriptor
-        private void DefineCustomTypeDescriptor() {
-            _tb.AddInterfaceImplementation(typeof(ICustomTypeDescriptor));
-
-            foreach (MethodInfo m in typeof(ICustomTypeDescriptor).GetMethods()) {
-                ImplementCTDOverride(m);
-            }
-        }
-
-        private void ImplementCTDOverride(MethodInfo m) {
-            MethodBuilder builder;
-            ILGen il = DefinePrivateInterfaceMethodOverride(_tb, m, out builder);
-            il.EmitLoadArg(0);
-
-            ParameterInfo[] pis = m.GetParameters();
-            Type[] paramTypes = new Type[pis.Length + 1];
-            paramTypes[0] = typeof(object);
-            for (int i = 0; i < pis.Length; i++) {
-                il.EmitLoadArg(i + 1);
-                paramTypes[i + 1] = pis[i].ParameterType;
-            }
-
-            il.EmitCall(typeof(CustomTypeDescHelpers), m.Name, paramTypes);
-            il.EmitBoxing(m.ReturnType);
-            il.Emit(OpCodes.Ret);
-        }
-#endif
+        #endregion
     }
 }

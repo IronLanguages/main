@@ -15,8 +15,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Reflection.Emit;
+using System.Runtime.Serialization;
 using Microsoft.Scripting.Utils;
+using IronRuby.Runtime;
+using IronRuby.Runtime.Calls;
 
 namespace IronRuby.Compiler.Generation {
     public class InterfacesBuilder : IFeatureBuilder {
@@ -24,7 +28,7 @@ namespace IronRuby.Compiler.Generation {
         #region ITypeFeature
 
         sealed class TypeFeature : ITypeFeature {
-            internal static readonly TypeFeature/*!*/ _empty = new TypeFeature(Type.EmptyTypes);
+            internal static readonly TypeFeature/*!*/ Empty = new TypeFeature(Type.EmptyTypes);
 
             private readonly Type/*!*/[]/*!*/ _interfaces;
             private readonly int _hash;
@@ -97,7 +101,7 @@ namespace IronRuby.Compiler.Generation {
 
         internal static ITypeFeature/*!*/ MakeFeature(IList<Type/*!*/>/*!*/ interfaceTypes) {
             if (interfaceTypes.Count == 0) {
-                return TypeFeature._empty;
+                return TypeFeature.Empty;
             }
             return new TypeFeature(interfaceTypes);
         }
@@ -117,8 +121,16 @@ namespace IronRuby.Compiler.Generation {
             // TODO: Exclude IDynamicMetaObjectProvider, IRubyObject, etc. or handle specially
             Dictionary<Type, bool> doneTypes = new Dictionary<Type, bool>();
             foreach (Type interfaceType in _interfaces) {
-                _tb.AddInterfaceImplementation(interfaceType);
-                ImplementInterface(emitter, interfaceType, doneTypes);
+                if (interfaceType != typeof(IRubyType) && 
+                    interfaceType != typeof(IRubyObject) && 
+#if !SILVERLIGHT
+                    interfaceType != typeof(ICustomTypeDescriptor) &&
+                    interfaceType != typeof(ISerializable) &&
+#endif
+                    interfaceType != typeof(IRubyDynamicMetaObjectProvider)) {
+                    _tb.AddInterfaceImplementation(interfaceType);
+                    ImplementInterface(emitter, interfaceType, doneTypes);
+                }
             }
         }
 

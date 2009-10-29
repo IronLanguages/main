@@ -201,7 +201,7 @@ namespace IronRuby.Builtins {
         #endregion
 
         protected RubyClass/*!*/ GetClass(Type/*!*/ type) {
-            Debug.Assert(type != null && !type.IsInterface);
+            Debug.Assert(type != null && !RubyModule.IsModuleType(type));
             // TODO: CLR class vs library class:
             return _context.GetOrCreateClass(type);
         }

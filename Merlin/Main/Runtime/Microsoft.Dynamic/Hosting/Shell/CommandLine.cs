@@ -53,7 +53,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
                 return HostingHelpers.GetScope(_scope); 
             }
             set {
-                _scope = new ScriptScope(_engine, value);
+                _scope = HostingHelpers.CreateScriptScope(_engine, value);
             }
         }
         

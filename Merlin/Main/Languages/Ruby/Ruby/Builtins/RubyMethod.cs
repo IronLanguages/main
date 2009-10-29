@@ -22,6 +22,7 @@ using Microsoft.Scripting.Ast;
 using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Text;
 using IronRuby.Runtime;
 using IronRuby.Runtime.Calls;
 using Microsoft.Scripting.Utils;
@@ -32,6 +33,7 @@ namespace IronRuby.Builtins {
     using Ast = Expression;
     using BlockCallTargetUnsplatN = Func<BlockParam, object, object[], RubyArray, object>;
 
+    [DebuggerDisplay("{GetDebugView(), nq}")]
     public partial class RubyMethod {
         private readonly object _target;
         private readonly string/*!*/ _name;
@@ -115,6 +117,7 @@ namespace IronRuby.Builtins {
         #region Curried
 
         // TODO: currently used only to curry a method name for method_missing, but could be easily extended to support general argument currying
+        [DebuggerDisplay("{GetDebugView(), nq}")]
         public sealed class Curried : RubyMethod {
             private readonly string/*!*/ _methodNameArg;
 
@@ -131,6 +134,35 @@ namespace IronRuby.Builtins {
             public override Proc/*!*/ ToProc(RubyScope/*!*/ scope) {
                 throw new NotSupportedException();
             }
+
+            private new string/*!*/ GetDebugView() {
+                var result = new StringBuilder();
+                result.Append("missing ");
+                result.Append(GetTargetClass().Name);
+                result.Append('#');
+                result.Append(_methodNameArg);
+
+                result.Append("(?)");
+                return result.ToString();
+            }
+        }
+
+        #endregion
+
+        #region Debug View
+
+        private string/*!*/ GetDebugView() {
+            var result = new StringBuilder();
+            result.Append(_info.Visibility.ToString().ToLowerInvariant());
+            result.Append(' ');
+
+            result.Append(GetTargetClass().Name);
+            result.Append('#');
+            result.Append(_name);
+
+            // TODO: parameter names?
+            result.Append("()");
+            return result.ToString();            
         }
 
         #endregion

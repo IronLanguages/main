@@ -263,6 +263,17 @@ IronRuby.globals.x = 2
 IronRuby.globals.z = IronRuby.globals.x + FooBar
 ");
             Assert(Runtime.Globals.GetVariable<int>("z") == 3);
+
+#if !CLR2
+            dynamic scope = Engine.CreateScope();
+            Engine.Execute(@"def foo; 1; end", scope);
+
+            RubyMethod method = (RubyMethod)scope.foo;
+            Assert(method.Name == "foo");
+
+            object value = scope.foo();
+            Assert((int)value == 1);
+#endif
         }
 
         public void RubyHosting_Scopes1() {

@@ -13,21 +13,27 @@
  *
  * ***************************************************************************/
 
+using System.Diagnostics;
+using System.Threading;
+using IronRuby.Builtins;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-using IronRuby.Builtins;
-using System.Diagnostics;
 
 namespace IronRuby.Runtime {
-    public class RubyGlobalScope : ScopeExtension {
-        private RubyContext/*!*/ _context;
-        private RubyObject/*!*/ _mainObject;
+    /// <summary>
+    /// DLR scope extension.
+    /// Thread safe.
+    /// </summary>
+    public sealed class RubyGlobalScope : ScopeExtension {
+        private readonly RubyContext/*!*/ _context;
+        private readonly RubyObject/*!*/ _mainObject;
+        private readonly bool _isHosted;
+
+        // interlocked:
         private RubyTopLevelScope _topLocalScope;
-        private bool _isHosted;
 
         public RubyContext/*!*/ Context {
             get { return _context; }
-            set { _context = value; }
         }
 
         public RubyClass/*!*/ MainSingleton {
@@ -44,10 +50,9 @@ namespace IronRuby.Runtime {
 
         public RubyTopLevelScope TopLocalScope {
             get { return _topLocalScope; }
-            internal set { _topLocalScope = value; }
         }
 
-        public RubyGlobalScope(RubyContext/*!*/ context, Scope/*!*/ scope, RubyObject/*!*/ mainObject, bool isHosted)
+        internal RubyGlobalScope(RubyContext/*!*/ context, Scope/*!*/ scope, RubyObject/*!*/ mainObject, bool isHosted)
             : base(scope) {
             Assert.NotNull(context, scope, mainObject);
             Debug.Assert(mainObject.ImmediateClass.IsSingletonClass);
@@ -55,6 +60,10 @@ namespace IronRuby.Runtime {
             _context = context;
             _mainObject = mainObject;
             _isHosted = isHosted;
+        }
+
+        internal RubyTopLevelScope/*!*/ SetTopLocalScope(RubyTopLevelScope/*!*/ scope) {
+            return Interlocked.CompareExchange(ref _topLocalScope, scope, null);
         }
     }
 }

@@ -166,11 +166,11 @@ namespace Microsoft.Scripting.Runtime {
         }
 
         /// <summary>
-        /// Gets the member name from the object obj and converts it to the type T.  Throws an exception if the
-        /// member does not exist, is write-only, or cannot be converted.
+        /// Gets the member name from the object obj and converts it to the type T. The conversion will be explicit or implicit
+        /// depending on what the langauge prefers. Throws an exception if the member does not exist, is write-only, or cannot be converted.
         /// </summary>
         public T GetMember<T>(object obj, string name, bool ignoreCase) {
-            CallSite<Func<CallSite, object, T>> convertSite = GetOrCreateSite<object, T>(_lc.CreateConvertBinder(typeof(T), false));
+            CallSite<Func<CallSite, object, T>> convertSite = GetOrCreateSite<object, T>(_lc.CreateConvertBinder(typeof(T), null));
             CallSite<Func<CallSite, object, object>> site = GetOrCreateSite<object, object>(_lc.CreateGetMemberBinder(name, ignoreCase));
             return convertSite.Target(convertSite, site.Target(site, obj));
         }

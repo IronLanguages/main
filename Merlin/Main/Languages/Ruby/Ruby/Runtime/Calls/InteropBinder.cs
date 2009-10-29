@@ -184,11 +184,17 @@ namespace IronRuby.Runtime.Calls {
 
         internal class InvokeMember : InvokeMemberBinder, IInteropBinder {
             private readonly RubyContext/*!*/ _context;
+            private readonly string _mangled;
 
             internal InvokeMember(RubyContext/*!*/ context, string/*!*/ name, CallInfo/*!*/ callInfo)
+                : this(context, name, null, callInfo) {
+            }
+
+            private InvokeMember(RubyContext/*!*/ context, string/*!*/ name, string mangled, CallInfo/*!*/ callInfo)
                 : base(name, false, callInfo) {
                 Assert.NotNull(context);
                 _context = context;
+                _mangled = mangled;
             }
 
             public RubyContext Context {
@@ -206,7 +212,14 @@ namespace IronRuby.Runtime.Calls {
                 }
 #endif
 
-                return FallbackInvokeMember(this, Name, CallInfo, target, args, errorSuggestion);
+                if (_mangled == null) {
+                    string unmangled = RubyUtils.TryUnmangleMethodName(Name);
+                    if (unmangled != null) {
+                        return new InvokeMember(_context, unmangled, Name, CallInfo).Bind(target, args);
+                    }
+                }
+
+                return FallbackInvokeMember(this, _mangled ?? Name, CallInfo, target, args, errorSuggestion);
             }
 
             internal static DynamicMetaObject FallbackInvokeMember(IInteropBinder/*!*/ binder, string/*!*/ methodName, CallInfo/*!*/ callInfo,

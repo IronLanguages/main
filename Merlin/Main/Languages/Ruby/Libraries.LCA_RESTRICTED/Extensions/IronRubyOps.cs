@@ -59,7 +59,7 @@ namespace IronRuby.Builtins {
             object loaded;
             
             scope.RubyContext.Loader.LoadFile(
-                null, self, libraryName, LoadFlags.LoadOnce | LoadFlags.AppendExtensions | LoadFlags.ResolveLoaded, out loaded
+                null, self, libraryName, LoadFlags.LoadOnce | LoadFlags.AppendExtensions | LoadFlags.ResolveLoaded | LoadFlags.AnyLanguage, out loaded
             );
 
             Debug.Assert(loaded != null);
@@ -72,7 +72,7 @@ namespace IronRuby.Builtins {
         [RubyMethod("load", RubyMethodAttributes.PublicSingleton)]
         public static object/*!*/ Load(RubyScope/*!*/ scope, RubyModule/*!*/ self, MutableString/*!*/ libraryName) {
             object loaded;
-            scope.RubyContext.Loader.LoadFile(null, self, libraryName, LoadFlags.ResolveLoaded, out loaded);
+            scope.RubyContext.Loader.LoadFile(null, self, libraryName, LoadFlags.ResolveLoaded | LoadFlags.AnyLanguage, out loaded);
             Debug.Assert(loaded != null);
             return loaded;
         }

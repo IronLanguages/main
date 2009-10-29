@@ -46,5 +46,10 @@ namespace Microsoft.Scripting.Actions.Calls {
         /// Actual arguments cannot be constructed.
         /// </summary>
         InvalidArguments,
+
+        /// <summary>
+        /// No method is callable. For example, all methods have an unbound generic parameter.
+        /// </summary>
+        NoCallableMethod,
     }
 }

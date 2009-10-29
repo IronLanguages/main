@@ -247,6 +247,7 @@
     <Compile Include="Compiler\Ast\Walkers\NodeTypes.cs" />
     <Compile Include="Compiler\Ast\Walkers\Walker.cs" />
     <Compile Include="Compiler\Errors.cs" />
+    <Compile Include="Compiler\Generation\IRubyType.cs" />
     <Compile Include="Compiler\Parser\ParserStack.cs" />
     <Compile Include="Runtime\BinaryContentProvider.cs" />
     <Compile Include="Runtime\CallSiteStorages.cs" />
@@ -273,7 +274,6 @@
     <Compile Include="Runtime\CheckedMonitor.cs" />
     <Compile Include="Runtime\ClrName.cs" />
     <Compile Include="Runtime\CustomTypeDescHelpers.cs" />
-    <Compile Include="Compiler\Generation\OverriddenMembers.cs" />
     <Compile Include="Compiler\Generation\RubyTypeDispenser.cs" />
     <Compile Include="Compiler\Generation\InterfacesBuilder.cs" />
     <Compile Include="Compiler\Generation\RubyTypeEmitter.cs" />

@@ -38,6 +38,7 @@ namespace IronRuby.Runtime {
         LoadIsolated = 2,
         AppendExtensions = 4,
         ResolveLoaded = 8,
+        AnyLanguage = 16,
 
         Require = LoadOnce | AppendExtensions,
     }
@@ -496,7 +497,13 @@ namespace IronRuby.Runtime {
         private bool LoadFromPath(Scope globalScope, object self, string/*!*/ path, LoadFlags flags, out object loaded) {
             Assert.NotNull(path);
 
-            string[] sourceFileExtensions = DomainManager.Configuration.GetFileExtensions();
+            string[] sourceFileExtensions;
+            if ((flags & LoadFlags.AnyLanguage) != 0) {
+                sourceFileExtensions = DomainManager.Configuration.GetFileExtensions();
+            } else {
+                sourceFileExtensions = DomainManager.Configuration.GetFileExtensions(_context);
+            }
+
             ResolvedFile file = FindFile(path, (flags & LoadFlags.AppendExtensions) != 0, sourceFileExtensions);
             if (file == null) {
                 throw RubyExceptions.CreateLoadError(String.Format("no such file to load -- {0}", path));
@@ -586,7 +593,10 @@ namespace IronRuby.Runtime {
 
         internal Scope Execute(Scope globalScope, ScriptCode/*!*/ code) {
             if (globalScope == null || code.LanguageContext != _context) {
-                globalScope = code.CreateScope();
+                if (globalScope == null) {
+                    globalScope = code.CreateScope();
+                }
+
                 if (code.SourceUnit.Path != null) {
                     LoadedScripts[Platform.GetFullPath(code.SourceUnit.Path)] = globalScope;
                 }
@@ -733,7 +743,7 @@ namespace IronRuby.Runtime {
         }
 
         private List<string>/*!*/ GetExtensionsOfExistingFiles(string/*!*/ path, IEnumerable<string>/*!*/ extensions) {
-            // all extensions that could be appended to the path to get an sexisting file:
+            // all extensions that could be appended to the path to get an existing file:
             List<string> result = new List<string>();
             foreach (string extension in extensions) {
                 Debug.Assert(extension != null && extension.StartsWith("."));

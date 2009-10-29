@@ -688,11 +688,11 @@ namespace IronRuby.Runtime {
             }
         }
 
-        internal RubyModule/*!*/ GetOrCreateModule(Type/*!*/ interfaceType) {
-            Debug.Assert(interfaceType != null && interfaceType.IsInterface);
+        internal RubyModule/*!*/ GetOrCreateModule(Type/*!*/ moduleType) {
+            Debug.Assert(RubyModule.IsModuleType(moduleType));
 
             lock (ModuleCacheLock) {
-                return GetOrCreateModuleNoLock(interfaceType);
+                return GetOrCreateModuleNoLock(moduleType);
             }
         }
 
@@ -721,8 +721,6 @@ namespace IronRuby.Runtime {
         }
 
         internal RubyClass/*!*/ GetOrCreateClass(Type/*!*/ type) {
-            Debug.Assert(type != null && !type.IsInterface);
-
             lock (ModuleCacheLock) {
                 return GetOrCreateClassNoLock(type);
             }
@@ -741,31 +739,31 @@ namespace IronRuby.Runtime {
             return result;
         }
 
-        private RubyModule/*!*/ GetOrCreateModuleNoLock(Type/*!*/ interfaceType) {
-            Debug.Assert(interfaceType != null && interfaceType.IsInterface);
+        private RubyModule/*!*/ GetOrCreateModuleNoLock(Type/*!*/ moduleType) {
+            Debug.Assert(RubyModule.IsModuleType(moduleType));
 
             RubyModule result;
-            if (_moduleCache.TryGetValue(interfaceType, out result)) {
+            if (_moduleCache.TryGetValue(moduleType, out result)) {
                 return result;
             }
 
-            TypeTracker tracker = (TypeTracker)TypeTracker.FromMemberInfo(interfaceType);
+            TypeTracker tracker = (TypeTracker)TypeTracker.FromMemberInfo(moduleType);
 
             RubyModule[] mixins;
-            if (interfaceType.IsGenericType && !interfaceType.IsGenericTypeDefinition) {
+            if (moduleType.IsGenericType && !moduleType.IsGenericTypeDefinition) {
                 // I<T0..Tn> mixes in its generic definition I<,..,>
-                mixins = new[] { GetOrCreateModuleNoLock(interfaceType.GetGenericTypeDefinition()) };
+                mixins = new[] { GetOrCreateModuleNoLock(moduleType.GetGenericTypeDefinition()) };
             } else {
                 mixins = null;
             }
 
-            result = CreateModule(GetQualifiedNameNoLock(interfaceType), null, null, null, mixins, null, tracker, ModuleRestrictions.None);
-            _moduleCache[interfaceType] = result;
+            result = CreateModule(GetQualifiedNameNoLock(moduleType), null, null, null, mixins, null, tracker, ModuleRestrictions.None);
+            _moduleCache[moduleType] = result;
             return result;
         }
 
         private RubyClass/*!*/ GetOrCreateClassNoLock(Type/*!*/ type) {
-            Debug.Assert(type != null && !type.IsInterface);
+            Debug.Assert(!RubyModule.IsModuleType(type));
 
             RubyClass result;
             if (TryGetClassNoLock(type, out result)) {
@@ -774,22 +772,19 @@ namespace IronRuby.Runtime {
 
             RubyClass baseClass;
 
-            if (type.IsGenericType && !type.IsGenericTypeDefinition) {
-                // C<T0..Tn>'s super class is its generic definition C<,..,>
-                baseClass = GetOrCreateClassNoLock(type.GetGenericTypeDefinition());
-            } else if (type.IsByRef) {
+            if (type.IsByRef) {
                 baseClass = _objectClass;
             } else {
                 baseClass = GetOrCreateClassNoLock(type.BaseType);
             }
 
             TypeTracker tracker = (TypeTracker)TypeTracker.FromMemberInfo(type);
-            RubyModule[] interfaceMixins = GetDeclaredInterfaceModulesNoLock(type);
+            RubyModule[] clrMixins = GetClrMixinsNoLock(type);
             RubyModule[] expandedMixins;
 
-            if (interfaceMixins != null) {
+            if (clrMixins != null) {
                 using (ClassHierarchyLocker()) {
-                    expandedMixins = RubyModule.ExpandMixinsNoLock(baseClass, interfaceMixins);
+                    expandedMixins = RubyModule.ExpandMixinsNoLock(baseClass, clrMixins);
                 }
             } else {
                 expandedMixins = RubyModule.EmptyArray;
@@ -808,35 +803,41 @@ namespace IronRuby.Runtime {
             return result;
         }
 
-        private RubyModule[] GetDeclaredInterfaceModulesNoLock(Type/*!*/ type) {
-            // TODO:
-            if (type.IsGenericTypeDefinition) {
-                return null;
-            }
+        /// <summary>
+        /// An interface is mixed into the type that implements it.
+        /// A generic type definition is mixed into its instantiations.
+        /// 
+        /// In both cases these modules don't contribute any callable CLR methods, 
+        /// however Ruby methods defined on them can be called from the target type instances.
+        /// </summary>
+        private RubyModule[] GetClrMixinsNoLock(Type/*!*/ type) {
+            List<RubyModule> modules = new List<RubyModule>();
 
-            List<RubyModule> interfaces = new List<RubyModule>();
+            if (type.IsGenericType && !type.IsGenericTypeDefinition) {
+                modules.Add(GetOrCreateModuleNoLock(type.GetGenericTypeDefinition()));
+            }
             
             if (type.IsArray) {
                 if (type.GetArrayRank() > 1) {
                     RubyModule module;
                     if (TryGetModuleNoLock(typeof(MultiDimensionalArray), out module)) {
-                        interfaces.Add(module);
+                        modules.Add(module);
                     }
                 }
             } else if (type.IsEnum) {
                 if (type.IsDefined(typeof(FlagsAttribute), false)) {
                     RubyModule module;
                     if (TryGetModuleNoLock(typeof(FlagEnumeration), out module)) {
-                        interfaces.Add(module);
+                        modules.Add(module);
                     }
                 }
             }
 
             foreach (Type iface in ReflectionUtils.GetDeclaredInterfaces(type)) {
-                interfaces.Add(GetOrCreateModuleNoLock(iface));
+                modules.Add(GetOrCreateModuleNoLock(iface));
             }
 
-            return interfaces.Count > 0 ? interfaces.ToArray() : null;
+            return modules.Count > 0 ? modules.ToArray() : null;
         }
 
         #endregion
@@ -1080,7 +1081,7 @@ namespace IronRuby.Runtime {
         #region Getting Modules and Classes from objects, CLR types and CLR namespaces (thread-safe)
 
         public RubyModule/*!*/ GetModule(Type/*!*/ type) {
-            if (type.IsInterface) {
+            if (RubyModule.IsModuleType(type)) {
                 return GetOrCreateModule(type);
             } else {
                 return GetOrCreateClass(type);
@@ -1092,7 +1093,7 @@ namespace IronRuby.Runtime {
         }
 
         public RubyClass/*!*/ GetClass(Type/*!*/ type) {
-            ContractUtils.Requires(!type.IsInterface);
+            ContractUtils.Requires(!RubyModule.IsModuleType(type));
             return GetOrCreateClass(type);
         }
 
@@ -2106,7 +2107,7 @@ namespace IronRuby.Runtime {
 
         #endregion
 
-        #region Global Scope (TODO: thread-safe)
+        #region Global Scope (thread-safe)
 
         /// <summary>
         /// Creates a scope extension for a DLR scope unless it already exists for the given scope.
@@ -2114,7 +2115,6 @@ namespace IronRuby.Runtime {
         internal RubyGlobalScope/*!*/ InitializeGlobalScope(Scope/*!*/ globalScope, bool createHosted, bool bindGlobals) {
             Assert.NotNull(globalScope);
 
-            // TODO: Scopes are not thread safe but should be!
             var scopeExtension = globalScope.GetExtension(ContextId);
             if (scopeExtension != null) {
                 return (RubyGlobalScope)scopeExtension;
@@ -2124,8 +2124,6 @@ namespace IronRuby.Runtime {
             RubyClass mainSingleton = CreateMainSingleton(mainObject, null);
 
             RubyGlobalScope result = new RubyGlobalScope(this, globalScope, mainObject, createHosted);
-            globalScope.SetExtension(ContextId, result);
-
             if (bindGlobals) {
                 // method_missing:
                 mainSingleton.SetMethodNoEvent(this, Symbols.MethodMissing, 
@@ -2136,8 +2134,7 @@ namespace IronRuby.Runtime {
 
                 mainSingleton.SetGlobalScope(result);
             }
-
-            return result;
+            return (RubyGlobalScope)globalScope.SetExtension(ContextId, result);
         }
 
         public override int ExecuteProgram(SourceUnit/*!*/ program) {

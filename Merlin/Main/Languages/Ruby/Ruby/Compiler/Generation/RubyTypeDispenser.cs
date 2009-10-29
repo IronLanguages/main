@@ -60,6 +60,7 @@ namespace IronRuby.Compiler.Generation {
                     InterfacesBuilder.MakeFeature(interfaces)
                 };
             }
+            noOverrides |= typeof(IRubyType).IsAssignableFrom(baseType);
 
             TypeDescription typeInfo = new TypeDescription(baseType, features, noOverrides);
             Type type = _newTypes.GetOrCreateValue(typeInfo,
@@ -104,13 +105,14 @@ namespace IronRuby.Compiler.Generation {
             TypeBuilder tb = Snippets.Shared.DefinePublicType(typeName, baseType);
             Utils.Log(typeName, "TYPE_BUILDER");
 
-            IFeatureBuilder[] _features = new IFeatureBuilder[typeInfo.Features.Count];
-            ClsTypeEmitter emitter = new RubyTypeEmitter(tb);
+            IFeatureBuilder[] features = new IFeatureBuilder[typeInfo.Features.Count];
+            RubyTypeEmitter emitter = new RubyTypeEmitter(tb);
+
             for (int i = 0; i < typeInfo.Features.Count; i++) {
-                _features[i] = typeInfo.Features[i].MakeBuilder(tb);
+                features[i] = typeInfo.Features[i].MakeBuilder(tb);
             }
 
-            foreach (IFeatureBuilder feature in _features) {
+            foreach (IFeatureBuilder feature in features) {
                 feature.Implement(emitter);
             }
 

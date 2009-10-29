@@ -66,6 +66,7 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <UseVSHostingProcess>true</UseVSHostingProcess>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'V4 Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -77,6 +78,7 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <DelaySigned>true</DelaySigned>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />

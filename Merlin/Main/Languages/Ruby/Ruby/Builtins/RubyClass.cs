@@ -697,7 +697,7 @@ namespace IronRuby.Builtins {
             }
 
             Type type = cls.TypeTracker.Type;
-            Debug.Assert(!type.IsInterface);
+            Debug.Assert(!RubyModule.IsModuleType(type));
 
             // Note: We don't cache results as this API is not used so frequently (e.g. for regular method dispatch).
             
@@ -707,13 +707,13 @@ namespace IronRuby.Builtins {
 
             // TODO: should declaring module of the resulting method rather be the base class?
             method = null;
-            return cls.TryGetClrMember(asType ?? type, name, true, 0, out method);
+            return cls.TryGetClrMember(asType ?? type, name, true, true, 0, out method);
         }
 
         // thread safe: doesn't need any lock since it only accesses immutable state
         public bool TryGetClrConstructor(out RubyMemberInfo method) {
             ConstructorInfo[] ctors;
-            if (TypeTracker != null && !TypeTracker.Type.IsInterface && (ctors = GetConstructors(TypeTracker.Type)).Length > 0) {
+            if (TypeTracker != null && (ctors = GetConstructors(TypeTracker.Type)).Length > 0) {
                 method = new RubyMethodGroupInfo(ctors, this, true);
                 return true;
             }
@@ -722,7 +722,7 @@ namespace IronRuby.Builtins {
             return false;
         }
 
-        protected override bool TryGetClrMember(Type/*!*/ type, string/*!*/ name, bool tryUnmangle, out RubyMemberInfo method) {
+        protected override bool TryGetClrMember(Type/*!*/ type, string/*!*/ name, bool mapNames, bool unmangleNames, out RubyMemberInfo method) {
             Context.RequiresClassHierarchyLock();
 
             if (IsFailureCached(type, name, _isSingletonClass)) {
@@ -730,7 +730,7 @@ namespace IronRuby.Builtins {
                 return false;
             }
 
-            if (TryGetClrMember(type, name, tryUnmangle, BindingFlags.DeclaredOnly, out method)) {
+            if (TryGetClrMember(type, name, mapNames, unmangleNames, BindingFlags.DeclaredOnly, out method)) {
                 return true;
             }
 
@@ -743,7 +743,7 @@ namespace IronRuby.Builtins {
         /// Returns a fresh instance of RubyMemberInfo each time it is called. The caller needs to cache it if appropriate.
         /// May add or use method groups to/from super-clases if BindingFlags.DeclaredOnly is used.
         /// </summary>
-        private bool TryGetClrMember(Type/*!*/ type, string/*!*/ name, bool tryUnmangle, BindingFlags basicBindingFlags, out RubyMemberInfo method) {
+        private bool TryGetClrMember(Type/*!*/ type, string/*!*/ name, bool mapNames, bool unmangleNames, BindingFlags basicBindingFlags, out RubyMemberInfo method) {
             basicBindingFlags |= BindingFlags.Public | BindingFlags.NonPublic;
 
             // We look only for members directly declared on the type and handle method overloads inheritance manually.  
@@ -755,12 +755,12 @@ namespace IronRuby.Builtins {
             }
 
             string operatorName;
-            if (tryUnmangle && !_isSingletonClass && (operatorName = RubyUtils.MapOperator(name)) != null) {
+            if (mapNames && !_isSingletonClass && (operatorName = RubyUtils.MapOperator(name)) != null) {
                 // instance invocation of an operator:
                 if (TryGetClrMethod(type, basicBindingFlags | BindingFlags.Static, true, name, null, operatorName, null, out method)) {
                     return true;
                 }
-            } else if (tryUnmangle && (name == "[]" || name == "[]=")) {
+            } else if (mapNames && (name == "[]" || name == "[]=")) {
                 if (type.IsArray && !_isSingletonClass) {
                     bool isSetter = name.Length == 3;
                     TryGetClrMethod(type, bindingFlags, false, name, null, isSetter ? "Set" : "Get", null, out method);
@@ -778,7 +778,7 @@ namespace IronRuby.Builtins {
                 }
             } else if (name.LastCharacter() == '=') {
                 string propertyName = name.Substring(0, name.Length - 1);
-                string altName = tryUnmangle ? RubyUtils.TryUnmangleMethodName(propertyName) : null;
+                string altName = unmangleNames ? RubyUtils.TryUnmangleMethodName(propertyName) : null;
                 
                 // property setter:
                 if (TryGetClrProperty(type, bindingFlags, true, name, propertyName, altName, out method)) return true;
@@ -786,7 +786,7 @@ namespace IronRuby.Builtins {
                 // writeable field:
                 if (TryGetClrField(type, bindingFlags, true, propertyName, altName, out method)) return true;
             } else {
-                string altName = tryUnmangle ? RubyUtils.TryUnmangleMethodName(name) : null;
+                string altName = unmangleNames ? RubyUtils.TryUnmangleMethodName(name) : null;
 
                 // method:
                 if (TryGetClrMethod(type, bindingFlags, false, name, null, name, altName, out method)) return true;
@@ -929,7 +929,7 @@ namespace IronRuby.Builtins {
                     }
 
                     // Skip classes that have no tracker, e.g. Fixnum(tracker) <: Integer(null) <: Numeric(null) <: Object(tracker).
-                    // Skip interfaces, their methods are not callable => do not include them into a method group.
+                    // Skip CLR modules, their methods are not callable => do not include them into a method group.
                     // Skip all classes once hidden sentinel is encountered (no CLR overloads are visible since then).
                     if (!skipHidden && module.TypeTracker != null && module.IsClass) {
                         ancestors.Add((RubyClass)module);

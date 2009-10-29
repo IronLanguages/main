@@ -26,6 +26,7 @@ using System.Diagnostics;
 using System.Reflection;
 using IronRuby.Builtins;
 using IronRuby.Compiler;
+using IronRuby.Compiler.Generation;
 using Microsoft.Scripting.Actions.Calls;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Utils;
@@ -173,22 +174,98 @@ namespace IronRuby.Runtime.Calls {
             return typeof(SuperCallAction);
         }
 
-        protected virtual MethodBase/*!*/[]/*!*/ GetStaticDispatchMethods(Type/*!*/ baseType, string/*!*/ name) {
-            return MethodBases;
-        }
-
         internal override void BuildSuperCallNoFlow(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name, RubyModule/*!*/ declaringModule) {
             Assert.NotNull(declaringModule, metaBuilder, args);
-
-            IList<MethodBase> methods;
-            if (!declaringModule.IsSingletonClass) {
-                Type associatedType = GetAssociatedSystemType(declaringModule);
-                methods = GetStaticDispatchMethods(associatedType, name);
+            var visibleOverloads = GetVisibleOverloads(args, MethodBases, true);
+            if (visibleOverloads.Count == 0) {
+                metaBuilder.SetError(Methods.MakeClrVirtualMethodCalledError.OpCall(
+                    args.MetaContext.Expression, args.MetaTarget.Expression, Ast.Constant(name)
+                ));
             } else {
-                methods = MethodBases;
+                BuildCallNoFlow(metaBuilder, args, name, visibleOverloads, CallConvention, ImplicitProtocolConversions);
+            }
+        }
+
+        internal static IList<MethodBase>/*!*/ GetVisibleOverloads(CallArguments/*!*/ args, IList<MethodBase>/*!*/ overloads, bool isSuperCall) {
+            IList<MethodBase> newOverloads = null;
+            Debug.Assert(overloads.Count > 0);
+
+            // handle CLR-protected and virtual methods:
+
+            // TODO (opt):
+            // We might be able to cache the callable overloads in a MethodGroup. 
+            // However, the _overloadOwners of that group would need to point to the original overload owners, not the current class, in order
+            // to preserve semantics of overload deletion/redefinition (deletion of the protected overload would need to imply deletion
+            // of the correpsondig public overload in the cached MethodGroup).
+            if (isSuperCall || !args.RubyContext.DomainManager.Configuration.PrivateBinding) {
+                Type underlyingType = null;
+                BindingFlags bindingFlags = 0;
+
+                for (int i = 0; i < overloads.Count; i++) {
+                    var overload = overloads[i];
+                    if ((isSuperCall && overload.IsVirtual && !overload.IsFinal) || overload.IsProtected()) {
+                        if (newOverloads == null) {
+                            newOverloads = CollectionUtils.GetRange(overloads, 0, i);
+
+                            RubyClass cls;
+                            IRubyType rt = args.Target as IRubyType;
+                            if (rt != null) {
+                                bindingFlags = BindingFlags.Instance;
+                                underlyingType = args.Target.GetType();
+                            } else if ((cls = args.Target as RubyClass) != null && cls.IsRubyClass && !cls.IsSingletonClass) {
+                                bindingFlags = BindingFlags.Static;
+                                underlyingType = cls.GetUnderlyingSystemType();
+                            }
+                        }
+
+                        if (underlyingType != null) {
+                            // TODO (opt): we can define a method on the emitted type that does this more efficently:
+                            Type[] genericArguments = overload.IsGenericMethod ? overload.GetGenericArguments() : null;
+
+                            MethodInfo visibleMethod = GetMethodOverload(
+                                ReflectionUtils.GetParameterTypes(overload.GetParameters()),
+                                genericArguments,
+                                underlyingType,
+                                ClsTypeEmitter.BaseMethodPrefix + overload.Name,
+                                BindingFlags.Public | bindingFlags | BindingFlags.InvokeMethod
+                            );
+
+                            Debug.Assert(visibleMethod != null);
+
+                            newOverloads.Add(visibleMethod);
+                        }
+                    } else if (newOverloads != null) {
+                        newOverloads.Add(overload);
+                    }
+                }
             }
 
-            BuildCallNoFlow(metaBuilder, args, name, methods, CallConvention, ImplicitProtocolConversions);
+            return newOverloads ?? overloads;
+        }
+
+        private static MethodInfo/*!*/ GetMethodOverload(Type/*!*/[]/*!*/ parameterTypes, Type/*!*/[] genericParameterTypes,
+            Type/*!*/ type, string/*!*/ name, BindingFlags bindingFlags) {
+
+            var overloads = type.GetMember(name, MemberTypes.Method, bindingFlags);
+            for (int i = 0; i < overloads.Length; i++) {
+                MethodInfo overload = (MethodInfo)overloads[i];
+                MethodInfo originalOverload = overload;
+                if ((genericParameterTypes != null) != overload.IsGenericMethod) {
+                    continue;
+                }
+
+                if (overload.IsGenericMethod) {
+                    if (overload.GetGenericArguments().Length != genericParameterTypes.Length) {
+                        continue;
+                    }
+                    overload = overload.MakeGenericMethod(genericParameterTypes);
+                }
+
+                if (ReflectionUtils.GetParameterTypes(overload.GetParameters()).ValueEquals(parameterTypes)) {
+                    return originalOverload;
+                }
+            }
+            return null;
         }
 
         internal static BindingTarget/*!*/ ResolveOverload(MetaObjectBuilder/*!*/ metaBuilder, CallArguments/*!*/ args, string/*!*/ name,

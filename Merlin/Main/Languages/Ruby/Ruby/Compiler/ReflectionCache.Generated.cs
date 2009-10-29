@@ -216,10 +216,10 @@ namespace IronRuby.Compiler {
         private static MethodInfo _GetCurrentMatchGroup;
         public static MethodInfo/*!*/ GetCurrentMatchLastGroup { get { return _GetCurrentMatchLastGroup ?? (_GetCurrentMatchLastGroup = GetMethod(typeof(RubyOps), "GetCurrentMatchLastGroup")); } }
         private static MethodInfo _GetCurrentMatchLastGroup;
-        public static MethodInfo/*!*/ GetCurrentPreMatch { get { return _GetCurrentPreMatch ?? (_GetCurrentPreMatch = GetMethod(typeof(RubyOps), "GetCurrentPreMatch")); } }
-        private static MethodInfo _GetCurrentPreMatch;
         public static MethodInfo/*!*/ GetCurrentPostMatch { get { return _GetCurrentPostMatch ?? (_GetCurrentPostMatch = GetMethod(typeof(RubyOps), "GetCurrentPostMatch")); } }
         private static MethodInfo _GetCurrentPostMatch;
+        public static MethodInfo/*!*/ GetCurrentPreMatch { get { return _GetCurrentPreMatch ?? (_GetCurrentPreMatch = GetMethod(typeof(RubyOps), "GetCurrentPreMatch")); } }
+        private static MethodInfo _GetCurrentPreMatch;
         public static MethodInfo/*!*/ GetDefaultExceptionMessage { get { return _GetDefaultExceptionMessage ?? (_GetDefaultExceptionMessage = GetMethod(typeof(RubyOps), "GetDefaultExceptionMessage")); } }
         private static MethodInfo _GetDefaultExceptionMessage;
         public static MethodInfo/*!*/ GetEmptyScope { get { return _GetEmptyScope ?? (_GetEmptyScope = GetMethod(typeof(RubyOps), "GetEmptyScope")); } }
@@ -360,6 +360,8 @@ namespace IronRuby.Compiler {
         private static MethodInfo _MakeArrayN;
         public static MethodInfo/*!*/ MakeClrProtectedMethodCalledError { get { return _MakeClrProtectedMethodCalledError ?? (_MakeClrProtectedMethodCalledError = GetMethod(typeof(RubyOps), "MakeClrProtectedMethodCalledError")); } }
         private static MethodInfo _MakeClrProtectedMethodCalledError;
+        public static MethodInfo/*!*/ MakeClrVirtualMethodCalledError { get { return _MakeClrVirtualMethodCalledError ?? (_MakeClrVirtualMethodCalledError = GetMethod(typeof(RubyOps), "MakeClrVirtualMethodCalledError")); } }
+        private static MethodInfo _MakeClrVirtualMethodCalledError;
         public static MethodInfo/*!*/ MakeConstructorUndefinedError { get { return _MakeConstructorUndefinedError ?? (_MakeConstructorUndefinedError = GetMethod(typeof(RubyOps), "MakeConstructorUndefinedError")); } }
         private static MethodInfo _MakeConstructorUndefinedError;
         public static MethodInfo/*!*/ MakeHash { get { return _MakeHash ?? (_MakeHash = GetMethod(typeof(RubyOps), "MakeHash")); } }

@@ -128,14 +128,7 @@ error
                 File.WriteAllText(Path.Combine(temp, "a.py"), @"
 print 'Hello from Python'
 ");
-                AssertOutput(delegate() {
-                    CompilerTest(@"
-require('a')
-");
-                }, @"
-Hello from Python
-");
-
+                AssertExceptionThrown<LoadError>(() => CompilerTest(@"require('a')"));
             } finally {
                 File.Delete("b.py");
             }
@@ -162,9 +155,9 @@ class Bar(object):
                 TestOutput(@"
 a = IronRuby.require('a')
 scopes = IronRuby.loaded_scripts.collect { |z| z.value }
-a.who_is_this.call
+a.who_is_this
 a.foo += 1
-a.bar.new.baz
+a.bar.baz             # a Python class is callable so we get Bar's instance from a.bar
 puts scopes[0].Foo
 ", @"
 Python

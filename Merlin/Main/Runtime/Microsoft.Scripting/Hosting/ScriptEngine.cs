@@ -192,6 +192,7 @@ namespace Microsoft.Scripting.Hosting {
             return new ScriptScope(this, new Scope());
         }
 
+        [Obsolete("IAttributesCollection is obsolete, use CreateScope(IDynamicMetaObjectProvider) instead")]
         public ScriptScope CreateScope(IAttributesCollection dictionary) {
             ContractUtils.RequiresNotNull(dictionary, "dictionary");
             return new ScriptScope(this, new Scope(dictionary));
@@ -454,7 +455,8 @@ namespace Microsoft.Scripting.Hosting {
 
         #endregion
 
-        #region Scope Variable Access
+        #region Scope Variable Access (obsolete)
+#pragma warning disable 618
 
         /// <summary>
         /// Fetches the value of a variable stored in the scope.
@@ -464,6 +466,7 @@ namespace Microsoft.Scripting.Hosting {
         /// 
         /// If there is a default engine, then the name lookup uses that language's semantics.
         /// </summary>
+        [Obsolete("Use ScriptScope.GetVariable instead")]
         public dynamic GetVariable(ScriptScope scope, string name) {
             ContractUtils.RequiresNotNull(scope, "scope");
             ContractUtils.RequiresNotNull(name, "name");
@@ -482,6 +485,7 @@ namespace Microsoft.Scripting.Hosting {
         /// Some languages may refuse to remove some variables.  If the scope has a default language that has bound 
         /// variables that cannot be removed, the language engine throws an exception.
         /// </summary>
+        [Obsolete("Use ScriptScope.RemoveVariable instead")]
         public bool RemoveVariable(ScriptScope scope, string name) {
             ContractUtils.RequiresNotNull(scope, "scope");
             ContractUtils.RequiresNotNull(name, "name");
@@ -498,6 +502,7 @@ namespace Microsoft.Scripting.Hosting {
         /// 
         /// If there is a default engine, then the name lookup uses that language's semantics.
         /// </summary>
+        [Obsolete("Use ScriptScope.SetVariable instead")]
         public void SetVariable(ScriptScope scope, string name, object value) {
             ContractUtils.RequiresNotNull(scope, "scope");
             ContractUtils.RequiresNotNull(name, "name");
@@ -517,6 +522,7 @@ namespace Microsoft.Scripting.Hosting {
         /// 
         /// If there is a default engine, then the name lookup uses that language's semantics.
         /// </summary>
+        [Obsolete("Use ScriptScope.TryGetVariable instead")]
         public bool TryGetVariable(ScriptScope scope, string name, out object value) {
             ContractUtils.RequiresNotNull(scope, "scope");
             ContractUtils.RequiresNotNull(name, "name");
@@ -534,6 +540,10 @@ namespace Microsoft.Scripting.Hosting {
         /// 
         /// Throws an exception if the engine cannot perform the requested type conversion.
         /// </summary>
+        [Obsolete(
+            "Use ScriptScope.GetVariable<T> instead. If the target scope is not bound to any language " +
+            "or you need control over the conversion use ScriptScope.GetVariable and ScriptEngine.Operations.ConvertTo<T>"
+        )]
         public T GetVariable<T>(ScriptScope scope, string name) {
             ContractUtils.RequiresNotNull(scope, "scope");
             ContractUtils.RequiresNotNull(name, "name");
@@ -556,6 +566,10 @@ namespace Microsoft.Scripting.Hosting {
         /// Throws an exception if the engine cannot perform the requested type conversion, 
         /// then it return false and assigns value to default(T).
         /// </summary>
+        [Obsolete(
+            "Use ScriptScope.GetVariable<T> instead. If the target scope is not bound to any language " +
+            "or you need control over the conversion use ScriptScope.GetVariable and ScriptEngine.Operations.ConvertTo<T>"
+        )]
         public bool TryGetVariable<T>(ScriptScope scope, string name, out T value) {
             ContractUtils.RequiresNotNull(scope, "scope");
             ContractUtils.RequiresNotNull(name, "name");
@@ -578,6 +592,7 @@ namespace Microsoft.Scripting.Hosting {
         /// 
         /// If there is a default engine, then the name lookup uses that language's semantics.
         /// </summary>
+        [Obsolete("Use ScriptScope.ContainsVariable instead")]
         public bool ContainsVariable(ScriptScope scope, string name) {
             ContractUtils.RequiresNotNull(scope, "scope");
             ContractUtils.RequiresNotNull(name, "name");
@@ -586,9 +601,6 @@ namespace Microsoft.Scripting.Hosting {
             return TryGetVariable(scope, name, out dummy);
         }
 
-        #endregion
-
-        #region Remoting Support
 #if !SILVERLIGHT
 
         /// <summary>
@@ -599,6 +611,7 @@ namespace Microsoft.Scripting.Hosting {
         /// 
         /// If there is a default engine, then the name lookup uses that language's semantics.
         /// </summary>
+        [Obsolete("Use ScriptScope.GetVariableHandle instead")]
         public ObjectHandle GetVariableHandle(ScriptScope scope, string name) {
             ContractUtils.RequiresNotNull(scope, "scope");
             ContractUtils.RequiresNotNull(name, "name");
@@ -617,6 +630,7 @@ namespace Microsoft.Scripting.Hosting {
         /// 
         /// If there is a default engine, then the name lookup uses that language's semantics.
         /// </summary>
+        [Obsolete("Use ScriptScope.SetVariable instead")]
         public void SetVariable(ScriptScope scope, string name, ObjectHandle value) {
             ContractUtils.RequiresNotNull(scope, "scope");
             ContractUtils.RequiresNotNull(name, "name");
@@ -637,6 +651,7 @@ namespace Microsoft.Scripting.Hosting {
         /// 
         /// If there is a default engine, then the name lookup uses that language's semantics.
         /// </summary>
+        [Obsolete("Use ScriptScope.TryGetVariableHandle instead")]
         public bool TryGetVariableHandle(ScriptScope scope, string name, out ObjectHandle value) {
             ContractUtils.RequiresNotNull(scope, "scope");
             ContractUtils.RequiresNotNull(name, "name");
@@ -650,6 +665,7 @@ namespace Microsoft.Scripting.Hosting {
             return false;
         }
 #endif
+#pragma warning restore 618
         #endregion
 
         #region Additional Services

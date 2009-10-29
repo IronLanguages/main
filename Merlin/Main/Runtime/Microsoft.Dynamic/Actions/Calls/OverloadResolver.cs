@@ -389,7 +389,11 @@ namespace Microsoft.Scripting.Actions.Calls {
                 }
             }
 
-            Debug.Assert(failures != null);
+            if (failures == null) {
+                // this can happen if there is no callable method:
+                return new BindingTarget(_methodName, BindingResult.NoCallableMethod);
+            }
+
             if (nameBindingFailures != null) {
                 failures.AddRange(nameBindingFailures);
             }
@@ -971,6 +975,7 @@ namespace Microsoft.Scripting.Actions.Calls {
                 case BindingResult.AmbiguousMatch: return MakeAmbiguousCallError(target);
                 case BindingResult.IncorrectArgumentCount: return MakeIncorrectArgumentCountError(target);
                 case BindingResult.InvalidArguments: return MakeInvalidArgumentsError();
+                case BindingResult.NoCallableMethod: return MakeNoCallableMethodError();
                 default: throw new InvalidOperationException();
             }
         }
@@ -1073,6 +1078,12 @@ namespace Microsoft.Scripting.Actions.Calls {
 
         private ErrorInfo MakeInvalidArgumentsError() {
             return ErrorInfo.FromException(Ast.Call(typeof(BinderOps).GetMethod("SimpleTypeError"), AstUtils.Constant("Invalid arguments.")));
+        }
+
+        private ErrorInfo MakeNoCallableMethodError() {
+            return ErrorInfo.FromException(
+                Ast.New(typeof(InvalidOperationException).GetConstructor(new[] { typeof(string) }), AstUtils.Constant("No callable method."))
+            );
         }
 
         #endregion

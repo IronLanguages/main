@@ -1816,6 +1816,14 @@ namespace IronRuby.Runtime {
             );
         }
 
+        [Emitted]
+        public static Exception/*!*/ MakeClrVirtualMethodCalledError(RubyContext/*!*/ context, object target, string/*!*/ methodName) {
+            return new MissingMethodException(
+                RubyExceptions.FormatMethodMissingMessage(context, target, methodName, "Virtual CLR method `{0}' called via super from {1}; " +
+                "Super calls to virtual CLR methods can only be used in a Ruby subclass of the class declaring the method")
+            );
+        }
+
         #endregion
 
         [Emitted] //RubyBinder
