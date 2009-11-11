@@ -59,12 +59,12 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-        internal override MSAst.Expression Transform(AstGenerator ag, Type type) {
+        public override MSAst.Expression Reduce() {
             return Ast.Call(
-                AstGenerator.GetHelperMethod("MakeSlice"),                  // method
-                ag.TransformOrConstantNull(_sliceStart, typeof(object)),    // parameters
-                ag.TransformOrConstantNull(_sliceStop, typeof(object)),
-                ag.TransformOrConstantNull(_sliceStep, typeof(object))
+                AstMethods.MakeSlice,                                    // method
+                TransformOrConstantNull(_sliceStart, typeof(object)),    // parameters
+                TransformOrConstantNull(_sliceStop, typeof(object)),
+                TransformOrConstantNull(_sliceStep, typeof(object))
             );
         }
 

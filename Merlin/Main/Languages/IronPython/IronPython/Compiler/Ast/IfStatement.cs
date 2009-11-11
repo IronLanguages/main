@@ -45,11 +45,11 @@ namespace IronPython.Compiler.Ast {
             get { return _else; }
         }
 
-        internal override MSAst.Expression Transform(AstGenerator ag) {
+        public override MSAst.Expression Reduce() {
             MSAst.Expression result;
 
             if (_else != null) {
-                result = ag.Transform(_else);
+                result = _else;
             } else {
                 result = AstUtils.Empty();
             }
@@ -59,10 +59,10 @@ namespace IronPython.Compiler.Ast {
             while (i-- > 0) {
                 IfStatementTest ist = _tests[i];
 
-                result = ag.AddDebugInfoAndVoid(
+                result = GlobalParent.AddDebugInfoAndVoid(
                     Ast.Condition(
-                        ag.TransformAndDynamicConvert(ist.Test, typeof(bool)),
-                        ag.TransformMaybeSingleLineSuite(ist.Body, ist.Test.Start), 
+                        TransformAndDynamicConvert(ist.Test, typeof(bool)),
+                        TransformMaybeSingleLineSuite(ist.Body, ist.Test.Start),
                         result
                     ),
                     new SourceSpan(ist.Start, ist.Header)
@@ -84,12 +84,6 @@ namespace IronPython.Compiler.Ast {
                 }
             }
             walker.PostWalk(this);
-        }
-
-        internal override bool CanThrow {
-            get {
-                return this._tests[0].Test.CanThrow;
-            }
         }
     }
 }

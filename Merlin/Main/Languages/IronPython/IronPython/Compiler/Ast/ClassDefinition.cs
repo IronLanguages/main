@@ -16,6 +16,9 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Threading;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
@@ -34,11 +37,11 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
-
+    
     public class ClassDefinition : ScopeStatement {
         private SourceLocation _header;
         private readonly string _name;
-        private readonly Statement _body;
+        private Statement _body;
         private readonly Expression[] _bases;
         private IList<Expression> _decorators;
 
@@ -47,11 +50,17 @@ namespace IronPython.Compiler.Ast {
         private PythonVariable _docVariable;        // Variable for the __doc__ attribute
         private PythonVariable _modNameVariable;    // Variable for the module's __name__
 
+        private MSAst.LambdaExpression _dlrBody;       // the transformed body including all of our initialization, etc...
+
         private static int _classId;
 
         private static MSAst.ParameterExpression _parentContextParam = Ast.Parameter(typeof(CodeContext), "$parentContext");
+        private static MSAst.Expression _tupleExpression = MSAst.Expression.Call(typeof(PythonOps).GetMethod("GetClosureTupleFromContext"), _parentContextParam);
 
         public ClassDefinition(string name, Expression[] bases, Statement body) {
+            ContractUtils.RequiresNotNull(body, "body");
+            ContractUtils.RequiresNotNullItems(bases, "bases");
+
             _name = name;
             _bases = bases;
             _body = body;
@@ -62,7 +71,7 @@ namespace IronPython.Compiler.Ast {
             set { _header = value; }
         }
 
-        public string Name {
+        public override string Name {
             get { return _name; }
         }
 
@@ -83,7 +92,7 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-        internal PythonVariable Variable {
+        internal PythonVariable PythonVariable {
             get { return _variable; }
             set { _variable = value; }
         }
@@ -103,28 +112,47 @@ namespace IronPython.Compiler.Ast {
             set { _modNameVariable = value; }
         }
 
+        internal override bool HasLateBoundVariableSets {
+            get {
+                return base.HasLateBoundVariableSets || NeedsLocalsDictionary;
+            }
+            set {
+                base.HasLateBoundVariableSets = value;
+            }
+        }
+        
+        internal override bool NeedsLocalContext {
+            get {
+                return true;
+            }
+        }
+
         internal override bool ExposesLocalVariable(PythonVariable variable) {
             return true;
         }
 
-        internal override PythonVariable BindName(PythonNameBinder binder, string name) {
+        internal override PythonVariable BindReference(PythonNameBinder binder, PythonReference reference) {
             PythonVariable variable;
 
             // Python semantics: The variables bound local in the class
             // scope are accessed by name - the dictionary behavior of classes
-            if (TryGetVariable(name, out variable)) {
-                return variable.Kind == VariableKind.Local 
-                    || variable.Kind == VariableKind.GlobalLocal 
-                    || variable.Kind == VariableKind.HiddenLocal 
-                     ? null : variable;
+            if (TryGetVariable(reference.Name, out variable)) {
+                // TODO: This results in doing a dictionary lookup to get/set the local,
+                // when it should probably be an uninitialized check / global lookup for gets
+                // and a direct set
+                if (variable.Kind == VariableKind.Global) {
+                    AddReferencedGlobal(reference.Name);
+                } else if (variable.Kind == VariableKind.Local) {
+                    return null;
+                }
+
+                return variable;
             }
 
             // Try to bind in outer scopes, if we have an unqualified exec we need to leave the
             // variables as free for the same reason that locals are accessed by name.
             for (ScopeStatement parent = Parent; parent != null; parent = parent.Parent) {
-                if (parent.TryBindOuter(name, out variable)) {
-                    variable.AccessedInNestedScope = true;
-                    UpdateReferencedVariables(name, variable, parent);
+                if (parent.TryBindOuter(this, reference, out variable)) {
                     return variable;
                 }
             }
@@ -132,114 +160,122 @@ namespace IronPython.Compiler.Ast {
             return null;
         }
         
-        internal override MSAst.Expression Transform(AstGenerator ag) {
+        public override MSAst.Expression Reduce() {            
+            var funcCode = GlobalParent.Constant(GetOrMakeFunctionCode());
+            FuncCodeExpr = funcCode;
+
+            MSAst.Expression lambda;
+            if (EmitDebugSymbols) {
+                lambda = GetLambda();
+            } else {
+                lambda = Ast.Convert(funcCode, typeof(object));
+            }
+
+            MSAst.Expression classDef = Ast.Call(
+                AstMethods.MakeClass,
+                lambda,
+                Parent.LocalContext,
+                AstUtils.Constant(_name),
+                Ast.NewArrayInit(
+                    typeof(object),
+                    ToObjectArray(_bases)
+                ),
+                AstUtils.Constant(FindSelfNames())
+            );
+
+            classDef = AddDecorators(classDef, _decorators);
+
+            return GlobalParent.AddDebugInfoAndVoid(AssignValue(Parent.GetVariableExpression(_variable), classDef), new SourceSpan(Start, Header));
+        }
+
+        private MSAst.Expression<Func<CodeContext, CodeContext>> MakeClassBody() {
             string className = _name;
-            AstGenerator classGen = new AstGenerator(ag, className, false, "class " + className);
-            classGen.Parameter(_parentContextParam);
-            // we always need to create a nested context for class defs
-            classGen.CreateNestedContext();
 
-            List<MSAst.Expression> init = new List<MSAst.Expression>();
-            
-            classGen.AddHiddenVariable(ArrayGlobalAllocator._globalContext);
-            init.Add(Ast.Assign(ArrayGlobalAllocator._globalContext, Ast.Call(typeof(PythonOps).GetMethod("GetGlobalContext"), _parentContextParam)));
-            init.AddRange(classGen.Globals.PrepareScope(classGen));
+            // we always need to create a nested context for class defs            
 
-            CreateVariables(classGen, _parentContextParam, init, true, false);
+            var init = new List<MSAst.Expression>();
+            var locals = new ReadOnlyCollectionBuilder<MSAst.ParameterExpression>();
+
+            locals.Add(LocalCodeContextVariable);
+            locals.Add(PythonAst._globalContext);
+
+            init.Add(Ast.Assign(PythonAst._globalContext, Ast.Call(typeof(PythonOps).GetMethod("GetGlobalContext"), _parentContextParam)));
+
+            GlobalParent.PrepareScope(locals, init);
+
+            CreateVariables(locals, init);
+
+            var createLocal = CreateLocalContext(_parentContextParam);
+
+            init.Add(Ast.Assign(LocalCodeContextVariable, createLocal));
 
             List<MSAst.Expression> statements = new List<MSAst.Expression>();
             // Create the body
-            MSAst.Expression bodyStmt = classGen.Transform(_body);
-            
-            // __module__ = __name__
-            MSAst.Expression modStmt = GlobalAllocator.Assign(
-                classGen.Globals.GetVariable(classGen, _modVariable), 
-                classGen.Globals.GetVariable(classGen, _modNameVariable));
+            MSAst.Expression bodyStmt = _body;
 
-            string doc = classGen.GetDocumentation(_body);
+            // __module__ = __name__
+            MSAst.Expression modStmt = AssignValue(GetVariableExpression(_modVariable), GetVariableExpression(_modNameVariable));
+
+            string doc = GetDocumentation(_body);
             if (doc != null) {
                 statements.Add(
-                    GlobalAllocator.Assign(
-                        classGen.Globals.GetVariable(classGen, _docVariable),
+                    AssignValue(
+                        GetVariableExpression(_docVariable),
                         AstUtils.Constant(doc)
                     )
                 );
             }
 
-            FunctionCode funcCodeObj = new FunctionCode(
-                ag.PyContext,
-                null,
-                null,
-                Name,
-                ag.GetDocumentation(_body),
-                ArrayUtils.EmptyStrings,
-                FunctionAttributes.None,
-                Span,
-                ag.Context.SourceUnit.Path,
-                ag.EmitDebugSymbols,
-                ag.ShouldInterpret,
-                FreeVariables,
-                GlobalVariables,
-                CellVariables,
-                AppendVariables(new List<string>()),
-                Variables == null ? 0 : Variables.Count,
-                classGen.LoopLocationsNoCreate,
-                classGen.HandlerLocationsNoCreate
-            );
-            MSAst.Expression funcCode = classGen.Globals.GetConstant(funcCodeObj);
-            classGen.FuncCodeExpr = funcCode;
-
-            if (_body.CanThrow && ag.PyContext.PythonOptions.Frames) {
-                bodyStmt = AstGenerator.AddFrame(classGen.LocalContext, funcCode, bodyStmt);
-                classGen.AddHiddenVariable(AstGenerator._functionStack);
+            if (_body.CanThrow && GlobalParent.PyContext.PythonOptions.Frames) {
+                bodyStmt = AddFrame(LocalContext, FuncCodeExpr, bodyStmt);
+                locals.Add(FunctionStackVariable);
             }
 
-            bodyStmt = classGen.WrapScopeStatements(
+            bodyStmt = WrapScopeStatements(
                 Ast.Block(
+                    Ast.Block(init),
                     statements.Count == 0 ?
-                        AstGenerator.EmptyBlock :
+                        EmptyBlock :
                         Ast.Block(new ReadOnlyCollection<MSAst.Expression>(statements)),
                     modStmt,
                     bodyStmt,
-                    classGen.LocalContext    // return value
-                )
+                    LocalContext
+                ),
+                _body.CanThrow
             );
 
             var lambda = Ast.Lambda<Func<CodeContext, CodeContext>>(
-                classGen.MakeBody(_parentContextParam, init.ToArray(), bodyStmt),
-                classGen.Name + "$" + _classId++,
-                classGen.Parameters
-            );
-            
-            funcCodeObj.Code = lambda;
-
-            MSAst.Expression classDef = Ast.Call(
-                AstGenerator.GetHelperMethod("MakeClass"),
-                ag.EmitDebugSymbols ? 
-                    (MSAst.Expression)lambda : 
-                    Ast.Convert(funcCode, typeof(object)),
-                ag.LocalContext,
-                AstUtils.Constant(_name),
-                Ast.NewArrayInit(
-                    typeof(object),
-                    ag.TransformAndConvert(_bases, typeof(object))
+                Ast.Block(
+                    locals,
+                    bodyStmt
                 ),
-                AstUtils.Constant(FindSelfNames())
-            );
+                Name + "$" + Interlocked.Increment(ref _classId),
+                new[] { _parentContextParam }
+                );
 
-            classDef = ag.AddDecorators(classDef, _decorators);
+            return lambda;
+        }
 
-            return ag.AddDebugInfoAndVoid(GlobalAllocator.Assign(ag.Globals.GetVariable(ag, _variable), classDef), new SourceSpan(Start, Header));
+        internal override MSAst.LambdaExpression GetLambda() {
+            if (_dlrBody == null) {
+                PerfTrack.NoteEvent(PerfTrack.Categories.Compiler, "Creating FunctionBody");
+                _dlrBody = MakeClassBody();
+            }
+
+            return _dlrBody;
         }
 
         /// <summary>
         /// Gets the closure tuple from our parent context.
         /// </summary>
-        public override MSAst.Expression GetClosureTuple() {
-            return MSAst.Expression.Call(
-                typeof(PythonOps).GetMethod("GetClosureTupleFromContext"),
-                _parentContextParam
-            );
+        internal override MSAst.Expression GetParentClosureTuple() {
+            return _tupleExpression;
+        }
+
+        internal override string ScopeDocumentation {
+            get {
+                return GetDocumentation(_body);
+            }
         }
 
         public override void Walk(PythonWalker walker) {
@@ -303,7 +339,7 @@ namespace IronPython.Compiler.Ast {
                 if (ne == null) return false;
 
                 PythonVariable variable;
-                if (_function.TryGetVariable(ne.Name, out variable) && variable == _self.Variable) {
+                if (_function.TryGetVariable(ne.Name, out variable) && variable == _self.PythonVariable) {
                     return true;
                 }
 
@@ -329,6 +365,11 @@ namespace IronPython.Compiler.Ast {
                 }
                 return true;
             }
+        }
+
+        internal override void RewriteBody(PythonAst.LookupVisitor visitor) {
+            _dlrBody = null;
+            _body = new PythonAst.RewrittenBodyStatement(Body, visitor.Visit(Body));
         }
     }
 }

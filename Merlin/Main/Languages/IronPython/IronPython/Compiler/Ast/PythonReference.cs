@@ -22,8 +22,12 @@ using MSAst = Microsoft.Scripting.Ast;
 using Microsoft.Scripting;
 
 namespace IronPython.Compiler.Ast {
+    /// <summary>
+    /// Represents a reference to a name.  A PythonReference is created for each name
+    /// referred to in a scope (global, class, or function).  
+    /// </summary>
     class PythonReference {
-        private string _name;
+        private readonly string _name;
         private PythonVariable _variable;
 
         public PythonReference(string name) {

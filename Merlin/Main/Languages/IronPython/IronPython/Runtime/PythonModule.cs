@@ -39,7 +39,7 @@ namespace IronPython.Runtime {
     /// be directly created by calling the module type and providing a name or
     /// optionally a documentation string.
     /// </summary>
-    [PythonType("module")]
+    [PythonType("module"), DebuggerTypeProxy(typeof(PythonModule.DebugProxy)), DebuggerDisplay("module: {GetName()}")]
     public class PythonModule : IDynamicMetaObjectProvider, IPythonMembersList {
         private readonly PythonDictionary _dict;
         private Scope _scope;
@@ -372,5 +372,26 @@ namespace IronPython.Runtime {
         }
 
         #endregion
+        
+        internal class DebugProxy {
+            private readonly PythonModule _module;
+
+            public DebugProxy(PythonModule module) {
+                _module = module;
+            }
+
+            [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+            public List<ObjectDebugView> Members {
+                get {
+                    var res = new List<ObjectDebugView>();
+                    foreach (var v in _module._dict) {
+                        res.Add(new ObjectDebugView(v.Key, v.Value));
+                    }
+                    return res;
+                }
+            }
+        }
+
+        
     }
 }

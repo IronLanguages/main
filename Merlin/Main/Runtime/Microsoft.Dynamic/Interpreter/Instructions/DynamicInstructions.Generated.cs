@@ -19,8 +19,8 @@ using System.Runtime.CompilerServices;
 using Microsoft.Scripting.Utils;
 
 namespace Microsoft.Scripting.Interpreter {
-    public static partial class DynamicInstructions {
-        private static Type GetDynamicInstructionType(Type delegateType) {
+    internal partial class DynamicInstructionN {
+        internal static Type GetDynamicInstructionType(Type delegateType) {
             Type[] argTypes = delegateType.GetGenericArguments();
             if (argTypes.Length == 0) return null;
             Type genericType;
@@ -65,548 +65,403 @@ namespace Microsoft.Scripting.Interpreter {
 
     internal class DynamicInstruction<TRet> : Instruction {
         private CallSite<Func<CallSite,TRet>> _site;
+
         public static Instruction Factory(CallSiteBinder binder) {
             return new DynamicInstruction<TRet>(CallSite<Func<CallSite,TRet>>.Create(binder));
         }
+
         private DynamicInstruction(CallSite<Func<CallSite,TRet>> site) {
-            this._site = site;
+            _site = site;
         }
+
         public override int ProducedStack { get { return 1; } }
         public override int ConsumedStack { get { return 0; } }
+
         public override int Run(InterpretedFrame frame) {
-            frame.Push(_site.Target(
-                _site));
-            return +1;
+            frame.Data[frame.StackIndex - 0] = _site.Target(_site);
+            frame.StackIndex -= -1;
+            return 1;
         }
+
         public override string ToString() {
             return "Dynamic(" + _site.Binder.ToString() + ")";
         }
     }
+
     internal class DynamicInstruction<T0,TRet> : Instruction {
         private CallSite<Func<CallSite,T0,TRet>> _site;
+
         public static Instruction Factory(CallSiteBinder binder) {
             return new DynamicInstruction<T0,TRet>(CallSite<Func<CallSite,T0,TRet>>.Create(binder));
         }
+
         private DynamicInstruction(CallSite<Func<CallSite,T0,TRet>> site) {
-            this._site = site;
+            _site = site;
         }
+
         public override int ProducedStack { get { return 1; } }
         public override int ConsumedStack { get { return 1; } }
+
         public override int Run(InterpretedFrame frame) {
-            object arg0 = frame.Pop();
-            frame.Push(_site.Target(
-                _site,
-                (T0)arg0));
-            return +1;
+            frame.Data[frame.StackIndex - 1] = _site.Target(_site, (T0)frame.Data[frame.StackIndex - 1]);
+            return 1;
         }
+
         public override string ToString() {
             return "Dynamic(" + _site.Binder.ToString() + ")";
         }
     }
+
     internal class DynamicInstruction<T0,T1,TRet> : Instruction {
         private CallSite<Func<CallSite,T0,T1,TRet>> _site;
+
         public static Instruction Factory(CallSiteBinder binder) {
             return new DynamicInstruction<T0,T1,TRet>(CallSite<Func<CallSite,T0,T1,TRet>>.Create(binder));
         }
+
         private DynamicInstruction(CallSite<Func<CallSite,T0,T1,TRet>> site) {
-            this._site = site;
+            _site = site;
         }
+
         public override int ProducedStack { get { return 1; } }
         public override int ConsumedStack { get { return 2; } }
+
         public override int Run(InterpretedFrame frame) {
-            object arg1 = frame.Pop();
-            object arg0 = frame.Pop();
-            frame.Push(_site.Target(
-                _site,
-                (T0)arg0,
-                (T1)arg1));
-            return +1;
+            frame.Data[frame.StackIndex - 2] = _site.Target(_site, (T0)frame.Data[frame.StackIndex - 2], (T1)frame.Data[frame.StackIndex - 1]);
+            frame.StackIndex -= 1;
+            return 1;
         }
+
         public override string ToString() {
             return "Dynamic(" + _site.Binder.ToString() + ")";
         }
     }
+
     internal class DynamicInstruction<T0,T1,T2,TRet> : Instruction {
         private CallSite<Func<CallSite,T0,T1,T2,TRet>> _site;
+
         public static Instruction Factory(CallSiteBinder binder) {
             return new DynamicInstruction<T0,T1,T2,TRet>(CallSite<Func<CallSite,T0,T1,T2,TRet>>.Create(binder));
         }
+
         private DynamicInstruction(CallSite<Func<CallSite,T0,T1,T2,TRet>> site) {
-            this._site = site;
+            _site = site;
         }
+
         public override int ProducedStack { get { return 1; } }
         public override int ConsumedStack { get { return 3; } }
+
         public override int Run(InterpretedFrame frame) {
-            object arg2 = frame.Pop();
-            object arg1 = frame.Pop();
-            object arg0 = frame.Pop();
-            frame.Push(_site.Target(
-                _site,
-                (T0)arg0,
-                (T1)arg1,
-                (T2)arg2));
-            return +1;
+            frame.Data[frame.StackIndex - 3] = _site.Target(_site, (T0)frame.Data[frame.StackIndex - 3], (T1)frame.Data[frame.StackIndex - 2], (T2)frame.Data[frame.StackIndex - 1]);
+            frame.StackIndex -= 2;
+            return 1;
         }
+
         public override string ToString() {
             return "Dynamic(" + _site.Binder.ToString() + ")";
         }
     }
+
     internal class DynamicInstruction<T0,T1,T2,T3,TRet> : Instruction {
         private CallSite<Func<CallSite,T0,T1,T2,T3,TRet>> _site;
+
         public static Instruction Factory(CallSiteBinder binder) {
             return new DynamicInstruction<T0,T1,T2,T3,TRet>(CallSite<Func<CallSite,T0,T1,T2,T3,TRet>>.Create(binder));
         }
+
         private DynamicInstruction(CallSite<Func<CallSite,T0,T1,T2,T3,TRet>> site) {
-            this._site = site;
+            _site = site;
         }
+
         public override int ProducedStack { get { return 1; } }
         public override int ConsumedStack { get { return 4; } }
+
         public override int Run(InterpretedFrame frame) {
-            object arg3 = frame.Pop();
-            object arg2 = frame.Pop();
-            object arg1 = frame.Pop();
-            object arg0 = frame.Pop();
-            frame.Push(_site.Target(
-                _site,
-                (T0)arg0,
-                (T1)arg1,
-                (T2)arg2,
-                (T3)arg3));
-            return +1;
+            frame.Data[frame.StackIndex - 4] = _site.Target(_site, (T0)frame.Data[frame.StackIndex - 4], (T1)frame.Data[frame.StackIndex - 3], (T2)frame.Data[frame.StackIndex - 2], (T3)frame.Data[frame.StackIndex - 1]);
+            frame.StackIndex -= 3;
+            return 1;
         }
+
         public override string ToString() {
             return "Dynamic(" + _site.Binder.ToString() + ")";
         }
     }
+
     internal class DynamicInstruction<T0,T1,T2,T3,T4,TRet> : Instruction {
         private CallSite<Func<CallSite,T0,T1,T2,T3,T4,TRet>> _site;
+
         public static Instruction Factory(CallSiteBinder binder) {
             return new DynamicInstruction<T0,T1,T2,T3,T4,TRet>(CallSite<Func<CallSite,T0,T1,T2,T3,T4,TRet>>.Create(binder));
         }
+
         private DynamicInstruction(CallSite<Func<CallSite,T0,T1,T2,T3,T4,TRet>> site) {
-            this._site = site;
+            _site = site;
         }
+
         public override int ProducedStack { get { return 1; } }
         public override int ConsumedStack { get { return 5; } }
+
         public override int Run(InterpretedFrame frame) {
-            object arg4 = frame.Pop();
-            object arg3 = frame.Pop();
-            object arg2 = frame.Pop();
-            object arg1 = frame.Pop();
-            object arg0 = frame.Pop();
-            frame.Push(_site.Target(
-                _site,
-                (T0)arg0,
-                (T1)arg1,
-                (T2)arg2,
-                (T3)arg3,
-                (T4)arg4));
-            return +1;
+            frame.Data[frame.StackIndex - 5] = _site.Target(_site, (T0)frame.Data[frame.StackIndex - 5], (T1)frame.Data[frame.StackIndex - 4], (T2)frame.Data[frame.StackIndex - 3], (T3)frame.Data[frame.StackIndex - 2], (T4)frame.Data[frame.StackIndex - 1]);
+            frame.StackIndex -= 4;
+            return 1;
         }
+
         public override string ToString() {
             return "Dynamic(" + _site.Binder.ToString() + ")";
         }
     }
+
     internal class DynamicInstruction<T0,T1,T2,T3,T4,T5,TRet> : Instruction {
         private CallSite<Func<CallSite,T0,T1,T2,T3,T4,T5,TRet>> _site;
+
         public static Instruction Factory(CallSiteBinder binder) {
             return new DynamicInstruction<T0,T1,T2,T3,T4,T5,TRet>(CallSite<Func<CallSite,T0,T1,T2,T3,T4,T5,TRet>>.Create(binder));
         }
+
         private DynamicInstruction(CallSite<Func<CallSite,T0,T1,T2,T3,T4,T5,TRet>> site) {
-            this._site = site;
+            _site = site;
         }
+
         public override int ProducedStack { get { return 1; } }
         public override int ConsumedStack { get { return 6; } }
+
         public override int Run(InterpretedFrame frame) {
-            object arg5 = frame.Pop();
-            object arg4 = frame.Pop();
-            object arg3 = frame.Pop();
-            object arg2 = frame.Pop();
-            object arg1 = frame.Pop();
-            object arg0 = frame.Pop();
-            frame.Push(_site.Target(
-                _site,
-                (T0)arg0,
-                (T1)arg1,
-                (T2)arg2,
-                (T3)arg3,
-                (T4)arg4,
-                (T5)arg5));
-            return +1;
+            frame.Data[frame.StackIndex - 6] = _site.Target(_site, (T0)frame.Data[frame.StackIndex - 6], (T1)frame.Data[frame.StackIndex - 5], (T2)frame.Data[frame.StackIndex - 4], (T3)frame.Data[frame.StackIndex - 3], (T4)frame.Data[frame.StackIndex - 2], (T5)frame.Data[frame.StackIndex - 1]);
+            frame.StackIndex -= 5;
+            return 1;
         }
+
         public override string ToString() {
             return "Dynamic(" + _site.Binder.ToString() + ")";
         }
     }
+
     internal class DynamicInstruction<T0,T1,T2,T3,T4,T5,T6,TRet> : Instruction {
         private CallSite<Func<CallSite,T0,T1,T2,T3,T4,T5,T6,TRet>> _site;
+
         public static Instruction Factory(CallSiteBinder binder) {
             return new DynamicInstruction<T0,T1,T2,T3,T4,T5,T6,TRet>(CallSite<Func<CallSite,T0,T1,T2,T3,T4,T5,T6,TRet>>.Create(binder));
         }
+
         private DynamicInstruction(CallSite<Func<CallSite,T0,T1,T2,T3,T4,T5,T6,TRet>> site) {
-            this._site = site;
+            _site = site;
         }
+
         public override int ProducedStack { get { return 1; } }
         public override int ConsumedStack { get { return 7; } }
+
         public override int Run(InterpretedFrame frame) {
-            object arg6 = frame.Pop();
-            object arg5 = frame.Pop();
-            object arg4 = frame.Pop();
-            object arg3 = frame.Pop();
-            object arg2 = frame.Pop();
-            object arg1 = frame.Pop();
-            object arg0 = frame.Pop();
-            frame.Push(_site.Target(
-                _site,
-                (T0)arg0,
-                (T1)arg1,
-                (T2)arg2,
-                (T3)arg3,
-                (T4)arg4,
-                (T5)arg5,
-                (T6)arg6));
-            return +1;
+            frame.Data[frame.StackIndex - 7] = _site.Target(_site, (T0)frame.Data[frame.StackIndex - 7], (T1)frame.Data[frame.StackIndex - 6], (T2)frame.Data[frame.StackIndex - 5], (T3)frame.Data[frame.StackIndex - 4], (T4)frame.Data[frame.StackIndex - 3], (T5)frame.Data[frame.StackIndex - 2], (T6)frame.Data[frame.StackIndex - 1]);
+            frame.StackIndex -= 6;
+            return 1;
         }
+
         public override string ToString() {
             return "Dynamic(" + _site.Binder.ToString() + ")";
         }
     }
+
     internal class DynamicInstruction<T0,T1,T2,T3,T4,T5,T6,T7,TRet> : Instruction {
         private CallSite<Func<CallSite,T0,T1,T2,T3,T4,T5,T6,T7,TRet>> _site;
+
         public static Instruction Factory(CallSiteBinder binder) {
             return new DynamicInstruction<T0,T1,T2,T3,T4,T5,T6,T7,TRet>(CallSite<Func<CallSite,T0,T1,T2,T3,T4,T5,T6,T7,TRet>>.Create(binder));
         }
+
         private DynamicInstruction(CallSite<Func<CallSite,T0,T1,T2,T3,T4,T5,T6,T7,TRet>> site) {
-            this._site = site;
+            _site = site;
         }
+
         public override int ProducedStack { get { return 1; } }
         public override int ConsumedStack { get { return 8; } }
+
         public override int Run(InterpretedFrame frame) {
-            object arg7 = frame.Pop();
-            object arg6 = frame.Pop();
-            object arg5 = frame.Pop();
-            object arg4 = frame.Pop();
-            object arg3 = frame.Pop();
-            object arg2 = frame.Pop();
-            object arg1 = frame.Pop();
-            object arg0 = frame.Pop();
-            frame.Push(_site.Target(
-                _site,
-                (T0)arg0,
-                (T1)arg1,
-                (T2)arg2,
-                (T3)arg3,
-                (T4)arg4,
-                (T5)arg5,
-                (T6)arg6,
-                (T7)arg7));
-            return +1;
+            frame.Data[frame.StackIndex - 8] = _site.Target(_site, (T0)frame.Data[frame.StackIndex - 8], (T1)frame.Data[frame.StackIndex - 7], (T2)frame.Data[frame.StackIndex - 6], (T3)frame.Data[frame.StackIndex - 5], (T4)frame.Data[frame.StackIndex - 4], (T5)frame.Data[frame.StackIndex - 3], (T6)frame.Data[frame.StackIndex - 2], (T7)frame.Data[frame.StackIndex - 1]);
+            frame.StackIndex -= 7;
+            return 1;
         }
+
         public override string ToString() {
             return "Dynamic(" + _site.Binder.ToString() + ")";
         }
     }
+
     internal class DynamicInstruction<T0,T1,T2,T3,T4,T5,T6,T7,T8,TRet> : Instruction {
         private CallSite<Func<CallSite,T0,T1,T2,T3,T4,T5,T6,T7,T8,TRet>> _site;
+
         public static Instruction Factory(CallSiteBinder binder) {
             return new DynamicInstruction<T0,T1,T2,T3,T4,T5,T6,T7,T8,TRet>(CallSite<Func<CallSite,T0,T1,T2,T3,T4,T5,T6,T7,T8,TRet>>.Create(binder));
         }
+
         private DynamicInstruction(CallSite<Func<CallSite,T0,T1,T2,T3,T4,T5,T6,T7,T8,TRet>> site) {
-            this._site = site;
+            _site = site;
         }
+
         public override int ProducedStack { get { return 1; } }
         public override int ConsumedStack { get { return 9; } }
+
         public override int Run(InterpretedFrame frame) {
-            object arg8 = frame.Pop();
-            object arg7 = frame.Pop();
-            object arg6 = frame.Pop();
-            object arg5 = frame.Pop();
-            object arg4 = frame.Pop();
-            object arg3 = frame.Pop();
-            object arg2 = frame.Pop();
-            object arg1 = frame.Pop();
-            object arg0 = frame.Pop();
-            frame.Push(_site.Target(
-                _site,
-                (T0)arg0,
-                (T1)arg1,
-                (T2)arg2,
-                (T3)arg3,
-                (T4)arg4,
-                (T5)arg5,
-                (T6)arg6,
-                (T7)arg7,
-                (T8)arg8));
-            return +1;
+            frame.Data[frame.StackIndex - 9] = _site.Target(_site, (T0)frame.Data[frame.StackIndex - 9], (T1)frame.Data[frame.StackIndex - 8], (T2)frame.Data[frame.StackIndex - 7], (T3)frame.Data[frame.StackIndex - 6], (T4)frame.Data[frame.StackIndex - 5], (T5)frame.Data[frame.StackIndex - 4], (T6)frame.Data[frame.StackIndex - 3], (T7)frame.Data[frame.StackIndex - 2], (T8)frame.Data[frame.StackIndex - 1]);
+            frame.StackIndex -= 8;
+            return 1;
         }
+
         public override string ToString() {
             return "Dynamic(" + _site.Binder.ToString() + ")";
         }
     }
+
     internal class DynamicInstruction<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,TRet> : Instruction {
         private CallSite<Func<CallSite,T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,TRet>> _site;
+
         public static Instruction Factory(CallSiteBinder binder) {
             return new DynamicInstruction<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,TRet>(CallSite<Func<CallSite,T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,TRet>>.Create(binder));
         }
+
         private DynamicInstruction(CallSite<Func<CallSite,T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,TRet>> site) {
-            this._site = site;
+            _site = site;
         }
+
         public override int ProducedStack { get { return 1; } }
         public override int ConsumedStack { get { return 10; } }
+
         public override int Run(InterpretedFrame frame) {
-            object arg9 = frame.Pop();
-            object arg8 = frame.Pop();
-            object arg7 = frame.Pop();
-            object arg6 = frame.Pop();
-            object arg5 = frame.Pop();
-            object arg4 = frame.Pop();
-            object arg3 = frame.Pop();
-            object arg2 = frame.Pop();
-            object arg1 = frame.Pop();
-            object arg0 = frame.Pop();
-            frame.Push(_site.Target(
-                _site,
-                (T0)arg0,
-                (T1)arg1,
-                (T2)arg2,
-                (T3)arg3,
-                (T4)arg4,
-                (T5)arg5,
-                (T6)arg6,
-                (T7)arg7,
-                (T8)arg8,
-                (T9)arg9));
-            return +1;
+            frame.Data[frame.StackIndex - 10] = _site.Target(_site, (T0)frame.Data[frame.StackIndex - 10], (T1)frame.Data[frame.StackIndex - 9], (T2)frame.Data[frame.StackIndex - 8], (T3)frame.Data[frame.StackIndex - 7], (T4)frame.Data[frame.StackIndex - 6], (T5)frame.Data[frame.StackIndex - 5], (T6)frame.Data[frame.StackIndex - 4], (T7)frame.Data[frame.StackIndex - 3], (T8)frame.Data[frame.StackIndex - 2], (T9)frame.Data[frame.StackIndex - 1]);
+            frame.StackIndex -= 9;
+            return 1;
         }
+
         public override string ToString() {
             return "Dynamic(" + _site.Binder.ToString() + ")";
         }
     }
+
     internal class DynamicInstruction<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,TRet> : Instruction {
         private CallSite<Func<CallSite,T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,TRet>> _site;
+
         public static Instruction Factory(CallSiteBinder binder) {
             return new DynamicInstruction<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,TRet>(CallSite<Func<CallSite,T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,TRet>>.Create(binder));
         }
+
         private DynamicInstruction(CallSite<Func<CallSite,T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,TRet>> site) {
-            this._site = site;
+            _site = site;
         }
+
         public override int ProducedStack { get { return 1; } }
         public override int ConsumedStack { get { return 11; } }
+
         public override int Run(InterpretedFrame frame) {
-            object arg10 = frame.Pop();
-            object arg9 = frame.Pop();
-            object arg8 = frame.Pop();
-            object arg7 = frame.Pop();
-            object arg6 = frame.Pop();
-            object arg5 = frame.Pop();
-            object arg4 = frame.Pop();
-            object arg3 = frame.Pop();
-            object arg2 = frame.Pop();
-            object arg1 = frame.Pop();
-            object arg0 = frame.Pop();
-            frame.Push(_site.Target(
-                _site,
-                (T0)arg0,
-                (T1)arg1,
-                (T2)arg2,
-                (T3)arg3,
-                (T4)arg4,
-                (T5)arg5,
-                (T6)arg6,
-                (T7)arg7,
-                (T8)arg8,
-                (T9)arg9,
-                (T10)arg10));
-            return +1;
+            frame.Data[frame.StackIndex - 11] = _site.Target(_site, (T0)frame.Data[frame.StackIndex - 11], (T1)frame.Data[frame.StackIndex - 10], (T2)frame.Data[frame.StackIndex - 9], (T3)frame.Data[frame.StackIndex - 8], (T4)frame.Data[frame.StackIndex - 7], (T5)frame.Data[frame.StackIndex - 6], (T6)frame.Data[frame.StackIndex - 5], (T7)frame.Data[frame.StackIndex - 4], (T8)frame.Data[frame.StackIndex - 3], (T9)frame.Data[frame.StackIndex - 2], (T10)frame.Data[frame.StackIndex - 1]);
+            frame.StackIndex -= 10;
+            return 1;
         }
+
         public override string ToString() {
             return "Dynamic(" + _site.Binder.ToString() + ")";
         }
     }
+
     internal class DynamicInstruction<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,TRet> : Instruction {
         private CallSite<Func<CallSite,T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,TRet>> _site;
+
         public static Instruction Factory(CallSiteBinder binder) {
             return new DynamicInstruction<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,TRet>(CallSite<Func<CallSite,T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,TRet>>.Create(binder));
         }
+
         private DynamicInstruction(CallSite<Func<CallSite,T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,TRet>> site) {
-            this._site = site;
+            _site = site;
         }
+
         public override int ProducedStack { get { return 1; } }
         public override int ConsumedStack { get { return 12; } }
+
         public override int Run(InterpretedFrame frame) {
-            object arg11 = frame.Pop();
-            object arg10 = frame.Pop();
-            object arg9 = frame.Pop();
-            object arg8 = frame.Pop();
-            object arg7 = frame.Pop();
-            object arg6 = frame.Pop();
-            object arg5 = frame.Pop();
-            object arg4 = frame.Pop();
-            object arg3 = frame.Pop();
-            object arg2 = frame.Pop();
-            object arg1 = frame.Pop();
-            object arg0 = frame.Pop();
-            frame.Push(_site.Target(
-                _site,
-                (T0)arg0,
-                (T1)arg1,
-                (T2)arg2,
-                (T3)arg3,
-                (T4)arg4,
-                (T5)arg5,
-                (T6)arg6,
-                (T7)arg7,
-                (T8)arg8,
-                (T9)arg9,
-                (T10)arg10,
-                (T11)arg11));
-            return +1;
+            frame.Data[frame.StackIndex - 12] = _site.Target(_site, (T0)frame.Data[frame.StackIndex - 12], (T1)frame.Data[frame.StackIndex - 11], (T2)frame.Data[frame.StackIndex - 10], (T3)frame.Data[frame.StackIndex - 9], (T4)frame.Data[frame.StackIndex - 8], (T5)frame.Data[frame.StackIndex - 7], (T6)frame.Data[frame.StackIndex - 6], (T7)frame.Data[frame.StackIndex - 5], (T8)frame.Data[frame.StackIndex - 4], (T9)frame.Data[frame.StackIndex - 3], (T10)frame.Data[frame.StackIndex - 2], (T11)frame.Data[frame.StackIndex - 1]);
+            frame.StackIndex -= 11;
+            return 1;
         }
+
         public override string ToString() {
             return "Dynamic(" + _site.Binder.ToString() + ")";
         }
     }
+
     internal class DynamicInstruction<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,TRet> : Instruction {
         private CallSite<Func<CallSite,T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,TRet>> _site;
+
         public static Instruction Factory(CallSiteBinder binder) {
             return new DynamicInstruction<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,TRet>(CallSite<Func<CallSite,T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,TRet>>.Create(binder));
         }
+
         private DynamicInstruction(CallSite<Func<CallSite,T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,TRet>> site) {
-            this._site = site;
+            _site = site;
         }
+
         public override int ProducedStack { get { return 1; } }
         public override int ConsumedStack { get { return 13; } }
+
         public override int Run(InterpretedFrame frame) {
-            object arg12 = frame.Pop();
-            object arg11 = frame.Pop();
-            object arg10 = frame.Pop();
-            object arg9 = frame.Pop();
-            object arg8 = frame.Pop();
-            object arg7 = frame.Pop();
-            object arg6 = frame.Pop();
-            object arg5 = frame.Pop();
-            object arg4 = frame.Pop();
-            object arg3 = frame.Pop();
-            object arg2 = frame.Pop();
-            object arg1 = frame.Pop();
-            object arg0 = frame.Pop();
-            frame.Push(_site.Target(
-                _site,
-                (T0)arg0,
-                (T1)arg1,
-                (T2)arg2,
-                (T3)arg3,
-                (T4)arg4,
-                (T5)arg5,
-                (T6)arg6,
-                (T7)arg7,
-                (T8)arg8,
-                (T9)arg9,
-                (T10)arg10,
-                (T11)arg11,
-                (T12)arg12));
-            return +1;
+            frame.Data[frame.StackIndex - 13] = _site.Target(_site, (T0)frame.Data[frame.StackIndex - 13], (T1)frame.Data[frame.StackIndex - 12], (T2)frame.Data[frame.StackIndex - 11], (T3)frame.Data[frame.StackIndex - 10], (T4)frame.Data[frame.StackIndex - 9], (T5)frame.Data[frame.StackIndex - 8], (T6)frame.Data[frame.StackIndex - 7], (T7)frame.Data[frame.StackIndex - 6], (T8)frame.Data[frame.StackIndex - 5], (T9)frame.Data[frame.StackIndex - 4], (T10)frame.Data[frame.StackIndex - 3], (T11)frame.Data[frame.StackIndex - 2], (T12)frame.Data[frame.StackIndex - 1]);
+            frame.StackIndex -= 12;
+            return 1;
         }
+
         public override string ToString() {
             return "Dynamic(" + _site.Binder.ToString() + ")";
         }
     }
+
     internal class DynamicInstruction<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,TRet> : Instruction {
         private CallSite<Func<CallSite,T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,TRet>> _site;
+
         public static Instruction Factory(CallSiteBinder binder) {
             return new DynamicInstruction<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,TRet>(CallSite<Func<CallSite,T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,TRet>>.Create(binder));
         }
+
         private DynamicInstruction(CallSite<Func<CallSite,T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,TRet>> site) {
-            this._site = site;
+            _site = site;
         }
+
         public override int ProducedStack { get { return 1; } }
         public override int ConsumedStack { get { return 14; } }
+
         public override int Run(InterpretedFrame frame) {
-            object arg13 = frame.Pop();
-            object arg12 = frame.Pop();
-            object arg11 = frame.Pop();
-            object arg10 = frame.Pop();
-            object arg9 = frame.Pop();
-            object arg8 = frame.Pop();
-            object arg7 = frame.Pop();
-            object arg6 = frame.Pop();
-            object arg5 = frame.Pop();
-            object arg4 = frame.Pop();
-            object arg3 = frame.Pop();
-            object arg2 = frame.Pop();
-            object arg1 = frame.Pop();
-            object arg0 = frame.Pop();
-            frame.Push(_site.Target(
-                _site,
-                (T0)arg0,
-                (T1)arg1,
-                (T2)arg2,
-                (T3)arg3,
-                (T4)arg4,
-                (T5)arg5,
-                (T6)arg6,
-                (T7)arg7,
-                (T8)arg8,
-                (T9)arg9,
-                (T10)arg10,
-                (T11)arg11,
-                (T12)arg12,
-                (T13)arg13));
-            return +1;
+            frame.Data[frame.StackIndex - 14] = _site.Target(_site, (T0)frame.Data[frame.StackIndex - 14], (T1)frame.Data[frame.StackIndex - 13], (T2)frame.Data[frame.StackIndex - 12], (T3)frame.Data[frame.StackIndex - 11], (T4)frame.Data[frame.StackIndex - 10], (T5)frame.Data[frame.StackIndex - 9], (T6)frame.Data[frame.StackIndex - 8], (T7)frame.Data[frame.StackIndex - 7], (T8)frame.Data[frame.StackIndex - 6], (T9)frame.Data[frame.StackIndex - 5], (T10)frame.Data[frame.StackIndex - 4], (T11)frame.Data[frame.StackIndex - 3], (T12)frame.Data[frame.StackIndex - 2], (T13)frame.Data[frame.StackIndex - 1]);
+            frame.StackIndex -= 13;
+            return 1;
         }
+
         public override string ToString() {
             return "Dynamic(" + _site.Binder.ToString() + ")";
         }
     }
+
     internal class DynamicInstruction<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,TRet> : Instruction {
         private CallSite<Func<CallSite,T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,TRet>> _site;
+
         public static Instruction Factory(CallSiteBinder binder) {
             return new DynamicInstruction<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,TRet>(CallSite<Func<CallSite,T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,TRet>>.Create(binder));
         }
+
         private DynamicInstruction(CallSite<Func<CallSite,T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,TRet>> site) {
-            this._site = site;
+            _site = site;
         }
+
         public override int ProducedStack { get { return 1; } }
         public override int ConsumedStack { get { return 15; } }
+
         public override int Run(InterpretedFrame frame) {
-            object arg14 = frame.Pop();
-            object arg13 = frame.Pop();
-            object arg12 = frame.Pop();
-            object arg11 = frame.Pop();
-            object arg10 = frame.Pop();
-            object arg9 = frame.Pop();
-            object arg8 = frame.Pop();
-            object arg7 = frame.Pop();
-            object arg6 = frame.Pop();
-            object arg5 = frame.Pop();
-            object arg4 = frame.Pop();
-            object arg3 = frame.Pop();
-            object arg2 = frame.Pop();
-            object arg1 = frame.Pop();
-            object arg0 = frame.Pop();
-            frame.Push(_site.Target(
-                _site,
-                (T0)arg0,
-                (T1)arg1,
-                (T2)arg2,
-                (T3)arg3,
-                (T4)arg4,
-                (T5)arg5,
-                (T6)arg6,
-                (T7)arg7,
-                (T8)arg8,
-                (T9)arg9,
-                (T10)arg10,
-                (T11)arg11,
-                (T12)arg12,
-                (T13)arg13,
-                (T14)arg14));
-            return +1;
+            frame.Data[frame.StackIndex - 15] = _site.Target(_site, (T0)frame.Data[frame.StackIndex - 15], (T1)frame.Data[frame.StackIndex - 14], (T2)frame.Data[frame.StackIndex - 13], (T3)frame.Data[frame.StackIndex - 12], (T4)frame.Data[frame.StackIndex - 11], (T5)frame.Data[frame.StackIndex - 10], (T6)frame.Data[frame.StackIndex - 9], (T7)frame.Data[frame.StackIndex - 8], (T8)frame.Data[frame.StackIndex - 7], (T9)frame.Data[frame.StackIndex - 6], (T10)frame.Data[frame.StackIndex - 5], (T11)frame.Data[frame.StackIndex - 4], (T12)frame.Data[frame.StackIndex - 3], (T13)frame.Data[frame.StackIndex - 2], (T14)frame.Data[frame.StackIndex - 1]);
+            frame.StackIndex -= 14;
+            return 1;
         }
+
         public override string ToString() {
             return "Dynamic(" + _site.Binder.ToString() + ")";
         }
     }
+
 
     // *** END GENERATED CODE ***
 

@@ -29,27 +29,31 @@ using Microsoft.Scripting.Utils;
 using System.Diagnostics;
 
 namespace Microsoft.Scripting.Interpreter {
-    /**
-     * A simple forth-style stack machine for executing Expression trees
-     * without the need to compile to IL and then invoke the JIT.  This trades
-     * off much faster compilation time for a slower execution performance.
-     * For code that is only run a small number of times this can be a 
-     * sweet spot.
-     * 
-     * The core loop in the interpreter is the RunInstructions method.
-     */
+    /// <summary>
+    /// A simple forth-style stack machine for executing Expression trees
+    /// without the need to compile to IL and then invoke the JIT.  This trades
+    /// off much faster compilation time for a slower execution performance.
+    /// For code that is only run a small number of times this can be a 
+    /// sweet spot.
+    /// 
+    /// The core loop in the interpreter is the RunInstructions method.
+    /// </summary>
     internal sealed class Interpreter {
+        internal readonly int _compilationThreshold;
         internal readonly int _numberOfLocals;
         internal readonly int _maxStackDepth;
         internal readonly bool[] _localIsBoxed;
-        private readonly Instruction[] _instructions;
+
+        private readonly InstructionArray _instructions;
+        internal readonly object[] _objects;
+
         internal readonly LambdaExpression _lambda;
         private readonly ExceptionHandler[] _handlers;
         internal readonly DebugInfo[] _debugInfos;
         private readonly bool _onlyFaultHandlers;
 
-        internal Interpreter(LambdaExpression lambda, bool[] localIsBoxed, int maxStackDepth, 
-            Instruction[] instructions, ExceptionHandler[] handlers, DebugInfo[] debugInfos) {
+        internal Interpreter(LambdaExpression lambda, bool[] localIsBoxed, int maxStackDepth,
+            InstructionArray instructions, ExceptionHandler[] handlers, DebugInfo[] debugInfos, int compilationThreshold) {
 
             _lambda = lambda;
             _numberOfLocals = localIsBoxed.Length;
@@ -61,6 +65,7 @@ namespace Microsoft.Scripting.Interpreter {
                 
             _maxStackDepth = maxStackDepth;
             _instructions = instructions;
+            _objects = instructions.Objects;
             _handlers = handlers;
             _debugInfos = debugInfos;
 
@@ -71,6 +76,8 @@ namespace Microsoft.Scripting.Interpreter {
                     break;
                 }
             }
+
+            _compilationThreshold = compilationThreshold;
         }
 
         public void Run(InterpretedFrame frame) {
@@ -224,7 +231,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         internal void RunInstructions(InterpretedFrame frame, int endInstruction) {
-            var instructions = _instructions;
+            var instructions = _instructions.Instructions;
             int index = frame.InstructionIndex;
             while (index < endInstruction) {
                 index += instructions[index].Run(frame);
@@ -233,7 +240,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         private void RunInstructions(InterpretedFrame frame) {
-            var instructions = _instructions;
+            var instructions = _instructions.Instructions;
             int index = frame.InstructionIndex;
             while (index < instructions.Length) {
                 index += instructions[index].Run(frame);

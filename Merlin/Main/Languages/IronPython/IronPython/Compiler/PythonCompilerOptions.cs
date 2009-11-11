@@ -26,6 +26,7 @@ namespace IronPython.Compiler {
         private bool _skipFirstLine, _dontImplyIndent;
         private string _moduleName;
         private int[] _initialIndentation;
+        private CompilationMode _compilationMode;
 
         /// <summary>
         /// Creates a new PythonCompilerOptions with the default language features enabled.
@@ -177,6 +178,15 @@ namespace IronPython.Compiler {
         public bool SkipFirstLine {
             get { return _skipFirstLine; }
             set { _skipFirstLine = value; }
+        }
+
+        internal CompilationMode CompilationMode {
+            get {
+                return _compilationMode;
+            }
+            set {
+                _compilationMode = value;
+            }
         }
 
         #region ICloneable Members

@@ -21,6 +21,7 @@ using Microsoft.Scripting.Ast;
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
 
 using Microsoft.Scripting;
@@ -39,22 +40,13 @@ namespace IronPython.Compiler {
     /// used when tracing is enabled.
     /// </summary>
     class PythonScriptCode : RunnableScriptCode {
-        private readonly CompilerContext/*!*/ _context;
         private CodeContext _defaultContext;
-        private readonly Expression<Func<CodeContext/*!*/, FunctionCode/*!*/, object>> _lambda;
-        private readonly Dictionary<int, bool> _handlerLocations;                         // list of exception handler locations for debugging
-        private readonly Dictionary<int, Dictionary<int, bool>> _loopAndFinallyLocations; // list of loop and finally locations for debugging
-
         private Func<CodeContext/*!*/, FunctionCode/*!*/, object>/*!*/ _target, _tracingTarget; // lazily compiled targets
 
-        public PythonScriptCode(CompilerContext/*!*/ context, Expression<Func<CodeContext/*!*/, FunctionCode/*!*/, object>>/*!*/ lambda, SourceUnit/*!*/ sourceUnit, Dictionary<int, bool> handlerLocations, Dictionary<int, Dictionary<int, bool>> loopAndFinallyLocations, SourceSpan span)
-            : base(sourceUnit, span) {
-            Assert.NotNull(lambda, context);
-
-            _context = context;
-            _lambda = lambda;
-            _handlerLocations = handlerLocations;
-            _loopAndFinallyLocations = loopAndFinallyLocations;
+        public PythonScriptCode(Compiler.Ast.PythonAst/*!*/ ast)
+            : base(ast) {
+            Assert.NotNull(ast);
+            Debug.Assert(ast.Type == typeof(Expression<Func<CodeContext/*!*/, FunctionCode/*!*/, object>>));
         }
 
         public override object Run() {
@@ -90,7 +82,7 @@ namespace IronPython.Compiler {
 
         private Func<CodeContext/*!*/, FunctionCode/*!*/, object> GetTarget() {
             Func<CodeContext/*!*/, FunctionCode/*!*/, object> target;
-            PythonContext pc = (PythonContext)_context.SourceUnit.LanguageContext;
+            PythonContext pc = (PythonContext)Ast.CompilerContext.SourceUnit.LanguageContext;
             if (!pc.EnableTracing) {
                 EnsureTarget();
                 target = _target;
@@ -109,10 +101,6 @@ namespace IronPython.Compiler {
             return new Scope();
         }
 
-        protected override FunctionAttributes GetCodeAttributes() {
-            return GetCodeAttributes(_context);
-        }
-
         // wrapper so we can do minimal code gen for eval code
         private object EvalWrapper(CodeContext ctx) {
             try {
@@ -125,7 +113,7 @@ namespace IronPython.Compiler {
 
         private Func<CodeContext, FunctionCode, object> CompileBody(Expression<Func<CodeContext/*!*/, FunctionCode/*!*/, object>> lambda) {
             Func<CodeContext, FunctionCode, object> func;
-            PythonContext pc = (PythonContext)_context.SourceUnit.LanguageContext;
+            PythonContext pc = (PythonContext)Ast.CompilerContext.SourceUnit.LanguageContext;
 
             if (lambda.Body is ConstantExpression) {
                 // skip compiling for really simple code
@@ -133,10 +121,10 @@ namespace IronPython.Compiler {
                 return (codeCtx, functionCode) => value;
             }
 
-            if (pc.ShouldInterpret((PythonCompilerOptions)_context.Options, _context.SourceUnit)) {
-                func = CompilerHelpers.LightCompile(lambda, false);
+            if (pc.ShouldInterpret((PythonCompilerOptions)Ast.CompilerContext.Options, Ast.CompilerContext.SourceUnit)) {
+                func = CompilerHelpers.LightCompile(lambda, false, pc.Options.CompilationThreshold);
             } else {
-                func = lambda.Compile(_context.SourceUnit.EmitDebugSymbols);
+                func = lambda.Compile(Ast.CompilerContext.SourceUnit.EmitDebugSymbols);
             }
 
             return func;
@@ -144,14 +132,14 @@ namespace IronPython.Compiler {
 
         private void EnsureTarget() {
             if (_target == null) {
-                _target = CompileBody(_lambda);
+                _target = CompileBody((Expression<Func<CodeContext/*!*/, FunctionCode/*!*/, object>>)Ast.GetLambda());
             }
         }
 
         private CodeContext DefaultContext {
             get {
                 if (_defaultContext == null) {
-                    _defaultContext = CreateTopLevelCodeContext(new PythonDictionary(),  _context.SourceUnit.LanguageContext);
+                    _defaultContext = CreateTopLevelCodeContext(new PythonDictionary(), Ast.CompilerContext.SourceUnit.LanguageContext);
                 }
 
                 return _defaultContext;
@@ -160,9 +148,9 @@ namespace IronPython.Compiler {
 
         private void EnsureTracingTarget() {
             if (_tracingTarget == null) {
-                PythonContext pc = (PythonContext)_context.SourceUnit.LanguageContext;
+                PythonContext pc = (PythonContext)Ast.CompilerContext.SourceUnit.LanguageContext;
 
-                var debugProperties = new PythonDebuggingPayload(null, _loopAndFinallyLocations, _handlerLocations);
+                var debugProperties = new PythonDebuggingPayload(null);
 
                 var debugInfo = new Microsoft.Scripting.Debugging.CompilerServices.DebugLambdaInfo(
                     null,           // IDebugCompilerSupport
@@ -173,7 +161,7 @@ namespace IronPython.Compiler {
                     debugProperties // custom payload
                 );
 
-                _tracingTarget = CompileBody((Expression<Func<CodeContext/*!*/, FunctionCode/*!*/, object>>)pc.DebugContext.TransformLambda(_lambda, debugInfo));
+                _tracingTarget = CompileBody((Expression<Func<CodeContext/*!*/, FunctionCode/*!*/, object>>)pc.DebugContext.TransformLambda(Ast.GetLambda(), debugInfo));
                 debugProperties.Code = EnsureFunctionCode(_tracingTarget);
             }
         }

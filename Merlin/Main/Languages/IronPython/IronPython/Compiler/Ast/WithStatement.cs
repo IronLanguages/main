@@ -50,7 +50,7 @@ namespace IronPython.Compiler.Ast {
             set { _header = value; }
         }
 
-        public Expression Variable {
+        public new Expression Variable {
             get { return _var; }
         }
 
@@ -85,20 +85,24 @@ namespace IronPython.Compiler.Ast {
         ///         exit(None, None, None)
         /// 
         /// </summary>
-        internal override MSAst.Expression Transform(AstGenerator ag) {            
-            MSAst.ParameterExpression lineUpdated = ag.GetTemporary("$lineUpdated_with", typeof(bool));
+        public override MSAst.Expression Reduce() {
             // Five statements in the result...
             ReadOnlyCollectionBuilder<MSAst.Expression> statements = new ReadOnlyCollectionBuilder<MSAst.Expression>(6);
-            
+            ReadOnlyCollectionBuilder<MSAst.ParameterExpression> variables = new ReadOnlyCollectionBuilder<MSAst.ParameterExpression>(6);
+            MSAst.ParameterExpression lineUpdated = Ast.Variable(typeof(bool), "$lineUpdated_with");
+            variables.Add(lineUpdated);
 
             //******************************************************************
             // 1. mgr = (EXPR)
             //******************************************************************
-            MSAst.ParameterExpression manager = ag.GetTemporary("with_manager");
+            MSAst.ParameterExpression manager = Ast.Variable(typeof(object), "with_manager");
+            variables.Add(manager);
             statements.Add(
-                ag.MakeAssignment(
-                    manager,
-                    ag.Transform(_contextManager),
+                GlobalParent.AddDebugInfo(
+                    Ast.Assign(
+                        manager,
+                        _contextManager
+                    ),
                     new SourceSpan(Start, _header)
                 )
             );
@@ -106,11 +110,12 @@ namespace IronPython.Compiler.Ast {
             //******************************************************************
             // 2. exit = mgr.__exit__  # Not calling it yet
             //******************************************************************
-            MSAst.ParameterExpression exit = ag.GetTemporary("with_exit");
+            MSAst.ParameterExpression exit = Ast.Variable(typeof(object), "with_exit");
+            variables.Add(exit);
             statements.Add(
-                AstGenerator.MakeAssignment(
+                MakeAssignment(
                     exit,
-                    ag.Get(
+                    GlobalParent.Get(
                         typeof(object),
                         "__exit__",
                         manager
@@ -121,15 +126,16 @@ namespace IronPython.Compiler.Ast {
             //******************************************************************
             // 3. value = mgr.__enter__()
             //******************************************************************
-            MSAst.ParameterExpression value = ag.GetTemporary("with_value");
+            MSAst.ParameterExpression value = Ast.Variable(typeof(object), "with_value");
+            variables.Add(value);
             statements.Add(
-                ag.AddDebugInfoAndVoid(
-                    AstGenerator.MakeAssignment(
+                GlobalParent.AddDebugInfoAndVoid(
+                    MakeAssignment(
                         value,
-                        ag.Invoke(
+                        Parent.Invoke(
                             typeof(object),
                             new CallSignature(0),
-                            ag.Get(
+                            GlobalParent.Get(
                                 typeof(object),
                                 "__enter__",
                                 manager
@@ -143,9 +149,10 @@ namespace IronPython.Compiler.Ast {
             //******************************************************************
             // 4. exc = True
             //******************************************************************
-            MSAst.ParameterExpression exc = ag.GetTemporary("with_exc", typeof(bool));
+            MSAst.ParameterExpression exc = Ast.Variable(typeof(bool), "with_exc");
+            variables.Add(exc);
             statements.Add(
-                AstGenerator.MakeAssignment(
+                MakeAssignment(
                     exc,
                     AstUtils.Constant(true)
                 )
@@ -169,59 +176,61 @@ namespace IronPython.Compiler.Ast {
             //          exit(None, None, None)
             //******************************************************************
 
-            MSAst.ParameterExpression exception = ag.GetTemporary("exception", typeof(Exception));
-            MSAst.ParameterExpression nestedFrames = ag.GetTemporary("$nestedFrames", typeof(List<DynamicStackFrame>));
+            MSAst.ParameterExpression exception = Ast.Variable(typeof(Exception), "exception");
+            MSAst.ParameterExpression nestedFrames = Ast.Variable(typeof(List<DynamicStackFrame>), "$nestedFrames");
+            variables.Add(exception);
+            variables.Add(nestedFrames);
             statements.Add(
                 // try:
                 AstUtils.Try(
                     AstUtils.Try(// try statement body
-                        ag.PushLineUpdated(false, lineUpdated),
+                        PushLineUpdated(false, lineUpdated),
                         _var != null ?
-                            Ast.Block(
-                                // VAR = value
-                                _var.TransformSet(ag, SourceSpan.None, value, PythonOperationKind.None),
-                                // BLOCK
-                                ag.Transform(_body),
+                            (MSAst.Expression)Ast.Block(
+                // VAR = value
+                                _var.TransformSet(SourceSpan.None, value, PythonOperationKind.None),
+                // BLOCK
+                                _body,
                                 AstUtils.Empty()
                             ) :
-                            // BLOCK
-                            ag.Transform(_body) // except:, // try statement location
+                // BLOCK
+                            (MSAst.Expression)_body // except:, // try statement location
                     ).Catch(exception,
-                    // Python specific exception handling code
-                        TryStatement.GetTracebackHeader(                        
-                            ag,
+                // Python specific exception handling code
+                        TryStatement.GetTracebackHeader(
+                            this,
                             exception,
-                            ag.AddDebugInfoAndVoid(
+                            GlobalParent.AddDebugInfoAndVoid(
                                 Ast.Block(
-                                    // exc = False
-                                    AstGenerator.MakeAssignment(
+                // exc = False
+                                    MakeAssignment(
                                         exc,
                                         AstUtils.Constant(false)
                                     ),
                                     Ast.Assign(
                                         nestedFrames,
-                                        Ast.Call(AstGenerator.GetHelperMethod("GetAndClearDynamicStackFrames"))
+                                        Ast.Call(AstMethods.GetAndClearDynamicStackFrames)
                                     ),
-                                    //  if not exit(*sys.exc_info()):
-                                    //      raise
+                //  if not exit(*sys.exc_info()):
+                //      raise
                                     AstUtils.IfThen(
-                                        ag.Convert(
+                                        GlobalParent.Convert(
                                             typeof(bool),
                                             ConversionResultKind.ExplicitCast,
-                                            ag.Operation(
+                                            GlobalParent.Operation(
                                                 typeof(bool),
                                                 PythonOperationKind.Not,
-                                                MakeExitCall(ag, exit, exception)
+                                                MakeExitCall(exit, exception)
                                             )
                                         ),
-                                        ag.UpdateLineUpdated(true),
+                                        UpdateLineUpdated(true),
                                         Ast.Call(
-                                            AstGenerator.GetHelperMethod("SetDynamicStackFrames"),
+                                            AstMethods.SetDynamicStackFrames,
                                             nestedFrames
                                         ),
                                         Ast.Throw(
                                             Ast.Call(
-                                                AstGenerator.GetHelperMethod("MakeRethrowExceptionWorker"),
+                                                AstMethods.MakeRethrowExceptionWorker,
                                                 exception
                                             )
                                         )
@@ -231,10 +240,10 @@ namespace IronPython.Compiler.Ast {
                             )
                         ),
                         Ast.Call(
-                            AstGenerator.GetHelperMethod("SetDynamicStackFrames"),
+                            AstMethods.SetDynamicStackFrames,
                             nestedFrames
                         ),
-                        ag.PopLineUpdated(lineUpdated),
+                        PopLineUpdated(lineUpdated),
                         Ast.Empty()
                     )
                 // finally:                    
@@ -243,21 +252,21 @@ namespace IronPython.Compiler.Ast {
                 //      exit(None, None, None)
                     AstUtils.IfThen(
                         exc,
-                        ag.AddDebugInfoAndVoid(
+                        GlobalParent.AddDebugInfoAndVoid(
                             Ast.Block(
                                 Ast.Dynamic(
-                                    ag.PyContext.Invoke(
+                                    GlobalParent.PyContext.Invoke(
                                         new CallSignature(3)        // signature doesn't include function
                                     ),
                                     typeof(object),
                                     new MSAst.Expression[] {
-                                        ag.LocalContext,
+                                        Parent.LocalContext,
                                         exit,
                                         AstUtils.Constant(null),
                                         AstUtils.Constant(null),
                                         AstUtils.Constant(null)
                                     }
-                                ),                                    
+                                ),
                                 Ast.Empty()
                             ),
                             _contextManager.Span
@@ -267,25 +276,25 @@ namespace IronPython.Compiler.Ast {
             );
 
             statements.Add(AstUtils.Empty());
-            return Ast.Block(statements.ToReadOnlyCollection());
+            return Ast.Block(variables.ToReadOnlyCollection(), statements.ToReadOnlyCollection());
         }
 
-        private static MSAst.Expression MakeExitCall(AstGenerator ag, MSAst.ParameterExpression exit, MSAst.Expression exception) {
+        private MSAst.Expression MakeExitCall(MSAst.ParameterExpression exit, MSAst.Expression exception) {
             // The 'with' statement's exceptional clause explicitly does not set the thread's current exception information.
             // So while the pseudo code says:
             //    exit(*sys.exc_info())
             // we'll actually do:
             //    exit(*PythonOps.GetExceptionInfoLocal($exception))
-            return ag.Convert(
+            return GlobalParent.Convert(
                 typeof(bool),
                 ConversionResultKind.ExplicitCast,
-                ag.Invoke(
+                Parent.Invoke(
                     typeof(object),
                     new CallSignature(ArgumentType.List),
                     exit,
                     Ast.Call(
-                        AstGenerator.GetHelperMethod("GetExceptionInfoLocal"),
-                        ag.LocalContext,
+                        AstMethods.GetExceptionInfoLocal,
+                        Parent.LocalContext,
                         exception
                     )
                 )

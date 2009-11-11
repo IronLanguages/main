@@ -26,6 +26,7 @@ using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Utils;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using System.Reflection;
 
 namespace IronRuby.Tests {
     using Ast = Expression;
@@ -51,7 +52,6 @@ namespace IronRuby.Tests {
             rc = l0.Compile()();
             ri = l0.LightCompile()();
             Assert(rc == ri);
-
 
             // cross-block goto in try-catch-finally:
             label = Ast.Label(typeof(int));
@@ -471,6 +471,135 @@ namespace IronRuby.Tests {
                 )
             ).LightCompile()();
             Assert(strArray8[0, 0, 0, 0, 0, 0, 0, 0] == "bar");
+        }
+
+        [Options(NoRuntime = true)]
+        public void InterpreterNumeric1() {
+            Assert(Expression.Lambda<Func<short>>(
+                Expression.Add(Expression.Constant((short)1), Expression.Constant((short)2))
+            ).LightCompile()() == 3);
+
+            Assert(Expression.Lambda<Func<int>>(
+                Expression.Add(Expression.Constant((int)1), Expression.Constant((int)2))
+            ).LightCompile()() == 3);
+
+            Assert(Expression.Lambda<Func<short>>(
+                Expression.AddChecked(Expression.Constant((short)1), Expression.Constant((short)2))
+            ).LightCompile()() == 3);
+
+            Assert(Expression.Lambda<Func<bool>>(
+                Expression.LessThan(Expression.Constant((byte)1), Expression.Constant((byte)2))
+            ).LightCompile()() == true);
+
+            Assert(Expression.Lambda<Func<bool>>(
+                Expression.Equal(Expression.Constant(true), Expression.Constant(false))
+            ).LightCompile()() == false);
+
+            object obj1 = 1;
+            object obj2 = 1;
+            Assert(Expression.Lambda<Func<bool>>(
+                Expression.Equal(Expression.Constant(obj1, typeof(object)), Expression.Constant(obj2, typeof(object)))
+            ).LightCompile()() == false);
+
+            Assert(Expression.Lambda<Func<bool>>(
+                Expression.Equal(Expression.Constant(1), Expression.Constant(1))
+            ).LightCompile()() == true);
+        }
+
+        public class ClassWithMethods2 {
+            private readonly string Str = "<this>";
+
+            public static void SF0() { TestValues.Add("0"); }
+            public static void SF1(string a) { TestValues.Add(a); }
+            public static void SF2(string a, string b) { TestValues.Add(a + b); }
+            public static void SF3(string a, string b, string c) { TestValues.Add(a + b + c); }
+            public static void SF4(string a, string b, string c, string d) { TestValues.Add(a + b + c + d); }
+            public static void SF5(string a, string b, string c, string d, string e) { TestValues.Add(a + b + c + d + e); }
+            public static string SG0() { TestValues.Add("0"); return "G0"; }
+            public static string SG1(string a) { TestValues.Add(a); return "G1"; }
+            public static string SG2(string a, string b) { TestValues.Add(a + b); return "G2"; }
+            public static string SG3(string a, string b, string c) { TestValues.Add(a + b + c); return "G3"; }
+            public static string SG4(string a, string b, string c, string d) { TestValues.Add(a + b + c + d); return "G4"; }
+            public static string SG5(string a, string b, string c, string d, string e) { TestValues.Add(a + b + c + d + e); return "G5"; }
+
+            public void F0() { TestValues.Add(Str + "0"); }
+            public void F1(string a) { TestValues.Add(Str + a); }
+            public void F2(string a, string b) { TestValues.Add(Str + a + b); }
+            public void F3(string a, string b, string c) { TestValues.Add(Str + a + b + c); }
+            public void F4(string a, string b, string c, string d) { TestValues.Add(Str + a + b + c + d); }
+            public void F5(string a, string b, string c, string d, string e) { TestValues.Add(Str + a + b + c + d + e); }
+            public string G0() { TestValues.Add(Str + "0"); return "G0"; }
+            public string G1(string a) { TestValues.Add(Str + a); return "G1"; }
+            public string G2(string a, string b) { TestValues.Add(Str + a + b); return "G2"; }
+            public string G3(string a, string b, string c) { TestValues.Add(Str + a + b + c); return "G3"; }
+            public string G4(string a, string b, string c, string d) { TestValues.Add(Str + a + b + c + d); return "G4"; }
+            public string G5(string a, string b, string c, string d, string e) { TestValues.Add(Str + a + b + c + d + e); return "G5"; }
+        }
+
+        private static MethodInfo GM2(string name) {
+            return typeof(ClassWithMethods2).GetMethod(name);
+        }
+
+        [ThreadStatic]
+        private static List<string> TestValues = new List<string>();
+
+        [Options(NoRuntime = true)]
+        public void InterpreterMethodCalls1() {
+            var sf = Expression.Lambda<Action>(Ast.Block(
+                Ast.Call(null, GM2("SF0")),
+                Ast.Call(null, GM2("SF1"), Ast.Constant("1")),
+                Ast.Call(null, GM2("SF2"), Ast.Constant("1"), Ast.Constant("2")),
+                Ast.Call(null, GM2("SF3"), Ast.Constant("1"), Ast.Constant("2"), Ast.Constant("3")),
+                Ast.Call(null, GM2("SF4"), Ast.Constant("1"), Ast.Constant("2"), Ast.Constant("3"), Ast.Constant("4")),
+                Ast.Call(null, GM2("SF5"), Ast.Constant("1"), Ast.Constant("2"), Ast.Constant("3"), Ast.Constant("4"), Ast.Constant("5"))
+            ));
+
+            var sg = Expression.Lambda<Func<string[]>>(Ast.NewArrayInit(typeof(string),
+                Ast.Call(null, GM2("SG0")),
+                Ast.Call(null, GM2("SG1"), Ast.Constant("1")),
+                Ast.Call(null, GM2("SG2"), Ast.Constant("1"), Ast.Constant("2")),
+                Ast.Call(null, GM2("SG3"), Ast.Constant("1"), Ast.Constant("2"), Ast.Constant("3")),
+                Ast.Call(null, GM2("SG4"), Ast.Constant("1"), Ast.Constant("2"), Ast.Constant("3"), Ast.Constant("4")),
+                Ast.Call(null, GM2("SG5"), Ast.Constant("1"), Ast.Constant("2"), Ast.Constant("3"), Ast.Constant("4"), Ast.Constant("5"))
+            ));
+
+            var i = Expression.Constant(new ClassWithMethods2());
+
+            var f = Expression.Lambda<Action>(Ast.Block(
+                Ast.Call(i, GM2("F0")),
+                Ast.Call(i, GM2("F1"), Ast.Constant("1")),
+                Ast.Call(i, GM2("F2"), Ast.Constant("1"), Ast.Constant("2")),
+                Ast.Call(i, GM2("F3"), Ast.Constant("1"), Ast.Constant("2"), Ast.Constant("3")),
+                Ast.Call(i, GM2("F4"), Ast.Constant("1"), Ast.Constant("2"), Ast.Constant("3"), Ast.Constant("4")),
+                Ast.Call(i, GM2("F5"), Ast.Constant("1"), Ast.Constant("2"), Ast.Constant("3"), Ast.Constant("4"), Ast.Constant("5"))
+            ));
+
+            var g = Expression.Lambda<Func<string[]>>(Ast.NewArrayInit(typeof(string),
+                Ast.Call(i, GM2("G0")),
+                Ast.Call(i, GM2("G1"), Ast.Constant("1")),
+                Ast.Call(i, GM2("G2"), Ast.Constant("1"), Ast.Constant("2")),
+                Ast.Call(i, GM2("G3"), Ast.Constant("1"), Ast.Constant("2"), Ast.Constant("3")),
+                Ast.Call(i, GM2("G4"), Ast.Constant("1"), Ast.Constant("2"), Ast.Constant("3"), Ast.Constant("4")),
+                Ast.Call(i, GM2("G5"), Ast.Constant("1"), Ast.Constant("2"), Ast.Constant("3"), Ast.Constant("4"), Ast.Constant("5"))
+            ));
+
+            sf.Compile()();
+            var c_sg_result = sg.Compile()();
+            f.Compile()();
+            var c_g_result = g.Compile()();
+            string[] c_list = TestValues.ToArray();
+            TestValues.Clear();
+
+            sf.LightCompile()();
+            var i_sg_result = sg.LightCompile()();
+            f.LightCompile()();
+            var i_g_result = g.LightCompile()();
+            string[] i_list = TestValues.ToArray();
+            TestValues.Clear();
+
+            Assert(ArrayUtils.ValueEquals(c_sg_result, i_sg_result));
+            Assert(ArrayUtils.ValueEquals(c_g_result, i_g_result));
+            Assert(ArrayUtils.ValueEquals(c_list, i_list));
         }
     }
 }

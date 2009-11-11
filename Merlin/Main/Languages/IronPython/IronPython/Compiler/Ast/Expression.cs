@@ -29,19 +29,21 @@ using IronPython.Runtime.Binding;
 
 namespace IronPython.Compiler.Ast {
     public abstract class Expression : Node {
-        internal abstract MSAst.Expression Transform(AstGenerator ag, Type type);
+        internal static Expression[] EmptyArray = new Expression[0];
 
-        internal virtual MSAst.Expression TransformSet(AstGenerator ag, SourceSpan span, MSAst.Expression right, PythonOperationKind op) {
+        internal virtual MSAst.Expression TransformSet(SourceSpan span, MSAst.Expression right, PythonOperationKind op) {
             // unreachable, CheckAssign prevents us from calling this at parse time.
+            Debug.Assert(false);
             throw new InvalidOperationException();
         }
 
-        internal virtual MSAst.Expression TransformDelete(AstGenerator ag) {
+        internal virtual MSAst.Expression TransformDelete() {
+            Debug.Assert(false);
             throw new InvalidOperationException();
         }
 
-        internal virtual Expression ConstantFold() {
-            return this;
+        internal virtual ConstantExpression ConstantFold() {
+            return null;
         }
 
         internal virtual string CheckAssign() {
@@ -58,6 +60,12 @@ namespace IronPython.Compiler.Ast {
 
         internal virtual string CheckDelete() {
             return "can't delete " + NodeName;
+        }
+
+        public override Type Type {
+            get {
+                return typeof(object);
+            }
         }
     }
 }

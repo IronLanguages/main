@@ -253,7 +253,8 @@ namespace Microsoft.Scripting.Interpreter {
 
         public override int Run(InterpretedFrame frame) {
             _target();
-            return +1;
+            frame.StackIndex -= 0;
+            return 1;
         }
     }
 
@@ -272,10 +273,9 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public override int Run(InterpretedFrame frame) {
-            int firstArgStackIndex = (frame.StackIndex -= 1);
-            object arg0 = frame.Data[firstArgStackIndex + 0];
-            _target(arg0 != null ? (T0)arg0 : default(T0));
-            return +1;
+            _target((T0)frame.Data[frame.StackIndex - 1]);
+            frame.StackIndex -= 1;
+            return 1;
         }
     }
 
@@ -294,11 +294,9 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public override int Run(InterpretedFrame frame) {
-            int firstArgStackIndex = (frame.StackIndex -= 2);
-            object arg0 = frame.Data[firstArgStackIndex + 0];
-            object arg1 = frame.Data[firstArgStackIndex + 1];
-            _target(arg0 != null ? (T0)arg0 : default(T0), arg1 != null ? (T1)arg1 : default(T1));
-            return +1;
+            _target((T0)frame.Data[frame.StackIndex - 2], (T1)frame.Data[frame.StackIndex - 1]);
+            frame.StackIndex -= 2;
+            return 1;
         }
     }
 
@@ -317,12 +315,9 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public override int Run(InterpretedFrame frame) {
-            int firstArgStackIndex = (frame.StackIndex -= 3);
-            object arg0 = frame.Data[firstArgStackIndex + 0];
-            object arg1 = frame.Data[firstArgStackIndex + 1];
-            object arg2 = frame.Data[firstArgStackIndex + 2];
-            _target(arg0 != null ? (T0)arg0 : default(T0), arg1 != null ? (T1)arg1 : default(T1), arg2 != null ? (T2)arg2 : default(T2));
-            return +1;
+            _target((T0)frame.Data[frame.StackIndex - 3], (T1)frame.Data[frame.StackIndex - 2], (T2)frame.Data[frame.StackIndex - 1]);
+            frame.StackIndex -= 3;
+            return 1;
         }
     }
 
@@ -341,13 +336,9 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public override int Run(InterpretedFrame frame) {
-            int firstArgStackIndex = (frame.StackIndex -= 4);
-            object arg0 = frame.Data[firstArgStackIndex + 0];
-            object arg1 = frame.Data[firstArgStackIndex + 1];
-            object arg2 = frame.Data[firstArgStackIndex + 2];
-            object arg3 = frame.Data[firstArgStackIndex + 3];
-            _target(arg0 != null ? (T0)arg0 : default(T0), arg1 != null ? (T1)arg1 : default(T1), arg2 != null ? (T2)arg2 : default(T2), arg3 != null ? (T3)arg3 : default(T3));
-            return +1;
+            _target((T0)frame.Data[frame.StackIndex - 4], (T1)frame.Data[frame.StackIndex - 3], (T2)frame.Data[frame.StackIndex - 2], (T3)frame.Data[frame.StackIndex - 1]);
+            frame.StackIndex -= 4;
+            return 1;
         }
     }
 
@@ -366,14 +357,9 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public override int Run(InterpretedFrame frame) {
-            int firstArgStackIndex = (frame.StackIndex -= 5);
-            object arg0 = frame.Data[firstArgStackIndex + 0];
-            object arg1 = frame.Data[firstArgStackIndex + 1];
-            object arg2 = frame.Data[firstArgStackIndex + 2];
-            object arg3 = frame.Data[firstArgStackIndex + 3];
-            object arg4 = frame.Data[firstArgStackIndex + 4];
-            _target(arg0 != null ? (T0)arg0 : default(T0), arg1 != null ? (T1)arg1 : default(T1), arg2 != null ? (T2)arg2 : default(T2), arg3 != null ? (T3)arg3 : default(T3), arg4 != null ? (T4)arg4 : default(T4));
-            return +1;
+            _target((T0)frame.Data[frame.StackIndex - 5], (T1)frame.Data[frame.StackIndex - 4], (T2)frame.Data[frame.StackIndex - 3], (T3)frame.Data[frame.StackIndex - 2], (T4)frame.Data[frame.StackIndex - 1]);
+            frame.StackIndex -= 5;
+            return 1;
         }
     }
 
@@ -392,15 +378,9 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public override int Run(InterpretedFrame frame) {
-            int firstArgStackIndex = (frame.StackIndex -= 6);
-            object arg0 = frame.Data[firstArgStackIndex + 0];
-            object arg1 = frame.Data[firstArgStackIndex + 1];
-            object arg2 = frame.Data[firstArgStackIndex + 2];
-            object arg3 = frame.Data[firstArgStackIndex + 3];
-            object arg4 = frame.Data[firstArgStackIndex + 4];
-            object arg5 = frame.Data[firstArgStackIndex + 5];
-            _target(arg0 != null ? (T0)arg0 : default(T0), arg1 != null ? (T1)arg1 : default(T1), arg2 != null ? (T2)arg2 : default(T2), arg3 != null ? (T3)arg3 : default(T3), arg4 != null ? (T4)arg4 : default(T4), arg5 != null ? (T5)arg5 : default(T5));
-            return +1;
+            _target((T0)frame.Data[frame.StackIndex - 6], (T1)frame.Data[frame.StackIndex - 5], (T2)frame.Data[frame.StackIndex - 4], (T3)frame.Data[frame.StackIndex - 3], (T4)frame.Data[frame.StackIndex - 2], (T5)frame.Data[frame.StackIndex - 1]);
+            frame.StackIndex -= 6;
+            return 1;
         }
     }
 
@@ -419,16 +399,9 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public override int Run(InterpretedFrame frame) {
-            int firstArgStackIndex = (frame.StackIndex -= 7);
-            object arg0 = frame.Data[firstArgStackIndex + 0];
-            object arg1 = frame.Data[firstArgStackIndex + 1];
-            object arg2 = frame.Data[firstArgStackIndex + 2];
-            object arg3 = frame.Data[firstArgStackIndex + 3];
-            object arg4 = frame.Data[firstArgStackIndex + 4];
-            object arg5 = frame.Data[firstArgStackIndex + 5];
-            object arg6 = frame.Data[firstArgStackIndex + 6];
-            _target(arg0 != null ? (T0)arg0 : default(T0), arg1 != null ? (T1)arg1 : default(T1), arg2 != null ? (T2)arg2 : default(T2), arg3 != null ? (T3)arg3 : default(T3), arg4 != null ? (T4)arg4 : default(T4), arg5 != null ? (T5)arg5 : default(T5), arg6 != null ? (T6)arg6 : default(T6));
-            return +1;
+            _target((T0)frame.Data[frame.StackIndex - 7], (T1)frame.Data[frame.StackIndex - 6], (T2)frame.Data[frame.StackIndex - 5], (T3)frame.Data[frame.StackIndex - 4], (T4)frame.Data[frame.StackIndex - 3], (T5)frame.Data[frame.StackIndex - 2], (T6)frame.Data[frame.StackIndex - 1]);
+            frame.StackIndex -= 7;
+            return 1;
         }
     }
 
@@ -447,17 +420,9 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public override int Run(InterpretedFrame frame) {
-            int firstArgStackIndex = (frame.StackIndex -= 8);
-            object arg0 = frame.Data[firstArgStackIndex + 0];
-            object arg1 = frame.Data[firstArgStackIndex + 1];
-            object arg2 = frame.Data[firstArgStackIndex + 2];
-            object arg3 = frame.Data[firstArgStackIndex + 3];
-            object arg4 = frame.Data[firstArgStackIndex + 4];
-            object arg5 = frame.Data[firstArgStackIndex + 5];
-            object arg6 = frame.Data[firstArgStackIndex + 6];
-            object arg7 = frame.Data[firstArgStackIndex + 7];
-            _target(arg0 != null ? (T0)arg0 : default(T0), arg1 != null ? (T1)arg1 : default(T1), arg2 != null ? (T2)arg2 : default(T2), arg3 != null ? (T3)arg3 : default(T3), arg4 != null ? (T4)arg4 : default(T4), arg5 != null ? (T5)arg5 : default(T5), arg6 != null ? (T6)arg6 : default(T6), arg7 != null ? (T7)arg7 : default(T7));
-            return +1;
+            _target((T0)frame.Data[frame.StackIndex - 8], (T1)frame.Data[frame.StackIndex - 7], (T2)frame.Data[frame.StackIndex - 6], (T3)frame.Data[frame.StackIndex - 5], (T4)frame.Data[frame.StackIndex - 4], (T5)frame.Data[frame.StackIndex - 3], (T6)frame.Data[frame.StackIndex - 2], (T7)frame.Data[frame.StackIndex - 1]);
+            frame.StackIndex -= 8;
+            return 1;
         }
     }
 
@@ -476,18 +441,9 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public override int Run(InterpretedFrame frame) {
-            int firstArgStackIndex = (frame.StackIndex -= 9);
-            object arg0 = frame.Data[firstArgStackIndex + 0];
-            object arg1 = frame.Data[firstArgStackIndex + 1];
-            object arg2 = frame.Data[firstArgStackIndex + 2];
-            object arg3 = frame.Data[firstArgStackIndex + 3];
-            object arg4 = frame.Data[firstArgStackIndex + 4];
-            object arg5 = frame.Data[firstArgStackIndex + 5];
-            object arg6 = frame.Data[firstArgStackIndex + 6];
-            object arg7 = frame.Data[firstArgStackIndex + 7];
-            object arg8 = frame.Data[firstArgStackIndex + 8];
-            _target(arg0 != null ? (T0)arg0 : default(T0), arg1 != null ? (T1)arg1 : default(T1), arg2 != null ? (T2)arg2 : default(T2), arg3 != null ? (T3)arg3 : default(T3), arg4 != null ? (T4)arg4 : default(T4), arg5 != null ? (T5)arg5 : default(T5), arg6 != null ? (T6)arg6 : default(T6), arg7 != null ? (T7)arg7 : default(T7), arg8 != null ? (T8)arg8 : default(T8));
-            return +1;
+            _target((T0)frame.Data[frame.StackIndex - 9], (T1)frame.Data[frame.StackIndex - 8], (T2)frame.Data[frame.StackIndex - 7], (T3)frame.Data[frame.StackIndex - 6], (T4)frame.Data[frame.StackIndex - 5], (T5)frame.Data[frame.StackIndex - 4], (T6)frame.Data[frame.StackIndex - 3], (T7)frame.Data[frame.StackIndex - 2], (T8)frame.Data[frame.StackIndex - 1]);
+            frame.StackIndex -= 9;
+            return 1;
         }
     }
 
@@ -505,8 +461,9 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public override int Run(InterpretedFrame frame) {
-            frame.Push(_target());
-            return +1;
+            frame.Data[frame.StackIndex - 0] = _target();
+            frame.StackIndex -= -1;
+            return 1;
         }
     }
 
@@ -524,10 +481,9 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public override int Run(InterpretedFrame frame) {
-            int firstArgStackIndex = (frame.StackIndex -= 1);
-            object arg0 = frame.Data[firstArgStackIndex + 0];
-            frame.Push(_target(arg0 != null ? (T0)arg0 : default(T0)));
-            return +1;
+            frame.Data[frame.StackIndex - 1] = _target((T0)frame.Data[frame.StackIndex - 1]);
+            frame.StackIndex -= 0;
+            return 1;
         }
     }
 
@@ -545,11 +501,9 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public override int Run(InterpretedFrame frame) {
-            int firstArgStackIndex = (frame.StackIndex -= 2);
-            object arg0 = frame.Data[firstArgStackIndex + 0];
-            object arg1 = frame.Data[firstArgStackIndex + 1];
-            frame.Push(_target(arg0 != null ? (T0)arg0 : default(T0), arg1 != null ? (T1)arg1 : default(T1)));
-            return +1;
+            frame.Data[frame.StackIndex - 2] = _target((T0)frame.Data[frame.StackIndex - 2], (T1)frame.Data[frame.StackIndex - 1]);
+            frame.StackIndex -= 1;
+            return 1;
         }
     }
 
@@ -567,12 +521,9 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public override int Run(InterpretedFrame frame) {
-            int firstArgStackIndex = (frame.StackIndex -= 3);
-            object arg0 = frame.Data[firstArgStackIndex + 0];
-            object arg1 = frame.Data[firstArgStackIndex + 1];
-            object arg2 = frame.Data[firstArgStackIndex + 2];
-            frame.Push(_target(arg0 != null ? (T0)arg0 : default(T0), arg1 != null ? (T1)arg1 : default(T1), arg2 != null ? (T2)arg2 : default(T2)));
-            return +1;
+            frame.Data[frame.StackIndex - 3] = _target((T0)frame.Data[frame.StackIndex - 3], (T1)frame.Data[frame.StackIndex - 2], (T2)frame.Data[frame.StackIndex - 1]);
+            frame.StackIndex -= 2;
+            return 1;
         }
     }
 
@@ -590,13 +541,9 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public override int Run(InterpretedFrame frame) {
-            int firstArgStackIndex = (frame.StackIndex -= 4);
-            object arg0 = frame.Data[firstArgStackIndex + 0];
-            object arg1 = frame.Data[firstArgStackIndex + 1];
-            object arg2 = frame.Data[firstArgStackIndex + 2];
-            object arg3 = frame.Data[firstArgStackIndex + 3];
-            frame.Push(_target(arg0 != null ? (T0)arg0 : default(T0), arg1 != null ? (T1)arg1 : default(T1), arg2 != null ? (T2)arg2 : default(T2), arg3 != null ? (T3)arg3 : default(T3)));
-            return +1;
+            frame.Data[frame.StackIndex - 4] = _target((T0)frame.Data[frame.StackIndex - 4], (T1)frame.Data[frame.StackIndex - 3], (T2)frame.Data[frame.StackIndex - 2], (T3)frame.Data[frame.StackIndex - 1]);
+            frame.StackIndex -= 3;
+            return 1;
         }
     }
 
@@ -614,14 +561,9 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public override int Run(InterpretedFrame frame) {
-            int firstArgStackIndex = (frame.StackIndex -= 5);
-            object arg0 = frame.Data[firstArgStackIndex + 0];
-            object arg1 = frame.Data[firstArgStackIndex + 1];
-            object arg2 = frame.Data[firstArgStackIndex + 2];
-            object arg3 = frame.Data[firstArgStackIndex + 3];
-            object arg4 = frame.Data[firstArgStackIndex + 4];
-            frame.Push(_target(arg0 != null ? (T0)arg0 : default(T0), arg1 != null ? (T1)arg1 : default(T1), arg2 != null ? (T2)arg2 : default(T2), arg3 != null ? (T3)arg3 : default(T3), arg4 != null ? (T4)arg4 : default(T4)));
-            return +1;
+            frame.Data[frame.StackIndex - 5] = _target((T0)frame.Data[frame.StackIndex - 5], (T1)frame.Data[frame.StackIndex - 4], (T2)frame.Data[frame.StackIndex - 3], (T3)frame.Data[frame.StackIndex - 2], (T4)frame.Data[frame.StackIndex - 1]);
+            frame.StackIndex -= 4;
+            return 1;
         }
     }
 
@@ -639,15 +581,9 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public override int Run(InterpretedFrame frame) {
-            int firstArgStackIndex = (frame.StackIndex -= 6);
-            object arg0 = frame.Data[firstArgStackIndex + 0];
-            object arg1 = frame.Data[firstArgStackIndex + 1];
-            object arg2 = frame.Data[firstArgStackIndex + 2];
-            object arg3 = frame.Data[firstArgStackIndex + 3];
-            object arg4 = frame.Data[firstArgStackIndex + 4];
-            object arg5 = frame.Data[firstArgStackIndex + 5];
-            frame.Push(_target(arg0 != null ? (T0)arg0 : default(T0), arg1 != null ? (T1)arg1 : default(T1), arg2 != null ? (T2)arg2 : default(T2), arg3 != null ? (T3)arg3 : default(T3), arg4 != null ? (T4)arg4 : default(T4), arg5 != null ? (T5)arg5 : default(T5)));
-            return +1;
+            frame.Data[frame.StackIndex - 6] = _target((T0)frame.Data[frame.StackIndex - 6], (T1)frame.Data[frame.StackIndex - 5], (T2)frame.Data[frame.StackIndex - 4], (T3)frame.Data[frame.StackIndex - 3], (T4)frame.Data[frame.StackIndex - 2], (T5)frame.Data[frame.StackIndex - 1]);
+            frame.StackIndex -= 5;
+            return 1;
         }
     }
 
@@ -665,16 +601,9 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public override int Run(InterpretedFrame frame) {
-            int firstArgStackIndex = (frame.StackIndex -= 7);
-            object arg0 = frame.Data[firstArgStackIndex + 0];
-            object arg1 = frame.Data[firstArgStackIndex + 1];
-            object arg2 = frame.Data[firstArgStackIndex + 2];
-            object arg3 = frame.Data[firstArgStackIndex + 3];
-            object arg4 = frame.Data[firstArgStackIndex + 4];
-            object arg5 = frame.Data[firstArgStackIndex + 5];
-            object arg6 = frame.Data[firstArgStackIndex + 6];
-            frame.Push(_target(arg0 != null ? (T0)arg0 : default(T0), arg1 != null ? (T1)arg1 : default(T1), arg2 != null ? (T2)arg2 : default(T2), arg3 != null ? (T3)arg3 : default(T3), arg4 != null ? (T4)arg4 : default(T4), arg5 != null ? (T5)arg5 : default(T5), arg6 != null ? (T6)arg6 : default(T6)));
-            return +1;
+            frame.Data[frame.StackIndex - 7] = _target((T0)frame.Data[frame.StackIndex - 7], (T1)frame.Data[frame.StackIndex - 6], (T2)frame.Data[frame.StackIndex - 5], (T3)frame.Data[frame.StackIndex - 4], (T4)frame.Data[frame.StackIndex - 3], (T5)frame.Data[frame.StackIndex - 2], (T6)frame.Data[frame.StackIndex - 1]);
+            frame.StackIndex -= 6;
+            return 1;
         }
     }
 
@@ -692,17 +621,9 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public override int Run(InterpretedFrame frame) {
-            int firstArgStackIndex = (frame.StackIndex -= 8);
-            object arg0 = frame.Data[firstArgStackIndex + 0];
-            object arg1 = frame.Data[firstArgStackIndex + 1];
-            object arg2 = frame.Data[firstArgStackIndex + 2];
-            object arg3 = frame.Data[firstArgStackIndex + 3];
-            object arg4 = frame.Data[firstArgStackIndex + 4];
-            object arg5 = frame.Data[firstArgStackIndex + 5];
-            object arg6 = frame.Data[firstArgStackIndex + 6];
-            object arg7 = frame.Data[firstArgStackIndex + 7];
-            frame.Push(_target(arg0 != null ? (T0)arg0 : default(T0), arg1 != null ? (T1)arg1 : default(T1), arg2 != null ? (T2)arg2 : default(T2), arg3 != null ? (T3)arg3 : default(T3), arg4 != null ? (T4)arg4 : default(T4), arg5 != null ? (T5)arg5 : default(T5), arg6 != null ? (T6)arg6 : default(T6), arg7 != null ? (T7)arg7 : default(T7)));
-            return +1;
+            frame.Data[frame.StackIndex - 8] = _target((T0)frame.Data[frame.StackIndex - 8], (T1)frame.Data[frame.StackIndex - 7], (T2)frame.Data[frame.StackIndex - 6], (T3)frame.Data[frame.StackIndex - 5], (T4)frame.Data[frame.StackIndex - 4], (T5)frame.Data[frame.StackIndex - 3], (T6)frame.Data[frame.StackIndex - 2], (T7)frame.Data[frame.StackIndex - 1]);
+            frame.StackIndex -= 7;
+            return 1;
         }
     }
 
@@ -720,18 +641,9 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public override int Run(InterpretedFrame frame) {
-            int firstArgStackIndex = (frame.StackIndex -= 9);
-            object arg0 = frame.Data[firstArgStackIndex + 0];
-            object arg1 = frame.Data[firstArgStackIndex + 1];
-            object arg2 = frame.Data[firstArgStackIndex + 2];
-            object arg3 = frame.Data[firstArgStackIndex + 3];
-            object arg4 = frame.Data[firstArgStackIndex + 4];
-            object arg5 = frame.Data[firstArgStackIndex + 5];
-            object arg6 = frame.Data[firstArgStackIndex + 6];
-            object arg7 = frame.Data[firstArgStackIndex + 7];
-            object arg8 = frame.Data[firstArgStackIndex + 8];
-            frame.Push(_target(arg0 != null ? (T0)arg0 : default(T0), arg1 != null ? (T1)arg1 : default(T1), arg2 != null ? (T2)arg2 : default(T2), arg3 != null ? (T3)arg3 : default(T3), arg4 != null ? (T4)arg4 : default(T4), arg5 != null ? (T5)arg5 : default(T5), arg6 != null ? (T6)arg6 : default(T6), arg7 != null ? (T7)arg7 : default(T7), arg8 != null ? (T8)arg8 : default(T8)));
-            return +1;
+            frame.Data[frame.StackIndex - 9] = _target((T0)frame.Data[frame.StackIndex - 9], (T1)frame.Data[frame.StackIndex - 8], (T2)frame.Data[frame.StackIndex - 7], (T3)frame.Data[frame.StackIndex - 6], (T4)frame.Data[frame.StackIndex - 5], (T5)frame.Data[frame.StackIndex - 4], (T6)frame.Data[frame.StackIndex - 3], (T7)frame.Data[frame.StackIndex - 2], (T8)frame.Data[frame.StackIndex - 1]);
+            frame.StackIndex -= 8;
+            return 1;
         }
     }
 

@@ -23,34 +23,31 @@ using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Microsoft.Scripting.Runtime;
+using System.Collections.Generic;
 
 namespace Microsoft.Scripting.Interpreter {
-    public interface IBoxableInstruction {
+    internal interface IBoxableInstruction {
         Instruction BoxIfIndexMatches(int index);
     }
 
-    public abstract class LocalAccessInstruction : Instruction {
+    internal abstract class LocalAccessInstruction : Instruction {
         internal readonly int _index;
 
         protected LocalAccessInstruction(int index) {
             _index = index;
         }
 
-        public override string ToString() {
-            return InstructionName + "(" + _index + ")";
+        public override string ToDebugString(object cookie, IList<object> objects) {
+            return cookie == null ? 
+                InstructionName + "(" + _index + ")" : 
+                InstructionName + "(" + cookie + ": " + _index + ")";
         }
-
-        public override string ToString(LightCompiler compiler) {
-            return InstructionName + "(" + GetExpression(compiler).Name + ": " + _index + ")";
-        }
-
-        internal abstract ParameterExpression GetExpression(LightCompiler compiler);
     }
 
     #region Get
 
-    public sealed class GetLocalInstruction : LocalAccessInstruction, IBoxableInstruction {
-        internal GetLocalInstruction(int index)
+    internal sealed class LoadLocalInstruction : LocalAccessInstruction, IBoxableInstruction {
+        internal LoadLocalInstruction(int index)
             : base(index) {
         }
 
@@ -61,17 +58,13 @@ namespace Microsoft.Scripting.Interpreter {
             //frame.Push(frame.Data[_index]);
             return +1;
         }
-
-        internal override ParameterExpression GetExpression(LightCompiler compiler) {
-            return compiler.Locals[_index];
-        }
         
         public Instruction BoxIfIndexMatches(int index) {
-            return (index == _index) ? Instruction.GetBoxedLocal(index) : null;
+            return (index == _index) ? InstructionList.GetBoxedLocal(index) : null;
         }
     }
 
-    public sealed class GetBoxedLocalInstruction : LocalAccessInstruction {
+    internal sealed class GetBoxedLocalInstruction : LocalAccessInstruction {
         internal GetBoxedLocalInstruction(int index)
             : base(index) {
         }
@@ -83,13 +76,9 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[frame.StackIndex++] = box.Value;
             return +1;
         }
-
-        internal override ParameterExpression GetExpression(LightCompiler compiler) {
-            return compiler.Locals[_index];
-        }
     }
 
-    public sealed class GetClosureInstruction : LocalAccessInstruction {
+    internal sealed class GetClosureInstruction : LocalAccessInstruction {
         internal GetClosureInstruction(int index)
             : base(index) {
         }
@@ -101,14 +90,10 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[frame.StackIndex++] = box.Value;
             return +1;
         }
-
-        internal override ParameterExpression GetExpression(LightCompiler compiler) {
-            return compiler.ClosureVariables[_index];
-        }
     }
 
-    public sealed class GetBoxedClosureInstruction : LocalAccessInstruction {
-        internal GetBoxedClosureInstruction(int index)
+    internal sealed class LoadLocalFromClosureBoxedInstruction : LocalAccessInstruction {
+        internal LoadLocalFromClosureBoxedInstruction(int index)
             : base(index) {
         }
 
@@ -119,18 +104,14 @@ namespace Microsoft.Scripting.Interpreter {
             frame.Data[frame.StackIndex++] = box;
             return +1;
         }
-
-        internal override ParameterExpression GetExpression(LightCompiler compiler) {
-            return compiler.ClosureVariables[_index];
-        }
     }
 
     #endregion
 
     #region Set
 
-    public sealed class SetLocalInstruction : LocalAccessInstruction, IBoxableInstruction {
-        internal SetLocalInstruction(int index)
+    internal sealed class AssignLocalInstruction : LocalAccessInstruction, IBoxableInstruction {
+        internal AssignLocalInstruction(int index)
             : base(index) {
         }
 
@@ -143,16 +124,12 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public Instruction BoxIfIndexMatches(int index) {
-            return (index == _index) ? Instruction.SetBoxedLocal(index) : null;
-        }
-
-        internal override ParameterExpression GetExpression(LightCompiler compiler) {
-            return compiler.Locals[_index];
+            return (index == _index) ? InstructionList.AssignLocalBoxed(index) : null;
         }
     }
 
-    public sealed class SetLocalVoidInstruction : LocalAccessInstruction, IBoxableInstruction {
-        internal SetLocalVoidInstruction(int index)
+    internal sealed class StoreLocalInstruction : LocalAccessInstruction, IBoxableInstruction {
+        internal StoreLocalInstruction(int index)
             : base(index) {
         }
 
@@ -164,16 +141,12 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public Instruction BoxIfIndexMatches(int index) {
-            return (index == _index) ? Instruction.SetBoxedLocalVoid(index) : null;
-        }
-
-        internal override ParameterExpression GetExpression(LightCompiler compiler) {
-            return compiler.Locals[_index];
+            return (index == _index) ? InstructionList.StoreLocalBoxed(index) : null;
         }
     }
 
-    public sealed class SetBoxedLocalInstruction : LocalAccessInstruction {
-        internal SetBoxedLocalInstruction(int index)
+    internal sealed class AssignLocalBoxedInstruction : LocalAccessInstruction {
+        internal AssignLocalBoxedInstruction(int index)
             : base(index) {
         }
 
@@ -185,14 +158,10 @@ namespace Microsoft.Scripting.Interpreter {
             box.Value = frame.Peek();
             return +1;
         }
-
-        internal override ParameterExpression GetExpression(LightCompiler compiler) {
-            return compiler.Locals[_index];
-        }
     }
 
-    public sealed class SetBoxedLocalVoidInstruction : LocalAccessInstruction {
-        internal SetBoxedLocalVoidInstruction(int index)
+    internal sealed class StoreLocalBoxedInstruction : LocalAccessInstruction {
+        internal StoreLocalBoxedInstruction(int index)
             : base(index) {
         }
 
@@ -204,14 +173,10 @@ namespace Microsoft.Scripting.Interpreter {
             box.Value = frame.Data[--frame.StackIndex];
             return +1;
         }
-
-        internal override ParameterExpression GetExpression(LightCompiler compiler) {
-            return compiler.Locals[_index];
-        }
     }
 
-    public sealed class SetClosureInstruction : LocalAccessInstruction {
-        internal SetClosureInstruction(int index)
+    internal sealed class AssignLocalToClosureInstruction : LocalAccessInstruction {
+        internal AssignLocalToClosureInstruction(int index)
             : base(index) {
         }
 
@@ -223,10 +188,6 @@ namespace Microsoft.Scripting.Interpreter {
             box.Value = frame.Peek();
             return +1;
         }
-
-        internal override ParameterExpression GetExpression(LightCompiler compiler) {
-            return compiler.ClosureVariables[_index];
-        }
     }
 
     #endregion
@@ -234,7 +195,7 @@ namespace Microsoft.Scripting.Interpreter {
     #region Initialize
 
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1012:AbstractTypesShouldNotHaveConstructors")]
-    public abstract class InitializeLocalInstruction : LocalAccessInstruction {
+    internal abstract class InitializeLocalInstruction : LocalAccessInstruction {
         internal InitializeLocalInstruction(int index)
             : base(index) {
         }
@@ -250,7 +211,7 @@ namespace Microsoft.Scripting.Interpreter {
             }
 
             public Instruction BoxIfIndexMatches(int index) {
-                return (index == _index) ? InitImmutableRefBox(index) : null;
+                return (index == _index) ? InstructionList.InitImmutableRefBox(index) : null;
             }
 
             public override string InstructionName {
@@ -344,172 +305,33 @@ namespace Microsoft.Scripting.Interpreter {
                 get { return "InitMutableBox"; }
             }
         }
-
-        internal override ParameterExpression GetExpression(LightCompiler compiler) {
-            return compiler.Locals[_index];
-        }
     }
 
     #endregion
 
-    #region Factories
+    #region RuntimeVariables
 
-    public partial class Instruction {
-        private const int LocalInstrCacheSize = 32;
+    internal sealed class RuntimeVariablesInstruction : Instruction {
+        private readonly int _count;
 
-        private static Instruction[] _getLocal;
-        private static Instruction[] _getBoxedLocal;
-        private static Instruction[] _getClosure;
-        private static Instruction[] _getBoxedClosure;
-        private static Instruction[] _setLocal;
-        private static Instruction[] _setLocalVoid;
-        private static Instruction[] _setBoxedLocal;
-        private static Instruction[] _setBoxedLocalVoid;
-        private static Instruction[] _setClosure;
-        private static Instruction[] _initReference;
-        private static Instruction[] _initImmutableRefBox;
-
-        public static Instruction GetLocal(int index) {
-            if (_getLocal == null) {
-                _getLocal = new Instruction[LocalInstrCacheSize];
-            }
-
-            if (index < _getLocal.Length) {
-                return _getLocal[index] ?? (_getLocal[index] = new GetLocalInstruction(index));
-            } 
-
-            return new GetLocalInstruction(index);
+        public RuntimeVariablesInstruction(int count) {
+            _count = count;
         }
 
-        public static Instruction GetBoxedLocal(int index) {
-            if (_getBoxedLocal == null) {
-                _getBoxedLocal = new Instruction[LocalInstrCacheSize];
+        public override int ProducedStack { get { return 1; } }
+        public override int ConsumedStack { get { return _count; } }
+
+        public override int Run(InterpretedFrame frame) {
+            var ret = new IStrongBox[_count];
+            for (int i = ret.Length - 1; i >= 0; i--) {
+                ret[i] = (IStrongBox)frame.Pop();
             }
-
-            if (index < _getBoxedLocal.Length) {
-                return _getBoxedLocal[index] ?? (_getBoxedLocal[index] = new GetBoxedLocalInstruction(index));
-            } 
-
-            return new GetBoxedLocalInstruction(index);
+            frame.Push(RuntimeVariables.Create(ret));
+            return +1;
         }
 
-        public static Instruction GetClosure(int index) {
-            if (_getClosure == null) {
-                _getClosure = new Instruction[LocalInstrCacheSize];
-            }
-
-            if (index < _getClosure.Length) {
-                return _getClosure[index] ?? (_getClosure[index] = new GetClosureInstruction(index));
-            }
-
-            return new GetClosureInstruction(index);
-        }
-
-        public static Instruction GetBoxedClosure(int index) {
-            if (_getBoxedClosure == null) {
-                _getBoxedClosure = new Instruction[LocalInstrCacheSize];
-            }
-
-            if (index < _getBoxedClosure.Length) {
-                return _getBoxedClosure[index] ?? (_getBoxedClosure[index] = new GetBoxedClosureInstruction(index));
-            }
-
-            return new GetBoxedClosureInstruction(index);
-        }
-
-        public static Instruction SetLocal(int index) {
-            if (_setLocal == null) {
-                _setLocal = new Instruction[LocalInstrCacheSize];
-            }
-
-            if (index < _setLocal.Length) {
-                return _setLocal[index] ?? (_setLocal[index] = new SetLocalInstruction(index));
-            } 
-
-            return new SetLocalInstruction(index);
-        }
-
-        public static Instruction SetLocalVoid(int index) {
-            if (_setLocalVoid == null) {
-                _setLocalVoid = new Instruction[LocalInstrCacheSize];
-            }
-
-            if (index < _setLocalVoid.Length) {
-                return _setLocalVoid[index] ?? (_setLocalVoid[index] = new SetLocalVoidInstruction(index));
-            }
-
-            return new SetLocalVoidInstruction(index);
-        }
-
-        public static Instruction SetBoxedLocal(int index) {
-            if (_setBoxedLocal == null) {
-                _setBoxedLocal = new Instruction[LocalInstrCacheSize];
-            }
-
-            if (index < _setBoxedLocal.Length) {
-                return _setBoxedLocal[index] ?? (_setBoxedLocal[index] = new SetBoxedLocalInstruction(index));
-            } 
-
-            return new SetBoxedLocalInstruction(index);
-        }
-
-        public static Instruction SetBoxedLocalVoid(int index) {
-            if (_setBoxedLocalVoid == null) {
-                _setBoxedLocalVoid = new Instruction[LocalInstrCacheSize];
-            }
-
-            if (index < _setBoxedLocalVoid.Length) {
-                return _setBoxedLocalVoid[index] ?? (_setBoxedLocalVoid[index] = new SetBoxedLocalVoidInstruction(index));
-            }
-
-            return new SetBoxedLocalVoidInstruction(index);
-        }
-
-        public static Instruction SetClosure(int index) {
-            if (_setClosure == null) {
-                _setClosure = new Instruction[LocalInstrCacheSize];
-            }
-
-            if (index < _setClosure.Length) {
-                return _setClosure[index] ?? (_setClosure[index] = new SetClosureInstruction(index));
-            }
-
-            return new SetClosureInstruction(index);
-        }
-
-        public static Instruction InitializeLocal(int index, Type type) {
-            object value = LightCompiler.GetImmutableDefaultValue(type);
-            if (value != null) {
-                return new InitializeLocalInstruction.ImmutableValue(index, value);
-            } else if (type.IsValueType) {
-                return new InitializeLocalInstruction.MutableValue(index, type);
-            } else {
-                return InitReference(index);
-            }
-        }
-
-        private static Instruction InitReference(int index) {
-            if (_initReference == null) {
-                _initReference = new Instruction[LocalInstrCacheSize];
-            }
-
-            if (index < _initReference.Length) {
-                return _initReference[index] ?? (_initReference[index] = new InitializeLocalInstruction.Reference(index));
-            }
-
-            return new InitializeLocalInstruction.Reference(index);
-        }
-
-        internal static Instruction InitImmutableRefBox(int index) {
-            if (_initImmutableRefBox == null) {
-                _initImmutableRefBox = new Instruction[LocalInstrCacheSize];
-            }
-
-            if (index < _initImmutableRefBox.Length) {
-                return _initImmutableRefBox[index] ?? (_initImmutableRefBox[index] = new InitializeLocalInstruction.ImmutableBox(index, null));
-            }
-
-            return new InitializeLocalInstruction.ImmutableBox(index, null);
+        public override string ToString() {
+            return "GetRuntimeVariables()";
         }
     }
 

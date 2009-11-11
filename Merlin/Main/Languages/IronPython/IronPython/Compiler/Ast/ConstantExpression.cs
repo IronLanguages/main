@@ -44,7 +44,7 @@ namespace IronPython.Compiler.Ast {
             get { return _value; }
         }
 
-        internal override MSAst.Expression Transform(AstGenerator ag, Type type) {
+        public override MSAst.Expression Reduce() {
             if (_value == Ellipsis.Value) {
                 return Ast.Property(
                     null,
@@ -58,7 +58,17 @@ namespace IronPython.Compiler.Ast {
                 }
             }
 
-            return ag.Globals.GetConstant(_value);
+            return GlobalParent.Constant(_value);
+        }
+
+        internal override ConstantExpression ConstantFold() {
+            return this;
+        }
+
+        public override Type Type {
+            get {
+                return GlobalParent.CompilationMode.GetConstantType(_value);
+            }
         }
 
         internal override string CheckAssign() {

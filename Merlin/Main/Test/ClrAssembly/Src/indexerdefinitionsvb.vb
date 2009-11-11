@@ -127,4 +127,30 @@ Namespace Merlin.Testing.Indexer
     End Property
   End Class
 
+    Public Class ClassWithOverloadedIndexers
+        Private array As Integer()
+
+        Sub Init()
+            array = New Integer() {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+        End Sub
+
+        Public Property PropertyName(ByVal arg As Integer) As Integer
+            Get
+                Return array(arg)
+            End Get
+            Set(ByVal value As Integer)
+                array(arg) = value
+            End Set
+        End Property
+
+        Public Property PropertyName() As Integer
+            Get
+                Return array(2)
+            End Get
+            Set(ByVal value As Integer)
+                array(2) = value
+            End Set
+        End Property
+    End Class
+
 End Namespace

@@ -34,14 +34,14 @@ namespace Microsoft.Scripting.Interpreter {
         
         private static readonly Dictionary<MethodInfo, CallInstruction> _cache = new Dictionary<MethodInfo, CallInstruction>();
 
-        internal static CallInstruction Create(MethodInfo info) {
+        public static CallInstruction Create(MethodInfo info) {
             return Create(info, info.GetParameters());
         }
 
         /// <summary>
         /// Creates a new ReflectedCaller which can be used to quickly invoke the provided MethodInfo.
         /// </summary>
-        internal static CallInstruction Create(MethodInfo info, ParameterInfo[] parameters) {
+        public static CallInstruction Create(MethodInfo info, ParameterInfo[] parameters) {
             int argumentCount = parameters.Length;
             if (!info.IsStatic) {
                 argumentCount++;
@@ -273,30 +273,20 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public sealed override int Run(InterpretedFrame frame) {
+            int first = frame.StackIndex - _argumentCount;
             object[] args = new object[_argumentCount];
-            for (int i = _argumentCount - 1; i >= 0; i--) {
-                args[i] = frame.Pop();
+            for (int i = 0; i < args.Length; i++) {
+                args[i] = frame.Data[first + i];
             }
 
             object ret = Invoke(args);
             if (_target.ReturnType != typeof(void)) {
-                frame.Push(ret);
+                frame.Data[first] = ret;
+                frame.StackIndex = first + 1;
+            } else {
+                frame.StackIndex = first;
             }
-            return +1;
+            return 1;
         }
     }
-
-    #region Factories
-
-    public partial class Instruction {
-        public static CallInstruction Call(MethodInfo method) {
-            return Call(method, method.GetParameters());
-        }
-
-        public static CallInstruction Call(MethodInfo method, ParameterInfo[] parameters) {
-            return CallInstruction.Create(method, parameters);
-        }
-    }
-
-    #endregion
 }

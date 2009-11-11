@@ -31,19 +31,19 @@ namespace IronPython.Compiler.Ast {
             : base(items) {
         }
 
-        internal override MSAst.Expression Transform(AstGenerator ag, Type type) {
+        public override MSAst.Expression Reduce() {
             if (Items.Count == 0) {
                 return Ast.Call(
-                    AstGenerator.GetHelperMethod("MakeEmptyListFromCode"),
-                    AstGenerator.EmptyExpression
-                );            
+                    AstMethods.MakeEmptyListFromCode,
+                    EmptyExpression
+                );
             }
 
             return Ast.Call(
-                AstGenerator.GetHelperMethod("MakeListNoCopy", new Type[] { typeof(object[]) }),  // method
-                Ast.NewArrayInit(                                                               // parameters
+                AstMethods.MakeListNoCopy,  // method
+                Ast.NewArrayInit(           // parameters
                     typeof(object),
-                    ag.TransformAndConvert(Items, typeof(object))
+                    ToObjectArray(Items)
                 )
             );
         }

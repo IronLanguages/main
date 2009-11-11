@@ -23,7 +23,6 @@
     <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
     <Silverlight3Path>..\..\..\Utilities\Silverlight\x86ret</Silverlight3Path>
     <Silverlight4Path>..\..\..\Utilities\Silverlight\v4-x86fre</Silverlight4Path>
-
     <!-- The following two lines prevent csc.rsp and Microsoft.NETFramework.props from adding additional assembly references -->
     <NoConfig>true</NoConfig>
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
@@ -143,19 +142,22 @@
   <ItemGroup>
     <Compile Include="Compiler\Ast\AndExpression.cs" />
     <Compile Include="Compiler\Ast\Arg.cs" />
-    <Compile Include="Compiler\ArrayGlobalAllocator.cs" />
+    <Compile Include="Compiler\Ast\SerializedScopeStatement.cs" />
+    <Compile Include="Compiler\CollectableCompilationMode.cs" />
     <Compile Include="Compiler\Ast\AssertStatement.cs" />
     <Compile Include="Compiler\Ast\AssignmentStatement.cs" />
-    <Compile Include="Compiler\Ast\AstGenerator.cs" />
+    <Compile Include="Compiler\Ast\AstMethods.cs" />
     <Compile Include="Compiler\Ast\BinaryExpression.Generated.cs" />
-    <Compile Include="Compiler\SharedGlobalAllocator.Generated.cs" />
+    <Compile Include="Compiler\Ast\ILoopStatement.cs" />
+    <Compile Include="Compiler\UncollectableCompilationMode.Generated.cs" />
     <Compile Include="Compiler\RunnableScriptCode.cs" />
     <Compile Include="Modules\imp.cs" />
     <Compile Include="Runtime\AttributesDictionaryStorage.cs" />
     <Compile Include="Runtime\Binding\IComConvertible.cs" />
     <Compile Include="Runtime\CodeContext.cs" />
+    <Compile Include="Runtime\CollectionDebugView.cs" />
     <Compile Include="Runtime\DontMapIEnumerableToIterAttribute.cs" />
-    <Compile Include="Compiler\SharedGlobalAllocator.cs" />
+    <Compile Include="Compiler\UncollectableCompilationMode.cs" />
     <Compile Include="Runtime\Binding\ContextArgBuilder.cs" />
     <Compile Include="Runtime\Binding\IFastSettable.cs" />
     <Compile Include="Runtime\Binding\PythonBinder.Create.cs" />
@@ -163,7 +165,6 @@
     <Compile Include="Runtime\Binding\SiteLocalStorageBuilder.cs" />
     <Compile Include="Compiler\ClosureExpression.cs" />
     <Compile Include="Compiler\ClosureInfo.cs" />
-    <Compile Include="Compiler\CompilationMode.cs" />
     <Compile Include="Compiler\GeneratorRewriter.cs" />
     <Compile Include="Compiler\LazyCode.cs" />
     <Compile Include="Runtime\DontMapGetMemberNamesToDirAttribute.cs" />
@@ -177,8 +178,9 @@
     <Compile Include="Runtime\ModuleContext.cs" />
     <Compile Include="Runtime\ModuleGlobalCache.cs" />
     <Compile Include="Runtime\ModuleOptions.cs" />
+    <Compile Include="Runtime\ObjectDebugView.cs" />
     <Compile Include="Runtime\Profiler.cs" />
-    <Compile Include="Compiler\GlobalAllocator.cs" />
+    <Compile Include="Compiler\CompilationMode.cs" />
     <Compile Include="Compiler\Ast\AugmentedAssignStatement.cs" />
     <Compile Include="Compiler\Ast\BackQuoteExpression.cs" />
     <Compile Include="Compiler\Ast\BinaryExpression.cs" />
@@ -211,7 +213,7 @@
     <Compile Include="Compiler\Ast\ListComprehensionFor.cs" />
     <Compile Include="Compiler\Ast\ListComprehensionIf.cs" />
     <Compile Include="Compiler\Ast\ListExpression.cs" />
-    <Compile Include="Compiler\DictionaryGlobalAllocator.cs" />
+    <Compile Include="Compiler\LookupCompilationMode.cs" />
     <Compile Include="Compiler\Ast\MemberExpression.cs" />
     <Compile Include="Compiler\Ast\ModuleName.cs" />
     <Compile Include="Compiler\Ast\NameExpression.cs" />
@@ -254,7 +256,7 @@
     <Compile Include="Runtime\BuiltinsDictionaryStorage.cs" />
     <Compile Include="Runtime\CustomDictionaryStorage.cs" />
     <Compile Include="Runtime\GlobalDictionaryStorage.cs" />
-    <Compile Include="Compiler\SavableGlobalAllocator.cs" />
+    <Compile Include="Compiler\ToDiskCompilationMode.cs" />
     <Compile Include="Compiler\PythonGlobal.cs" />
     <Compile Include="Compiler\PythonGlobalVariableExpression.cs" />
     <Compile Include="Compiler\PythonScriptCode.cs" />

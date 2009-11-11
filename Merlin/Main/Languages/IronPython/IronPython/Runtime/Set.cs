@@ -211,13 +211,13 @@ namespace IronPython.Runtime {
                 keys[i++] = kvp.Key;
             }
             return PythonTuple.MakeTuple(type, PythonTuple.MakeTuple(List.FromArrayNoCopy(keys)), null);
-        }
+        }        
     }
 
     /// <summary>
     /// Mutable set class
     /// </summary>
-    [PythonType("set")]
+    [PythonType("set"), DebuggerDisplay("set, {Count} items", TargetTypeName = "set"), DebuggerTypeProxy(typeof(CollectionDebugProxy))]
     public class SetCollection : ISet, IValueEquality, ICodeFormattable, ICollection {
         private CommonDictionaryStorage _items;
 
@@ -737,7 +737,10 @@ namespace IronPython.Runtime {
         #region ICollection Members
 
         void ICollection.CopyTo(Array array, int index) {
-            throw new NotImplementedException();
+            int i = 0;
+            foreach (object o in this) {
+                array.SetValue(o, index + i++);
+            }
         }
 
         public int Count {
@@ -760,7 +763,7 @@ namespace IronPython.Runtime {
     /// <summary>
     /// Non-mutable set class
     /// </summary>
-    [PythonType("frozenset")]
+    [PythonType("frozenset"), DebuggerDisplay("frozenset, {Count} items", TargetTypeName = "frozenset"), DebuggerTypeProxy(typeof(CollectionDebugProxy))]
     public class FrozenSetCollection : ISet, IValueEquality, ICodeFormattable, ICollection {
         internal static readonly FrozenSetCollection EMPTY = new FrozenSetCollection();
 
@@ -1214,7 +1217,10 @@ namespace IronPython.Runtime {
         #region ICollection Members
 
         void ICollection.CopyTo(Array array, int index) {
-            throw new NotImplementedException();
+            int i = 0;
+            foreach (object o in this) {
+                array.SetValue(o, index + i++);
+            }
         }
 
         public int Count {

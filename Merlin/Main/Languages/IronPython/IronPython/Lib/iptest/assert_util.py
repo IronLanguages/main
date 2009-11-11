@@ -152,15 +152,6 @@ if is_cli or is_silverlight:
     import clr
     clr.AddReference("IronPython")
 
-# This has to be a function since the InterpretedMode option can change at runtime
-def is_interpreted():
-    if is_cli or is_silverlight:
-        load_iron_python_test()
-        from IronPythonTest import TestHelpers
-        return TestHelpers.GetContext().Options.InterpretedMode
-    else:
-        return False    
-
 def is_interactive():
     if not is_silverlight:
         isInteractive = get_environ_variable("ISINTERACTIVE")
@@ -386,8 +377,6 @@ class skip:
         return is_cli64
     def orcas_test(self):
         return is_orcas
-    def interpreted_test(self):
-        return is_interpreted()
     def interactive_test(self):
 	    return is_interactive()
     def multiple_execute_test(self):
@@ -406,7 +395,7 @@ class skip:
             return _do_nothing(msg)
 		
         
-        platforms = 'silverlight', 'cli64', 'orcas', 'interpreted', 'interactive', 'multiple_execute', 'stdlib'
+        platforms = 'silverlight', 'cli64', 'orcas', 'interactive', 'multiple_execute', 'stdlib'
         for to_skip in platforms:
             platform_test = getattr(self, to_skip + '_test')
             if to_skip in self.platforms and platform_test():
@@ -445,11 +434,6 @@ def skiptest(*args):
     elif is_silverlight and 'silverlight' in args:
         print '... %s, skipping whole test module...' % sys.platform
         exit_module()
-        
-    elif is_interpreted() and 'interpreted' in args:
-        print '... %s, skipping whole test module under "interpreted" mode...' % sys.platform
-        exit_module()     
-        
     elif is_interactive() and 'interactive' in args:
         print '... %s, skipping whole test module under "interactive" mode...' % sys.platform
         exit_module()

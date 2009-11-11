@@ -70,14 +70,14 @@ namespace IronPython.Compiler.Ast {
             _forceAbsolute = forceAbsolute;
         }
 
-        internal override MSAst.Expression Transform(AstGenerator ag) {            
+        public override MSAst.Expression Reduce() {
             if (_names == _star) {
                 // from a[.b] import *
-                return ag.AddDebugInfo(
+                return GlobalParent.AddDebugInfo(
                     Ast.Call(
-                        AstGenerator.GetHelperMethod("ImportStar"),
-                        ag.LocalContext, 
-                        AstUtils.Constant(_root.MakeString()), 
+                        AstMethods.ImportStar,
+                        Parent.LocalContext,
+                        AstUtils.Constant(_root.MakeString()),
                         AstUtils.Constant(GetLevel())
                     ),
                     Span
@@ -86,7 +86,7 @@ namespace IronPython.Compiler.Ast {
                 // from a[.b] import x [as xx], [ y [ as yy] ] [ , ... ]
 
                 ReadOnlyCollectionBuilder<MSAst.Expression> statements = new ReadOnlyCollectionBuilder<MSAst.Expression>();
-                MSAst.ParameterExpression module = ag.GetTemporary("module");
+                MSAst.ParameterExpression module = Ast.Variable(typeof(object), "module");
 
                 // Create initializer of the array of names being passed to ImportWithNames
                 MSAst.Expression[] names = new MSAst.Expression[_names.Length];
@@ -96,12 +96,12 @@ namespace IronPython.Compiler.Ast {
 
                 // module = PythonOps.ImportWithNames(<context>, _root, make_array(_names))
                 statements.Add(
-                    ag.AddDebugInfoAndVoid(
-                        GlobalAllocator.Assign(
-                            module, 
+                    GlobalParent.AddDebugInfoAndVoid(
+                        AssignValue(
+                            module,
                             Ast.Call(
-                                AstGenerator.GetHelperMethod("ImportWithNames"),
-                                ag.LocalContext,
+                                AstMethods.ImportWithNames,
+                                Parent.LocalContext,
                                 AstUtils.Constant(_root.MakeString()),
                                 Ast.NewArrayInit(typeof(string), names),
                                 AstUtils.Constant(GetLevel())
@@ -114,12 +114,12 @@ namespace IronPython.Compiler.Ast {
                 // now load all the names being imported and assign the variables
                 for (int i = 0; i < names.Length; i++) {
                     statements.Add(
-                        ag.AddDebugInfoAndVoid(
-                            GlobalAllocator.Assign(
-                                ag.Globals.GetVariable(ag, _variables[i]), 
+                        GlobalParent.AddDebugInfoAndVoid(
+                            AssignValue(
+                                Parent.GetVariableExpression(_variables[i]),
                                 Ast.Call(
-                                    AstGenerator.GetHelperMethod("ImportFrom"),
-                                    ag.LocalContext,
+                                    AstMethods.ImportFrom,
+                                    Parent.LocalContext,
                                     module,
                                     names[i]
                                 )
@@ -130,7 +130,7 @@ namespace IronPython.Compiler.Ast {
                 }
 
                 statements.Add(AstUtils.Empty());
-                return ag.AddDebugInfo(Ast.Block(statements.ToArray()), Span);
+                return GlobalParent.AddDebugInfo(Ast.Block(new[] { module }, statements.ToArray()), Span);
             }
         }
 

@@ -146,7 +146,7 @@ namespace Microsoft.Scripting.Debugging {
 
             // Run 1st tree walk to identify all locals
             LambdaWalker lambdaWalker = new LambdaWalker();
-            lambdaWalker.Visit(body);
+            body = lambdaWalker.Visit(body);
 
             // Add all locals to pending list
             _pendingLocals.AddRange(lambdaWalker.Locals);

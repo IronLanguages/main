@@ -98,7 +98,7 @@ namespace Microsoft.Scripting.Silverlight {
             var downloadQueue = new List<DynamicLanguageInfo>();
             foreach(var used in LanguagesUsed) {
                 var lang = GetLanguageByName(used.Key);
-                if (used.Value && lang != null) {
+                if (used.Value && lang != null && lang.External != null) {
                     downloadQueue.Add(lang);
                 }
             }
@@ -197,7 +197,7 @@ namespace Microsoft.Scripting.Silverlight {
                     dl.Languages.Add(new DynamicLanguageInfo(
                         attribute.Names,
                         attribute.LanguageContextType.AssemblyQualifiedName,
-                        new string[] { assembly.FullName },
+                        new string[] { assembly.ManifestModule.ToString() },
                         attribute.FileExtensions,
                         null
                     ));

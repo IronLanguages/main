@@ -49,31 +49,40 @@ namespace IronPython.Compiler.Ast {
             get { return _right; }
         } 
 
-        internal override MSAst.Expression Transform(AstGenerator ag, Type type) {
-            MSAst.Expression left = ag.Transform(_left);
-            MSAst.Expression right = ag.Transform(_right);
+        public override MSAst.Expression Reduce() {
+            MSAst.Expression left = _left;
+            MSAst.Expression right = _right;
 
-            Type t = left.Type == right.Type ? left.Type : typeof(object);
-            MSAst.ParameterExpression tmp = ag.GetTemporary("__all__", t);
-            
-            return Ast.Condition(
-                ag.Convert(
-                    typeof(bool),
-                    ConversionResultKind.ExplicitCast,
-                    Ast.Assign(
-                        tmp,
-                        AstUtils.Convert(
-                            left,
-                            t
+            Type t = Type;
+            MSAst.ParameterExpression tmp = Ast.Variable(t, "__all__");
+
+            return Ast.Block(
+                new [] { tmp },
+                Ast.Condition(
+                    GlobalParent.Convert(
+                        typeof(bool),
+                        ConversionResultKind.ExplicitCast,
+                        Ast.Assign(
+                            tmp,
+                            AstUtils.Convert(
+                                left,
+                                t
+                            )
                         )
-                    )
-                ),
-                AstUtils.Convert(
-                    right,
-                    t
-                ),
-                tmp
-            );            
+                    ),
+                    AstUtils.Convert(
+                        right,
+                        t
+                    ),
+                    tmp
+                )
+            );
+        }
+
+        public override Type Type {
+            get {
+                return _left.Type == _right.Type ? _left.Type : typeof(object);
+            }
         }
 
         public override void Walk(PythonWalker walker) {

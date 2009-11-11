@@ -142,12 +142,18 @@ namespace IronPython.Compiler {
 
         public SourceLocation TokenStart {
             get {
+                if (_sourceUnit == null) {
+                    return _buffer.TokenStart;
+                }
                 return _sourceUnit.MakeLocation(_buffer.TokenStart);
             }
         }
 
         public SourceLocation TokenEnd {
             get {
+                if (_sourceUnit == null) {
+                    return _buffer.TokenEnd;
+                }
                 return _sourceUnit.MakeLocation(_buffer.TokenEnd);
             }
         }

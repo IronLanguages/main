@@ -521,10 +521,6 @@ namespace IronPython.Modules {
             code.Call(execScope);
         }
 
-        private static FunctionCode GetFunctionCode(PythonContext pc, SourceUnit sourceUnit, PythonCompilerOptions options) {
-            return ((RunnableScriptCode)pc.CompilePythonCode(Compiler.CompilationMode.Lookup, sourceUnit, options, ThrowingErrorSink.Default)).GetFunctionCode();
-        }
-
         public static PythonType file {
             get {
                 return DynamicHelpers.GetPythonTypeFromType(typeof(PythonFile));
@@ -2054,6 +2050,7 @@ namespace IronPython.Modules {
             // optimized module (exec, compile)
             pco.Module &= ~ModuleOptions.Optimized;
             pco.Module |= ModuleOptions.Interpret;
+            pco.CompilationMode = CompilationMode.Lookup;
             return pco;
         }
 

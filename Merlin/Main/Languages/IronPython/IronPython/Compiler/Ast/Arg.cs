@@ -47,9 +47,7 @@ namespace IronPython.Compiler.Ast {
             return base.ToString() + ":" + _name;
         }
 
-        internal Argument Transform(AstGenerator ag, out MSAst.Expression expression) {
-            expression = ag.Transform(_expression);
-
+        internal Argument GetArgumentInfo() {
             if (_name == null) {
                 return Argument.Simple;
             } else if (_name == "*") {

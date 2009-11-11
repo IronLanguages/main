@@ -29,6 +29,7 @@ namespace Microsoft.Scripting {
         private bool _interpretedMode;
         private readonly bool _perfStats;
         private readonly bool _noAdaptiveCompilation;
+        private readonly int _compilationThreshold;
         private readonly ReadOnlyCollection<string> _searchPaths;
 
         /// <summary>
@@ -37,9 +38,17 @@ namespace Microsoft.Scripting {
         /// </summary>
         public bool NoAdaptiveCompilation {
             get { return _noAdaptiveCompilation; }
+        } 
+        
+        /// <summary>
+        /// The number of iterations before the interpreter starts compiling.s
+        /// </summary>
+        public int CompilationThreshold {
+            get { return _compilationThreshold; }
         }
 
         // TODO: remove
+        [Obsolete("No longer used.")]
         public bool InterpretedMode {
             get { return _interpretedMode; }
             set { _interpretedMode = value; }
@@ -82,6 +91,7 @@ namespace Microsoft.Scripting {
             _showClrExceptions = GetOption(options, "ShowClrExceptions", false);
             _perfStats = GetOption(options, "PerfStats", false);
             _noAdaptiveCompilation = GetOption(options, "NoAdaptiveCompilation", false);
+            _compilationThreshold = GetOption(options, "CompilationThreshold", -1);
             _searchPaths = GetSearchPathsOption(options) ?? new ReadOnlyCollection<string>(new string[0]);
         }
 

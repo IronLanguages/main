@@ -53,16 +53,16 @@ namespace IronPython.Compiler.Ast {
             get { return _right; }
         }
 
-        internal override MSAst.Expression Transform(AstGenerator ag) {
+        public override MSAst.Expression Reduce() {
             if (_left.Length == 1) {
                 // Do not need temps for simple assignment
-                return AssignOne(ag);
+                return AssignOne();
             } else {
-                return AssignComplex(ag, ag.Transform(_right));
+                return AssignComplex(_right);
             }
         }
 
-        private MSAst.Expression AssignComplex(AstGenerator ag, MSAst.Expression right) {
+        private MSAst.Expression AssignComplex(MSAst.Expression right) {
             // Python assignment semantics:
             // - only evaluate RHS once. 
             // - evaluates assignment from left to right
@@ -79,12 +79,10 @@ namespace IronPython.Compiler.Ast {
             List<MSAst.Expression> statements = new List<MSAst.Expression>();
 
             // 1. Create temp variable for the right value
-            MSAst.ParameterExpression right_temp = ag.GetTemporary("assignment");
+            MSAst.ParameterExpression right_temp = Expression.Variable(typeof(object), "assignment");
 
             // 2. right_temp = right
-            statements.Add(
-                AstGenerator.MakeAssignment(right_temp, right)
-                );
+            statements.Add(MakeAssignment(right_temp, right));
 
             // Do left to right assignment
             foreach (Expression e in _left) {
@@ -93,20 +91,20 @@ namespace IronPython.Compiler.Ast {
                 }
 
                 // 3. e = right_temp
-                MSAst.Expression transformed = e.TransformSet(ag, Span, right_temp, PythonOperationKind.None);
+                MSAst.Expression transformed = e.TransformSet(Span, right_temp, PythonOperationKind.None);
 
                 statements.Add(transformed);
             }
 
             // 4. Create and return the resulting suite
             statements.Add(AstUtils.Empty());
-            return ag.AddDebugInfoAndVoid(
-                Ast.Block(statements.ToArray()),
+            return GlobalParent.AddDebugInfoAndVoid(
+                Ast.Block(new[] { right_temp }, statements.ToArray()),
                 Span
             );
         }
 
-        private MSAst.Expression AssignOne(AstGenerator ag) {
+        private MSAst.Expression AssignOne() {
             Debug.Assert(_left.Length == 1);
 
             SequenceExpression seLeft = _left[0] as SequenceExpression;
@@ -114,7 +112,7 @@ namespace IronPython.Compiler.Ast {
 
             if (seLeft != null && seRight != null && seLeft.Items.Count == seRight.Items.Count) {
                 int cnt = seLeft.Items.Count;
-
+                
                 // a, b = 1, 2, or [a,b] = 1,2 - not something like a, b = range(2)
                 // we can do a fast parallel assignment
                 MSAst.ParameterExpression[] tmps = new MSAst.ParameterExpression[cnt];
@@ -131,28 +129,23 @@ namespace IronPython.Compiler.Ast {
 
                 // allocate the temps first before transforming so we don't pick up a bad temp...
                 for (int i = 0; i < cnt; i++) {
-                    MSAst.Expression tmpVal = ag.Transform(seRight.Items[i]);
-                    tmps[i] = ag.GetTemporary("parallelAssign", tmpVal.Type);
+                    MSAst.Expression tmpVal = seRight.Items[i];
+                    tmps[i] = Ast.Variable(tmpVal.Type, "parallelAssign");
 
                     body[i] = Ast.Assign(tmps[i], tmpVal);
                 }
 
                 // then transform which can allocate more temps
                 for (int i = 0; i < cnt; i++) {
-                    body[i + cnt] = seLeft.Items[i].TransformSet(ag, SourceSpan.None, tmps[i], PythonOperationKind.None);
+                    body[i + cnt] = seLeft.Items[i].TransformSet(SourceSpan.None, tmps[i], PythonOperationKind.None);
                 }
-
-                // finally free the temps.
-                foreach (MSAst.ParameterExpression variable in tmps) {
-                    ag.FreeTemp(variable);
-                }
-
+                
                 // 4. Create and return the resulting suite
                 body[cnt * 2] = AstUtils.Empty();
-                return ag.AddDebugInfoAndVoid(Ast.Block(body), Span);
+                return GlobalParent.AddDebugInfoAndVoid(Ast.Block(tmps, body), Span);
             }
 
-            return _left[0].TransformSet(ag, Span, ag.Transform(_right), PythonOperationKind.None);
+            return _left[0].TransformSet(Span, _right, PythonOperationKind.None);
         }
 
         public override void Walk(PythonWalker walker) {

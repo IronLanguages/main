@@ -13,6 +13,8 @@
  *
  * ***************************************************************************/
 
+using System;
+
 #if !CLR2
 using MSAst = System.Linq.Expressions;
 #else
@@ -26,6 +28,7 @@ namespace IronPython.Compiler.Ast {
 
     public class RaiseStatement : Statement {
         private readonly Expression _type, _value, _traceback;
+        private bool _inFinally;
 
         public RaiseStatement(Expression exceptionType, Expression exceptionValue, Expression traceBack) {
             _type = exceptionType;
@@ -33,8 +36,15 @@ namespace IronPython.Compiler.Ast {
             _traceback = traceBack;
         }
 
-        public Expression Type {
+        [Obsolete("Type is obsolete due to direct inheritance from DLR Expression.  Use ExceptType instead")]
+        public new Expression Type {
             get { return _type; }
+        }
+
+        public Expression ExceptType {
+            get {
+                return _type;
+            }
         }
 
         public Expression Value {
@@ -45,33 +55,43 @@ namespace IronPython.Compiler.Ast {
             get { return _traceback; }
         }
 
-        internal override MSAst.Expression Transform(AstGenerator ag) {
+        public override MSAst.Expression Reduce() {
             MSAst.Expression raiseExpression;
             if (_type == null && _value == null && _traceback == null) {
                 raiseExpression = Ast.Call(
-                    AstGenerator.GetHelperMethod("MakeRethrownException"),
-                    ag.LocalContext
+                    AstMethods.MakeRethrownException,
+                    Parent.LocalContext
                 );
-
-                if (!ag._isEmittingFinally) {
+                
+                if (!InFinally) {
                     raiseExpression = Ast.Block(
-                        ag.UpdateLineUpdated(true),
+                        UpdateLineUpdated(true),
                         raiseExpression
                     );
                 }
             } else {
                 raiseExpression = Ast.Call(
-                    AstGenerator.GetHelperMethod("MakeException"),
-                    ag.LocalContext,
-                    ag.TransformOrConstantNull(_type, typeof(object)),
-                    ag.TransformOrConstantNull(_value, typeof(object)),
-                    ag.TransformOrConstantNull(_traceback, typeof(object))
+                    AstMethods.MakeException,
+                    Parent.LocalContext,
+                    TransformOrConstantNull(_type, typeof(object)),
+                    TransformOrConstantNull(_value, typeof(object)),
+                    TransformOrConstantNull(_traceback, typeof(object))
                 );
             }
-            return ag.AddDebugInfo(
+
+            return GlobalParent.AddDebugInfo(
                 Ast.Throw(raiseExpression),
                 Span
             );
+        }
+
+        internal bool InFinally {
+            get {
+                return _inFinally;
+            }
+            set {
+                _inFinally = value;
+            }
         }
 
         public override void Walk(PythonWalker walker) {

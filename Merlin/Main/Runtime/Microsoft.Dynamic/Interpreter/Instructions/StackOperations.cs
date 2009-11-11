@@ -13,11 +13,14 @@
  *
  * ***************************************************************************/
 
+using System.Collections.Generic;
+using System;
+using System.Diagnostics;
 namespace Microsoft.Scripting.Interpreter {
-    public sealed class PushInstruction : Instruction {
+    internal sealed class LoadObjectInstruction : Instruction {
         private readonly object _value;
 
-        internal PushInstruction(object value) {
+        internal LoadObjectInstruction(object value) {
             _value = value;
         }
 
@@ -29,11 +32,34 @@ namespace Microsoft.Scripting.Interpreter {
         }
 
         public override string ToString() {
-            return "Push(" + (_value ?? "null") + ")";
+            return "LoadObject(" + (_value ?? "null") + ")";
         }
     }
 
-    public sealed class PopInstruction : Instruction {
+    internal sealed class LoadCachedObjectInstruction : Instruction {
+        private readonly uint _index;
+
+        internal LoadCachedObjectInstruction(uint index) {
+            _index = index;
+        }
+
+        public override int ProducedStack { get { return 1; } }
+
+        public override int Run(InterpretedFrame frame) {
+            frame.Data[frame.StackIndex++] = frame.Interpreter._objects[_index];
+            return +1;
+        }
+
+        public override string ToDebugString(object cookie, IList<object> objects) {
+            return String.Format("LoadCached({0}: {1})", _index, objects[(int)_index]);
+        }
+        
+        public override string ToString() {
+            return "LoadCached(" + _index + ")";
+        }
+    }
+
+    internal sealed class PopInstruction : Instruction {
         internal static readonly PopInstruction Instance = new PopInstruction();
 
         private PopInstruction() { }
@@ -50,7 +76,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
     }
 
-    public sealed class DupInstruction : Instruction {
+    internal sealed class DupInstruction : Instruction {
         internal readonly static DupInstruction Instance = new DupInstruction();
 
         private DupInstruction() { }
@@ -67,53 +93,4 @@ namespace Microsoft.Scripting.Interpreter {
             return "Dup()";
         }
     }
-
-    #region Factories
-
-    public partial class Instruction {
-        private const int PushIntMinCachedValue = -100;
-        private const int PushIntMaxCachedValue = 100;
-
-        private static Instruction _null;
-        private static Instruction _true;
-        private static Instruction _false;
-        private static Instruction[] _ints;
-
-        public static Instruction Push(object value) {
-            if (value == null) {
-                return _null ?? (_null = new PushInstruction(null));
-            }
-
-            if (value is bool) {
-                if ((bool)value) {
-                    return _true ?? (_true = new PushInstruction(value));
-                } else {
-                    return _false ?? (_false = new PushInstruction(value));
-                }
-            }
-
-            if (value is int) {
-                int i = (int)value;
-                if (i >= PushIntMinCachedValue && i <= PushIntMaxCachedValue) {
-                    if (_ints == null) {
-                        _ints = new Instruction[PushIntMaxCachedValue - PushIntMinCachedValue + 1];
-                    }
-                    i -= PushIntMinCachedValue;
-                    return _ints[i] ?? (_ints[i] = new PushInstruction(value));
-                }
-            }
-
-            return new PushInstruction(value);
-        }
-
-        public static Instruction Dup() {
-            return DupInstruction.Instance;
-        }
-
-        public static Instruction Pop() {
-            return PopInstruction.Instance;
-        }
-    }
-
-    #endregion
 }

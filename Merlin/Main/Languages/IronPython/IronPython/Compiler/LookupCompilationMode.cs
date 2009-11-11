@@ -29,38 +29,38 @@ using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime;
 
+using AstUtils = Microsoft.Scripting.Ast.Utils;
+
 namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
-
     /// <summary>
     /// Provides globals for when we need to lookup into a dictionary for each global access.
     /// 
     /// This is the slowest form of globals and is only used when we need to run against an
     /// arbitrary dictionary given to us by a user.
     /// </summary>
-    class DictionaryGlobalAllocator : GlobalAllocator {
-        public DictionaryGlobalAllocator() {
+    class LookupCompilationMode : CompilationMode {
+        public LookupCompilationMode() {
         }
 
-        public override ScriptCode/*!*/ MakeScriptCode(MSAst.Expression/*!*/ body, CompilerContext/*!*/ context, PythonAst/*!*/ ast, Dictionary<int, bool> handlerLocations, Dictionary<int, Dictionary<int, bool>> loopAndFinallyLocations) {
-            PythonCompilerOptions pco = ((PythonCompilerOptions)context.Options);
-            PythonContext pc = (PythonContext)context.SourceUnit.LanguageContext;
+        public override ScriptCode MakeScriptCode(PythonAst ast) {
+            return new PythonScriptCode(ast);
+        }
 
-            var lambda = Ast.Lambda<Func<CodeContext, FunctionCode, object>>(
-                Utils.Convert(body, typeof(object)),
-                pco.ModuleName ?? "<unnamed>",
-                ArrayGlobalAllocator._arrayFuncParams
+        public override MSAst.LambdaExpression ReduceAst(PythonAst instance, string name) {
+            return Ast.Lambda<Func<CodeContext, FunctionCode, object>>(
+                AstUtils.Convert(instance.ReduceWorker(), typeof(object)),
+                name,
+                PythonAst._arrayFuncParams
             );
-
-            return new PythonScriptCode(context, lambda, context.SourceUnit, handlerLocations, loopAndFinallyLocations, ast.Body.Span);
         }
 
-        public override MSAst.Expression/*!*/ GlobalContext {
-            get { return ArrayGlobalAllocator._globalContext; }
-        }
-
-        protected override MSAst.Expression/*!*/ GetGlobal(string/*!*/ name, AstGenerator/*!*/ ag, bool isLocal) {
-            return new LookupGlobalVariable(ag.LocalContext, name, isLocal);
+        public override MSAst.Expression GetGlobal(MSAst.Expression globalContext, int arrayIndex, PythonVariable variable, PythonGlobal global) {
+            return new LookupGlobalVariable(
+                globalContext,
+                variable.Name,
+                variable.Kind == VariableKind.Local
+            );
         }
     }
 }

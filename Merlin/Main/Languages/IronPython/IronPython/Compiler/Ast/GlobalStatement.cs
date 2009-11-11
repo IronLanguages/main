@@ -19,8 +19,12 @@ using MSAst = System.Linq.Expressions;
 using MSAst = Microsoft.Scripting.Ast;
 #endif
 
-using Microsoft.Scripting;
+
+using System;
 using System.Collections.Generic;
+
+using Microsoft.Scripting;
+
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Compiler.Ast {
@@ -36,7 +40,7 @@ namespace IronPython.Compiler.Ast {
             get { return _names; }
         }
 
-        internal override MSAst.Expression Transform(AstGenerator ag) {
+        public override MSAst.Expression Reduce() {
             // global statement is Python's specific syntactic sugar.
             return AstUtils.Empty();
         }

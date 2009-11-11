@@ -1,9 +1,15 @@
-describe :time_params, :shared => true do
+describe :time_params, :shared => true do 
   it "handles string-like second argument" do
-    Time.send(@method, 2008, "12").should  == Time.send(@method, 2008, 12)
-    Time.send(@method, 2008, "dec").should == Time.send(@method, 2008, 12)
-    (obj = mock('12')).should_receive(:to_str).and_return("12")
+    (obj = mock('12')).should_receive(:to_str).and_return("12").should_not_receive(:to_int)
     Time.send(@method, 2008, obj).should == Time.send(@method, 2008, 12)
+  end
+
+  it "handles month names for second argument" do
+    month_names = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"]
+    month_names.each_index do |i|
+      Time.send(@method, 2008, month_names[i]       ).should  == Time.send(@method, 2008, i + 1)
+      Time.send(@method, 2008, month_names[i].upcase).should  == Time.send(@method, 2008, i + 1)
+    end
   end
 
   ruby_bug "#", "1.8.6.114" do
@@ -15,19 +21,40 @@ describe :time_params, :shared => true do
     end
   end
 
+  it "handles int-like arguments" do
+    (obj = mock('2008')).should_receive(:to_int).and_return(2008)
+    Time.send(@method, obj).should == Time.send(@method, 2008)
+  end
+
   it "handles string arguments" do
-    Time.send(@method, "2000", "1", "1" , "20", "15", "1").should == Time.send(@method, 2000, 1, 1, 20, 15, 1)
-    Time.send(@method, "1", "15", "20", "1", "1", "2000", :ignored, :ignored, :ignored, :ignored).should == Time.send(@method, 1, 15, 20, 1, 1, 2000, :ignored, :ignored, :ignored, :ignored)
+    Time.send(@method, "1999", "1", "1" , "20", "15", "1").should == Time.send(@method, 1999, 1, 1, 20, 15, 1)
+  end
+  
+  it "handles string arguments by calling to_i" do
+    [" 1999 ", "1999.1", "abc"].each do |s|
+      Time.send(@method, s).should == Time.send(@method, s.to_i)
+    end
+  end
+  
+  it "does not handle string-like arguments" do
+    (obj = mock('2008')).should_not_receive(:to_str)
+    lambda { Time.send(@method, obj) }.should raise_error(TypeError)
   end
 
-  it "handles float arguments" do
-    Time.send(@method, 2000.0, 1.0, 1.0, 20.0, 15.0, 1.0).should == Time.send(@method, 2000, 1, 1, 20, 15, 1)
-    Time.send(@method, 1.0, 15.0, 20.0, 1.0, 1.0, 2000.0, :ignored, :ignored, :ignored, :ignored).should == Time.send(@method, 1, 15, 20, 1, 1, 2000, :ignored, :ignored, :ignored, :ignored)
+  it "accepts 10 arguments in the order output by Time#to_a" do
+    Time.send(@method, "1", "15", "20", "1", "1", "1999", :ignored, :ignored, :ignored, :ignored).should == Time.send(@method, 1, 15, 20, 1, 1, 1999, :ignored, :ignored, :ignored, :ignored)
   end
 
+  it "defaults to year 2000" do
+    Time.send(@method, 0).should == Time.send(@method, 2000)
+  end
+  
   ruby_version_is ""..."1.9.1" do
     it "should accept various year ranges" do
-      Time.send(@method, 1901, 12, 31, 23, 59, 59, 0).wday.should == 2
+      ruby_bug "2307", "1.9" do
+        Time.send(@method, 1901, 12, 31, 23, 59, 59, 0).wday.should == 2
+      end
+
       Time.send(@method, 2037, 12, 31, 23, 59, 59, 0).wday.should == 4
 
       platform_is :wordsize => 32 do

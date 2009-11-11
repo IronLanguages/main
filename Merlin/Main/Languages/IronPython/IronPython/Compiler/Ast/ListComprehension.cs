@@ -30,7 +30,7 @@ namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
 
     public abstract class ListComprehensionIterator : Node {
-        internal abstract MSAst.Expression Transform(AstGenerator ag, MSAst.Expression body);
+        internal abstract MSAst.Expression Transform(MSAst.Expression body);
     }
 
     public class ListComprehension : Expression {
@@ -50,24 +50,22 @@ namespace IronPython.Compiler.Ast {
             get { return _iterators; }
         }
 
-        internal override MSAst.Expression Transform(AstGenerator ag, Type type) {
-            MSAst.ParameterExpression list = ag.GetTemporary("list_comprehension_list", typeof(List));
+        public override MSAst.Expression Reduce() {
+            MSAst.ParameterExpression list = Ast.Parameter(typeof(List), "list_comprehension_list");
 
             // 1. Initialization code - create list and store it in the temp variable
             MSAst.Expression initialize =
                 Ast.Assign(
                     list,
-                    Ast.Call(
-                        AstGenerator.GetHelperMethod("MakeList", Type.EmptyTypes) // method
-                    )                    
+                    Ast.Call(AstMethods.MakeList)
                 );
 
             // 2. Create body from _item:   list.Append(_item)
-            MSAst.Expression body = ag.AddDebugInfo(
+            MSAst.Expression body = GlobalParent.AddDebugInfo(
                 Ast.Call(
-                    AstGenerator.GetHelperMethod("ListAddForComprehension"),
+                    AstMethods.ListAddForComprehension,
                     list,
-                    ag.TransformAsObject(_item)
+                    AstUtils.Convert(_item, typeof(object))
                 ),
                 _item.Span
             );
@@ -76,10 +74,11 @@ namespace IronPython.Compiler.Ast {
             int current = _iterators.Length;
             while (current-- > 0) {
                 ListComprehensionIterator iterator = _iterators[current];
-                body = iterator.Transform(ag, body);
+                body = iterator.Transform(body);
             }
 
             return Ast.Block(
+                new[] { list },
                 initialize,
                 body,
                 list                        // result

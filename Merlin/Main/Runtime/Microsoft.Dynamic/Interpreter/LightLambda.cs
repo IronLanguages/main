@@ -27,6 +27,7 @@ using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Utils;
 
 using AstUtils = Microsoft.Scripting.Ast.Utils;
+using System.Threading;
 
 namespace Microsoft.Scripting.Interpreter {
 
@@ -46,16 +47,18 @@ namespace Microsoft.Scripting.Interpreter {
         // Adaptive compilation support
         private readonly LightDelegateCreator _delegateCreator;
         private Delegate _compiled;
+        private int _compilationThreshold;
 
         /// <summary>
         /// Provides notification that the LightLambda has been compiled.
         /// </summary>
         public event EventHandler<LightLambdaCompileEventArgs> Compile;
 
-        internal LightLambda(LightDelegateCreator delegateCreator, StrongBox<object>[] closure) {
+        internal LightLambda(LightDelegateCreator delegateCreator, StrongBox<object>[] closure, int compilationThreshold) {
             _delegateCreator = delegateCreator;
             _closure = closure;
             _interpreter = delegateCreator.Interpreter;
+            _compilationThreshold = compilationThreshold;
         }
 
         private static MethodInfo GetRunMethodOrFastCtor(Type delegateType, out Func<LightLambda, Delegate> fastCtor) {
@@ -162,7 +165,22 @@ namespace Microsoft.Scripting.Interpreter {
 
                 return true;
             }
-            _delegateCreator.UpdateExecutionCount();
+
+            // Don't lock here, it's a frequently hit path.
+            //
+            // There could be multiple threads racing, but that is okay.
+            // Two bad things can happen:
+            //   * We miss increments (one thread sets the counter back)
+            //   * We might enter the "if" branch more than once.
+            //
+            // The first is okay, it just means we take longer to compile.
+            // The second we explicitly guard against inside of Compile().
+            //
+            if (unchecked(_compilationThreshold--) == 0) {
+                // Kick off the compile on another thread so this one can keep going
+                ThreadPool.QueueUserWorkItem(_delegateCreator.Compile, null);
+            }
+
             return false;
         }
 

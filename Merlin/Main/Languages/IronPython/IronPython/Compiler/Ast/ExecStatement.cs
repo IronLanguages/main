@@ -52,30 +52,30 @@ namespace IronPython.Compiler.Ast {
             return _globals == null && _locals == null;
         }
 
-        internal override MSAst.Expression Transform(AstGenerator ag) {
+        public override MSAst.Expression Reduce() {
             MSAst.MethodCallExpression call;
 
             if (_locals == null && _globals == null) {
                 // exec code
                 call = Ast.Call(
-                    AstGenerator.GetHelperMethod("UnqualifiedExec"),
-                    ag.LocalContext, 
-                    ag.TransformAsObject(_code)
+                    AstMethods.UnqualifiedExec,
+                    Parent.LocalContext,
+                    AstUtils.Convert(_code, typeof(object))
                 );
             } else {
                 // exec code in globals [ , locals ]
                 // We must have globals now (locals is last and may be absent)
                 Debug.Assert(_globals != null);
                 call = Ast.Call(
-                    AstGenerator.GetHelperMethod("QualifiedExec"),
-                    ag.LocalContext, 
-                    ag.TransformAsObject(_code), 
-                    ag.TransformAndDynamicConvert(_globals, typeof(PythonDictionary)), 
-                    ag.TransformOrConstantNull(_locals, typeof(object))
+                    AstMethods.QualifiedExec,
+                    Parent.LocalContext,
+                    AstUtils.Convert(_code, typeof(object)),
+                    TransformAndDynamicConvert(_globals, typeof(PythonDictionary)),
+                    TransformOrConstantNull(_locals, typeof(object))
                 );
             }
 
-            return ag.AddDebugInfo(call, Span);
+            return GlobalParent.AddDebugInfo(call, Span);
         }
 
         public override void Walk(PythonWalker walker) {

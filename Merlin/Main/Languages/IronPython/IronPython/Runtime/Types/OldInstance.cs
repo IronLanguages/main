@@ -41,6 +41,7 @@ namespace IronPython.Runtime.Types {
 
     [PythonType("instance")]
     [Serializable]
+    [DebuggerTypeProxy(typeof(OldInstance.OldInstanceDebugView)), DebuggerDisplay("old-style instance of {ClassName}")]
     public sealed partial class OldInstance :
         ICodeFormattable,
         IValueEquality,
@@ -125,6 +126,12 @@ namespace IronPython.Runtime.Types {
         /// </summary>
         internal PythonDictionary Dictionary {
             get { return _dict; }
+        }
+
+        internal string ClassName {
+            get {
+                return _class.Name;
+            }
         }
 
         public static bool operator true(OldInstance self) {
@@ -942,5 +949,33 @@ namespace IronPython.Runtime.Types {
         }
 
         #endregion
+
+        internal class OldInstanceDebugView {
+            private readonly OldInstance _userObject;
+
+            public OldInstanceDebugView(OldInstance userObject) {
+                _userObject = userObject;
+            }
+
+            public OldClass __class__ {
+                get {
+                    return _userObject._class;
+                }
+            }
+
+            [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+            internal List<ObjectDebugView> Members {
+                get {
+                    var res = new List<ObjectDebugView>();
+                    if (_userObject._dict != null) {
+                        foreach (var v in _userObject._dict) {
+                            res.Add(new ObjectDebugView(v.Key, v.Value));
+                        }
+                    }
+
+                    return res;
+                }
+            }
+        }
     }
 }

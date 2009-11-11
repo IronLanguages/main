@@ -55,11 +55,11 @@ namespace IronPython.Compiler.Ast {
             return null;
         }
 
-        internal override MSAst.Expression Transform(AstGenerator ag, Type type) {
+        public override MSAst.Expression Reduce() {
             if (_expandable) {
                 return Ast.NewArrayInit(
                     typeof(object),
-                    ag.TransformAndConvert(Items, typeof(object))
+                    ToObjectArray(Items)
                 );
             }
 
@@ -71,10 +71,10 @@ namespace IronPython.Compiler.Ast {
             }
 
             return Ast.Call(
-                AstGenerator.GetHelperMethod("MakeTuple"),
+                AstMethods.MakeTuple,
                 Ast.NewArrayInit(
                     typeof(object),
-                    ag.TransformAndConvert(Items, typeof(object))
+                    ToObjectArray(Items)
                 )
             );
         }

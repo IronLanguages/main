@@ -98,6 +98,12 @@ namespace Microsoft.Scripting {
             }
         }
 
+        public static void IncrementEntry<TKey>(IDictionary<TKey, int> histogram, TKey key) {
+            int value;
+            histogram.TryGetValue(key, out value);
+            histogram[key] = value + 1;
+        }
+
         public static void DumpStats() {
             DumpStats(Console.Out);
         }

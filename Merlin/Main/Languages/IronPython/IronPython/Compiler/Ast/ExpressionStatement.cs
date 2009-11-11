@@ -35,18 +35,22 @@ namespace IronPython.Compiler.Ast {
             get { return _expression; }
         }
 
-        internal override MSAst.Expression Transform(AstGenerator ag) {
-            MSAst.Expression expression = ag.Transform(_expression);
+        public override MSAst.Expression Reduce() {
+            MSAst.Expression expression = _expression;
 
-            if (ag.PrintExpressions) {
+            return ReduceWorker(expression);
+        }
+
+        private MSAst.Expression ReduceWorker(MSAst.Expression expression) {
+            if (Parent.PrintExpressions) {
                 expression = Ast.Call(
-                    AstGenerator.GetHelperMethod("PrintExpressionValue"),
-                    ag.LocalContext,
-                    AstGenerator.ConvertIfNeeded(expression, typeof(object))
+                    AstMethods.PrintExpressionValue,
+                    Parent.LocalContext,
+                    ConvertIfNeeded(expression, typeof(object))
                 );
             }
 
-            return ag.AddDebugInfoAndVoid(expression, _expression.Span);
+            return GlobalParent.AddDebugInfoAndVoid(expression, _expression.Span);
         }
 
         public override void Walk(PythonWalker walker) {

@@ -46,24 +46,12 @@ namespace IronPython.Runtime {
         [PythonHidden]
         public Delegate Target;                                     // the current target for the function.  This can change based upon adaptive compilation, recursion enforcement, and tracing.
         private Delegate _normalDelegate;                           // the normal delegate - this can be a compiled or interpreted delegate.
-
-        private readonly string _filename;                          // the filename that created the function co
-        private readonly FunctionAttributes _flags;                 // future division, generator
-        private LambdaExpression _lambda;                           // the original DLR lambda that contains the code
-        private readonly bool _shouldInterpret;                     // true if we should interpret the code
-        private readonly bool _debuggable;                          // true if the code should be compiled as debuggable code
-        private readonly SourceSpan _span;                          // the source span for the source code
-        private readonly string[] _argNames;                        // the argument names for the function
-        private readonly PythonTuple _freevars, _names;             // a tuple of variable names which have been closed over and global variables that have been accessed
-        private readonly PythonTuple _cellvars;                     // variables which are accessed by nested functions
-        private readonly string _name;                              // the name of the function
-        private readonly int _localCount;                           // the number of local variables in the code
+        private Compiler.Ast.ScopeStatement _lambda;                // the original DLR lambda that contains the code
         internal readonly string _initialDoc;                       // the initial doc string
-        private readonly PythonTuple _varnames;                     // variable names (parameters and locals)
+        private readonly int _localCount;                           // the number of local variables in the code
+        private readonly int _argCount;                             // cached locally because it's used during calls w/ defaults
 
         // debugging/tracing support
-        private readonly Dictionary<int, bool> _handlerLocations; // list of exception handler locations for debugging
-        private readonly Dictionary<int, Dictionary<int, bool>> _loopAndFinallyLocations; // list of loop and finally locations for debugging
         private LambdaExpression _tracingLambda;                    // the transformed lambda used for tracing/debugging
         private Delegate _tracingDelegate;                          // the delegate used for tracing/debugging, if one has been created.  This can be interpreted or compiled.
 
@@ -84,21 +72,10 @@ namespace IronPython.Runtime {
         /// 
         /// Function codes created this way do support recursion enforcement and are therefore registered in the global function code registry.
         /// </summary>
-        internal FunctionCode(PythonContext context, Delegate code, string name, string documentation, string[] argNames, FunctionAttributes flags, SourceSpan span, string path, string[] freeVars, string[] names, string[] cellVars, string[] varNames, int localCount) {
-            _name = name;
-            _span = span;
-            _initialDoc = documentation;
-            _argNames = argNames;
-            _flags = flags;
-            _span = span;
-            _filename = path;
-            _freevars = StringArrayToTuple(freeVars);
-            _names = StringArrayToTuple(names);
-            _cellvars = StringArrayToTuple(cellVars);
-            _varnames = StringArrayToTuple(varNames);
-            _localCount = localCount;
-
+        internal FunctionCode(PythonContext context, Delegate code, Compiler.Ast.ScopeStatement scope, string documentation, int localCount) {
             _normalDelegate = code;
+            _lambda = scope;
+            _argCount = CalculateArgumentCount();
 
             // need to take this lock to ensure sys.settrace/sys.setprofile is not actively changing
             lock (_CodeCreateAndUpdateDelegateLock) {
@@ -118,29 +95,13 @@ namespace IronPython.Runtime {
         /// 
         /// the initial delegate provided here should NOT be the actual code.  It should always be a delegate which updates our Target lazily.
         /// </summary>
-        internal FunctionCode(PythonContext context, Delegate initialDelegate, LambdaExpression code, string name, string documentation, string[] argNames, FunctionAttributes flags, SourceSpan span, string path, bool isDebuggable, bool shouldInterpret, IList<string> freeVars, IList<string> names, IList<string> cellVars, IList<string> varNames, int localCount, Dictionary<int, Dictionary<int, bool>> loopLocations, Dictionary<int, bool> handlerLocations) {
-            _lambda = code;
-            _name = name;
-            _span = span;
-            _initialDoc = documentation;
-            _argNames = argNames;
-            _flags = flags;
-            _span = span;
-            _filename = path ?? "<string>";
-
-            _shouldInterpret = shouldInterpret;
-            _freevars = SymbolListToTuple(freeVars);
-            _names = SymbolListToTuple(names);
-            _cellvars = SymbolListToTuple(cellVars);
-            _varnames = SymbolListToTuple(varNames);
-            _localCount = localCount;
-
-            _handlerLocations = handlerLocations;
-            _loopAndFinallyLocations = loopLocations;
-
-            _debuggable = isDebuggable;
-
+        internal FunctionCode(PythonContext context, Delegate initialDelegate, Compiler.Ast.ScopeStatement scope, string documentation) {
+            _lambda = scope;
             Target = initialDelegate;
+            _initialDoc = documentation;
+            _localCount = scope.Variables == null ? 0 : scope.Variables.Count;
+            _argCount = CalculateArgumentCount();
+
             RegisterFunctionCode(context);
         }
 
@@ -338,19 +299,19 @@ namespace IronPython.Runtime {
 
         internal SourceSpan Span {
             get {
-                return _span;
+                return _lambda.Span;
             }
         }
 
         internal string[] ArgNames {
             get {
-                return _argNames;
+                return _lambda.ParameterNames;
             }
         }
 
         internal FunctionAttributes Flags {
             get {
-                return _flags;
+                return _lambda.Flags;
             }
         }
 
@@ -384,17 +345,22 @@ namespace IronPython.Runtime {
 
         public PythonTuple co_varnames {
             get {
-                return _varnames;
+                return SymbolListToTuple(_lambda.GetVarNames());
             }
         }
 
         public int co_argcount {
             get {
-                int argCnt = ArgNames.Length;
-                if ((_flags & FunctionAttributes.ArgumentList) != 0) argCnt--;
-                if ((_flags & FunctionAttributes.KeywordDictionary) != 0) argCnt--;
-                return argCnt;
+                return _argCount;
             }
+        }
+
+        private int CalculateArgumentCount() {
+            int argCnt = _lambda.ArgCount;
+            FunctionAttributes flags = Flags;
+            if ((flags & FunctionAttributes.ArgumentList) != 0) argCnt--;
+            if ((flags & FunctionAttributes.KeywordDictionary) != 0) argCnt--;
+            return argCnt;
         }
 
         /// <summary>
@@ -402,7 +368,7 @@ namespace IronPython.Runtime {
         /// </summary>
         public PythonTuple co_cellvars {
             get {
-                return _cellvars;
+                return SymbolListToTuple(_lambda.CellVariables != null ? ArrayUtils.ToArray(_lambda.CellVariables) : null);
             }
         }
 
@@ -426,7 +392,7 @@ namespace IronPython.Runtime {
         /// </summary>
         public PythonTuple co_consts {
             get {
-                if (this._initialDoc != null) {
+                if (_initialDoc != null) {
                     return PythonTuple.MakeTuple(_initialDoc, null);
                 }
 
@@ -439,7 +405,7 @@ namespace IronPython.Runtime {
         /// </summary>
         public string co_filename {
             get {
-                return _filename;
+                return _lambda.Filename;
             }
         }
 
@@ -448,7 +414,7 @@ namespace IronPython.Runtime {
         /// </summary>
         public int co_firstlineno {
             get {
-                return _span.Start.Line;
+                return Span.Start.Line;
             }
         }
 
@@ -461,7 +427,7 @@ namespace IronPython.Runtime {
         /// </summary>
         public int co_flags {
             get {
-                return (int)_flags;
+                return (int)Flags;
             }
         }
 
@@ -472,7 +438,7 @@ namespace IronPython.Runtime {
         /// </summary>
         public PythonTuple co_freevars {
             get {
-                return _freevars;
+                return SymbolListToTuple(_lambda.FreeVariables != null ? CollectionUtils.ConvertAll(_lambda.FreeVariables, x => x.Name) : null);
             }
         }
 
@@ -492,7 +458,7 @@ namespace IronPython.Runtime {
         /// </summary>
         public string co_name {
             get {
-                return _name;
+                return _lambda.Name;
             }
         }
 
@@ -501,7 +467,7 @@ namespace IronPython.Runtime {
         /// </summary>
         public PythonTuple co_names {
             get {
-                return _names;
+                return SymbolListToTuple(_lambda.GlobalVariables);
             }
         }
 
@@ -531,16 +497,19 @@ namespace IronPython.Runtime {
 
         internal LambdaExpression Code {
             get {
-                return _lambda;
+                return _lambda.GetLambda();
             }
-            set {
-                _lambda = value;
+        }
+
+        internal Compiler.Ast.ScopeStatement PythonCode {
+            get {
+                return (Compiler.Ast.ScopeStatement)_lambda;
             }
         }
 
         internal object Call(CodeContext/*!*/ context) {
-            if (_freevars != PythonTuple.EMPTY) {
-                throw PythonOps.TypeError("cannot exec code object that contains free variables: {0}", _freevars.__repr__(context));
+            if (co_freevars != PythonTuple.EMPTY) {
+                throw PythonOps.TypeError("cannot exec code object that contains free variables: {0}", co_freevars.__repr__(context));
             }
 
             if (Target == null) {
@@ -573,8 +542,8 @@ namespace IronPython.Runtime {
         /// The code is then executed in a specific CodeContext by calling the .Call method.
         /// </summary>
         internal static FunctionCode FromSourceUnit(SourceUnit sourceUnit, PythonCompilerOptions options) {
-            var code = ((PythonContext)sourceUnit.LanguageContext).CompilePythonCode(Compiler.CompilationMode.Lookup, sourceUnit, options, ThrowingErrorSink.Default);
-            
+            var code = PythonContext.CompilePythonCode(sourceUnit, options, ThrowingErrorSink.Default);
+
             return ((RunnableScriptCode)code).GetFunctionCode();
         }
 
@@ -666,7 +635,7 @@ namespace IronPython.Runtime {
                     if (!forceCreation) {
                         // the user just called sys.settrace(), don't force re-compilation of every method in the system.  Instead
                         // we'll just re-compile them as they're invoked.
-                        PythonCallTargets.GetPythonTargetType(_argNames.Length > PythonCallTargets.MaxArgs, _argNames.Length, out Target);
+                        PythonCallTargets.GetPythonTargetType(_lambda.ParameterNames.Length > PythonCallTargets.MaxArgs, _lambda.ParameterNames.Length, out Target);
                         return;
                     }
                     _tracingLambda = GetGeneratorOrNormalLambdaTracing(context);
@@ -695,11 +664,9 @@ namespace IronPython.Runtime {
         /// .NET style debugging.
         /// </summary>
         internal void SetDebugTarget(PythonContext context, Delegate target) {
-            if (Target == null) {
-                _normalDelegate = target;
+            _normalDelegate = target;
 
-                Target = AddRecursionCheck(context, target);
-            }
+            Target = AddRecursionCheck(context, target);
         }
 
         /// <summary>
@@ -708,7 +675,7 @@ namespace IronPython.Runtime {
         /// If this is a generator function code then the lambda gets tranformed into the correct generator code.
         /// </summary>
         private LambdaExpression GetGeneratorOrNormalLambdaTracing(PythonContext context) {
-            var debugProperties = new PythonDebuggingPayload(this, _loopAndFinallyLocations, _handlerLocations);
+            var debugProperties = new PythonDebuggingPayload(this);
 
             var debugInfo = new Microsoft.Scripting.Debugging.CompilerServices.DebugLambdaInfo(
                 null,           // IDebugCompilerSupport
@@ -719,18 +686,19 @@ namespace IronPython.Runtime {
                 debugProperties // custom payload
             );
 
-            if ((_flags & FunctionAttributes.Generator) == 0) {
-                return context.DebugContext.TransformLambda(_lambda, debugInfo);
+            if ((Flags & FunctionAttributes.Generator) == 0) {
+                return context.DebugContext.TransformLambda(_lambda.GetLambda(), debugInfo);
             }
 
             return Expression.Lambda(
                 Code.Type,
                 new GeneratorRewriter(
-                    _name,
+                    _lambda.Name,
                     Code.Body
                 ).Reduce(
-                    _shouldInterpret,
-                    _debuggable,
+                    _lambda.ShouldInterpret,
+                    _lambda.EmitDebugSymbols,
+                    context.Options.CompilationThreshold,
                     Code.Parameters,
                     x => (Expression<Func<MutableTuple, object>>)context.DebugContext.TransformLambda(x, debugInfo)
                 ),
@@ -746,19 +714,25 @@ namespace IronPython.Runtime {
         /// </summary>
         private LambdaExpression GetGeneratorOrNormalLambda() {
             LambdaExpression finalCode;
-            if ((_flags & FunctionAttributes.Generator) == 0) {
+            if ((Flags & FunctionAttributes.Generator) == 0) {
                 finalCode = Code;
             } else {
-                finalCode = Code.ToGenerator(_shouldInterpret, _debuggable);
+                finalCode = Code.ToGenerator(
+                    _lambda.ShouldInterpret, 
+                    _lambda.EmitDebugSymbols, 
+                    _lambda.GlobalParent.PyContext.Options.CompilationThreshold
+                );
             }
             return finalCode;
         }
 
         private Delegate CompileLambda(LambdaExpression code, EventHandler<LightLambdaCompileEventArgs> handler) {
-            if (_debuggable) {
+            if (_lambda.EmitDebugSymbols) {
                 return CompilerHelpers.CompileToMethod(code, DebugInfoGenerator.CreatePdbGenerator(), true);
-            } else if (_shouldInterpret) {
-                Delegate result = CompilerHelpers.LightCompile(code);
+            } else if (_lambda.ShouldInterpret) {
+                Delegate result = CompilerHelpers.LightCompile(code, _lambda is Compiler.Ast.FunctionDefinition,
+                    _lambda.GlobalParent.PyContext.Options.CompilationThreshold
+                );
 
                 // If the adaptive compiler decides to compile this function, we
                 // want to store the new compiled target. This saves us from going
@@ -781,7 +755,7 @@ namespace IronPython.Runtime {
                     return finalTarget;
                 }
 
-                switch (_argNames.Length) {
+                switch (_lambda.ParameterNames.Length) {
                     #region Generated Python Recursion Delegate Switch
 
                     // *** BEGIN GENERATED CODE ***
@@ -871,35 +845,35 @@ namespace IronPython.Runtime {
         Expression IExpressionSerializable.CreateExpression() {
             return Expression.Call(
                 typeof(PythonOps).GetMethod("MakeFunctionCode"),
-                Compiler.Ast.ArrayGlobalAllocator._globalContext,
-                Expression.Constant(_name),
+                Compiler.Ast.PythonAst._globalContext,
+                Expression.Constant(_lambda.Name),
                 Expression.Constant(_initialDoc, typeof(string)),
                 Expression.NewArrayInit(
                     typeof(string),
-                    ArrayUtils.ConvertAll(_argNames, (x) => Expression.Constant(x))
+                    ArrayUtils.ConvertAll(_lambda.ParameterNames, (x) => Expression.Constant(x))
                 ),
-                Expression.Constant(_flags),
+                Expression.Constant(Flags),
                 Expression.New(
                     typeof(SourceSpan).GetConstructor(new Type[] { typeof(SourceLocation), typeof(SourceLocation) }),
                     Expression.New(
                         typeof(SourceLocation).GetConstructor(new Type[] { typeof(int), typeof(int), typeof(int) }),
-                        Expression.Constant(_span.Start.Index),
-                        Expression.Constant(_span.Start.Line),
-                        Expression.Constant(_span.Start.Column)
+                        Expression.Constant(Span.Start.Index),
+                        Expression.Constant(Span.Start.Line),
+                        Expression.Constant(Span.Start.Column)
                     ),
                     Expression.New(
                         typeof(SourceLocation).GetConstructor(new Type[] { typeof(int), typeof(int), typeof(int) }),
-                        Expression.Constant(_span.End.Index),
-                        Expression.Constant(_span.End.Line),
-                        Expression.Constant(_span.End.Column)
+                        Expression.Constant(Span.End.Index),
+                        Expression.Constant(Span.End.Line),
+                        Expression.Constant(Span.End.Column)
                     )
                 ),
-                Expression.Constant(_filename),
+                Expression.Constant(_lambda.Filename),
                 GetGeneratorOrNormalLambda(),
-                TupleToStringArray(_freevars),
-                TupleToStringArray(_names),
-                TupleToStringArray(_cellvars),
-                TupleToStringArray(_varnames),
+                TupleToStringArray(co_freevars),
+                TupleToStringArray(co_names),
+                TupleToStringArray(co_cellvars),
+                TupleToStringArray(co_varnames),
                 Expression.Constant(_localCount)
             );
         }
@@ -934,14 +908,216 @@ namespace IronPython.Runtime {
     }
 
     internal class PythonDebuggingPayload {
-        public readonly Dictionary<int, Dictionary<int, bool>> LoopAndFinallyLocations;
-        public readonly Dictionary<int, bool> HandlerLocations;
         public FunctionCode Code;
+        private Dictionary<int, bool> _handlerLocations;
+        private Dictionary<int, Dictionary<int, bool>> _loopAndFinallyLocations;
 
-        public PythonDebuggingPayload(FunctionCode code, Dictionary<int, Dictionary<int, bool>> loopLocations, Dictionary<int, bool> handlerLocations) {
+        public PythonDebuggingPayload(FunctionCode code) {
             Code = code;
-            LoopAndFinallyLocations = loopLocations;
-            HandlerLocations = handlerLocations;
+        }
+
+        public Dictionary<int, bool> HandlerLocations {
+            get {
+                if (_handlerLocations == null) {
+                    GatherLocations();
+                }
+
+                return _handlerLocations;
+            }
+        }
+
+        public Dictionary<int, Dictionary<int, bool>> LoopAndFinallyLocations {
+            get {
+                if (_loopAndFinallyLocations == null) {
+                    GatherLocations();
+                }
+
+                return _loopAndFinallyLocations;
+            }
+        }
+
+        private void GatherLocations() {
+            var walker = new TracingWalker();
+
+            Code.PythonCode.Walk(walker);
+
+            _loopAndFinallyLocations = walker.LoopAndFinallyLocations;
+            _handlerLocations = walker.HandlerLocations;
+        }
+
+        class TracingWalker : Compiler.Ast.PythonWalker {
+            private bool _inLoop, _inFinally;
+            private int _loopId;
+            public Dictionary<int, bool> HandlerLocations = new Dictionary<int, bool>();
+            public Dictionary<int, Dictionary<int, bool>> LoopAndFinallyLocations = new Dictionary<int, Dictionary<int, bool>>();
+            private Dictionary<int, bool> _loopIds = new Dictionary<int, bool>();
+
+            public override bool Walk(Compiler.Ast.ForStatement node) {
+                UpdateLoops(node);
+                WalkLoopBody(node.Body, false);
+
+                if (node.Else != null) {
+                    node.Else.Walk(this);
+                }
+
+                return false;
+            }
+
+            private void WalkLoopBody(IronPython.Compiler.Ast.Statement body, bool isFinally) {
+
+                bool inLoop = _inLoop;
+                bool inFinally = _inFinally;
+
+                int loopId = ++_loopId;
+                _inFinally = false;
+                _inLoop = true;
+                _loopIds.Add(loopId, isFinally);
+
+                body.Walk(this);
+
+                _inLoop = inLoop;
+                _inFinally = inFinally;
+                LoopOrFinallyIds.Remove(loopId);
+            }
+
+            public override bool Walk(Compiler.Ast.WhileStatement node) {
+                UpdateLoops(node);
+
+                WalkLoopBody(node.Body, false);
+
+                if (node.ElseStatement != null) {
+                    node.ElseStatement.Walk(this);
+                }
+
+                return false;
+            }
+
+            public override bool Walk(Compiler.Ast.TryStatement node) {
+                UpdateLoops(node);
+
+                node.Body.Walk(this);
+
+                if (node.Handlers != null) {
+                    foreach (var handler in node.Handlers) {
+                        HandlerLocations[handler.Span.Start.Line] = false;
+                        handler.Body.Walk(this);
+                    }
+                }
+
+                if (node.Finally != null) {
+                    WalkLoopBody(node.Finally, true);
+                }
+                return false;
+            }
+
+
+            public override bool Walk(IronPython.Compiler.Ast.AssertStatement node) {
+                UpdateLoops(node);
+                return base.Walk(node);
+            }
+
+            public override bool Walk(IronPython.Compiler.Ast.AssignmentStatement node) {
+                UpdateLoops(node);
+                return base.Walk(node);
+            }
+
+            public override bool Walk(IronPython.Compiler.Ast.AugmentedAssignStatement node) {
+                UpdateLoops(node);
+                return base.Walk(node);
+            }
+
+            public override bool Walk(IronPython.Compiler.Ast.BreakStatement node) {
+                UpdateLoops(node);
+                return base.Walk(node);
+            }
+
+            public override bool Walk(IronPython.Compiler.Ast.ClassDefinition node) {
+                UpdateLoops(node);
+                return false;
+            }
+
+            public override bool Walk(IronPython.Compiler.Ast.ContinueStatement node) {
+                UpdateLoops(node);
+                return base.Walk(node);
+            }
+
+            public override bool Walk(IronPython.Compiler.Ast.ExecStatement node) {
+                UpdateLoops(node);
+                return base.Walk(node);
+            }
+
+            public override void PostWalk(IronPython.Compiler.Ast.EmptyStatement node) {
+                UpdateLoops(node);
+                base.PostWalk(node);
+            }
+
+            public override bool Walk(IronPython.Compiler.Ast.DelStatement node) {
+                UpdateLoops(node);
+                return base.Walk(node);
+            }
+
+            public override bool Walk(IronPython.Compiler.Ast.EmptyStatement node) {
+                UpdateLoops(node);
+                return base.Walk(node);
+            }
+
+            public override bool Walk(IronPython.Compiler.Ast.GlobalStatement node) {
+                UpdateLoops(node);
+                return base.Walk(node);
+            }
+
+            public override bool Walk(IronPython.Compiler.Ast.FromImportStatement node) {
+                UpdateLoops(node);
+                return base.Walk(node);
+            }
+
+            public override bool Walk(IronPython.Compiler.Ast.ExpressionStatement node) {
+                UpdateLoops(node);
+                return base.Walk(node);
+            }
+
+            public override bool Walk(IronPython.Compiler.Ast.FunctionDefinition node) {
+                UpdateLoops(node);
+                return base.Walk(node);
+            }
+
+            public override bool Walk(IronPython.Compiler.Ast.IfStatement node) {
+                UpdateLoops(node);
+                return base.Walk(node);
+            }
+
+            public override bool Walk(IronPython.Compiler.Ast.ImportStatement node) {
+                UpdateLoops(node);
+                return base.Walk(node);
+            }
+
+            public override bool Walk(IronPython.Compiler.Ast.RaiseStatement node) {
+                UpdateLoops(node);
+                return base.Walk(node);
+            }
+
+            public override bool Walk(IronPython.Compiler.Ast.WithStatement node) {
+                UpdateLoops(node);
+                return base.Walk(node);
+            }
+
+            private void UpdateLoops(Compiler.Ast.Statement stmt) {
+                if (_inFinally || _inLoop) {
+                    if (!LoopAndFinallyLocations.ContainsKey(stmt.Span.Start.Line)) {
+                        LoopAndFinallyLocations.Add(stmt.Span.Start.Line, new Dictionary<int, bool>(LoopOrFinallyIds));
+                    }
+                }
+            }
+
+            public Dictionary<int, bool> LoopOrFinallyIds {
+                get {
+                    if (_loopIds == null) {
+                        _loopIds = new Dictionary<int, bool>();
+                    }
+                    return _loopIds;
+                }
+            }
+
         }
     }
 }

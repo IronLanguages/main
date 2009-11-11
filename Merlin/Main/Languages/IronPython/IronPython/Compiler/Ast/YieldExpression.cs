@@ -46,17 +46,7 @@ namespace IronPython.Compiler.Ast {
         // This needs to be injected at any yield suspension points, mainly:
         // - at the start of the generator body
         // - after each yield statement.
-        static internal MSAst.Expression CreateCheckThrowExpression(AstGenerator ag, SourceSpan span) {
-            if (!ag.IsGenerator) {
-                // This can fail if yield is used outside of a function body. 
-                // Normally, we'd like the parser to catch this and just assert there. But yield could be in practically any expression,
-                // and the parser can't catch all cases. 
-
-                // Consider using ag.AddError(). However, consumers expect Expression transforms to be non-null, so if we don't throw,
-                // we'd still need to return something. 
-                throw PythonOps.SyntaxError(IronPython.Resources.MisplacedYield, ag.Context.SourceUnit, span, IronPython.Hosting.ErrorCodes.SyntaxError);
-            }
-
+        static internal MSAst.Expression CreateCheckThrowExpression(SourceSpan span) {
             MSAst.Expression instance = GeneratorRewriter._generatorParam;
             Debug.Assert(instance.Type == typeof(IronPython.Runtime.PythonGenerator));
 
@@ -67,7 +57,7 @@ namespace IronPython.Compiler.Ast {
             return s2;
         }
 
-        internal override MSAst.Expression Transform(AstGenerator ag, Type type) {
+        public override MSAst.Expression Reduce() {
             // (yield z) becomes:
             // .comma (1) {
             //    .void ( .yield_statement (_expression) ),
@@ -76,10 +66,10 @@ namespace IronPython.Compiler.Ast {
 
             return Ast.Block(
                 AstUtils.YieldReturn(
-                    AstGenerator.GeneratorLabel,
-                    AstUtils.Convert(ag.Transform(_expression), typeof(object))
+                    GeneratorLabel,
+                    AstUtils.Convert(_expression, typeof(object))
                 ),
-                CreateCheckThrowExpression(ag, Span) // emits ($gen.CheckThrowable())
+                CreateCheckThrowExpression(Span) // emits ($gen.CheckThrowable())
             );
         }
 

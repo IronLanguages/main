@@ -1,3 +1,16 @@
+# Workaround for bug 1972 - ENV['TZ'] is read only on startup on Windows
+def can_modify_env_tz?()
+  platform_is_not :windows do
+    return true
+  end
+
+  ruby_bug "1972", "1.9.2" do
+    return true
+  end
+  
+  false
+end
+
 def with_timezone(name, offset = nil, daylight_saving_zone = "")
   zone = name.dup
 
@@ -10,13 +23,18 @@ def with_timezone(name, offset = nil, daylight_saving_zone = "")
   end
   zone << daylight_saving_zone
 
-  old = ENV["TZ"]
-  ENV["TZ"] = zone
-
-  begin
-    yield
-  ensure
-    ENV["TZ"] = old
+  if can_modify_env_tz?
+    old = ENV["TZ"]
+    ENV["TZ"] = zone
+  
+    begin
+      yield
+    ensure
+      ENV["TZ"] = old
+    end
+  else
+    # skip the test
+    true.should be_true
   end
 end
 

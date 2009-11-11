@@ -16,6 +16,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
@@ -83,41 +84,31 @@ namespace IronPython.Compiler.Ast {
             get { return _handlers; }
         }
 
-        internal override MSAst.Expression Transform(AstGenerator ag) {
+        public override MSAst.Expression Reduce() {
             // allocated all variables here so they won't be shared w/ other 
             // locals allocated during the body or except blocks.
             MSAst.ParameterExpression noNestedException = null;
             if (_finally != null) {
-                noNestedException = ag.GetTemporary("$noException", typeof(bool));
+                noNestedException = Ast.Variable(typeof(bool), "$noException");
             }
 
             MSAst.ParameterExpression lineUpdated = null;
             MSAst.ParameterExpression runElse = null;
 
             if (_else != null || (_handlers != null && _handlers.Length > 0)) {
-                lineUpdated = ag.GetTemporary("$lineUpdated", typeof(bool));
+                lineUpdated = Ast.Variable(typeof(bool), "$lineUpdated_try");
                 if (_else != null) {
-                    runElse = ag.GetTemporary("run_else", typeof(bool));
+                    runElse = Ast.Variable(typeof(bool), "run_else");
                 }
             }
 
             // don't allocate locals below here...
-            MSAst.Expression body = ag.Transform(_body);
-            MSAst.Expression @else = ag.Transform(_else);
-
-            if (body == null) {
-                return null;
-            }
-
-            if (_handlers != null) {
-                foreach (var handler in _handlers) {
-                    ag.HandlerLocations[handler.Span.Start.Line] = false;
-                }
-            }
+            MSAst.Expression body = _body;
+            MSAst.Expression @else = _else;
 
             MSAst.ParameterExpression exception;
 
-            MSAst.Expression @catch = TransformHandlers(ag, out exception);
+            MSAst.Expression @catch = TransformHandlers(out exception);
             MSAst.Expression result;
 
             // We have else clause, must generate guard around it
@@ -134,19 +125,20 @@ namespace IronPython.Compiler.Ast {
                 //  if (run_else) {
                 //      else_body
                 //  }
-                result =
+                result =                        
                     Ast.Block(
+                        new [] { exception },
                         Ast.Assign(runElse, AstUtils.Constant(true)),
-                        // save existing line updated, we could choose to do this only for nested exception handlers.
-                        ag.PushLineUpdated(false, lineUpdated),
+                    // save existing line updated, we could choose to do this only for nested exception handlers.
+                        PushLineUpdated(false, lineUpdated),
                         AstUtils.Try(
-                            ag.AddDebugInfo(AstUtils.Empty(), new SourceSpan(Span.Start, _header)),
+                            Parent.AddDebugInfo(AstUtils.Empty(), new SourceSpan(Span.Start, _header)),
                             body
                         ).Catch(exception,
                             Ast.Assign(runElse, AstUtils.Constant(false)),
                             @catch,
-                            // restore existing line updated after exception handler completes
-                            ag.PopLineUpdated(lineUpdated),
+                    // restore existing line updated after exception handler completes
+                            PopLineUpdated(lineUpdated),
                             AstUtils.Default(body.Type)
                         ),
                         AstUtils.IfThen(runElse,
@@ -162,110 +154,101 @@ namespace IronPython.Compiler.Ast {
                 //      ... catch handling ...
                 //  }
                 //
-                result = AstUtils.Try(
-                        ag.AddDebugInfo(AstUtils.Empty(), new SourceSpan(Span.Start, _header)),
+                result = Ast.Block(
+                        new[] { exception },
+                        AstUtils.Try(
+                            GlobalParent.AddDebugInfo(AstUtils.Empty(), new SourceSpan(Span.Start, _header)),
                         // save existing line updated
-                        ag.PushLineUpdated(false, lineUpdated),
-                        body
-                    ).Catch(exception,
-                        @catch,
+                            PushLineUpdated(false, lineUpdated),
+                            body
+                        ).Catch(exception,
+                            @catch,
                         // restore existing line updated after exception handler completes
-                        ag.PopLineUpdated(lineUpdated),
-                        Ast.Call(AstGenerator.GetHelperMethod("ExceptionHandled"), ag.LocalContext),
-                        AstUtils.Default(body.Type)
+                            PopLineUpdated(lineUpdated),
+                            Ast.Call(AstMethods.ExceptionHandled, Parent.LocalContext),
+                            AstUtils.Default(body.Type)
+                        )
                     );
             } else {
                 result = body;
             }
 
-            try {
-                return AddFinally(ag, result, noNestedException);
-            } finally {
-                // free all locals here after the children nodes have been generated
-                if (lineUpdated != null) {
-                    ag.FreeTemp(lineUpdated);
-                }
-                if (runElse != null) {
-                    ag.FreeTemp(@runElse);
-                }
-            }
+            return Ast.Block(GetVariables(noNestedException, lineUpdated, runElse), AddFinally(result, noNestedException));
         }
 
-        private MSAst.Expression AddFinally(AstGenerator/*!*/ ag, MSAst.Expression/*!*/ body, MSAst.ParameterExpression nestedException) {
+        private static ReadOnlyCollectionBuilder<MSAst.ParameterExpression> GetVariables(MSAst.ParameterExpression noNestedException, MSAst.ParameterExpression lineUpdated, MSAst.ParameterExpression runElse) {
+            var paramList = new ReadOnlyCollectionBuilder<MSAst.ParameterExpression>();
+            if(noNestedException != null) {
+                paramList.Add(noNestedException);
+            }
+            if(lineUpdated != null) {
+                paramList.Add(lineUpdated);
+            }
+            if(runElse != null) {
+                paramList.Add(runElse);
+            }
+            return paramList;
+        }
+
+        private MSAst.Expression AddFinally(MSAst.Expression/*!*/ body, MSAst.ParameterExpression nestedException) {
             if (_finally != null) {
-                bool isEmitting = ag._isEmittingFinally;
-                ag._isEmittingFinally = true;
-                int loopId = ++ag._loopOrFinallyId;
-                ag.LoopOrFinallyIds.Add(loopId, true);
-                try {
-                    Debug.Assert(nestedException != null);
+                Debug.Assert(nestedException != null);
 
-                    MSAst.ParameterExpression nestedFrames = ag.GetTemporary("$nestedFrames", typeof(List<DynamicStackFrame>));
+                MSAst.ParameterExpression nestedFrames = Ast.Variable(typeof(List<DynamicStackFrame>), "$nestedFrames");
 
-                    bool inFinally = ag.InFinally;
-                    ag.InFinally = true;
-                    MSAst.Expression @finally = ag.Transform(_finally);
-                    ag.InFinally = inFinally;
-                    if (@finally == null) {
-                        // error reported during compilation
-                        return null;
-                    }
+                MSAst.Expression @finally = _finally;
 
-                    // lots is going on here.  We need to consider:
-                    //      1. Exceptions propagating out of try/except/finally.  Here we need to save the line #
-                    //          from the exception block and not save the # from the finally block later.
-                    //      2. Exceptions propagating out of the finally block.  Here we need to report the line number
-                    //          from the finally block and leave the existing stack traces cleared.
-                    //      3. Returning from the try block: Here we need to run the finally block and not update the
-                    //          line numbers.
-                    body = AstUtils.Try( // we use a fault to know when we have an exception and when control leaves normally (via
-                        // either a return or the body completing successfully).
-                        AstUtils.Try(
-                            ag.AddDebugInfo(AstUtils.Empty(), new SourceSpan(Span.Start, _header)),
-                            Ast.Assign(nestedException, AstUtils.Constant(false)),
-                            body
-                        ).Fault(
-                        // fault
-                            Ast.Assign(nestedException, AstUtils.Constant(true))
-                        )
-                    ).FinallyWithJumps(
-                        // if we had an exception save the line # that was last executing during the try
-                        AstUtils.If(
-                            nestedException,
-                            ag.GetSaveLineNumberExpression(false)
-                        ),
+                // lots is going on here.  We need to consider:
+                //      1. Exceptions propagating out of try/except/finally.  Here we need to save the line #
+                //          from the exception block and not save the # from the finally block later.
+                //      2. Exceptions propagating out of the finally block.  Here we need to report the line number
+                //          from the finally block and leave the existing stack traces cleared.
+                //      3. Returning from the try block: Here we need to run the finally block and not update the
+                //          line numbers.
+                body = AstUtils.Try( // we use a fault to know when we have an exception and when control leaves normally (via
+                    // either a return or the body completing successfully).
+                    AstUtils.Try(
+                        Parent.AddDebugInfo(AstUtils.Empty(), new SourceSpan(Span.Start, _header)),
+                        Ast.Assign(nestedException, AstUtils.Constant(false)),
+                        body
+                    ).Fault(
+                    // fault
+                        Ast.Assign(nestedException, AstUtils.Constant(true))
+                    )
+                ).FinallyWithJumps(
+                    // if we had an exception save the line # that was last executing during the try
+                    AstUtils.If(
+                        nestedException,
+                        Parent.GetSaveLineNumberExpression(false)
+                    ),
 
-                        // clear the frames incase thae finally throws, and allow line number
-                        // updates to proceed
-                        ag.UpdateLineUpdated(false),
-                        Ast.Assign(
-                            nestedFrames,
-                            Ast.Call(AstGenerator.GetHelperMethod("GetAndClearDynamicStackFrames"))
-                        ),
+                    // clear the frames incase thae finally throws, and allow line number
+                    // updates to proceed
+                    UpdateLineUpdated(false),
+                    Ast.Assign(
+                        nestedFrames,
+                        Ast.Call(AstMethods.GetAndClearDynamicStackFrames)
+                    ),
 
-                        // run the finally code
-                        @finally,
+                    // run the finally code
+                    @finally,
 
-                        // if the finally exits normally restore any previous exception info
-                        Ast.Call(
-                            AstGenerator.GetHelperMethod("SetDynamicStackFrames"),
-                            nestedFrames
-                        ),
+                    // if the finally exits normally restore any previous exception info
+                    Ast.Call(
+                        AstMethods.SetDynamicStackFrames,
+                        nestedFrames
+                    ),
 
-                        // if we took an exception in the try block we have saved the line number.  Otherwise
-                        // we have no line number saved and will need to continue saving them if
-                        // other exceptions are thrown.
-                        AstUtils.If(                            
-                            nestedException,
-                            ag.UpdateLineUpdated(true)
-                        )
-                    );
-                    ag.FreeTemp(nestedFrames);
-                    ag.FreeTemp(nestedException);
-                } finally {
-                    ag._isEmittingFinally = isEmitting;
-                    ag.LoopOrFinallyIds.Remove(loopId);
-                }
+                    // if we took an exception in the try block we have saved the line number.  Otherwise
+                    // we have no line number saved and will need to continue saving them if
+                    // other exceptions are thrown.
+                    AstUtils.If(
+                        nestedException,
+                        UpdateLineUpdated(true)
+                    )
+                );
+
+                body = Ast.Block(new[] { nestedFrames }, body);
             }
             return body;
         }
@@ -274,191 +257,187 @@ namespace IronPython.Compiler.Ast {
         /// <summary>
         /// Transform multiple python except handlers for a try block into a single catch body.
         /// </summary>
-        /// <param name="ag"></param>
         /// <param name="variable">The variable for the exception in the catch block.</param>
         /// <returns>Null if there are no except handlers. Else the statement to go inside the catch handler</returns>
-        private MSAst.Expression TransformHandlers(AstGenerator ag, out MSAst.ParameterExpression variable) {
+        private MSAst.Expression TransformHandlers(out MSAst.ParameterExpression variable) {
             if (_handlers == null || _handlers.Length == 0) {
                 variable = null;
                 return null;
             }
-            bool emittingFinally = ag._isEmittingFinally;
-            ag._isEmittingFinally = false;
-            try {
-                MSAst.ParameterExpression exception = ag.GetTemporary("exception", typeof(Exception));
-                MSAst.ParameterExpression extracted = ag.GetTemporary("extracted", typeof(object));
 
-                // The variable where the runtime will store the exception.
-                variable = exception;
+            MSAst.ParameterExpression exception = Ast.Variable(typeof(Exception), "$exception");
+            MSAst.ParameterExpression extracted = Ast.Variable(typeof(object), "$extracted");
 
-                var tests = new List<Microsoft.Scripting.Ast.IfStatementTest>(_handlers.Length);
-                MSAst.ParameterExpression converted = null;
-                MSAst.Expression catchAll = null;
+            // The variable where the runtime will store the exception.
+            variable = exception;
 
-                for (int index = 0; index < _handlers.Length; index++) {
-                    TryStatementHandler tsh = _handlers[index];
+            var tests = new List<Microsoft.Scripting.Ast.IfStatementTest>(_handlers.Length);
+            MSAst.ParameterExpression converted = null;
+            MSAst.Expression catchAll = null;
 
-                    if (tsh.Test != null) {
-                        Microsoft.Scripting.Ast.IfStatementTest ist;
+            for (int index = 0; index < _handlers.Length; index++) {
+                TryStatementHandler tsh = _handlers[index];
 
+                if (tsh.Test != null) {
+                    Microsoft.Scripting.Ast.IfStatementTest ist;
+
+                    //  translating:
+                    //      except Test ...
+                    //
+                    //  generate following AST for the Test (common part):
+                    //      CheckException(exception, Test)
+                    MSAst.Expression test =
+                        Ast.Call(
+                            AstMethods.CheckException,
+                            Parent.LocalContext,
+                            extracted,
+                            AstUtils.Convert(tsh.Test, typeof(object))
+                        );
+
+                    if (tsh.Target != null) {
                         //  translating:
-                        //      except Test ...
-                        //
-                        //  generate following AST for the Test (common part):
-                        //      CheckException(exception, Test)
-                        MSAst.Expression test =
-                            Ast.Call(
-                                AstGenerator.GetHelperMethod("CheckException"),
-                                ag.LocalContext,
-                                extracted,
-                                ag.TransformAsObject(tsh.Test)
-                            );
-
-                        if (tsh.Target != null) {
-                            //  translating:
-                            //      except Test, Target:
-                            //          <body>
-                            //  into:
-                            //      if ((converted = CheckException(exception, Test)) != null) {
-                            //          Target = converted;
-                            //          traceback-header
-                            //          <body>
-                            //      }
-
-                            if (converted == null) {
-                                converted = ag.GetTemporary("converted");
-                            }
-
-                            ist = AstUtils.IfCondition(
-                                Ast.NotEqual(
-                                    Ast.Assign(converted, test),
-                                    AstUtils.Constant(null)
-                                ),
-                                Ast.Block(
-                                    tsh.Target.TransformSet(ag, SourceSpan.None, converted, PythonOperationKind.None),
-                                    ag.AddDebugInfo(
-                                        GetTracebackHeader(
-                                            ag,
-                                            exception,
-                                            ag.Transform(tsh.Body)
-                                        ),
-                                        new SourceSpan(tsh.Start, tsh.Header)
-                                    ),
-                                    AstUtils.Empty()
-                                )
-                            );
-                        } else {
-                            //  translating:
-                            //      except Test:
-                            //          <body>
-                            //  into:
-                            //      if (CheckException(exception, Test) != null) {
-                            //          traceback-header
-                            //          <body>
-                            //      }
-                            ist = AstUtils.IfCondition(
-                                Ast.NotEqual(
-                                    test,
-                                    AstUtils.Constant(null)
-                                ),
-                                ag.AddDebugInfo(
-                                    GetTracebackHeader(
-                                        ag,
-                                        exception,
-                                        ag.Transform(tsh.Body)
-                                    ),
-                                    new SourceSpan(tsh.Start, tsh.Header)
-                                )
-                            );
-                        }
-
-                        // Add the test to the if statement test cascade
-                        tests.Add(ist);
-                    } else {
-                        Debug.Assert(index == _handlers.Length - 1);
-                        Debug.Assert(catchAll == null);
-
-                        //  translating:
-                        //      except:
+                        //      except Test, Target:
                         //          <body>
                         //  into:
-                        //  {
+                        //      if ((converted = CheckException(exception, Test)) != null) {
+                        //          Target = converted;
                         //          traceback-header
                         //          <body>
-                        //  }
+                        //      }
 
-                        catchAll = ag.AddDebugInfo(
-                            GetTracebackHeader(ag, exception, ag.Transform(tsh.Body)),
-                            new SourceSpan(tsh.Start, tsh.Header)
+                        if (converted == null) {
+                            converted = Ast.Variable(typeof(object), "$converted");
+                        }
+
+                        ist = AstUtils.IfCondition(
+                            Ast.NotEqual(
+                                Ast.Assign(converted, test),
+                                AstUtils.Constant(null)
+                            ),
+                            Ast.Block(
+                                tsh.Target.TransformSet(SourceSpan.None, converted, PythonOperationKind.None),
+                                GlobalParent.AddDebugInfo(
+                                    GetTracebackHeader(
+                                        this, 
+                                        exception,
+                                        tsh.Body
+                                    ),
+                                    new SourceSpan(tsh.Start, tsh.Header)
+                                ),
+                                AstUtils.Empty()
+                            )
                         );
-                    }
-                }
-
-                MSAst.Expression body = null;
-
-                if (tests.Count > 0) {
-                    // rethrow the exception if we have no catch-all block
-                    if (catchAll == null) {
-                        catchAll = Ast.Block(
-                            ag.GetSaveLineNumberExpression(true),
-                            Ast.Throw(
-                                Ast.Call(
-                                    typeof(ExceptionHelpers).GetMethod("UpdateForRethrow"),
-                                    exception
-                                )
+                    } else {
+                        //  translating:
+                        //      except Test:
+                        //          <body>
+                        //  into:
+                        //      if (CheckException(exception, Test) != null) {
+                        //          traceback-header
+                        //          <body>
+                        //      }
+                        ist = AstUtils.IfCondition(
+                            Ast.NotEqual(
+                                test,
+                                AstUtils.Constant(null)
+                            ),
+                            GlobalParent.AddDebugInfo(
+                                GetTracebackHeader(
+                                    this, 
+                                    exception,
+                                    tsh.Body
+                                ),
+                                new SourceSpan(tsh.Start, tsh.Header)
                             )
                         );
                     }
 
-                    body = AstUtils.If(
-                        tests.ToArray(),                        
-                        catchAll
-                    );
+                    // Add the test to the if statement test cascade
+                    tests.Add(ist);
                 } else {
-                    Debug.Assert(catchAll != null);
-                    body = catchAll;
-                }
+                    Debug.Assert(index == _handlers.Length - 1);
+                    Debug.Assert(catchAll == null);
 
-                if (converted != null) {
-                    ag.FreeTemp(converted);
-                }
-                ag.FreeTemp(exception);
-                ag.FreeTemp(extracted);
+                    //  translating:
+                    //      except:
+                    //          <body>
+                    //  into:
+                    //  {
+                    //          traceback-header
+                    //          <body>
+                    //  }
 
-                // Codegen becomes:
-                //     extracted = PythonOps.SetCurrentException(exception)
-                //      < dynamic exception analysis >
-                return Ast.Block(
-                    Ast.Assign(
-                        extracted,
-                        Ast.Call(
-                            AstGenerator.GetHelperMethod("SetCurrentException"),
-                            ag.LocalContext,
-                            exception
-                        )
-                    ),
-                    body,
-                    AstUtils.Empty()
-                );
-            } finally {
-                ag._isEmittingFinally = emittingFinally;
+                    catchAll = GlobalParent.AddDebugInfo(
+                        GetTracebackHeader(this, exception, tsh.Body),
+                        new SourceSpan(tsh.Start, tsh.Header)
+                    );
+                }
             }
+
+            MSAst.Expression body = null;
+
+            if (tests.Count > 0) {
+                // rethrow the exception if we have no catch-all block
+                if (catchAll == null) {
+                    catchAll = Ast.Block(
+                        Parent.GetSaveLineNumberExpression(true),
+                        Ast.Throw(
+                            Ast.Call(
+                                typeof(ExceptionHelpers).GetMethod("UpdateForRethrow"),
+                                exception
+                            )
+                        )
+                    );
+                }
+
+                body = AstUtils.If(
+                    tests.ToArray(),
+                    catchAll
+                );
+            } else {
+                Debug.Assert(catchAll != null);
+                body = catchAll;
+            }
+
+            IList<MSAst.ParameterExpression> args;
+            if (converted != null) {
+                args = new ReadOnlyCollectionBuilder<MSAst.ParameterExpression> { converted,  extracted };
+            } else {
+                args = new ReadOnlyCollectionBuilder<MSAst.ParameterExpression> { extracted };
+            }
+
+            // Codegen becomes:
+            //     extracted = PythonOps.SetCurrentException(exception)
+            //      < dynamic exception analysis >
+            return Ast.Block(
+                args,
+                Ast.Assign(
+                    extracted,
+                    Ast.Call(
+                        AstMethods.SetCurrentException,
+                        Parent.LocalContext,
+                        exception
+                    )
+                ),
+                body,
+                AstUtils.Empty()
+            );
         }
 
         /// <summary>
         /// Surrounds the body of an except block w/ the appropriate code for maintaining the traceback.
         /// </summary>
-        internal static MSAst.Expression GetTracebackHeader(AstGenerator ag, MSAst.ParameterExpression exception, MSAst.Expression body) {
+        internal static MSAst.Expression GetTracebackHeader(Statement node, MSAst.ParameterExpression exception, MSAst.Expression body) {
             // we are about to enter a except block.  We need to emit the line number update so we track
             // the line that the exception was thrown from.  We then need to build exc_info() so that
             // it's available.  Finally we clear the list of dynamic stack frames because they've all
             // been associated with this exception.
             return Ast.Block(
                 // pass false so if we take another exception we'll add it to the frame list
-                ag.GetSaveLineNumberExpression(false),
+                node.Parent.GetSaveLineNumberExpression(false),
                 Ast.Call(
-                    AstGenerator.GetHelperMethod("BuildExceptionInfo"),
-                    ag.LocalContext,
+                    AstMethods.BuildExceptionInfo,
+                    node.Parent.LocalContext,
                     exception
                 ),
                 body,
@@ -484,12 +463,6 @@ namespace IronPython.Compiler.Ast {
                 }
             }
             walker.PostWalk(this);
-        }
-
-        internal override bool CanThrow {
-            get {
-                return false;
-            }
         }
     }
 

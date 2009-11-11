@@ -19,6 +19,8 @@ using MSAst = System.Linq.Expressions;
 using MSAst = Microsoft.Scripting.Ast;
 #endif
 
+using Microsoft.Scripting.Actions;
+
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Compiler.Ast {
@@ -35,10 +37,10 @@ namespace IronPython.Compiler.Ast {
             get { return _test; }
         }
 
-        internal override MSAst.Expression Transform(AstGenerator ag, MSAst.Expression body) {
-            return ag.AddDebugInfoAndVoid(
+        internal override MSAst.Expression Transform(MSAst.Expression body) {
+            return GlobalParent.AddDebugInfoAndVoid(
                 AstUtils.If(
-                    ag.TransformAndDynamicConvert(_test, typeof(bool)),
+                    GlobalParent.Convert(typeof(bool), ConversionResultKind.ExplicitCast, _test),
                     body
                 ),
                 Span

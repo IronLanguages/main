@@ -33,12 +33,13 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
 
-    public class ForStatement : Statement {
+    public class ForStatement : Statement, ILoopStatement {
         private SourceLocation _header;
         private readonly Expression _left;
         private Expression _list;
         private Statement _body;
         private readonly Statement _else;
+        private MSAst.LabelTarget _break, _continue;
 
         public ForStatement(Expression left, Expression list, Statement body, Statement else_) {
             _left = left;
@@ -69,19 +70,29 @@ namespace IronPython.Compiler.Ast {
             get { return _else; }
         }
 
-        internal override MSAst.Expression Transform(AstGenerator ag) {
-            // Temporary variable for the IEnumerator object
-            MSAst.ParameterExpression enumerator = ag.GetTemporary("foreach_enumerator", typeof(KeyValuePair<IEnumerator, IDisposable>));
-
-            // Only the body is "in the loop" for the purposes of break/continue
-            // The "else" clause is outside
-            MSAst.LabelTarget breakLabel, continueLabel;
-            MSAst.Expression body = ag.TransformLoopBody(_body, _left.Start, out breakLabel, out continueLabel);
-            if (body == null) {
-                // error recovery
-                return null;
+        MSAst.LabelTarget ILoopStatement.BreakLabel {
+            get {
+                return _break;
             }
-            return TransformForStatement(ag, enumerator, _list, _left, body, _else, Span, _header, breakLabel, continueLabel);
+            set {
+                _break = value;
+            }
+        }
+
+        MSAst.LabelTarget ILoopStatement.ContinueLabel {
+            get {
+                return _continue;
+            }
+            set {
+                _continue = value;
+            }
+        }
+
+        public override MSAst.Expression Reduce() {
+            // Temporary variable for the IEnumerator object
+            MSAst.ParameterExpression enumerator = Ast.Variable(typeof(KeyValuePair<IEnumerator, IDisposable>), "foreach_enumerator");
+
+            return Ast.Block(new[] { enumerator }, TransformForStatement(Parent, enumerator, _list, _left, _body, _else, Span, _header, _break, _continue));
         }
 
         public override void Walk(PythonWalker walker) {
@@ -102,17 +113,17 @@ namespace IronPython.Compiler.Ast {
             walker.PostWalk(this);
         }
 
-        internal static MSAst.Expression TransformForStatement(AstGenerator ag, MSAst.ParameterExpression enumerator,
+        internal static MSAst.Expression TransformForStatement(ScopeStatement parent, MSAst.ParameterExpression enumerator,
                                                     Expression list, Expression left, MSAst.Expression body,
                                                     Statement else_, SourceSpan span, SourceLocation header,
                                                     MSAst.LabelTarget breakLabel, MSAst.LabelTarget continueLabel) {
-            // enumerator = PythonOps.GetEnumeratorForIteration(list)
+            // enumerator, isDisposable = Dynamic(GetEnumeratorBinder, list)
             MSAst.Expression init = Ast.Assign(
                     enumerator,
-                    ag.Operation(
+                    parent.GlobalParent.Operation(
                         typeof(KeyValuePair<IEnumerator, IDisposable>),
                         PythonOperationKind.GetEnumeratorForIteration,
-                        ag.TransformAsObject(list)
+                        AstUtils.Convert(list, typeof(object))
                     )
                 );
 
@@ -122,7 +133,7 @@ namespace IronPython.Compiler.Ast {
             // else:
             //    else
             MSAst.Expression ls = AstUtils.Loop(
-                    ag.AddDebugInfo(
+                    parent.GlobalParent.AddDebugInfo(
                         Ast.Call(
                             Ast.Property(
                                 enumerator,
@@ -135,7 +146,6 @@ namespace IronPython.Compiler.Ast {
                     null,
                     Ast.Block(
                         left.TransformSet(
-                            ag,
                             SourceSpan.None,
                             Ast.Call(
                                 Ast.Property(
@@ -147,10 +157,10 @@ namespace IronPython.Compiler.Ast {
                             PythonOperationKind.None
                         ),
                         body,
-                        ag.UpdateLineNumber(list.Start.Line),
+                        UpdateLineNumber(list.Start.Line),
                         AstUtils.Empty()
                     ),
-                    ag.Transform(else_),
+                    else_,
                     breakLabel,
                     continueLabel
             );

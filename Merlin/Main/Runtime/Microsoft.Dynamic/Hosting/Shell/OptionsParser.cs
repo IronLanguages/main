@@ -21,6 +21,7 @@ using System.Runtime.Serialization;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+using Microsoft.Scripting.Interpreter;
 
 namespace Microsoft.Scripting.Hosting.Shell {
 
@@ -216,9 +217,13 @@ namespace Microsoft.Scripting.Hosting.Shell {
                 case "-X:Interpret":
                     LanguageSetup.Options["InterpretedMode"] = ScriptingRuntimeHelpers.True;
                     break;
-                
+
                 case "-X:NoAdaptiveCompilation":
                     LanguageSetup.Options["NoAdaptiveCompilation"] = true;
+                    break;
+
+                case "-X:CompilationThreshold":
+                    LanguageSetup.Options["CompilationThreshold"] = Int32.Parse(PopNextArg());
                     break;
 
                 case "-X:ExceptionDetail":
@@ -274,6 +279,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
                 { "-X:AutoIndent",               "Enable auto-indenting in the REPL loop" },
                 { "-X:ExceptionDetail",          "Enable ExceptionDetail mode" },
                 { "-X:NoAdaptiveCompilation",    "Disable adaptive compilation" },
+                { "-X:CompilationThreshold",     "The number of iterations before the interpreter starts compiling" },
                 { "-X:PassExceptions",           "Do not catch exceptions that are unhandled by script code" },
                 { "-X:PrivateBinding",           "Enable binding to private members" },
                 { "-X:ShowClrExceptions",        "Display CLS Exception information" },

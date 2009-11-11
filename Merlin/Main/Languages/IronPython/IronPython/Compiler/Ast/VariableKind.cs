@@ -25,16 +25,6 @@ namespace IronPython.Compiler.Ast {
         Local,
 
         /// <summary>
-        /// Variables that weren't assigned within the using scope and were hoisted to the global scope.
-        /// </summary>
-        GlobalLocal,
-
-        /// <summary>
-        /// Variables that weren't assigned within the scope that contains unqualified exec, eval, locals().
-        /// </summary>
-        HiddenLocal,
-
-        /// <summary>
         /// Parameter to a LambdaExpression
         /// 
         /// Like locals, they can be referenced from nested lambdas
@@ -47,6 +37,5 @@ namespace IronPython.Compiler.Ast {
         /// Should only appear in global (top level) lambda.
         /// </summary>
         Global
-    };
-
+    }
 }

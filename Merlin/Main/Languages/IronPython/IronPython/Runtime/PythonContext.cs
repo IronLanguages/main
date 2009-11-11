@@ -671,17 +671,6 @@ namespace IronPython.Runtime {
             flags.bytes_warning = _options.BytesWarning ? 1 : 0;
         }
 
-
-        private Compiler.CompilationMode GetCompilationMode(PythonCompilerOptions options, SourceUnit source) {
-            if ((options.Module & ModuleOptions.ExecOrEvalCode) != 0) {
-                return CompilationMode.Lookup;
-            }
- 
-            return ((_options.Optimize || options.Optimized) && !_options.LightweightScopes) ?
-                CompilationMode.Uncollectable :
-                CompilationMode.Collectable;
-        }
-
         internal bool ShouldInterpret(PythonCompilerOptions options, SourceUnit source) {
             // We have to turn off adaptive compilation in debug mode to
             // support mangaged debuggers. Also turn off in optimized mode.
@@ -738,11 +727,11 @@ namespace IronPython.Runtime {
                 return null;
             }
 
-            PyAst.PythonNameBinder.BindAst(ast, context);
+            ast.Bind();
             return ast;
         }
 
-        internal ScriptCode CompilePythonCode(Compiler.CompilationMode? compilationMode, SourceUnit/*!*/ sourceUnit, CompilerOptions/*!*/ options, ErrorSink/*!*/ errorSink) {
+        internal static ScriptCode CompilePythonCode(SourceUnit/*!*/ sourceUnit, CompilerOptions/*!*/ options, ErrorSink/*!*/ errorSink) {
             var pythonOptions = (PythonCompilerOptions)options;
 
             if (sourceUnit.Kind == SourceCodeKind.File) {
@@ -755,12 +744,12 @@ namespace IronPython.Runtime {
             if (ast == null) {
                 return null;
             }
-
-            return ast.TransformToAst(compilationMode ?? GetCompilationMode(pythonOptions, sourceUnit), context);
+            
+            return ast.ToScriptCode();
         }
 
         public override ScriptCode CompileSourceCode(SourceUnit/*!*/ sourceUnit, CompilerOptions/*!*/ options, ErrorSink/*!*/ errorSink) {            
-            ScriptCode res = CompilePythonCode(null, sourceUnit, options, errorSink);
+            ScriptCode res = CompilePythonCode(sourceUnit, options, errorSink);
             if (res != null) {
                 Scope scope = res.CreateScope();
 
@@ -1002,14 +991,15 @@ namespace IronPython.Runtime {
             return GetScriptCode(sourceCode, moduleName, options, null);
         }
 
-        internal ScriptCode GetScriptCode(SourceUnit sourceCode, string moduleName, ModuleOptions options, Compiler.CompilationMode? mode) {
+        internal ScriptCode GetScriptCode(SourceUnit sourceCode, string moduleName, ModuleOptions options, Compiler.CompilationMode mode) {
             PythonCompilerOptions compilerOptions = GetPythonCompilerOptions();
 
             compilerOptions.SkipFirstLine = (options & ModuleOptions.SkipFirstLine) != 0;
             compilerOptions.ModuleName = moduleName;
             compilerOptions.Module = options;
+            compilerOptions.CompilationMode = mode;
 
-            return CompilePythonCode(mode, sourceCode, compilerOptions, ThrowingErrorSink.Default);
+            return CompilePythonCode(sourceCode, compilerOptions, ThrowingErrorSink.Default);
         }
 
         internal PythonModule CreateBuiltinModule(string name) {

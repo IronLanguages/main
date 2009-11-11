@@ -344,7 +344,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         internal static Expression CreateBinderStateExpression() {
-            return Compiler.Ast.ArrayGlobalAllocator._globalContext;
+            return Compiler.Ast.PythonAst._globalContext;
         }
 
         /// <summary>

@@ -63,7 +63,7 @@ namespace Microsoft.Scripting.Interpreter {
         }
     }
 
-    class UpdateStackTraceInstruction : Instruction {
+    internal sealed class UpdateStackTraceInstruction : Instruction {
         internal DebugInfo[] _debugInfos;
 
         public override int ProducedStack {

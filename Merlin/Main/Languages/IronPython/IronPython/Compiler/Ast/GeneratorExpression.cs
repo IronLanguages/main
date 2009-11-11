@@ -21,9 +21,11 @@ using MSAst = Microsoft.Scripting.Ast;
 
 using System;
 using System.Diagnostics;
+
+using Microsoft.Scripting.Actions;
+
 using IronPython.Runtime;
 using IronPython.Runtime.Binding;
-using Microsoft.Scripting.Actions;
 
 namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
@@ -37,13 +39,11 @@ namespace IronPython.Compiler.Ast {
             _iterable = iterable;
         }
 
-        internal override MSAst.Expression Transform(AstGenerator ag, Type type) {
-            MSAst.Expression func = _function.TransformToFunctionExpression(ag);
-
+        public override MSAst.Expression Reduce() {
             return Ast.Call(
-                AstGenerator.GetHelperMethod("MakeGeneratorExpression"),
-                func,
-                ag.TransformAsObject(_iterable)
+                AstMethods.MakeGeneratorExpression,
+                _function.MakeFunctionExpression(),
+                _iterable
             );
         }
 

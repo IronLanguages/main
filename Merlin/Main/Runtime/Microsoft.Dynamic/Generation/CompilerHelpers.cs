@@ -733,7 +733,7 @@ namespace Microsoft.Scripting.Generation {
         /// <param name="lambda">The lambda to compile.</param>
         /// <returns>A delegate which can interpret the lambda.</returns>
         public static Delegate LightCompile(this LambdaExpression lambda) {
-            return new LightCompiler(true).CompileTop(lambda).CreateDelegate();
+            return new LightCompiler(true, -1).CompileTop(lambda).CreateDelegate();
         }
 
         /// <summary>
@@ -743,7 +743,18 @@ namespace Microsoft.Scripting.Generation {
         /// <param name="compileLoops">true if the presence of loops should result in a compiled delegate</param>
         /// <returns>A delegate which can interpret the lambda.</returns>
         public static Delegate LightCompile(this LambdaExpression lambda, bool compileLoops) {
-            return new LightCompiler(compileLoops).CompileTop(lambda).CreateDelegate();
+            return new LightCompiler(compileLoops, -1).CompileTop(lambda).CreateDelegate();
+        }
+
+        /// <summary>
+        /// Creates an interpreted delegate for the lambda.
+        /// </summary>
+        /// <param name="lambda">The lambda to compile.</param>
+        /// <param name="compileLoops">true if the presence of loops should result in a compiled delegate</param>
+        /// <param name="compilationThreshold">The number of iterations before the interpreter starts compiling</param>
+        /// <returns>A delegate which can interpret the lambda.</returns>
+        public static Delegate LightCompile(this LambdaExpression lambda, bool compileLoops, int compilationThreshold) {
+            return new LightCompiler(compileLoops, compilationThreshold).CompileTop(lambda).CreateDelegate();
         }
 
         /// <summary>
@@ -769,6 +780,16 @@ namespace Microsoft.Scripting.Generation {
             return (T)(object)LightCompile((LambdaExpression)lambda, compileLoops);
         }
 
+        /// <summary>
+        /// Creates an interpreted delegate for the lambda.
+        /// </summary>
+        /// <param name="lambda">The lambda to compile.</param>
+        /// <param name="compileLoops">true if the presence of loops should result in a compiled delegate</param>
+        /// <param name="compilationThreshold">The number of iterations before the interpreter starts compiling</param>
+        /// <returns>A delegate which can interpret the lambda.</returns>
+        public static T LightCompile<T>(this Expression<T> lambda, bool compileLoops, int compilationThreshold) {
+            return (T)(object)LightCompile((LambdaExpression)lambda, compileLoops, compilationThreshold);
+        }
 
         /// <summary>
         /// Compiles the lambda into a method definition.

@@ -41,10 +41,7 @@ namespace Microsoft.Scripting.Interpreter {
         // Adaptive compilation support:
         private Type _compiledDelegateType;
         private Delegate _compiled;
-        private int _executionCount;
         private readonly object _compileLock = new object();
-
-        private const int CompilationThreshold = 32;
 
         internal LightDelegateCreator(Interpreter interpreter, LambdaExpression lambda, IList<ParameterExpression> closureVariables) {
             _interpreter = interpreter;
@@ -104,7 +101,7 @@ namespace Microsoft.Scripting.Interpreter {
             }
 
             // Otherwise, we'll create an interpreted LightLambda
-            return new LightLambda(this, closure).MakeDelegate(_lambda.Type);
+            return new LightLambda(this, closure, _interpreter._compilationThreshold).MakeDelegate(_lambda.Type);
         }
 
         /// <summary>
@@ -175,29 +172,6 @@ namespace Microsoft.Scripting.Interpreter {
                     }
                 }
                 return lambda.Type;
-            }
-        }
-
-        /// <summary>
-        /// Updates the execution count of this light delegate. If a certain
-        /// threshold is reached, it will start a background compilation.
-        /// </summary>
-        internal void UpdateExecutionCount() {
-            Debug.Assert(_interpreter != null);
-
-            // Don't lock here, it's a frequently hit path.
-            //
-            // There could be multiple threads racing, but that is okay.
-            // Two bad things can happen:
-            //   * We miss increments (one thread sets the counter back)
-            //   * We might enter the "if" branch more than once.
-            //
-            // The first is okay, it just means we take longer to compile.
-            // The second we explicitly guard against inside of Compile().
-            //
-            if (++_executionCount >= CompilationThreshold) {
-                // Kick off the compile on another thread so this one can keep going
-                ThreadPool.QueueUserWorkItem(Compile, null);
             }
         }
     }

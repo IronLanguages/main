@@ -22,8 +22,9 @@ using Microsoft.Scripting.Ast;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Runtime.Serialization;
+using System.Diagnostics;
 using System.Dynamic;
+using System.Runtime.Serialization;
 using System.Threading;
 
 using Microsoft.Scripting;
@@ -54,6 +55,7 @@ namespace IronPython.Runtime.Types {
 
     [PythonType("classobj"), DontMapGetMemberNamesToDir]
     [Serializable]
+    [DebuggerTypeProxy(typeof(OldClass.OldClassDebugView)), DebuggerDisplay("old-style class {Name}")]
     public sealed class OldClass :
 #if !SILVERLIGHT // ICustomTypeDescriptor
  ICustomTypeDescriptor,
@@ -587,5 +589,33 @@ namespace IronPython.Runtime.Types {
         }
 
         #endregion
+
+        internal class OldClassDebugView {
+            private readonly OldClass _class;
+
+            public OldClassDebugView(OldClass klass) {
+                _class = klass;
+            }
+
+            public List<OldClass> __bases__ {
+                get {
+                    return _class.BaseClasses;
+                }
+            }
+
+            [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+            internal List<ObjectDebugView> Members {
+                get {
+                    var res = new List<ObjectDebugView>();
+                    if (_class._dict != null) {
+                        foreach (var v in _class._dict) {
+                            res.Add(new ObjectDebugView(v.Key, v.Value));
+                        }
+                    }
+
+                    return res;
+                }
+            }
+        }
     }
 }

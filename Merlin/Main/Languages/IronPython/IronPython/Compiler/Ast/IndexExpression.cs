@@ -47,81 +47,81 @@ namespace IronPython.Compiler.Ast {
             get { return _index; }
         }
 
-        internal override MSAst.Expression Transform(AstGenerator ag, Type type) {
+        public override MSAst.Expression Reduce() {
             if (IsSlice) {
-                return ag.GetSlice(type, GetActionArgumentsForGetOrDelete(ag));
+                return GlobalParent.GetSlice(typeof(object), GetActionArgumentsForGetOrDelete());
             }
-            return ag.GetIndex(type, GetActionArgumentsForGetOrDelete(ag));
+            return GlobalParent.GetIndex(typeof(object), GetActionArgumentsForGetOrDelete());
         }
 
-        private MSAst.Expression[] GetActionArgumentsForGetOrDelete(AstGenerator ag) {
+        private MSAst.Expression[] GetActionArgumentsForGetOrDelete() {
             TupleExpression te = _index as TupleExpression;
             if (te != null && te.IsExpandable) {
-                return ArrayUtils.Insert(ag.Transform(_target), ag.Transform(te.Items));
+                return ArrayUtils.Insert(_target, te.Items);
             }
 
             SliceExpression se = _index as SliceExpression;
             if (se != null) {
                 if (se.StepProvided) {
-                    return new [] { 
-                        ag.Transform(_target),
-                        GetSliceValue(ag, se.SliceStart),
-                        GetSliceValue(ag, se.SliceStop),
-                        GetSliceValue(ag, se.SliceStep) 
+                    return new[] { 
+                        _target,
+                        GetSliceValue(se.SliceStart),
+                        GetSliceValue(se.SliceStop),
+                        GetSliceValue(se.SliceStep) 
                     };
                 }
 
                 return new[] { 
-                    ag.Transform(_target),
-                    GetSliceValue(ag, se.SliceStart),
-                    GetSliceValue(ag, se.SliceStop)
+                    _target,
+                    GetSliceValue(se.SliceStart),
+                    GetSliceValue(se.SliceStop)
                 };
             }
 
-            return new[] { ag.Transform(_target), ag.Transform(_index) };
+            return new[] { _target, _index };
         }
 
-        private static MSAst.Expression GetSliceValue(AstGenerator ag, Expression expr) {
+        private static MSAst.Expression GetSliceValue(Expression expr) {
             if (expr != null) {
-                return ag.Transform(expr);
+                return expr;
             }
 
             return Ast.Field(null, typeof(MissingParameter).GetField("Value"));
         }
 
-        private MSAst.Expression[] GetActionArgumentsForSet(AstGenerator ag, MSAst.Expression right) {
-            return ArrayUtils.Append(GetActionArgumentsForGetOrDelete(ag), right);
+        private MSAst.Expression[] GetActionArgumentsForSet(MSAst.Expression right) {
+            return ArrayUtils.Append(GetActionArgumentsForGetOrDelete(), right);
         }
 
-        internal override MSAst.Expression TransformSet(AstGenerator ag, SourceSpan span, MSAst.Expression right, PythonOperationKind op) {
+        internal override MSAst.Expression TransformSet(SourceSpan span, MSAst.Expression right, PythonOperationKind op) {
             if (op != PythonOperationKind.None) {
-                right = ag.Operation(
+                right = GlobalParent.Operation(
                     typeof(object),
                     op,
-                    Transform(ag, typeof(object)),
+                    this,
                     right
-                );                
+                );
             }
 
             MSAst.Expression index;
             if (IsSlice) {
-                index = ag.SetSlice(typeof(object), GetActionArgumentsForSet(ag, right));
+                index = GlobalParent.SetSlice(typeof(object), GetActionArgumentsForSet(right));
             } else {
-                index = ag.SetIndex(typeof(object), GetActionArgumentsForSet(ag, right));
+                index = GlobalParent.SetIndex(typeof(object), GetActionArgumentsForSet(right));
             }
-            
-            return ag.AddDebugInfoAndVoid(index, Span);
+
+            return GlobalParent.AddDebugInfoAndVoid(index, Span);
         }
 
-        internal override MSAst.Expression TransformDelete(AstGenerator ag) {
+        internal override MSAst.Expression TransformDelete() {
             MSAst.Expression index;
             if (IsSlice) {
-                index = ag.DeleteSlice(typeof(object), GetActionArgumentsForGetOrDelete(ag));
+                index = GlobalParent.DeleteSlice(typeof(object), GetActionArgumentsForGetOrDelete());
             } else {
-                index = ag.DeleteIndex(typeof(void), GetActionArgumentsForGetOrDelete(ag));
+                index = GlobalParent.DeleteIndex(typeof(void), GetActionArgumentsForGetOrDelete());
             }
 
-            return ag.AddDebugInfoAndVoid(index, Span);
+            return GlobalParent.AddDebugInfoAndVoid(index, Span);
         }
 
         internal override string CheckAssign() {

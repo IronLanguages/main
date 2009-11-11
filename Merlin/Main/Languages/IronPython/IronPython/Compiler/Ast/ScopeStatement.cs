@@ -16,11 +16,18 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 
 using Microsoft.Scripting;
+using Microsoft.Scripting.Actions;
+using Microsoft.Scripting.Ast;
+using Microsoft.Scripting.Interpreter;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime;
+using IronPython.Runtime.Binding;
 using IronPython.Runtime.Operations;
 
 #if !CLR2
@@ -29,37 +36,87 @@ using MSAst = System.Linq.Expressions;
 using MSAst = Microsoft.Scripting.Ast;
 #endif
 
-
 namespace IronPython.Compiler.Ast {
+    using Ast = MSAst.Expression;
+    using AstUtils = Microsoft.Scripting.Ast.Utils;
 
     public abstract class ScopeStatement : Statement {
-        private ScopeStatement _parent;
-
         private bool _importStar;                   // from module import *
         private bool _unqualifiedExec;              // exec "code"
         private bool _nestedFreeVariables;          // nested function with free variable
         private bool _locals;                       // The scope needs locals dictionary
                                                     // due to "exec" or call to dir, locals, eval, vars...
         private bool _hasLateboundVarSets;          // calls code which can assign to variables
-        
-        private Dictionary<string, PythonVariable> _variables;
-        private Dictionary<string, PythonReference> _references;
-        private Dictionary<string, PythonReference> _childReferences;
-        private List<string> _freeVars, _globalVars, _cellVars;
-        
-        public ScopeStatement Parent {
-            get { return _parent; }
-            set { _parent = value; }
-        }
+        private bool _containsExceptionHandling;    // true if this block contains a try/with statement
+
+        private FunctionCode _funcCode;             // the function code object created for this scope
+
+        private Dictionary<string, PythonVariable> _variables;          // mapping of string to variables
+        private ClosureInfo[] _closureVariables;                        // closed over variables, bool indicates if we accessed it in this scope.
+        private List<PythonVariable> _freeVars;                         // list of variables accessed from outer scopes
+        private List<string> _globalVars;                               // global variables accessed from this scope
+        private List<string> _cellVars;                                 // variables accessed from nested scopes
+        private Dictionary<string, PythonReference> _references;        // names of all variables referenced, null after binding completes
+
+        internal Dictionary<PythonVariable, MSAst.Expression> _variableMapping = new Dictionary<PythonVariable, MSAst.Expression>();
+        private MSAst.Expression _saveLineNumberAdds, _saveLineNumberNoAdds;                        // line number update expressions, saved so we don't repeatedly re-generate them
+        private MSAst.ParameterExpression _localParentTuple;                                        // parent's tuple local saved locally
+        private readonly DelayedFunctionCode _funcCodeExpr = new DelayedFunctionCode();             // expression that refers to the function code for this scope
+
+        internal static MSAst.ParameterExpression LocalCodeContextVariable = Ast.Parameter(typeof(CodeContext), "$localContext");
+        private static readonly MethodInfo _UpdateStackTrace = typeof(PythonOps).GetMethod("UpdateStackTrace");
+        private static readonly MSAst.Expression _GetCurrentMethod = Ast.Call(typeof(MethodBase).GetMethod("GetCurrentMethod"));
+        internal const string NameForExec = "module: <exec>";
 
         internal bool ContainsImportStar {
             get { return _importStar; }
             set { _importStar = value; }
         }
 
+        internal bool ContainsExceptionHandling {
+            get {
+                return _containsExceptionHandling;
+            }
+            set {
+                _containsExceptionHandling = value;
+            }
+        }
+
         internal bool ContainsUnqualifiedExec {
             get { return _unqualifiedExec; }
             set { _unqualifiedExec = value; }
+        }
+
+        internal virtual bool IsGeneratorMethod {
+            get {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// The variable used to hold out parents closure tuple in our local scope.
+        /// </summary>
+        internal MSAst.ParameterExpression LocalParentTuple {
+            get {
+                return _localParentTuple;
+            }
+        }
+
+        /// <summary>
+        /// Gets the expression associated with the local CodeContext.  If the function
+        /// doesn't have a local CodeContext then this is the global context.
+        /// </summary>
+        internal virtual MSAst.Expression LocalContext {
+            get {
+                return LocalCodeContextVariable;
+            }
+        }
+
+        /// <summary>
+        /// True if this scope accesses a variable from an outer scope.
+        /// </summary>
+        internal bool IsClosure {
+            get { return FreeVariables != null && FreeVariables.Count > 0; }
         }
 
         /// <summary>
@@ -81,13 +138,25 @@ namespace IronPython.Compiler.Ast {
             set { _locals = value; }
         }
 
+        public virtual string Name {
+            get {
+                return "<unknown>";
+            }
+        }
+
+        internal virtual string Filename {
+            get {
+                return GlobalParent.SourceUnit.Path ?? "<string>";
+            }
+        }
+
         /// <summary>
         /// True if variables can be set in a late bound fashion that we don't
         /// know about at code gen time - for example via from foo import *.
         /// 
         /// This is tracked independently of the ContainsUnqualifiedExec/NeedsLocalsDictionary
         /// </summary>
-        internal bool HasLateBoundVariableSets {
+        internal virtual bool HasLateBoundVariableSets {
             get {
                 return _hasLateboundVarSets;
             }
@@ -100,22 +169,75 @@ namespace IronPython.Compiler.Ast {
             get { return _variables; }
         }
 
-        internal Dictionary<string, PythonReference> References {
-            get { return _references; }
-        }
-
         internal virtual bool IsGlobal {
             get { return false; }
         }
 
-        internal string AddFreeVariable(string name) {
+        internal virtual bool NeedsLocalContext {
+            get {
+                return NeedsLocalsDictionary || ContainsNestedFreeVariables;
+            }
+        }
+
+        internal virtual string[] ParameterNames {
+            get {
+                return ArrayUtils.EmptyStrings;
+            }
+        }
+
+        internal virtual int ArgCount {
+            get {
+                return 0;
+            }
+        }
+
+        internal virtual FunctionAttributes Flags {
+            get {
+                return FunctionAttributes.None;
+            }
+        }
+
+        internal abstract MSAst.LambdaExpression GetLambda();
+
+        /// <summary>
+        /// Gets or creates the FunctionCode object for this FunctionDefinition.
+        /// </summary>
+        internal FunctionCode GetOrMakeFunctionCode() {
+            if (_funcCode == null) {
+                _funcCode = new FunctionCode(GlobalParent.PyContext, OriginalDelegate, this, ScopeDocumentation);
+            }
+            return _funcCode;
+        }
+
+        internal virtual string ScopeDocumentation {
+            get {
+                return null;
+            }
+        }
+
+        internal virtual Delegate OriginalDelegate {
+            get {
+                return null;
+            }
+        }
+
+        internal virtual IList<string> GetVarNames() {
+            List<string> res = new List<string>();
+
+            AppendVariables(res);
+
+            return res;
+        }
+
+
+        internal void AddFreeVariable(PythonVariable variable, bool accessedInScope) {
             if (_freeVars == null) {
-                _freeVars = new List<string>();
+                _freeVars = new List<PythonVariable>();
             }
-            if (!_freeVars.Contains(name)) {
-                _freeVars.Add(name);
+
+            if(!_freeVars.Contains(variable)) {
+                _freeVars.Add(variable);
             }
-            return name;
         }
 
         internal string AddReferencedGlobal(string name) {
@@ -128,25 +250,13 @@ namespace IronPython.Compiler.Ast {
             return name;
         }
 
-        internal string AddCellVariable(string name) {
+        internal void AddCellVariable(PythonVariable variable) {
             if (_cellVars == null) {
                 _cellVars = new List<string>();
             }
-            if (!_cellVars.Contains(name)) {
-                _cellVars.Add(name);
-            }
-            return name;
-        }
 
-        internal void UpdateReferencedVariables(string name, PythonVariable variable, ScopeStatement parent) {
-            if (variable.Kind == VariableKind.Global || variable.Kind == VariableKind.GlobalLocal) {
-                AddReferencedGlobal(name);
-            } else {
-                name = AddFreeVariable(name);
-
-                for (ScopeStatement innerParent = Parent; innerParent != parent; innerParent = innerParent.Parent) {
-                    innerParent.AddFreeVariable(name);
-                }
+            if (!_cellVars.Contains(variable.Name)) {
+                _cellVars.Add(variable.Name);
             }
         }
 
@@ -168,7 +278,7 @@ namespace IronPython.Compiler.Ast {
         /// <summary>
         /// Variables that are bound in an outer scope - but not a global scope
         /// </summary>
-        internal IList<string> FreeVariables {
+        internal IList<PythonVariable> FreeVariables {
             get {
                 return _freeVars;
             }
@@ -193,165 +303,30 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
+        internal Type GetClosureTupleType() {
+            if (TupleCells > 0) {
+                Type[] args = new Type[TupleCells];
+                for (int i = 0; i < TupleCells; i++) {
+                    args[i] = typeof(ClosureCell);
+                }
+                return MutableTuple.MakeTupleType(args);
+            }
+            return null;
+        }
+
+        internal virtual int TupleCells {
+            get {
+                if (_closureVariables == null) {
+                    return 0;
+                }
+
+                return _closureVariables.Length;
+            }
+        }
+
         internal abstract bool ExposesLocalVariable(PythonVariable variable);
 
-        internal void CreateVariables(AstGenerator ag, MSAst.Expression parentContext, List<MSAst.Expression> init, bool emitDictionary, bool needsLocals) {
-            if (_variables != null) {
-                CreateLocalVariables(ag, init, emitDictionary);
-            }
-
-            if (_references != null) {
-                CreateReferencedVariables(ag, init, emitDictionary, needsLocals);
-            }
-
-            if (_childReferences != null) {
-                CreateChildReferencedVariables(ag, parentContext, init);
-            }
-        }
-
-        /// <summary>
-        /// Creates variables which are defined in this scope.
-        /// </summary>
-        private void CreateLocalVariables(AstGenerator ag, List<MSAst.Expression> init, bool emitDictionary) {
-            foreach (KeyValuePair<string, PythonVariable> kv in _variables) {
-                PythonVariable pv = kv.Value;
-                // Publish variables for this context only (there may be references to the global variables
-                // in the dictionary also that were used for name binding lookups)
-                if (pv.Scope == this) {
-                    // Do not publish parameters, they will get created separately.
-                    if (pv.Kind != VariableKind.Parameter) {
-                        MSAst.Expression var = ag.Globals.CreateVariable(ag, pv, emitDictionary);
-
-                        //
-                        // Initializes variable to Uninitialized.Instance:
-                        //
-                        // 1) Local variables (variables that has been assigned within the scope)
-                        //    - do not initialize in module scope, ModuleGlobalWrappers do
-                        //    - initialize variables that are read before initialized by assignment or deletion
-                        //    - initialize variables that are accessed from within a nested scope:
-                        //        def f(): 
-                        //          def g(): 
-                        //            read(a) 
-                        //          g()
-                        //          write(a)
-                        //
-                        //    - initialize in a scope that exposes locals (i.e. class scope, function scope with unqualified exec, eval, locals())
-                        // 2) Global local variables (variables that weren't assigned within the child scope and were hoisted to the global scope)
-                        //    - we need to initialize them because the runtime lookup is relying on that (ModuleGlobalWrapper checks for uninitialized and fethes the value then)
-                        //      TODO: this is hacky, the global variable lookup should be implemented better
-                        // 3) Hidden local variables (variables that weren't assigned within the scope that contains unqualified exec, eval, locals())
-                        //    - initialize them to skip the local slot while looking up the name in scope chain
-                        //      TODO: this is hacky as well
-                        //
-                        if (pv.Kind == VariableKind.Local && !IsGlobal && (pv.ReadBeforeInitialized || pv.AccessedInNestedScope || ExposesLocalVariable(pv)) ||
-                            pv.Kind == VariableKind.GlobalLocal && pv.ReadBeforeInitialized ||
-                            pv.Kind == VariableKind.HiddenLocal) {
-
-                            Debug.Assert(pv.Kind != VariableKind.HiddenLocal || pv.ReadBeforeInitialized, "Hidden variable is always uninitialized");
-
-                            if (var is ClosureExpression) {
-                                init.Add(((ClosureExpression)var).Create());
-                            } else {
-                                init.Add(
-                                    GlobalAllocator.Assign(
-                                        var,
-                                        MSAst.Expression.Field(null, typeof(Uninitialized).GetField("Instance"))
-                                    )
-                                );
-                            }
-                        }
-                    }                    
-                } 
-            }
-        }
-
-        /// <summary>
-        /// Creates variables which are defined in a parent scope and accessed in this scope.
-        /// </summary>
-        private void CreateReferencedVariables(AstGenerator ag, List<MSAst.Expression> init, bool emitDictionary, bool needsLocals) {
-            MSAst.Expression localTuple = null;
-            foreach (KeyValuePair<string, PythonReference> kv in _references) {
-                PythonVariable var = kv.Value.PythonVariable;
-
-                if (var == null || var.Scope == this) {
-                    continue;
-                }
-
-                if ((var.Kind == VariableKind.Local || var.Kind == VariableKind.Parameter) && !var.Scope.IsGlobal) {
-                    // closed over local, we need to pull in the closure variable
-                    Type tupleType = ag.GetParentTupleType();
-                    int index = ag.TupleIndex(var);
-
-                    localTuple = EnsureLocalTuple(ag, init, localTuple, tupleType);
-
-                    // get the closure cell from the tuple
-                    MSAst.Expression tuplePath = localTuple;
-                    foreach (var v in MutableTuple.GetAccessPath(tupleType, index)) {
-                        tuplePath = MSAst.Expression.Property(tuplePath, v);
-                    }
-
-                    MSAst.ParameterExpression pe = ag.HiddenVariable(typeof(ClosureCell), var.Name);
-                    init.Add(MSAst.Expression.Assign(pe, tuplePath));
-
-                    ag.SetLocalLiftedVariable(var, new ClosureExpression(var, pe, null));
-
-                    if (emitDictionary) {
-                        ag.ReferenceVariable(var, index, localTuple, needsLocals);
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        /// Creates variables which are defined in a parent scope and used by a child scope.
-        /// </summary>
-        private void CreateChildReferencedVariables(AstGenerator ag, MSAst.Expression parentContext, List<MSAst.Expression> init) {
-            MSAst.Expression localTuple = null;
-            foreach (KeyValuePair<string, PythonReference> kv in _childReferences) {
-                // a child scope refers to this closure value but we don't refer
-                // to it directly.
-                int index = ag.TupleIndex(kv.Value.PythonVariable);
-                Type tupleType = ag.GetParentTupleType();
-
-                if (localTuple == null) {
-                    // pull the tuple from the context once
-                    localTuple = ag.HiddenVariable(tupleType, "$parentClosureTuple");
-                    init.Add(
-                        MSAst.Expression.Assign(
-                            localTuple,
-                            MSAst.Expression.Convert(
-                                MSAst.Expression.Call(
-                                    typeof(PythonOps).GetMethod("GetClosureTupleFromContext"),
-                                    parentContext
-                                ),
-                                tupleType
-                            )
-                        )
-                    );
-                }
-
-                ag.ReferenceVariable(kv.Value.PythonVariable, index, localTuple, false);
-            }
-        }
-
-        private MSAst.Expression EnsureLocalTuple(AstGenerator ag, List<MSAst.Expression> init, MSAst.Expression localTuple, Type tupleType) {
-            if (localTuple == null) {
-                // pull the tuple from the context once
-                localTuple = ag.HiddenVariable(tupleType, "$closureTuple");
-                init.Add(
-                    MSAst.Expression.Assign(
-                        localTuple,
-                        MSAst.Expression.Convert(
-                            GetClosureTuple(),
-                            tupleType
-                        )
-                    )
-                );
-            }
-            return localTuple;
-        }
-        
-        public virtual MSAst.Expression GetClosureTuple() {
+        internal virtual MSAst.Expression GetParentClosureTuple() {
             // PythonAst will never call this.
             throw new NotSupportedException();
         }
@@ -366,7 +341,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal bool TryGetVariable(string name, out PythonVariable variable) {
-            if (TryGetAnyVariable(name, out variable) && variable.Kind != VariableKind.HiddenLocal) {
+            if (TryGetAnyVariable(name, out variable)) {
                 return true;
             } else {
                 variable = null;
@@ -374,53 +349,105 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-        internal virtual bool TryBindOuter(string name, out PythonVariable variable) {
+        internal virtual bool TryBindOuter(ScopeStatement from, PythonReference reference, out PythonVariable variable) {
             // Hide scope contents by default (only functions expose their locals)
             variable = null;
             return false;
         }
 
-        internal abstract PythonVariable BindName(PythonNameBinder binder, string name);
+        internal abstract PythonVariable BindReference(PythonNameBinder binder, PythonReference reference);
 
         internal virtual void Bind(PythonNameBinder binder) {
             if (_references != null) {
-                foreach (KeyValuePair<string, PythonReference> kv in _references) {
+                foreach (var reference in _references.Values) {
                     PythonVariable variable;
-                    kv.Value.PythonVariable = variable = BindName(binder, kv.Key);
+                    reference.PythonVariable = variable = BindReference(binder, reference);
 
                     // Accessing outer scope variable which is being deleted?
                     if (variable != null) {
-                        if (variable.Deleted &&
-                        (object)variable.Scope != (object)this &&
-                        !variable.Scope.IsGlobal) {
+                        if (variable.Deleted && variable.Scope != this && !variable.Scope.IsGlobal) {
 
                             // report syntax error
                             binder.ReportSyntaxError(
                                 String.Format(
                                     System.Globalization.CultureInfo.InvariantCulture,
                                     "can not delete variable '{0}' referenced in nested scope",
-                                    kv.Key
+                                    reference.Name
                                     ),
                                 this);
-                        }
-                        
-                        if (variable.Scope != this && 
-                            variable.Kind != VariableKind.Global && variable.Kind != VariableKind.GlobalLocal &&
-                            !variable.Scope.IsGlobal) {
-
-                            ScopeStatement curScope = Parent;
-                            while (curScope != variable.Scope) {
-                                if (curScope._childReferences == null) {
-                                    curScope._childReferences = new Dictionary<string, PythonReference>(StringComparer.Ordinal);
-                                }
-
-                                curScope._childReferences[kv.Key] = kv.Value;
-                                curScope = curScope.Parent;
-                            }
                         }
                     }
                 }
             }
+        }
+
+        internal virtual void FinishBind(PythonNameBinder binder) {
+            List<ClosureInfo> closureVariables = null;
+            
+            if (FreeVariables != null && FreeVariables.Count > 0) {
+                _localParentTuple = Ast.Parameter(Parent.GetClosureTupleType(), "$tuple");
+
+                foreach (var variable in _freeVars) {
+                    var parentClosure = Parent._closureVariables;                    
+                    Debug.Assert(parentClosure != null);
+                    
+                    for (int i = 0; i < parentClosure.Length; i++) {
+                        if (parentClosure[i].Variable == variable) {
+                            _variableMapping[variable] = new ClosureExpression(variable, Ast.Property(_localParentTuple, String.Format("Item{0:D3}", i)), null);
+                            break;
+                        }
+                    }
+                    Debug.Assert(_variableMapping.ContainsKey(variable));
+                    
+                    if (closureVariables == null) {
+                        closureVariables = new List<ClosureInfo>();
+                    }
+                    closureVariables.Add(new ClosureInfo(variable, !(this is ClassDefinition)));
+                }
+            }
+
+            if (Variables != null) {
+                foreach (PythonVariable variable in Variables.Values) {
+                    if (!HasClosureVariable(closureVariables, variable) &&
+                        !variable.IsGlobal && (variable.AccessedInNestedScope || ExposesLocalVariable(variable))) {
+                        if (closureVariables == null) {
+                            closureVariables = new List<ClosureInfo>();
+                        }
+                        closureVariables.Add(new ClosureInfo(variable, true));
+                    }
+
+                    if (variable.Kind == VariableKind.Local) {
+                        Debug.Assert(variable.Scope == this);
+
+                        if (variable.AccessedInNestedScope || ExposesLocalVariable(variable)) {
+                            _variableMapping[variable] = new ClosureExpression(variable, Ast.Parameter(typeof(ClosureCell), variable.Name), null);
+                        } else {
+                            _variableMapping[variable] = Ast.Parameter(typeof(object), variable.Name);
+                        }
+                    }
+                }
+            }
+
+            if (closureVariables != null) {
+                _closureVariables = closureVariables.ToArray();
+            }
+
+            // no longer needed
+            _references = null;
+        }
+
+        private static bool HasClosureVariable(List<ClosureInfo> closureVariables, PythonVariable variable) {
+            if (closureVariables == null) {
+                return false;
+            }
+
+            for (int i = 0; i < closureVariables.Count; i++) {
+                if (closureVariables[i].Variable == variable) {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private void EnsureVariables() {
@@ -450,7 +477,7 @@ namespace IronPython.Compiler.Ast {
             return _references != null && _references.TryGetValue(name, out reference);
         }
 
-        internal PythonVariable CreateVariable(string name, VariableKind kind) {
+        internal PythonVariable/*!*/ CreateVariable(string name, VariableKind kind) {
             EnsureVariables();
             Debug.Assert(!_variables.ContainsKey(name));
             PythonVariable variable;
@@ -458,34 +485,10 @@ namespace IronPython.Compiler.Ast {
             return variable;
         }
 
-        internal PythonVariable EnsureVariable(string name) {
+        internal PythonVariable/*!*/ EnsureVariable(string name) {
             PythonVariable variable;
             if (!TryGetVariable(name, out variable)) {
                 return CreateVariable(name, VariableKind.Local);
-            }
-            return variable;
-        }
-
-        internal PythonVariable EnsureGlobalVariable(string name) {
-            PythonVariable variable;
-            if (!TryGetVariable(name, out variable)) {
-                return CreateVariable(name, VariableKind.Global);
-            }
-            return variable;
-        }
-
-        internal PythonVariable EnsureUnboundVariable(string name) {
-            PythonVariable variable;
-            if (!TryGetVariable(name, out variable)) {
-                return CreateVariable(name, VariableKind.GlobalLocal);
-            }
-            return variable;
-        }
-
-        internal PythonVariable EnsureHiddenVariable(string name) {
-            PythonVariable variable;
-            if (!TryGetAnyVariable(name, out variable)) {
-                variable = CreateVariable(name, VariableKind.HiddenLocal);
             }
             return variable;
         }
@@ -494,13 +497,391 @@ namespace IronPython.Compiler.Ast {
             return CreateVariable(name, VariableKind.Parameter);
         }
 
-        protected internal PythonAst GetGlobalScope() {
-            ScopeStatement global = this;
-            while (global.Parent != null) {
-                global = global.Parent;
+        internal PythonContext PyContext {
+            get {
+                return (PythonContext)GlobalParent.CompilerContext.SourceUnit.LanguageContext;
             }
-            Debug.Assert(global is PythonAst);
-            return global as PythonAst;
         }
+
+        #region Debug Info Tracking
+
+        private MSAst.SymbolDocumentInfo Document {
+            get {
+                return GlobalParent.Document;
+            }
+        }
+
+        internal MSAst.Expression/*!*/ AddDebugInfo(MSAst.Expression/*!*/ expression, SourceLocation start, SourceLocation end) {
+            if (PyContext.PythonOptions.GCStress != null) {
+                expression = Ast.Block(
+                    Ast.Call(
+                        typeof(GC).GetMethod("Collect", new[] { typeof(int) }),
+                        Ast.Constant(PyContext.PythonOptions.GCStress.Value)
+                    ),
+                    expression
+                );
+            }
+
+            return AstUtils.AddDebugInfo(expression, Document, start, end);
+        }
+
+        internal MSAst.Expression/*!*/ AddDebugInfo(MSAst.Expression/*!*/ expression, SourceSpan location) {
+            return AddDebugInfo(expression, location.Start, location.End);
+        }
+
+        internal MSAst.Expression/*!*/ AddDebugInfoAndVoid(MSAst.Expression/*!*/ expression, SourceSpan location) {
+            if (expression.Type != typeof(void)) {
+                expression = AstUtils.Void(expression);
+            }
+            return AddDebugInfo(expression, location);
+        }
+
+        #endregion
+
+        #region Runtime Line Number Tracing
+
+        /// <summary>
+        /// Gets the expression for updating the dynamic stack trace at runtime when an
+        /// exception is thrown.
+        /// </summary>
+        internal MSAst.Expression GetUpdateTrackbackExpression() {
+            if (!_containsExceptionHandling) {
+                Debug.Assert(Name != null);
+
+                return Ast.Call(
+                    _UpdateStackTrace,
+                    LocalContext,
+                    _funcCodeExpr,
+                    _GetCurrentMethod,
+                    AstUtils.Constant(Name),
+                    AstUtils.Constant(GlobalParent.SourceUnit.Path ?? "<string>"),
+                    new LastFaultingLineExpression(LineNumberExpression)
+                );
+            }
+
+            return GetSaveLineNumberExpression(true);
+        }
+
+
+        /// <summary>
+        /// Gets the expression for the actual updating of the line number for stack traces to be available
+        /// </summary>
+        internal MSAst.Expression GetSaveLineNumberExpression(bool preventAdditionalAdds) {            
+            MSAst.Expression res;
+            if (preventAdditionalAdds) {
+                res = _saveLineNumberNoAdds;
+            } else {
+                res = _saveLineNumberAdds;
+            }
+
+            if (res == null) {
+                res = Ast.Block(
+                    AstUtils.If(
+                        Ast.Not(
+                            LineNumberUpdated
+                        ),
+                        Ast.Call(
+                            _UpdateStackTrace,
+                            LocalContext,
+                            _funcCodeExpr,
+                            _GetCurrentMethod,
+                            AstUtils.Constant(Name),
+                            AstUtils.Constant(GlobalParent.SourceUnit.Path ?? "<string>"),
+                            new LastFaultingLineExpression(LineNumberExpression)
+                        )
+                    ),
+                    Ast.Assign(
+                        LineNumberUpdated,
+                        AstUtils.Constant(preventAdditionalAdds)
+                    ),
+                    AstUtils.Empty()
+                );
+
+                if (preventAdditionalAdds) {
+                    _saveLineNumberNoAdds = res;
+                } else {
+                    _saveLineNumberAdds = res;
+                }
+            }
+
+            return res;
+        }
+
+        /// <summary>
+        /// Wraps the body of a statement which should result in a frame being available during
+        /// exception handling.  This ensures the line number is updated as the stack is unwound.
+        /// </summary>
+        internal MSAst.Expression/*!*/ WrapScopeStatements(MSAst.Expression/*!*/ body, bool canThrow) {
+            if (canThrow) {
+                body = Ast.Block(
+                    new[] { LineNumberExpression, LineNumberUpdated },
+                    AstUtils.Try(
+                        body
+                    ).Fault(
+                        GetUpdateTrackbackExpression()
+                    )
+                );
+            }
+            
+            return body;
+        }
+
+        #endregion
+
+        /// <summary>
+        /// Provides a place holder for the expression which represents
+        /// a FunctionCode.  For functions/classes this gets updated after
+        /// the AST has been generated because the FunctionCode needs to
+        /// know about the tree which gets generated.  For modules we 
+        /// immediately have the value because it always comes in as a parameter.
+        /// </summary>
+        class DelayedFunctionCode : MSAst.Expression {
+            private MSAst.Expression _funcCode;
+
+            public override bool CanReduce {
+                get {
+                    return true;
+                }
+            }
+
+            public MSAst.Expression Code {
+                get {
+                    return _funcCode;
+                }
+                set {
+                    _funcCode = value;
+                }
+            }
+
+            public override Type Type {
+                get {
+                    return typeof(FunctionCode);
+                }
+            }
+
+            protected override MSAst.Expression VisitChildren(MSAst.ExpressionVisitor visitor) {
+                if (_funcCode != null) {
+                    MSAst.Expression funcCode = visitor.Visit(_funcCode);
+                    if (funcCode != _funcCode) {
+                        DelayedFunctionCode res = new DelayedFunctionCode();
+                        res._funcCode = funcCode;
+                        return res;
+                    }
+                }
+                return this;
+            }
+
+            public override MSAst.Expression Reduce() {
+                Debug.Assert(_funcCode != null);
+                return _funcCode;
+            }
+
+            public override MSAst.ExpressionType NodeType {
+                get {
+                    return MSAst.ExpressionType.Extension;
+                }
+            }
+        }
+
+        internal MSAst.Expression FuncCodeExpr {
+            get {
+                return _funcCodeExpr.Code;
+            }
+            set {
+                _funcCodeExpr.Code = value;
+            }
+        }
+
+        internal MSAst.MethodCallExpression CreateLocalContext(MSAst.Expression parentContext) {
+            var closureVariables = _closureVariables;
+            if (_closureVariables == null) {
+                closureVariables = new ClosureInfo[0];
+            }
+            return Ast.Call(
+                typeof(PythonOps).GetMethod("CreateLocalContext"),
+                parentContext,
+                MutableTuple.Create(ArrayUtils.ConvertAll(closureVariables, x => GetClosureCell(x))),
+                Ast.Constant(ArrayUtils.ConvertAll(closureVariables, x => x.AccessedInScope ? x.Variable.Name : null))
+            );
+        }
+
+        private MSAst.Expression GetClosureCell(ClosureInfo variable) {
+            return ((ClosureExpression)GetVariableExpression(variable.Variable)).ClosureCell;
+        }
+
+        internal MSAst.Expression GetVariableExpression(PythonVariable variable) {
+            if (variable.IsGlobal) {
+                return GlobalParent.ModuleVariables[variable];
+            }
+
+            Debug.Assert(_variableMapping.ContainsKey(variable));
+            return _variableMapping[variable];
+        }
+
+        internal void CreateVariables(ReadOnlyCollectionBuilder<MSAst.ParameterExpression> locals, List<MSAst.Expression> init) {
+            if (Variables != null) {
+                foreach (PythonVariable variable in Variables.Values) {
+                    if(variable.Kind != VariableKind.Global) {
+                        
+                        ClosureExpression closure = GetVariableExpression(variable) as ClosureExpression;
+                        if (closure != null) {
+                            init.Add(closure.Create());
+                            locals.Add((MSAst.ParameterExpression)closure.ClosureCell);
+                        } else if (variable.Kind == VariableKind.Local) {
+                            locals.Add((MSAst.ParameterExpression)GetVariableExpression(variable));
+                            if (variable.ReadBeforeInitialized) {
+                                init.Add(
+                                    AssignValue(
+                                        GetVariableExpression(variable),
+                                        MSAst.Expression.Field(null, typeof(Uninitialized).GetField("Instance"))
+                                    )
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (IsClosure) {
+                Type tupleType = Parent.GetClosureTupleType();
+                Debug.Assert(tupleType != null);
+
+                init.Add(
+                    MSAst.Expression.Assign(
+                        LocalParentTuple,
+                        MSAst.Expression.Convert(
+                            GetParentClosureTuple(),
+                            tupleType
+                        )
+                    )
+                );
+
+                locals.Add(LocalParentTuple);
+            }
+        }
+
+        internal MSAst.Expression AddDecorators(MSAst.Expression ret, IList<Expression> decorators) {
+            // add decorators
+            if (decorators != null) {
+                for (int i = decorators.Count - 1; i >= 0; i--) {
+                    Expression decorator = decorators[i];
+                    ret = Parent.Invoke(
+                        typeof(object),
+                        new CallSignature(1),
+                        decorator,
+                        ret
+                    );
+                }
+            }
+            return ret;
+        }
+
+        internal MSAst.Expression/*!*/ Invoke(Type/*!*/ resultType, CallSignature signature, params MSAst.Expression/*!*/[]/*!*/ args) {
+            PythonInvokeBinder invoke = PyContext.Invoke(signature);
+            switch (args.Length) {
+                case 0: return GlobalParent.CompilationMode.Dynamic(invoke, resultType, LocalContext);
+                case 1: return GlobalParent.CompilationMode.Dynamic(invoke, resultType, LocalContext, args[0]);
+                case 2: return GlobalParent.CompilationMode.Dynamic(invoke, resultType, LocalContext, args[0], args[1]);
+                case 3: return GlobalParent.CompilationMode.Dynamic(invoke, resultType, LocalContext, args[0], args[1], args[2]);
+                default:
+                    return GlobalParent.CompilationMode.Dynamic(
+                        invoke,
+                        resultType,
+                        ArrayUtils.Insert(LocalContext, args)
+                    );
+            }
+        }
+
+        internal ScopeStatement CopyForRewrite() {
+            return (ScopeStatement)MemberwiseClone();
+        }
+
+        internal virtual void RewriteBody(PythonAst.LookupVisitor visitor) {
+            _funcCode = null;
+        }
+
+        struct ClosureInfo {
+            public PythonVariable Variable;
+            public bool AccessedInScope;
+
+            public ClosureInfo(PythonVariable variable, bool accessedInScope) {
+                Variable = variable;
+                AccessedInScope = accessedInScope;
+            }
+        }
+
+        internal virtual bool PrintExpressions {
+            get {
+                return false;
+            }
+        }
+
+        #region Profiling Support
+
+        internal virtual string ProfilerName {
+            get {
+                return Name;
+            }
+        }
+
+        /// <summary>
+        /// Reducible node so that re-writing for profiling does not occur until
+        /// after the script code has been completed and is ready to be compiled.
+        /// 
+        /// Without this extra node profiling would force reduction of the node
+        /// and we wouldn't have setup our constant access correctly yet.
+        /// </summary>
+        class DelayedProfiling : MSAst.Expression {
+            private readonly ScopeStatement _ast;
+            private readonly MSAst.Expression _body;
+            private readonly MSAst.ParameterExpression _tick;
+
+            public DelayedProfiling(ScopeStatement ast, MSAst.Expression body, MSAst.ParameterExpression tick) {
+                _ast = ast;
+                _body = body;
+                _tick = tick;
+            }
+
+            public override bool CanReduce {
+                get {
+                    return true;
+                }
+            }
+
+            public override Type Type {
+                get {
+                    return _body.Type;
+                }
+            }
+
+            protected override MSAst.Expression VisitChildren(MSAst.ExpressionVisitor visitor) {
+                return visitor.Visit(_body);
+            }
+
+            public override MSAst.Expression Reduce() {
+                string profilerName = _ast.ProfilerName;
+                bool unique = (profilerName == NameForExec);
+                return Ast.Block(
+                    new[] { _tick },
+                    _ast.GlobalParent._profiler.AddProfiling(_body, _tick, profilerName, unique)
+                );
+            }
+
+            public override MSAst.ExpressionType NodeType {
+                get {
+                    return MSAst.ExpressionType.Extension;
+                }
+            }
+        }
+
+        internal MSAst.Expression AddProfiling(MSAst.Expression/*!*/ body) {
+            if (GlobalParent._profiler != null) {
+                MSAst.ParameterExpression tick = Ast.Variable(typeof(long), "$tick");
+                return new DelayedProfiling(this, body, tick);
+            }
+            return body;
+        }
+
+        #endregion
     }
 }

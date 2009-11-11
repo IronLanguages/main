@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 
+using IronPython.Runtime;
 using IronPython.Runtime.Binding;
 
 #if !CLR2
@@ -28,6 +29,7 @@ using MSAst = Microsoft.Scripting.Ast;
 
 
 namespace IronPython.Compiler.Ast {
+    using Ast = MSAst.Expression;
 
     public enum ParameterKind {
         Normal,
@@ -47,6 +49,7 @@ namespace IronPython.Compiler.Ast {
         protected Expression _defaultValue;
 
         private PythonVariable _variable;
+        private MSAst.ParameterExpression _parameter;
 
         public Parameter(string name)
             : this(name, ParameterKind.Normal) {
@@ -81,37 +84,35 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-        internal PythonVariable Variable {
+        internal ParameterKind Kind {
+            get {
+                return _kind;
+            }
+        }
+
+        internal PythonVariable PythonVariable {
             get { return _variable; }
             set { _variable = value; }
         }
 
-        internal MSAst.Expression Transform(AstGenerator inner, bool needsWrapperMethod, bool needsLocalsDictionary, List<MSAst.Expression> init) {
+        internal MSAst.Expression FinishBind(bool needsLocalsDictionary) {
             string name = Name;
             if (_variable.AccessedInNestedScope || needsLocalsDictionary) {
-                ClosureExpression closureVar;
-                if (needsWrapperMethod) {
-                    closureVar = inner.LiftedVariable(Variable, name, _variable.AccessedInNestedScope);
-                } else {
-                    closureVar = inner.LiftedParameter(Variable, name);
-                }
-                inner.SetLocalLiftedVariable(_variable, closureVar);
-                init.Add(closureVar.Create());
-
-                return closureVar;                
+                _parameter = Expression.Parameter(typeof(object), Name);
+                var cell = Ast.Parameter(typeof(ClosureCell), Name);
+                return new ClosureExpression(_variable, cell, _parameter);
             } else {
-                MSAst.Expression parameter;
-                if (needsWrapperMethod) {
-                    parameter = inner.Variable(typeof(object), name);
-                } else {
-                    parameter = inner.Parameter(typeof(object), name);
-                }
-                inner.Globals.SetParameter(_variable, parameter);
-                return parameter;
+                return _parameter = Ast.Parameter(typeof(object), Name);
             }
         }
 
-        internal virtual void Init(AstGenerator inner, List<MSAst.Expression> init) {
+        internal MSAst.ParameterExpression ParameterExpression {
+            get {
+                return _parameter;
+            }
+        }
+
+        internal virtual void Init(List<MSAst.Expression> init) {
             // Regular parameter has no initialization
         }
 
@@ -137,14 +138,9 @@ namespace IronPython.Compiler.Ast {
             get { return _tuple; }
         }
 
-        internal override void Init(AstGenerator inner, List<MSAst.Expression> init) {
+        internal override void Init(List<MSAst.Expression> init) {
             init.Add(
-                _tuple.TransformSet(
-                    inner,
-                    Span,
-                    inner.Globals.GetVariable(inner, Variable),
-                    PythonOperationKind.None
-                )
+                _tuple.TransformSet(Span, ParameterExpression, PythonOperationKind.None)
             );
         }
 

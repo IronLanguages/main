@@ -83,7 +83,7 @@ namespace IronPython.Compiler {
             } else {
                 object value;
 
-                if (_context.TryLookupGlobal(_name, out value)) {
+                if (_context.TryLookupBuiltin(_name, out value)) {
                     return value;
                 }
             }

@@ -20,8 +20,10 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Text;
 using System.Threading;
+using System.Runtime.CompilerServices;
 
 using Microsoft.Scripting;
+using Microsoft.Scripting.Interpreter;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
@@ -41,23 +43,22 @@ using Debugging = Microsoft.Scripting.Debugging;
 namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
 
-    public class FunctionDefinition : ScopeStatement {
+    public class FunctionDefinition : ScopeStatement, IInstructionProvider {
         protected Statement _body;
         private SourceLocation _header;
         private readonly string _name;
         private readonly Parameter[] _parameters;
         private IList<Expression> _decorators;
-        private SourceUnit _sourceUnit;
         private bool _generator;                        // The function is a generator
+        private bool _isLambda;
 
         // true if this function can set sys.exc_info(). Only functions with an except block can set that.
         private bool _canSetSysExcInfo;
         private bool _containsTryFinally;               // true if the function contains try/finally, used for generator optimization
-        // the scope contains variables that are bound to parent scope forming a closure:
-        private bool _closure;
 
         private PythonVariable _variable;               // The variable corresponding to the function name or null for lambdas
         internal PythonVariable _nameVariable;          // the variable that refers to the global __name__
+        private MSAst.LambdaExpression _dlrBody;       // the transformed body including all of our initialization, etc...
 
         private static MSAst.ParameterExpression _functionParam = Ast.Parameter(typeof(PythonFunction), "$function");
         private static int _lambdaId;
@@ -65,31 +66,69 @@ namespace IronPython.Compiler.Ast {
         private static readonly MethodInfo _GetGlobalContext = typeof(PythonOps).GetMethod("GetGlobalContext");
         private static readonly MethodInfo _MakeFunctionDebug = typeof(PythonOps).GetMethod("MakeFunctionDebug");
         private static readonly MethodInfo _MakeFunction = typeof(PythonOps).GetMethod("MakeFunction");
-        private static readonly MSAst.Expression _GetClosureTupleFromFunctionCall = MSAst.Expression.Call(
-                null,
-                typeof(PythonOps).GetMethod("GetClosureTupleFromFunction"),
-                _functionParam
-            );
-
-        public FunctionDefinition(string name, Parameter[] parameters, SourceUnit sourceUnit)
-            : this(name, parameters, null, sourceUnit) {
+        private static readonly MSAst.Expression _GetClosureTupleFromFunctionCall = MSAst.Expression.Call(null, typeof(PythonOps).GetMethod("GetClosureTupleFromFunction"), _functionParam);
+        private static MSAst.Expression _parentContext = MSAst.Expression.Call(_GetParentContextFromFunction, _functionParam);
+        internal static readonly MSAst.LabelTarget _returnLabel = MSAst.Expression.Label(typeof(object), "return");
+        internal bool _hasReturn;
+        
+        public FunctionDefinition(string name, Parameter[] parameters)
+            : this(name, parameters, (Statement)null) {            
         }
 
-        public FunctionDefinition(string name, Parameter[] parameters, Statement body, SourceUnit sourceUnit) {
-            _name = name;
+        
+        public FunctionDefinition(string name, Parameter[] parameters, Statement body) {
+            ContractUtils.RequiresNotNullItems(parameters, "parameters");
+
+            if (name == null) {
+                _name = "<lambda$" + Interlocked.Increment(ref _lambdaId) + ">";
+                _isLambda = true;
+            } else {
+                _name = name;
+            }
+
             _parameters = parameters;
             _body = body;
-            _sourceUnit = sourceUnit;
         }
 
+        [Obsolete("sourceUnit is now ignored.  FunctionDefinitions should belong to a PythonAst which has a SourceUnit")]
+        public FunctionDefinition(string name, Parameter[] parameters, SourceUnit sourceUnit)
+            : this(name, parameters, (Statement)null) {
+        }
+
+        [Obsolete("sourceUnit is now ignored.  FunctionDefinitions should belong to a PythonAst which has a SourceUnit")]
+        public FunctionDefinition(string name, Parameter[] parameters, Statement body, SourceUnit sourceUnit)             
+            : this(name, parameters, body) {
+        }
+
+        internal override MSAst.Expression LocalContext {
+            get {
+                if (NeedsLocalsDictionary || ContainsNestedFreeVariables) {
+                    return base.LocalContext;
+                }
+
+                return GlobalParent.LocalContext;
+            }
+        }
         public bool IsLambda {
             get {
-                return String.IsNullOrEmpty(_name);
+                return _isLambda;
             }
         }
 
         public IList<Parameter> Parameters {
             get { return _parameters; }
+        }
+
+        internal override string[] ParameterNames {
+            get {
+                return ArrayUtils.ConvertAll(_parameters, val => val.Name);
+            }
+        }
+
+        internal override int ArgCount {
+            get {
+                return _parameters.Length;
+            }
         }
 
         public Statement Body {
@@ -102,13 +141,19 @@ namespace IronPython.Compiler.Ast {
             set { _header = value; }
         }
 
-        public string Name {
+        public override string Name {
             get { return _name; }
         }
 
         public IList<Expression> Decorators {
             get { return _decorators; }
             internal set { _decorators = value; }
+        }
+
+        internal override bool IsGeneratorMethod {
+            get {
+                return IsGenerator;
+            }
         }
 
         public bool IsGenerator {
@@ -127,15 +172,7 @@ namespace IronPython.Compiler.Ast {
             set { _containsTryFinally = value; }
         }
 
-        /// <summary>
-        /// True if this scope accesses a variable from an outer scope.
-        /// </summary>
-        internal bool IsClosure {
-            get { return _closure; }
-            set { _closure = value; }
-        }
-
-        internal PythonVariable Variable {
+        internal PythonVariable PythonVariable {
             get { return _variable; }
             set { _variable = value; }
         }
@@ -144,88 +181,104 @@ namespace IronPython.Compiler.Ast {
             return NeedsLocalsDictionary; 
         }
 
-        private static FunctionAttributes ComputeFlags(Parameter[] parameters) {
-            FunctionAttributes fa = FunctionAttributes.None;
-            if (parameters != null) {
-                int i;
-                for (i = 0; i < parameters.Length; i++) {
-                    Parameter p = parameters[i];
-                    if (p.IsDictionary || p.IsList) break;
+        internal override FunctionAttributes Flags {
+            get {
+                FunctionAttributes fa = FunctionAttributes.None;
+                if (_parameters != null) {
+                    int i;
+                    for (i = 0; i < _parameters.Length; i++) {
+                        Parameter p = _parameters[i];
+                        if (p.IsDictionary || p.IsList) break;
+                    }
+                    // Check for the list and dictionary parameters, which must be the last(two)
+                    if (i < _parameters.Length && _parameters[i].IsList) {
+                        i++;
+                        fa |= FunctionAttributes.ArgumentList;
+                    }
+                    if (i < _parameters.Length && _parameters[i].IsDictionary) {
+                        i++;
+                        fa |= FunctionAttributes.KeywordDictionary;
+                    }
+
+                    // All parameters must now be exhausted
+                    Debug.Assert(i == _parameters.Length);
                 }
-                // Check for the list and dictionary parameters, which must be the last(two)
-                if (i < parameters.Length && parameters[i].IsList) {
-                    i++;
-                    fa |= FunctionAttributes.ArgumentList;
+
+                if (_canSetSysExcInfo) {
+                    fa |= FunctionAttributes.CanSetSysExcInfo;
                 }
-                if (i < parameters.Length && parameters[i].IsDictionary) {
-                    i++;
-                    fa |= FunctionAttributes.KeywordDictionary;
+
+                if (ContainsTryFinally) {
+                    fa |= FunctionAttributes.ContainsTryFinally;
                 }
-                
-                // All parameters must now be exhausted
-                Debug.Assert(i == parameters.Length);
+
+                if (IsGenerator) {
+                    fa |= FunctionAttributes.Generator;
+                }
+
+                return fa;
             }
-            return fa;
         }
 
-        internal override bool TryBindOuter(string name, out PythonVariable variable) {
+        internal override bool TryBindOuter(ScopeStatement from, PythonReference reference, out PythonVariable variable) {
             // Functions expose their locals to direct access
             ContainsNestedFreeVariables = true;
-            if (TryGetVariable(name, out variable)) {
+            if (TryGetVariable(reference.Name, out variable)) {
+                variable.AccessedInNestedScope = true;
+
                 if (variable.Kind == VariableKind.Local || variable.Kind == VariableKind.Parameter) {
-                    name = AddCellVariable(name);
+                    from.AddFreeVariable(variable, true);
+
+                    for (ScopeStatement scope = from.Parent; scope != this; scope = scope.Parent) {
+                        scope.AddFreeVariable(variable, false);
+                    }
+
+                    AddCellVariable(variable);
+                } else {
+                    from.AddReferencedGlobal(reference.Name);
                 }
                 return true;
             }
             return false;
         }
 
-        internal override PythonVariable BindName(PythonNameBinder binder, string name) {
+        internal override PythonVariable BindReference(PythonNameBinder binder, PythonReference reference) {
             PythonVariable variable;
 
             // First try variables local to this scope
-            if (TryGetVariable(name, out variable)) {
-                if (variable.Kind == VariableKind.GlobalLocal || variable.Kind == VariableKind.Global) {
-                    AddReferencedGlobal(name);
+            if (TryGetVariable(reference.Name, out variable)) {
+                if (variable.Kind == VariableKind.Global) {
+                    AddReferencedGlobal(reference.Name);
                 }
                 return variable;
             }
 
             // Try to bind in outer scopes
             for (ScopeStatement parent = Parent; parent != null; parent = parent.Parent) {
-                if (parent.TryBindOuter(name, out variable)) {
-                    IsClosure = true;
-                    variable.AccessedInNestedScope = true;
-                    UpdateReferencedVariables(name, variable, parent);
+                if (parent.TryBindOuter(this, reference, out variable)) {
                     return variable;
                 }
             }
 
-            // Unbound variable
-            if (HasLateBoundVariableSets) {
-                // If the context contains unqualified exec, new locals can be introduced
-                // We introduce the locals for every free variable to optimize the name based
-                // lookup.
-                EnsureHiddenVariable(name);
-                return null;
-            } else {
-                // Create a global variable to bind to.
-                AddReferencedGlobal(name);
-                return GetGlobalScope().EnsureGlobalVariable(binder, name);
-            }
+            return null;
         }
 
 
         internal override void Bind(PythonNameBinder binder) {
             base.Bind(binder);
             Verify(binder);
-        }
 
-        /// <summary>
-        /// Pulls the closure tuple from our function/generator which is flowed into each function call.
-        /// </summary>
-        public override MSAst.Expression/*!*/ GetClosureTuple() {
-            return _GetClosureTupleFromFunctionCall;
+            if (((PythonContext)binder.Context.SourceUnit.LanguageContext).PythonOptions.FullFrames) {
+                // force a dictionary if we have enabled full frames for sys._getframe support
+                NeedsLocalsDictionary = true;
+            }
+        }
+        
+        internal override void FinishBind(PythonNameBinder binder) {
+            foreach (var param in _parameters) {
+                _variableMapping[param.PythonVariable] = param.FinishBind(NeedsLocalsDictionary);
+            }
+            base.FinishBind(binder);
         }
 
         private void Verify(PythonNameBinder binder) {
@@ -271,79 +324,297 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-        internal override MSAst.Expression Transform(AstGenerator ag) {
+        /// <summary>
+        /// Pulls the closure tuple from our function/generator which is flowed into each function call.
+        /// </summary>
+        internal override MSAst.Expression/*!*/ GetParentClosureTuple() {
+            return _GetClosureTupleFromFunctionCall;
+        }
+
+        public override MSAst.Expression Reduce() {
             Debug.Assert(_variable != null, "Shouldn't be called by lambda expression");
 
-            MSAst.Expression function = TransformToFunctionExpression(ag);
-            return ag.AddDebugInfoAndVoid(GlobalAllocator.Assign(ag.Globals.GetVariable(ag, _variable), function), new SourceSpan(Start, Header));
+            MSAst.Expression function = MakeFunctionExpression();
+            return GlobalParent.AddDebugInfoAndVoid(AssignValue(Parent.GetVariableExpression(_variable), function), new SourceSpan(Start, Header));
         }
-
-        private string MakeProfilerName(string name) {
-            var sb = new StringBuilder("def ");
-            sb.Append(name);
-            sb.Append('(');
-            bool comma = false;
-            foreach (var p in _parameters) {
-                if (comma) {
-                    sb.Append(", ");
-                } else {
-                    comma = true;
-                }
-                sb.Append(p.Name);
-            }
-            sb.Append(')');
-            return sb.ToString();
-        }
-
-        internal MSAst.Expression TransformToFunctionExpression(AstGenerator ag) {
-            string name;
-
-            if (IsLambda) {
-                name = "<lambda$" + Interlocked.Increment(ref _lambdaId) + ">";
-            } else {
-                name = _name;
-            }
-
-            if (ag.PyContext.PythonOptions.FullFrames) {
-                // force a dictionary if we have enabled full frames for sys._getframe support
-                NeedsLocalsDictionary = true;
-            }
-
-            // Create AST generator to generate the body with
-            AstGenerator bodyGen = new AstGenerator(ag, name, IsGenerator, MakeProfilerName(name));
-
-            FunctionAttributes flags = ComputeFlags(_parameters);
-            bool needsWrapperMethod = _parameters.Length > PythonCallTargets.MaxArgs;
-            
-            // Transform the parameters.
-            // Populate the list of the parameter names and defaults.
+        
+        /// <summary>
+        /// Returns an expression which creates the function object.
+        /// </summary>
+        internal MSAst.Expression MakeFunctionExpression() {
             List<MSAst.Expression> defaults = new List<MSAst.Expression>(0);
-            List<MSAst.Expression> names = new List<MSAst.Expression>();
+            foreach (var param in _parameters) {
+                if (param.DefaultValue != null) {
+                    defaults.Add(AstUtils.Convert(param.DefaultValue, typeof(object)));
+                }
+            }
+
+            MSAst.Expression funcCode = GlobalParent.Constant(GetOrMakeFunctionCode());
+            FuncCodeExpr = funcCode;
+
+            MSAst.Expression ret;
+            if (EmitDebugFunction()) {
+                MSAst.LambdaExpression code = EnsureFunctionLambda();
+
+                // we need to compile all of the debuggable code together at once otherwise mdbg gets confused.  If we're
+                // in tracing mode we'll still compile things one off though just to keep things simple.  The code will still
+                // be debuggable but naive debuggers like mdbg will have more issues.
+                ret = Ast.Call(
+                    _MakeFunctionDebug,                                                             // method
+                    Parent.LocalContext,                                                            // 1. Emit CodeContext
+                    FuncCodeExpr,                                                                   // 2. FunctionCode                        
+                    ((IPythonGlobalExpression)GetVariableExpression(_nameVariable)).RawValue(),     // 3. module name
+                    defaults.Count == 0 ?                                                           // 4. default values
+                        AstUtils.Constant(null, typeof(object[])) :
+                        (MSAst.Expression)Ast.NewArrayInit(typeof(object), defaults),
+                    IsGenerator ?
+                        (MSAst.Expression)new PythonGeneratorExpression(code, GlobalParent.PyContext.Options.CompilationThreshold) :
+                        (MSAst.Expression)code
+                );
+            } else {
+                ret = Ast.Call(
+                    _MakeFunction,                                                                  // method
+                    Parent.LocalContext,                                                            // 1. Emit CodeContext
+                    FuncCodeExpr,                                                                   // 2. FunctionCode
+                    ((IPythonGlobalExpression)GetVariableExpression(_nameVariable)).RawValue(),     // 3. module name
+                    defaults.Count == 0 ?                                                           // 4. default values
+                        AstUtils.Constant(null, typeof(object[])) :
+                        (MSAst.Expression)Ast.NewArrayInit(typeof(object), defaults)
+                );
+            }
+
+            return AddDecorators(ret, _decorators);
+        }
+
+        #region IInstructionProvider Members
+
+        void IInstructionProvider.AddInstructions(LightCompiler compiler) {
+            if (_decorators != null) {
+                // decorators aren't supported, skip using the optimized instruction.
+                compiler.Compile(Reduce());
+                return;
+            }
+
+            // currently needed so we can later compile
+            MSAst.Expression funcCode = GlobalParent.Constant(GetOrMakeFunctionCode());
+            FuncCodeExpr = funcCode;
+
+            var variable = Parent.GetVariableExpression(_variable);
+
+            CompileAssignment(compiler, variable, CreateFunctionInstructions);
+        }
+
+        private void CreateFunctionInstructions(LightCompiler compiler) {
+            // emit context if we have a special local context
+            CodeContext globalContext = null;
+
+            // potential optimization to avoid loading the context:
+            /*if (Parent.LocalContext == PythonAst._globalContext) {
+                globalContext = GlobalParent.ModuleContext.GlobalContext;
+            } else*/ {
+                compiler.Compile(Parent.LocalContext);
+            }
+
+            // emit name if necessary
+            PythonGlobalVariableExpression name = GetVariableExpression(_nameVariable) as PythonGlobalVariableExpression;
+            PythonGlobal globalName = null;
+            if (name == null) {
+                compiler.Compile(((IPythonGlobalExpression)GetVariableExpression(_nameVariable)).RawValue());
+            } else {
+                globalName = name.Global;
+            }
+
+            // emit defaults
+            int defaultCount = 0;
+            for (int i = _parameters.Length - 1; i >= 0; i--) {
+                var param = _parameters[i];
+
+                if (param.DefaultValue != null) {
+                    compiler.Compile(AstUtils.Convert(param.DefaultValue, typeof(object)));
+                    defaultCount++;
+                }
+            }
+
+            compiler.Instructions.Emit(new FunctionDefinitionInstruction(globalContext, this, defaultCount, globalName));
+        }
+
+        private static void CompileAssignment(LightCompiler compiler, MSAst.Expression variable, Action<LightCompiler> compileValue) {
+            var instructions = compiler.Instructions;
+
+            ClosureExpression closure = variable as ClosureExpression;
+            if (closure != null) {
+                compiler.Compile(closure.ClosureCell);
+            }
+            LookupGlobalVariable lookup = variable as LookupGlobalVariable;
+            if (lookup != null) {
+                compiler.Compile(lookup.CodeContext);
+                instructions.EmitLoad(lookup.Name);
+            }
+
+            compileValue(compiler);
+
+            if (closure != null) {
+                instructions.EmitStoreField(ClosureExpression._cellField);
+                return;
+            }
+            if (lookup != null) {
+                instructions.EmitCall(typeof(PythonOps).GetMethod(lookup.IsLocal ? "SetLocal" : "SetGlobal"));
+                return;
+            }
+
+            MSAst.ParameterExpression functionValueParam = variable as MSAst.ParameterExpression;
+            if (functionValueParam != null) {
+                instructions.EmitStoreLocal(compiler.GetVariableIndex(functionValueParam));
+                return;
+            }
+
+            var globalVar = variable as PythonGlobalVariableExpression;
+            if (globalVar != null) {
+                instructions.Emit(new PythonSetGlobalInstruction(globalVar.Global));
+                instructions.EmitPop();
+                return;
+            }
+            Debug.Assert(false, "Unsupported variable type for light compiling function");
+        }
+
+        class FunctionDefinitionInstruction : Instruction {
+            private readonly FunctionDefinition _def;
+            private readonly int _defaultCount;
+            private readonly CodeContext _context;
+            private readonly PythonGlobal _name;
+
+            public FunctionDefinitionInstruction(CodeContext context, FunctionDefinition/*!*/ definition, int defaultCount, PythonGlobal name) {
+                Assert.NotNull(definition);
+
+                _context = context;
+                _defaultCount = defaultCount;
+                _def = definition;
+                _name = name;
+            }
+
+            public override int Run(InterpretedFrame frame) {
+                object[] defaults;
+                if (_defaultCount > 0) {
+                    defaults = new object[_defaultCount];
+                    for (int i = 0; i < _defaultCount; i++) {
+                        defaults[i] = frame.Pop();
+                    }
+                } else {
+                    defaults = ArrayUtils.EmptyObjects;
+                }
+
+                object modName;
+                if (_name != null) {
+                    modName = _name.RawValue;
+                } else {
+                    modName = frame.Pop();
+                }
+
+                CodeContext context = /*_context ?? */(CodeContext)frame.Pop();
+                
+                frame.Push(PythonOps.MakeFunction(context, _def.FunctionCode, modName, defaults));
+
+                return +1;
+            }
+
+            public override int ConsumedStack {
+                get {
+                    return _defaultCount +
+                        (_context == null ? 1 : 0) +
+                        (_name    == null ? 1 : 0);
+                }
+            }
+
+            public override int ProducedStack {
+                get {
+                    return 1;
+                }
+            }
+        }
+
+        #endregion
+
+        /// <summary>
+        /// Creates the LambdaExpression which is the actual function body.
+        /// </summary>
+        private MSAst.LambdaExpression EnsureFunctionLambda() {
+            if (_dlrBody == null) {
+                PerfTrack.NoteEvent(PerfTrack.Categories.Compiler, "Creating FunctionBody");
+                _dlrBody = CreateFunctionLambda();
+            }
+
+            return _dlrBody;
+        }
+
+        internal override Delegate OriginalDelegate {
+            get {
+                Delegate originalDelegate;
+                bool needsWrapperMethod = _parameters.Length > PythonCallTargets.MaxArgs;
+                GetDelegateType(_parameters, needsWrapperMethod, out originalDelegate);
+                return originalDelegate;
+            }
+        }
+
+        internal override string ScopeDocumentation {
+            get {
+                return GetDocumentation(_body);
+            }
+        }
+
+        /// <summary>
+        /// Creates the LambdaExpression which implements the body of the function.
+        /// 
+        /// The functions signature is either "object Function(PythonFunction, ...)"
+        /// where there is one object parameter for each user defined parameter or
+        /// object Function(PythonFunction, object[]) for functions which take more
+        /// than PythonCallTargets.MaxArgs arguments.
+        /// </summary>
+        private MSAst.LambdaExpression CreateFunctionLambda() {
+            bool needsWrapperMethod = _parameters.Length > PythonCallTargets.MaxArgs;
+            Delegate originalDelegate;
+            Type delegateType = GetDelegateType(_parameters, needsWrapperMethod, out originalDelegate);
+
+            MSAst.ParameterExpression localContext = null;
+            ReadOnlyCollectionBuilder<MSAst.ParameterExpression> locals = new ReadOnlyCollectionBuilder<MSAst.ParameterExpression>();
+            if (NeedsLocalsDictionary || ContainsNestedFreeVariables) {
+                localContext = LocalCodeContextVariable;
+                locals.Add(localContext);
+            }
+
+            MSAst.ParameterExpression[] parameters = CreateParameters(needsWrapperMethod, locals);
 
             List<MSAst.Expression> init = new List<MSAst.Expression>();
-            init.Add(Ast.ClearDebugInfo(ag.Document));
 
-            TransformParameters(ag, bodyGen, defaults, names, needsWrapperMethod, init);
+            foreach (var param in _parameters) {
+                IPythonVariableExpression pyVar = GetVariableExpression(param.PythonVariable) as IPythonVariableExpression;
+                if (pyVar != null) {
+                    var varInit = pyVar.Create();
+                    if (varInit != null) {
+                        init.Add(varInit);
+                    }
+                }
+            }
 
-            MSAst.Expression parentContext;
+            // Transform the parameters.
+            init.Add(Ast.ClearDebugInfo(GlobalParent.Document));
 
-            parentContext = MSAst.Expression.Call(_GetParentContextFromFunction, _functionParam);
+            locals.Add(PythonAst._globalContext);
+            init.Add(Ast.Assign(PythonAst._globalContext, Ast.Call(_GetGlobalContext, _parentContext)));
 
-            bodyGen.AddHiddenVariable(ArrayGlobalAllocator._globalContext);
-            init.Add(Ast.Assign(ArrayGlobalAllocator._globalContext, Ast.Call(_GetGlobalContext, parentContext)));
-            init.AddRange(bodyGen.Globals.PrepareScope(bodyGen));
+            GlobalParent.PrepareScope(locals, init);
 
             // Create variables and references. Since references refer to
             // parameters, do this after parameters have been created.
-            CreateVariables(bodyGen, parentContext, init, NeedsLocalsDictionary, NeedsLocalsDictionary);
+
+            CreateFunctionVariables(locals, init);
 
             // Initialize parameters - unpack tuples.
             // Since tuples unpack into locals, this must be done after locals have been created.
-            InitializeParameters(bodyGen, init, needsWrapperMethod);
+            InitializeParameters(init, needsWrapperMethod, parameters);
 
             List<MSAst.Expression> statements = new List<MSAst.Expression>();
             // add beginning sequence point
-            statements.Add(bodyGen.AddDebugInfo(
+            statements.Add(GlobalParent.AddDebugInfo(
                 AstUtils.Empty(),
                 new SourceSpan(new SourceLocation(0, Start.Line, Start.Column), new SourceLocation(0, Start.Line, Int32.MaxValue))));
 
@@ -352,27 +623,23 @@ namespace IronPython.Compiler.Ast {
             // The exception traceback needs to come from the generator's method body, and so we must do the check and throw
             // from inside the generator.
             if (IsGenerator) {
-                MSAst.Expression s1 = YieldExpression.CreateCheckThrowExpression(bodyGen, SourceSpan.None);
+                MSAst.Expression s1 = YieldExpression.CreateCheckThrowExpression(SourceSpan.None);
                 statements.Add(s1);
-            }
-
-            if (NeedsLocalsDictionary || ContainsNestedFreeVariables) {
-                bodyGen.CreateNestedContext();
             }
 
             MSAst.ParameterExpression extracted = null;
             if (!IsGenerator && _canSetSysExcInfo) {
                 // need to allocate the exception here so we don't share w/ exceptions made & freed
                 // during the body.
-                extracted = bodyGen.GetTemporary("$ex", typeof(Exception));
+                extracted = Ast.Parameter(typeof(Exception), "$ex");
+                locals.Add(extracted);
             }
 
-            // Transform the body and add the resulting statements into the list
-            if (!TryTransformBody(bodyGen, statements)) {
-                // there's an error in the body
-                return null;
+            if (_body.CanThrow && !(_body is SuiteStatement) && _body.Start.IsValid) {
+                statements.Add(UpdateLineNumber(_body.Start.Line));
             }
 
+            statements.Add(Body);
             MSAst.Expression body = Ast.Block(statements);
 
             // If this function can modify sys.exc_info() (_canSetSysExcInfo), then it must restore the result on finish.
@@ -388,118 +655,125 @@ namespace IronPython.Compiler.Ast {
                 MSAst.Expression s = AstUtils.Try(
                     Ast.Assign(
                         extracted,
-                        Ast.Call(
-                            AstGenerator.GetHelperMethod("SaveCurrentException")
-                        )
+                        Ast.Call(AstMethods.SaveCurrentException)
                     ),
                     body
                 ).Finally(
                     Ast.Call(
-                        AstGenerator.GetHelperMethod("RestoreCurrentException"), extracted
+                        AstMethods.RestoreCurrentException, extracted
                     )
                 );
                 body = s;
             }
 
-            if (_body.CanThrow && ag.PyContext.PythonOptions.Frames) {
-                body = AstGenerator.AddFrame(bodyGen.LocalContext, Ast.Property(_functionParam, typeof(PythonFunction).GetProperty("__code__")), body);
-                bodyGen.AddHiddenVariable(AstGenerator._functionStack);
+            if (_body.CanThrow && GlobalParent.PyContext.PythonOptions.Frames) {
+                body = AddFrame(LocalContext, Ast.Property(_functionParam, typeof(PythonFunction).GetProperty("__code__")), body);
+                locals.Add(FunctionStackVariable);
             }
 
-            body = bodyGen.AddProfiling(body);
-            body = bodyGen.WrapScopeStatements(body);
-            body = bodyGen.AddReturnTarget(body);
+            body = AddProfiling(body);
+            body = WrapScopeStatements(body, _body.CanThrow);
+            body = Ast.Block(body, AstUtils.Empty());
+            body = AddReturnTarget(body);
 
-            if (_canSetSysExcInfo) {
-                flags |= FunctionAttributes.CanSetSysExcInfo;
-            }
 
-            if (ContainsTryFinally) {
-                flags |= FunctionAttributes.ContainsTryFinally;
-            }
+            MSAst.Expression bodyStmt = body;
+            if (localContext != null) {
+                var createLocal = CreateLocalContext(_parentContext);
 
-            if (IsGenerator) {
-                flags |= FunctionAttributes.Generator;
-            }
-
-            MSAst.Expression bodyStmt = bodyGen.MakeBody(
-                parentContext, 
-                init.ToArray(), 
-                body
-            );
-
-            Delegate originalDelegate;
-            MSAst.LambdaExpression code = Ast.Lambda(
-                GetDelegateType(_parameters, needsWrapperMethod, out originalDelegate),
-                AstGenerator.AddDefaultReturn(bodyStmt, typeof(object)),
-                bodyGen.Name + "$" + _lambdaId++,
-                bodyGen.Parameters
-            );
-
-            // create the function code object which all function instances will share
-            MSAst.Expression funcCode = ag.Globals.GetConstant(
-                new FunctionCode(
-                    ag.PyContext,
-                    EmitDebugFunction(ag) ? null : originalDelegate,
-                    code,
-                    name,
-                    ag.GetDocumentation(_body),
-                    ArrayUtils.ConvertAll(_parameters, (val) => val.Name),
-                    flags,
-                    Span,
-                    _sourceUnit.Path,
-                    ag.EmitDebugSymbols,
-                    ag.ShouldInterpret,
-                    FreeVariables,
-                    GlobalVariables,
-                    CellVariables,
-                    GetVarNames(),
-                    Variables == null ? 0 : Variables.Count,
-                    bodyGen.LoopLocationsNoCreate,
-                    bodyGen.HandlerLocationsNoCreate
-                )                
-            );
-            bodyGen.FuncCodeExpr = funcCode;
-
-            MSAst.Expression ret;
-            if (EmitDebugFunction(ag)) {
-                // we need to compile all of the debuggable code together at once otherwise mdbg gets confused.  If we're
-                // in tracing mode we'll still compile things one off though just to keep things simple.  The code will still
-                // be debuggable but naive debuggers like mdbg will have more issues.
-                ret = Ast.Call(
-                    _MakeFunctionDebug,                                                             // method
-                    ag.LocalContext,                                                                // 1. Emit CodeContext
-                    funcCode,                                                                       // 2. FunctionCode
-                    ((IPythonGlobalExpression)ag.Globals.GetVariable(ag, _nameVariable)).RawValue(),// 3. module name
-                    defaults.Count == 0 ?                                                           // 4. default values
-                        AstUtils.Constant(null, typeof(object[])) :
-                        (MSAst.Expression)Ast.NewArrayInit(typeof(object), defaults),
-                    IsGenerator ? 
-                        (MSAst.Expression)new PythonGeneratorExpression(code) :
-                        (MSAst.Expression)code
+                init.Add(
+                    Ast.Assign(
+                        localContext,
+                        createLocal
+                    )
                 );
+            }
+
+            init.Add(bodyStmt);
+
+            bodyStmt = Ast.Block(init);
+
+            // wrap a scope if needed
+            bodyStmt = Ast.Block(locals.ToReadOnlyCollection(), bodyStmt);
+
+            return Ast.Lambda(
+                delegateType,
+                AddDefaultReturn(bodyStmt, typeof(object)),
+                Name + "$" + Interlocked.Increment(ref _lambdaId),
+                parameters
+            );
+        }
+
+        internal override MSAst.LambdaExpression GetLambda() {
+            return EnsureFunctionLambda();
+        }
+
+        internal FunctionCode FunctionCode {
+            get {
+                return GetOrMakeFunctionCode();
+            }
+        }
+
+        private static MSAst.Expression/*!*/ AddDefaultReturn(MSAst.Expression/*!*/ body, Type returnType) {
+            if (body.Type == typeof(void) && returnType != typeof(void)) {
+                body = Ast.Block(body, Ast.Default(returnType));
+            }
+            return body;
+        }
+
+        private MSAst.ParameterExpression[] CreateParameters(bool needsWrapperMethod, ReadOnlyCollectionBuilder<MSAst.ParameterExpression> locals) {
+            MSAst.ParameterExpression[] parameters;
+            if (needsWrapperMethod) {
+                parameters = new[] { _functionParam, Ast.Parameter(typeof(object[]), "allArgs") };
+                foreach (var param in _parameters) {
+                    locals.Add(param.ParameterExpression);
+                }
             } else {
-                ret = Ast.Call(
-                    _MakeFunction,                                                                  // method
-                    ag.LocalContext,                                                                // 1. Emit CodeContext
-                    funcCode,                                                                       // 2. FunctionCode
-                    ((IPythonGlobalExpression)ag.Globals.GetVariable(ag, _nameVariable)).RawValue(),// 3. module name
-                    defaults.Count == 0 ?                                                           // 4. default values
-                        AstUtils.Constant(null, typeof(object[])) :
-                        (MSAst.Expression)Ast.NewArrayInit(typeof(object), defaults)
-                );
+                parameters = new MSAst.ParameterExpression[_parameters.Length + 1];
+                for (int i = 1; i < parameters.Length; i++) {
+                    parameters[i] = _parameters[i - 1].ParameterExpression;
+                }
+                parameters[0] = _functionParam;
+            }
+            return parameters;
+        }
+
+        internal void CreateFunctionVariables(ReadOnlyCollectionBuilder<MSAst.ParameterExpression> locals, List<MSAst.Expression> init) {
+            CreateVariables(locals, init);
+        }
+
+        internal MSAst.Expression/*!*/ AddReturnTarget(MSAst.Expression/*!*/ expression) {
+            if (_hasReturn) {
+                return Ast.Label(_returnLabel, AstUtils.Convert(expression, typeof(object)));
             }
 
-            ret = ag.AddDecorators(ret, _decorators);
-
-            return ret;
+            return expression;
         }
 
-        private static bool EmitDebugFunction(AstGenerator ag) {
-            return ag.EmitDebugSymbols && !ag.PyContext.EnableTracing;
+        internal override string ProfilerName {
+            get {
+                var sb = new StringBuilder("def ");
+                sb.Append(Name);
+                sb.Append('(');
+                bool comma = false;
+                foreach (var p in _parameters) {
+                    if (comma) {
+                        sb.Append(", ");
+                    } else {
+                        comma = true;
+                    }
+                    sb.Append(p.Name);
+                }
+                sb.Append(')');
+                return sb.ToString();
+            }
         }
 
-        private IList<string> GetVarNames() {
+        private bool EmitDebugFunction() {
+            return EmitDebugSymbols && !GlobalParent.PyContext.EnableTracing;
+        }
+
+        internal override IList<string> GetVarNames() {
             List<string> res = new List<string>();
 
             foreach (Parameter p in _parameters) {
@@ -511,78 +785,25 @@ namespace IronPython.Compiler.Ast {
             return res;
         }
         
-        private void TransformParameters(AstGenerator outer, AstGenerator inner, List<MSAst.Expression> defaults, List<MSAst.Expression> names, bool needsWrapperMethod, List<MSAst.Expression> init) {
-            inner.Parameter(_functionParam);
-
-            if (needsWrapperMethod) {
-                // define a single parameter which takes all arguments
-                inner.Parameter(typeof(object[]), "allArgs");
-            }
-
-            for (int i = 0; i < _parameters.Length; i++) {
-                // Create the parameter in the inner code block
-                Parameter p = _parameters[i];
-                p.Transform(inner, needsWrapperMethod, NeedsLocalsDictionary, init);
-
-                // Transform the default value
-                if (p.DefaultValue != null) {
-                    defaults.Add(
-                        outer.TransformAndConvert(p.DefaultValue, typeof(object))
-                    );
-                }
-
-                names.Add(
-                    AstUtils.Constant(
-                        p.Name
-                    )
-                );
-            }
-        }
-
-        private void InitializeParameters(AstGenerator ag, List<MSAst.Expression> init, bool needsWrapperMethod) {
+        private void InitializeParameters(List<MSAst.Expression> init, bool needsWrapperMethod, MSAst.Expression[] parameters) {
             for (int i = 0; i < _parameters.Length; i++) {
                 Parameter p = _parameters[i];
                 if (needsWrapperMethod) {
                     // if our method signature is object[] we need to first unpack the argument
                     // from the incoming array.
                     init.Add(
-                        GlobalAllocator.Assign(
-                            ag.Globals.GetVariable(ag, p.Variable),
+                        AssignValue(
+                            GetVariableExpression(p.PythonVariable),
                             Ast.ArrayIndex(
-                                ag.Parameters[1],
+                                parameters[1],
                                 Ast.Constant(i)
                             )
                         )
                     );
                 }
 
-                p.Init(ag, init);
+                p.Init(init);
             }
-        }
-
-        private bool TryTransformBody(AstGenerator ag, List<MSAst.Expression> statements) {
-            SuiteStatement suite = _body as SuiteStatement;
-
-            // Special case suite statement to avoid unnecessary allocation of extra node.
-            if (suite != null) {
-                foreach (Statement one in suite.Statements) {
-                    MSAst.Expression transforned = ag.Transform(one);
-                    if (transforned != null) {
-                        statements.Add(transforned);
-                    } else {
-                        return false;
-                    }
-                }
-            } else {
-                MSAst.Expression transformed = ag.Transform(_body);
-                if (transformed != null) {
-                    statements.Add(transformed);
-                } else {
-                    return false;
-                }
-            }
-
-            return true;
         }
 
         public override void Walk(PythonWalker walker) {
@@ -616,5 +837,14 @@ namespace IronPython.Compiler.Ast {
                 return false;
             }
         }
+
+        internal override void RewriteBody(PythonAst.LookupVisitor visitor) {
+            _dlrBody = null;    // clear the cached body if we've been reduced
+            
+            MSAst.Expression funcCode = GlobalParent.Constant(GetOrMakeFunctionCode());
+            FuncCodeExpr = funcCode;
+            
+            Body = new PythonAst.RewrittenBodyStatement(Body, visitor.Visit(Body));
+        }        
     }
 }

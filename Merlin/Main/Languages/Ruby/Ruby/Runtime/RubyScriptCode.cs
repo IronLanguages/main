@@ -114,10 +114,12 @@ namespace IronRuby.Runtime {
         private static bool _HasPdbPermissions = true;
 
         internal static Delegate/*!*/ CompileLambda(LambdaExpression/*!*/ lambda, LanguageContext/*!*/ context) {
-            return CompileLambda(lambda, context.DomainManager.Configuration.DebugMode, context.Options.NoAdaptiveCompilation);
+            return CompileLambda(lambda, context.DomainManager.Configuration.DebugMode, context.Options.NoAdaptiveCompilation, context.Options.CompilationThreshold);
         }
 
-        internal static Delegate/*!*/ CompileLambda(LambdaExpression/*!*/ lambda, bool debugMode, bool noAdaptiveCompilation) {
+        internal static Delegate/*!*/ CompileLambda(LambdaExpression/*!*/ lambda, bool debugMode, bool noAdaptiveCompilation, 
+            int compilationThreshold) {
+
             if (debugMode) {
 #if !SILVERLIGHT
                 // try to use PDBs and fallback to CustomGenerator if not allowed to:
@@ -137,7 +139,7 @@ namespace IronRuby.Runtime {
                 Debug.Assert(!(result.Target is Closure) || ((Closure)result.Target).Locals == null);
                 return result;
             } else {
-                return lambda.LightCompile(false);
+                return lambda.LightCompile(false, compilationThreshold);
             }
         }
     }

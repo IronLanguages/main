@@ -21,7 +21,11 @@ using MSAst = Microsoft.Scripting.Ast;
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Runtime.CompilerServices;
+
+using Microsoft.Scripting;
 using Microsoft.Scripting.Utils;
+
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Compiler.Ast {
@@ -39,23 +43,64 @@ namespace IronPython.Compiler.Ast {
             get { return _statements; }
         } 
 
-        internal override MSAst.Expression Transform(AstGenerator ag) {
+        public override MSAst.Expression Reduce() {
             if (_statements.Length == 0) {
-                return AstGenerator.EmptyBlock;
+                return AstUtils.Empty();
             }
 
-            var stmts = ag.Transform(_statements);
+            ReadOnlyCollectionBuilder<MSAst.Expression> statements = new ReadOnlyCollectionBuilder<MSAst.Expression>();
 
-            foreach (MSAst.Expression stmt in stmts) {
-                if (stmt == null) {
-                    // error was encountered and added to sync, 
-                    // don't return any of the block
-                    return null;
+            int curStart = -1;
+            foreach (var statement in _statements) {
+                // CPython debugging treats multiple statements on the same line as a single step, we
+                // match that behavior here.
+                if (statement.Start.Line == curStart) {
+                    statements.Add(new DebugInfoRemovalExpression(statement, curStart));
+                } else {
+                    if (statement.CanThrow && statement.Start.IsValid) {
+                        statements.Add(UpdateLineNumber(statement.Start.Line));
+                    }
+
+                    statements.Add(statement);
+                }
+                curStart = statement.Start.Line;
+            }
+            
+            return Ast.Block(statements.ToReadOnlyCollection());
+        }
+
+        internal class DebugInfoRemovalExpression : MSAst.Expression {
+            private MSAst.Expression _inner;
+            private int _start;
+
+            public DebugInfoRemovalExpression(MSAst.Expression expression, int line) {
+                _inner = expression;
+                _start = line;
+            }
+
+            public override MSAst.Expression Reduce() {
+                return RemoveDebugInfo(_start, _inner.Reduce());
+            }
+
+            public override MSAst.ExpressionType NodeType {
+                get {
+                    return MSAst.ExpressionType.Extension;
                 }
             }
-            return Ast.Block(stmts);
+
+            public override System.Type Type {
+                get {
+                    return _inner.Type;
+                }
+            }
+
+            public override bool CanReduce {
+                get {
+                    return true;
+                }
+            }
         }
-       
+
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {
                 if (_statements != null) {

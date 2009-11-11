@@ -35,9 +35,23 @@ namespace IronPython.Compiler {
         private readonly string _moduleName;
 
         public OnDiskScriptCode(Func<CodeContext, FunctionCode, object> code, SourceUnit sourceUnit, string moduleName) :
-            base(sourceUnit, SourceSpan.None) {
+            base(MakeAstFromSourceUnit(sourceUnit)) {
             _code = code;
             _moduleName = moduleName;
+        }
+
+        /// <summary>
+        /// Creates a fake PythonAst object which is represenative of the on-disk script code.
+        /// </summary>
+        private static Ast.PythonAst MakeAstFromSourceUnit(SourceUnit sourceUnit) {
+            var compCtx = new CompilerContext(sourceUnit, new PythonCompilerOptions(), ErrorSink.Null);
+
+            return new Ast.PythonAst(
+                new Ast.EmptyStatement(), 
+                true, 
+                ModuleOptions.None, 
+                false, 
+                compCtx);
         }
 
         public override object Run() {

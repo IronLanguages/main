@@ -28,11 +28,11 @@ using IronPython.Runtime.Operations;
 namespace IronPython.Compiler {    
     abstract class RunnableScriptCode : ScriptCode {
         private FunctionCode _code;
-        private readonly SourceSpan _span;
+        private readonly Compiler.Ast.PythonAst _ast;
 
-        public RunnableScriptCode(SourceUnit sourceUnit, SourceSpan span)
-            : base(sourceUnit) {
-            _span = span;
+        public RunnableScriptCode(Compiler.Ast.PythonAst ast)
+            : base(ast.SourceUnit) {
+            _ast = ast;
         }
 
         public override object Run() {
@@ -68,27 +68,19 @@ namespace IronPython.Compiler {
                     new FunctionCode(
                         (PythonContext)SourceUnit.LanguageContext,
                         dlg,
-                        null,
-                        "<module>",
-                        "",
-                        ArrayUtils.EmptyStrings,
-                        GetCodeAttributes(),
-                        _span,
-                        SourceUnit.Path,
-                        false,
-                        true,
-                        ArrayUtils.EmptyStrings,
-                        ArrayUtils.EmptyStrings,
-                        ArrayUtils.EmptyStrings,
-                        ArrayUtils.EmptyStrings,
-                        0,
-                        null,
-                        null
+                        _ast,
+                        _ast.GetDocumentation(_ast)
                     ),
                     null
                 );
             }
             return _code;
+        }
+
+        public Compiler.Ast.PythonAst Ast {
+            get {
+                return _ast;
+            }
         }
 
         public FunctionCode Code {
@@ -98,22 +90,7 @@ namespace IronPython.Compiler {
         }
 
         public abstract FunctionCode GetFunctionCode();
-        
-        protected virtual FunctionAttributes GetCodeAttributes() {            
-            return FunctionAttributes.None;
-        }
-
-        protected static FunctionAttributes GetCodeAttributes(CompilerContext context) {
-            ModuleOptions features = ((PythonCompilerOptions)context.Options).Module;
-            FunctionAttributes funcAttrs = 0;
-
-            if ((features & ModuleOptions.TrueDivision) != 0) {
-                funcAttrs |= FunctionAttributes.FutureDivision;
-            }
-
-            return funcAttrs;
-        }
-
+                
         protected void PushFrame(CodeContext context, Delegate code) {
             if (((PythonContext)SourceUnit.LanguageContext).PythonOptions.Frames) {
                 EnsureFunctionCode(code);

@@ -33,8 +33,8 @@ namespace IronPython.Compiler.Ast {
             get { return _function; }
         }
 
-        internal override MSAst.Expression Transform(AstGenerator ag, Type type) {
-            return _function.TransformToFunctionExpression(ag);
+        public override MSAst.Expression Reduce() {
+            return _function.MakeFunctionExpression();
         }
 
         public override void Walk(PythonWalker walker) {

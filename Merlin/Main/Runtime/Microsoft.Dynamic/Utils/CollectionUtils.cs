@@ -139,6 +139,18 @@ namespace Microsoft.Scripting.Utils {
             return true;
         }
 
+        public static IList<TRet> ConvertAll<T, TRet>(IList<T> collection, Func<T, TRet> predicate) {
+            ContractUtils.RequiresNotNull(collection, "collection");
+            ContractUtils.RequiresNotNull(predicate, "predicate");
+
+            List<TRet> res = new List<TRet>(collection.Count);
+            foreach (T item in collection) {
+                res.Add(predicate(item));
+            }
+
+            return res;
+        }
+
         public static List<T> GetRange<T>(IList<T> list, int index, int count) {
             ContractUtils.RequiresNotNull(list, "list");
             ContractUtils.RequiresArrayRange(list, index, count, "index", "count");

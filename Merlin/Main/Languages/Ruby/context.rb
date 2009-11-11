@@ -381,11 +381,10 @@ class CSProjCompiler
 
   def transform_config_file(configuration, source_path, target_build_path)
     # signing is on for IronRuby in Merlin, off for SVN and Binary
-    layout = {'Merlin' => { :LibraryPaths => '..\..\Languages\Ruby\libs;..\..\..\External.LCA_RESTRICTED\Languages\Ruby\Ruby-1.8.6p287\lib\ruby\site_ruby\1.8;..\..\..\External.LCA_RESTRICTED\Languages\Ruby\Ruby-1.8.6p287\lib\ruby\site_ruby;..\..\..\External.LCA_RESTRICTED\Languages\Ruby\Ruby-1.8.6p287\lib\ruby\1.8' }, 
+layout = {'Merlin' => { :LibraryPaths => '..\..\Languages\Ruby\libs;..\..\..\External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\site_ruby\1.8;..\..\..\External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\site_ruby;..\..\..\External.LCA_RESTRICTED\Languages\Ruby\redist-libs\ruby\1.8' }, 
               'Binary' => { :LibraryPaths => '..\lib\IronRuby;..\lib\ruby\site_ruby\1.8;..\lib\ruby\site_ruby;..\lib\ruby\1.8' },
-              'MerlinMono' => { :LibraryPaths => '../../Languages/Ruby/libs;../../../External.LCA_RESTRICTED/Languages/Ruby/Ruby-1.8.6p287/lib/ruby/site_ruby/1.8;../../../External.LCA_RESTRICTED/Languages/Ruby/Ruby-1.8.6p287/lib/ruby/site_ruby;../../../External.LCA_RESTRICTED/Languages/Ruby/Ruby-1.8.6p287/lib/ruby/1.8' }, 
-              'MonoRL' => { :LibraryPaths => '../lib;../lib/ironruby;../lib/ruby/site_ruby/1.8/;../lib/ruby/site_ruby/;../lib/ruby/1.8/' } }
-    
+          'MerlinMono' => { :LibraryPaths => '../../Languages/Ruby/libs;../../../External.LCA_RESTRICTED/Languages/Ruby/redist-libs/ruby/site_ruby/1.8;../../../External.LCA_RESTRICTED/Languages/Ruby/redist-libs/ruby/site_ruby;../../../External.LCA_RESTRICTED/Languages/Ruby/redist-libs/ruby/1.8' }, 
+              'MonoRL' => { :LibraryPaths => '../lib/IronRuby;../lib/ruby/site_ruby/1.8;../lib/ruby/site_ruby;../lib/ruby/1.8' } }
     transform_config source_path, target_build_path, layout[configuration][:LibraryPaths]
   end
 

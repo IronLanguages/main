@@ -16,6 +16,7 @@
 using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.Scripting.Math;
@@ -203,7 +204,11 @@ namespace IronRuby.StandardLibrary.BigDecimal {
 
         #region Create Methods
         public static BigDecimal Create(Config/*!*/config, object value) {
+            Debug.Assert(!(value is double) && !(value is float)); // Need to use CultureInfo.InvariantCulture for double
             return Create(config, value.ToString(), 0);
+        }
+        public static BigDecimal Create(Config/*!*/config, double value) {
+            return Create(config, value.ToString(CultureInfo.InvariantCulture), 0);
         }
         public static BigDecimal Create(Config/*!*/config, string value) {
             return Create(config, value, 0);
@@ -236,7 +241,7 @@ namespace IronRuby.StandardLibrary.BigDecimal {
                 if (!fraction.IsZero) {
                     if (!string.IsNullOrEmpty(exponentStr)) {
                         try {
-                            exponent = int.Parse(exponentStr);
+                            exponent = int.Parse(exponentStr, CultureInfo.InvariantCulture);
                         } catch (OverflowException) {
                             exponent = exponentStr.StartsWith("-") ? -1 : 1;
                             return ExponentOverflow(config, sign, exponent);
@@ -326,7 +331,7 @@ namespace IronRuby.StandardLibrary.BigDecimal {
                 if (BigDecimal.IsNegativeZero(x)) {
                     return -0.0;
                 }
-                return Double.Parse(x.ToString(0, "", true));
+                return Double.Parse(x.ToString(0, "", true), CultureInfo.InvariantCulture);
             } catch (OverflowException) {
                 return Double.PositiveInfinity;
             }

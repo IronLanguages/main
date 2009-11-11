@@ -98,6 +98,12 @@ namespace Microsoft.Scripting.Silverlight {
         /// background thread
         /// </summary>
         internal static Uri _HtmlPageUri;
+
+        /// <summary>
+        /// First Repl instance created
+        /// </summary>
+        public Repl Console { get; private set; }
+
         #endregion
         #region Depricated Properties
         [Obsolete("Use DynamicApplication.Current.Engine.Runtime instead")]
@@ -274,7 +280,6 @@ namespace Microsoft.Scripting.Silverlight {
         #endregion
 
         #region Implementation
-
         /// <summary>
         /// Called by Silverlight host when it instantiates our application
         /// </summary>
@@ -306,7 +311,7 @@ namespace Microsoft.Scripting.Silverlight {
                 ScriptTags.DownloadExternalCode(() => {
                     Engine = new DynamicEngine();
                     if (Settings.ConsoleEnabled)
-                        Repl.Show();
+                        Console = Repl.Show();
                     LanguageTypeExtensions.Load(Engine.LangConfig);
                     ScriptTags.Run(Engine);
                     Engine.Run(Settings.EntryPoint);
@@ -354,7 +359,6 @@ namespace Microsoft.Scripting.Silverlight {
         internal static Stream GetManifestResourceStream(string filename) {
             return Assembly.GetExecutingAssembly().GetManifestResourceStream("Microsoft.Scripting.Silverlight." + filename);
         }
-
         #endregion
     }
 }

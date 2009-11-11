@@ -20,13 +20,12 @@ using Microsoft.Scripting.Ast;
 #endif
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
-using Microsoft.Scripting;
-using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
@@ -426,6 +425,54 @@ namespace IronPython.Runtime.Operations {
             }
 
             return new FastBindResult<T>();
+        }
+    }
+
+    /// <summary>
+    /// Provides a debug view for user defined types.  This class is declared as public
+    /// because it is referred to from generated code.  You should not use this class.
+    /// </summary>
+    public class UserTypeDebugView {
+        private readonly IPythonObject _userObject;
+        
+        public UserTypeDebugView(IPythonObject userObject) {
+            _userObject = userObject;
+        }
+
+        public PythonType __class__ {
+            get {
+                return _userObject.PythonType;
+            }
+        }
+
+        [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+        internal List<ObjectDebugView> Members {
+            get {
+                var res = new List<ObjectDebugView>();
+                if (_userObject.Dict != null) {
+                    foreach (var v in _userObject.Dict) {
+                        res.Add(new ObjectDebugView(v.Key, v.Value));
+                    }
+                }
+
+                // collect any slots on the object
+                object[] slots = _userObject.GetSlots();
+                if (slots != null) {
+                    var mro = _userObject.PythonType.ResolutionOrder;
+                    List<string> slotNames = new List<string>();
+                    
+                    for(int i = mro.Count - 1; i>= 0; i--) {
+                        slotNames.AddRange(mro[i].GetTypeSlots());
+                    }
+
+                    for (int i = 0; i < slots.Length - 1; i++) {
+                        if (slots[i] != Uninitialized.Instance) {
+                            res.Add(new ObjectDebugView(slotNames[i], slots[i]));
+                        }
+                    }
+                }
+                return res;
+            }
         }
     }
 }

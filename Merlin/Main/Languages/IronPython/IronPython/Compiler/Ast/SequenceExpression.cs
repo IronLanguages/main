@@ -45,7 +45,7 @@ namespace IronPython.Compiler.Ast {
             get { return _items; }
         }
 
-        internal override MSAst.Expression TransformSet(AstGenerator ag, SourceSpan span, MSAst.Expression right, PythonOperationKind op) {
+        internal override MSAst.Expression TransformSet(SourceSpan span, MSAst.Expression right, PythonOperationKind op) {
             // if we just have a simple named multi-assignment  (e.g. a, b = 1,2)
             // then go ahead and step over the entire statement at once.  If we have a 
             // more complex statement (e.g. a.b, c.d = 1, 2) then we'll step over the
@@ -75,33 +75,33 @@ namespace IronPython.Compiler.Ast {
             }
 
             // 1. Evaluate the expression and assign the value to the temp.
-            MSAst.ParameterExpression right_temp = ag.GetTemporary("unpacking");
+            MSAst.ParameterExpression right_temp = Ast.Variable(typeof(object), "unpacking");
 
             // 2. Add the assignment "right_temp = right" into the suite/block
-            MSAst.Expression assignStmt1 = AstGenerator.MakeAssignment(right_temp, right);
+            MSAst.Expression assignStmt1 = MakeAssignment(right_temp, right);
 
             // 3. Call GetEnumeratorValues on the right side (stored in temp)
             MSAst.Expression enumeratorValues = Ast.Call(
-                AstGenerator.GetHelperMethod("GetEnumeratorValues"),    // method
+                AstMethods.GetEnumeratorValues,    // method
                 // arguments
-                ag.LocalContext,
+                Parent.LocalContext,
                 right_temp,
                 AstUtils.Constant(_items.Length)
             );
 
             // 4. Create temporary variable for the array
-            MSAst.ParameterExpression array_temp = ag.GetTemporary("array", typeof(object[]));
+            MSAst.ParameterExpression array_temp = Ast.Variable(typeof(object[]), "array");
 
             // 5. Assign the value of the method call (mce) into the array temp
             // And add the assignment "array_temp = Ops.GetEnumeratorValues(...)" into the block
-            MSAst.Expression assignStmt2 = ag.MakeAssignment(
-                array_temp, 
-                enumeratorValues, 
+            MSAst.Expression assignStmt2 = MakeAssignment(
+                array_temp,
+                enumeratorValues,
                 rightSpan
             );
 
             ReadOnlyCollectionBuilder<MSAst.Expression> sets = new ReadOnlyCollectionBuilder<MSAst.Expression>(_items.Length + 1);
-            for (int i = 0; i < _items.Length; i ++) {
+            for (int i = 0; i < _items.Length; i++) {
                 // target = array_temp[i]
 
                 Expression target = _items[i];
@@ -117,7 +117,6 @@ namespace IronPython.Compiler.Ast {
 
                 // 7. target = array_temp[i], and add the transformed assignment into the list of sets
                 MSAst.Expression set = target.TransformSet(
-                    ag,
                     emitIndividualSets ?                    // span
                         target.Span :
                         SourceSpan.None,
@@ -128,14 +127,10 @@ namespace IronPython.Compiler.Ast {
             }
             // 9. add the sets as their own block so they can be marked as a single span, if necessary.
             sets.Add(AstUtils.Empty());
-            MSAst.Expression itemSet = ag.AddDebugInfo(Ast.Block(sets.ToReadOnlyCollection()), leftSpan);
+            MSAst.Expression itemSet = GlobalParent.AddDebugInfo(Ast.Block(sets.ToReadOnlyCollection()), leftSpan);
 
-            // 10. Free the temps
-            ag.FreeTemp(array_temp);
-            ag.FreeTemp(right_temp);
-
-            // 11. Return the suite statement (block)
-            return ag.AddDebugInfo(Ast.Block(assignStmt1, assignStmt2, itemSet, AstUtils.Empty()), totalSpan);
+            // 10. Return the suite statement (block)
+            return GlobalParent.AddDebugInfo(Ast.Block(new[] { array_temp, right_temp }, assignStmt1, assignStmt2, itemSet, AstUtils.Empty()), totalSpan);
         }
 
         internal override string CheckAssign() {
@@ -154,13 +149,13 @@ namespace IronPython.Compiler.Ast {
             return !(expr is NameExpression);
         }
 
-        internal override MSAst.Expression TransformDelete(AstGenerator ag) {
+        internal override MSAst.Expression TransformDelete() {
             MSAst.Expression[] statements = new MSAst.Expression[_items.Length + 1];
             for (int i = 0; i < _items.Length; i++) {
-                statements[i] = _items[i].TransformDelete(ag);
+                statements[i] = _items[i].TransformDelete();
             }
             statements[_items.Length] = AstUtils.Empty();
-            return ag.AddDebugInfo(Ast.Block(statements), Span);
+            return GlobalParent.AddDebugInfo(Ast.Block(statements), Span);
         }
 
         internal override bool CanThrow {

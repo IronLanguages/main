@@ -267,18 +267,28 @@
     <Compile Include="Hosting\Shell\Remote\RemoteConsoleCommandLine.cs" />
     <Compile Include="Hosting\Shell\Remote\RemoteConsoleHost.cs" />
     <Compile Include="Hosting\Shell\Remote\RemoteRuntimeServer.cs" />
+    <Compile Include="Interpreter\BranchLabel.cs" />
+    <Compile Include="Interpreter\Instructions\AddInstruction.cs" />
     <Compile Include="Interpreter\Instructions\ArrayOperations.cs" />
     <Compile Include="Interpreter\Instructions\CallInstruction.cs" />
     <Compile Include="Interpreter\Instructions\CallInstruction.Generated.cs" />
+    <Compile Include="Interpreter\Instructions\ControlFlowInstructions.cs" />
+    <Compile Include="Interpreter\Instructions\EqualInstruction.cs" />
+    <Compile Include="Interpreter\Instructions\FieldOperations.cs" />
+    <Compile Include="Interpreter\Instructions\GreaterThanInstruction.cs" />
     <Compile Include="Interpreter\Instructions\InstructionFactory.cs" />
+    <Compile Include="Interpreter\Instructions\LessThanInstruction.cs" />
     <Compile Include="Interpreter\Instructions\LocalAccess.cs" />
+    <Compile Include="Interpreter\Instructions\InstructionList.cs" />
+    <Compile Include="Interpreter\Instructions\NotEqualInstruction.cs" />
+    <Compile Include="Interpreter\Instructions\NumericConvertInstruction.cs" />
     <Compile Include="Interpreter\Instructions\StackOperations.cs" />
-    <Compile Include="Interpreter\LightCompilerDebugView.cs" />
+    <Compile Include="Interpreter\Instructions\TypeOperations.cs" />
     <Compile Include="Interpreter\LightDelegateCreator.cs" />
     <Compile Include="Interpreter\LightLambda.Generated.cs" />
     <Compile Include="Interpreter\Interpreter.cs" />
-    <Compile Include="Interpreter\DynamicInstructions.Generated.cs" />
-    <Compile Include="Interpreter\DynamicInstructions.cs" />
+    <Compile Include="Interpreter\Instructions\DynamicInstructions.Generated.cs" />
+    <Compile Include="Interpreter\Instructions\DynamicInstructionN.cs" />
     <Compile Include="Interpreter\LightLambdaClosureVisitor.cs" />
     <Compile Include="Interpreter\LightLambda.cs" />
     <Compile Include="Interpreter\Instructions\Instruction.cs" />
@@ -510,9 +520,6 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Microsoft.Scripting.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Hosting\Providers\" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" Condition=" '$(SilverlightTreeBuild)' != 'true' " />
   <Import Condition=" '$(Golden)' == 'True'" Project="..\..\External\Build\Microsoft.VersionNumber.targets" />

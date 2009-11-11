@@ -24,15 +24,13 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 namespace IronPython.Compiler.Ast {
 
     public class BreakStatement : Statement {
+        private ILoopStatement _loop;
+
         public BreakStatement() {
         }
 
-        internal override MSAst.Expression Transform(AstGenerator ag) {
-            if (ag.InLoop) {
-                return ag.AddDebugInfo(MSAst.Expression.Break(ag.BreakLabel), Span);
-            } else {
-                return null;
-            }
+        public override MSAst.Expression Reduce() {
+            return GlobalParent.AddDebugInfo(MSAst.Expression.Break(_loop.BreakLabel), Span);
         }
 
         public override void Walk(PythonWalker walker) {
@@ -44,6 +42,15 @@ namespace IronPython.Compiler.Ast {
         internal override bool CanThrow {
             get {
                 return false;
+            }
+        }
+
+        internal ILoopStatement LoopStatement {
+            get {
+                return _loop;
+            }
+            set {
+                _loop = value;
             }
         }
     }

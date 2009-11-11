@@ -30,53 +30,55 @@ using Microsoft.Scripting.Utils;
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 
+using AstUtils = Microsoft.Scripting.Ast.Utils;
+
+
 namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
 
-    class SavableGlobalAllocator : ArrayGlobalAllocator {
-        public SavableGlobalAllocator(PythonContext/*!*/ context)
-            : base(context) {
-        }
-
+    class ToDiskCompilationMode : CollectableCompilationMode {
         public override MSAst.Expression GetConstant(object value) {
-            return Utils.Constant(value);
+            return AstUtils.Constant(value);
         }
 
-        public override MSAst.Expression[] PrepareScope(AstGenerator gen) {
-            gen.AddHiddenVariable(GlobalArray);
-            return new MSAst.Expression[] {
+        public override void PrepareScope(PythonAst ast, System.Runtime.CompilerServices.ReadOnlyCollectionBuilder<MSAst.ParameterExpression> locals, List<MSAst.Expression> init) {
+            locals.Add(PythonAst._globalArray);
+            init.Add(
                 Ast.Assign(
-                    GlobalArray, 
+                    PythonAst._globalArray,
                     Ast.Call(
                         typeof(PythonOps).GetMethod("GetGlobalArrayFromContext"),
-                        ArrayGlobalAllocator._globalContext
+                        PythonAst._globalContext
                     )
                 )
-            };
+            );
         }
 
-        public override ScriptCode/*!*/ MakeScriptCode(MSAst.Expression/*!*/ body, CompilerContext/*!*/ context, PythonAst/*!*/ ast, Dictionary<int, bool> handlerLocations, Dictionary<int, Dictionary<int, bool>> loopAndFinallyLocations) {
-            // finally build the funcion that's closed over the array
-            var func = Ast.Lambda<Func<CodeContext, FunctionCode, object>>(
+        public override MSAst.LambdaExpression ReduceAst(PythonAst instance, string name) {
+            return Ast.Lambda<Func<CodeContext, FunctionCode, object>>(
                 Ast.Block(
-                    new[] { GlobalArray },
+                    new[] { PythonAst._globalArray },
                     Ast.Assign(
-                        GlobalArray, 
+                        PythonAst._globalArray,
                         Ast.Call(
                             null,
                             typeof(PythonOps).GetMethod("GetGlobalArrayFromContext"),
-                            IronPython.Compiler.Ast.ArrayGlobalAllocator._globalContext 
+                            IronPython.Compiler.Ast.PythonAst._globalContext
                         )
                     ),
-                    Utils.Convert(body, typeof(object))
+                    AstUtils.Convert(instance.ReduceWorker(), typeof(object))
                 ),
-                ((PythonCompilerOptions)context.Options).ModuleName,
-                ArrayGlobalAllocator._arrayFuncParams
+                name,
+                PythonAst._arrayFuncParams
             );
-
-            PythonCompilerOptions pco = context.Options as PythonCompilerOptions;
-
-            return new PythonSavableScriptCode(func, context.SourceUnit, GetNames(), pco.ModuleName);
         }
+
+        public override ScriptCode MakeScriptCode(PythonAst ast) {
+            PythonCompilerOptions pco = ast.CompilerContext.Options as PythonCompilerOptions;
+            var code = (MSAst.Expression<Func<CodeContext/*!*/, FunctionCode/*!*/, object>>)ast.Reduce();
+
+            return new PythonSavableScriptCode(code, ast.SourceUnit, ast.GetNames(), pco.ModuleName);
+        }
+
     }
 }

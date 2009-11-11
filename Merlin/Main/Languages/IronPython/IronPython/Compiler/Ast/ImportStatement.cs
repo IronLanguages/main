@@ -53,20 +53,18 @@ namespace IronPython.Compiler.Ast {
             get { return _asNames; }
         }
 
-        internal override MSAst.Expression Transform(AstGenerator ag) {
+        public override MSAst.Expression Reduce() {
             ReadOnlyCollectionBuilder<MSAst.Expression> statements = new ReadOnlyCollectionBuilder<MSAst.Expression>();
 
             for (int i = 0; i < _names.Length; i++) {
                 statements.Add(
                     // _references[i] = PythonOps.Import(<code context>, _names[i])
-                    ag.AddDebugInfoAndVoid(
-                        GlobalAllocator.Assign(
-                            ag.Globals.GetVariable(ag, _variables[i]), 
+                    GlobalParent.AddDebugInfoAndVoid(
+                        AssignValue(
+                            Parent.GetVariableExpression(_variables[i]),
                             Ast.Call(
-                                AstGenerator.GetHelperMethod(                           // helper
-                                    _asNames[i] == null ? "ImportTop" : "ImportBottom"
-                                ),
-                                ag.LocalContext,                                        // 1st arg - code context
+                                _asNames[i] == null ? AstMethods.ImportTop : AstMethods.ImportBottom,
+                                Parent.LocalContext,                                     // 1st arg - code context
                                 AstUtils.Constant(_names[i].MakeString()),                   // 2nd arg - module name
                                 AstUtils.Constant(_forceAbsolute ? 0 : -1)                   // 3rd arg - absolute or relative imports
                             )
@@ -77,7 +75,7 @@ namespace IronPython.Compiler.Ast {
             }
 
             statements.Add(AstUtils.Empty());
-            return ag.AddDebugInfo(Ast.Block(statements.ToReadOnlyCollection()), Span);
+            return GlobalParent.AddDebugInfo(Ast.Block(statements.ToReadOnlyCollection()), Span);
         }
 
         public override void Walk(PythonWalker walker) {

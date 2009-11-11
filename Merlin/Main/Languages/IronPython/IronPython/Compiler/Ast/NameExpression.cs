@@ -20,12 +20,16 @@ using MSAst = Microsoft.Scripting.Ast;
 #endif
 
 using System;
+using System.Diagnostics;
 using System.Dynamic;
-using IronPython.Runtime.Binding;
+
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
+
+using IronPython.Runtime.Binding;
 using IronPython.Runtime.Operations;
+
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
@@ -57,60 +61,62 @@ namespace IronPython.Compiler.Ast {
             return base.ToString() + ":" + _name;
         }
 
-        internal override MSAst.Expression Transform(AstGenerator ag, Type type) {
+        public override MSAst.Expression Reduce() {
             MSAst.Expression read;
+
             if (_reference.PythonVariable == null) {
                 read = Ast.Call(
                     typeof(PythonOps).GetMethod("LookupName"),
-                    ag.LocalContext,
-                    ag.Globals.GetConstant(_name)                    
+                    Parent.LocalContext,
+                    Ast.Constant(_name)                    
                 );
             } else {
-                read = ag.Globals.GetVariable(ag, _reference.PythonVariable);
+                read = Parent.GetVariableExpression(_reference.PythonVariable);
             }
 
             if (!_assigned && !(read is IPythonGlobalExpression)) {
                 read = Ast.Call(
-                    AstGenerator.GetHelperMethod("CheckUninitialized"),
+                    AstMethods.CheckUninitialized,
                     read,
-                    ag.Globals.GetConstant(_name)
+                    Ast.Constant(_name)
                 );
             }
 
             return read;
         }
 
-        internal override MSAst.Expression TransformSet(AstGenerator ag, SourceSpan span, MSAst.Expression right, PythonOperationKind op) {
+        internal override MSAst.Expression TransformSet(SourceSpan span, MSAst.Expression right, PythonOperationKind op) {
             MSAst.Expression assignment;
 
             if (op != PythonOperationKind.None) {
-                right = ag.Operation(
+                right = GlobalParent.Operation(
                     typeof(object),
                     op,
-                    Transform(ag, typeof(object)),
+                    this,
                     right
                 );
             }
 
+            SourceSpan aspan = span.IsValid ? new SourceSpan(Span.Start, span.End) : SourceSpan.None;
+
             if (_reference.PythonVariable != null) {
-                assignment = GlobalAllocator.Assign(
-                    ag.Globals.GetVariable(ag, _reference.PythonVariable), 
-                    AstGenerator.ConvertIfNeeded(right, typeof(object))
+                assignment = AssignValue(
+                    Parent.GetVariableExpression(_reference.PythonVariable),
+                    ConvertIfNeeded(right, typeof(object))
                 );
             } else {
                 assignment = Ast.Call(
                     null,
                     typeof(PythonOps).GetMethod("SetName"),
-                    new [] {
-                        ag.LocalContext, 
-                        ag.Globals.GetConstant(_name),
+                    new[] {
+                        Parent.LocalContext, 
+                        Ast.Constant(_name),
                         AstUtils.Convert(right, typeof(object))
-                        }
+                    }
                 );
             }
 
-            SourceSpan aspan = span.IsValid ? new SourceSpan(Span.Start, span.End) : SourceSpan.None;
-            return ag.AddDebugInfoAndVoid(assignment, aspan);
+            return GlobalParent.AddDebugInfoAndVoid(assignment, aspan);
         }
 
         internal override string CheckAssign() {
@@ -121,9 +127,9 @@ namespace IronPython.Compiler.Ast {
             return null;
         }
 
-        internal override MSAst.Expression TransformDelete(AstGenerator ag) {
-            if (_reference.PythonVariable != null && !ag.IsGlobal) {
-                MSAst.Expression variable = ag.Globals.GetVariable(ag, _reference.PythonVariable);
+        internal override MSAst.Expression TransformDelete() {
+            if (_reference.PythonVariable != null) {
+                MSAst.Expression variable = Parent.GetVariableExpression(_reference.PythonVariable);
                 // keep the variable alive until we hit the del statement to
                 // better match CPython's lifetimes
                 MSAst.Expression del = Ast.Block(
@@ -131,12 +137,12 @@ namespace IronPython.Compiler.Ast {
                         typeof(GC).GetMethod("KeepAlive"),
                         variable
                     ),
-                    GlobalAllocator.Delete(variable)
+                    Delete(variable)
                 );
 
                 if (!_assigned) {
                     del = Ast.Block(
-                        Transform(ag, variable.Type),
+                        this,
                         del,
                         AstUtils.Empty()
                     );
@@ -146,8 +152,8 @@ namespace IronPython.Compiler.Ast {
                 return Ast.Call(
                     typeof(PythonOps).GetMethod("RemoveName"),
                     new[] {
-                        ag.LocalContext,
-                        ag.Globals.GetConstant(_name)
+                        Parent.LocalContext,
+                        Ast.Constant(_name)
                     }
                 );
             }

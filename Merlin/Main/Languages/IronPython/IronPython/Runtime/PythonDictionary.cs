@@ -25,7 +25,7 @@ using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime {
 
-    [PythonType("dict"), Serializable]
+    [PythonType("dict"), Serializable, DebuggerTypeProxy(typeof(PythonDictionary.DebugProxy)), DebuggerDisplay("dict, {Count} items")]
     public class PythonDictionary : IDictionary<object, object>, IValueEquality,
         IDictionary, ICodeFormattable, IAttributesCollection {
         [MultiRuntimeAware]
@@ -807,6 +807,47 @@ namespace IronPython.Runtime {
 
         internal bool TryRemoveValue(object key, out object value) {
             return _storage.TryRemoveValue(key, out value);
+        }
+
+        #endregion
+
+        #region Debugger View
+
+        internal class DebugProxy {
+            private readonly PythonDictionary _dict;
+
+            public DebugProxy(PythonDictionary dict) {
+                _dict = dict;
+            }
+
+            [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+            public List<KeyValueDebugView> Members {
+                get {
+                    var res = new List<KeyValueDebugView>();
+                    foreach (var v in _dict) {
+                        res.Add(new KeyValueDebugView(v.Key, v.Value));
+                    }
+                    return res;
+                }
+            }
+        }
+
+        [DebuggerDisplay("{Value}", Name = "{Key,nq}", Type = "{TypeInfo,nq}")]
+        internal class KeyValueDebugView {
+            public readonly object Key;
+            public readonly object Value;
+
+            public KeyValueDebugView(object key, object value) {
+                Key = key;
+                Value = value;
+            }
+
+            [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+            public string TypeInfo {
+                get {
+                    return "Key: " + PythonTypeOps.GetName(Key) + ", " + "Value: " + PythonTypeOps.GetName(Value);
+                }
+            }
         }
 
         #endregion

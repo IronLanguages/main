@@ -81,6 +81,8 @@ namespace IronRuby.Tests {
                 Interpreter3,
                 Interpreter4,
                 Interpreter5,
+                InterpreterNumeric1,
+                InterpreterMethodCalls1,
 
                 Scenario_RubySimpleCall1,
                 Scenario_RubySimpleCall2, 

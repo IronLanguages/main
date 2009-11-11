@@ -44,9 +44,7 @@ namespace IronPython.Runtime.Types {
     /// <summary>
     /// Represents a PythonType.  Instances of PythonType are created via PythonTypeBuilder.  
     /// </summary>
-#if !SILVERLIGHT
-    [DebuggerDisplay("PythonType: {Name}")]
-#endif
+    [DebuggerDisplay("PythonType: {Name}"), DebuggerTypeProxy(typeof(PythonType.DebugProxy))]
     [PythonType("type")]
     [Documentation(@"type(object) -> gets the type of the object
 type(name, bases, dict) -> creates a new type instance with the given name, base classes, and members from the dictionary")]
@@ -517,6 +515,17 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 }
                 return string.Format("<class '{0}.{1}'>", module, name);
             }
+        }
+
+        internal string/*!*/ GetTypeDebuggerDisplay() {
+            PythonTypeSlot dts;
+            string module = "unknown";
+            object modObj;
+            if (TryLookupSlot(Context.SharedContext, "__module__", out dts) &&
+                dts.TryGetValue(Context.SharedContext, this, this, out modObj)) {
+                module = modObj as string;
+            }
+            return string.Format("{0}.{1} instance", module, Name);
         }
 
         public void __setattr__(CodeContext/*!*/ context, string name, object value) {
@@ -1823,6 +1832,14 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             UpdateObjectNewAndInit(context);
         }
 
+        internal IList<string> GetTypeSlots() {
+            PythonTypeSlot pts;
+            if(_dict != null && _dict.TryGetValue("__slots__", out pts) && pts is PythonTypeUserDescriptorSlot) {
+                return SlotsToList(((PythonTypeUserDescriptorSlot)pts).Value);
+            }
+            return ArrayUtils.EmptyStrings; 
+        }
+
         internal static List<string> GetSlots(PythonDictionary dict) {
             List<string> res = null;
             object slots;
@@ -2476,6 +2493,37 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
 
         #endregion
+
+        internal class DebugProxy {
+            private readonly PythonType _type;
+
+            public DebugProxy(PythonType type) {
+                _type = type;
+            }
+            
+            public PythonType[] __bases__ {
+                get {
+                    return ArrayUtils.ToArray(_type.BaseTypes);
+                }
+            }
+
+            [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+            public List<ObjectDebugView> Members {
+                get {
+                    var res = new List<ObjectDebugView>();
+                    if (_type._dict != null) {
+                        foreach (var v in _type._dict) {
+                            if (v.Value is PythonTypeUserDescriptorSlot) {
+                                res.Add(new ObjectDebugView(v.Key, ((PythonTypeUserDescriptorSlot)v.Value).Value));
+                            } else {
+                                res.Add(new ObjectDebugView(v.Key, v.Value));
+                            }
+                        }
+                    }
+                    return res;
+                }
+            }
+        }
     }
 
     enum OptimizedGetKind {

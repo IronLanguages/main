@@ -24,7 +24,7 @@ using IronPython.Runtime.Operations;
 
 namespace IronPython.Compiler.Ast {
     public partial class BinaryExpression {
-        internal override Expression ConstantFold() {
+        internal override ConstantExpression ConstantFold() {
             Expression left = _left.ConstantFold();
             Expression right = _right.ConstantFold();
 
@@ -121,7 +121,7 @@ namespace IronPython.Compiler.Ast {
             } catch (ArithmeticException) {
             }
 
-            return this;
+            return null;
         }
 
     }

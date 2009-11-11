@@ -25,6 +25,8 @@ using System.Collections.Generic;
 using Microsoft.Scripting;
 
 namespace IronPython.Compiler.Ast {
+    using Ast = MSAst.Expression;
+
     public class ListComprehensionFor : ListComprehensionIterator {
         private readonly Expression _lhs, _list;
 
@@ -41,9 +43,13 @@ namespace IronPython.Compiler.Ast {
             get { return _list; }
         }
 
-        internal override MSAst.Expression Transform(AstGenerator ag, MSAst.Expression body) {
-            MSAst.ParameterExpression temp = ag.GetTemporary("list_comprehension_for", typeof(KeyValuePair<IEnumerator, IDisposable>));
-            return ForStatement.TransformForStatement(ag, temp, _list, _lhs, body, null, Span, _lhs.End, null, null);
+        internal override MSAst.Expression Transform(MSAst.Expression body) {
+            MSAst.ParameterExpression temp = Ast.Parameter(typeof(KeyValuePair<IEnumerator, IDisposable>), "list_comprehension_for");
+
+            return Ast.Block(
+                new[] { temp },
+                ForStatement.TransformForStatement(Parent, temp, _list, _lhs, body, null, Span, _lhs.End, null, null)
+            );
         }
 
         public override void Walk(PythonWalker walker) {

@@ -37,11 +37,11 @@ namespace IronPython.Compiler {
     /// </summary>
     class ClosureExpression : Expression, IPythonVariableExpression {
         private readonly Expression/*!*/ _closureCell;
-        private readonly Expression _parameter;
+        private readonly ParameterExpression _parameter;
         private readonly Ast.PythonVariable/*!*/ _variable;
-        private static readonly FieldInfo _cellField = typeof(ClosureCell).GetField("Value");
+        internal static readonly FieldInfo _cellField = typeof(ClosureCell).GetField("Value");
 
-        public ClosureExpression(Ast.PythonVariable/*!*/ variable, Expression/*!*/ closureCell, Expression parameter) {
+        public ClosureExpression(Ast.PythonVariable/*!*/ variable, Expression/*!*/ closureCell, ParameterExpression parameter) {
             Assert.NotNull(closureCell);
 
             _variable = variable;
@@ -64,7 +64,7 @@ namespace IronPython.Compiler {
         /// The original expression for the incoming parameter if this is a parameter closure.  Otherwise
         /// the value is null.
         /// </summary>
-        public Expression OriginalParameter {
+        public ParameterExpression OriginalParameter {
             get {
                 return _parameter;
             }

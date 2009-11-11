@@ -24,11 +24,13 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 namespace IronPython.Compiler.Ast {
 
     public class EmptyStatement : Statement {
+        internal static EmptyStatement PreCompiledInstance = new EmptyStatement();
+
         public EmptyStatement() {
         }
 
-        internal override MSAst.Expression Transform(AstGenerator ag) {
-            return ag.AddDebugInfo(AstUtils.Empty(), Span);
+        public override MSAst.Expression Reduce() {
+            return GlobalParent.AddDebugInfoAndVoid(AstUtils.Empty(), Span);
         }
 
         public override void Walk(PythonWalker walker) {

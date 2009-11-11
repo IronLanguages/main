@@ -40,12 +40,12 @@ namespace IronPython.Compiler.Ast {
             get { return _expression; }
         }
 
-        internal override MSAst.Expression Transform(AstGenerator ag, Type type) {
-            return ag.Transform(_expression, type);
+        public override MSAst.Expression Reduce() {
+            return _expression;
         }
 
-        internal override MSAst.Expression TransformSet(AstGenerator ag, SourceSpan span, MSAst.Expression right, PythonOperationKind op) {
-            return _expression.TransformSet(ag, span, right, op);
+        internal override MSAst.Expression TransformSet(SourceSpan span, MSAst.Expression right, PythonOperationKind op) {
+            return _expression.TransformSet(span, right, op);
         }
 
         internal override string CheckAssign() {
@@ -56,8 +56,14 @@ namespace IronPython.Compiler.Ast {
             return _expression.CheckDelete();
         }
 
-        internal override MSAst.Expression TransformDelete(AstGenerator ag) {
-            return _expression.TransformDelete(ag);
+        internal override MSAst.Expression TransformDelete() {
+            return _expression.TransformDelete();
+        }
+
+        public override Type Type {
+            get {
+                return _expression.Type;
+            }
         }
 
         public override void Walk(PythonWalker walker) {

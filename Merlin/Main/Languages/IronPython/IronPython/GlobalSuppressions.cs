@@ -59,3 +59,4 @@
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1823:AvoidUnusedPrivateFields", Scope = "member", Target = "IronPython.Runtime.Types.BuiltinFunction+BuiltinMethodCaller`7.#MyDelegate")]
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1823:AvoidUnusedPrivateFields", Scope = "member", Target = "IronPython.Runtime.Types.BuiltinFunction+BuiltinMethodCaller`8.#MyDelegate")]
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1823:AvoidUnusedPrivateFields", Scope = "member", Target = "IronPython.Runtime.Types.BuiltinFunction+BuiltinMethodCaller`9.#MyDelegate")]
+[assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1823:AvoidUnusedPrivateFields", Scope = "member", Target = "IronPython.Runtime.ObjectDebugView.#_name")]

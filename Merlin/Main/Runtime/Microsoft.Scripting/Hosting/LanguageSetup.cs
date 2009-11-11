@@ -127,6 +127,7 @@ namespace Microsoft.Scripting.Hosting {
             get { return _options; }
         }
 
+        [Obsolete("This option is ignored")]
         public bool InterpretedMode {
             get { return GetCachedOption("InterpretedMode", ref _interpretedMode); }
             set { 
@@ -135,6 +136,7 @@ namespace Microsoft.Scripting.Hosting {
             }
         }
 
+        [Obsolete("Use Options[\"NoAdaptiveCompilation\"] instead.")]
         public bool NoAdaptiveCompilation {
             get { return GetCachedOption("NoAdaptiveCompilation", ref _noAdaptiveCompilation); }
             set {
@@ -151,6 +153,7 @@ namespace Microsoft.Scripting.Hosting {
             }
         }
 
+        [Obsolete("Use Options[\"PerfStats\"] instead.")]
         public bool PerfStats {
             get { return GetCachedOption("PerfStats", ref _perfStats); }
             set {

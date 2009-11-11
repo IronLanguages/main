@@ -413,7 +413,7 @@ namespace IronRuby.Builtins {
 
                 // One digit is displayed before the decimal point. Hence, we need one fewer than the precision after the decimal point
                 int fractionDigitsRequired = (_opts.Precision - 1);
-                string expForm = absV.ToString("E" + fractionDigitsRequired);
+                string expForm = absV.ToString("E" + fractionDigitsRequired, CultureInfo.InvariantCulture);
                 string mantissa = expForm.Substring(0, expForm.IndexOf('E')).TrimEnd(zero);
 
                 // We do -2 to ignore the digit before the decimal point and the decimal point itself

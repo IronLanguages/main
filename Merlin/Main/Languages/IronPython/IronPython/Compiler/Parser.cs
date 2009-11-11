@@ -30,9 +30,6 @@ using IronPython.Runtime.Types;
 
 namespace IronPython.Compiler {
 
-    /// <summary>
-    /// Summary description for Parser.
-    /// </summary>
     public class Parser : IDisposable { // TODO: remove IDisposable
         // immutable properties:
         private readonly Tokenizer _tokenizer;
@@ -60,13 +57,14 @@ namespace IronPython.Compiler {
         private bool _inLoop, _inFinally, _isGenerator, _returnWithValue;
         private SourceCodeReader _sourceReader;
         private int _errorCode;
+        private readonly CompilerContext _context;
 
         private static readonly char[] newLineChar = new char[] { '\n' };
         private static readonly char[] whiteSpace = { ' ', '\t' };
       
         #region Construction
 
-        private Parser(Tokenizer tokenizer, ErrorSink errorSink, ParserSink parserSink, ModuleOptions languageFeatures) {
+        private Parser(CompilerContext context, Tokenizer tokenizer, ErrorSink errorSink, ParserSink parserSink, ModuleOptions languageFeatures) {
             ContractUtils.RequiresNotNull(tokenizer, "tokenizer");
             ContractUtils.RequiresNotNull(errorSink, "errorSink");
             ContractUtils.RequiresNotNull(parserSink, "parserSink");
@@ -76,6 +74,7 @@ namespace IronPython.Compiler {
             _tokenizer = tokenizer;
             _errors = errorSink;
             _sink = parserSink;
+            _context = context;
 
             Reset(tokenizer.SourceUnit, languageFeatures);
         }
@@ -115,7 +114,7 @@ namespace IronPython.Compiler {
             tokenizer.Initialize(null, reader, context.SourceUnit, SourceLocation.MinValue);
             tokenizer.IndentationInconsistencySeverity = options.IndentationInconsistencySeverity;
 
-            Parser result = new Parser(tokenizer, context.Errors, context.ParserSink, compilerOptions.Module);
+            Parser result = new Parser(context, tokenizer, context.Errors, context.ParserSink, compilerOptions.Module);
             result._sourceReader = reader;
             return result;
         }
@@ -167,7 +166,7 @@ namespace IronPython.Compiler {
                     return null;
                 }
 
-                return new PythonAst(ret, false, _languageFeatures, true);
+                return new PythonAst(ret, false, _languageFeatures, true, _context);
             } else {
                 if ((_errorCode & ErrorCodes.IncompleteMask) != 0) {
                     if ((_errorCode & ErrorCodes.IncompleteToken) != 0) {
@@ -197,7 +196,7 @@ namespace IronPython.Compiler {
                 MaybeEatNewLine();
                 Statement statement = ParseStmt();
                 EatEndOfInput();
-                return new PythonAst(statement, false, _languageFeatures, true);
+                return new PythonAst(statement, false, _languageFeatures, true, _context);
             } catch (BadSourceException bse) {
                 throw BadSourceError(bse);
             }
@@ -208,7 +207,7 @@ namespace IronPython.Compiler {
                 // TODO: move from source unit  .TrimStart(' ', '\t')
                 ReturnStatement ret = new ReturnStatement(ParseTestListAsExpression());
                 ret.SetLoc(SourceSpan.None);
-                return new PythonAst(ret, false, _languageFeatures, false);
+                return new PythonAst(ret, false, _languageFeatures, false, _context);
             } catch (BadSourceException bse) {
                 throw BadSourceError(bse);
             }
@@ -1125,12 +1124,12 @@ namespace IronPython.Compiler {
             Parameter[] parameters = ParseVarArgsList(TokenKind.RightParenthesis);
             if (parameters == null) {
                 // error in parameters
-                return new FunctionDefinition(name, new Parameter[0], _sourceUnit);
+                return new FunctionDefinition(name, new Parameter[0]);
             }
 
             SourceLocation rStart = GetStart(), rEnd = GetEnd();
 
-            FunctionDefinition ret = new FunctionDefinition(name, parameters, _sourceUnit);
+            FunctionDefinition ret = new FunctionDefinition(name, parameters);
             PushFunction(ret);
 
 
@@ -1241,7 +1240,7 @@ namespace IronPython.Compiler {
 
         //  parameter ::=
         //      identifier | "(" sublist ")"
-        Parameter ParseParameter(int position, Dictionary<string, object> names) {
+        private Parameter ParseParameter(int position, Dictionary<string, object> names) {
             Token t = PeekToken();
             Parameter parameter = null;
 
@@ -1290,7 +1289,7 @@ namespace IronPython.Compiler {
 
         //  parameter ::=
         //      identifier | "(" sublist ")"
-        Expression ParseSublistParameter(Dictionary<string, object> names) {
+        private Expression ParseSublistParameter(Dictionary<string, object> names) {
             Token t = NextToken();
             Expression ret = null;
             switch (t.Kind) {
@@ -1314,7 +1313,7 @@ namespace IronPython.Compiler {
 
         //  sublist ::=
         //      parameter ("," parameter)* [","]
-        Expression ParseSublist(Dictionary<string, object> names) {
+        private Expression ParseSublist(Dictionary<string, object> names) {
             bool trailingComma;
             List<Expression> list = new List<Expression>();
             for (; ; ) {
@@ -1358,13 +1357,13 @@ namespace IronPython.Compiler {
         //   FunctionDefinition f = ParseLambdaHelperStart(string);
         //   Expression expr = ParseXYZ();
         //   return ParseLambdaHelperEnd(f, expr);
-        FunctionDefinition ParseLambdaHelperStart(string name) {
+        private FunctionDefinition ParseLambdaHelperStart(string name) {
             SourceLocation start = GetStart();
             Parameter[] parameters;
             parameters = ParseVarArgsList(TokenKind.Colon);
             SourceLocation mid = GetEnd();
 
-            FunctionDefinition func = new FunctionDefinition(name, parameters, _sourceUnit);
+            FunctionDefinition func = new FunctionDefinition(name, parameters);
             func.Header = mid;
             func.Start = start;
 
@@ -1374,7 +1373,7 @@ namespace IronPython.Compiler {
             return func;
         }
 
-        Expression ParseLambdaHelperEnd(FunctionDefinition func, Expression expr) {
+        private Expression ParseLambdaHelperEnd(FunctionDefinition func, Expression expr) {
             // Pep 342 in Python 2.5 allows Yield Expressions, which can occur inside a Lambda body. 
             // In this case, the lambda is a generator and will yield it's final result instead of just return it.
             Statement body;
@@ -2480,7 +2479,7 @@ namespace IronPython.Compiler {
             // say that this one piece is computed at definition time rather than iteration time
             const string fname = "__generator_";
             Parameter parameter = new Parameter("__gen_$_parm__", 0);
-            FunctionDefinition func = new FunctionDefinition(fname, new Parameter[] { parameter }, root, _sourceUnit);
+            FunctionDefinition func = new FunctionDefinition(fname, new Parameter[] { parameter }, root);
             func.IsGenerator = true;
             func.SetLoc(root.Start, GetEnd());
             func.Header = root.End;
@@ -2879,7 +2878,7 @@ namespace IronPython.Compiler {
 
             SuiteStatement ret = new SuiteStatement(stmts);
             ret.SetLoc(_sourceUnit.MakeLocation(SourceLocation.MinValue), GetEnd());
-            return new PythonAst(ret, makeModule, _languageFeatures, false);
+            return new PythonAst(ret, makeModule, _languageFeatures, false, _context);
         }
 
         private Statement InternalParseInteractiveInput(out bool parsingMultiLineCmpdStmt, out bool isEmptyStmt) {

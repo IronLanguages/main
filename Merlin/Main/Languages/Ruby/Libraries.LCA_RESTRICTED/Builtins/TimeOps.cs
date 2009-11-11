@@ -80,65 +80,148 @@ namespace IronRuby.Builtins {
 
         #region local, mktime
 
+        private static int NormalizeYear(int year) {
+            if (year == 0) {
+                return 2000;
+            } else {
+                return year;
+            }
+        }
+
         [RubyMethod("local", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("mktime", RubyMethodAttributes.PublicSingleton)]
         public static DateTime CreateLocalTime(object/*!*/ self, int year) {
-            return new DateTime(year, 1, 1);
+            return new DateTime(NormalizeYear(year), 1, 1);
         }
 
         [RubyMethod("local", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("mktime", RubyMethodAttributes.PublicSingleton)]
         public static DateTime CreateLocalTime(object/*!*/ self, int year, int month) {
-            return new DateTime(year, month, 1);
+            return new DateTime(NormalizeYear(year), month, 1);
         }
 
         [RubyMethod("local", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("mktime", RubyMethodAttributes.PublicSingleton)]
         public static DateTime CreateLocalTime(object/*!*/ self, int year, int month, int day) {
-            return new DateTime(year, month, day);
+            return new DateTime(NormalizeYear(year), month, day);
         }
 
         [RubyMethod("local", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("mktime", RubyMethodAttributes.PublicSingleton)]
         public static DateTime CreateLocalTime(object/*!*/ self, int year, int month, int day, int hour) {
-            return new DateTime(year, month, day, hour, 0, 0);
+            return new DateTime(NormalizeYear(year), month, day, hour, 0, 0);
         }
 
         [RubyMethod("local", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("mktime", RubyMethodAttributes.PublicSingleton)]
         public static DateTime CreateLocalTime(object/*!*/ self, int year, int month, int day, int hour, int minute) {
-            return new DateTime(year, month, day, hour, minute, 0);
+            return new DateTime(NormalizeYear(year), month, day, hour, minute, 0);
         }
 
         [RubyMethod("local", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("mktime", RubyMethodAttributes.PublicSingleton)]
         public static DateTime CreateLocalTime(object/*!*/ self, int year, int month, int day, int hour, int minute, int second) {
-            return new DateTime(year, month, day, hour, minute, second);
+            return new DateTime(NormalizeYear(year), month, day, hour, minute, second);
         }
 
         [RubyMethod("local", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("mktime", RubyMethodAttributes.PublicSingleton)]
         public static DateTime CreateLocalTime(object/*!*/ self, int year, int month, int day, int hour, int minute, int second, int microsecond) {
-            return new DateTime(year, month, day, hour, minute, second).AddTicks(microsecond*10);
+            return new DateTime(NormalizeYear(year), month, day, hour, minute, second).AddTicks(microsecond*10);
         }
 
-        private static int GetComponent(ConversionStorage<int>/*!*/ conversionStorage, object[] components, int index, int defValue) {
+        private static int GetComponent(ConversionStorage<int>/*!*/ conversionStorage, object[] components, int index, int defValue, bool zeroOk) {
             if (index >= components.Length || components[index] == null) {
                 return defValue;
             }
-            return Protocols.CastToFixnum(conversionStorage, components[index]);
+
+            object component = components[index];
+
+            int result;
+            try {
+                result = Protocols.CastToFixnum(conversionStorage, component);
+            } catch (InvalidOperationException) {
+                MutableString str = component as MutableString;
+                if (str == null) {
+                    throw;
+                }
+                result = checked((int)MutableStringOps.ToInteger(str, 10));
+            }
+
+            if (result == 0 && !zeroOk) {
+                return defValue;
+            } else {
+                return result;
+            }
+        }
+
+        private static int GetComponent(ConversionStorage<int>/*!*/ conversionStorage, object[] components, int index, int defValue) {
+            return GetComponent(conversionStorage, components, index, defValue, true);
+        }
+
+        private static int GetYearComponent(ConversionStorage<int>/*!*/ conversionStorage, object[] components, int index) {
+            return GetComponent(conversionStorage, components, index, 2000, false);
+        }
+
+        private static string[] /*!*/ _Months = new string[12] {
+            "jan",
+            "feb",
+            "mar",
+            "apr",
+            "may",
+            "jun",
+            "jul",
+            "aug",
+            "sep",
+            "oct",
+            "nov",
+            "dec"
+        };
+
+        private static int GetMonthComponent(ConversionStorage<int>/*!*/ conversionStorage, ConversionStorage<MutableString>/*!*/ strConversionStorage, 
+            object[] components, int index) {
+            const int defValue = 1;
+            if (index >= components.Length || components[index] == null) {
+                return defValue;
+            }
+
+            MutableString asStr = Protocols.TryCastToString(strConversionStorage, components[index]);
+            if (asStr != null) {
+                string str = asStr.ConvertToString();
+
+                if (str.Length == 3) {
+                    string strLower = str.ToLowerInvariant();
+                    int monthIndex = _Months.FindIndex(delegate(string obj) { return obj == strLower; });
+                    if (monthIndex != -1) {
+                        return monthIndex + 1;
+                    }
+                }
+
+                components[index] = asStr; // fall through after modifying the array
+            }
+
+            return GetComponent(conversionStorage, components, index, defValue, false);
         }
 
         [RubyMethod("local", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("mktime", RubyMethodAttributes.PublicSingleton)]
-        public static DateTime CreateLocalTime(ConversionStorage<int>/*!*/ conversionStorage, object/*!*/ self, [NotNull]params object[]/*!*/ components) {
+        public static DateTime CreateLocalTime(ConversionStorage<int>/*!*/ conversionStorage, ConversionStorage<MutableString>/*!*/ strConversionStorage, 
+            object/*!*/ self, [NotNull]params object[]/*!*/ components) {
 
-            if (components.Length > 7 || components.Length == 0) {
+            if (components.Length == 10) {
+                // 10 arguments in the order output by Time#to_a are permitted.
+                // The last 4 are ignored. The first 6 need to be used in the reverse order
+                object[] newComponents = new object[6];
+                Array.Copy(components, newComponents, 6);
+                Array.Reverse(newComponents);
+                components = newComponents;
+            } else if (components.Length > 7 || components.Length == 0) {
                 throw RubyExceptions.CreateArgumentError(String.Format("wrong number of arguments ({0} for 7)", components.Length));
             }
             
-            return new DateTime(Protocols.CastToFixnum(conversionStorage, components[0]),
-                GetComponent(conversionStorage, components, 1, 1),
+            return new DateTime(
+                GetYearComponent(conversionStorage, components, 0),
+                GetMonthComponent(conversionStorage, strConversionStorage, components, 1),
                 GetComponent(conversionStorage, components, 2, 1),
                 GetComponent(conversionStorage, components, 3, 0),
                 GetComponent(conversionStorage, components, 4, 0),
@@ -154,56 +237,65 @@ namespace IronRuby.Builtins {
         [RubyMethod("utc", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("gm", RubyMethodAttributes.PublicSingleton)]
         public static DateTime CreateGmtTime(object/*!*/ self, int year) {
-            return new DateTime(year, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            return new DateTime(NormalizeYear(year), 1, 1, 0, 0, 0, DateTimeKind.Utc);
         }
 
         [RubyMethod("utc", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("gm", RubyMethodAttributes.PublicSingleton)]
         public static DateTime CreateGmtTime(object/*!*/ self, int year, int month) {
-            return new DateTime(year, month, 1, 0, 0, 0, DateTimeKind.Utc);
+            return new DateTime(NormalizeYear(year), month, 1, 0, 0, 0, DateTimeKind.Utc);
         }
 
         [RubyMethod("utc", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("gm", RubyMethodAttributes.PublicSingleton)]
         public static DateTime CreateGmtTime(object/*!*/ self, int year, int month, int day) {
-            return new DateTime(year, month, day, 0, 0, 0, DateTimeKind.Utc);
+            return new DateTime(NormalizeYear(year), month, day, 0, 0, 0, DateTimeKind.Utc);
         }
 
         [RubyMethod("utc", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("gm", RubyMethodAttributes.PublicSingleton)]
         public static DateTime CreateGmtTime(object/*!*/ self, int year, int month, int day, int hour) {
-            return new DateTime(year, month, day, hour, 0, 0, DateTimeKind.Utc);
+            return new DateTime(NormalizeYear(year), month, day, hour, 0, 0, DateTimeKind.Utc);
         }
 
         [RubyMethod("utc", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("gm", RubyMethodAttributes.PublicSingleton)]
         public static DateTime CreateGmtTime(object/*!*/ self, int year, int month, int day, int hour, int minute) {
-            return new DateTime(year, month, day, hour, minute, 0, DateTimeKind.Utc);
+            return new DateTime(NormalizeYear(year), month, day, hour, minute, 0, DateTimeKind.Utc);
         }
 
         [RubyMethod("utc", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("gm", RubyMethodAttributes.PublicSingleton)]
         public static DateTime CreateGmtTime(object/*!*/ self, int year, int month, int day, int hour, int minute, int second) {
-            return new DateTime(year, month, day, hour, minute, second, DateTimeKind.Utc);
+            return new DateTime(NormalizeYear(year), month, day, hour, minute, second, DateTimeKind.Utc);
         }
 
         [RubyMethod("utc", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("gm", RubyMethodAttributes.PublicSingleton)]
         public static DateTime CreateGmtTime(object/*!*/ self, int year, int month, int day, int hour, int minute, int second, int microsecond) {
-            return new DateTime(year, month, day, hour, minute, second, DateTimeKind.Utc).AddTicks(microsecond * 10);
+            return new DateTime(NormalizeYear(year), month, day, hour, minute, second, DateTimeKind.Utc).AddTicks(microsecond * 10);
         }
 
         [RubyMethod("utc", RubyMethodAttributes.PublicSingleton)]
         [RubyMethod("gm", RubyMethodAttributes.PublicSingleton)]
-        public static DateTime CreateGmtTime(ConversionStorage<int>/*!*/ conversionStorage, RubyContext/*!*/ context, object/*!*/ self, 
+        public static DateTime CreateGmtTime(ConversionStorage<int>/*!*/ conversionStorage, ConversionStorage<MutableString>/*!*/ strConversionStorage, 
+            RubyContext/*!*/ context, object/*!*/ self, 
             [NotNull]params object[]/*!*/ components) {
 
-            if (components.Length > 7 || components.Length == 0) {
+            if (components.Length == 10) {
+                // 10 arguments in the order output by Time#to_a are permitted.
+                // The last 4 are ignored. The first 6 need to be used in the reverse order
+                object[] newComponents = new object[6];
+                Array.Copy(components, newComponents, 6);
+                Array.Reverse(newComponents);
+                components = newComponents;
+            } else if (components.Length > 10 || components.Length == 0) {
                 throw RubyExceptions.CreateArgumentError(String.Format("wrong number of arguments ({0} for 7)", components.Length));
             }
+
             return new DateTime(
-                Protocols.CastToFixnum(conversionStorage, components[0]),
-                GetComponent(conversionStorage, components, 1, 1),
+                GetYearComponent(conversionStorage, components, 0),
+                GetMonthComponent(conversionStorage, strConversionStorage, components, 1),
                 GetComponent(conversionStorage, components, 2, 1),
                 GetComponent(conversionStorage, components, 3, 0),
                 GetComponent(conversionStorage, components, 4, 0),

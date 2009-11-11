@@ -21,9 +21,13 @@ using MSAst = Microsoft.Scripting.Ast;
 
 using System;
 using System.Diagnostics;
-using IronPython.Runtime.Binding;
+using System.Reflection;
+
 using Microsoft.Scripting;
 using Microsoft.Scripting.Utils;
+
+using IronPython.Runtime.Binding;
+
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Compiler.Ast {
@@ -89,24 +93,22 @@ namespace IronPython.Compiler.Ast {
         // - return true iff (a<b) && (b<c), but ensure that b is only evaluated once. 
         // - ensure evaluation order is correct (a,b,c)
         // - don't evaluate c if a<b is false.
-        private MSAst.Expression FinishCompare(MSAst.Expression left, AstGenerator ag) {
+        private MSAst.Expression FinishCompare(MSAst.Expression left) {
             Debug.Assert(_right is BinaryExpression);
 
             BinaryExpression bright = (BinaryExpression)_right;
 
             // Transform the left child of my right child (the next node in sequence)
-            MSAst.Expression rleft = ag.Transform(bright.Left);
+            MSAst.Expression rleft = bright.Left;
 
             // Store it in the temp
-            MSAst.ParameterExpression temp = ag.GetTemporary("chained_comparison");
+            MSAst.ParameterExpression temp = Ast.Parameter(typeof(object), "chained_comparison");
 
             // Create binary operation: left <_op> (temp = rleft)
             MSAst.Expression comparison = MakeBinaryOperation(
-                ag,
                 _op,
                 left,
                 Ast.Assign(temp, AstUtils.Convert(rleft, temp.Type)),
-                typeof(object),
                 Span
             );
 
@@ -114,93 +116,92 @@ namespace IronPython.Compiler.Ast {
 
             // Transform rright, comparing to temp
             if (IsComparison(bright._right)) {
-                rright = bright.FinishCompare(temp, ag);
+                rright = bright.FinishCompare(temp);
             } else {
-                MSAst.Expression transformedRight = ag.Transform(bright.Right);
+                MSAst.Expression transformedRight = bright.Right;
                 rright = MakeBinaryOperation(
-                    ag,
                     bright.Operator,
                     temp,
                     transformedRight,
-                    typeof(object),
                     bright.Span
                 );
             }
-
-            ag.FreeTemp(temp);
 
             // return (left (op) (temp = rleft)) and (rright)
             MSAst.ParameterExpression tmp;
             MSAst.Expression res = AstUtils.CoalesceTrue(
                 comparison,
                 rright,
-                AstGenerator.GetHelperMethod("IsTrue"),
+                AstMethods.IsTrue,
                 out tmp
             );
 
-            ag.AddHiddenVariable(tmp);
-            return res;
+            return Ast.Block(
+                new[] { temp, tmp },
+                res
+            );
         }
 
-        internal override MSAst.Expression Transform(AstGenerator ag, Type type) {
-            if (!CanEmitWarning(ag, _op)) {
-                Expression folded = ConstantFold();
-                if (folded != this) {
-                    return folded.Transform(ag, type);
+        public override MSAst.Expression Reduce() {
+            if (!CanEmitWarning(_op)) {
+                var folded = ConstantFold();
+                if (folded != null) {
+                    folded.Parent = Parent;
+                    return AstUtils.Convert(folded.Reduce(), typeof(object));
                 }
             }
 
-            MSAst.Expression left = ag.Transform(_left);
-
             if (NeedComparisonTransformation()) {
                 // This is a compound comparison like: (a < b < c)
-                return FinishCompare(left, ag);
+                return FinishCompare(_left);
             } else {
                 // Simple binary operator.
-                return MakeBinaryOperation(ag, _op, left, ag.Transform(_right), type, Span);
+                return MakeBinaryOperation(_op, _left, _right, Span);
             }
         }
+
 
         internal override string CheckAssign() {
             return "can't assign to operator";
         }
 
-        private static MSAst.Expression MakeBinaryOperation(AstGenerator ag, PythonOperator op, MSAst.Expression left, MSAst.Expression right, Type type, SourceSpan span) {
-            if (op == PythonOperator.NotIn) {                
+        private MSAst.Expression MakeBinaryOperation(PythonOperator op, MSAst.Expression left, MSAst.Expression right, SourceSpan span) {
+            if (op == PythonOperator.NotIn) {
                 return AstUtils.Convert(
                     Ast.Not(
-                        ag.Operation(
+                        GlobalParent.Operation(
                             typeof(bool),
                             PythonOperationKind.Contains,
                             left,
                             right
-                        )                            
+                        )
                     ),
-                    type
+                    typeof(object)
                 );
             } else if (op == PythonOperator.In) {
                 return AstUtils.Convert(
-                    ag.Operation(
+                    GlobalParent.Operation(
                         typeof(bool),
                         PythonOperationKind.Contains,
                         left,
                         right
                     ),
-                    type
+                    typeof(object)
                 );
             }
 
             PythonOperationKind action = PythonOperatorToAction(op);
             if (action != PythonOperationKind.None) {
                 // Create action expression
-                if (CanEmitWarning(ag, op)) {
-                    MSAst.ParameterExpression tempLeft = ag.GetTemporary("left", left.Type);
-                    MSAst.ParameterExpression tempRight = ag.GetTemporary("right", right.Type);
+                if (CanEmitWarning(op)) {
+                    MSAst.ParameterExpression tempLeft = Ast.Parameter(left.Type, "left");
+                    MSAst.ParameterExpression tempRight = Ast.Parameter(right.Type, "right");
                     return Ast.Block(
+                        new[] { tempLeft, tempRight },
                         Ast.Call(
-                            AstGenerator.GetHelperMethod("WarnDivision"),
-                            ag.LocalContext,
-                            AstUtils.Constant(ag.DivisionOptions),
+                            AstMethods.WarnDivision,
+                            Parent.LocalContext,
+                            AstUtils.Constant(GlobalParent.DivisionOptions),
                             AstUtils.Convert(
                                 Ast.Assign(tempLeft, left),
                                 typeof(object)
@@ -210,8 +211,8 @@ namespace IronPython.Compiler.Ast {
                                 typeof(object)
                             )
                         ),
-                        ag.Operation(
-                            type,
+                        GlobalParent.Operation(
+                            typeof(object),
                             action,
                             tempLeft,
                             tempRight
@@ -219,8 +220,8 @@ namespace IronPython.Compiler.Ast {
                     );
                 }
 
-                return ag.Operation(
-                    type,
+                return GlobalParent.Operation(
+                    typeof(object),
                     action,
                     left,
                     right
@@ -228,16 +229,17 @@ namespace IronPython.Compiler.Ast {
             } else {
                 // Call helper method
                 return Ast.Call(
-                    AstGenerator.GetHelperMethod(GetHelperName(op)),
-                    AstGenerator.ConvertIfNeeded(left, typeof(object)),
-                    AstGenerator.ConvertIfNeeded(right, typeof(object))
+                    GetHelperMethod(op),
+                    ConvertIfNeeded(left, typeof(object)),
+                    ConvertIfNeeded(right, typeof(object))
                 );
             }
         }
 
-        private static bool CanEmitWarning(AstGenerator ag, PythonOperator op) {
+        private bool CanEmitWarning(PythonOperator op) {
+            
             return op == PythonOperator.Divide &&
-                                (ag.DivisionOptions == PythonDivisionOptions.Warn || ag.DivisionOptions == PythonDivisionOptions.WarnAll);
+                                (GlobalParent.DivisionOptions == PythonDivisionOptions.Warn || GlobalParent.DivisionOptions == PythonDivisionOptions.WarnAll);
         }
 
         public override void Walk(PythonWalker walker) {
@@ -306,16 +308,12 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-        private static string GetHelperName(PythonOperator op) {
+        private static MethodInfo GetHelperMethod(PythonOperator op) {
             switch (op) {
-                case PythonOperator.In:
-                    return "In";
-                case PythonOperator.NotIn:
-                    return "NotIn";
                 case PythonOperator.IsNot:
-                    return "IsNot";
+                    return AstMethods.IsNot;
                 case PythonOperator.Is:
-                    return "Is";
+                    return AstMethods.Is;
 
                 default:
                     Debug.Assert(false, "Invalid PythonOperator: " + op.ToString());

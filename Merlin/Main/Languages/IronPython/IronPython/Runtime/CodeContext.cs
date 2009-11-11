@@ -14,8 +14,8 @@
  * ***************************************************************************/
 
 using System;
+using System.Diagnostics;
 
-using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
@@ -27,6 +27,7 @@ namespace IronPython.Runtime {
     /// Captures and flows the state of executing code from the generated 
     /// Python code into the IronPython runtime.
     /// </summary>    
+    [DebuggerTypeProxy(typeof(CodeContext.DebugProxy)), DebuggerDisplay("module: {ModuleName}", Type="module")]
     public sealed class CodeContext {
         private readonly ModuleContext/*!*/ _modContext;
         private readonly PythonDictionary/*!*/ _dict;
@@ -113,7 +114,7 @@ namespace IronPython.Runtime {
         /// Looks up a global variable.  If the variable is not defined in the
         /// global scope then built-ins is consulted.
         /// </summary>
-        internal bool TryLookupGlobal(string name, out object value) {
+        internal bool TryLookupBuiltin(string name, out object value) {
             object builtins;
             if (!GlobalDict.TryGetValue("__builtins__", out builtins)) {
                 value = null;
@@ -213,6 +214,33 @@ namespace IronPython.Runtime {
             }
 
             return null;
+        }
+
+        internal PythonModule Module {
+            get {
+                return _modContext.Module;
+            }
+        }
+
+        internal string ModuleName {
+            get {
+                return Module.GetName();
+            }
+        }
+
+        internal class DebugProxy {
+            private readonly CodeContext _context;
+
+            public DebugProxy(CodeContext context) {
+                _context = context;
+            }
+
+            [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+            public PythonModule Members {
+                get {
+                    return _context.Module;
+                }
+            }
         }
 
         #endregion

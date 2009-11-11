@@ -36,14 +36,14 @@ namespace IronPython.Compiler.Ast {
             get { return _expressions; }
         }
 
-        internal override MSAst.Expression Transform(AstGenerator ag) {
+        public override MSAst.Expression Reduce() {
             // Transform to series of individual del statements.
             ReadOnlyCollectionBuilder<MSAst.Expression> statements = new ReadOnlyCollectionBuilder<MSAst.Expression>(_expressions.Length + 1);
             for (int i = 0; i < _expressions.Length; i++) {
-                statements.Add(_expressions[i].TransformDelete(ag));
+                statements.Add(_expressions[i].TransformDelete());
             }
             statements.Add(AstUtils.Empty());
-            return ag.AddDebugInfo(MSAst.Expression.Block(statements), Span);
+            return GlobalParent.AddDebugInfo(MSAst.Expression.Block(statements), Span);
         }
 
         public override void Walk(PythonWalker walker) {

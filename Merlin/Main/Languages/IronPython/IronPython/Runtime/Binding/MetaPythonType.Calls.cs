@@ -56,6 +56,7 @@ namespace IronPython.Runtime.Binding {
         #region MetaObject Overrides
 
         public override DynamicMetaObject/*!*/ BindInvokeMember(InvokeMemberBinder/*!*/ action, DynamicMetaObject/*!*/[]/*!*/ args) {
+            
             foreach (PythonType pt in Value.ResolutionOrder) {
                 PythonTypeSlot dummy;
                 if (pt.IsSystemType) {

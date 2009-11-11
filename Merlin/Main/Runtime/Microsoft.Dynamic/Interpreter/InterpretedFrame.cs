@@ -19,14 +19,16 @@ using System.Linq.Expressions;
 using Microsoft.Scripting.Ast;
 #endif
 
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Microsoft.Scripting.Utils;
-using System.Diagnostics;
+using Microsoft.Scripting.Runtime;
 
 namespace Microsoft.Scripting.Interpreter {
-    public class InterpretedFrame {
+    public sealed class InterpretedFrame {
         internal readonly Interpreter Interpreter;
         public InterpretedFrame Parent;
 
@@ -79,6 +81,14 @@ namespace Microsoft.Scripting.Interpreter {
             Data[StackIndex++] = value;
         }
 
+        public void Push(bool value) {
+            Data[StackIndex++] = value ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+        }
+
+        public void Push(int value) {
+            Data[StackIndex++] = ScriptingRuntimeHelpers.Int32ToObject(value);
+        }
+
         public object Pop() {
             return Data[--StackIndex];
         }
@@ -89,6 +99,12 @@ namespace Microsoft.Scripting.Interpreter {
 
         public object Peek() {
             return Data[StackIndex - 1];
+        }
+
+        public void Dup() {
+            int i = StackIndex;
+            Data[i] = Data[i - 1];
+            StackIndex = i + 1;
         }
 
 #if DEBUG

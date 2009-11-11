@@ -395,11 +395,11 @@ namespace IronPython.Runtime.Binding {
 
                                 if (prop != null && (parameters = prop.GetParameters()).Length == 0) {
                                     if (prop.ReturnType == typeof(bool)) {
-                                        return new FastPropertyGet<TSelfType>(type, Instruction.Call(prop, parameters).Invoke).GetPropertyBool;
+                                        return new FastPropertyGet<TSelfType>(type, CallInstruction.Create(prop, parameters).Invoke).GetPropertyBool;
                                     } else if (prop.ReturnType == typeof(int)) {
-                                        return new FastPropertyGet<TSelfType>(type, Instruction.Call(prop, parameters).Invoke).GetPropertyInt;
+                                        return new FastPropertyGet<TSelfType>(type, CallInstruction.Create(prop, parameters).Invoke).GetPropertyInt;
                                     } else {
-                                        return new FastPropertyGet<TSelfType>(type, Instruction.Call(prop, parameters).Invoke).GetProperty;
+                                        return new FastPropertyGet<TSelfType>(type, CallInstruction.Create(prop, parameters).Invoke).GetProperty;
                                     }
                                 }
                             }

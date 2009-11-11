@@ -76,7 +76,10 @@ namespace IronPython.Compiler {
             _gotoRouter = Expression.Variable(typeof(int), "$gotoRouter");
         }
 
-        internal Expression Reduce(bool shouldInterpret, bool emitDebugSymbols, IList<ParameterExpression> parameters, Func<Expression<Func<MutableTuple, object>>, Expression<Func<MutableTuple, object>>> bodyConverter) {
+        internal Expression Reduce(bool shouldInterpret, bool emitDebugSymbols, int compilationThreshold, 
+            IList<ParameterExpression> parameters, Func<Expression<Func<MutableTuple, object>>, 
+            Expression<Func<MutableTuple, object>>> bodyConverter) {
+
             _state = LiftVariable(Expression.Parameter(typeof(int), "state"));
             _current = LiftVariable(Expression.Parameter(typeof(object), "current"));
 
@@ -154,7 +157,8 @@ namespace IronPython.Compiler {
                             (Expression)Expression.Constant(
                                 new LazyCode<Func<MutableTuple, object>>(
                                     bodyConverter(innerLambda),
-                                    shouldInterpret
+                                    shouldInterpret,
+                                    compilationThreshold
                                 ),
                                 typeof(object)
                             )
@@ -977,15 +981,17 @@ namespace IronPython.Compiler {
         }
     }
 
-    sealed class PythonGeneratorExpression : Expression {
-        private LambdaExpression _lambda;
+    internal sealed class PythonGeneratorExpression : Expression {
+        private readonly LambdaExpression _lambda;
+        private readonly int _compilationThreshold;
 
-        public PythonGeneratorExpression(LambdaExpression lambda) {
+        public PythonGeneratorExpression(LambdaExpression lambda, int compilationThreshold) {
             _lambda = lambda;
+            _compilationThreshold = compilationThreshold;
         }
 
         public override Expression Reduce() {
-            return _lambda.ToGenerator(false, true);
+            return _lambda.ToGenerator(false, true, _compilationThreshold);
         }
 
         public sealed override ExpressionType NodeType {

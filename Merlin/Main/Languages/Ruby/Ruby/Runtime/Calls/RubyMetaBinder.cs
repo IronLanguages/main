@@ -75,7 +75,7 @@ namespace IronRuby.Runtime.Calls {
                     throw new InvalidImplementationException("DynamicMetaObjectBinder.Bind must return non-null meta-object");
                 }
 
-                T result = dispatcher.CreateDelegate<T>(binding);
+                T result = dispatcher.CreateDelegate<T>(binding, context.Options.CompilationThreshold);
                 CacheTarget(result);
                 return result;
             }

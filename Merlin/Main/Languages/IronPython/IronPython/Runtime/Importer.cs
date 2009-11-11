@@ -443,7 +443,7 @@ namespace IronPython.Runtime {
 
                 sourceUnit = pc.CreateFileUnit(fileName, pc.DefaultEncoding, SourceCodeKind.File);
             }
-            pc.GetScriptCode(sourceUnit, name, ModuleOptions.None).Run(module.Scope);
+            pc.GetScriptCode(sourceUnit, name, ModuleOptions.None, Compiler.CompilationMode.Lookup).Run(module.Scope);
             return module;
         }
 

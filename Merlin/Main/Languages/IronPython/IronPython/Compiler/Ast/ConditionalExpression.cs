@@ -21,6 +21,8 @@ using MSAst = Microsoft.Scripting.Ast;
 
 using System;
 
+using Microsoft.Scripting.Actions;
+
 namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
@@ -48,17 +50,15 @@ namespace IronPython.Compiler.Ast {
             get { return _trueExpr; }
         }
 
-        internal override MSAst.Expression Transform(AstGenerator ag, Type type) {
-            MSAst.Expression test = ag.TransformAndDynamicConvert(_testExpr, typeof(bool));
-            MSAst.Expression ifTrue = ag.TransformAndDynamicConvert(_trueExpr, type);
-            MSAst.Expression ifFalse = ag.TransformAndDynamicConvert(_falseExpr, type);
+        public override MSAst.Expression Reduce() {
+            MSAst.Expression ifTrue = AstUtils.Convert(_trueExpr, typeof(object));
+            MSAst.Expression ifFalse = AstUtils.Convert(_falseExpr, typeof(object));
 
-            // Convert both to "type" ... since they are assignable already
-            // it is really just a cosmetic cast.
-            ifTrue = AstUtils.Convert(ifTrue, type);
-            ifFalse = AstUtils.Convert(ifFalse, type);
-
-            return Ast.Condition(test, ifTrue, ifFalse);
+            return Ast.Condition(
+                GlobalParent.Convert(typeof(bool), ConversionResultKind.ExplicitCast, _testExpr), 
+                ifTrue, 
+                ifFalse
+            );
         }
 
         public override void Walk(PythonWalker walker) {

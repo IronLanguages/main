@@ -33,6 +33,7 @@ using MSAst = System.Linq.Expressions;
 #else
 using MSAst = Microsoft.Scripting.Ast;
 #endif
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 
 namespace IronPython.Compiler.Ast {
@@ -45,59 +46,15 @@ namespace IronPython.Compiler.Ast {
     /// 
     /// We don't generate any code into the type though - DynamicMethod's are much faster for code gen then normal ref emit.
     /// </summary>
-    partial class SharedGlobalAllocator : GlobalAllocator {
+    partial class UncollectableCompilationMode : CompilationMode {
         private static readonly Dictionary<object/*!*/, ConstantInfo/*!*/>/*!*/ _allConstants = new Dictionary<object/*!*/, ConstantInfo/*!*/>();
         private static readonly Dictionary<Type/*!*/, DelegateCache/*!*/>/*!*/ _delegateCache = new Dictionary<Type/*!*/, DelegateCache/*!*/>();
 
-        private readonly MSAst.Expression/*!*/ _codeContext;
-        private readonly CodeContext/*!*/ _context;
-        private readonly ConstantInfo/*!*/ _codeContextInfo;
-        private readonly Dictionary<object/*!*/, ConstantInfo/*!*/>/*!*/ _constants = new Dictionary<object/*!*/, ConstantInfo/*!*/>();
-        private readonly Dictionary<string/*!*/, ConstantInfo/*!*/>/*!*/ _globals = new Dictionary<string/*!*/, ConstantInfo/*!*/>(StringComparer.Ordinal);
-        private readonly Dictionary<string, PythonGlobal/*!*/>/*!*/ _globalVals = new Dictionary<string, PythonGlobal>(StringComparer.Ordinal);
-        private readonly List<SiteInfo/*!*/>/*!*/ _sites = new List<SiteInfo/*!*/>();
-        private readonly GlobalDictionaryStorage _globalStorage;
-        private readonly ModuleContext _modContext;
-
-        public SharedGlobalAllocator(PythonContext/*!*/ context) {
-            _codeContextInfo = NextContext();
-            _codeContext = _codeContextInfo.Expression;
-
-            _globalStorage = new GlobalDictionaryStorage(_globalVals);
-            _modContext = new ModuleContext(new PythonDictionary(_globalStorage), context);
-            _context = _modContext.GlobalContext;
+        public UncollectableCompilationMode() {
         }
 
-        public override ScriptCode/*!*/ MakeScriptCode(MSAst.Expression/*!*/ lambda, CompilerContext/*!*/ compilerContext, PythonAst/*!*/ ast, Dictionary<int, bool> handlerLocations, Dictionary<int, Dictionary<int, bool>> loopAndFinallyLocations) {
-            PythonContext context = (PythonContext)compilerContext.SourceUnit.LanguageContext;
-
-            // create the CodeContext for this optimized module
-            PublishGlobals(_globals, _globalVals);
-            PublishContext(_context, _codeContextInfo);
-
-            // publish the cached constants
-            PublishConstants(_constants);
-
-            // publish all of the call site instances
-            PublishSites(_sites);
-
-            /*
-            Console.WriteLine(
-                "{0} constants, {1} contexts, {2} globals, {3} symbols (total); {4} sites (this module)",
-                StorageData.ConstantCount, StorageData.ContextCount, StorageData.GlobalCount, StorageData.SymbolCount,
-                _sites.Count
-            );
-            */
-
-            string name = ((PythonCompilerOptions)compilerContext.Options).ModuleName ?? "<unnamed>";
-            var func = Ast.Lambda<Func<FunctionCode, object>>(Utils.Convert(lambda, typeof(object)), name, new [] { AstGenerator._functionCode });
-            return new RuntimeScriptCode(compilerContext, func, ast, _context);
-        }
-
-        public override MSAst.Expression/*!*/ GlobalContext {
-            get {
-                return _codeContext;
-            }
+        public override MSAst.LambdaExpression ReduceAst(PythonAst instance, string name) {
+            return Ast.Lambda<Func<FunctionCode, object>>(AstUtils.Convert(instance.ReduceWorker(), typeof(object)), name, new[] { PythonAst._functionCode });
         }
 
         #region Cached Constant/Symbol/Global Support
@@ -117,34 +74,49 @@ namespace IronPython.Compiler.Ast {
             ConstantInfo ci;
             lock (_allConstants) {
                 if (!_allConstants.TryGetValue(value, out ci)) {
-                    _allConstants[value] = _constants[value] = ci = NextConstant(_constants.Count, CompilerHelpers.GetType(value));
+                    _allConstants[value] = ci = NextConstant(_allConstants.Count, value);
+                    PublishConstant(value, ci);
                 }
             }
 
             return ci.Expression;
         }
 
-        protected override MSAst.Expression/*!*/ GetGlobal(string/*!*/ name, AstGenerator/*!*/ ag, bool isLocal) {
-            Assert.NotNull(name);
-
-            PythonGlobal global = _globalVals[name] = new PythonGlobal(_context, name);
-            return new PythonGlobalVariableExpression(GetGlobalInfo(name).Expression, global);
-        }
-
-        private ConstantInfo/*!*/ GetGlobalInfo(string name) {
-            ConstantInfo res;
-            if (!_globals.TryGetValue(name, out res)) {
-                _globals[name] = res = NextGlobal(_globals.Count);
+        public override Type GetConstantType(object value) {
+            if (value == null || value.GetType().IsValueType) {
+                return typeof(object);
             }
 
-            return res;
+            return value.GetType();
+        }
+
+        public override MSAst.Expression GetGlobal(MSAst.Expression globalContext, int arrayIndex, PythonVariable variable, PythonGlobal/*!*/ global) {
+            Assert.NotNull(global);
+
+            lock (StorageData.Globals) {
+                ConstantInfo info = NextGlobal(0);
+
+                StorageData.GlobalStorageType(StorageData.GlobalCount + 1);
+
+                PublishWorker(StorageData.GlobalCount, StorageData.GlobalTypes, info, global, StorageData.Globals);
+
+                StorageData.GlobalCount += 1;
+
+                return new PythonGlobalVariableExpression(info.Expression, variable, global);
+            }
+        }
+
+        public override Type DelegateType {
+            get {
+                return typeof(MSAst.Expression<Func<FunctionCode, object>>);
+            }
         }
 
         #endregion
 
         #region Field Allocation and Publishing
 
-        private static ConstantInfo/*!*/ NextContext() {
+        public override UncollectableCompilationMode.ConstantInfo GetContext() {
             lock (StorageData.Contexts) {
                 int index = StorageData.ContextCount++;
                 int arrIndex = index - StorageData.ContextTypes * StorageData.StaticFields;
@@ -167,8 +139,8 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-        private static ConstantInfo/*!*/ NextConstant(int offset, Type/*!*/ returnType) {
-            return new ConstantInfo(new ConstantExpression(offset, returnType), null, offset);
+        private static ConstantInfo/*!*/ NextConstant(int offset, object value) {
+            return new ConstantInfo(new ConstantExpression(offset, value), null, offset);
         }
 
         private static ConstantInfo/*!*/ NextGlobal(int offset) {
@@ -195,7 +167,7 @@ namespace IronPython.Compiler.Ast {
                     );
                 }
 
-                return new SiteInfo<T>(binder, expr, fieldInfo, index);
+                return PublishSite(new SiteInfo<T>(binder, expr, fieldInfo, index));
             }
         }
 
@@ -223,11 +195,11 @@ namespace IronPython.Compiler.Ast {
                     );
                 }
 
-                return new SiteInfoLarge(binder, expr, fieldInfo, index, delegateType);
+                return PublishSite(new SiteInfoLarge(binder, expr, fieldInfo, index, delegateType));
             }
         }
 
-        private static void PublishContext(CodeContext/*!*/ context, ConstantInfo/*!*/ codeContextInfo) {
+        public override void PublishContext(CodeContext/*!*/ context, ConstantInfo/*!*/ codeContextInfo) {
             int arrIndex = codeContextInfo.Offset - StorageData.ContextTypes * StorageData.StaticFields;
 
             if (arrIndex < 0) {
@@ -238,50 +210,26 @@ namespace IronPython.Compiler.Ast {
                 }
             }
         }
+        
+        private static void PublishConstant(object constant, ConstantInfo info) {
+            StorageData.ConstantStorageType(info.Offset);
 
-        private static void PublishConstants(Dictionary<object/*!*/, ConstantInfo/*!*/>/*!*/ constants) {
-            if (constants.Count > 0) {
-                lock (StorageData.Constants) {
-                    int start = StorageData.ConstantCount;
-                    StorageData.ConstantCount += constants.Count;
-                    StorageData.ConstantStorageType(StorageData.ConstantCount - 1); // resize array once
-
-                    foreach (var constant in constants) {
-                        PublishWorker(start, StorageData.ConstantTypes, constant.Value, constant.Key, StorageData.Constants);
-                    }
-                }
-            }
+            PublishWorker(0, StorageData.ConstantTypes, info, constant, StorageData.Constants);
         }
 
-        private static void PublishGlobals(Dictionary<string/*!*/, ConstantInfo/*!*/>/*!*/ globals, Dictionary<string, PythonGlobal/*!*/>/*!*/ globalVals) {
-            Assert.Equals(globals.Count, globalVals.Count);
+        private static SiteInfo PublishSite(SiteInfo si) {
+            int arrIndex = si.Offset - StorageData.SiteTypes * StorageData.StaticFields;
+            CallSite site = si.MakeSite();
 
-            if (globals.Count > 0) {
-                lock (StorageData.Globals) {
-                    int start = StorageData.GlobalCount;
-                    StorageData.GlobalCount += globals.Count;
-                    StorageData.GlobalStorageType(StorageData.GlobalCount - 1); // resize array once
-
-                    foreach (var global in globals) {
-                        PublishWorker(start, StorageData.GlobalTypes, global.Value, globalVals[global.Key], StorageData.Globals);
-                    }
+            if (arrIndex < 0) {
+                si.Field.SetValue(null, site);
+            } else {
+                lock (StorageData.SiteLockObj) {
+                    ((CallSite[])si.Field.GetValue(null))[arrIndex] = site;
                 }
             }
-        }
 
-        private static void PublishSites(List<SiteInfo/*!*/>/*!*/ sites) {
-            foreach (SiteInfo si in sites) {
-                int arrIndex = si.Offset - StorageData.SiteTypes * StorageData.StaticFields;
-                CallSite site = si.MakeSite();
-
-                if (arrIndex < 0) {
-                    si.Field.SetValue(null, site);
-                } else {
-                    lock (StorageData.SiteLockObj) {
-                        ((CallSite[])si.Field.GetValue(null))[arrIndex] = site;
-                    }
-                }
-            }
+            return si;
         }
 
         private static void PublishWorker<T>(int start, int nTypes, ConstantInfo info, T value, T[] fallbackArray) {
@@ -380,7 +328,7 @@ namespace IronPython.Compiler.Ast {
                 SiteType = typeof(CallSite<>).MakeGenericType(DelegateType);
                 NextSite = (Func<DynamicMetaObjectBinder, SiteInfo>)Delegate.CreateDelegate(
                     typeof(Func<DynamicMetaObjectBinder, SiteInfo>),
-                    typeof(SharedGlobalAllocator).GetMethod("NextSite").MakeGenericMethod(DelegateType)
+                    typeof(UncollectableCompilationMode).GetMethod("NextSite").MakeGenericMethod(DelegateType)
                 );
                 TargetField = SiteType.GetField("Target");
                 InvokeMethod = DelegateType.GetMethod("Invoke");
@@ -496,14 +444,11 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal sealed class ConstantExpression : ReducibleExpression {
-            private Type/*!*/ _returnType;
+            private object _value;
 
-            public ConstantExpression(int offset, Type/*!*/ returnType) : base(offset) {
-                if (!returnType.IsValueType) {
-                    _returnType = returnType;
-                } else {
-                    _returnType = typeof(object);
-                }
+            public ConstantExpression(int offset, object value) : base(offset) {
+                Type returnType = value.GetType();
+                _value = value;
             }
 
             public override string/*!*/ Name {
@@ -519,14 +464,27 @@ namespace IronPython.Compiler.Ast {
             }
 
             public override Type/*!*/ Type {
-                get { return _returnType; }
+                get {
+                    Type returnType = _value.GetType();
+                    if (!returnType.IsValueType) {
+                        return returnType;
+                    } else {
+                        return typeof(object);
+                    }                    
+                }
             }
 
-            public override MSAst.Expression/*!*/ Reduce() {
-                if (_returnType == typeof(object)) {
+            public object Value {
+                get {
+                    return _value;
+                }
+            }
+
+            public override MSAst.Expression Reduce() {
+                if (_value.GetType().IsValueType) {
                     return base.Reduce();
                 } else {
-                    return MSAst.Expression.Convert(base.Reduce(), _returnType);
+                    return MSAst.Expression.Convert(base.Reduce(), _value.GetType());
                 }
             }
         }

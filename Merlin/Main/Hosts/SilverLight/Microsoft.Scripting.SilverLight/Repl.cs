@@ -107,10 +107,21 @@ namespace Microsoft.Scripting.Silverlight {
             }
 
             ScriptEngine engine = null;
-            if (DynamicApplication.Current.Engine == null || DynamicApplication.Current.Engine.Engine == null) {
-                throw new Exception("Use the Show(engine, scope) overload; a default engine was not found");
+            if (DynamicApplication.Current.Engine != null) {
+                engine = DynamicApplication.Current.Engine.Engine;    
             }
-            engine = DynamicApplication.Current.Engine.Engine;
+            if (engine == null) {
+                var langCfg = DynamicApplication.Current.LanguagesConfig;
+                if (langCfg.LanguagesUsed.Count < 1) {
+                    throw new Exception("Use the Show(engine, scope) overload, since there are no languages used");
+                }
+                foreach(var lang in langCfg.LanguagesUsed) {
+                    if (lang.Value) {
+                        engine = langCfg.GetEngine(lang.Key);
+                        break;
+                    }
+                }
+            }
 
             ScriptScope scope = DynamicApplication.Current.Engine.EntryPointScope;
             if (scope == null) {
@@ -148,7 +159,7 @@ namespace Microsoft.Scripting.Silverlight {
 
             Window.Current.AddPanel(engine.Setup.Names[0] + " Console", replDiv);
             Window.Current.Initialize();
-            
+
             repl.Start();
             return repl;
         }

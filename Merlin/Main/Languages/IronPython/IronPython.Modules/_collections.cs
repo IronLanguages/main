@@ -16,17 +16,21 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
-using IronPython.Runtime;
-using IronPython.Runtime.Binding;
-using IronPython.Runtime.Operations;
-using IronPython.Runtime.Types;
+
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Math;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+
+using IronPython.Runtime;
+using IronPython.Runtime.Binding;
+using IronPython.Runtime.Operations;
+using IronPython.Runtime.Types;
+
 using SpecialNameAttribute = System.Runtime.CompilerServices.SpecialNameAttribute;
 
 [assembly: PythonModule("_collections", typeof(IronPython.Modules.PythonCollections))]
@@ -35,7 +39,7 @@ namespace IronPython.Modules {
         public const string __doc__ = "High performance data structures\n";
 
         [PythonType]
-        [DontMapIEnumerableToContains]
+        [DontMapIEnumerableToContains, DebuggerDisplay("deque, {__len__()} items"), DebuggerTypeProxy(typeof(CollectionDebugProxy))]
         public class deque : IEnumerable, IComparable, ICodeFormattable, IValueEquality, ICollection, IReversible {
             private object[] _data;
             private object _lockObj = new object();
@@ -795,7 +799,10 @@ namespace IronPython.Modules {
             #region ICollection Members
 
             void ICollection.CopyTo(Array array, int index) {
-                throw new NotImplementedException();
+                int i = 0;
+                foreach (object o in this) {
+                    array.SetValue(o, index + i++);
+                }
             }
 
             int ICollection.Count {

@@ -42,14 +42,16 @@ namespace IronPython.Compiler {
     /// For pre-compiled scenarios the code is IExpressionSerializable and will
     /// turn into a normal pre-compiled method.
     /// </summary>
-    sealed class LazyCode<T> : IExpressionSerializable where T : class {
+    internal sealed class LazyCode<T> : IExpressionSerializable where T : class {
         public Expression<T> Code;
         private T Delegate;
-        private bool _shouldInterpret;
+        private readonly bool _shouldInterpret;
+        private readonly int _compilationThreshold;
 
-        public LazyCode(Expression<T> code, bool shouldInterpret) {
+        public LazyCode(Expression<T> code, bool shouldInterpret, int compilationThreshold) {
             Code = code;
             _shouldInterpret = shouldInterpret;
+            _compilationThreshold = compilationThreshold;
         }
 
         public T EnsureDelegate() {
@@ -67,7 +69,7 @@ namespace IronPython.Compiler {
 
         private T Compile() {
             if (_shouldInterpret) {
-                return (T)(object)Microsoft.Scripting.Generation.CompilerHelpers.LightCompile(Code);
+                return (T)(object)Microsoft.Scripting.Generation.CompilerHelpers.LightCompile(Code, true, _compilationThreshold);
             }
 
             return Code.Compile();

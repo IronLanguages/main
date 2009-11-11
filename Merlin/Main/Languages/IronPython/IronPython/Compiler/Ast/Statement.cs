@@ -13,6 +13,8 @@
  *
  * ***************************************************************************/
 
+using System;
+
 #if !CLR2
 using MSAst = System.Linq.Expressions;
 #else
@@ -28,6 +30,10 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-        internal abstract MSAst.Expression Transform(AstGenerator ag);
+        public override Type Type {
+            get {
+                return typeof(void);
+            }
+        }
     }
 }

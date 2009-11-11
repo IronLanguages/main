@@ -23,6 +23,7 @@ using System;
 
 namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
+    using AstUtils = Microsoft.Scripting.Ast.Utils;
 
     public class BackQuoteExpression : Expression {
         private readonly Expression _expression;
@@ -35,11 +36,11 @@ namespace IronPython.Compiler.Ast {
             get { return _expression; }
         }
 
-        internal override MSAst.Expression Transform(AstGenerator ag, Type type) {
+        public override MSAst.Expression Reduce() {
             return Ast.Call(
-                AstGenerator.GetHelperMethod("Repr"),   // method
-                ag.LocalContext,
-                ag.TransformAsObject(_expression)       // args
+                AstMethods.Repr,
+                Parent.LocalContext,
+                AstUtils.Convert(_expression, typeof(object))
             );                                  
         }
 

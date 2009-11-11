@@ -38,21 +38,16 @@ namespace IronPython.Compiler {
     /// no external dependencies and is closed over its scope.  
     /// </summary>
     class RuntimeScriptCode : RunnableScriptCode {
-        private readonly CompilerContext/*!*/ _context;
-        private readonly PythonAst/*!*/ _ast;
         private readonly CodeContext/*!*/ _optimizedContext;
-        private readonly MSAst.Expression<Func<FunctionCode, object>> _code;
         private Func<FunctionCode, object> _optimizedTarget;
 
         private ScriptCode _unoptimizedCode;
 
-        public RuntimeScriptCode(CompilerContext/*!*/ context, MSAst.Expression<Func<FunctionCode, object>>/*!*/ expression, PythonAst/*!*/ ast, CodeContext/*!*/ codeContext)
-            : base(context.SourceUnit, ast.Body.Span) {
+        public RuntimeScriptCode(PythonAst/*!*/ ast, CodeContext/*!*/ codeContext)
+            : base(ast) {
             Debug.Assert(codeContext.GlobalScope.GetExtension(codeContext.LanguageContext.ContextId) != null);
+            Debug.Assert(ast.Type == typeof(MSAst.Expression<Func<FunctionCode, object>>));
 
-            _code = expression;
-            _ast = ast;
-            _context = context;
             _optimizedContext = codeContext;
         }
 
@@ -77,7 +72,7 @@ namespace IronPython.Compiler {
                 Exception e = PythonOps.SaveCurrentException();
                 PushFrame(_optimizedContext, _optimizedTarget);
                 try {
-                    if (_context.SourceUnit.Kind == SourceCodeKind.Expression) {
+                    if (Ast.CompilerContext.SourceUnit.Kind == SourceCodeKind.Expression) {
                         return OptimizedEvalWrapper();
                     }
                     return _optimizedTarget(EnsureFunctionCode(_optimizedTarget));
@@ -90,10 +85,10 @@ namespace IronPython.Compiler {
             // if we're running against a different scope or we need tracing then re-compile the code.
             if (_unoptimizedCode == null) {
                 // TODO: Copy instead of mutate
-                ((PythonCompilerOptions)_context.Options).Optimized = false;
+                ((PythonCompilerOptions)Ast.CompilerContext.Options).Optimized = false;
                 Interlocked.CompareExchange(
                     ref _unoptimizedCode,
-                    _ast.TransformToAst(CompilationMode.Lookup, _context),
+                    Ast.MakeLookupCode().ToScriptCode(),
                     null
                 );
             }
@@ -123,18 +118,16 @@ namespace IronPython.Compiler {
             }
         }
 
-        protected override FunctionAttributes GetCodeAttributes() {
-            return GetCodeAttributes(_context);
-        }
-
         private Func<FunctionCode, object>/*!*/ Compile() {
-            var pco = (PythonCompilerOptions)_context.Options;
+            var pco = (PythonCompilerOptions)Ast.CompilerContext.Options;
             var pc = (PythonContext)SourceUnit.LanguageContext;
             
             if (pc.ShouldInterpret(pco, SourceUnit)) {
-                return CompilerHelpers.LightCompile(_code, false);
+                return CompilerHelpers.LightCompile(
+                    (MSAst.Expression<Func<FunctionCode, object>>)Ast.GetLambda(), false, pc.Options.CompilationThreshold
+                );
             } else {
-                return _code.Compile(SourceUnit.EmitDebugSymbols);
+                return ((MSAst.Expression<Func<FunctionCode, object>>)Ast.GetLambda()).Compile(SourceUnit.EmitDebugSymbols);
             }
         }
     }

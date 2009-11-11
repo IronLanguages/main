@@ -46,8 +46,8 @@ namespace IronPython.Compiler.Ast {
             get { return _right; }
         }
 
-        internal override MSAst.Expression Transform(AstGenerator ag) {
-            return _left.TransformSet(ag, Span, ag.Transform(_right), PythonOperatorToAction(_op));
+        public override MSAst.Expression Reduce() {
+            return _left.TransformSet(Span, _right, PythonOperatorToAction(_op));
         }
 
         private static PythonOperationKind PythonOperatorToAction(PythonOperator op) {

@@ -298,6 +298,14 @@ namespace IronRuby.Hosting {
 #endif
             LanguageSetup.Options["SearchPaths"] = _loadPaths;
             LanguageSetup.Options["RequiredPaths"] = _requiredPaths;
+
+#if DEBUG && !SILVERLIGHT
+            // Can be set to nl-BE, ja-JP, etc
+            string culture = Environment.GetEnvironmentVariable("IR_CULTURE");
+            if (culture != null) {
+                System.Threading.Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo(culture, false);
+            }
+#endif
         }
 
         public override void GetHelp(out string commandLine, out string[,] options, out string[,] environmentVariables, out string comments) {
@@ -341,7 +349,8 @@ namespace IronRuby.Hosting {
                 { "-20",                         "Ruby 2.0 mode" },
 
                 { "-X:ExceptionDetail",          "enable ExceptionDetail mode" },
-                { "-X:NoAdaptiveCompilation",    "disable adaptive compilation" },
+                { "-X:NoAdaptiveCompilation",    "disable adaptive compilation - all code will be compiled" },
+                { "-X:CompilationThreshold",     "the number of iterations before the interpreter starts compiling" },
                 { "-X:PassExceptions",           "do not catch exceptions that are unhandled by script code" },
                 { "-X:PrivateBinding",           "enable binding to private members" },
                 { "-X:ShowClrExceptions",        "display CLS Exception information" },

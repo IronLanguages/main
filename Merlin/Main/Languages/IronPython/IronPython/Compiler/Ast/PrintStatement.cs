@@ -49,55 +49,54 @@ namespace IronPython.Compiler.Ast {
             get { return _trailingComma; }
         }
 
-        internal override MSAst.Expression Transform(AstGenerator ag) {
-            MSAst.Expression destination = ag.TransformAsObject(_dest);
+        public override MSAst.Expression Reduce() {
+            MSAst.Expression destination = _dest;
 
             if (_expressions.Length == 0) {
                 MSAst.Expression result;
                 if (destination != null) {
                     result = Ast.Call(
-                        AstGenerator.GetHelperMethod("PrintNewlineWithDest"),
-                        ag.LocalContext,
+                        AstMethods.PrintNewlineWithDest,
+                        Parent.LocalContext,
                         destination
                     );
                 } else {
                     result = Ast.Call(
-                        AstGenerator.GetHelperMethod("PrintNewline"),
-                        ag.LocalContext
+                        AstMethods.PrintNewline,
+                        Parent.LocalContext
                     );
                 }
-                return ag.AddDebugInfo(result, Span);
+                return GlobalParent.AddDebugInfo(result, Span);
             } else {
                 // Create list for the individual statements
                 ReadOnlyCollectionBuilder<MSAst.Expression> statements = new ReadOnlyCollectionBuilder<MSAst.Expression>();
 
                 // Store destination in a temp, if we have one
+                MSAst.ParameterExpression temp = null;
                 if (destination != null) {
-                    MSAst.ParameterExpression temp = ag.GetTemporary("destination");
+                    temp = Ast.Variable(typeof(object), "destination");
 
-                    statements.Add(
-                        AstGenerator.MakeAssignment(temp, destination)
-                    );
+                    statements.Add(MakeAssignment(temp, destination));
 
                     destination = temp;
                 }
                 for (int i = 0; i < _expressions.Length; i++) {
-                    string method = (i < _expressions.Length - 1 || _trailingComma) ? "PrintComma" : "Print";
+                    bool withComma = (i < _expressions.Length - 1 || _trailingComma);// ? "PrintComma" : "Print";
                     Expression current = _expressions[i];
                     MSAst.MethodCallExpression mce;
 
                     if (destination != null) {
                         mce = Ast.Call(
-                            AstGenerator.GetHelperMethod(method + "WithDest"),
-                            ag.LocalContext,
+                            withComma ? AstMethods.PrintCommaWithDest : AstMethods.PrintWithDest,
+                            Parent.LocalContext,
                             destination,
-                            ag.TransformAsObject(current)
+                            AstUtils.Convert(current, typeof(object))
                         );
                     } else {
                         mce = Ast.Call(
-                            AstGenerator.GetHelperMethod(method),
-                            ag.LocalContext,
-                            ag.TransformAsObject(current)
+                            withComma ? AstMethods.PrintComma : AstMethods.Print,
+                            Parent.LocalContext,
+                            AstUtils.Convert(current, typeof(object))
                         );
                     }
 
@@ -105,7 +104,13 @@ namespace IronPython.Compiler.Ast {
                 }
 
                 statements.Add(AstUtils.Empty());
-                return ag.AddDebugInfo(Ast.Block(statements.ToReadOnlyCollection()), Span);
+                MSAst.Expression res;
+                if (temp != null) {
+                    res = Ast.Block(new[] { temp }, statements.ToReadOnlyCollection());
+                } else {
+                    res = Ast.Block(statements.ToReadOnlyCollection());
+                }
+                return GlobalParent.AddDebugInfo(res, Span);
             }
         }
 

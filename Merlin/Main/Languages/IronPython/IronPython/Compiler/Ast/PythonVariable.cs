@@ -21,11 +21,16 @@ using MSAst = Microsoft.Scripting.Ast;
 
 using System;
 using System.Diagnostics;
+
 using Microsoft.Scripting;
 using Microsoft.Scripting.Ast;
 using Microsoft.Scripting.Utils;
 
+using IronPython.Runtime;
+
 namespace IronPython.Compiler.Ast {
+    using Ast = MSAst.Expression;
+
     internal class PythonVariable {
         private readonly string _name;
         private readonly ScopeStatement/*!*/ _scope;
@@ -46,6 +51,12 @@ namespace IronPython.Compiler.Ast {
 
         public string Name {
             get { return _name; }
+        }
+
+        public bool IsGlobal {
+            get {
+                return Kind == VariableKind.Global || Scope.IsGlobal;
+            }
         }
 
         public ScopeStatement Scope {

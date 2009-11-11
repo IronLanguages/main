@@ -108,40 +108,4 @@ namespace Microsoft.Scripting.Interpreter {
             get { return "SetArrayItem"; }
         }
     }
-
-    #region Factories
-
-    public partial class Instruction {
-        public static Instruction GetArrayItem(Type arrayType) {
-            Type elementType = arrayType.GetElementType();
-            if (elementType.IsClass || elementType.IsInterface) {
-                return InstructionFactory<object>.Factory.GetArrayItem();
-            } else {
-                return InstructionFactory.GetFactory(elementType).GetArrayItem();
-            }
-        }
-
-        public static Instruction SetArrayItem(Type arrayType) {
-            Type elementType = arrayType.GetElementType();
-            if (elementType.IsClass || elementType.IsInterface) {
-                return InstructionFactory<object>.Factory.SetArrayItem();
-            } else {
-                return InstructionFactory.GetFactory(elementType).SetArrayItem();
-            }
-        }
-
-        public static Instruction NewArray(Type elementType) {
-            return InstructionFactory.GetFactory(elementType).NewArray();
-        }
-
-        public static Instruction NewArrayBounds(Type elementType, int rank) {
-            return new NewArrayBoundsInstruction(elementType, rank);
-        }
-
-        public static Instruction NewArrayInit(Type elementType, int elementCount) {
-            return InstructionFactory.GetFactory(elementType).NewArrayInit(elementCount);
-        }
-    }
-
-    #endregion
 }

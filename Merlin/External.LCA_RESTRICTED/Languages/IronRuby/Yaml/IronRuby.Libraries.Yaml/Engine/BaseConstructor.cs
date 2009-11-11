@@ -19,6 +19,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text.RegularExpressions;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
@@ -605,12 +606,12 @@ namespace IronRuby.StandardLibrary.Yaml {
                 int bes = 1;
                 double val = 0.0;
                 for (int i = 0, j = digits.Length; i < j; i++) {
-                    val += (double.Parse(digits[(j - i) - 1]) * bes);
+                    val += (double.Parse(digits[(j - i) - 1], CultureInfo.InvariantCulture) * bes);
                     bes *= 60;
                 }
                 return sign * val;
             } else {
-                return sign * double.Parse(value);
+                return sign * double.Parse(value, CultureInfo.InvariantCulture);
             }
         }
 

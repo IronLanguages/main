@@ -31,7 +31,7 @@ namespace IronRuby.Compiler.Ast {
         internal static readonly MSA.Expression Instance = new EnterInterpretedFrameExpression();
 
         public void AddInstructions(LightCompiler compiler) {
-            compiler.AddInstruction(_Instruction.Instance);
+            compiler.Instructions.Emit(_Instruction.Instance);
         }
         
         public sealed override Type/*!*/ Type {
@@ -71,7 +71,7 @@ namespace IronRuby.Compiler.Ast {
         internal static readonly MSA.Expression Instance = new LeaveInterpretedFrameExpression();
 
         public void AddInstructions(LightCompiler compiler) {
-            compiler.AddInstruction(_Instruction.Instance);
+            compiler.Instructions.Emit(_Instruction.Instance);
         }
 
         private sealed class _Instruction : Instruction {

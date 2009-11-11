@@ -2956,7 +2956,9 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static FunctionCode MakeFunctionCode(CodeContext context, string name, string documentation, string[] argNames, FunctionAttributes flags, SourceSpan span, string path, Delegate code, string[] freeVars, string[] names, string[] cellVars, string[] varNames, int localCount) {
-            return new FunctionCode(PythonContext.GetContext(context), code, name, documentation, argNames, flags, span, path, freeVars, names, cellVars, varNames, localCount);
+            Compiler.Ast.SerializedScopeStatement scope = new Compiler.Ast.SerializedScopeStatement(name, argNames, flags, span, path, freeVars, names, cellVars, varNames);
+
+            return new FunctionCode(PythonContext.GetContext(context), code, scope, documentation, localCount);
         }
 
         [NoSideEffects]
@@ -3601,11 +3603,9 @@ namespace IronPython.Runtime.Operations {
         /// </summary>
         public static object LookupName(CodeContext context, string name) {
             object value;
-            if (context.TryLookupName(name, out value) && value != Uninitialized.Instance) {
+            if (context.TryLookupName(name, out value)) {
                 return value;
-            }
-
-            if (context.TryLookupGlobal(name, out value) && value != Uninitialized.Instance) {
+            } else if (context.TryLookupBuiltin(name, out value)) {
                 return value;
             }
 
@@ -4158,10 +4158,10 @@ namespace IronPython.Runtime.Operations {
             return stack;
         }
 
-        internal static LambdaExpression ToGenerator(this LambdaExpression code, bool shouldInterpret, bool debuggable) {
+        internal static LambdaExpression ToGenerator(this LambdaExpression code, bool shouldInterpret, bool debuggable, int compilationThreshold) {
             return Expression.Lambda(
                 code.Type,
-                new GeneratorRewriter(code.Name, code.Body).Reduce(shouldInterpret, debuggable, code.Parameters, x => x),
+                new GeneratorRewriter(code.Name, code.Body).Reduce(shouldInterpret, debuggable, compilationThreshold, code.Parameters, x => x),
                 code.Name,
                 code.Parameters
             );

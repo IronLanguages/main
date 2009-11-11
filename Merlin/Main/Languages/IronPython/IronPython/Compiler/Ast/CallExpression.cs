@@ -71,21 +71,21 @@ namespace IronPython.Compiler.Ast {
             return false;
         }
 
-        internal override MSAst.Expression Transform(AstGenerator ag, Type type) {
-            MSAst.Expression[] values = new MSAst.Expression[_args.Length + 2];
+        public override MSAst.Expression Reduce() {
+            MSAst.Expression[] values = new MSAst.Expression[_args.Length + 1];
             Argument[] kinds = new Argument[_args.Length];
 
-            values[0] = ag.LocalContext;
-            values[1] = ag.Transform(_target);
+            values[0] = _target;
 
             for (int i = 0; i < _args.Length; i++) {
-                kinds[i] = _args[i].Transform(ag, out values[i + 2]);
+                kinds[i] = _args[i].GetArgumentInfo();
+                values[i + 1] = _args[i].Expression;
             }
 
-            return ag.Invoke(
-                type,
+            return Parent.Invoke(
+                typeof(object),
                 new CallSignature(kinds),
-                ArrayUtils.RemoveFirst(values)
+                values
             );
         }
 

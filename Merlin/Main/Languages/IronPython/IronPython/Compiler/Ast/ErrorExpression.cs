@@ -26,10 +26,6 @@ namespace IronPython.Compiler.Ast {
         public ErrorExpression() {
         }
 
-        internal override MSAst.Expression Transform(AstGenerator ag, Type type) {
-            return null;
-        }
-
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {
                 ;

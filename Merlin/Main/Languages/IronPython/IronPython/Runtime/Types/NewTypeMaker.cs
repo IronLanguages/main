@@ -299,6 +299,24 @@ namespace IronPython.Runtime.Types {
             ImplementPythonEquals();
 
             ImplementWeakReference();
+
+            AddDebugView();
+        }
+
+        private void AddDebugView() {
+            _tg.SetCustomAttribute(
+                new CustomAttributeBuilder(
+                    typeof(DebuggerTypeProxyAttribute).GetConstructor(new[] { typeof(Type) }),
+                    new object[] { typeof(UserTypeDebugView) }
+                )
+            );
+
+            _tg.SetCustomAttribute(
+                new CustomAttributeBuilder(
+                    typeof(DebuggerDisplayAttribute).GetConstructor(new[] { typeof(string) }),
+                    new object[] { "{get_PythonType().GetTypeDebuggerDisplay()}" }
+                )
+            );
         }
 
         private void EmitGetDict(ILGen gen) {
