@@ -22,4 +22,10 @@ describe "File.utime" do
     File.atime(@file2).to_i.should be_close(@atime.to_i, 2)
     File.mtime(@file2).to_i.should be_close(@mtime.to_i, 2)
   end
+  
+  it "treats nil times as Time.now" do
+    File.utime(nil, nil, @file1).should == 1
+    File.atime(@file1).to_i.should be_close(@atime.to_i, 2)
+    File.mtime(@file1).to_i.should be_close(@mtime.to_i, 2)
+  end
 end

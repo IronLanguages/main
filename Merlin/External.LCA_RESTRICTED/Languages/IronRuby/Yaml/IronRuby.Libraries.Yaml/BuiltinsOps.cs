@@ -322,16 +322,16 @@ namespace IronRuby.StandardLibrary.Yaml {
         }
     }
 
-    [RubyModule(Extends = typeof(DateTime))]
-    public static class DateTimeOps {
+    [RubyModule(Extends = typeof(Time))]
+    public static class TimeOps {
         [RubyMethod("to_yaml_node", RubyMethodAttributes.PrivateInstance)]
-        public static Node/*!*/ ToYaml(DateTime self, [NotNull]RubyRepresenter/*!*/ rep) {
-            string format = (self.Millisecond != 0) ? "yyyy-MM-dd HH:mm:ss.fffffff K" : "yyyy-MM-dd HH:mm:ss K";
+        public static Node/*!*/ ToYaml(Time self, [NotNull]RubyRepresenter/*!*/ rep) {
+            string format = (self.DateTime.Millisecond != 0) ? "yyyy-MM-dd HH:mm:ss.fffffff K" : "yyyy-MM-dd HH:mm:ss K";
             return rep.Scalar(self, MutableString.CreateAscii(self.ToString(format, CultureInfo.InvariantCulture)));
         }
 
         [RubyMethod("taguri")]
-        public static MutableString/*!*/ TagUri(DateTime self) {
+        public static MutableString/*!*/ TagUri(Time self) {
             return MutableString.CreateAscii("tag:yaml.org,2002:timestamp");
         }
     }

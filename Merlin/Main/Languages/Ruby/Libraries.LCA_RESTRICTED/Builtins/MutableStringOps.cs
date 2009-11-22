@@ -1849,7 +1849,7 @@ namespace IronRuby.Builtins {
 
         [RubyMethod("scan")]
         public static RubyArray/*!*/ Scan(RubyScope/*!*/ scope, MutableString/*!*/ self, [DefaultProtocol, NotNull]RubyRegex/*!*/ regex) {
-            IList<MatchData> matches = regex.Matches(scope.RubyContext.KCode, self);
+            IList<MatchData> matches = regex.Matches(scope.RubyContext.KCode, self, false);
 
             var matchScope = scope.GetInnerMostClosureScope();
             

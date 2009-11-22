@@ -7,4 +7,11 @@ describe :time_gmtime, :shared => true do
       t.should == Time.gm(2007, 1, 9, 12, 0, 0)
     end
   end
+
+  it "changes the receiver" do
+    t = Time.now
+    t.utc?.should be_false
+    t.send(@method)
+    t.utc?.should be_true
+  end
 end

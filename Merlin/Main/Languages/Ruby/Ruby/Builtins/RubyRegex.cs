@@ -225,7 +225,7 @@ namespace IronRuby.Builtins {
 
         public MatchData Match(RubyEncoding kcode, MutableString/*!*/ input) {
             string str;
-            return MatchData.Create(Transform(ref kcode, input, 0, out str).Match(str), input, str, kcode, 0);
+            return MatchData.Create(Transform(ref kcode, input, 0, out str).Match(str), input, true, str, kcode, 0);
         }
 
         /// <summary>
@@ -251,7 +251,7 @@ namespace IronRuby.Builtins {
                 match = regex.Match(str, start);
             }
 
-            return MatchData.Create(match, input, str, kcode, start);
+            return MatchData.Create(match, input, true, str, kcode, start);
         }
 
         public MatchData LastMatch(RubyEncoding kcode, MutableString/*!*/ input) {
@@ -298,7 +298,7 @@ namespace IronRuby.Builtins {
                     return null;
                 }
             }
-            return MatchData.Create(match, input, str, kcode, 0);
+            return MatchData.Create(match, input, true, str, kcode, 0);
         }
 
         /// <summary>
@@ -326,15 +326,25 @@ namespace IronRuby.Builtins {
         /// <summary>
         /// Returns a collection of fresh MatchData objects.
         /// </summary>
-        public IList<MatchData>/*!*/ Matches(RubyEncoding kcode, MutableString/*!*/ input) {
+        public IList<MatchData>/*!*/ Matches(RubyEncoding kcode, MutableString/*!*/ input, bool inputMayMutate) {
             string str;
             MatchCollection matches = Transform(ref kcode, input, 0, out str).Matches(str);
 
             var result = new MatchData[matches.Count];
-            for (int i = 0; i < result.Length; i++) {
-                result[i] = MatchData.Create(matches[i], input, str, kcode, 0);
+            if (result.Length > 0 && inputMayMutate) {
+                // clone and freeze the string once so that it can be shared by all the MatchData objects
+                input = input.Clone().Freeze();
             }
+
+            for (int i = 0; i < result.Length; i++) {
+                result[i] = MatchData.Create(matches[i], input, false, str, kcode, 0);
+            }
+
             return result;
+        }
+
+        public IList<MatchData>/*!*/ Matches(RubyEncoding kcode, MutableString/*!*/ input) {
+            return Matches(kcode, input, true);
         }
 
         public MutableString[]/*!*/ Split(RubyEncoding kcode, MutableString/*!*/ input) {

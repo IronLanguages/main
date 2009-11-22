@@ -56,8 +56,8 @@ namespace IronRuby.Runtime {
         public static readonly int MriPatchLevel = 0; // TODO: core/string/modulo are failing if we claim compat with 368
 
         // IronRuby:
-        public const string/*!*/ IronRubyVersionString = "0.9.2.0";
-        public static readonly Version IronRubyVersion = new Version(0, 9, 2, 0);
+        public const string/*!*/ IronRubyVersionString = "0.9.3.0";
+        public static readonly Version IronRubyVersion = new Version(0, 9, 3, 0);
         internal const string/*!*/ IronRubyDisplayName = "IronRuby";
         internal const string/*!*/ IronRubyNames = "IronRuby;Ruby;rb";
         internal const string/*!*/ IronRubyFileExtensions = ".rb";

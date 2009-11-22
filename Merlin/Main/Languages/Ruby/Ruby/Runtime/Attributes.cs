@@ -161,11 +161,11 @@ namespace IronRuby.Runtime {
         /// 
         /// 2)
         /// namespace Ruby.Builtins {
-        ///     [RubyClass("Time", Extends = typeof(DateTime))]
-        ///     public static class TimeOps {}
+        ///     [RubyClass("Exception", Extends = typeof(Exception))]
+        ///     public static class ExceptionOps {}
         /// }
         /// 
-        /// Ruby name is "Time". Constant "Time" is defined on Object.
+        /// Ruby name is "Exception". Constant "Exception" is defined on Object.
         /// 
         /// 3) 
         /// namespace Ruby.MyLibrary {

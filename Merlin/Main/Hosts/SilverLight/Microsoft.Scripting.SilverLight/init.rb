@@ -20,6 +20,28 @@ class String
   end
 end
 
+class System::Windows::FrameworkElement
+  # Monkey-patch FrameworkElement to allow element.ChildName instead of window.FindName("ChildName")
+  # If FindName doesn't yield an object, it tried the Resources collection (for things like Storyboards)
+  def method_missing name, *args
+    obj   = find_name(name.to_s.to_clr_string) 
+    obj ||= self.resources[name.to_s.to_clr_string]
+    obj || super
+  end
+
+  def hide!
+    self.visibility = System::Windows::Visibility.hidden
+  end
+
+  def collapse!
+    self.visibility = System::Windows::Visibility.collapsed
+  end
+
+  def show!
+    self.visibility = System::Windows::Visibility.visible
+  end
+end
+
 module System::Windows::Browser
   module HtmlInspector
     def inspect

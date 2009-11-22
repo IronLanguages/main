@@ -21,6 +21,7 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Threading;
 using IronRuby.Compiler;
 using IronRuby.Runtime;
@@ -1563,6 +1564,26 @@ namespace IronRuby.Builtins {
         #endregion
 
         #region rand, srand
+
+        private static RNGCryptoServiceProvider _RNGCryptoServiceProvider;
+
+        [RubyMethod("srand", RubyMethodAttributes.PrivateInstance)]
+        [RubyMethod("srand", RubyMethodAttributes.PublicSingleton)]
+        public static object SeedRandomNumberGenerator(RubyContext/*!*/ context, object self) {
+            // This should use a combination of the time, the process id, and a sequence number.
+
+            if (_RNGCryptoServiceProvider == null) {
+                _RNGCryptoServiceProvider = new RNGCryptoServiceProvider();
+            }
+
+            int secureRandomNumber = 0;
+            do {
+                byte[] b = new byte[4];
+                _RNGCryptoServiceProvider.GetBytes(b);
+                secureRandomNumber = ((int)b[0] << 24) | ((int)b[1] << 16) | ((int)b[2] << 8) | b[3];
+            } while (secureRandomNumber == 0); // GetNonZeroBytes does not exist in Silverlight
+            return SeedRandomNumberGenerator(context, self, secureRandomNumber);
+        }
 
         [RubyMethod("srand", RubyMethodAttributes.PrivateInstance)]
         [RubyMethod("srand", RubyMethodAttributes.PublicSingleton)]

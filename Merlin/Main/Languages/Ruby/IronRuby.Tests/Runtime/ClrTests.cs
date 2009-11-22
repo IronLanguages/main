@@ -2685,17 +2685,17 @@ false
 
         /// <summary>
         /// Operator mapping is not performed for builtin classes. 
-        /// CLR DateTime defines op_LessThan but we want less-than operator to call comparison method &lt;=&gt;.
+        /// CLR BigInteger defines op_LessThan but we want less-than operator to call comparison method &lt;=&gt;.
         /// </summary>
         public void ClrOperators3() {
             TestOutput(@"
-class Time
+class Bignum
   def <=>(other)
     puts '<=>'
     1
   end
 end
-p Time.mktime(1) < Time.mktime(10)
+p 0x1000_0000_0 < 0x1000_0000_1
 ", @"
 <=>
 false

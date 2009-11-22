@@ -12,7 +12,11 @@ describe "Logger#new" do
   after :each do
     @log_file.close unless @log_file.closed?
     @l.close if @l
-    File.unlink(@file_path) if File.exists?(@file_path)
+    begin
+      File.unlink(@file_path) if File.exists?(@file_path)
+    rescue Errno::EACCES
+      File.unlink(@file_path) if File.exists?(@file_path)
+    end
   end
 
    it "creates a new logger object" do

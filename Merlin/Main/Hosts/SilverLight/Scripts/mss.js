@@ -13,7 +13,8 @@ if(!DLR.autoAdd) {
 }
 
 if(!DLR.path) {
-  DLR.path = null 
+  //DLR.path = null
+  DLR.path = "../dlr"
 }
 
 if (typeof HTMLElement != "undefined" && !HTMLElement.prototype.insertAdjacentElement) {
@@ -181,12 +182,45 @@ if(!DLR.__loaded) {
       onError: 'Silverlight.default_error_handler',
       reportErrors: 'errorLocation',
       source: DLR.path != null ? DLR.path + '/dlr.xap' : 'dlr.xap',
-      id: 'silverlightDlrObject_DOMOnly'
+      id: 'silverlightDlrObject_DOMOnly',
+      enableHtmlAccess: "true"
     };
   }
 
   if(!DLR.settings)
     DLR.settings = {}
+
+  /*
+   * __onDownloadCompleteToPoll is only used by the XMLHttpRequest implementation
+   * that uses polling to detect the download succeeded, rather than using the 
+   * HTMLBridge to hook the XMLHttpRequest.onreadystatechanged event. The only
+   * benefit to this is that a cross-domain XAP file does not require the
+   * ExternalCallersFromCrossDomain="ScriptableOnly" setting to exist in the
+   * AppManifest.xaml.
+   */
+
+  DLR.__onDownloadCompleteToPoll = function(file) {
+    return function() {
+      if (this.readyState == 4 && this.status == 200) {
+        obj = DLR.__persistFile(file, this.responseText, this.status);
+      } else if (this.readyState == 4 && this.status != 200) {
+        obj = DLR.__persistFile(file, null, this.status);
+      }
+    }
+  }
+
+  DLR.__persistFile = function(file, content, status) {
+    obj = document.getElementById(file);
+    if (obj == null) {
+      obj = document.createElement("div");
+      obj.id = file;
+    }
+    obj.setAttribute("style", "display: none");
+    obj.status = status;
+    obj.scriptContent = content;
+    document.body.appendChild(obj);
+    return obj;
+  }
 
   if(window.addEventListener) {
     window.addEventListener('load', DLR.__startup, false);

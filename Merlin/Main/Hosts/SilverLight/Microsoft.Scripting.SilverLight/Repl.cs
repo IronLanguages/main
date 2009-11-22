@@ -419,19 +419,7 @@ namespace Microsoft.Scripting.Silverlight {
         /// </summary>
         /// <param name="e"></param>
         private void HandleException(Exception e) {
-            _outputBuffer.WriteLine(string.Format("{0}: {1}", e.GetType(), e.Message));
-            var dfs = Microsoft.Scripting.Runtime.ScriptingRuntimeHelpers.GetDynamicStackFrames(e);
-            if(dfs == null || dfs.Length == 0) {
-                _outputBuffer.WriteLine(e.StackTrace != null ? e.StackTrace : e.ToString());
-            } else {
-                foreach(var frame in dfs) { 
-                    _outputBuffer.WriteLine("  at {0} in {1}, line {2}",
-                        frame.GetMethodName(),
-                        frame.GetFileName() != null ? frame.GetFileName() : null,
-                        frame.GetFileLineNumber()
-                    );
-                }
-            }
+            _outputBuffer.WriteLine(_engine.GetService<ExceptionOperations>().FormatException(e));
         }
 
         /// <summary>

@@ -27,9 +27,9 @@
     $script_tags_run['inline-ruby-deferred'] = {:inline => true, :defer => true}
   </script>
 
-  <script type="application/ruby" src="fixtures/ext-defer.rb"></script>
+  <script type="application/ruby" src="fixtures/ext-defer.rb" defer='true'></script>
  
-  <script type="application/ruby" src="fixtures/ext-nodefer.rb" defer="false"></script>
+  <script type="application/ruby" src="fixtures/ext-nodefer.rb"></script>
 
   <script type="application/x-ruby">
     $script_tags_run ||= {}
@@ -92,8 +92,8 @@
   <script src="test_script-tags.js"></script>
   -->
 
-  <script type="application/ruby" src="test_script_tags.rb"></script>
-  <script type="application/python" src="test_script_tags.py"></script>
+  <script type="application/ruby" src="test_script_tags.rb" defer='true'></script>
+  <script type="application/python" src="test_script_tags.py" defer='true'></script>
 
 </head>
 <body>
@@ -108,26 +108,26 @@
   <script type="text/javascript" src="qunit/testrunner.js"></script>
   -->
 
-  <script type="text/ruby" src="rblib/bacon_runner.rb"></script>
-  <script type="text/ruby" src="rblib/bacon.rb"></script>
+  <script type="text/ruby" src="rblib/bacon_runner.rb" defer='true'></script>
+  <script type="text/ruby" src="rblib/bacon.rb" defer='true'></script>
   <script type="text/ruby">
     require 'rblib/bacon_runner'
     BaconRunner.run(%W(test_script_tags))
   </script>
-
-  <script type="text/python" src="pylib/traceback.py"></script>
-  <script type="text/python" src="pylib/linecache.py"></script>
-  <script type="text/python" src="pylib/os.py"></script>
-  <script type="text/python" src="pylib/ntpath.py"></script>
-  <script type="text/python" src="pylib/stat.py"></script>
-  <script type="text/python" src="pylib/genericpath.py"></script>
-  <script type="text/python" src="pylib/warnings.py"></script>
-  <script type="text/python" src="pylib/types.py"></script>
-  <script type="text/python" src="pylib/random.py"></script>
-  <script type="text/python" src="pylib/__future__.py"></script>
-  <script type="text/python" src="pylib/getopt.py"></script>
-  <script type="text/python" src="pylib/unittest.py"></script>
-  <script type="text/python" src="pylib/unittest_runner.py"></script>
+  <!--
+  <script type="text/python" src="pylib/traceback.py" defer'true'></script>
+  <script type="text/python" src="pylib/linecache.py" defer'true'></script>
+  <script type="text/python" src="pylib/os.py" defer'true'></script>
+  <script type="text/python" src="pylib/ntpath.py" defer'true'></script>
+  <script type="text/python" src="pylib/stat.py" defer'true'></script>
+  <script type="text/python" src="pylib/genericpath.py" defer'true'></script>
+  <script type="text/python" src="pylib/warnings.py" defer'true'></script>
+  <script type="text/python" src="pylib/types.py" defer'true'></script>
+  <script type="text/python" src="pylib/random.py" defer'true'></script>
+  <script type="text/python" src="pylib/__future__.py" defer'true'></script>
+  <script type="text/python" src="pylib/getopt.py" defer'true'></script>
+  <script type="text/python" src="pylib/unittest.py" defer'true'></script>
+  <script type="text/python" src="pylib/unittest_runner.py" defer'true'></script>
   <script type="text/python">
     import sys
     sys.path.append("pylib")
@@ -135,6 +135,6 @@
     import test_script_tags
     #unittest_runner.run(test_script_tags)
   </script>
-
+  -->
 </body>
 </html>

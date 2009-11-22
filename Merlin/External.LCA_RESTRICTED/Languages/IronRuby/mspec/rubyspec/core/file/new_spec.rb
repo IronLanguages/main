@@ -14,8 +14,12 @@ describe "File.new" do
   
   after :each do
     @fh.close if @fh and not @fh.closed?
-    File.delete(@file) if File.exists?(@file)
     @fh = nil
+    begin
+      File.delete(@file) if File.exists?(@file)
+    rescue Errno::EACCES
+      File.delete(@file) if File.exists?(@file)
+    end
   end
 
   it "return a new File with mode string" do

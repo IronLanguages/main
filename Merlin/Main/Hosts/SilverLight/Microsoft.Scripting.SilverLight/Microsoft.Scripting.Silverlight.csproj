@@ -132,9 +132,11 @@
       <HintPath>$(SilverlightPath)\System.Net.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="System.Core, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" Condition=" '$(TargetFrameworkVersion)' == 'v4.0' ">
+    <Reference Include="System.Core, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(SilverlightPath)\System.Core.dll</HintPath>
+      <Private>False</Private>
+      <Aliases>systemcore</Aliases>
     </Reference>
   </ItemGroup>
   <ItemGroup>

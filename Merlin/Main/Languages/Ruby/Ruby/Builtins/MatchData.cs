@@ -58,7 +58,7 @@ namespace IronRuby.Builtins {
             _match = match;
 
             // TODO (opt): create groups instead?
-            _originalString = originalString.Clone().Freeze();
+            _originalString = originalString;
 
             _kIndices = kIndices;
             IsTainted = originalString.IsTainted;
@@ -89,7 +89,7 @@ namespace IronRuby.Builtins {
             _originalString = other._originalString;
         }
 
-        internal static MatchData Create(Match/*!*/ match, MutableString/*!*/ input, string/*!*/ encodedInput, RubyEncoding kcoding, int kStart) {
+        internal static MatchData Create(Match/*!*/ match, MutableString/*!*/ input, bool inputMayMutate, string/*!*/ encodedInput, RubyEncoding kcoding, int kStart) {
             if (!match.Success) {
                 return null;
             }
@@ -113,6 +113,9 @@ namespace IronRuby.Builtins {
                 kIndices = null;
             }
 
+            if (inputMayMutate) {
+                input = input.Clone().Freeze();
+            }
             return new MatchData(match, input, kIndices);
         }
         

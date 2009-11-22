@@ -1,0 +1,61 @@
+<style type="text/css">
+  body {
+    font-family: Calibri, sans-serif;
+  }
+  pre {
+    font-family: Consolas, monospace;
+  }
+</style>
+
+<h1>Ruby and Python in the Browser</h1>
+
+<h2>Getting Started</h2>
+<p>
+Include the <code>http://gestalt.ironruby.com/d1/dlr-20091111/dlr.js</code> file on your page to enable
+Ruby and Python script-tags on the HTML page:
+</p>
+
+<pre>
+&lt;html&gt;
+  &lt;head&gt;
+    &lt;script type="text/javascript" src="http://ironruby.com/dlr/dlr.js"&gt;&lt;/script&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;script type="text/ruby"&gt;
+      window.alert "Hello World from Ruby"
+    &lt;/script&gt;
+  &lt;/body&gt;
+&lt;/html&gt;
+</pre>
+
+<p><b>Try out some simple examples: </b>
+<a href="getting-started/01_ruby.html">ruby</a> |
+<a href="getting-started/02_python.html">python</a> |
+<a href="getting-started/03_xaml.html">xaml</a> |
+<a href="getting-started/04_animation.html">animation</a> |
+<a href="getting-started/05_final.html">final</a>
+</p>
+
+<p><b>And take a look at the paper:</b>
+<a href="sl-back-to-just-text.pdf">Back to "Just-Text"</a>
+</p>
+
+<h2>Custom Installation</h2>
+
+<p><a href="gestalt-2009-11-10.zip">Download the redistributable package</a></p>
+
+<p>
+Place the package anywhere on your webserver, but keep in mind if you have
+to reference dlr.js with a path that's different than "../dlr.js", you'll 
+have to add this to your HTML file <b>before</b> referencing dlr.js:
+</p>
+
+<pre>
+&lt;script type="text/javascript"&gt;
+  window.DLR = {}
+  DLR.path = "../../path/to/dlr" // where ../../path/to/dlr.js exists
+&lt;/script&gt;
+</pre>
+
+<p>However, if you don't want to add this to every file, you can also 
+add it to the top of dlr.js</p>

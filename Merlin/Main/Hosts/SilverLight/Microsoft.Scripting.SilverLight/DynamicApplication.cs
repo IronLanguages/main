@@ -83,13 +83,13 @@ namespace Microsoft.Scripting.Silverlight {
         /// </summary>
         public static Uri BaseUri {
             get {
-                if (_Current.Engine != null && _Current.Engine.RunningEntryPoint) {
+                if (_Current != null && _Current.Engine != null && _Current.Engine.RunningEntryPoint) {
                     return new Uri(
                         NormalizePath(Path.GetDirectoryName(Settings.EntryPoint)),
                         UriKind.RelativeOrAbsolute
                     );
                 }
-                return _HtmlPageUri;
+                return HtmlPageUri;
             }
         }
 
@@ -98,6 +98,14 @@ namespace Microsoft.Scripting.Silverlight {
         /// background thread
         /// </summary>
         internal static Uri _HtmlPageUri;
+        internal static Uri HtmlPageUri {
+            get {
+                if (_HtmlPageUri == null) {
+                    _HtmlPageUri = HtmlPage.Document.DocumentUri;
+                }
+                return _HtmlPageUri;
+            }
+        }
 
         /// <summary>
         /// First Repl instance created
@@ -220,7 +228,7 @@ namespace Microsoft.Scripting.Silverlight {
         /// See MakeUri(Uri, Uri)
         /// </summary>
         public static Uri MakeUri(Uri baseUri, string relativeUri) {
-            return MakeUri(null, new Uri(NormalizePath(relativeUri), UriKind.Relative));
+            return MakeUri(null, new Uri(NormalizePath(relativeUri), UriKind.RelativeOrAbsolute));
         }
 
         /// <summary>
@@ -290,7 +298,7 @@ namespace Microsoft.Scripting.Silverlight {
 
             _Current = this;
             _UIThreadId = Thread.CurrentThread.ManagedThreadId;
-            _HtmlPageUri = HtmlPage.Document.DocumentUri;
+            _HtmlPageUri = HtmlPageUri;
 
             Settings.ReportUnhandledErrors = true;
 
@@ -310,7 +318,7 @@ namespace Microsoft.Scripting.Silverlight {
             LanguagesConfig.DownloadLanguages(AppManifest, () => {
                 ScriptTags.DownloadExternalCode(() => {
                     Engine = new DynamicEngine();
-                    if (Settings.ConsoleEnabled)
+                    if (Settings.ConsoleEnabled && LanguagesConfig.LanguagesUsed.Count > 0)
                         Console = Repl.Show();
                     LanguageTypeExtensions.Load(Engine.LangConfig);
                     ScriptTags.Run(Engine);

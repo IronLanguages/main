@@ -14,10 +14,10 @@ WHEN PERFORMING MAJOR IR UPGRADES (e.g., 2.5 => 2.6):
 -->
 
 <?define ProductShortName = "IronRuby" ?>
-<?define ProductVersion = "0.9.2.0" ?>
-<?define ProductVersionText = "0.9.2" ?>
+<?define ProductVersion = "0.9.3.0" ?>
+<?define ProductVersionText = "0.9.3.0" ?>
 <?define Manufacturer = "Microsoft Corporation" ?>
-<?define UpgradeCode = "4C7A5A90-300E-466d-927B-E1B2E8B704A5" ?>
+<?define UpgradeCode = "AC5205E2-8D34-446E-9CE4-BF9D8F65AF93" ?>
 
 
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">

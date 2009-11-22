@@ -305,11 +305,15 @@ namespace Microsoft.Scripting.Silverlight {
                 // Try to get the ScriptEngine from the source file's extension;
                 // if that fails just use the current ScriptEngine
                 ScriptEngine engine = null;
-                if (_sourceFileName != null) {
-                    try {
+                try {
+                    if (_sourceFileName != null) {
                         var extension = System.IO.Path.GetExtension(_sourceFileName);
                         _runtime.TryGetEngineByFileExtension(extension, out engine);
-                    } catch (ArgumentException) {
+                    } else {
+                        throw new Exception(); 
+                    }
+                } catch {
+                    if (DynamicApplication.Current.Engine != null) {
                         engine = DynamicApplication.Current.Engine.Engine;
                     }
                 }

@@ -335,7 +335,6 @@ else:
             System.GC.WaitForPendingFinalizers()
         return System.GC.GetTotalMemory(True)
 
-
 def _do_nothing(*args): 
     for arg in args:
         print arg
@@ -607,3 +606,15 @@ def retry_on_failure(f, *args, **kwargs):
         raise e
                 
     return t
+    
+def force_gc():
+    if is_silverlight:
+        return
+    elif is_cpython:
+        import gc
+        gc.collect()
+    else:
+        import System
+        for i in xrange(100):
+            System.GC.Collect()
+        System.GC.WaitForPendingFinalizers()

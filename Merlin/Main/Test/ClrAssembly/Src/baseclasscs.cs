@@ -92,6 +92,12 @@ namespace Merlin.Testing.BaseClass {
     public class Class210d : Class210a { }
     public class Class210e : Class210a { public sealed override int m210() { return 214; } }
 
+    public class Class215a { protected virtual int m215() { return 215; } }
+    public class Class215b : Class215a { new protected virtual int m215() { return 216; } }
+    public class Class215c : Class215a { protected override int m215() { return 217; } }
+    public class Class215d : Class215a { }
+    public class Class215e : Class215a { protected sealed override int m215() { return 218; } }
+
     public partial class Callback {
         public static int On(Class210a arg) { return arg.m210(); }
     }

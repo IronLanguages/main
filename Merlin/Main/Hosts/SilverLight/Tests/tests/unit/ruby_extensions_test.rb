@@ -13,6 +13,17 @@ shared 'Create HTML element' do
   end
 end
 
+shared 'Create XAML element' do
+  before do
+    @root = System::Windows::Controls::UserControl.new
+    DynamicApplication.load_component @root, "#{File.dirname(__FILE__)}/assets/foo.xaml"
+  end
+
+  after do
+    @root = nil
+  end
+end
+
 describe "Ruby extensions" do
   it 'should define document on Kernel' do
     lambda { Kernel.method(:document) }.should.not.raise
@@ -132,5 +143,14 @@ describe 'System::Windows::Browser::ScriptObjectCollection' do
   it 'can be empty' do
     document.foo.children.empty?.should.be.true
     document.body.children.empty?.should.not.be.true
+  end
+end
+
+describe 'System::Windows::FrameworkElement' do
+  behaves_like 'Create XAML element'
+
+  it 'can get named elements with method_missing' do
+    @root.layout_root.class.should == System::Windows::Controls::Grid
+    @root.message.text.should == "Foo.xaml" 
   end
 end

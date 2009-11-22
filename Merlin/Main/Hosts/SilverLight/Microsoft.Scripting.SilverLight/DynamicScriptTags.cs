@@ -90,8 +90,6 @@ namespace Microsoft.Scripting.Silverlight {
 
                 var src = (string)e.GetAttribute("src");
                 bool defer = (bool)e.GetProperty("defer");
-                bool deferDefault = src != null;
-                defer = defer ^ deferDefault;
 
                 string language = GetLanguageNameFrom(type).ToLower();
 
@@ -159,7 +157,7 @@ namespace Microsoft.Scripting.Silverlight {
                         sourceCode =
                             engine.Engine.CreateScriptSourceFromString(
                                 sc.Inline,
-                                DynamicApplication.BaseUri.LocalPath.Remove(0, 1),
+                                "main" + engine.LangConfig.GetLanguageByName(sc.Language).Extensions[0],
                                 SourceCodeKind.File
                             );
                         scope = inlineScope;

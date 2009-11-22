@@ -475,7 +475,7 @@ namespace IronRuby.StandardLibrary.Yaml {
                 int month_ymd = int.Parse(match.Groups[2].Value);
                 int day_ymd = int.Parse(match.Groups[3].Value);
 
-                return new DateTime(year_ymd, month_ymd, day_ymd);
+                return new Time(year_ymd, month_ymd, day_ymd);
             }
             throw new ConstructorException("Invalid tag:yaml.org,2002:timestamp#ymd value.");
         }
@@ -542,7 +542,7 @@ namespace IronRuby.StandardLibrary.Yaml {
                     dt = dt.AddMilliseconds(utcOffset - sign * zone);
                 }
             }
-            return dt;
+            return new Time(dt);
         }
 
         public static object ConstructYamlInt(BaseConstructor ctor, Node node) {

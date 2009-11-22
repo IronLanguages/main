@@ -41,8 +41,6 @@ echo DLR slvx files created
 
 popd
 
-REM call deploy_slvx.bat
-
 GOTO VERYEND
 
 :END

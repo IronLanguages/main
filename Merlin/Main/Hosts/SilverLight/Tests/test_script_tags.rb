@@ -34,7 +34,7 @@ describe "DLR-based script tags: end-to-end" do
     end
   end
 
-  it 'runs external script-tags with defer=false' do
+  it 'runs external script-tags' do
     script_tag('ext-nodefer') do |obj|
       obj.should have_run
       obj.should.not.be inline
@@ -58,7 +58,7 @@ describe "DLR-based script tags: end-to-end" do
     end
   end
 
-  it 'can require external script files' do
+  it 'can require external script files with defer=true' do
     script_tag('ext-defer') do |obj|
       obj.should have_run
       obj.should.not.be inline

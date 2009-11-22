@@ -45,7 +45,7 @@ namespace Microsoft.Scripting.Silverlight {
                 // Fetch innerHTML if inline, or the downloaded file otherwise
                 xaml = src == string.Empty ? 
                     (string) xamlScriptTag.GetProperty("innerHTML") :
-                    BrowserPAL.PAL.VirtualFilesystem.GetFileContents(new Uri((string)src, UriKind.RelativeOrAbsolute));
+                    BrowserPAL.PAL.VirtualFilesystem.GetFileContents(DynamicApplication.MakeUri(src));
 
                 // Rewrite the XAML to remove CDATA or <?xml line
                 var r = new StringReader(xaml);
@@ -67,7 +67,7 @@ namespace Microsoft.Scripting.Silverlight {
                 onComplete.Invoke();
             } else {
                 ((HttpVirtualFilesystem)HttpPAL.PAL.VirtualFilesystem).
-                    DownloadAndCache(new List<Uri>(){ new Uri((string)src, UriKind.RelativeOrAbsolute) }, onComplete);
+                    DownloadAndCache(new List<Uri>(){ DynamicApplication.MakeUri((string)src) }, onComplete);
             }
         }
     }

@@ -2,6 +2,7 @@
 
 echo Creating dlr directory
 if not exist %~dp0dlr mkdir %~dp0dlr
+if not exist %~dp0dlr\dlr mkdir %~dp0dlr\dlr
 
 echo Generating dlr.js
 ruby %~dp0..\Scripts\generate_dlrjs.rb > %~dp0generate_dlrjs.log
